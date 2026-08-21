@@ -11,6 +11,7 @@ import '../../core/typed_quantities.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/food_repository.dart';
+import '../../data/repositories/nutrition_target_authority.dart';
 import '../dashboard/today_surface_controller.dart';
 import 'food_contextual_actions.dart';
 import 'meal_presentation_registry.dart';
@@ -46,9 +47,18 @@ final canonicalFoodRecordsForDayProvider = FutureProvider.autoDispose
     });
 
 class FoodDiaryReadModel {
-  const FoodDiaryReadModel({required this.daily});
+  const FoodDiaryReadModel({
+    required this.daily,
+    this.targets = const TodayDomainRead<NutritionTargetsForDate?>.available(
+      null,
+    ),
+  });
 
   final NutritionDailyReadModel daily;
+
+  /// The target read is separate from food totals so a target-source failure
+  /// cannot hide otherwise available logged-food history.
+  final TodayDomainRead<NutritionTargetsForDate?> targets;
 }
 
 /// Food-root read boundary. It asks the canonical B03 read model for both the
@@ -57,6 +67,7 @@ class FoodDiaryReadModel {
 final foodDiaryReadModelProvider = FutureProvider.autoDispose
     .family<FoodDiaryReadModel, DateTime>((ref, date) async {
       ref.watch(todayNutritionRevisionProvider);
+      ref.watch(nutritionGoalVersionChangesProvider);
       final repository = await ref.watch(
         nutritionReadModelRepositoryProvider.future,
       );
@@ -64,7 +75,27 @@ final foodDiaryReadModelProvider = FutureProvider.autoDispose
         userId: kLocalNutritionUserScopeId,
         localDate: _localDateKey(date),
       );
-      return FoodDiaryReadModel(daily: daily);
+      final timezoneId = await ref
+          .watch(localTimezoneServiceProvider)
+          .currentTimezoneId();
+      TodayDomainRead<NutritionTargetsForDate?> targets;
+      try {
+        targets = TodayDomainRead<NutritionTargetsForDate?>.available(
+          await ref
+              .watch(nutritionTargetAuthorityProvider)
+              .resolve(
+                NutritionTargetDateQuery(
+                  localDate: _localDateKey(date),
+                  timezoneId: timezoneId,
+                ),
+              ),
+        );
+      } catch (_) {
+        targets = const TodayDomainRead<NutritionTargetsForDate?>.unavailable(
+          'Nutrition target unavailable',
+        );
+      }
+      return FoodDiaryReadModel(daily: daily, targets: targets);
     });
 
 /// A compact production food-log surface used by the existing food-search/log

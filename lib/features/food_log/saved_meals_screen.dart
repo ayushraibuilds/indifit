@@ -81,10 +81,9 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
 
     if (snapshot != null && mounted) {
       _refreshTodaySurfaces();
-      ScaffoldMessenger.of(context).showSnackBar(
-        indiFitSuccessSnackBar(
-          'Logged "${item.draft.name}" to ${widget.mealType.toUpperCase()}!',
-        ),
+      showIndiFitSuccessFeedback(
+        context,
+        'Logged "${item.draft.name}" to ${widget.mealType.toUpperCase()}!',
       );
       if (mounted && Navigator.canPop(context)) {
         Navigator.pop(context, true);
@@ -107,10 +106,9 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
     );
 
     if (result != null && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        indiFitSuccessSnackBar(
-          'Logged "${item.draft.name}" to ${widget.mealType.toUpperCase()}!',
-        ),
+      showIndiFitSuccessFeedback(
+        context,
+        'Logged "${item.draft.name}" to ${widget.mealType.toUpperCase()}!',
       );
       if (mounted && Navigator.canPop(context)) {
         Navigator.pop(context, true);

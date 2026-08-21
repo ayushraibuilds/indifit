@@ -4,8 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/raw_cooked_transformations.dart';
-import '../../core/theme/colors.dart';
+import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/typed_quantities.dart';
+import '../../core/widgets/indi_fit_feedback.dart';
 import '../../data/repositories/nutrition_food_catalog_repository.dart';
 import 'nutrition_recipe_editor_controller.dart';
 
@@ -72,7 +73,6 @@ class _NutritionRecipeEditorScreenState
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.recipeId == null ? 'Create Recipe' : 'Edit Recipe'),
-        backgroundColor: AppColors.surface,
         elevation: 0,
         actions: [
           if (_controller != null)
@@ -139,13 +139,18 @@ class _NutritionRecipeEditorScreenState
           const SizedBox(height: 20),
           if (state.errorMessage != null)
             Card(
-              color: AppColors.danger.withValues(alpha: 0.08),
+              color: context.b05Colors.danger.container,
               child: ListTile(
-                leading: const Icon(
+                leading: Icon(
                   Icons.error_outline,
-                  color: AppColors.danger,
+                  color: context.b05Colors.danger.indicator,
                 ),
-                title: Text(state.errorMessage!),
+                title: Text(
+                  state.errorMessage!,
+                  style: TextStyle(
+                    color: context.b05Colors.danger.foreground,
+                  ),
+                ),
               ),
             ),
           Row(
@@ -162,11 +167,11 @@ class _NutritionRecipeEditorScreenState
           ),
           const SizedBox(height: 8),
           if (state.ingredients.isEmpty)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
               child: Text(
                 'An empty draft is allowed. Add a direct food before publishing.',
-                style: TextStyle(color: AppColors.textSecondary),
+                style: TextStyle(color: context.b05Colors.textSecondary),
               ),
             )
           else
@@ -180,9 +185,9 @@ class _NutritionRecipeEditorScreenState
                   ),
                   trailing: IconButton(
                     tooltip: 'Remove ingredient',
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.delete_outline,
-                      color: AppColors.danger,
+                      color: context.b05Colors.danger.indicator,
                     ),
                     onPressed: busy
                         ? null
@@ -211,9 +216,9 @@ class _NutritionRecipeEditorScreenState
           ),
           const SizedBox(height: 8),
           if (state.foods.isEmpty)
-            const Text(
+            Text(
               'No foods are available offline for this search.',
-              style: TextStyle(color: AppColors.textSecondary),
+              style: TextStyle(color: context.b05Colors.textSecondary),
             )
           else
             ...state.foods
@@ -221,9 +226,9 @@ class _NutritionRecipeEditorScreenState
                 .map(
                   (food) => ListTile(
                     dense: true,
-                    leading: const Icon(
+                    leading: Icon(
                       Icons.add_circle_outline,
-                      color: AppColors.primary,
+                      color: context.b05Colors.action,
                     ),
                     title: Text(food.displayName),
                     subtitle: Text(
@@ -401,9 +406,7 @@ class _NutritionRecipeEditorScreenState
     await controller.saveDraft();
     if (mounted &&
         controller.currentState.status == NutritionRecipeEditorStatus.success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Recipe draft saved offline.')),
-      );
+      showIndiFitSuccessFeedback(context, 'Recipe draft saved offline.');
     }
   }
 
@@ -413,10 +416,9 @@ class _NutritionRecipeEditorScreenState
     await controller.publish();
     if (!mounted) return;
     if (controller.currentState.published) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Recipe published as a new saved recipe.'),
-        ),
+      showIndiFitSuccessFeedback(
+        context,
+        'Recipe published as a new saved recipe.',
       );
     }
   }

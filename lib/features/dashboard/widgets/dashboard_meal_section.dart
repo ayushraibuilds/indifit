@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/nutrients.dart';
 import '../../../core/nutrition_legacy_read_models.dart';
 import '../../../core/theme/colors.dart';
+import '../../../core/widgets/indi_fit_feedback.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/repositories/food_repository.dart';
 import '../../food_log/ai_meal_logger_screen.dart';
@@ -160,11 +161,9 @@ class _MealCard extends ConsumerWidget {
                           await HapticFeedback.selectionClick();
                           if (context.mounted) {
                             Navigator.pop(sheetCtx);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Re-logged recent $title items!'),
-                                backgroundColor: AppColors.success,
-                              ),
+                            showIndiFitSuccessFeedback(
+                              context,
+                              'Re-logged recent $title items!',
                             );
                           }
                         },
@@ -495,11 +494,9 @@ class _MealCard extends ConsumerWidget {
         : targetDate.day == DateTime.now().add(const Duration(days: 1)).day
         ? 'Tomorrow'
         : '${targetDate.day}/${targetDate.month}';
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Copied $title → $targetType ($dateStr)'),
-        backgroundColor: AppColors.success,
-      ),
+    showIndiFitSuccessFeedback(
+      context,
+      'Copied $title → $targetType ($dateStr)',
     );
   }
 
@@ -661,10 +658,9 @@ class _MealCard extends ConsumerWidget {
                                     .read(dashboardControllerProvider.notifier)
                                     .repeatLastMeal(type, lastMeal);
                                 if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('Repeated last $type!'),
-                                    ),
+                                  showIndiFitSuccessFeedback(
+                                    context,
+                                    'Repeated last $type!',
                                   );
                                 }
                               },

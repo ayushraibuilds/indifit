@@ -1,0 +1,3547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IndiFit R08-0.2: RepDB Movement Mapping Review Contact Sheet</title>
+    <style>
+        :root {
+            --bg-primary: #0F1115;
+            --bg-surface: #181B20;
+            --bg-card: #20242B;
+            --bg-inset: #131519;
+            --border-color: #2D323C;
+            --text-primary: #E6E8EC;
+            --text-secondary: #9DA3AF;
+            --text-muted: #6B7280;
+            --accent-blue: #3B82F6;
+            --accent-green: #10B981;
+            --accent-amber: #F59E0B;
+            --accent-red: #EF4444;
+            --accent-purple: #8B5CF6;
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            padding: 24px;
+            line-height: 1.5;
+        }
+        .header {
+            max-width: 1300px;
+            margin: 0 auto 24px auto;
+            padding: 24px;
+            background: var(--bg-surface);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+        .header-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #FFFFFF;
+            margin-bottom: 8px;
+        }
+        .header-subtitle {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+        }
+        .disclosure-banner {
+            background: rgba(245, 158, 11, 0.1);
+            border-left: 4px solid var(--accent-amber);
+            padding: 12px 16px;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #FCD34D;
+            margin-bottom: 16px;
+        }
+        .summary-stats {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .stat-badge {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        .stat-badge span {
+            color: var(--accent-blue);
+            margin-left: 4px;
+        }
+        .container {
+            max-width: 1300px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+        .card {
+            background: var(--bg-surface);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        .card-header {
+            background: var(--bg-card);
+            padding: 14px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .card-title-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .family-tag {
+            background: var(--accent-purple);
+            color: #FFFFFF;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 4px;
+            letter-spacing: 0.5px;
+        }
+        .card-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #FFFFFF;
+        }
+        .confidence-badge {
+            font-size: 12px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 6px;
+            text-transform: uppercase;
+        }
+        .confidence-badge.exact {
+            background: rgba(16, 185, 129, 0.2);
+            color: #34D399;
+            border: 1px solid #10B981;
+        }
+        .confidence-badge.strong {
+            background: rgba(59, 130, 246, 0.2);
+            color: #60A5FA;
+            border: 1px solid #3B82F6;
+        }
+        .confidence-badge.ambiguous {
+            background: rgba(245, 158, 11, 0.2);
+            color: #FBBF24;
+            border: 1px solid #F59E0B;
+        }
+        .confidence-badge.no_match {
+            background: rgba(239, 68, 68, 0.2);
+            color: #F87171;
+            border: 1px solid #EF4444;
+        }
+        .card-body {
+            display: grid;
+            grid-template-columns: 460px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        @media (max-width: 1024px) {
+            .card-body {
+                grid-template-columns: 1fr;
+            }
+        }
+        .visual-panel {
+            background: var(--bg-inset);
+            border-radius: 8px;
+            padding: 16px;
+            border: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .pose-container {
+            display: flex;
+            gap: 12px;
+            width: 100%;
+            justify-content: center;
+        }
+        .pose-container.single-pose {
+            max-width: 240px;
+        }
+        .pose-box {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            background: #0D0F12;
+            border-radius: 6px;
+            padding: 8px;
+            border: 1px solid #232730;
+        }
+        .pose-box img {
+            width: 100%;
+            height: auto;
+            max-height: 220px;
+            object-fit: contain;
+            border-radius: 4px;
+        }
+        .pose-badge {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 4px;
+            letter-spacing: 0.5px;
+        }
+        .pose-badge.start-badge {
+            background: #2563EB;
+            color: #FFFFFF;
+        }
+        .pose-badge.peak-badge {
+            background: #D97706;
+            color: #FFFFFF;
+        }
+        .pose-badge.main-badge {
+            background: #059669;
+            color: #FFFFFF;
+        }
+        .img-caption {
+            font-size: 10px;
+            color: var(--text-muted);
+            margin-top: 6px;
+            text-align: center;
+            word-break: break-all;
+            line-height: 1.3;
+        }
+        .hash-tag {
+            color: #60A5FA;
+            font-family: monospace;
+        }
+        .no-match-box {
+            text-align: center;
+            padding: 32px 16px;
+            color: var(--text-secondary);
+        }
+        .no-match-icon {
+            font-size: 32px;
+            color: var(--accent-red);
+            margin-bottom: 8px;
+        }
+        .no-match-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: #F87171;
+            margin-bottom: 4px;
+        }
+        .no-match-sub {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+        .details-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .section-title {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.8px;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 4px;
+            margin-bottom: 8px;
+        }
+        .meta-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            font-size: 13px;
+        }
+        .meta-item {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .meta-item.full-width {
+            grid-column: span 2;
+        }
+        .meta-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+        .meta-value {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+        .badge-equipment {
+            color: #93C5FD;
+        }
+        .badge-primary-muscle {
+            color: #6EE7B7;
+            font-weight: 600;
+        }
+        .variant-list-container {
+            background: var(--bg-card);
+            border-radius: 6px;
+            padding: 10px 14px;
+            margin-top: 6px;
+            border: 1px solid var(--border-color);
+        }
+        .variant-list {
+            list-style: none;
+            margin-top: 6px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            font-size: 12px;
+        }
+        .variant-list li code {
+            color: #A78BFA;
+            font-family: ui-monospace, monospace;
+            font-size: 11px;
+        }
+        .conflict-box {
+            background: var(--bg-inset);
+            border-radius: 6px;
+            padding: 10px 14px;
+            font-size: 12px;
+            border: 1px solid var(--border-color);
+            color: #D1D5DB;
+        }
+        .conflict-box strong {
+            color: #F3F4F6;
+        }
+        .review-status-box {
+            margin-top: 8px;
+            background: rgba(59, 130, 246, 0.05);
+            border: 1px dashed #3B82F6;
+            border-radius: 6px;
+            padding: 10px 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .review-status-header {
+            font-size: 12px;
+            font-weight: 700;
+            color: #93C5FD;
+        }
+        .decision-placeholders {
+            display: flex;
+            gap: 12px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1 class="header-title">IndiFit R08-0.2: RepDB Movement Mapping Contact Sheet</h1>
+        <div class="header-subtitle">
+            Authoritative Review Gallery for Pinned RepDB Snapshot (<code>045845b61e4aefd9e684fa84518b84c665ea3cd3</code>) vs. IndiFit 35 Base Movement Families.
+        </div>
+        <div class="disclosure-banner">
+            <strong>Mandatory Product Disclosure:</strong> Exercise artwork represents the underlying physical movement and equipment. It does not demonstrate exact pause duration, tempo, cadence, or other IndiFit technique prescriptions.
+        </div>
+        <div class="summary-stats">
+            <div class="stat-badge">Total Families: <span>35</span></div>
+            <div class="stat-badge">Canonical UUIDs Bound: <span>140</span></div>
+            <div class="stat-badge">EXACT Matches: <span>24</span></div>
+            <div class="stat-badge">STRONG Matches: <span>9</span></div>
+            <div class="stat-badge">AMBIGUOUS Matches: <span>1</span></div>
+            <div class="stat-badge">NO MATCH / Fallbacks: <span>1</span></div>
+            <div class="stat-badge">Candidate Visual Files: <span>67</span></div>
+            <div class="stat-badge" style="border-color: #3B82F6;">Review State: <span style="color: #60A5FA;">100% PENDING HUMAN APPROVAL</span></div>
+        </div>
+    </div>
+
+    <div class="container">
+        
+    <div class="card" id="FAM-01">
+        <div class="card-header">
+            <div class="card-title-group">
+                <span class="family-tag">FAM-01</span>
+                <h2 class="card-title">Flat Barbell Bench Press</h2>
+            </div>
+            <span class="confidence-badge exact">EXACT</span>
+        </div>
+        
+        <div class="card-body">
+            <div class="visual-panel">
+                
+        <div class="pose-container">
+            <div class="pose-box">
+                <span class="pose-badge start-badge">START POSE</span>
+                <img src="repdb_mapping_review/bench-press-start.webp" alt="Flat Barbell Bench Press Start" loading="lazy" />
+                <div class="img-caption">images/flat/bench-press-start.webp<br><span class="hash-tag">sha256:a14c6cf3187...</span></div>
+            </div>
+            <div class="pose-box">
+                <span class="pose-badge peak-badge">PEAK POSE</span>
+                <img src="repdb_mapping_review/bench-press-peak.webp" alt="Flat Barbell Bench Press Peak" loading="lazy" />
+                <div class="img-caption">images/flat/bench-press-peak.webp<br><span class="hash-tag">sha256:8d1a88d3e49...</span></div>
+            </div>
+        </div>
+        
+            </div>
+            
+            <div class="details-panel">
+                <div class="section-title">INDIFIT CANONICAL DEFINITION</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">Equipment</span>
+                        <span class="meta-value badge-equipment">Barbell</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Primary Display Muscle</span>
+                        <span class="meta-value badge-primary-muscle">Chest</span>
+                    </div>
+                    <div class="meta-item full-width">
+                        <span class="meta-label">Secondary Muscles</span>
+                        <span class="meta-value">Triceps, Shoulders</span>
+                    </div>
+                </div>
+                
+                <div class="variant-list-container">
+                    <span class="meta-label">Bound Canonical Variants (4 UUIDs)</span>
+                    <ul class="variant-list">
+                        <li><code>089ec703-a25e-5b12-a39a-78b17ee33742</code> &mdash; Flat Barbell Bench Press</li><li><code>b70e7a1c-ec87-578f-bfeb-8fbdbceaf2ca</code> &mdash; Flat Barbell Bench Press (Standard)</li><li><code>f5d1ceeb-fe66-51f7-bd58-6c3e9874a969</code> &mdash; Pause Flat Barbell Bench Press</li><li><code>f9c0eb18-fc35-515c-bf18-f9bf6e1e1a5f</code> &mdash; Slow Eccentric Flat Barbell Bench Press</li>
+                    </ul>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">REPDB PINNED METADATA</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB ID</span>
+                        <span class="meta-value"><code>bench-press</code></span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Name</span>
+                        <span class="meta-value">Barbell Bench Press</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Equipment</span>
+                        <span class="meta-value">barbell</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Primary Muscles</span>
+                        <span class="meta-value">pectoralis_major</span>
+                    </div>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">MAPPING EVALUATION & CONFLICTS</div>
+                <div class="conflict-box">
+                    <strong>Candidate Rationale:</strong> Direct movement and equipment match; standard flat barbell chest press.<br><br>
+                    <strong>Taxonomy / Movement Flags:</strong> None (RepDB: pectoralis_major; IndiFit: Chest).
+                </div>
+
+                <div class="review-status-box">
+                    <div class="review-status-header">
+                        <span class="status-indicator pending">&#9679; REVIEW STATUS: PENDING HUMAN APPROVAL</span>
+                    </div>
+                    <div class="decision-placeholders">
+                        <label><input type="radio" name="decision_FAM-01" value="APPROVE" disabled> Approve</label>
+                        <label><input type="radio" name="decision_FAM-01" value="REJECT" disabled> Reject</label>
+                        <label><input type="radio" name="decision_FAM-01" value="NEEDS_REVIEW" checked disabled> Needs Review</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card" id="FAM-02">
+        <div class="card-header">
+            <div class="card-title-group">
+                <span class="family-tag">FAM-02</span>
+                <h2 class="card-title">Incline Dumbbell Bench Press</h2>
+            </div>
+            <span class="confidence-badge exact">EXACT</span>
+        </div>
+        
+        <div class="card-body">
+            <div class="visual-panel">
+                
+        <div class="pose-container">
+            <div class="pose-box">
+                <span class="pose-badge start-badge">START POSE</span>
+                <img src="repdb_mapping_review/incline-db-press-start.webp" alt="Incline Dumbbell Bench Press Start" loading="lazy" />
+                <div class="img-caption">images/flat/incline-db-press-start.webp<br><span class="hash-tag">sha256:6d0b56825dc...</span></div>
+            </div>
+            <div class="pose-box">
+                <span class="pose-badge peak-badge">PEAK POSE</span>
+                <img src="repdb_mapping_review/incline-db-press-peak.webp" alt="Incline Dumbbell Bench Press Peak" loading="lazy" />
+                <div class="img-caption">images/flat/incline-db-press-peak.webp<br><span class="hash-tag">sha256:a9912766528...</span></div>
+            </div>
+        </div>
+        
+            </div>
+            
+            <div class="details-panel">
+                <div class="section-title">INDIFIT CANONICAL DEFINITION</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">Equipment</span>
+                        <span class="meta-value badge-equipment">Dumbbells</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Primary Display Muscle</span>
+                        <span class="meta-value badge-primary-muscle">Chest</span>
+                    </div>
+                    <div class="meta-item full-width">
+                        <span class="meta-label">Secondary Muscles</span>
+                        <span class="meta-value">Shoulders, Triceps</span>
+                    </div>
+                </div>
+                
+                <div class="variant-list-container">
+                    <span class="meta-label">Bound Canonical Variants (4 UUIDs)</span>
+                    <ul class="variant-list">
+                        <li><code>256fb9bd-77a8-5ea5-ab07-cb10d65bce67</code> &mdash; Incline Dumbbell Bench Press</li><li><code>2d6bbfa9-7c25-5463-b8c2-4a5eec542dd7</code> &mdash; Incline Dumbbell Bench Press (Standard)</li><li><code>c3c0efc1-7d1a-512c-afbf-aa58832a8435</code> &mdash; Pause Incline Dumbbell Bench Press</li><li><code>6dbfc969-9524-5d55-8dd2-8eb99a9b708d</code> &mdash; Slow Eccentric Incline Dumbbell Bench Press</li>
+                    </ul>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">REPDB PINNED METADATA</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB ID</span>
+                        <span class="meta-value"><code>incline-db-press</code></span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Name</span>
+                        <span class="meta-value">Incline Dumbbell Press</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Equipment</span>
+                        <span class="meta-value">dumbbell</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Primary Muscles</span>
+                        <span class="meta-value">pectoralis_major</span>
+                    </div>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">MAPPING EVALUATION & CONFLICTS</div>
+                <div class="conflict-box">
+                    <strong>Candidate Rationale:</strong> Exact movement and equipment match; 30-45 degree incline dumbbell chest press.<br><br>
+                    <strong>Taxonomy / Movement Flags:</strong> None (RepDB: pectoralis_major; IndiFit: Chest).
+                </div>
+
+                <div class="review-status-box">
+                    <div class="review-status-header">
+                        <span class="status-indicator pending">&#9679; REVIEW STATUS: PENDING HUMAN APPROVAL</span>
+                    </div>
+                    <div class="decision-placeholders">
+                        <label><input type="radio" name="decision_FAM-02" value="APPROVE" disabled> Approve</label>
+                        <label><input type="radio" name="decision_FAM-02" value="REJECT" disabled> Reject</label>
+                        <label><input type="radio" name="decision_FAM-02" value="NEEDS_REVIEW" checked disabled> Needs Review</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card" id="FAM-03">
+        <div class="card-header">
+            <div class="card-title-group">
+                <span class="family-tag">FAM-03</span>
+                <h2 class="card-title">Decline Hammer Strength Press</h2>
+            </div>
+            <span class="confidence-badge no_match">NO_MATCH</span>
+        </div>
+        
+        <div class="card-body">
+            <div class="visual-panel">
+                
+        <div class="no-match-box">
+            <div class="no-match-icon">&#10006;</div>
+            <div class="no-match-title">NO APPROVED MATCH IN REPDB FREE TIER</div>
+            <div class="no-match-sub">Explicit fallback: B05 Canonical Muscle & Neutral Text Display. No synthetic artwork.</div>
+        </div>
+        
+            </div>
+            
+            <div class="details-panel">
+                <div class="section-title">INDIFIT CANONICAL DEFINITION</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">Equipment</span>
+                        <span class="meta-value badge-equipment">Machine</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Primary Display Muscle</span>
+                        <span class="meta-value badge-primary-muscle">Chest</span>
+                    </div>
+                    <div class="meta-item full-width">
+                        <span class="meta-label">Secondary Muscles</span>
+                        <span class="meta-value">Triceps</span>
+                    </div>
+                </div>
+                
+                <div class="variant-list-container">
+                    <span class="meta-label">Bound Canonical Variants (4 UUIDs)</span>
+                    <ul class="variant-list">
+                        <li><code>767caf63-b617-5a2f-9a01-a22b55918316</code> &mdash; Decline Hammer Strength Press</li><li><code>f2103bf2-af7f-5133-87d8-b8786f3eaf7e</code> &mdash; Decline Hammer Strength Press (Standard)</li><li><code>a5854b31-1917-565c-8d1a-7e88e2a5772d</code> &mdash; Pause Decline Hammer Strength Press</li><li><code>5cdc2480-a820-57e5-87fd-73743346ad72</code> &mdash; Slow Eccentric Decline Hammer Strength Press</li>
+                    </ul>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">REPDB PINNED METADATA</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB ID</span>
+                        <span class="meta-value"><code>NO_MATCH</code></span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Name</span>
+                        <span class="meta-value">&mdash;</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Equipment</span>
+                        <span class="meta-value">&mdash;</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Primary Muscles</span>
+                        <span class="meta-value">&mdash;</span>
+                    </div>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">MAPPING EVALUATION & CONFLICTS</div>
+                <div class="conflict-box">
+                    <strong>Candidate Rationale:</strong> RepDB free tier lacks plate-loaded convergent Decline Hammer Strength press; only has barbell decline and generic machine press.<br><br>
+                    <strong>Taxonomy / Movement Flags:</strong> Machine apparatus subtype mismatch. Fails closed to B05 text/muscle fallback. Do not substitute generic decline bench.
+                </div>
+
+                <div class="review-status-box">
+                    <div class="review-status-header">
+                        <span class="status-indicator pending">&#9679; REVIEW STATUS: PENDING HUMAN APPROVAL</span>
+                    </div>
+                    <div class="decision-placeholders">
+                        <label><input type="radio" name="decision_FAM-03" value="APPROVE" disabled> Approve</label>
+                        <label><input type="radio" name="decision_FAM-03" value="REJECT" disabled> Reject</label>
+                        <label><input type="radio" name="decision_FAM-03" value="NEEDS_REVIEW" checked disabled> Needs Review</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card" id="FAM-04">
+        <div class="card-header">
+            <div class="card-title-group">
+                <span class="family-tag">FAM-04</span>
+                <h2 class="card-title">Chest Dips</h2>
+            </div>
+            <span class="confidence-badge strong">STRONG</span>
+        </div>
+        
+        <div class="card-body">
+            <div class="visual-panel">
+                
+        <div class="pose-container">
+            <div class="pose-box">
+                <span class="pose-badge start-badge">START POSE</span>
+                <img src="repdb_mapping_review/dips-start.webp" alt="Chest Dips Start" loading="lazy" />
+                <div class="img-caption">images/flat/dips-start.webp<br><span class="hash-tag">sha256:3702e16a23a...</span></div>
+            </div>
+            <div class="pose-box">
+                <span class="pose-badge peak-badge">PEAK POSE</span>
+                <img src="repdb_mapping_review/dips-peak.webp" alt="Chest Dips Peak" loading="lazy" />
+                <div class="img-caption">images/flat/dips-peak.webp<br><span class="hash-tag">sha256:b09d41d7e69...</span></div>
+            </div>
+        </div>
+        
+            </div>
+            
+            <div class="details-panel">
+                <div class="section-title">INDIFIT CANONICAL DEFINITION</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">Equipment</span>
+                        <span class="meta-value badge-equipment">Bodyweight</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Primary Display Muscle</span>
+                        <span class="meta-value badge-primary-muscle">Chest</span>
+                    </div>
+                    <div class="meta-item full-width">
+                        <span class="meta-label">Secondary Muscles</span>
+                        <span class="meta-value">Triceps</span>
+                    </div>
+                </div>
+                
+                <div class="variant-list-container">
+                    <span class="meta-label">Bound Canonical Variants (4 UUIDs)</span>
+                    <ul class="variant-list">
+                        <li><code>74aa39bb-ff5a-5ff7-8cbe-e75878af3cf3</code> &mdash; Chest Dips</li><li><code>8fe2c474-0f11-5d9c-be8a-c60318ce992e</code> &mdash; Chest Dips (Standard)</li><li><code>2fa5be19-f538-5182-82dc-df4c0840cb8f</code> &mdash; Pause Chest Dips</li><li><code>52495689-5ee4-59e5-b1a7-640a45fd8100</code> &mdash; Slow Eccentric Chest Dips</li>
+                    </ul>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">REPDB PINNED METADATA</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB ID</span>
+                        <span class="meta-value"><code>dips</code></span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Name</span>
+                        <span class="meta-value">Chest Dips</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Equipment</span>
+                        <span class="meta-value">dip_station</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Primary Muscles</span>
+                        <span class="meta-value">pectoralis_major, triceps_brachii</span>
+                    </div>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">MAPPING EVALUATION & CONFLICTS</div>
+                <div class="conflict-box">
+                    <strong>Candidate Rationale:</strong> RepDB dips matches dip-station bodyweight dip with forward torso lean.<br><br>
+                    <strong>Taxonomy / Movement Flags:</strong> Taxonomy difference: RepDB classifies under triceps_brachii as primary with pectoralis_major secondary; IndiFit classifies Chest as primary. Torso angle in visual shows chest engagement.
+                </div>
+
+                <div class="review-status-box">
+                    <div class="review-status-header">
+                        <span class="status-indicator pending">&#9679; REVIEW STATUS: PENDING HUMAN APPROVAL</span>
+                    </div>
+                    <div class="decision-placeholders">
+                        <label><input type="radio" name="decision_FAM-04" value="APPROVE" disabled> Approve</label>
+                        <label><input type="radio" name="decision_FAM-04" value="REJECT" disabled> Reject</label>
+                        <label><input type="radio" name="decision_FAM-04" value="NEEDS_REVIEW" checked disabled> Needs Review</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card" id="FAM-05">
+        <div class="card-header">
+            <div class="card-title-group">
+                <span class="family-tag">FAM-05</span>
+                <h2 class="card-title">Push-Ups</h2>
+            </div>
+            <span class="confidence-badge exact">EXACT</span>
+        </div>
+        
+        <div class="card-body">
+            <div class="visual-panel">
+                
+        <div class="pose-container">
+            <div class="pose-box">
+                <span class="pose-badge start-badge">START POSE</span>
+                <img src="repdb_mapping_review/push-up-start.webp" alt="Push-Ups Start" loading="lazy" />
+                <div class="img-caption">images/flat/push-up-start.webp<br><span class="hash-tag">sha256:55e3ebf7751...</span></div>
+            </div>
+            <div class="pose-box">
+                <span class="pose-badge peak-badge">PEAK POSE</span>
+                <img src="repdb_mapping_review/push-up-peak.webp" alt="Push-Ups Peak" loading="lazy" />
+                <div class="img-caption">images/flat/push-up-peak.webp<br><span class="hash-tag">sha256:c11e6746ea7...</span></div>
+            </div>
+        </div>
+        
+            </div>
+            
+            <div class="details-panel">
+                <div class="section-title">INDIFIT CANONICAL DEFINITION</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">Equipment</span>
+                        <span class="meta-value badge-equipment">Bodyweight</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Primary Display Muscle</span>
+                        <span class="meta-value badge-primary-muscle">Chest</span>
+                    </div>
+                    <div class="meta-item full-width">
+                        <span class="meta-label">Secondary Muscles</span>
+                        <span class="meta-value">Triceps, Core</span>
+                    </div>
+                </div>
+                
+                <div class="variant-list-container">
+                    <span class="meta-label">Bound Canonical Variants (4 UUIDs)</span>
+                    <ul class="variant-list">
+                        <li><code>91fe3e17-b76e-57b1-b4ef-bc615cb38c5d</code> &mdash; Push-Ups</li><li><code>b20a3a7f-ae82-5555-89f5-19ae1fa3c749</code> &mdash; Push-Ups (Standard)</li><li><code>bfdfef59-a292-5ee3-a5aa-c3a5e845c43d</code> &mdash; Pause Push-Ups</li><li><code>c01c0c9e-561b-53c8-aa5e-26fbd0eb4e5e</code> &mdash; Slow Eccentric Push-Ups</li>
+                    </ul>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">REPDB PINNED METADATA</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB ID</span>
+                        <span class="meta-value"><code>push-up</code></span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Name</span>
+                        <span class="meta-value">Push-Up</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Equipment</span>
+                        <span class="meta-value">&mdash;</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Primary Muscles</span>
+                        <span class="meta-value">pectoralis_major, triceps_brachii</span>
+                    </div>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">MAPPING EVALUATION & CONFLICTS</div>
+                <div class="conflict-box">
+                    <strong>Candidate Rationale:</strong> Singular vs plural naming difference; exact standard prone bodyweight push-up.<br><br>
+                    <strong>Taxonomy / Movement Flags:</strong> None (RepDB: pectoralis_major; IndiFit: Chest).
+                </div>
+
+                <div class="review-status-box">
+                    <div class="review-status-header">
+                        <span class="status-indicator pending">&#9679; REVIEW STATUS: PENDING HUMAN APPROVAL</span>
+                    </div>
+                    <div class="decision-placeholders">
+                        <label><input type="radio" name="decision_FAM-05" value="APPROVE" disabled> Approve</label>
+                        <label><input type="radio" name="decision_FAM-05" value="REJECT" disabled> Reject</label>
+                        <label><input type="radio" name="decision_FAM-05" value="NEEDS_REVIEW" checked disabled> Needs Review</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card" id="FAM-06">
+        <div class="card-header">
+            <div class="card-title-group">
+                <span class="family-tag">FAM-06</span>
+                <h2 class="card-title">Cable Chest Fly</h2>
+            </div>
+            <span class="confidence-badge exact">EXACT</span>
+        </div>
+        
+        <div class="card-body">
+            <div class="visual-panel">
+                
+        <div class="pose-container">
+            <div class="pose-box">
+                <span class="pose-badge start-badge">START POSE</span>
+                <img src="repdb_mapping_review/cable-fly-start.webp" alt="Cable Chest Fly Start" loading="lazy" />
+                <div class="img-caption">images/flat/cable-fly-start.webp<br><span class="hash-tag">sha256:b578214528b...</span></div>
+            </div>
+            <div class="pose-box">
+                <span class="pose-badge peak-badge">PEAK POSE</span>
+                <img src="repdb_mapping_review/cable-fly-peak.webp" alt="Cable Chest Fly Peak" loading="lazy" />
+                <div class="img-caption">images/flat/cable-fly-peak.webp<br><span class="hash-tag">sha256:38506016c29...</span></div>
+            </div>
+        </div>
+        
+            </div>
+            
+            <div class="details-panel">
+                <div class="section-title">INDIFIT CANONICAL DEFINITION</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">Equipment</span>
+                        <span class="meta-value badge-equipment">Cables</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Primary Display Muscle</span>
+                        <span class="meta-value badge-primary-muscle">Chest</span>
+                    </div>
+                    <div class="meta-item full-width">
+                        <span class="meta-label">Secondary Muscles</span>
+                        <span class="meta-value">&mdash;</span>
+                    </div>
+                </div>
+                
+                <div class="variant-list-container">
+                    <span class="meta-label">Bound Canonical Variants (4 UUIDs)</span>
+                    <ul class="variant-list">
+                        <li><code>d1ea21fb-ca2a-5fe4-b529-1a48c66e2c3e</code> &mdash; Cable Chest Fly</li><li><code>dbafb9d3-d2eb-5460-a2ef-98cf1eb19bc5</code> &mdash; Cable Chest Fly (Standard)</li><li><code>8470a7d9-c020-5fe8-ba68-d0bfebe706e2</code> &mdash; Pause Cable Chest Fly</li><li><code>61bc7ff5-e8d9-5e92-ba7d-fe3910c22d4f</code> &mdash; Slow Eccentric Cable Chest Fly</li>
+                    </ul>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">REPDB PINNED METADATA</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB ID</span>
+                        <span class="meta-value"><code>cable-fly</code></span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Name</span>
+                        <span class="meta-value">Cable Fly</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Equipment</span>
+                        <span class="meta-value">cable</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Primary Muscles</span>
+                        <span class="meta-value">pectoralis_major</span>
+                    </div>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">MAPPING EVALUATION & CONFLICTS</div>
+                <div class="conflict-box">
+                    <strong>Candidate Rationale:</strong> Exact movement and cable apparatus match; bilateral standing cable chest fly.<br><br>
+                    <strong>Taxonomy / Movement Flags:</strong> None (RepDB: pectoralis_major; IndiFit: Chest).
+                </div>
+
+                <div class="review-status-box">
+                    <div class="review-status-header">
+                        <span class="status-indicator pending">&#9679; REVIEW STATUS: PENDING HUMAN APPROVAL</span>
+                    </div>
+                    <div class="decision-placeholders">
+                        <label><input type="radio" name="decision_FAM-06" value="APPROVE" disabled> Approve</label>
+                        <label><input type="radio" name="decision_FAM-06" value="REJECT" disabled> Reject</label>
+                        <label><input type="radio" name="decision_FAM-06" value="NEEDS_REVIEW" checked disabled> Needs Review</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card" id="FAM-07">
+        <div class="card-header">
+            <div class="card-title-group">
+                <span class="family-tag">FAM-07</span>
+                <h2 class="card-title">Barbell Deadlift</h2>
+            </div>
+            <span class="confidence-badge strong">STRONG</span>
+        </div>
+        
+        <div class="card-body">
+            <div class="visual-panel">
+                
+        <div class="pose-container">
+            <div class="pose-box">
+                <span class="pose-badge start-badge">START POSE</span>
+                <img src="repdb_mapping_review/deadlift-start.webp" alt="Barbell Deadlift Start" loading="lazy" />
+                <div class="img-caption">images/flat/deadlift-start.webp<br><span class="hash-tag">sha256:68a68c1acb1...</span></div>
+            </div>
+            <div class="pose-box">
+                <span class="pose-badge peak-badge">PEAK POSE</span>
+                <img src="repdb_mapping_review/deadlift-peak.webp" alt="Barbell Deadlift Peak" loading="lazy" />
+                <div class="img-caption">images/flat/deadlift-peak.webp<br><span class="hash-tag">sha256:f0909401d6c...</span></div>
+            </div>
+        </div>
+        
+            </div>
+            
+            <div class="details-panel">
+                <div class="section-title">INDIFIT CANONICAL DEFINITION</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">Equipment</span>
+                        <span class="meta-value badge-equipment">Barbell</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Primary Display Muscle</span>
+                        <span class="meta-value badge-primary-muscle">Back</span>
+                    </div>
+                    <div class="meta-item full-width">
+                        <span class="meta-label">Secondary Muscles</span>
+                        <span class="meta-value">Glutes, Hamstrings</span>
+                    </div>
+                </div>
+                
+                <div class="variant-list-container">
+                    <span class="meta-label">Bound Canonical Variants (4 UUIDs)</span>
+                    <ul class="variant-list">
+                        <li><code>b102bfa4-6cc5-5e60-accb-82a1ae39b8bc</code> &mdash; Barbell Deadlift</li><li><code>7fd950ce-79e5-5558-86d7-fc197b1026ea</code> &mdash; Barbell Deadlift (Standard)</li><li><code>18b6bdf9-9941-5bb1-9369-1c8d73f41560</code> &mdash; Pause Barbell Deadlift</li><li><code>3bc421ec-ab46-5c7c-a9fb-ce137b9bf737</code> &mdash; Slow Eccentric Barbell Deadlift</li>
+                    </ul>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">REPDB PINNED METADATA</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB ID</span>
+                        <span class="meta-value"><code>deadlift</code></span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Name</span>
+                        <span class="meta-value">Barbell Deadlift</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Equipment</span>
+                        <span class="meta-value">barbell</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Primary Muscles</span>
+                        <span class="meta-value">erector_spinae, gluteus_maximus, hamstrings</span>
+                    </div>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">MAPPING EVALUATION & CONFLICTS</div>
+                <div class="conflict-box">
+                    <strong>Candidate Rationale:</strong> Exact mechanical movement; standard conventional bilateral barbell deadlift.<br><br>
+                    <strong>Taxonomy / Movement Flags:</strong> Taxonomy difference: RepDB assigns gluteus_maximus/hamstrings as primary with erector_spinae/latissimus_dorsi secondary; IndiFit classifies Back as primary display category with posterior chain secondary.
+                </div>
+
+                <div class="review-status-box">
+                    <div class="review-status-header">
+                        <span class="status-indicator pending">&#9679; REVIEW STATUS: PENDING HUMAN APPROVAL</span>
+                    </div>
+                    <div class="decision-placeholders">
+                        <label><input type="radio" name="decision_FAM-07" value="APPROVE" disabled> Approve</label>
+                        <label><input type="radio" name="decision_FAM-07" value="REJECT" disabled> Reject</label>
+                        <label><input type="radio" name="decision_FAM-07" value="NEEDS_REVIEW" checked disabled> Needs Review</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card" id="FAM-08">
+        <div class="card-header">
+            <div class="card-title-group">
+                <span class="family-tag">FAM-08</span>
+                <h2 class="card-title">Lat Pulldown</h2>
+            </div>
+            <span class="confidence-badge exact">EXACT</span>
+        </div>
+        
+        <div class="card-body">
+            <div class="visual-panel">
+                
+        <div class="pose-container">
+            <div class="pose-box">
+                <span class="pose-badge start-badge">START POSE</span>
+                <img src="repdb_mapping_review/lat-pulldown-start.webp" alt="Lat Pulldown Start" loading="lazy" />
+                <div class="img-caption">images/flat/lat-pulldown-start.webp<br><span class="hash-tag">sha256:4cb61a49bfa...</span></div>
+            </div>
+            <div class="pose-box">
+                <span class="pose-badge peak-badge">PEAK POSE</span>
+                <img src="repdb_mapping_review/lat-pulldown-peak.webp" alt="Lat Pulldown Peak" loading="lazy" />
+                <div class="img-caption">images/flat/lat-pulldown-peak.webp<br><span class="hash-tag">sha256:5045afd7131...</span></div>
+            </div>
+        </div>
+        
+            </div>
+            
+            <div class="details-panel">
+                <div class="section-title">INDIFIT CANONICAL DEFINITION</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">Equipment</span>
+                        <span class="meta-value badge-equipment">Cables</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Primary Display Muscle</span>
+                        <span class="meta-value badge-primary-muscle">Back</span>
+                    </div>
+                    <div class="meta-item full-width">
+                        <span class="meta-label">Secondary Muscles</span>
+                        <span class="meta-value">Biceps</span>
+                    </div>
+                </div>
+                
+                <div class="variant-list-container">
+                    <span class="meta-label">Bound Canonical Variants (4 UUIDs)</span>
+                    <ul class="variant-list">
+                        <li><code>30dcad52-0a4d-55a4-a33b-e8923f85a51a</code> &mdash; Lat Pulldown</li><li><code>924f6bfe-7c00-5dca-b6a0-9bbd38771b0f</code> &mdash; Lat Pulldown (Standard)</li><li><code>a9424a05-8453-52ea-aee4-b94ae2a2fbfe</code> &mdash; Pause Lat Pulldown</li><li><code>aa3707c7-fc1b-51cf-987c-7fd002d64e5e</code> &mdash; Slow Eccentric Lat Pulldown</li>
+                    </ul>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">REPDB PINNED METADATA</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB ID</span>
+                        <span class="meta-value"><code>lat-pulldown</code></span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Name</span>
+                        <span class="meta-value">Lat Pulldown</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Equipment</span>
+                        <span class="meta-value">cable</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Primary Muscles</span>
+                        <span class="meta-value">latissimus_dorsi</span>
+                    </div>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">MAPPING EVALUATION & CONFLICTS</div>
+                <div class="conflict-box">
+                    <strong>Candidate Rationale:</strong> Exact equipment and mechanics match; wide-grip seated cable pulldown.<br><br>
+                    <strong>Taxonomy / Movement Flags:</strong> None (RepDB: latissimus_dorsi; IndiFit: Back).
+                </div>
+
+                <div class="review-status-box">
+                    <div class="review-status-header">
+                        <span class="status-indicator pending">&#9679; REVIEW STATUS: PENDING HUMAN APPROVAL</span>
+                    </div>
+                    <div class="decision-placeholders">
+                        <label><input type="radio" name="decision_FAM-08" value="APPROVE" disabled> Approve</label>
+                        <label><input type="radio" name="decision_FAM-08" value="REJECT" disabled> Reject</label>
+                        <label><input type="radio" name="decision_FAM-08" value="NEEDS_REVIEW" checked disabled> Needs Review</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card" id="FAM-09">
+        <div class="card-header">
+            <div class="card-title-group">
+                <span class="family-tag">FAM-09</span>
+                <h2 class="card-title">Bent Over Barbell Row</h2>
+            </div>
+            <span class="confidence-badge exact">EXACT</span>
+        </div>
+        
+        <div class="card-body">
+            <div class="visual-panel">
+                
+        <div class="pose-container">
+            <div class="pose-box">
+                <span class="pose-badge start-badge">START POSE</span>
+                <img src="repdb_mapping_review/barbell-row-start.webp" alt="Bent Over Barbell Row Start" loading="lazy" />
+                <div class="img-caption">images/flat/barbell-row-start.webp<br><span class="hash-tag">sha256:c16991dc8f4...</span></div>
+            </div>
+            <div class="pose-box">
+                <span class="pose-badge peak-badge">PEAK POSE</span>
+                <img src="repdb_mapping_review/barbell-row-peak.webp" alt="Bent Over Barbell Row Peak" loading="lazy" />
+                <div class="img-caption">images/flat/barbell-row-peak.webp<br><span class="hash-tag">sha256:20a9acc8e7f...</span></div>
+            </div>
+        </div>
+        
+            </div>
+            
+            <div class="details-panel">
+                <div class="section-title">INDIFIT CANONICAL DEFINITION</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">Equipment</span>
+                        <span class="meta-value badge-equipment">Barbell</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Primary Display Muscle</span>
+                        <span class="meta-value badge-primary-muscle">Back</span>
+                    </div>
+                    <div class="meta-item full-width">
+                        <span class="meta-label">Secondary Muscles</span>
+                        <span class="meta-value">Biceps</span>
+                    </div>
+                </div>
+                
+                <div class="variant-list-container">
+                    <span class="meta-label">Bound Canonical Variants (4 UUIDs)</span>
+                    <ul class="variant-list">
+                        <li><code>84011c13-4413-5779-8e7c-64f6a7860c68</code> &mdash; Bent Over Barbell Row</li><li><code>325be024-0a2a-5752-81c3-117d833ca80b</code> &mdash; Bent Over Barbell Row (Standard)</li><li><code>82bc5ef4-2fcc-5752-8c52-3f407263cacd</code> &mdash; Pause Bent Over Barbell Row</li><li><code>0f26c6a6-7e5f-5099-aa2e-b8ee59d2c99e</code> &mdash; Slow Eccentric Bent Over Barbell Row</li>
+                    </ul>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">REPDB PINNED METADATA</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB ID</span>
+                        <span class="meta-value"><code>barbell-row</code></span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Name</span>
+                        <span class="meta-value">Bent-Over Barbell Row</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Equipment</span>
+                        <span class="meta-value">barbell</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Primary Muscles</span>
+                        <span class="meta-value">latissimus_dorsi, rhomboids</span>
+                    </div>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">MAPPING EVALUATION & CONFLICTS</div>
+                <div class="conflict-box">
+                    <strong>Candidate Rationale:</strong> Exact equipment and mechanical posture match; standing bent-over barbell row.<br><br>
+                    <strong>Taxonomy / Movement Flags:</strong> None (RepDB: latissimus_dorsi; IndiFit: Back).
+                </div>
+
+                <div class="review-status-box">
+                    <div class="review-status-header">
+                        <span class="status-indicator pending">&#9679; REVIEW STATUS: PENDING HUMAN APPROVAL</span>
+                    </div>
+                    <div class="decision-placeholders">
+                        <label><input type="radio" name="decision_FAM-09" value="APPROVE" disabled> Approve</label>
+                        <label><input type="radio" name="decision_FAM-09" value="REJECT" disabled> Reject</label>
+                        <label><input type="radio" name="decision_FAM-09" value="NEEDS_REVIEW" checked disabled> Needs Review</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card" id="FAM-10">
+        <div class="card-header">
+            <div class="card-title-group">
+                <span class="family-tag">FAM-10</span>
+                <h2 class="card-title">One-Arm Dumbbell Row</h2>
+            </div>
+            <span class="confidence-badge exact">EXACT</span>
+        </div>
+        
+        <div class="card-body">
+            <div class="visual-panel">
+                
+        <div class="pose-container">
+            <div class="pose-box">
+                <span class="pose-badge start-badge">START POSE</span>
+                <img src="repdb_mapping_review/single-arm-db-row-start.webp" alt="One-Arm Dumbbell Row Start" loading="lazy" />
+                <div class="img-caption">images/flat/single-arm-db-row-start.webp<br><span class="hash-tag">sha256:e0d78751132...</span></div>
+            </div>
+            <div class="pose-box">
+                <span class="pose-badge peak-badge">PEAK POSE</span>
+                <img src="repdb_mapping_review/single-arm-db-row-peak.webp" alt="One-Arm Dumbbell Row Peak" loading="lazy" />
+                <div class="img-caption">images/flat/single-arm-db-row-peak.webp<br><span class="hash-tag">sha256:2b02e7108c1...</span></div>
+            </div>
+        </div>
+        
+            </div>
+            
+            <div class="details-panel">
+                <div class="section-title">INDIFIT CANONICAL DEFINITION</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">Equipment</span>
+                        <span class="meta-value badge-equipment">Dumbbells</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Primary Display Muscle</span>
+                        <span class="meta-value badge-primary-muscle">Back</span>
+                    </div>
+                    <div class="meta-item full-width">
+                        <span class="meta-label">Secondary Muscles</span>
+                        <span class="meta-value">Biceps</span>
+                    </div>
+                </div>
+                
+                <div class="variant-list-container">
+                    <span class="meta-label">Bound Canonical Variants (4 UUIDs)</span>
+                    <ul class="variant-list">
+                        <li><code>b353d5f5-6116-5410-b6b3-50b2d78aea57</code> &mdash; One-Arm Dumbbell Row</li><li><code>c920003d-fd67-5632-af80-571261d344d6</code> &mdash; One-Arm Dumbbell Row (Standard)</li><li><code>ecdbffb9-e1c9-516a-a217-cf42bad1a131</code> &mdash; Pause One-Arm Dumbbell Row</li><li><code>11191d4f-9d7c-5501-9d1e-6dc1e172273c</code> &mdash; Slow Eccentric One-Arm Dumbbell Row</li>
+                    </ul>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">REPDB PINNED METADATA</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB ID</span>
+                        <span class="meta-value"><code>single-arm-db-row</code></span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Name</span>
+                        <span class="meta-value">Single-Arm Dumbbell Row</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Equipment</span>
+                        <span class="meta-value">dumbbell</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Primary Muscles</span>
+                        <span class="meta-value">latissimus_dorsi, rhomboids</span>
+                    </div>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">MAPPING EVALUATION & CONFLICTS</div>
+                <div class="conflict-box">
+                    <strong>Candidate Rationale:</strong> Exact unilateral bench-supported dumbbell row match.<br><br>
+                    <strong>Taxonomy / Movement Flags:</strong> None (RepDB: latissimus_dorsi; IndiFit: Back).
+                </div>
+
+                <div class="review-status-box">
+                    <div class="review-status-header">
+                        <span class="status-indicator pending">&#9679; REVIEW STATUS: PENDING HUMAN APPROVAL</span>
+                    </div>
+                    <div class="decision-placeholders">
+                        <label><input type="radio" name="decision_FAM-10" value="APPROVE" disabled> Approve</label>
+                        <label><input type="radio" name="decision_FAM-10" value="REJECT" disabled> Reject</label>
+                        <label><input type="radio" name="decision_FAM-10" value="NEEDS_REVIEW" checked disabled> Needs Review</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card" id="FAM-11">
+        <div class="card-header">
+            <div class="card-title-group">
+                <span class="family-tag">FAM-11</span>
+                <h2 class="card-title">Pull-Ups</h2>
+            </div>
+            <span class="confidence-badge exact">EXACT</span>
+        </div>
+        
+        <div class="card-body">
+            <div class="visual-panel">
+                
+        <div class="pose-container">
+            <div class="pose-box">
+                <span class="pose-badge start-badge">START POSE</span>
+                <img src="repdb_mapping_review/pull-up-start.webp" alt="Pull-Ups Start" loading="lazy" />
+                <div class="img-caption">images/flat/pull-up-start.webp<br><span class="hash-tag">sha256:59f14269777...</span></div>
+            </div>
+            <div class="pose-box">
+                <span class="pose-badge peak-badge">PEAK POSE</span>
+                <img src="repdb_mapping_review/pull-up-peak.webp" alt="Pull-Ups Peak" loading="lazy" />
+                <div class="img-caption">images/flat/pull-up-peak.webp<br><span class="hash-tag">sha256:f4c8c624ba2...</span></div>
+            </div>
+        </div>
+        
+            </div>
+            
+            <div class="details-panel">
+                <div class="section-title">INDIFIT CANONICAL DEFINITION</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">Equipment</span>
+                        <span class="meta-value badge-equipment">Bodyweight</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Primary Display Muscle</span>
+                        <span class="meta-value badge-primary-muscle">Back</span>
+                    </div>
+                    <div class="meta-item full-width">
+                        <span class="meta-label">Secondary Muscles</span>
+                        <span class="meta-value">Biceps</span>
+                    </div>
+                </div>
+                
+                <div class="variant-list-container">
+                    <span class="meta-label">Bound Canonical Variants (4 UUIDs)</span>
+                    <ul class="variant-list">
+                        <li><code>4e17e360-9f97-5cd4-a68c-c9dc1dcd7724</code> &mdash; Pull-Ups</li><li><code>15b91f5f-c007-5afa-98c0-8e2154eb84b6</code> &mdash; Pull-Ups (Standard)</li><li><code>96fa8741-f9d7-51a8-b9a6-8276c0d48e9a</code> &mdash; Pause Pull-Ups</li><li><code>f1fd96e9-e59c-54dd-ab83-9ee1ad3747be</code> &mdash; Slow Eccentric Pull-Ups</li>
+                    </ul>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">REPDB PINNED METADATA</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB ID</span>
+                        <span class="meta-value"><code>pull-up</code></span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Name</span>
+                        <span class="meta-value">Pull-Up</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Equipment</span>
+                        <span class="meta-value">pull_up_bar</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Primary Muscles</span>
+                        <span class="meta-value">latissimus_dorsi</span>
+                    </div>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">MAPPING EVALUATION & CONFLICTS</div>
+                <div class="conflict-box">
+                    <strong>Candidate Rationale:</strong> Singular vs plural naming difference; standard overhand bodyweight pull-up.<br><br>
+                    <strong>Taxonomy / Movement Flags:</strong> None (RepDB: latissimus_dorsi; IndiFit: Back).
+                </div>
+
+                <div class="review-status-box">
+                    <div class="review-status-header">
+                        <span class="status-indicator pending">&#9679; REVIEW STATUS: PENDING HUMAN APPROVAL</span>
+                    </div>
+                    <div class="decision-placeholders">
+                        <label><input type="radio" name="decision_FAM-11" value="APPROVE" disabled> Approve</label>
+                        <label><input type="radio" name="decision_FAM-11" value="REJECT" disabled> Reject</label>
+                        <label><input type="radio" name="decision_FAM-11" value="NEEDS_REVIEW" checked disabled> Needs Review</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card" id="FAM-12">
+        <div class="card-header">
+            <div class="card-title-group">
+                <span class="family-tag">FAM-12</span>
+                <h2 class="card-title">Seated Cable Row</h2>
+            </div>
+            <span class="confidence-badge strong">STRONG</span>
+        </div>
+        
+        <div class="card-body">
+            <div class="visual-panel">
+                
+        <div class="pose-container">
+            <div class="pose-box">
+                <span class="pose-badge start-badge">START POSE</span>
+                <img src="repdb_mapping_review/wide-grip-seated-cable-row-start.webp" alt="Seated Cable Row Start" loading="lazy" />
+                <div class="img-caption">images/flat/wide-grip-seated-cable-row-start.webp<br><span class="hash-tag">sha256:586ad6dfb35...</span></div>
+            </div>
+            <div class="pose-box">
+                <span class="pose-badge peak-badge">PEAK POSE</span>
+                <img src="repdb_mapping_review/wide-grip-seated-cable-row-peak.webp" alt="Seated Cable Row Peak" loading="lazy" />
+                <div class="img-caption">images/flat/wide-grip-seated-cable-row-peak.webp<br><span class="hash-tag">sha256:fc4e5efaf7b...</span></div>
+            </div>
+        </div>
+        
+            </div>
+            
+            <div class="details-panel">
+                <div class="section-title">INDIFIT CANONICAL DEFINITION</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">Equipment</span>
+                        <span class="meta-value badge-equipment">Cables</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Primary Display Muscle</span>
+                        <span class="meta-value badge-primary-muscle">Back</span>
+                    </div>
+                    <div class="meta-item full-width">
+                        <span class="meta-label">Secondary Muscles</span>
+                        <span class="meta-value">Biceps</span>
+                    </div>
+                </div>
+                
+                <div class="variant-list-container">
+                    <span class="meta-label">Bound Canonical Variants (4 UUIDs)</span>
+                    <ul class="variant-list">
+                        <li><code>9fae7317-b8a5-5f5c-ba93-9d1611fb21dc</code> &mdash; Seated Cable Row</li><li><code>a9996115-566e-5d9a-b7b4-2634ffe5e97c</code> &mdash; Seated Cable Row (Standard)</li><li><code>e78325b4-b36a-5bf3-a6a8-c7e5eecb1066</code> &mdash; Pause Seated Cable Row</li><li><code>916b7eb0-fa0c-5e4c-b7e9-57635901091f</code> &mdash; Slow Eccentric Seated Cable Row</li>
+                    </ul>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">REPDB PINNED METADATA</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB ID</span>
+                        <span class="meta-value"><code>wide-grip-seated-cable-row</code></span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Name</span>
+                        <span class="meta-value">Wide Grip Seated Cable Row</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Equipment</span>
+                        <span class="meta-value">cable</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Primary Muscles</span>
+                        <span class="meta-value">latissimus_dorsi, rhomboids</span>
+                    </div>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">MAPPING EVALUATION & CONFLICTS</div>
+                <div class="conflict-box">
+                    <strong>Candidate Rationale:</strong> Exact apparatus and seated cable row mechanics.<br><br>
+                    <strong>Taxonomy / Movement Flags:</strong> Grip attachment note: RepDB illustration uses wide-grip bar attachment rather than close-grip V-bar. Reviewer must verify whether wide-grip visual is acceptable for canonical Seated Cable Row.
+                </div>
+
+                <div class="review-status-box">
+                    <div class="review-status-header">
+                        <span class="status-indicator pending">&#9679; REVIEW STATUS: PENDING HUMAN APPROVAL</span>
+                    </div>
+                    <div class="decision-placeholders">
+                        <label><input type="radio" name="decision_FAM-12" value="APPROVE" disabled> Approve</label>
+                        <label><input type="radio" name="decision_FAM-12" value="REJECT" disabled> Reject</label>
+                        <label><input type="radio" name="decision_FAM-12" value="NEEDS_REVIEW" checked disabled> Needs Review</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card" id="FAM-13">
+        <div class="card-header">
+            <div class="card-title-group">
+                <span class="family-tag">FAM-13</span>
+                <h2 class="card-title">Barbell Squat</h2>
+            </div>
+            <span class="confidence-badge exact">EXACT</span>
+        </div>
+        
+        <div class="card-body">
+            <div class="visual-panel">
+                
+        <div class="pose-container">
+            <div class="pose-box">
+                <span class="pose-badge start-badge">START POSE</span>
+                <img src="repdb_mapping_review/squat-start.webp" alt="Barbell Squat Start" loading="lazy" />
+                <div class="img-caption">images/flat/squat-start.webp<br><span class="hash-tag">sha256:e39e3084f50...</span></div>
+            </div>
+            <div class="pose-box">
+                <span class="pose-badge peak-badge">PEAK POSE</span>
+                <img src="repdb_mapping_review/squat-peak.webp" alt="Barbell Squat Peak" loading="lazy" />
+                <div class="img-caption">images/flat/squat-peak.webp<br><span class="hash-tag">sha256:d6913ea6c3d...</span></div>
+            </div>
+        </div>
+        
+            </div>
+            
+            <div class="details-panel">
+                <div class="section-title">INDIFIT CANONICAL DEFINITION</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">Equipment</span>
+                        <span class="meta-value badge-equipment">Barbell</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Primary Display Muscle</span>
+                        <span class="meta-value badge-primary-muscle">Legs</span>
+                    </div>
+                    <div class="meta-item full-width">
+                        <span class="meta-label">Secondary Muscles</span>
+                        <span class="meta-value">Glutes, Core</span>
+                    </div>
+                </div>
+                
+                <div class="variant-list-container">
+                    <span class="meta-label">Bound Canonical Variants (4 UUIDs)</span>
+                    <ul class="variant-list">
+                        <li><code>d3b5ab04-74f6-5155-9621-50238644eeda</code> &mdash; Barbell Squat</li><li><code>73d7db9e-67f2-5311-a106-31bca1914a95</code> &mdash; Barbell Squat (Standard)</li><li><code>3bf3d06e-5e1d-5d47-b05f-0b954ec89de9</code> &mdash; Pause Barbell Squat</li><li><code>1b4fa856-03b8-5c6b-81ca-8df9b13721d4</code> &mdash; Slow Eccentric Barbell Squat</li>
+                    </ul>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">REPDB PINNED METADATA</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB ID</span>
+                        <span class="meta-value"><code>squat</code></span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Name</span>
+                        <span class="meta-value">Barbell Back Squat</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Equipment</span>
+                        <span class="meta-value">barbell</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Primary Muscles</span>
+                        <span class="meta-value">gluteus_maximus, quadriceps</span>
+                    </div>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">MAPPING EVALUATION & CONFLICTS</div>
+                <div class="conflict-box">
+                    <strong>Candidate Rationale:</strong> Exact back squat match; standard bilateral barbell back squat.<br><br>
+                    <strong>Taxonomy / Movement Flags:</strong> None (RepDB: quadriceps; IndiFit: Legs/Quads).
+                </div>
+
+                <div class="review-status-box">
+                    <div class="review-status-header">
+                        <span class="status-indicator pending">&#9679; REVIEW STATUS: PENDING HUMAN APPROVAL</span>
+                    </div>
+                    <div class="decision-placeholders">
+                        <label><input type="radio" name="decision_FAM-13" value="APPROVE" disabled> Approve</label>
+                        <label><input type="radio" name="decision_FAM-13" value="REJECT" disabled> Reject</label>
+                        <label><input type="radio" name="decision_FAM-13" value="NEEDS_REVIEW" checked disabled> Needs Review</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card" id="FAM-14">
+        <div class="card-header">
+            <div class="card-title-group">
+                <span class="family-tag">FAM-14</span>
+                <h2 class="card-title">Leg Press</h2>
+            </div>
+            <span class="confidence-badge exact">EXACT</span>
+        </div>
+        
+        <div class="card-body">
+            <div class="visual-panel">
+                
+        <div class="pose-container">
+            <div class="pose-box">
+                <span class="pose-badge start-badge">START POSE</span>
+                <img src="repdb_mapping_review/leg-press-start.webp" alt="Leg Press Start" loading="lazy" />
+                <div class="img-caption">images/flat/leg-press-start.webp<br><span class="hash-tag">sha256:68c7769b023...</span></div>
+            </div>
+            <div class="pose-box">
+                <span class="pose-badge peak-badge">PEAK POSE</span>
+                <img src="repdb_mapping_review/leg-press-peak.webp" alt="Leg Press Peak" loading="lazy" />
+                <div class="img-caption">images/flat/leg-press-peak.webp<br><span class="hash-tag">sha256:2115ffe5c13...</span></div>
+            </div>
+        </div>
+        
+            </div>
+            
+            <div class="details-panel">
+                <div class="section-title">INDIFIT CANONICAL DEFINITION</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">Equipment</span>
+                        <span class="meta-value badge-equipment">Machine</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Primary Display Muscle</span>
+                        <span class="meta-value badge-primary-muscle">Legs</span>
+                    </div>
+                    <div class="meta-item full-width">
+                        <span class="meta-label">Secondary Muscles</span>
+                        <span class="meta-value">Glutes</span>
+                    </div>
+                </div>
+                
+                <div class="variant-list-container">
+                    <span class="meta-label">Bound Canonical Variants (4 UUIDs)</span>
+                    <ul class="variant-list">
+                        <li><code>081ed879-f46b-592a-8982-345f0f01dd3f</code> &mdash; Leg Press</li><li><code>1b692ec8-40d9-53e5-a7dd-47af7606d42b</code> &mdash; Leg Press (Standard)</li><li><code>d167dea0-e52d-59dd-9ad9-1c597bbf65ab</code> &mdash; Pause Leg Press</li><li><code>26ce5ae7-2f08-55a2-b015-c60ae6307d3b</code> &mdash; Slow Eccentric Leg Press</li>
+                    </ul>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">REPDB PINNED METADATA</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB ID</span>
+                        <span class="meta-value"><code>leg-press</code></span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Name</span>
+                        <span class="meta-value">Leg Press</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Equipment</span>
+                        <span class="meta-value">leg_press</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Primary Muscles</span>
+                        <span class="meta-value">gluteus_maximus, quadriceps</span>
+                    </div>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">MAPPING EVALUATION & CONFLICTS</div>
+                <div class="conflict-box">
+                    <strong>Candidate Rationale:</strong> Exact 45-degree sled machine leg press match.<br><br>
+                    <strong>Taxonomy / Movement Flags:</strong> None (RepDB: quadriceps; IndiFit: Legs/Quads).
+                </div>
+
+                <div class="review-status-box">
+                    <div class="review-status-header">
+                        <span class="status-indicator pending">&#9679; REVIEW STATUS: PENDING HUMAN APPROVAL</span>
+                    </div>
+                    <div class="decision-placeholders">
+                        <label><input type="radio" name="decision_FAM-14" value="APPROVE" disabled> Approve</label>
+                        <label><input type="radio" name="decision_FAM-14" value="REJECT" disabled> Reject</label>
+                        <label><input type="radio" name="decision_FAM-14" value="NEEDS_REVIEW" checked disabled> Needs Review</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card" id="FAM-15">
+        <div class="card-header">
+            <div class="card-title-group">
+                <span class="family-tag">FAM-15</span>
+                <h2 class="card-title">Romanian Deadlift (RDL)</h2>
+            </div>
+            <span class="confidence-badge exact">EXACT</span>
+        </div>
+        
+        <div class="card-body">
+            <div class="visual-panel">
+                
+        <div class="pose-container">
+            <div class="pose-box">
+                <span class="pose-badge start-badge">START POSE</span>
+                <img src="repdb_mapping_review/romanian-deadlift-start.webp" alt="Romanian Deadlift (RDL) Start" loading="lazy" />
+                <div class="img-caption">images/flat/romanian-deadlift-start.webp<br><span class="hash-tag">sha256:5385feab276...</span></div>
+            </div>
+            <div class="pose-box">
+                <span class="pose-badge peak-badge">PEAK POSE</span>
+                <img src="repdb_mapping_review/romanian-deadlift-peak.webp" alt="Romanian Deadlift (RDL) Peak" loading="lazy" />
+                <div class="img-caption">images/flat/romanian-deadlift-peak.webp<br><span class="hash-tag">sha256:88602d0076e...</span></div>
+            </div>
+        </div>
+        
+            </div>
+            
+            <div class="details-panel">
+                <div class="section-title">INDIFIT CANONICAL DEFINITION</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">Equipment</span>
+                        <span class="meta-value badge-equipment">Barbell</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Primary Display Muscle</span>
+                        <span class="meta-value badge-primary-muscle">Hamstrings</span>
+                    </div>
+                    <div class="meta-item full-width">
+                        <span class="meta-label">Secondary Muscles</span>
+                        <span class="meta-value">Glutes, Back</span>
+                    </div>
+                </div>
+                
+                <div class="variant-list-container">
+                    <span class="meta-label">Bound Canonical Variants (4 UUIDs)</span>
+                    <ul class="variant-list">
+                        <li><code>7887c839-1b15-5005-a0c9-b942842548e3</code> &mdash; Romanian Deadlift (RDL)</li><li><code>8f4249e1-62c9-50be-a30c-e5f90b0b61ff</code> &mdash; Romanian Deadlift (RDL) (Standard)</li><li><code>5742f3b8-9595-591c-a042-bc11a162840c</code> &mdash; Pause Romanian Deadlift (RDL)</li><li><code>ccfda1c6-c811-538c-89cf-be67fa8fe932</code> &mdash; Slow Eccentric Romanian Deadlift (RDL)</li>
+                    </ul>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">REPDB PINNED METADATA</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB ID</span>
+                        <span class="meta-value"><code>romanian-deadlift</code></span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Name</span>
+                        <span class="meta-value">Romanian Deadlift</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Equipment</span>
+                        <span class="meta-value">barbell</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Primary Muscles</span>
+                        <span class="meta-value">gluteus_maximus, hamstrings</span>
+                    </div>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">MAPPING EVALUATION & CONFLICTS</div>
+                <div class="conflict-box">
+                    <strong>Candidate Rationale:</strong> Exact barbell hinge movement; IndiFit includes (RDL) acronym alias.<br><br>
+                    <strong>Taxonomy / Movement Flags:</strong> None (RepDB: hamstrings; IndiFit: Hamstrings).
+                </div>
+
+                <div class="review-status-box">
+                    <div class="review-status-header">
+                        <span class="status-indicator pending">&#9679; REVIEW STATUS: PENDING HUMAN APPROVAL</span>
+                    </div>
+                    <div class="decision-placeholders">
+                        <label><input type="radio" name="decision_FAM-15" value="APPROVE" disabled> Approve</label>
+                        <label><input type="radio" name="decision_FAM-15" value="REJECT" disabled> Reject</label>
+                        <label><input type="radio" name="decision_FAM-15" value="NEEDS_REVIEW" checked disabled> Needs Review</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card" id="FAM-16">
+        <div class="card-header">
+            <div class="card-title-group">
+                <span class="family-tag">FAM-16</span>
+                <h2 class="card-title">Leg Extensions</h2>
+            </div>
+            <span class="confidence-badge exact">EXACT</span>
+        </div>
+        
+        <div class="card-body">
+            <div class="visual-panel">
+                
+        <div class="pose-container">
+            <div class="pose-box">
+                <span class="pose-badge start-badge">START POSE</span>
+                <img src="repdb_mapping_review/leg-extension-start.webp" alt="Leg Extensions Start" loading="lazy" />
+                <div class="img-caption">images/flat/leg-extension-start.webp<br><span class="hash-tag">sha256:97c34b7bbd7...</span></div>
+            </div>
+            <div class="pose-box">
+                <span class="pose-badge peak-badge">PEAK POSE</span>
+                <img src="repdb_mapping_review/leg-extension-peak.webp" alt="Leg Extensions Peak" loading="lazy" />
+                <div class="img-caption">images/flat/leg-extension-peak.webp<br><span class="hash-tag">sha256:04f79670ee6...</span></div>
+            </div>
+        </div>
+        
+            </div>
+            
+            <div class="details-panel">
+                <div class="section-title">INDIFIT CANONICAL DEFINITION</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">Equipment</span>
+                        <span class="meta-value badge-equipment">Machine</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Primary Display Muscle</span>
+                        <span class="meta-value badge-primary-muscle">Legs</span>
+                    </div>
+                    <div class="meta-item full-width">
+                        <span class="meta-label">Secondary Muscles</span>
+                        <span class="meta-value">&mdash;</span>
+                    </div>
+                </div>
+                
+                <div class="variant-list-container">
+                    <span class="meta-label">Bound Canonical Variants (4 UUIDs)</span>
+                    <ul class="variant-list">
+                        <li><code>568fcfd9-bb09-5299-a898-801e93216770</code> &mdash; Leg Extensions</li><li><code>7c25a9f3-00af-5e09-b667-a6f9d9c024e2</code> &mdash; Leg Extensions (Standard)</li><li><code>56feb751-efbb-5302-902d-940d45697261</code> &mdash; Pause Leg Extensions</li><li><code>e87b0d6a-0a2c-595b-b241-89fc0d6f32fb</code> &mdash; Slow Eccentric Leg Extensions</li>
+                    </ul>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">REPDB PINNED METADATA</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB ID</span>
+                        <span class="meta-value"><code>leg-extension</code></span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Name</span>
+                        <span class="meta-value">Leg Extension</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Equipment</span>
+                        <span class="meta-value">leg_extension</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Primary Muscles</span>
+                        <span class="meta-value">quadriceps</span>
+                    </div>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">MAPPING EVALUATION & CONFLICTS</div>
+                <div class="conflict-box">
+                    <strong>Candidate Rationale:</strong> Singular vs plural naming difference; seated machine knee extension.<br><br>
+                    <strong>Taxonomy / Movement Flags:</strong> None (RepDB: quadriceps; IndiFit: Legs/Quads).
+                </div>
+
+                <div class="review-status-box">
+                    <div class="review-status-header">
+                        <span class="status-indicator pending">&#9679; REVIEW STATUS: PENDING HUMAN APPROVAL</span>
+                    </div>
+                    <div class="decision-placeholders">
+                        <label><input type="radio" name="decision_FAM-16" value="APPROVE" disabled> Approve</label>
+                        <label><input type="radio" name="decision_FAM-16" value="REJECT" disabled> Reject</label>
+                        <label><input type="radio" name="decision_FAM-16" value="NEEDS_REVIEW" checked disabled> Needs Review</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card" id="FAM-17">
+        <div class="card-header">
+            <div class="card-title-group">
+                <span class="family-tag">FAM-17</span>
+                <h2 class="card-title">Seated Leg Curl</h2>
+            </div>
+            <span class="confidence-badge ambiguous">AMBIGUOUS</span>
+        </div>
+        
+        <div class="card-body">
+            <div class="visual-panel">
+                
+        <div class="pose-container">
+            <div class="pose-box">
+                <span class="pose-badge start-badge">START POSE</span>
+                <img src="repdb_mapping_review/leg-curl-start.webp" alt="Seated Leg Curl Start" loading="lazy" />
+                <div class="img-caption">images/flat/leg-curl-start.webp<br><span class="hash-tag">sha256:9eed895562e...</span></div>
+            </div>
+            <div class="pose-box">
+                <span class="pose-badge peak-badge">PEAK POSE</span>
+                <img src="repdb_mapping_review/leg-curl-peak.webp" alt="Seated Leg Curl Peak" loading="lazy" />
+                <div class="img-caption">images/flat/leg-curl-peak.webp<br><span class="hash-tag">sha256:e1f42294337...</span></div>
+            </div>
+        </div>
+        
+            </div>
+            
+            <div class="details-panel">
+                <div class="section-title">INDIFIT CANONICAL DEFINITION</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">Equipment</span>
+                        <span class="meta-value badge-equipment">Machine</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Primary Display Muscle</span>
+                        <span class="meta-value badge-primary-muscle">Hamstrings</span>
+                    </div>
+                    <div class="meta-item full-width">
+                        <span class="meta-label">Secondary Muscles</span>
+                        <span class="meta-value">&mdash;</span>
+                    </div>
+                </div>
+                
+                <div class="variant-list-container">
+                    <span class="meta-label">Bound Canonical Variants (4 UUIDs)</span>
+                    <ul class="variant-list">
+                        <li><code>59ff6c53-7932-57e3-a546-07ac2aa457ae</code> &mdash; Seated Leg Curl</li><li><code>84776ac4-f142-55cd-92f6-fa35a74956d3</code> &mdash; Seated Leg Curl (Standard)</li><li><code>9fb9ee61-0792-5eef-a5f7-923914649294</code> &mdash; Pause Seated Leg Curl</li><li><code>4f035379-6a9e-52a9-bb2b-b4c608808ba6</code> &mdash; Slow Eccentric Seated Leg Curl</li>
+                    </ul>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">REPDB PINNED METADATA</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB ID</span>
+                        <span class="meta-value"><code>leg-curl</code></span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Name</span>
+                        <span class="meta-value">Lying Leg Curl</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Equipment</span>
+                        <span class="meta-value">leg_curl</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Primary Muscles</span>
+                        <span class="meta-value">hamstrings</span>
+                    </div>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">MAPPING EVALUATION & CONFLICTS</div>
+                <div class="conflict-box">
+                    <strong>Candidate Rationale:</strong> RepDB free tier only includes lying prone machine leg curl (leg-curl); lacks seated leg curl machine illustration.<br><br>
+                    <strong>Taxonomy / Movement Flags:</strong> Apparatus / Body orientation conflict: IndiFit prescribes Seated Leg Curl; RepDB candidate illustrates Lying Leg Curl (prone). Reviewer must evaluate if lying machine artwork is acceptable or should fail closed to muscle/text fallback.
+                </div>
+
+                <div class="review-status-box">
+                    <div class="review-status-header">
+                        <span class="status-indicator pending">&#9679; REVIEW STATUS: PENDING HUMAN APPROVAL</span>
+                    </div>
+                    <div class="decision-placeholders">
+                        <label><input type="radio" name="decision_FAM-17" value="APPROVE" disabled> Approve</label>
+                        <label><input type="radio" name="decision_FAM-17" value="REJECT" disabled> Reject</label>
+                        <label><input type="radio" name="decision_FAM-17" value="NEEDS_REVIEW" checked disabled> Needs Review</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card" id="FAM-18">
+        <div class="card-header">
+            <div class="card-title-group">
+                <span class="family-tag">FAM-18</span>
+                <h2 class="card-title">Standing Calf Raise</h2>
+            </div>
+            <span class="confidence-badge exact">EXACT</span>
+        </div>
+        
+        <div class="card-body">
+            <div class="visual-panel">
+                
+        <div class="pose-container">
+            <div class="pose-box">
+                <span class="pose-badge start-badge">START POSE</span>
+                <img src="repdb_mapping_review/machine-calf-raise-start.webp" alt="Standing Calf Raise Start" loading="lazy" />
+                <div class="img-caption">images/flat/machine-calf-raise-start.webp<br><span class="hash-tag">sha256:811bd64a2b2...</span></div>
+            </div>
+            <div class="pose-box">
+                <span class="pose-badge peak-badge">PEAK POSE</span>
+                <img src="repdb_mapping_review/machine-calf-raise-peak.webp" alt="Standing Calf Raise Peak" loading="lazy" />
+                <div class="img-caption">images/flat/machine-calf-raise-peak.webp<br><span class="hash-tag">sha256:10b1c0808a7...</span></div>
+            </div>
+        </div>
+        
+            </div>
+            
+            <div class="details-panel">
+                <div class="section-title">INDIFIT CANONICAL DEFINITION</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">Equipment</span>
+                        <span class="meta-value badge-equipment">Bodyweight</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Primary Display Muscle</span>
+                        <span class="meta-value badge-primary-muscle">Calves</span>
+                    </div>
+                    <div class="meta-item full-width">
+                        <span class="meta-label">Secondary Muscles</span>
+                        <span class="meta-value">&mdash;</span>
+                    </div>
+                </div>
+                
+                <div class="variant-list-container">
+                    <span class="meta-label">Bound Canonical Variants (4 UUIDs)</span>
+                    <ul class="variant-list">
+                        <li><code>426ff89a-6639-51d1-a6c1-33184586bbed</code> &mdash; Standing Calf Raise</li><li><code>b1e568c2-89f5-5689-b8d7-ee46d1205cf1</code> &mdash; Standing Calf Raise (Standard)</li><li><code>419c463a-1d6a-5e6c-9000-54832b5116f5</code> &mdash; Pause Standing Calf Raise</li><li><code>3c34c8f2-ce64-5f74-b002-e55775759e6d</code> &mdash; Slow Eccentric Standing Calf Raise</li>
+                    </ul>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">REPDB PINNED METADATA</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB ID</span>
+                        <span class="meta-value"><code>standing-calf-raise</code></span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Name</span>
+                        <span class="meta-value">Standing Calf Raise</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Equipment</span>
+                        <span class="meta-value">standing_calf_raise_machine</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Primary Muscles</span>
+                        <span class="meta-value">gastrocnemius</span>
+                    </div>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">MAPPING EVALUATION & CONFLICTS</div>
+                <div class="conflict-box">
+                    <strong>Candidate Rationale:</strong> Exact standing machine calf raise match.<br><br>
+                    <strong>Taxonomy / Movement Flags:</strong> None (RepDB: gastrocnemius; IndiFit: Calves).
+                </div>
+
+                <div class="review-status-box">
+                    <div class="review-status-header">
+                        <span class="status-indicator pending">&#9679; REVIEW STATUS: PENDING HUMAN APPROVAL</span>
+                    </div>
+                    <div class="decision-placeholders">
+                        <label><input type="radio" name="decision_FAM-18" value="APPROVE" disabled> Approve</label>
+                        <label><input type="radio" name="decision_FAM-18" value="REJECT" disabled> Reject</label>
+                        <label><input type="radio" name="decision_FAM-18" value="NEEDS_REVIEW" checked disabled> Needs Review</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card" id="FAM-19">
+        <div class="card-header">
+            <div class="card-title-group">
+                <span class="family-tag">FAM-19</span>
+                <h2 class="card-title">Walking Lunges</h2>
+            </div>
+            <span class="confidence-badge strong">STRONG</span>
+        </div>
+        
+        <div class="card-body">
+            <div class="visual-panel">
+                
+        <div class="pose-container">
+            <div class="pose-box">
+                <span class="pose-badge start-badge">START POSE</span>
+                <img src="repdb_mapping_review/db-lunge-start.webp" alt="Walking Lunges Start" loading="lazy" />
+                <div class="img-caption">images/flat/db-lunge-start.webp<br><span class="hash-tag">sha256:9aaa3e3983e...</span></div>
+            </div>
+            <div class="pose-box">
+                <span class="pose-badge peak-badge">PEAK POSE</span>
+                <img src="repdb_mapping_review/db-lunge-peak.webp" alt="Walking Lunges Peak" loading="lazy" />
+                <div class="img-caption">images/flat/db-lunge-peak.webp<br><span class="hash-tag">sha256:4cbc3dcac48...</span></div>
+            </div>
+        </div>
+        
+            </div>
+            
+            <div class="details-panel">
+                <div class="section-title">INDIFIT CANONICAL DEFINITION</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">Equipment</span>
+                        <span class="meta-value badge-equipment">Dumbbells</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Primary Display Muscle</span>
+                        <span class="meta-value badge-primary-muscle">Legs</span>
+                    </div>
+                    <div class="meta-item full-width">
+                        <span class="meta-label">Secondary Muscles</span>
+                        <span class="meta-value">Glutes</span>
+                    </div>
+                </div>
+                
+                <div class="variant-list-container">
+                    <span class="meta-label">Bound Canonical Variants (4 UUIDs)</span>
+                    <ul class="variant-list">
+                        <li><code>d8a67487-1f7a-5bed-b1aa-62537870b25b</code> &mdash; Walking Lunges</li><li><code>13e0d854-7591-586e-813f-4a462fbd1722</code> &mdash; Walking Lunges (Standard)</li><li><code>f187e832-fdfa-5c75-a9bd-2cb19ff122f7</code> &mdash; Pause Walking Lunges</li><li><code>a6b5fe22-9279-5ade-8f1e-f7d1cc323f80</code> &mdash; Slow Eccentric Walking Lunges</li>
+                    </ul>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">REPDB PINNED METADATA</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB ID</span>
+                        <span class="meta-value"><code>db-lunge</code></span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Name</span>
+                        <span class="meta-value">Dumbbell Lunge</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Equipment</span>
+                        <span class="meta-value">dumbbell</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Primary Muscles</span>
+                        <span class="meta-value">gluteus_maximus, quadriceps</span>
+                    </div>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">MAPPING EVALUATION & CONFLICTS</div>
+                <div class="conflict-box">
+                    <strong>Candidate Rationale:</strong> Dumbbell lunge with matching dumbbell equipment.<br><br>
+                    <strong>Taxonomy / Movement Flags:</strong> Locomotion note: RepDB illustration shows stationary dumbbell split lunge posture rather than continuous walking traversal.
+                </div>
+
+                <div class="review-status-box">
+                    <div class="review-status-header">
+                        <span class="status-indicator pending">&#9679; REVIEW STATUS: PENDING HUMAN APPROVAL</span>
+                    </div>
+                    <div class="decision-placeholders">
+                        <label><input type="radio" name="decision_FAM-19" value="APPROVE" disabled> Approve</label>
+                        <label><input type="radio" name="decision_FAM-19" value="REJECT" disabled> Reject</label>
+                        <label><input type="radio" name="decision_FAM-19" value="NEEDS_REVIEW" checked disabled> Needs Review</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card" id="FAM-20">
+        <div class="card-header">
+            <div class="card-title-group">
+                <span class="family-tag">FAM-20</span>
+                <h2 class="card-title">Overhead Barbell Press</h2>
+            </div>
+            <span class="confidence-badge strong">STRONG</span>
+        </div>
+        
+        <div class="card-body">
+            <div class="visual-panel">
+                
+        <div class="pose-container">
+            <div class="pose-box">
+                <span class="pose-badge start-badge">START POSE</span>
+                <img src="repdb_mapping_review/ohp-start.webp" alt="Overhead Barbell Press Start" loading="lazy" />
+                <div class="img-caption">images/flat/ohp-start.webp<br><span class="hash-tag">sha256:4d7cd73c2a1...</span></div>
+            </div>
+            <div class="pose-box">
+                <span class="pose-badge peak-badge">PEAK POSE</span>
+                <img src="repdb_mapping_review/ohp-peak.webp" alt="Overhead Barbell Press Peak" loading="lazy" />
+                <div class="img-caption">images/flat/ohp-peak.webp<br><span class="hash-tag">sha256:896371a20c1...</span></div>
+            </div>
+        </div>
+        
+            </div>
+            
+            <div class="details-panel">
+                <div class="section-title">INDIFIT CANONICAL DEFINITION</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">Equipment</span>
+                        <span class="meta-value badge-equipment">Barbell</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Primary Display Muscle</span>
+                        <span class="meta-value badge-primary-muscle">Shoulders</span>
+                    </div>
+                    <div class="meta-item full-width">
+                        <span class="meta-label">Secondary Muscles</span>
+                        <span class="meta-value">Triceps, Core</span>
+                    </div>
+                </div>
+                
+                <div class="variant-list-container">
+                    <span class="meta-label">Bound Canonical Variants (4 UUIDs)</span>
+                    <ul class="variant-list">
+                        <li><code>d2674149-5f1c-529b-9e3e-136fef2d8933</code> &mdash; Overhead Barbell Press</li><li><code>93e0d927-843c-55e1-aa47-39071e715a63</code> &mdash; Overhead Barbell Press (Standard)</li><li><code>209a82cb-2a0f-5905-8d1a-a35cf35945fb</code> &mdash; Pause Overhead Barbell Press</li><li><code>1f05a67e-8cc2-5b02-a6b9-76bee46e3beb</code> &mdash; Slow Eccentric Overhead Barbell Press</li>
+                    </ul>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">REPDB PINNED METADATA</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB ID</span>
+                        <span class="meta-value"><code>ohp</code></span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Name</span>
+                        <span class="meta-value">Barbell Overhead Press</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Equipment</span>
+                        <span class="meta-value">barbell</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Primary Muscles</span>
+                        <span class="meta-value">anterior_deltoid, lateral_deltoid</span>
+                    </div>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">MAPPING EVALUATION & CONFLICTS</div>
+                <div class="conflict-box">
+                    <strong>Candidate Rationale:</strong> RepDB uses OHP acronym; exact standing barbell overhead press.<br><br>
+                    <strong>Taxonomy / Movement Flags:</strong> None (RepDB: anterior_deltoid; IndiFit: Shoulders).
+                </div>
+
+                <div class="review-status-box">
+                    <div class="review-status-header">
+                        <span class="status-indicator pending">&#9679; REVIEW STATUS: PENDING HUMAN APPROVAL</span>
+                    </div>
+                    <div class="decision-placeholders">
+                        <label><input type="radio" name="decision_FAM-20" value="APPROVE" disabled> Approve</label>
+                        <label><input type="radio" name="decision_FAM-20" value="REJECT" disabled> Reject</label>
+                        <label><input type="radio" name="decision_FAM-20" value="NEEDS_REVIEW" checked disabled> Needs Review</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card" id="FAM-21">
+        <div class="card-header">
+            <div class="card-title-group">
+                <span class="family-tag">FAM-21</span>
+                <h2 class="card-title">Seated Dumbbell Shoulder Press</h2>
+            </div>
+            <span class="confidence-badge exact">EXACT</span>
+        </div>
+        
+        <div class="card-body">
+            <div class="visual-panel">
+                
+        <div class="pose-container">
+            <div class="pose-box">
+                <span class="pose-badge start-badge">START POSE</span>
+                <img src="repdb_mapping_review/seated-db-press-start.webp" alt="Seated Dumbbell Shoulder Press Start" loading="lazy" />
+                <div class="img-caption">images/flat/seated-db-press-start.webp<br><span class="hash-tag">sha256:5e946e69777...</span></div>
+            </div>
+            <div class="pose-box">
+                <span class="pose-badge peak-badge">PEAK POSE</span>
+                <img src="repdb_mapping_review/seated-db-press-peak.webp" alt="Seated Dumbbell Shoulder Press Peak" loading="lazy" />
+                <div class="img-caption">images/flat/seated-db-press-peak.webp<br><span class="hash-tag">sha256:7edc80e11ac...</span></div>
+            </div>
+        </div>
+        
+            </div>
+            
+            <div class="details-panel">
+                <div class="section-title">INDIFIT CANONICAL DEFINITION</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">Equipment</span>
+                        <span class="meta-value badge-equipment">Dumbbells</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Primary Display Muscle</span>
+                        <span class="meta-value badge-primary-muscle">Shoulders</span>
+                    </div>
+                    <div class="meta-item full-width">
+                        <span class="meta-label">Secondary Muscles</span>
+                        <span class="meta-value">Triceps</span>
+                    </div>
+                </div>
+                
+                <div class="variant-list-container">
+                    <span class="meta-label">Bound Canonical Variants (4 UUIDs)</span>
+                    <ul class="variant-list">
+                        <li><code>37088aa5-6989-5241-8ad9-23f1687a9435</code> &mdash; Seated Dumbbell Shoulder Press</li><li><code>1976abfd-1c4a-5d9c-8788-2f86ee8f1b61</code> &mdash; Seated Dumbbell Shoulder Press (Standard)</li><li><code>e6d19944-fd95-5213-9bcb-89b1cc507ab4</code> &mdash; Pause Seated Dumbbell Shoulder Press</li><li><code>ea431a7f-19b8-5e5e-9e4c-da6298f4c50e</code> &mdash; Slow Eccentric Seated Dumbbell Shoulder Press</li>
+                    </ul>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">REPDB PINNED METADATA</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB ID</span>
+                        <span class="meta-value"><code>seated-db-press</code></span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Name</span>
+                        <span class="meta-value">Seated Dumbbell Shoulder Press</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Equipment</span>
+                        <span class="meta-value">dumbbell</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Primary Muscles</span>
+                        <span class="meta-value">anterior_deltoid, lateral_deltoid</span>
+                    </div>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">MAPPING EVALUATION & CONFLICTS</div>
+                <div class="conflict-box">
+                    <strong>Candidate Rationale:</strong> Exact seated vertical dumbbell press match.<br><br>
+                    <strong>Taxonomy / Movement Flags:</strong> None (RepDB: anterior_deltoid; IndiFit: Shoulders).
+                </div>
+
+                <div class="review-status-box">
+                    <div class="review-status-header">
+                        <span class="status-indicator pending">&#9679; REVIEW STATUS: PENDING HUMAN APPROVAL</span>
+                    </div>
+                    <div class="decision-placeholders">
+                        <label><input type="radio" name="decision_FAM-21" value="APPROVE" disabled> Approve</label>
+                        <label><input type="radio" name="decision_FAM-21" value="REJECT" disabled> Reject</label>
+                        <label><input type="radio" name="decision_FAM-21" value="NEEDS_REVIEW" checked disabled> Needs Review</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card" id="FAM-22">
+        <div class="card-header">
+            <div class="card-title-group">
+                <span class="family-tag">FAM-22</span>
+                <h2 class="card-title">Dumbbell Lateral Raise</h2>
+            </div>
+            <span class="confidence-badge exact">EXACT</span>
+        </div>
+        
+        <div class="card-body">
+            <div class="visual-panel">
+                
+        <div class="pose-container">
+            <div class="pose-box">
+                <span class="pose-badge start-badge">START POSE</span>
+                <img src="repdb_mapping_review/lateral-raise-start.webp" alt="Dumbbell Lateral Raise Start" loading="lazy" />
+                <div class="img-caption">images/flat/lateral-raise-start.webp<br><span class="hash-tag">sha256:6993bfa0e16...</span></div>
+            </div>
+            <div class="pose-box">
+                <span class="pose-badge peak-badge">PEAK POSE</span>
+                <img src="repdb_mapping_review/lateral-raise-peak.webp" alt="Dumbbell Lateral Raise Peak" loading="lazy" />
+                <div class="img-caption">images/flat/lateral-raise-peak.webp<br><span class="hash-tag">sha256:65f3e3180a2...</span></div>
+            </div>
+        </div>
+        
+            </div>
+            
+            <div class="details-panel">
+                <div class="section-title">INDIFIT CANONICAL DEFINITION</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">Equipment</span>
+                        <span class="meta-value badge-equipment">Dumbbells</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Primary Display Muscle</span>
+                        <span class="meta-value badge-primary-muscle">Shoulders</span>
+                    </div>
+                    <div class="meta-item full-width">
+                        <span class="meta-label">Secondary Muscles</span>
+                        <span class="meta-value">&mdash;</span>
+                    </div>
+                </div>
+                
+                <div class="variant-list-container">
+                    <span class="meta-label">Bound Canonical Variants (4 UUIDs)</span>
+                    <ul class="variant-list">
+                        <li><code>c6422f26-c3ca-5a2b-9796-e4a3c17d1563</code> &mdash; Dumbbell Lateral Raise</li><li><code>5a039bbb-5edf-50a9-bbb5-3f349555689d</code> &mdash; Dumbbell Lateral Raise (Standard)</li><li><code>0fa6d488-a6a9-56e0-ad16-401162373b19</code> &mdash; Pause Dumbbell Lateral Raise</li><li><code>b095c880-f806-5b29-a2e0-300632a48796</code> &mdash; Slow Eccentric Dumbbell Lateral Raise</li>
+                    </ul>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">REPDB PINNED METADATA</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB ID</span>
+                        <span class="meta-value"><code>lateral-raise</code></span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Name</span>
+                        <span class="meta-value">Dumbbell Lateral Raise</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Equipment</span>
+                        <span class="meta-value">dumbbell</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Primary Muscles</span>
+                        <span class="meta-value">lateral_deltoid</span>
+                    </div>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">MAPPING EVALUATION & CONFLICTS</div>
+                <div class="conflict-box">
+                    <strong>Candidate Rationale:</strong> Exact standing dumbbell medial deltoid raise match.<br><br>
+                    <strong>Taxonomy / Movement Flags:</strong> None (RepDB: lateral_deltoid; IndiFit: Shoulders).
+                </div>
+
+                <div class="review-status-box">
+                    <div class="review-status-header">
+                        <span class="status-indicator pending">&#9679; REVIEW STATUS: PENDING HUMAN APPROVAL</span>
+                    </div>
+                    <div class="decision-placeholders">
+                        <label><input type="radio" name="decision_FAM-22" value="APPROVE" disabled> Approve</label>
+                        <label><input type="radio" name="decision_FAM-22" value="REJECT" disabled> Reject</label>
+                        <label><input type="radio" name="decision_FAM-22" value="NEEDS_REVIEW" checked disabled> Needs Review</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card" id="FAM-23">
+        <div class="card-header">
+            <div class="card-title-group">
+                <span class="family-tag">FAM-23</span>
+                <h2 class="card-title">Dumbbell Front Raise</h2>
+            </div>
+            <span class="confidence-badge exact">EXACT</span>
+        </div>
+        
+        <div class="card-body">
+            <div class="visual-panel">
+                
+        <div class="pose-container">
+            <div class="pose-box">
+                <span class="pose-badge start-badge">START POSE</span>
+                <img src="repdb_mapping_review/dumbbell-front-raise-start.webp" alt="Dumbbell Front Raise Start" loading="lazy" />
+                <div class="img-caption">images/flat/dumbbell-front-raise-start.webp<br><span class="hash-tag">sha256:bc0ada2f3dd...</span></div>
+            </div>
+            <div class="pose-box">
+                <span class="pose-badge peak-badge">PEAK POSE</span>
+                <img src="repdb_mapping_review/dumbbell-front-raise-peak.webp" alt="Dumbbell Front Raise Peak" loading="lazy" />
+                <div class="img-caption">images/flat/dumbbell-front-raise-peak.webp<br><span class="hash-tag">sha256:4d70c650923...</span></div>
+            </div>
+        </div>
+        
+            </div>
+            
+            <div class="details-panel">
+                <div class="section-title">INDIFIT CANONICAL DEFINITION</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">Equipment</span>
+                        <span class="meta-value badge-equipment">Dumbbells</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Primary Display Muscle</span>
+                        <span class="meta-value badge-primary-muscle">Shoulders</span>
+                    </div>
+                    <div class="meta-item full-width">
+                        <span class="meta-label">Secondary Muscles</span>
+                        <span class="meta-value">&mdash;</span>
+                    </div>
+                </div>
+                
+                <div class="variant-list-container">
+                    <span class="meta-label">Bound Canonical Variants (4 UUIDs)</span>
+                    <ul class="variant-list">
+                        <li><code>7acd7ccb-01ec-5c3a-80c8-7797efcd3302</code> &mdash; Dumbbell Front Raise</li><li><code>7834b7ff-ccfb-5d3b-b06a-0d36f1621841</code> &mdash; Dumbbell Front Raise (Standard)</li><li><code>e3003cca-416b-599f-a691-c2d976688108</code> &mdash; Pause Dumbbell Front Raise</li><li><code>d095fe23-fbe7-5944-a9e9-b244cc6c52ce</code> &mdash; Slow Eccentric Dumbbell Front Raise</li>
+                    </ul>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">REPDB PINNED METADATA</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB ID</span>
+                        <span class="meta-value"><code>dumbbell-front-raise</code></span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Name</span>
+                        <span class="meta-value">Dumbbell Front Raise</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Equipment</span>
+                        <span class="meta-value">dumbbell</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Primary Muscles</span>
+                        <span class="meta-value">anterior_deltoid</span>
+                    </div>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">MAPPING EVALUATION & CONFLICTS</div>
+                <div class="conflict-box">
+                    <strong>Candidate Rationale:</strong> Exact standing dumbbell anterior deltoid raise match.<br><br>
+                    <strong>Taxonomy / Movement Flags:</strong> None (RepDB: anterior_deltoid; IndiFit: Shoulders).
+                </div>
+
+                <div class="review-status-box">
+                    <div class="review-status-header">
+                        <span class="status-indicator pending">&#9679; REVIEW STATUS: PENDING HUMAN APPROVAL</span>
+                    </div>
+                    <div class="decision-placeholders">
+                        <label><input type="radio" name="decision_FAM-23" value="APPROVE" disabled> Approve</label>
+                        <label><input type="radio" name="decision_FAM-23" value="REJECT" disabled> Reject</label>
+                        <label><input type="radio" name="decision_FAM-23" value="NEEDS_REVIEW" checked disabled> Needs Review</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card" id="FAM-24">
+        <div class="card-header">
+            <div class="card-title-group">
+                <span class="family-tag">FAM-24</span>
+                <h2 class="card-title">Face Pulls</h2>
+            </div>
+            <span class="confidence-badge exact">EXACT</span>
+        </div>
+        
+        <div class="card-body">
+            <div class="visual-panel">
+                
+        <div class="pose-container">
+            <div class="pose-box">
+                <span class="pose-badge start-badge">START POSE</span>
+                <img src="repdb_mapping_review/face-pull-start.webp" alt="Face Pulls Start" loading="lazy" />
+                <div class="img-caption">images/flat/face-pull-start.webp<br><span class="hash-tag">sha256:49cdf614803...</span></div>
+            </div>
+            <div class="pose-box">
+                <span class="pose-badge peak-badge">PEAK POSE</span>
+                <img src="repdb_mapping_review/face-pull-peak.webp" alt="Face Pulls Peak" loading="lazy" />
+                <div class="img-caption">images/flat/face-pull-peak.webp<br><span class="hash-tag">sha256:8170fd3885e...</span></div>
+            </div>
+        </div>
+        
+            </div>
+            
+            <div class="details-panel">
+                <div class="section-title">INDIFIT CANONICAL DEFINITION</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">Equipment</span>
+                        <span class="meta-value badge-equipment">Cables</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Primary Display Muscle</span>
+                        <span class="meta-value badge-primary-muscle">Shoulders</span>
+                    </div>
+                    <div class="meta-item full-width">
+                        <span class="meta-label">Secondary Muscles</span>
+                        <span class="meta-value">Back</span>
+                    </div>
+                </div>
+                
+                <div class="variant-list-container">
+                    <span class="meta-label">Bound Canonical Variants (4 UUIDs)</span>
+                    <ul class="variant-list">
+                        <li><code>5e5620d2-4170-5f2a-bd3d-a1c0070480c9</code> &mdash; Face Pulls</li><li><code>b8dbb448-b55b-524a-94e8-b485abc563db</code> &mdash; Face Pulls (Standard)</li><li><code>f76c4d8d-6b3f-5ac7-8589-1dedba951634</code> &mdash; Pause Face Pulls</li><li><code>84e64439-e26f-5ad4-80ab-587f29ff1a74</code> &mdash; Slow Eccentric Face Pulls</li>
+                    </ul>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">REPDB PINNED METADATA</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB ID</span>
+                        <span class="meta-value"><code>face-pull</code></span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Name</span>
+                        <span class="meta-value">Cable Face Pull</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Equipment</span>
+                        <span class="meta-value">cable</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Primary Muscles</span>
+                        <span class="meta-value">posterior_deltoid, rhomboids</span>
+                    </div>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">MAPPING EVALUATION & CONFLICTS</div>
+                <div class="conflict-box">
+                    <strong>Candidate Rationale:</strong> Singular vs plural naming difference; rope cable face pull to eye level.<br><br>
+                    <strong>Taxonomy / Movement Flags:</strong> None (RepDB: posterior_deltoid; IndiFit: Shoulders).
+                </div>
+
+                <div class="review-status-box">
+                    <div class="review-status-header">
+                        <span class="status-indicator pending">&#9679; REVIEW STATUS: PENDING HUMAN APPROVAL</span>
+                    </div>
+                    <div class="decision-placeholders">
+                        <label><input type="radio" name="decision_FAM-24" value="APPROVE" disabled> Approve</label>
+                        <label><input type="radio" name="decision_FAM-24" value="REJECT" disabled> Reject</label>
+                        <label><input type="radio" name="decision_FAM-24" value="NEEDS_REVIEW" checked disabled> Needs Review</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card" id="FAM-25">
+        <div class="card-header">
+            <div class="card-title-group">
+                <span class="family-tag">FAM-25</span>
+                <h2 class="card-title">Standing Barbell Curl</h2>
+            </div>
+            <span class="confidence-badge strong">STRONG</span>
+        </div>
+        
+        <div class="card-body">
+            <div class="visual-panel">
+                
+        <div class="pose-container">
+            <div class="pose-box">
+                <span class="pose-badge start-badge">START POSE</span>
+                <img src="repdb_mapping_review/barbell-curl-start.webp" alt="Standing Barbell Curl Start" loading="lazy" />
+                <div class="img-caption">images/flat/barbell-curl-start.webp<br><span class="hash-tag">sha256:46996e2bf0a...</span></div>
+            </div>
+            <div class="pose-box">
+                <span class="pose-badge peak-badge">PEAK POSE</span>
+                <img src="repdb_mapping_review/barbell-curl-peak.webp" alt="Standing Barbell Curl Peak" loading="lazy" />
+                <div class="img-caption">images/flat/barbell-curl-peak.webp<br><span class="hash-tag">sha256:1eef7447817...</span></div>
+            </div>
+        </div>
+        
+            </div>
+            
+            <div class="details-panel">
+                <div class="section-title">INDIFIT CANONICAL DEFINITION</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">Equipment</span>
+                        <span class="meta-value badge-equipment">Barbell</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Primary Display Muscle</span>
+                        <span class="meta-value badge-primary-muscle">Biceps</span>
+                    </div>
+                    <div class="meta-item full-width">
+                        <span class="meta-label">Secondary Muscles</span>
+                        <span class="meta-value">&mdash;</span>
+                    </div>
+                </div>
+                
+                <div class="variant-list-container">
+                    <span class="meta-label">Bound Canonical Variants (4 UUIDs)</span>
+                    <ul class="variant-list">
+                        <li><code>6c8e559c-a8f8-59f0-a761-81d9c4cf4aa7</code> &mdash; Standing Barbell Curl</li><li><code>5a555f32-2b94-58b7-a627-708df73096f9</code> &mdash; Standing Barbell Curl (Standard)</li><li><code>c1b4df37-8a58-5053-8f41-f6aeb8990f8f</code> &mdash; Pause Standing Barbell Curl</li><li><code>37582935-75f9-5fe3-aa4e-8891f6fdc35a</code> &mdash; Slow Eccentric Standing Barbell Curl</li>
+                    </ul>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">REPDB PINNED METADATA</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB ID</span>
+                        <span class="meta-value"><code>barbell-curl</code></span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Name</span>
+                        <span class="meta-value">Barbell Curl</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Equipment</span>
+                        <span class="meta-value">barbell</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Primary Muscles</span>
+                        <span class="meta-value">biceps_brachii</span>
+                    </div>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">MAPPING EVALUATION & CONFLICTS</div>
+                <div class="conflict-box">
+                    <strong>Candidate Rationale:</strong> RepDB omits 'Standing' prefix; identical standing bilateral barbell curl.<br><br>
+                    <strong>Taxonomy / Movement Flags:</strong> None (RepDB: biceps_brachii; IndiFit: Biceps).
+                </div>
+
+                <div class="review-status-box">
+                    <div class="review-status-header">
+                        <span class="status-indicator pending">&#9679; REVIEW STATUS: PENDING HUMAN APPROVAL</span>
+                    </div>
+                    <div class="decision-placeholders">
+                        <label><input type="radio" name="decision_FAM-25" value="APPROVE" disabled> Approve</label>
+                        <label><input type="radio" name="decision_FAM-25" value="REJECT" disabled> Reject</label>
+                        <label><input type="radio" name="decision_FAM-25" value="NEEDS_REVIEW" checked disabled> Needs Review</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card" id="FAM-26">
+        <div class="card-header">
+            <div class="card-title-group">
+                <span class="family-tag">FAM-26</span>
+                <h2 class="card-title">Dumbbell Hammer Curl</h2>
+            </div>
+            <span class="confidence-badge strong">STRONG</span>
+        </div>
+        
+        <div class="card-body">
+            <div class="visual-panel">
+                
+        <div class="pose-container">
+            <div class="pose-box">
+                <span class="pose-badge start-badge">START POSE</span>
+                <img src="repdb_mapping_review/hammer-curl-start.webp" alt="Dumbbell Hammer Curl Start" loading="lazy" />
+                <div class="img-caption">images/flat/hammer-curl-start.webp<br><span class="hash-tag">sha256:15f3b7da1ec...</span></div>
+            </div>
+            <div class="pose-box">
+                <span class="pose-badge peak-badge">PEAK POSE</span>
+                <img src="repdb_mapping_review/hammer-curl-peak.webp" alt="Dumbbell Hammer Curl Peak" loading="lazy" />
+                <div class="img-caption">images/flat/hammer-curl-peak.webp<br><span class="hash-tag">sha256:90a5a56b480...</span></div>
+            </div>
+        </div>
+        
+            </div>
+            
+            <div class="details-panel">
+                <div class="section-title">INDIFIT CANONICAL DEFINITION</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">Equipment</span>
+                        <span class="meta-value badge-equipment">Dumbbells</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Primary Display Muscle</span>
+                        <span class="meta-value badge-primary-muscle">Biceps</span>
+                    </div>
+                    <div class="meta-item full-width">
+                        <span class="meta-label">Secondary Muscles</span>
+                        <span class="meta-value">&mdash;</span>
+                    </div>
+                </div>
+                
+                <div class="variant-list-container">
+                    <span class="meta-label">Bound Canonical Variants (4 UUIDs)</span>
+                    <ul class="variant-list">
+                        <li><code>93760f3b-6f76-5856-9e79-0022911863cc</code> &mdash; Dumbbell Hammer Curl</li><li><code>b9ba7916-de0c-5068-a4e1-39fa395b0a31</code> &mdash; Dumbbell Hammer Curl (Standard)</li><li><code>4cab0e37-bdbe-53e9-bf46-50309381ea17</code> &mdash; Pause Dumbbell Hammer Curl</li><li><code>64074bfd-2840-5974-ba9e-2e3e46748509</code> &mdash; Slow Eccentric Dumbbell Hammer Curl</li>
+                    </ul>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">REPDB PINNED METADATA</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB ID</span>
+                        <span class="meta-value"><code>hammer-curl</code></span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Name</span>
+                        <span class="meta-value">Dumbbell Hammer Curl</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Equipment</span>
+                        <span class="meta-value">dumbbell</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Primary Muscles</span>
+                        <span class="meta-value">biceps_brachii, brachialis</span>
+                    </div>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">MAPPING EVALUATION & CONFLICTS</div>
+                <div class="conflict-box">
+                    <strong>Candidate Rationale:</strong> RepDB names it hammer-curl; identical neutral-grip standing dumbbell curl.<br><br>
+                    <strong>Taxonomy / Movement Flags:</strong> None (RepDB: brachioradialis/biceps; IndiFit: Biceps).
+                </div>
+
+                <div class="review-status-box">
+                    <div class="review-status-header">
+                        <span class="status-indicator pending">&#9679; REVIEW STATUS: PENDING HUMAN APPROVAL</span>
+                    </div>
+                    <div class="decision-placeholders">
+                        <label><input type="radio" name="decision_FAM-26" value="APPROVE" disabled> Approve</label>
+                        <label><input type="radio" name="decision_FAM-26" value="REJECT" disabled> Reject</label>
+                        <label><input type="radio" name="decision_FAM-26" value="NEEDS_REVIEW" checked disabled> Needs Review</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card" id="FAM-27">
+        <div class="card-header">
+            <div class="card-title-group">
+                <span class="family-tag">FAM-27</span>
+                <h2 class="card-title">Incline Dumbbell Curl</h2>
+            </div>
+            <span class="confidence-badge exact">EXACT</span>
+        </div>
+        
+        <div class="card-body">
+            <div class="visual-panel">
+                
+        <div class="pose-container">
+            <div class="pose-box">
+                <span class="pose-badge start-badge">START POSE</span>
+                <img src="repdb_mapping_review/incline-db-curl-start.webp" alt="Incline Dumbbell Curl Start" loading="lazy" />
+                <div class="img-caption">images/flat/incline-db-curl-start.webp<br><span class="hash-tag">sha256:ef619d81c7b...</span></div>
+            </div>
+            <div class="pose-box">
+                <span class="pose-badge peak-badge">PEAK POSE</span>
+                <img src="repdb_mapping_review/incline-db-curl-peak.webp" alt="Incline Dumbbell Curl Peak" loading="lazy" />
+                <div class="img-caption">images/flat/incline-db-curl-peak.webp<br><span class="hash-tag">sha256:e941128f3a3...</span></div>
+            </div>
+        </div>
+        
+            </div>
+            
+            <div class="details-panel">
+                <div class="section-title">INDIFIT CANONICAL DEFINITION</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">Equipment</span>
+                        <span class="meta-value badge-equipment">Dumbbells</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Primary Display Muscle</span>
+                        <span class="meta-value badge-primary-muscle">Biceps</span>
+                    </div>
+                    <div class="meta-item full-width">
+                        <span class="meta-label">Secondary Muscles</span>
+                        <span class="meta-value">&mdash;</span>
+                    </div>
+                </div>
+                
+                <div class="variant-list-container">
+                    <span class="meta-label">Bound Canonical Variants (4 UUIDs)</span>
+                    <ul class="variant-list">
+                        <li><code>a5650e7a-0cb9-5acb-8d66-889d2289e647</code> &mdash; Incline Dumbbell Curl</li><li><code>9b638815-f580-511c-9f06-3d3fa0e12d0a</code> &mdash; Incline Dumbbell Curl (Standard)</li><li><code>aecb66d9-5817-5093-83c6-1e56a236854e</code> &mdash; Pause Incline Dumbbell Curl</li><li><code>58200cd2-1ea4-509a-8ef9-77467602f9af</code> &mdash; Slow Eccentric Incline Dumbbell Curl</li>
+                    </ul>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">REPDB PINNED METADATA</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB ID</span>
+                        <span class="meta-value"><code>incline-db-curl</code></span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Name</span>
+                        <span class="meta-value">Incline Dumbbell Curl</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Equipment</span>
+                        <span class="meta-value">dumbbell</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Primary Muscles</span>
+                        <span class="meta-value">biceps_brachii</span>
+                    </div>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">MAPPING EVALUATION & CONFLICTS</div>
+                <div class="conflict-box">
+                    <strong>Candidate Rationale:</strong> Exact incline bench dumbbell curl match.<br><br>
+                    <strong>Taxonomy / Movement Flags:</strong> None (RepDB: biceps_brachii; IndiFit: Biceps).
+                </div>
+
+                <div class="review-status-box">
+                    <div class="review-status-header">
+                        <span class="status-indicator pending">&#9679; REVIEW STATUS: PENDING HUMAN APPROVAL</span>
+                    </div>
+                    <div class="decision-placeholders">
+                        <label><input type="radio" name="decision_FAM-27" value="APPROVE" disabled> Approve</label>
+                        <label><input type="radio" name="decision_FAM-27" value="REJECT" disabled> Reject</label>
+                        <label><input type="radio" name="decision_FAM-27" value="NEEDS_REVIEW" checked disabled> Needs Review</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card" id="FAM-28">
+        <div class="card-header">
+            <div class="card-title-group">
+                <span class="family-tag">FAM-28</span>
+                <h2 class="card-title">Preacher Curl</h2>
+            </div>
+            <span class="confidence-badge exact">EXACT</span>
+        </div>
+        
+        <div class="card-body">
+            <div class="visual-panel">
+                
+        <div class="pose-container">
+            <div class="pose-box">
+                <span class="pose-badge start-badge">START POSE</span>
+                <img src="repdb_mapping_review/preacher-curl-start.webp" alt="Preacher Curl Start" loading="lazy" />
+                <div class="img-caption">images/flat/preacher-curl-start.webp<br><span class="hash-tag">sha256:07bd210521c...</span></div>
+            </div>
+            <div class="pose-box">
+                <span class="pose-badge peak-badge">PEAK POSE</span>
+                <img src="repdb_mapping_review/preacher-curl-peak.webp" alt="Preacher Curl Peak" loading="lazy" />
+                <div class="img-caption">images/flat/preacher-curl-peak.webp<br><span class="hash-tag">sha256:75c5d995910...</span></div>
+            </div>
+        </div>
+        
+            </div>
+            
+            <div class="details-panel">
+                <div class="section-title">INDIFIT CANONICAL DEFINITION</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">Equipment</span>
+                        <span class="meta-value badge-equipment">Barbell</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Primary Display Muscle</span>
+                        <span class="meta-value badge-primary-muscle">Biceps</span>
+                    </div>
+                    <div class="meta-item full-width">
+                        <span class="meta-label">Secondary Muscles</span>
+                        <span class="meta-value">&mdash;</span>
+                    </div>
+                </div>
+                
+                <div class="variant-list-container">
+                    <span class="meta-label">Bound Canonical Variants (4 UUIDs)</span>
+                    <ul class="variant-list">
+                        <li><code>cb6bc77b-5a4b-5b00-9e8a-4d0c790f37a7</code> &mdash; Preacher Curl</li><li><code>b6e6e3a7-6896-5362-ba5c-68b66c70263b</code> &mdash; Preacher Curl (Standard)</li><li><code>5433b78a-3583-56f4-a264-cb1c6495af7b</code> &mdash; Pause Preacher Curl</li><li><code>4e154d93-302a-5ccb-97a9-fa684cbffbf2</code> &mdash; Slow Eccentric Preacher Curl</li>
+                    </ul>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">REPDB PINNED METADATA</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB ID</span>
+                        <span class="meta-value"><code>preacher-curl</code></span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Name</span>
+                        <span class="meta-value">Preacher Curl</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Equipment</span>
+                        <span class="meta-value">ez_bar</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Primary Muscles</span>
+                        <span class="meta-value">biceps_brachii</span>
+                    </div>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">MAPPING EVALUATION & CONFLICTS</div>
+                <div class="conflict-box">
+                    <strong>Candidate Rationale:</strong> Exact preacher bench EZ-bar curl match.<br><br>
+                    <strong>Taxonomy / Movement Flags:</strong> None (RepDB: biceps_brachii; IndiFit: Biceps).
+                </div>
+
+                <div class="review-status-box">
+                    <div class="review-status-header">
+                        <span class="status-indicator pending">&#9679; REVIEW STATUS: PENDING HUMAN APPROVAL</span>
+                    </div>
+                    <div class="decision-placeholders">
+                        <label><input type="radio" name="decision_FAM-28" value="APPROVE" disabled> Approve</label>
+                        <label><input type="radio" name="decision_FAM-28" value="REJECT" disabled> Reject</label>
+                        <label><input type="radio" name="decision_FAM-28" value="NEEDS_REVIEW" checked disabled> Needs Review</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card" id="FAM-29">
+        <div class="card-header">
+            <div class="card-title-group">
+                <span class="family-tag">FAM-29</span>
+                <h2 class="card-title">Tricep Pushdown</h2>
+            </div>
+            <span class="confidence-badge exact">EXACT</span>
+        </div>
+        
+        <div class="card-body">
+            <div class="visual-panel">
+                
+        <div class="pose-container">
+            <div class="pose-box">
+                <span class="pose-badge start-badge">START POSE</span>
+                <img src="repdb_mapping_review/tricep-pushdown-start.webp" alt="Tricep Pushdown Start" loading="lazy" />
+                <div class="img-caption">images/flat/tricep-pushdown-start.webp<br><span class="hash-tag">sha256:6a95910acc7...</span></div>
+            </div>
+            <div class="pose-box">
+                <span class="pose-badge peak-badge">PEAK POSE</span>
+                <img src="repdb_mapping_review/tricep-pushdown-peak.webp" alt="Tricep Pushdown Peak" loading="lazy" />
+                <div class="img-caption">images/flat/tricep-pushdown-peak.webp<br><span class="hash-tag">sha256:81a2548ce43...</span></div>
+            </div>
+        </div>
+        
+            </div>
+            
+            <div class="details-panel">
+                <div class="section-title">INDIFIT CANONICAL DEFINITION</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">Equipment</span>
+                        <span class="meta-value badge-equipment">Cables</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Primary Display Muscle</span>
+                        <span class="meta-value badge-primary-muscle">Triceps</span>
+                    </div>
+                    <div class="meta-item full-width">
+                        <span class="meta-label">Secondary Muscles</span>
+                        <span class="meta-value">&mdash;</span>
+                    </div>
+                </div>
+                
+                <div class="variant-list-container">
+                    <span class="meta-label">Bound Canonical Variants (4 UUIDs)</span>
+                    <ul class="variant-list">
+                        <li><code>9cb62691-e65f-56f4-9a93-c82a4834a448</code> &mdash; Tricep Pushdown</li><li><code>680d6269-6d0f-5d37-bc56-c851de59ef76</code> &mdash; Tricep Pushdown (Standard)</li><li><code>8c01c75a-b425-53ac-9892-7b5d3f2d664c</code> &mdash; Pause Tricep Pushdown</li><li><code>4119c3bb-cd5a-5027-91e4-5d3edd747a30</code> &mdash; Slow Eccentric Tricep Pushdown</li>
+                    </ul>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">REPDB PINNED METADATA</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB ID</span>
+                        <span class="meta-value"><code>tricep-pushdown</code></span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Name</span>
+                        <span class="meta-value">Cable Tricep Pushdown</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Equipment</span>
+                        <span class="meta-value">cable</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Primary Muscles</span>
+                        <span class="meta-value">triceps_brachii</span>
+                    </div>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">MAPPING EVALUATION & CONFLICTS</div>
+                <div class="conflict-box">
+                    <strong>Candidate Rationale:</strong> Exact cable triceps pushdown match.<br><br>
+                    <strong>Taxonomy / Movement Flags:</strong> None (RepDB: triceps_brachii; IndiFit: Triceps).
+                </div>
+
+                <div class="review-status-box">
+                    <div class="review-status-header">
+                        <span class="status-indicator pending">&#9679; REVIEW STATUS: PENDING HUMAN APPROVAL</span>
+                    </div>
+                    <div class="decision-placeholders">
+                        <label><input type="radio" name="decision_FAM-29" value="APPROVE" disabled> Approve</label>
+                        <label><input type="radio" name="decision_FAM-29" value="REJECT" disabled> Reject</label>
+                        <label><input type="radio" name="decision_FAM-29" value="NEEDS_REVIEW" checked disabled> Needs Review</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card" id="FAM-30">
+        <div class="card-header">
+            <div class="card-title-group">
+                <span class="family-tag">FAM-30</span>
+                <h2 class="card-title">Skull Crushers (EZ Bar)</h2>
+            </div>
+            <span class="confidence-badge strong">STRONG</span>
+        </div>
+        
+        <div class="card-body">
+            <div class="visual-panel">
+                
+        <div class="pose-container">
+            <div class="pose-box">
+                <span class="pose-badge start-badge">START POSE</span>
+                <img src="repdb_mapping_review/skull-crusher-start.webp" alt="Skull Crushers (EZ Bar) Start" loading="lazy" />
+                <div class="img-caption">images/flat/skull-crusher-start.webp<br><span class="hash-tag">sha256:94e636b16e8...</span></div>
+            </div>
+            <div class="pose-box">
+                <span class="pose-badge peak-badge">PEAK POSE</span>
+                <img src="repdb_mapping_review/skull-crusher-peak.webp" alt="Skull Crushers (EZ Bar) Peak" loading="lazy" />
+                <div class="img-caption">images/flat/skull-crusher-peak.webp<br><span class="hash-tag">sha256:bf3bf82823c...</span></div>
+            </div>
+        </div>
+        
+            </div>
+            
+            <div class="details-panel">
+                <div class="section-title">INDIFIT CANONICAL DEFINITION</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">Equipment</span>
+                        <span class="meta-value badge-equipment">Barbell</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Primary Display Muscle</span>
+                        <span class="meta-value badge-primary-muscle">Triceps</span>
+                    </div>
+                    <div class="meta-item full-width">
+                        <span class="meta-label">Secondary Muscles</span>
+                        <span class="meta-value">&mdash;</span>
+                    </div>
+                </div>
+                
+                <div class="variant-list-container">
+                    <span class="meta-label">Bound Canonical Variants (4 UUIDs)</span>
+                    <ul class="variant-list">
+                        <li><code>b8f0b194-2d41-5514-bc2c-a2bdabbe056e</code> &mdash; Skull Crushers (EZ Bar)</li><li><code>a570013f-3743-5c80-8f40-5fed726b4925</code> &mdash; Skull Crushers (EZ Bar) (Standard)</li><li><code>1230840b-9006-525b-a392-bfe9faf7cfe5</code> &mdash; Pause Skull Crushers (EZ Bar)</li><li><code>1fc82856-abad-5a9f-ae6c-73069ff0c36b</code> &mdash; Slow Eccentric Skull Crushers (EZ Bar)</li>
+                    </ul>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">REPDB PINNED METADATA</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB ID</span>
+                        <span class="meta-value"><code>skull-crusher</code></span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Name</span>
+                        <span class="meta-value">Skull Crusher</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Equipment</span>
+                        <span class="meta-value">barbell</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Primary Muscles</span>
+                        <span class="meta-value">triceps_brachii</span>
+                    </div>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">MAPPING EVALUATION & CONFLICTS</div>
+                <div class="conflict-box">
+                    <strong>Candidate Rationale:</strong> RepDB names it skull-crusher; visual is lying EZ-bar triceps extension to forehead.<br><br>
+                    <strong>Taxonomy / Movement Flags:</strong> None (RepDB: triceps_brachii; IndiFit: Triceps).
+                </div>
+
+                <div class="review-status-box">
+                    <div class="review-status-header">
+                        <span class="status-indicator pending">&#9679; REVIEW STATUS: PENDING HUMAN APPROVAL</span>
+                    </div>
+                    <div class="decision-placeholders">
+                        <label><input type="radio" name="decision_FAM-30" value="APPROVE" disabled> Approve</label>
+                        <label><input type="radio" name="decision_FAM-30" value="REJECT" disabled> Reject</label>
+                        <label><input type="radio" name="decision_FAM-30" value="NEEDS_REVIEW" checked disabled> Needs Review</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card" id="FAM-31">
+        <div class="card-header">
+            <div class="card-title-group">
+                <span class="family-tag">FAM-31</span>
+                <h2 class="card-title">Overhead Dumbbell Tricep Extension</h2>
+            </div>
+            <span class="confidence-badge strong">STRONG</span>
+        </div>
+        
+        <div class="card-body">
+            <div class="visual-panel">
+                
+        <div class="pose-container">
+            <div class="pose-box">
+                <span class="pose-badge start-badge">START POSE</span>
+                <img src="repdb_mapping_review/overhead-tricep-extension-start.webp" alt="Overhead Dumbbell Tricep Extension Start" loading="lazy" />
+                <div class="img-caption">images/flat/overhead-tricep-extension-start.webp<br><span class="hash-tag">sha256:b3ed4b231cc...</span></div>
+            </div>
+            <div class="pose-box">
+                <span class="pose-badge peak-badge">PEAK POSE</span>
+                <img src="repdb_mapping_review/overhead-tricep-extension-peak.webp" alt="Overhead Dumbbell Tricep Extension Peak" loading="lazy" />
+                <div class="img-caption">images/flat/overhead-tricep-extension-peak.webp<br><span class="hash-tag">sha256:cd8dba7e3e8...</span></div>
+            </div>
+        </div>
+        
+            </div>
+            
+            <div class="details-panel">
+                <div class="section-title">INDIFIT CANONICAL DEFINITION</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">Equipment</span>
+                        <span class="meta-value badge-equipment">Dumbbells</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Primary Display Muscle</span>
+                        <span class="meta-value badge-primary-muscle">Triceps</span>
+                    </div>
+                    <div class="meta-item full-width">
+                        <span class="meta-label">Secondary Muscles</span>
+                        <span class="meta-value">&mdash;</span>
+                    </div>
+                </div>
+                
+                <div class="variant-list-container">
+                    <span class="meta-label">Bound Canonical Variants (4 UUIDs)</span>
+                    <ul class="variant-list">
+                        <li><code>4f71798e-7893-51a2-b542-090c03df5cb6</code> &mdash; Overhead Dumbbell Tricep Extension</li><li><code>81d3dde6-4f93-586f-8f76-c96256e82135</code> &mdash; Overhead Dumbbell Tricep Extension (Standard)</li><li><code>386ded7b-1307-5ebb-b76d-f5dde4cb1ec3</code> &mdash; Pause Overhead Dumbbell Tricep Extension</li><li><code>8dd8f09b-5e0c-56b7-bb45-55d58947db72</code> &mdash; Slow Eccentric Overhead Dumbbell Tricep Extension</li>
+                    </ul>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">REPDB PINNED METADATA</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB ID</span>
+                        <span class="meta-value"><code>overhead-tricep-extension</code></span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Name</span>
+                        <span class="meta-value">Overhead Tricep Extension</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Equipment</span>
+                        <span class="meta-value">dumbbell</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Primary Muscles</span>
+                        <span class="meta-value">triceps_brachii</span>
+                    </div>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">MAPPING EVALUATION & CONFLICTS</div>
+                <div class="conflict-box">
+                    <strong>Candidate Rationale:</strong> Exact overhead dumbbell extension movement; word order difference.<br><br>
+                    <strong>Taxonomy / Movement Flags:</strong> None (RepDB: triceps_brachii; IndiFit: Triceps).
+                </div>
+
+                <div class="review-status-box">
+                    <div class="review-status-header">
+                        <span class="status-indicator pending">&#9679; REVIEW STATUS: PENDING HUMAN APPROVAL</span>
+                    </div>
+                    <div class="decision-placeholders">
+                        <label><input type="radio" name="decision_FAM-31" value="APPROVE" disabled> Approve</label>
+                        <label><input type="radio" name="decision_FAM-31" value="REJECT" disabled> Reject</label>
+                        <label><input type="radio" name="decision_FAM-31" value="NEEDS_REVIEW" checked disabled> Needs Review</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card" id="FAM-32">
+        <div class="card-header">
+            <div class="card-title-group">
+                <span class="family-tag">FAM-32</span>
+                <h2 class="card-title">Ab Wheel Rollout</h2>
+            </div>
+            <span class="confidence-badge exact">EXACT</span>
+        </div>
+        
+        <div class="card-body">
+            <div class="visual-panel">
+                
+        <div class="pose-container">
+            <div class="pose-box">
+                <span class="pose-badge start-badge">START POSE</span>
+                <img src="repdb_mapping_review/ab-wheel-rollout-start.webp" alt="Ab Wheel Rollout Start" loading="lazy" />
+                <div class="img-caption">images/flat/ab-wheel-rollout-start.webp<br><span class="hash-tag">sha256:cc6976578c8...</span></div>
+            </div>
+            <div class="pose-box">
+                <span class="pose-badge peak-badge">PEAK POSE</span>
+                <img src="repdb_mapping_review/ab-wheel-rollout-peak.webp" alt="Ab Wheel Rollout Peak" loading="lazy" />
+                <div class="img-caption">images/flat/ab-wheel-rollout-peak.webp<br><span class="hash-tag">sha256:bfbdc823735...</span></div>
+            </div>
+        </div>
+        
+            </div>
+            
+            <div class="details-panel">
+                <div class="section-title">INDIFIT CANONICAL DEFINITION</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">Equipment</span>
+                        <span class="meta-value badge-equipment">Bodyweight</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Primary Display Muscle</span>
+                        <span class="meta-value badge-primary-muscle">Core</span>
+                    </div>
+                    <div class="meta-item full-width">
+                        <span class="meta-label">Secondary Muscles</span>
+                        <span class="meta-value">&mdash;</span>
+                    </div>
+                </div>
+                
+                <div class="variant-list-container">
+                    <span class="meta-label">Bound Canonical Variants (4 UUIDs)</span>
+                    <ul class="variant-list">
+                        <li><code>bdd4c5a6-ea2b-55e0-a6e0-206ea683b886</code> &mdash; Ab Wheel Rollout</li><li><code>3163de96-3fc3-533d-ab06-70ac27ae214c</code> &mdash; Ab Wheel Rollout (Standard)</li><li><code>73601fc7-0d6a-5b78-84d4-499399470903</code> &mdash; Pause Ab Wheel Rollout</li><li><code>695681c5-e86f-5bcc-930a-85d2ef73f583</code> &mdash; Slow Eccentric Ab Wheel Rollout</li>
+                    </ul>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">REPDB PINNED METADATA</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB ID</span>
+                        <span class="meta-value"><code>ab-wheel-rollout</code></span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Name</span>
+                        <span class="meta-value">Ab Wheel Rollout</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Equipment</span>
+                        <span class="meta-value">ab_wheel</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Primary Muscles</span>
+                        <span class="meta-value">rectus_abdominis, transverse_abdominis</span>
+                    </div>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">MAPPING EVALUATION & CONFLICTS</div>
+                <div class="conflict-box">
+                    <strong>Candidate Rationale:</strong> Exact kneeling anti-extension core roll match.<br><br>
+                    <strong>Taxonomy / Movement Flags:</strong> None (RepDB: rectus_abdominis; IndiFit: Core).
+                </div>
+
+                <div class="review-status-box">
+                    <div class="review-status-header">
+                        <span class="status-indicator pending">&#9679; REVIEW STATUS: PENDING HUMAN APPROVAL</span>
+                    </div>
+                    <div class="decision-placeholders">
+                        <label><input type="radio" name="decision_FAM-32" value="APPROVE" disabled> Approve</label>
+                        <label><input type="radio" name="decision_FAM-32" value="REJECT" disabled> Reject</label>
+                        <label><input type="radio" name="decision_FAM-32" value="NEEDS_REVIEW" checked disabled> Needs Review</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card" id="FAM-33">
+        <div class="card-header">
+            <div class="card-title-group">
+                <span class="family-tag">FAM-33</span>
+                <h2 class="card-title">Cable Crunch</h2>
+            </div>
+            <span class="confidence-badge exact">EXACT</span>
+        </div>
+        
+        <div class="card-body">
+            <div class="visual-panel">
+                
+        <div class="pose-container">
+            <div class="pose-box">
+                <span class="pose-badge start-badge">START POSE</span>
+                <img src="repdb_mapping_review/cable-crunch-start.webp" alt="Cable Crunch Start" loading="lazy" />
+                <div class="img-caption">images/flat/cable-crunch-start.webp<br><span class="hash-tag">sha256:af994f7379d...</span></div>
+            </div>
+            <div class="pose-box">
+                <span class="pose-badge peak-badge">PEAK POSE</span>
+                <img src="repdb_mapping_review/cable-crunch-peak.webp" alt="Cable Crunch Peak" loading="lazy" />
+                <div class="img-caption">images/flat/cable-crunch-peak.webp<br><span class="hash-tag">sha256:36b1aed1472...</span></div>
+            </div>
+        </div>
+        
+            </div>
+            
+            <div class="details-panel">
+                <div class="section-title">INDIFIT CANONICAL DEFINITION</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">Equipment</span>
+                        <span class="meta-value badge-equipment">Cables</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Primary Display Muscle</span>
+                        <span class="meta-value badge-primary-muscle">Core</span>
+                    </div>
+                    <div class="meta-item full-width">
+                        <span class="meta-label">Secondary Muscles</span>
+                        <span class="meta-value">&mdash;</span>
+                    </div>
+                </div>
+                
+                <div class="variant-list-container">
+                    <span class="meta-label">Bound Canonical Variants (4 UUIDs)</span>
+                    <ul class="variant-list">
+                        <li><code>0bce1172-7f1c-5d38-9581-0bc2fc6807bb</code> &mdash; Cable Crunch</li><li><code>8ea9c7c8-75d9-53d1-a1d6-fefe851f1688</code> &mdash; Cable Crunch (Standard)</li><li><code>29c7bd7d-342a-54ba-ad69-ebef5f15a7e2</code> &mdash; Pause Cable Crunch</li><li><code>85c25be6-ccbd-5b87-9e4a-1edac4359256</code> &mdash; Slow Eccentric Cable Crunch</li>
+                    </ul>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">REPDB PINNED METADATA</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB ID</span>
+                        <span class="meta-value"><code>cable-crunch</code></span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Name</span>
+                        <span class="meta-value">Cable Crunch</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Equipment</span>
+                        <span class="meta-value">cable</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Primary Muscles</span>
+                        <span class="meta-value">rectus_abdominis</span>
+                    </div>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">MAPPING EVALUATION & CONFLICTS</div>
+                <div class="conflict-box">
+                    <strong>Candidate Rationale:</strong> Exact kneeling cable spine flexion crunch match.<br><br>
+                    <strong>Taxonomy / Movement Flags:</strong> None (RepDB: rectus_abdominis; IndiFit: Core).
+                </div>
+
+                <div class="review-status-box">
+                    <div class="review-status-header">
+                        <span class="status-indicator pending">&#9679; REVIEW STATUS: PENDING HUMAN APPROVAL</span>
+                    </div>
+                    <div class="decision-placeholders">
+                        <label><input type="radio" name="decision_FAM-33" value="APPROVE" disabled> Approve</label>
+                        <label><input type="radio" name="decision_FAM-33" value="REJECT" disabled> Reject</label>
+                        <label><input type="radio" name="decision_FAM-33" value="NEEDS_REVIEW" checked disabled> Needs Review</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card" id="FAM-34">
+        <div class="card-header">
+            <div class="card-title-group">
+                <span class="family-tag">FAM-34</span>
+                <h2 class="card-title">Plank</h2>
+            </div>
+            <span class="confidence-badge exact">EXACT</span>
+        </div>
+        
+        <div class="card-body">
+            <div class="visual-panel">
+                
+        <div class="pose-container single-pose">
+            <div class="pose-box">
+                <span class="pose-badge main-badge">MAIN POSE (STATIC)</span>
+                <img src="repdb_mapping_review/plank-main.webp" alt="Plank Main" loading="lazy" />
+                <div class="img-caption">images/flat/plank-main.webp<br><span class="hash-tag">sha256:cfa10a00bab...</span></div>
+            </div>
+        </div>
+        
+            </div>
+            
+            <div class="details-panel">
+                <div class="section-title">INDIFIT CANONICAL DEFINITION</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">Equipment</span>
+                        <span class="meta-value badge-equipment">Bodyweight</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Primary Display Muscle</span>
+                        <span class="meta-value badge-primary-muscle">Core</span>
+                    </div>
+                    <div class="meta-item full-width">
+                        <span class="meta-label">Secondary Muscles</span>
+                        <span class="meta-value">&mdash;</span>
+                    </div>
+                </div>
+                
+                <div class="variant-list-container">
+                    <span class="meta-label">Bound Canonical Variants (4 UUIDs)</span>
+                    <ul class="variant-list">
+                        <li><code>3525a526-c7a6-5d33-9758-4428da2760b6</code> &mdash; Plank</li><li><code>6edde0de-7492-5b33-ab28-5f27747c0bbc</code> &mdash; Plank (Standard)</li><li><code>c166fed2-3d32-5641-94e5-8ea16ec447eb</code> &mdash; Pause Plank</li><li><code>ab2ee7bc-cc73-55a9-b542-31821cac14ca</code> &mdash; Slow Eccentric Plank</li>
+                    </ul>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">REPDB PINNED METADATA</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB ID</span>
+                        <span class="meta-value"><code>plank</code></span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Name</span>
+                        <span class="meta-value">Plank</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Equipment</span>
+                        <span class="meta-value">&mdash;</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Primary Muscles</span>
+                        <span class="meta-value">rectus_abdominis, transverse_abdominis</span>
+                    </div>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">MAPPING EVALUATION & CONFLICTS</div>
+                <div class="conflict-box">
+                    <strong>Candidate Rationale:</strong> Exact static prone forearm plank match.<br><br>
+                    <strong>Taxonomy / Movement Flags:</strong> Static movement: RepDB provides single 'main' image rather than start/peak pose pair.
+                </div>
+
+                <div class="review-status-box">
+                    <div class="review-status-header">
+                        <span class="status-indicator pending">&#9679; REVIEW STATUS: PENDING HUMAN APPROVAL</span>
+                    </div>
+                    <div class="decision-placeholders">
+                        <label><input type="radio" name="decision_FAM-34" value="APPROVE" disabled> Approve</label>
+                        <label><input type="radio" name="decision_FAM-34" value="REJECT" disabled> Reject</label>
+                        <label><input type="radio" name="decision_FAM-34" value="NEEDS_REVIEW" checked disabled> Needs Review</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card" id="FAM-35">
+        <div class="card-header">
+            <div class="card-title-group">
+                <span class="family-tag">FAM-35</span>
+                <h2 class="card-title">Hanging Leg Raise</h2>
+            </div>
+            <span class="confidence-badge exact">EXACT</span>
+        </div>
+        
+        <div class="card-body">
+            <div class="visual-panel">
+                
+        <div class="pose-container">
+            <div class="pose-box">
+                <span class="pose-badge start-badge">START POSE</span>
+                <img src="repdb_mapping_review/hanging-leg-raise-start.webp" alt="Hanging Leg Raise Start" loading="lazy" />
+                <div class="img-caption">images/flat/hanging-leg-raise-start.webp<br><span class="hash-tag">sha256:b1f318a2e21...</span></div>
+            </div>
+            <div class="pose-box">
+                <span class="pose-badge peak-badge">PEAK POSE</span>
+                <img src="repdb_mapping_review/hanging-leg-raise-peak.webp" alt="Hanging Leg Raise Peak" loading="lazy" />
+                <div class="img-caption">images/flat/hanging-leg-raise-peak.webp<br><span class="hash-tag">sha256:b1b1a0cdb5c...</span></div>
+            </div>
+        </div>
+        
+            </div>
+            
+            <div class="details-panel">
+                <div class="section-title">INDIFIT CANONICAL DEFINITION</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">Equipment</span>
+                        <span class="meta-value badge-equipment">Bodyweight</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Primary Display Muscle</span>
+                        <span class="meta-value badge-primary-muscle">Core</span>
+                    </div>
+                    <div class="meta-item full-width">
+                        <span class="meta-label">Secondary Muscles</span>
+                        <span class="meta-value">&mdash;</span>
+                    </div>
+                </div>
+                
+                <div class="variant-list-container">
+                    <span class="meta-label">Bound Canonical Variants (4 UUIDs)</span>
+                    <ul class="variant-list">
+                        <li><code>803fcabc-ad1c-52ac-b956-9e85a593c6f3</code> &mdash; Hanging Leg Raise</li><li><code>4d83d57c-2da7-50e0-a69f-f8dabc69135d</code> &mdash; Hanging Leg Raise (Standard)</li><li><code>704c2f48-894c-5197-9232-236d83fd8118</code> &mdash; Pause Hanging Leg Raise</li><li><code>da4d6b6f-ec07-5d98-b994-cb0bea76a66f</code> &mdash; Slow Eccentric Hanging Leg Raise</li>
+                    </ul>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">REPDB PINNED METADATA</div>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB ID</span>
+                        <span class="meta-value"><code>hanging-leg-raise</code></span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Name</span>
+                        <span class="meta-value">Hanging Leg Raise</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Equipment</span>
+                        <span class="meta-value">pull_up_bar</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">RepDB Primary Muscles</span>
+                        <span class="meta-value">hip_flexors, rectus_abdominis</span>
+                    </div>
+                </div>
+
+                <div class="section-title" style="margin-top: 16px;">MAPPING EVALUATION & CONFLICTS</div>
+                <div class="conflict-box">
+                    <strong>Candidate Rationale:</strong> Exact bar-hanging knee/leg raise match.<br><br>
+                    <strong>Taxonomy / Movement Flags:</strong> None (RepDB: rectus_abdominis/iliopsoas; IndiFit: Core).
+                </div>
+
+                <div class="review-status-box">
+                    <div class="review-status-header">
+                        <span class="status-indicator pending">&#9679; REVIEW STATUS: PENDING HUMAN APPROVAL</span>
+                    </div>
+                    <div class="decision-placeholders">
+                        <label><input type="radio" name="decision_FAM-35" value="APPROVE" disabled> Approve</label>
+                        <label><input type="radio" name="decision_FAM-35" value="REJECT" disabled> Reject</label>
+                        <label><input type="radio" name="decision_FAM-35" value="NEEDS_REVIEW" checked disabled> Needs Review</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    </div>
+</body>
+</html>

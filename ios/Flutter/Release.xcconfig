@@ -1,3 +1,7 @@
 #include? "Pods/Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"
 #include? "../Pods/Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"
 #include "Generated.xcconfig"
+
+// Local device-testing credential only. Replace this with a deployment secret
+// supplied through --dart-define for any real release or archive.
+DART_DEFINES = $(inherited),SU5ESUZJVF9BUElfS0VZPWIwMV9yZWxlYXNlX2dhdGVfdGVzdF9rZXk=

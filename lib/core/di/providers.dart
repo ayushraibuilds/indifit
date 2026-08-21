@@ -31,6 +31,7 @@ import '../../data/repositories/nutrition_protein_distribution_repository.dart';
 import '../../data/repositories/nutrition_read_model_repository.dart';
 import '../../data/repositories/nutrition_recipe_log_coordinator.dart';
 import '../../data/repositories/nutrition_recipe_repository.dart';
+import '../../data/repositories/nutrition_target_authority.dart';
 import '../../data/repositories/nutrition_thali_repository.dart';
 import '../../data/repositories/nutrition_transformation_repository.dart';
 import '../../data/repositories/program_activation_coordinator.dart';
@@ -306,6 +307,37 @@ final nutritionGoalRepositoryProvider = Provider<NutritionGoalRepository>(
     dates: ref.watch(localScheduleDateServiceProvider),
   ),
 );
+
+/// B04 goal-version writes are the durable invalidation source for every
+/// date-scoped nutrition target consumer. This stream carries no target data;
+/// it only makes Riverpod recompute the shared authority after a goal change.
+final nutritionGoalVersionChangesProvider = StreamProvider.autoDispose<Object>((
+  ref,
+) {
+  final database = ref.watch(databaseProvider);
+  return database
+      .select(database.nutritionGoalVersions)
+      .watch()
+      .map<Object>((_) => Object());
+});
+
+/// One consumer-facing target resolver shared by Today, Food, and Progress.
+/// The resolver is stateless; each Riverpod read boundary watches the durable
+/// goal-version stream so its date reads are recomputed after a change.
+final nutritionTargetAuthorityProvider = Provider<NutritionTargetAuthority>((
+  ref,
+) {
+  return NutritionTargetAuthority(
+    goals: ref.watch(nutritionGoalRepositoryProvider),
+    dates: ref.watch(localScheduleDateServiceProvider),
+  );
+});
+
+final nutritionTargetsForDateProvider = FutureProvider.autoDispose
+    .family<NutritionTargetsForDate, NutritionTargetDateQuery>((ref, query) {
+      ref.watch(nutritionGoalVersionChangesProvider);
+      return ref.watch(nutritionTargetAuthorityProvider).resolve(query);
+    });
 
 final coachingPreferenceRepositoryProvider =
     Provider<CoachingPreferenceRepository>(

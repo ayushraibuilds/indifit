@@ -9,8 +9,8 @@ import '../../data/models/b02_progress_read_models.dart';
 import '../../data/models/b04_goal_models.dart';
 import '../../data/repositories/b02_progress_read_repository.dart';
 import '../../data/repositories/calendar_read_repository.dart';
-import '../../data/repositories/nutrition_goal_repository.dart';
 import '../../data/repositories/nutrition_read_model_repository.dart';
+import '../../data/repositories/nutrition_target_authority.dart';
 
 /// A typed result from an existing B01–B03 read authority. A failed source
 /// remains distinguishable from an available source with no records, so the
@@ -44,6 +44,12 @@ class TodaySurfaceSnapshot {
   /// A nullable value is a known absence of an accepted target. An unavailable
   /// read remains distinct, so Today never invents a target just to fill the
   /// calorie ring.
+  final TodayDomainRead<NutritionTargetsForDate?>? targets;
+
+  /// Compatibility projection for older test/read callers. Production Today
+  /// reads [targets] from the shared date-scoped authority; this field is
+  /// retained while existing presentation fixtures migrate to that model.
+  @Deprecated('Use targets from NutritionTargetAuthority.')
   final TodayDomainRead<NutritionGoalVersionReadModel?> goal;
 
   const TodaySurfaceSnapshot({
@@ -53,6 +59,7 @@ class TodaySurfaceSnapshot {
     required this.calendar,
     required this.progress,
     required this.nutrition,
+    this.targets,
     this.goal = const TodayDomainRead<NutritionGoalVersionReadModel?>.available(
       null,
     ),
@@ -65,19 +72,19 @@ class TodaySurfaceReadRepository {
   final CalendarReadRepository _calendar;
   final B02ProgressReadRepository _progress;
   final Future<NutritionReadModelRepository> Function() _nutrition;
-  final NutritionGoalRepository _goals;
+  final NutritionTargetAuthority _targets;
   final LocalScheduleDateService _dates;
 
   TodaySurfaceReadRepository({
     required CalendarReadRepository calendar,
     required B02ProgressReadRepository progress,
     required Future<NutritionReadModelRepository> Function() nutrition,
-    required NutritionGoalRepository goals,
+    required NutritionTargetAuthority targets,
     required LocalScheduleDateService dates,
   }) : _calendar = calendar,
        _progress = progress,
        _nutrition = nutrition,
-       _goals = goals,
+       _targets = targets,
        _dates = dates;
 
   Future<TodaySurfaceSnapshot> read({
@@ -110,14 +117,24 @@ class TodaySurfaceReadRepository {
           localDate: localDate,
         );
       }),
-      _safeRead(
-        () => _goals.activeGoalForPrimaryProfile(
-          localDate: localDate,
-          timezoneId: timezoneId,
+      _safeRead<NutritionTargetsForDate?>(
+        () => _targets.resolve(
+          NutritionTargetDateQuery(
+            localDate: localDate,
+            timezoneId: timezoneId,
+          ),
         ),
       ),
     ]);
 
+    final targetRead = reads[3] as TodayDomainRead<NutritionTargetsForDate?>;
+    final goalRead = targetRead.isAvailable
+        ? TodayDomainRead<NutritionGoalVersionReadModel?>.available(
+            targetRead.value?.goalVersion,
+          )
+        : const TodayDomainRead<NutritionGoalVersionReadModel?>.unavailable(
+            'Nutrition target unavailable',
+          );
     return TodaySurfaceSnapshot(
       selectedDate: selectedDate,
       localDate: localDate,
@@ -125,7 +142,10 @@ class TodaySurfaceReadRepository {
       calendar: reads[0] as TodayDomainRead<CalendarReadSnapshot>,
       progress: reads[1] as TodayDomainRead<B02ProgressReadModel>,
       nutrition: reads[2] as TodayDomainRead<NutritionDailyReadModel>,
-      goal: reads[3] as TodayDomainRead<NutritionGoalVersionReadModel?>,
+      targets: targetRead,
+      // Keep the older projection coherent for existing read fixtures. Both
+      // values are derived from the same authority result above.
+      goal: goalRead,
     );
   }
 
@@ -149,16 +169,19 @@ String _dateKey(DateTime value) =>
     '${value.day.toString().padLeft(2, '0')}';
 
 final todaySurfaceReadRepositoryProvider = Provider<TodaySurfaceReadRepository>(
-  (ref) => TodaySurfaceReadRepository(
-    calendar: ref.watch(calendarReadRepositoryProvider),
-    progress: B02ProgressReadRepository(
-      ref.watch(databaseProvider),
-      civilDates: ref.watch(localScheduleDateServiceProvider),
-    ),
-    nutrition: () => ref.read(nutritionReadModelRepositoryProvider.future),
-    goals: ref.watch(nutritionGoalRepositoryProvider),
-    dates: ref.watch(localScheduleDateServiceProvider),
-  ),
+  (ref) {
+    ref.watch(nutritionGoalVersionChangesProvider);
+    return TodaySurfaceReadRepository(
+      calendar: ref.watch(calendarReadRepositoryProvider),
+      progress: B02ProgressReadRepository(
+        ref.watch(databaseProvider),
+        civilDates: ref.watch(localScheduleDateServiceProvider),
+      ),
+      nutrition: () => ref.read(nutritionReadModelRepositoryProvider.future),
+      targets: ref.watch(nutritionTargetAuthorityProvider),
+      dates: ref.watch(localScheduleDateServiceProvider),
+    );
+  },
 );
 
 /// Presentation invalidation owned by successful nutrition logging commands.
