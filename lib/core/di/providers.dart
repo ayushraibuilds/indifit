@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/database/app_database.dart';
 import '../../data/models/b04_recommendation_context_models.dart';
 import '../../data/repositories/b02_exercise_performance_read_repository.dart';
+import '../../data/repositories/b02_previous_performance_repository.dart';
 import '../../data/repositories/b02_progress_read_repository.dart';
 import '../../data/repositories/b02_strength_execution_repository.dart';
 import '../../data/repositories/b04_briefing_read_repositories.dart';
@@ -928,6 +929,13 @@ final b02ExercisePerformanceReadRepositoryProvider =
     Provider<B02ExercisePerformanceReadRepository>(
       (ref) =>
           B02ExercisePerformanceReadRepository(ref.watch(databaseProvider)),
+    );
+
+/// UI-independent B.3 boundary. B.2 can consume factual previous evidence
+/// without importing a player widget or the progression recommendation rule.
+final b02PreviousPerformanceRepositoryProvider =
+    Provider<B02PreviousPerformanceRepository>(
+      (ref) => B02PreviousPerformanceRepository(ref.watch(databaseProvider)),
     );
 
 final strengthExecutionCompatibilityAdapterProvider =
