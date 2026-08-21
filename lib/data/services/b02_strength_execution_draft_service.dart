@@ -47,7 +47,7 @@ class B02StrengthExecutionDraftService {
     final override = state.targetOverrides[slot.id];
     final ordinal = existing?.sets.length ?? 0;
     final set = B02PerformedSet(
-      id: '$performedId:set:$ordinal',
+      id: _nextSetId(performedId, existing?.sets ?? const []),
       performedExerciseId: performedId,
       ordinal: ordinal,
       role: role,
@@ -111,6 +111,92 @@ class B02StrengthExecutionDraftService {
       },
       performedExercises: updated,
     );
+  }
+
+  /// Applies a correction to one already logged set in the active draft.
+  ///
+  /// The set ID is the mutation identity. Display ordinals and list indexes
+  /// are deliberately not accepted as a lookup key, so a row can be edited
+  /// safely after another row has been removed.
+  B02ExecutionDraftState editSet({
+    required B02ExecutionDraftState state,
+    required B02StrengthExecutionSlot slot,
+    required String setId,
+    required int reps,
+    double? loadKg,
+    B02LoadBasis? actualLoadBasis,
+    int? rpe,
+  }) {
+    if (reps < 1) {
+      throw const B02ValidationException('Repetitions must be positive.');
+    }
+    final match = _findSet(state: state, slot: slot, setId: setId);
+    final exercise = state.performedExercises[match.exerciseIndex];
+    final existing = exercise.sets[match.setIndex];
+    if (existing.technique.segments.isNotEmpty) {
+      final segmentReps = existing.technique.segments.fold<int>(
+        0,
+        (sum, segment) => sum + segment.reps,
+      );
+      if (reps != segmentReps) {
+        throw const B02ValidationException(
+          'Advanced set details must be edited together.',
+        );
+      }
+    }
+    final updatedSet = B02PerformedSet(
+      id: existing.id,
+      performedExerciseId: existing.performedExerciseId,
+      ordinal: existing.ordinal,
+      role: existing.role,
+      targetLoadKg: existing.targetLoadKg,
+      targetLoadBasis: existing.targetLoadBasis,
+      targetRepsMin: existing.targetRepsMin,
+      targetRepsMax: existing.targetRepsMax,
+      targetRpe: existing.targetRpe,
+      actualLoadKg: loadKg,
+      actualLoadBasis: actualLoadBasis,
+      actualReps: reps,
+      actualRpe: rpe,
+      technique: existing.technique,
+      notes: existing.notes,
+    );
+    final updatedSets = [...exercise.sets];
+    updatedSets[match.setIndex] = updatedSet;
+    final updatedExercises = [...state.performedExercises];
+    updatedExercises[match.exerciseIndex] = _replaceExercise(
+      exercise,
+      sets: updatedSets,
+      status: _statusFor(sets: updatedSets, plannedSets: slot.plannedSets),
+    );
+    return state.copyWith(performedExercises: updatedExercises);
+  }
+
+  /// Removes one set from the active draft while retaining the performed-set
+  /// IDs of every remaining row. Ordinals are presentation order only and are
+  /// compacted after removal to satisfy the canonical draft invariant.
+  B02ExecutionDraftState deleteSet({
+    required B02ExecutionDraftState state,
+    required B02StrengthExecutionSlot slot,
+    required String setId,
+  }) {
+    final match = _findSet(state: state, slot: slot, setId: setId);
+    final exercise = state.performedExercises[match.exerciseIndex];
+    final remaining = [
+      for (var index = 0; index < exercise.sets.length; index++)
+        if (index != match.setIndex) exercise.sets[index],
+    ];
+    final renumbered = [
+      for (var index = 0; index < remaining.length; index++)
+        _copySet(remaining[index], ordinal: index),
+    ];
+    final updatedExercises = [...state.performedExercises];
+    updatedExercises[match.exerciseIndex] = _replaceExercise(
+      exercise,
+      sets: renumbered,
+      status: _statusFor(sets: renumbered, plannedSets: slot.plannedSets),
+    );
+    return state.copyWith(performedExercises: updatedExercises);
   }
 
   B02ExecutionDraftState skipSlot({
@@ -194,6 +280,106 @@ class B02StrengthExecutionDraftService {
       targetOverrides: {...state.targetOverrides, slot.id: override},
       performedExercises: updatedExercises,
     );
+  }
+
+  String _nextSetId(String performedId, List<B02PerformedSet> existing) {
+    final used = existing.map((set) => set.id).toSet();
+    var sequence = existing.length;
+    var candidate = '$performedId:set:$sequence';
+    while (used.contains(candidate)) {
+      sequence += 1;
+      candidate = '$performedId:set:$sequence';
+    }
+    return candidate;
+  }
+
+  ({int exerciseIndex, int setIndex}) _findSet({
+    required B02ExecutionDraftState state,
+    required B02StrengthExecutionSlot slot,
+    required String setId,
+  }) {
+    final trimmedId = setId.trim();
+    if (trimmedId.isEmpty) {
+      throw const B02ValidationException('This set is no longer available.');
+    }
+    final matches = <({int exerciseIndex, int setIndex})>[];
+    for (
+      var exerciseIndex = 0;
+      exerciseIndex < state.performedExercises.length;
+      exerciseIndex++
+    ) {
+      final exercise = state.performedExercises[exerciseIndex];
+      for (var setIndex = 0; setIndex < exercise.sets.length; setIndex++) {
+        if (exercise.sets[setIndex].id == trimmedId) {
+          matches.add((exerciseIndex: exerciseIndex, setIndex: setIndex));
+        }
+      }
+    }
+    if (matches.length != 1) {
+      throw const B02ValidationException('This set is no longer available.');
+    }
+    final match = matches.single;
+    final exercise = state.performedExercises[match.exerciseIndex];
+    final belongsToSlot =
+        exercise.id == 'performed:${slot.id}' ||
+        (exercise.sourceExercisePrescriptionId == slot.prescriptionId &&
+            exercise.groupRoundOrdinal == slot.roundOrdinal &&
+            exercise.groupMemberOrdinal == slot.memberOrdinal);
+    if (!belongsToSlot) {
+      throw const B02ValidationException('This set is no longer available.');
+    }
+    return match;
+  }
+
+  B02PerformedExerciseDraft _replaceExercise(
+    B02PerformedExerciseDraft exercise, {
+    required List<B02PerformedSet> sets,
+    required String status,
+  }) {
+    return B02PerformedExerciseDraft(
+      id: exercise.id,
+      performedExerciseGroupId: exercise.performedExerciseGroupId,
+      sourceExercisePrescriptionId: exercise.sourceExercisePrescriptionId,
+      groupMemberOrdinal: exercise.groupMemberOrdinal,
+      groupRoundOrdinal: exercise.groupRoundOrdinal,
+      ordinal: exercise.ordinal,
+      expectedExerciseId: exercise.expectedExerciseId,
+      expectedExerciseNameSnapshot: exercise.expectedExerciseNameSnapshot,
+      actualExerciseId: exercise.actualExerciseId,
+      actualExerciseNameSnapshot: exercise.actualExerciseNameSnapshot,
+      status: status,
+      substitutionReason: exercise.substitutionReason,
+      sets: sets,
+      targetRecommendation: exercise.targetRecommendation,
+    );
+  }
+
+  B02PerformedSet _copySet(B02PerformedSet set, {required int ordinal}) {
+    return B02PerformedSet(
+      id: set.id,
+      performedExerciseId: set.performedExerciseId,
+      ordinal: ordinal,
+      role: set.role,
+      targetLoadKg: set.targetLoadKg,
+      targetLoadBasis: set.targetLoadBasis,
+      targetRepsMin: set.targetRepsMin,
+      targetRepsMax: set.targetRepsMax,
+      targetRpe: set.targetRpe,
+      actualLoadKg: set.actualLoadKg,
+      actualLoadBasis: set.actualLoadBasis,
+      actualReps: set.actualReps,
+      actualRpe: set.actualRpe,
+      technique: set.technique,
+      notes: set.notes,
+    );
+  }
+
+  String _statusFor({
+    required List<B02PerformedSet> sets,
+    required int plannedSets,
+  }) {
+    final workingSets = sets.where((set) => set.role == B02SetRole.working);
+    return workingSets.length >= plannedSets ? 'completed' : 'partial';
   }
 
   B02ExecutionDraftState chooseWarmup(
