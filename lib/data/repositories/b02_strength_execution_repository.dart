@@ -9,6 +9,7 @@ import '../../core/fixtures/equipment_fixtures.dart';
 import '../../core/fixtures/workout_draft_codec.dart';
 import '../database/app_database.dart';
 import '../models/b02_execution_models.dart';
+import '../models/b02_rich_set_helpers.dart';
 import '../services/b02_workout_preparation_orchestrator.dart';
 import 'b02_target_recommendation_repository.dart';
 import 'calendar_repository.dart';
@@ -591,9 +592,13 @@ class StrengthExecutionRepository {
         : null;
 
     final slots = <B02StrengthExecutionSlot>[];
-    for (final group in launch.state.groups) {
+    final orderedGroups = [...launch.state.groups]
+      ..sort((left, right) => left.ordinal.compareTo(right.ordinal));
+    for (final group in orderedGroups) {
+      final orderedMembers = [...group.members]
+        ..sort((left, right) => left.ordinal.compareTo(right.ordinal));
       for (var round = 0; round < group.roundCount; round++) {
-        for (final member in group.members) {
+        for (final member in orderedMembers) {
           final prescription = prescriptionById[member.exercisePrescriptionId];
           final raw = snapshotPrescriptions[member.exercisePrescriptionId];
           final name =
@@ -606,7 +611,19 @@ class StrengthExecutionRepository {
           final exerciseId =
               prescription?.exerciseId ?? raw?['exerciseId'] as String?;
           if (name == null || repsRange == null || plannedSets == null) {
-            continue;
+            throw const B02StrengthExecutionRecoveryException(
+              'A grouped exercise prescription is unavailable right now.',
+            );
+          }
+          if (plannedSets < 1) {
+            throw const B02StrengthExecutionRecoveryException(
+              'A grouped exercise prescription is unavailable right now.',
+            );
+          }
+          if (name.trim().isEmpty || repsRange.trim().isEmpty) {
+            throw const B02StrengthExecutionRecoveryException(
+              'A grouped exercise prescription is unavailable right now.',
+            );
           }
           final reps = _parseRepsRange(repsRange);
           final slot = await _buildSlot(
@@ -618,7 +635,12 @@ class StrengthExecutionRepository {
             raw: raw,
             name: name,
             reps: reps,
-            plannedSets: plannedSets,
+            // B02 defines one working slot per member per group round. The
+            // round ordinal addresses the corresponding frozen set
+            // prescription; the exercise prescription's standalone
+            // planned-set count must not be multiplied by round count.
+            plannedSets: 1,
+            setPrescriptionOrdinal: round,
             exerciseId:
                 exerciseId != null && resolvedStableIds.contains(exerciseId)
                 ? exerciseId
@@ -640,7 +662,7 @@ class StrengthExecutionRepository {
         }
       }
     }
-    final groupedPrescriptionIds = launch.state.groups
+    final groupedPrescriptionIds = orderedGroups
         .expand((group) => group.members)
         .map((member) => member.exercisePrescriptionId)
         .toSet();
@@ -668,6 +690,7 @@ class StrengthExecutionRepository {
         name: name,
         reps: reps,
         plannedSets: plannedSets,
+        setPrescriptionOrdinal: null,
         exerciseId: exerciseId != null && resolvedStableIds.contains(exerciseId)
             ? exerciseId
             : null,
@@ -718,6 +741,7 @@ class StrengthExecutionRepository {
     required String name,
     required (int?, int?) reps,
     required int plannedSets,
+    required int? setPrescriptionOrdinal,
     required String? exerciseId,
     required Exercise? exercise,
     required List<StrengthSetPrescription> strengthRows,
@@ -725,7 +749,40 @@ class StrengthExecutionRepository {
     required bool isDeloadWeek,
     required EquipmentProfileAggregate? profile,
   }) async {
-    final strength = strengthRows.isEmpty ? null : strengthRows.first;
+    final setPrescriptions = _readSetPrescriptions(
+      raw: raw,
+      rows: strengthRows,
+      prescriptionId: prescription?.id ?? raw?['id'] as String? ?? id,
+    );
+    if (group != null &&
+        setPrescriptions.isNotEmpty &&
+        setPrescriptions.length != group.roundCount) {
+      throw const B02StrengthExecutionRecoveryException(
+        'This grouped exercise prescription is unavailable right now.',
+      );
+    }
+    final strength = setPrescriptionOrdinal == null
+        ? (strengthRows.isEmpty ? null : strengthRows.first)
+        : strengthRows
+              .where((row) => row.ordinal == setPrescriptionOrdinal)
+              .firstOrNull;
+    if (group != null && strengthRows.isNotEmpty && strength == null) {
+      throw const B02StrengthExecutionRecoveryException(
+        'This grouped exercise prescription is unavailable right now.',
+      );
+    }
+    final frozenFirst = setPrescriptionOrdinal == null
+        ? (setPrescriptions.isEmpty ? null : setPrescriptions.first)
+        : setPrescriptions
+              .where((item) => item.ordinal == setPrescriptionOrdinal)
+              .firstOrNull;
+    if (setPrescriptionOrdinal != null &&
+        setPrescriptions.isNotEmpty &&
+        frozenFirst == null) {
+      throw const B02StrengthExecutionRecoveryException(
+        'This grouped exercise prescription is unavailable right now.',
+      );
+    }
     final preference = exerciseId == null
         ? null
         : await _preferenceRepo.getExecutionPreference(stableId: exerciseId);
@@ -750,17 +807,34 @@ class StrengthExecutionRepository {
         ? null
         : item?.weightIncrementKg;
     final targetLoad =
-        strength?.targetLoadKg ?? _rawDouble(raw?['targetLoadKg']);
+        frozenFirst?.targetLoadKg ??
+        strength?.targetLoadKg ??
+        _rawDouble(raw?['targetLoadKg']);
     final targetBasis =
-        _rawLoadBasis(strength?.loadBasis) ?? _rawLoadBasis(raw?['loadBasis']);
+        frozenFirst?.loadBasis ??
+        _rawLoadBasis(strength?.loadBasis) ??
+        _rawLoadBasis(raw?['loadBasis']);
     final targetMin =
-        strength?.targetRepsMin ?? _rawInt(raw?['targetRepsMin']) ?? reps.$1;
+        frozenFirst?.targetRepsMin ??
+        strength?.targetRepsMin ??
+        _rawInt(raw?['targetRepsMin']) ??
+        reps.$1;
     final targetMax =
-        strength?.targetRepsMax ?? _rawInt(raw?['targetRepsMax']) ?? reps.$2;
-    final targetRpe = strength?.targetRpe ?? _rawInt(raw?['targetRpe']);
-    final effortMode = strength?.effortMode == null
-        ? _rawEffortMode(raw?['effortMode'])
-        : B02EffortMode.parse(strength!.effortMode);
+        frozenFirst?.targetRepsMax ??
+        strength?.targetRepsMax ??
+        _rawInt(raw?['targetRepsMax']) ??
+        reps.$2;
+    final targetRpe =
+        frozenFirst?.targetRpe ??
+        strength?.targetRpe ??
+        _rawInt(raw?['targetRpe']);
+    final effortMode =
+        frozenFirst?.technique.effortMode ??
+        (strength?.effortMode == null
+            ? _rawEffortMode(raw?['effortMode'])
+            : B02EffortMode.parse(strength!.effortMode));
+    final endedAtFailure =
+        frozenFirst?.technique.endedAtFailure ?? raw?['endedAtFailure'] == true;
     return B02StrengthExecutionSlot(
       id: id,
       groupId: group?.id,
@@ -773,24 +847,131 @@ class StrengthExecutionRepository {
       exerciseId: exerciseId,
       exerciseNameSnapshot: name,
       plannedSets: plannedSets,
+      setPrescriptions: setPrescriptions,
+      setPrescriptionOrdinal: setPrescriptionOrdinal,
       targetRepsMin: targetMin,
       targetRepsMax: targetMax,
       targetRpe: targetRpe,
       targetLoadKg: targetLoad,
       targetLoadBasis: targetBasis,
       prescribedRestSeconds:
-          strength?.restSeconds ?? _rawInt(raw?['restSeconds']),
+          frozenFirst?.restSeconds ??
+          strength?.restSeconds ??
+          _rawInt(raw?['restSeconds']),
       memberTransitionRestSeconds: member?.transitionRestSeconds,
       groupRestAfterRoundSeconds: group?.restAfterRoundSeconds,
       templateDefaultRestSeconds: templateDefaultRestSeconds,
       exercisePreferenceRestSeconds: preference?.customRestSeconds,
       effortMode: effortMode,
-      endedAtFailure: raw?['endedAtFailure'] == true,
+      endedAtFailure: endedAtFailure,
       executionPreference: preference,
       effectiveItemIncrementKg: effectiveItemIncrement,
       profileDefaultIncrementKg: profile?.profile.defaultWeightIncrementKg,
       isDeloadWeek: isDeloadWeek,
     );
+  }
+
+  List<B02StrengthSetPrescription> _readSetPrescriptions({
+    required Map<String, dynamic>? raw,
+    required List<StrengthSetPrescription> rows,
+    required String prescriptionId,
+  }) {
+    final hasFrozenValue = raw?.containsKey('strengthSetPrescriptions') == true;
+    final rawValue = raw?['strengthSetPrescriptions'];
+    if (hasFrozenValue && rawValue is! List) {
+      throw const B02StrengthExecutionRecoveryException(
+        'This workout prescription is unavailable right now.',
+      );
+    }
+    if (rawValue is List) {
+      final parsed = <B02StrengthSetPrescription>[];
+      try {
+        for (final value in rawValue) {
+          if (value is! Map) {
+            throw const B02ValidationException(
+              'A set prescription is not an object.',
+            );
+          }
+          final prescription = B02StrengthSetPrescription.fromJson(
+            Map<String, dynamic>.from(value),
+          );
+          if (prescription.exercisePrescriptionId != prescriptionId) {
+            throw const B02ValidationException(
+              'A set prescription points to another exercise.',
+            );
+          }
+          parsed.add(prescription);
+        }
+      } on Object {
+        throw const B02StrengthExecutionRecoveryException(
+          'This workout prescription is unavailable right now.',
+        );
+      }
+      parsed.sort((left, right) => left.ordinal.compareTo(right.ordinal));
+      for (var index = 0; index < parsed.length; index++) {
+        if (parsed[index].ordinal != index) {
+          throw const B02StrengthExecutionRecoveryException(
+            'This workout prescription is unavailable right now.',
+          );
+        }
+      }
+      return parsed;
+    }
+
+    final parsed = [for (final row in rows) _setPrescriptionFromRow(row)]
+      ..sort((left, right) => left.ordinal.compareTo(right.ordinal));
+    for (var index = 0; index < parsed.length; index++) {
+      if (parsed[index].ordinal != index) {
+        throw const B02StrengthExecutionRecoveryException(
+          'This workout prescription is unavailable right now.',
+        );
+      }
+    }
+    return parsed;
+  }
+
+  B02StrengthSetPrescription _setPrescriptionFromRow(
+    StrengthSetPrescription row,
+  ) {
+    try {
+      final technique = row.techniquePlanJson == null
+          ? B02TechniqueFields(
+              effortMode: row.effortMode == null
+                  ? B02EffortMode.standard
+                  : B02EffortMode.parse(row.effortMode!),
+              tempoEccentricSeconds: row.tempoEccentricSeconds,
+              tempoBottomPauseSeconds: row.tempoBottomPauseSeconds,
+              tempoConcentricSeconds: row.tempoConcentricSeconds,
+              tempoLockoutPauseSeconds: row.tempoLockoutPauseSeconds,
+              pausedRepPosition: row.pausedRepPosition == null
+                  ? null
+                  : B02PausedRepPosition.parse(row.pausedRepPosition!),
+              pausedRepSeconds: row.pausedRepSeconds,
+              assistanceMode: row.assistanceMode == null
+                  ? null
+                  : B02AssistanceMode.parse(row.assistanceMode!),
+              assistanceKg: row.assistanceKg,
+            )
+          : B02TechniqueDraftCodec.decode(row.techniquePlanJson!);
+      return B02StrengthSetPrescription(
+        id: row.id,
+        exercisePrescriptionId: row.exercisePrescriptionId,
+        ordinal: row.ordinal,
+        targetLoadKg: row.targetLoadKg,
+        loadBasis: row.loadBasis == null
+            ? null
+            : B02LoadBasis.parse(row.loadBasis!),
+        targetRepsMin: row.targetRepsMin,
+        targetRepsMax: row.targetRepsMax,
+        targetRpe: row.targetRpe,
+        restSeconds: row.restSeconds,
+        technique: technique,
+      );
+    } on B02ValidationException {
+      throw const B02StrengthExecutionRecoveryException(
+        'This workout prescription is unavailable right now.',
+      );
+    }
   }
 
   static Map<String, dynamic> _snapshotObject(Object? raw) {

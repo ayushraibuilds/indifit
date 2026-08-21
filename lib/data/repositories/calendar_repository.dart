@@ -1161,6 +1161,21 @@ class CalendarRepository {
                 ..where((table) => table.exerciseGroupId.isIn(groupIds))
                 ..orderBy([(table) => OrderingTerm(expression: table.ordinal)]))
               .get();
+    final strengthSetRows = prescriptions.isEmpty
+        ? <StrengthSetPrescription>[]
+        : await (_db.select(_db.strengthSetPrescriptions)
+                ..where(
+                  (table) => table.exercisePrescriptionId.isIn(
+                    prescriptions.map((prescription) => prescription.id),
+                  ),
+                )
+                ..orderBy([(table) => OrderingTerm(expression: table.ordinal)]))
+              .get();
+    final strengthSetsByPrescription =
+        <String, List<StrengthSetPrescription>>{};
+    for (final row in strengthSetRows) {
+      (strengthSetsByPrescription[row.exercisePrescriptionId] ??= []).add(row);
+    }
     final snapshot = <String, dynamic>{
       'version': 1,
       'occurrenceId': occurrence.id,
@@ -1202,6 +1217,27 @@ class CalendarRepository {
               'exerciseNameSnapshot': prescription.exerciseNameSnapshot,
               'plannedSets': prescription.plannedSets,
               'repsRange': prescription.repsRange,
+              'strengthSetPrescriptions':
+                  (strengthSetsByPrescription[prescription.id] ?? const [])
+                      .map(
+                        (set) => {
+                          'id': set.id,
+                          'exercisePrescriptionId': set.exercisePrescriptionId,
+                          'ordinal': set.ordinal,
+                          if (set.targetLoadKg != null)
+                            'targetLoadKg': set.targetLoadKg,
+                          if (set.loadBasis != null) 'loadBasis': set.loadBasis,
+                          if (set.targetRepsMin != null)
+                            'targetRepsMin': set.targetRepsMin,
+                          if (set.targetRepsMax != null)
+                            'targetRepsMax': set.targetRepsMax,
+                          if (set.targetRpe != null) 'targetRpe': set.targetRpe,
+                          if (set.restSeconds != null)
+                            'restSeconds': set.restSeconds,
+                          'technique': _snapshotTechnique(set),
+                        },
+                      )
+                      .toList(),
             },
           )
           .toList(),
@@ -1233,6 +1269,48 @@ class CalendarRepository {
       snapshot['personalExerciseContext'] = executionContext;
     }
     return jsonEncode(snapshot);
+  }
+
+  Map<String, dynamic> _snapshotTechnique(StrengthSetPrescription row) {
+    final payload = row.techniquePlanJson;
+    if (payload != null && payload.trim().isNotEmpty) {
+      try {
+        final decoded = jsonDecode(payload);
+        if (decoded is Map) {
+          return Map<String, dynamic>.from(decoded);
+        }
+      } on Object {
+        // Fall through to the relational fields only when the payload is
+        // absent. A present malformed payload must not be silently flattened.
+        throw const InvalidOccurrenceTransitionException(
+          'A strength prescription has invalid technique details.',
+        );
+      }
+      throw const InvalidOccurrenceTransitionException(
+        'A strength prescription has invalid technique details.',
+      );
+    }
+    return {
+      'effortMode': row.effortMode ?? 'standard',
+      'endedAtFailure': false,
+      'isDropSet': false,
+      'isRestPause': false,
+      if (row.tempoEccentricSeconds != null)
+        'tempoEccentricSeconds': row.tempoEccentricSeconds,
+      if (row.tempoBottomPauseSeconds != null)
+        'tempoBottomPauseSeconds': row.tempoBottomPauseSeconds,
+      if (row.tempoConcentricSeconds != null)
+        'tempoConcentricSeconds': row.tempoConcentricSeconds,
+      if (row.tempoLockoutPauseSeconds != null)
+        'tempoLockoutPauseSeconds': row.tempoLockoutPauseSeconds,
+      if (row.pausedRepPosition != null)
+        'pausedRepPosition': row.pausedRepPosition,
+      if (row.pausedRepSeconds != null)
+        'pausedRepSeconds': row.pausedRepSeconds,
+      if (row.assistanceMode != null) 'assistanceMode': row.assistanceMode,
+      if (row.assistanceKg != null) 'assistanceKg': row.assistanceKg,
+      'segments': const <dynamic>[],
+    };
   }
 
   Future<OccurrenceEvent> _insertEvent({

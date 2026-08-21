@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
 import '../../../core/widgets/responsive_form_primitives.dart';
 import '../../../data/models/b02_execution_models.dart';
+import 'b02_execution_semantics.dart';
 import 'r07c_workout_presentation.dart';
 
 /// The presentation contract for one compact execution row.
@@ -27,6 +28,8 @@ class B02CompactSetRow {
     this.actualLoadBasis,
     this.actualReps,
     this.actualRpe,
+    this.plannedTechnique,
+    this.actualTechnique,
     this.performedSet,
   });
 
@@ -50,6 +53,7 @@ class B02CompactSetRow {
       actualLoadBasis: set.actualLoadBasis,
       actualReps: set.actualReps,
       actualRpe: set.actualRpe,
+      actualTechnique: set.technique,
       performedSet: set,
     );
   }
@@ -58,6 +62,7 @@ class B02CompactSetRow {
     required B02StrengthExecutionSlot slot,
     required int displayNumber,
     required bool isExtra,
+    int? prescriptionOrdinal,
   }) {
     return B02CompactSetRow(
       id: 'planned:${slot.id}:$displayNumber',
@@ -70,6 +75,9 @@ class B02CompactSetRow {
       plannedRepsMin: slot.targetRepsMin,
       plannedRepsMax: slot.targetRepsMax,
       plannedRpe: slot.targetRpe,
+      plannedTechnique: slot.techniqueForSet(
+        prescriptionOrdinal ?? displayNumber - 1,
+      ),
     );
   }
 
@@ -87,6 +95,8 @@ class B02CompactSetRow {
   final B02LoadBasis? actualLoadBasis;
   final int? actualReps;
   final int? actualRpe;
+  final B02TechniqueFields? plannedTechnique;
+  final B02TechniqueFields? actualTechnique;
   final B02PerformedSet? performedSet;
 
   String? get plannedLabel => r07cFormatTarget(
@@ -106,6 +116,12 @@ class B02CompactSetRow {
       if (actualRpe != null) 'RPE $actualRpe',
     ].join(' · ');
   }
+
+  String? get plannedDetailsLabel =>
+      plannedTechnique == null ? null : b02TechniqueSummary(plannedTechnique!);
+
+  String? get actualDetailsLabel =>
+      actualTechnique == null ? null : b02TechniqueSummary(actualTechnique!);
 }
 
 /// A shared, compact set-entry surface for Planned and Quick execution.
@@ -262,6 +278,7 @@ class B02CompactSetTable extends StatelessWidget {
             slot: slot,
             displayNumber: rows.length + 1,
             isExtra: false,
+            prescriptionOrdinal: slot.setPrescriptionOrdinal ?? workingLogged,
           ),
         );
         workingLogged++;
@@ -353,8 +370,18 @@ class _SetRow extends StatelessWidget {
             ),
           ),
           if (showTarget)
-            Expanded(flex: 2, child: Text(row.plannedLabel ?? 'No target')),
-          Expanded(flex: 3, child: Text(actual)),
+            Expanded(
+              flex: 2,
+              child: _valueWithDetails(
+                context,
+                row.plannedLabel ?? 'No target',
+                row.plannedDetailsLabel,
+              ),
+            ),
+          Expanded(
+            flex: 3,
+            child: _valueWithDetails(context, actual, row.actualDetailsLabel),
+          ),
           SizedBox(
             width: B05Layout.minTouchTarget * 2,
             child: row.isLogged
@@ -389,8 +416,10 @@ class _SetRow extends StatelessWidget {
           ),
           if (showTarget) ...[
             const SizedBox(height: 2),
-            Text(
+            _valueWithDetails(
+              context,
               'Planned: ${row.plannedLabel ?? 'No target'}',
+              row.plannedDetailsLabel,
               style: B05Typography.caption(context),
             ),
           ],
@@ -398,7 +427,13 @@ class _SetRow extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(child: Text('Actual: $actual')),
+              Expanded(
+                child: _valueWithDetails(
+                  context,
+                  'Actual: $actual',
+                  row.actualDetailsLabel,
+                ),
+              ),
               if (row.isLogged) _actions(context),
             ],
           ),
@@ -416,7 +451,7 @@ class _SetRow extends StatelessWidget {
         B05IconAction(
           icon: Icons.edit_outlined,
           label: 'Edit set ${row.displayNumber}',
-          hint: 'Change the logged reps, load, or RPE',
+          hint: 'Change the logged values or set details',
           onPressed: isBusy || onEdit == null ? null : () => onEdit!(set),
         ),
         B05IconAction(
@@ -425,6 +460,22 @@ class _SetRow extends StatelessWidget {
           hint: 'Remove this logged set from the workout',
           onPressed: isBusy || onDelete == null ? null : () => onDelete!(set),
         ),
+      ],
+    );
+  }
+
+  Widget _valueWithDetails(
+    BuildContext context,
+    String value,
+    String? details, {
+    TextStyle? style,
+  }) {
+    if (details == null) return Text(value, style: style);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(value, style: style),
+        Text('Details: $details', style: B05Typography.caption(context)),
       ],
     );
   }
@@ -441,6 +492,10 @@ class _SetRow extends StatelessWidget {
       _statusLabel(),
       if (row.plannedLabel != null) 'planned ${row.plannedLabel}',
       if (row.actualLabel != null) 'actual ${row.actualLabel}',
+      if (row.plannedDetailsLabel != null)
+        'planned details ${row.plannedDetailsLabel}',
+      if (row.actualDetailsLabel != null)
+        'actual details ${row.actualDetailsLabel}',
     ];
     return parts.join(', ');
   }

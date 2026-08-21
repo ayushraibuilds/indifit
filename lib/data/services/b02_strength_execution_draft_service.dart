@@ -1,4 +1,5 @@
 import '../models/b02_execution_models.dart';
+import '../models/b02_rich_set_helpers.dart';
 
 /// Pure draft mutations used by the B02 player. Persistence and finalization
 /// remain repository concerns; this service only applies a validated user
@@ -46,6 +47,16 @@ class B02StrengthExecutionDraftService {
         existing?.targetRecommendation ?? state.targetRecommendations[slot.id];
     final override = state.targetOverrides[slot.id];
     final ordinal = existing?.sets.length ?? 0;
+    final workingOrdinal =
+        existing?.sets.where((set) => set.role == B02SetRole.working).length ??
+        0;
+    final effectiveTechnique =
+        technique ??
+        (useSlotPrescription && role == B02SetRole.working
+            ? slot.techniqueForSet(
+                slot.setPrescriptionOrdinal ?? workingOrdinal,
+              )
+            : null);
     final set = B02PerformedSet(
       id: _nextSetId(performedId, existing?.sets ?? const []),
       performedExerciseId: performedId,
@@ -63,7 +74,7 @@ class B02StrengthExecutionDraftService {
           (loadKg == null ? null : B02LoadBasis.totalExternal),
       actualReps: reps,
       actualRpe: rpe,
-      technique: technique,
+      technique: effectiveTechnique,
     );
     final sets = [...?existing?.sets, set];
     final completed =
@@ -126,6 +137,7 @@ class B02StrengthExecutionDraftService {
     double? loadKg,
     B02LoadBasis? actualLoadBasis,
     int? rpe,
+    B02TechniqueFields? technique,
   }) {
     if (reps < 1) {
       throw const B02ValidationException('Repetitions must be positive.');
@@ -144,6 +156,8 @@ class B02StrengthExecutionDraftService {
         );
       }
     }
+    final nextTechnique = technique ?? existing.technique;
+    B02RichSetValidator.validateTechnique(nextTechnique, headerReps: reps);
     final updatedSet = B02PerformedSet(
       id: existing.id,
       performedExerciseId: existing.performedExerciseId,
@@ -158,7 +172,7 @@ class B02StrengthExecutionDraftService {
       actualLoadBasis: actualLoadBasis,
       actualReps: reps,
       actualRpe: rpe,
-      technique: existing.technique,
+      technique: nextTechnique,
       notes: existing.notes,
     );
     final updatedSets = [...exercise.sets];

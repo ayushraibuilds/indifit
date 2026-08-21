@@ -584,6 +584,17 @@ class B02StrengthExecutionSlot {
   final String? exerciseId;
   final String exerciseNameSnapshot;
   final int plannedSets;
+
+  /// Frozen, ordinal-addressed set prescriptions for this exercise slot.
+  ///
+  /// The slot still carries the compact target fields used by the common
+  /// table. This list preserves the richer B02 prescription without making
+  /// widgets reconstruct it from display order or exercise names.
+  final List<B02StrengthSetPrescription> setPrescriptions;
+
+  /// The frozen set-prescription ordinal represented by this grouped round.
+  /// Standalone slots address their set prescriptions from zero.
+  final int? setPrescriptionOrdinal;
   final int? targetRepsMin;
   final int? targetRepsMax;
   final int? targetRpe;
@@ -613,6 +624,8 @@ class B02StrengthExecutionSlot {
     required this.exerciseId,
     required this.exerciseNameSnapshot,
     required this.plannedSets,
+    this.setPrescriptions = const [],
+    this.setPrescriptionOrdinal,
     required this.targetRepsMin,
     required this.targetRepsMax,
     required this.targetRpe,
@@ -633,6 +646,17 @@ class B02StrengthExecutionSlot {
 
   bool get hasCanonicalExercise => exerciseId?.trim().isNotEmpty == true;
 
+  B02StrengthSetPrescription? prescriptionForSet(int setOrdinal) {
+    for (final prescription in setPrescriptions) {
+      if (prescription.ordinal == setOrdinal) return prescription;
+    }
+    return null;
+  }
+
+  B02TechniqueFields? techniqueForSet(int setOrdinal) {
+    return prescriptionForSet(setOrdinal)?.technique;
+  }
+
   B02StrengthExecutionSlot copyWith({
     int? targetRepsMin,
     int? targetRepsMax,
@@ -652,6 +676,8 @@ class B02StrengthExecutionSlot {
       exerciseId: exerciseId,
       exerciseNameSnapshot: exerciseNameSnapshot,
       plannedSets: plannedSets,
+      setPrescriptions: setPrescriptions,
+      setPrescriptionOrdinal: setPrescriptionOrdinal,
       targetRepsMin: targetRepsMin ?? this.targetRepsMin,
       targetRepsMax: targetRepsMax ?? this.targetRepsMax,
       targetRpe: targetRpe ?? this.targetRpe,
@@ -672,11 +698,16 @@ class B02StrengthExecutionSlot {
   }
 
   String get groupDescription {
-    final type = groupType?.dbValue ?? 'standalone';
+    final type = switch (groupType) {
+      B02GroupType.superset => 'Superset',
+      B02GroupType.circuit => 'Circuit',
+      B02GroupType.giantSet => 'Giant set',
+      null => 'Standalone exercise',
+    };
     final group = groupLabel?.trim().isNotEmpty == true
         ? groupLabel!.trim()
         : 'Group ${((groupOrdinal ?? 0) + 1)}';
-    return groupType == null ? 'Standalone exercise' : '$group · $type';
+    return groupType == null ? type : '$group · $type';
   }
 }
 
@@ -2572,10 +2603,10 @@ class B02ExecutionDraftState {
   B02ExecutionDraftState copyWith({
     int? elapsedSeconds,
     Object? activeSegmentStartedAtUtc = _unset,
-    int? currentGroupOrdinal,
-    String? currentGroupId,
-    int? currentRoundOrdinal,
-    int? currentMemberOrdinal,
+    Object? currentGroupOrdinal = _unset,
+    Object? currentGroupId = _unset,
+    Object? currentRoundOrdinal = _unset,
+    Object? currentMemberOrdinal = _unset,
     int? currentExerciseOrdinal,
     int? currentSetOrdinal,
     List<B02PerformedExerciseDraft>? performedExercises,
@@ -2596,10 +2627,18 @@ class B02ExecutionDraftState {
       activeSegmentStartedAtUtc: identical(activeSegmentStartedAtUtc, _unset)
           ? this.activeSegmentStartedAtUtc
           : (activeSegmentStartedAtUtc as DateTime?)?.toUtc(),
-      currentGroupOrdinal: currentGroupOrdinal ?? this.currentGroupOrdinal,
-      currentGroupId: currentGroupId ?? this.currentGroupId,
-      currentRoundOrdinal: currentRoundOrdinal ?? this.currentRoundOrdinal,
-      currentMemberOrdinal: currentMemberOrdinal ?? this.currentMemberOrdinal,
+      currentGroupOrdinal: identical(currentGroupOrdinal, _unset)
+          ? this.currentGroupOrdinal
+          : currentGroupOrdinal as int?,
+      currentGroupId: identical(currentGroupId, _unset)
+          ? this.currentGroupId
+          : currentGroupId as String?,
+      currentRoundOrdinal: identical(currentRoundOrdinal, _unset)
+          ? this.currentRoundOrdinal
+          : currentRoundOrdinal as int?,
+      currentMemberOrdinal: identical(currentMemberOrdinal, _unset)
+          ? this.currentMemberOrdinal
+          : currentMemberOrdinal as int?,
       currentExerciseOrdinal:
           currentExerciseOrdinal ?? this.currentExerciseOrdinal,
       currentSetOrdinal: currentSetOrdinal ?? this.currentSetOrdinal,
