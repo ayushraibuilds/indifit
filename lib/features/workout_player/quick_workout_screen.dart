@@ -13,6 +13,7 @@ import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/b02_strength_execution_repository.dart';
 import '../../data/repositories/workout_repository.dart';
+import '../exercise_picker/exercise_picker.dart';
 import 'b02_strength_execution_controller.dart';
 import 'workout_execution_route.dart';
 
@@ -388,127 +389,20 @@ class _QuickWorkoutStartSurface extends StatelessWidget {
   );
 }
 
-/// Search-first picker shared by the Quick Workout entry and the live player.
-/// It intentionally uses the same local Exercise Library query authority as
-/// the full Exercise Library screen.
-class QuickExercisePicker extends ConsumerStatefulWidget {
+/// Compatibility wrapper for the existing Quick Workout callers. The picker
+/// surface and search authority now live in [ExercisePicker], while this
+/// symbol keeps the pre-B.4 `Exercise` return shape for callers that have not
+/// yet moved to the typed selection result.
+class QuickExercisePicker extends StatelessWidget {
   const QuickExercisePicker({super.key});
 
   @override
-  ConsumerState<QuickExercisePicker> createState() =>
-      _QuickExercisePickerState();
-}
-
-class _QuickExercisePickerState extends ConsumerState<QuickExercisePicker> {
-  final _searchController = TextEditingController();
-  var _loading = true;
-  List<Exercise> _exercises = const [];
-
-  @override
-  void initState() {
-    super.initState();
-    _searchController.addListener(_load);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
-  }
-
-  @override
-  void dispose() {
-    _searchController.removeListener(_load);
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _load() async {
-    if (!mounted) return;
-    setState(() => _loading = true);
-    try {
-      final rows = await ref
-          .read(workoutRepositoryProvider)
-          .searchExercises(_searchController.text);
-      if (!mounted) return;
-      setState(() {
-        _exercises = rows
-            .where((exercise) => exercise.stableId?.trim().isNotEmpty == true)
-            .toList(growable: false);
-        _loading = false;
-      });
-    } catch (_) {
-      if (mounted) setState(() => _loading = false);
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        B05Layout.space16,
-        B05Layout.space12,
-        B05Layout.space16,
-        B05Layout.space16 + bottomInset,
-      ),
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.sizeOf(context).height * .88,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'Add exercise',
-                    style: B05Typography.pageTitle(context),
-                  ),
-                ),
-                B05IconAction(
-                  icon: Icons.close_rounded,
-                  label: 'Close exercise picker',
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
-              ],
-            ),
-            const SizedBox(height: B05Layout.space12),
-            TextField(
-              controller: _searchController,
-              autofocus: true,
-              textInputAction: TextInputAction.search,
-              decoration: const InputDecoration(
-                labelText: 'Search exercises',
-                hintText: 'Bench press, squat, row…',
-                prefixIcon: Icon(Icons.search_rounded),
-              ),
-            ),
-            const SizedBox(height: B05Layout.space8),
-            Expanded(
-              child: _loading
-                  ? const Center(child: CircularProgressIndicator())
-                  : _exercises.isEmpty
-                  ? const Center(child: Text('No matching exercises.'))
-                  : ListView.separated(
-                      keyboardDismissBehavior:
-                          ScrollViewKeyboardDismissBehavior.onDrag,
-                      itemCount: _exercises.length,
-                      separatorBuilder: (_, _) => const Divider(height: 1),
-                      itemBuilder: (context, index) {
-                        final exercise = _exercises[index];
-                        return ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          minVerticalPadding: B05Layout.space8,
-                          title: Text(exercise.name),
-                          subtitle: Text(
-                            '${exercise.equipment} · ${exercise.muscleGroups}',
-                          ),
-                          trailing: const Icon(Icons.add_circle_outline),
-                          onTap: () => Navigator.of(context).pop(exercise),
-                        );
-                      },
-                    ),
-            ),
-          ],
-        ),
-      ),
+    return ExercisePicker(
+      selectionContext: const QuickExercisePickerContext(),
+      onExerciseSelected: (exercise, _) {
+        Navigator.of(context).pop(exercise);
+      },
     );
   }
 }
