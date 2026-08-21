@@ -12,13 +12,19 @@ import '../../data/repositories/b02_strength_execution_repository.dart';
 import '../../data/repositories/calendar_repository.dart';
 import 'b02_strength_execution_controller.dart';
 import 'widgets/r07c_workout_presentation.dart';
+import 'workout_execution_context.dart';
 
 /// Final review for B02 strength execution. Full and partial completion are
 /// explicit actions; a failed finalization keeps the linked draft visible.
 class B02StrengthSummaryScreen extends ConsumerStatefulWidget {
   final B02StrengthExecutionLaunch launch;
+  final WorkoutExecutionContext? executionContext;
 
-  const B02StrengthSummaryScreen({super.key, required this.launch});
+  const B02StrengthSummaryScreen({
+    super.key,
+    required this.launch,
+    this.executionContext,
+  });
 
   @override
   ConsumerState<B02StrengthSummaryScreen> createState() =>
@@ -46,6 +52,9 @@ class _B02StrengthSummaryScreenState
     );
     final ui = ref.watch(provider);
     final current = ui.launch ?? widget.launch;
+    final execution =
+        (widget.executionContext ?? WorkoutExecutionContext.fromLaunch(current))
+            .rebind(current);
     final completed =
         ui.status == B02StrengthExecutionStatus.ready && ui.launch == null;
     if (completed) {
@@ -61,6 +70,7 @@ class _B02StrengthSummaryScreenState
       appBar: AppBar(title: const Text('Review workout')),
       body: _Body(
         launch: current,
+        executionContext: execution,
         ui: ui,
         onRetry: ui.launch == null || _pendingCompletionKind == null
             ? null
@@ -280,6 +290,7 @@ String formatB02WorkoutDuration(int seconds) {
 
 class _Body extends StatelessWidget {
   final B02StrengthExecutionLaunch launch;
+  final WorkoutExecutionContext executionContext;
   final B02StrengthExecutionUiState ui;
   final VoidCallback? onRetry;
   final VoidCallback? onFull;
@@ -288,6 +299,7 @@ class _Body extends StatelessWidget {
 
   const _Body({
     required this.launch,
+    required this.executionContext,
     required this.ui,
     required this.onRetry,
     required this.onFull,
@@ -344,6 +356,8 @@ class _Body extends StatelessWidget {
             children: [
               Text(
                 launch.state.routineName,
+                semanticsLabel:
+                    '${executionContext.modeLabel}: ${launch.state.routineName}',
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
               const SizedBox(height: 6),

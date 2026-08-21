@@ -14,6 +14,7 @@ import '../../data/database/app_database.dart';
 import '../../data/repositories/b02_strength_execution_repository.dart';
 import '../../data/repositories/workout_repository.dart';
 import 'b02_strength_execution_controller.dart';
+import 'workout_execution_route.dart';
 
 /// The immutable input snapshot for a standalone B02 session. The draft owns
 /// the live set state; this payload only records the exercise identities the
@@ -75,7 +76,9 @@ class _QuickWorkoutScreenState extends ConsumerState<QuickWorkoutScreen> {
       if (!mounted) return;
       await context.push(
         '/b02-strength-player',
-        extra: {'launch': withExercise.copyWith(state: prepared.state)},
+        extra: WorkoutExecutionRouteData.fromLaunch(
+          withExercise.copyWith(state: prepared.state),
+        ),
       );
       if (mounted) ref.invalidate(quickWorkoutActiveDraftProvider);
     } on B02StrengthExecutionException catch (error, stackTrace) {
@@ -122,7 +125,7 @@ class _QuickWorkoutScreenState extends ConsumerState<QuickWorkoutScreen> {
       }
       await context.push(
         '/b02-strength-player',
-        extra: {'launch': recovered.launch},
+        extra: WorkoutExecutionRouteData.fromLaunch(recovered.launch!),
       );
       if (mounted) ref.invalidate(quickWorkoutActiveDraftProvider);
     } catch (error, stackTrace) {

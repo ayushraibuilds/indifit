@@ -16,14 +16,23 @@ import 'b02_strength_execution_controller.dart';
 import 'b02_workout_elapsed.dart';
 import 'quick_workout_screen.dart';
 import 'widgets/r07c_workout_presentation.dart';
+import 'workout_execution_context.dart';
+import 'workout_execution_route.dart';
+import 'workout_execution_shell.dart';
 
 /// B02's compact, offline-first player. All mutations go through the
 /// successor controller; the widget only collects input and presents state.
 class B02StrengthPlayerScreen extends ConsumerStatefulWidget {
   final B02StrengthExecutionLaunch launch;
+  final WorkoutExecutionContext? executionContext;
   final DateTime Function()? nowUtc;
 
-  const B02StrengthPlayerScreen({super.key, required this.launch, this.nowUtc});
+  const B02StrengthPlayerScreen({
+    super.key,
+    required this.launch,
+    this.executionContext,
+    this.nowUtc,
+  });
 
   @override
   ConsumerState<B02StrengthPlayerScreen> createState() =>
@@ -87,41 +96,14 @@ class _B02StrengthPlayerScreenState
     );
     final ui = ref.watch(provider);
     final launch = ui.launch ?? widget.launch;
+    final execution = _executionFor(launch);
     return PopScope(
       canPop: _allowPop,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop || _isClosing) return;
         unawaited(_closeWorkout(provider));
       },
-      child: Scaffold(
-        appBar: AppBar(
-          leading: IconButton(
-            tooltip: 'Close workout',
-            onPressed: ui.isBusy ? null : () => _closeWorkout(provider),
-            icon: const Icon(Icons.close_rounded),
-          ),
-          title: Text(launch.state.routineName),
-          actions: [
-            PopupMenuButton<String>(
-              tooltip: 'Workout options',
-              enabled: !ui.isBusy,
-              onSelected: (value) {
-                switch (value) {
-                  case 'review':
-                    unawaited(_openSummary(provider));
-                  case 'discard':
-                    _discard(provider);
-                }
-              },
-              itemBuilder: (context) => const [
-                PopupMenuItem(value: 'review', child: Text('Review workout')),
-                PopupMenuItem(value: 'discard', child: Text('Discard draft')),
-              ],
-            ),
-          ],
-        ),
-        body: _buildBody(context, provider, ui, launch),
-      ),
+      child: _buildBody(context, provider, ui, launch, execution),
     );
   }
 
@@ -130,19 +112,33 @@ class _B02StrengthPlayerScreenState
     dynamic provider,
     B02StrengthExecutionUiState ui,
     B02StrengthExecutionLaunch launch,
+    WorkoutExecutionContext execution,
   ) {
     if (ui.status == B02StrengthExecutionStatus.loading && ui.launch == null) {
-      return const Center(child: CircularProgressIndicator());
+      return WorkoutExecutionShell(
+        execution: execution,
+        isBusy: true,
+        contentOverride: const Center(child: CircularProgressIndicator()),
+      );
     }
     if (ui.status == B02StrengthExecutionStatus.failure ||
         ui.status == B02StrengthExecutionStatus.recovery) {
-      return _ErrorState(
-        message: ui.errorMessage ?? 'The draft needs recovery.',
-        canRetry: ui.launch != null,
-        onRetry: ui.launch == null
-            ? null
-            : () => ref.read(provider.notifier).loadSlots(),
-        onClose: () => context.pop(),
+      return WorkoutExecutionShell(
+        execution: execution,
+        isBusy: ui.isBusy,
+        onClose: () => _closeWorkout(provider),
+        onReview: () => _openSummary(provider),
+        onDiscard: () => _discard(provider),
+        contentOverride: _ErrorState(
+          message:
+              ui.errorMessage ??
+              'This saved workout needs to be reopened before you can continue.',
+          canRetry: ui.launch != null,
+          onRetry: ui.launch == null
+              ? null
+              : () => ref.read(provider.notifier).loadSlots(),
+          onClose: () => context.pop(),
+        ),
       );
     }
     final slots = ui.slots;
@@ -150,29 +146,43 @@ class _B02StrengthPlayerScreenState
       final hasPerformedSets = launch.state.performedExercises.any(
         (exercise) => exercise.sets.isNotEmpty,
       );
-      return ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          const Text('No exercises in this workout yet.'),
-          const SizedBox(height: 8),
-          const Text('Add an exercise to keep this draft ready for logging.'),
-          const SizedBox(height: 16),
-          if (launch.occurrenceId == null)
-            FilledButton.icon(
-              onPressed: ui.isBusy ? null : () => _openExercisePicker(provider),
-              icon: const Icon(Icons.add_rounded),
-              label: const Text('Add exercise'),
+      final isQuick = execution is QuickWorkoutExecutionContext;
+      return WorkoutExecutionShell(
+        execution: execution,
+        isBusy: ui.isBusy,
+        onClose: () => _closeWorkout(provider),
+        onReview: hasPerformedSets ? () => _openSummary(provider) : null,
+        onDiscard: () => _discard(provider),
+        contentOverride: ListView(
+          padding: const EdgeInsets.all(20),
+          children: [
+            const Text('No exercises in this workout yet.'),
+            const SizedBox(height: 8),
+            const Text(
+              'Add an exercise to make this workout ready for logging.',
             ),
-          if (hasPerformedSets)
-            FilledButton.tonal(
-              onPressed: ui.isBusy ? null : () => _openSummary(provider),
-              child: const Text('Review and finish saved sets'),
+            const SizedBox(height: 16),
+            if (isQuick)
+              B05ActionButton(
+                label: 'Add exercise',
+                icon: Icons.add_rounded,
+                onPressed: ui.isBusy
+                    ? null
+                    : () => _openExercisePicker(provider),
+              ),
+            if (hasPerformedSets)
+              B05ActionButton(
+                label: 'Review and finish saved sets',
+                emphasis: B05ActionEmphasis.secondary,
+                onPressed: ui.isBusy ? null : () => _openSummary(provider),
+              ),
+            B05ActionButton(
+              label: 'Back',
+              emphasis: B05ActionEmphasis.tertiary,
+              onPressed: ui.isBusy ? null : () => _closeWorkout(provider),
             ),
-          TextButton(
-            onPressed: ui.isBusy ? null : () => _closeWorkout(provider),
-            child: const Text('Back'),
-          ),
-        ],
+          ],
+        ),
       );
     }
     final selected = slots.firstWhere(
@@ -182,7 +192,7 @@ class _B02StrengthPlayerScreenState
     _selectedSlotId ??= selected.id;
     final workingSetCount = _workingSetCount(launch.state, selected);
     final hasOpenRest = _hasOpenRest(launch.state, selected);
-    final isQuick = launch.occurrenceId == null;
+    final isQuick = execution is QuickWorkoutExecutionContext;
     final exerciseComplete =
         !isQuick && workingSetCount >= selected.plannedSets;
     final currentSet = workingSetCount + 1;
@@ -195,172 +205,32 @@ class _B02StrengthPlayerScreenState
       selected.id,
       () => selected.targetRepsMin?.toString() ?? '',
     );
-    return ListView(
-      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
-      children: [
-        _R07CExecutionHeader(
-          isQuick: isQuick,
-          exerciseIndex: slots.indexOf(selected),
-          exerciseCount: slots.length,
-          currentSet: currentSet,
-          plannedSets: selected.plannedSets,
-          exerciseComplete: exerciseComplete,
-          groupContext: selected.groupType == null
-              ? null
-              : _groupContext(selected),
-          exerciseName: _actualExerciseName(launch.state, selected),
-          elapsedState: launch.state,
-          nowUtc: widget.nowUtc,
-          onActions: ui.isBusy
-              ? null
-              : () => _showExerciseActions(provider, selected),
-        ),
-        const SizedBox(height: 12),
-        _R07CExerciseStrip(
-          slots: slots,
-          state: launch.state,
-          selectedId: selected.id,
-          onSelected: ui.isBusy
-              ? null
-              : (value) => setState(() => _selectedSlotId = value),
-        ),
-        const SizedBox(height: 12),
-        _R07CTargetContext(
-          slot: selected,
-          state: launch.state,
-          onApply: ui.isBusy
-              ? null
-              : () => _applySuggestedTarget(launch.state, selected),
-          onChange: ui.isBusy
-              ? null
-              : () => _overrideTarget(provider, selected),
-        ),
-        if (_hasUsefulTargetContext(launch.state, selected))
-          const SizedBox(height: 12),
-        if (hasOpenRest) ...[
-          _buildRestCard(provider, ui, launch, selected),
-          const SizedBox(height: 12),
-          Text(
-            'The next set is ready when you are.',
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-        ] else ...[
-          B05Surface(
-            padding: const EdgeInsets.fromLTRB(14, 14, 14, 8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Log set $currentSet',
-                  style: B05Typography.title(context),
-                ),
-                const SizedBox(height: 10),
-                IndiFitResponsiveFieldGroup(
-                  spacing: 10,
-                  breakpoint: 350,
-                  children: [
-                    TextFormField(
-                      key: ValueKey('load-${selected.id}'),
-                      initialValue: _loads[selected.id],
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      textInputAction: TextInputAction.next,
-                      decoration: InputDecoration(
-                        labelText: _loadLabel(selected.targetLoadBasis),
-                      ),
-                      onChanged: (value) => _loads[selected.id] = value,
-                    ),
-                    TextFormField(
-                      key: ValueKey('reps-${selected.id}'),
-                      initialValue: _reps[selected.id],
-                      keyboardType: TextInputType.number,
-                      textInputAction: TextInputAction.done,
-                      decoration: const InputDecoration(labelText: 'Reps'),
-                      onChanged: (value) => _reps[selected.id] = value,
-                      onEditingComplete: () =>
-                          FocusManager.instance.primaryFocus?.unfocus(),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                ExpansionTile(
-                  tilePadding: EdgeInsets.zero,
-                  childrenPadding: EdgeInsets.zero,
-                  title: Row(
-                    children: [
-                      const Expanded(child: Text('More for this set')),
-                      Text(
-                        'RPE',
-                        style: Theme.of(context).textTheme.labelMedium,
-                      ),
-                    ],
-                  ),
-                  subtitle: Text(
-                    _rpes[selected.id]?.isNotEmpty == true
-                        ? 'RPE ${_rpes[selected.id]}'
-                        : _warmup
-                        ? 'Warm-up set'
-                        : 'RPE and set type',
-                  ),
-                  children: [
-                    _RpeSelector(
-                      value: int.tryParse(_rpes[selected.id] ?? ''),
-                      onChanged: (value) => setState(
-                        () => _rpes[selected.id] = value?.toString() ?? '',
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    DropdownButtonFormField<String>(
-                      isExpanded: true,
-                      initialValue: _warmup ? 'warmup' : 'working',
-                      decoration: const InputDecoration(labelText: 'Set type'),
-                      items: const [
-                        DropdownMenuItem(
-                          value: 'working',
-                          child: Text('Working'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'warmup',
-                          child: Text('Warm-up'),
-                        ),
-                      ],
-                      onChanged: ui.isBusy
-                          ? null
-                          : (value) =>
-                                setState(() => _warmup = value == 'warmup'),
-                    ),
-                    if (launch.state.warmupRecommendation != null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: _WarmupCard(
-                          recommendation: launch.state.warmupRecommendation!,
-                          onAccept: ui.isBusy
-                              ? null
-                              : () => ref
-                                    .read(provider.notifier)
-                                    .chooseWarmup(B02WarmupDecision.accepted),
-                          onSkip: ui.isBusy
-                              ? null
-                              : () => ref
-                                    .read(provider.notifier)
-                                    .chooseWarmup(B02WarmupDecision.skipped),
-                          onEdit: ui.isBusy
-                              ? null
-                              : () => _editWarmup(
-                                  provider,
-                                  launch.state.warmupRecommendation!,
-                                ),
-                        ),
-                      ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 10),
-          SizedBox(
+    final currentTarget = _hasUsefulTargetContext(launch.state, selected)
+        ? _R07CTargetContext(
+            slot: selected,
+            state: launch.state,
+            onApply: ui.isBusy
+                ? null
+                : () => _applySuggestedTarget(launch.state, selected),
+            onChange: ui.isBusy
+                ? null
+                : () => _overrideTarget(provider, selected),
+          )
+        : null;
+    final setLogging = hasOpenRest
+        ? null
+        : _buildSetLoggingSlot(
+            context: context,
+            provider: provider,
+            ui: ui,
+            launch: launch,
+            selected: selected,
+            currentSet: currentSet,
+            performedSets: performedSets,
+          );
+    final primaryAction = hasOpenRest
+        ? null
+        : SizedBox(
             width: double.infinity,
             child: B05ActionButton(
               label: _warmup
@@ -377,13 +247,216 @@ class _B02StrengthPlayerScreenState
                   ? null
                   : () => _record(provider, selected),
             ),
+          );
+    return WorkoutExecutionShell(
+      execution: execution,
+      isBusy: ui.isBusy,
+      onClose: () => _closeWorkout(provider),
+      onReview: () => _openSummary(provider),
+      onDiscard: () => _discard(provider),
+      workoutContextSlot: _R07CExecutionHeader(
+        executionContext: execution,
+        exerciseIndex: slots.indexOf(selected),
+        exerciseCount: slots.length,
+        currentSet: currentSet,
+        plannedSets: selected.plannedSets,
+        exerciseComplete: exerciseComplete,
+        groupContext: selected.groupType == null
+            ? null
+            : _groupContext(selected),
+        exerciseName: _actualExerciseName(launch.state, selected),
+        elapsedState: launch.state,
+        nowUtc: widget.nowUtc,
+        onActions: ui.isBusy
+            ? null
+            : () => _showExerciseActions(provider, selected),
+      ),
+      exerciseProgressSlot: _R07CExerciseStrip(
+        slots: slots,
+        state: launch.state,
+        selectedId: selected.id,
+        onSelected: ui.isBusy
+            ? null
+            : (value) => setState(() => _selectedSlotId = value),
+      ),
+      currentExerciseSlot: currentTarget,
+      restSlot: hasOpenRest
+          ? _buildRestCard(provider, ui, launch, selected)
+          : null,
+      setLoggingSlot: setLogging,
+      primaryActionSlot: primaryAction,
+      primaryActionGap: 10,
+      nextExerciseGap: hasOpenRest
+          ? 12
+          : isQuick
+          ? 10
+          : 0,
+      nextExerciseSlot: _buildNextExerciseSlot(
+        context: context,
+        provider: provider,
+        ui: ui,
+        launch: launch,
+        selected: selected,
+        slots: slots,
+        isQuick: isQuick,
+        hasOpenRest: hasOpenRest,
+      ),
+      completionSlot: SizedBox(
+        width: double.infinity,
+        child: B05ActionButton(
+          label: isQuick ? 'Finish workout' : 'Review and finish',
+          emphasis: B05ActionEmphasis.secondary,
+          onPressed: ui.isBusy ? null : () => _openSummary(provider),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSetLoggingSlot({
+    required BuildContext context,
+    required dynamic provider,
+    required B02StrengthExecutionUiState ui,
+    required B02StrengthExecutionLaunch launch,
+    required B02StrengthExecutionSlot selected,
+    required int currentSet,
+    required List<B02PerformedSet> performedSets,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        B05Surface(
+          padding: const EdgeInsets.fromLTRB(14, 14, 14, 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Log set $currentSet', style: B05Typography.title(context)),
+              const SizedBox(height: 10),
+              IndiFitResponsiveFieldGroup(
+                spacing: 10,
+                breakpoint: 350,
+                children: [
+                  TextFormField(
+                    key: ValueKey('load-${selected.id}'),
+                    initialValue: _loads[selected.id],
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    textInputAction: TextInputAction.next,
+                    decoration: InputDecoration(
+                      labelText: _loadLabel(selected.targetLoadBasis),
+                    ),
+                    onChanged: (value) => _loads[selected.id] = value,
+                  ),
+                  TextFormField(
+                    key: ValueKey('reps-${selected.id}'),
+                    initialValue: _reps[selected.id],
+                    keyboardType: TextInputType.number,
+                    textInputAction: TextInputAction.done,
+                    decoration: const InputDecoration(labelText: 'Reps'),
+                    onChanged: (value) => _reps[selected.id] = value,
+                    onEditingComplete: () =>
+                        FocusManager.instance.primaryFocus?.unfocus(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              ExpansionTile(
+                tilePadding: EdgeInsets.zero,
+                childrenPadding: EdgeInsets.zero,
+                title: Row(
+                  children: [
+                    const Expanded(child: Text('More for this set')),
+                    Text('RPE', style: Theme.of(context).textTheme.labelMedium),
+                  ],
+                ),
+                subtitle: Text(
+                  _rpes[selected.id]?.isNotEmpty == true
+                      ? 'RPE ${_rpes[selected.id]}'
+                      : _warmup
+                      ? 'Warm-up set'
+                      : 'RPE and set type',
+                ),
+                children: [
+                  _RpeSelector(
+                    value: int.tryParse(_rpes[selected.id] ?? ''),
+                    onChanged: (value) => setState(
+                      () => _rpes[selected.id] = value?.toString() ?? '',
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<String>(
+                    isExpanded: true,
+                    initialValue: _warmup ? 'warmup' : 'working',
+                    decoration: const InputDecoration(labelText: 'Set type'),
+                    items: const [
+                      DropdownMenuItem(
+                        value: 'working',
+                        child: Text('Working'),
+                      ),
+                      DropdownMenuItem(value: 'warmup', child: Text('Warm-up')),
+                    ],
+                    onChanged: ui.isBusy
+                        ? null
+                        : (value) =>
+                              setState(() => _warmup = value == 'warmup'),
+                  ),
+                  if (launch.state.warmupRecommendation != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: _WarmupCard(
+                        recommendation: launch.state.warmupRecommendation!,
+                        onAccept: ui.isBusy
+                            ? null
+                            : () => ref
+                                  .read(provider.notifier)
+                                  .chooseWarmup(B02WarmupDecision.accepted),
+                        onSkip: ui.isBusy
+                            ? null
+                            : () => ref
+                                  .read(provider.notifier)
+                                  .chooseWarmup(B02WarmupDecision.skipped),
+                        onEdit: ui.isBusy
+                            ? null
+                            : () => _editWarmup(
+                                provider,
+                                launch.state.warmupRecommendation!,
+                              ),
+                      ),
+                    ),
+                ],
+              ),
+            ],
           ),
-          if (performedSets.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            R07CPerformedSetList(title: 'Logged sets', sets: performedSets),
-          ],
+        ),
+        if (performedSets.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          R07CPerformedSetList(title: 'Logged sets', sets: performedSets),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildNextExerciseSlot({
+    required BuildContext context,
+    required dynamic provider,
+    required B02StrengthExecutionUiState ui,
+    required B02StrengthExecutionLaunch launch,
+    required B02StrengthExecutionSlot selected,
+    required List<B02StrengthExecutionSlot> slots,
+    required bool isQuick,
+    required bool hasOpenRest,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (hasOpenRest) ...[
+          Text(
+            'The next set is ready when you are.',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ],
+        if (!hasOpenRest)
           if (isQuick) ...[
-            const SizedBox(height: 10),
             B05ActionButton(
               label: 'Add set',
               icon: Icons.add_rounded,
@@ -408,7 +481,6 @@ class _B02StrengthPlayerScreenState
                 label: const Text('Skip exercise'),
               ),
             ),
-        ],
         ExpansionTile(
           tilePadding: EdgeInsets.zero,
           title: const Text('Form cues'),
@@ -426,15 +498,6 @@ class _B02StrengthPlayerScreenState
         ),
         const SizedBox(height: 12),
         _GroupProgressCard(launch: launch, slots: slots),
-        const SizedBox(height: 12),
-        SizedBox(
-          width: double.infinity,
-          child: B05ActionButton(
-            label: isQuick ? 'Finish workout' : 'Review and finish',
-            emphasis: B05ActionEmphasis.secondary,
-            onPressed: ui.isBusy ? null : () => _openSummary(provider),
-          ),
-        ),
       ],
     );
   }
@@ -650,7 +713,11 @@ class _B02StrengthPlayerScreenState
         if (!_warmup) {
           await controller.beginRest(slot);
         }
-        if (mounted && launchForProvider(provider)?.occurrenceId == null) {
+        final currentLaunch = launchForProvider(provider);
+        final currentExecution = currentLaunch == null
+            ? null
+            : _executionFor(currentLaunch);
+        if (mounted && currentExecution is QuickWorkoutExecutionContext) {
           setState(() {
             _reps[slot.id] = slot.targetRepsMin?.toString() ?? '';
             _rpes[slot.id] = '';
@@ -700,7 +767,11 @@ class _B02StrengthPlayerScreenState
     dynamic provider,
     B02StrengthExecutionSlot slot,
   ) async {
-    final isQuick = launchForProvider(provider)?.occurrenceId == null;
+    final currentLaunch = launchForProvider(provider);
+    final currentExecution = currentLaunch == null
+        ? null
+        : _executionFor(currentLaunch);
+    final isQuick = currentExecution is QuickWorkoutExecutionContext;
     final hasLoggedSets = _hasLoggedSet(
       launchForProvider(provider)?.state ?? widget.launch.state,
       slot,
@@ -804,8 +875,18 @@ class _B02StrengthPlayerScreenState
     if (!mounted) return;
     final launch = ref.read(provider).launch;
     if (launch == null) return;
-    await context.push('/b02-strength-summary', extra: {'launch': launch});
+    await context.push(
+      '/b02-strength-summary',
+      extra: WorkoutExecutionRouteData(_executionFor(launch)),
+    );
     if (mounted) unawaited(controller.resumeElapsed());
+  }
+
+  WorkoutExecutionContext _executionFor(B02StrengthExecutionLaunch launch) {
+    final origin =
+        widget.executionContext ??
+        WorkoutExecutionContext.fromLaunch(widget.launch);
+    return origin.rebind(launch);
   }
 
   Future<void> _closeWorkout(dynamic provider) async {
@@ -935,8 +1016,8 @@ class _B02StrengthPlayerScreenState
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Discard draft?'),
-        content: const Text('This removes only the unfinished B02 draft.'),
+        title: const Text('Discard saved workout?'),
+        content: const Text('This removes only this unfinished workout.'),
         actions: [
           TextButton(
             onPressed: () => context.pop(false),
@@ -1001,7 +1082,7 @@ class _GroupProgressCard extends StatelessWidget {
 
 class _R07CExecutionHeader extends StatelessWidget {
   const _R07CExecutionHeader({
-    required this.isQuick,
+    required this.executionContext,
     required this.exerciseIndex,
     required this.exerciseCount,
     required this.currentSet,
@@ -1014,7 +1095,7 @@ class _R07CExecutionHeader extends StatelessWidget {
     required this.onActions,
   });
 
-  final bool isQuick;
+  final WorkoutExecutionContext executionContext;
   final int exerciseIndex;
   final int exerciseCount;
   final int currentSet;
@@ -1029,14 +1110,15 @@ class _R07CExecutionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.b05Colors;
-    final position = isQuick
+    final position = executionContext is QuickWorkoutExecutionContext
         ? 'Quick workout'
         : 'Exercise ${exerciseIndex + 1} of $exerciseCount';
+    final exercisePosition = 'Exercise ${exerciseIndex + 1} of $exerciseCount';
     final status =
         groupContext ??
         (exerciseComplete
             ? 'Exercise complete'
-            : 'Set $currentSet${isQuick ? '' : ' of $plannedSets'}');
+            : 'Set $currentSet${executionContext is QuickWorkoutExecutionContext ? '' : ' of $plannedSets'}');
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1047,12 +1129,15 @@ class _R07CExecutionHeader extends StatelessWidget {
               Row(
                 children: [
                   Flexible(
-                    child: Text(
-                      position.toUpperCase(),
-                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                        color: colors.action,
-                        letterSpacing: 0.6,
-                        fontWeight: FontWeight.w700,
+                    child: Semantics(
+                      label: '${executionContext.modeLabel}, $exercisePosition',
+                      child: Text(
+                        position.toUpperCase(),
+                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          color: colors.action,
+                          letterSpacing: 0.6,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                   ),
@@ -1662,7 +1747,7 @@ class _ErrorState extends StatelessWidget {
             ),
           TextButton(
             onPressed: onClose,
-            child: const Text('Keep draft and go back'),
+            child: const Text('Keep workout and go back'),
           ),
         ],
       ),
