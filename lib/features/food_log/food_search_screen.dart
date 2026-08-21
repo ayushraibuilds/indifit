@@ -11,7 +11,6 @@ import '../../core/nutrients.dart';
 import '../../core/nutrition_household_measures.dart';
 import '../../core/nutrition_legacy_read_models.dart';
 import '../../core/presentation/consumer_date_label.dart';
-import '../../core/services/indifit_haptics.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/typed_quantities.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
@@ -737,26 +736,18 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         consumptionId: 'direct-food-consumption::${const Uuid().v4()}',
       );
       if (!mounted) return;
-      unawaited(IndiFitHaptics.confirmation());
       _invalidateNutritionReads();
       final undo = _FoodAddUndoToken(
         snapshotId: snapshot.id,
         localDate: dateContext.localDate,
         mealCategory: selectedMealType,
       );
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 6),
-          content: Text(
+      showIndiFitUndoFeedback(
+        context,
+        message:
             'Added ${option.displayName} to ${_mealLabel(selectedMealType)}',
-          ),
-          action: SnackBarAction(
-            label: 'Undo',
-            onPressed: () => unawaited(_undoLastCanonicalAdd(undo)),
-          ),
-        ),
+        duration: const Duration(seconds: 4),
+        onUndo: () => unawaited(_undoLastCanonicalAdd(undo)),
       );
     } catch (_) {
       if (mounted) {
@@ -786,11 +777,9 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       );
       if (!mounted) return;
       _invalidateNutritionReads();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          behavior: SnackBarBehavior.floating,
-          content: Text('Food removed. Your totals are up to date.'),
-        ),
+      showIndiFitSuccessFeedback(
+        context,
+        'Food removed. Your totals are up to date.',
       );
     } catch (_) {
       if (mounted) {
@@ -846,6 +835,12 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     if (!compatibleUnits.contains(option.baseQuantity.unit)) {
       compatibleUnits.insert(0, option.baseQuantity.unit);
     }
+    final initialPreview = await coordinator.preview(
+      option: option,
+      quantity: selectedQuantity,
+      transformation: null,
+    );
+    if (!mounted) return;
     final amountController = TextEditingController(
       text: selectedQuantity.amount.toString(),
     );
@@ -864,15 +859,35 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         String? commandId;
         String? consumptionId;
         var isFinalizing = false;
-        Future<NutritionFoodLogPreview>? previewFuture;
-        Future<NutritionFoodLogPreview> buildPreview() => coordinator.preview(
-          option: option,
-          quantity: selectedQuantity,
-          transformation: transformations
+        var previewGeneration = 0;
+        NutritionFoodLogPreview? currentPreview = initialPreview;
+        var previewHasError = false;
+
+        void updatePreview(StateSetter setModalState) {
+          final currentGen = ++previewGeneration;
+          final transformation = transformations
               .where((item) => item.id == selectedTransformationId)
-              .firstOrNull,
-        );
-        previewFuture = buildPreview();
+              .firstOrNull;
+          coordinator.preview(
+            option: option,
+            quantity: selectedQuantity,
+            transformation: transformation,
+          ).then((preview) {
+            if (currentGen == previewGeneration && sheetContext.mounted) {
+              setModalState(() {
+                currentPreview = preview;
+                previewHasError = false;
+              });
+            }
+          }).catchError((_) {
+            if (currentGen == previewGeneration && sheetContext.mounted) {
+              setModalState(() {
+                previewHasError = true;
+              });
+            }
+          });
+        }
+
         void setQuantity(Quantity quantity, StateSetter setModalState) {
           final nextText = quantity.amount.toString();
           amountController.value = TextEditingValue(
@@ -882,7 +897,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
           setModalState(() {
             selectedQuantity = quantity;
             amountError = null;
-            previewFuture = buildPreview();
+            updatePreview(setModalState);
           });
         }
 
@@ -892,14 +907,14 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
           if (trimmed.isEmpty || trimmed == '.' || trimmed == '0.') {
             setModalState(() {
               amountError = null;
-              previewFuture = null;
+              currentPreview = null;
             });
             return;
           }
           if (amount == null || !amount.isFinite || amount <= 0) {
             setModalState(() {
               amountError = null;
-              previewFuture = null;
+              currentPreview = null;
             });
             return;
           }
@@ -911,7 +926,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
           setModalState(() {
             selectedQuantity = quantity;
             amountError = null;
-            previewFuture = buildPreview();
+            updatePreview(setModalState);
           });
         }
 
@@ -1095,16 +1110,24 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                         onChanged: (value) {
                           setModalState(() {
                             selectedTransformationId = value;
-                            previewFuture = buildPreview();
+                            updatePreview(setModalState);
                           });
                         },
                       ),
                       const SizedBox(height: 12),
                     ],
-                    FutureBuilder<NutritionFoodLogPreview>(
-                      future: previewFuture,
-                      builder: (context, snapshot) {
-                        if (previewFuture == null) {
+                    Builder(
+                      builder: (context) {
+                        final preview = currentPreview;
+                        if (preview == null) {
+                          if (previewHasError) {
+                            return Text(
+                              'Nutrition preview unavailable. Try again.',
+                              style: TextStyle(
+                                color: context.b05Colors.warning.foreground,
+                              ),
+                            );
+                          }
                           return Text(
                             'Enter an amount to preview nutrition.',
                             style: TextStyle(
@@ -1112,21 +1135,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                             ),
                           );
                         }
-                        if (snapshot.connectionState != ConnectionState.done) {
-                          return const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 8),
-                            child: LinearProgressIndicator(),
-                          );
-                        }
-                        if (snapshot.hasError) {
-                          return Text(
-                            'Nutrition preview unavailable. Try again.',
-                            style: TextStyle(
-                              color: context.b05Colors.warning.foreground,
-                            ),
-                          );
-                        }
-                        final facts = snapshot.data!.facts;
+                        final facts = preview.facts;
                         String value(String id, String unit) {
                           final fact = facts[id];
                           if (fact == null || !fact.isAvailable) return '—';
@@ -1262,7 +1271,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                                             finalQuantity,
                                           );
                                           selectedQuantity = finalQuantity;
-                                          previewFuture ??= buildPreview();
+                                          updatePreview(setModalState);
                                         } on QuantityError {
                                           setModalState(
                                             () => amountError =
@@ -1310,7 +1319,18 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                                               'direct-food-consumption::${const Uuid().v4()}';
                                         });
                                         try {
-                                          final preview = await previewFuture!;
+                                          final preview = currentPreview ??
+                                              await coordinator.preview(
+                                                option: option,
+                                                quantity: selectedQuantity,
+                                                transformation: transformations
+                                                    .where(
+                                                      (item) =>
+                                                          item.id ==
+                                                          selectedTransformationId,
+                                                    )
+                                                    .firstOrNull,
+                                              );
                                           final timezoneId = await ref
                                               .read(
                                                 localTimezoneServiceProvider,
@@ -1435,12 +1455,11 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       // its overlay to be removed before popping the meal-specific search
       // route, otherwise `maybePop` can run while the navigator is locked.
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          indiFitSuccessSnackBar(
-            supersedesSnapshotId == null
-                ? '✓ Food added to ${_mealLabel(selectedMealType)}'
-                : '✓ Food entry updated',
-          ),
+        showIndiFitSuccessFeedback(
+          context,
+          supersedesSnapshotId == null
+              ? '✓ Food added to ${_mealLabel(selectedMealType)}'
+              : '✓ Food entry updated',
         );
       }
       if (widget.returnToParentOnSave) {
@@ -1463,7 +1482,6 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         _selectedQuantities[key] = option.baseQuantity;
       }
     });
-    unawaited(IndiFitHaptics.selection());
   }
 
   Future<void> _toggleLegacySelection(FoodItem food) async {
@@ -1604,7 +1622,6 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         consumptionId: 'direct-food-batch-consumption::${const Uuid().v4()}',
       );
       if (!mounted) return;
-      unawaited(IndiFitHaptics.confirmation());
       setState(() {
         _selectedKeys.clear();
         _selectedOptions.clear();
@@ -1616,18 +1633,11 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         localDate: dateContext.localDate,
         mealCategory: mealType,
       );
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 6),
-          content: Text(
-            '${selected.length} foods added to ${_mealLabel(mealType)}',
-          ),
-          action: SnackBarAction(
-            label: 'Undo',
-            onPressed: () => unawaited(_undoLastCanonicalAdd(undo)),
-          ),
-        ),
+      showIndiFitUndoFeedback(
+        context,
+        message: '${selected.length} foods added to ${_mealLabel(mealType)}',
+        duration: const Duration(seconds: 4),
+        onUndo: () => unawaited(_undoLastCanonicalAdd(undo)),
       );
     } catch (_) {
       if (mounted) {
