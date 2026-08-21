@@ -109,14 +109,14 @@ class WorkoutExecutionShell extends StatelessWidget {
       if (currentExerciseSlot != null)
         _WorkoutExecutionSlot(currentExerciseSlot!, label: 'Current exercise'),
       if (restSlot != null) _WorkoutExecutionSlot(restSlot!, label: 'Rest'),
-      if (setLoggingSlot != null)
-        _WorkoutExecutionSlot(setLoggingSlot!, label: 'Set logging'),
       if (primaryActionSlot != null)
         _WorkoutExecutionSlot(
           primaryActionSlot!,
           label: 'Primary workout action',
           gapBefore: primaryActionGap,
         ),
+      if (setLoggingSlot != null)
+        _WorkoutExecutionSlot(setLoggingSlot!, label: 'Set logging'),
       if (nextExerciseSlot != null)
         _WorkoutExecutionSlot(
           nextExerciseSlot!,

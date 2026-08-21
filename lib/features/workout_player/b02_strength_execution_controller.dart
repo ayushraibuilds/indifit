@@ -282,6 +282,66 @@ class B02StrengthExecutionController
     }
   }
 
+  Future<bool> editSet({
+    required B02StrengthExecutionSlot slot,
+    required String setId,
+    required int reps,
+    double? loadKg,
+    B02LoadBasis? actualLoadBasis,
+    int? rpe,
+  }) async {
+    final current = state.launch;
+    if (current == null) {
+      state = const B02StrengthExecutionUiState(
+        status: B02StrengthExecutionStatus.recovery,
+        errorMessage:
+            'This workout draft is unavailable. Recover it or start over.',
+      );
+      return false;
+    }
+    try {
+      final next = _draftService.editSet(
+        state: current.state,
+        slot: slot,
+        setId: setId,
+        reps: reps,
+        loadKg: loadKg,
+        actualLoadBasis: actualLoadBasis,
+        rpe: rpe,
+      );
+      return await saveDraft(next);
+    } catch (error) {
+      _setFailure(error, current);
+      return false;
+    }
+  }
+
+  Future<bool> deleteSet({
+    required B02StrengthExecutionSlot slot,
+    required String setId,
+  }) async {
+    final current = state.launch;
+    if (current == null) {
+      state = const B02StrengthExecutionUiState(
+        status: B02StrengthExecutionStatus.recovery,
+        errorMessage:
+            'This workout draft is unavailable. Recover it or start over.',
+      );
+      return false;
+    }
+    try {
+      final next = _draftService.deleteSet(
+        state: current.state,
+        slot: slot,
+        setId: setId,
+      );
+      return await saveDraft(next);
+    } catch (error) {
+      _setFailure(error, current);
+      return false;
+    }
+  }
+
   Future<void> skipSlot(B02StrengthExecutionSlot slot, {String? reason}) async {
     final current = state.launch;
     if (current == null) {

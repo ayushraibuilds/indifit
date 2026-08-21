@@ -103,6 +103,28 @@ void main() {
     expect(find.text('Review and finish'), findsOneWidget);
   });
 
+  testWidgets('R08B2 repeated Log set taps persist one set', (tester) async {
+    _setViewport(tester, const Size(390, 844));
+    final launch = (await tester.runAsync(() => _launch(executions)))!;
+    await _pumpPlayer(tester, launch, executions, AppTheme.lightTheme);
+
+    await tester.enterText(find.byType(TextFormField).at(1), '8');
+    await tester.tap(find.text('Log set'));
+    await tester.pump();
+    await tester.tap(find.text('Log set'), warnIfMissed: false);
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 500)),
+    );
+    await tester.pump();
+
+    final saved = (await tester.runAsync(
+      () => executions.readDraft(launch.draftId),
+    ))!;
+    expect(saved.state.performedExercises.single.sets, hasLength(1));
+    expect(find.text('REST'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('R07C rest surface keeps wall-clock controls visible', (
     tester,
   ) async {

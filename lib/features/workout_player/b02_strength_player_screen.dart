@@ -15,6 +15,7 @@ import '../../data/repositories/b02_strength_execution_repository.dart';
 import 'b02_strength_execution_controller.dart';
 import 'b02_workout_elapsed.dart';
 import 'quick_workout_screen.dart';
+import 'widgets/b02_compact_set_table.dart';
 import 'widgets/r07c_workout_presentation.dart';
 import 'workout_execution_context.dart';
 import 'workout_execution_route.dart';
@@ -42,9 +43,10 @@ class B02StrengthPlayerScreen extends ConsumerStatefulWidget {
 class _B02StrengthPlayerScreenState
     extends ConsumerState<B02StrengthPlayerScreen>
     with WidgetsBindingObserver {
-  final _reps = <String, String>{};
-  final _loads = <String, String>{};
+  final _repControllers = <String, TextEditingController>{};
+  final _loadControllers = <String, TextEditingController>{};
   final _rpes = <String, String>{};
+  final _mutatingSetIds = <String>{};
   String? _selectedSlotId;
   final _substitutionIds = <String, String?>{};
   final _substitutionNames = <String, String?>{};
@@ -72,6 +74,12 @@ class _B02StrengthPlayerScreenState
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    for (final controller in _repControllers.values) {
+      controller.dispose();
+    }
+    for (final controller in _loadControllers.values) {
+      controller.dispose();
+    }
     super.dispose();
   }
 
@@ -197,14 +205,6 @@ class _B02StrengthPlayerScreenState
         !isQuick && workingSetCount >= selected.plannedSets;
     final currentSet = workingSetCount + 1;
     final performedSets = _performedSets(launch.state, selected);
-    _loads.putIfAbsent(
-      selected.id,
-      () => selected.targetLoadKg?.toString() ?? '',
-    );
-    _reps.putIfAbsent(
-      selected.id,
-      () => selected.targetRepsMin?.toString() ?? '',
-    );
     final currentTarget = _hasUsefulTargetContext(launch.state, selected)
         ? _R07CTargetContext(
             slot: selected,
@@ -220,24 +220,25 @@ class _B02StrengthPlayerScreenState
     final setLogging = hasOpenRest
         ? null
         : _buildSetLoggingSlot(
-            context: context,
             provider: provider,
             ui: ui,
             launch: launch,
             selected: selected,
             currentSet: currentSet,
             performedSets: performedSets,
+            isPlannedMode: execution is PlannedWorkoutExecutionContext,
           );
+    final primaryLabel = _warmup
+        ? 'Log warm-up set'
+        : exerciseComplete
+        ? 'Exercise complete'
+        : 'Log set';
     final primaryAction = hasOpenRest
         ? null
         : SizedBox(
             width: double.infinity,
             child: B05ActionButton(
-              label: _warmup
-                  ? 'Log warm-up set'
-                  : exerciseComplete
-                  ? 'Exercise complete'
-                  : 'Log set',
+              label: primaryLabel,
               hint: _warmup ? 'Save this warm-up set' : 'Save this set',
               onPressed:
                   ui.isBusy ||
@@ -313,126 +314,53 @@ class _B02StrengthPlayerScreenState
   }
 
   Widget _buildSetLoggingSlot({
-    required BuildContext context,
     required dynamic provider,
     required B02StrengthExecutionUiState ui,
     required B02StrengthExecutionLaunch launch,
     required B02StrengthExecutionSlot selected,
     required int currentSet,
     required List<B02PerformedSet> performedSets,
+    required bool isPlannedMode,
   }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        B05Surface(
-          padding: const EdgeInsets.fromLTRB(14, 14, 14, 8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Log set $currentSet', style: B05Typography.title(context)),
-              const SizedBox(height: 10),
-              IndiFitResponsiveFieldGroup(
-                spacing: 10,
-                breakpoint: 350,
-                children: [
-                  TextFormField(
-                    key: ValueKey('load-${selected.id}'),
-                    initialValue: _loads[selected.id],
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
+    final rpe = int.tryParse(_rpes[selected.id] ?? '');
+    return B02CompactSetTable(
+      slot: selected,
+      loggedSets: performedSets,
+      isPlannedMode: isPlannedMode,
+      isBusy: ui.isBusy || _isSubmittingSet,
+      currentSet: currentSet,
+      loadController: _loadControllerFor(selected),
+      repsController: _repControllerFor(selected),
+      rpe: rpe,
+      isWarmup: _warmup,
+      loadLabel: _loadLabel(selected.targetLoadBasis),
+      onRpeChanged: (value) =>
+          setState(() => _rpes[selected.id] = value?.toString() ?? ''),
+      onWarmupChanged: (value) => setState(() => _warmup = value),
+      onEdit: (set) => unawaited(_editLoggedSet(provider, selected, set)),
+      onDelete: (set) => unawaited(_deleteLoggedSet(provider, selected, set)),
+      onAddSet: !isPlannedMode ? () => _prepareExtraSet(selected) : null,
+      moreContent: launch.state.warmupRecommendation == null
+          ? null
+          : _WarmupCard(
+              recommendation: launch.state.warmupRecommendation!,
+              onAccept: ui.isBusy
+                  ? null
+                  : () => ref
+                        .read(provider.notifier)
+                        .chooseWarmup(B02WarmupDecision.accepted),
+              onSkip: ui.isBusy
+                  ? null
+                  : () => ref
+                        .read(provider.notifier)
+                        .chooseWarmup(B02WarmupDecision.skipped),
+              onEdit: ui.isBusy
+                  ? null
+                  : () => _editWarmup(
+                      provider,
+                      launch.state.warmupRecommendation!,
                     ),
-                    textInputAction: TextInputAction.next,
-                    decoration: InputDecoration(
-                      labelText: _loadLabel(selected.targetLoadBasis),
-                    ),
-                    onChanged: (value) => _loads[selected.id] = value,
-                  ),
-                  TextFormField(
-                    key: ValueKey('reps-${selected.id}'),
-                    initialValue: _reps[selected.id],
-                    keyboardType: TextInputType.number,
-                    textInputAction: TextInputAction.done,
-                    decoration: const InputDecoration(labelText: 'Reps'),
-                    onChanged: (value) => _reps[selected.id] = value,
-                    onEditingComplete: () =>
-                        FocusManager.instance.primaryFocus?.unfocus(),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              ExpansionTile(
-                tilePadding: EdgeInsets.zero,
-                childrenPadding: EdgeInsets.zero,
-                title: Row(
-                  children: [
-                    const Expanded(child: Text('More for this set')),
-                    Text('RPE', style: Theme.of(context).textTheme.labelMedium),
-                  ],
-                ),
-                subtitle: Text(
-                  _rpes[selected.id]?.isNotEmpty == true
-                      ? 'RPE ${_rpes[selected.id]}'
-                      : _warmup
-                      ? 'Warm-up set'
-                      : 'RPE and set type',
-                ),
-                children: [
-                  _RpeSelector(
-                    value: int.tryParse(_rpes[selected.id] ?? ''),
-                    onChanged: (value) => setState(
-                      () => _rpes[selected.id] = value?.toString() ?? '',
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  DropdownButtonFormField<String>(
-                    isExpanded: true,
-                    initialValue: _warmup ? 'warmup' : 'working',
-                    decoration: const InputDecoration(labelText: 'Set type'),
-                    items: const [
-                      DropdownMenuItem(
-                        value: 'working',
-                        child: Text('Working'),
-                      ),
-                      DropdownMenuItem(value: 'warmup', child: Text('Warm-up')),
-                    ],
-                    onChanged: ui.isBusy
-                        ? null
-                        : (value) =>
-                              setState(() => _warmup = value == 'warmup'),
-                  ),
-                  if (launch.state.warmupRecommendation != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: _WarmupCard(
-                        recommendation: launch.state.warmupRecommendation!,
-                        onAccept: ui.isBusy
-                            ? null
-                            : () => ref
-                                  .read(provider.notifier)
-                                  .chooseWarmup(B02WarmupDecision.accepted),
-                        onSkip: ui.isBusy
-                            ? null
-                            : () => ref
-                                  .read(provider.notifier)
-                                  .chooseWarmup(B02WarmupDecision.skipped),
-                        onEdit: ui.isBusy
-                            ? null
-                            : () => _editWarmup(
-                                provider,
-                                launch.state.warmupRecommendation!,
-                              ),
-                      ),
-                    ),
-                ],
-              ),
-            ],
-          ),
-        ),
-        if (performedSets.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          R07CPerformedSetList(title: 'Logged sets', sets: performedSets),
-        ],
-      ],
+            ),
     );
   }
 
@@ -457,13 +385,6 @@ class _B02StrengthPlayerScreenState
         ],
         if (!hasOpenRest)
           if (isQuick) ...[
-            B05ActionButton(
-              label: 'Add set',
-              icon: Icons.add_rounded,
-              emphasis: B05ActionEmphasis.secondary,
-              onPressed: ui.isBusy ? null : () => _prepareExtraSet(selected),
-            ),
-            const SizedBox(height: 4),
             B05ActionButton(
               label: 'Add exercise',
               icon: Icons.playlist_add_rounded,
@@ -608,8 +529,10 @@ class _B02StrengthPlayerScreenState
     final recommendation = state.targetRecommendations[slot.id];
     if (recommendation == null) return;
     setState(() {
-      _loads[slot.id] = recommendation.recommendedLoadKg?.toString() ?? '';
-      _reps[slot.id] = recommendation.targetRepsMin?.toString() ?? '';
+      _loadControllerFor(slot).text =
+          recommendation.recommendedLoadKg?.toString() ?? '';
+      _repControllerFor(slot).text =
+          recommendation.targetRepsMin?.toString() ?? '';
     });
     FocusManager.instance.primaryFocus?.unfocus();
   }
@@ -680,7 +603,7 @@ class _B02StrengthPlayerScreenState
 
   Future<void> _record(dynamic provider, B02StrengthExecutionSlot slot) async {
     if (_isSubmittingSet) return;
-    final reps = int.tryParse(_reps[slot.id] ?? '');
+    final reps = int.tryParse(_repControllerFor(slot).text);
     if (reps == null || reps < 1) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -695,7 +618,7 @@ class _B02StrengthPlayerScreenState
       await controller.recordSet(
         slot: slot,
         reps: reps,
-        loadKg: double.tryParse(_loads[slot.id] ?? ''),
+        loadKg: double.tryParse(_loadControllerFor(slot).text),
         actualLoadBasis: slot.targetLoadBasis,
         rpe: int.tryParse(_rpes[slot.id] ?? ''),
         role: _warmup ? B02SetRole.warmup : B02SetRole.working,
@@ -719,7 +642,7 @@ class _B02StrengthPlayerScreenState
             : _executionFor(currentLaunch);
         if (mounted && currentExecution is QuickWorkoutExecutionContext) {
           setState(() {
-            _reps[slot.id] = slot.targetRepsMin?.toString() ?? '';
+            _repControllerFor(slot).text = slot.targetRepsMin?.toString() ?? '';
             _rpes[slot.id] = '';
             _warmup = false;
           });
@@ -735,11 +658,218 @@ class _B02StrengthPlayerScreenState
 
   void _prepareExtraSet(B02StrengthExecutionSlot slot) {
     setState(() {
-      _reps[slot.id] = slot.targetRepsMin?.toString() ?? '';
+      _repControllerFor(slot).text = slot.targetRepsMin?.toString() ?? '';
       _rpes[slot.id] = '';
       _warmup = false;
     });
     FocusManager.instance.primaryFocus?.unfocus();
+  }
+
+  TextEditingController _loadControllerFor(B02StrengthExecutionSlot slot) {
+    return _loadControllers.putIfAbsent(
+      slot.id,
+      () => TextEditingController(text: slot.targetLoadKg?.toString() ?? ''),
+    );
+  }
+
+  TextEditingController _repControllerFor(B02StrengthExecutionSlot slot) {
+    return _repControllers.putIfAbsent(
+      slot.id,
+      () => TextEditingController(text: slot.targetRepsMin?.toString() ?? ''),
+    );
+  }
+
+  Future<void> _editLoggedSet(
+    dynamic provider,
+    B02StrengthExecutionSlot slot,
+    B02PerformedSet set,
+  ) async {
+    if (!_mutatingSetIds.add(set.id)) return;
+    try {
+      // The row action may be tapped while the pending-set field still owns
+      // the keyboard. Close that transient input surface before presenting
+      // the edit sheet so its safe-area inset is measured from the viewport.
+      FocusManager.instance.primaryFocus?.unfocus();
+      final repsController = TextEditingController(
+        text: set.actualReps?.toString() ?? '',
+      );
+      final loadController = TextEditingController(
+        text: set.actualLoadKg?.toString() ?? '',
+      );
+      final result = await showModalBottomSheet<_B02LoggedSetEditValues>(
+        context: context,
+        isScrollControlled: true,
+        useSafeArea: true,
+        builder: (sheetContext) {
+          int? rpe = set.actualRpe;
+          String? repsError;
+          String? loadError;
+          final canEditReps = set.technique.segments.isEmpty;
+          return StatefulBuilder(
+            builder: (context, setModalState) {
+              void save() {
+                final reps = int.tryParse(repsController.text.trim());
+                final rawLoad = loadController.text.trim();
+                final load = rawLoad.isEmpty ? null : double.tryParse(rawLoad);
+                final nextRepsError = reps == null || reps < 1
+                    ? 'Enter at least 1 rep.'
+                    : null;
+                final nextLoadError =
+                    rawLoad.isNotEmpty && (load == null || load < 0)
+                    ? 'Enter a valid load.'
+                    : null;
+                if (nextRepsError != null || nextLoadError != null) {
+                  setModalState(() {
+                    repsError = nextRepsError;
+                    loadError = nextLoadError;
+                  });
+                  return;
+                }
+                Navigator.of(sheetContext).pop(
+                  _B02LoggedSetEditValues(reps: reps!, loadKg: load, rpe: rpe),
+                );
+              }
+
+              return Padding(
+                padding: EdgeInsets.only(
+                  left: 20,
+                  right: 20,
+                  top: 12,
+                  bottom: MediaQuery.viewInsetsOf(context).bottom + 20,
+                ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        'Edit set ${set.ordinal + 1}',
+                        style: B05Typography.title(context),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        set.role == B02SetRole.warmup
+                            ? 'Warm-up set'
+                            : 'Logged set',
+                        style: B05Typography.caption(context),
+                      ),
+                      const SizedBox(height: 16),
+                      IndiFitResponsiveFieldGroup(
+                        spacing: 10,
+                        breakpoint: 350,
+                        children: [
+                          TextFormField(
+                            controller: loadController,
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
+                            decoration: InputDecoration(
+                              labelText: 'Load (kg)',
+                              helperText:
+                                  set.actualLoadBasis == B02LoadBasis.bodyweight
+                                  ? 'Bodyweight'
+                                  : null,
+                              errorText: loadError,
+                            ),
+                          ),
+                          TextFormField(
+                            controller: repsController,
+                            readOnly: !canEditReps,
+                            keyboardType: TextInputType.number,
+                            decoration: InputDecoration(
+                              labelText: 'Reps',
+                              helperText: canEditReps
+                                  ? null
+                                  : 'Advanced set details are kept together.',
+                              errorText: repsError,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<int>(
+                        isExpanded: true,
+                        initialValue: rpe,
+                        decoration: const InputDecoration(labelText: 'RPE'),
+                        items: [
+                          const DropdownMenuItem<int>(
+                            value: null,
+                            child: Text('Not set'),
+                          ),
+                          for (var effort = 1; effort <= 10; effort++)
+                            DropdownMenuItem(
+                              value: effort,
+                              child: Text('$effort'),
+                            ),
+                        ],
+                        onChanged: (value) => setModalState(() => rpe = value),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          TextButton(
+                            onPressed: () => Navigator.of(sheetContext).pop(),
+                            child: const Text('Cancel'),
+                          ),
+                          const SizedBox(width: 8),
+                          FilledButton(
+                            onPressed: save,
+                            child: const Text('Save changes'),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      );
+      repsController.dispose();
+      loadController.dispose();
+      if (result == null || !mounted) return;
+      final loadBasis = result.loadKg == null
+          ? set.actualLoadBasis == B02LoadBasis.bodyweight
+                ? B02LoadBasis.bodyweight
+                : null
+          : set.actualLoadBasis ??
+                slot.targetLoadBasis ??
+                B02LoadBasis.totalExternal;
+      final saved = await ref
+          .read(provider.notifier)
+          .editSet(
+            slot: slot,
+            setId: set.id,
+            reps: result.reps,
+            loadKg: result.loadKg,
+            actualLoadBasis: loadBasis,
+            rpe: result.rpe,
+          );
+      if (saved && mounted) {
+        showIndiFitSuccessFeedback(context, 'Set updated');
+      }
+    } finally {
+      _mutatingSetIds.remove(set.id);
+    }
+  }
+
+  Future<void> _deleteLoggedSet(
+    dynamic provider,
+    B02StrengthExecutionSlot slot,
+    B02PerformedSet set,
+  ) async {
+    if (!_mutatingSetIds.add(set.id)) return;
+    try {
+      final saved = await ref
+          .read(provider.notifier)
+          .deleteSet(slot: slot, setId: set.id);
+      if (saved && mounted) {
+        showIndiFitSuccessFeedback(context, 'Set deleted');
+      }
+    } finally {
+      _mutatingSetIds.remove(set.id);
+    }
   }
 
   Future<void> _openExercisePicker(dynamic provider) async {
@@ -1080,6 +1210,18 @@ class _GroupProgressCard extends StatelessWidget {
   }
 }
 
+class _B02LoggedSetEditValues {
+  const _B02LoggedSetEditValues({
+    required this.reps,
+    required this.loadKg,
+    required this.rpe,
+  });
+
+  final int reps;
+  final double? loadKg;
+  final int? rpe;
+}
+
 class _R07CExecutionHeader extends StatelessWidget {
   const _R07CExecutionHeader({
     required this.executionContext,
@@ -1357,26 +1499,6 @@ class _R07CTargetContext extends StatelessWidget {
     num number => number.toInt(),
     _ => null,
   };
-}
-
-class _RpeSelector extends StatelessWidget {
-  final int? value;
-  final ValueChanged<int?> onChanged;
-
-  const _RpeSelector({required this.value, required this.onChanged});
-
-  @override
-  Widget build(BuildContext context) => DropdownButtonFormField<int>(
-    isExpanded: true,
-    initialValue: value,
-    decoration: const InputDecoration(labelText: 'RPE'),
-    items: [
-      const DropdownMenuItem<int>(value: null, child: Text('RPE')),
-      for (var effort = 1; effort <= 10; effort++)
-        DropdownMenuItem(value: effort, child: Text('$effort')),
-    ],
-    onChanged: onChanged,
-  );
 }
 
 class _WarmupCard extends StatelessWidget {
