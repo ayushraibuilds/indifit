@@ -6,11 +6,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/di/providers.dart';
+import 'package:indifit/core/fixtures/exercise_display_muscles.dart';
 import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/models/b02_execution_models.dart';
 import 'package:indifit/data/repositories/b02_exercise_performance_read_repository.dart';
 import 'package:indifit/data/repositories/b02_strength_execution_repository.dart';
+import 'package:indifit/data/repositories/b07_exercise_context_repository.dart';
 import 'package:indifit/data/repositories/calendar_repository.dart';
 import 'package:indifit/data/services/b02_rest_recommendation_service.dart';
 import 'package:indifit/data/services/b02_strength_execution_draft_service.dart';
@@ -57,7 +59,7 @@ void main() {
   ) async {
     _setViewport(tester, const Size(390, 844));
     final launch = (await tester.runAsync(() => _launch(executions)))!;
-    await _pumpPlayer(tester, launch, executions, AppTheme.lightTheme);
+    await _pumpPlayer(tester, launch, executions, db, AppTheme.lightTheme);
 
     expect(find.text('Log set'), findsOneWidget);
     expect(find.text('Suggested'), findsNothing);
@@ -81,7 +83,7 @@ void main() {
     final launch = (await tester.runAsync(
       () => _launchPlannedLike(executions),
     ))!;
-    await _pumpPlayer(tester, launch, executions, AppTheme.lightTheme);
+    await _pumpPlayer(tester, launch, executions, db, AppTheme.lightTheme);
 
     expect(find.text('Suggested'), findsOneWidget);
     expect(find.text('Log set'), findsOneWidget);
@@ -106,7 +108,7 @@ void main() {
   testWidgets('R08B2 repeated Log set taps persist one set', (tester) async {
     _setViewport(tester, const Size(390, 844));
     final launch = (await tester.runAsync(() => _launch(executions)))!;
-    await _pumpPlayer(tester, launch, executions, AppTheme.lightTheme);
+    await _pumpPlayer(tester, launch, executions, db, AppTheme.lightTheme);
 
     await tester.enterText(find.byType(TextFormField).at(1), '8');
     await tester.tap(find.text('Log set'));
@@ -130,7 +132,7 @@ void main() {
   ) async {
     _setViewport(tester, const Size(390, 844));
     final launch = (await tester.runAsync(() => _launchWithRest(executions)))!;
-    await _pumpPlayer(tester, launch, executions, AppTheme.darkTheme);
+    await _pumpPlayer(tester, launch, executions, db, AppTheme.darkTheme);
 
     expect(find.text('REST'), findsOneWidget);
     expect(find.text('−15 sec'), findsOneWidget);
@@ -251,6 +253,7 @@ void main() {
             tester,
             launch,
             executions,
+            db,
             theme,
             textScale: scale,
           );
@@ -296,6 +299,7 @@ Future<void> _pumpPlayer(
   WidgetTester tester,
   B02StrengthExecutionLaunch launch,
   StrengthExecutionRepository executions,
+  AppDatabase database,
   ThemeData theme, {
   double textScale = 1,
 }) async {
@@ -309,6 +313,9 @@ Future<void> _pumpPlayer(
       overrides: [
         b02StrengthExecutionScreenControllerProvider.overrideWith(
           (ref, _) => controller,
+        ),
+        b07ExerciseContextRepositoryProvider.overrideWithValue(
+          _GoldenB07ExerciseContextRepository(database),
         ),
       ],
       child: MaterialApp(
@@ -434,5 +441,28 @@ class _FakeExercisePerformanceReadRepository
   }) async {
     expect(stableExerciseId, 'r07c-bench');
     return records;
+  }
+}
+
+class _GoldenB07ExerciseContextRepository extends B07ExerciseContextRepository {
+  _GoldenB07ExerciseContextRepository(super.database);
+
+  @override
+  Future<B07ExerciseContextResult> resolve(String canonicalExerciseId) async {
+    if (canonicalExerciseId != 'r07c-bench') {
+      return const B07ExerciseContextResult.unavailable();
+    }
+    return B07ExerciseContextResult.available(
+      B07ExerciseContext(
+        canonicalExerciseId: 'r07c-bench',
+        canonicalName: 'Bench press',
+        equipment: 'Barbell',
+        displayMuscles: ExerciseDisplayMuscles.fromMuscleGroups(
+          'Chest,Triceps',
+        ),
+        formCues: const ['Brace your feet', 'Keep the bar path controlled'],
+        commonMistakes: const ['Bouncing the bar'],
+      ),
+    );
   }
 }

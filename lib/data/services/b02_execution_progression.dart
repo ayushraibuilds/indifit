@@ -66,6 +66,17 @@ abstract final class B02ExecutionProgression {
     return _moveToNext(state: state, slots: slots, current: current);
   }
 
+  /// Returns the next slot using the same persisted group/member/round
+  /// ordering used by cursor advancement. This is a read-only presentation
+  /// seam; it does not create a new progression rule or mutate the draft.
+  static B02StrengthExecutionSlot? nextSlot({
+    required B02ExecutionDraftState state,
+    required List<B02StrengthExecutionSlot> slots,
+    required B02StrengthExecutionSlot current,
+  }) {
+    return _nextSlot(state: state, slots: slots, current: current);
+  }
+
   static B02ExecutionDraftState _moveToNext({
     required B02ExecutionDraftState state,
     required List<B02StrengthExecutionSlot> slots,

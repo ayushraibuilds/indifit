@@ -15,6 +15,7 @@ import '../../data/repositories/b02_progress_read_repository.dart';
 import '../../data/repositories/b02_strength_execution_repository.dart';
 import '../../data/repositories/b04_briefing_read_repositories.dart';
 import '../../data/repositories/b04_recommendation_history_repository.dart';
+import '../../data/repositories/b07_exercise_context_repository.dart';
 import '../../data/repositories/calendar_read_repository.dart';
 import '../../data/repositories/calendar_repository.dart';
 import '../../data/repositories/coaching_preference_repository.dart';
@@ -56,6 +57,7 @@ import '../../features/dashboard/b04_daily_briefing_controller.dart';
 import '../../features/food_log/nutrition_estimate_review_controller.dart';
 import '../../features/food_log/nutrition_thali_controller.dart';
 import '../../features/food_log/saved_recipe_log_controller.dart';
+import '../../features/media/b05_exercise_visual_registry.dart';
 import '../../features/nutrition/current_food_controller.dart';
 import '../../features/nutrition/protein_distribution_controller.dart';
 import '../../features/progress/b04_weekly_review_controller.dart';
@@ -915,6 +917,34 @@ final exercisePreferenceAggregateProvider =
       return ref
           .watch(exercisePreferenceRepositoryProvider)
           .watchPreference(stableId: lookup.stableId, rawName: lookup.rawName);
+    });
+
+/// The existing R08-0 exact-UUID visual registry, loaded through the packaged
+/// manifest boundary. Missing local/private RepDB files are expected: the
+/// registry remains useful for exact binding, while [ExerciseVisual] falls
+/// through to the canonical muscle map or semantic icon.
+final b05ExerciseVisualRegistryProvider =
+    FutureProvider<B05ExerciseVisualRegistry>((ref) async {
+      try {
+        return await B05AssetBundleExerciseVisualRegistrySource(
+          bundle: rootBundle,
+        ).load();
+      } catch (_) {
+        return const B05ExerciseVisualRegistry.empty();
+      }
+    });
+
+final b07ExerciseContextRepositoryProvider =
+    Provider<B07ExerciseContextRepository>(
+      (ref) => B07ExerciseContextRepository(ref.watch(databaseProvider)),
+    );
+
+/// Exact actual-exercise context keyed by the canonical performed UUID.
+/// Riverpod's family key also prevents a late A lookup from painting over a
+/// replacement B lookup.
+final b07ExerciseContextProvider =
+    FutureProvider.family<B07ExerciseContextResult, String>((ref, id) {
+      return ref.watch(b07ExerciseContextRepositoryProvider).resolve(id);
     });
 
 final workoutExecutionCompatibilityAdapterProvider =

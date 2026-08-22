@@ -25,6 +25,7 @@ import 'quick_workout_screen.dart';
 import 'widgets/b02_compact_set_table.dart';
 import 'widgets/b02_execution_advanced_controls.dart';
 import 'widgets/b02_execution_semantics.dart';
+import 'widgets/b07_exercise_context.dart';
 import 'widgets/r07c_workout_presentation.dart';
 import 'workout_execution_context.dart';
 import 'workout_execution_route.dart';
@@ -233,6 +234,11 @@ class _B02StrengthPlayerScreenState
     final groupSafe = _groupIntegrity(launch.state, selected, slots).isValid;
     _loggedSetCounts[selected.id] = performedSets.length;
     final actualExerciseId = _actualExerciseId(launch.state, selected);
+    final nextSlot = B02ExecutionProgression.nextSlot(
+      state: launch.state,
+      slots: slots,
+      current: selected,
+    );
     _syncInputIdentity(selected, actualExerciseId);
     final pendingTechnique = _pendingTechniqueFor(selected, currentSet);
     final previousKey = _previousPerformanceKey(
@@ -335,16 +341,28 @@ class _B02StrengthPlayerScreenState
           : isQuick
           ? 10
           : 0,
-      nextExerciseSlot: _buildNextExerciseSlot(
-        context: context,
-        provider: provider,
-        ui: ui,
-        launch: launch,
-        selected: selected,
-        slots: slots,
-        isQuick: isQuick,
-        hasOpenRest: hasOpenRest,
-        groupSafe: groupSafe,
+      nextExerciseSlot: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          B07ExerciseContextPanel(
+            key: ValueKey<String>('b07-context:${actualExerciseId ?? ''}'),
+            canonicalExerciseId: actualExerciseId ?? '',
+            exerciseNameSnapshot: _actualExerciseName(launch.state, selected),
+          ),
+          const SizedBox(height: 12),
+          _buildNextExerciseSlot(
+            context: context,
+            provider: provider,
+            ui: ui,
+            launch: launch,
+            selected: selected,
+            slots: slots,
+            isQuick: isQuick,
+            hasOpenRest: hasOpenRest,
+            groupSafe: groupSafe,
+            nextSlot: nextSlot,
+          ),
+        ],
       ),
       completionSlot: SizedBox(
         width: double.infinity,
@@ -446,6 +464,7 @@ class _B02StrengthPlayerScreenState
     required bool isQuick,
     required bool hasOpenRest,
     required bool groupSafe,
+    required B02StrengthExecutionSlot? nextSlot,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -477,21 +496,7 @@ class _B02StrengthPlayerScreenState
                 label: const Text('Skip exercise'),
               ),
             ),
-        ExpansionTile(
-          tilePadding: EdgeInsets.zero,
-          title: const Text('Form cues'),
-          children: const [
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Padding(
-                padding: EdgeInsets.only(bottom: 12),
-                child: Text(
-                  'Open exercise details for setup and technique guidance.',
-                ),
-              ),
-            ),
-          ],
-        ),
+        B07NextExerciseContext(currentSlot: selected, nextSlot: nextSlot),
         const SizedBox(height: 12),
         _GroupProgressCard(launch: launch, slots: slots, selected: selected),
       ],
