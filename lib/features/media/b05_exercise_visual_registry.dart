@@ -183,6 +183,7 @@ class ExerciseVisual extends StatefulWidget {
   final bool showTechniqueDisclosure;
   final double? width;
   final double? height;
+  final int? cacheWidth;
   final BoxFit fit;
   final AssetBundle? assetBundle;
 
@@ -198,6 +199,7 @@ class ExerciseVisual extends StatefulWidget {
     this.showTechniqueDisclosure = false,
     this.width,
     this.height,
+    this.cacheWidth,
     this.fit = BoxFit.contain,
     this.assetBundle,
     super.key,
@@ -265,6 +267,7 @@ class _ExerciseVisualState extends State<ExerciseVisual> {
                 width: widget.width,
                 height: widget.height,
                 fit: widget.fit,
+                cacheWidth: widget.cacheWidth,
                 gaplessPlayback: true,
                 errorBuilder: (errorContext, error, stackTrace) {
                   return _fallback(errorContext);
@@ -319,14 +322,36 @@ class _ExerciseVisualState extends State<ExerciseVisual> {
   Widget _fallback(BuildContext context) {
     final muscles = widget.displayMuscles;
     if (muscles?.isNotEmpty == true) {
-      return SizedBox(
-        width: widget.width,
-        height: widget.height,
-        child: IndiFitMuscleMap.exercise(
-          primaryMuscle: muscles!.primaryMuscle,
-          secondaryMuscles: muscles.secondaryMuscles,
-          showTextEquivalent: false,
-        ),
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final explicitHeight = widget.height;
+          final mapHeight =
+              explicitHeight != null &&
+                  explicitHeight.isFinite &&
+                  explicitHeight > 0
+              ? explicitHeight
+              : constraints.maxHeight.isFinite && constraints.maxHeight > 0
+              ? constraints.maxHeight
+              : 112.0;
+          return SizedBox(
+            width: widget.width,
+            height: widget.height,
+            child: Center(
+              child: SizedBox(
+                // The pinned both-view geometry is about 1.15:1 at its
+                // natural aspect ratio. A finite canvas keeps the renderer
+                // safe inside the player's compact, lazy list slot.
+                width: mapHeight * 1.15,
+                height: mapHeight,
+                child: IndiFitMuscleMap.exercise(
+                  primaryMuscle: muscles!.primaryMuscle,
+                  secondaryMuscles: muscles.secondaryMuscles,
+                  showTextEquivalent: false,
+                ),
+              ),
+            ),
+          );
+        },
       );
     }
     final equipment = widget.equipment?.trim();
