@@ -247,6 +247,28 @@ class CalendarRepository {
     )..where((table) => table.id.equals(occurrenceId))).getSingleOrNull();
   }
 
+  /// Reads the exact prescription snapshot that a scheduled occurrence would
+  /// use at launch, without changing its lifecycle or creating a draft.
+  ///
+  /// A started occurrence already owns an immutable execution snapshot, so it
+  /// is returned as-is even after the active plan changes. An unstarted
+  /// occurrence is projected through the same occurrence-ancestry builder used
+  /// by [start]; it is never rebuilt from the currently selected plan or from
+  /// display names. The active-plan guard makes an unstarted stale retained
+  /// screen fail closed, just like the eventual start command does.
+  Future<String> readWorkoutPreviewSnapshot(String occurrenceId) async {
+    final occurrence = await getOccurrence(occurrenceId);
+    if (occurrence == null) {
+      throw const InvalidOccurrenceTransitionException(
+        'Workout was not found.',
+      );
+    }
+    final existing = occurrence.executionSnapshotJson?.trim();
+    if (existing != null && existing.isNotEmpty) return existing;
+    await _requireActivePlan(occurrence);
+    return _buildExecutionSnapshot(occurrence);
+  }
+
   Future<List<ScheduledSessionOccurrence>> getOccurrencesInLocalDateRange({
     required String startLocalDate,
     required String endLocalDate,

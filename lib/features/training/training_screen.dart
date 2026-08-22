@@ -18,6 +18,7 @@ import '../../data/repositories/calendar_read_repository.dart';
 import '../../data/repositories/program_lifecycle_repository.dart';
 import '../../data/repositories/training_next_action_resolver.dart';
 import '../../data/repositories/workout_repository.dart';
+import '../calendar/occurrence_actions_sheet.dart';
 import '../calendar/program_calendar_screen.dart';
 import '../calendar/workout_contextual_launcher.dart';
 import '../exercise_library/exercise_library_screen.dart';
@@ -28,6 +29,7 @@ import '../workout_player/routine_display_screen.dart';
 import '../workout_player/widgets/manual_log_sheet.dart';
 import '../workout_player/workout_player_screen.dart';
 import 'training_plan_lifecycle_controller.dart';
+import 'training_workout_preview.dart';
 import 'workout_history_screen.dart';
 
 /// Read-only, presentation-ready data for the Training landing page.
@@ -179,6 +181,7 @@ class TrainingScreen extends ConsumerStatefulWidget {
 
 class _TrainingScreenState extends ConsumerState<TrainingScreen> {
   var _isLaunching = false;
+  var _isOpeningPreview = false;
   var _isEndingPlan = false;
 
   static WorkoutDraft? _resumableDraftFor(TrainingLandingSnapshot data) {
@@ -411,18 +414,32 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
     CalendarOccurrenceReadItem item,
   ) async {
     if (_isLaunching || !isActionableTrainingOccurrence(item)) return;
-    final snapshotData = ref
-        .read(trainingLandingSnapshotProvider)
-        .asData
-        ?.value;
-    final hasActiveDraft = snapshotData?.hasActiveDraft ?? false;
-    final resumableDraft = snapshotData == null
-        ? null
-        : _resumableDraftFor(snapshotData);
+    final snapshotState = ref.read(trainingLandingSnapshotProvider);
+    if (!snapshotState.hasValue ||
+        snapshotState
+                .requireValue
+                .nextActionResolution
+                ?.activeDraftReadAvailable ==
+            false) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Workout state unavailable. Try again before starting another workout.',
+          ),
+        ),
+      );
+      return;
+    }
+    final snapshotData = snapshotState.requireValue;
+    final hasActiveDraft = snapshotData.hasActiveDraft;
+    final resumableDraft = _resumableDraftFor(snapshotData);
+    final currentOccurrenceId =
+        snapshotData.nextActionResolution?.currentOccurrence?.occurrence.id;
     if (hasActiveDraft) {
-      if (item.occurrence.status == 'inProgress' &&
-          resumableDraft != null &&
-          resumableDraft.scheduledOccurrenceId == item.occurrence.id) {
+      if (resumableDraft != null &&
+          resumableDraft.scheduledOccurrenceId == item.occurrence.id &&
+          (item.occurrence.status == 'inProgress' ||
+              currentOccurrenceId == item.occurrence.id)) {
         await _resumeDraft(context, ref, resumableDraft);
         return;
       } else {
@@ -488,6 +505,68 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
     }
   }
 
+  Future<void> _openWorkoutPreview(
+    BuildContext context,
+    WidgetRef ref,
+    CalendarOccurrenceReadItem item,
+  ) async {
+    if (_isLaunching || _isOpeningPreview) return;
+    if (!isActionableTrainingOccurrence(item) ||
+        item.occurrence.status == 'inProgress') {
+      return;
+    }
+    setState(() => _isOpeningPreview = true);
+    try {
+      final snapshotJson = await ref
+          .read(calendarRepositoryProvider)
+          .readWorkoutPreviewSnapshot(item.occurrence.id);
+      final preview = TrainingWorkoutPreviewData.fromOccurrence(
+        item,
+        snapshotJson: snapshotJson,
+      );
+      if (!context.mounted) return;
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => TrainingWorkoutPreviewScreen(
+            preview: preview,
+            onStartWorkout: () => _startWorkout(context, ref, item),
+            onOpenScheduleActions: () =>
+                _showOccurrenceActions(context, ref, item),
+          ),
+        ),
+      );
+      if (context.mounted) ref.invalidate(trainingLandingSnapshotProvider);
+    } catch (error) {
+      if (!context.mounted) return;
+      final message = ProductFailurePresentation.fromError(
+        error,
+        title: 'Workout preview unavailable',
+        code: 'workout_unavailable',
+      ).message;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
+    } finally {
+      if (mounted) setState(() => _isOpeningPreview = false);
+    }
+  }
+
+  Future<void> _showOccurrenceActions(
+    BuildContext context,
+    WidgetRef ref,
+    CalendarOccurrenceReadItem item,
+  ) async {
+    await showIndiFitBottomSheet<void>(
+      context: context,
+      semanticLabel: 'Workout actions',
+      builder: (_) => OccurrenceActionsSheet(
+        occurrenceItem: item,
+        scheduleAdjustmentsOnly: true,
+      ),
+    );
+    if (context.mounted) ref.invalidate(trainingLandingSnapshotProvider);
+  }
+
   Future<void> _logWorkout(
     BuildContext context,
     TrainingLandingSnapshot data,
@@ -546,8 +625,8 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
         ),
         data: (data) => _DominantTrainingLandingBody(
           data: data,
-          isLaunching: _isLaunching,
-          onStartWorkout: (item) => _startWorkout(context, ref, item),
+          isLaunching: _isLaunching || _isOpeningPreview,
+          onStartWorkout: (item) => _openWorkoutPreview(context, ref, item),
           onStartQuickWorkout: () => context.push('/quick-workout'),
           onResumeDraft: _resumableDraftFor(data) == null
               ? null
