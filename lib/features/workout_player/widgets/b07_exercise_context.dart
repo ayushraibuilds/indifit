@@ -456,7 +456,7 @@ class B07NextExerciseContext extends StatelessWidget {
     return Semantics(
       container: true,
       label: nextName == null || nextName.isEmpty
-          ? 'End of the canonical exercise sequence'
+          ? 'End of workout sequence'
           : 'Next exercise $nextName${position == null ? '' : ', $position'}',
       child: B05Surface(
         tone: B05SurfaceTone.inset,

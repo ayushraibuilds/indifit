@@ -331,7 +331,7 @@ class _B02StrengthPlayerScreenState
       ),
       currentExerciseSlot: currentTarget,
       restSlot: hasOpenRest
-          ? _buildRestCard(provider, ui, launch, selected)
+          ? _buildRestCard(provider, ui, launch, cursorSlot ?? selected)
           : null,
       setLoggingSlot: setLogging,
       primaryActionSlot: primaryAction,
@@ -829,18 +829,18 @@ class _B02StrengthPlayerScreenState
     dynamic provider,
     B02StrengthExecutionUiState ui,
     B02StrengthExecutionLaunch launch,
-    B02StrengthExecutionSlot selected,
+    B02StrengthExecutionSlot nextSlot,
   ) => _RestCard(
-    slot: selected,
+    slot: nextSlot,
     state: launch.state,
     onBegin: ui.isBusy
         ? null
-        : () => ref.read(provider.notifier).beginRest(selected),
+        : () => ref.read(provider.notifier).beginRest(nextSlot),
     onCustom: ui.isBusy
         ? null
         : (seconds) => ref
               .read(provider.notifier)
-              .beginRest(selected, selectedSeconds: seconds),
+              .beginRest(nextSlot, selectedSeconds: seconds),
     onExtend: ui.isBusy
         ? null
         : (periodId) =>
@@ -1498,7 +1498,7 @@ class _B02StrengthPlayerScreenState
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Discard saved workout?'),
+        title: const Text('Discard workout?'),
         content: const Text('This removes only this unfinished workout.'),
         actions: [
           TextButton(
@@ -2157,6 +2157,9 @@ class _RestCardState extends State<_RestCard> {
   Widget build(BuildContext context) {
     final period = _openPeriod(widget);
     final remaining = period == null ? null : _remainingLabel(period);
+    final remainingSeconds = period == null
+        ? null
+        : b02RestRemainingSeconds(period, _now);
     return Semantics(
       container: true,
       label: period == null ? 'Rest controls' : 'Rest in progress',
@@ -2236,14 +2239,34 @@ class _RestCardState extends State<_RestCard> {
                 ),
               ] else ...[
                 Center(
-                  child: Semantics(
-                    label: 'Rest remaining $remaining',
-                    liveRegion: false,
-                    child: ExcludeSemantics(
-                      child: Text(
-                        remaining!,
-                        style: Theme.of(context).textTheme.displaySmall,
-                      ),
+                  child: SizedBox.square(
+                    dimension: 92,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        CircularProgressIndicator(
+                          value:
+                              period.selectedSeconds == null ||
+                                  period.selectedSeconds == 0
+                              ? 0
+                              : (remainingSeconds! / period.selectedSeconds!)
+                                    .clamp(0.0, 1.0),
+                          strokeWidth: 5,
+                          backgroundColor: Theme.of(
+                            context,
+                          ).colorScheme.surfaceContainerLow,
+                        ),
+                        Semantics(
+                          label: 'Rest remaining $remaining',
+                          liveRegion: false,
+                          child: ExcludeSemantics(
+                            child: Text(
+                              remaining!,
+                              style: Theme.of(context).textTheme.titleLarge,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),

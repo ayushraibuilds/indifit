@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/di/providers.dart';
+import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/models/b02_execution_models.dart';
 import 'package:indifit/data/repositories/b02_execution_compatibility_read_repository.dart';
@@ -102,6 +103,9 @@ void main() {
   testWidgets(
     'saved summary uses persisted duration, identity and partial state',
     (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
       final sessionId = (await tester.runAsync(
         () => _insertSavedStrength(
           db,
@@ -129,11 +133,14 @@ void main() {
             ).overrideWith((ref) async => history),
           ],
           child: MaterialApp(
-            home: B02WorkoutCompletionSuccess(
-              launch: launch,
-              sessionId: sessionId,
-              completionKind: CompletionKind.partial,
-              onDone: () {},
+            theme: AppTheme.darkTheme,
+            home: Scaffold(
+              body: B02WorkoutCompletionSuccess(
+                launch: launch,
+                sessionId: sessionId,
+                completionKind: CompletionKind.partial,
+                onDone: () {},
+              ),
             ),
           ),
         ),
@@ -151,6 +158,11 @@ void main() {
       expect(
         find.textContaining('Performed instead of Planned strength'),
         findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+      await expectLater(
+        find.byType(Scaffold),
+        matchesGoldenFile('goldens/r08b8_partial_saved_summary_dark.png'),
       );
     },
   );
@@ -179,6 +191,45 @@ void main() {
     expect(find.textContaining('personal best'), findsNothing);
     expect(find.textContaining('progress'), findsNothing);
     expect(find.textContaining('Target'), findsNothing);
+  });
+
+  testWidgets('pre-completion review does not claim persistence early', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final launch = _launch(
+      routineName: 'Quick evidence',
+      actualName: 'Quick press',
+      elapsedSeconds: 90,
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [databaseProvider.overrideWithValue(db)],
+        child: MaterialApp(
+          theme: AppTheme.lightTheme,
+          home: B02StrengthSummaryScreen(launch: launch),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('Review workout'), findsOneWidget);
+    expect(
+      find.text('These completed sets will be saved with this workout.'),
+      findsOneWidget,
+    );
+    expect(
+      find.text('Your completed sets are saved with this workout.'),
+      findsNothing,
+    );
+    expect(find.text('Complete workout'), findsOneWidget);
+    await expectLater(
+      find.byType(B02StrengthSummaryScreen),
+      matchesGoldenFile('goldens/r08b8_precompletion_review_light.png'),
+    );
   });
 
   test(

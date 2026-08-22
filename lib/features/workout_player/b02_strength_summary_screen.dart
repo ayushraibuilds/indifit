@@ -900,12 +900,7 @@ class _Body extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               const Text(
-                'Your saved workout is still available to retry.',
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 4),
-              const Text(
-                'It has not been finalized yet.',
+                'Your workout is still here. Nothing was lost.',
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
@@ -984,8 +979,8 @@ class _Body extends StatelessWidget {
         const SizedBox(height: 8),
         Text(
           launch.occurrenceId == null
-              ? 'Your completed sets are saved with this workout.'
-              : 'Your completed sets and planned targets are saved with this workout.',
+              ? 'These completed sets will be saved with this workout.'
+              : 'These completed sets and planned targets will be saved with this workout.',
         ),
         const SizedBox(height: 16),
         FilledButton(onPressed: onFull, child: const Text('Complete workout')),

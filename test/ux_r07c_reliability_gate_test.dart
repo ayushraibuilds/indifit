@@ -265,7 +265,7 @@ void main() {
         }
 
         expect(
-          find.text('Your saved workout is still available to retry.'),
+          find.text('Your workout is still here. Nothing was lost.'),
           findsOneWidget,
         );
         expect(find.text('Retry'), findsOneWidget);

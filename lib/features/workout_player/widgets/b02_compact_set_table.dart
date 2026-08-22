@@ -556,7 +556,7 @@ class _PendingSetEditor extends StatelessWidget {
               if (slot.targetRepsMin != null || slot.targetLoadKg != null)
                 Flexible(
                   child: Text(
-                    'Planned input',
+                    'Enter actuals',
                     textAlign: TextAlign.end,
                     style: B05Typography.caption(context),
                   ),

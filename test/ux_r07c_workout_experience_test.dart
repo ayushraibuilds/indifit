@@ -138,6 +138,7 @@ void main() {
     expect(find.text('−15 sec'), findsOneWidget);
     expect(find.text('+15 sec'), findsOneWidget);
     expect(find.text('Skip'), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
     expect(tester.takeException(), isNull);
     await expectLater(
       find.byType(B02StrengthPlayerScreen),

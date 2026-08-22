@@ -209,6 +209,7 @@ void main() {
           nextExerciseSlot: const Text('next exercise'),
           restSlot: const Text('rest slot'),
           completionSlot: const Text('review and completion'),
+          onDiscard: () {},
         ),
       ),
     );
@@ -224,6 +225,10 @@ void main() {
     expect(find.text('review and completion'), findsOneWidget);
     expect(find.bySemanticsLabel('Primary workout action'), findsOneWidget);
     expect(find.byTooltip('Close workout'), findsOneWidget);
+    await tester.tap(find.byTooltip('Workout options'));
+    await tester.pumpAndSettle();
+    expect(find.text('Discard workout'), findsOneWidget);
+    expect(find.text('Discard saved workout'), findsNothing);
   });
 
   testWidgets('Planned and Quick contexts both render through the shell', (

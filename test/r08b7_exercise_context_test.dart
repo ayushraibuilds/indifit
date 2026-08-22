@@ -473,6 +473,29 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('end context uses consumer language in semantics', (
+    tester,
+  ) async {
+    final current = _slot(
+      id: 'last',
+      exerciseId: 'a',
+      name: 'Bench press',
+      memberOrdinal: 0,
+    );
+
+    await tester.pumpWidget(_app(B07NextExerciseContext(currentSlot: current)));
+
+    expect(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is Semantics &&
+            widget.properties.label == 'End of workout sequence',
+      ),
+      findsOneWidget,
+    );
+    expect(find.textContaining('canonical'), findsNothing);
+  });
+
   testWidgets('context card remains within a 390 point 1.5x player width', (
     tester,
   ) async {

@@ -139,6 +139,8 @@ void main() {
 
     expect(find.text('PLANNED'), findsOneWidget);
     expect(find.text('ACTUAL'), findsOneWidget);
+    expect(find.text('Enter actuals'), findsOneWidget);
+    expect(find.text('Planned input'), findsNothing);
     expect(find.text('80 kg × 8–10 reps × RPE 8'), findsNWidgets(2));
     expect(find.bySemanticsLabel('Edit set 1'), findsOneWidget);
     expect(find.bySemanticsLabel('Delete set 1'), findsOneWidget);

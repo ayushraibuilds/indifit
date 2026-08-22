@@ -84,7 +84,7 @@ class WorkoutExecutionShell extends StatelessWidget {
                 if (onDiscard != null)
                   const PopupMenuItem(
                     value: 'discard',
-                    child: Text('Discard saved workout'),
+                    child: Text('Discard workout'),
                   ),
               ],
             ),
