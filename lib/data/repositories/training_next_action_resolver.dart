@@ -65,10 +65,25 @@ class TrainingNextActionResolution {
 
   /// Exact occurrence identity for cross-surface assertions and action
   /// routing. It never falls back to a name or a derived movement key.
+  ///
+  /// A pending overdue occurrence wins over a same-day planned row because
+  /// B01 still considers the overdue work the next required item. Today and
+  /// Training both consume this ordering so they cannot promote different
+  /// workouts as the current action.
   String? get currentOrNextOccurrenceId =>
       currentOccurrence?.occurrence.id ??
+      overdueOccurrence?.occurrence.id ??
       todayOccurrence?.occurrence.id ??
       nextOccurrence?.occurrence.id;
+
+  /// The one scheduled occurrence that may be shown as the current action.
+  /// This is a presentation-friendly alias for the same canonical ordering
+  /// used by [currentOrNextOccurrenceId].
+  CalendarOccurrenceReadItem? get dominantScheduledOccurrence =>
+      currentOccurrence ??
+      overdueOccurrence ??
+      todayOccurrence ??
+      nextOccurrence;
 }
 
 /// Resolves Today and Training state from the same B01/B02 inputs.

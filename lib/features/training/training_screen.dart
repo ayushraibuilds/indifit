@@ -48,6 +48,7 @@ class TrainingLandingSnapshot {
     this.lastEndedOutcome,
     this.activeDraft,
     this.activeStrengthDraft,
+    this.nextActionResolution,
   });
 
   final String localDate;
@@ -63,11 +64,19 @@ class TrainingLandingSnapshot {
   final WorkoutDraft? activeDraft;
   final WorkoutDraft? activeStrengthDraft;
 
+  /// The same current/next projection consumed by Today. Training keeps the
+  /// read model alongside its legacy fixture fields so older callers can
+  /// continue constructing snapshots while production uses one authority.
+  final TrainingNextActionResolution? nextActionResolution;
+
   bool get hasActiveDraft =>
-      activeDraft != null || activeStrengthDraft != null;
+      nextActionResolution?.hasActiveDraft ??
+      (activeDraft != null || activeStrengthDraft != null);
 
   CalendarOccurrenceReadItem? get currentPlanContext =>
-      todayWorkout ?? (upcoming.isEmpty ? null : upcoming.first);
+      nextActionResolution?.dominantScheduledOccurrence ??
+      todayWorkout ??
+      (upcoming.isEmpty ? null : upcoming.first);
 }
 
 final trainingLandingSnapshotProvider =
@@ -157,6 +166,7 @@ final trainingLandingSnapshotProvider =
         lastEndedOutcome: calendar.lastEndedOutcome,
         activeDraft: activeDraft,
         activeStrengthDraft: resumableDraft,
+        nextActionResolution: resolution,
       );
     });
 
@@ -171,126 +181,15 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
   var _isLaunching = false;
   var _isEndingPlan = false;
 
-  static WorkoutDraft? _activeDraftFor(
-    TrainingLandingSnapshot data,
-  ) => data.activeDraft ?? data.activeStrengthDraft;
-
-  static WorkoutDraft? _resumableDraftFor(
-    TrainingLandingSnapshot data,
-  ) {
+  static WorkoutDraft? _resumableDraftFor(TrainingLandingSnapshot data) {
+    final resolution = data.nextActionResolution;
+    if (resolution != null) return resolution.activeDraft;
     final draft = data.activeStrengthDraft;
     if (draft != null) return draft;
     final fallback = data.activeDraft;
     return fallback != null && isTrainingResumableDraft(fallback)
         ? fallback
         : null;
-  }
-
-  Future<void> _openStartWorkout(
-    BuildContext context,
-    WidgetRef ref,
-    TrainingLandingSnapshot data,
-  ) async {
-    final today = data.todayWorkout;
-    final activeDraft = _activeDraftFor(data);
-    final resumableDraft = _resumableDraftFor(data);
-    final isTodayActive =
-        today != null &&
-        today.occurrence.status == 'inProgress' &&
-        (activeDraft == null ||
-            (resumableDraft != null &&
-                resumableDraft.scheduledOccurrenceId ==
-                    today.occurrence.id));
-    final canDirectlyResumeToday = isTodayActive && resumableDraft != null;
-    final choice = await showModalBottomSheet<String>(
-      context: context,
-      useSafeArea: true,
-      builder: (sheetContext) => SafeArea(
-        child: ListView(
-          shrinkWrap: true,
-          padding: const EdgeInsets.fromLTRB(
-            B05Layout.space8,
-            B05Layout.space8,
-            B05Layout.space8,
-            B05Layout.space16,
-          ),
-          children: [
-            const ListTile(
-              title: Text('Start workout'),
-              subtitle: Text('Train right now or follow today’s plan.'),
-            ),
-            if (resumableDraft != null)
-              ListTile(
-                leading: const Icon(Icons.play_arrow_rounded),
-                title: Text('Resume ${resumableDraft.routineName}'),
-                subtitle: const Text('Continue your saved workout first.'),
-                onTap: () => Navigator.pop(sheetContext, 'resume'),
-              ),
-            if (activeDraft != null && resumableDraft == null)
-              const ListTile(
-                leading: Icon(Icons.pause_circle_outline_rounded),
-                title: Text('Workout in progress'),
-                subtitle: Text(
-                  'Finish or discard your active workout before starting another.',
-                ),
-                enabled: false,
-              ),
-            if (today != null && isActionableTrainingOccurrence(today))
-              ListTile(
-                leading: const Icon(Icons.calendar_today_outlined),
-                title: Text(
-                  isTodayActive
-                      ? 'Resume today’s workout · ${today.template.name}'
-                      : 'Today’s workout · ${today.template.name}',
-                ),
-                subtitle: Text(
-                  activeDraft != null && !isTodayActive
-                      ? 'Finish your active workout before starting this plan.'
-                      : 'Use the scheduled workout and targets.',
-                ),
-                enabled: activeDraft == null || isTodayActive,
-                onTap: () => Navigator.pop(
-                  sheetContext,
-                  canDirectlyResumeToday ? 'resume' : 'today',
-                ),
-              ),
-            if (activeDraft == null)
-              ListTile(
-                leading: const Icon(Icons.bolt_rounded),
-                title: const Text('Quick workout'),
-                subtitle: const Text(
-                  'Start immediately and choose exercises as you go.',
-                ),
-                onTap: () => Navigator.pop(sheetContext, 'quick'),
-              ),
-            ListTile(
-              leading: const Icon(Icons.route_outlined),
-              title: const Text('Choose a plan'),
-              subtitle: const Text(
-                'Review or build a training plan for later.',
-              ),
-              onTap: () => Navigator.pop(sheetContext, 'plan'),
-            ),
-          ],
-        ),
-      ),
-    );
-    if (!context.mounted || choice == null) return;
-    switch (choice) {
-      case 'resume':
-        if (resumableDraft != null) {
-          await _resumeDraft(context, ref, resumableDraft);
-        }
-      case 'quick':
-        await context.push('/quick-workout');
-      case 'today':
-        if (today != null) await _startWorkout(context, ref, today);
-      case 'plan':
-        await Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (_) => const RoutineDisplayScreen()));
-    }
-    if (context.mounted) ref.invalidate(trainingLandingSnapshotProvider);
   }
 
   Future<void> _showPlanActions(
@@ -497,9 +396,9 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
           title: 'Saved workout unavailable',
           code: 'workout_recovery_needed',
         ).message;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(message)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(message)));
       }
     } finally {
       if (mounted) setState(() => _isLaunching = false);
@@ -516,13 +415,11 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
         .read(trainingLandingSnapshotProvider)
         .asData
         ?.value;
-    final activeDraft = snapshotData == null
-        ? null
-        : _activeDraftFor(snapshotData);
+    final hasActiveDraft = snapshotData?.hasActiveDraft ?? false;
     final resumableDraft = snapshotData == null
         ? null
         : _resumableDraftFor(snapshotData);
-    if (activeDraft != null) {
+    if (hasActiveDraft) {
       if (item.occurrence.status == 'inProgress' &&
           resumableDraft != null &&
           resumableDraft.scheduledOccurrenceId == item.occurrence.id) {
@@ -583,9 +480,9 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
         error,
         title: 'Workout unavailable',
       ).message;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     } finally {
       if (mounted) setState(() => _isLaunching = false);
     }
@@ -647,11 +544,10 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
             actionIcon: Icons.refresh_rounded,
           ),
         ),
-        data: (data) => _TrainingLandingBody(
+        data: (data) => _DominantTrainingLandingBody(
           data: data,
           isLaunching: _isLaunching,
           onStartWorkout: (item) => _startWorkout(context, ref, item),
-          onStartTraining: () => _openStartWorkout(context, ref, data),
           onStartQuickWorkout: () => context.push('/quick-workout'),
           onResumeDraft: _resumableDraftFor(data) == null
               ? null
@@ -659,6 +555,7 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
           onOpenPlan: () => Navigator.of(context).push(
             MaterialPageRoute(builder: (_) => const RoutineDisplayScreen()),
           ),
+          onOpenBuilder: () => context.push('/program-author'),
           onOpenPlanActions: () => _showPlanActions(context, ref, data),
           onOpenCalendar: () => Navigator.of(context).push(
             MaterialPageRoute(builder: (_) => const ProgramCalendarScreen()),
@@ -669,7 +566,7 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
           onOpenHistory: () => Navigator.of(context).push(
             MaterialPageRoute(builder: (_) => const WorkoutHistoryScreen()),
           ),
-          onLogWorkout: () => _logWorkout(context, data),
+          onRetry: () => ref.invalidate(trainingLandingSnapshotProvider),
         ),
       ),
     );
@@ -757,313 +654,620 @@ String _planLifecycleFailureMessage(ProgramLifecycleException error) {
   return ProductFailurePresentation.fromError(error).message;
 }
 
-class _TrainingLandingBody extends StatelessWidget {
-  const _TrainingLandingBody({
+enum _TrainingActionKind {
+  unavailable,
+  resume,
+  blocked,
+  start,
+  completed,
+  partial,
+  openDay,
+  noPlan,
+}
+
+class _TrainingActionModel {
+  const _TrainingActionModel({
+    required this.kind,
+    required this.title,
+    required this.detail,
+    this.occurrence,
+    this.draft,
+    this.primaryLabel,
+    this.primaryIcon,
+  });
+
+  final _TrainingActionKind kind;
+  final String title;
+  final String detail;
+  final CalendarOccurrenceReadItem? occurrence;
+  final WorkoutDraft? draft;
+  final String? primaryLabel;
+  final IconData? primaryIcon;
+
+  bool get showsQuickWorkout => switch (kind) {
+    _TrainingActionKind.start ||
+    _TrainingActionKind.completed ||
+    _TrainingActionKind.partial ||
+    _TrainingActionKind.openDay ||
+    _TrainingActionKind.noPlan => true,
+    _ => false,
+  };
+}
+
+/// Presentation-only mapping of the shared current/next read. It contains no
+/// scheduling queries or priority rules; those remain in the shared resolver.
+_TrainingActionModel _trainingActionFor(TrainingLandingSnapshot data) {
+  final resolution = data.nextActionResolution;
+  if (resolution != null && !resolution.activeDraftReadAvailable) {
+    return const _TrainingActionModel(
+      kind: _TrainingActionKind.unavailable,
+      title: 'Workout state unavailable',
+      detail: 'Try again to check your active workout before starting another.',
+      primaryLabel: 'Try again',
+      primaryIcon: Icons.refresh_rounded,
+    );
+  }
+
+  final rawDraft = data.activeDraft ?? data.activeStrengthDraft;
+  final resumableDraft = resolution != null
+      ? resolution.activeDraft
+      : data.activeStrengthDraft ??
+            (rawDraft != null && isTrainingResumableDraft(rawDraft)
+                ? rawDraft
+                : null);
+  final hasActiveDraft = resolution?.hasActiveDraft ?? rawDraft != null;
+  final currentOccurrence =
+      resolution?.currentOccurrence ??
+      (data.todayWorkout?.occurrence.status == 'inProgress'
+          ? data.todayWorkout
+          : null);
+  final activePlan = resolution != null
+      ? resolution.activeProgramVersionId != null
+      : data.activeProgramName?.trim().isNotEmpty == true;
+  final planned = activePlan
+      ? resolution?.overdueOccurrence ??
+            resolution?.todayOccurrence ??
+            (data.todayWorkout != null &&
+                    isActionableTrainingOccurrence(data.todayWorkout!)
+                ? data.todayWorkout
+                : null)
+      : null;
+  final matchingDraft =
+      resumableDraft != null &&
+      resumableDraft.scheduledOccurrenceId != null &&
+      (resumableDraft.scheduledOccurrenceId ==
+              currentOccurrence?.occurrence.id ||
+          resumableDraft.scheduledOccurrenceId == planned?.occurrence.id ||
+          (data.todayWorkout?.occurrence.status == 'inProgress' &&
+              resumableDraft.scheduledOccurrenceId ==
+                  data.todayWorkout?.occurrence.id));
+
+  if (hasActiveDraft) {
+    if (resumableDraft != null) {
+      final detail = matchingDraft || planned == null
+          ? 'Your saved workout is ready to continue.'
+          : 'Finish this workout before starting another.';
+      return _TrainingActionModel(
+        kind: _TrainingActionKind.resume,
+        title: resumableDraft.routineName,
+        detail: detail,
+        occurrence: currentOccurrence,
+        draft: resumableDraft,
+        primaryLabel: 'Resume workout',
+        primaryIcon: Icons.play_arrow_rounded,
+      );
+    }
+    return const _TrainingActionModel(
+      kind: _TrainingActionKind.blocked,
+      title: 'Workout in progress',
+      detail: 'Finish or reopen your active workout before starting another.',
+    );
+  }
+
+  // An in-progress occurrence without a readable matching draft is a
+  // recovery state. It must never be downgraded to a Start button.
+  if (currentOccurrence != null) {
+    return const _TrainingActionModel(
+      kind: _TrainingActionKind.blocked,
+      title: 'Workout in progress',
+      detail: 'This workout needs attention before you can start another.',
+    );
+  }
+
+  if (planned != null) {
+    final isOverdue =
+        planned.isOverdue ||
+        planned.occurrence.effectiveLocalDate.compareTo(data.localDate) < 0;
+    final count = planned.prescriptions.length;
+    final countLabel = '$count ${count == 1 ? 'exercise' : 'exercises'}';
+    return _TrainingActionModel(
+      kind: _TrainingActionKind.start,
+      title: planned.template.name,
+      detail:
+          '${isOverdue ? 'Still pending' : 'Today'} · $countLabel · ${_trainingPlanContextLabel(planned)}',
+      occurrence: planned,
+      primaryLabel: 'Start workout',
+      primaryIcon: Icons.play_arrow_rounded,
+    );
+  }
+
+  final terminal =
+      resolution?.todayCompletedOccurrence ??
+      (data.todayWorkout?.occurrence.status == 'completed' ||
+              data.todayWorkout?.occurrence.status == 'partiallyCompleted'
+          ? data.todayWorkout
+          : null);
+  if (activePlan && terminal != null) {
+    final isPartial = terminal.occurrence.status == 'partiallyCompleted';
+    return _TrainingActionModel(
+      kind: isPartial
+          ? _TrainingActionKind.partial
+          : _TrainingActionKind.completed,
+      title: isPartial
+          ? 'Workout partially completed'
+          : 'Workout complete today',
+      detail: isPartial
+          ? 'Your progress is saved. No new workout starts from this state.'
+          : 'Your workout is saved. Nothing else starts from this state.',
+      occurrence: terminal,
+    );
+  }
+
+  if (!activePlan) {
+    final previous = data.lastEndedProgramName;
+    return _TrainingActionModel(
+      kind: _TrainingActionKind.noPlan,
+      title: 'Set up your training plan',
+      detail: previous == null
+          ? 'Choose a plan or build one when you’re ready.'
+          : '$previous is saved in history. Choose what you want to do next.',
+      primaryLabel: 'Choose a plan',
+      primaryIcon: Icons.route_outlined,
+    );
+  }
+
+  return const _TrainingActionModel(
+    kind: _TrainingActionKind.openDay,
+    title: 'No workout planned today',
+    detail:
+        'Nothing needs your attention today. Use Quick Workout if you want to move.',
+  );
+}
+
+String _trainingPlanContextLabel(CalendarOccurrenceReadItem? item) {
+  if (item == null) return 'Your next workout will appear here.';
+  final week = item.week.programWeekOrdinal + 1;
+  final deload = item.isDeload ? ' · Deload week' : '';
+  return 'Week $week$deload · ${item.template.name}';
+}
+
+String _trainingMondayForLocalDate(String localDate) {
+  final date = DateTime.parse('${localDate}T12:00:00Z');
+  final monday = date.subtract(Duration(days: date.weekday - 1));
+  return '${monday.year.toString().padLeft(4, '0')}-'
+      '${monday.month.toString().padLeft(2, '0')}-'
+      '${monday.day.toString().padLeft(2, '0')}';
+}
+
+class _DominantTrainingLandingBody extends StatelessWidget {
+  const _DominantTrainingLandingBody({
     required this.data,
     required this.isLaunching,
     required this.onStartWorkout,
-    required this.onStartTraining,
     required this.onStartQuickWorkout,
     required this.onResumeDraft,
     required this.onOpenPlan,
+    required this.onOpenBuilder,
     required this.onOpenPlanActions,
     required this.onOpenCalendar,
     required this.onOpenExercises,
     required this.onOpenHistory,
-    required this.onLogWorkout,
+    required this.onRetry,
   });
 
   final TrainingLandingSnapshot data;
   final bool isLaunching;
   final ValueChanged<CalendarOccurrenceReadItem> onStartWorkout;
-  final VoidCallback onStartTraining;
   final VoidCallback onStartQuickWorkout;
   final VoidCallback? onResumeDraft;
   final VoidCallback onOpenPlan;
+  final VoidCallback onOpenBuilder;
   final VoidCallback onOpenPlanActions;
   final VoidCallback onOpenCalendar;
   final VoidCallback onOpenExercises;
   final VoidCallback onOpenHistory;
-  final VoidCallback onLogWorkout;
+  final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
-    final today = data.todayWorkout;
-    final planContext = data.currentPlanContext;
-    final activeDraft = data.activeDraft ?? data.activeStrengthDraft;
-    final resumableDraft = data.activeStrengthDraft ??
-        (activeDraft != null && isTrainingResumableDraft(activeDraft)
-            ? activeDraft
-            : null);
-    final isEmpty =
-        today == null &&
-        data.upcoming.isEmpty &&
-        data.recentSessions.isEmpty &&
-        data.activeProgramName?.trim().isNotEmpty != true &&
-        data.lastEndedOutcome == null &&
-        activeDraft == null;
-    if (isEmpty) {
-      return ListView(
-        padding: const EdgeInsets.fromLTRB(
-          B05Layout.space16,
-          B05Layout.space16,
-          B05Layout.space16,
-          B05Layout.space32,
-        ),
-        children: [
-          _SectionLabel(label: 'START TRAINING'),
-          const SizedBox(height: B05Layout.space8),
-          _TrainingEmptySurface(
-            onStart: onStartTraining,
-            onChoosePlan: onOpenPlan,
-            onLogWorkout: onLogWorkout,
-          ),
-        ],
-      );
-    }
+    final action = _trainingActionFor(data);
+    final activePlan =
+        data.activeProgramName?.trim().isNotEmpty == true &&
+        (data.nextActionResolution == null ||
+            data.nextActionResolution!.activeProgramVersionId != null);
+    final nextWorkout = data.upcoming.isEmpty ? null : data.upcoming.first;
+    final planContext =
+        data.nextActionResolution?.dominantScheduledOccurrence ??
+        data.currentPlanContext;
+
     return ListView(
       padding: const EdgeInsets.fromLTRB(
         B05Layout.space16,
-        B05Layout.space8,
+        B05Layout.space12,
         B05Layout.space16,
         B05Layout.space32,
       ),
       children: [
-        if (activeDraft != null) ...[
+        _DominantTrainingAction(
+          action: action,
+          isLaunching: isLaunching,
+          onStart: action.occurrence == null
+              ? null
+              : () => onStartWorkout(action.occurrence!),
+          onResume: action.draft == null ? null : onResumeDraft,
+          onChoosePlan: onOpenPlan,
+          onRetry: onRetry,
+          onQuickWorkout: onStartQuickWorkout,
+        ),
+        if (activePlan) ...[
+          const SizedBox(height: B05Layout.space12),
+          _TrainingPlanContext(
+            planName: data.activeProgramName!,
+            item: planContext,
+            onOpenActions: onOpenPlanActions,
+          ),
+          if (data.currentWeekOccurrences.isNotEmpty) ...[
+            const SizedBox(height: B05Layout.space16),
+            const _SectionLabel(label: 'THIS WEEK'),
+            const SizedBox(height: B05Layout.space8),
+            _TrainingWeekStrip(
+              weekStartLocalDate:
+                  data.currentWeekStartLocalDate ??
+                  _trainingMondayForLocalDate(data.localDate),
+              occurrences: data.currentWeekOccurrences,
+              localDate: data.localDate,
+            ),
+          ],
+        ],
+        if (nextWorkout != null) ...[
+          const SizedBox(height: B05Layout.space16),
+          const _SectionLabel(label: 'NEXT WORKOUT'),
+          const SizedBox(height: B05Layout.space8),
+          _NextTrainingContext(item: nextWorkout, onTap: onOpenCalendar),
+        ],
+        if (data.recentSessions.isNotEmpty) ...[
+          const SizedBox(height: B05Layout.space16),
+          const _SectionLabel(label: 'RECENT'),
+          const SizedBox(height: B05Layout.space8),
           B05Surface(
-            tone: B05SurfaceTone.selected,
+            padding: EdgeInsets.zero,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.play_circle_outline_rounded,
-                      color: context.b05Colors.action,
-                    ),
-                    const SizedBox(width: B05Layout.space8),
-                    Expanded(
-                      child: Text(
-                        'WORKOUT IN PROGRESS',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: B05Typography.label(context),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: B05Layout.space8),
-                Text(
-                  activeDraft.routineName,
-                  style: B05Typography.title(context),
-                ),
-                const SizedBox(height: B05Layout.space4),
-                Text(
-                  resumableDraft == null
-                      ? 'Finish or discard this workout before starting another.'
-                      : 'Your exercises, sets, and active time are saved.',
-                  style: B05Typography.body(context),
-                ),
-                if (resumableDraft != null) ...[
-                  const SizedBox(height: B05Layout.space12),
-                  SizedBox(
-                    width: double.infinity,
+                for (
+                  var index = 0;
+                  index < data.recentSessions.length && index < 2;
+                  index++
+                )
+                  _RecentTrainingRow(
+                    session: data.recentSessions[index],
+                    showDivider:
+                        index < data.recentSessions.length - 1 && index < 1,
+                  ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    B05Layout.space12,
+                    B05Layout.space4,
+                    B05Layout.space12,
+                    B05Layout.space8,
+                  ),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
                     child: B05ActionButton(
-                      label: 'Resume ${resumableDraft.routineName}',
-                      onPressed: onResumeDraft,
+                      label: 'View history',
+                      icon: Icons.history_rounded,
+                      emphasis: B05ActionEmphasis.tertiary,
+                      onPressed: onOpenHistory,
                     ),
                   ),
-                ],
+                ),
               ],
             ),
           ),
-          const SizedBox(height: B05Layout.space16),
         ],
-        _SectionLabel(label: 'TODAY'),
+        const SizedBox(height: B05Layout.space16),
+        const _SectionLabel(label: 'MORE TRAINING'),
         const SizedBox(height: B05Layout.space8),
-        _TodayTrainingSurface(
-          item: today,
-          isLaunching: isLaunching,
-          activeDraft: activeDraft,
-          onStart: today == null || !isActionableTrainingOccurrence(today)
-              ? onStartTraining
-              : () => onStartWorkout(today),
-          onResumeDraft: onResumeDraft,
-          onStartQuickWorkout: onStartQuickWorkout,
+        _TrainingSecondaryNavigation(
+          onOpenExercises: onOpenExercises,
+          onOpenHistory: onOpenHistory,
+          onOpenCalendar: onOpenCalendar,
           onOpenPlan: onOpenPlan,
-          onLogWorkout: onLogWorkout,
+          onOpenBuilder: onOpenBuilder,
         ),
-        const SizedBox(height: B05Layout.space20),
-        _SectionLabel(label: 'CURRENT PLAN'),
-        const SizedBox(height: B05Layout.space8),
-        B05Surface(
-          tone: B05SurfaceTone.section,
-          child: Row(
+      ],
+    );
+  }
+}
+
+class _DominantTrainingAction extends StatelessWidget {
+  const _DominantTrainingAction({
+    required this.action,
+    required this.isLaunching,
+    required this.onStart,
+    required this.onResume,
+    required this.onChoosePlan,
+    required this.onRetry,
+    required this.onQuickWorkout,
+  });
+
+  final _TrainingActionModel action;
+  final bool isLaunching;
+  final VoidCallback? onStart;
+  final VoidCallback? onResume;
+  final VoidCallback onChoosePlan;
+  final VoidCallback onRetry;
+  final VoidCallback onQuickWorkout;
+
+  @override
+  Widget build(BuildContext context) {
+    final icon = switch (action.kind) {
+      _TrainingActionKind.resume => Icons.play_circle_outline_rounded,
+      _TrainingActionKind.start => Icons.fitness_center_rounded,
+      _TrainingActionKind.completed => Icons.check_circle_outline_rounded,
+      _TrainingActionKind.partial => Icons.timelapse_rounded,
+      _TrainingActionKind.openDay => Icons.self_improvement_outlined,
+      _TrainingActionKind.noPlan => Icons.route_outlined,
+      _TrainingActionKind.blocked => Icons.pause_circle_outline_rounded,
+      _TrainingActionKind.unavailable => Icons.error_outline_rounded,
+    };
+    final iconColor = switch (action.kind) {
+      _TrainingActionKind.completed => context.b05Colors.success.indicator,
+      _TrainingActionKind.partial ||
+      _TrainingActionKind.blocked => context.b05Colors.warning.indicator,
+      _TrainingActionKind.unavailable =>
+        context.b05Colors.unavailable.indicator,
+      _ => context.b05Colors.action,
+    };
+    final primary = switch (action.kind) {
+      _TrainingActionKind.resume => onResume,
+      _TrainingActionKind.start => onStart,
+      _TrainingActionKind.noPlan => onChoosePlan,
+      _TrainingActionKind.unavailable => onRetry,
+      _ => null,
+    };
+    final primaryLabel = action.kind == _TrainingActionKind.start && isLaunching
+        ? 'Opening workout…'
+        : action.primaryLabel;
+    final primaryButton = primaryLabel == null
+        ? null
+        : B05ActionButton(
+            label: primaryLabel,
+            icon: action.primaryIcon,
+            onPressed: isLaunching ? null : primary,
+          );
+    final quickButton = action.showsQuickWorkout
+        ? B05ActionButton(
+            label: 'Quick Workout',
+            icon: Icons.bolt_rounded,
+            emphasis: B05ActionEmphasis.secondary,
+            onPressed: isLaunching ? null : onQuickWorkout,
+          )
+        : null;
+
+    return Semantics(
+      container: true,
+      label: 'What to do now. ${action.title}. ${action.detail}',
+      child: B05Surface(
+        tone: B05SurfaceTone.selected,
+        padding: const EdgeInsets.all(B05Layout.space16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: iconColor.withValues(alpha: .14),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(B05Layout.space8),
+                    child: Icon(icon, color: iconColor),
+                  ),
+                ),
+                const SizedBox(width: B05Layout.space12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('WHAT TO DO NOW', style: _trainingEyebrow(context)),
+                      const SizedBox(height: B05Layout.space4),
+                      Text(action.title, style: B05Typography.title(context)),
+                      const SizedBox(height: B05Layout.space4),
+                      Text(action.detail, style: B05Typography.body(context)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (primaryButton != null || quickButton != null) ...[
+              const SizedBox(height: B05Layout.space12),
+              B05ActionGroup(children: [?primaryButton, ?quickButton]),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TrainingPlanContext extends StatelessWidget {
+  const _TrainingPlanContext({
+    required this.planName,
+    required this.item,
+    required this.onOpenActions,
+  });
+
+  final String planName;
+  final CalendarOccurrenceReadItem? item;
+  final VoidCallback onOpenActions;
+
+  @override
+  Widget build(BuildContext context) => B05Surface(
+    tone: B05SurfaceTone.inset,
+    padding: const EdgeInsets.symmetric(
+      horizontal: B05Layout.space12,
+      vertical: B05Layout.space8,
+    ),
+    child: Row(
+      children: [
+        Icon(
+          Icons.route_outlined,
+          size: B05Layout.iconMedium,
+          color: context.b05Colors.action,
+        ),
+        const SizedBox(width: B05Layout.space8),
+        Expanded(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.route_outlined, color: context.b05Colors.action),
-              const SizedBox(width: B05Layout.space12),
+              Text('Plan', style: _trainingEyebrow(context)),
+              Text(planName, style: B05Typography.label(context)),
+              if (item != null)
+                Text(
+                  _trainingPlanContextLabel(item),
+                  style: B05Typography.caption(context),
+                ),
+            ],
+          ),
+        ),
+        B05IconAction(
+          icon: Icons.more_horiz_rounded,
+          label: 'Plan actions',
+          hint: 'View, switch, finish, or leave this plan.',
+          onPressed: onOpenActions,
+        ),
+      ],
+    ),
+  );
+}
+
+class _NextTrainingContext extends StatelessWidget {
+  const _NextTrainingContext({required this.item, required this.onTap});
+
+  final CalendarOccurrenceReadItem item;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    container: true,
+    button: true,
+    label:
+        'Next workout. ${item.template.name}, ${ConsumerDateLabel.day(item.occurrence.effectiveLocalDate)}',
+    hint: 'Open the training calendar.',
+    onTap: onTap,
+    child: B05Surface(
+      tone: B05SurfaceTone.inset,
+      padding: EdgeInsets.zero,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: B05Radii.mediumRadius,
+        child: Padding(
+          padding: const EdgeInsets.all(B05Layout.space12),
+          child: Row(
+            children: [
+              Icon(Icons.event_outlined, color: context.b05Colors.action),
+              const SizedBox(width: B05Layout.space8),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      data.activeProgramName ??
-                          _endedPlanTitle(data.lastEndedOutcome),
-                      style: B05Typography.title(context),
+                      item.template.name,
+                      style: B05Typography.label(context),
                     ),
-                    const SizedBox(height: B05Layout.space4),
                     Text(
-                      data.activeProgramName == null
-                          ? data.lastEndedOutcome == null
-                                ? 'Choose a plan or build one when you’re ready.'
-                                : '${data.lastEndedProgramName ?? 'Your previous plan'} is saved in history. Choose another plan whenever you are ready.'
-                          : _planContextLabel(planContext),
-                      style: B05Typography.body(context),
+                      '${ConsumerDateLabel.day(item.occurrence.effectiveLocalDate)} · ${item.prescriptions.length} ${item.prescriptions.length == 1 ? 'exercise' : 'exercises'}',
+                      style: B05Typography.caption(context),
                     ),
                   ],
                 ),
               ),
-              if (data.activeProgramName != null)
-                B05IconAction(
-                  icon: Icons.more_horiz_rounded,
-                  label: 'Plan actions',
-                  hint: 'View, switch, finish, or leave this plan.',
-                  onPressed: onOpenPlanActions,
-                )
-              else
-                B05IconAction(
-                  icon: Icons.chevron_right_rounded,
-                  label: 'Choose a training plan',
-                  onPressed: onOpenPlan,
-                ),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: context.b05Colors.textSecondary,
+              ),
             ],
           ),
         ),
-        if (data.activeProgramName != null) ...[
-          const SizedBox(height: B05Layout.space20),
-          _SectionLabel(label: 'THIS WEEK'),
-          const SizedBox(height: B05Layout.space8),
-          _TrainingWeekStrip(
-            weekStartLocalDate:
-                data.currentWeekStartLocalDate ??
-                _mondayForLocalDate(data.localDate),
-            occurrences: data.currentWeekOccurrences,
-            localDate: data.localDate,
-          ),
-        ],
-        const SizedBox(height: B05Layout.space20),
-        _SectionLabel(label: 'UPCOMING'),
-        const SizedBox(height: B05Layout.space8),
-        if (data.upcoming.isEmpty)
-          B05Surface(
-            tone: B05SurfaceTone.inset,
-            child: Text(
-              'Nothing else is scheduled yet.',
-              style: B05Typography.body(context),
-            ),
-          )
-        else
-          B05Surface(
-            padding: EdgeInsets.zero,
-            child: Column(
-              children: [
-                for (var index = 0; index < data.upcoming.length; index++) ...[
-                  _UpcomingTrainingRow(
-                    item: data.upcoming[index],
-                    onTap: isLaunching
-                        ? null
-                        : () => onStartWorkout(data.upcoming[index]),
-                  ),
-                  if (index < data.upcoming.length - 1)
-                    Divider(height: 1, color: context.b05Colors.border),
-                ],
-              ],
-            ),
-          ),
-        if (data.recentSessions.isNotEmpty) ...[
-          const SizedBox(height: B05Layout.space8),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: B05ActionButton(
-              label: 'View all history',
-              icon: Icons.history_rounded,
-              emphasis: B05ActionEmphasis.tertiary,
-              onPressed: onOpenHistory,
-            ),
-          ),
-        ],
-        const SizedBox(height: B05Layout.space20),
-        _SectionLabel(label: 'RECENT'),
-        const SizedBox(height: B05Layout.space8),
-        if (data.recentSessions.isEmpty)
-          ProductEmptyState(
-            icon: Icons.history_rounded,
-            title: 'No exercise history yet',
-            message: 'Complete a workout to start building history.',
-          )
-        else
-          B05Surface(
-            padding: EdgeInsets.zero,
-            child: Column(
-              children: [
-                for (var index = 0; index < data.recentSessions.length; index++)
-                  _RecentTrainingRow(
-                    session: data.recentSessions[index],
-                    showDivider: index < data.recentSessions.length - 1,
-                  ),
-              ],
-            ),
-          ),
-        const SizedBox(height: B05Layout.space20),
-        _SectionLabel(label: 'EXPLORE'),
-        const SizedBox(height: B05Layout.space8),
-        Row(
-          children: [
-            Expanded(
-              child: B05ActionButton(
-                label: 'Exercises',
-                icon: Icons.search_rounded,
-                onPressed: onOpenExercises,
-                emphasis: B05ActionEmphasis.secondary,
-              ),
-            ),
-            const SizedBox(width: B05Layout.space8),
-            Expanded(
-              child: B05ActionButton(
-                label: 'Calendar',
-                icon: Icons.calendar_month_outlined,
-                onPressed: onOpenCalendar,
-                emphasis: B05ActionEmphasis.secondary,
-              ),
-            ),
-          ],
+      ),
+    ),
+  );
+}
+
+class _TrainingSecondaryNavigation extends StatelessWidget {
+  const _TrainingSecondaryNavigation({
+    required this.onOpenExercises,
+    required this.onOpenHistory,
+    required this.onOpenCalendar,
+    required this.onOpenPlan,
+    required this.onOpenBuilder,
+  });
+
+  final VoidCallback onOpenExercises;
+  final VoidCallback onOpenHistory;
+  final VoidCallback onOpenCalendar;
+  final VoidCallback onOpenPlan;
+  final VoidCallback onOpenBuilder;
+
+  @override
+  Widget build(BuildContext context) => B05Surface(
+    tone: B05SurfaceTone.inset,
+    padding: const EdgeInsets.symmetric(
+      horizontal: B05Layout.space8,
+      vertical: B05Layout.space4,
+    ),
+    child: B05ActionGroup(
+      children: [
+        B05ActionButton(
+          label: 'Exercise Library',
+          icon: Icons.search_rounded,
+          emphasis: B05ActionEmphasis.tertiary,
+          onPressed: onOpenExercises,
+        ),
+        B05ActionButton(
+          label: 'History',
+          icon: Icons.history_rounded,
+          emphasis: B05ActionEmphasis.tertiary,
+          onPressed: onOpenHistory,
+        ),
+        B05ActionButton(
+          label: 'Calendar',
+          icon: Icons.calendar_month_outlined,
+          emphasis: B05ActionEmphasis.tertiary,
+          onPressed: onOpenCalendar,
+        ),
+        B05ActionButton(
+          label: 'Plan Library',
+          icon: Icons.collections_bookmark_outlined,
+          emphasis: B05ActionEmphasis.tertiary,
+          onPressed: onOpenPlan,
+        ),
+        B05ActionButton(
+          label: 'Builder',
+          icon: Icons.edit_note_rounded,
+          emphasis: B05ActionEmphasis.tertiary,
+          onPressed: onOpenBuilder,
         ),
       ],
-    );
-  }
-
-  static String _planContextLabel(CalendarOccurrenceReadItem? item) {
-    if (item == null) return 'Your next workout will appear here.';
-    final week = item.week.programWeekOrdinal + 1;
-    final deload = item.isDeload ? ' · Deload week' : '';
-    return 'Week $week$deload · ${item.template.name}';
-  }
-
-  static String _endedPlanTitle(String? outcome) => switch (outcome) {
-    'finished' => 'Plan finished',
-    'left' => 'Plan left',
-    _ => 'No training plan yet',
-  };
-
-  static String _mondayForLocalDate(String localDate) {
-    final date = DateTime.parse('${localDate}T12:00:00Z');
-    final monday = date.subtract(Duration(days: date.weekday - 1));
-    return '${monday.year.toString().padLeft(4, '0')}-'
-        '${monday.month.toString().padLeft(2, '0')}-'
-        '${monday.day.toString().padLeft(2, '0')}';
-  }
+    ),
+  );
 }
+
+TextStyle _trainingEyebrow(BuildContext context) => B05Typography.caption(
+  context,
+).copyWith(fontWeight: FontWeight.w700, letterSpacing: .8);
 
 class _TrainingWeekStrip extends StatelessWidget {
   const _TrainingWeekStrip({
@@ -1256,302 +1460,6 @@ enum _TrainingWeekStatus {
     if (statuses.contains('skipped')) return skipped;
     return cancelled;
   }
-}
-
-class _TodayTrainingSurface extends StatelessWidget {
-  const _TodayTrainingSurface({
-    required this.item,
-    required this.isLaunching,
-    required this.activeDraft,
-    required this.onStart,
-    required this.onResumeDraft,
-    required this.onStartQuickWorkout,
-    required this.onOpenPlan,
-    required this.onLogWorkout,
-  });
-
-  final CalendarOccurrenceReadItem? item;
-  final bool isLaunching;
-  final WorkoutDraft? activeDraft;
-  final VoidCallback? onStart;
-  final VoidCallback? onResumeDraft;
-  final VoidCallback onStartQuickWorkout;
-  final VoidCallback onOpenPlan;
-  final VoidCallback onLogWorkout;
-
-  @override
-  Widget build(BuildContext context) {
-    final hasActiveDraft = activeDraft != null;
-    if (item == null) {
-      return B05Surface(
-        tone: B05SurfaceTone.inset,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(
-              Icons.self_improvement_outlined,
-              color: context.b05Colors.info.foreground,
-            ),
-            const SizedBox(height: B05Layout.space8),
-            Text('Nothing planned today', style: B05Typography.title(context)),
-            const SizedBox(height: B05Layout.space4),
-            Text(
-              hasActiveDraft
-                  ? onResumeDraft != null
-                        ? 'Resume your saved workout before starting another.'
-                        : 'Finish or discard your active workout before starting another.'
-                  : 'Choose a workout or enjoy a recovery day.',
-              style: B05Typography.body(context),
-            ),
-            if (!hasActiveDraft) ...[
-              const SizedBox(height: B05Layout.space12),
-              SizedBox(
-                width: double.infinity,
-                child: B05ActionButton(
-                  label: 'Quick Workout',
-                  icon: Icons.bolt_rounded,
-                  onPressed: isLaunching ? null : onStartQuickWorkout,
-                ),
-              ),
-            ],
-            const SizedBox(height: B05Layout.space8),
-            Wrap(
-              spacing: B05Layout.space8,
-              runSpacing: B05Layout.space8,
-              children: [
-                B05ActionButton(
-                  label: 'View plan',
-                  icon: Icons.route_outlined,
-                  onPressed: onOpenPlan,
-                  emphasis: B05ActionEmphasis.secondary,
-                ),
-                B05ActionButton(
-                  label: 'Log workout',
-                  icon: Icons.edit_note_rounded,
-                  onPressed: onLogWorkout,
-                  emphasis: B05ActionEmphasis.tertiary,
-                ),
-              ],
-            ),
-          ],
-        ),
-      );
-    }
-    final occurrence = item!.occurrence;
-    final status = _statusLabel(occurrence.status);
-    final isCompleted = occurrence.status == 'completed';
-    final isPartiallyCompleted = occurrence.status == 'partiallyCompleted';
-    final isTerminal = isCompleted || isPartiallyCompleted;
-    final isOccurrenceActive =
-        occurrence.status == 'inProgress' &&
-        (activeDraft == null ||
-            activeDraft!.scheduledOccurrenceId == occurrence.id);
-    final hasCompetingDraft = hasActiveDraft && !isOccurrenceActive;
-    final actionLabel = isOccurrenceActive
-        ? 'Resume workout'
-        : 'Start workout';
-    final prescriptionPreview = item!.prescriptions
-        .take(2)
-        .map(
-          (prescription) =>
-              '${prescription.exerciseNameSnapshot} · ${prescription.plannedSets} × ${prescription.repsRange}',
-        )
-        .join('  ·  ');
-    return B05Surface(
-      tone: B05SurfaceTone.selected,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(
-                isCompleted ? Icons.check_circle_outline : Icons.fitness_center,
-                color: isCompleted
-                    ? context.b05Colors.success.foreground
-                    : context.b05Colors.action,
-              ),
-              const SizedBox(width: B05Layout.space12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      item!.template.name,
-                      style: B05Typography.title(context),
-                    ),
-                    const SizedBox(height: B05Layout.space4),
-                    Text(
-                      '${item!.prescriptions.length} ${item!.prescriptions.length == 1 ? 'exercise' : 'exercises'} · $status',
-                      style: B05Typography.body(context),
-                    ),
-                    if (!isTerminal && prescriptionPreview.isNotEmpty) ...[
-                      const SizedBox(height: B05Layout.space4),
-                      Text(
-                        prescriptionPreview,
-                        style: B05Typography.caption(context),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: B05Layout.space12),
-          if (isTerminal) ...[
-            Text(
-              isPartiallyCompleted
-                  ? 'Workout partially completed.'
-                  : 'Workout complete for today.',
-              style: B05Typography.body(context),
-            ),
-            const SizedBox(height: B05Layout.space12),
-            if (hasActiveDraft)
-              Text(
-                onResumeDraft != null
-                    ? 'Resume your saved workout before starting another.'
-                    : 'Finish or discard your active workout before starting another.',
-                style: B05Typography.body(context),
-              )
-            else
-              B05ActionButton(
-                label: 'Quick Workout',
-                icon: Icons.bolt_rounded,
-                emphasis: B05ActionEmphasis.secondary,
-                onPressed: isLaunching ? null : onStartQuickWorkout,
-              ),
-          ] else if (hasCompetingDraft)
-            Text(
-              'Resume your saved workout before starting today’s plan.',
-              style: B05Typography.body(context),
-            )
-          else
-            B05ActionButton(
-              label: isLaunching ? 'Opening workout…' : actionLabel,
-              icon: Icons.play_arrow_rounded,
-              onPressed: isLaunching
-                  ? null
-                  : (isOccurrenceActive && onResumeDraft != null)
-                      ? onResumeDraft
-                      : onStart,
-            ),
-        ],
-      ),
-    );
-  }
-
-  static String _statusLabel(String status) => switch (status) {
-    'inProgress' => 'in progress',
-    'completed' => 'completed',
-    'partiallyCompleted' => 'partially complete',
-    'rescheduled' => 'rescheduled',
-    _ => 'scheduled',
-  };
-}
-
-class _TrainingEmptySurface extends StatelessWidget {
-  const _TrainingEmptySurface({
-    required this.onStart,
-    required this.onChoosePlan,
-    required this.onLogWorkout,
-  });
-
-  final VoidCallback onStart;
-  final VoidCallback onChoosePlan;
-  final VoidCallback onLogWorkout;
-
-  @override
-  Widget build(BuildContext context) => B05Surface(
-    tone: B05SurfaceTone.inset,
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(Icons.fitness_center_outlined, color: context.b05Colors.action),
-        const SizedBox(height: B05Layout.space8),
-        Text('Nothing planned today', style: B05Typography.title(context)),
-        const SizedBox(height: B05Layout.space4),
-        Text('No training plan yet', style: B05Typography.body(context)),
-        const SizedBox(height: B05Layout.space4),
-        Text(
-          'Start with one meaningful action.',
-          style: B05Typography.body(context),
-        ),
-        const SizedBox(height: B05Layout.space16),
-        SizedBox(
-          width: double.infinity,
-          child: B05ActionButton(
-            label: 'Start quick workout',
-            icon: Icons.play_arrow_rounded,
-            onPressed: onStart,
-          ),
-        ),
-        const SizedBox(height: B05Layout.space8),
-        Wrap(
-          spacing: B05Layout.space8,
-          runSpacing: B05Layout.space8,
-          children: [
-            B05ActionButton(
-              label: 'View plan',
-              icon: Icons.route_outlined,
-              emphasis: B05ActionEmphasis.secondary,
-              onPressed: onChoosePlan,
-            ),
-            B05ActionButton(
-              label: 'Log workout',
-              icon: Icons.edit_note_rounded,
-              emphasis: B05ActionEmphasis.tertiary,
-              onPressed: onLogWorkout,
-            ),
-          ],
-        ),
-      ],
-    ),
-  );
-}
-
-class _UpcomingTrainingRow extends StatelessWidget {
-  const _UpcomingTrainingRow({required this.item, required this.onTap});
-
-  final CalendarOccurrenceReadItem item;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) => Semantics(
-    button: onTap != null,
-    label:
-        '${item.template.name}, ${ConsumerDateLabel.day(item.occurrence.effectiveLocalDate)}',
-    onTap: onTap,
-    child: InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.all(B05Layout.space12),
-        child: Row(
-          children: [
-            SizedBox(
-              width: 84,
-              child: Text(
-                ConsumerDateLabel.day(item.occurrence.effectiveLocalDate),
-                style: B05Typography.caption(context),
-              ),
-            ),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(item.template.name, style: B05Typography.label(context)),
-                  Text(
-                    '${item.prescriptions.length} ${item.prescriptions.length == 1 ? 'exercise' : 'exercises'}',
-                    style: B05Typography.caption(context),
-                  ),
-                ],
-              ),
-            ),
-            const Icon(Icons.chevron_right_rounded),
-          ],
-        ),
-      ),
-    ),
-  );
 }
 
 class _RecentTrainingRow extends StatelessWidget {
