@@ -152,6 +152,8 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        // Keep the neutral legacy route title stable; the body explicitly
+        // identifies this as a pre-save review.
         title: const Text('Workout Summary'),
         automaticallyImplyLeading: false, // Don't allow backing out to player
       ),
@@ -168,7 +170,7 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
                     ),
                     const SizedBox(height: B05Layout.space12),
                     Text(
-                      'Workout complete',
+                      'Review workout',
                       style: B05Typography.pageTitle(context),
                     ),
                     const SizedBox(height: B05Layout.space4),
@@ -179,6 +181,11 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
                         color: context.b05Colors.action,
                         fontWeight: FontWeight.w600,
                       ),
+                    ),
+                    const SizedBox(height: B05Layout.space8),
+                    const Text(
+                      'Review your logged sets before saving this workout.',
+                      textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: B05Layout.space24),
 
@@ -238,7 +245,7 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
                     Align(
                       alignment: Alignment.centerLeft,
                       child: Text(
-                        'Exercises completed',
+                        'Exercises logged',
                         style: B05Typography.caption(
                           context,
                         ).copyWith(fontWeight: FontWeight.w700),
@@ -299,11 +306,10 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
                     ? null
                     : () {
                         final text =
-                            'Crushed my workout today! 🏋️\n'
+                            'Workout review\n'
                             'Routine: ${widget.routineName}\n'
-                            'Volume Lifted: ${totalVolume.round()} kg\n'
-                            'Duration: $durationText\n'
-                            'Logged with IndiFit App ⚡';
+                            'Logged sets: ${widget.loggedSets.length}\n'
+                            'Duration: $durationText';
                         Share.share(text);
                       },
               ),

@@ -32,18 +32,28 @@ class B02StrengthExecutionUiState {
   final List<B02StrengthExecutionSlot> slots;
   final String? errorMessage;
 
+  /// The immutable session written by the canonical finalizer. This is a
+  /// presentation handoff only; the controller does not become a history
+  /// authority.
+  final int? completedSessionId;
+  final CompletionKind? completedCompletionKind;
+
   const B02StrengthExecutionUiState({
     required this.status,
     this.launch,
     this.slots = const [],
     this.errorMessage,
+    this.completedSessionId,
+    this.completedCompletionKind,
   });
 
   const B02StrengthExecutionUiState.initial()
     : status = B02StrengthExecutionStatus.loading,
       launch = null,
       slots = const [],
-      errorMessage = null;
+      errorMessage = null,
+      completedSessionId = null,
+      completedCompletionKind = null;
 
   B02StrengthExecutionUiState copyWith({
     B02StrengthExecutionStatus? status,
@@ -51,12 +61,17 @@ class B02StrengthExecutionUiState {
     List<B02StrengthExecutionSlot>? slots,
     String? errorMessage,
     bool clearError = false,
+    int? completedSessionId,
+    CompletionKind? completedCompletionKind,
   }) {
     return B02StrengthExecutionUiState(
       status: status ?? this.status,
       launch: launch ?? this.launch,
       slots: slots ?? this.slots,
       errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
+      completedSessionId: completedSessionId ?? this.completedSessionId,
+      completedCompletionKind:
+          completedCompletionKind ?? this.completedCompletionKind,
     );
   }
 
@@ -1039,7 +1054,7 @@ class B02StrengthExecutionController
         // completion deleted it. Let the repository replay its durable
         // completion marker before surfacing a failure.
       }
-      await _adapter.finalizeDraft(
+      final sessionId = await _adapter.finalizeDraft(
         draftId: current.draftId,
         commandId: commandId,
         state: finalState,
@@ -1053,6 +1068,8 @@ class B02StrengthExecutionController
       if (!mounted) return false;
       state = B02StrengthExecutionUiState(
         status: B02StrengthExecutionStatus.ready,
+        completedSessionId: sessionId,
+        completedCompletionKind: completionKind,
       );
       return true;
     } on B02StrengthExecutionRecoveryException catch (error, stackTrace) {

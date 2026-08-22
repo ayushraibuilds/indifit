@@ -317,6 +317,20 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         },
       ),
       GoRoute(
+        path: '/workout-history/:sessionId',
+        builder: (context, state) {
+          final sessionId = int.tryParse(
+            state.pathParameters['sessionId'] ?? '',
+          );
+          if (sessionId == null || sessionId < 1) {
+            return const Scaffold(
+              body: Center(child: Text('Workout details are unavailable.')),
+            );
+          }
+          return B02StrengthHistoryDetailScreen(sessionId: sessionId);
+        },
+      ),
+      GoRoute(
         path: '/quick-workout',
         builder: (context, state) => const QuickWorkoutScreen(),
       ),
