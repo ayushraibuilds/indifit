@@ -16,6 +16,7 @@ import '../../data/models/b02_previous_performance_models.dart';
 import '../../data/models/b02_rich_set_helpers.dart';
 import '../../data/repositories/b02_strength_execution_repository.dart';
 import '../../data/services/b02_execution_progression.dart';
+import '../../data/services/b02_rest_recommendation_service.dart';
 import '../exercise_picker/exercise_picker.dart';
 import 'b02_previous_performance_integration.dart';
 import 'b02_strength_execution_controller.dart';
@@ -80,6 +81,7 @@ class _B02StrengthPlayerScreenState
         final provider = b02StrengthExecutionScreenControllerProvider(
           widget.launch,
         );
+        unawaited(ref.read(provider.notifier).reconcileWakeLock());
         if (ref.read(provider).slots.isEmpty) {
           ref.read(provider.notifier).loadSlots();
         }
@@ -107,6 +109,7 @@ class _B02StrengthPlayerScreenState
     );
     if (state == AppLifecycleState.resumed) {
       unawaited(controller.resumeElapsed());
+      unawaited(controller.reconcileWakeLock());
     } else if (state == AppLifecycleState.inactive ||
         state == AppLifecycleState.paused ||
         state == AppLifecycleState.detached) {
@@ -221,7 +224,7 @@ class _B02StrengthPlayerScreenState
     );
     _selectedSlotId ??= selected.id;
     final workingSetCount = _workingSetCount(launch.state, selected);
-    final hasOpenRest = _hasOpenRest(launch.state, selected);
+    final hasOpenRest = _hasOpenRest(launch.state);
     final isQuick = execution is QuickWorkoutExecutionContext;
     final exerciseComplete =
         !isQuick && workingSetCount >= selected.plannedSets;
@@ -257,7 +260,7 @@ class _B02StrengthPlayerScreenState
                 : () => _overrideTarget(provider, selected),
           )
         : null;
-    final setLogging = hasOpenRest || !groupSafe
+    final setLogging = !groupSafe
         ? null
         : _buildSetLoggingSlot(
             provider: provider,
@@ -274,23 +277,21 @@ class _B02StrengthPlayerScreenState
         : exerciseComplete
         ? 'Exercise complete'
         : 'Log set';
-    final primaryAction = hasOpenRest
-        ? null
-        : SizedBox(
-            width: double.infinity,
-            child: B05ActionButton(
-              label: primaryLabel,
-              hint: _warmup ? 'Save this warm-up set' : 'Save this set',
-              onPressed:
-                  ui.isBusy ||
-                      _isSubmittingSet ||
-                      !groupSafe ||
-                      !selected.hasCanonicalExercise ||
-                      (!_warmup && exerciseComplete)
-                  ? null
-                  : () => _record(provider, selected),
-            ),
-          );
+    final primaryAction = SizedBox(
+      width: double.infinity,
+      child: B05ActionButton(
+        label: primaryLabel,
+        hint: _warmup ? 'Save this warm-up set' : 'Save this set',
+        onPressed:
+            ui.isBusy ||
+                _isSubmittingSet ||
+                !groupSafe ||
+                !selected.hasCanonicalExercise ||
+                (!_warmup && exerciseComplete)
+            ? null
+            : () => _record(provider, selected),
+      ),
+    );
     return WorkoutExecutionShell(
       execution: execution,
       isBusy: ui.isBusy,
@@ -803,14 +804,11 @@ class _B02StrengthPlayerScreenState
     FocusManager.instance.primaryFocus?.unfocus();
   }
 
-  bool _hasOpenRest(
-    B02ExecutionDraftState state,
-    B02StrengthExecutionSlot slot,
-  ) {
-    return state.restPeriods.any(
-      (period) =>
-          period.endedAtUtc == null && b02RestPeriodBelongsToSlot(period, slot),
-    );
+  bool _hasOpenRest(B02ExecutionDraftState state) {
+    // B02 permits exactly one open period per draft. The current cursor may
+    // already have advanced to the next member/slot, so filtering by that
+    // cursor would hide a valid rest belonging to the completed slot.
+    return state.restPeriods.any((period) => period.endedAtUtc == null);
   }
 
   static String _groupContext(B02StrengthExecutionSlot slot) {
@@ -887,6 +885,7 @@ class _B02StrengthPlayerScreenState
         actualLoadBasis: slot.targetLoadBasis,
         rpe: int.tryParse(_rpes[slot.id] ?? ''),
         role: roleWasWarmup ? B02SetRole.warmup : B02SetRole.working,
+        startRestAfterRecord: !roleWasWarmup,
         technique: technique,
       );
       if (!mounted) return;
@@ -894,9 +893,6 @@ class _B02StrengthPlayerScreenState
       if (saved.status != B02StrengthExecutionStatus.failure &&
           saved.status != B02StrengthExecutionStatus.recovery) {
         unawaited(IndiFitHaptics.confirmation());
-        if (!_warmup) {
-          await controller.beginRest(slot);
-        }
         final afterSave = ref.read(provider);
         final cursorLaunch = afterSave.launch;
         final cursor = cursorLaunch == null
@@ -2140,6 +2136,9 @@ class _RestCardState extends State<_RestCard> {
   @override
   void didUpdateWidget(covariant _RestCard oldWidget) {
     super.didUpdateWidget(oldWidget);
+    // Rebuilds and restored route instances repaint from the durable start
+    // timestamp immediately; they never carry a decremented local counter.
+    _now = DateTime.now().toUtc();
     _syncTicker();
   }
 
@@ -2153,130 +2152,155 @@ class _RestCardState extends State<_RestCard> {
   Widget build(BuildContext context) {
     final period = _openPeriod(widget);
     final remaining = period == null ? null : _remainingLabel(period);
-    return Card(
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.timer_outlined, color: context.b05Colors.action),
-                const SizedBox(width: 8),
-                Text('REST', style: Theme.of(context).textTheme.labelLarge),
-              ],
-            ),
-            const SizedBox(height: 8),
-            if (period == null) ...[
-              Text(
-                'Ready when you are',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                widget.slot.groupType == null
-                    ? 'Take a breather before your next set.'
-                    : 'Rest before the next exercise in this group.',
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
+    return Semantics(
+      container: true,
+      label: period == null ? 'Rest controls' : 'Rest in progress',
+      child: Card(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
                 children: [
-                  FilledButton(
-                    onPressed: widget.onBegin,
-                    child: const Text('Start rest'),
-                  ),
-                  OutlinedButton(
-                    onPressed: widget.onCustom == null
-                        ? null
-                        : () async {
-                            final controller = TextEditingController();
-                            final value = await showDialog<int>(
-                              context: context,
-                              builder: (context) => AlertDialog(
-                                title: const Text('Custom rest'),
-                                content: TextField(
-                                  controller: controller,
-                                  autofocus: true,
-                                  keyboardType: TextInputType.number,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Seconds',
-                                  ),
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => context.pop(),
-                                    child: const Text('Cancel'),
-                                  ),
-                                  FilledButton(
-                                    onPressed: () => context.pop(
-                                      int.tryParse(controller.text),
+                  Icon(Icons.timer_outlined, color: context.b05Colors.action),
+                  const SizedBox(width: 8),
+                  Text('REST', style: Theme.of(context).textTheme.labelLarge),
+                ],
+              ),
+              const SizedBox(height: 8),
+              if (period == null) ...[
+                Text(
+                  'Ready when you are',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  widget.slot.groupType == null
+                      ? 'Take a breather before your next set.'
+                      : 'Rest before the next exercise in this group.',
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    FilledButton(
+                      onPressed: widget.onBegin,
+                      child: const Text('Start rest'),
+                    ),
+                    OutlinedButton(
+                      onPressed: widget.onCustom == null
+                          ? null
+                          : () async {
+                              final controller = TextEditingController();
+                              final value = await showDialog<int>(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: const Text('Custom rest'),
+                                  content: TextField(
+                                    controller: controller,
+                                    autofocus: true,
+                                    keyboardType: TextInputType.number,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Seconds',
                                     ),
-                                    child: const Text('Start'),
                                   ),
-                                ],
-                              ),
-                            );
-                            controller.dispose();
-                            if (value != null && value >= 0) {
-                              widget.onCustom?.call(value);
-                            }
-                          },
-                    child: const Text('Custom'),
-                  ),
-                ],
-              ),
-            ] else ...[
-              Center(
-                child: Text(
-                  remaining!,
-                  style: Theme.of(context).textTheme.displaySmall,
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => context.pop(),
+                                      child: const Text('Cancel'),
+                                    ),
+                                    FilledButton(
+                                      onPressed: () => context.pop(
+                                        int.tryParse(controller.text),
+                                      ),
+                                      child: const Text('Start'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                              controller.dispose();
+                              if (value != null && value >= 0) {
+                                widget.onCustom?.call(value);
+                              }
+                            },
+                      child: const Text('Custom'),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(height: 4),
-              Center(
-                child: Text(
-                  'Next set: ${widget.slot.targetRepsMin ?? '—'}${widget.slot.targetRepsMax == null || widget.slot.targetRepsMax == widget.slot.targetRepsMin ? '' : '–${widget.slot.targetRepsMax}'} reps',
+              ] else ...[
+                Center(
+                  child: Semantics(
+                    label: 'Rest remaining $remaining',
+                    liveRegion: false,
+                    child: ExcludeSemantics(
+                      child: Text(
+                        remaining!,
+                        style: Theme.of(context).textTheme.displaySmall,
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                alignment: WrapAlignment.center,
-                children: [
-                  OutlinedButton(
-                    onPressed: widget.onDecrease == null
-                        ? null
-                        : () {
-                            unawaited(IndiFitHaptics.selection());
-                            widget.onDecrease?.call(period.id);
-                          },
-                    child: const Text('−15 sec'),
+                const SizedBox(height: 4),
+                Center(
+                  child: Text(
+                    'Next set: ${widget.slot.targetRepsMin ?? '—'}${widget.slot.targetRepsMax == null || widget.slot.targetRepsMax == widget.slot.targetRepsMin ? '' : '–${widget.slot.targetRepsMax}'} reps',
                   ),
-                  OutlinedButton(
-                    onPressed: widget.onExtend == null
-                        ? null
-                        : () {
-                            unawaited(IndiFitHaptics.selection());
-                            widget.onExtend?.call(period.id);
-                          },
-                    child: const Text('+15 sec'),
-                  ),
-                  TextButton(
-                    onPressed: widget.onSkip == null
-                        ? null
-                        : () {
-                            unawaited(IndiFitHaptics.selection());
-                            widget.onSkip?.call(period.id);
-                          },
-                    child: const Text('Skip'),
-                  ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  alignment: WrapAlignment.center,
+                  children: [
+                    Semantics(
+                      button: true,
+                      label: 'Decrease rest by 15 seconds',
+                      child: OutlinedButton(
+                        onPressed: widget.onDecrease == null
+                            ? null
+                            : () {
+                                unawaited(IndiFitHaptics.selection());
+                                widget.onDecrease?.call(period.id);
+                              },
+                        child: const Text('−15 sec'),
+                      ),
+                    ),
+                    Semantics(
+                      button: true,
+                      label: 'Increase rest by 15 seconds',
+                      child: OutlinedButton(
+                        onPressed: widget.onExtend == null
+                            ? null
+                            : () {
+                                unawaited(IndiFitHaptics.selection());
+                                widget.onExtend?.call(period.id);
+                              },
+                        child: const Text('+15 sec'),
+                      ),
+                    ),
+                    Semantics(
+                      button: true,
+                      label: 'Skip rest',
+                      child: TextButton(
+                        onPressed: widget.onSkip == null
+                            ? null
+                            : () {
+                                unawaited(IndiFitHaptics.selection());
+                                widget.onSkip?.call(period.id);
+                              },
+                        // Keep the compact visible action label stable for the
+                        // existing player surface; the surrounding Semantics
+                        // label retains the clearer "Skip rest" announcement.
+                        child: const Text('Skip'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
@@ -2291,11 +2315,7 @@ class _RestCardState extends State<_RestCard> {
 
   B02RestPeriod? _openPeriod(_RestCard value) {
     final open = value.state.restPeriods
-        .where(
-          (period) =>
-              period.endedAtUtc == null &&
-              b02RestPeriodBelongsToSlot(period, value.slot),
-        )
+        .where((period) => period.endedAtUtc == null)
         .toList();
     return open.isEmpty ? null : open.last;
   }
@@ -2314,6 +2334,7 @@ class _RestCardState extends State<_RestCard> {
         if (b02RestRemainingSeconds(open, now) == 0) {
           _ticker?.cancel();
           _ticker = null;
+          setState(() => _now = now);
           if (!_finishingElapsedRest) {
             _finishingElapsedRest = true;
             unawaited(_completeElapsedRest(open.id));
@@ -2334,18 +2355,25 @@ class _RestCardState extends State<_RestCard> {
       final completed = await widget.onElapsed(periodId);
       if (completed && mounted) {
         unawaited(IndiFitHaptics.confirmation());
+      } else if (!completed && mounted) {
+        _finishingElapsedRest = false;
+        _now = DateTime.now().toUtc();
+        _syncTicker();
       }
     } catch (_) {
       // A failed durable completion must not create tactile success feedback.
+      if (mounted) {
+        _finishingElapsedRest = false;
+        _now = DateTime.now().toUtc();
+        _syncTicker();
+      }
     }
   }
 }
 
 @visibleForTesting
 int b02RestRemainingSeconds(B02RestPeriod period, DateTime now) {
-  final total = period.selectedSeconds ?? period.recommendedSeconds ?? 0;
-  final elapsed = now.toUtc().difference(period.startedAtUtc).inSeconds;
-  return (total - elapsed).clamp(0, total);
+  return B02RestTimerSnapshot(period).remainingSeconds(now);
 }
 
 class _ErrorState extends StatelessWidget {

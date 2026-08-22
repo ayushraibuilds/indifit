@@ -571,6 +571,7 @@ class _PendingSetEditor extends StatelessWidget {
               TextFormField(
                 key: ValueKey('compact-load-${slot.id}'),
                 controller: loadController,
+                enabled: !isBusy,
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                 ),
@@ -581,6 +582,7 @@ class _PendingSetEditor extends StatelessWidget {
               TextFormField(
                 key: ValueKey('compact-reps-${slot.id}'),
                 controller: repsController,
+                enabled: !isBusy,
                 keyboardType: TextInputType.number,
                 textInputAction: TextInputAction.done,
                 decoration: const InputDecoration(labelText: 'Reps'),
@@ -637,7 +639,7 @@ class _PendingSetEditor extends StatelessWidget {
               ),
               if (moreContent != null) ...[
                 const SizedBox(height: 8),
-                moreContent!,
+                IgnorePointer(ignoring: isBusy, child: moreContent!),
               ],
             ],
           ),

@@ -10,6 +10,7 @@ import '../../core/fixtures/workout_draft_codec.dart';
 import '../../core/presentation/consumer_date_label.dart';
 import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/services/crash_reporting_service.dart';
+import '../../core/services/workout_session_wake_lock_coordinator.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/utils/app_logger.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
@@ -74,6 +75,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 } else {
                   await repo.deleteActiveDraft();
                 }
+                final wakeLock = ref.read(
+                  workoutSessionWakeLockCoordinatorProvider,
+                );
+                unawaited(
+                  wakeLock.clearActiveSession(
+                    b02WorkoutSessionWakeLockKey(draft.id),
+                  ),
+                );
+                unawaited(
+                  wakeLock.clearActiveSession(
+                    legacyWorkoutSessionWakeLockKey(
+                      draft.scheduledOccurrenceId,
+                    ),
+                  ),
+                );
               },
               child: const Text('Discard'),
             ),

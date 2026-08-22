@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/di/providers.dart';
 import '../../core/presentation/product_failure_presentation.dart';
+import '../../core/services/workout_session_wake_lock_coordinator.dart';
 import '../../core/utils/app_logger.dart';
 import '../../data/models/b02_execution_models.dart';
 import '../../data/repositories/b02_strength_execution_repository.dart';
@@ -69,9 +70,11 @@ class B02StrengthExecutionController
   final B02StrengthExecutionDraftService _draftService;
   final B02RestDraftCoordinator _restCoordinator;
   final DateTime Function() _nowUtc;
+  final WorkoutSessionWakeLockCoordinator? _wakeLockCoordinator;
   Future<bool>? _finalizationInFlight;
   _B02CompletionRequestKey? _finalizationRequestKey;
   Future<void> _draftWriteTail = Future<void>.value();
+  Future<void> _restActionTail = Future<void>.value();
   B02ExecutionDraftState? _pendingPauseState;
   int? _pendingPauseDraftId;
   var _timingRevision = 0;
@@ -83,9 +86,11 @@ class B02StrengthExecutionController
     B02StrengthExecutionDraftService? draftService,
     B02RestDraftCoordinator? restCoordinator,
     DateTime Function()? nowUtc,
+    WorkoutSessionWakeLockCoordinator? wakeLockCoordinator,
   }) : _draftService = draftService ?? const B02StrengthExecutionDraftService(),
        _restCoordinator = restCoordinator ?? const B02RestDraftCoordinator(),
        _nowUtc = nowUtc ?? _systemNowUtc,
+       _wakeLockCoordinator = wakeLockCoordinator,
        super(
          initialLaunch == null
              ? const B02StrengthExecutionUiState.initial()
@@ -93,9 +98,43 @@ class B02StrengthExecutionController
                  status: B02StrengthExecutionStatus.ready,
                  launch: initialLaunch,
                ),
-       );
+       ) {
+    if (initialLaunch != null) {
+      _ensureWakeLockForLaunch(initialLaunch);
+    }
+  }
 
   static DateTime _systemNowUtc() => DateTime.now().toUtc();
+
+  String _wakeLockKey(B02StrengthExecutionLaunch launch) =>
+      b02WorkoutSessionWakeLockKey(launch.draftId);
+
+  void _ensureWakeLockForLaunch(B02StrengthExecutionLaunch launch) {
+    final coordinator = _wakeLockCoordinator;
+    if (coordinator == null) return;
+    coordinator.attachToAppLifecycle();
+    unawaited(coordinator.setActiveSession(_wakeLockKey(launch)));
+  }
+
+  /// Reconciles the session-owned screen-awake intent for route rebinds and
+  /// lifecycle callbacks. It does not infer or mutate workout state.
+  Future<void> reconcileWakeLock() async {
+    final coordinator = _wakeLockCoordinator;
+    if (coordinator == null) return;
+    coordinator.attachToAppLifecycle();
+    final launch = state.launch;
+    // A disposed/terminal route can have no launch while a newer route owns a
+    // different active session. Only canonical terminal mutations may clear
+    // ownership, so a launch-less route must not issue a global OFF request.
+    if (launch == null) return;
+    await coordinator.reconcileForActiveSession(_wakeLockKey(launch));
+  }
+
+  void _releaseWakeLockForLaunch(B02StrengthExecutionLaunch launch) {
+    final coordinator = _wakeLockCoordinator;
+    if (coordinator == null) return;
+    unawaited(coordinator.clearActiveSession(_wakeLockKey(launch)));
+  }
 
   Future<void> startScheduled({
     required String occurrenceId,
@@ -235,6 +274,7 @@ class B02StrengthExecutionController
         launch: current.copyWith(state: activeState),
         slots: prepared.slots,
       );
+      _ensureWakeLockForLaunch(current.copyWith(state: activeState));
     } catch (error) {
       _setFailure(error, current);
     }
@@ -247,6 +287,7 @@ class B02StrengthExecutionController
     B02LoadBasis? actualLoadBasis,
     int? rpe,
     B02SetRole role = B02SetRole.working,
+    bool startRestAfterRecord = false,
     B02TechniqueFields? technique,
     String? actualExerciseId,
     String? actualExerciseNameSnapshot,
@@ -262,8 +303,15 @@ class B02StrengthExecutionController
       return;
     }
     try {
+      // B02 rest never blocks recording. Starting the next execution action
+      // finalizes the one open interval in the same durable write as the new
+      // set, so a failed write leaves the rest truthfully open.
+      final recordingState = _finishOpenRestForNextAction(
+        current.state,
+        endedAtUtc: _nowUtc().toUtc(),
+      );
       final next = _draftService.recordSet(
-        state: current.state,
+        state: recordingState,
         slot: slot,
         reps: reps,
         loadKg: loadKg,
@@ -287,7 +335,12 @@ class B02StrengthExecutionController
               current: slot,
             )
           : next;
-      await saveDraft(progressed);
+      final saved = await saveDraft(progressed);
+      if (saved && startRestAfterRecord && role == B02SetRole.working) {
+        // Rest starts only after the set and the progressed cursor have been
+        // durably accepted by the canonical draft boundary.
+        await beginRest(slot);
+      }
     } catch (error) {
       _setFailure(error, current);
     }
@@ -578,84 +631,126 @@ class B02StrengthExecutionController
     B02StrengthExecutionSlot slot, {
     int? selectedSeconds,
   }) async {
-    final current = state.launch;
-    if (current == null) return;
     try {
-      final performed = current.state.performedExercises.where(
-        (exercise) =>
-            exercise.id == 'performed:${slot.id}' ||
-            (exercise.sourceExercisePrescriptionId == slot.prescriptionId &&
-                exercise.groupRoundOrdinal == slot.roundOrdinal &&
-                exercise.groupMemberOrdinal == slot.memberOrdinal),
-      );
-      final sets = performed.expand((exercise) => exercise.sets).toList();
-      final lastSet = sets.isEmpty ? null : sets.last;
-      final setId = lastSet?.id;
-      if (setId == null) {
-        throw const B02ValidationException('Log a set before starting rest.');
-      }
-      final group = slot.groupId == null
-          ? null
-          : current.state.groups.firstWhere(
-              (candidate) => candidate.id == slot.groupId,
-              orElse: () => throw const B02ValidationException(
-                'This workout is missing a required detail. Recover the draft and try again.',
-              ),
-            );
-      final isLastGroupMember =
-          group != null && slot.memberOrdinal == group.members.length - 1;
-      final restPauseSeconds = lastSet?.technique.isRestPause == true
-          ? lastSet!.technique.segments
-                .skip(1)
-                .map((segment) => segment.restBeforeSeconds)
-                .whereType<int>()
-                .firstOrNull
-          : null;
-      final scope = restPauseSeconds != null
-          ? B02RestScope.restPause
-          : group == null
-          ? B02RestScope.exerciseSet
-          : isLastGroupMember
-          ? B02RestScope.groupRound
-          : B02RestScope.groupTransition;
-      final recommendation = const RestRecommendationService().recommend(
-        B02RestSelectionRequest(
-          scope: scope,
-          userSelectedSeconds: selectedSeconds,
-          prescribedSeconds: restPauseSeconds ?? slot.prescribedRestSeconds,
-          memberTransitionRestSeconds: slot.memberTransitionRestSeconds,
-          groupRestAfterRoundSeconds: slot.groupRestAfterRoundSeconds,
-          exercisePreferenceSeconds: slot.exercisePreferenceRestSeconds,
-          templateDefaultRestSeconds: slot.templateDefaultRestSeconds,
-          rpe: lastSet?.actualRpe,
-          effortMode: lastSet?.technique.effortMode ?? slot.effortMode,
-          endedAtFailure:
-              lastSet?.technique.endedAtFailure ?? slot.endedAtFailure,
-        ),
-      );
-      if (!recommendation.isAvailable) {
-        throw B02ValidationException(recommendation.explanation);
-      }
-      final period = B02RestPeriod(
-        id: 'rest:${slot.id}:${current.state.restPeriods.length}',
-        performedSetId:
-            scope == B02RestScope.exerciseSet || scope == B02RestScope.restPause
-            ? setId
-            : null,
-        performedExerciseGroupId:
-            scope == B02RestScope.exerciseSet || scope == B02RestScope.restPause
+      await _enqueueRestAction<void>(() async {
+        final current = state.launch;
+        if (current == null) return;
+        // B02 permits one open rest per draft. Treat a duplicate UI request as
+        // harmless instead of creating a competing timer.
+        if (_openRestPeriod(current.state) != null) return;
+
+        final performed = current.state.performedExercises.where(
+          (exercise) =>
+              exercise.id == 'performed:${slot.id}' ||
+              (exercise.sourceExercisePrescriptionId == slot.prescriptionId &&
+                  exercise.groupRoundOrdinal == slot.roundOrdinal &&
+                  exercise.groupMemberOrdinal == slot.memberOrdinal),
+        );
+        final sets = performed.expand((exercise) => exercise.sets).toList();
+        final lastSet = sets.isEmpty ? null : sets.last;
+        final setId = lastSet?.id;
+        if (setId == null) {
+          throw const B02ValidationException('Log a set before starting rest.');
+        }
+
+        final group = slot.groupId == null
             ? null
-            : slot.groupId,
-        scope: scope,
-        recommendedSeconds: recommendation.recommendedSeconds,
-        selectedSeconds: recommendation.selectedSeconds,
-        actualSeconds: null,
-        source: recommendation.source,
-        startedAtUtc: _nowUtc().toUtc(),
-      );
-      await saveDraft(_restCoordinator.begin(current.state, period));
+            : current.state.groups.firstWhere(
+                (candidate) => candidate.id == slot.groupId,
+                orElse: () => throw const B02ValidationException(
+                  'This workout is missing a required detail. Recover the draft and try again.',
+                ),
+              );
+        if (group == null &&
+            (slot.groupType != null ||
+                slot.groupOrdinal != null ||
+                slot.roundOrdinal != null ||
+                slot.memberOrdinal != null)) {
+          throw const B02ValidationException(
+            'This workout is missing a required detail. Recover the draft and try again.',
+          );
+        }
+        if (group != null) {
+          final memberOrdinal = slot.memberOrdinal;
+          final roundOrdinal = slot.roundOrdinal;
+          final memberMatches =
+              memberOrdinal != null &&
+              memberOrdinal >= 0 &&
+              memberOrdinal < group.members.length &&
+              group.members[memberOrdinal].exercisePrescriptionId ==
+                  slot.prescriptionId;
+          if (slot.groupOrdinal != group.ordinal ||
+              slot.groupType != group.groupType ||
+              roundOrdinal == null ||
+              roundOrdinal < 0 ||
+              roundOrdinal >= group.roundCount ||
+              !memberMatches) {
+            throw const B02ValidationException(
+              'This grouped workout detail is unavailable right now.',
+            );
+          }
+        }
+        final isLastGroupMember =
+            group != null && slot.memberOrdinal == group.members.length - 1;
+        final restPauseSeconds = lastSet?.technique.isRestPause == true
+            ? lastSet!.technique.segments
+                  .skip(1)
+                  .map((segment) => segment.restBeforeSeconds)
+                  .whereType<int>()
+                  .firstOrNull
+            : null;
+        final scope = restPauseSeconds != null
+            ? B02RestScope.restPause
+            : group == null
+            ? B02RestScope.exerciseSet
+            : isLastGroupMember
+            ? B02RestScope.groupRound
+            : B02RestScope.groupTransition;
+        final recommendation = const RestRecommendationService().recommend(
+          B02RestSelectionRequest(
+            scope: scope,
+            userSelectedSeconds: selectedSeconds,
+            prescribedSeconds: restPauseSeconds ?? slot.prescribedRestSeconds,
+            memberTransitionRestSeconds: slot.memberTransitionRestSeconds,
+            groupRestAfterRoundSeconds: slot.groupRestAfterRoundSeconds,
+            exercisePreferenceSeconds: slot.exercisePreferenceRestSeconds,
+            templateDefaultRestSeconds: slot.templateDefaultRestSeconds,
+            rpe: lastSet?.actualRpe,
+            effortMode: lastSet?.technique.effortMode ?? slot.effortMode,
+            endedAtFailure:
+                lastSet?.technique.endedAtFailure ?? slot.endedAtFailure,
+          ),
+        );
+        if (!recommendation.isAvailable) {
+          throw B02ValidationException(recommendation.explanation);
+        }
+        final period = B02RestPeriod(
+          id: 'rest:${slot.id}:${current.state.restPeriods.length}',
+          performedSetId:
+              scope == B02RestScope.exerciseSet ||
+                  scope == B02RestScope.restPause
+              ? setId
+              : null,
+          performedExerciseGroupId:
+              scope == B02RestScope.exerciseSet ||
+                  scope == B02RestScope.restPause
+              ? null
+              : slot.groupId,
+          scope: scope,
+          recommendedSeconds: recommendation.recommendedSeconds,
+          selectedSeconds: recommendation.selectedSeconds,
+          actualSeconds: null,
+          source: recommendation.source,
+          startedAtUtc: _nowUtc().toUtc(),
+        );
+        final saved = await saveDraft(
+          _restCoordinator.begin(current.state, period),
+        );
+        if (!saved) return;
+      });
     } catch (error) {
-      _setFailure(error, current);
+      final current = state.launch;
+      if (current != null) _setFailure(error, current);
     }
   }
 
@@ -731,60 +826,85 @@ class B02StrengthExecutionController
   }
 
   Future<void> extendRest(String periodId, {int seconds = 30}) async {
-    final current = state.launch;
-    if (current == null) return;
     try {
-      await saveDraft(
-        _restCoordinator.extend(current.state, periodId, seconds: seconds),
-      );
+      await _enqueueRestAction<void>(() async {
+        final current = state.launch;
+        final period = current == null
+            ? null
+            : _restPeriod(current.state, periodId);
+        if (current == null || period == null || period.endedAtUtc != null) {
+          return;
+        }
+        await saveDraft(
+          _restCoordinator.extend(current.state, periodId, seconds: seconds),
+        );
+      });
     } catch (error) {
-      _setFailure(error, current);
+      final current = state.launch;
+      if (current != null) _setFailure(error, current);
     }
   }
 
   Future<void> adjustRest(String periodId, {required int seconds}) async {
-    final current = state.launch;
-    if (current == null) return;
     try {
-      final period = current.state.restPeriods.firstWhere(
-        (candidate) => candidate.id == periodId,
-      );
-      final selected =
-          (period.selectedSeconds ?? period.recommendedSeconds ?? 0) + seconds;
-      final adjusted = selected.clamp(0, 3600);
-      final now = _nowUtc().toUtc();
-      final elapsed = now
-          .difference(period.startedAtUtc)
-          .inSeconds
-          .clamp(0, 86400);
-      await saveDraft(
-        adjusted <= elapsed
-            ? _restCoordinator.finish(
-                current.state,
-                periodId,
-                endedAtUtc: now,
-                endReason: B02RestEndReason.elapsed,
-              )
-            : _restCoordinator.select(current.state, periodId, adjusted),
-      );
+      await _enqueueRestAction<void>(() async {
+        final current = state.launch;
+        final period = current == null
+            ? null
+            : _restPeriod(current.state, periodId);
+        if (current == null || period == null || period.endedAtUtc != null) {
+          return;
+        }
+        final selected =
+            (period.selectedSeconds ?? period.recommendedSeconds ?? 0) +
+            seconds;
+        // 3600 seconds is the existing technical draft bound; it is not a
+        // new fitness recommendation. Never persist a negative duration.
+        final adjusted = selected.clamp(0, 3600).toInt();
+        final now = _nowUtc().toUtc();
+        final elapsed = now
+            .difference(period.startedAtUtc)
+            .inSeconds
+            .clamp(0, 86400)
+            .toInt();
+        await saveDraft(
+          adjusted <= elapsed
+              ? _restCoordinator.finish(
+                  current.state,
+                  periodId,
+                  endedAtUtc: now,
+                  endReason: B02RestEndReason.elapsed,
+                )
+              : _restCoordinator.select(current.state, periodId, adjusted),
+        );
+      });
     } catch (error) {
-      _setFailure(error, current);
+      final current = state.launch;
+      if (current != null) _setFailure(error, current);
     }
   }
 
   Future<void> skipRest(String periodId) async {
-    final current = state.launch;
-    if (current == null) return;
     try {
-      await saveDraft(
-        _restCoordinator.skip(
-          current.state,
-          periodId,
-          endedAtUtc: _nowUtc().toUtc(),
-        ),
-      );
+      await _enqueueRestAction<void>(() async {
+        final current = state.launch;
+        final period = current == null
+            ? null
+            : _restPeriod(current.state, periodId);
+        if (current == null || period == null || period.endedAtUtc != null) {
+          return;
+        }
+        await saveDraft(
+          _restCoordinator.skip(
+            current.state,
+            periodId,
+            endedAtUtc: _nowUtc().toUtc(),
+          ),
+        );
+      });
     } catch (error) {
-      _setFailure(error, current);
+      final current = state.launch;
+      if (current != null) _setFailure(error, current);
     }
   }
 
@@ -792,25 +912,32 @@ class B02StrengthExecutionController
   /// an explicit skip. The timer is presentation-only; it never mutates a
   /// rest period directly.
   Future<bool> completeRest(String periodId, {DateTime? endedAtUtc}) async {
-    final current = state.launch;
-    if (current == null) return false;
     try {
-      await saveDraft(
-        _restCoordinator.finish(
-          current.state,
-          periodId,
-          endedAtUtc: (endedAtUtc ?? _nowUtc()).toUtc(),
-          endReason: B02RestEndReason.elapsed,
-        ),
-      );
-      return mounted &&
-          state.status == B02StrengthExecutionStatus.partial &&
-          state.launch?.state.restPeriods.any(
-                (period) => period.id == periodId && period.endedAtUtc != null,
-              ) ==
-              true;
+      return await _enqueueRestAction<bool>(() async {
+        final current = state.launch;
+        final period = current == null
+            ? null
+            : _restPeriod(current.state, periodId);
+        if (current == null || period == null) return false;
+        if (period.endedAtUtc != null) return true;
+        final saved = await saveDraft(
+          _restCoordinator.finish(
+            current.state,
+            periodId,
+            endedAtUtc: (endedAtUtc ?? _nowUtc()).toUtc(),
+            endReason: B02RestEndReason.elapsed,
+          ),
+        );
+        return saved &&
+            mounted &&
+            state.launch?.state.restPeriods.any(
+                  (value) => value.id == periodId && value.endedAtUtc != null,
+                ) ==
+                true;
+      });
     } catch (error) {
-      _setFailure(error, current);
+      final current = state.launch;
+      if (current != null) _setFailure(error, current);
       return false;
     }
   }
@@ -900,9 +1027,10 @@ class B02StrengthExecutionController
           clearError: true,
         );
       }
+      final terminalNow = _nowUtc().toUtc();
       final finalState = _stampElapsed(
-        current.state,
-        nowUtc: _nowUtc().toUtc(),
+        _finishOpenRestForNextAction(current.state, endedAtUtc: terminalNow),
+        nowUtc: terminalNow,
       ).copyWith(activeSegmentStartedAtUtc: null);
       try {
         await _saveDraft(finalState, allowDuringCompletion: true);
@@ -919,6 +1047,9 @@ class B02StrengthExecutionController
         reason: reason,
         completedAtUtc: completedAtUtc,
       );
+      // The durable terminal transition is authoritative. Wake-lock cleanup
+      // is best effort and must not change the successful result.
+      _releaseWakeLockForLaunch(current);
       if (!mounted) return false;
       state = B02StrengthExecutionUiState(
         status: B02StrengthExecutionStatus.ready,
@@ -976,6 +1107,7 @@ class B02StrengthExecutionController
     );
     try {
       await _adapter.discardDraft(draftId: current.draftId);
+      _releaseWakeLockForLaunch(current);
       if (!mounted) return;
       state = const B02StrengthExecutionUiState(
         status: B02StrengthExecutionStatus.ready,
@@ -1000,6 +1132,7 @@ class B02StrengthExecutionController
         launch: launch.copyWith(state: activeState),
         slots: prepared.slots,
       );
+      _ensureWakeLockForLaunch(launch.copyWith(state: activeState));
     } catch (error) {
       _setFailure(error, null, recovery: true);
     }
@@ -1026,6 +1159,7 @@ class B02StrengthExecutionController
         launch: launch.copyWith(state: activeState),
         slots: prepared.slots,
       );
+      _ensureWakeLockForLaunch(launch.copyWith(state: activeState));
     } on B02StrengthExecutionRecoveryException catch (error) {
       _setFailure(error, prior, recovery: true);
     } catch (error) {
@@ -1167,6 +1301,43 @@ class B02StrengthExecutionController
     return next;
   }
 
+  Future<T> _enqueueRestAction<T>(Future<T> Function() operation) {
+    final next = _restActionTail.then<T>((_) => operation());
+    _restActionTail = next.then<void>(
+      (_) {},
+      onError: (Object error, StackTrace stackTrace) {},
+    );
+    return next;
+  }
+
+  B02RestPeriod? _openRestPeriod(B02ExecutionDraftState draft) {
+    for (final period in draft.restPeriods) {
+      if (period.endedAtUtc == null) return period;
+    }
+    return null;
+  }
+
+  B02RestPeriod? _restPeriod(B02ExecutionDraftState draft, String periodId) {
+    for (final period in draft.restPeriods) {
+      if (period.id == periodId) return period;
+    }
+    return null;
+  }
+
+  B02ExecutionDraftState _finishOpenRestForNextAction(
+    B02ExecutionDraftState draft, {
+    required DateTime endedAtUtc,
+  }) {
+    final open = _openRestPeriod(draft);
+    if (open == null) return draft;
+    return _restCoordinator.finish(
+      draft,
+      open.id,
+      endedAtUtc: endedAtUtc,
+      endReason: B02RestEndReason.nextAction,
+    );
+  }
+
   void _setFailure(
     Object error,
     B02StrengthExecutionLaunch? launch, {
@@ -1235,6 +1406,9 @@ final b02StrengthExecutionControllerProvider =
     >(
       (ref) => B02StrengthExecutionController(
         ref.watch(strengthExecutionCompatibilityAdapterProvider),
+        wakeLockCoordinator: ref.watch(
+          workoutSessionWakeLockCoordinatorProvider,
+        ),
       ),
     );
 
@@ -1248,6 +1422,9 @@ final b02StrengthExecutionScreenControllerProvider = StateNotifierProvider
       (ref, launch) => B02StrengthExecutionController(
         ref.watch(strengthExecutionCompatibilityAdapterProvider),
         initialLaunch: launch,
+        wakeLockCoordinator: ref.watch(
+          workoutSessionWakeLockCoordinatorProvider,
+        ),
       ),
     );
 

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -86,6 +88,7 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       ref.read(_controllerProvider.notifier).syncElapsedOnResume();
+      unawaited(ref.read(_controllerProvider.notifier).reconcileWakeLock());
     }
   }
 
