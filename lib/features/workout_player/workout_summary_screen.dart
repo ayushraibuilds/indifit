@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../core/di/providers.dart';
 import '../../core/presentation/product_failure_presentation.dart';
+import '../../core/services/workout_session_wake_lock_coordinator.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../data/database/app_database.dart';
@@ -98,6 +101,17 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
         // Legacy/unscheduled behavior intentionally stays unchanged.
         await repo.deleteActiveDraft();
       }
+
+      // The durable save/finalization above is authoritative. Screen-awake
+      // cleanup is best effort and cannot turn a successful workout into a
+      // failure state.
+      unawaited(
+        ref
+            .read(workoutSessionWakeLockCoordinatorProvider)
+            .clearActiveSession(
+              legacyWorkoutSessionWakeLockKey(widget.scheduledOccurrenceId),
+            ),
+      );
 
       if (mounted && Navigator.of(context).canPop()) {
         Navigator.pop(context); // Exit summary and return to split view

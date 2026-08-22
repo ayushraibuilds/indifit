@@ -70,6 +70,7 @@ import '../privacy/privacy_policy.dart';
 import '../services/civil_date_revision_notifier.dart';
 import '../services/local_schedule_date_service.dart';
 import '../services/local_timezone_service.dart';
+import '../services/workout_session_wake_lock_coordinator.dart';
 
 export 'user_profile_provider.dart';
 
@@ -78,6 +79,16 @@ final databaseProvider = Provider<AppDatabase>((ref) {
   ref.onDispose(() => db.close());
   return db;
 });
+
+/// One app-scoped owner for the active workout's screen-awake intent. It is
+/// intentionally not auto-disposed with an individual player route.
+final workoutSessionWakeLockCoordinatorProvider =
+    Provider<WorkoutSessionWakeLockCoordinator>((ref) {
+      final coordinator = WorkoutSessionWakeLockCoordinator();
+      coordinator.attachToAppLifecycle();
+      ref.onDispose(coordinator.dispose);
+      return coordinator;
+    });
 
 final nutritionRecipeRepositoryProvider = Provider<NutritionRecipeRepository>(
   (ref) => NutritionRecipeRepository(db: ref.watch(databaseProvider)),

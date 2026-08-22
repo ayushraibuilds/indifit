@@ -7,6 +7,7 @@ import 'package:vibration/vibration.dart';
 
 import '../../core/di/providers.dart';
 import '../../core/fixtures/workout_draft_codec.dart';
+import '../../core/services/workout_session_wake_lock_coordinator.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/legacy_workout_compatibility_adapter.dart';
 import '../../data/repositories/workout_repository.dart';
@@ -89,6 +90,7 @@ class WorkoutPlayerController extends StateNotifier<WorkoutPlayerState> {
   final String? scheduledOccurrenceId;
   final String? executionSnapshotJson;
   final LegacyWorkoutCompatibilityAdapter _legacyCompatibility;
+  final WorkoutSessionWakeLockCoordinator _wakeLockCoordinator;
   Timer? _timer;
 
   WorkoutPlayerController(
@@ -104,6 +106,9 @@ class WorkoutPlayerController extends StateNotifier<WorkoutPlayerState> {
     LegacyWorkoutCompatibilityAdapter? legacyCompatibility,
   }) : _legacyCompatibility =
            legacyCompatibility ?? const LegacyWorkoutCompatibilityAdapter(),
+       _wakeLockCoordinator = _ref.read(
+         workoutSessionWakeLockCoordinatorProvider,
+       ),
        super(
          WorkoutPlayerState(
            activeExercises: initialExercises,
@@ -113,6 +118,12 @@ class WorkoutPlayerController extends StateNotifier<WorkoutPlayerState> {
            loggedSets: initialLoggedSets ?? [],
          ),
        ) {
+    _wakeLockCoordinator.attachToAppLifecycle();
+    unawaited(
+      _wakeLockCoordinator.setActiveSession(
+        legacyWorkoutSessionWakeLockKey(scheduledOccurrenceId),
+      ),
+    );
     _startTimer();
     prefillInputs();
   }
@@ -137,6 +148,15 @@ class WorkoutPlayerController extends StateNotifier<WorkoutPlayerState> {
       state = state.copyWith(elapsedSeconds: _baseElapsedSeconds + diff);
     }
   }
+
+  Future<void> reconcileWakeLock() =>
+      _wakeLockCoordinator.reconcileForActiveSession(
+        legacyWorkoutSessionWakeLockKey(scheduledOccurrenceId),
+      );
+
+  Future<void> releaseWakeLock() => _wakeLockCoordinator.clearActiveSession(
+    legacyWorkoutSessionWakeLockKey(scheduledOccurrenceId),
+  );
 
   @override
   void dispose() {
@@ -388,9 +408,11 @@ class WorkoutPlayerController extends StateNotifier<WorkoutPlayerState> {
             occurrenceId: occurrenceId,
             commandId: const Uuid().v4(),
           );
+      await releaseWakeLock();
       return;
     }
     final repo = _ref.read(workoutRepositoryProvider);
     await repo.deleteActiveDraft();
+    await releaseWakeLock();
   }
 }

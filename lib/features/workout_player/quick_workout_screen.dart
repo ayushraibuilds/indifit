@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -7,6 +8,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../core/di/providers.dart';
 import '../../core/fixtures/b02_execution_draft_codec.dart';
+import '../../core/services/workout_session_wake_lock_coordinator.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/utils/app_logger.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
@@ -180,6 +182,15 @@ class _QuickWorkoutScreenState extends ConsumerState<QuickWorkoutScreen> {
       await ref
           .read(strengthExecutionCompatibilityAdapterProvider)
           .discardDraft(draftId: draft.id, commandId: const Uuid().v4());
+      final wakeLock = ref.read(workoutSessionWakeLockCoordinatorProvider);
+      unawaited(
+        wakeLock.clearActiveSession(b02WorkoutSessionWakeLockKey(draft.id)),
+      );
+      unawaited(
+        wakeLock.clearActiveSession(
+          legacyWorkoutSessionWakeLockKey(draft.scheduledOccurrenceId),
+        ),
+      );
       ref.invalidate(quickWorkoutActiveDraftProvider);
     } catch (error, stackTrace) {
       AppLogger.error(
