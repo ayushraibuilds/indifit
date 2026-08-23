@@ -25,8 +25,13 @@ String occurrenceEventLabel(String value) => value
 /// Modal action sheet for calendar occurrences exposing B01 domain actions.
 class OccurrenceActionsSheet extends ConsumerStatefulWidget {
   final CalendarOccurrenceReadItem occurrenceItem;
+  final bool scheduleAdjustmentsOnly;
 
-  const OccurrenceActionsSheet({super.key, required this.occurrenceItem});
+  const OccurrenceActionsSheet({
+    super.key,
+    required this.occurrenceItem,
+    this.scheduleAdjustmentsOnly = false,
+  });
 
   @override
   ConsumerState<OccurrenceActionsSheet> createState() =>
@@ -504,7 +509,8 @@ class _OccurrenceActionsSheetState
               ),
             )
           else ...[
-            if (isStartable || isInProgress)
+            if (!widget.scheduleAdjustmentsOnly &&
+                (isStartable || isInProgress))
               ListTile(
                 leading: Icon(Icons.play_arrow_rounded, color: colors.action),
                 title: Text(isInProgress ? 'Resume Workout' : 'Start Workout'),
@@ -521,19 +527,20 @@ class _OccurrenceActionsSheetState
                 title: const Text('Skip Workout'),
                 onTap: _showSkipDialog,
               ),
-              ListTile(
-                leading: Icon(
-                  Icons.cancel_outlined,
-                  color: colors.danger.indicator,
+              if (!widget.scheduleAdjustmentsOnly)
+                ListTile(
+                  leading: Icon(
+                    Icons.cancel_outlined,
+                    color: colors.danger.indicator,
+                  ),
+                  title: Text(
+                    'Cancel Workout',
+                    style: B05Typography.body(
+                      context,
+                    ).copyWith(color: colors.danger.indicator),
+                  ),
+                  onTap: _cancelOccurrence,
                 ),
-                title: Text(
-                  'Cancel Workout',
-                  style: B05Typography.body(
-                    context,
-                  ).copyWith(color: colors.danger.indicator),
-                ),
-                onTap: _cancelOccurrence,
-              ),
             ],
             if (isRestorable)
               ListTile(
@@ -547,11 +554,12 @@ class _OccurrenceActionsSheetState
                 title: const Text('Repeat Workout'),
                 onTap: _showRepeatDialog,
               ),
-            ListTile(
-              leading: const Icon(Icons.history_rounded),
-              title: const Text('View History'),
-              onTap: _showHistory,
-            ),
+            if (!widget.scheduleAdjustmentsOnly)
+              ListTile(
+                leading: const Icon(Icons.history_rounded),
+                title: const Text('View History'),
+                onTap: _showHistory,
+              ),
           ],
         ],
       ),
