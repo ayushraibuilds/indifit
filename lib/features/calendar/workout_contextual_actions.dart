@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/di/providers.dart';
 import '../../core/presentation/consumer_date_label.dart';
 import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/theme/b05_semantic_colors.dart';
@@ -220,24 +221,41 @@ class _WorkoutContextualActionsState
     final actionState = ref.watch(
       workoutOccurrenceActionControllerProvider(occurrence.id),
     );
+    final dates = ref.watch(localScheduleDateServiceProvider);
+    final today = dates.todayIn(occurrence.effectiveTimezoneId);
+    final isToday = occurrence.effectiveLocalDate == today;
+    final isFuture = dates.compare(occurrence.effectiveLocalDate, today) > 0;
     final busy = _isLaunching || actionState.isPending;
     final colors = context.b05Colors;
-    final status = _statusFor(colors, occurrence.status, item.isDeload);
+    final status = _statusFor(
+      colors,
+      occurrence.status,
+      item.isDeload,
+      item.isOverdue,
+    );
+    final spokenStatus = _spokenStatus(
+      occurrence.status,
+      isOverdue: item.isOverdue,
+      isToday: isToday,
+      isFuture: isFuture,
+    );
 
     return Semantics(
       container: true,
       label: '${item.template.name} workout',
-      value: 'Status ${_spokenStatus(occurrence.status)}',
-      hint: _canLaunch
+      value: 'Status $spokenStatus',
+      hint: _canLaunch && isToday
           ? 'Swipe right to open the workout player or left to skip. Buttons provide the same actions.'
           : occurrence.status == OccurrenceStatus.completed.dbValue
           ? 'Open the completed workout to review its details.'
+          : occurrence.status == OccurrenceStatus.partiallyCompleted.dbValue
+          ? 'Open the partially completed workout to review its details.'
           : occurrence.status == OccurrenceStatus.skipped.dbValue
           ? 'This workout was skipped.'
           : 'Open details for this workout.',
       child: Dismissible(
         key: ValueKey('workout-contextual-${occurrence.id}'),
-        direction: _canLaunch
+        direction: (_canLaunch && isToday)
             ? DismissDirection.horizontal
             : DismissDirection.none,
         movementDuration: B05MotionPolicy.transitionDuration(context),
@@ -272,7 +290,7 @@ class _WorkoutContextualActionsState
                       child: Padding(
                         padding: const EdgeInsets.all(B05Layout.space8),
                         child: Icon(
-                          _statusIcon(occurrence.status),
+                          _statusIcon(occurrence.status, isOverdue: item.isOverdue),
                           color: status.indicator,
                         ),
                       ),
@@ -307,9 +325,9 @@ class _WorkoutContextualActionsState
                 const SizedBox(height: B05Layout.space12),
                 Semantics(
                   label: 'Workout status',
-                  value: _spokenStatus(occurrence.status),
+                  value: spokenStatus,
                   child: Text(
-                    _spokenStatus(occurrence.status),
+                    spokenStatus,
                     style: B05Typography.label(
                       context,
                     ).copyWith(color: status.foreground),
@@ -325,6 +343,8 @@ class _WorkoutContextualActionsState
                             : 'Start workout',
                         hint: _isInProgress
                             ? 'Resumes this existing workout draft.'
+                            : isFuture
+                            ? 'Starts this scheduled future workout in the player.'
                             : 'Starts this scheduled workout in the player.',
                         icon: _isInProgress
                             ? Icons.play_arrow_rounded
@@ -346,12 +366,14 @@ class _WorkoutContextualActionsState
                     ],
                   )
                 else if (occurrence.status ==
-                    OccurrenceStatus.completed.dbValue)
+                        OccurrenceStatus.completed.dbValue ||
+                    occurrence.status ==
+                        OccurrenceStatus.partiallyCompleted.dbValue)
                   B05ActionGroup(
                     children: [
                       B05ActionButton(
                         label: 'View workout',
-                        hint: 'Review this completed workout.',
+                        hint: 'Review this workout.',
                         icon: Icons.open_in_new_rounded,
                         onPressed: busy
                             ? null
@@ -362,8 +384,26 @@ class _WorkoutContextualActionsState
                       ),
                     ],
                   )
-                else if (occurrence.status == OccurrenceStatus.skipped.dbValue)
-                  const SizedBox.shrink()
+                else if (occurrence.status == OccurrenceStatus.skipped.dbValue ||
+                    occurrence.status == OccurrenceStatus.cancelled.dbValue)
+                  B05ActionGroup(
+                    children: [
+                      B05ActionButton(
+                        label: 'Restore to plan',
+                        hint: 'Restores this workout to your plan.',
+                        icon: Icons.undo_rounded,
+                        emphasis: B05ActionEmphasis.secondary,
+                        onPressed: busy
+                            ? null
+                            : () async {
+                                dismissIndiFitFeedback(context);
+                                await ref
+                                    .read(calendarControllerProvider.notifier)
+                                    .restoreOccurrence(occurrence.id);
+                              },
+                      ),
+                    ],
+                  )
                 else
                   const B05StatusMessage(
                     status: B05SemanticStatus.unavailable,
@@ -452,7 +492,9 @@ class _WorkoutContextualActionsState
     B05SemanticColors colors,
     String status,
     bool isDeload,
+    bool isOverdue,
   ) {
+    if (isOverdue) return colors.warning;
     if (isDeload) return colors.info;
     return switch (status) {
       'completed' => colors.success,
@@ -465,24 +507,44 @@ class _WorkoutContextualActionsState
     };
   }
 
-  static IconData _statusIcon(String status) => switch (status) {
-    'completed' => Icons.check_circle_rounded,
-    'inProgress' => Icons.play_circle_fill_rounded,
-    'skipped' => Icons.skip_next_rounded,
-    'cancelled' => Icons.cancel_outlined,
-    _ => Icons.fitness_center_rounded,
-  };
+  static IconData _statusIcon(String status, {required bool isOverdue}) {
+    if (isOverdue) return Icons.warning_amber_rounded;
+    return switch (status) {
+      'completed' => Icons.check_circle_rounded,
+      'partiallyCompleted' => Icons.pie_chart_outline_rounded,
+      'inProgress' => Icons.play_circle_fill_rounded,
+      'skipped' => Icons.skip_next_rounded,
+      'cancelled' => Icons.cancel_outlined,
+      _ => Icons.fitness_center_rounded,
+    };
+  }
 
-  static String _spokenStatus(String status) => switch (status) {
-    'planned' => 'Planned',
-    'rescheduled' => 'Rescheduled',
-    'completed' => 'Completed',
-    'partiallyCompleted' => 'Partially completed',
-    'inProgress' => 'In progress',
-    'skipped' => 'Skipped',
-    'cancelled' => 'Cancelled',
-    _ => 'Status not available',
-  };
+  static String _spokenStatus(
+    String status, {
+    required bool isOverdue,
+    required bool isToday,
+    required bool isFuture,
+  }) {
+    if (isOverdue) return 'Overdue';
+    return switch (status) {
+      'planned' => isToday
+          ? 'Planned for today'
+          : isFuture
+          ? 'Scheduled'
+          : 'Planned',
+      'rescheduled' => isToday
+          ? 'Rescheduled for today'
+          : isFuture
+          ? 'Rescheduled'
+          : 'Rescheduled',
+      'completed' => 'Completed',
+      'partiallyCompleted' => 'Partially completed',
+      'inProgress' => 'In progress',
+      'skipped' => 'Skipped',
+      'cancelled' => 'Cancelled',
+      _ => 'Status not available',
+    };
+  }
 }
 
 /// B05-08 owns the playlist behavior; this retained slot keeps the launcher
