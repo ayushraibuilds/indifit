@@ -364,7 +364,7 @@ void main() {
     );
   });
 
-  testWidgets('Training keeps Travel inside More and only with a plan', (
+  testWidgets('Training More options does not show deprecated Travel Mode', (
     tester,
   ) async {
     _setViewport(tester, const Size(390, 844));
@@ -381,7 +381,10 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('More training options'));
     await tester.pumpAndSettle();
-    expect(find.text('Travel mode'), findsOneWidget);
+    expect(find.text('Travel mode'), findsNothing);
+    expect(find.text('Manage plan'), findsOneWidget);
+    expect(find.text('Equipment and preferences'), findsOneWidget);
+    expect(find.text('Log completed workout'), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pumpAndSettle();

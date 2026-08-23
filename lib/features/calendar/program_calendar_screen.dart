@@ -4,15 +4,12 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/di/providers.dart';
-import '../../core/presentation/consumer_count_label.dart';
-import '../../core/presentation/consumer_date_label.dart';
 import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/consumer_task_primitives.dart';
 import '../../core/widgets/indi_fit_bottom_sheet.dart';
 import '../../data/repositories/calendar_read_repository.dart';
-import '../travel/travel_controller.dart';
 import 'calendar_controller.dart';
 import 'calendar_read_model.dart';
 import 'occurrence_actions_sheet.dart';
@@ -136,13 +133,11 @@ class ProgramCalendarScreen extends ConsumerWidget {
 
   Widget _buildOccurrenceCard(
     BuildContext context,
-    CalendarOccurrenceReadItem item, {
-    required bool hasTravelOverride,
-  }) => Padding(
+    CalendarOccurrenceReadItem item,
+  ) => Padding(
     padding: const EdgeInsets.only(bottom: 12),
     child: WorkoutContextualActions(
       item: item,
-      hasTravelOverride: hasTravelOverride,
       onOpenDetails: () => _showActions(context, item),
     ),
   );
@@ -150,7 +145,6 @@ class ProgramCalendarScreen extends ConsumerWidget {
   Widget _buildOccurrences(
     BuildContext context,
     List<CalendarOccurrenceReadItem> items,
-    Set<String> activeTravelOccurrenceIds,
     CalendarView view,
     bool hasActiveProgram,
   ) {
@@ -168,9 +162,6 @@ class ProgramCalendarScreen extends ConsumerWidget {
       itemBuilder: (context, index) => _buildOccurrenceCard(
         context,
         items[index],
-        hasTravelOverride: activeTravelOccurrenceIds.contains(
-          items[index].occurrence.id,
-        ),
       ),
     );
   }
@@ -191,7 +182,6 @@ class ProgramCalendarScreen extends ConsumerWidget {
         }
       });
     }
-    final travelState = ref.watch(travelControllerProvider);
     final visibleItems = switch (state.view) {
       CalendarView.day => state.selectedDateOccurrences,
       CalendarView.week || CalendarView.month => state.rangeOccurrences,
@@ -207,8 +197,6 @@ class ProgramCalendarScreen extends ConsumerWidget {
               switch (value) {
                 case 'plan':
                   context.push('/program-author');
-                case 'travel':
-                  context.push('/travel-mode');
               }
             },
             itemBuilder: (context) => [
@@ -220,15 +208,6 @@ class ProgramCalendarScreen extends ConsumerWidget {
                       : 'Manage training plan',
                 ),
               ),
-              if (state.activeProgramVersionId != null)
-                PopupMenuItem(
-                  value: 'travel',
-                  child: Text(
-                    travelState.activeTravelContext != null
-                        ? 'Travel mode active'
-                        : 'Travel mode',
-                  ),
-                ),
             ],
           ),
         ],
@@ -278,27 +257,6 @@ class ProgramCalendarScreen extends ConsumerWidget {
                 onRetry: controller.refresh,
               ),
             ),
-          if (travelState.activeTravelContext case final travel?)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                B05Layout.space16,
-                B05Layout.space4,
-                B05Layout.space16,
-                0,
-              ),
-              child: B05Surface(
-                tone: B05SurfaceTone.selected,
-                showBorder: false,
-                padding: const EdgeInsets.all(B05Layout.space12),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: Text(
-                    'Travel mode is on for ${ConsumerCountLabel.format(travelState.activeTravelOccurrenceIds.length, 'workout')} (${ConsumerDateLabel.range(travel.startLocalDate, travel.endLocalDate)}).',
-                    style: B05Typography.body(context),
-                  ),
-                ),
-              ),
-            ),
           if (state.isLoading)
             Flexible(
               child: SingleChildScrollView(
@@ -315,7 +273,6 @@ class ProgramCalendarScreen extends ConsumerWidget {
               child: _buildOccurrences(
                 context,
                 visibleItems,
-                travelState.activeTravelOccurrenceIds,
                 state.view,
                 state.activeProgramVersionId != null,
               ),

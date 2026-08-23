@@ -7,7 +7,6 @@ import 'package:indifit/data/repositories/equipment_preference_repository.dart';
 import 'package:indifit/data/repositories/program_activation_coordinator.dart';
 import 'package:indifit/data/repositories/program_repository.dart';
 import 'package:indifit/data/repositories/travel_repository.dart';
-import 'package:indifit/features/travel/travel_controller.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -348,52 +347,6 @@ void main() {
           ),
           equals(defaultId),
         );
-      },
-    );
-
-    test(
-      '4. TravelController manages travel preview, apply, and cancel state reactively',
-      () async {
-        final profileId = await equipRepo.createProfile(
-          name: 'Hotel Gym Profile',
-        );
-
-        final controller = TravelController(travelRepo: travelRepo);
-
-        await controller.previewTravel(
-          startLocalDate: '2026-10-01',
-          endLocalDate: '2026-10-07',
-          timezoneId: 'Asia/Kolkata',
-          equipmentProfileId: profileId,
-        );
-
-        expect(controller.state.previewResult, isNotNull);
-
-        await controller.applyTravel(note: 'Vacation in Goa');
-        expect(controller.state.activeTravelContext, isNotNull);
-
-        // A rejected second apply is surfaced to the UI instead of being
-        // swallowed and allowing the preview sheet to dismiss as success.
-        await expectLater(controller.applyTravel(), throwsA(isA<StateError>()));
-        expect(controller.state.activeTravelContext, isNotNull);
-
-        await controller.cancelActiveTravel();
-        expect(controller.state.activeTravelContext, isNull);
-
-        await controller.previewTravel(
-          startLocalDate: '2026-10-08',
-          endLocalDate: '2026-10-09',
-          timezoneId: 'Asia/Kolkata',
-          equipmentProfileId: profileId,
-        );
-        await controller.applyTravel();
-        final endedId = controller.state.activeTravelContext!.id;
-        await controller.endActiveTravel();
-        expect(controller.state.activeTravelContext, isNull);
-        final ended = await (db.select(
-          db.travelContexts,
-        )..where((table) => table.id.equals(endedId))).getSingle();
-        expect(ended.status, equals('ended'));
       },
     );
   });
