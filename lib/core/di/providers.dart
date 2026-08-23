@@ -36,6 +36,7 @@ import '../../data/repositories/nutrition_recipe_repository.dart';
 import '../../data/repositories/nutrition_target_authority.dart';
 import '../../data/repositories/nutrition_thali_repository.dart';
 import '../../data/repositories/nutrition_transformation_repository.dart';
+import '../../data/repositories/plan_library_read_repository.dart';
 import '../../data/repositories/program_activation_coordinator.dart';
 import '../../data/repositories/program_lifecycle_repository.dart';
 import '../../data/repositories/program_repository.dart';
@@ -822,6 +823,45 @@ final waterProvider = StateNotifierProvider<WaterNotifier, WaterState>((ref) {
 final programRepositoryProvider = Provider<ProgramRepository>((ref) {
   return ProgramRepository(ref.watch(databaseProvider));
 });
+
+final planLibraryReadRepositoryProvider = Provider<PlanLibraryReadRepository>(
+  (ref) => PlanLibraryReadRepository(
+    ref.watch(databaseProvider),
+    programs: ref.watch(programRepositoryProvider),
+  ),
+);
+
+/// The Plan Library is a read projection of the canonical program graph and
+/// active-version pointer. Mutations still flow through B01 repositories and
+/// coordinators; this signal only makes mounted library routes reconcile.
+final planLibraryRevisionProvider = StreamProvider.autoDispose<Object>((ref) {
+  final db = ref.watch(databaseProvider);
+  return db
+      .tableUpdates(
+        TableUpdateQuery.onAllTables([
+          db.programs,
+          db.programVersions,
+          db.programBlocks,
+          db.programWeeks,
+          db.sessionTemplates,
+          db.exercisePrescriptions,
+          db.exerciseGroups,
+          db.exerciseGroupMembers,
+          db.trainingPlanSettings,
+        ]),
+      )
+      // Table-update streams establish their subscription with an initial
+      // emission. Ignore that baseline so the read provider does not
+      // invalidate itself while it is still constructing its first value.
+      .skip(1)
+      .map<Object>((_) => Object());
+});
+
+final planLibrarySnapshotProvider =
+    FutureProvider.autoDispose<PlanLibrarySnapshot>((ref) {
+      ref.watch(planLibraryRevisionProvider);
+      return ref.watch(planLibraryReadRepositoryProvider).read();
+    });
 
 final localScheduleDateServiceProvider = Provider<LocalScheduleDateService>((
   ref,
