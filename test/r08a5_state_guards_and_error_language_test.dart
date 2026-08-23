@@ -536,7 +536,7 @@ void main() {
   });
 
   group('R08A.5 Training UI Widget Precedence & Language', () {
-    testWidgets('Today card renders "Resume workout" when today\'s scheduled workout is active', (tester) async {
+    testWidgets('Training landing makes a matching workout Resume', (tester) async {
       final landingSnapshot = TrainingLandingSnapshot(
         localDate: '2026-08-21',
         timezoneId: 'UTC',
@@ -564,16 +564,15 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Active workout banner at top should be present
-      expect(find.text('WORKOUT IN PROGRESS'), findsOneWidget);
-      expect(find.text('Resume Chest Day'), findsOneWidget);
-
-      // Today card should say "Resume workout", NOT "Resume your saved workout before starting today's plan"
+      // The current action is singular and authoritative.
+      expect(find.text('Chest Day'), findsOneWidget);
       expect(find.text('Resume your saved workout before starting today’s plan.'), findsNothing);
       expect(find.text('Resume workout'), findsOneWidget);
+      expect(find.text('WORKOUT IN PROGRESS'), findsNothing);
+      expect(find.text('Resume Chest Day'), findsNothing);
     });
 
-    testWidgets('Today card renders blocking guidance when competing active draft exists', (tester) async {
+    testWidgets('Training landing blocks a competing active draft truthfully', (tester) async {
       final landingSnapshot = TrainingLandingSnapshot(
         localDate: '2026-08-21',
         timezoneId: 'UTC',
@@ -601,20 +600,66 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Top banner shows Quick Workout
-      expect(find.text('WORKOUT IN PROGRESS'), findsOneWidget);
-      expect(find.text('Resume Quick Workout'), findsOneWidget);
-
-      // Today card shows blocking guidance
+      expect(find.text('Quick Workout'), findsOneWidget);
+      expect(find.text('Resume workout'), findsOneWidget);
       expect(
-        find.text('Resume your saved workout before starting today’s plan.'),
+        find.text('Finish this workout before starting another.'),
         findsOneWidget,
       );
       // Start button for today's workout must NOT be present while competing draft is open
       expect(find.text('Start workout'), findsNothing);
+      expect(find.text('WORKOUT IN PROGRESS'), findsNothing);
     });
 
-    testWidgets('Today card renders "Workout complete for today." on completed workout', (tester) async {
+    testWidgets(
+      'Training landing does not resurrect a draft rejected by the resolver',
+      (tester) async {
+        final landingSnapshot = TrainingLandingSnapshot(
+          localDate: '2026-08-21',
+          timezoneId: 'UTC',
+          todayWorkout: completedOccurrenceItem,
+          upcoming: const [],
+          recentSessions: const [],
+          activeProgramName: 'PPL Program',
+          activeDraft: matchingDraftRow,
+          nextActionResolution: TrainingNextActionResolution(
+            localDate: '2026-08-21',
+            activeProgramVersionId:
+                completedOccurrenceItem.occurrence.programVersionId,
+            activeDraft: null,
+            hasActiveDraft: true,
+            currentOccurrence: null,
+            todayOccurrence: null,
+            overdueOccurrence: null,
+            nextOccurrence: null,
+            todayCompletedOccurrence: completedOccurrenceItem,
+            upcomingOccurrences: const [],
+          ),
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              trainingLandingSnapshotProvider.overrideWith(
+                (ref) async => landingSnapshot,
+              ),
+            ],
+            child: MaterialApp(
+              theme: AppTheme.lightTheme,
+              home: const TrainingScreen(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Workout in progress'), findsOneWidget);
+        expect(find.text('Resume workout'), findsNothing);
+        expect(find.text('Start workout'), findsNothing);
+        expect(find.text('Quick Workout'), findsNothing);
+      },
+    );
+
+    testWidgets('Training landing renders a completed state without Start or Resume', (tester) async {
       final landingSnapshot = TrainingLandingSnapshot(
         localDate: '2026-08-21',
         timezoneId: 'UTC',
@@ -642,12 +687,12 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Workout complete for today.'), findsOneWidget);
+      expect(find.text('Workout complete today'), findsOneWidget);
       expect(find.text('Start workout'), findsNothing);
       expect(find.text('Resume workout'), findsNothing);
     });
 
-    testWidgets('Today card distinguishes partial completion from full completion', (tester) async {
+    testWidgets('Training landing distinguishes partial completion from full completion', (tester) async {
       final landingSnapshot = TrainingLandingSnapshot(
         localDate: '2026-08-21',
         timezoneId: 'UTC',
@@ -675,8 +720,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Workout partially completed.'), findsOneWidget);
-      expect(find.text('Workout complete for today.'), findsNothing);
+      expect(find.text('Workout partially completed'), findsOneWidget);
+      expect(find.text('Workout complete today'), findsNothing);
       expect(find.text('Start workout'), findsNothing);
       expect(find.text('Resume workout'), findsNothing);
     });
