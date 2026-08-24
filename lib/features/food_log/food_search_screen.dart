@@ -178,6 +178,8 @@ class _FoodQuantityReviewCapture extends StatelessWidget {
 }
 
 class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
+  static const _searchDebounce = Duration(milliseconds: 300);
+
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   List<FoodItem> _localResults = [];
@@ -399,55 +401,24 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     if (_debounceTimer?.isActive ?? false) _debounceTimer?.cancel();
     _onlineSearchCancelToken?.cancel('Food search query changed');
     _searchGeneration++;
-    _debounceTimer = Timer(const Duration(milliseconds: 700), () {
-      _performSearch(_searchController.text);
+    final query = _searchController.text;
+    // Rows belong to the query that produced them. Remove them immediately so
+    // an old result cannot be selected while the replacement query is waiting
+    // for its debounce interval.
+    setState(() {
+      _localResults = [];
+      _canonicalResults = [];
+      _onlineResults = [];
+      _rankedSearchResults = [];
+      _searching = query.trim().isNotEmpty;
+      _searchingOnline = false;
+      _isOnlineSearchOffline = false;
+      _onlineFailureMessage = null;
     });
-  }
-
-  NutritionFoodSearchHistory _searchHistory() {
-    final frequency = <String, int>{};
-    final recent = <String>{};
-    for (final item in _canonicalRecentResults) {
-      final key = 'canonical::${item.option.id}';
-      frequency[key] = item.frequencyCount;
-      recent.add(key);
-      const legacyMarker = 'legacy-food-item:';
-      final sourceReference = item.option.sourceReference;
-      if (sourceReference?.startsWith(legacyMarker) == true) {
-        final legacyKey =
-            'canonical::legacy-food-item::${sourceReference!.substring(legacyMarker.length)}';
-        frequency[legacyKey] = item.frequencyCount;
-        recent.add(legacyKey);
-      }
-      final providerKey = _providerHistoryKey(sourceReference);
-      if (providerKey != null) {
-        frequency[providerKey] = item.frequencyCount;
-        recent.add(providerKey);
-      }
-    }
-    for (final item in _recentResults) {
-      final key = 'canonical::legacy-food-item::${item.id}';
-      frequency.putIfAbsent(key, () => 1);
-      recent.add(key);
-    }
-    return NutritionFoodSearchHistory(
-      frequencyByIdentity: frequency,
-      recentIdentities: recent,
-    );
-  }
-
-  String? _providerHistoryKey(String? sourceReference) {
-    final reference = sourceReference?.trim();
-    if (reference == null || reference.isEmpty) return null;
-    for (final prefix in const [
-      'open-food-facts:barcode:',
-      'open-food-facts:product:',
-    ]) {
-      if (!reference.startsWith(prefix)) continue;
-      final providerId = reference.substring(prefix.length).trim();
-      return providerId.isEmpty ? null : 'provider::$providerId';
-    }
-    return null;
+    if (query.trim().isEmpty) return;
+    _debounceTimer = Timer(_searchDebounce, () {
+      _performSearch(query);
+    });
   }
 
   void _rebuildSearchRanking(String query) {
@@ -462,7 +433,6 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     _rankedSearchResults = NutritionFoodSearchRanking.rank(
       query: query,
       candidates: candidates,
-      history: _searchHistory(),
     );
   }
 
@@ -609,18 +579,18 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     };
   }
 
-  String _providerReference(FoodApiResult result) {
-    final barcode = result.barcode?.trim();
-    if (barcode != null && barcode.isNotEmpty) {
-      // Preserve the R07D-1 provider identity namespace for barcode-backed
-      // products so retries reuse existing B03 identities.
-      return 'open-food-facts:barcode:$barcode';
-    }
-    final stableId = result.providerId ?? result.barcode;
-    if (stableId != null && stableId.trim().isNotEmpty) {
-      return 'open-food-facts:product:${stableId.trim()}';
-    }
-    return 'open-food-facts:search:${NutritionFoodSearchVocabulary.normalize(result.name)}';
+  String? _providerReference(FoodApiResult result) =>
+      NutritionFoodProviderIdentity.sourceReference(result);
+
+  void _showUnavailableProviderFoodMessage() {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'This result is unavailable for logging. Try another match.',
+        ),
+      ),
+    );
   }
 
   Future<void> _openLegacyLogDialog(FoodItem food) async {
@@ -657,6 +627,10 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   Future<void> _openProviderLogDialog(FoodApiResult result) async {
     try {
       final reference = _providerReference(result);
+      if (reference == null) {
+        _showUnavailableProviderFoodMessage();
+        return;
+      }
       final catalog = await ref.read(
         nutritionFoodCatalogRepositoryProvider.future,
       );
@@ -684,6 +658,10 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   Future<void> _openProviderFastAdd(FoodApiResult result) async {
     try {
       final reference = _providerReference(result);
+      if (reference == null) {
+        _showUnavailableProviderFoodMessage();
+        return;
+      }
       final catalog = await ref.read(
         nutritionFoodCatalogRepositoryProvider.future,
       );
@@ -871,24 +849,27 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
           final transformation = transformations
               .where((item) => item.id == selectedTransformationId)
               .firstOrNull;
-          coordinator.preview(
-            option: option,
-            quantity: selectedQuantity,
-            transformation: transformation,
-          ).then((preview) {
-            if (currentGen == previewGeneration && sheetContext.mounted) {
-              setModalState(() {
-                currentPreview = preview;
-                previewHasError = false;
+          coordinator
+              .preview(
+                option: option,
+                quantity: selectedQuantity,
+                transformation: transformation,
+              )
+              .then((preview) {
+                if (currentGen == previewGeneration && sheetContext.mounted) {
+                  setModalState(() {
+                    currentPreview = preview;
+                    previewHasError = false;
+                  });
+                }
+              })
+              .catchError((_) {
+                if (currentGen == previewGeneration && sheetContext.mounted) {
+                  setModalState(() {
+                    previewHasError = true;
+                  });
+                }
               });
-            }
-          }).catchError((_) {
-            if (currentGen == previewGeneration && sheetContext.mounted) {
-              setModalState(() {
-                previewHasError = true;
-              });
-            }
-          });
         }
 
         void setQuantity(Quantity quantity, StateSetter setModalState) {
@@ -1322,7 +1303,8 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                                               'direct-food-consumption::${const Uuid().v4()}';
                                         });
                                         try {
-                                          final preview = currentPreview ??
+                                          final preview =
+                                              currentPreview ??
                                               await coordinator.preview(
                                                 option: option,
                                                 quantity: selectedQuantity,
@@ -1531,6 +1513,10 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
 
   Future<void> _toggleOnlineSelection(FoodApiResult food) async {
     final reference = _providerReference(food);
+    if (reference == null) {
+      _showUnavailableProviderFoodMessage();
+      return;
+    }
     final key = 'provider-food:$reference';
     if (_selectionLoading.contains(key)) return;
     final selectedOption = _selectedOptions.entries
@@ -2293,8 +2279,13 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     required String foodName,
     required VoidCallback? onPressed,
     bool isAdding = false,
+    bool unavailable = false,
   }) {
-    final label = isAdding ? 'Adding $foodName' : 'Add $foodName';
+    final label = unavailable
+        ? '$foodName unavailable for logging'
+        : isAdding
+        ? 'Adding $foodName'
+        : 'Add $foodName';
     // A disabled nested button must still consume its own hit area. Otherwise
     // a second physical tap falls through to the result-row tap target and
     // unexpectedly opens the quantity sheet.
@@ -2312,7 +2303,13 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
               isAdding ? Icons.hourglass_top_rounded : Icons.add_rounded,
               size: 18,
             ),
-            label: Text(isAdding ? 'Adding…' : 'Add'),
+            label: Text(
+              unavailable
+                  ? 'Unavailable'
+                  : isAdding
+                  ? 'Adding…'
+                  : 'Add',
+            ),
           ),
         ),
       ),
@@ -2679,9 +2676,12 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         ? food.name
         : '$brand ${food.name}';
     final reference = _providerReference(food);
-    final isSelected = _selectedOptions.values.any(
-      (option) => option.sourceReference == reference,
-    );
+    final canLog = reference != null;
+    final isSelected =
+        canLog &&
+        _selectedOptions.values.any(
+          (option) => option.sourceReference == reference,
+        );
     return Card(
       margin: const EdgeInsets.only(bottom: 8.0),
       child: Semantics(
@@ -2689,16 +2689,19 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         explicitChildNodes: true,
         button: true,
         label:
-            '$identityLabel, ${_formatProviderValue(food.calories, 'kcal')}$packageDetail, $serving',
-        hint:
-            'Tap Add to use a supported serving or open to adjust the amount.',
+            '$identityLabel, ${_formatProviderValue(food.calories, 'kcal')}$packageDetail, $serving${canLog ? '' : ', unavailable for logging'}',
+        hint: canLog
+            ? 'Tap Add to use a supported serving or open to adjust the amount.'
+            : 'This result is unavailable for logging. Try another match.',
         child: ListTile(
           minVerticalPadding: 10,
           leading: Semantics(
             label: 'Select ${food.name} for a multi-food add',
             child: Checkbox(
               value: isSelected,
-              onChanged: (_) => unawaited(_toggleOnlineSelection(food)),
+              onChanged: canLog
+                  ? (_) => unawaited(_toggleOnlineSelection(food))
+                  : null,
             ),
           ),
           title: brand == null || brand.isEmpty
@@ -2732,9 +2735,14 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
           ),
           trailing: _buildFastAddAction(
             foodName: food.name,
-            onPressed: () => unawaited(_openProviderFastAdd(food)),
+            onPressed: canLog
+                ? () => unawaited(_openProviderFastAdd(food))
+                : null,
+            unavailable: !canLog,
           ),
-          onTap: () => unawaited(_openProviderLogDialog(food)),
+          onTap: canLog
+              ? () => unawaited(_openProviderLogDialog(food))
+              : _showUnavailableProviderFoodMessage,
         ),
       ),
     );

@@ -604,11 +604,17 @@ void main() {
     await _pumpFood(tester);
 
     await tester.enterText(find.byType(TextField).first, 'first');
-    await tester.pump(const Duration(milliseconds: 800));
+    await tester.pump(const Duration(milliseconds: 299));
+    expect(online.completers, isNot(contains('first')));
+    await tester.pump(const Duration(milliseconds: 1));
     expect(online.completers, contains('first'));
     await tester.enterText(find.byType(TextField).first, 'second');
     expect(online.tokens['first']!.isCancelled, isTrue);
-    await tester.pump(const Duration(milliseconds: 800));
+    expect(find.text('Stale first result'), findsNothing);
+    await tester.pump(const Duration(milliseconds: 299));
+    expect(online.completers, isNot(contains('second')));
+    await tester.pump(const Duration(milliseconds: 1));
+    expect(online.completers, contains('second'));
     online.completers['second']!.complete([
       FoodApiResult(
         name: 'Second result',
@@ -636,6 +642,11 @@ void main() {
 
     expect(find.text('Second result'), findsOneWidget);
     expect(find.text('Stale first result'), findsNothing);
+
+    await tester.enterText(find.byType(TextField).first, '');
+    await tester.pump();
+    expect(find.text('Second result'), findsNothing);
+    expect(find.text('Search results'), findsNothing);
   });
 
   testWidgets('remote provider results remain distinct from local foods', (
