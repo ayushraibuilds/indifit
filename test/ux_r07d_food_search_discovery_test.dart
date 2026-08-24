@@ -231,7 +231,7 @@ void main() {
       expect(bounded.first.candidate.displayName, 'Milk');
     });
 
-    test('provider history uses its stable provider identity', () {
+    test('provider history does not change discovery relevance', () {
       final branded = _remote(
         'Taaza Milk',
         providerId: 'amul-taaza',
@@ -247,7 +247,7 @@ void main() {
         ),
       ).single;
 
-      expect(boosted.score, baseline.score + 54);
+      expect(boosted.score, baseline.score);
     });
 
     test('custom exact match is strong without merging provider identity', () {

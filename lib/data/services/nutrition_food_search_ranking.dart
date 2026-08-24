@@ -63,6 +63,34 @@ class NutritionFoodSearchVocabulary {
   }
 }
 
+/// Exact Open Food Facts identity validation shared by discovery and logging.
+/// Display text and other metadata never participate in this decision.
+class NutritionFoodProviderIdentity {
+  const NutritionFoodProviderIdentity._();
+
+  static String? stableProductId(FoodApiResult result) {
+    final barcode = _clean(result.barcode);
+    final providerId = _clean(result.providerId);
+    if (barcode != null && providerId != null && barcode != providerId) {
+      return null;
+    }
+    return barcode ?? providerId;
+  }
+
+  static String? sourceReference(FoodApiResult result) {
+    final stableId = stableProductId(result);
+    if (stableId == null) return null;
+    return _clean(result.barcode) != null
+        ? 'open-food-facts:barcode:$stableId'
+        : 'open-food-facts:product:$stableId';
+  }
+
+  static String? _clean(String? value) {
+    final clean = value?.trim();
+    return clean == null || clean.isEmpty ? null : clean;
+  }
+}
+
 enum NutritionFoodSearchSource { legacy, canonical, remote }
 
 enum NutritionFoodSearchMatch {
@@ -81,6 +109,8 @@ class NutritionFoodSearchCandidate {
     required this.id,
     required this.displayName,
     required this.brand,
+    required this.category,
+    required this.regionPack,
     required this.isCustom,
     required this.hasNumericFacts,
     required this.providerId,
@@ -96,6 +126,8 @@ class NutritionFoodSearchCandidate {
       id: 'legacy-food-item::${food.id}',
       displayName: food.name,
       brand: _clean(food.brand),
+      category: _clean(food.category),
+      regionPack: _clean(food.regionPack),
       isCustom: food.isCustom,
       hasNumericFacts: true,
       providerId: null,
@@ -112,6 +144,8 @@ class NutritionFoodSearchCandidate {
       id: option.id,
       displayName: option.displayName,
       brand: _clean(option.brand),
+      category: null,
+      regionPack: null,
       isCustom:
           option.sourceType == 'user' || option.sourceType == 'user_entered',
       hasNumericFacts: option.hasNumericFacts,
@@ -124,18 +158,21 @@ class NutritionFoodSearchCandidate {
   }
 
   factory NutritionFoodSearchCandidate.remote(FoodApiResult remote) {
+    final stableId = NutritionFoodProviderIdentity.stableProductId(remote);
     return NutritionFoodSearchCandidate._(
       source: NutritionFoodSearchSource.remote,
-      id: remote.providerId ?? remote.barcode ?? '',
+      id: stableId ?? '',
       displayName: remote.name,
       brand: _clean(remote.brand),
+      category: null,
+      regionPack: null,
       isCustom: false,
       hasNumericFacts:
           remote.calories != null ||
           remote.protein != null ||
           remote.carbs != null ||
           remote.fat != null,
-      providerId: _clean(remote.providerId ?? remote.barcode),
+      providerId: stableId,
       packageQuantity: _clean(remote.packageQuantity),
       food: null,
       option: null,
@@ -147,6 +184,8 @@ class NutritionFoodSearchCandidate {
   final String id;
   final String displayName;
   final String? brand;
+  final String? category;
+  final String? regionPack;
   final bool isCustom;
   final bool hasNumericFacts;
   final String? providerId;
@@ -172,10 +211,18 @@ class NutritionFoodSearchCandidate {
     final packageText = NutritionFoodSearchVocabulary.normalize(
       packageQuantity ?? '',
     );
+    final categoryText = NutritionFoodSearchVocabulary.normalize(
+      category ?? '',
+    );
+    final regionText = NutritionFoodSearchVocabulary.normalize(
+      regionPack ?? '',
+    );
     return [
-      if (brandText.isNotEmpty && !name.contains(brandText)) brandText,
       name,
+      if (brandText.isNotEmpty && !name.contains(brandText)) brandText,
       if (packageText.isNotEmpty && !name.contains(packageText)) packageText,
+      if (categoryText.isNotEmpty && !name.contains(categoryText)) categoryText,
+      if (regionText.isNotEmpty && !name.contains(regionText)) regionText,
     ].where((part) => part.isNotEmpty).join(' ');
   }
 
@@ -192,7 +239,13 @@ class NutritionFoodSearchCandidate {
       id,
       remote?.servingSize.toString() ?? '',
       remote?.servingUnit ?? '',
+      remote?.calories?.toString() ?? '',
+      remote?.protein?.toString() ?? '',
+      remote?.carbs?.toString() ?? '',
+      remote?.fat?.toString() ?? '',
       NutritionFoodSearchVocabulary.normalize(packageQuantity ?? ''),
+      NutritionFoodSearchVocabulary.normalize(category ?? ''),
+      NutritionFoodSearchVocabulary.normalize(regionPack ?? ''),
     ].join('|');
   }
 
@@ -242,7 +295,8 @@ class NutritionFoodSearchResult {
 /// Pure deterministic ranking for local, canonical, and provider candidates.
 ///
 /// The score is deliberately an explainable composition: lexical match is
-/// dominant, then bounded history/locality/generic/quality tie-breaks apply.
+/// dominant, then bounded locality, generic-name, and facts-availability
+/// tie-breaks apply. Usage history and popularity are intentionally excluded.
 /// The UI consumes the ordered candidates and never exposes the score.
 class NutritionFoodSearchRanking {
   const NutritionFoodSearchRanking._();
@@ -257,9 +311,7 @@ class NutritionFoodSearchRanking {
   static const int _localityBoost = 35;
   static const int _customBoost = 30;
   static const int _genericBoost = 22;
-  static const int _recentBoost = 12;
-  static const int _frequencyBoost = 14;
-  static const int _qualityBoost = 12;
+  static const int _factsAvailabilityBoost = 12;
   static const int _remoteMinimum = 260;
 
   static List<NutritionFoodSearchResult> rank({
@@ -278,7 +330,7 @@ class NutritionFoodSearchRanking {
     for (final candidate in candidates) {
       final evaluation = _evaluate(candidate, normalizedQuery, queryVariants);
       if (evaluation.match == NutritionFoodSearchMatch.none) continue;
-      final score = _score(candidate, evaluation, normalizedQuery, history);
+      final score = _score(candidate, evaluation, normalizedQuery);
       final result = NutritionFoodSearchResult(
         candidate: candidate,
         match: evaluation.match,
@@ -344,6 +396,28 @@ class NutritionFoodSearchRanking {
     List<String> originalTokens,
     bool alias,
   ) {
+    // Display name is the primary identity-bearing field. Search metadata is
+    // useful for discovery, but must not turn an exact food-name query into a
+    // weaker token match merely because a brand/category is also present.
+    final displayName = NutritionFoodSearchVocabulary.normalize(
+      candidate.displayName,
+    );
+    if (displayName == variant) {
+      return _Evaluation(
+        match: alias
+            ? NutritionFoodSearchMatch.aliasExact
+            : NutritionFoodSearchMatch.exact,
+        lexicalScore: alias ? _aliasExact : _exact,
+      );
+    }
+    if (displayName.startsWith('$variant ')) {
+      return _Evaluation(
+        match: alias
+            ? NutritionFoodSearchMatch.aliasExact
+            : NutritionFoodSearchMatch.prefix,
+        lexicalScore: alias ? _aliasExact - 30 : _prefix,
+      );
+    }
     if (name == variant) {
       return _Evaluation(
         match: alias
@@ -427,7 +501,6 @@ class NutritionFoodSearchRanking {
     NutritionFoodSearchCandidate candidate,
     _Evaluation evaluation,
     String normalizedQuery,
-    NutritionFoodSearchHistory history,
   ) {
     var score = evaluation.lexicalScore;
     if (candidate.source != NutritionFoodSearchSource.remote) {
@@ -441,13 +514,7 @@ class NutritionFoodSearchRanking {
     final brandIntent = _queryNamesBrand(candidate.brand, normalizedQuery);
     if (candidate.brand == null && !brandIntent) score += _genericBoost;
 
-    final frequency = history.frequencyFor(candidate);
-    final isLexicallyRelevant = evaluation.lexicalScore >= _token;
-    if (isLexicallyRelevant && frequency > 0) {
-      score += (frequency.clamp(1, 3) * _frequencyBoost).toInt();
-      if (history.isRecent(candidate)) score += _recentBoost;
-    }
-    if (candidate.hasNumericFacts) score += _qualityBoost;
+    if (candidate.hasNumericFacts) score += _factsAvailabilityBoost;
     return score;
   }
 
