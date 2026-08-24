@@ -150,6 +150,7 @@ class TodayDailyActionSurface extends ConsumerWidget {
     this.onStartWorkout,
     this.onResumeWorkout,
     this.onOpenFoodGuidance,
+    this.onOpenNutritionTargets,
   });
 
   final DateTime selectedDate;
@@ -169,6 +170,7 @@ class TodayDailyActionSurface extends ConsumerWidget {
   final Future<void> Function(CalendarOccurrenceReadItem item)? onStartWorkout;
   final Future<void> Function(WorkoutDraft draft)? onResumeWorkout;
   final VoidCallback? onOpenFoodGuidance;
+  final VoidCallback? onOpenNutritionTargets;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -416,9 +418,10 @@ class TodayDailyActionSurface extends ConsumerWidget {
     return switch (item.moduleId) {
       'today.meals' => _TodayNutritionHero(
         presentation: nutrition,
+        relation: relation,
         onLogFood: () => onLogMeal(''),
         onOpenFoodGuidance: onOpenFoodGuidance,
-        onOpenTargetSetup: onOpenSettings,
+        onOpenTargetSetup: onOpenNutritionTargets ?? onOpenSettings,
         onRetry: onRetry,
       ),
       'today.next_action' => _TodayNextUpModule(
@@ -616,15 +619,17 @@ class _StreakChip extends StatelessWidget {
 class _TodayNutritionHero extends StatelessWidget {
   const _TodayNutritionHero({
     required this.presentation,
+    required this.relation,
     required this.onLogFood,
-    required this.onOpenFoodGuidance,
+    this.onOpenFoodGuidance,
     required this.onOpenTargetSetup,
     required this.onRetry,
   });
 
   final TodayNutritionPresentation presentation;
+  final TodayDateRelation relation;
   final VoidCallback onLogFood;
-  final VoidCallback onOpenFoodGuidance;
+  final VoidCallback? onOpenFoodGuidance;
   final VoidCallback onOpenTargetSetup;
   final VoidCallback onRetry;
 
@@ -640,6 +645,10 @@ class _TodayNutritionHero extends StatelessWidget {
         onRetry: onRetry,
       );
     }
+    final showMealIdeas = relation == TodayDateRelation.today &&
+        onOpenFoodGuidance != null &&
+        presentation.state != TodayPresentationState.unavailable;
+
     return Semantics(
       container: true,
       label: 'Nutrition. ${presentation.headline}',
@@ -685,7 +694,7 @@ class _TodayNutritionHero extends StatelessWidget {
               const SizedBox(height: B05Layout.space12),
               _NutritionNotice(
                 icon: Icons.info_outline_rounded,
-                label: 'Some nutrition is incomplete',
+                label: 'Some nutrition details are incomplete',
                 color: context.b05Colors.unavailable.indicator,
               ),
             ],
@@ -708,18 +717,26 @@ class _TodayNutritionHero extends StatelessWidget {
                   hint: 'Search foods and log them for this day.',
                   onPressed: onLogFood,
                 ),
-                B05ActionButton(
-                  label: 'What can I eat?',
-                  icon: Icons.lightbulb_outline_rounded,
-                  hint: 'Shows a concise meal suggestion when one is ready.',
-                  emphasis: B05ActionEmphasis.secondary,
-                  onPressed: onOpenFoodGuidance,
-                ),
+                if (showMealIdeas)
+                  B05ActionButton(
+                    label: 'What can I eat?',
+                    icon: Icons.lightbulb_outline_rounded,
+                    hint: 'Shows a concise meal suggestion when one is ready.',
+                    emphasis: B05ActionEmphasis.secondary,
+                    onPressed: onOpenFoodGuidance,
+                  ),
                 if (!presentation.hasAcceptedCalorieTarget)
                   B05ActionButton(
                     label: 'Set a target',
                     emphasis: B05ActionEmphasis.tertiary,
-                    hint: 'Opens settings where you can set your own target.',
+                    hint: 'Opens nutrition targets to set your daily goals.',
+                    onPressed: onOpenTargetSetup,
+                  )
+                else
+                  B05ActionButton(
+                    label: 'View targets',
+                    emphasis: B05ActionEmphasis.tertiary,
+                    hint: 'Opens nutrition targets for this date.',
                     onPressed: onOpenTargetSetup,
                   ),
               ],
@@ -989,10 +1006,10 @@ class _MacroRow extends StatelessWidget {
       _ => context.b05Colors.unavailable,
     };
     final icon = switch (metric.nutrientId) {
-      'protein' => Icons.egg_alt_outlined,
-      'carbohydrate' => Icons.grain_outlined,
-      'fat' => Icons.oil_barrel_outlined,
-      'fibre' => Icons.eco_outlined,
+      'protein' => Icons.egg_alt_rounded,
+      'carbohydrate' => Icons.grain_rounded,
+      'fat' => Icons.opacity_rounded,
+      'fibre' => Icons.eco_rounded,
       _ => Icons.circle_outlined,
     };
     final compact = MediaQuery.textScalerOf(context).scale(1) > 1.35;
@@ -1043,15 +1060,20 @@ class _MacroRow extends StatelessWidget {
                 ),
               ),
             ],
-            if (metric.estimated || metric.isIncomplete) ...[
+            if (metric.estimated && !metric.isIncomplete) ...[
               const SizedBox(height: B05Layout.space4),
               Text(
-                metric.estimated ? 'Estimated' : 'Some details are incomplete',
+                'Estimated',
                 style: B05Typography.caption(context),
               ),
             ],
-            const SizedBox(height: B05Layout.space4),
-            _MacroProgress(metric: metric, color: role.indicator),
+            if (metric.hasTarget && metric.progress != null) ...[
+              const SizedBox(height: B05Layout.space4),
+              _MacroProgress(metric: metric, color: role.indicator),
+            ] else if (!metric.isAvailable) ...[
+              const SizedBox(height: B05Layout.space4),
+              Text('Not available', style: B05Typography.caption(context)),
+            ],
           ],
         ),
       ),
@@ -1071,7 +1093,7 @@ class _MacroProgress extends StatelessWidget {
       return Text('Not available', style: B05Typography.caption(context));
     }
     if (!metric.hasTarget || metric.progress == null) {
-      return Text('No target set', style: B05Typography.caption(context));
+      return const SizedBox.shrink();
     }
     return TweenAnimationBuilder<double>(
       tween: Tween<double>(end: metric.upperProgress ?? metric.progress!),
