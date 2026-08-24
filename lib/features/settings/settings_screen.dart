@@ -25,7 +25,6 @@ import 'nutrition_targets_hub_screen.dart';
 import 'regional_food_packs_screen.dart';
 import 'settings_controller.dart';
 import 'unit_preference.dart';
-import 'water_settings_sub_screen.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -159,13 +158,6 @@ class SettingsScreen extends ConsumerWidget {
                           child: DashboardModuleCustomizationPanel(),
                         ),
                       ),
-                    ),
-                    _SettingsRow(
-                      icon: Icons.water_drop_outlined,
-                      title: 'Hydration',
-                      summary: 'Water goal and glass size',
-                      onTap: () =>
-                          _push(context, const WaterSettingsSubScreen()),
                     ),
                   ],
                 ),
