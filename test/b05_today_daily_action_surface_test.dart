@@ -132,8 +132,11 @@ void main() {
 
     expect(find.text('Nutrition unavailable'), findsNothing);
     expect(find.text('Collapsed'), findsOneWidget);
+    // E.4 optional evidence fails closed when its source is unavailable.
+    expect(find.text('Activity unavailable'), findsNothing);
+    expect(find.text('Progress unavailable'), findsNothing);
     expect(
-      tester.getTopLeft(find.text('Progress unavailable')).dy,
+      tester.getTopLeft(find.text('Collapsed')).dy,
       lessThan(tester.getTopLeft(find.text('Workout unavailable')).dy),
     );
     await tester.pumpWidget(const SizedBox.shrink());
@@ -203,7 +206,7 @@ void main() {
     );
     expect(
       chooseTodayNextAction(dateRelation: TodayDateRelation.today).action,
-      TodayNextAction.openWorkoutPlan,
+      isNull,
     );
   });
 }

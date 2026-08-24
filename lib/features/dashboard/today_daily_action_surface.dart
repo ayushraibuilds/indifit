@@ -44,7 +44,7 @@ String todayDateContextLabel(DateTime selectedDate, DateTime now) {
 }
 
 class TodayNextActionChoice {
-  final TodayNextAction action;
+  final TodayNextAction? action;
   final String label;
   final String hint;
 
@@ -53,10 +53,13 @@ class TodayNextActionChoice {
     required this.label,
     required this.hint,
   });
+
+  bool get shouldRender => action != null;
 }
 
-/// Selects only among routes already owned by the application. It does not
-/// rank workouts, calculate a recommendation, or infer a nutrition target.
+/// Compatibility projection for callers that still consume the older choice
+/// shape. The current/next decision remains entirely in
+/// [todayFocusPresentation], which consumes the shared R08A.2 resolver.
 TodayNextActionChoice chooseTodayNextAction({
   required TodayDateRelation dateRelation,
   TodaySurfaceSnapshot? snapshot,
@@ -68,49 +71,16 @@ TodayNextActionChoice chooseTodayNextAction({
       hint: 'Shows actions that are available today.',
     );
   }
-  final scheduled = snapshot?.calendar.value == null
-      ? false
-      : snapshot!.nextActionResolution?.todayOccurrence != null;
-  if (snapshot?.nextActionResolution?.activeDraftReadAvailable == false) {
-    return const TodayNextActionChoice(
-      action: TodayNextAction.openWorkoutPlan,
-      label: 'Workout state unavailable',
-      hint: 'Check your saved workout before starting another.',
-    );
-  }
-  if (snapshot?.nextActionResolution?.activeDraft != null) {
-    return const TodayNextActionChoice(
-      action: TodayNextAction.resumeWorkout,
-      label: 'Resume workout',
-      hint: 'Continues your saved active workout.',
-    );
-  }
-  if (snapshot?.nextActionResolution?.hasActiveDraft == true) {
-    return const TodayNextActionChoice(
-      action: TodayNextAction.openWorkoutPlan,
-      label: 'Open workout plan',
-      hint: 'Resolve your active workout before starting another.',
-    );
-  }
-  if (scheduled == true) {
-    return const TodayNextActionChoice(
-      action: TodayNextAction.openWorkoutPlan,
-      label: 'View today’s workout',
-      hint: 'Opens your workout plan for today.',
-    );
-  }
-  final nutrition = snapshot?.nutrition.value;
-  if (nutrition != null && nutrition.records.isEmpty) {
-    return const TodayNextActionChoice(
-      action: TodayNextAction.logMeal,
-      label: 'Log your first meal',
-      hint: 'Opens the food logging flow for this day.',
-    );
-  }
-  return const TodayNextActionChoice(
-    action: TodayNextAction.openWorkoutPlan,
-    label: 'Open workout plan',
-    hint: 'Choose a workout or take a recovery day.',
+  final focus = todayFocusPresentation(
+    dateRelation: dateRelation,
+    snapshot: snapshot,
+  );
+  return TodayNextActionChoice(
+    action: focus.action,
+    label: focus.actionLabel ?? 'No next action',
+    hint: focus.action == null
+        ? focus.detail
+        : '${focus.title}. ${focus.detail}',
   );
 }
 
@@ -233,13 +203,23 @@ class TodayDailyActionSurface extends ConsumerWidget {
       loading: loading,
       unavailable: unavailable,
     );
-    final nextUpVisible = configuredLayout.any(
-      (item) => item.moduleId == 'today.next_action' && item.isVisible,
-    );
+    final nextUpVisible =
+        nextUp.shouldRender &&
+        configuredLayout.any(
+          (item) => item.moduleId == 'today.next_action' && item.isVisible,
+        );
+    // The B02 read is a trailing range ending on the selected date. For a
+    // future date that range can include present-day records, which must not
+    // be presented as evidence for that future Today context.
+    final evidenceDateSupported = relation != TodayDateRelation.future;
     final layout = [
       for (final item in configuredLayout)
         if (_shouldRenderTodayModule(
           item: item,
+          nextUp: nextUp,
+          activity: activity,
+          progress: progress,
+          evidenceDateSupported: evidenceDateSupported,
           hideWorkoutDuplicate:
               nextUpVisible &&
               (nextUp.action == TodayNextAction.resumeWorkout ||
@@ -343,11 +323,27 @@ class TodayDailyActionSurface extends ConsumerWidget {
 
   bool _shouldRenderTodayModule({
     required DashboardModuleLayoutItem item,
+    required TodayFocusPresentation nextUp,
+    required TodayActivityPresentation activity,
+    required TodayProgressPresentation progress,
+    required bool evidenceDateSupported,
     required bool hideWorkoutDuplicate,
   }) {
     if (!item.isVisible) return false;
+    if (item.moduleId == 'today.next_action' && !nextUp.shouldRender) {
+      return false;
+    }
+    if (item.moduleId == 'today.activity' &&
+        (!evidenceDateSupported || !activity.shouldRender)) {
+      return false;
+    }
+    if (item.moduleId == 'today.progress' &&
+        (!evidenceDateSupported || !progress.shouldRender)) {
+      return false;
+    }
     // A collapsed module is an explicit user choice. Keep its compact row
-    // available even while its source is loading or unavailable.
+    // available while a renderable source is loading; empty/error optional
+    // evidence has already failed closed above.
     if (item.isCollapsed && item.descriptor.collapsible) return true;
     return switch (item.moduleId) {
       'today.workout' => !hideWorkoutDuplicate,
@@ -1185,6 +1181,7 @@ class _TodayNextUpModule extends StatelessWidget {
     if (presentation.state == TodayPresentationState.loading) {
       return const _TodayModuleSkeleton(label: 'Preparing your next step');
     }
+    if (!presentation.shouldRender) return const SizedBox.shrink();
     if (presentation.state == TodayPresentationState.unavailable) {
       return _TodayUnavailableModule(
         title: 'Next up unavailable',

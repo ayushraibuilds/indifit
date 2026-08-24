@@ -257,7 +257,7 @@ void main() {
     expect(find.bySemanticsLabel('View workout'), findsOneWidget);
   });
 
-  testWidgets('Next Up does not duplicate the generic workout CTA', (
+  testWidgets('Next Up hides when there is no canonical next action', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -269,7 +269,7 @@ void main() {
     );
     await _settleToday(tester);
 
-    expect(find.bySemanticsLabel('Choose workout'), findsOneWidget);
+    expect(find.bySemanticsLabel('Choose workout'), findsNothing);
   });
 
   testWidgets('meal source refresh redraws subtotal, ring, and macros', (
