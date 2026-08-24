@@ -262,6 +262,7 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
                 final confirm = await showDialog<bool>(
                   context: context,
                   builder: (ctx) => AlertDialog(
+                    backgroundColor: ctx.b05Colors.section,
                     title: Text('Delete "${recipe.name}"?'),
                     content: const Text(
                       'This recipe will be archived from future logging. Previously logged meals in your diary will remain untouched.',
@@ -271,11 +272,11 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
                         onPressed: () => Navigator.pop(ctx, false),
                         child: const Text('Cancel'),
                       ),
-                      ElevatedButton(
+                      FilledButton(
                         onPressed: () => Navigator.pop(ctx, true),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
-                          foregroundColor: Colors.white,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: ctx.b05Colors.danger.container,
+                          foregroundColor: ctx.b05Colors.danger.foreground,
                         ),
                         child: const Text('Delete'),
                       ),

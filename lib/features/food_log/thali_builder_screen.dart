@@ -5,6 +5,7 @@ import '../../core/di/providers.dart';
 import '../../core/nutrients.dart';
 import '../../core/nutrition_constraints.dart';
 import '../../core/nutrition_thali.dart';
+import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/theme/colors.dart';
 import '../../core/typed_quantities.dart';
 import 'nutrition_thali_controller.dart';
@@ -184,7 +185,10 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
                 ),
                 IconButton(
                   tooltip: 'Remove $label',
-                  icon: const Icon(Icons.delete_outline),
+                  icon: Icon(
+                    Icons.delete_outline,
+                    color: context.b05Colors.danger.indicator,
+                  ),
                   onPressed: () => _controller.removeItem(item.id),
                 ),
               ],
