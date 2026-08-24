@@ -61,12 +61,18 @@ class CanonicalRecentFood {
     required this.quantityLabel,
     required this.loggedAtUtc,
     this.frequencyCount = 1,
+    this.historicalQuantity,
+    this.historicalTransformationId,
+    this.lastLoggedMealCategory,
   });
 
   final NutritionFoodOption option;
   final String quantityLabel;
   final DateTime loggedAtUtc;
   final int frequencyCount;
+  final Quantity? historicalQuantity;
+  final String? historicalTransformationId;
+  final String? lastLoggedMealCategory;
 }
 
 class _FoodAddUndoToken {
@@ -106,14 +112,18 @@ final canonicalRecentFoodsProvider =
           userId: kLocalNutritionUserScopeId,
         );
         final ordered = records.where((record) => !record.isLegacy).toList()
-          ..sort(
-            (left, right) => right.loggedAtUtc.compareTo(left.loggedAtUtc),
-          );
+          ..sort((left, right) {
+            final dateComp = right.loggedAtUtc.compareTo(left.loggedAtUtc);
+            if (dateComp != 0) return dateComp;
+            return right.stableId.compareTo(left.stableId);
+          });
         final frequencyByFoodId = <String, int>{};
         for (final record in ordered) {
           for (final item in record.items) {
             final foodId = item.foodId;
-            if (item.originSourceType == 'direct_food' && foodId != null) {
+            if (item.originSourceType == 'direct_food' &&
+                foodId != null &&
+                foodId.isNotEmpty) {
               frequencyByFoodId.update(
                 foodId,
                 (count) => count + 1,
@@ -129,19 +139,28 @@ final canonicalRecentFoodsProvider =
             final foodId = item.foodId;
             if (item.originSourceType != 'direct_food' ||
                 foodId == null ||
+                foodId.isEmpty ||
                 !seenFoodIds.add(foodId)) {
               continue;
             }
             final option = await catalog.getOption(foodId);
             if (option == null) continue;
+            final historicalQuantity =
+                item.quantity.isResolved ? item.quantity.quantity : null;
+            final quantityLabel = historicalQuantity != null
+                ? QuantityFormatter.format(historicalQuantity)
+                : (item.quantity.storedAmount != null &&
+                    item.quantity.storedUnit.isNotEmpty)
+                ? '${item.quantity.storedAmount} ${item.quantity.storedUnit}'
+                : '${option.baseQuantity.amount} ${option.baseQuantity.unit.name}';
             result.add(
               CanonicalRecentFood(
                 option: option,
-                quantityLabel: item.quantity.quantity == null
-                    ? 'Previous amount unavailable'
-                    : QuantityFormatter.format(item.quantity.quantity!),
+                quantityLabel: quantityLabel,
                 loggedAtUtc: record.loggedAtUtc,
                 frequencyCount: frequencyByFoodId[foodId] ?? 1,
+                historicalQuantity: historicalQuantity,
+                lastLoggedMealCategory: record.mealCategory,
               ),
             );
             if (result.length == 20) return result;
@@ -743,6 +762,87 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     }
   }
 
+  bool _isSafeRepeatQuantity(NutritionFoodOption option, Quantity? quantity) {
+    if (quantity == null || quantity.isZero) {
+      return false;
+    }
+    if (quantity.unit == option.baseQuantity.unit) {
+      if (quantity.unit == QuantityUnit.serving) {
+        return quantity.context.servingDefinition != null ||
+            option.baseQuantity.context.servingDefinition != null;
+      }
+      return true;
+    }
+    if (quantity.dimension == option.baseQuantity.dimension &&
+        quantity.dimension != QuantityDimension.unknown &&
+        quantity.dimension != QuantityDimension.legacy) {
+      return true;
+    }
+    return false;
+  }
+
+  Future<void> _addRecentFast(CanonicalRecentFood recent) async {
+    final option = recent.option;
+    if (!_fastAddInFlight.add(option.id)) return;
+    if (mounted) setState(() {});
+    try {
+      final selectedMealType = await _ensureMealContext();
+      if (selectedMealType == null || !mounted) return;
+      final quantity = recent.historicalQuantity;
+      if (quantity == null || !_isSafeRepeatQuantity(option, quantity)) {
+        await _showLogDialog(
+          option,
+          mealType: selectedMealType,
+          initialQuantity: quantity,
+        );
+        return;
+      }
+      final coordinator = await ref.read(
+        nutritionFoodLoggingCoordinatorProvider.future,
+      );
+      final preview = await coordinator.preview(
+        option: option,
+        quantity: quantity,
+      );
+      final dateContext = await _dateContext();
+      final snapshot = await coordinator.finalize(
+        userId: kLocalNutritionUserScopeId,
+        preview: preview,
+        mealCategory: selectedMealType,
+        loggedAt: dateContext.loggedAt,
+        localDate: dateContext.localDate,
+        timezoneId: dateContext.timezoneId,
+        commandId: 'direct-food-command::${const Uuid().v4()}',
+        consumptionId: 'direct-food-consumption::${const Uuid().v4()}',
+      );
+      if (!mounted) return;
+      _invalidateNutritionReads();
+      final undo = _FoodAddUndoToken(
+        snapshotId: snapshot.id,
+        localDate: dateContext.localDate,
+        mealCategory: selectedMealType,
+      );
+      showIndiFitUndoFeedback(
+        context,
+        message:
+            'Added ${option.displayName} to ${_mealLabel(selectedMealType)}',
+        duration: const Duration(seconds: 4),
+        onUndo: () => unawaited(_undoLastCanonicalAdd(undo)),
+      );
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            behavior: SnackBarBehavior.floating,
+            content: Text('Food could not be added. Try again.'),
+          ),
+        );
+      }
+    } finally {
+      if (_fastAddInFlight.remove(option.id) && mounted) setState(() {});
+    }
+  }
+
   Future<void> _undoLastCanonicalAdd(_FoodAddUndoToken undo) async {
     try {
       final repository = await ref.read(
@@ -798,7 +898,6 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     final transformations = await coordinator.transformationsFor(option);
     if (!mounted) return;
     var finalized = false;
-    var selectedQuantity = initialQuantity ?? option.baseQuantity;
     final compatibleUnits = <QuantityUnit>[
       ...switch (option.baseQuantity.dimension) {
         QuantityDimension.mass => const [
@@ -814,6 +913,12 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     ];
     if (!compatibleUnits.contains(option.baseQuantity.unit)) {
       compatibleUnits.insert(0, option.baseQuantity.unit);
+    }
+    var selectedQuantity = option.baseQuantity;
+    if (initialQuantity != null &&
+        compatibleUnits.contains(initialQuantity.unit) &&
+        !initialQuantity.isZero) {
+      selectedQuantity = initialQuantity;
     }
     final initialPreview = await coordinator.preview(
       option: option,
@@ -1454,7 +1559,10 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     }
   }
 
-  void _toggleCanonicalSelection(NutritionFoodOption option) {
+  void _toggleCanonicalSelection(
+    NutritionFoodOption option, {
+    Quantity? initialQuantity,
+  }) {
     final key = _selectionKeyForOption(option);
     setState(() {
       if (_selectedKeys.remove(key)) {
@@ -1463,7 +1571,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       } else {
         _selectedKeys.add(key);
         _selectedOptions[key] = option;
-        _selectedQuantities[key] = option.baseQuantity;
+        _selectedQuantities[key] = initialQuantity ?? option.baseQuantity;
       }
     });
   }
@@ -1924,9 +2032,10 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                   final count = right.frequencyCount.compareTo(
                     left.frequencyCount,
                   );
-                  return count == 0
-                      ? right.loggedAtUtc.compareTo(left.loggedAtUtc)
-                      : count;
+                  if (count != 0) return count;
+                  final date = right.loggedAtUtc.compareTo(left.loggedAtUtc);
+                  if (date != 0) return date;
+                  return left.option.id.compareTo(right.option.id);
                 }))
               .map(_buildCanonicalRecentItemRow),
         ],
@@ -2205,16 +2314,19 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         container: true,
         explicitChildNodes: true,
         button: true,
-        label: '$identityLabel, $energy, $protein',
+        label: '$identityLabel, ${recent.quantityLabel}, $energy, $protein',
         hint:
-            'Tap Add to log the listed serving, or open to adjust the amount.',
+            'Tap Add to log ${recent.quantityLabel}, or open to adjust the amount.',
         child: ListTile(
           minVerticalPadding: 10,
           leading: Semantics(
             label: 'Select ${option.displayName} for a multi-food add',
             child: Checkbox(
               value: _selectedOptions.containsKey(option.id),
-              onChanged: (_) => _toggleCanonicalSelection(option),
+              onChanged: (_) => _toggleCanonicalSelection(
+                option,
+                initialQuantity: recent.historicalQuantity,
+              ),
             ),
           ),
           title: brand == null || brand.isEmpty
@@ -2242,14 +2354,29 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                   ],
                 ),
           subtitle: Text(
-            '${recent.quantityLabel} · ${_lastLoggedLabel(recent.loggedAtUtc)} · ${recent.frequencyCount} logged · $energy · $protein',
+            '${recent.quantityLabel} · ${_lastLoggedLabel(recent.loggedAtUtc)}${recent.frequencyCount > 1 ? ' · ${recent.frequencyCount} logged' : ''} · $energy · $protein',
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
-          trailing: _buildCanonicalFastAddAction(option),
-          onTap: () => unawaited(_showLogDialog(option)),
+          trailing: _buildCanonicalRecentFastAddAction(recent),
+          onTap: () => unawaited(
+            _showLogDialog(
+              option,
+              initialQuantity: recent.historicalQuantity,
+            ),
+          ),
         ),
       ),
+    );
+  }
+
+  Widget _buildCanonicalRecentFastAddAction(CanonicalRecentFood recent) {
+    final option = recent.option;
+    final isAdding = _fastAddInFlight.contains(option.id);
+    return _buildFastAddAction(
+      foodName: option.displayName,
+      isAdding: isAdding,
+      onPressed: isAdding ? null : () => unawaited(_addRecentFast(recent)),
     );
   }
 
