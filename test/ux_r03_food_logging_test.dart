@@ -21,11 +21,13 @@ import 'package:indifit/data/repositories/food_repository.dart';
 import 'package:indifit/data/repositories/nutrition_consumption_repository.dart';
 import 'package:indifit/data/repositories/nutrition_food_catalog_repository.dart';
 import 'package:indifit/data/repositories/nutrition_food_logging_coordinator.dart';
+import 'package:indifit/data/repositories/nutrition_thali_repository.dart';
 import 'package:indifit/data/repositories/nutrition_transformation_repository.dart';
 import 'package:indifit/features/dashboard/main_navigation_scaffold.dart';
 import 'package:indifit/features/food_log/ai_meal_logger_screen.dart';
 import 'package:indifit/features/food_log/food_log_surface.dart';
 import 'package:indifit/features/food_log/food_search_screen.dart';
+import 'package:indifit/features/food_log/saved_meals_controller.dart';
 import 'package:indifit/features/food_log/saved_meals_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -820,53 +822,54 @@ void main() {
     expect(find.text('Online search unavailable'), findsNothing);
   });
 
-  testWidgets('Saved meals completion unwinds the food entry route to its caller', (
-    tester,
-  ) async {
-    _setViewport(tester, const Size(390, 2000));
-    final database = AppDatabase.memory();
-    late ProviderContainer container;
-    addTearDown(() async {
-      await tester.pumpWidget(const SizedBox.shrink());
-      container.dispose();
-      tester.view.resetPhysicalSize();
-      tester.view.resetDevicePixelRatio();
-      await database.close();
-    });
-    await tester.pumpWidget(
-      _foodApp(
-        database: database,
-        repository: _TestFoodRepository(database),
-        mealType: 'breakfast',
-        selectedDate: DateTime(2026, 8, 9),
-        home: const _FoodRouteHarness(),
-      ),
-    );
-    container = ProviderScope.containerOf(
-      tester.element(find.byType(_FoodRouteHarness)),
-    );
-    unawaited(
-      tester
-          .state<_FoodRouteHarnessState>(find.byType(_FoodRouteHarness))
-          .openFoodFlow(),
-    );
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
-    expect(find.byType(FoodSearchScreen), findsOneWidget);
-    tester.testTextInput.hide();
-    await tester.pump(const Duration(seconds: 3));
-    expect(find.text('Saved meals'), findsOneWidget);
-    await tester.tap(find.widgetWithText(ListTile, 'Saved meals'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 750));
-    expect(find.byType(SavedMealsScreen), findsOneWidget);
-    Navigator.of(tester.element(find.byType(SavedMealsScreen))).pop(true);
-    await tester.pump(const Duration(milliseconds: 750));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
-    expect(find.text('Saved result'), findsOneWidget);
-    expect(find.byType(FoodSearchScreen), findsNothing);
-  });
+  testWidgets(
+    'Saved meals completion unwinds the food entry route to its caller',
+    (tester) async {
+      _setViewport(tester, const Size(390, 2000));
+      final database = AppDatabase.memory();
+      late ProviderContainer container;
+      addTearDown(() async {
+        await tester.pumpWidget(const SizedBox.shrink());
+        container.dispose();
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+        await database.close();
+      });
+      await tester.pumpWidget(
+        _foodApp(
+          database: database,
+          repository: _TestFoodRepository(database),
+          mealType: 'breakfast',
+          selectedDate: DateTime(2026, 8, 9),
+          home: const _FoodRouteHarness(),
+        ),
+      );
+      container = ProviderScope.containerOf(
+        tester.element(find.byType(_FoodRouteHarness)),
+      );
+      unawaited(
+        tester
+            .state<_FoodRouteHarnessState>(find.byType(_FoodRouteHarness))
+            .openFoodFlow(),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.byType(FoodSearchScreen), findsOneWidget);
+      tester.testTextInput.hide();
+      await tester.pump(const Duration(seconds: 3));
+      expect(find.text('Saved meals'), findsOneWidget);
+      await tester.tap(find.widgetWithText(ListTile, 'Saved meals'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 750));
+      expect(find.byType(SavedMealsScreen), findsOneWidget);
+      Navigator.of(tester.element(find.byType(SavedMealsScreen))).pop(true);
+      await tester.pump(const Duration(milliseconds: 750));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.text('Saved result'), findsOneWidget);
+      expect(find.byType(FoodSearchScreen), findsNothing);
+    },
+  );
 
   testWidgets('recent and saved landing state golden', (tester) async {
     _setViewport(tester, const Size(390, 844));
@@ -1195,6 +1198,9 @@ Widget _foodApp({
       if (apiService != null)
         foodApiServiceProvider.overrideWithValue(apiService),
       canonicalRecentFoodsProvider.overrideWith((ref) async => canonicalRecent),
+      savedMealsControllerProvider.overrideWith(
+        (ref) => _StaticSavedMealsController(),
+      ),
       foodLogsForDayProvider.overrideWith((ref, date) async => []),
       canonicalFoodRecordsForDayProvider.overrideWith((ref, date) async => []),
       foodDiaryReadModelProvider.overrideWith((ref, date) async {
@@ -1241,6 +1247,16 @@ Widget _foodApp({
       ),
     ),
   );
+}
+
+class _StaticSavedMealsController extends SavedMealsController {
+  _StaticSavedMealsController()
+    : super(
+        thaliRepoFuture: Completer<NutritionThaliRepository>().future,
+        userId: kLocalNutritionUserScopeId,
+      ) {
+    state = const SavedMealsState(status: SavedMealsStatus.ready);
+  }
 }
 
 void _setViewport(WidgetTester tester, Size size) {
