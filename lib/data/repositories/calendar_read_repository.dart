@@ -230,6 +230,43 @@ class CalendarReadRepository {
     );
   }
 
+  /// Reads every materialized occurrence for one exact program version.
+  ///
+  /// This is a read-only extension for version-scoped plan surfaces. It does
+  /// not replace the active-plan/current-action resolver used by Training and
+  /// Today, and it never reconstructs occurrences from the plan graph.
+  Future<List<CalendarOccurrenceReadItem>> readOccurrencesForVersion({
+    required String programVersionId,
+    required String timezoneId,
+  }) async {
+    final versionId = programVersionId.trim();
+    if (versionId.isEmpty) {
+      throw ArgumentError.value(
+        programVersionId,
+        'programVersionId',
+        'A program version is required.',
+      );
+    }
+    _dates.validateTimezone(timezoneId);
+    final today = _dates.todayIn(timezoneId);
+    final occurrences =
+        await (_db.select(_db.scheduledSessionOccurrences)
+              ..where((table) => table.programVersionId.equals(versionId))
+              ..orderBy([
+                (table) => OrderingTerm(expression: table.effectiveLocalDate),
+                (table) => OrderingTerm(expression: table.programWeekOrdinal),
+                (table) => OrderingTerm(expression: table.sessionOrdinal),
+                (table) => OrderingTerm(expression: table.repeatOrdinal),
+              ]))
+            .get();
+    final nextRequiredIds = await _nextRequiredIds([versionId]);
+    return _hydrate(
+      occurrences: occurrences,
+      today: today,
+      nextRequiredIds: nextRequiredIds,
+    );
+  }
+
   Future<Set<String>> _nextRequiredIds(Iterable<String> versionIds) async {
     final ids = versionIds.toSet().toList();
     if (ids.isEmpty) return const {};

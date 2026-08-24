@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/database/app_database.dart';
 import '../../data/models/b04_recommendation_context_models.dart';
+import '../../data/repositories/b02_execution_compatibility_read_repository.dart';
 import '../../data/repositories/b02_exercise_performance_read_repository.dart';
 import '../../data/repositories/b02_previous_performance_repository.dart';
 import '../../data/repositories/b02_progress_read_repository.dart';
@@ -37,6 +38,7 @@ import '../../data/repositories/nutrition_target_authority.dart';
 import '../../data/repositories/nutrition_thali_repository.dart';
 import '../../data/repositories/nutrition_transformation_repository.dart';
 import '../../data/repositories/plan_library_read_repository.dart';
+import '../../data/repositories/plan_overview_read_repository.dart';
 import '../../data/repositories/program_activation_coordinator.dart';
 import '../../data/repositories/program_lifecycle_repository.dart';
 import '../../data/repositories/program_repository.dart';
@@ -861,6 +863,61 @@ final planLibrarySnapshotProvider =
     FutureProvider.autoDispose<PlanLibrarySnapshot>((ref) {
       ref.watch(planLibraryRevisionProvider);
       return ref.watch(planLibraryReadRepositoryProvider).read();
+    });
+
+final planOverviewReadRepositoryProvider = Provider<PlanOverviewReadRepository>(
+  (ref) {
+    return PlanOverviewReadRepository(
+      plans: ref.watch(planLibraryReadRepositoryProvider),
+      calendar: ref.watch(calendarReadRepositoryProvider),
+      history: B02ExecutionCompatibilityReadRepository(
+        ref.watch(databaseProvider),
+      ),
+    );
+  },
+);
+
+/// One read invalidation boundary for the plan overview. The overview does
+/// not own any of these tables; this only asks its composed read authorities
+/// to refresh when structure, occurrences, or saved history changes.
+final planOverviewRevisionProvider = StreamProvider.autoDispose<Object>((ref) {
+  final db = ref.watch(databaseProvider);
+  return db
+      .tableUpdates(
+        TableUpdateQuery.onAllTables([
+          db.programs,
+          db.programVersions,
+          db.programBlocks,
+          db.programWeeks,
+          db.sessionTemplates,
+          db.exercisePrescriptions,
+          db.exerciseGroups,
+          db.exerciseGroupMembers,
+          db.trainingPlanSettings,
+          db.scheduledSessionOccurrences,
+          db.workoutSessions,
+          db.performedExerciseGroups,
+          db.performedExercises,
+          db.performedSets,
+          db.performedSetSegments,
+          db.cardioSessionDetails,
+          db.cardioIntervals,
+          db.mobilitySessionDetails,
+        ]),
+      )
+      .skip(1)
+      .map<Object>((_) => Object());
+});
+
+final planOverviewSnapshotProvider = FutureProvider.autoDispose
+    .family<PlanOverviewSnapshot?, String>((ref, versionId) async {
+      ref.watch(planOverviewRevisionProvider);
+      final timezoneId = await ref
+          .watch(localTimezoneServiceProvider)
+          .currentTimezoneId();
+      return ref
+          .watch(planOverviewReadRepositoryProvider)
+          .read(versionId: versionId, timezoneId: timezoneId);
     });
 
 final localScheduleDateServiceProvider = Provider<LocalScheduleDateService>((

@@ -119,8 +119,7 @@ class PlanLibraryReadRepository {
       );
     }
 
-    if (activeVersionId != null &&
-        !entries.any((entry) => entry.isActive)) {
+    if (activeVersionId != null && !entries.any((entry) => entry.isActive)) {
       throw StateError(
         'The active training plan is unavailable. Choose a different plan.',
       );
@@ -136,6 +135,35 @@ class PlanLibraryReadRepository {
     return PlanLibrarySnapshot(
       entries: List<PlanLibraryEntry>.unmodifiable(entries),
       activeProgramVersionId: activeVersionId,
+    );
+  }
+
+  /// Reads one exact version for version-scoped overview/history surfaces.
+  ///
+  /// The library list intentionally chooses one display version per program;
+  /// an overview must not repeat that preference after a route has already
+  /// carried an immutable version identity.
+  Future<PlanLibraryEntry?> readVersion(String versionId) async {
+    final cleanVersionId = versionId.trim();
+    if (cleanVersionId.isEmpty) return null;
+
+    final settings = await (db.select(
+      db.trainingPlanSettings,
+    )..where((table) => table.id.equals(1))).getSingleOrNull();
+    final activeVersionId = settings?.activeProgramVersionId;
+    await _validateActivePointer(activeVersionId);
+
+    final version = await (db.select(
+      db.programVersions,
+    )..where((table) => table.id.equals(cleanVersionId))).getSingleOrNull();
+    if (version == null || version.status == 'archived') return null;
+
+    final detail = await programs.getProgramVersionDetail(cleanVersionId);
+    if (detail == null || detail.program.archivedAtUtc != null) return null;
+    return PlanLibraryEntry(
+      detail: detail,
+      metadata: _metadataFor(detail),
+      isActive: cleanVersionId == activeVersionId,
     );
   }
 

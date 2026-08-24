@@ -86,8 +86,8 @@ class _WorkoutHistoryRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final detail = _detailLabel(item);
-    // Legacy rows keep a short provenance note; current rows need no label.
-    final source = item.isLegacy ? 'Earlier workout' : null;
+    final source = _historyContextLabel(item);
+    final status = item.isPartial ? 'Partially completed' : 'Completed';
     final date = ConsumerDateLabel.dateTime(item.completedAt);
     final row = B05Surface(
       tone: B05SurfaceTone.interactive,
@@ -103,23 +103,14 @@ class _WorkoutHistoryRow extends StatelessWidget {
                 Text(item.name, style: B05Typography.label(context)),
                 const SizedBox(height: B05Layout.space4),
                 Text(
-                  '$date · ${_activityLabel(item.activityType)}',
+                  '$date · ${_activityLabel(item.activityType)} · $source',
                   style: B05Typography.caption(context),
                 ),
                 const SizedBox(height: B05Layout.space4),
                 Text(
-                  '${_formatDuration(item.durationSeconds)} · $detail',
+                  '${_formatDuration(item.durationSeconds)} · $detail · $status',
                   style: B05Typography.caption(context),
                 ),
-                if (source != null) ...[
-                  const SizedBox(height: B05Layout.space4),
-                  Text(
-                    source,
-                    style: B05Typography.caption(
-                      context,
-                    ).copyWith(color: context.b05Colors.textSecondary),
-                  ),
-                ],
               ],
             ),
           ),
@@ -132,8 +123,7 @@ class _WorkoutHistoryRow extends StatelessWidget {
     );
     return Semantics(
       button: onOpen != null,
-      label:
-          '${item.name}, $date${source == null ? '' : ', $source'}, $detail.',
+      label: '${item.name}, $date, $source, $detail, $status.',
       child: onOpen == null
           ? row
           : InkWell(
@@ -143,6 +133,18 @@ class _WorkoutHistoryRow extends StatelessWidget {
             ),
     );
   }
+}
+
+String _historyContextLabel(B02ActivityHistoryItem item) {
+  if (item.isLegacy) return 'Earlier workout';
+  if (item.scheduledOccurrenceId != null) return 'Planned workout';
+  if (item.activityType == B02ActivityType.strength) {
+    // The canonical session schema does not distinguish Quick from manual
+    // historical strength input. Keep that difference truthful instead of
+    // guessing from a display name.
+    return 'Independent workout';
+  }
+  return 'Logged activity';
 }
 
 String _activityLabel(B02ActivityType type) => switch (type) {
