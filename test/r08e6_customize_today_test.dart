@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/data/database/app_database.dart';
+import 'package:indifit/data/models/b02_execution_models.dart';
+import 'package:indifit/data/models/b02_progress_read_models.dart';
+import 'package:indifit/data/repositories/calendar_read_repository.dart';
 import 'package:indifit/data/repositories/dashboard_personalization_repository.dart';
 import 'package:indifit/features/dashboard/dashboard_module_registry.dart';
 import 'package:indifit/features/dashboard/dashboard_personalization_controller.dart';
@@ -139,7 +142,7 @@ void main() {
             (ref) => personalization,
           ),
           todaySurfaceSnapshotProvider.overrideWith(
-            (ref, date) async => _unavailableSnapshot(date),
+            (ref, date) async => _activitySnapshot(date),
           ),
         ],
         child: MaterialApp(
@@ -162,7 +165,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
-    expect(find.text('Activity unavailable'), findsNothing);
+    expect(find.text('Recent activity'), findsNothing);
     await tester.runAsync(
       () => personalization.setVisible('today.activity', true),
     );
@@ -171,13 +174,13 @@ void main() {
       _item(personalization.state.layout, 'today.activity').isVisible,
       isTrue,
     );
-    expect(find.text('Activity unavailable'), findsOneWidget);
+    expect(find.text('Recent activity'), findsOneWidget);
 
     await tester.runAsync(
       () => personalization.setVisible('today.activity', false),
     );
     await tester.pump();
-    expect(find.text('Activity unavailable'), findsNothing);
+    expect(find.text('Recent activity'), findsNothing);
   });
 
   testWidgets('unsupported descriptors stay out of Customize Today', (
@@ -280,12 +283,48 @@ DashboardModuleLayoutItem _item(
   String moduleId,
 ) => layout.singleWhere((item) => item.moduleId == moduleId);
 
-TodaySurfaceSnapshot _unavailableSnapshot(DateTime date) =>
-    TodaySurfaceSnapshot(
-      selectedDate: date,
-      localDate: todaySurfaceDateKey(date),
-      timezoneId: 'Asia/Kolkata',
-      calendar: const TodayDomainRead.unavailable('calendar unavailable'),
-      progress: const TodayDomainRead.unavailable('progress unavailable'),
-      nutrition: const TodayDomainRead.unavailable('nutrition unavailable'),
-    );
+TodaySurfaceSnapshot _activitySnapshot(DateTime date) => TodaySurfaceSnapshot(
+  selectedDate: date,
+  localDate: todaySurfaceDateKey(date),
+  timezoneId: 'Asia/Kolkata',
+  calendar: const TodayDomainRead.available(
+    CalendarReadSnapshot(
+      rangeOccurrences: [],
+      overdueOccurrences: [],
+      activeProgramVersionId: null,
+      activeProgramName: null,
+    ),
+  ),
+  progress: TodayDomainRead.available(
+    B02ProgressReadModel(
+      query: B02ProgressQuery(
+        startLocalDate: '2026-08-18',
+        endLocalDate: '2026-08-25',
+        timezoneId: 'Asia/Kolkata',
+      ),
+      activityHistory: [
+        B02ProgressActivityRecord(
+          sessionId: 1,
+          name: 'Push session',
+          activityType: B02ActivityType.strength,
+          recordKind: B02HistoryRecordKind.canonical,
+          completedAtUtc: DateTime.utc(2026, 8, 25, 8),
+          durationSeconds: 2700,
+          source: B02ActivitySource.manual,
+          legacySetCount: 0,
+          performedExerciseCount: 1,
+          performedGroupCount: 0,
+          cardioIntervalCount: 0,
+          hasCardioDetail: false,
+          hasMobilityDetail: false,
+          cardioDetail: null,
+          mobilityDetail: null,
+        ),
+      ],
+      groupHistory: null,
+      targetEvidence: null,
+      muscleVolume: null,
+    ),
+  ),
+  nutrition: const TodayDomainRead.unavailable('nutrition unavailable'),
+);
