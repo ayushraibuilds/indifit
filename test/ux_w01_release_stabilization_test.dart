@@ -381,6 +381,8 @@ void main() {
     expect(find.text('Bench Press'), findsOneWidget);
     await tester.tap(find.text('Bench Press'));
     await tester.pumpAndSettle();
+    await tester.tap(find.text('Done (1)'));
+    await tester.pumpAndSettle();
 
     expect(find.text('Set 1'), findsOneWidget);
     final firstSetWeight = find.byType(TextField).at(2);
