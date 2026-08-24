@@ -8,6 +8,7 @@ import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/typed_quantities.dart';
 import '../../core/widgets/indi_fit_feedback.dart';
 import '../../data/repositories/nutrition_food_catalog_repository.dart';
+import '../../data/repositories/nutrition_recipe_repository.dart';
 import 'nutrition_recipe_editor_controller.dart';
 
 class NutritionRecipeEditorScreen extends ConsumerStatefulWidget {
@@ -109,6 +110,7 @@ class _NutritionRecipeEditorScreenState
             enabled: !busy,
             decoration: const InputDecoration(
               labelText: 'Recipe name',
+              hintText: 'e.g. Protein Moong Dal Khichdi',
               border: OutlineInputBorder(),
             ),
             onChanged: controller.setName,
@@ -119,7 +121,8 @@ class _NutritionRecipeEditorScreenState
             enabled: !busy,
             maxLines: 2,
             decoration: const InputDecoration(
-              labelText: 'Description (optional)',
+              labelText: 'Cooking notes & instructions (optional)',
+              hintText: 'Add cooking instructions, notes, or tips...',
               border: OutlineInputBorder(),
             ),
             onChanged: controller.setDescription,
@@ -130,8 +133,8 @@ class _NutritionRecipeEditorScreenState
             enabled: !busy,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             decoration: const InputDecoration(
-              labelText: 'Declared servings',
-              helperText: 'Used when scaling a saved recipe at log time.',
+              labelText: 'Declared servings (Yield)',
+              helperText: 'Number of servings this recipe makes when cooked.',
               border: OutlineInputBorder(),
             ),
             onChanged: controller.setServingCount,
@@ -179,7 +182,7 @@ class _NutritionRecipeEditorScreenState
               (entry) => Card(
                 key: ValueKey(entry.value.id),
                 child: ListTile(
-                  title: Text(entry.value.foodId ?? 'Unknown food'),
+                  title: Text(_ingredientDisplayName(entry.value, state.foods)),
                   subtitle: Text(
                     '${entry.value.quantity.amount} ${entry.value.quantity.definition.displayLabel}',
                   ),
@@ -383,22 +386,71 @@ class _NutritionRecipeEditorScreenState
   ) => showDialog<NutritionTransformation?>(
     context: context,
     builder: (dialogContext) => SimpleDialog(
-      title: const Text('Optional preparation conversion'),
+      title: const Text('Preparation & Cooking Method'),
       children: [
         SimpleDialogOption(
           onPressed: () => Navigator.pop(dialogContext),
-          child: const Text('No conversion'),
+          child: const Text('As listed (no conversion)'),
         ),
         for (final transformation in transformations)
           SimpleDialogOption(
             onPressed: () => Navigator.pop(dialogContext, transformation),
             child: Text(
-              '${transformation.sourceState.name} → ${transformation.targetState.name} (${transformation.method.name})',
+              '${_formatPrepState(transformation.sourceState)} → ${_formatPrepState(transformation.targetState)} (${_formatPrepMethod(transformation.method)})',
             ),
           ),
       ],
     ),
   );
+
+  String _ingredientDisplayName(
+    NutritionRecipeIngredientInput input,
+    List<NutritionFoodOption> foods,
+  ) {
+    if (input.foodId == null || input.foodId!.isEmpty) {
+      return 'Unknown ingredient';
+    }
+    final match = foods.where((f) => f.id == input.foodId);
+    if (match.isNotEmpty) return match.first.displayName;
+    if (input.foodId!.startsWith('food::')) {
+      final raw = input.foodId!
+          .substring(6)
+          .replaceAll('_', ' ')
+          .replaceAll('-', ' ');
+      return raw
+          .split(' ')
+          .map(
+            (word) => word.isNotEmpty
+                ? '${word[0].toUpperCase()}${word.substring(1)}'
+                : '',
+          )
+          .join(' ');
+    }
+    return input.foodId!;
+  }
+
+  String _formatPrepState(NutritionPreparationState state) => switch (state) {
+    NutritionPreparationState.raw => 'Raw',
+    NutritionPreparationState.cooked => 'Cooked',
+    NutritionPreparationState.unspecified => 'Standard',
+    NutritionPreparationState.unknown => 'Unknown',
+    NutritionPreparationState.legacy => 'Legacy',
+  };
+
+  String _formatPrepMethod(NutritionPreparationMethod method) =>
+      switch (method) {
+        NutritionPreparationMethod.boiled => 'Boiled',
+        NutritionPreparationMethod.steamed => 'Steamed',
+        NutritionPreparationMethod.pressureCooked => 'Pressure cooked',
+        NutritionPreparationMethod.fried => 'Fried',
+        NutritionPreparationMethod.roasted => 'Roasted',
+        NutritionPreparationMethod.baked => 'Baked',
+        NutritionPreparationMethod.soaked => 'Soaked',
+        NutritionPreparationMethod.drained => 'Drained',
+        NutritionPreparationMethod.prepared => 'Prepared',
+        NutritionPreparationMethod.unknown => 'Standard',
+        NutritionPreparationMethod.legacy => 'Legacy',
+      };
 
   Future<void> _saveDraft() async {
     final controller = _controller;
