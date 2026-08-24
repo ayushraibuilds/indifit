@@ -22,7 +22,6 @@ import '../calendar/occurrence_actions_sheet.dart';
 import '../calendar/program_calendar_screen.dart';
 import '../calendar/workout_contextual_launcher.dart';
 import '../exercise_library/exercise_library_screen.dart';
-import '../travel/travel_mode_screen.dart';
 import '../workout_player/b02_strength_execution_controller.dart';
 import '../workout_player/b02_strength_player_screen.dart';
 import '../workout_player/routine_display_screen.dart';
@@ -685,20 +684,6 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
                   );
                 },
               ),
-              if (hasActiveProgram)
-                ListTile(
-                  leading: const Icon(Icons.flight_outlined),
-                  title: const Text('Travel mode'),
-                  subtitle: const Text('Adjust training for a trip.'),
-                  onTap: () {
-                    Navigator.pop(sheetContext);
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const TravelModeScreen(),
-                      ),
-                    );
-                  },
-                ),
               ListTile(
                 leading: const Icon(Icons.tune_rounded),
                 title: const Text('Equipment and preferences'),

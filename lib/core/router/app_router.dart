@@ -31,7 +31,6 @@ import '../../features/settings/nutrition_constraint_review_screen.dart';
 import '../../features/settings/nutrition_constraints_screen.dart';
 import '../../features/settings/settings_screen.dart';
 import '../../features/training/plan_library_screen.dart';
-import '../../features/travel/travel_mode_screen.dart';
 import '../../features/workout_player/b02_strength_player_screen.dart';
 import '../../features/workout_player/b02_strength_summary_screen.dart';
 import '../../features/workout_player/quick_workout_screen.dart';
@@ -442,9 +441,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           );
         },
       ),
+      // Former Travel Mode route fails safely into Training without loading
+      // deprecated surfaces.
       GoRoute(
         path: '/travel-mode',
-        builder: (context, state) => const TravelModeScreen(),
+        redirect: (context, state) => '/training',
       ),
     ],
   );

@@ -24,12 +24,10 @@ class WorkoutContextualActions extends ConsumerStatefulWidget {
     required this.item,
     required this.onOpenDetails,
     super.key,
-    this.hasTravelOverride = false,
   });
 
   final CalendarOccurrenceReadItem item;
   final VoidCallback onOpenDetails;
-  final bool hasTravelOverride;
 
   @override
   ConsumerState<WorkoutContextualActions> createState() =>
@@ -306,7 +304,7 @@ class _WorkoutContextualActionsState
                           ),
                           const SizedBox(height: B05Layout.space4),
                           Text(
-                            _detailsLabel(item, widget.hasTravelOverride),
+                            _detailsLabel(item),
                             style: B05Typography.body(context),
                           ),
                         ],
@@ -479,12 +477,10 @@ class _WorkoutContextualActionsState
 
   static String _detailsLabel(
     CalendarOccurrenceReadItem item,
-    bool hasTravelOverride,
   ) {
     final occurrence = item.occurrence;
     return '${ConsumerDateLabel.day(occurrence.effectiveLocalDate)} • ${item.block.name} • Week ${item.week.programWeekOrdinal + 1}'
         '${item.isDeload ? ' • Deload' : ''}'
-        '${hasTravelOverride ? ' • Travel equipment' : ''}'
         '${item.isOverdue ? ' • Overdue' : ''}';
   }
 
