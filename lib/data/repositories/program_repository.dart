@@ -137,20 +137,6 @@ class ProgramDetailAggregate {
   });
 }
 
-/// Small UI-safe exercise selection model. It exposes stable identity and
-/// display metadata without making authoring widgets database owners.
-class ExerciseAuthoringOption {
-  final String stableId;
-  final String name;
-  final String equipment;
-
-  const ExerciseAuthoringOption({
-    required this.stableId,
-    required this.name,
-    required this.equipment,
-  });
-}
-
 /// B01 authoring owner. It intentionally cannot activate or publish a
 /// version: B01-06's activation coordinator owns that cross-aggregate
 /// transaction together with occurrence materialisation.
@@ -182,27 +168,6 @@ class ProgramRepository {
       query.where((t) => t.archivedAtUtc.isNull());
     }
     return query.watch();
-  }
-
-  /// Authoring read model for the exact, stable-ID exercise picker. The UI
-  /// never resolves a typed name itself: a normal prescription is created from
-  /// one of these persisted catalogue/custom rows, while unresolved names are
-  /// an explicit compatibility-only choice.
-  Future<List<ExerciseAuthoringOption>> getExercisesForAuthoring() async {
-    final rows =
-        await (db.select(db.exercises)
-              ..where((table) => table.stableId.isNotNull())
-              ..orderBy([(table) => OrderingTerm(expression: table.name)]))
-            .get();
-    return rows
-        .map(
-          (row) => ExerciseAuthoringOption(
-            stableId: row.stableId!,
-            name: row.name,
-            equipment: row.equipment,
-          ),
-        )
-        .toList(growable: false);
   }
 
   /// Program identity metadata is user-owned but is deliberately separate
@@ -372,6 +337,35 @@ class ProgramRepository {
     await _validateGraph(blocks);
     await db.transaction(() async {
       await _requireDraft(versionId);
+      await _deleteVersionGraph(versionId);
+      await _insertVersionGraph(versionId, blocks);
+    });
+  }
+
+  /// Saves the editable plan metadata and its ordered graph as one operation.
+  ///
+  /// The authoring surface uses this boundary so a graph-write failure cannot
+  /// leave the plan name/notes updated while the structure is still old. The
+  /// version guard and graph validation remain in this repository; callers do
+  /// not get a second persistence or lifecycle authority.
+  Future<void> saveDraft({
+    required String versionId,
+    required String name,
+    String? notes,
+    required List<ProgramBlockInput> blocks,
+  }) async {
+    _requireText(name, 'Program name');
+    await _validateGraph(blocks);
+    await db.transaction(() async {
+      final version = await _requireDraft(versionId);
+      await (db.update(
+        db.programs,
+      )..where((table) => table.id.equals(version.programId))).write(
+        ProgramsCompanion(
+          name: Value(name.trim()),
+          notes: Value(_nullableTrim(notes)),
+        ),
+      );
       await _deleteVersionGraph(versionId);
       await _insertVersionGraph(versionId, blocks);
     });

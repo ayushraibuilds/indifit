@@ -9,9 +9,11 @@ import '../../core/presentation/consumer_count_label.dart';
 import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/theme/colors.dart';
 import '../../core/utils/app_logger.dart';
+import '../../data/models/b02_execution_models.dart';
 import '../../data/repositories/program_activation_coordinator.dart';
 import '../../data/repositories/program_repository.dart';
 import '../../data/repositories/workout_repository.dart';
+import '../workout_player/widgets/b02_execution_semantics.dart';
 
 /// Screen for reviewing program graph, selecting start local date and timezone, and publishing/activating.
 class ProgramReviewScreen extends ConsumerStatefulWidget {
@@ -61,7 +63,10 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
         widget.programVersionId,
       );
       if (detail == null) {
-        setState(() => _errorMessage = 'This program is no longer available.');
+        setState(() {
+          _errorMessage = 'This plan is no longer available.';
+          _isLoading = false;
+        });
         return;
       }
 
@@ -71,7 +76,7 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
       });
     } catch (_) {
       setState(() {
-        _errorMessage = 'This program could not be loaded. Try again.';
+        _errorMessage = 'This plan could not be loaded. Try again.';
         _isLoading = false;
       });
     }
@@ -126,7 +131,7 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
         const SnackBar(
           behavior: SnackBarBehavior.floating,
           content: Text(
-            'Program activated, but no workouts were scheduled. Review the plan before leaving this screen.',
+            'The plan is ready, but it has no workouts scheduled yet.',
           ),
         ),
       );
@@ -139,7 +144,7 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
       SnackBar(
         behavior: SnackBarBehavior.floating,
         content: Text(
-          '✓ Program activated · ${ConsumerCountLabel.format(result.occurrences.length, 'workout')} scheduled',
+          'Plan ready · ${ConsumerCountLabel.format(result.occurrences.length, 'workout')} scheduled',
         ),
       ),
     );
@@ -159,7 +164,7 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
           builder: (dialogContext) => AlertDialog(
             title: const Text('Workout in progress'),
             content: Text(
-              'You have an active workout in progress (${activeDraft.routineName}). Resolve it before activating a new plan.',
+              'You have an active workout in progress (${activeDraft.routineName}). Finish or leave it before using another plan.',
             ),
             actions: [
               FilledButton(
@@ -242,10 +247,7 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          'Review & Activate',
-          style: TextStyle(fontFamily: 'Outfit'),
-        ),
+        title: Text('Review your plan', style: TextStyle(fontFamily: 'Outfit')),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -285,7 +287,7 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    'Activation Settings',
+                    'When will it start?',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -298,7 +300,7 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    title: const Text('Start Local Date'),
+                    title: const Text('Start date'),
                     subtitle: Text(
                       DateFormat(
                         'd MMM y',
@@ -311,7 +313,7 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
                   DropdownButtonFormField<String>(
                     initialValue: _selectedTimezone,
                     decoration: const InputDecoration(
-                      labelText: 'Program timezone',
+                      labelText: 'Plan timezone',
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.public_rounded),
                     ),
@@ -335,12 +337,12 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'Existing scheduled workouts from earlier versions stay on their original dates unless you explicitly cancel them.',
+                    'Existing scheduled workouts stay on their original dates unless you change them separately.',
                     style: TextStyle(color: Colors.grey),
                   ),
                   const SizedBox(height: 24),
                   Text(
-                    'Program Overview',
+                    'Plan overview',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -388,7 +390,7 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
                                     )
                                     .length;
                                 return Text(
-                                  '${group.groupType} • ${group.roundCount} rounds • $memberCount members',
+                                  '${_groupTypeLabel(group.groupType)} • ${group.roundCount} rounds • $memberCount exercises',
                                 );
                               }),
                             ],
@@ -402,7 +404,7 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
                     Card(
                       child: ListTile(
                         leading: const Icon(Icons.error_outline),
-                        title: const Text('Program not activated'),
+                        title: const Text('Plan could not be started'),
                         subtitle: Text(_activationError!),
                       ),
                     ),
@@ -416,8 +418,8 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
                       icon: const Icon(Icons.rocket_launch_rounded),
                       label: Text(
                         _activationError == null
-                            ? 'Publish & Activate Program'
-                            : 'Retry activation',
+                            ? 'Use this plan'
+                            : 'Try again',
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
@@ -439,4 +441,12 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
 
 String _activationFailureMessage(Object error) {
   return ProductFailurePresentation.fromError(error).message;
+}
+
+String _groupTypeLabel(String raw) {
+  try {
+    return b02ExecutionGroupTypeLabel(B02GroupType.parse(raw));
+  } catch (_) {
+    return 'Grouped exercises';
+  }
 }
