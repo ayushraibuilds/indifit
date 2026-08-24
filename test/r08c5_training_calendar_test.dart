@@ -461,19 +461,27 @@ void main() {
     );
 
     // -----------------------------------------------------------------------
-    // 10. Narrow width (320px): no overflow
+    // 10. Narrow width plus elevated text: no overflow
     // -----------------------------------------------------------------------
-    testWidgets('10. Narrow 320px viewport: renders without overflow', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        _buildTestApp(calendarState: todayState(), size: const Size(320, 568)),
-      );
-      await tester.pumpAndSettle();
+    testWidgets(
+      '10. Narrow 320px viewport at 2x text renders without overflow',
+      (tester) async {
+        tester.view.physicalSize = const Size(320, 568);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        await tester.pumpWidget(
+          _buildTestApp(
+            calendarState: todayState(),
+            size: const Size(320, 568),
+            textScale: 2,
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      expect(tester.takeException(), isNull);
-      expect(find.text('Calendar'), findsOneWidget);
-    });
+        expect(tester.takeException(), isNull);
+        expect(find.text('Calendar'), findsOneWidget);
+      },
+    );
 
     // -----------------------------------------------------------------------
     // 11. Elevated text scale (1.8x): no overflow
@@ -524,6 +532,57 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Set up a training plan'), findsOneWidget);
+    });
+
+    testWidgets('14. Empty calendar stays usable at 320px and 2x text', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(320, 568);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final emptyState = CalendarUiState(
+        selectedLocalDate: '2026-08-03',
+        timezoneId: 'UTC',
+        view: CalendarView.week,
+        selectedDateOccurrences: const [],
+        rangeOccurrences: const [],
+      );
+      await tester.pumpWidget(
+        _buildTestApp(
+          calendarState: emptyState,
+          size: const Size(320, 568),
+          textScale: 2,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('Set up a training plan'), findsOneWidget);
+    });
+
+    testWidgets('15. Loading calendar stays usable at 320px and 2x text', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(320, 568);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final loadingState = CalendarUiState(
+        selectedLocalDate: '2026-08-03',
+        timezoneId: 'UTC',
+        view: CalendarView.week,
+        isLoading: true,
+      );
+      await tester.pumpWidget(
+        _buildTestApp(
+          calendarState: loadingState,
+          size: const Size(320, 568),
+          textScale: 2,
+        ),
+      );
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('Loading your calendar'), findsOneWidget);
     });
   });
 }

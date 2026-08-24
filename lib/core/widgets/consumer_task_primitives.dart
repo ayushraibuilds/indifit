@@ -213,6 +213,7 @@ class ConsumerStatusRow extends StatelessWidget {
         const SizedBox(width: B05Layout.space8),
         Expanded(
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(label, style: B05Typography.label(context)),

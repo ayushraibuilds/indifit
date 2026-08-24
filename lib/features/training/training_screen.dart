@@ -19,12 +19,9 @@ import '../../data/repositories/program_lifecycle_repository.dart';
 import '../../data/repositories/training_next_action_resolver.dart';
 import '../../data/repositories/workout_repository.dart';
 import '../calendar/occurrence_actions_sheet.dart';
-import '../calendar/program_calendar_screen.dart';
 import '../calendar/workout_contextual_launcher.dart';
-import '../exercise_library/exercise_library_screen.dart';
 import '../workout_player/b02_strength_execution_controller.dart';
 import '../workout_player/b02_strength_player_screen.dart';
-import '../workout_player/routine_display_screen.dart';
 import '../workout_player/widgets/manual_log_sheet.dart';
 import '../workout_player/workout_player_screen.dart';
 import 'training_plan_lifecycle_controller.dart';
@@ -247,13 +244,14 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
     if (!context.mounted || action == null) return;
     switch (action) {
       case 'plan':
-        await Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (_) => const RoutineDisplayScreen()));
-      case 'calendar':
-        await Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const ProgramCalendarScreen()),
+        final versionId = data.nextActionResolution?.activeProgramVersionId;
+        await context.push(
+          versionId == null
+              ? '/plan-library'
+              : '/plan-overview/${Uri.encodeComponent(versionId)}',
         );
+      case 'calendar':
+        await context.push('/calendar');
       case 'finish':
         await _confirmEndPlan(context, ref, data, PlanEndOutcome.finished);
       case 'leave':
@@ -632,12 +630,8 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
           onOpenPlan: () => context.push('/plan-library'),
           onOpenBuilder: () => context.push('/program-author'),
           onOpenPlanActions: () => _showPlanActions(context, ref, data),
-          onOpenCalendar: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const ProgramCalendarScreen()),
-          ),
-          onOpenExercises: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const ExerciseLibraryScreen()),
-          ),
+          onOpenCalendar: () => context.push('/calendar'),
+          onOpenExercises: () => context.push('/exercises'),
           onOpenHistory: () => context.push('/workout-history'),
           onRetry: () => ref.invalidate(trainingLandingSnapshotProvider),
         ),

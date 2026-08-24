@@ -80,6 +80,66 @@ void main() {
     semantics.dispose();
   });
 
+  testWidgets('Training opens the exact active plan overview', (tester) async {
+    final today = _populatedTrainingSnapshot.todayWorkout!;
+    final snapshot = TrainingLandingSnapshot(
+      localDate: _populatedTrainingSnapshot.localDate,
+      timezoneId: _populatedTrainingSnapshot.timezoneId,
+      todayWorkout: today,
+      upcoming: _populatedTrainingSnapshot.upcoming,
+      recentSessions: _populatedTrainingSnapshot.recentSessions,
+      activeProgramName: _populatedTrainingSnapshot.activeProgramName,
+      nextActionResolution: TrainingNextActionResolution(
+        localDate: _populatedTrainingSnapshot.localDate,
+        activeProgramVersionId: today.version.id,
+        activeDraft: null,
+        hasActiveDraft: false,
+        currentOccurrence: null,
+        todayOccurrence: today,
+        overdueOccurrence: null,
+        nextOccurrence: _populatedTrainingSnapshot.upcoming.first,
+        todayCompletedOccurrence: null,
+        upcomingOccurrences: _populatedTrainingSnapshot.upcoming,
+      ),
+    );
+    final router = GoRouter(
+      initialLocation: '/training',
+      routes: [
+        GoRoute(
+          path: '/training',
+          builder: (context, state) => const TrainingScreen(),
+        ),
+        GoRoute(
+          path: '/plan-overview/:versionId',
+          builder: (context, state) =>
+              Text('plan overview ${state.pathParameters['versionId']}'),
+        ),
+        GoRoute(
+          path: '/plan-library',
+          builder: (context, state) => const Text('plan library'),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          trainingLandingSnapshotProvider.overrideWith((ref) async => snapshot),
+        ],
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Plan actions'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('View plan'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('plan overview ${today.version.id}'), findsOneWidget);
+    expect(find.text('plan library'), findsNothing);
+  });
+
   testWidgets('Training treats an empty plan day as an intentional open day', (
     tester,
   ) async {

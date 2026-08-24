@@ -326,19 +326,35 @@ class _ProgramCalendarScreenState extends ConsumerState<ProgramCalendarScreen> {
               ),
             ),
           if (state.isLoading)
-            const Expanded(
-              child: Center(
-                child: ConsumerStatusRow(
-                  label: 'Loading your calendar',
-                  detail: 'Finding planned workouts for this period.',
-                  loading: true,
-                ),
-              ),
-            )
+            const Expanded(child: _CalendarLoadingState())
           else
             Expanded(child: _buildCalendarContent(context, state)),
         ],
       ),
+    );
+  }
+}
+
+class _CalendarLoadingState extends StatelessWidget {
+  const _CalendarLoadingState();
+
+  @override
+  Widget build(BuildContext context) {
+    const status = ConsumerStatusRow(
+      label: 'Loading your calendar',
+      detail: 'Finding planned workouts for this period.',
+      loading: true,
+    );
+    final scale = MediaQuery.textScalerOf(context).scale(14) / 14;
+    if (scale < 1.6) return const Center(child: status);
+    return const SingleChildScrollView(
+      padding: EdgeInsets.fromLTRB(
+        B05Layout.space16,
+        B05Layout.space16,
+        B05Layout.space16,
+        B05Layout.space24,
+      ),
+      child: status,
     );
   }
 }
