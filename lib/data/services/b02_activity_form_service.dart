@@ -23,6 +23,7 @@ class B02ActivityFormService {
     bool isIntervalWorkout = false,
     int? workSeconds,
     int? recoverySeconds,
+    String intervalIdPrefix = 'manual',
   }) {
     if (durationSeconds < 1) {
       throw const B02ValidationException('Duration must be positive.');
@@ -37,7 +38,7 @@ class B02ActivityFormService {
         }
         intervals.add(
           B02CardioInterval(
-            id: 'manual-work-0',
+            id: '$intervalIdPrefix:work:0',
             ordinal: 0,
             segmentType: B02CardioSegmentType.work,
             durationSeconds: workSeconds,
@@ -46,7 +47,7 @@ class B02ActivityFormService {
         if (recoverySeconds != null && recoverySeconds > 0) {
           intervals.add(
             B02CardioInterval(
-              id: 'manual-recovery-1',
+              id: '$intervalIdPrefix:recovery:1',
               ordinal: 1,
               segmentType: B02CardioSegmentType.recovery,
               durationSeconds: recoverySeconds,

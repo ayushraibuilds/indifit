@@ -63,11 +63,11 @@ class WorkoutHistoryScreen extends ConsumerWidget {
                     const SizedBox(height: B05Layout.space8),
                 itemBuilder: (context, index) => _WorkoutHistoryRow(
                   item: items[index],
-                  onOpen:
-                      items[index].isCanonical &&
-                          items[index].activityType == B02ActivityType.strength
+                  onOpen: items[index].isCanonical
                       ? () => context.push(
-                          '/workout-history/${items[index].sessionId}',
+                          items[index].activityType == B02ActivityType.strength
+                              ? '/workout-history/${items[index].sessionId}'
+                              : '/activity-history/${items[index].sessionId}',
                         )
                       : null,
                 ),
@@ -107,7 +107,10 @@ class _WorkoutHistoryRow extends StatelessWidget {
                   style: B05Typography.caption(context),
                 ),
                 const SizedBox(height: B05Layout.space4),
-                Text(detail, style: B05Typography.caption(context)),
+                Text(
+                  '${_formatDuration(item.durationSeconds)} · $detail',
+                  style: B05Typography.caption(context),
+                ),
                 if (source != null) ...[
                   const SizedBox(height: B05Layout.space4),
                   Text(
@@ -173,4 +176,11 @@ String _detailLabel(B02ActivityHistoryItem item) {
           : 'Mobility detail not available yet',
     B02ActivityType.legacy => 'Details not available',
   };
+}
+
+String _formatDuration(int seconds) {
+  final minutes = seconds ~/ 60;
+  final remainder = seconds % 60;
+  if (remainder == 0) return '$minutes min';
+  return '$minutes min ${remainder}s';
 }

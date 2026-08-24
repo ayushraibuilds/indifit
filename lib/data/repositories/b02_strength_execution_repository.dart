@@ -84,6 +84,7 @@ class StrengthExecutionRepository {
   final ExercisePreferenceRepository _preferenceRepo;
   final B02WorkoutPreparationOrchestrator _preparation;
   final Map<int, Future<void>> _draftMutationTails = {};
+  final Map<String, Future<int>> _manualCompletionTails = {};
 
   StrengthExecutionRepository({
     required AppDatabase db,
@@ -105,6 +106,125 @@ class StrengthExecutionRepository {
              evidenceRepository: B02TargetEvidenceRepository(db),
              nowUtc: nowUtc,
            );
+
+  /// Saves a completed strength workout that happened outside an IndiFit
+  /// schedule. This is deliberately a direct history write: it does not
+  /// create a WorkoutDraft, elapsed-time authority, occurrence, or resume
+  /// state. The performed graph still goes through the same canonical B02
+  /// tables and validation used by active completion.
+  ///
+  /// [idempotencyKey] is owned by the caller for the lifetime of one form
+  /// submission. Reusing it returns the same saved session; a new key is a
+  /// new manual historical record. This is bounded submission protection, not
+  /// a global duplicate-detection policy.
+  Future<int> saveManualCompletedWorkout({
+    required String routineName,
+    required int durationSeconds,
+    required DateTime completedAtUtc,
+    required List<B02PerformedExerciseDraft> performedExercises,
+    String? idempotencyKey,
+  }) {
+    final key = idempotencyKey?.trim().isNotEmpty == true
+        ? idempotencyKey!.trim()
+        : 'manual-strength:${_uuid.v4()}';
+    final inFlight = _manualCompletionTails[key];
+    if (inFlight != null) return inFlight;
+    final future = _saveManualCompletedWorkout(
+      routineName: routineName,
+      durationSeconds: durationSeconds,
+      completedAtUtc: completedAtUtc,
+      performedExercises: performedExercises,
+      idempotencyKey: key,
+    );
+    _manualCompletionTails[key] = future;
+    return future.whenComplete(() {
+      if (identical(_manualCompletionTails[key], future)) {
+        _manualCompletionTails.remove(key);
+      }
+    });
+  }
+
+  Future<int> _saveManualCompletedWorkout({
+    required String routineName,
+    required int durationSeconds,
+    required DateTime completedAtUtc,
+    required List<B02PerformedExerciseDraft> performedExercises,
+    required String idempotencyKey,
+  }) async {
+    final cleanName = routineName.trim();
+    if (cleanName.isEmpty) {
+      throw const B02StrengthExecutionFinalizationException(
+        'A manual workout needs a name.',
+      );
+    }
+    final state = B02ExecutionDraftState(
+      snapshotId: idempotencyKey,
+      snapshotVersion: B02ExecutionDraftState.schemaVersion,
+      activityType: B02ActivityType.strength,
+      routineName: cleanName,
+      elapsedSeconds: durationSeconds,
+      currentExerciseOrdinal: 0,
+      currentSetOrdinal: 0,
+      performedExercises: List.unmodifiable(performedExercises),
+    );
+    await _validateBeforeMutation(
+      state: state,
+      completionKind: CompletionKind.full,
+      requirePrescriptionAncestry: false,
+    );
+
+    final actualIds = state.performedExercises
+        .map((exercise) => exercise.actualExerciseId)
+        .toSet();
+    final actualRows = await (_db.select(
+      _db.exercises,
+    )..where((table) => table.stableId.isIn(actualIds))).get();
+    final namesById = <String, String>{
+      for (final row in actualRows) row.stableId!: row.name.trim(),
+    };
+    for (final exercise in state.performedExercises) {
+      if (namesById[exercise.actualExerciseId] !=
+          exercise.actualExerciseNameSnapshot.trim()) {
+        throw const B02StrengthExecutionFinalizationException(
+          'A manual exercise identity is not available in the exercise library.',
+        );
+      }
+    }
+
+    return _db.transaction(() async {
+      final existing = await (_db.select(
+        _db.workoutSessions,
+      )..where((table) => table.uuid.equals(idempotencyKey))).getSingleOrNull();
+      if (existing != null) {
+        if (existing.activityType != B02ActivityType.strength.dbValue) {
+          throw const B02StrengthExecutionFinalizationException(
+            'This workout entry is already used for another activity.',
+          );
+        }
+        return existing.id;
+      }
+      final sessionId = await _db
+          .into(_db.workoutSessions)
+          .insert(
+            WorkoutSessionsCompanion.insert(
+              name: cleanName,
+              totalVolume: _calculateVolume(state),
+              durationSeconds: durationSeconds,
+              estimatedCalories: 0,
+              completedAt: Value(completedAtUtc.toUtc()),
+              uuid: Value(idempotencyKey),
+              completionKind: Value(CompletionKind.full.dbValue),
+              activityType: Value(B02ActivityType.strength.dbValue),
+              activitySchemaVersion: const Value(1),
+              executionSnapshotJson: Value(
+                B02ExecutionDraftCodec.encode(state),
+              ),
+            ),
+          );
+      await _persistDetail(sessionId: sessionId, state: state);
+      return sessionId;
+    });
+  }
 
   /// Serializes mutations for one durable draft across controllers that share
   /// this repository instance. This protects provider recreation: a pending
@@ -2092,6 +2212,20 @@ class StrengthExecutionCompatibilityAdapter {
     required int draftId,
     required B02ExecutionDraftState state,
   }) => _repository.saveDraft(draftId: draftId, state: state);
+
+  Future<int> saveManualCompletedWorkout({
+    required String routineName,
+    required int durationSeconds,
+    required DateTime completedAtUtc,
+    required List<B02PerformedExerciseDraft> performedExercises,
+    String? idempotencyKey,
+  }) => _repository.saveManualCompletedWorkout(
+    routineName: routineName,
+    durationSeconds: durationSeconds,
+    completedAtUtc: completedAtUtc,
+    performedExercises: performedExercises,
+    idempotencyKey: idempotencyKey,
+  );
 
   Future<int> finalizeDraft({
     required int draftId,

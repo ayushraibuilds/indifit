@@ -6,6 +6,7 @@ import '../../data/database/app_database.dart';
 import '../../data/models/b02_execution_models.dart';
 import '../../data/repositories/workout_execution_compatibility_adapter.dart';
 import '../../features/activity/b02_activity_creation_screen.dart';
+import '../../features/activity/b02_activity_history_detail_screen.dart';
 import '../../features/calendar/program_calendar_screen.dart';
 import '../../features/dashboard/main_navigation_scaffold.dart';
 import '../../features/education/learn_screen.dart';
@@ -84,6 +85,19 @@ DateTime? parseFoodRouteDate(String? raw) {
     return null;
   }
   return parsed;
+}
+
+B02ActivityType? parseManualActivityRouteType(String? raw) {
+  if (raw == null) return B02ActivityType.running;
+  try {
+    final parsed = B02ActivityType.parse(raw.trim());
+    return parsed == B02ActivityType.strength ||
+            parsed == B02ActivityType.legacy
+        ? null
+        : parsed;
+  } on B02ValidationException {
+    return null;
+  }
 }
 
 String? parseFoodRouteMealType(String? raw) {
@@ -332,6 +346,20 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         },
       ),
       GoRoute(
+        path: '/activity-history/:sessionId',
+        builder: (context, state) {
+          final sessionId = int.tryParse(
+            state.pathParameters['sessionId'] ?? '',
+          );
+          if (sessionId == null || sessionId < 1) {
+            return const Scaffold(
+              body: Center(child: Text('Activity details are unavailable.')),
+            );
+          }
+          return B02ActivityHistoryDetailScreen(sessionId: sessionId);
+        },
+      ),
+      GoRoute(
         path: '/quick-workout',
         builder: (context, state) => const QuickWorkoutScreen(),
       ),
@@ -339,18 +367,23 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/activity-create',
         builder: (context, state) {
           final rawType = state.uri.queryParameters['type'];
-          B02ActivityType type = B02ActivityType.running;
-          if (rawType != null) {
-            try {
-              type = B02ActivityType.parse(rawType);
-            } catch (_) {
-              type = B02ActivityType.running;
-            }
+          final type = parseManualActivityRouteType(rawType);
+          final rawDate = state.uri.queryParameters['date'];
+          final selectedDate = parseFoodRouteDate(rawDate);
+          final rawDraftId = state.uri.queryParameters['draftId'];
+          final draftId = rawDraftId == null ? null : int.tryParse(rawDraftId);
+          if (type == null ||
+              (rawDate != null && selectedDate == null) ||
+              (rawDraftId != null && (draftId == null || draftId < 1))) {
+            return const Scaffold(
+              body: Center(child: Text('Activity entry is unavailable.')),
+            );
           }
-          final draftId = int.tryParse(
-            state.uri.queryParameters['draftId'] ?? '',
+          return B02ActivityCreationScreen(
+            initialType: type,
+            draftId: draftId,
+            selectedDate: selectedDate,
           );
-          return B02ActivityCreationScreen(initialType: type, draftId: draftId);
         },
       ),
       GoRoute(

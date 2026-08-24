@@ -23,6 +23,8 @@ class ExercisePicker extends ConsumerStatefulWidget {
     this.repository,
     this.onReplacementCommit,
     this.onExerciseSelected,
+    this.allowMultiple = false,
+    this.initialSelectedExerciseIds = const <String>{},
   });
 
   final ExercisePickerSelectionContext selectionContext;
@@ -33,6 +35,8 @@ class ExercisePicker extends ConsumerStatefulWidget {
     ExercisePickerSelection selection,
   )?
   onExerciseSelected;
+  final bool allowMultiple;
+  final Set<String> initialSelectedExerciseIds;
 
   @override
   ConsumerState<ExercisePicker> createState() => _ExercisePickerState();
@@ -51,6 +55,31 @@ Future<ExercisePickerSelection?> showExercisePicker({
     builder: (_) => ExercisePicker(
       selectionContext: selectionContext,
       repository: repository,
+    ),
+  );
+}
+
+/// Opens the shared picker for selecting several canonical exercises. The
+/// picker remains a presentation surface: it returns exact-ID selections and
+/// does not create a draft or persist a workout.
+Future<List<ExercisePickerSelection>?> showExerciseMultiPicker({
+  required BuildContext context,
+  ExercisePickerSelectionContext selectionContext =
+      const ExerciseLibraryPickerContext(
+        title: 'Add exercises',
+        semanticLabel: 'Add exercises to workout',
+      ),
+  ExercisePickerRepository? repository,
+  Set<String> initialSelectedExerciseIds = const <String>{},
+}) {
+  return showIndiFitBottomSheet<List<ExercisePickerSelection>>(
+    context: context,
+    semanticLabel: selectionContext.semanticLabel,
+    builder: (_) => ExercisePicker(
+      selectionContext: selectionContext,
+      repository: repository,
+      allowMultiple: true,
+      initialSelectedExerciseIds: initialSelectedExerciseIds,
     ),
   );
 }
@@ -92,6 +121,11 @@ class _ExercisePickerState extends ConsumerState<ExercisePicker> {
   var _loading = true;
   var _committing = false;
   ExercisePickerSelection? _pendingSelection;
+  late final Set<String> _selectedExerciseIds = {
+    for (final id in widget.initialSelectedExerciseIds)
+      if (id.trim().isNotEmpty) id.trim(),
+  };
+  final Map<String, ExercisePickerSelection> _selectedExercises = {};
 
   ExercisePickerRepository get _repository =>
       widget.repository ?? ref.read(exercisePickerRepositoryProvider);
@@ -136,6 +170,17 @@ class _ExercisePickerState extends ConsumerState<ExercisePicker> {
         _primaryMuscles = results[0] as List<String>;
         _equipmentOptions = results[1] as List<String>;
         _exercises = results[2] as List<Exercise>;
+        if (widget.allowMultiple) {
+          for (final exercise in _exercises) {
+            final stableId = exercise.stableId?.trim();
+            if (stableId != null && _selectedExerciseIds.contains(stableId)) {
+              _selectedExercises.putIfAbsent(
+                stableId,
+                () => ExercisePickerSelection.fromExercise(exercise),
+              );
+            }
+          }
+        }
         _loading = false;
       });
     } catch (error) {
@@ -202,6 +247,18 @@ class _ExercisePickerState extends ConsumerState<ExercisePicker> {
     final selection = ExercisePickerSelection.fromExercise(exercise);
     final pickerContext = widget.selectionContext;
     if (pickerContext is! ExerciseReplacementPickerContext) {
+      if (widget.allowMultiple) {
+        setState(() {
+          if (_selectedExerciseIds.contains(selection.exerciseId)) {
+            _selectedExerciseIds.remove(selection.exerciseId);
+            _selectedExercises.remove(selection.exerciseId);
+          } else {
+            _selectedExerciseIds.add(selection.exerciseId);
+            _selectedExercises[selection.exerciseId] = selection;
+          }
+        });
+        return;
+      }
       final callback = widget.onExerciseSelected;
       if (callback != null) {
         try {
@@ -407,6 +464,19 @@ class _ExercisePickerState extends ConsumerState<ExercisePicker> {
             style: B05Typography.pageTitle(context),
           ),
         ),
+        if (widget.allowMultiple)
+          TextButton(
+            onPressed: _committing || _selectedExercises.isEmpty
+                ? null
+                : () => Navigator.of(
+                    context,
+                  ).pop(_selectedExercises.values.toList(growable: false)),
+            child: Text(
+              _selectedExercises.isEmpty
+                  ? 'Done'
+                  : 'Done (${_selectedExercises.length})',
+            ),
+          ),
         Semantics(
           button: true,
           label: 'Close exercise picker',
@@ -572,9 +642,10 @@ class _ExercisePickerState extends ConsumerState<ExercisePicker> {
     final candidate = replacementContext?.compatibility.forExerciseId(
       exercise.stableId ?? '',
     );
-    final selected =
-        widget.selectionContext.selectedExerciseId?.trim() ==
-        exercise.stableId?.trim();
+    final selected = widget.allowMultiple
+        ? _selectedExerciseIds.contains(exercise.stableId?.trim())
+        : widget.selectionContext.selectedExerciseId?.trim() ==
+              exercise.stableId?.trim();
     final isCurrent =
         replacementContext != null &&
         exercise.stableId?.trim() ==
@@ -598,7 +669,9 @@ class _ExercisePickerState extends ConsumerState<ExercisePicker> {
       enabled: isSelectable && !_committing,
       label: selected ? '$semanticLabel Selected.' : semanticLabel,
       hint: isSelectable
-          ? 'Double tap to select.'
+          ? widget.allowMultiple
+                ? 'Double tap to select or remove from the list.'
+                : 'Double tap to select.'
           : selected
           ? 'Selected exercise.'
           : unavailableReason,
