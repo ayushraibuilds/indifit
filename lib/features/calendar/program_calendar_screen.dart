@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/di/providers.dart';
+import '../../core/presentation/consumer_date_label.dart';
 import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
@@ -170,10 +171,7 @@ class _ProgramCalendarScreenState extends ConsumerState<ProgramCalendarScreen> {
     ),
   );
 
-  Widget _buildCalendarContent(
-    BuildContext context,
-    CalendarUiState state,
-  ) {
+  Widget _buildCalendarContent(BuildContext context, CalendarUiState state) {
     final hasActiveProgram = state.activeProgramVersionId != null;
 
     if (!hasActiveProgram && state.rangeOccurrences.isEmpty) {
@@ -338,12 +336,7 @@ class _ProgramCalendarScreenState extends ConsumerState<ProgramCalendarScreen> {
               ),
             )
           else
-            Expanded(
-              child: _buildCalendarContent(
-                context,
-                state,
-              ),
-            ),
+            Expanded(child: _buildCalendarContent(context, state)),
         ],
       ),
     );
@@ -451,9 +444,11 @@ _DayOccurrenceStatus _resolveDayStatus(
   if (items.any((i) => i.occurrence.status == 'partiallyCompleted')) {
     return _DayOccurrenceStatus.partiallyCompleted;
   }
-  if (items.any((i) =>
-      i.occurrence.status == 'planned' ||
-      i.occurrence.status == 'rescheduled')) {
+  if (items.any(
+    (i) =>
+        i.occurrence.status == 'planned' ||
+        i.occurrence.status == 'rescheduled',
+  )) {
     return _DayOccurrenceStatus.scheduled;
   }
   if (items.any((i) => i.occurrence.status == 'skipped')) {
@@ -720,9 +715,7 @@ class _CalendarMonthGrid extends StatelessWidget {
               const SizedBox(height: 2),
               SizedBox(
                 height: 14,
-                child: Center(
-                  child: indicator ?? const SizedBox(height: 6),
-                ),
+                child: Center(child: indicator ?? const SizedBox(height: 6)),
               ),
             ],
           ),
@@ -852,9 +845,7 @@ class _CalendarWeekStrip extends StatelessWidget {
               const SizedBox(height: 2),
               SizedBox(
                 height: 14,
-                child: Center(
-                  child: indicator ?? const SizedBox(height: 6),
-                ),
+                child: Center(child: indicator ?? const SizedBox(height: 6)),
               ),
             ],
           ),
@@ -906,10 +897,7 @@ class _CalendarRestDayCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Rest Day',
-                    style: B05Typography.title(context),
-                  ),
+                  Text('Rest Day', style: B05Typography.title(context)),
                   const SizedBox(height: B05Layout.space4),
                   Text(
                     hasActiveProgram

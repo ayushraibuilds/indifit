@@ -112,6 +112,7 @@ void main() {
         expect(find.text('Manage plan'), findsOneWidget);
         expect(find.text('Equipment and preferences'), findsOneWidget);
         expect(find.text('Log completed workout'), findsOneWidget);
+        expect(find.text('Log other activity'), findsOneWidget);
       },
     );
 

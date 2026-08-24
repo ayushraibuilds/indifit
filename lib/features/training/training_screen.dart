@@ -630,9 +630,7 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
           onResumeDraft: _resumableDraftFor(data) == null
               ? null
               : () => _resumeDraft(context, ref, _resumableDraftFor(data)!),
-          onOpenPlan: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const RoutineDisplayScreen()),
-          ),
+          onOpenPlan: () => context.push('/plan-library'),
           onOpenBuilder: () => context.push('/program-author'),
           onOpenPlanActions: () => _showPlanActions(context, ref, data),
           onOpenCalendar: () => Navigator.of(context).push(
@@ -677,11 +675,7 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
                 subtitle: const Text('Create or edit your training plan.'),
                 onTap: () {
                   Navigator.pop(sheetContext);
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const RoutineDisplayScreen(),
-                    ),
-                  );
+                  context.push('/plan-library');
                 },
               ),
               ListTile(
@@ -704,6 +698,15 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
                       .asData
                       ?.value;
                   if (data != null) _logWorkout(context, data);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.directions_run_outlined),
+                title: const Text('Log other activity'),
+                subtitle: const Text('Record activity you already completed.'),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  context.push('/activity-create');
                 },
               ),
             ],

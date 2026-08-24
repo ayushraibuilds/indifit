@@ -12,7 +12,6 @@ import 'package:indifit/features/calendar/calendar_read_model.dart';
 import 'package:indifit/features/calendar/occurrence_actions_sheet.dart';
 import 'package:indifit/features/calendar/program_calendar_screen.dart';
 import 'package:indifit/features/calendar/workout_contextual_actions.dart';
-import 'package:indifit/features/travel/travel_controller.dart';
 
 // ---------------------------------------------------------------------------
 // Shared test fixtures
@@ -80,34 +79,33 @@ CalendarOccurrenceReadItem _makeOccurrence({
   bool isOverdue = false,
   bool isDeload = false,
   String progressionDisposition = 'pending',
-}) =>
-    CalendarOccurrenceReadItem(
-      occurrence: ScheduledSessionOccurrence(
-        id: id,
-        programVersionId: _versionId,
-        sessionTemplateId: template.id,
-        programBlockOrdinal: 0,
-        programWeekOrdinal: 0,
-        sessionOrdinal: 0,
-        repeatOrdinal: 0,
-        originalLocalDate: effectiveLocalDate,
-        originalTimezoneId: 'UTC',
-        effectiveLocalDate: effectiveLocalDate,
-        effectiveTimezoneId: 'UTC',
-        status: status,
-        progressionDisposition: progressionDisposition,
-        createdAtUtc: DateTime.utc(2026, 8, 1),
-      ),
-      template: template,
-      week: _testWeek(),
-      block: _testBlock(),
-      version: _testVersion(),
-      program: _testProgram(),
-      prescriptions: const [],
-      isOverdue: isOverdue,
-      isDeload: isDeload,
-      isNextRequired: status == 'planned',
-    );
+}) => CalendarOccurrenceReadItem(
+  occurrence: ScheduledSessionOccurrence(
+    id: id,
+    programVersionId: _versionId,
+    sessionTemplateId: template.id,
+    programBlockOrdinal: 0,
+    programWeekOrdinal: 0,
+    sessionOrdinal: 0,
+    repeatOrdinal: 0,
+    originalLocalDate: effectiveLocalDate,
+    originalTimezoneId: 'UTC',
+    effectiveLocalDate: effectiveLocalDate,
+    effectiveTimezoneId: 'UTC',
+    status: status,
+    progressionDisposition: progressionDisposition,
+    createdAtUtc: DateTime.utc(2026, 8, 1),
+  ),
+  template: template,
+  week: _testWeek(),
+  block: _testBlock(),
+  version: _testVersion(),
+  program: _testProgram(),
+  prescriptions: const [],
+  isOverdue: isOverdue,
+  isDeload: isDeload,
+  isNextRequired: status == 'planned',
+);
 
 // ---------------------------------------------------------------------------
 // Stub controllers that don't open Drift watch() streams
@@ -137,26 +135,30 @@ class _StubCalendarController extends StateNotifier<CalendarUiState>
   @override
   Future<void> refresh() async {}
   @override
-  Future<void> rescheduleOccurrence(String id, String date,
-      {required bool confirmed, String? effectiveTimezoneId, String? reason}) async {}
+  Future<void> rescheduleOccurrence(
+    String id,
+    String date, {
+    required bool confirmed,
+    String? effectiveTimezoneId,
+    String? reason,
+  }) async {}
   @override
-  Future<void> skipOccurrence(String id,
-      {required SkipDisposition disposition, String? reason}) async {}
+  Future<void> skipOccurrence(
+    String id, {
+    required SkipDisposition disposition,
+    String? reason,
+  }) async {}
   @override
   Future<void> cancelOccurrence(String id, {String? reason}) async {}
   @override
   Future<void> restoreOccurrence(String id) async {}
   @override
-  Future<void> repeatOccurrence(String id, String targetLocalDate,
-      {required RepeatPurpose purpose, String? timezoneId}) async {}
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
-
-class _StubTravelController extends StateNotifier<TravelUiState>
-    implements TravelController {
-  _StubTravelController() : super(const TravelUiState());
+  Future<void> repeatOccurrence(
+    String id,
+    String targetLocalDate, {
+    required RepeatPurpose purpose,
+    String? timezoneId,
+  }) async {}
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -166,7 +168,7 @@ class _StubTravelController extends StateNotifier<TravelUiState>
 // Helpers
 // ---------------------------------------------------------------------------
 
-/// Builds a test app with CalendarController and TravelController stubs.
+/// Builds a test app with a CalendarController stub.
 Widget _buildTestApp({
   required CalendarUiState calendarState,
   ThemeData? theme,
@@ -174,25 +176,20 @@ Widget _buildTestApp({
   Size size = const Size(390, 844),
 }) {
   final calendarCtrl = _StubCalendarController(calendarState);
-  final travelCtrl = _StubTravelController();
 
   return ProviderScope(
     overrides: [
       calendarControllerProvider.overrideWith((_) => calendarCtrl),
-      travelControllerProvider.overrideWith((_) => travelCtrl),
       localScheduleDateServiceProvider.overrideWithValue(
-        LocalScheduleDateService(
-          nowUtc: () => DateTime.utc(2026, 8, 3, 10, 0),
-        ),
+        LocalScheduleDateService(nowUtc: () => DateTime.utc(2026, 8, 3, 10, 0)),
       ),
     ],
     child: MaterialApp(
       theme: theme ?? AppTheme.darkTheme,
       builder: (context, child) => MediaQuery(
-        data: MediaQuery.of(context).copyWith(
-          size: size,
-          textScaler: TextScaler.linear(textScale),
-        ),
+        data: MediaQuery.of(
+          context,
+        ).copyWith(size: size, textScaler: TextScaler.linear(textScale)),
         child: child!,
       ),
       home: const ProgramCalendarScreen(),
@@ -208,20 +205,14 @@ Widget _buildContextualActionsApp({
   return ProviderScope(
     overrides: [
       localScheduleDateServiceProvider.overrideWithValue(
-        LocalScheduleDateService(
-          nowUtc: () => DateTime.utc(2026, 8, 3, 10, 0),
-        ),
+        LocalScheduleDateService(nowUtc: () => DateTime.utc(2026, 8, 3, 10, 0)),
       ),
     ],
     child: MaterialApp(
       theme: theme ?? AppTheme.darkTheme,
       home: Scaffold(
         body: SingleChildScrollView(
-          child: WorkoutContextualActions(
-            item: item,
-            hasTravelOverride: false,
-            onOpenDetails: () {},
-          ),
+          child: WorkoutContextualActions(item: item, onOpenDetails: () {}),
         ),
       ),
     ),
@@ -233,16 +224,12 @@ Widget _buildActionsSheetApp(CalendarOccurrenceReadItem item) {
   return ProviderScope(
     overrides: [
       localScheduleDateServiceProvider.overrideWithValue(
-        LocalScheduleDateService(
-          nowUtc: () => DateTime.utc(2026, 8, 3, 10, 0),
-        ),
+        LocalScheduleDateService(nowUtc: () => DateTime.utc(2026, 8, 3, 10, 0)),
       ),
     ],
     child: MaterialApp(
       theme: AppTheme.darkTheme,
-      home: Scaffold(
-        body: OccurrenceActionsSheet(occurrenceItem: item),
-      ),
+      home: Scaffold(body: OccurrenceActionsSheet(occurrenceItem: item)),
     ),
   );
 }
@@ -292,23 +279,23 @@ void main() {
     List<CalendarOccurrenceReadItem>? selected,
     List<CalendarOccurrenceReadItem>? range,
     CalendarView view = CalendarView.week,
-  }) =>
-      CalendarUiState(
-        selectedLocalDate: '2026-08-03',
-        timezoneId: 'UTC',
-        view: view,
-        activeProgramVersionId: _versionId,
-        activeProgramName: 'Strength 101',
-        selectedDateOccurrences: selected ?? [mondayPlanned],
-        rangeOccurrences: range ?? [mondayPlanned, wednesdayPlanned],
-      );
+  }) => CalendarUiState(
+    selectedLocalDate: '2026-08-03',
+    timezoneId: 'UTC',
+    view: view,
+    activeProgramVersionId: _versionId,
+    activeProgramName: 'Strength 101',
+    selectedDateOccurrences: selected ?? [mondayPlanned],
+    rangeOccurrences: range ?? [mondayPlanned, wednesdayPlanned],
+  );
 
   group('R08C.5 Training Calendar', () {
     // -----------------------------------------------------------------------
     // 1. Today: planned workout shown with action buttons
     // -----------------------------------------------------------------------
-    testWidgets('1. Today: displays planned workout with action buttons',
-        (tester) async {
+    testWidgets('1. Today: displays planned workout with action buttons', (
+      tester,
+    ) async {
       await tester.pumpWidget(_buildTestApp(calendarState: todayState()));
       await tester.pumpAndSettle();
 
@@ -320,39 +307,46 @@ void main() {
     // 2. WorkoutContextualActions: completed occurrence shows View, not Start
     // -----------------------------------------------------------------------
     testWidgets(
-        '2. Completed occurrence shows View workout, not Start/Resume',
-        (tester) async {
-      await tester.pumpWidget(_buildContextualActionsApp(item: mondayCompleted));
-      await tester.pumpAndSettle();
+      '2. Completed occurrence shows View workout, not Start/Resume',
+      (tester) async {
+        await tester.pumpWidget(
+          _buildContextualActionsApp(item: mondayCompleted),
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.text('Day A: Lower'), findsOneWidget);
-      expect(find.text('Completed'), findsWidgets);
-      expect(find.text('View workout'), findsOneWidget);
-      expect(find.text('Start workout'), findsNothing);
-      expect(find.text('Resume workout'), findsNothing);
-    });
+        expect(find.text('Day A: Lower'), findsOneWidget);
+        expect(find.text('Completed'), findsWidgets);
+        expect(find.text('View workout'), findsOneWidget);
+        expect(find.text('Start workout'), findsNothing);
+        expect(find.text('Resume workout'), findsNothing);
+      },
+    );
 
     // -----------------------------------------------------------------------
     // 3. TRN-07: partiallyCompleted is not resumable
     // -----------------------------------------------------------------------
     testWidgets(
-        '3. Partially completed shows View workout, never Start/Resume',
-        (tester) async {
-      await tester.pumpWidget(_buildContextualActionsApp(item: mondayPartial));
-      await tester.pumpAndSettle();
+      '3. Partially completed shows View workout, never Start/Resume',
+      (tester) async {
+        await tester.pumpWidget(
+          _buildContextualActionsApp(item: mondayPartial),
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.text('Day A: Lower'), findsOneWidget);
-      expect(find.text('Partially completed'), findsWidgets);
-      expect(find.text('View workout'), findsOneWidget);
-      expect(find.text('Start workout'), findsNothing);
-      expect(find.text('Resume workout'), findsNothing);
-    });
+        expect(find.text('Day A: Lower'), findsOneWidget);
+        expect(find.text('Partially completed'), findsWidgets);
+        expect(find.text('View workout'), findsOneWidget);
+        expect(find.text('Start workout'), findsNothing);
+        expect(find.text('Resume workout'), findsNothing);
+      },
+    );
 
     // -----------------------------------------------------------------------
     // 4. Skipped/Cancelled: shows Restore to plan
     // -----------------------------------------------------------------------
-    testWidgets('4. Skipped occurrence shows Restore to plan action',
-        (tester) async {
+    testWidgets('4. Skipped occurrence shows Restore to plan action', (
+      tester,
+    ) async {
       await tester.pumpWidget(_buildContextualActionsApp(item: mondaySkipped));
       await tester.pumpAndSettle();
 
@@ -365,8 +359,7 @@ void main() {
     // -----------------------------------------------------------------------
     // 5. Rest / Open Day: clean Rest Day card
     // -----------------------------------------------------------------------
-    testWidgets('5. Rest day: shows clean Rest Day card',
-        (tester) async {
+    testWidgets('5. Rest day: shows clean Rest Day card', (tester) async {
       final restState = CalendarUiState(
         selectedLocalDate: '2026-08-04',
         timezoneId: 'UTC',
@@ -391,32 +384,36 @@ void main() {
     // 6. Future occurrence: swipe is disabled (guarded to today only)
     // -----------------------------------------------------------------------
     testWidgets(
-        '6. Future occurrence: swipe is disabled, Start still available',
-        (tester) async {
-      final futureItem = _makeOccurrence(
-        id: 'occ-future',
-        template: _upperTemplate(),
-        effectiveLocalDate: '2026-08-05',
-        status: 'planned',
-      );
-      await tester.pumpWidget(_buildContextualActionsApp(item: futureItem));
-      await tester.pumpAndSettle();
+      '6. Future occurrence: swipe is disabled, Start still available',
+      (tester) async {
+        final futureItem = _makeOccurrence(
+          id: 'occ-future',
+          template: _upperTemplate(),
+          effectiveLocalDate: '2026-08-05',
+          status: 'planned',
+        );
+        await tester.pumpWidget(_buildContextualActionsApp(item: futureItem));
+        await tester.pumpAndSettle();
 
-      expect(find.text('Day B: Upper'), findsOneWidget);
-      expect(find.text('Scheduled'), findsWidgets);
-      // Start button present for explicit tap (requires confirmation dialog)
-      expect(find.text('Start workout'), findsOneWidget);
+        expect(find.text('Day B: Upper'), findsOneWidget);
+        expect(find.text('Scheduled'), findsWidgets);
+        // Start button present for explicit tap (requires confirmation dialog)
+        expect(find.text('Start workout'), findsOneWidget);
 
-      // Verify Dismissible direction is none for future date
-      final dismissible = tester.widget<Dismissible>(find.byType(Dismissible));
-      expect(dismissible.direction, DismissDirection.none);
-    });
+        // Verify Dismissible direction is none for future date
+        final dismissible = tester.widget<Dismissible>(
+          find.byType(Dismissible),
+        );
+        expect(dismissible.direction, DismissDirection.none);
+      },
+    );
 
     // -----------------------------------------------------------------------
     // 7. Month view: grid renders with weekday headers
     // -----------------------------------------------------------------------
-    testWidgets('7. Month view: renders grid with Mon-Sun headers',
-        (tester) async {
+    testWidgets('7. Month view: renders grid with Mon-Sun headers', (
+      tester,
+    ) async {
       final monthState = todayState(view: CalendarView.month);
       await tester.pumpWidget(_buildTestApp(calendarState: monthState));
       await tester.pumpAndSettle();
@@ -434,8 +431,7 @@ void main() {
     // -----------------------------------------------------------------------
     // 8. Week view: strip renders 7 day buttons
     // -----------------------------------------------------------------------
-    testWidgets('8. Week view: renders 7 day strip buttons',
-        (tester) async {
+    testWidgets('8. Week view: renders 7 day strip buttons', (tester) async {
       await tester.pumpWidget(_buildTestApp(calendarState: todayState()));
       await tester.pumpAndSettle();
 
@@ -449,29 +445,30 @@ void main() {
     // 9. TRN-15: OccurrenceActionsSheet has no Start/Resume
     // -----------------------------------------------------------------------
     testWidgets(
-        '9. TRN-15: OccurrenceActionsSheet has no Start/Resume WorkoutListTile',
-        (tester) async {
-      await tester.pumpWidget(_buildActionsSheetApp(mondayPlanned));
-      await tester.pumpAndSettle();
+      '9. TRN-15: OccurrenceActionsSheet has no Start/Resume WorkoutListTile',
+      (tester) async {
+        await tester.pumpWidget(_buildActionsSheetApp(mondayPlanned));
+        await tester.pumpAndSettle();
 
-      expect(find.text('Day A: Lower'), findsOneWidget);
-      expect(find.text('Reschedule'), findsOneWidget);
-      expect(find.text('Skip Workout'), findsOneWidget);
-      expect(find.text('Cancel Workout'), findsOneWidget);
-      // TRN-15: no redundant Start/Resume in action sheet
-      expect(find.widgetWithText(ListTile, 'Start Workout'), findsNothing);
-      expect(find.widgetWithText(ListTile, 'Resume Workout'), findsNothing);
-    });
+        expect(find.text('Day A: Lower'), findsOneWidget);
+        expect(find.text('Reschedule'), findsOneWidget);
+        expect(find.text('Skip Workout'), findsOneWidget);
+        expect(find.text('Cancel Workout'), findsOneWidget);
+        // TRN-15: no redundant Start/Resume in action sheet
+        expect(find.widgetWithText(ListTile, 'Start Workout'), findsNothing);
+        expect(find.widgetWithText(ListTile, 'Resume Workout'), findsNothing);
+      },
+    );
 
     // -----------------------------------------------------------------------
     // 10. Narrow width (320px): no overflow
     // -----------------------------------------------------------------------
-    testWidgets('10. Narrow 320px viewport: renders without overflow',
-        (tester) async {
-      await tester.pumpWidget(_buildTestApp(
-        calendarState: todayState(),
-        size: const Size(320, 568),
-      ));
+    testWidgets('10. Narrow 320px viewport: renders without overflow', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _buildTestApp(calendarState: todayState(), size: const Size(320, 568)),
+      );
       await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);
@@ -481,12 +478,12 @@ void main() {
     // -----------------------------------------------------------------------
     // 11. Elevated text scale (1.8x): no overflow
     // -----------------------------------------------------------------------
-    testWidgets('11. Elevated text scale 1.8x: renders without overflow',
-        (tester) async {
-      await tester.pumpWidget(_buildTestApp(
-        calendarState: todayState(),
-        textScale: 1.8,
-      ));
+    testWidgets('11. Elevated text scale 1.8x: renders without overflow', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _buildTestApp(calendarState: todayState(), textScale: 1.8),
+      );
       await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);
@@ -498,18 +495,16 @@ void main() {
     // -----------------------------------------------------------------------
     testWidgets('12. Light and dark themes render cleanly', (tester) async {
       // Dark
-      await tester.pumpWidget(_buildTestApp(
-        calendarState: todayState(),
-        theme: AppTheme.darkTheme,
-      ));
+      await tester.pumpWidget(
+        _buildTestApp(calendarState: todayState(), theme: AppTheme.darkTheme),
+      );
       await tester.pumpAndSettle();
       expect(find.text('Day A: Lower'), findsOneWidget);
 
       // Light
-      await tester.pumpWidget(_buildTestApp(
-        calendarState: todayState(),
-        theme: AppTheme.lightTheme,
-      ));
+      await tester.pumpWidget(
+        _buildTestApp(calendarState: todayState(), theme: AppTheme.lightTheme),
+      );
       await tester.pumpAndSettle();
       expect(find.text('Day A: Lower'), findsOneWidget);
     });
