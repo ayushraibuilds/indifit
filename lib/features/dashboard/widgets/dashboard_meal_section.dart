@@ -11,6 +11,7 @@ import '../../../data/database/app_database.dart';
 import '../../../data/repositories/food_repository.dart';
 import '../../food_log/canonical_food_delete.dart';
 import '../../food_log/food_search_screen.dart';
+import '../../food_log/meal_presentation_registry.dart';
 import '../../food_log/save_logged_meal_as_reusable_meal_helper.dart';
 import '../../food_log/saved_meals_screen.dart';
 import '../../food_log/saved_recipe_log_screen.dart';
@@ -515,28 +516,20 @@ class _MealCard extends ConsumerWidget {
         ? '${(legacyCalories + canonicalEnergyLower).round()}–${(legacyCalories + canonicalEnergyUpper).round()} kcal'
         : '$totalCals kcal';
 
-    Color accentColor = AppColors.primary;
-    IconData mealIcon = Icons.restaurant_rounded;
-    if (type == 'breakfast') {
-      accentColor = AppColors.achievementGold;
-      mealIcon = Icons.wb_sunny_outlined;
-    } else if (type == 'lunch') {
-      accentColor = Colors.green;
-      mealIcon = Icons.wb_twilight_rounded;
-    } else if (type == 'dinner') {
-      accentColor = Colors.indigoAccent;
-      mealIcon = Icons.nightlight_round;
-    } else if (type == 'snack') {
-      accentColor = Colors.deepOrangeAccent;
-      mealIcon = Icons.cookie_outlined;
-    }
+    final presentation = foodMealPresentationFor(type);
+    final mealAccent = context.b05Colors.meal(
+      presentation.accent ?? B05MealAccent.snack,
+    );
+    final accentColor = mealAccent.indicator;
+    final containerColor = mealAccent.container;
+    final mealIcon = presentation.icon;
 
     return Card(
       child: ExpansionTile(
         leading: Container(
-          padding: const EdgeInsets.all(6),
+          padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: accentColor.withValues(alpha: 0.12),
+            color: containerColor,
             shape: BoxShape.circle,
           ),
           child: Icon(mealIcon, color: accentColor, size: 18),
@@ -545,7 +538,7 @@ class _MealCard extends ConsumerWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              title,
+              presentation.label,
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
             ),
             Text(

@@ -220,6 +220,7 @@ void main() {
             home: FoodSearchScreen(
               mealType: 'lunch',
               selectedDate: DateTime(2026, 8, 13),
+              initialMultiSelect: true,
             ),
           ),
         ),
