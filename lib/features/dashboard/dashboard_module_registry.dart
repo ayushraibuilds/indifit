@@ -164,19 +164,19 @@ class DashboardPersonalizationValidationException extends FormatException {
 final DashboardModuleRegistry standardDashboardModuleRegistry =
     DashboardModuleRegistry([
       const DashboardModuleDescriptor(
-        id: 'today.meals',
-        defaultOrdinal: 0,
-        label: 'Nutrition',
-        customizationLabel: 'Nutrition hero',
-        eligibility: DashboardModuleEligibility.nutrition,
-      ),
-      const DashboardModuleDescriptor(
         id: 'today.next_action',
-        defaultOrdinal: 1,
+        defaultOrdinal: 0,
         label: 'Next up',
         customizationLabel: 'Next up',
         eligibility: DashboardModuleEligibility.nextAction,
         collapsible: false,
+      ),
+      const DashboardModuleDescriptor(
+        id: 'today.meals',
+        defaultOrdinal: 1,
+        label: 'Nutrition',
+        customizationLabel: 'Nutrition summary',
+        eligibility: DashboardModuleEligibility.nutrition,
       ),
       const DashboardModuleDescriptor(
         id: 'today.meal_rows',
@@ -191,6 +191,7 @@ final DashboardModuleRegistry standardDashboardModuleRegistry =
         label: 'Workout',
         customizationLabel: 'Workout',
         eligibility: DashboardModuleEligibility.workout,
+        defaultVisible: false,
       ),
       const DashboardModuleDescriptor(
         id: 'today.activity',
@@ -198,6 +199,7 @@ final DashboardModuleRegistry standardDashboardModuleRegistry =
         label: 'Activity',
         customizationLabel: 'Activity and recovery',
         eligibility: DashboardModuleEligibility.activity,
+        defaultVisible: false,
       ),
       const DashboardModuleDescriptor(
         id: 'today.progress',
@@ -205,6 +207,7 @@ final DashboardModuleRegistry standardDashboardModuleRegistry =
         label: 'Progress',
         customizationLabel: 'Progress',
         eligibility: DashboardModuleEligibility.progress,
+        defaultVisible: false,
       ),
     ]);
 

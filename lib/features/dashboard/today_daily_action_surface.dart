@@ -31,6 +31,18 @@ TodayDateRelation todayDateRelation(DateTime selectedDate, DateTime now) {
   return TodayDateRelation.today;
 }
 
+/// Returns the visible context for the selected civil date without changing
+/// the date authority. The short relative word makes historical and future
+/// browsing obvious while the full date keeps the context unambiguous.
+String todayDateContextLabel(DateTime selectedDate, DateTime now) {
+  final formatted = DateFormat('EEEE, d MMMM').format(selectedDate);
+  return switch (todayDateRelation(selectedDate, now)) {
+    TodayDateRelation.today => 'Today · $formatted',
+    TodayDateRelation.past => 'Past day · $formatted',
+    TodayDateRelation.future => 'Upcoming · $formatted',
+  };
+}
+
 class TodayNextActionChoice {
   final TodayNextAction action;
   final String label;
@@ -118,8 +130,9 @@ TodayNutritionSummaryState todayNutritionSummaryState(
   return TodayNutritionSummaryState.known;
 }
 
-/// The R2 Today composition. It reads source-owned B01–B04 projections and
-/// B05 layout preferences; it does not query Drift or calculate domain facts.
+/// The Today foundation composition. It reads source-owned B01–B04
+/// projections and B05 layout preferences; it does not query Drift or
+/// calculate domain facts.
 class TodayDailyActionSurface extends ConsumerWidget {
   const TodayDailyActionSurface({
     required this.selectedDate,
@@ -168,7 +181,7 @@ class TodayDailyActionSurface extends ConsumerWidget {
     final snapshotAsync = ref.watch(todaySurfaceSnapshotProvider(selectedDate));
     final referenceNow = now ?? DateTime.now();
     final relation = todayDateRelation(selectedDate, referenceNow);
-    final layout = personalization.layout.isEmpty
+    final configuredLayout = personalization.layout.isEmpty
         ? standardDashboardModuleRegistry.normalize(const [])
         : personalization.layout;
     final snapshot = snapshotAsync.valueOrNull;
@@ -220,9 +233,21 @@ class TodayDailyActionSurface extends ConsumerWidget {
       loading: loading,
       unavailable: unavailable,
     );
-    final nextUpVisible = layout.any(
+    final nextUpVisible = configuredLayout.any(
       (item) => item.moduleId == 'today.next_action' && item.isVisible,
     );
+    final layout = [
+      for (final item in configuredLayout)
+        if (_shouldRenderTodayModule(
+          item: item,
+          hideWorkoutDuplicate:
+              nextUpVisible &&
+              (nextUp.action == TodayNextAction.resumeWorkout ||
+                  nextUp.action == TodayNextAction.startWorkout ||
+                  nextUp.action == TodayNextAction.openWorkoutPlan),
+        ))
+          item,
+    ];
 
     return ColoredBox(
       color: context.b05Colors.page,
@@ -250,7 +275,7 @@ class TodayDailyActionSurface extends ConsumerWidget {
                     onOpenSettings: onOpenSettings,
                     onCustomize: onCustomize,
                   ),
-                  const SizedBox(height: B05Layout.space12),
+                  const SizedBox(height: B05Layout.space8),
                   DashboardDateBar(
                     selectedDate: selectedDate,
                     today: referenceNow,
@@ -271,7 +296,7 @@ class TodayDailyActionSurface extends ConsumerWidget {
                         onRetry: personalizationController.retry,
                       ),
                     ),
-                  const SizedBox(height: B05Layout.space16),
+                  const SizedBox(height: B05Layout.space12),
                   for (final item in layout)
                     if (item.isVisible) ...[
                       _module(
@@ -303,9 +328,9 @@ class TodayDailyActionSurface extends ConsumerWidget {
                           false,
                         ),
                       ),
-                      const SizedBox(height: B05Layout.space12),
+                      const SizedBox(height: B05Layout.space8),
                     ],
-                  if (!layout.any((item) => item.isVisible))
+                  if (!configuredLayout.any((item) => item.isVisible))
                     _NoVisibleModules(onCustomize: onCustomize),
                 ],
               ),
@@ -314,6 +339,26 @@ class TodayDailyActionSurface extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  bool _shouldRenderTodayModule({
+    required DashboardModuleLayoutItem item,
+    required bool hideWorkoutDuplicate,
+  }) {
+    if (!item.isVisible) return false;
+    // A collapsed module is an explicit user choice. Keep its compact row
+    // available even while its source is loading or unavailable.
+    if (item.isCollapsed && item.descriptor.collapsible) return true;
+    return switch (item.moduleId) {
+      'today.workout' => !hideWorkoutDuplicate,
+      // Meal rows retain their direct add actions even on an empty day. The
+      // activity and progress descriptors are hidden by default and remain
+      // available through Customize Today when a person wants them.
+      'today.meal_rows' => true,
+      'today.activity' || 'today.progress' => true,
+      'today.next_action' || 'today.meals' => true,
+      _ => false,
+    };
   }
 
   void _openMeal(String mealType) {
@@ -476,12 +521,12 @@ class _TodayHeaderState extends State<_TodayHeader>
   Widget build(BuildContext context) {
     final name = widget.userName.trim();
     final greeting = daypartGreeting(_localNow);
-    final date = DateFormat('EEEE, d MMMM').format(widget.selectedDate);
+    final dateContext = todayDateContextLabel(widget.selectedDate, _localNow);
     return Semantics(
       container: true,
       header: true,
       label: name.isEmpty || name == 'there' ? greeting : '$greeting, $name',
-      value: date,
+      value: dateContext,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -498,7 +543,7 @@ class _TodayHeaderState extends State<_TodayHeader>
                   style: B05Typography.pageTitle(context),
                 ),
                 const SizedBox(height: B05Layout.space4),
-                Text(date, style: B05Typography.body(context)),
+                Text(dateContext, style: B05Typography.body(context)),
                 if (widget.streakCount > 0) ...[
                   const SizedBox(height: B05Layout.space8),
                   _StreakChip(count: widget.streakCount),

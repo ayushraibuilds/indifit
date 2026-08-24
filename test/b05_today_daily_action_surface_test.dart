@@ -35,54 +35,55 @@ void main() {
     await database.close();
   });
 
-  testWidgets('Today presents the daily modules in registry order', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      _app(
-        overrides: [
-          dashboardPersonalizationControllerProvider.overrideWith(
-            (ref) => personalization,
+  testWidgets(
+    'Today puts the primary modules first and keeps optional cards hidden',
+    (tester) async {
+      await tester.pumpWidget(
+        _app(
+          overrides: [
+            dashboardPersonalizationControllerProvider.overrideWith(
+              (ref) => personalization,
+            ),
+            todaySurfaceSnapshotProvider.overrideWith(
+              (ref, date) async => _unavailableSnapshot(date),
+            ),
+          ],
+          child: TodayDailyActionSurface(
+            selectedDate: DateTime(2026, 8, 6),
+            now: DateTime(2026, 8, 7),
+            userName: 'Ari',
+            streakCount: 4,
+            onDateChanged: (_) {},
+            onRefresh: () async {},
+            onOpenSettings: () {},
+            onCustomize: () {},
+            onOpenWorkoutPlan: () {},
+            onLogMeal: () {},
           ),
-          todaySurfaceSnapshotProvider.overrideWith(
-            (ref, date) async => _unavailableSnapshot(date),
-          ),
-        ],
-        child: TodayDailyActionSurface(
-          selectedDate: DateTime(2026, 8, 6),
-          now: DateTime(2026, 8, 7),
-          userName: 'Ari',
-          streakCount: 4,
-          onDateChanged: (_) {},
-          onRefresh: () async {},
-          onOpenSettings: () {},
-          onCustomize: () {},
-          onOpenWorkoutPlan: () {},
-          onLogMeal: () {},
         ),
-      ),
-    );
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 100));
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
-    final labels = [
-      'Nutrition unavailable',
-      'Next up unavailable',
-      'Meals unavailable',
-      'Workout unavailable',
-      'Activity unavailable',
-      'Progress unavailable',
-    ];
-    for (final label in labels) {
-      expect(find.text(label), findsOneWidget);
-    }
-    expect(
-      tester.getTopLeft(find.text(labels[0])).dy,
-      lessThan(tester.getTopLeft(find.text(labels[1])).dy),
-    );
-    await tester.pumpWidget(const SizedBox.shrink());
-    await tester.pump();
-  });
+      final labels = [
+        'Next up unavailable',
+        'Nutrition unavailable',
+        'Meals unavailable',
+      ];
+      for (final label in labels) {
+        expect(find.text(label), findsOneWidget);
+      }
+      expect(
+        tester.getTopLeft(find.text(labels[0])).dy,
+        lessThan(tester.getTopLeft(find.text(labels[1])).dy),
+      );
+      expect(find.text('Workout unavailable'), findsNothing);
+      expect(find.text('Activity unavailable'), findsNothing);
+      expect(find.text('Progress unavailable'), findsNothing);
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+    },
+  );
 
   testWidgets('personalization changes visibility, order and collapse', (
     tester,
@@ -94,9 +95,9 @@ void main() {
         registry: standardDashboardModuleRegistry,
       ),
       layout: [
-        defaults[5].copyWith(ordinal: 0),
+        defaults[5].copyWith(ordinal: 0, isVisible: true),
         defaults[2].copyWith(ordinal: 1, isCollapsed: true),
-        defaults[3].copyWith(ordinal: 2),
+        defaults[3].copyWith(ordinal: 2, isVisible: true),
         defaults[0].copyWith(ordinal: 3, isVisible: false),
       ],
     );
