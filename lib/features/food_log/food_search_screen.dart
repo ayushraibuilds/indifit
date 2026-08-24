@@ -3161,9 +3161,6 @@ class _FoodDiaryScreenState extends ConsumerState<FoodDiaryScreen> {
     final canonical = daily == null && diary.hasError
         ? ref.watch(canonicalFoodRecordsForDayProvider(_selectedDay))
         : const AsyncData<List<NutritionHistoricalReadRecord>>([]);
-    final recent = daily == null && diary.isLoading
-        ? const AsyncLoading<List<CanonicalRecentFood>>()
-        : ref.watch(canonicalRecentFoodsProvider);
     final nutritionRead = diary.hasError
         ? const TodayDomainRead<NutritionDailyReadModel>.unavailable(
             'Food diary unavailable',
@@ -3256,56 +3253,17 @@ class _FoodDiaryScreenState extends ConsumerState<FoodDiaryScreen> {
                 Divider(height: 16, color: context.b05Colors.border),
             ],
             const SizedBox(height: 20),
-            Text('Repeat or browse', style: B05Typography.title(context)),
+            Text('Food tools', style: B05Typography.title(context)),
             const SizedBox(height: 2),
             Text(
-              'Use your history, saved meals or recipes when helpful.',
+              'Repeat from history or use a reusable meal when helpful.',
               style: B05Typography.caption(context),
             ),
             const SizedBox(height: 8),
-            recent.when(
-              loading: () => const B05StatusMessage(
-                status: B05SemanticStatus.info,
-                label: 'Loading recent foods',
-              ),
-              error: (_, _) => const B05StatusMessage(
-                status: B05SemanticStatus.info,
-                label: 'Recent foods are unavailable',
-                value: 'Use Add food to search your local foods.',
-              ),
-              data: (foods) => foods.isEmpty
-                  ? const B05StatusMessage(
-                      status: B05SemanticStatus.info,
-                      label: 'No recent foods yet',
-                      value: 'Foods you log will appear here.',
-                    )
-                  : Column(
-                      children: [
-                        for (final food in foods.take(3))
-                          _FoodDiaryHistoryRow(
-                            recent: food,
-                            onTap: () => _openMealPicker(context),
-                          ),
-                      ],
-                    ),
-            ),
-            if (recent.valueOrNull?.any((item) => item.frequencyCount > 1) ==
-                true) ...[
-              const SizedBox(height: 12),
-              _FoodDiaryShortcut(
-                icon: Icons.repeat_rounded,
-                title: 'Frequent foods',
-                detail: 'Repeat choices ordered by your real local history.',
-                onTap: () => _openMealPicker(context),
-              ),
-            ],
-            const SizedBox(height: 16),
-            Text('Food tools', style: B05Typography.title(context)),
-            const SizedBox(height: 8),
             _FoodDiaryShortcut(
-              icon: Icons.search_rounded,
-              title: 'Search foods',
-              detail: 'Find a food to add to a meal.',
+              icon: Icons.repeat_rounded,
+              title: 'Recent and frequent',
+              detail: 'Repeat foods using your real local history.',
               onTap: () => _openMealPicker(context),
             ),
             _FoodDiaryShortcut(
@@ -3840,36 +3798,6 @@ class _FoodDiaryMealRow extends StatelessWidget {
       ),
     );
   }
-}
-
-class _FoodDiaryHistoryRow extends StatelessWidget {
-  const _FoodDiaryHistoryRow({required this.recent, required this.onTap});
-
-  final CanonicalRecentFood recent;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) => Semantics(
-    button: true,
-    label: '${recent.option.displayName}, ${recent.quantityLabel}',
-    hint: 'Choose a meal to add this food.',
-    child: ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-      dense: true,
-      title: Text(
-        recent.option.displayName,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-      subtitle: Text(
-        '${recent.quantityLabel} · ${recent.frequencyCount} logged',
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-      trailing: const Icon(Icons.add_rounded),
-      onTap: onTap,
-    ),
-  );
 }
 
 class _FoodDiaryShortcut extends StatelessWidget {

@@ -5,7 +5,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/di/providers.dart';
 import 'package:indifit/core/nutrients.dart';
 import 'package:indifit/core/nutrition_calculation_service.dart';
+import 'package:indifit/core/nutrition_consumption_snapshots.dart' as snapshots;
 import 'package:indifit/core/nutrition_household_measures.dart';
+import 'package:indifit/core/services/local_schedule_date_service.dart';
+import 'package:indifit/core/services/local_timezone_service.dart';
 import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/core/typed_quantities.dart';
 import 'package:indifit/core/widgets/consumer_task_primitives.dart';
@@ -316,6 +319,81 @@ void main() {
       expect(controller.state.selectedRecipe, isNull);
       expect(controller.state.selectedVersion, isNull);
     });
+    testWidgets('unresolved ingredient identity never leaks a durable ID', (
+      tester,
+    ) async {
+      final controller = SavedRecipeLogController(
+        coordinator: Future.value(harness.coordinator),
+        userId: harness.userId,
+      );
+      const rawFoodId = 'food-seed-private-identity-9f87';
+      const recipe = NutritionRecipeModel(
+        id: 'rec-unresolved',
+        userId: kLocalNutritionUserScopeId,
+        name: 'Unresolved ingredient recipe',
+        description: null,
+        lifecycle: NutritionRecipeLifecycle.active,
+        currentVersionId: 'rec-unresolved-v1',
+      );
+      final version = NutritionRecipeVersionModel(
+        id: 'rec-unresolved-v1',
+        recipeId: recipe.id,
+        versionNumber: 1,
+        status: NutritionRecipeVersionStatus.published,
+        yieldQuantity: null,
+        servingDefinition: null,
+        calculationRuleVersion: 'b03',
+        source: const NutritionRecipeSource(),
+        parentVersionId: null,
+        createdAt: DateTime.utc(2026, 8, 24),
+        updatedAt: DateTime.utc(2026, 8, 24),
+        ingredients: [
+          NutritionRecipeIngredientModel(
+            id: 'ingredient-unresolved',
+            recipeVersionId: 'rec-unresolved-v1',
+            position: 0,
+            foodId: rawFoodId,
+            preparationId: null,
+            quantity: Quantity.fromDecimal(
+              amount: '100',
+              unit: QuantityUnit.gram,
+            ),
+            measureId: null,
+            lower: null,
+            upper: null,
+            notes: null,
+            substitutedFromFoodId: null,
+          ),
+        ],
+      );
+      controller.state = controller.state.copyWith(
+        status: SavedRecipeLogStatus.ready,
+        selectedRecipe: recipe,
+        selectedVersion: version,
+        versions: [version],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            savedRecipeLogControllerProvider.overrideWith((ref) => controller),
+            nutritionFoodCatalogRepositoryProvider.overrideWith(
+              (ref) async => _MissingFoodCatalogRepository(
+                db: harness.db,
+                registry: harness.registry,
+              ),
+            ),
+          ],
+          child: const MaterialApp(
+            home: SavedRecipeLogScreen(mealType: 'lunch'),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(rawFoodId), findsNothing);
+      expect(find.text('Ingredient unavailable'), findsOneWidget);
+    });
   });
 
   group('R08D.7: Portion Selection & Nutrition Logging', () {
@@ -428,6 +506,109 @@ void main() {
       expect(find.text('Add with missing nutrition'), findsOneWidget);
       expect(find.text('Missing nutrition stays missing rather than becoming zero.'), findsOneWidget);
     });
+    testWidgets('successful persistence stays visible until Done', (
+      tester,
+    ) async {
+      late NutritionRecipeModel recipe;
+      late NutritionRecipeVersionModel version;
+      late NutritionRecipeLogPreview preview;
+      late NutritionFoodOption food;
+      late snapshots.NutritionConsumptionSnapshot saved;
+      late SavedRecipeLogController controller;
+      await tester.runAsync(() async {
+        final published = await harness.published(
+          'visible-success',
+          'Visible Success Recipe',
+        );
+        recipe = published.recipe;
+        version = published.version;
+        preview = await harness.coordinator.preview(
+          userId: harness.userId,
+          recipeId: recipe.id,
+          amount: NutritionRecipeLogAmount.wholeRecipe(),
+        );
+        food = (await harness.catalogRepo.getOption('food-rice'))!;
+        saved = await harness.coordinator.finalize(
+          userId: harness.userId,
+          preview: preview,
+          mealCategory: 'dinner',
+          loggedAt: DateTime.utc(2026, 8, 24, 12),
+          localDate: '2026-08-24',
+          timezoneId: 'UTC',
+          commandId: 'recipe-visible-success-fixture',
+          allowPartial: true,
+        );
+        controller = SavedRecipeLogController(
+          coordinator: Future.value(
+            _ImmediateRecipeLogCoordinator(
+              harness: harness,
+              savedSnapshot: saved,
+            ),
+          ),
+          userId: harness.userId,
+        );
+      });
+      controller.state = controller.state.copyWith(
+        status: SavedRecipeLogStatus.previewReady,
+        selectedRecipe: recipe,
+        selectedVersion: version,
+        versions: [version],
+        preview: preview,
+        partialAcknowledged: true,
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            savedRecipeLogControllerProvider.overrideWith((ref) => controller),
+            nutritionFoodCatalogRepositoryProvider.overrideWith(
+              (ref) async => _ImmediateFoodCatalogRepository(
+                db: harness.db,
+                registry: harness.registry,
+                option: food,
+              ),
+            ),
+            localTimezoneServiceProvider.overrideWithValue(
+              LocalTimezoneService(read: () async => 'UTC'),
+            ),
+            localScheduleDateServiceProvider.overrideWithValue(
+              LocalScheduleDateService(
+                nowUtc: () => DateTime.utc(2026, 8, 24, 12),
+              ),
+            ),
+          ],
+          child: MaterialApp(
+            home: SavedRecipeLogScreen(
+              mealType: 'dinner',
+              selectedDate: DateTime(2026, 8, 24),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      await tester.scrollUntilVisible(
+        find.text('Confirm & log'),
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
+      final confirm = tester.widget<ElevatedButton>(
+        find.widgetWithText(ElevatedButton, 'Confirm & log'),
+      );
+      await tester.runAsync(() async {
+        confirm.onPressed!();
+        for (var attempt = 0; attempt < 100; attempt++) {
+          if (controller.state.status == SavedRecipeLogStatus.success) return;
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+        }
+      });
+      await tester.pump();
+
+      expect(controller.state.status, SavedRecipeLogStatus.success);
+      expect(find.text('Recipe added'), findsOneWidget);
+      expect(find.text('Done'), findsOneWidget);
+      expect(find.byType(SavedRecipeLogScreen), findsOneWidget);
+    });
   });
 
   group('R08D.7: Recipe Editor Flow', () {
@@ -470,6 +651,9 @@ void main() {
 
   group('R08D.7: Accessibility & Responsiveness', () {
     testWidgets('SavedRecipeLogScreen renders cleanly at 320pt with 2x text in dark theme', (tester) async {
+      tester.view.physicalSize = const Size(320, 568);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
       final controller = SavedRecipeLogController(
         coordinator: Future.value(harness.coordinator),
         userId: harness.userId,
@@ -512,6 +696,9 @@ void main() {
     });
 
     testWidgets('NutritionRecipeEditorScreen renders cleanly at 320pt with 2x text in light theme', (tester) async {
+      tester.view.physicalSize = const Size(320, 568);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
       final editorController = NutritionRecipeEditorController(
         recipes: harness.recipes,
         foods: Future.value(harness.catalogRepo),
@@ -707,4 +894,56 @@ class _Harness {
   }
 
   Future<void> close() => db.close();
+}
+class _MissingFoodCatalogRepository extends NutritionFoodCatalogRepository {
+  _MissingFoodCatalogRepository({required super.db, required super.registry});
+
+  @override
+  Future<NutritionFoodOption?> getOption(String foodId) async => null;
+}
+
+class _ImmediateFoodCatalogRepository extends NutritionFoodCatalogRepository {
+  _ImmediateFoodCatalogRepository({
+    required super.db,
+    required super.registry,
+    required this.option,
+  });
+
+  final NutritionFoodOption option;
+
+  @override
+  Future<NutritionFoodOption?> getOption(String foodId) async =>
+      foodId == option.id ? option : null;
+}
+
+class _ImmediateRecipeLogCoordinator extends NutritionRecipeLogCoordinator {
+  _ImmediateRecipeLogCoordinator({
+    required _Harness harness,
+    required this.savedSnapshot,
+  }) : super(
+         db: harness.db,
+         recipes: harness.recipes,
+         calculator: const NutritionCalculationService(),
+         consumption: harness.consumption,
+         registry: harness.registry,
+       );
+
+  final snapshots.NutritionConsumptionSnapshot savedSnapshot;
+
+  @override
+  Future<snapshots.NutritionConsumptionSnapshot> finalize({
+    required String userId,
+    required NutritionRecipeLogPreview preview,
+    required String mealCategory,
+    required DateTime loggedAt,
+    String? mealGroupId,
+    String? localDate,
+    String? timezoneId,
+    String? consumptionId,
+    required String commandId,
+    bool allowPartial = false,
+    String? supersedesSnapshotId,
+    String? correctionId,
+    String? correctionReason,
+  }) async => savedSnapshot;
 }

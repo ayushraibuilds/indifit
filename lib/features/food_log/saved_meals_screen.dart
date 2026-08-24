@@ -613,14 +613,21 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
                   PopupMenuItem(
                     value: 'delete',
                     enabled: !deleting,
-                    child: const Row(
+                    child: Row(
                       children: [
-                        Icon(Icons.delete_outline_rounded, size: 18),
-                        SizedBox(width: 8),
+                        Icon(
+                          Icons.delete_outline_rounded,
+                          size: 18,
+                          color: context.b05Colors.danger.indicator,
+                        ),
+                        const SizedBox(width: 8),
                         Flexible(
                           child: Text(
                             'Delete',
                             overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: context.b05Colors.danger.foreground,
+                            ),
                           ),
                         ),
                       ],

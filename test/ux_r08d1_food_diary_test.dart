@@ -115,7 +115,13 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
     expect(find.text('Food tools'), findsOneWidget);
-    expect(find.text('Search foods'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Recent and frequent'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('Recent and frequent'), findsOneWidget);
+    expect(find.text('Search foods'), findsNothing);
     expect(find.text('Saved meals'), findsOneWidget);
     expect(find.text('Saved recipes'), findsOneWidget);
   });

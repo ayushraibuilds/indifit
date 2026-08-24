@@ -15,6 +15,14 @@ import '../dashboard/today_surface_controller.dart';
 import 'nutrition_recipe_editor_screen.dart';
 import 'saved_recipe_log_controller.dart';
 
+final _savedRecipeIngredientNameProvider = FutureProvider.autoDispose
+    .family<String?, String>((ref, foodId) async {
+      final catalogue = await ref.watch(
+        nutritionFoodCatalogRepositoryProvider.future,
+      );
+      return (await catalogue.getOption(foodId))?.displayName;
+    });
+
 class SavedRecipeLogScreen extends ConsumerStatefulWidget {
   final String mealType;
   final DateTime? selectedDate;
@@ -232,7 +240,8 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
         subtitle: Text(
           recipe.currentVersionId == null
               ? 'Still being prepared'
-              : recipe.description != null && recipe.description!.trim().isNotEmpty
+              : recipe.description != null &&
+                    recipe.description!.trim().isNotEmpty
               ? recipe.description!
               : 'Ready to add',
           maxLines: 1,
@@ -303,7 +312,9 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
         padding: const EdgeInsets.all(24),
         child: ProductEmptyState(
           icon: Icons.menu_book_outlined,
-          title: isSearching ? 'No saved recipes match “$query”' : 'No saved recipes yet',
+          title: isSearching
+              ? 'No saved recipes match “$query”'
+              : 'No saved recipes yet',
           message: isSearching
               ? 'Try searching with a different recipe name.'
               : 'Create a recipe for meals you make often.',
@@ -463,10 +474,9 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
             children: [
               Text(
                 'INGREDIENTS',
-                style: B05Typography.caption(context).copyWith(
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: .6,
-                ),
+                style: B05Typography.caption(
+                  context,
+                ).copyWith(fontWeight: FontWeight.w700, letterSpacing: .6),
               ),
               const SizedBox(width: 8),
               Text(
@@ -506,9 +516,8 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
                       ),
                       const SizedBox(width: B05Layout.space8),
                       Expanded(
-                        child: Text(
-                          _formatFoodName(ingredient.foodId),
-                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        child: _SavedRecipeIngredientName(
+                          foodId: ingredient.foodId,
                         ),
                       ),
                       Text(
@@ -862,7 +871,7 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
       localDate: localDate,
       timezoneId: timezoneId,
     );
-    await _returnToTodayAfterSuccessfulSave();
+    _refreshAfterSuccessfulSave();
   }
 
   Future<void> _retryWithStoredTimezone(
@@ -884,10 +893,10 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
       localDate: localDate,
       timezoneId: timezoneId,
     );
-    await _returnToTodayAfterSuccessfulSave();
+    _refreshAfterSuccessfulSave();
   }
 
-  Future<void> _returnToTodayAfterSuccessfulSave() async {
+  void _refreshAfterSuccessfulSave() {
     if (!mounted ||
         ref.read(savedRecipeLogControllerProvider).status !=
             SavedRecipeLogStatus.success) {
@@ -896,7 +905,6 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
     ref.read(todayNutritionRevisionProvider.notifier).state++;
     ref.invalidate(b04ProductionRecommendationContextProvider);
     ref.invalidate(b04CurrentFoodControllerProvider);
-    Navigator.of(context).pop(true);
   }
 
   String _formatDate(DateTime value) =>
@@ -918,22 +926,36 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
     return count.format(decimalPlaces: 1);
   }
 
-  static String _formatFoodName(String? foodId) {
-    if (foodId == null || foodId.isEmpty) return 'Unknown ingredient';
-    if (foodId.startsWith('food::')) {
-      final raw = foodId.substring(6).replaceAll('_', ' ').replaceAll('-', ' ');
-      return raw
-          .split(' ')
-          .map((word) => word.isNotEmpty
-              ? '${word[0].toUpperCase()}${word.substring(1)}'
-              : '')
-          .join(' ');
-    }
-    return foodId;
-  }
-
   static String _localDateKey(DateTime value) =>
       '${value.year.toString().padLeft(4, '0')}-'
       '${value.month.toString().padLeft(2, '0')}-'
       '${value.day.toString().padLeft(2, '0')}';
+}
+
+class _SavedRecipeIngredientName extends ConsumerWidget {
+  const _SavedRecipeIngredientName({required this.foodId});
+
+  final String foodId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final name = ref.watch(_savedRecipeIngredientNameProvider(foodId));
+    return Text(
+      name.valueOrNull ?? _safeIngredientFallback(foodId),
+      style: const TextStyle(fontWeight: FontWeight.w600),
+    );
+  }
+}
+
+String _safeIngredientFallback(String foodId) {
+  if (!foodId.startsWith('food::')) return 'Ingredient unavailable';
+  final raw = foodId.substring(6).replaceAll('_', ' ').replaceAll('-', ' ');
+  return raw
+      .split(' ')
+      .map(
+        (word) => word.isNotEmpty
+            ? '${word[0].toUpperCase()}${word.substring(1)}'
+            : '',
+      )
+      .join(' ');
 }

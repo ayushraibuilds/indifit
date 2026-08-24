@@ -111,6 +111,35 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets('Saved Meal detail uses explicit danger styling for delete', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: SavedMealDetailScreen(
+          meal: _displayMeal(),
+          mealType: 'lunch',
+          onQuickLog: () async => false,
+          onReviewPortions: () async => false,
+          onEdit: () async => false,
+          onDelete: () async => true,
+        ),
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.byTooltip('Saved meal actions'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Delete'));
+    await tester.pumpAndSettle();
+
+    final delete = tester.widget<FilledButton>(
+      find.widgetWithText(FilledButton, 'Delete'),
+    );
+    expect(delete.style?.backgroundColor?.resolve({}), isNotNull);
+    expect(delete.style?.foregroundColor?.resolve({}), isNotNull);
+  });
 }
 
 Widget _providerApp(SavedMealsController controller, Widget home) {

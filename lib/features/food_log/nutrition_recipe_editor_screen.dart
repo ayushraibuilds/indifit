@@ -150,13 +150,15 @@ class _NutritionRecipeEditorScreenState
                 ),
                 title: Text(
                   state.errorMessage!,
-                  style: TextStyle(
-                    color: context.b05Colors.danger.foreground,
-                  ),
+                  style: TextStyle(color: context.b05Colors.danger.foreground),
                 ),
               ),
             ),
-          Row(
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 12,
+            runSpacing: 4,
             children: [
               Text(
                 'Ingredients',
@@ -164,7 +166,6 @@ class _NutritionRecipeEditorScreenState
                   context,
                 ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
               ),
-              const Spacer(),
               Text('${state.ingredients.length} added'),
             ],
           ),
@@ -243,32 +244,43 @@ class _NutritionRecipeEditorScreenState
                   ),
                 ),
           const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: busy ? null : _saveDraft,
-                  icon: const Icon(Icons.save_outlined),
-                  label: Text(
-                    state.status == NutritionRecipeEditorStatus.saving
-                        ? 'Saving…'
-                        : 'Save draft',
-                  ),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final stackActions =
+                  constraints.maxWidth < 400 ||
+                  MediaQuery.textScalerOf(context).scale(16) > 20;
+              final saveDraft = OutlinedButton.icon(
+                onPressed: busy ? null : _saveDraft,
+                icon: const Icon(Icons.save_outlined),
+                label: Text(
+                  state.status == NutritionRecipeEditorStatus.saving
+                      ? 'Saving…'
+                      : 'Save draft',
                 ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: busy ? null : _publish,
-                  icon: const Icon(Icons.publish_outlined),
-                  label: Text(
-                    state.status == NutritionRecipeEditorStatus.publishing
-                        ? 'Publishing…'
-                        : 'Publish recipe',
-                  ),
+              );
+              final publish = ElevatedButton.icon(
+                onPressed: busy ? null : _publish,
+                icon: const Icon(Icons.publish_outlined),
+                label: Text(
+                  state.status == NutritionRecipeEditorStatus.publishing
+                      ? 'Publishing…'
+                      : 'Publish recipe',
                 ),
-              ),
-            ],
+              );
+              if (stackActions) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [saveDraft, const SizedBox(height: 8), publish],
+                );
+              }
+              return Row(
+                children: [
+                  Expanded(child: saveDraft),
+                  const SizedBox(width: 10),
+                  Expanded(child: publish),
+                ],
+              );
+            },
           ),
           if (state.published) ...[
             const SizedBox(height: 8),
@@ -426,7 +438,7 @@ class _NutritionRecipeEditorScreenState
           )
           .join(' ');
     }
-    return input.foodId!;
+    return 'Ingredient unavailable';
   }
 
   String _formatPrepState(NutritionPreparationState state) => switch (state) {

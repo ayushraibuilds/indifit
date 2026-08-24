@@ -78,9 +78,18 @@ class _SavedMealDetailScreenState extends State<SavedMealDetailScreen> {
                   _confirmDelete();
                 }
               },
-              itemBuilder: (context) => const [
-                PopupMenuItem(value: 'edit', child: Text('Edit saved meal')),
-                PopupMenuItem(value: 'delete', child: Text('Delete')),
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'edit',
+                  child: Text('Edit saved meal'),
+                ),
+                PopupMenuItem(
+                  value: 'delete',
+                  child: Text(
+                    'Delete',
+                    style: TextStyle(color: colors.danger.foreground),
+                  ),
+                ),
               ],
             ),
         ],
@@ -240,6 +249,10 @@ class _SavedMealDetailScreenState extends State<SavedMealDetailScreen> {
           ),
           FilledButton(
             onPressed: () => Navigator.pop(dialogContext, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: dialogContext.b05Colors.danger.container,
+              foregroundColor: dialogContext.b05Colors.danger.foreground,
+            ),
             child: const Text('Delete'),
           ),
         ],
