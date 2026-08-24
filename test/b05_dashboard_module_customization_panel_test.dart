@@ -16,6 +16,8 @@ void main() {
           defaultOrdinal: 0,
           label: 'Workout',
           customizationLabel: 'Workout',
+          customizationDescription: 'Keep your workout close.',
+          showInCustomizeToday: true,
           eligibility: DashboardModuleEligibility.workout,
         ),
         const DashboardModuleDescriptor(
@@ -23,6 +25,8 @@ void main() {
           defaultOrdinal: 1,
           label: 'Meals',
           customizationLabel: 'Meals',
+          customizationDescription: 'Log meals from Today.',
+          showInCustomizeToday: true,
           eligibility: DashboardModuleEligibility.nutrition,
         ),
         const DashboardModuleDescriptor(
@@ -30,6 +34,8 @@ void main() {
           defaultOrdinal: 2,
           label: 'Next action',
           customizationLabel: 'Next action',
+          customizationDescription: 'See what to do next.',
+          showInCustomizeToday: true,
           eligibility: DashboardModuleEligibility.nextAction,
           collapsible: false,
         ),
@@ -59,6 +65,11 @@ void main() {
         ),
       );
 
+      await tester.scrollUntilVisible(
+        find.byTooltip('More options for Meals'),
+        200,
+        scrollable: find.byType(Scrollable),
+      );
       expect(find.byTooltip('More options for Meals'), findsOneWidget);
       expect(find.byTooltip('More options for Workout'), findsOneWidget);
       expect(find.byType(FocusTraversalGroup), findsAtLeastNWidgets(1));
@@ -83,6 +94,7 @@ void main() {
         defaultOrdinal: 0,
         label: 'Workout',
         customizationLabel: 'Workout',
+        showInCustomizeToday: true,
         eligibility: DashboardModuleEligibility.workout,
       ),
       const DashboardModuleDescriptor(
@@ -90,6 +102,7 @@ void main() {
         defaultOrdinal: 1,
         label: 'Meals',
         customizationLabel: 'Meals',
+        showInCustomizeToday: true,
         eligibility: DashboardModuleEligibility.nutrition,
       ),
     ]);
@@ -114,7 +127,7 @@ void main() {
       );
 
       expect(
-        find.bySemanticsLabel('Saving dashboard customization'),
+        find.bySemanticsLabel('Saving your Today changes'),
         findsOneWidget,
       );
       expect(

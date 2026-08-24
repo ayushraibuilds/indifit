@@ -24,6 +24,8 @@ class DashboardModuleDescriptor {
   final bool collapsible;
   final String label;
   final String customizationLabel;
+  final String customizationDescription;
+  final bool showInCustomizeToday;
   final DashboardModuleEligibility eligibility;
 
   const DashboardModuleDescriptor({
@@ -32,6 +34,8 @@ class DashboardModuleDescriptor {
     required this.label,
     required this.customizationLabel,
     required this.eligibility,
+    this.customizationDescription = '',
+    this.showInCustomizeToday = false,
     this.defaultVisible = true,
     this.defaultCollapsed = false,
     this.collapsible = true,
@@ -168,6 +172,8 @@ final DashboardModuleRegistry standardDashboardModuleRegistry =
         defaultOrdinal: 0,
         label: 'Next up',
         customizationLabel: 'Next up',
+        customizationDescription: 'See the most useful next step for today.',
+        showInCustomizeToday: true,
         eligibility: DashboardModuleEligibility.nextAction,
         collapsible: false,
       ),
@@ -175,7 +181,9 @@ final DashboardModuleRegistry standardDashboardModuleRegistry =
         id: 'today.meals',
         defaultOrdinal: 1,
         label: 'Nutrition',
-        customizationLabel: 'Nutrition summary',
+        customizationLabel: 'Nutrition',
+        customizationDescription: 'Keep your daily nutrition summary close.',
+        showInCustomizeToday: true,
         eligibility: DashboardModuleEligibility.nutrition,
       ),
       const DashboardModuleDescriptor(
@@ -183,6 +191,8 @@ final DashboardModuleRegistry standardDashboardModuleRegistry =
         defaultOrdinal: 2,
         label: 'Meals',
         customizationLabel: 'Meals',
+        customizationDescription: "Log and review today's meals.",
+        showInCustomizeToday: true,
         eligibility: DashboardModuleEligibility.nutrition,
       ),
       const DashboardModuleDescriptor(
@@ -190,6 +200,8 @@ final DashboardModuleRegistry standardDashboardModuleRegistry =
         defaultOrdinal: 3,
         label: 'Workout',
         customizationLabel: 'Workout',
+        customizationDescription: "Keep today's workout within reach.",
+        showInCustomizeToday: true,
         eligibility: DashboardModuleEligibility.workout,
         defaultVisible: false,
       ),
@@ -197,7 +209,9 @@ final DashboardModuleRegistry standardDashboardModuleRegistry =
         id: 'today.activity',
         defaultOrdinal: 4,
         label: 'Activity',
-        customizationLabel: 'Activity and recovery',
+        customizationLabel: 'Activity',
+        customizationDescription: 'See your activity and recovery details.',
+        showInCustomizeToday: true,
         eligibility: DashboardModuleEligibility.activity,
         defaultVisible: false,
       ),
@@ -206,6 +220,8 @@ final DashboardModuleRegistry standardDashboardModuleRegistry =
         defaultOrdinal: 5,
         label: 'Progress',
         customizationLabel: 'Progress',
+        customizationDescription: 'Check your progress for the day.',
+        showInCustomizeToday: true,
         eligibility: DashboardModuleEligibility.progress,
         defaultVisible: false,
       ),

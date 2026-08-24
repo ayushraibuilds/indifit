@@ -111,6 +111,37 @@ void main() {
   );
 
   test(
+    'reset restores registry defaults in the same preference rows',
+    () async {
+      await repository.reorder(
+        userId: _userId,
+        moduleId: 'next',
+        targetIndex: 0,
+      );
+      await repository.setVisible(
+        userId: _userId,
+        moduleId: 'workout',
+        isVisible: false,
+      );
+      await repository.setCollapsed(
+        userId: _userId,
+        moduleId: 'meals',
+        isCollapsed: true,
+      );
+
+      final reset = await repository.resetToDefaults(userId: _userId);
+
+      expect(reset.map((item) => item.moduleId), ['workout', 'meals', 'next']);
+      expect(reset.every((item) => item.isVisible), isTrue);
+      expect(reset.every((item) => !item.isCollapsed), isTrue);
+      expect(
+        await database.select(database.dashboardModulePreferences).get(),
+        hasLength(3),
+      );
+    },
+  );
+
+  test(
     'normalization follows unknown, first duplicate, tie, default and non-collapsible rules',
     () {
       final layout = registry.normalize([
