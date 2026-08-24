@@ -10,7 +10,6 @@ import '../../core/widgets/indi_fit_bottom_sheet.dart';
 import '../../data/repositories/calendar_read_repository.dart';
 import '../../data/repositories/calendar_repository.dart';
 import 'calendar_controller.dart';
-import 'workout_contextual_launcher.dart';
 
 /// Consumer label for an occurrence history event. Public for focused tests.
 /// Splits both snake_case and camelCase event types into readable words.
@@ -41,66 +40,6 @@ class OccurrenceActionsSheet extends ConsumerStatefulWidget {
 class _OccurrenceActionsSheetState
     extends ConsumerState<OccurrenceActionsSheet> {
   bool _isLoading = false;
-
-  Future<void> _startWorkout() async {
-    final occurrence = widget.occurrenceItem.occurrence;
-    final needsConfirmation =
-        WorkoutContextualLauncher.requiresDateConfirmation(
-          ref,
-          widget.occurrenceItem,
-        );
-    if (needsConfirmation) {
-      final confirmed = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Start outside scheduled date?'),
-          content: Text(
-            'This workout is scheduled for ${ConsumerDateLabel.day(occurrence.effectiveLocalDate)}. Starting it will not move or skip any other workout.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Start workout'),
-            ),
-          ],
-        ),
-      );
-      if (confirmed != true || !mounted) return;
-    }
-    setState(() => _isLoading = true);
-    try {
-      final target = await WorkoutContextualLauncher.prepare(
-        ref: ref,
-        item: widget.occurrenceItem,
-        confirmedOutsideEffectiveDate: needsConfirmation,
-      );
-
-      if (mounted) {
-        Navigator.pop(context);
-        await WorkoutContextualLauncher.push(context, target);
-      }
-    } catch (error) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              ProductFailurePresentation.fromError(
-                error,
-                title: 'Workout could not be started',
-                code: 'workout_unavailable',
-              ).message,
-            ),
-          ),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
 
   Future<void> _rescheduleOccurrence() async {
     final now = DateTime.now();
@@ -429,7 +368,6 @@ class _OccurrenceActionsSheetState
     final item = widget.occurrenceItem;
     final occ = item.occurrence;
     final isStartable = occ.status == 'planned' || occ.status == 'rescheduled';
-    final isInProgress = occ.status == 'inProgress';
     final isTerminal = const {
       'completed',
       'partiallyCompleted',
@@ -509,13 +447,6 @@ class _OccurrenceActionsSheetState
               ),
             )
           else ...[
-            if (!widget.scheduleAdjustmentsOnly &&
-                (isStartable || isInProgress))
-              ListTile(
-                leading: Icon(Icons.play_arrow_rounded, color: colors.action),
-                title: Text(isInProgress ? 'Resume Workout' : 'Start Workout'),
-                onTap: _startWorkout,
-              ),
             if (isStartable) ...[
               ListTile(
                 leading: const Icon(Icons.edit_calendar_rounded),

@@ -40,15 +40,19 @@ class CalendarController extends StateNotifier<CalendarUiState> {
     LocalScheduleDateService? dates,
     Uuid? uuid,
     String timezoneId = 'UTC',
+    String? initialLocalDate,
   }) : _calendarRepo = calendarRepo,
        _readRepo = readRepo,
        _dates = dates ?? LocalScheduleDateService(),
        _uuid = uuid ?? const Uuid(),
        super(
          CalendarUiState(
-           selectedLocalDate: (dates ?? LocalScheduleDateService()).todayIn(
-             timezoneId,
-           ),
+           selectedLocalDate: initialLocalDate != null
+               ? (dates ?? LocalScheduleDateService())
+                   .normalizeLocalDate(initialLocalDate)
+               : (dates ?? LocalScheduleDateService()).todayIn(
+                   timezoneId,
+                 ),
            timezoneId: timezoneId,
            isLoading: true,
          ),
