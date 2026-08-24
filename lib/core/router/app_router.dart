@@ -29,6 +29,7 @@ import '../../features/settings/household_measures_screen.dart';
 import '../../features/settings/nutrition_constraint_review_screen.dart';
 import '../../features/settings/nutrition_constraints_screen.dart';
 import '../../features/settings/settings_screen.dart';
+import '../../features/training/plan_library_screen.dart';
 import '../../features/travel/travel_mode_screen.dart';
 import '../../features/workout_player/b02_strength_player_screen.dart';
 import '../../features/workout_player/b02_strength_summary_screen.dart';
@@ -374,6 +375,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/calendar',
         builder: (context, state) => ProgramCalendarScreen(
           initialLocalDate: state.uri.queryParameters['date'],
+        ),
+      ),
+      GoRoute(
+        path: '/plan-library',
+        builder: (context, state) => const PlanLibraryScreen(),
+      ),
+      GoRoute(
+        path: '/plan-library/:programId',
+        builder: (context, state) => PlanLibraryDetailScreen(
+          programId: state.pathParameters['programId']!,
         ),
       ),
       GoRoute(
