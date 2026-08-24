@@ -10,6 +10,7 @@ import '../../core/widgets/indi_fit_feedback.dart';
 import '../../core/widgets/skeleton_loader.dart';
 import '../dashboard/today_surface_controller.dart';
 import 'meal_templates_screen.dart';
+import 'saved_meal_detail_screen.dart';
 import 'saved_meal_editor_screen.dart';
 import 'saved_meals_controller.dart';
 import 'widgets/saved_meal_edit_before_log_sheet.dart';
@@ -50,18 +51,23 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
     });
   }
 
-  Future<void> _handleQuickLog(SavedMealDisplayItem item) async {
+  Future<bool> _handleQuickLog(
+    SavedMealDisplayItem item, {
+    bool closeAfterSuccess = true,
+  }) async {
     if (!item.isLoggable ||
         _quickLogInFlight ||
         ref.read(savedMealsControllerProvider).status ==
             SavedMealsStatus.finalizing) {
-      return;
+      return false;
     }
     setState(() => _quickLogInFlight = true);
     try {
       if (item.requiresPartialAcknowledgement) {
-        await _handleEditBeforeLog(item);
-        return;
+        return await _handleEditBeforeLog(
+          item,
+          closeAfterSuccess: closeAfterSuccess,
+        );
       }
 
       final now = DateTime.now().toUtc();
@@ -75,7 +81,7 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
       final loggedAt = widget.selectedDate == null
           ? now
           : dates.instantForLocalDate(localDate, timezoneId);
-      if (!mounted) return;
+      if (!mounted) return false;
       final controller = ref.read(savedMealsControllerProvider.notifier);
       final snapshot = await controller.logSavedMeal(
         draft: item.draft,
@@ -91,17 +97,22 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
           context,
           'Logged "${item.draft.name}" to ${widget.mealType.toUpperCase()}!',
         );
-        if (mounted && Navigator.canPop(context)) {
+        if (closeAfterSuccess && mounted && Navigator.canPop(context)) {
           Navigator.pop(context, true);
         }
+        return true;
       }
+      return false;
     } finally {
       _quickLogInFlight = false;
       if (mounted) setState(() {});
     }
   }
 
-  Future<void> _handleEditBeforeLog(SavedMealDisplayItem item) async {
+  Future<bool> _handleEditBeforeLog(
+    SavedMealDisplayItem item, {
+    bool closeAfterSuccess = true,
+  }) async {
     final result = await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -120,13 +131,15 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
         context,
         'Logged "${item.draft.name}" to ${widget.mealType.toUpperCase()}!',
       );
-      if (mounted && Navigator.canPop(context)) {
+      if (closeAfterSuccess && mounted && Navigator.canPop(context)) {
         Navigator.pop(context, true);
       }
+      return true;
     }
+    return false;
   }
 
-  Future<void> _handleDelete(SavedMealDisplayItem item) async {
+  Future<bool> _handleDelete(SavedMealDisplayItem item) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -154,7 +167,7 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
     if (confirm != true ||
         !mounted ||
         !_deletingSavedMealIds.add(item.draft.id)) {
-      return;
+      return false;
     }
     setState(() {});
     try {
@@ -164,12 +177,56 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
         item.draft.id,
         reload: false,
       );
-      if (!deleted || !mounted) return;
+      if (!deleted || !mounted) return false;
       unawaited(IndiFitHaptics.warning());
       await controller.loadSavedMeals(query: query);
+      return true;
     } finally {
       _deletingSavedMealIds.remove(item.draft.id);
       if (mounted) setState(() {});
+    }
+  }
+
+  Future<bool> _openEditor({SavedMealDisplayItem? item}) async {
+    final saved = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => SavedMealEditorScreen(
+          thaliDraft: item?.draft,
+          defaultMealType: widget.mealType,
+        ),
+      ),
+    );
+    if (saved == true && mounted) {
+      await ref
+          .read(savedMealsControllerProvider.notifier)
+          .loadSavedMeals(query: ref.read(savedMealsControllerProvider).query);
+    }
+    return saved == true;
+  }
+
+  Future<void> _openMealDetail(SavedMealDisplayItem meal) async {
+    final result = await Navigator.push<SavedMealDetailResult>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => SavedMealDetailScreen(
+          meal: meal,
+          mealType: widget.mealType,
+          onQuickLog: () => _handleQuickLog(meal, closeAfterSuccess: false),
+          onReviewPortions: () =>
+              _handleEditBeforeLog(meal, closeAfterSuccess: false),
+          onEdit: () => _openEditor(item: meal),
+          onDelete: () => _handleDelete(meal),
+        ),
+      ),
+    );
+    if (!mounted) return;
+    if (result == SavedMealDetailResult.logged) {
+      if (Navigator.canPop(context)) Navigator.pop(context, true);
+    } else if (result == SavedMealDetailResult.updated) {
+      await ref
+          .read(savedMealsControllerProvider.notifier)
+          .loadSavedMeals(query: ref.read(savedMealsControllerProvider).query);
     }
   }
 
@@ -215,22 +272,7 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
           IconButton(
             tooltip: 'Create Saved Meal',
             icon: const Icon(Icons.add_rounded),
-            onPressed: () async {
-              final created = await Navigator.push<bool>(
-                context,
-                MaterialPageRoute(
-                  builder: (_) =>
-                      SavedMealEditorScreen(defaultMealType: widget.mealType),
-                ),
-              );
-              if (created == true && mounted) {
-                unawaited(
-                  ref
-                      .read(savedMealsControllerProvider.notifier)
-                      .loadSavedMeals(),
-                );
-              }
-            },
+            onPressed: () => _openEditor(),
           ),
         ],
       ),
@@ -302,6 +344,9 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
                       SkeletonCard(height: 96),
                     ],
                   )
+                : state.status == SavedMealsStatus.failure &&
+                      state.meals.isEmpty
+                ? _buildFailureState()
                 : state.meals.isEmpty
                 ? _buildEmptyState()
                 : ListView.separated(
@@ -334,6 +379,7 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
   }
 
   Widget _buildEmptyState() {
+    final hasSearch = _searchController.text.trim().isNotEmpty;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -347,7 +393,7 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              _searchController.text.trim().isEmpty
+              !hasSearch
                   ? 'No saved meals yet'
                   : 'No saved meals match "${_searchController.text}"',
               style: Theme.of(
@@ -357,7 +403,9 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Save your commonly eaten meal combinations to log them faster in one tap.',
+              hasSearch
+                  ? 'Try a different name or create a new saved meal.'
+                  : 'Save the foods and recipes you eat together to log them again quickly.',
               style: TextStyle(
                 color: context.b05Colors.textSecondary,
                 fontSize: 13,
@@ -366,22 +414,7 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
             ),
             const SizedBox(height: 20),
             ElevatedButton.icon(
-              onPressed: () async {
-                final created = await Navigator.push<bool>(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) =>
-                        SavedMealEditorScreen(defaultMealType: widget.mealType),
-                  ),
-                );
-                if (created == true && mounted) {
-                  unawaited(
-                    ref
-                        .read(savedMealsControllerProvider.notifier)
-                        .loadSavedMeals(),
-                  );
-                }
-              },
+              onPressed: () => _openEditor(),
               icon: const Icon(Icons.add_rounded),
               label: const Text('Create saved meal'),
               style: ElevatedButton.styleFrom(
@@ -391,6 +424,51 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFailureState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.cloud_off_rounded,
+              size: 48,
+              color: context.b05Colors.danger.indicator,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Saved meals could not be loaded',
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Your saved meals are still safe. Try again when you’re ready.',
+              style: TextStyle(
+                color: context.b05Colors.textSecondary,
+                fontSize: 13,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            OutlinedButton.icon(
+              onPressed: () => ref
+                  .read(savedMealsControllerProvider.notifier)
+                  .loadSavedMeals(
+                    query: ref.read(savedMealsControllerProvider).query,
+                  ),
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Try again'),
             ),
           ],
         ),
@@ -445,27 +523,47 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      meal.draft.name,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                child: Semantics(
+                  container: true,
+                  button: true,
+                  enabled: !actionInFlight,
+                  label: 'View ${meal.draft.name} composition',
+                  hint: 'Double tap to review this saved meal.',
+                  onTap: actionInFlight ? null : () => _openMealDetail(meal),
+                  child: InkWell(
+                    onTap: actionInFlight ? null : () => _openMealDetail(meal),
+                    borderRadius: BorderRadius.circular(8),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            meal.draft.name,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            '${meal.itemCount} items · $calText · $protText',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: context.b05Colors.textSecondary,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '${meal.itemCount} items · $calText · $protText',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: context.b05Colors.textSecondary,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
+              ),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: context.b05Colors.textSecondary,
+                semanticLabel: 'View composition',
               ),
               PopupMenuButton<String>(
                 icon: const Icon(Icons.more_vert_rounded),
@@ -474,21 +572,7 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
                   if (action == 'edit_before_log') {
                     _handleEditBeforeLog(meal);
                   } else if (action == 'edit_template') {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => SavedMealEditorScreen(
-                          thaliDraft: meal.draft,
-                          defaultMealType: widget.mealType,
-                        ),
-                      ),
-                    ).then((updated) {
-                      if (updated == true && mounted) {
-                        ref
-                            .read(savedMealsControllerProvider.notifier)
-                            .loadSavedMeals();
-                      }
-                    });
+                    _openEditor(item: meal);
                   } else if (action == 'delete') {
                     _handleDelete(meal);
                   }

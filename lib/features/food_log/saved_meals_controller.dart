@@ -17,6 +17,7 @@ class SavedMealDisplayItem {
   final double? estimatedCalories;
   final double? estimatedProteinG;
   final String summary;
+  final NutritionThaliPreview? preview;
   final bool hasPartialNutrition;
   final bool requiresPartialAcknowledgement;
   final String? unavailableCode;
@@ -28,6 +29,7 @@ class SavedMealDisplayItem {
     this.estimatedCalories,
     this.estimatedProteinG,
     required this.summary,
+    this.preview,
     this.hasPartialNutrition = false,
     this.requiresPartialAcknowledgement = false,
     this.unavailableCode,
@@ -131,9 +133,11 @@ class SavedMealsController extends StateNotifier<SavedMealsState> {
         var requiresPartialAcknowledgement = false;
         String? unavailableCode;
         String? unavailableMessage;
+        NutritionThaliPreview? previewResult;
         try {
           final preview = await thaliRepo.preview(draft: draft);
           if (generation != _loadGeneration) return;
+          previewResult = preview;
           final energy =
               preview.aggregate.facts['energy']?.point?.value.asDouble;
           final prot =
@@ -158,6 +162,7 @@ class SavedMealsController extends StateNotifier<SavedMealsState> {
             estimatedCalories: calories,
             estimatedProteinG: protein,
             summary: summary.isEmpty ? 'No items' : summary,
+            preview: previewResult,
             hasPartialNutrition: hasPartialNutrition,
             requiresPartialAcknowledgement: requiresPartialAcknowledgement,
             unavailableCode: unavailableCode,

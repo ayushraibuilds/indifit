@@ -8,10 +8,11 @@ import '../../core/di/providers.dart';
 import '../../core/nutrition_household_measures.dart';
 import '../../core/nutrition_thali.dart';
 import '../../core/theme/b05_semantic_colors.dart';
-import '../../core/theme/colors.dart';
 import '../../core/typed_quantities.dart';
+import '../../core/widgets/indi_fit_feedback.dart';
 import '../../data/repositories/nutrition_food_catalog_repository.dart';
 import '../../data/repositories/nutrition_thali_repository.dart';
+import 'saved_meal_presentation.dart';
 
 class SavedMealEditorScreen extends ConsumerStatefulWidget {
   final NutritionThaliDraft? thaliDraft;
@@ -193,12 +194,7 @@ class _SavedMealEditorScreenState extends ConsumerState<SavedMealEditorScreen> {
       await thaliRepo.saveDraft(draft);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Saved "$name" successfully!'),
-            backgroundColor: AppColors.success,
-          ),
-        );
+        showIndiFitSuccessFeedback(context, 'Saved "$name".');
         Navigator.pop(context, true);
       }
     } catch (e) {
@@ -246,22 +242,22 @@ class _SavedMealEditorScreenState extends ConsumerState<SavedMealEditorScreen> {
                 margin: const EdgeInsets.only(bottom: 16),
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppColors.danger.withValues(alpha: 0.1),
+                  color: context.b05Colors.danger.container,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.error_outline,
-                      color: AppColors.danger,
+                      color: context.b05Colors.danger.indicator,
                       size: 20,
                     ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         _errorMessage!,
-                        style: const TextStyle(
-                          color: AppColors.danger,
+                        style: TextStyle(
+                          color: context.b05Colors.danger.foreground,
                           fontSize: 13,
                         ),
                       ),
@@ -361,9 +357,7 @@ class _SavedMealEditorScreenState extends ConsumerState<SavedMealEditorScreen> {
                 separatorBuilder: (_, _) => const SizedBox(height: 8),
                 itemBuilder: (context, index) {
                   final item = _items[index];
-                  final amount = item.quantity.amount.asDouble;
-                  final displayQty =
-                      '${amount == amount.roundToDouble() ? amount.toInt() : amount.toStringAsFixed(1)} ${item.quantity.unit.name}';
+                  final displayQty = savedMealQuantityLabel(item);
 
                   return Container(
                     decoration: BoxDecoration(
@@ -420,10 +414,10 @@ class _SavedMealEditorScreenState extends ConsumerState<SavedMealEditorScreen> {
                             ),
                             IconButton(
                               tooltip: 'Remove item',
-                              icon: const Icon(
+                              icon: Icon(
                                 Icons.delete_outline_rounded,
                                 size: 20,
-                                color: AppColors.danger,
+                                color: context.b05Colors.danger.indicator,
                               ),
                               onPressed: () => _removeItem(index),
                             ),
@@ -638,12 +632,7 @@ class _FoodOptionsList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (options.isEmpty) {
-      return const Center(
-        child: Text(
-          'No matching foods found.',
-          style: TextStyle(color: AppColors.textSecondary),
-        ),
-      );
+      return const Center(child: Text('No matching foods found.'));
     }
     return ListView.separated(
       itemCount: options.length,
@@ -664,10 +653,7 @@ class _FoodOptionsList extends StatelessWidget {
               color: context.b05Colors.textSecondary,
             ),
           ),
-          trailing: const Icon(
-            Icons.add_circle_outline,
-            color: AppColors.primary,
-          ),
+          trailing: const Icon(Icons.add_circle_outline),
           onTap: () =>
               Navigator.pop(context, _SavedMealComponentSelection.food(option)),
         );
@@ -684,12 +670,7 @@ class _RecipeOptionsList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (options.isEmpty) {
-      return const Center(
-        child: Text(
-          'No matching recipes found.',
-          style: TextStyle(color: AppColors.textSecondary),
-        ),
-      );
+      return const Center(child: Text('No matching recipes found.'));
     }
     return ListView.separated(
       itemCount: options.length,
@@ -708,10 +689,7 @@ class _RecipeOptionsList extends StatelessWidget {
               color: context.b05Colors.textSecondary,
             ),
           ),
-          trailing: const Icon(
-            Icons.add_circle_outline,
-            color: AppColors.primary,
-          ),
+          trailing: const Icon(Icons.add_circle_outline),
           onTap: () => Navigator.pop(
             context,
             _SavedMealComponentSelection.recipe(option),

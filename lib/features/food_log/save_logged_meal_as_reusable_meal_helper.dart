@@ -6,8 +6,9 @@ import '../../core/di/providers.dart';
 import '../../core/nutrition_household_measures.dart';
 import '../../core/nutrition_legacy_read_models.dart';
 import '../../core/nutrition_thali.dart' as thali;
-import '../../core/theme/colors.dart';
+import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/typed_quantities.dart';
+import '../../core/widgets/indi_fit_feedback.dart';
 
 class SaveLoggedMealError implements Exception {
   final String code;
@@ -41,9 +42,11 @@ class SaveLoggedMealHelper {
     }
     if (legacyItemCount > 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
+          backgroundColor: context.b05Colors.warning.container,
           content: Text(
             'This meal includes older entries that cannot be copied safely. Create a saved meal to choose those items again.',
+            style: TextStyle(color: context.b05Colors.warning.foreground),
           ),
         ),
       );
@@ -57,7 +60,7 @@ class SaveLoggedMealHelper {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(error.message),
-          backgroundColor: AppColors.danger,
+          backgroundColor: context.b05Colors.danger.container,
         ),
       );
       return false;
@@ -77,7 +80,7 @@ class SaveLoggedMealHelper {
           children: [
             const Text(
               'Save this meal combination to quickly log it again in the future.',
-              style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+              style: TextStyle(fontSize: 13),
             ),
             const SizedBox(height: 16),
             TextFormField(
@@ -103,8 +106,8 @@ class SaveLoggedMealHelper {
               Navigator.pop(ctx, trimmed.isNotEmpty ? trimmed : defaultName);
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
+              backgroundColor: ctx.b05Colors.action,
+              foregroundColor: ctx.b05Colors.onAction,
             ),
             child: const Text('Save'),
           ),
@@ -134,20 +137,18 @@ class SaveLoggedMealHelper {
       await thaliRepo.saveDraft(draft);
 
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Saved "$mealName" as a reusable meal!'),
-            backgroundColor: AppColors.success,
-          ),
+        showIndiFitSuccessFeedback(
+          context,
+          'Saved "$mealName" as a reusable meal.',
         );
       }
       return true;
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Could not save meal. Please try again.'),
-            backgroundColor: AppColors.danger,
+          SnackBar(
+            content: const Text('Could not save meal. Please try again.'),
+            backgroundColor: context.b05Colors.danger.container,
           ),
         );
       }
