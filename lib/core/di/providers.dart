@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/database/app_database.dart';
+import '../../data/models/b04_goal_models.dart';
 import '../../data/models/b04_recommendation_context_models.dart';
 import '../../data/repositories/b02_execution_compatibility_read_repository.dart';
 import '../../data/repositories/b02_exercise_performance_read_repository.dart';
@@ -358,6 +359,17 @@ final nutritionTargetsForDateProvider = FutureProvider.autoDispose
     .family<NutritionTargetsForDate, NutritionTargetDateQuery>((ref, query) {
       ref.watch(nutritionTargetAuthorityChangesProvider);
       return ref.watch(nutritionTargetAuthorityProvider).resolve(query);
+    });
+
+/// Read-only history for the Nutrition Targets hub. Values still come from
+/// the goal-version repository; this provider adds no current-target or
+/// date-resolution semantics of its own.
+final nutritionGoalHistoryProvider = FutureProvider.autoDispose
+    .family<List<NutritionGoalVersionReadModel>, String>((ref, userId) {
+      ref.watch(nutritionTargetAuthorityChangesProvider);
+      return ref
+          .watch(nutritionGoalRepositoryProvider)
+          .listVersions(userId: userId);
     });
 
 final coachingPreferenceRepositoryProvider =

@@ -21,6 +21,7 @@ import 'household_measures_screen.dart';
 import 'notification_settings_screen.dart';
 import 'nutrition_constraints_screen.dart';
 import 'nutrition_goals_sub_screen.dart';
+import 'nutrition_targets_hub_screen.dart';
 import 'regional_food_packs_screen.dart';
 import 'settings_controller.dart';
 import 'unit_preference.dart';
@@ -217,6 +218,13 @@ class SettingsScreen extends ConsumerWidget {
                       icon: Icons.track_changes_outlined,
                       title: 'Nutrition targets',
                       summary: 'Review or adjust your targets',
+                      onTap: () =>
+                          _push(context, const NutritionTargetsHubScreen()),
+                    ),
+                    _SettingsRow(
+                      icon: Icons.auto_graph_outlined,
+                      title: 'Goals & adaptive coaching',
+                      summary: 'Manage goals and coaching preferences',
                       onTap: () =>
                           _push(context, const NutritionGoalsSubScreen()),
                     ),
