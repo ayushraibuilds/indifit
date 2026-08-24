@@ -149,12 +149,13 @@ final canonicalRecentFoodsProvider =
             }
             final option = await catalog.getOption(foodId);
             if (option == null) continue;
-            final historicalQuantity =
-                item.quantity.isResolved ? item.quantity.quantity : null;
+            final historicalQuantity = item.quantity.isResolved
+                ? item.quantity.quantity
+                : null;
             final quantityLabel = historicalQuantity != null
                 ? QuantityFormatter.format(historicalQuantity)
                 : (item.quantity.storedAmount != null &&
-                    item.quantity.storedUnit.isNotEmpty)
+                      item.quantity.storedUnit.isNotEmpty)
                 ? '${item.quantity.storedAmount} ${item.quantity.storedUnit}'
                 : '${option.baseQuantity.amount} ${option.baseQuantity.unit.name}';
             result.add(
@@ -924,6 +925,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     final transformations = await coordinator.transformationsFor(option);
     if (!mounted) return;
     var finalized = false;
+    var selectedQuantity = initialQuantity ?? option.baseQuantity;
     final compatibleUnits = <QuantityUnit>[
       ...switch (selectedQuantity.dimension) {
         QuantityDimension.mass => const [
@@ -939,12 +941,6 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     ];
     if (!compatibleUnits.contains(selectedQuantity.unit)) {
       compatibleUnits.insert(0, selectedQuantity.unit);
-    }
-    var selectedQuantity = option.baseQuantity;
-    if (initialQuantity != null &&
-        compatibleUnits.contains(initialQuantity.unit) &&
-        !initialQuantity.isZero) {
-      selectedQuantity = initialQuantity;
     }
     final initialPreview = await coordinator.preview(
       option: option,
@@ -2388,8 +2384,8 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
             '$identityLabel${isCustom ? ', custom food' : ''}, $energy, $protein',
         hint: _isMultiSelect
             ? (isSelected
-                ? 'Tap to deselect from multi-food add.'
-                : 'Tap to select for multi-food add.')
+                  ? 'Tap to deselect from multi-food add.'
+                  : 'Tap to select for multi-food add.')
             : 'Tap Add to log the listed serving, or open to adjust the amount.',
         child: ListTile(
           minVerticalPadding: 8,
@@ -2429,12 +2425,13 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
           ),
           trailing: _isMultiSelect
               ? (isSelected
-                  ? IconButton(
-                      icon: const Icon(Icons.tune_rounded, size: 20),
-                      tooltip: 'Adjust portion for ${option.displayName}',
-                      onPressed: () => unawaited(_editSelectedQuantity(option)),
-                    )
-                  : null)
+                    ? IconButton(
+                        icon: const Icon(Icons.tune_rounded, size: 20),
+                        tooltip: 'Adjust portion for ${option.displayName}',
+                        onPressed: () =>
+                            unawaited(_editSelectedQuantity(option)),
+                      )
+                    : null)
               : _buildCanonicalFastAddAction(option),
           onTap: () {
             if (_isMultiSelect) {
@@ -2466,8 +2463,8 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         label: '$identityLabel, ${recent.quantityLabel}, $energy, $protein',
         hint: _isMultiSelect
             ? (isSelected
-                ? 'Tap to deselect from multi-food add.'
-                : 'Tap to select for multi-food add.')
+                  ? 'Tap to deselect from multi-food add.'
+                  : 'Tap to select for multi-food add.')
             : 'Tap Add to log ${recent.quantityLabel}, or open to adjust the amount.',
         child: ListTile(
           minVerticalPadding: 10,
@@ -2514,12 +2511,13 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
           ),
           trailing: _isMultiSelect
               ? (isSelected
-                  ? IconButton(
-                      icon: const Icon(Icons.tune_rounded, size: 20),
-                      tooltip: 'Adjust portion for ${option.displayName}',
-                      onPressed: () => unawaited(_editSelectedQuantity(option)),
-                    )
-                  : null)
+                    ? IconButton(
+                        icon: const Icon(Icons.tune_rounded, size: 20),
+                        tooltip: 'Adjust portion for ${option.displayName}',
+                        onPressed: () =>
+                            unawaited(_editSelectedQuantity(option)),
+                      )
+                    : null)
               : _buildCanonicalRecentFastAddAction(recent),
           onTap: () {
             if (_isMultiSelect) {
@@ -2832,8 +2830,8 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         label: '${food.name}, ${food.calories} kilocalories, $serving',
         hint: _isMultiSelect
             ? (isSelected
-                ? 'Tap to deselect from multi-food add.'
-                : 'Tap to select for multi-food add.')
+                  ? 'Tap to deselect from multi-food add.'
+                  : 'Tap to select for multi-food add.')
             : 'Tap Add to use a supported serving or open to adjust the amount.',
         child: ListTile(
           minVerticalPadding: 10,
@@ -2880,23 +2878,23 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
           ),
           trailing: _isMultiSelect
               ? (isSelected
-                  ? IconButton(
-                      icon: const Icon(Icons.tune_rounded, size: 20),
-                      tooltip: 'Adjust portion for ${food.name}',
-                      onPressed: () async {
-                        final selectedOption = _selectedOptions.values
-                            .where(
-                              (opt) =>
-                                  opt.sourceReference ==
-                                  'legacy-food-item:${food.id}',
-                            )
-                            .firstOrNull;
-                        if (selectedOption != null) {
-                          await _editSelectedQuantity(selectedOption);
-                        }
-                      },
-                    )
-                  : null)
+                    ? IconButton(
+                        icon: const Icon(Icons.tune_rounded, size: 20),
+                        tooltip: 'Adjust portion for ${food.name}',
+                        onPressed: () async {
+                          final selectedOption = _selectedOptions.values
+                              .where(
+                                (opt) =>
+                                    opt.sourceReference ==
+                                    'legacy-food-item:${food.id}',
+                              )
+                              .firstOrNull;
+                          if (selectedOption != null) {
+                            await _editSelectedQuantity(selectedOption);
+                          }
+                        },
+                      )
+                    : null)
               : _buildFastAddAction(
                   foodName: food.name,
                   onPressed: () => unawaited(_openLegacyFastAdd(food)),
@@ -2941,10 +2939,10 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
             '$identityLabel, ${_formatProviderValue(food.calories, 'kcal')}$packageDetail, $serving${canLog ? '' : ', unavailable for logging'}',
         hint: canLog
             ? (_isMultiSelect
-                ? (isSelected
-                    ? 'Tap to deselect from multi-food add.'
-                    : 'Tap to select for multi-food add.')
-                : 'Tap Add to use a supported serving or open to adjust the amount.')
+                  ? (isSelected
+                        ? 'Tap to deselect from multi-food add.'
+                        : 'Tap to select for multi-food add.')
+                  : 'Tap Add to use a supported serving or open to adjust the amount.')
             : 'This result is unavailable for logging. Try another match.',
         child: ListTile(
           minVerticalPadding: 10,
@@ -2990,21 +2988,19 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
           ),
           trailing: _isMultiSelect
               ? (isSelected
-                  ? IconButton(
-                      icon: const Icon(Icons.tune_rounded, size: 20),
-                      tooltip: 'Adjust portion for ${food.name}',
-                      onPressed: () async {
-                        final selectedOption = _selectedOptions.values
-                            .where(
-                              (opt) => opt.sourceReference == reference,
-                            )
-                            .firstOrNull;
-                        if (selectedOption != null) {
-                          await _editSelectedQuantity(selectedOption);
-                        }
-                      },
-                    )
-                  : null)
+                    ? IconButton(
+                        icon: const Icon(Icons.tune_rounded, size: 20),
+                        tooltip: 'Adjust portion for ${food.name}',
+                        onPressed: () async {
+                          final selectedOption = _selectedOptions.values
+                              .where((opt) => opt.sourceReference == reference)
+                              .firstOrNull;
+                          if (selectedOption != null) {
+                            await _editSelectedQuantity(selectedOption);
+                          }
+                        },
+                      )
+                    : null)
               : _buildFastAddAction(
                   foodName: food.name,
                   onPressed: canLog

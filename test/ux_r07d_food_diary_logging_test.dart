@@ -304,6 +304,7 @@ void main() {
           option: options,
           quantityLabel: '1 katori',
           loggedAtUtc: DateTime.utc(2026, 8, 12, 9),
+          historicalQuantity: options.baseQuantity,
         ),
       ];
 
