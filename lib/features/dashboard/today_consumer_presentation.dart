@@ -86,8 +86,7 @@ class TodayWorkoutPresentation {
         detail: 'Try again to check your active workout.',
       );
     }
-    if (resolution?.hasActiveDraft == true &&
-        resolution?.activeDraft == null) {
+    if (resolution?.hasActiveDraft == true && resolution?.activeDraft == null) {
       return const TodayWorkoutPresentation(
         state: TodayPresentationState.ready,
         title: 'Workout in progress',
@@ -530,6 +529,13 @@ class TodayActivityPresentation {
     this.sessionCount,
   });
 
+  /// Activity is optional evidence. Loading is renderable so an explicitly
+  /// enabled module can settle without a layout jump; empty and unavailable
+  /// reads fail closed and are omitted by the Today composition.
+  bool get shouldRender =>
+      state == TodayPresentationState.loading ||
+      state == TodayPresentationState.ready;
+
   factory TodayActivityPresentation.from(
     TodayDomainRead<B02ProgressReadModel>? read, {
     required bool loading,
@@ -541,14 +547,18 @@ class TodayActivityPresentation {
         detail: 'Checking your recent movement.',
       );
     }
-    if (!read.isAvailable || read.value!.activityHistory == null) {
+    if (!read.isAvailable ||
+        read.value == null ||
+        read.value!.activityHistory == null) {
       return const TodayActivityPresentation(
         state: TodayPresentationState.unavailable,
         headline: 'Activity unavailable',
         detail: 'Try again later for your recent activity.',
       );
     }
-    final history = read.value!.activityHistory!;
+    final history = read.value!.activityHistory!
+        .where(_isMeaningfulActivityRecord)
+        .toList(growable: false);
     if (history.isEmpty) {
       return const TodayActivityPresentation(
         state: TodayPresentationState.empty,
@@ -559,7 +569,7 @@ class TodayActivityPresentation {
     final latest = history.first;
     return TodayActivityPresentation(
       state: TodayPresentationState.ready,
-      headline: 'Activity this week',
+      headline: 'Recent activity',
       detail: '${ConsumerCountLabel.format(history.length, 'session')} logged',
       latestActivity: ConsumerCopy.label(latest.name, fallback: 'Workout'),
       sessionCount: history.length,
@@ -580,6 +590,12 @@ class TodayProgressPresentation {
     this.supporting,
   });
 
+  /// Progress is optional evidence, not a placeholder destination. A known
+  /// empty history or a failed read is therefore hidden by Today.
+  bool get shouldRender =>
+      state == TodayPresentationState.loading ||
+      state == TodayPresentationState.ready;
+
   factory TodayProgressPresentation.from(
     TodayDomainRead<B02ProgressReadModel>? read, {
     required bool loading,
@@ -591,28 +607,79 @@ class TodayProgressPresentation {
         detail: 'Preparing your recent activity.',
       );
     }
-    if (!read.isAvailable || read.value!.activityHistory == null) {
+    if (!read.isAvailable ||
+        read.value == null ||
+        read.value!.activityHistory == null) {
       return const TodayProgressPresentation(
         state: TodayPresentationState.unavailable,
         headline: 'Progress unavailable',
         detail: 'Try again later to see your recent activity.',
       );
     }
-    final history = read.value!.activityHistory!;
+    final history = read.value!.activityHistory!
+        .where(_isMeaningfulActivityRecord)
+        .toList(growable: false);
     if (history.isEmpty) {
       return const TodayProgressPresentation(
         state: TodayPresentationState.empty,
-        headline: 'Your progress starts with one workout',
-        detail: 'Your weekly view will build from completed sessions.',
+        headline: 'Progress not shown',
+        detail: 'There is no recent progress evidence to show.',
       );
     }
+
+    final targetEvidence = _firstMeaningfulTargetEvidence(
+      read.value!.targetEvidence,
+    );
+    final latest = history.first;
+    if (targetEvidence != null) {
+      final exercise = ConsumerCopy.label(
+        targetEvidence.actualExerciseName,
+        fallback: 'Strength work',
+      );
+      final setCount = targetEvidence.workingSetCount > 0
+          ? '${targetEvidence.workingSetCount} working sets recorded'
+          : '${targetEvidence.totalSetCount} sets recorded';
+      return TodayProgressPresentation(
+        state: TodayPresentationState.ready,
+        headline: exercise,
+        detail: setCount,
+        supporting:
+            '${ConsumerCountLabel.format(history.length, 'session')} completed · '
+            '${B02ProgressPresentation.range(read.value!.query)}',
+      );
+    }
+
     return TodayProgressPresentation(
       state: TodayPresentationState.ready,
-      headline: 'Your week is taking shape',
-      detail: 'Keep building the routine that works for you.',
+      headline:
+          '${ConsumerCountLabel.format(history.length, 'session')} completed',
+      detail:
+          'Latest: ${ConsumerCopy.label(latest.name, fallback: 'Activity')}',
       supporting: B02ProgressPresentation.range(read.value!.query),
     );
   }
+}
+
+bool _isMeaningfulActivityRecord(B02ProgressActivityRecord record) =>
+    record.name.trim().isNotEmpty ||
+    record.performedExerciseCount > 0 ||
+    record.performedGroupCount > 0 ||
+    record.cardioIntervalCount > 0 ||
+    record.hasCardioDetail ||
+    record.hasMobilityDetail ||
+    record.durationSeconds > 0;
+
+B02ProgressTargetEvidence? _firstMeaningfulTargetEvidence(
+  List<B02ProgressTargetEvidence>? values,
+) {
+  if (values == null) return null;
+  for (final value in values) {
+    if (value.actualExerciseName.trim().isNotEmpty &&
+        (value.workingSetCount > 0 || value.totalSetCount > 0)) {
+      return value;
+    }
+  }
+  return null;
 }
 
 class TodayFocusPresentation {
@@ -633,6 +700,14 @@ class TodayFocusPresentation {
     this.workout,
     this.activeDraft,
   });
+
+  /// Loading and source failure remain visible as safe status/retry states.
+  /// A loaded focus with no canonical action is omitted so Today does not
+  /// turn a generic route into a false “next up” recommendation.
+  bool get shouldRender =>
+      state == TodayPresentationState.loading ||
+      state == TodayPresentationState.unavailable ||
+      (state == TodayPresentationState.ready && action != null);
 }
 
 TodayFocusPresentation todayFocusPresentation({
@@ -691,6 +766,15 @@ TodayFocusPresentation todayFocusPresentation({
       action: TodayNextAction.resumeWorkout,
       activeDraft: activeDraft,
       workout: resolution?.currentOccurrence,
+    );
+  }
+  if (resolution?.currentOccurrence != null) {
+    return const TodayFocusPresentation(
+      state: TodayPresentationState.ready,
+      title: 'Workout in progress',
+      detail: 'This workout needs attention before another one can start.',
+      actionLabel: 'Open workout plan',
+      action: TodayNextAction.openWorkoutPlan,
     );
   }
   if (resolution?.hasActiveDraft == true) {
@@ -763,22 +847,11 @@ TodayFocusPresentation todayFocusPresentation({
       workout: next,
     );
   }
-  final hasNoMeals = snapshot.nutrition.value?.records.isEmpty == true;
-  if (hasNoMeals) {
-    return const TodayFocusPresentation(
-      state: TodayPresentationState.ready,
-      title: 'Log your first meal',
-      detail: 'Start with breakfast whenever you’re ready.',
-      actionLabel: 'Log breakfast',
-      action: TodayNextAction.logMeal,
-    );
-  }
   return const TodayFocusPresentation(
-    state: TodayPresentationState.ready,
-    title: 'Nothing planned today',
-    detail: 'Choose a workout or enjoy a recovery day.',
-    actionLabel: 'Choose workout',
-    action: TodayNextAction.openWorkoutPlan,
+    state: TodayPresentationState.empty,
+    title: 'No next step',
+    detail: 'There is no canonical action to show right now.',
+    action: null,
   );
 }
 
