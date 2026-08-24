@@ -4,11 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/nutrients.dart';
 import '../../../core/nutrition_legacy_read_models.dart';
+import '../../../core/theme/b05_semantic_colors.dart';
 import '../../../core/theme/colors.dart';
 import '../../../core/widgets/indi_fit_feedback.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/repositories/food_repository.dart';
-import '../../food_log/ai_meal_logger_screen.dart';
 import '../../food_log/canonical_food_delete.dart';
 import '../../food_log/food_search_screen.dart';
 import '../../food_log/save_logged_meal_as_reusable_meal_helper.dart';
@@ -280,32 +280,6 @@ class _MealCard extends ConsumerWidget {
                     context,
                     MaterialPageRoute(
                       builder: (context) => ThaliBuilderScreen(mealType: type),
-                    ),
-                  );
-                },
-              ),
-              const Divider(color: AppColors.border),
-              ListTile(
-                leading: const Icon(
-                  Icons.psychology_rounded,
-                  color: AppColors.success,
-                ),
-                title: const Text(
-                  'AI Meal Estimator',
-                  style: TextStyle(fontWeight: FontWeight.w600),
-                ),
-                subtitle: const Text(
-                  'Estimate calories & macros from photos or text',
-                ),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => AiMealLoggerScreen(
-                        mealType: type,
-                        selectedDate: selectedDate,
-                      ),
                     ),
                   );
                 },
@@ -889,21 +863,21 @@ class _LoggedItemRow extends ConsumerWidget {
         return await showDialog<bool>(
           context: context,
           builder: (dialogCtx) => AlertDialog(
-            backgroundColor: AppColors.surface,
-            title: const Text('Delete Entry?'),
+            backgroundColor: dialogCtx.b05Colors.section,
+            title: const Text('Delete food entry?'),
             content: Text(
-              'Are you sure you want to remove "${log.name}" from your logged meal?',
+              'Remove "${log.name}" from this logged meal?',
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(dialogCtx, false),
                 child: const Text('Cancel'),
               ),
-              ElevatedButton(
+              FilledButton(
                 onPressed: () => Navigator.pop(dialogCtx, true),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.danger,
-                  foregroundColor: Colors.white,
+                style: FilledButton.styleFrom(
+                  backgroundColor: dialogCtx.b05Colors.danger.container,
+                  foregroundColor: dialogCtx.b05Colors.danger.foreground,
                 ),
                 child: const Text('Delete'),
               ),
@@ -1004,21 +978,23 @@ class _LoggedItemRow extends ConsumerWidget {
                     final confirm = await showDialog<bool>(
                       context: context,
                       builder: (dialogCtx) => AlertDialog(
-                        backgroundColor: AppColors.surface,
-                        title: const Text('Delete Entry?'),
+                        backgroundColor: dialogCtx.b05Colors.section,
+                        title: const Text('Delete food entry?'),
                         content: Text(
-                          'Are you sure you want to remove "${log.name}" from your logged meal?',
+                          'Remove "${log.name}" from this logged meal?',
                         ),
                         actions: [
                           TextButton(
                             onPressed: () => Navigator.pop(dialogCtx, false),
                             child: const Text('Cancel'),
                           ),
-                          ElevatedButton(
+                          FilledButton(
                             onPressed: () => Navigator.pop(dialogCtx, true),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.danger,
-                              foregroundColor: Colors.white,
+                            style: FilledButton.styleFrom(
+                              backgroundColor:
+                                  dialogCtx.b05Colors.danger.container,
+                              foregroundColor:
+                                  dialogCtx.b05Colors.danger.foreground,
                             ),
                             child: const Text('Delete'),
                           ),

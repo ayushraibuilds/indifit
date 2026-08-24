@@ -82,6 +82,7 @@ class _FoodContextualActionsState extends ConsumerState<FoodContextualActions> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
+        backgroundColor: dialogContext.b05Colors.section,
         title: const Text('Delete food entry?'),
         content: Text('Remove “${_log.name}” from this logged meal?'),
         actions: [
@@ -90,6 +91,10 @@ class _FoodContextualActionsState extends ConsumerState<FoodContextualActions> {
             child: const Text('Cancel'),
           ),
           FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: dialogContext.b05Colors.danger.container,
+              foregroundColor: dialogContext.b05Colors.danger.foreground,
+            ),
             onPressed: () => Navigator.pop(dialogContext, true),
             child: const Text('Delete'),
           ),
@@ -131,7 +136,7 @@ class _FoodContextualActionsState extends ConsumerState<FoodContextualActions> {
               B05ActionButton(
                 label: 'Delete food entry',
                 icon: Icons.delete_outline,
-                emphasis: B05ActionEmphasis.secondary,
+                emphasis: B05ActionEmphasis.danger,
                 onPressed: () =>
                     Navigator.pop(sheetContext, _FoodMenuAction.delete),
               ),
@@ -304,7 +309,7 @@ class _FoodContextualActionsState extends ConsumerState<FoodContextualActions> {
                       label: 'Delete food',
                       hint: 'Confirm before deleting this entry.',
                       icon: Icons.delete_outline,
-                      emphasis: B05ActionEmphasis.secondary,
+                      emphasis: B05ActionEmphasis.danger,
                       onPressed: busy ? null : _delete,
                       focusOrder: 3,
                     ),

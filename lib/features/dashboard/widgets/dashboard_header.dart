@@ -86,47 +86,6 @@ class DashboardHeader extends StatelessWidget {
           tooltip: 'Settings & Goals',
           onPressed: () => context.push('/settings'),
         ),
-
-        // Actions Menu
-        PopupMenuButton<String>(
-          icon: const Icon(
-            Icons.more_vert_rounded,
-            color: AppColors.textSecondary,
-          ),
-          onSelected: (val) {
-            if (val == 'planner') {
-              context.push('/meal-planner');
-            } else if (val == 'settings') {
-              context.push('/settings');
-            }
-          },
-          itemBuilder: (context) => [
-            const PopupMenuItem(
-              value: 'planner',
-              child: Row(
-                children: [
-                  Icon(Icons.auto_awesome, size: 18, color: AppColors.primary),
-                  SizedBox(width: 8),
-                  Text('AI Meal Planner'),
-                ],
-              ),
-            ),
-            const PopupMenuItem(
-              value: 'settings',
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.settings,
-                    size: 18,
-                    color: AppColors.textSecondary,
-                  ),
-                  SizedBox(width: 8),
-                  Text('Settings'),
-                ],
-              ),
-            ),
-          ],
-        ),
       ],
     );
   }

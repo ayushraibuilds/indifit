@@ -208,7 +208,7 @@ class _B05FocusRingState extends State<B05FocusRing> {
   }
 }
 
-enum B05ActionEmphasis { primary, secondary, tertiary }
+enum B05ActionEmphasis { primary, secondary, tertiary, danger }
 
 /// A labelled action with a semantic hint, focus order and shared touch target.
 class B05ActionButton extends StatelessWidget {
@@ -259,6 +259,15 @@ class B05ActionButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: B05Layout.space8),
         shape: RoundedRectangleBorder(borderRadius: B05Radii.smallRadius),
       ),
+      B05ActionEmphasis.danger => FilledButton.styleFrom(
+        backgroundColor: colors.danger.container,
+        foregroundColor: colors.danger.foreground,
+        disabledBackgroundColor: colors.disabled,
+        disabledForegroundColor: colors.textDisabled,
+        minimumSize: B05Layout.minimumTouchTarget,
+        padding: const EdgeInsets.symmetric(horizontal: B05Layout.space16),
+        shape: RoundedRectangleBorder(borderRadius: B05Radii.mediumRadius),
+      ),
     };
     final button = B05TouchTarget(
       child: B05FocusRing(
@@ -290,7 +299,7 @@ class B05ActionButton extends StatelessWidget {
 
   Widget _button(ButtonStyle style) {
     return switch (emphasis) {
-      B05ActionEmphasis.primary => FilledButton(
+      B05ActionEmphasis.primary || B05ActionEmphasis.danger => FilledButton(
         onPressed: onPressed,
         style: style,
         child: Text(label),
@@ -310,7 +319,7 @@ class B05ActionButton extends StatelessWidget {
 
   Widget _iconButton(ButtonStyle style) {
     return switch (emphasis) {
-      B05ActionEmphasis.primary => FilledButton.icon(
+      B05ActionEmphasis.primary || B05ActionEmphasis.danger => FilledButton.icon(
         onPressed: onPressed,
         style: style,
         icon: Icon(icon, size: B05Layout.iconMedium),

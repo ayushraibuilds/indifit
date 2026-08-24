@@ -26,6 +26,7 @@ import 'package:indifit/features/dashboard/main_navigation_scaffold.dart';
 import 'package:indifit/features/food_log/ai_meal_logger_screen.dart';
 import 'package:indifit/features/food_log/food_log_surface.dart';
 import 'package:indifit/features/food_log/food_search_screen.dart';
+import 'package:indifit/features/food_log/saved_meals_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -808,7 +809,7 @@ void main() {
     expect(find.text('Online search unavailable'), findsNothing);
   });
 
-  testWidgets('AI completion unwinds the food entry route to its caller', (
+  testWidgets('Saved meals completion unwinds the food entry route to its caller', (
     tester,
   ) async {
     _setViewport(tester, const Size(390, 2000));
@@ -843,12 +844,12 @@ void main() {
     expect(find.byType(FoodSearchScreen), findsOneWidget);
     tester.testTextInput.hide();
     await tester.pump(const Duration(seconds: 3));
-    expect(find.text('Describe with AI'), findsOneWidget);
-    await tester.tap(find.widgetWithText(ListTile, 'Describe with AI'));
+    expect(find.text('Saved meals'), findsOneWidget);
+    await tester.tap(find.widgetWithText(ListTile, 'Saved meals'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 750));
-    expect(find.byType(AiMealLoggerScreen), findsOneWidget);
-    Navigator.of(tester.element(find.byType(AiMealLoggerScreen))).pop(true);
+    expect(find.byType(SavedMealsScreen), findsOneWidget);
+    Navigator.of(tester.element(find.byType(SavedMealsScreen))).pop(true);
     await tester.pump(const Duration(milliseconds: 750));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
@@ -1215,6 +1216,7 @@ Widget _foodApp({
       data: MediaQueryData(
         size: mediaSize ?? Size.zero,
         textScaler: TextScaler.linear(textScale),
+        disableAnimations: true,
       ),
       child: MaterialApp(
         theme: theme ?? AppTheme.darkTheme,
@@ -1561,6 +1563,7 @@ class _FoodRouteHarnessState extends State<_FoodRouteHarness> {
         builder: (_) => FoodSearchScreen(
           mealType: 'breakfast',
           selectedDate: DateTime(2026, 8, 9),
+          returnToParentOnSave: true,
         ),
       ),
     );

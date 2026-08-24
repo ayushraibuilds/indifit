@@ -14,8 +14,6 @@ import '../../features/equipment/equipment_profile_editor_screen.dart';
 import '../../features/equipment/equipment_profiles_screen.dart';
 import '../../features/equipment/exercise_preference_editor_screen.dart';
 import '../../features/exercise_library/exercise_library_screen.dart';
-import '../../features/food_log/ai_meal_logger_screen.dart';
-import '../../features/food_log/ai_meal_planner_screen.dart';
 import '../../features/food_log/nutrition_estimate_review_screen.dart';
 import '../../features/food_log/nutrition_recipe_editor_screen.dart';
 import '../../features/onboarding/onboarding_screen.dart';
@@ -177,26 +175,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           date: state.uri.queryParameters['date'],
         ),
       ),
-      GoRoute(
-        path: '/food/ai',
-        builder: (context, state) {
-          final mealType = parseFoodRouteMealType(
-            state.uri.queryParameters['mealType'],
-          );
-          if (mealType == null) {
-            return foodRouteDestination(
-              date: state.uri.queryParameters['date'],
-            );
-          }
-          final selectedDate = parseFoodRouteDate(
-            state.uri.queryParameters['date'],
-          );
-          return AiMealLoggerScreen(
-            mealType: mealType,
-            selectedDate: selectedDate,
-          );
-        },
-      ),
+      // Former AI meal logging route fails safely into Food diary without
+      // mounting unavailable surfaces.
+      GoRoute(path: '/food/ai', redirect: (context, state) => '/food'),
       GoRoute(
         path: '/food/estimate-review',
         builder: (context, state) {
@@ -248,10 +229,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           recipeVersionId: state.uri.queryParameters['recipeVersionId'],
         ),
       ),
-      GoRoute(
-        path: '/meal-planner',
-        builder: (context, state) => const AiMealPlannerScreen(),
-      ),
+      // Former AI meal planner route fails safely into Food diary.
+      GoRoute(path: '/meal-planner', redirect: (context, state) => '/food'),
       GoRoute(
         path: '/achievements',
         builder: (context, state) => const AchievementsScreen(),

@@ -26,7 +26,6 @@ import '../../data/services/nutrition_food_search_ranking.dart';
 import '../dashboard/today_consumer_presentation.dart';
 import '../dashboard/today_surface_controller.dart';
 import '../dashboard/widgets/dashboard_date_bar.dart';
-import 'ai_meal_logger_screen.dart';
 import 'barcode_scanner_screen.dart';
 import 'canonical_food_delete.dart';
 import 'custom_food_editor_screen.dart';
@@ -1970,18 +1969,6 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
           detail: 'Find a packaged food by its barcode.',
           onTap: () => _openBarcode(context),
         ),
-        _buildNavigationCard(
-          icon: Icons.auto_awesome_rounded,
-          title: 'Describe with AI',
-          detail: 'Get an estimate, then review it before saving.',
-          onTap: () => _openAi(context),
-        ),
-        _buildNavigationCard(
-          icon: Icons.photo_camera_outlined,
-          title: 'Photo estimate',
-          detail: 'Use a photo as an optional starting point.',
-          onTap: () => _openAi(context),
-        ),
         const SizedBox(height: 16),
         FoodLogEntriesPanel(
           date: logDate,
@@ -2380,27 +2367,6 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     }
   }
 
-  Future<void> _openAi(BuildContext context) async {
-    final mealType = await _ensureMealContext();
-    if (mealType == null || !mounted) return;
-    final navigator = Navigator.of(this.context);
-    final saved = await navigator.push<bool?>(
-      MaterialPageRoute(
-        builder: (_) => AiMealLoggerScreen(
-          mealType: mealType,
-          selectedDate: widget.selectedDate,
-        ),
-      ),
-    );
-    if (saved == true && mounted) {
-      if (widget.returnToParentOnSave) {
-        navigator.pop(true);
-      } else {
-        await _retryRecentFoods();
-      }
-    }
-  }
-
   void _openBarcode(BuildContext context) {
     _showBarcodePermissionRationale(context, () async {
       final result = await Navigator.push<Object?>(
@@ -2456,6 +2422,10 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: sheetContext.b05Colors.danger.container,
+                      foregroundColor: sheetContext.b05Colors.danger.foreground,
+                    ),
                     onPressed: () => Navigator.of(sheetContext).pop(true),
                     icon: const Icon(Icons.delete_outline_rounded),
                     label: const Text('Delete entire batch'),
@@ -2523,7 +2493,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
               B05ActionButton(
                 label: 'Delete food',
                 icon: Icons.delete_outline_rounded,
-                emphasis: B05ActionEmphasis.secondary,
+                emphasis: B05ActionEmphasis.danger,
                 onPressed: () =>
                     Navigator.of(sheetContext).pop(_CanonicalFoodAction.delete),
               ),
