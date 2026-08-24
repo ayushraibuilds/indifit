@@ -368,7 +368,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Semantics(
-                    label: 'Customize Today dashboard',
+                    label: 'Customize Today',
                     header: true,
                     child: Column(
                       children: [
