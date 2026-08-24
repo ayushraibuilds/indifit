@@ -31,6 +31,7 @@ import '../../features/settings/nutrition_constraint_review_screen.dart';
 import '../../features/settings/nutrition_constraints_screen.dart';
 import '../../features/settings/settings_screen.dart';
 import '../../features/training/plan_library_screen.dart';
+import '../../features/training/workout_history_screen.dart';
 import '../../features/workout_player/b02_strength_player_screen.dart';
 import '../../features/workout_player/b02_strength_summary_screen.dart';
 import '../../features/workout_player/quick_workout_screen.dart';
@@ -331,6 +332,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         },
       ),
       GoRoute(
+        path: '/workout-history',
+        builder: (context, state) => const WorkoutHistoryScreen(),
+      ),
+      GoRoute(
         path: '/workout-history/:sessionId',
         builder: (context, state) {
           final sessionId = int.tryParse(
@@ -414,6 +419,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const PlanLibraryScreen(),
       ),
       GoRoute(
+        path: '/plan-overview/:versionId',
+        builder: (context, state) =>
+            PlanOverviewScreen(versionId: state.pathParameters['versionId']!),
+      ),
+      GoRoute(
         path: '/plan-library/:programId',
         builder: (context, state) => PlanLibraryDetailScreen(
           programId: state.pathParameters['programId']!,
@@ -443,10 +453,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       // Former Travel Mode route fails safely into Training without loading
       // deprecated surfaces.
-      GoRoute(
-        path: '/travel-mode',
-        redirect: (context, state) => '/training',
-      ),
+      GoRoute(path: '/travel-mode', redirect: (context, state) => '/training'),
     ],
   );
 });

@@ -29,7 +29,6 @@ import '../workout_player/widgets/manual_log_sheet.dart';
 import '../workout_player/workout_player_screen.dart';
 import 'training_plan_lifecycle_controller.dart';
 import 'training_workout_preview.dart';
-import 'workout_history_screen.dart';
 
 /// Read-only, presentation-ready data for the Training landing page.
 ///
@@ -639,9 +638,7 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
           onOpenExercises: () => Navigator.of(context).push(
             MaterialPageRoute(builder: (_) => const ExerciseLibraryScreen()),
           ),
-          onOpenHistory: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const WorkoutHistoryScreen()),
-          ),
+          onOpenHistory: () => context.push('/workout-history'),
           onRetry: () => ref.invalidate(trainingLandingSnapshotProvider),
         ),
       ),

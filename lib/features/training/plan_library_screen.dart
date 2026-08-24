@@ -4,13 +4,18 @@ import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/di/providers.dart';
+import '../../core/presentation/consumer_date_label.dart';
 import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/consumer_task_primitives.dart';
 import '../../core/widgets/skeleton_loader.dart';
 import '../../data/database/app_database.dart';
+import '../../data/models/b02_execution_models.dart';
+import '../../data/repositories/b02_execution_compatibility_read_repository.dart';
+import '../../data/repositories/calendar_read_repository.dart';
 import '../../data/repositories/plan_library_read_repository.dart';
+import '../../data/repositories/plan_overview_read_repository.dart';
 import '../../data/repositories/program_activation_coordinator.dart';
 import '../../data/repositories/workout_repository.dart';
 
@@ -157,22 +162,33 @@ class _PlanLibraryScreenState extends ConsumerState<PlanLibraryScreen> {
   }
 
   void _openPlan(BuildContext context, PlanLibraryEntry entry) {
-    context.push('/plan-library/${entry.program.id}');
+    context.push('/plan-overview/${entry.version.id}');
   }
 }
 
-class PlanLibraryDetailScreen extends ConsumerStatefulWidget {
-  const PlanLibraryDetailScreen({required this.programId, super.key});
+/// Read-only orientation for one exact canonical program version.
+class PlanOverviewScreen extends ConsumerStatefulWidget {
+  const PlanOverviewScreen({this.programId, this.versionId, super.key})
+    : assert(programId != null || versionId != null);
 
-  final String programId;
+  /// [programId] is retained only for the pre-C.9 compatibility route and
+  /// existing callers. New navigation must carry [versionId].
+  final String? programId;
+  final String? versionId;
 
   @override
-  ConsumerState<PlanLibraryDetailScreen> createState() =>
-      _PlanLibraryDetailScreenState();
+  ConsumerState<PlanOverviewScreen> createState() => _PlanOverviewScreenState();
 }
 
-class _PlanLibraryDetailScreenState
-    extends ConsumerState<PlanLibraryDetailScreen> {
+/// Compatibility surface for C.3 callers that still identify a library entry
+/// by program. It renders the same overview body while the route migrates to
+/// exact version identity.
+class PlanLibraryDetailScreen extends PlanOverviewScreen {
+  const PlanLibraryDetailScreen({required String programId, super.key})
+    : super(programId: programId);
+}
+
+class _PlanOverviewScreenState extends ConsumerState<PlanOverviewScreen> {
   final Uuid _uuid = const Uuid();
   var _isActivating = false;
   String? _activationError;
@@ -181,42 +197,77 @@ class _PlanLibraryDetailScreenState
 
   @override
   Widget build(BuildContext context) {
+    if (widget.versionId case final versionId?) {
+      final overview = ref.watch(planOverviewSnapshotProvider(versionId));
+      return Scaffold(
+        appBar: AppBar(title: const Text('Plan overview')),
+        body: overview.when(
+          loading: () => _planLoadingBody(),
+          error: (_, _) => _PlanLibraryError(
+            onRetry: () =>
+                ref.invalidate(planOverviewSnapshotProvider(versionId)),
+          ),
+          data: (value) {
+            if (value == null) return const _PlanDetailsUnavailable();
+            return _buildEntryBody(context, value.entry, overview: value);
+          },
+        ),
+      );
+    }
+
     final snapshot = ref.watch(planLibrarySnapshotProvider);
     return Scaffold(
       appBar: AppBar(title: const Text('Plan details')),
       body: snapshot.when(
-        loading: () => const SafeArea(
-          child: Padding(
-            padding: EdgeInsets.all(B05Layout.space16),
-            child: SkeletonList(count: 3),
-          ),
-        ),
+        loading: _planLoadingBody,
         error: (error, _) => _PlanLibraryError(
           onRetry: () => ref.invalidate(planLibrarySnapshotProvider),
         ),
         data: (library) {
-          final entry = library.entryForProgram(widget.programId);
+          final entry = library.entryForProgram(widget.programId!);
           if (entry == null) {
             return const _PlanDetailsUnavailable();
           }
-          return _PlanDetailsBody(
-            entry: entry,
-            isActivating: _isActivating,
-            activationError: _activationError,
-            onUsePlan: entry.isReadyToUse && !entry.isActive
-                ? () => _activatePlan(entry)
-                : null,
-            onContinueSetup: entry.isDraft
-                ? () => context.push(
-                    Uri(
-                      path: '/program-author',
-                      queryParameters: {'versionId': entry.version.id},
-                    ).toString(),
-                  )
-                : null,
-          );
+          return _buildEntryBody(context, entry);
         },
       ),
+    );
+  }
+
+  Widget _planLoadingBody() => const SafeArea(
+    child: Padding(
+      padding: EdgeInsets.all(B05Layout.space16),
+      child: SkeletonList(count: 3),
+    ),
+  );
+
+  Widget _buildEntryBody(
+    BuildContext context,
+    PlanLibraryEntry entry, {
+    PlanOverviewSnapshot? overview,
+  }) {
+    return _PlanDetailsBody(
+      entry: entry,
+      overview: overview,
+      isActivating: _isActivating,
+      activationError: _activationError,
+      onUsePlan: entry.isReadyToUse && !entry.isActive
+          ? () => _activatePlan(entry)
+          : null,
+      onEditPlan: () => context.push(
+        Uri(
+          path: '/program-author',
+          queryParameters: {'versionId': entry.version.id},
+        ).toString(),
+      ),
+      onContinueSetup: entry.isDraft
+          ? () => context.push(
+              Uri(
+                path: '/program-author',
+                queryParameters: {'versionId': entry.version.id},
+              ).toString(),
+            )
+          : null,
     );
   }
 
@@ -424,16 +475,20 @@ class PlanLibraryCard extends StatelessWidget {
 class _PlanDetailsBody extends StatelessWidget {
   const _PlanDetailsBody({
     required this.entry,
+    this.overview,
     required this.isActivating,
     required this.activationError,
     required this.onUsePlan,
+    required this.onEditPlan,
     required this.onContinueSetup,
   });
 
   final PlanLibraryEntry entry;
+  final PlanOverviewSnapshot? overview;
   final bool isActivating;
   final String? activationError;
   final VoidCallback? onUsePlan;
+  final VoidCallback onEditPlan;
   final VoidCallback? onContinueSetup;
 
   @override
@@ -523,7 +578,22 @@ class _PlanDetailsBody extends StatelessWidget {
                         label: const Text('Continue setup'),
                       ),
                     ),
+                  if (overview != null && !entry.isDraft) ...[
+                    const SizedBox(height: B05Layout.space12),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextButton.icon(
+                        onPressed: onEditPlan,
+                        icon: const Icon(Icons.edit_outlined),
+                        label: const Text('Edit plan'),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: B05Layout.space24),
+                  if (overview != null) ...[
+                    _PlanScheduleAndHistory(overview: overview!),
+                    const SizedBox(height: B05Layout.space24),
+                  ],
                   _PlanStructure(entry: entry),
                 ],
               ),
@@ -534,6 +604,235 @@ class _PlanDetailsBody extends StatelessWidget {
     );
   }
 }
+
+class _PlanScheduleAndHistory extends StatelessWidget {
+  const _PlanScheduleAndHistory({required this.overview});
+
+  final PlanOverviewSnapshot overview;
+
+  @override
+  Widget build(BuildContext context) {
+    final occurrences = overview.occurrences;
+    CalendarOccurrenceReadItem? nextOccurrence;
+    if (overview.isCurrent) {
+      for (final item in occurrences) {
+        if (item.isNextRequired) {
+          nextOccurrence = item;
+          break;
+        }
+      }
+    }
+    final completedCount = occurrences
+        .where((item) => item.occurrence.status == 'completed')
+        .length;
+    final partialCount = occurrences
+        .where((item) => item.occurrence.status == 'partiallyCompleted')
+        .length;
+    final progressMessage = occurrences.isEmpty
+        ? 'This plan has no scheduled workouts yet.'
+        : '$completedCount completed, $partialCount partially completed of ${occurrences.length} scheduled workouts.${nextOccurrence == null ? '' : ' Next: ${nextOccurrence.template.name} on ${ConsumerDateLabel.day(nextOccurrence.occurrence.effectiveLocalDate)}.'}';
+    final historyByOccurrence = {
+      for (final item in overview.history)
+        if (item.scheduledOccurrenceId != null)
+          item.scheduledOccurrenceId!: item,
+    };
+    final visibleOccurrences = occurrences.take(6).toList(growable: false);
+    final visibleHistory = overview.history.take(6).toList(growable: false);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Plan progress', style: B05Typography.title(context)),
+        const SizedBox(height: B05Layout.space8),
+        B05Surface(
+          tone: B05SurfaceTone.inset,
+          child: Semantics(
+            container: true,
+            label: progressMessage,
+            child: Text(progressMessage, style: B05Typography.body(context)),
+          ),
+        ),
+        if (occurrences.isNotEmpty) ...[
+          const SizedBox(height: B05Layout.space20),
+          Text('Schedule', style: B05Typography.title(context)),
+          const SizedBox(height: B05Layout.space8),
+          for (final item in visibleOccurrences) ...[
+            _PlanOccurrenceRow(
+              item: item,
+              history: historyByOccurrence[item.occurrence.id],
+            ),
+            const SizedBox(height: B05Layout.space8),
+          ],
+          if (occurrences.length > visibleOccurrences.length)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: () => context.push('/calendar'),
+                icon: const Icon(Icons.calendar_month_outlined),
+                label: const Text('View full calendar'),
+              ),
+            ),
+        ],
+        const SizedBox(height: B05Layout.space20),
+        Text('Workouts from this plan', style: B05Typography.title(context)),
+        const SizedBox(height: B05Layout.space8),
+        if (visibleHistory.isEmpty)
+          const _PlanOverviewEmpty(
+            message: 'No saved workouts from this plan yet.',
+          )
+        else ...[
+          for (final item in visibleHistory) ...[
+            _PlanHistoryRow(item: item),
+            const SizedBox(height: B05Layout.space8),
+          ],
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: () => context.push('/workout-history'),
+              icon: const Icon(Icons.history_rounded),
+              label: const Text('View all training history'),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _PlanOccurrenceRow extends StatelessWidget {
+  const _PlanOccurrenceRow({required this.item, this.history});
+
+  final CalendarOccurrenceReadItem item;
+  final B02ActivityHistoryItem? history;
+
+  @override
+  Widget build(BuildContext context) {
+    final occurrence = item.occurrence;
+    final status = _occurrenceStatusLabel(occurrence.status);
+    final date = ConsumerDateLabel.day(occurrence.effectiveLocalDate);
+    return B05Surface(
+      tone: B05SurfaceTone.interactive,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Semantics(
+            container: true,
+            label: '${item.template.name}, $date, $status',
+            child: Text(
+              item.template.name,
+              style: B05Typography.label(context),
+            ),
+          ),
+          const SizedBox(height: B05Layout.space4),
+          Text(
+            '$date · ${item.week.name?.trim().isNotEmpty == true ? item.week.name!.trim() : 'Week ${item.week.programWeekOrdinal + 1}'} · $status',
+            style: B05Typography.caption(context),
+          ),
+          if (history != null) ...[
+            const SizedBox(height: B05Layout.space4),
+            Text(
+              history!.isPartial
+                  ? 'Saved as partially completed'
+                  : 'Saved to history',
+              style: B05Typography.caption(context),
+            ),
+          ],
+          const SizedBox(height: B05Layout.space4),
+          Wrap(
+            spacing: B05Layout.space8,
+            children: [
+              TextButton(
+                onPressed: () => context.push(
+                  Uri(
+                    path: '/calendar',
+                    queryParameters: {'date': occurrence.effectiveLocalDate},
+                  ).toString(),
+                ),
+                child: const Text('Open in calendar'),
+              ),
+              if (history != null)
+                TextButton(
+                  onPressed: () => context.push(_historyDetailRoute(history!)),
+                  child: const Text('View details'),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PlanHistoryRow extends StatelessWidget {
+  const _PlanHistoryRow({required this.item});
+
+  final B02ActivityHistoryItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final status = item.isPartial ? 'Partially completed' : 'Completed';
+    return Semantics(
+      button: true,
+      label:
+          '${item.name}, ${ConsumerDateLabel.dateTime(item.completedAt)}, $status',
+      child: B05Surface(
+        tone: B05SurfaceTone.interactive,
+        child: InkWell(
+          onTap: () => context.push(_historyDetailRoute(item)),
+          borderRadius: B05Radii.mediumRadius,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.history_rounded, color: context.b05Colors.action),
+              const SizedBox(width: B05Layout.space12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(item.name, style: B05Typography.label(context)),
+                    const SizedBox(height: B05Layout.space4),
+                    Text(
+                      '${ConsumerDateLabel.dateTime(item.completedAt)} · $status',
+                      style: B05Typography.caption(context),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right_rounded),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PlanOverviewEmpty extends StatelessWidget {
+  const _PlanOverviewEmpty({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) => B05Surface(
+    tone: B05SurfaceTone.inset,
+    child: Text(message, style: B05Typography.body(context)),
+  );
+}
+
+String _occurrenceStatusLabel(String status) => switch (status) {
+  'planned' || 'rescheduled' => 'Scheduled',
+  'completed' => 'Completed',
+  'partiallyCompleted' => 'Partially completed',
+  'skipped' => 'Skipped',
+  'cancelled' => 'Cancelled',
+  'inProgress' => 'In progress',
+  _ => 'Unavailable',
+};
+
+String _historyDetailRoute(B02ActivityHistoryItem item) =>
+    item.activityType == B02ActivityType.strength
+    ? '/workout-history/${item.sessionId}'
+    : '/activity-history/${item.sessionId}';
 
 class _PlanStructure extends StatelessWidget {
   const _PlanStructure({required this.entry});

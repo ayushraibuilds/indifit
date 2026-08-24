@@ -109,6 +109,7 @@ class B02ActivityHistoryItem {
   final B02HistoryRecordKind recordKind;
   final DateTime completedAt;
   final int durationSeconds;
+  final String? completionKind;
   final String? scheduledOccurrenceId;
   final int legacySetCount;
   final int performedExerciseCount;
@@ -124,6 +125,7 @@ class B02ActivityHistoryItem {
     required this.recordKind,
     required this.completedAt,
     required this.durationSeconds,
+    this.completionKind,
     required this.scheduledOccurrenceId,
     required this.legacySetCount,
     required this.performedExerciseCount,
@@ -135,6 +137,7 @@ class B02ActivityHistoryItem {
 
   bool get isLegacy => recordKind == B02HistoryRecordKind.legacyProjection;
   bool get isCanonical => recordKind == B02HistoryRecordKind.canonical;
+  bool get isPartial => completionKind == 'partial';
 }
 
 /// Compatibility read contract for the transition from B01 session/set rows
@@ -412,6 +415,7 @@ class B02ExecutionCompatibilityReadRepository {
         recordKind: B02HistoryRecordKind.legacyProjection,
         completedAt: session.completedAt,
         durationSeconds: session.durationSeconds,
+        completionKind: session.completionKind,
         scheduledOccurrenceId: session.scheduledOccurrenceId,
         legacySetCount: legacySets.length,
         performedExerciseCount: 0,
@@ -449,6 +453,7 @@ class B02ExecutionCompatibilityReadRepository {
       recordKind: B02HistoryRecordKind.canonical,
       completedAt: session.completedAt,
       durationSeconds: session.durationSeconds,
+      completionKind: session.completionKind,
       scheduledOccurrenceId: session.scheduledOccurrenceId,
       legacySetCount: 0,
       performedExerciseCount: performedExercises.length,
