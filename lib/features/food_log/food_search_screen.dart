@@ -42,6 +42,7 @@ class FoodSearchScreen extends ConsumerStatefulWidget {
   final DateTime? selectedDate;
   final bool returnToParentOnSave;
   final NutritionHistoricalReadRecord? initialRecord;
+  final NutritionHistoricalReadItem? initialRecordItem;
 
   const FoodSearchScreen({
     super.key,
@@ -49,6 +50,7 @@ class FoodSearchScreen extends ConsumerStatefulWidget {
     this.selectedDate,
     this.returnToParentOnSave = true,
     this.initialRecord,
+    this.initialRecordItem,
   });
 
   @override
@@ -221,7 +223,10 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         if (!_openedInitialRecord && mounted && widget.initialRecord != null) {
           _openedInitialRecord = true;
           unawaited(() async {
-            await _showCanonicalActionMenu(widget.initialRecord!);
+            await _showCanonicalActionMenu(
+              widget.initialRecord!,
+              widget.initialRecordItem,
+            );
             if (mounted && widget.initialRecord != null) {
               Navigator.of(context).pop(true);
             }
@@ -786,11 +791,17 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     NutritionFoodOption option, {
     String? mealType,
     Quantity? initialQuantity,
-    String? supersedesSnapshotId,
+    NutritionHistoricalReadRecord? correctionRecord,
+    NutritionHistoricalReadItem? correctionItem,
     Future<void> Function(Quantity quantity)? onQuantityPicked,
   }) async {
-    final selectedMealType = mealType ?? await _ensureMealContext();
-    if (selectedMealType == null || !mounted) return;
+    final isCorrection = correctionRecord != null && correctionItem != null;
+    final resolvedMealType =
+        mealType ??
+        correctionRecord?.mealCategory ??
+        await _ensureMealContext();
+    if (resolvedMealType == null || !mounted) return;
+    var selectedMealType = resolvedMealType;
     FocusManager.instance.primaryFocus?.unfocus();
     final coordinator = await ref.read(
       nutritionFoodLoggingCoordinatorProvider.future,
@@ -800,7 +811,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     var finalized = false;
     var selectedQuantity = initialQuantity ?? option.baseQuantity;
     final compatibleUnits = <QuantityUnit>[
-      ...switch (option.baseQuantity.dimension) {
+      ...switch (selectedQuantity.dimension) {
         QuantityDimension.mass => const [
           QuantityUnit.gram,
           QuantityUnit.kilogram,
@@ -812,8 +823,8 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         _ => [option.baseQuantity.unit],
       },
     ];
-    if (!compatibleUnits.contains(option.baseQuantity.unit)) {
-      compatibleUnits.insert(0, option.baseQuantity.unit);
+    if (!compatibleUnits.contains(selectedQuantity.unit)) {
+      compatibleUnits.insert(0, selectedQuantity.unit);
     }
     final initialPreview = await coordinator.preview(
       option: option,
@@ -915,8 +926,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
 
         return StatefulBuilder(
           builder: (context, setModalState) {
-            final stepQuantity =
-                option.baseQuantity.convertTo(selectedQuantity.unit) / 4;
+            final stepQuantity = selectedQuantity / 4;
             final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
             Widget decreaseButton() => IconButton(
               tooltip: 'Decrease amount',
@@ -1017,9 +1027,13 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                     const SizedBox(height: 8),
                     Semantics(
                       liveRegion: true,
-                      label: 'Adding to ${_mealLabel(selectedMealType)}',
+                      label: isCorrection
+                          ? 'Updating in ${_mealLabel(selectedMealType)}'
+                          : 'Adding to ${_mealLabel(selectedMealType)}',
                       child: Text(
-                        'Log to ${selectedMealType.toUpperCase()}',
+                        isCorrection
+                            ? 'UPDATE IN ${selectedMealType.toUpperCase()}'
+                            : 'Log to ${selectedMealType.toUpperCase()}',
                         style: TextStyle(
                           color: context.b05Colors.action,
                           fontWeight: FontWeight.w700,
@@ -1028,6 +1042,39 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
+                    if (isCorrection) ...[
+                      DropdownButtonFormField<String>(
+                        initialValue: selectedMealType,
+                        decoration: const InputDecoration(
+                          labelText: 'Meal',
+                          helperText:
+                              'Choose a new meal only if you mean to move it.',
+                        ),
+                        items: const [
+                          DropdownMenuItem(
+                            value: 'breakfast',
+                            child: Text('Breakfast'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'lunch',
+                            child: Text('Lunch'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'dinner',
+                            child: Text('Dinner'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'snack',
+                            child: Text('Snack'),
+                          ),
+                        ],
+                        onChanged: (value) {
+                          if (value == null) return;
+                          setModalState(() => selectedMealType = value);
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                    ],
 
                     LayoutBuilder(
                       builder: (context, constraints) {
@@ -1302,9 +1349,8 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                                               'direct-food-consumption::${const Uuid().v4()}';
                                         });
                                         try {
-                                          final preview =
-                                              currentPreview ??
-                                              await coordinator.preview(
+                                          final preview = await coordinator
+                                              .preview(
                                                 option: option,
                                                 quantity: selectedQuantity,
                                                 transformation: transformations
@@ -1342,26 +1388,59 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                                                 loggedAt,
                                                 timezoneId,
                                               );
-                                          await coordinator.finalize(
-                                            userId: kLocalNutritionUserScopeId,
-                                            preview: preview,
-                                            mealCategory: selectedMealType,
-                                            loggedAt: loggedAt,
-                                            localDate: localDate,
-                                            timezoneId: timezoneId,
-                                            commandId: commandId,
-                                            consumptionId: consumptionId,
-                                            supersedesSnapshotId:
-                                                supersedesSnapshotId,
-                                            correctionId:
-                                                supersedesSnapshotId == null
-                                                ? null
-                                                : 'food-correction::${const Uuid().v4()}',
-                                            correctionReason:
-                                                supersedesSnapshotId == null
-                                                ? null
-                                                : 'User edited logged quantity.',
-                                          );
+                                          if (isCorrection) {
+                                            final canonicalRecord =
+                                                correctionRecord
+                                                    is NutritionCanonicalSnapshotReadModel
+                                                ? correctionRecord.snapshot
+                                                : null;
+                                            final correctionTimezone =
+                                                canonicalRecord?.timezoneId ??
+                                                await ref
+                                                    .read(
+                                                      localTimezoneServiceProvider,
+                                                    )
+                                                    .currentTimezoneId();
+                                            final correctionLoggedAt =
+                                                canonicalRecord?.loggedAtUtc ??
+                                                loggedAt;
+                                            await coordinator
+                                                .correctDirectFoodItem(
+                                                  userId:
+                                                      kLocalNutritionUserScopeId,
+                                                  snapshotId:
+                                                      correctionRecord.stableId,
+                                                  itemId:
+                                                      correctionItem.stableId,
+                                                  expectedMealCategory:
+                                                      correctionRecord
+                                                          .mealCategory,
+                                                  mealCategory:
+                                                      selectedMealType,
+                                                  localDate: correctionRecord
+                                                      .localDate,
+                                                  timezoneId:
+                                                      correctionTimezone,
+                                                  loggedAtUtc:
+                                                      correctionLoggedAt,
+                                                  commandId: commandId!,
+                                                  correctionReason:
+                                                      'User edited logged food.',
+                                                  replacement: preview,
+                                                );
+                                          } else {
+                                            await coordinator.finalize(
+                                              userId:
+                                                  kLocalNutritionUserScopeId,
+                                              preview: preview,
+                                              mealCategory: selectedMealType,
+                                              loggedAt: loggedAt,
+                                              localDate: localDate,
+                                              timezoneId: timezoneId,
+                                              commandId: commandId,
+                                              consumptionId: consumptionId,
+                                            );
+                                          }
                                           // Keep the route result as a secondary
                                           // signal. A platform haptic/plugin call
                                           // must not prevent the completed canonical
@@ -1386,8 +1465,10 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                                               context,
                                             ).showSnackBar(
                                               SnackBar(
-                                                content: const Text(
-                                                  'Meal could not be logged. Try again.',
+                                                content: Text(
+                                                  isCorrection
+                                                      ? 'Food entry could not be updated. Your changes are still here.'
+                                                      : 'Meal could not be logged. Try again.',
                                                 ),
                                               ),
                                             );
@@ -1409,6 +1490,8 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                                 child: Text(
                                   isFinalizing
                                       ? 'Saving…'
+                                      : isCorrection
+                                      ? 'Update food in ${_mealTitle(selectedMealType)}'
                                       : 'Add to ${_mealTitle(selectedMealType)}',
                                 ),
                               ),
@@ -1441,9 +1524,9 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       if (mounted) {
         showIndiFitSuccessFeedback(
           context,
-          supersedesSnapshotId == null
-              ? '✓ Food added to ${_mealLabel(selectedMealType)}'
-              : '✓ Food entry updated',
+          isCorrection
+              ? '✓ Food entry updated in ${_mealLabel(selectedMealType)}'
+              : '✓ Food added to ${_mealLabel(selectedMealType)}',
         );
       }
       if (widget.returnToParentOnSave) {
@@ -1962,6 +2045,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         FoodLogEntriesPanel(
           date: logDate,
           onCanonicalRecordTap: _showCanonicalActionMenu,
+          onCanonicalItemTap: _showCanonicalActionMenu,
         ),
       ],
     );
@@ -2390,69 +2474,18 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   }
 
   Future<void> _showCanonicalActionMenu(
-    NutritionHistoricalReadRecord record,
-  ) async {
-    final directItems = record.items
-        .where(
-          (candidate) =>
-              candidate.originSourceType == 'direct_food' &&
-              candidate.foodId != null,
-        )
-        .toList(growable: false);
-    if (directItems.length > 1) {
-      final deleteBatch = await showModalBottomSheet<bool>(
-        context: context,
-        builder: (sheetContext) => SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(B05Layout.space16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '${directItems.length} foods in this entry',
-                  style: B05Typography.title(sheetContext),
-                ),
-                const SizedBox(height: B05Layout.space8),
-                Text(
-                  'Editing one food as a single correction could change the other foods. Add a corrected food from the meal instead, or delete this complete batch.',
-                  style: B05Typography.body(sheetContext),
-                ),
-                const SizedBox(height: B05Layout.space16),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton.icon(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: sheetContext.b05Colors.danger.container,
-                      foregroundColor: sheetContext.b05Colors.danger.foreground,
-                    ),
-                    onPressed: () => Navigator.of(sheetContext).pop(true),
-                    icon: const Icon(Icons.delete_outline_rounded),
-                    label: const Text('Delete entire batch'),
-                  ),
-                ),
-                SizedBox(
-                  width: double.infinity,
-                  child: TextButton(
-                    onPressed: () => Navigator.of(sheetContext).pop(false),
-                    child: const Text('Keep entry'),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-      if (deleteBatch == true && mounted) {
-        await showCanonicalFoodDelete(
-          context: context,
-          ref: ref,
-          record: record,
-        );
-      }
-      return;
-    }
-    final item = directItems.firstOrNull;
+    NutritionHistoricalReadRecord record, [
+    NutritionHistoricalReadItem? selectedItem,
+  ]) async {
+    final item =
+        selectedItem ??
+        record.items
+            .where(
+              (candidate) =>
+                  candidate.originSourceType == 'direct_food' &&
+                  candidate.foodId != null,
+            )
+            .firstOrNull;
     if (item == null || item.foodId == null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -2509,15 +2542,17 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
           option,
           mealType: record.mealCategory,
           initialQuantity: item.quantity.quantity ?? option.baseQuantity,
-          supersedesSnapshotId: record.stableId,
+          correctionRecord: record,
+          correctionItem: item,
         );
       case _CanonicalFoodAction.copy:
         await _showLogDialog(option, mealType: record.mealCategory);
       case _CanonicalFoodAction.delete:
-        await showCanonicalFoodDelete(
+        await showCanonicalFoodItemDelete(
           context: context,
           ref: ref,
           record: record,
+          item: item,
         );
       case null:
         break;
@@ -3190,8 +3225,8 @@ class FoodMealDetailScreen extends ConsumerWidget {
             FoodLogEntriesPanel(
               date: selectedDate,
               mealType: mealType,
-              onCanonicalRecordTap: (record) =>
-                  _openRecordActions(context, record),
+              onCanonicalItemTap: (record, item) =>
+                  _openRecordActions(context, record, item),
             ),
           ],
         ),
@@ -3202,6 +3237,7 @@ class FoodMealDetailScreen extends ConsumerWidget {
   Future<void> _openRecordActions(
     BuildContext context,
     NutritionHistoricalReadRecord record,
+    NutritionHistoricalReadItem item,
   ) async {
     await Navigator.of(context).push<bool>(
       MaterialPageRoute(
@@ -3210,6 +3246,7 @@ class FoodMealDetailScreen extends ConsumerWidget {
           selectedDate: selectedDate,
           returnToParentOnSave: true,
           initialRecord: record,
+          initialRecordItem: item,
         ),
       ),
     );
