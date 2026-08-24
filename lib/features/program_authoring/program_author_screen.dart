@@ -8,6 +8,8 @@ import '../../core/presentation/consumer_count_label.dart';
 import '../../core/theme/colors.dart';
 import '../../data/models/b02_execution_models.dart';
 import '../../data/repositories/program_repository.dart';
+import '../exercise_picker/exercise_picker.dart';
+import '../workout_player/widgets/b02_execution_semantics.dart';
 import 'program_authoring_controller.dart';
 
 /// Screen for creating, editing, and copying draft training programs.
@@ -29,7 +31,6 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
   String? _currentProgramId;
   String? _currentVersionId;
   bool _isDraftVersion = true;
-  List<ExerciseAuthoringOption> _exerciseOptions = const [];
   List<ProgramBlockInput> _blocks = [];
 
   @override
@@ -42,61 +43,69 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
     });
   }
 
+  @override
+  void dispose() {
+    _programNameController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadOrCreateDraft() async {
     final authoring = ref.read(programAuthoringControllerProvider.notifier);
     authoring.beginLoading();
     try {
       final repo = ref.read(programRepositoryProvider);
+      var loadedExisting = false;
 
       if (_currentVersionId != null) {
         final versionDetail = await repo.getProgramVersionDetail(
           _currentVersionId!,
         );
-        if (versionDetail != null) {
-          _programNameController.text = versionDetail.program.name;
-          _descriptionController.text = versionDetail.program.notes ?? '';
-          _currentProgramId = versionDetail.program.id;
-          _isDraftVersion = versionDetail.version.status == 'draft';
-          _blocks = _mapDetailToBlockInputs(versionDetail);
+        if (versionDetail == null) {
+          throw StateError('The selected plan is unavailable.');
         }
+        _programNameController.text = versionDetail.program.name;
+        _descriptionController.text = versionDetail.program.notes ?? '';
+        _currentProgramId = versionDetail.program.id;
+        _isDraftVersion = versionDetail.version.status == 'draft';
+        _blocks = _mapDetailToBlockInputs(versionDetail);
+        loadedExisting = true;
       } else if (_currentProgramId != null) {
         final versions = await repo.getVersionsForProgram(_currentProgramId!);
-        if (versions.isNotEmpty) {
-          final detail = await repo.getProgramVersionDetail(versions.last.id);
-          if (detail != null) {
-            _programNameController.text = detail.program.name;
-            _descriptionController.text = detail.program.notes ?? '';
-            _currentVersionId = detail.version.id;
-            _isDraftVersion = detail.version.status == 'draft';
-            _blocks = _mapDetailToBlockInputs(detail);
-          }
+        if (versions.isEmpty) {
+          throw StateError('The selected plan is unavailable.');
         }
+        final detail = await repo.getProgramVersionDetail(versions.last.id);
+        if (detail == null) {
+          throw StateError('The selected plan is unavailable.');
+        }
+        _programNameController.text = detail.program.name;
+        _descriptionController.text = detail.program.notes ?? '';
+        _currentVersionId = detail.version.id;
+        _isDraftVersion = detail.version.status == 'draft';
+        _blocks = _mapDetailToBlockInputs(detail);
+        loadedExisting = true;
       }
 
-      if (_blocks.isEmpty) {
-        _programNameController.text = 'New Program';
+      if (!loadedExisting) {
+        _programNameController.text = _programNameController.text.trim().isEmpty
+            ? 'New plan'
+            : _programNameController.text;
         _blocks = [
           ProgramBlockInput(
-            name: 'Block 1 - Hypertrophy',
+            name: 'Block 1',
             ordinal: 0,
             weeks: [
               ProgramWeekInput(
+                name: 'Week 1',
                 ordinalInBlock: 0,
                 programWeekOrdinal: 0,
                 templates: [
                   SessionTemplateInput(
-                    name: 'Day 1 - Push',
+                    name: 'Workout 1',
                     ordinal: 0,
                     plannedWeekday: 1,
-                    prescriptions: [
-                      ExercisePrescriptionInput(
-                        exerciseNameSnapshot: 'Custom exercise',
-                        plannedSets: 4,
-                        repsRange: '8-10',
-                        ordinal: 0,
-                        allowUnresolvedExerciseFallback: true,
-                      ),
-                    ],
+                    prescriptions: const [],
                   ),
                 ],
               ),
@@ -110,7 +119,7 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('The draft could not be loaded. Try again.'),
+            content: Text('The plan could not be loaded. Try again.'),
           ),
         );
       }
@@ -350,7 +359,7 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
 
   Future<void> _addWeek(int blockIndex) async {
     final name = await _promptText(
-      title: 'Add program week',
+      title: 'Add week',
       label: 'Week name (optional)',
       initialValue: 'Week ${_blocks[blockIndex].weeks.length + 1}',
     );
@@ -370,6 +379,46 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
           templates: const [],
         ),
       ],
+    );
+    _replaceBlocks(updated);
+  }
+
+  Future<void> _renameWeek(int blockIndex, int weekIndex) async {
+    final week = _blocks[blockIndex].weeks[weekIndex];
+    final name = await _promptText(
+      title: 'Edit week',
+      label: 'Week name',
+      initialValue: week.name ?? 'Week ${week.programWeekOrdinal + 1}',
+    );
+    if (name == null) return;
+    final updated = [..._blocks];
+    final block = updated[blockIndex];
+    final weeks = [...block.weeks];
+    weeks[weekIndex] = ProgramWeekInput(
+      name: name,
+      ordinalInBlock: week.ordinalInBlock,
+      programWeekOrdinal: week.programWeekOrdinal,
+      isDeload: week.isDeload,
+      templates: week.templates,
+    );
+    updated[blockIndex] = ProgramBlockInput(
+      name: block.name,
+      description: block.description,
+      ordinal: block.ordinal,
+      weeks: weeks,
+    );
+    _replaceBlocks(updated);
+  }
+
+  void _deleteWeek(int blockIndex, int weekIndex) {
+    final updated = [..._blocks];
+    final block = updated[blockIndex];
+    final weeks = [...block.weeks]..removeAt(weekIndex);
+    updated[blockIndex] = ProgramBlockInput(
+      name: block.name,
+      description: block.description,
+      ordinal: block.ordinal,
+      weeks: weeks,
     );
     _replaceBlocks(updated);
   }
@@ -395,65 +444,138 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
     _replaceBlocks(updated);
   }
 
-  Future<void> _addSessionTemplate(int blockIndex, int weekIndex) async {
-    final controller = TextEditingController(
-      text:
-          'Session ${_blocks[blockIndex].weeks[weekIndex].templates.length + 1}',
-    );
-    var weekday = DateTime.monday;
-    final result = await showDialog<({String name, int weekday})>(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Add session template'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: controller,
-                decoration: const InputDecoration(labelText: 'Session name'),
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<int>(
-                initialValue: weekday,
-                decoration: const InputDecoration(labelText: 'Planned weekday'),
-                items: const [
-                  DropdownMenuItem(value: 1, child: Text('Monday')),
-                  DropdownMenuItem(value: 2, child: Text('Tuesday')),
-                  DropdownMenuItem(value: 3, child: Text('Wednesday')),
-                  DropdownMenuItem(value: 4, child: Text('Thursday')),
-                  DropdownMenuItem(value: 5, child: Text('Friday')),
-                  DropdownMenuItem(value: 6, child: Text('Saturday')),
-                  DropdownMenuItem(value: 7, child: Text('Sunday')),
+  Future<({String name, int weekday, int? startMinute})?>
+  _promptSessionTemplate({
+    required String title,
+    required String initialName,
+    required int initialWeekday,
+    required int? initialStartMinute,
+  }) async {
+    final controller = TextEditingController(text: initialName);
+    var weekday = initialWeekday;
+    var startMinute = initialStartMinute;
+    String? error;
+    final result =
+        await showDialog<({String name, int weekday, int? startMinute})>(
+          context: context,
+          builder: (dialogContext) => StatefulBuilder(
+            builder: (context, setDialogState) => AlertDialog(
+              title: Text(title),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: controller,
+                    decoration: const InputDecoration(
+                      labelText: 'Workout name',
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<int>(
+                    initialValue: weekday,
+                    decoration: const InputDecoration(labelText: 'Day of week'),
+                    items: const [
+                      DropdownMenuItem(value: 1, child: Text('Monday')),
+                      DropdownMenuItem(value: 2, child: Text('Tuesday')),
+                      DropdownMenuItem(value: 3, child: Text('Wednesday')),
+                      DropdownMenuItem(value: 4, child: Text('Thursday')),
+                      DropdownMenuItem(value: 5, child: Text('Friday')),
+                      DropdownMenuItem(value: 6, child: Text('Saturday')),
+                      DropdownMenuItem(value: 7, child: Text('Sunday')),
+                    ],
+                    onChanged: (value) {
+                      if (value != null) setDialogState(() => weekday = value);
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: OutlinedButton.icon(
+                      onPressed: () async {
+                        final current = startMinute == null
+                            ? TimeOfDay.now()
+                            : TimeOfDay(
+                                hour: startMinute! ~/ 60,
+                                minute: startMinute! % 60,
+                              );
+                        final picked = await showTimePicker(
+                          context: dialogContext,
+                          initialTime: current,
+                        );
+                        if (picked != null) {
+                          setDialogState(
+                            () =>
+                                startMinute = picked.hour * 60 + picked.minute,
+                          );
+                        }
+                      },
+                      icon: const Icon(Icons.schedule_rounded),
+                      label: Text(
+                        startMinute == null
+                            ? 'Add a start time (optional)'
+                            : 'Starts at ${_formatTime(startMinute!)}',
+                      ),
+                    ),
+                  ),
+                  if (startMinute != null)
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextButton(
+                        onPressed: () =>
+                            setDialogState(() => startMinute = null),
+                        child: const Text('Clear start time'),
+                      ),
+                    ),
+                  if (error != null)
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        error!,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
+                    ),
                 ],
-                onChanged: (value) {
-                  if (value != null) setDialogState(() => weekday = value);
-                },
               ),
-            ],
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    if (controller.text.trim().isEmpty) {
+                      setDialogState(() => error = 'Enter a workout name.');
+                      return;
+                    }
+                    Navigator.pop(dialogContext, (
+                      name: controller.text.trim(),
+                      weekday: weekday,
+                      startMinute: startMinute,
+                    ));
+                  },
+                  child: Text(title.startsWith('Add') ? 'Add workout' : 'Save'),
+                ),
+              ],
+            ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(context, (
-                name: controller.text.trim(),
-                weekday: weekday,
-              )),
-              child: const Text('Add'),
-            ),
-          ],
-        ),
-      ),
-    );
+        );
     controller.dispose();
-    if (result == null || result.name.isEmpty) return;
-    final updated = [..._blocks];
-    final block = updated[blockIndex];
+    return result;
+  }
+
+  Future<void> _addSessionTemplate(int blockIndex, int weekIndex) async {
+    final week = _blocks[blockIndex].weeks[weekIndex];
+    final result = await _promptSessionTemplate(
+      title: 'Add workout',
+      initialName: 'Workout ${week.templates.length + 1}',
+      initialWeekday: DateTime.monday,
+      initialStartMinute: null,
+    );
+    if (result == null) return;
+    final block = _blocks[blockIndex];
     final weeks = [...block.weeks];
-    final week = weeks[weekIndex];
     weeks[weekIndex] = ProgramWeekInput(
       name: week.name,
       ordinalInBlock: week.ordinalInBlock,
@@ -465,10 +587,12 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
           name: result.name,
           ordinal: week.templates.length,
           plannedWeekday: result.weekday,
+          plannedStartMinute: result.startMinute,
           prescriptions: const [],
         ),
       ],
     );
+    final updated = [..._blocks];
     updated[blockIndex] = ProgramBlockInput(
       name: block.name,
       description: block.description,
@@ -478,55 +602,126 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
     _replaceBlocks(updated);
   }
 
-  Future<void> _addPrescription(
+  Future<void> _editSessionTemplate(
     int blockIndex,
     int weekIndex,
     int templateIndex,
   ) async {
-    if (_exerciseOptions.isEmpty) {
-      final options = await ref
-          .read(programRepositoryProvider)
-          .getExercisesForAuthoring();
-      if (!mounted) return;
-      setState(() => _exerciseOptions = options);
-    }
-    final customName = TextEditingController();
-    final reps = TextEditingController(text: '8-10');
-    final sets = TextEditingController(text: '3');
-    ExerciseAuthoringOption? selected = _exerciseOptions.isEmpty
-        ? null
-        : _exerciseOptions.first;
+    final template =
+        _blocks[blockIndex].weeks[weekIndex].templates[templateIndex];
+    final result = await _promptSessionTemplate(
+      title: 'Edit workout',
+      initialName: template.name,
+      initialWeekday: template.plannedWeekday,
+      initialStartMinute: template.plannedStartMinute,
+    );
+    if (result == null) return;
+    _replaceTemplate(
+      blockIndex,
+      weekIndex,
+      templateIndex,
+      _copyTemplate(
+        template,
+        name: result.name,
+        plannedWeekday: result.weekday,
+        plannedStartMinute: result.startMinute,
+        overwritePlannedStartMinute: true,
+      ),
+    );
+  }
+
+  void _deleteSessionTemplate(
+    int blockIndex,
+    int weekIndex,
+    int templateIndex,
+  ) {
+    final week = _blocks[blockIndex].weeks[weekIndex];
+    final templates = [...week.templates]..removeAt(templateIndex);
+    final block = _blocks[blockIndex];
+    final weeks = [...block.weeks];
+    weeks[weekIndex] = ProgramWeekInput(
+      name: week.name,
+      ordinalInBlock: week.ordinalInBlock,
+      programWeekOrdinal: week.programWeekOrdinal,
+      isDeload: week.isDeload,
+      templates: templates,
+    );
+    final updated = [..._blocks];
+    updated[blockIndex] = ProgramBlockInput(
+      name: block.name,
+      description: block.description,
+      ordinal: block.ordinal,
+      weeks: weeks,
+    );
+    _replaceBlocks(updated);
+  }
+
+  Future<ExercisePickerSelection?> _pickExercise({String? selectedId}) {
+    return showExercisePicker(
+      context: context,
+      selectionContext: ExerciseLibraryPickerContext(
+        title: 'Choose an exercise',
+        semanticLabel: 'Choose an exercise for this plan',
+        selectedExerciseId: selectedId,
+      ),
+    );
+  }
+
+  Future<ExercisePrescriptionInput?> _promptPrescription({
+    required String title,
+    required int ordinal,
+    ExercisePrescriptionInput? initial,
+  }) async {
+    final sets = TextEditingController(text: '${initial?.plannedSets ?? 3}');
+    final reps = TextEditingController(text: initial?.repsRange ?? '8-10');
+    ExercisePickerSelection? selected =
+        initial?.exerciseId?.trim().isNotEmpty == true
+        ? ExercisePickerSelection(
+            exerciseId: initial!.exerciseId!,
+            exerciseNameSnapshot: initial.exerciseNameSnapshot,
+          )
+        : null;
+    String? error;
     final result = await showDialog<ExercisePrescriptionInput>(
       context: context,
-      builder: (context) => StatefulBuilder(
+      builder: (dialogContext) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Add exercise prescription'),
+          title: Text(title),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (_exerciseOptions.isNotEmpty)
-                  DropdownButtonFormField<ExerciseAuthoringOption>(
-                    initialValue: selected,
-                    isExpanded: true,
-                    decoration: const InputDecoration(labelText: 'Exercise'),
-                    items: _exerciseOptions
-                        .map(
-                          (option) => DropdownMenuItem(
-                            value: option,
-                            child: Text('${option.name} (${option.equipment})'),
-                          ),
-                        )
-                        .toList(growable: false),
-                    onChanged: (value) =>
-                        setDialogState(() => selected = value),
-                  )
-                else
-                  TextField(
-                    controller: customName,
-                    decoration: const InputDecoration(
-                      labelText: 'Custom exercise name',
-                      helperText: 'You can link a library exercise later.',
+                Semantics(
+                  button: true,
+                  label: selected == null
+                      ? 'Choose an exercise from the library'
+                      : 'Selected exercise ${selected!.exerciseNameSnapshot}',
+                  child: OutlinedButton.icon(
+                    onPressed: () async {
+                      final picked = await _pickExercise(
+                        selectedId: selected?.exerciseId,
+                      );
+                      if (picked != null) {
+                        setDialogState(() {
+                          selected = picked;
+                          error = null;
+                        });
+                      }
+                    },
+                    icon: const Icon(Icons.search_rounded),
+                    label: Text(
+                      selected?.exerciseNameSnapshot ??
+                          'Choose from exercise library',
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+                if (selected == null)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 6),
+                    child: Text(
+                      'Choose a library exercise so this plan always opens the right exercise.',
                     ),
                   ),
                 const SizedBox(height: 12),
@@ -537,65 +732,211 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
                 ),
                 TextField(
                   controller: reps,
-                  decoration: const InputDecoration(labelText: 'Rep range'),
+                  decoration: const InputDecoration(
+                    labelText: 'Rep range',
+                    hintText: 'For example, 8-10',
+                  ),
                 ),
+                if (error != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    error!,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => Navigator.pop(dialogContext),
               child: const Text('Cancel'),
             ),
             FilledButton(
               onPressed: () {
                 final count = int.tryParse(sets.text.trim());
-                if (count == null || count <= 0 || reps.text.trim().isEmpty) {
+                if (selected == null) {
+                  setDialogState(
+                    () => error = 'Choose an exercise from the library.',
+                  );
                   return;
                 }
-                final exerciseName = selected?.name ?? customName.text.trim();
-                if (exerciseName.isEmpty) return;
-                final template = _blocks[blockIndex]
-                    .weeks[weekIndex]
-                    .templates[templateIndex];
+                if (count == null || count <= 0) {
+                  setDialogState(
+                    () => error = 'Planned sets must be greater than zero.',
+                  );
+                  return;
+                }
+                if (reps.text.trim().isEmpty) {
+                  setDialogState(() => error = 'Enter a rep range.');
+                  return;
+                }
                 Navigator.pop(
-                  context,
+                  dialogContext,
                   ExercisePrescriptionInput(
-                    id: Uuid().v4(),
-                    exerciseId: selected?.stableId,
-                    exerciseNameSnapshot: exerciseName,
+                    id: initial?.id ?? Uuid().v4(),
+                    exerciseId: selected!.exerciseId,
+                    exerciseNameSnapshot: selected!.exerciseNameSnapshot,
                     plannedSets: count,
                     repsRange: reps.text.trim(),
-                    ordinal: template.prescriptions.length,
-                    allowUnresolvedExerciseFallback: selected == null,
+                    ordinal: ordinal,
                   ),
                 );
               },
-              child: const Text('Add'),
+              child: Text(initial == null ? 'Add exercise' : 'Save exercise'),
             ),
           ],
         ),
       ),
     );
-    customName.dispose();
-    reps.dispose();
     sets.dispose();
+    reps.dispose();
+    return result;
+  }
+
+  Future<void> _addPrescription(
+    int blockIndex,
+    int weekIndex,
+    int templateIndex,
+  ) async {
+    final template =
+        _blocks[blockIndex].weeks[weekIndex].templates[templateIndex];
+    final result = await _promptPrescription(
+      title: 'Add exercise',
+      ordinal: template.prescriptions.length,
+    );
     if (result == null) return;
+    _replaceTemplate(
+      blockIndex,
+      weekIndex,
+      templateIndex,
+      _copyTemplate(
+        template,
+        prescriptions: [...template.prescriptions, result],
+      ),
+    );
+  }
+
+  Future<void> _editPrescription(
+    int blockIndex,
+    int weekIndex,
+    int templateIndex,
+    int prescriptionIndex,
+  ) async {
+    final template =
+        _blocks[blockIndex].weeks[weekIndex].templates[templateIndex];
+    final result = await _promptPrescription(
+      title: 'Edit exercise',
+      ordinal: prescriptionIndex,
+      initial: template.prescriptions[prescriptionIndex],
+    );
+    if (result == null) return;
+    final prescriptions = [...template.prescriptions];
+    prescriptions[prescriptionIndex] = result;
+    _replaceTemplate(
+      blockIndex,
+      weekIndex,
+      templateIndex,
+      _copyTemplate(template, prescriptions: prescriptions),
+    );
+  }
+
+  void _deletePrescription(
+    int blockIndex,
+    int weekIndex,
+    int templateIndex,
+    int prescriptionIndex,
+  ) {
+    final template =
+        _blocks[blockIndex].weeks[weekIndex].templates[templateIndex];
+    final prescription = template.prescriptions[prescriptionIndex];
+    if (prescription.id != null &&
+        template.groups.any(
+          (group) => group.members.any(
+            (member) => member.exercisePrescriptionId == prescription.id,
+          ),
+        )) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Remove this exercise from its group before deleting it.',
+          ),
+        ),
+      );
+      return;
+    }
+    final prescriptions = [...template.prescriptions]
+      ..removeAt(prescriptionIndex);
+    _replaceTemplate(
+      blockIndex,
+      weekIndex,
+      templateIndex,
+      _copyTemplate(template, prescriptions: prescriptions),
+    );
+  }
+
+  void _movePrescription(
+    int blockIndex,
+    int weekIndex,
+    int templateIndex,
+    int prescriptionIndex,
+    int delta,
+  ) {
+    final template =
+        _blocks[blockIndex].weeks[weekIndex].templates[templateIndex];
+    final targetIndex = prescriptionIndex + delta;
+    if (targetIndex < 0 || targetIndex >= template.prescriptions.length) {
+      return;
+    }
+    final prescriptions = [...template.prescriptions];
+    final moved = prescriptions.removeAt(prescriptionIndex);
+    prescriptions.insert(targetIndex, moved);
+    _replaceTemplate(
+      blockIndex,
+      weekIndex,
+      templateIndex,
+      _copyTemplate(template, prescriptions: prescriptions),
+    );
+  }
+
+  SessionTemplateInput _copyTemplate(
+    SessionTemplateInput template, {
+    String? name,
+    int? ordinal,
+    int? plannedWeekday,
+    int? plannedStartMinute,
+    bool overwritePlannedStartMinute = false,
+    String? notes,
+    List<ExercisePrescriptionInput>? prescriptions,
+    List<ExerciseGroupInput>? groups,
+  }) {
+    return SessionTemplateInput(
+      name: name ?? template.name,
+      ordinal: ordinal ?? template.ordinal,
+      plannedWeekday: plannedWeekday ?? template.plannedWeekday,
+      plannedStartMinute: overwritePlannedStartMinute
+          ? plannedStartMinute
+          : plannedStartMinute ?? template.plannedStartMinute,
+      notes: notes ?? template.notes,
+      prescriptions: prescriptions ?? template.prescriptions,
+      groups: groups ?? template.groups,
+    );
+  }
+
+  void _replaceTemplate(
+    int blockIndex,
+    int weekIndex,
+    int templateIndex,
+    SessionTemplateInput template,
+  ) {
     final updated = [..._blocks];
     final block = updated[blockIndex];
     final weeks = [...block.weeks];
     final week = weeks[weekIndex];
     final templates = [...week.templates];
-    final template = templates[templateIndex];
-    templates[templateIndex] = SessionTemplateInput(
-      name: template.name,
-      ordinal: template.ordinal,
-      plannedWeekday: template.plannedWeekday,
-      plannedStartMinute: template.plannedStartMinute,
-      notes: template.notes,
-      prescriptions: [...template.prescriptions, result],
-      groups: template.groups,
-    );
+    templates[templateIndex] = template;
     weeks[weekIndex] = ProgramWeekInput(
       name: week.name,
       ordinalInBlock: week.ordinalInBlock,
@@ -612,40 +953,61 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
     _replaceBlocks(updated);
   }
 
-  Future<void> _addGroup(
-    int blockIndex,
-    int weekIndex,
-    int templateIndex,
-  ) async {
-    final template =
-        _blocks[blockIndex].weeks[weekIndex].templates[templateIndex];
+  Future<ExerciseGroupInput?> _promptGroup({
+    required String title,
+    required SessionTemplateInput template,
+    ExerciseGroupInput? initial,
+  }) async {
     final options = template.prescriptions
         .where((prescription) => prescription.id != null)
         .toList(growable: false);
     if (options.length < 2) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
+          content: Text('Add at least two library exercises before grouping.'),
+        ),
+      );
+      return null;
+    }
+    final optionIds = options.map((prescription) => prescription.id!).toSet();
+    final initialMembers =
+        initial?.members ?? const <ExerciseGroupMemberInput>[];
+    final initialMemberIds = initialMembers
+        .map((member) => member.exercisePrescriptionId)
+        .toList(growable: false);
+    if (initialMemberIds.toSet().length != initialMemberIds.length ||
+        initialMemberIds.any((id) => !optionIds.contains(id))) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
           content: Text(
-            'Add at least two stable-ID exercises before grouping.',
+            'This group includes an unavailable exercise and cannot be edited.',
           ),
         ),
       );
-      return;
+      return null;
     }
-    final label = TextEditingController();
-    final rounds = TextEditingController(text: '3');
-    final rest = TextEditingController();
-    var groupType = B02GroupType.superset;
-    final selectedIds = <String>{};
+    final label = TextEditingController(text: initial?.label ?? '');
+    final rounds = TextEditingController(text: '${initial?.roundCount ?? 3}');
+    final rest = TextEditingController(
+      text: initial?.restAfterRoundSeconds?.toString() ?? '',
+    );
+    var groupType = initial?.groupType ?? B02GroupType.superset;
+    final selectedIds = [...initialMemberIds];
+    final transitionRestControllers = <String, TextEditingController>{
+      for (final member in initialMembers)
+        member.exercisePrescriptionId: TextEditingController(
+          text: member.transitionRestSeconds?.toString() ?? '',
+        ),
+    };
     String? error;
     final result = await showDialog<ExerciseGroupInput>(
       context: context,
-      builder: (context) => StatefulBuilder(
+      builder: (dialogContext) => StatefulBuilder(
         builder: (context, setDialogState) {
           final selectedCount = selectedIds.length;
           final canSubmit = groupType.acceptsMemberCount(selectedCount);
           return AlertDialog(
-            title: const Text('Add exercise group'),
+            title: Text(title),
             content: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -657,7 +1019,7 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
                         .map(
                           (type) => DropdownMenuItem(
                             value: type,
-                            child: Text(type.dbValue),
+                            child: Text(b02ExecutionGroupTypeLabel(type)),
                           ),
                         )
                         .toList(growable: false),
@@ -693,29 +1055,55 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
                   const SizedBox(height: 12),
                   const Align(
                     alignment: Alignment.centerLeft,
-                    child: Text('Select members by stable prescription:'),
-                  ),
-                  ...options.map(
-                    (prescription) => CheckboxListTile(
-                      dense: true,
-                      contentPadding: EdgeInsets.zero,
-                      value: selectedIds.contains(prescription.id),
-                      title: Text(prescription.exerciseNameSnapshot),
-                      subtitle: Text(
-                        '${prescription.plannedSets} × ${prescription.repsRange}',
-                      ),
-                      onChanged: (value) {
-                        setDialogState(() {
-                          if (value == true) {
-                            selectedIds.add(prescription.id!);
-                          } else {
-                            selectedIds.remove(prescription.id);
-                          }
-                          error = null;
-                        });
-                      },
+                    child: Text(
+                      'Choose exercises in the order they should run:',
                     ),
                   ),
+                  ...options.map((prescription) {
+                    final prescriptionId = prescription.id!;
+                    final isSelected = selectedIds.contains(prescriptionId);
+                    return Column(
+                      children: [
+                        CheckboxListTile(
+                          dense: true,
+                          contentPadding: EdgeInsets.zero,
+                          value: isSelected,
+                          title: Text(prescription.exerciseNameSnapshot),
+                          subtitle: Text(
+                            '${prescription.plannedSets} × ${prescription.repsRange}',
+                          ),
+                          onChanged: (value) {
+                            setDialogState(() {
+                              if (value == true && !isSelected) {
+                                selectedIds.add(prescriptionId);
+                                transitionRestControllers[prescriptionId] =
+                                    TextEditingController();
+                              } else if (value != true && isSelected) {
+                                selectedIds.remove(prescriptionId);
+                                transitionRestControllers
+                                    .remove(prescriptionId)
+                                    ?.dispose();
+                              }
+                              error = null;
+                            });
+                          },
+                        ),
+                        if (isSelected)
+                          Padding(
+                            padding: const EdgeInsets.only(left: 16),
+                            child: TextField(
+                              controller:
+                                  transitionRestControllers[prescriptionId],
+                              keyboardType: TextInputType.number,
+                              decoration: InputDecoration(
+                                labelText:
+                                    'Rest after ${prescription.exerciseNameSnapshot} (seconds, optional)',
+                              ),
+                            ),
+                          ),
+                      ],
+                    );
+                  }),
                   if (error != null)
                     Align(
                       alignment: Alignment.centerLeft,
@@ -731,7 +1119,7 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
             ),
             actions: [
               TextButton(
-                onPressed: () => Navigator.pop(context),
+                onPressed: () => Navigator.pop(dialogContext),
                 child: const Text('Cancel'),
               ),
               FilledButton(
@@ -767,16 +1155,41 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
                     );
                     return;
                   }
-                  final selected = options
-                      .where(
-                        (prescription) => selectedIds.contains(prescription.id),
-                      )
-                      .toList(growable: false);
+                  final selected = [
+                    for (final selectedId in selectedIds)
+                      ...options.where(
+                        (prescription) => prescription.id == selectedId,
+                      ),
+                  ];
+                  final transitionRestByExerciseId = <String, int?>{};
+                  for (final selectedId in selectedIds) {
+                    final transitionRestText =
+                        transitionRestControllers[selectedId]?.text.trim() ??
+                        '';
+                    final transitionRestSeconds = transitionRestText.isEmpty
+                        ? null
+                        : int.tryParse(transitionRestText);
+                    if (transitionRestText.isNotEmpty &&
+                        (transitionRestSeconds == null ||
+                            transitionRestSeconds < 0)) {
+                      setDialogState(
+                        () =>
+                            error = 'Transition rest must be zero or positive.',
+                      );
+                      return;
+                    }
+                    transitionRestByExerciseId[selectedId] =
+                        transitionRestSeconds;
+                  }
+                  final existingMembersByExerciseId = {
+                    for (final member in initialMembers)
+                      member.exercisePrescriptionId: member,
+                  };
                   Navigator.pop(
-                    context,
+                    dialogContext,
                     ExerciseGroupInput(
-                      id: Uuid().v4(),
-                      ordinal: template.groups.length,
+                      id: initial?.id ?? Uuid().v4(),
+                      ordinal: initial?.ordinal ?? template.groups.length,
                       groupType: groupType,
                       roundCount: roundCount,
                       restAfterRoundSeconds: restSeconds,
@@ -788,16 +1201,21 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
                           .entries
                           .map(
                             (entry) => ExerciseGroupMemberInput(
-                              id: Uuid().v4(),
+                              id:
+                                  existingMembersByExerciseId[entry.value.id!]
+                                      ?.id ??
+                                  Uuid().v4(),
                               exercisePrescriptionId: entry.value.id!,
                               ordinal: entry.key,
+                              transitionRestSeconds:
+                                  transitionRestByExerciseId[entry.value.id!],
                             ),
                           )
                           .toList(growable: false),
                     ),
                   );
                 },
-                child: const Text('Add group'),
+                child: Text(initial == null ? 'Add group' : 'Save group'),
               ),
             ],
           );
@@ -807,35 +1225,77 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
     label.dispose();
     rounds.dispose();
     rest.dispose();
+    for (final controller in transitionRestControllers.values) {
+      controller.dispose();
+    }
+    return result;
+  }
+
+  Future<void> _addGroup(
+    int blockIndex,
+    int weekIndex,
+    int templateIndex,
+  ) async {
+    final template =
+        _blocks[blockIndex].weeks[weekIndex].templates[templateIndex];
+    final result = await _promptGroup(
+      title: 'Add exercise group',
+      template: template,
+    );
     if (result == null) return;
-    final updated = [..._blocks];
-    final block = updated[blockIndex];
-    final weeks = [...block.weeks];
-    final week = weeks[weekIndex];
-    final templates = [...week.templates];
-    templates[templateIndex] = SessionTemplateInput(
-      name: template.name,
-      ordinal: template.ordinal,
-      plannedWeekday: template.plannedWeekday,
-      plannedStartMinute: template.plannedStartMinute,
-      notes: template.notes,
-      prescriptions: template.prescriptions,
-      groups: [...template.groups, result],
+    _replaceTemplate(
+      blockIndex,
+      weekIndex,
+      templateIndex,
+      _copyTemplate(template, groups: [...template.groups, result]),
     );
-    weeks[weekIndex] = ProgramWeekInput(
-      name: week.name,
-      ordinalInBlock: week.ordinalInBlock,
-      programWeekOrdinal: week.programWeekOrdinal,
-      isDeload: week.isDeload,
-      templates: templates,
+  }
+
+  Future<void> _editGroup(
+    int blockIndex,
+    int weekIndex,
+    int templateIndex,
+    int groupIndex,
+  ) async {
+    final template =
+        _blocks[blockIndex].weeks[weekIndex].templates[templateIndex];
+    final existing = template.groups[groupIndex];
+    final result = await _promptGroup(
+      title: 'Edit exercise group',
+      template: template,
+      initial: existing,
     );
-    updated[blockIndex] = ProgramBlockInput(
-      name: block.name,
-      description: block.description,
-      ordinal: block.ordinal,
-      weeks: weeks,
+    if (result == null) return;
+    final groups = [...template.groups];
+    groups[groupIndex] = result;
+    _replaceTemplate(
+      blockIndex,
+      weekIndex,
+      templateIndex,
+      _copyTemplate(template, groups: groups),
     );
-    _replaceBlocks(updated);
+  }
+
+  void _moveGroup(
+    int blockIndex,
+    int weekIndex,
+    int templateIndex,
+    int groupIndex,
+    int delta,
+  ) {
+    final template =
+        _blocks[blockIndex].weeks[weekIndex].templates[templateIndex];
+    final targetIndex = groupIndex + delta;
+    if (targetIndex < 0 || targetIndex >= template.groups.length) return;
+    final groups = [...template.groups];
+    final moved = groups.removeAt(groupIndex);
+    groups.insert(targetIndex, moved);
+    _replaceTemplate(
+      blockIndex,
+      weekIndex,
+      templateIndex,
+      _copyTemplate(template, groups: groups),
+    );
   }
 
   void _deleteGroup(
@@ -879,7 +1339,7 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
   Future<bool> _saveDraft() async {
     if (_programNameController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a program name.')),
+        const SnackBar(content: Text('Please enter a plan name.')),
       );
       return false;
     }
@@ -902,29 +1362,35 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
         } else if (_currentVersionId != null) {
           if (!_isDraftVersion) {
             throw StateError(
-              'Published versions are immutable. Create a new draft before editing.',
+              'This plan is already in use. Make a copy before editing it.',
             );
           }
-          await repo.updateProgramMetadata(
-            programId: progId,
+          await repo.saveDraft(
+            versionId: _currentVersionId!,
             name: _programNameController.text.trim(),
             notes: _descriptionController.text.trim(),
+            blocks: _blocks,
           );
-          await repo.updateDraftVersion(_currentVersionId!, blocks: _blocks);
+        } else {
+          throw StateError('This plan has no editable version.');
         }
       });
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Draft saved successfully.')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Plan saved.')));
       }
       return true;
     } catch (_) {
+      // A failed write leaves the in-memory graph intact. Keep the authoring
+      // surface in its edited state so the load-retry action cannot replace
+      // those edits with the last persisted graph.
+      authoring.markEdited();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('The draft could not be saved. Try again.'),
+            content: Text('The plan could not be saved. Try again.'),
           ),
         );
       }
@@ -946,14 +1412,16 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
       await _loadOrCreateDraft();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Copied to new draft version.')),
+          const SnackBar(content: Text('A new editable copy is ready.')),
         );
       }
     } catch (_) {
+      // Copy failure does not invalidate the source detail already on screen.
+      authoring.markReady();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('The draft could not be copied. Try again.'),
+            content: Text('The plan copy could not be created. Try again.'),
           ),
         );
       }
@@ -978,182 +1446,170 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
     _ => 'Unknown day',
   };
 
+  static String _formatTime(int minute) {
+    final hour = minute ~/ 60;
+    final minutePart = minute % 60;
+    final suffix = hour >= 12 ? 'PM' : 'AM';
+    final displayHour = hour % 12 == 0 ? 12 : hour % 12;
+    return '$displayHour:${minutePart.toString().padLeft(2, '0')} $suffix';
+  }
+
   @override
   Widget build(BuildContext context) {
     final authoringState = ref.watch(programAuthoringControllerProvider);
     final isLoading = authoringState.isBusy;
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          'Program Authoring',
-          style: TextStyle(fontFamily: 'Outfit'),
-        ),
+        title: Text('Build your plan', style: TextStyle(fontFamily: 'Outfit')),
         actions: [
-          if (_currentVersionId != null)
+          if (_currentVersionId != null && !_isDraftVersion)
             IconButton(
               icon: const Icon(Icons.copy_rounded),
-              tooltip: 'Copy to New Draft',
+              tooltip: 'Make an editable copy',
               onPressed: isLoading ? null : _copyToNewDraft,
             ),
         ],
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (authoringState.status == ProgramAuthoringStatus.failure)
-                    Card(
-                      color: Theme.of(context).colorScheme.errorContainer,
-                      child: ListTile(
-                        title: const Text('Draft needs recovery'),
-                        subtitle: Text(
-                          authoringState.errorMessage ??
-                              'The in-memory draft is retained. Retry when storage is available.',
-                        ),
-                        trailing: TextButton(
-                          onPressed: () {
-                            ref
-                                .read(
-                                  programAuthoringControllerProvider.notifier,
-                                )
-                                .recover();
-                            _loadOrCreateDraft();
-                          },
-                          child: const Text('Recover'),
-                        ),
-                      ),
-                    ),
-                  TextField(
-                    controller: _programNameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Program Name',
-                      border: OutlineInputBorder(),
-                    ),
-                    style: TextStyle(
-                      fontFamily: 'Outfit',
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _descriptionController,
-                    decoration: const InputDecoration(
-                      labelText: 'Description / Notes',
-                      border: OutlineInputBorder(),
-                    ),
-                    maxLines: 2,
-                  ),
-                  if (!_isDraftVersion) ...[
-                    const SizedBox(height: 12),
-                    Card(
-                      color: Colors.amber.withValues(alpha: 0.12),
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.lock_outline, color: Colors.amber),
-                            const SizedBox(width: 8),
-                            const Expanded(
-                              child: Text(
-                                'Published versions are immutable. Create a new draft to edit this program.',
-                              ),
-                            ),
-                            TextButton(
-                              onPressed: isLoading ? null : _copyToNewDraft,
-                              child: const Text('Create draft'),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 24),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Program Structure (${ConsumerCountLabel.format(_blocks.length, 'block')})',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'Outfit',
-                        ),
-                      ),
-                      TextButton.icon(
-                        onPressed: _isDraftVersion ? _addBlock : null,
-                        icon: const Icon(Icons.add),
-                        label: const Text('Add block'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: _blocks.length,
-                    itemBuilder: (context, bIdx) {
-                      final block = _blocks[bIdx];
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      block.name,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                  ),
-                                  IconButton(
-                                    tooltip: 'Rename block',
-                                    onPressed: _isDraftVersion
-                                        ? () => _renameBlock(bIdx)
-                                        : null,
-                                    icon: const Icon(Icons.edit_outlined),
-                                  ),
-                                  IconButton(
-                                    tooltip: 'Delete block',
-                                    onPressed: _isDraftVersion
-                                        ? () => _deleteBlock(bIdx)
-                                        : null,
-                                    icon: const Icon(
-                                      Icons.delete_outline,
-                                      color: Colors.red,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              Align(
-                                alignment: Alignment.centerLeft,
-                                child: TextButton.icon(
-                                  onPressed: _isDraftVersion
-                                      ? () => _addWeek(bIdx)
-                                      : null,
-                                  icon: const Icon(Icons.add, size: 18),
-                                  label: const Text('Add week'),
+          : SafeArea(
+              child: LayoutBuilder(
+                builder: (context, constraints) => SingleChildScrollView(
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  padding: const EdgeInsets.all(16),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 720),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (authoringState.status ==
+                              ProgramAuthoringStatus.failure)
+                            Card(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.errorContainer,
+                              child: ListTile(
+                                title: const Text('Plan could not be loaded'),
+                                subtitle: Text(
+                                  authoringState.errorMessage ??
+                                      'Your changes are still here. Try again when storage is available.',
+                                ),
+                                trailing: TextButton(
+                                  onPressed: () {
+                                    ref
+                                        .read(
+                                          programAuthoringControllerProvider
+                                              .notifier,
+                                        )
+                                        .recover();
+                                    _loadOrCreateDraft();
+                                  },
+                                  child: const Text('Try again'),
                                 ),
                               ),
-                              const SizedBox(height: 8),
-                              ...block.weeks.asMap().entries.map((weekEntry) {
-                                final wIdx = weekEntry.key;
-                                final w = weekEntry.value;
-                                return Padding(
-                                  padding: const EdgeInsets.only(
-                                    left: 12,
-                                    top: 4,
+                            ),
+                          TextField(
+                            controller: _programNameController,
+                            readOnly: !_isDraftVersion,
+                            onChanged: _isDraftVersion
+                                ? (_) => ref
+                                      .read(
+                                        programAuthoringControllerProvider
+                                            .notifier,
+                                      )
+                                      .markEdited()
+                                : null,
+                            decoration: const InputDecoration(
+                              labelText: 'Plan name',
+                              border: OutlineInputBorder(),
+                            ),
+                            style: TextStyle(
+                              fontFamily: 'Outfit',
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          TextField(
+                            controller: _descriptionController,
+                            readOnly: !_isDraftVersion,
+                            onChanged: _isDraftVersion
+                                ? (_) => ref
+                                      .read(
+                                        programAuthoringControllerProvider
+                                            .notifier,
+                                      )
+                                      .markEdited()
+                                : null,
+                            decoration: const InputDecoration(
+                              labelText: 'Description or notes',
+                              border: OutlineInputBorder(),
+                            ),
+                            maxLines: 2,
+                          ),
+                          if (!_isDraftVersion) ...[
+                            const SizedBox(height: 12),
+                            Card(
+                              color: Colors.amber.withValues(alpha: 0.12),
+                              child: Padding(
+                                padding: const EdgeInsets.all(12),
+                                child: Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.lock_outline,
+                                      color: Colors.amber,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    const Expanded(
+                                      child: Text(
+                                        'This plan is already in use. Make an editable copy to keep scheduled workouts unchanged.',
+                                      ),
+                                    ),
+                                    TextButton(
+                                      onPressed: isLoading
+                                          ? null
+                                          : _copyToNewDraft,
+                                      child: const Text('Make a copy'),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 24),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  'Plan structure (${ConsumerCountLabel.format(_blocks.length, 'block')})',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    fontFamily: 'Outfit',
                                   ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              TextButton.icon(
+                                onPressed: _isDraftVersion ? _addBlock : null,
+                                icon: const Icon(Icons.add),
+                                label: const Text('Add block'),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          ListView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: _blocks.length,
+                            itemBuilder: (context, bIdx) {
+                              final block = _blocks[bIdx];
+                              return Card(
+                                margin: const EdgeInsets.only(bottom: 12),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(12),
                                   child: Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
@@ -1162,26 +1618,30 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
                                         children: [
                                           Expanded(
                                             child: Text(
-                                              'Week ${w.programWeekOrdinal + 1}: ${ConsumerCountLabel.format(w.templates.length, 'session')}',
-                                              style: TextStyle(
-                                                color: w.isDeload
-                                                    ? Colors.purple
-                                                    : AppColors.textPrimary,
-                                                fontWeight: FontWeight.w600,
+                                              block.name,
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 16,
                                               ),
                                             ),
                                           ),
-                                          Tooltip(
-                                            message: 'Deload week',
-                                            child: Switch(
-                                              value: w.isDeload,
-                                              onChanged: _isDraftVersion
-                                                  ? (value) => _setWeekDeload(
-                                                      bIdx,
-                                                      wIdx,
-                                                      value,
-                                                    )
-                                                  : null,
+                                          IconButton(
+                                            tooltip: 'Rename block',
+                                            onPressed: _isDraftVersion
+                                                ? () => _renameBlock(bIdx)
+                                                : null,
+                                            icon: const Icon(
+                                              Icons.edit_outlined,
+                                            ),
+                                          ),
+                                          IconButton(
+                                            tooltip: 'Delete block',
+                                            onPressed: _isDraftVersion
+                                                ? () => _deleteBlock(bIdx)
+                                                : null,
+                                            icon: const Icon(
+                                              Icons.delete_outline,
+                                              color: Colors.red,
                                             ),
                                           ),
                                         ],
@@ -1190,193 +1650,509 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
                                         alignment: Alignment.centerLeft,
                                         child: TextButton.icon(
                                           onPressed: _isDraftVersion
-                                              ? () => _addSessionTemplate(
-                                                  bIdx,
-                                                  wIdx,
-                                                )
+                                              ? () => _addWeek(bIdx)
                                               : null,
-                                          icon: const Icon(Icons.add, size: 16),
-                                          label: const Text('Add session'),
+                                          icon: const Icon(Icons.add, size: 18),
+                                          label: const Text('Add week'),
                                         ),
                                       ),
-                                      ...w.templates.asMap().entries.map((
-                                        templateEntry,
+                                      const SizedBox(height: 8),
+                                      ...block.weeks.asMap().entries.map((
+                                        weekEntry,
                                       ) {
-                                        final templateIndex = templateEntry.key;
-                                        final st = templateEntry.value;
+                                        final wIdx = weekEntry.key;
+                                        final w = weekEntry.value;
                                         return Padding(
                                           padding: const EdgeInsets.only(
                                             left: 12,
-                                            top: 2,
+                                            top: 4,
                                           ),
-                                          child: Card(
-                                            margin: EdgeInsets.zero,
-                                            color: AppColors.cardBackground,
-                                            child: Padding(
-                                              padding: const EdgeInsets.all(8),
-                                              child: Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Row(
                                                 children: [
-                                                  Text(
-                                                    '${st.name} • ${_weekdayLabel(st.plannedWeekday)}',
-                                                    style: const TextStyle(
-                                                      fontWeight:
-                                                          FontWeight.w600,
-                                                    ),
-                                                  ),
-                                                  ...st.prescriptions.map(
-                                                    (prescription) => Text(
-                                                      '• ${prescription.exerciseNameSnapshot}: ${prescription.plannedSets} × ${prescription.repsRange}${prescription.exerciseId == null ? " (compatibility unknown)" : ""}',
-                                                      style: const TextStyle(
-                                                        fontSize: 13,
-                                                        color: Colors.grey,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                  if (st.groups.isNotEmpty) ...[
-                                                    const SizedBox(height: 8),
-                                                    const Text(
-                                                      'Explicit exercise groups',
+                                                  Expanded(
+                                                    child: Text(
+                                                      'Week ${w.programWeekOrdinal + 1}: ${ConsumerCountLabel.format(w.templates.length, 'session')}',
                                                       style: TextStyle(
+                                                        color: w.isDeload
+                                                            ? Colors.purple
+                                                            : AppColors
+                                                                  .textPrimary,
                                                         fontWeight:
                                                             FontWeight.w600,
                                                       ),
                                                     ),
-                                                    ...st.groups.asMap().entries.map((
-                                                      groupEntry,
-                                                    ) {
-                                                      final group =
-                                                          groupEntry.value;
-                                                      final namesById = {
-                                                        for (final prescription
-                                                            in st.prescriptions)
-                                                          if (prescription.id !=
-                                                              null)
-                                                            prescription
-                                                                .id!: prescription
-                                                                .exerciseNameSnapshot,
-                                                      };
-                                                      final memberLabels = group
-                                                          .members
-                                                          .map(
-                                                            (member) =>
-                                                                namesById[member
-                                                                    .exercisePrescriptionId] ??
-                                                                'Missing prescription',
-                                                          )
-                                                          .join(' → ');
-                                                      return ListTile(
-                                                        dense: true,
-                                                        contentPadding:
-                                                            EdgeInsets.zero,
-                                                        title: Text(
-                                                          '${group.groupType.dbValue} • ${group.roundCount} rounds',
-                                                        ),
-                                                        subtitle: Text(
-                                                          'Members: $memberLabels${group.restAfterRoundSeconds == null ? '' : ' • ${group.restAfterRoundSeconds}s rest after round'}',
-                                                        ),
-                                                        trailing: IconButton(
-                                                          tooltip:
-                                                              'Delete group',
-                                                          onPressed:
-                                                              _isDraftVersion
-                                                              ? () => _deleteGroup(
+                                                  ),
+                                                  Tooltip(
+                                                    message: 'Deload week',
+                                                    child: Switch(
+                                                      value: w.isDeload,
+                                                      onChanged: _isDraftVersion
+                                                          ? (value) =>
+                                                                _setWeekDeload(
                                                                   bIdx,
                                                                   wIdx,
-                                                                  templateIndex,
-                                                                  groupEntry
-                                                                      .key,
+                                                                  value,
                                                                 )
-                                                              : null,
-                                                          icon: const Icon(
-                                                            Icons
-                                                                .delete_outline,
-                                                            color: Colors.red,
-                                                          ),
-                                                        ),
-                                                      );
-                                                    }),
-                                                  ],
-                                                  TextButton.icon(
+                                                          : null,
+                                                    ),
+                                                  ),
+                                                  IconButton(
+                                                    tooltip: 'Edit week name',
                                                     onPressed: _isDraftVersion
-                                                        ? () => _addGroup(
+                                                        ? () => _renameWeek(
                                                             bIdx,
                                                             wIdx,
-                                                            templateIndex,
                                                           )
                                                         : null,
                                                     icon: const Icon(
-                                                      Icons
-                                                          .account_tree_outlined,
-                                                      size: 16,
-                                                    ),
-                                                    label: const Text(
-                                                      'Add group',
+                                                      Icons.edit_outlined,
+                                                      size: 20,
                                                     ),
                                                   ),
-                                                  TextButton.icon(
+                                                  IconButton(
+                                                    tooltip: 'Delete week',
                                                     onPressed: _isDraftVersion
-                                                        ? () =>
-                                                              _addPrescription(
-                                                                bIdx,
-                                                                wIdx,
-                                                                templateIndex,
-                                                              )
+                                                        ? () => _deleteWeek(
+                                                            bIdx,
+                                                            wIdx,
+                                                          )
                                                         : null,
                                                     icon: const Icon(
-                                                      Icons.add,
-                                                      size: 16,
-                                                    ),
-                                                    label: const Text(
-                                                      'Add exercise',
+                                                      Icons.delete_outline,
+                                                      size: 20,
                                                     ),
                                                   ),
                                                 ],
                                               ),
-                                            ),
+                                              Align(
+                                                alignment: Alignment.centerLeft,
+                                                child: TextButton.icon(
+                                                  onPressed: _isDraftVersion
+                                                      ? () =>
+                                                            _addSessionTemplate(
+                                                              bIdx,
+                                                              wIdx,
+                                                            )
+                                                      : null,
+                                                  icon: const Icon(
+                                                    Icons.add,
+                                                    size: 16,
+                                                  ),
+                                                  label: const Text(
+                                                    'Add session',
+                                                  ),
+                                                ),
+                                              ),
+                                              ...w.templates.asMap().entries.map((
+                                                templateEntry,
+                                              ) {
+                                                final templateIndex =
+                                                    templateEntry.key;
+                                                final st = templateEntry.value;
+                                                return Padding(
+                                                  padding:
+                                                      const EdgeInsets.only(
+                                                        left: 12,
+                                                        top: 2,
+                                                      ),
+                                                  child: Card(
+                                                    margin: EdgeInsets.zero,
+                                                    color: AppColors
+                                                        .cardBackground,
+                                                    child: Padding(
+                                                      padding:
+                                                          const EdgeInsets.all(
+                                                            8,
+                                                          ),
+                                                      child: Column(
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment
+                                                                .start,
+                                                        children: [
+                                                          Row(
+                                                            children: [
+                                                              Expanded(
+                                                                child: Text(
+                                                                  '${st.name} • ${_weekdayLabel(st.plannedWeekday)}${st.plannedStartMinute == null ? '' : ' • ${_formatTime(st.plannedStartMinute!)}'}',
+                                                                  style: const TextStyle(
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .w600,
+                                                                  ),
+                                                                ),
+                                                              ),
+                                                              IconButton(
+                                                                tooltip:
+                                                                    'Edit workout',
+                                                                onPressed:
+                                                                    _isDraftVersion
+                                                                    ? () => _editSessionTemplate(
+                                                                        bIdx,
+                                                                        wIdx,
+                                                                        templateIndex,
+                                                                      )
+                                                                    : null,
+                                                                icon: const Icon(
+                                                                  Icons
+                                                                      .edit_outlined,
+                                                                  size: 20,
+                                                                ),
+                                                              ),
+                                                              IconButton(
+                                                                tooltip:
+                                                                    'Delete workout',
+                                                                onPressed:
+                                                                    _isDraftVersion
+                                                                    ? () => _deleteSessionTemplate(
+                                                                        bIdx,
+                                                                        wIdx,
+                                                                        templateIndex,
+                                                                      )
+                                                                    : null,
+                                                                icon: const Icon(
+                                                                  Icons
+                                                                      .delete_outline,
+                                                                  size: 20,
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                          ...st.prescriptions.asMap().entries.map((
+                                                            prescriptionEntry,
+                                                          ) {
+                                                            final prescriptionIndex =
+                                                                prescriptionEntry
+                                                                    .key;
+                                                            final prescription =
+                                                                prescriptionEntry
+                                                                    .value;
+                                                            final exerciseLabel =
+                                                                '${prescription.exerciseNameSnapshot}: ${prescription.plannedSets} × ${prescription.repsRange}${prescription.exerciseId == null ? ' (choose an exercise)' : ''}';
+                                                            return ListTile(
+                                                              dense: true,
+                                                              contentPadding:
+                                                                  EdgeInsets
+                                                                      .zero,
+                                                              title: Text(
+                                                                exerciseLabel,
+                                                              ),
+                                                              leading: Text(
+                                                                '${prescriptionIndex + 1}',
+                                                                semanticsLabel:
+                                                                    'Exercise ${prescriptionIndex + 1}',
+                                                              ),
+                                                              trailing: Wrap(
+                                                                spacing: 0,
+                                                                children: [
+                                                                  IconButton(
+                                                                    tooltip:
+                                                                        'Move exercise up',
+                                                                    onPressed:
+                                                                        !_isDraftVersion ||
+                                                                            prescriptionIndex ==
+                                                                                0
+                                                                        ? null
+                                                                        : () => _movePrescription(
+                                                                            bIdx,
+                                                                            wIdx,
+                                                                            templateIndex,
+                                                                            prescriptionIndex,
+                                                                            -1,
+                                                                          ),
+                                                                    icon: const Icon(
+                                                                      Icons
+                                                                          .keyboard_arrow_up_rounded,
+                                                                    ),
+                                                                  ),
+                                                                  IconButton(
+                                                                    tooltip:
+                                                                        'Move exercise down',
+                                                                    onPressed:
+                                                                        !_isDraftVersion ||
+                                                                            prescriptionIndex ==
+                                                                                st.prescriptions.length -
+                                                                                    1
+                                                                        ? null
+                                                                        : () => _movePrescription(
+                                                                            bIdx,
+                                                                            wIdx,
+                                                                            templateIndex,
+                                                                            prescriptionIndex,
+                                                                            1,
+                                                                          ),
+                                                                    icon: const Icon(
+                                                                      Icons
+                                                                          .keyboard_arrow_down_rounded,
+                                                                    ),
+                                                                  ),
+                                                                  IconButton(
+                                                                    tooltip:
+                                                                        'Edit exercise',
+                                                                    onPressed:
+                                                                        _isDraftVersion
+                                                                        ? () => _editPrescription(
+                                                                            bIdx,
+                                                                            wIdx,
+                                                                            templateIndex,
+                                                                            prescriptionIndex,
+                                                                          )
+                                                                        : null,
+                                                                    icon: const Icon(
+                                                                      Icons
+                                                                          .edit_outlined,
+                                                                    ),
+                                                                  ),
+                                                                  IconButton(
+                                                                    tooltip:
+                                                                        'Delete exercise',
+                                                                    onPressed:
+                                                                        _isDraftVersion
+                                                                        ? () => _deletePrescription(
+                                                                            bIdx,
+                                                                            wIdx,
+                                                                            templateIndex,
+                                                                            prescriptionIndex,
+                                                                          )
+                                                                        : null,
+                                                                    icon: const Icon(
+                                                                      Icons
+                                                                          .delete_outline,
+                                                                    ),
+                                                                  ),
+                                                                ],
+                                                              ),
+                                                            );
+                                                          }),
+                                                          if (st
+                                                              .groups
+                                                              .isNotEmpty) ...[
+                                                            const SizedBox(
+                                                              height: 8,
+                                                            ),
+                                                            const Text(
+                                                              'Exercise groups',
+                                                              style: TextStyle(
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w600,
+                                                              ),
+                                                            ),
+                                                            ...st.groups.asMap().entries.map((
+                                                              groupEntry,
+                                                            ) {
+                                                              final group =
+                                                                  groupEntry
+                                                                      .value;
+                                                              final namesById = {
+                                                                for (final prescription
+                                                                    in st
+                                                                        .prescriptions)
+                                                                  if (prescription
+                                                                          .id !=
+                                                                      null)
+                                                                    prescription
+                                                                            .id!:
+                                                                        prescription
+                                                                            .exerciseNameSnapshot,
+                                                              };
+                                                              final memberLabels = group
+                                                                  .members
+                                                                  .map(
+                                                                    (member) =>
+                                                                        namesById[member
+                                                                            .exercisePrescriptionId] ??
+                                                                        'Unavailable exercise',
+                                                                  )
+                                                                  .join(' → ');
+                                                              return ListTile(
+                                                                dense: true,
+                                                                contentPadding:
+                                                                    EdgeInsets
+                                                                        .zero,
+                                                                title: Text(
+                                                                  '${b02ExecutionGroupTypeLabel(group.groupType)} • ${group.roundCount} rounds',
+                                                                ),
+                                                                subtitle: Text(
+                                                                  'Exercises: $memberLabels${group.restAfterRoundSeconds == null ? '' : ' • ${group.restAfterRoundSeconds}s rest after round'}',
+                                                                ),
+                                                                trailing: PopupMenuButton<String>(
+                                                                  tooltip:
+                                                                      'Group actions',
+                                                                  enabled:
+                                                                      _isDraftVersion,
+                                                                  onSelected: (action) {
+                                                                    switch (action) {
+                                                                      case 'edit':
+                                                                        _editGroup(
+                                                                          bIdx,
+                                                                          wIdx,
+                                                                          templateIndex,
+                                                                          groupEntry
+                                                                              .key,
+                                                                        );
+                                                                      case 'up':
+                                                                        _moveGroup(
+                                                                          bIdx,
+                                                                          wIdx,
+                                                                          templateIndex,
+                                                                          groupEntry
+                                                                              .key,
+                                                                          -1,
+                                                                        );
+                                                                      case 'down':
+                                                                        _moveGroup(
+                                                                          bIdx,
+                                                                          wIdx,
+                                                                          templateIndex,
+                                                                          groupEntry
+                                                                              .key,
+                                                                          1,
+                                                                        );
+                                                                      case 'delete':
+                                                                        _deleteGroup(
+                                                                          bIdx,
+                                                                          wIdx,
+                                                                          templateIndex,
+                                                                          groupEntry
+                                                                              .key,
+                                                                        );
+                                                                    }
+                                                                  },
+                                                                  itemBuilder: (context) => [
+                                                                    const PopupMenuItem(
+                                                                      value:
+                                                                          'edit',
+                                                                      child: Text(
+                                                                        'Edit group',
+                                                                      ),
+                                                                    ),
+                                                                    PopupMenuItem(
+                                                                      value:
+                                                                          'up',
+                                                                      enabled:
+                                                                          groupEntry
+                                                                              .key >
+                                                                          0,
+                                                                      child: const Text(
+                                                                        'Move group up',
+                                                                      ),
+                                                                    ),
+                                                                    PopupMenuItem(
+                                                                      value:
+                                                                          'down',
+                                                                      enabled:
+                                                                          groupEntry
+                                                                              .key <
+                                                                          st.groups.length -
+                                                                              1,
+                                                                      child: const Text(
+                                                                        'Move group down',
+                                                                      ),
+                                                                    ),
+                                                                    const PopupMenuItem(
+                                                                      value:
+                                                                          'delete',
+                                                                      child: Text(
+                                                                        'Delete group',
+                                                                      ),
+                                                                    ),
+                                                                  ],
+                                                                  icon: const Icon(
+                                                                    Icons
+                                                                        .more_vert,
+                                                                  ),
+                                                                ),
+                                                              );
+                                                            }),
+                                                          ],
+                                                          TextButton.icon(
+                                                            onPressed:
+                                                                _isDraftVersion
+                                                                ? () => _addGroup(
+                                                                    bIdx,
+                                                                    wIdx,
+                                                                    templateIndex,
+                                                                  )
+                                                                : null,
+                                                            icon: const Icon(
+                                                              Icons
+                                                                  .account_tree_outlined,
+                                                              size: 16,
+                                                            ),
+                                                            label: const Text(
+                                                              'Add group',
+                                                            ),
+                                                          ),
+                                                          TextButton.icon(
+                                                            onPressed:
+                                                                _isDraftVersion
+                                                                ? () => _addPrescription(
+                                                                    bIdx,
+                                                                    wIdx,
+                                                                    templateIndex,
+                                                                  )
+                                                                : null,
+                                                            icon: const Icon(
+                                                              Icons.add,
+                                                              size: 16,
+                                                            ),
+                                                            label: const Text(
+                                                              'Add exercise',
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  ),
+                                                );
+                                              }),
+                                            ],
                                           ),
                                         );
                                       }),
                                     ],
                                   ),
-                                );
-                              }),
+                                ),
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 24),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: isLoading || !_isDraftVersion
+                                      ? null
+                                      : _saveDraft,
+                                  icon: const Icon(Icons.save_outlined),
+                                  label: const Text('Save plan'),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: ElevatedButton.icon(
+                                  onPressed: isLoading || !_isDraftVersion
+                                      ? null
+                                      : _proceedToReview,
+                                  icon: const Icon(Icons.rate_review_outlined),
+                                  label: const Text('Review plan'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.primary,
+                                    foregroundColor: Colors.black,
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 24),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: isLoading || !_isDraftVersion
-                              ? null
-                              : _saveDraft,
-                          icon: const Icon(Icons.save_outlined),
-                          label: const Text('Save Draft'),
-                        ),
+                        ],
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: isLoading || !_isDraftVersion
-                              ? null
-                              : _proceedToReview,
-                          icon: const Icon(Icons.rate_review_outlined),
-                          label: const Text('Review & Activate'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: Colors.black,
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                ],
+                ),
               ),
             ),
     );

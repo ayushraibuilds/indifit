@@ -20,7 +20,7 @@ class _ReviewProgramRepository extends ProgramRepository {
   ) async => versionId == detail.version.id ? detail : null;
 }
 
-ProgramDetailAggregate _reviewDetail() {
+ProgramDetailAggregate _reviewDetail({String status = 'draft'}) {
   final now = DateTime.utc(2026, 8, 1);
   const programId = 'program-review';
   const versionId = 'version-review';
@@ -37,7 +37,7 @@ ProgramDetailAggregate _reviewDetail() {
       id: versionId,
       programId: programId,
       versionNumber: 1,
-      status: 'draft',
+      status: status,
       origin: 'user',
       createdAtUtc: now,
     ),
@@ -170,23 +170,23 @@ void main() {
 
   group('B01-11A Program Authoring & Calendar Widget Tests', () {
     testWidgets(
-      '1. ProgramAuthorScreen renders draft name input and save buttons',
+      '1. ProgramAuthorScreen renders plan name input and save buttons',
       (tester) async {
         await tester.pumpWidget(
           createWidgetUnderTest(const ProgramAuthorScreen()),
         );
         await tester.pumpAndSettle();
 
-        expect(find.text('Program Authoring'), findsOneWidget);
-        expect(find.text('New Program'), findsOneWidget);
+        expect(find.text('Build your plan'), findsOneWidget);
+        expect(find.text('New plan'), findsOneWidget);
         expect(find.text('Add group'), findsOneWidget);
-        expect(find.text('Save Draft'), findsOneWidget);
-        expect(find.text('Review & Activate'), findsOneWidget);
+        expect(find.text('Save plan'), findsOneWidget);
+        expect(find.text('Review plan'), findsOneWidget);
       },
     );
 
     testWidgets(
-      '2. ProgramReviewScreen displays version details and activation button',
+      '2. ProgramReviewScreen displays version details and use button',
       (tester) async {
         final detail = _reviewDetail();
 
@@ -202,14 +202,57 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.text('Review & Activate'), findsOneWidget);
+        expect(find.text('Review your plan'), findsOneWidget);
         expect(find.text('Review Test Plan'), findsOneWidget);
-        expect(find.text('Publish & Activate Program'), findsOneWidget);
+        expect(find.text('Use this plan'), findsOneWidget);
         await tester.tap(find.text('Block 1'));
         await tester.pumpAndSettle();
-        expect(find.text('superset • 3 rounds • 2 members'), findsOneWidget);
+        expect(find.text('Superset • 3 rounds • 2 exercises'), findsOneWidget);
       },
     );
+
+    testWidgets('2a. ProgramReviewScreen surfaces an unavailable plan', (
+      tester,
+    ) async {
+      final detail = _reviewDetail();
+      await tester.pumpWidget(
+        createWidgetUnderTest(
+          const ProgramReviewScreen(programVersionId: 'missing-version'),
+          overrides: [
+            programRepositoryProvider.overrideWithValue(
+              _ReviewProgramRepository(db, detail),
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('This plan is no longer available.'), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+    });
+
+    testWidgets('2b. In-use plan metadata is read-only until copied', (
+      tester,
+    ) async {
+      final detail = _reviewDetail(status: 'published');
+      await tester.pumpWidget(
+        createWidgetUnderTest(
+          ProgramAuthorScreen(programVersionId: detail.version.id),
+          overrides: [
+            programRepositoryProvider.overrideWithValue(
+              _ReviewProgramRepository(db, detail),
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final fields = tester.widgetList<TextField>(find.byType(TextField));
+      expect(fields, isNotEmpty);
+      expect(fields.every((field) => field.readOnly), isTrue);
+      expect(find.text('Make a copy'), findsOneWidget);
+    });
 
     testWidgets(
       '3. ProgramAuthorScreen renders persisted group type, rounds and members',
@@ -228,10 +271,10 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.text('Explicit exercise groups'), findsOneWidget);
-        expect(find.text('superset • 3 rounds'), findsOneWidget);
+        expect(find.text('Exercise groups'), findsOneWidget);
+        expect(find.text('Superset • 3 rounds'), findsOneWidget);
         expect(
-          find.text('Members: Squat → Row • 90s rest after round'),
+          find.text('Exercises: Squat → Row • 90s rest after round'),
           findsOneWidget,
         );
       },
