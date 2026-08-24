@@ -79,18 +79,6 @@ class NotificationSettingsSection extends ConsumerWidget {
         ),
         const SizedBox(height: 12),
         SettingsReminderToggle(
-          icon: Icons.water_drop_rounded,
-          iconColor: AppColors.infoBlue,
-          title: 'Water Intake',
-          subtitle: 'Twice daily (11 AM & 4 PM) — gentle hydration nudge',
-          value: state.remindWater,
-          onChanged: (val) => controller.toggleReminder(
-            NotificationService.prefRemindWater,
-            val,
-          ),
-        ),
-        const SizedBox(height: 12),
-        SettingsReminderToggle(
           icon: Icons.bedtime_rounded,
           iconColor: Colors.purple,
           title: 'Evening Log Nudge',

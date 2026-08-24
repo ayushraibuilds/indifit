@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:indifit/core/di/providers.dart';
+import 'package:indifit/core/services/local_timezone_service.dart';
 import 'package:indifit/core/utils/tdee_calculator.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/repositories/workout_repository.dart';
@@ -133,7 +134,50 @@ void main() {
       expect(prefs.getDouble('protein_goal'), macros.proteinG);
       expect(prefs.getDouble('carbs_goal'), macros.carbsG);
       expect(prefs.getDouble('fat_goal'), macros.fatG);
+
       expect(tester.takeException(), isNull);
+    },
+  );
+
+  test(
+    'profile bridge persists preference targets into canonical storage',
+    () async {
+      SharedPreferences.setMockInitialValues({
+        'user_name': 'Maya',
+        'user_age': 31,
+        'user_height': 165.0,
+        'current_weight': 62.0,
+        'user_sex': 'female',
+        'user_activity_level': 'active',
+        'user_goal': 'gain',
+        'user_diet_preference': 'non-veg',
+        'calorie_goal': 2603,
+        'protein_goal': 124.0,
+        'carbs_goal': 364.1,
+        'fat_goal': 72.3,
+      });
+      final database = AppDatabase.memory();
+      final notifier = UserProfileNotifier(
+        database,
+        LocalTimezoneService(read: () async => 'Asia/Kolkata'),
+      );
+      addTearDown(() async {
+        notifier.dispose();
+        await database.close();
+      });
+
+      await notifier.loadProfile();
+
+      final profiles = await database.select(database.userProfiles).get();
+      final goals = await database.select(database.nutritionGoalVersions).get();
+      expect(profiles, hasLength(1));
+      expect(goals, hasLength(1));
+      expect(profiles.single.name, 'Maya');
+      expect(goals.single.userId, profiles.single.id.toString());
+      expect(goals.single.calorieTargetKcal, 2603);
+      expect(goals.single.proteinTargetG, 124);
+      expect(goals.single.carbsTargetG, 364.1);
+      expect(goals.single.fatTargetG, 72.3);
     },
   );
 

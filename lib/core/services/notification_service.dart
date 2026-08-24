@@ -15,11 +15,10 @@ import 'crash_reporting_service.dart';
 /// Schedule philosophy:
 ///   - Workout reminder: Once daily (morning warm-up window)
 ///   - Meal logging: Twice daily (post-lunch + post-dinner — skips breakfast to avoid morning spam)
-///   - Water intake: Twice daily (mid-morning + mid-afternoon — not hourly)
 ///   - Evening nudge: Once daily (gentle "did you log today?" before bed)
 ///   - Weekly AI report: Once per week (Sunday morning)
 ///
-/// Total: ~6 notifications/day max (vs 15+ if we did hourly water + every meal).
+/// Total: up to four notifications on a day with the weekly report.
 /// All configurable via SharedPreferences toggles in Settings screen.
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _plugin =
@@ -28,7 +27,6 @@ class NotificationService {
   // Notification channel IDs
   static const String _workoutChannelId = 'indifit_workout';
   static const String _mealChannelId = 'indifit_meals';
-  static const String _waterChannelId = 'indifit_water';
   static const String _nudgeChannelId = 'indifit_nudge';
   static const String _weeklyChannelId = 'indifit_weekly';
 
@@ -36,8 +34,6 @@ class NotificationService {
   static const int _idWorkout = 100;
   static const int _idMealLunch = 201;
   static const int _idMealDinner = 202;
-  static const int _idWaterMorning = 301;
-  static const int _idWaterAfternoon = 302;
   static const int _idEveningNudge = 400;
   static const int _idWeeklyReport = 500;
 
@@ -142,7 +138,6 @@ class NotificationService {
 
     final workoutEnabled = prefs.getBool(prefRemindWorkout) ?? false;
     final mealsEnabled = prefs.getBool(prefRemindMeals) ?? false;
-    final waterEnabled = prefs.getBool(prefRemindWater) ?? false;
     final eveningEnabled = prefs.getBool(prefRemindEvening) ?? false;
     final weeklyEnabled = prefs.getBool(prefRemindWeekly) ?? false;
 
@@ -203,13 +198,6 @@ class NotificationService {
       await _scheduleMealReminders(
         hasLunchToday,
         hasDinnerToday,
-        quietHoursEnabled,
-        quietHoursStart,
-        quietHoursEnd,
-      );
-    }
-    if (waterEnabled) {
-      await _scheduleWaterReminders(
         quietHoursEnabled,
         quietHoursStart,
         quietHoursEnd,
@@ -301,42 +289,6 @@ class NotificationService {
     }
   }
 
-  /// 💧 Water intake — gentle twice-daily nudges
-  static Future<void> _scheduleWaterReminders(
-    bool quietHoursEnabled,
-    int quietStart,
-    int quietEnd,
-  ) async {
-    await _scheduleDailyNotification(
-      id: _idWaterMorning,
-      channelId: _waterChannelId,
-      channelName: 'Water Reminders',
-      hour: 11,
-      minute: 0,
-      title: '💧 Hydration check',
-      body: 'Have you had enough water this morning? Tap to log glasses.',
-      payload: 'water',
-      quietHoursEnabled: quietHoursEnabled,
-      quietHoursStart: quietStart,
-      quietHoursEnd: quietEnd,
-    );
-
-    await _scheduleDailyNotification(
-      id: _idWaterAfternoon,
-      channelId: _waterChannelId,
-      channelName: 'Water Reminders',
-      hour: 16,
-      minute: 0,
-      title: '💧 Afternoon hydration',
-      body:
-          'Staying hydrated boosts workout performance. Log your water intake.',
-      payload: 'water',
-      quietHoursEnabled: quietHoursEnabled,
-      quietHoursStart: quietStart,
-      quietHoursEnd: quietEnd,
-    );
-  }
-
   /// 🌙 Evening nudge at 9:15 PM
   static Future<void> _scheduleEveningNudge(
     bool quietHoursEnabled,
@@ -351,7 +303,7 @@ class NotificationService {
       minute: 15,
       title: '🌙 Log your day',
       body:
-          'Take 30 seconds to log anything you missed — meals, water, or workouts. Keep your streak alive!',
+          'Take 30 seconds to log anything you missed — meals or workouts. Keep your streak alive!',
       payload: 'evening_nudge',
       quietHoursEnabled: quietHoursEnabled,
       quietHoursStart: quietStart,

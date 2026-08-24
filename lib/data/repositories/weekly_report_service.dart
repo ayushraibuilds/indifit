@@ -78,7 +78,6 @@ class WeeklyReportService {
     final completedWorkouts =
         metrics?.completedWorkoutsCount ?? workoutSessionsCount;
     final plannedWorkouts = metrics?.plannedWorkoutsCount ?? 0;
-    final hydrationDays = metrics?.hydrationDaysAtGoal ?? 0;
     final dateRangeStr = metrics != null
         ? "${metrics.startDate.year}-${metrics.startDate.month.toString().padLeft(2, '0')}-${metrics.startDate.day.toString().padLeft(2, '0')} to ${metrics.endDate.year}-${metrics.endDate.month.toString().padLeft(2, '0')}-${metrics.endDate.day.toString().padLeft(2, '0')}"
         : null;
@@ -90,8 +89,7 @@ class WeeklyReportService {
         adherenceScore: 0.0,
         summary:
             'Log at least 2 days of nutrition or 1 workout session during the week to unlock your personalized AI weekly report.',
-        coachingTip:
-            'Focus on logging your daily meals and water intake to build baseline habits!',
+        coachingTip: 'Focus on logging your daily meals to build a baseline.',
         topPrs: const [],
         isFallback: true,
         isInsufficientData: true,
@@ -125,7 +123,6 @@ class WeeklyReportService {
         'nutrition_days_logged': nutritionDays,
         'calorie_adherence_pct': (metrics?.calorieAdherenceScore ?? 0.0) * 100,
         'protein_adherence_pct': (metrics?.proteinAdherenceScore ?? 0.0) * 100,
-        'hydration_days_at_goal': hydrationDays,
         'completed_workouts': completedWorkouts,
         'planned_workouts': plannedWorkouts,
       };
@@ -146,7 +143,7 @@ class WeeklyReportService {
               'Consistent nutrition and workout effort across the week.',
           coachingTip:
               d['coaching_tip'] ??
-              'Keep staying hydrated and aim for progressive overload.',
+              'Keep training consistently and log meals when you can.',
           topPrs:
               (d['top_prs'] as List?)?.map((e) => e.toString()).toList() ?? [],
           isFallback: d['is_fallback'] ?? false,
@@ -200,7 +197,7 @@ class WeeklyReportService {
       summary:
           '${rangeText}You logged nutrition on $nutritionDaysLogged days ($totalCaloriesLogged total kcal), completed $workoutText (${totalVolumeKg.toStringAsFixed(0)} kg total volume), and achieved $prsCount PRs.',
       coachingTip:
-          'Maintain your progressive overload, stay hydrated, and target consistent protein intake.',
+          'Keep training consistently and aim for steady protein intake.',
       topPrs: [prText],
       isFallback: true,
       fallbackReason: reason,

@@ -16,6 +16,7 @@ import '../../core/utils/app_logger.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/calendar_read_repository.dart';
+import '../../data/repositories/training_next_action_resolver.dart';
 import '../../data/repositories/workout_repository.dart';
 import '../activity/b02_activity_controller.dart';
 import '../calendar/workout_contextual_launcher.dart';
@@ -32,6 +33,9 @@ import 'widgets/dashboard_module_customization_panel.dart';
 
 /// B05's daily action surface. It composes source-owned B01–B04 reads and
 /// existing routes; it is not another dashboard data authority.
+bool shouldShowDashboardActivityRecoveryPrompt(WorkoutDraft? draft) =>
+    draft != null && !isTrainingResumableDraft(draft);
+
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
@@ -52,15 +56,23 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     try {
       final repo = ref.read(workoutRepositoryProvider);
       final draft = await repo.getActiveDraft();
-      if (draft == null || !mounted) return;
+      // Today and Training already expose the one canonical Resume action for
+      // workout drafts. Keep this launch-time recovery prompt only for the
+      // competing non-training activity drafts that those surfaces cannot
+      // resume themselves.
+      if (draft == null ||
+          !mounted ||
+          !shouldShowDashboardActivityRecoveryPrompt(draft)) {
+        return;
+      }
 
       await showDialog(
         context: context,
         barrierDismissible: false,
         builder: (dialogContext) => AlertDialog(
-          title: const Text('Resume workout?'),
+          title: const Text('Resume activity?'),
           content: Text(
-            'You have an unfinished workout session ("${draft.routineName}") from your last visit. Would you like to resume it?',
+            'You have an unfinished activity ("${draft.routineName}") from your last visit. Would you like to resume it?',
           ),
           actions: [
             TextButton(
@@ -176,7 +188,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   await _refreshToday();
                 }
               },
-              child: const Text('Resume'),
+              child: const Text('Resume activity'),
             ),
           ],
         ),

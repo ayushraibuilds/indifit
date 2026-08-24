@@ -34,11 +34,6 @@ const List<WeeklyActionOption> kWeeklyActionOptions = [
     text: 'Complete 3 workout sessions next week',
     targetDays: 3,
   ),
-  WeeklyActionOption(
-    type: 'water_intake',
-    text: 'Log daily water intake 6 days next week',
-    targetDays: 6,
-  ),
 ];
 
 class WeeklyReportScreen extends ConsumerStatefulWidget {
@@ -533,12 +528,6 @@ class _WeeklyReportScreenState extends ConsumerState<WeeklyReportScreen> {
               valueText:
                   '${m.completedWorkoutsCount} / ${m.plannedWorkoutsCount > 0 ? m.plannedWorkoutsCount : "–"} completed (${m.totalVolumeKg.toStringAsFixed(0)} kg, ${m.prsCount} PRs)',
               score: b.workoutScore,
-            ),
-            const SizedBox(height: 8),
-            _buildMetricProgressRow(
-              label: 'Hydration Goal',
-              valueText: '${m.hydrationDaysAtGoal} / 7 days at goal',
-              score: b.hydrationScore,
             ),
           ],
         ),
