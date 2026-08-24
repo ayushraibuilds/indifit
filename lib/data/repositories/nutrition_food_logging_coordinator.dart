@@ -279,6 +279,262 @@ class NutritionFoodLoggingCoordinator {
     }
   }
 
+  /// Applies a direct-food correction to one exact item in an immutable
+  /// snapshot.
+  ///
+  /// B03 history is append-only: the predecessor remains intact and the
+  /// successor contains the unchanged items plus the edited replacement. The
+  /// item ID supplied by the caller is an exact persisted identity; display
+  /// names, quantities, and list positions are never used to select it.
+  /// Passing a null [replacement] removes only that item. If it is the last
+  /// item, the canonical retraction path is used instead.
+  Future<NutritionConsumptionSnapshot> correctDirectFoodItem({
+    required String userId,
+    required String snapshotId,
+    required String itemId,
+    required String expectedMealCategory,
+    required String mealCategory,
+    required String localDate,
+    required String timezoneId,
+    required DateTime loggedAtUtc,
+    required String commandId,
+    required String correctionReason,
+    NutritionFoodLogPreview? replacement,
+  }) async {
+    final normalizedUserId = userId.trim();
+    final normalizedSnapshotId = snapshotId.trim();
+    final normalizedItemId = itemId.trim();
+    final normalizedExpectedMeal = expectedMealCategory.trim().toLowerCase();
+    final normalizedMeal = mealCategory.trim().toLowerCase();
+    final normalizedLocalDate = localDate.trim();
+    final normalizedTimezone = timezoneId.trim();
+    final normalizedCommand = commandId.trim();
+    final normalizedReason = correctionReason.trim();
+    const supportedMeals = {'breakfast', 'lunch', 'dinner', 'snack'};
+    if (normalizedUserId.isEmpty ||
+        normalizedSnapshotId.isEmpty ||
+        normalizedItemId.isEmpty ||
+        normalizedExpectedMeal.isEmpty ||
+        normalizedMeal.isEmpty ||
+        normalizedLocalDate.isEmpty ||
+        normalizedTimezone.isEmpty ||
+        normalizedCommand.isEmpty ||
+        normalizedReason.isEmpty) {
+      throw const NutritionFoodLoggingError(
+        'invalid_food_correction',
+        'A food correction needs an exact entry, meal, date, timezone, and command.',
+      );
+    }
+    if (!supportedMeals.contains(normalizedExpectedMeal) ||
+        !supportedMeals.contains(normalizedMeal)) {
+      throw const NutritionFoodLoggingError(
+        'unsupported_food_correction_meal',
+        'Choose Breakfast, Lunch, Dinner, or Snack for this food.',
+      );
+    }
+
+    final predecessor = await _consumption.getSnapshot(
+      userId: normalizedUserId,
+      consumptionId: normalizedSnapshotId,
+    );
+    if (predecessor == null) {
+      throw const NutritionFoodLoggingError(
+        'missing_food_correction_predecessor',
+        'This logged food is no longer available. Refresh and try again.',
+      );
+    }
+    if (predecessor.sourceType != 'direct_food' || predecessor.isRetraction) {
+      throw const NutritionFoodLoggingError(
+        'unsupported_food_correction_source',
+        'Only a directly logged food can be edited here.',
+      );
+    }
+    if (predecessor.localDate != normalizedLocalDate ||
+        predecessor.mealCategory.trim().toLowerCase() !=
+            normalizedExpectedMeal ||
+        predecessor.timezoneId != normalizedTimezone ||
+        !predecessor.loggedAtUtc.toUtc().isAtSameMomentAs(
+          loggedAtUtc.toUtc(),
+        )) {
+      throw const NutritionFoodLoggingError(
+        'food_correction_context_mismatch',
+        'This food moved or changed before the edit was saved. Refresh and try again.',
+      );
+    }
+    if (predecessor.constraintEvaluation != null ||
+        predecessor.constraintAcknowledgement != null) {
+      throw const NutritionFoodLoggingError(
+        'unsupported_food_correction_constraints',
+        'This logged food needs a constraint-aware correction path.',
+      );
+    }
+    final target = predecessor.items
+        .where((item) => item.id == normalizedItemId)
+        .firstOrNull;
+    if (target == null ||
+        target.sourceType != 'direct_food' ||
+        target.foodId == null) {
+      throw const NutritionFoodLoggingError(
+        'missing_food_correction_item',
+        'The selected food entry is no longer available. Refresh and try again.',
+      );
+    }
+    if (predecessor.items.any(
+      (item) => item.sourceType != 'direct_food' || item.foodId == null,
+    )) {
+      throw const NutritionFoodLoggingError(
+        'unsupported_mixed_food_correction',
+        'This meal contains a composition that cannot be edited one food at a time.',
+      );
+    }
+    if (replacement != null &&
+        replacement.calculation.calculationRuleVersion !=
+            predecessor.calculatorVersion) {
+      throw const NutritionFoodLoggingError(
+        'food_correction_calculation_version',
+        'This food uses an older nutrition calculation and cannot be safely edited here.',
+      );
+    }
+
+    final digest = sha256
+        .convert(
+          utf8.encode(
+            '$normalizedUserId\u0000$normalizedSnapshotId\u0000$normalizedItemId\u0000$normalizedCommand',
+          ),
+        )
+        .toString();
+    final correctionId = 'direct-food-correction::$digest';
+    final successorId = 'direct-food-successor::$digest';
+
+    if (replacement == null && predecessor.items.length == 1) {
+      try {
+        return await _consumption.retractConsumption(
+          userId: normalizedUserId,
+          snapshotId: normalizedSnapshotId,
+          expectedLocalDate: normalizedLocalDate,
+          expectedMealCategory: normalizedExpectedMeal,
+          commandId: normalizedCommand,
+          reason: normalizedReason,
+        );
+      } on NutritionConsumptionError catch (error) {
+        throw NutritionFoodLoggingError(
+          error.code,
+          error.message,
+          cause: error,
+        );
+      }
+    }
+
+    final requestedNutrients = predecessor.completeness.requestedNutrientIds;
+    final items = <NutritionConsumptionItemInput>[];
+    var successorPosition = 0;
+    for (var position = 0; position < predecessor.items.length; position++) {
+      final item = predecessor.items[position];
+      if (replacement == null && item.id == normalizedItemId) continue;
+
+      final isTarget = item.id == normalizedItemId;
+      final itemIdForSuccessor = '$successorId::item::$successorPosition';
+      final calculation = isTarget && replacement != null
+          ? NutritionConsumptionCalculationSnapshot.fromFacts(
+              facts: replacement.facts,
+              registry: _registry,
+              requestedNutrientIds: requestedNutrients,
+              calculatorVersion: predecessor.calculatorVersion,
+              calculationFingerprint:
+                  'direct-food-edit::$normalizedSnapshotId::$normalizedItemId::${replacement.calculationSnapshot.calculationFingerprint}',
+              lineage: {
+                'replacement_item_id': normalizedItemId,
+                'replacement_calculation': replacement.calculationSnapshot
+                    .toJson(),
+              },
+            )
+          : NutritionConsumptionCalculationSnapshot.fromFacts(
+              facts: item.facts,
+              registry: _registry,
+              requestedNutrientIds: requestedNutrients,
+              calculatorVersion: predecessor.calculatorVersion,
+              calculationFingerprint:
+                  'direct-food-preserved::$normalizedSnapshotId::${item.id}::${predecessor.lineage.contentFingerprint}',
+              lineage: {'preserved_item_id': item.id},
+            );
+      final quantity = isTarget && replacement != null
+          ? replacement.quantity
+          : item.quantity;
+      final foodId = isTarget && replacement != null
+          ? replacement.effectiveFood.id
+          : item.foodId!;
+      final preparationId = isTarget && replacement != null
+          ? replacement.preparationId
+          : item.preparationId;
+      final sourceReference = isTarget && replacement != null
+          ? replacement.effectiveFood.sourceReference
+          : item.sourceReference;
+      final displayLabel = isTarget && replacement != null
+          ? replacement.effectiveFood.displayName
+          : item.displayLabel;
+      items.add(
+        NutritionConsumptionItemInput(
+          id: itemIdForSuccessor,
+          position: successorPosition,
+          sourceType: 'direct_food',
+          foodId: foodId,
+          preparationId: preparationId,
+          sourceReference: sourceReference,
+          displayLabel: displayLabel,
+          quantity: quantity,
+          calculation: calculation,
+          evidence: {
+            'correction_item_id': item.id,
+            if (isTarget && replacement != null)
+              'operation': 'update'
+            else
+              'operation': 'preserve',
+          },
+        ),
+      );
+      successorPosition++;
+    }
+    if (items.isEmpty) {
+      throw const NutritionFoodLoggingError(
+        'empty_food_correction',
+        'A meal must retain at least one logged food.',
+      );
+    }
+
+    try {
+      return await _consumption.finalizeConsumption(
+        NutritionConsumptionFinalizeRequest(
+          userId: normalizedUserId,
+          consumptionId: successorId,
+          commandId: normalizedCommand,
+          loggedAtUtc: loggedAtUtc,
+          mealCategory: normalizedMeal,
+          mealGroupId: predecessor.mealGroupId,
+          sourceType: 'direct_food',
+          localDate: normalizedLocalDate,
+          timezoneId: normalizedTimezone,
+          calculatorVersion: predecessor.calculatorVersion,
+          evidence: {
+            'direct_food_correction': {
+              'operation': replacement == null ? 'delete_item' : 'update_item',
+              'predecessor_snapshot_id': normalizedSnapshotId,
+              'predecessor_item_id': normalizedItemId,
+              'expected_meal_category': normalizedExpectedMeal,
+              'meal_category': normalizedMeal,
+              'local_date': normalizedLocalDate,
+            },
+          },
+          items: items,
+          supersedesSnapshotId: normalizedSnapshotId,
+          correctionId: correctionId,
+          correctionReason: normalizedReason,
+        ),
+      );
+    } on NutritionConsumptionError catch (error) {
+      throw NutritionFoodLoggingError(error.code, error.message, cause: error);
+    }
+  }
+
   /// Finalizes several direct foods as one immutable meal snapshot.
   ///
   /// The snapshot item graph is already the B03 unit of atomicity. Keeping a

@@ -664,23 +664,30 @@ class _MealCard extends ConsumerWidget {
             )
           else ...[
             ...mealLogs.map((log) => _LoggedItemRow(log: log)),
-            ...?canonicalRecords?.map(
-              (record) => _CanonicalItemRow(
-                record: record,
-                onDelete:
-                    record.items.any(
-                      (item) =>
-                          item.originSourceType == 'direct_food' &&
-                          item.foodId != null,
-                    )
-                    ? () => showCanonicalFoodDelete(
-                        context: context,
-                        ref: ref,
-                        record: record,
-                      )
-                    : null,
-              ),
-            ),
+            ...?canonicalRecords?.expand((record) {
+              final items = record.items
+                  .where(
+                    (candidate) =>
+                        candidate.originSourceType == 'direct_food' &&
+                        candidate.foodId != null,
+                  )
+                  .toList(growable: false);
+              if (items.isEmpty) {
+                return [_CanonicalItemRow(record: record)];
+              }
+              return items.map(
+                (item) => _CanonicalItemRow(
+                  record: record,
+                  item: item,
+                  onDelete: () => showCanonicalFoodItemDelete(
+                    context: context,
+                    ref: ref,
+                    record: record,
+                    item: item,
+                  ),
+                ),
+              );
+            }),
             const Divider(color: AppColors.border, height: 20),
             Row(
               children: [
@@ -745,16 +752,17 @@ class _MealCard extends ConsumerWidget {
 
 class _CanonicalItemRow extends StatelessWidget {
   final NutritionHistoricalReadRecord record;
+  final NutritionHistoricalReadItem? item;
   final Future<bool> Function()? onDelete;
 
-  const _CanonicalItemRow({required this.record, this.onDelete});
+  const _CanonicalItemRow({required this.record, this.item, this.onDelete});
 
   @override
   Widget build(BuildContext context) {
-    final item = record.items.isEmpty ? null : record.items.first;
-    final energy = record.totals.facts['energy'];
-    final isRecipe = record.items.any((item) => item.recipeVersionId != null);
-    final quantity = item?.quantity.quantity;
+    final displayedItem = item ?? record.items.firstOrNull;
+    final energy = item?.facts['energy'] ?? record.totals.facts['energy'];
+    final isRecipe = displayedItem?.recipeVersionId != null;
+    final quantity = displayedItem?.quantity.quantity;
     final amount = quantity == null
         ? null
         : '${quantity.amount} ${quantity.definition.displayLabel}';
@@ -782,7 +790,7 @@ class _CanonicalItemRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  record.displayLabel,
+                  displayedItem?.displayLabel ?? record.displayLabel,
                   style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
                 Text(
@@ -817,7 +825,8 @@ class _CanonicalItemRow extends StatelessWidget {
             )
           else
             IconButton(
-              tooltip: 'Delete ${record.displayLabel}',
+              tooltip:
+                  'Delete ${displayedItem?.displayLabel ?? record.displayLabel}',
               visualDensity: VisualDensity.compact,
               onPressed: () => onDelete!(),
               icon: const Icon(Icons.delete_outline_rounded, size: 18),
@@ -865,9 +874,7 @@ class _LoggedItemRow extends ConsumerWidget {
           builder: (dialogCtx) => AlertDialog(
             backgroundColor: dialogCtx.b05Colors.section,
             title: const Text('Delete food entry?'),
-            content: Text(
-              'Remove "${log.name}" from this logged meal?',
-            ),
+            content: Text('Remove "${log.name}" from this logged meal?'),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(dialogCtx, false),
