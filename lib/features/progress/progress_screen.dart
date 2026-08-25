@@ -45,7 +45,15 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final units = ref.watch(unitPreferenceProvider);
+    // Some deterministic preview fixtures intentionally render without a
+    // ProviderScope; production and scoped previews still consume the shared
+    // unit preference authority.
+    var units = 'kg';
+    try {
+      units = ref.watch(unitPreferenceProvider);
+    } on StateError {
+      units = 'kg';
+    }
     return Scaffold(
       appBar: AppBar(
         title: const Text('Progress'),
@@ -469,16 +477,13 @@ class _ProgressHighlights extends StatelessWidget {
     if (dailyWeights.isNotEmpty) {
       final latest = dailyWeights.last;
       final detail = _weightOverviewDetail(allWeights, units);
-      final trendLabel = _weightGoalTrendLabel(snapshot, allWeights);
       highlights.add(
         _ProgressHighlight(
           label: 'Weight',
           value: _formatWeight(latest.weightKg!, units),
           detail: detail,
           icon: _weightDirectionIcon(allWeights),
-          accent: _goalAwareTrendColor(context, snapshot, allWeights),
-          semanticDetail: _weightSemantics(snapshot, allWeights, units),
-          statusLabel: trendLabel,
+          semanticDetail: _weightSemantics(allWeights, units),
         ),
       );
     }
@@ -561,9 +566,7 @@ class _ProgressHighlight {
     required this.value,
     required this.detail,
     required this.icon,
-    this.accent,
     this.semanticDetail,
-    this.statusLabel,
     this.onPressed,
     this.actionLabel,
   });
@@ -572,9 +575,7 @@ class _ProgressHighlight {
   final String value;
   final String detail;
   final IconData icon;
-  final Color? accent;
   final String? semanticDetail;
-  final String? statusLabel;
   final VoidCallback? onPressed;
   final String? actionLabel;
 }
@@ -587,7 +588,7 @@ class _ProgressHighlightTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.b05Colors;
-    final accent = highlight.accent ?? colors.action;
+    final accent = colors.action;
     final semanticLabel =
         '${highlight.label}: ${highlight.value}. '
         '${highlight.semanticDetail ?? highlight.detail}';
@@ -635,17 +636,6 @@ class _ProgressHighlightTile extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: B05Typography.caption(context),
           ),
-          if (highlight.statusLabel case final status?) ...[
-            const SizedBox(height: B05Layout.space4),
-            Text(
-              status,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: B05Typography.caption(
-                context,
-              ).copyWith(color: colors.success.foreground),
-            ),
-          ],
         ],
       ),
     );
@@ -1067,11 +1057,7 @@ class _WeightSectionState extends State<_WeightSection> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Semantics(
-                label: _weightSemantics(
-                  widget.snapshot,
-                  measurements,
-                  widget.units,
-                ),
+                label: _weightSemantics(measurements, widget.units),
                 child: ExcludeSemantics(
                   child: Text(
                     _formatWeight(latest.weightKg!, widget.units),
@@ -1084,14 +1070,6 @@ class _WeightSectionState extends State<_WeightSection> {
                 _weightDetail(measurements, widget.units),
                 style: B05Typography.body(context),
               ),
-              if (widget.snapshot.weightGoal case final goal?) ...[
-                const SizedBox(height: B05Layout.space12),
-                _WeightGoalSummary(
-                  goal: goal,
-                  currentWeight: latest.weightKg!,
-                  units: widget.units,
-                ),
-              ],
               if (showRangeSelector) ...[
                 const SizedBox(height: B05Layout.space16),
                 _WeightRangeSelector(
@@ -1124,11 +1102,7 @@ class _WeightSectionState extends State<_WeightSection> {
                 const SizedBox(height: B05Layout.space20),
                 Semantics(
                   container: true,
-                  label: _weightSemantics(
-                    widget.snapshot,
-                    measurements,
-                    widget.units,
-                  ),
+                  label: _weightSemantics(measurements, widget.units),
                   hint:
                       'Drag across the chart to inspect each recorded weight.',
                   child: SizedBox(
@@ -1139,7 +1113,6 @@ class _WeightSectionState extends State<_WeightSection> {
                         context: context,
                         measurements: dailyMeasurements,
                         units: widget.units,
-                        goal: widget.snapshot.weightGoal,
                         onTouch: (index) =>
                             setState(() => _touchedPoint = index),
                       ),
@@ -1283,88 +1256,6 @@ class ProgressWeightHistoryScreen extends StatelessWidget {
                 );
               },
             ),
-    );
-  }
-}
-
-class _WeightGoalSummary extends StatelessWidget {
-  const _WeightGoalSummary({
-    required this.goal,
-    required this.currentWeight,
-    required this.units,
-  });
-
-  final ProgressWeightGoal goal;
-  final double currentWeight;
-  final String units;
-
-  @override
-  Widget build(BuildContext context) {
-    final targetLabel =
-        goal.direction == ProgressWeightGoalDirection.maintenance
-        ? 'Target ${_formatWeight(goal.targetKg, units)}'
-        : 'Goal ${_formatWeight(goal.targetKg, units)}';
-    final progressLabel = _weightGoalProgressLabel(goal, currentWeight, units);
-    return Semantics(
-      label: progressLabel == null
-          ? targetLabel
-          : '$targetLabel. $progressLabel.',
-      child: B05Surface(
-        tone: B05SurfaceTone.inset,
-        radius: B05SurfaceRadius.small,
-        padding: const EdgeInsets.symmetric(
-          horizontal: B05Layout.space12,
-          vertical: B05Layout.space8,
-        ),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
-            final stacked = constraints.maxWidth < 330 || textScale >= 1.5;
-            final target = Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.flag_outlined,
-                  size: 18,
-                  color: context.b05Colors.action,
-                ),
-                const SizedBox(width: B05Layout.space8),
-                Flexible(
-                  child: Text(
-                    targetLabel,
-                    style: B05Typography.caption(context),
-                  ),
-                ),
-              ],
-            );
-            final progressText = Text(
-              progressLabel ?? '',
-              style: B05Typography.label(context),
-            );
-            if (progressLabel == null) return target;
-            if (stacked) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  target,
-                  const SizedBox(height: B05Layout.space4),
-                  Padding(
-                    padding: const EdgeInsets.only(left: 26),
-                    child: progressText,
-                  ),
-                ],
-              );
-            }
-            return Row(
-              children: [
-                Expanded(child: target),
-                const SizedBox(width: B05Layout.space8),
-                progressText,
-              ],
-            );
-          },
-        ),
-      ),
     );
   }
 }
@@ -2355,19 +2246,12 @@ String _weightDetail(
 }
 
 String _weightSemantics(
-  ProgressDashboardSnapshot snapshot,
   List<ProgressMeasurementRecord> measurements,
   String units,
 ) {
   final latest = _dailyWeightObservations(measurements).last;
   final detail = _weightDetail(measurements, units);
-  final goal = snapshot.weightGoal;
-  final goalText = goal == null
-      ? ''
-      : goal.direction == ProgressWeightGoalDirection.maintenance
-      ? ' Target ${_formatWeight(goal.targetKg, units)}.'
-      : ' Goal ${_formatWeight(goal.targetKg, units)}, ${_weightGoalProgressLabel(goal, latest.weightKg!, units)}.';
-  return 'Weight: ${_formatWeight(latest.weightKg!, units)}. $detail.$goalText';
+  return 'Weight: ${_formatWeight(latest.weightKg!, units)}. $detail.';
 }
 
 IconData _weightDirectionIcon(List<ProgressMeasurementRecord> measurements) {
@@ -2380,93 +2264,10 @@ IconData _weightDirectionIcon(List<ProgressMeasurementRecord> measurements) {
   return Icons.horizontal_rule_rounded;
 }
 
-/// At-goal language follows the displayed precision so an invisible floating
-/// point difference cannot create a misleading remaining-distance claim.
-bool _isAtWeightGoal(double currentWeight, double targetWeight) =>
-    currentWeight.toStringAsFixed(1) == targetWeight.toStringAsFixed(1);
-
-String? _weightGoalProgressLabel(
-  ProgressWeightGoal goal,
-  double currentWeight,
-  String units,
-) {
-  if (goal.direction == ProgressWeightGoalDirection.maintenance) return null;
-  if (_isAtWeightGoal(currentWeight, goal.targetKg)) return 'At your goal';
-
-  final distance = _formatWeight((currentWeight - goal.targetKg).abs(), units);
-  return switch (goal.direction) {
-    ProgressWeightGoalDirection.loss =>
-      currentWeight > goal.targetKg
-          ? '$distance to go'
-          : '$distance below your goal',
-    ProgressWeightGoalDirection.gain =>
-      currentWeight < goal.targetKg
-          ? '$distance to go'
-          : '$distance above your goal',
-    ProgressWeightGoalDirection.maintenance => null,
-  };
-}
-
-bool _hasPassedWeightGoal(
-  List<ProgressMeasurementRecord> measurements,
-  double targetWeight,
-) {
-  final hasAboveTarget = measurements.any(
-    (measurement) => measurement.weightKg! > targetWeight,
-  );
-  final hasBelowTarget = measurements.any(
-    (measurement) => measurement.weightKg! < targetWeight,
-  );
-  final reachedBeforeLatest = measurements
-      .take(measurements.length - 1)
-      .any(
-        (measurement) => _isAtWeightGoal(measurement.weightKg!, targetWeight),
-      );
-  return (hasAboveTarget && hasBelowTarget) || reachedBeforeLatest;
-}
-
-bool _isMovingTowardWeightGoal(
-  ProgressWeightGoal goal,
-  List<ProgressMeasurementRecord> measurements,
-) {
-  if (goal.direction == ProgressWeightGoalDirection.maintenance) return false;
-  final dailyMeasurements = _dailyWeightObservations(measurements);
-  if (dailyMeasurements.length < 2) return false;
-  final last = dailyMeasurements.last;
-  if (_isAtWeightGoal(last.weightKg!, goal.targetKg)) return true;
-  if (_hasPassedWeightGoal(dailyMeasurements, goal.targetKg)) return false;
-  return (last.weightKg! - goal.targetKg).abs() <
-      (dailyMeasurements.first.weightKg! - goal.targetKg).abs();
-}
-
-String? _weightGoalTrendLabel(
-  ProgressDashboardSnapshot snapshot,
-  List<ProgressMeasurementRecord> measurements,
-) {
-  final goal = snapshot.weightGoal;
-  if (goal == null || !_hasWeightChartHistory(measurements)) return null;
-  if (!_isMovingTowardWeightGoal(goal, measurements)) return null;
-  final latest = _dailyWeightObservations(measurements).last;
-  return _isAtWeightGoal(latest.weightKg!, goal.targetKg)
-      ? 'At your goal'
-      : 'Moving closer to your goal';
-}
-
-Color? _goalAwareTrendColor(
-  BuildContext context,
-  ProgressDashboardSnapshot snapshot,
-  List<ProgressMeasurementRecord> measurements,
-) {
-  return _weightGoalTrendLabel(snapshot, measurements) == null
-      ? null
-      : context.b05Colors.success.indicator;
-}
-
 LineChartData _weightChartData({
   required BuildContext context,
   required List<ProgressMeasurementRecord> measurements,
   required String units,
-  required ProgressWeightGoal? goal,
   required ValueChanged<int> onTouch,
 }) {
   final colors = context.b05Colors;
@@ -2501,11 +2302,6 @@ LineChartData _weightChartData({
         ? 1
         : (minY * 1.01).clamp(minY, double.maxFinite).toDouble();
   }
-  final displayedGoal = goal == null
-      ? null
-      : UnitPreferencePresentation.weightForDisplay(goal.targetKg, units);
-  final canShowGoalLine =
-      displayedGoal != null && displayedGoal >= minY && displayedGoal <= maxY;
   return LineChartData(
     gridData: FlGridData(
       show: true,
@@ -2574,24 +2370,6 @@ LineChartData _weightChartData({
         ],
       ),
     ),
-    extraLinesData: canShowGoalLine
-        ? ExtraLinesData(
-            horizontalLines: [
-              HorizontalLine(
-                y: displayedGoal!,
-                color: colors.action.withValues(alpha: .8),
-                strokeWidth: 1,
-                dashArray: [6, 4],
-                label: HorizontalLineLabel(
-                  show: true,
-                  alignment: Alignment.topRight,
-                  labelResolver: (_) => 'Goal',
-                  style: B05Typography.caption(context),
-                ),
-              ),
-            ],
-          )
-        : const ExtraLinesData(),
     lineBarsData: [
       LineChartBarData(
         spots: [
