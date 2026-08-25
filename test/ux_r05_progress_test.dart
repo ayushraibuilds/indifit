@@ -312,9 +312,9 @@ void main() {
             : AppTheme.lightTheme,
       );
 
-      expect(find.text('Overview'), findsOneWidget);
+      expect(find.text('Highlights'), findsOneWidget);
       expect(find.text('Training consistency'), findsOneWidget);
-      expect(find.text('Strength'), findsOneWidget);
+      expect(find.text('Strength'), findsWidgets);
       expect(find.text('Training volume'), findsOneWidget);
       expect(find.text('Recent training emphasis'), findsOneWidget);
       expect(find.text('Moving closer to your goal'), findsOneWidget);
@@ -435,7 +435,7 @@ void main() {
       _setViewport(tester, const Size(390, 844));
       await _pump(tester, _bodyMeasurementOnly(), AppTheme.darkTheme);
 
-      await tester.ensureVisible(find.text('Measurements'));
+      await tester.ensureVisible(find.text('Measurements').last);
       expect(find.text('Weight'), findsNothing);
       expect(find.text('Waist'), findsOneWidget);
       expect(find.text('80 cm'), findsWidgets);
@@ -520,7 +520,7 @@ void main() {
       _setViewport(tester, const Size(390, 844));
       await _pump(tester, _mixedData(), AppTheme.lightTheme);
 
-      expect(find.text('Weight'), findsOneWidget);
+      expect(find.text('Weight'), findsWidgets);
       expect(find.text('Training consistency'), findsNothing);
       expect(
         find.text('Some progress details are unavailable'),

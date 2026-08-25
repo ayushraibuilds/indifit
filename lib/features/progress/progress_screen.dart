@@ -109,9 +109,10 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _ProgressOverview(
+                _ProgressHighlights(
                   snapshot: snapshot,
-                  selectedWeights: _weightsForRange(snapshot, range),
+                  onViewTrainingHistory: _openTrainingHistory,
+                  onViewStrengthHistory: _openStrengthHistory,
                 ),
                 if (snapshot.unavailableSections.isNotEmpty) ...[
                   const SizedBox(height: B05Layout.space12),
@@ -391,31 +392,32 @@ enum _ProgressTimeRange {
   }
 }
 
-class _ProgressOverview extends StatelessWidget {
-  const _ProgressOverview({
+class _ProgressHighlights extends StatelessWidget {
+  const _ProgressHighlights({
     required this.snapshot,
-    required this.selectedWeights,
+    required this.onViewTrainingHistory,
+    required this.onViewStrengthHistory,
   });
 
   final ProgressDashboardSnapshot snapshot;
-  final List<ProgressMeasurementRecord> selectedWeights;
+  final VoidCallback onViewTrainingHistory;
+  final void Function(String name, String stableExerciseId)
+  onViewStrengthHistory;
 
   @override
   Widget build(BuildContext context) {
-    final dailyWeights = _dailyWeightObservations(selectedWeights);
-    final metrics = <Widget>[];
-
+    final highlights = <_ProgressHighlight>[];
     final thisWeek = _workoutsThisWeek(snapshot);
     if (thisWeek.isNotEmpty) {
-      metrics.add(
-        _OverviewMetric(
-          value: '${thisWeek.length}',
-          label: thisWeek.length == 1
-              ? 'workout this week'
-              : 'workouts this week',
-          semanticLabel:
-              '${thisWeek.length} ${thisWeek.length == 1 ? 'workout' : 'workouts'} completed this week',
-          direction: Icons.calendar_today_rounded,
+      highlights.add(
+        _ProgressHighlight(
+          label: 'Training',
+          value:
+              '${thisWeek.length} ${thisWeek.length == 1 ? 'workout' : 'workouts'}',
+          detail: 'completed this week',
+          icon: Icons.fitness_center_rounded,
+          onPressed: onViewTrainingHistory,
+          actionLabel: 'View workout history',
         ),
       );
     }
@@ -424,79 +426,106 @@ class _ProgressOverview extends StatelessWidget {
       snapshot.strengthSets ?? const [],
     );
     if (strength != null) {
-      metrics.add(
-        _OverviewMetric(
+      highlights.add(
+        _ProgressHighlight(
+          label: 'Strength',
           value: _formatSet(strength.heaviest),
-          label: strength.comparisonText ?? strength.exerciseName,
-          semanticLabel:
-              '${strength.exerciseName}, ${_formatSet(strength.heaviest)}. ${strength.comparisonText ?? 'Heaviest recorded performed set.'}',
-          direction: Icons.fitness_center_rounded,
+          detail: strength.comparisonText == null
+              ? strength.exerciseName
+              : '${strength.exerciseName} · ${strength.comparisonText}',
+          icon: Icons.show_chart_rounded,
+          onPressed: () =>
+              onViewStrengthHistory(strength.exerciseName, strength.exerciseId),
+          actionLabel: 'View strength history',
         ),
       );
     }
 
+    final allWeights = snapshot.weightMeasurements.toList(growable: true)
+      ..sort(_compareMeasurementsChronologically);
+    final dailyWeights = _dailyWeightObservations(allWeights);
     if (dailyWeights.isNotEmpty) {
       final latest = dailyWeights.last;
-      metrics.add(
-        _OverviewMetric(
+      final detail = _weightOverviewDetail(allWeights);
+      final trendLabel = _weightGoalTrendLabel(snapshot, allWeights);
+      highlights.add(
+        _ProgressHighlight(
+          label: 'Weight',
           value: _formatWeight(latest.weightKg!),
-          label: _weightOverviewDetail(selectedWeights),
-          semanticLabel: _weightSemantics(snapshot, selectedWeights),
-          direction: _weightDirectionIcon(selectedWeights),
-          color: _goalAwareTrendColor(context, snapshot, selectedWeights),
-          statusLabel: _weightGoalTrendLabel(snapshot, selectedWeights),
+          detail: detail,
+          icon: _weightDirectionIcon(allWeights),
+          accent: _goalAwareTrendColor(context, snapshot, allWeights),
+          semanticDetail: _weightSemantics(snapshot, allWeights),
+          statusLabel: trendLabel,
         ),
       );
     }
 
-    if (snapshot.nutritionSummary != null &&
-        snapshot.nutritionSummary!.hasAnyLoggedDays) {
-      final nut = snapshot.nutritionSummary!;
-      final label = _nutritionAdherenceLabel(nut);
-      metrics.add(
-        _OverviewMetric(
-          value: nut.averageCaloriesKcal != null
-              ? '${_formatVolume(nut.averageCaloriesKcal!)} kcal'
-              : '${nut.loggedDaysCount} days logged',
-          label: label,
-          semanticLabel:
-              'Nutrition: ${nut.averageCaloriesKcal != null ? '${_formatVolume(nut.averageCaloriesKcal!)} average calories across ${nut.calorieEvidenceDaysCount} complete days. ' : ''}$label.',
-          direction: Icons.restaurant_rounded,
+    final nutrition = snapshot.nutritionSummary;
+    if (nutrition != null && nutrition.hasAnyLoggedDays) {
+      final detail = _nutritionAdherenceLabel(nutrition);
+      highlights.add(
+        _ProgressHighlight(
+          label: 'Nutrition',
+          value: nutrition.averageCaloriesKcal != null
+              ? '${_formatVolume(nutrition.averageCaloriesKcal!)} kcal'
+              : '${nutrition.loggedDaysCount} days logged',
+          detail: detail,
+          icon: Icons.restaurant_rounded,
+          semanticDetail:
+              'Nutrition: ${nutrition.averageCaloriesKcal != null ? '${_formatVolume(nutrition.averageCaloriesKcal!)} average calories across ${nutrition.calorieEvidenceDaysCount} complete days. ' : ''}$detail.',
         ),
       );
     }
 
-    if (metrics.isEmpty && snapshot.bodyMeasurements.isNotEmpty) {
+    if (highlights.isEmpty && snapshot.bodyMeasurements.isNotEmpty) {
       final measurements = snapshot.bodyMeasurements.toList(growable: true)
         ..sort(_compareMeasurementsNewestFirst);
       final bodyValues = _bodyMeasurementValues(measurements);
       if (bodyValues.isNotEmpty) {
         final value = bodyValues.first;
-        metrics.add(
-          _OverviewMetric(
+        highlights.add(
+          _ProgressHighlight(
+            label: 'Measurements',
             value: '${_formatNumber(value.value)} cm',
-            label: 'latest ${value.label.toLowerCase()}',
-            semanticLabel:
+            detail: 'latest ${value.label.toLowerCase()}',
+            icon: Icons.straighten_rounded,
+            semanticDetail:
                 '${value.label}: ${_formatNumber(value.value)} centimetres, latest measurement.',
-            direction: Icons.straighten_rounded,
           ),
         );
       }
     }
 
-    if (metrics.isEmpty) return const SizedBox.shrink();
+    if (highlights.isEmpty) return const SizedBox.shrink();
 
     return Semantics(
       container: true,
-      label: 'Overview',
+      label: 'Progress highlights',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const _SectionHeading(title: 'Overview'),
+          const _SectionHeading(title: 'Highlights'),
           const SizedBox(height: B05Layout.space8),
-          B05Surface(
-            padding: const EdgeInsets.all(B05Layout.space20),
-            child: Wrap(spacing: 24, runSpacing: 20, children: metrics),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
+              final twoColumns = constraints.maxWidth >= 330 && textScale < 1.5;
+              final width = twoColumns
+                  ? (constraints.maxWidth - B05Layout.space12) / 2
+                  : constraints.maxWidth;
+              return Wrap(
+                spacing: B05Layout.space12,
+                runSpacing: B05Layout.space12,
+                children: [
+                  for (final highlight in highlights)
+                    SizedBox(
+                      width: width,
+                      child: _ProgressHighlightTile(highlight: highlight),
+                    ),
+                ],
+              );
+            },
           ),
         ],
       ),
@@ -504,67 +533,120 @@ class _ProgressOverview extends StatelessWidget {
   }
 }
 
-class _OverviewMetric extends StatelessWidget {
-  const _OverviewMetric({
-    required this.value,
+class _ProgressHighlight {
+  const _ProgressHighlight({
     required this.label,
-    required this.semanticLabel,
-    required this.direction,
-    this.color,
+    required this.value,
+    required this.detail,
+    required this.icon,
+    this.accent,
+    this.semanticDetail,
     this.statusLabel,
+    this.onPressed,
+    this.actionLabel,
   });
 
-  final String value;
   final String label;
-  final String semanticLabel;
-  final IconData direction;
-  final Color? color;
+  final String value;
+  final String detail;
+  final IconData icon;
+  final Color? accent;
+  final String? semanticDetail;
   final String? statusLabel;
+  final VoidCallback? onPressed;
+  final String? actionLabel;
+}
+
+class _ProgressHighlightTile extends StatelessWidget {
+  const _ProgressHighlightTile({required this.highlight});
+
+  final _ProgressHighlight highlight;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.b05Colors;
-    final valueColor = color ?? colors.textPrimary;
-    return Semantics(
-      label: semanticLabel,
-      child: ExcludeSemantics(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minWidth: 132, maxWidth: 240),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
+    final accent = highlight.accent ?? colors.action;
+    final semanticLabel =
+        '${highlight.label}: ${highlight.value}. '
+        '${highlight.semanticDetail ?? highlight.detail}';
+    final surface = B05Surface(
+      tone: highlight.onPressed == null
+          ? B05SurfaceTone.inset
+          : B05SurfaceTone.interactive,
+      padding: const EdgeInsets.all(B05Layout.space16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(direction, size: 16, color: valueColor),
-                  const SizedBox(width: B05Layout.space4),
-                  Flexible(
-                    child: Text(
-                      value,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: B05Typography.title(
-                        context,
-                      ).copyWith(color: valueColor),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 2),
-              Text(label, style: B05Typography.caption(context)),
-              if (statusLabel case final status?) ...[
-                const SizedBox(height: 2),
-                Text(
-                  status,
+              Icon(highlight.icon, size: B05Layout.iconMedium, color: accent),
+              const SizedBox(width: B05Layout.space8),
+              Expanded(
+                child: Text(
+                  highlight.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: B05Typography.caption(
                     context,
-                  ).copyWith(color: colors.success.foreground),
+                  ).copyWith(color: accent, fontWeight: FontWeight.w700),
                 ),
-              ],
+              ),
+              if (highlight.onPressed != null)
+                Icon(
+                  Icons.chevron_right_rounded,
+                  size: B05Layout.iconSmall,
+                  color: colors.textSecondary,
+                ),
             ],
           ),
-        ),
+          const SizedBox(height: B05Layout.space8),
+          Text(
+            highlight.value,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: B05Typography.title(context),
+          ),
+          const SizedBox(height: B05Layout.space4),
+          Text(
+            highlight.detail,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: B05Typography.caption(context),
+          ),
+          if (highlight.statusLabel case final status?) ...[
+            const SizedBox(height: B05Layout.space4),
+            Text(
+              status,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: B05Typography.caption(
+                context,
+              ).copyWith(color: colors.success.foreground),
+            ),
+          ],
+        ],
+      ),
+    );
+    final interactiveSurface = highlight.onPressed == null
+        ? surface
+        : Material(
+            type: MaterialType.transparency,
+            child: InkWell(
+              borderRadius: b05Radius(B05SurfaceRadius.medium),
+              onTap: highlight.onPressed,
+              child: surface,
+            ),
+          );
+    return Semantics(
+      container: true,
+      label: semanticLabel,
+      button: highlight.onPressed != null,
+      enabled: highlight.onPressed != null,
+      onTap: highlight.onPressed,
+      hint: highlight.actionLabel,
+      child: KeyedSubtree(
+        key: ValueKey('progress_highlight_${highlight.label.toLowerCase()}'),
+        child: ExcludeSemantics(child: interactiveSurface),
       ),
     );
   }
