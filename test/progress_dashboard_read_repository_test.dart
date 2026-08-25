@@ -375,6 +375,96 @@ void main() {
     expect(snapshot.workouts!.single.volumeIsTrustworthy, isFalse);
     expect(snapshot.strengthSets, hasLength(2));
   });
+
+  test(
+    'strength facts require authoritative session and exercise completion',
+    () async {
+      await database
+          .into(database.exercises)
+          .insert(
+            ExercisesCompanion.insert(
+              stableId: const Value('bench'),
+              name: 'Bench press',
+              muscleGroups: 'Chest',
+              equipment: 'Barbell',
+              difficulty: 'Intermediate',
+              formCues: 'Brace',
+              commonMistakes: 'Bounce',
+            ),
+          );
+
+      Future<void> addFact({
+        required String id,
+        required String? completionKind,
+        required String exerciseStatus,
+        required double loadKg,
+        bool preserveNullCompletionKind = false,
+      }) async {
+        final sessionId = await _insertSession(
+          database,
+          name: id,
+          completedAt: DateTime.utc(2026, 8, 8, 9),
+          activityType: 'strength',
+          completionKind: completionKind,
+          preserveNullCompletionKind: preserveNullCompletionKind,
+        );
+        await database
+            .into(database.performedExercises)
+            .insert(
+              PerformedExercisesCompanion.insert(
+                id: '$id-exercise',
+                sessionId: sessionId,
+                ordinal: 0,
+                actualExerciseId: 'bench',
+                actualExerciseNameSnapshot: 'Bench press',
+                status: Value(exerciseStatus),
+              ),
+            );
+        await database
+            .into(database.performedSets)
+            .insert(
+              PerformedSetsCompanion.insert(
+                id: '$id-set',
+                performedExerciseId: '$id-exercise',
+                ordinal: 0,
+                role: 'working',
+                actualLoadKg: Value(loadKg),
+                actualLoadBasis: const Value('totalExternal'),
+                actualReps: const Value(5),
+              ),
+            );
+      }
+
+      await addFact(
+        id: 'partial',
+        completionKind: 'partial',
+        exerciseStatus: 'partial',
+        loadKg: 80,
+      );
+      await addFact(
+        id: 'missing-kind',
+        completionKind: null,
+        exerciseStatus: 'completed',
+        loadKg: 90,
+        preserveNullCompletionKind: true,
+      );
+      await addFact(
+        id: 'skipped',
+        completionKind: 'full',
+        exerciseStatus: 'skipped',
+        loadKg: 100,
+      );
+
+      final snapshot = await repository.read(
+        nowUtc: DateTime.utc(2026, 8, 9, 12),
+        timezoneId: 'UTC',
+      );
+
+      expect(snapshot.strengthSets, hasLength(1));
+      expect(snapshot.strengthSets!.single.performedSetId, 'partial-set');
+      expect(snapshot.strengthSets!.single.loadKg, 80);
+    },
+  );
 }
 
 Future<int> _insertSession(
@@ -383,6 +473,8 @@ Future<int> _insertSession(
   required DateTime completedAt,
   String activityType = 'legacy',
   double volume = 0,
+  String? completionKind,
+  bool preserveNullCompletionKind = false,
 }) => database
     .into(database.workoutSessions)
     .insert(
@@ -393,6 +485,11 @@ Future<int> _insertSession(
         estimatedCalories: 0,
         completedAt: Value(completedAt),
         activityType: Value(activityType),
+        completionKind: Value(
+          preserveNullCompletionKind
+              ? completionKind
+              : completionKind ?? (activityType == 'strength' ? 'full' : null),
+        ),
         activitySchemaVersion: const Value(1),
       ),
     );

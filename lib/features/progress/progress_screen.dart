@@ -851,10 +851,70 @@ class _StrengthSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final highlight = _selectStrengthHighlight(
+    final highlights = _selectStrengthHighlights(
       snapshot.strengthSets ?? const [],
     );
-    if (highlight == null) return const SizedBox.shrink();
+    if (highlights.isEmpty) return const SizedBox.shrink();
+
+    if (highlights.length > 1) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _SectionHeading(title: 'Strength'),
+          const SizedBox(height: B05Layout.space8),
+          B05Surface(
+            padding: const EdgeInsets.all(B05Layout.space16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Saved actual sets from strength sessions.',
+                  style: B05Typography.body(context),
+                ),
+                const SizedBox(height: B05Layout.space8),
+                for (final highlight in highlights)
+                  Semantics(
+                    button: true,
+                    label:
+                        'View actual performance history for ${highlight.exerciseName}',
+                    hint: 'Open this exercise’s recorded sets over time',
+                    onTap: () => onViewHistory(
+                      highlight.exerciseName,
+                      highlight.exerciseId,
+                    ),
+                    child: ExcludeSemantics(
+                      child: ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        minVerticalPadding: B05Layout.space8,
+                        title: Text(
+                          highlight.exerciseName,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: B05Typography.title(context),
+                        ),
+                        subtitle: Text(
+                          '${_formatSet(highlight.heaviest)} · ${_distinctStrengthSessionCount(highlight.records)} ${_distinctStrengthSessionCount(highlight.records) == 1 ? 'session' : 'sessions'}',
+                          style: B05Typography.caption(context),
+                        ),
+                        trailing: Icon(
+                          Icons.chevron_right_rounded,
+                          color: context.b05Colors.textSecondary,
+                        ),
+                        onTap: () => onViewHistory(
+                          highlight.exerciseName,
+                          highlight.exerciseId,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+
+    final highlight = highlights.first;
 
     final setFormatted = _formatSet(highlight.heaviest);
     return Column(
@@ -2038,11 +2098,21 @@ class _StrengthHighlight {
 _StrengthHighlight? _selectStrengthHighlight(
   List<ProgressStrengthSetRecord> records,
 ) {
-  if (records.isEmpty) return null;
+  final highlights = _selectStrengthHighlights(records);
+  return highlights.isEmpty ? null : highlights.first;
+}
+
+List<_StrengthHighlight> _selectStrengthHighlights(
+  List<ProgressStrengthSetRecord> records,
+) {
+  if (records.isEmpty) return const [];
   final groups = <String, List<ProgressStrengthSetRecord>>{};
   for (final record in records) {
-    groups.putIfAbsent(record.exerciseId, () => []).add(record);
+    final exerciseId = record.exerciseId.trim();
+    if (exerciseId.isEmpty || record.exerciseName.trim().isEmpty) continue;
+    groups.putIfAbsent(exerciseId, () => []).add(record);
   }
+  if (groups.isEmpty) return const [];
   final highlights = <_StrengthHighlight>[];
   for (final entry in groups.entries) {
     final values = entry.value;
@@ -2087,8 +2157,11 @@ _StrengthHighlight? _selectStrengthHighlight(
     if (byLatest != 0) return byLatest;
     return second.records.length.compareTo(first.records.length);
   });
-  return highlights.first;
+  return List.unmodifiable(highlights);
 }
+
+int _distinctStrengthSessionCount(List<ProgressStrengthSetRecord> records) =>
+    records.map(_presentationStrengthSessionKey).toSet().length;
 
 int _compareStrengthRecordsForPresentation(
   ProgressStrengthSetRecord first,
