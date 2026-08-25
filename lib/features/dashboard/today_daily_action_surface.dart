@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/di/providers.dart';
 import '../../core/nutrition_legacy_read_models.dart';
 import '../../core/presentation/consumer_number_label.dart';
 import '../../core/presentation/daypart_greeting.dart';
@@ -11,8 +12,10 @@ import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../data/database/app_database.dart';
 import '../../data/models/b02_progress_read_models.dart';
+import '../../data/models/b04_current_food_models.dart';
 import '../../data/repositories/calendar_read_repository.dart';
 import '../food_log/food_search_screen.dart';
+import '../nutrition/current_food_controller.dart';
 import 'dashboard_module_registry.dart';
 import 'dashboard_personalization_controller.dart';
 import 'today_consumer_presentation.dart';
@@ -41,6 +44,25 @@ String todayDateContextLabel(DateTime selectedDate, DateTime now) {
     TodayDateRelation.past => 'Past day · $formatted',
     TodayDateRelation.future => 'Upcoming · $formatted',
   };
+}
+
+/// Returns true only for a current-day B04 result that already contains a
+/// canonical, actionable candidate card. The Today surface does not infer
+/// usefulness from calories, macros, or local thresholds.
+bool todayMealIdeasAreAvailable({
+  required TodayDateRelation dateRelation,
+  required B04CurrentFoodState state,
+  String? expectedLocalDate,
+}) {
+  if (dateRelation != TodayDateRelation.today ||
+      state.status != B04CurrentFoodControllerStatus.ready) {
+    return false;
+  }
+  final guidance = state.guidance;
+  return guidance != null &&
+      guidance.status == B04CurrentFoodGuidanceStatus.available &&
+      guidance.cards.isNotEmpty &&
+      (expectedLocalDate == null || guidance.localDate == expectedLocalDate);
 }
 
 class TodayNextActionChoice {
@@ -303,7 +325,7 @@ class TodayDailyActionSurface extends ConsumerWidget {
                         onLogMeal: _openMeal,
                         onStartWorkout: _startWorkout,
                         onResumeWorkout: _resumeWorkout,
-                        onOpenFoodGuidance: onOpenFoodGuidance ?? () {},
+                        onOpenFoodGuidance: onOpenFoodGuidance,
                         selectedDate: selectedDate,
                         onExpand: () => personalizationController.setCollapsed(
                           item.moduleId,
@@ -401,7 +423,7 @@ class TodayDailyActionSurface extends ConsumerWidget {
     required ValueChanged<String> onLogMeal,
     required ValueChanged<CalendarOccurrenceReadItem> onStartWorkout,
     required ValueChanged<WorkoutDraft> onResumeWorkout,
-    required VoidCallback onOpenFoodGuidance,
+    required VoidCallback? onOpenFoodGuidance,
     required Future<void> Function() onExpand,
     required DateTime selectedDate,
   }) {
@@ -412,11 +434,12 @@ class TodayDailyActionSurface extends ConsumerWidget {
       );
     }
     return switch (item.moduleId) {
-      'today.meals' => _TodayNutritionHero(
+      'today.meals' => TodayNutritionHero(
         presentation: nutrition,
-        relation: relation,
         onLogFood: () => onLogMeal(''),
         onOpenFoodGuidance: onOpenFoodGuidance,
+        dateRelation: relation,
+        selectedDate: selectedDate,
         onOpenTargetSetup: onOpenNutritionTargets ?? onOpenSettings,
         onRetry: onRetry,
       ),
@@ -612,20 +635,23 @@ class _StreakChip extends StatelessWidget {
   }
 }
 
-class _TodayNutritionHero extends StatelessWidget {
-  const _TodayNutritionHero({
+class TodayNutritionHero extends StatelessWidget {
+  const TodayNutritionHero({
     required this.presentation,
-    required this.relation,
     required this.onLogFood,
-    this.onOpenFoodGuidance,
+    required this.onOpenFoodGuidance,
+    required this.dateRelation,
+    required this.selectedDate,
     required this.onOpenTargetSetup,
     required this.onRetry,
+    super.key,
   });
 
   final TodayNutritionPresentation presentation;
-  final TodayDateRelation relation;
   final VoidCallback onLogFood;
   final VoidCallback? onOpenFoodGuidance;
+  final TodayDateRelation dateRelation;
+  final DateTime selectedDate;
   final VoidCallback onOpenTargetSetup;
   final VoidCallback onRetry;
 
@@ -641,10 +667,6 @@ class _TodayNutritionHero extends StatelessWidget {
         onRetry: onRetry,
       );
     }
-    final showMealIdeas = relation == TodayDateRelation.today &&
-        onOpenFoodGuidance != null &&
-        presentation.state != TodayPresentationState.unavailable;
-
     return Semantics(
       container: true,
       label: 'Nutrition. ${presentation.headline}',
@@ -713,14 +735,11 @@ class _TodayNutritionHero extends StatelessWidget {
                   hint: 'Search foods and log them for this day.',
                   onPressed: onLogFood,
                 ),
-                if (showMealIdeas)
-                  B05ActionButton(
-                    label: 'What can I eat?',
-                    icon: Icons.lightbulb_outline_rounded,
-                    hint: 'Shows a concise meal suggestion when one is ready.',
-                    emphasis: B05ActionEmphasis.secondary,
-                    onPressed: onOpenFoodGuidance,
-                  ),
+                _TodayMealIdeasAction(
+                  dateRelation: dateRelation,
+                  selectedDate: selectedDate,
+                  onOpenFoodGuidance: onOpenFoodGuidance,
+                ),
                 if (!presentation.hasAcceptedCalorieTarget)
                   B05ActionButton(
                     label: 'Set a target',
@@ -740,6 +759,74 @@ class _TodayNutritionHero extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _TodayMealIdeasAction extends ConsumerStatefulWidget {
+  const _TodayMealIdeasAction({
+    required this.dateRelation,
+    required this.selectedDate,
+    required this.onOpenFoodGuidance,
+  });
+
+  final TodayDateRelation dateRelation;
+  final DateTime selectedDate;
+  final VoidCallback? onOpenFoodGuidance;
+
+  @override
+  ConsumerState<_TodayMealIdeasAction> createState() =>
+      _TodayMealIdeasActionState();
+}
+
+class _TodayMealIdeasActionState extends ConsumerState<_TodayMealIdeasAction> {
+  Object? _loadedContext;
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.dateRelation != TodayDateRelation.today ||
+        widget.onOpenFoodGuidance == null) {
+      return const SizedBox.shrink();
+    }
+
+    final contextAsync = ref.watch(b04ProductionRecommendationContextProvider);
+    final currentFoodContext = contextAsync.isLoading || contextAsync.hasError
+        ? null
+        : contextAsync.valueOrNull;
+    final expectedLocalDate = todaySurfaceDateKey(widget.selectedDate);
+    final contextMatchesDate =
+        currentFoodContext != null &&
+        currentFoodContext.window.startLocalDate == expectedLocalDate;
+    final needsLoad =
+        contextMatchesDate && !identical(_loadedContext, currentFoodContext);
+    if (needsLoad) {
+      _loadedContext = currentFoodContext;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        unawaited(
+          ref
+              .read(b04CurrentFoodControllerProvider.notifier)
+              .loadProduction(context: currentFoodContext),
+        );
+      });
+    }
+
+    final available =
+        contextMatchesDate &&
+        !needsLoad &&
+        todayMealIdeasAreAvailable(
+          dateRelation: widget.dateRelation,
+          state: ref.watch(b04CurrentFoodControllerProvider),
+          expectedLocalDate: expectedLocalDate,
+        );
+    if (!available) return const SizedBox.shrink();
+
+    return B05ActionButton(
+      label: 'What can I eat?',
+      icon: Icons.lightbulb_outline_rounded,
+      hint: 'Shows a concise meal suggestion when one is ready.',
+      emphasis: B05ActionEmphasis.secondary,
+      onPressed: widget.onOpenFoodGuidance!,
     );
   }
 }
