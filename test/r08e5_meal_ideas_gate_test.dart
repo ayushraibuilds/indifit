@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:indifit/core/di/providers.dart';
 import 'package:indifit/core/nutrients.dart';
 import 'package:indifit/core/nutrition_legacy_read_models.dart';
 import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/data/models/b04_current_food_models.dart';
 import 'package:indifit/data/models/b04_recommendation_context_models.dart';
 import 'package:indifit/data/models/b04_recommendation_models.dart';
+import 'package:indifit/data/services/b04_current_food_guidance_service.dart';
 import 'package:indifit/features/dashboard/today_consumer_presentation.dart';
 import 'package:indifit/features/dashboard/today_daily_action_surface.dart';
 import 'package:indifit/features/dashboard/today_surface_controller.dart';
@@ -140,7 +143,105 @@ void main() {
     expect(find.text('Log food'), findsOneWidget);
     expect(find.text('What can I eat?'), findsNothing);
   });
+
+  testWidgets('first production load rebuilds when guidance becomes ready', (
+    tester,
+  ) async {
+    final selectedDate = DateTime(2026, 8, 7);
+    var guidanceOpened = false;
+    final controller = _ReadyCurrentFoodController(
+      _state(
+        controllerStatus: B04CurrentFoodControllerStatus.ready,
+        guidanceStatus: B04CurrentFoodGuidanceStatus.available,
+        reason: 'candidate_guidance_available',
+      ),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          b04ProductionRecommendationContextProvider.overrideWith(
+            (ref) async => _recommendationContext(),
+          ),
+          b04CurrentFoodControllerProvider.overrideWith((ref) => controller),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.lightTheme,
+          home: TodayNutritionHero(
+            presentation: TodayNutritionPresentation.from(
+              _emptySnapshot(selectedDate).nutrition,
+              loading: false,
+            ),
+            onLogFood: () {},
+            onOpenFoodGuidance: () => guidanceOpened = true,
+            dateRelation: TodayDateRelation.today,
+            selectedDate: selectedDate,
+            onOpenTargetSetup: () {},
+            onRetry: () {},
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(controller.loadCount, 1);
+    expect(find.text('What can I eat?'), findsOneWidget);
+    await tester.tap(find.text('What can I eat?'));
+    expect(guidanceOpened, isTrue);
+  });
 }
+
+class _ReadyCurrentFoodController extends B04CurrentFoodController {
+  _ReadyCurrentFoodController(this.readyState)
+    : super(service: const B04CurrentFoodGuidanceService());
+
+  final B04CurrentFoodState readyState;
+  var loadCount = 0;
+
+  @override
+  Future<void> loadProduction({
+    required B04RecommendationContext context,
+    bool refresh = false,
+  }) async {
+    loadCount += 1;
+    state = const B04CurrentFoodState(
+      status: B04CurrentFoodControllerStatus.loading,
+    );
+    await Future<void>.delayed(Duration.zero);
+    state = readyState;
+  }
+}
+
+B04RecommendationContext _recommendationContext() => B04RecommendationContext(
+  contextId: 'today-meal-ideas-context',
+  userId: 'user-1',
+  window: const B04RecommendationWindow(
+    period: B04RecommendationPeriod.daily,
+    startLocalDate: '2026-08-07',
+    endLocalDate: '2026-08-07',
+    timezoneId: 'UTC',
+    targetEvaluationWindowDays: 1,
+    aggregateWindowDays: 1,
+  ),
+  evaluatedAtUtc: DateTime.utc(2026, 8, 7, 12),
+  availability: B04ContextAvailability.available,
+  activeGoal: null,
+  preferences: null,
+  eligibility: null,
+  readiness: null,
+  workload: null,
+  schedule: null,
+  nutrition: const B04NutritionContext(
+    days: [],
+    expectedLocalDates: ['2026-08-07'],
+    missingLocalDates: [],
+  ),
+  constraints: const [],
+  targetResult: null,
+  mealOpportunity: null,
+  missingEvidence: const [],
+  n8: B04N8Context.absent,
+);
 
 B04CurrentFoodState _state({
   required B04CurrentFoodControllerStatus controllerStatus,

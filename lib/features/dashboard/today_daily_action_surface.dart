@@ -793,6 +793,10 @@ class _TodayMealIdeasActionState extends ConsumerState<_TodayMealIdeasAction> {
     final currentFoodContext = contextAsync.isLoading || contextAsync.hasError
         ? null
         : contextAsync.valueOrNull;
+    // Subscribe before scheduling the first load. Otherwise the short-circuit
+    // below can skip the watch while [needsLoad] is true, leaving this action
+    // unaware when the controller transitions from loading to ready.
+    final currentFoodState = ref.watch(b04CurrentFoodControllerProvider);
     final expectedLocalDate = todaySurfaceDateKey(widget.selectedDate);
     final contextMatchesDate =
         currentFoodContext != null &&
@@ -816,7 +820,7 @@ class _TodayMealIdeasActionState extends ConsumerState<_TodayMealIdeasAction> {
         !needsLoad &&
         todayMealIdeasAreAvailable(
           dateRelation: widget.dateRelation,
-          state: ref.watch(b04CurrentFoodControllerProvider),
+          state: currentFoodState,
           expectedLocalDate: expectedLocalDate,
         );
     if (!available) return const SizedBox.shrink();

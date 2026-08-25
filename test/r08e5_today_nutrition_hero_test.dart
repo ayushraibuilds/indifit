@@ -34,7 +34,7 @@ void main() {
   });
 
   testWidgets(
-    'current-date hero with active target shows consumed, remaining, macros, Log food, What can I eat, and View targets',
+    'current-date hero shows nutrition actions but gates Meal Ideas without a B04 card',
     (tester) async {
       final selectedDate = DateTime(2026, 8, 10);
       final daily = _createNutritionDaily(
@@ -88,7 +88,7 @@ void main() {
 
       // Action buttons
       expect(find.text('Log food'), findsOneWidget);
-      expect(find.text('What can I eat?'), findsOneWidget);
+      expect(find.text('What can I eat?'), findsNothing);
       expect(find.text('View targets'), findsOneWidget);
       expect(find.text('Set a target'), findsNothing);
 
@@ -142,7 +142,7 @@ void main() {
 
       // Action buttons
       expect(find.text('Log food'), findsOneWidget);
-      expect(find.text('What can I eat?'), findsOneWidget);
+      expect(find.text('What can I eat?'), findsNothing);
       expect(find.text('Set a target'), findsOneWidget);
       expect(find.text('View targets'), findsNothing);
 
@@ -374,11 +374,10 @@ void main() {
   });
 
   testWidgets(
-    'action buttons trigger Log food, What can I eat, and Target navigation',
+    'available nutrition actions trigger Log food and Target navigation',
     (tester) async {
       final selectedDate = DateTime(2026, 8, 10);
       var logFoodCalled = false;
-      var guidanceCalled = false;
       var targetsCalled = false;
 
       final daily = _createNutritionDaily(
@@ -408,7 +407,7 @@ void main() {
             targets: target,
           ),
           onLogMeal: () => logFoodCalled = true,
-          onOpenFoodGuidance: () => guidanceCalled = true,
+          onOpenFoodGuidance: () {},
           onOpenNutritionTargets: () => targetsCalled = true,
         ),
       );
@@ -419,9 +418,7 @@ void main() {
       await tester.pump();
       expect(logFoodCalled, isTrue);
 
-      await tester.tap(find.text('What can I eat?'));
-      await tester.pump();
-      expect(guidanceCalled, isTrue);
+      expect(find.text('What can I eat?'), findsNothing);
 
       await tester.tap(find.text('View targets'));
       await tester.pump();
