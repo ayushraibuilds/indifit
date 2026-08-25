@@ -16,6 +16,9 @@ enum ProgressDataSection {
 enum ProgressWeightGoalDirection { loss, gain, maintenance }
 
 class ProgressWeightGoal {
+  /// Compatibility input reserved for a future canonical goal read model.
+  /// Progress does not render this value until an owning authority supplies
+  /// it; legacy onboarding preferences are not a target authority.
   const ProgressWeightGoal({required this.targetKg, required this.direction});
 
   final double targetKg;
@@ -216,6 +219,9 @@ class ProgressDashboardSnapshot {
   final List<ProgressStrengthSetRecord>? strengthSets;
   final B02MuscleVolumeReadModel? muscleBalance;
   final Set<ProgressDataSection> unavailableSections;
+
+  /// Reserved compatibility input. Consumer Progress must only render a goal
+  /// after a canonical body-target authority is introduced.
   final ProgressWeightGoal? weightGoal;
   final ProgressNutritionSummary? nutritionSummary;
   final List<ProgressStrengthExerciseSummary>? strengthExercises;
@@ -230,7 +236,9 @@ class ProgressDashboardSnapshot {
       (measurements ?? const [])
           .where(
             (measurement) =>
-                measurement.weightKg != null && measurement.weightKg! > 0,
+                measurement.weightKg != null &&
+                measurement.weightKg!.isFinite &&
+                measurement.weightKg! > 0,
           )
           .toList(growable: false);
 
