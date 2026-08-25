@@ -151,6 +151,102 @@ void main() {
       expect(await repository.read(stableExerciseId: 'bench'), isEmpty);
     },
   );
+
+  test(
+    'preserves partial completion and replacement provenance from canonical rows',
+    () async {
+      await _insertExercise(database, 'bench', 'Bench press');
+      await _insertExercise(database, 'machine-bench', 'Machine chest press');
+
+      final partialSession = await _insertSession(
+        database,
+        name: 'Modified push day',
+        completedAt: DateTime.utc(2026, 8, 14, 9),
+        completionKind: 'partial',
+      );
+      await _insertPerformedExercise(
+        database,
+        id: 'machine-bench-performed',
+        sessionId: partialSession,
+        actualExerciseId: 'machine-bench',
+        actualName: 'Machine chest press',
+        expectedExerciseId: 'bench',
+        expectedExerciseName: 'Bench press',
+        substitutionReason: 'Shoulder discomfort',
+      );
+      await _insertPerformedSet(
+        database,
+        id: 'machine-bench-set',
+        performedExerciseId: 'machine-bench-performed',
+        ordinal: 0,
+        role: B02SetRole.working,
+        loadKg: 55,
+        reps: 8,
+      );
+
+      final malformedSession = await _insertSession(
+        database,
+        name: 'Malformed push day',
+        completedAt: DateTime.utc(2026, 8, 15, 9),
+        completionKind: 'cancelled',
+      );
+      await _insertPerformedExercise(
+        database,
+        id: 'malformed-bench-performed',
+        sessionId: malformedSession,
+        actualExerciseId: 'bench',
+        actualName: 'Bench press',
+      );
+      await _insertPerformedSet(
+        database,
+        id: 'malformed-bench-set',
+        performedExerciseId: 'malformed-bench-performed',
+        ordinal: 0,
+        role: B02SetRole.working,
+        loadKg: 100,
+        reps: 1,
+      );
+
+      final skippedSession = await _insertSession(
+        database,
+        name: 'Skipped push day',
+        completedAt: DateTime.utc(2026, 8, 16, 9),
+      );
+      await _insertPerformedExercise(
+        database,
+        id: 'skipped-bench-performed',
+        sessionId: skippedSession,
+        actualExerciseId: 'bench',
+        actualName: 'Bench press',
+        status: 'skipped',
+      );
+      await _insertPerformedSet(
+        database,
+        id: 'skipped-bench-set',
+        performedExerciseId: 'skipped-bench-performed',
+        ordinal: 0,
+        role: B02SetRole.working,
+        loadKg: 110,
+        reps: 1,
+      );
+
+      final replacementHistory = await repository.read(
+        stableExerciseId: 'machine-bench',
+      );
+
+      expect(replacementHistory, hasLength(1));
+      expect(replacementHistory.single.isPartial, isTrue);
+      expect(replacementHistory.single.actualExerciseId, 'machine-bench');
+      expect(replacementHistory.single.expectedExerciseId, 'bench');
+      expect(replacementHistory.single.expectedExerciseName, 'Bench press');
+      expect(replacementHistory.single.wasSubstituted, isTrue);
+      expect(
+        replacementHistory.single.substitutionReason,
+        'Shoulder discomfort',
+      );
+      expect(await repository.read(stableExerciseId: 'bench'), isEmpty);
+    },
+  );
 }
 
 Future<void> _insertExercise(
@@ -176,6 +272,7 @@ Future<int> _insertSession(
   required String name,
   required DateTime completedAt,
   B02ActivityType activityType = B02ActivityType.strength,
+  String? completionKind = 'full',
 }) => database
     .into(database.workoutSessions)
     .insert(
@@ -185,6 +282,7 @@ Future<int> _insertSession(
         durationSeconds: 600,
         estimatedCalories: 0,
         completedAt: Value(completedAt),
+        completionKind: Value(completionKind),
         activityType: Value(activityType.dbValue),
         activitySchemaVersion: const Value(1),
       ),
@@ -196,6 +294,10 @@ Future<void> _insertPerformedExercise(
   required int sessionId,
   required String actualExerciseId,
   required String actualName,
+  String? expectedExerciseId,
+  String? expectedExerciseName,
+  String? substitutionReason,
+  String status = 'completed',
 }) => database
     .into(database.performedExercises)
     .insert(
@@ -203,9 +305,12 @@ Future<void> _insertPerformedExercise(
         id: id,
         sessionId: sessionId,
         ordinal: 0,
+        expectedExerciseId: Value(expectedExerciseId),
+        expectedExerciseNameSnapshot: Value(expectedExerciseName),
         actualExerciseId: actualExerciseId,
         actualExerciseNameSnapshot: actualName,
-        status: const Value('completed'),
+        status: Value(status),
+        substitutionReason: Value(substitutionReason),
       ),
     );
 

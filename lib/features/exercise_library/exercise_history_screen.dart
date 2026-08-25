@@ -1,3 +1,4 @@
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -9,6 +10,7 @@ import '../../data/database/app_database.dart';
 import '../../data/models/b02_execution_models.dart';
 import '../../data/repositories/b02_exercise_performance_read_repository.dart';
 import '../../data/repositories/workout_repository.dart';
+import '../progress/r08f3_strength_performance_presentation.dart';
 import '../workout_player/widgets/plate_calculator_sheet.dart';
 import '../workout_player/widgets/r07c_workout_presentation.dart';
 
@@ -99,9 +101,10 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
       final canonical = await ref
           .read(b02ExercisePerformanceReadRepositoryProvider)
           .read(stableExerciseId: stableExerciseId);
-      if (canonical.isNotEmpty) {
-        return _ExerciseHistory.canonical(canonical);
-      }
+      // A stable ID is an exact canonical query. Do not silently replace an
+      // empty canonical result with legacy name history for a similarly named
+      // exercise.
+      return _ExerciseHistory.canonical(canonical);
     }
     final legacy = await ref
         .read(workoutRepositoryProvider)
@@ -176,20 +179,35 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
 
   Widget _buildCanonicalHistoryTab(List<B02ExercisePerformanceRecord> history) {
     if (history.isEmpty) return const R07CPerformanceEmptyState();
+    final summary = R08F3StrengthPerformancePresentation.summarize(history);
     return _buildActualHistory(
       heading: 'Actual performance',
-      detail:
-          '${history.length} ${history.length == 1 ? 'session' : 'sessions'} saved for this exercise.',
+      detail: _canonicalHistoryDetail(summary),
+      summary: summary,
       records: [
         for (final record in history)
           _PerformanceHistoryItem(
             date: record.completedAt,
             sessionName: record.sessionName,
-            status: _statusLabel(record.exerciseStatus),
+            status: _statusLabel(record.exerciseStatus, record.completionKind),
+            isCanonical: true,
+            wasSubstituted: record.wasSubstituted,
+            expectedExerciseName: record.expectedExerciseName,
             sets: record.sets,
           ),
       ],
     );
+  }
+
+  static String _canonicalHistoryDetail(
+    R08F3StrengthPerformanceSummary summary,
+  ) {
+    final sessions =
+        '${summary.sessionCount} ${summary.sessionCount == 1 ? 'session' : 'sessions'}';
+    if (summary.occurrenceCount == summary.sessionCount) {
+      return '$sessions saved for this exercise.';
+    }
+    return '$sessions saved · ${summary.occurrenceCount} exercise occurrences preserved.';
   }
 
   Widget _buildHistoryAndChartTab(List<Map<String, dynamic>> history) {
@@ -231,31 +249,17 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
     required String heading,
     required String detail,
     required List<_PerformanceHistoryItem> records,
+    R08F3StrengthPerformanceSummary? summary,
   }) => SingleChildScrollView(
     padding: const EdgeInsets.all(B05Layout.space16),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        B05Surface(
-          tone: B05SurfaceTone.selected,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(Icons.history_rounded, color: context.b05Colors.action),
-              const SizedBox(width: B05Layout.space12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(heading, style: B05Typography.title(context)),
-                    const SizedBox(height: B05Layout.space4),
-                    Text(detail, style: B05Typography.body(context)),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
+        _HistoryHeader(heading: heading, detail: detail, summary: summary),
+        if (summary != null) ...[
+          const SizedBox(height: B05Layout.space16),
+          _buildCanonicalTrend(summary),
+        ],
         const SizedBox(height: B05Layout.space16),
         Text('RECENT SESSIONS', style: B05Typography.label(context)),
         const SizedBox(height: B05Layout.space8),
@@ -285,8 +289,22 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
                 ),
                 const SizedBox(height: B05Layout.space4),
                 Text(record.sessionName, style: B05Typography.body(context)),
+                if (record.wasSubstituted) ...[
+                  const SizedBox(height: B05Layout.space4),
+                  Text(
+                    record.expectedExerciseName == null
+                        ? 'Replacement used in this session'
+                        : 'Performed instead of ${record.expectedExerciseName}',
+                    style: B05Typography.caption(
+                      context,
+                    ).copyWith(color: context.b05Colors.textSecondary),
+                  ),
+                ],
                 const SizedBox(height: B05Layout.space12),
-                R07CPerformedSetList(sets: record.sets),
+                if (record.isCanonical)
+                  _R08F3PerformedSetList(sets: record.sets)
+                else
+                  R07CPerformedSetList(sets: record.sets),
               ],
             ),
           ),
@@ -296,13 +314,191 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
     ),
   );
 
-  static String _statusLabel(String status) => switch (status) {
-    'completed' => 'Completed',
-    'partial' => 'Partially complete',
-    'skipped' => 'Skipped',
-    'inProgress' => 'In progress',
-    _ => 'Logged',
-  };
+  static String _statusLabel(String status, [String? completionKind]) {
+    if (completionKind == 'partial') return 'Partially complete';
+    return switch (status) {
+      'completed' => 'Completed',
+      'partial' => 'Partially complete',
+      'skipped' => 'Skipped',
+      'inProgress' => 'In progress',
+      _ => 'Logged',
+    };
+  }
+
+  Widget _buildCanonicalTrend(R08F3StrengthPerformanceSummary summary) {
+    final colors = context.b05Colors;
+    if (summary.canShowTrend) {
+      final points = summary.trendPoints;
+      final basis = summary.trendBasis!;
+      final values = [
+        for (final point in points)
+          '${DateFormat('MMM d').format(point.completedAt.toLocal())}: ${R08F3StrengthPerformancePresentation.formatTrendLoad(point)}${point.isPartial ? ' (partial session)' : ''}',
+      ];
+      return B05Surface(
+        tone: B05SurfaceTone.inset,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Recorded load over sessions',
+              style: B05Typography.title(context),
+            ),
+            const SizedBox(height: B05Layout.space4),
+            Text(
+              'Heaviest recorded working load · ${R08F3StrengthPerformancePresentation.formatLoadBasis(basis)}',
+              style: B05Typography.caption(context),
+            ),
+            const SizedBox(height: B05Layout.space12),
+            Semantics(
+              container: true,
+              label: 'Recorded load over sessions. ${values.join('. ')}.',
+              hint: 'The session values are also listed below the chart.',
+              child: ExcludeSemantics(
+                child: SizedBox(
+                  key: const ValueKey('exercise_performance_load_chart'),
+                  height: 180,
+                  child: LineChart(
+                    _performanceChartData(context, points),
+                    duration: B05MotionPolicy.transitionDuration(context),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: B05Layout.space8),
+            Text(
+              'Session values: ${values.join(' · ')}',
+              style: B05Typography.caption(
+                context,
+              ).copyWith(color: colors.textPrimary),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final detail = summary.hasMultipleOccurrencesPerSession
+        ? 'A session contains this exercise more than once. Each occurrence is preserved below instead of merged into a chart.'
+        : summary.sessionCount == 1
+        ? 'One session saved. More sessions will show a factual comparison.'
+        : summary.hasIncompleteTrend
+        ? 'Some sessions do not have comparable load details. Their saved sets remain below.'
+        : 'Recorded sets use different load units. Compare each saved session below.';
+    return B05Surface(
+      tone: B05SurfaceTone.inset,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.show_chart_rounded, color: colors.textSecondary),
+          const SizedBox(width: B05Layout.space12),
+          Expanded(child: Text(detail, style: B05Typography.body(context))),
+        ],
+      ),
+    );
+  }
+
+  LineChartData _performanceChartData(
+    BuildContext context,
+    List<R08F3StrengthTrendPoint> points,
+  ) {
+    final colors = context.b05Colors;
+    final loads = points.map((point) => point.loadKg).toList(growable: false);
+    final minimum = loads.reduce(
+      (first, second) => first < second ? first : second,
+    );
+    final maximum = loads.reduce(
+      (first, second) => first > second ? first : second,
+    );
+    final spread = maximum - minimum;
+    final padding = spread == 0
+        ? (maximum == 0 ? 1 : maximum * .15)
+        : spread * .2;
+    final minY = (minimum - padding).clamp(0, double.infinity).toDouble();
+    final maxY = (maximum + padding).toDouble();
+    final ySpan = (maxY - minY).abs() < .001 ? 1.0 : maxY - minY;
+    final maxX = (points.length - 1).toDouble();
+    return LineChartData(
+      minX: 0,
+      maxX: maxX,
+      minY: minY,
+      maxY: maxY,
+      gridData: FlGridData(
+        show: true,
+        drawVerticalLine: false,
+        horizontalInterval: ySpan / 2,
+        getDrawingHorizontalLine: (_) =>
+            FlLine(color: colors.border.withValues(alpha: .45), strokeWidth: 1),
+      ),
+      titlesData: FlTitlesData(
+        topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        rightTitles: const AxisTitles(
+          sideTitles: SideTitles(showTitles: false),
+        ),
+        leftTitles: AxisTitles(
+          sideTitles: SideTitles(
+            showTitles: true,
+            reservedSize: 42,
+            interval: ySpan / 2,
+            getTitlesWidget: (value, _) => Text(
+              value.toStringAsFixed(0),
+              style: B05Typography.caption(context),
+            ),
+          ),
+        ),
+        bottomTitles: AxisTitles(
+          sideTitles: SideTitles(
+            showTitles: true,
+            reservedSize: 28,
+            interval: maxX == 0 ? 1 : maxX,
+            getTitlesWidget: (value, _) {
+              final index = value.round();
+              if (index < 0 || index >= points.length) {
+                return const SizedBox.shrink();
+              }
+              if (index != 0 && index != points.length - 1) {
+                return const SizedBox.shrink();
+              }
+              return Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(
+                  DateFormat(
+                    'MMM d',
+                  ).format(points[index].completedAt.toLocal()),
+                  style: B05Typography.caption(context),
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+      borderData: FlBorderData(show: false),
+      lineTouchData: const LineTouchData(enabled: false),
+      lineBarsData: [
+        LineChartBarData(
+          spots: [
+            for (var index = 0; index < points.length; index++)
+              FlSpot(index.toDouble(), points[index].loadKg),
+          ],
+          isCurved: false,
+          color: colors.action,
+          barWidth: 3,
+          isStrokeCapRound: true,
+          dotData: FlDotData(
+            show: true,
+            getDotPainter: (_, _, _, _) => FlDotCirclePainter(
+              radius: 4,
+              color: colors.section,
+              strokeColor: colors.action,
+              strokeWidth: 2,
+            ),
+          ),
+          belowBarData: BarAreaData(
+            show: true,
+            color: colors.action.withValues(alpha: .08),
+          ),
+        ),
+      ],
+    );
+  }
 
   Widget _buildPlateCalculatorTab() {
     return const PlateCalculatorView(
@@ -347,12 +543,170 @@ class _PerformanceHistoryItem {
     required this.sessionName,
     required this.sets,
     this.status,
+    this.isCanonical = false,
+    this.wasSubstituted = false,
+    this.expectedExerciseName,
   });
 
   final DateTime date;
   final String sessionName;
   final String? status;
+  final bool isCanonical;
+  final bool wasSubstituted;
+  final String? expectedExerciseName;
   final List<B02PerformedSet> sets;
+}
+
+class _HistoryHeader extends StatelessWidget {
+  const _HistoryHeader({
+    required this.heading,
+    required this.detail,
+    this.summary,
+  });
+
+  final String heading;
+  final String detail;
+  final R08F3StrengthPerformanceSummary? summary;
+
+  @override
+  Widget build(BuildContext context) {
+    return B05Surface(
+      tone: B05SurfaceTone.selected,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.history_rounded, color: context.b05Colors.action),
+              const SizedBox(width: B05Layout.space12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(heading, style: B05Typography.title(context)),
+                    const SizedBox(height: B05Layout.space4),
+                    Text(detail, style: B05Typography.body(context)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (summary != null &&
+              (summary!.latestRecordedSet != null ||
+                  summary!.heaviestRecordedSet != null ||
+                  summary!.comparisonText != null ||
+                  summary!.partialSessionCount > 0)) ...[
+            const SizedBox(height: B05Layout.space16),
+            Divider(color: context.b05Colors.border),
+            const SizedBox(height: B05Layout.space12),
+            if (summary!.latestRecordedSet case final latest?) ...[
+              Text(
+                'Latest recorded set',
+                style: B05Typography.caption(context),
+              ),
+              const SizedBox(height: B05Layout.space4),
+              Semantics(
+                label:
+                    'Latest recorded set: ${R08F3StrengthPerformancePresentation.formatActualFact(latest)}',
+                child: ExcludeSemantics(
+                  child: Text(
+                    R08F3StrengthPerformancePresentation.formatActualFact(
+                      latest,
+                    ),
+                    style: B05Typography.title(context),
+                  ),
+                ),
+              ),
+            ],
+            if (summary!.heaviestRecordedSet case final heaviest?) ...[
+              const SizedBox(height: B05Layout.space8),
+              Text(
+                'Heaviest working set (${R08F3StrengthPerformancePresentation.formatLoadBasis(summary!.trendBasis!)})',
+                style: B05Typography.caption(context),
+              ),
+              const SizedBox(height: B05Layout.space4),
+              Semantics(
+                label:
+                    'Heaviest working set, ${R08F3StrengthPerformancePresentation.formatLoadBasis(summary!.trendBasis!)}: ${R08F3StrengthPerformancePresentation.formatActualFact(heaviest)}',
+                child: ExcludeSemantics(
+                  child: Text(
+                    R08F3StrengthPerformancePresentation.formatActualFact(
+                      heaviest,
+                    ),
+                    style: B05Typography.title(context),
+                  ),
+                ),
+              ),
+            ],
+            if (summary!.comparisonText case final comparison?) ...[
+              const SizedBox(height: B05Layout.space8),
+              Text(comparison, style: B05Typography.body(context)),
+            ],
+            if (summary!.partialSessionCount > 0) ...[
+              const SizedBox(height: B05Layout.space8),
+              Text(
+                '${summary!.partialSessionCount} ${summary!.partialSessionCount == 1 ? 'partial session is' : 'partial sessions are'} labelled below.',
+                style: B05Typography.caption(context),
+              ),
+            ],
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _R08F3PerformedSetList extends StatelessWidget {
+  const _R08F3PerformedSetList({required this.sets});
+
+  final List<B02PerformedSet> sets;
+
+  @override
+  Widget build(BuildContext context) {
+    if (sets.isEmpty) return const SizedBox.shrink();
+    final colors = context.b05Colors;
+    return B05Surface(
+      tone: B05SurfaceTone.inset,
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (final set in sets)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Semantics(
+                label:
+                    'Logged set ${R08F3StrengthPerformancePresentation.formatActualSet(set)}',
+                child: ExcludeSemantics(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.check_circle_rounded,
+                        size: 18,
+                        color: colors.success.foreground,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          R08F3StrengthPerformancePresentation.formatActualSet(
+                            set,
+                          ),
+                          style: B05Typography.body(
+                            context,
+                          ).copyWith(color: colors.textPrimary),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 }
 
 class _HistoryErrorState extends StatelessWidget {

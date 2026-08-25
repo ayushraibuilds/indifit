@@ -297,7 +297,9 @@ class ProgressDashboardReadRepository {
       final actualLoad = set.actualLoadKg;
       final actualReps = set.actualReps;
       final loadBasis = set.actualLoadBasis;
-      if (completedAtUtc.isAfter(nowUtc) ||
+      if (!const {'full', 'partial'}.contains(session.completionKind) ||
+          !const {'completed', 'partial'}.contains(exercise.status) ||
+          completedAtUtc.isAfter(nowUtc) ||
           actualLoad == null ||
           actualReps == null ||
           actualReps < 1 ||
