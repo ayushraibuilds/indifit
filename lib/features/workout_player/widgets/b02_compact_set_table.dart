@@ -148,6 +148,7 @@ class B02CompactSetTable extends StatelessWidget {
     required this.moreContent,
     super.key,
     this.onAddSet,
+    this.showPendingEditor = true,
     this.onLoadChanged,
     this.onRepsChanged,
   });
@@ -168,6 +169,7 @@ class B02CompactSetTable extends StatelessWidget {
   final ValueChanged<B02PerformedSet>? onDelete;
   final Widget? moreContent;
   final VoidCallback? onAddSet;
+  final bool showPendingEditor;
   final ValueChanged<String>? onLoadChanged;
   final ValueChanged<String>? onRepsChanged;
 
@@ -209,21 +211,22 @@ class B02CompactSetTable extends StatelessWidget {
             ],
             const SizedBox(height: 10),
           ],
-          _PendingSetEditor(
-            slot: slot,
-            currentSet: currentSet,
-            loadController: loadController,
-            repsController: repsController,
-            rpe: rpe,
-            isWarmup: isWarmup,
-            loadLabel: loadLabel,
-            isBusy: isBusy,
-            onRpeChanged: onRpeChanged,
-            onWarmupChanged: onWarmupChanged,
-            onLoadChanged: onLoadChanged,
-            onRepsChanged: onRepsChanged,
-            moreContent: moreContent,
-          ),
+          if (showPendingEditor)
+            _PendingSetEditor(
+              slot: slot,
+              currentSet: currentSet,
+              loadController: loadController,
+              repsController: repsController,
+              rpe: rpe,
+              isWarmup: isWarmup,
+              loadLabel: loadLabel,
+              isBusy: isBusy,
+              onRpeChanged: onRpeChanged,
+              onWarmupChanged: onWarmupChanged,
+              onLoadChanged: onLoadChanged,
+              onRepsChanged: onRepsChanged,
+              moreContent: moreContent,
+            ),
           if (onAddSet != null) ...[
             const SizedBox(height: 8),
             Align(

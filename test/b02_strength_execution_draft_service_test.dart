@@ -79,6 +79,58 @@ void main() {
     expect(second.performedExercises.single.actualExerciseId, 'exercise-1');
   });
 
+  test('edit and delete restore the prescribed terminal state by set ID', () {
+    final first = service.recordSet(
+      state: draft(),
+      slot: slot,
+      reps: 8,
+      loadKg: 80,
+    );
+    final complete = service.recordSet(
+      state: first,
+      slot: slot,
+      reps: 9,
+      loadKg: 82.5,
+    );
+    final sets = complete.performedExercises.single.sets;
+    final firstId = sets[0].id;
+    final secondId = sets[1].id;
+
+    final edited = service.editSet(
+      state: complete,
+      slot: slot,
+      setId: firstId,
+      reps: 7,
+      loadKg: 77.5,
+      actualLoadBasis: B02LoadBasis.totalExternal,
+      rpe: 7,
+    );
+    expect(edited.performedExercises.single.status, 'completed');
+    expect(edited.performedExercises.single.sets.first.id, firstId);
+    expect(edited.performedExercises.single.sets.first.actualReps, 7);
+    expect(edited.performedExercises.single.sets.first.actualRpe, 7);
+
+    final partial = service.deleteSet(
+      state: edited,
+      slot: slot,
+      setId: firstId,
+    );
+    expect(partial.performedExercises.single.status, 'partial');
+    expect(partial.performedExercises.single.sets.single.id, secondId);
+    expect(partial.performedExercises.single.sets.single.ordinal, 0);
+
+    final restored = service.recordSet(
+      state: partial,
+      slot: slot,
+      reps: 10,
+      loadKg: 85,
+    );
+    expect(restored.performedExercises.single.status, 'completed');
+    expect(restored.performedExercises.single.sets, hasLength(2));
+    expect(restored.performedExercises.single.sets.last.id, isNot(firstId));
+    expect(restored.performedExercises.single.sets.last.id, isNot(secondId));
+  });
+
   test('refuses to invent a stable identity for an unresolved slot', () {
     final unresolved = B02StrengthExecutionSlot(
       id: 'group-1:0:1',

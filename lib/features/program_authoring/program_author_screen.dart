@@ -1336,6 +1336,205 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
     _replaceBlocks(updated);
   }
 
+  List<
+    ({
+      int blockIndex,
+      int weekIndex,
+      int templateIndex,
+      SessionTemplateInput template,
+    })
+  >
+  _consumerDayEntries() {
+    return [
+      for (var blockIndex = 0; blockIndex < _blocks.length; blockIndex++)
+        for (
+          var weekIndex = 0;
+          weekIndex < _blocks[blockIndex].weeks.length;
+          weekIndex++
+        )
+          for (
+            var templateIndex = 0;
+            templateIndex <
+                _blocks[blockIndex].weeks[weekIndex].templates.length;
+            templateIndex++
+          )
+            (
+              blockIndex: blockIndex,
+              weekIndex: weekIndex,
+              templateIndex: templateIndex,
+              template:
+                  _blocks[blockIndex].weeks[weekIndex].templates[templateIndex],
+            ),
+    ];
+  }
+
+  Future<void> _addConsumerDay() async {
+    if (!_isDraftVersion) return;
+    if (_blocks.isEmpty) {
+      await _addBlock();
+    }
+    if (!mounted || _blocks.isEmpty) return;
+    if (_blocks.first.weeks.isEmpty) {
+      await _addWeek(0);
+    }
+    if (!mounted || _blocks.first.weeks.isEmpty) return;
+    await _addSessionTemplate(0, 0);
+  }
+
+  Widget _buildConsumerPlanSurface(BuildContext context) {
+    final entries = _consumerDayEntries();
+    final canEdit = _isDraftVersion;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Days',
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          ConsumerCountLabel.format(entries.length, 'day'),
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+        if (canEdit) ...[
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: _addConsumerDay,
+              icon: const Icon(Icons.add_rounded),
+              label: const Text('Add day'),
+            ),
+          ),
+        ],
+        if (entries.isEmpty)
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                'Add a day to start building workouts and exercises.',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ),
+          )
+        else
+          for (var dayIndex = 0; dayIndex < entries.length; dayIndex++)
+            _buildConsumerDayCard(
+              context,
+              entries[dayIndex],
+              dayIndex,
+              canEdit,
+            ),
+      ],
+    );
+  }
+
+  Widget _buildConsumerDayCard(
+    BuildContext context,
+    ({
+      int blockIndex,
+      int weekIndex,
+      int templateIndex,
+      SessionTemplateInput template,
+    })
+    entry,
+    int dayIndex,
+    bool canEdit,
+  ) {
+    final workout = entry.template;
+    return Card(
+      margin: const EdgeInsets.only(top: 12),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.calendar_today_outlined),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Day ${dayIndex + 1}',
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w700),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${_weekdayLabel(workout.plannedWeekday)} · ${workout.name}',
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const Divider(height: 24),
+            Text(
+              'Workout',
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Exercises',
+                    style: Theme.of(context).textTheme.labelLarge,
+                  ),
+                ),
+                Text(
+                  'Sets/reps',
+                  style: Theme.of(context).textTheme.labelLarge,
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            if (workout.prescriptions.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8),
+                child: Text('No exercises added yet.'),
+              )
+            else
+              for (final prescription in workout.prescriptions)
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                  title: Text(prescription.exerciseNameSnapshot),
+                  subtitle: prescription.exerciseId == null
+                      ? const Text('Choose an exercise')
+                      : null,
+                  trailing: Text(
+                    '${prescription.plannedSets} × ${prescription.repsRange}',
+                    textAlign: TextAlign.end,
+                  ),
+                ),
+            if (canEdit)
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: () => _addPrescription(
+                    entry.blockIndex,
+                    entry.weekIndex,
+                    entry.templateIndex,
+                  ),
+                  icon: const Icon(Icons.add_rounded, size: 18),
+                  label: const Text('Add exercise'),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<bool> _saveDraft() async {
     if (_programNameController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1579,546 +1778,564 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
                             ),
                           ],
                           const SizedBox(height: 24),
-                          Row(
+                          _buildConsumerPlanSurface(context),
+                          const SizedBox(height: 16),
+                          ExpansionTile(
+                            tilePadding: EdgeInsets.zero,
+                            title: const Text('Advanced plan structure'),
+                            subtitle: const Text(
+                              'Optional phases, weeks, groups, and scheduling',
+                            ),
                             children: [
-                              Expanded(
-                                child: Text(
-                                  'Plan structure (${ConsumerCountLabel.format(_blocks.length, 'block')})',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    fontFamily: 'Outfit',
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      'Phases (${ConsumerCountLabel.format(_blocks.length, 'phase')})',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        fontFamily: 'Outfit',
+                                      ),
+                                    ),
                                   ),
-                                ),
+                                  const SizedBox(width: 8),
+                                  TextButton.icon(
+                                    onPressed: _isDraftVersion
+                                        ? _addBlock
+                                        : null,
+                                    icon: const Icon(Icons.add),
+                                    label: const Text('Add phase'),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(width: 8),
-                              TextButton.icon(
-                                onPressed: _isDraftVersion ? _addBlock : null,
-                                icon: const Icon(Icons.add),
-                                label: const Text('Add block'),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          ListView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: _blocks.length,
-                            itemBuilder: (context, bIdx) {
-                              final block = _blocks[bIdx];
-                              return Card(
-                                margin: const EdgeInsets.only(bottom: 12),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(12),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
+                              const SizedBox(height: 12),
+                              ListView.builder(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: _blocks.length,
+                                itemBuilder: (context, bIdx) {
+                                  final block = _blocks[bIdx];
+                                  return Card(
+                                    margin: const EdgeInsets.only(bottom: 12),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(12),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
-                                          Expanded(
-                                            child: Text(
-                                              block.name,
-                                              style: const TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 16,
-                                              ),
-                                            ),
-                                          ),
-                                          IconButton(
-                                            tooltip: 'Rename block',
-                                            onPressed: _isDraftVersion
-                                                ? () => _renameBlock(bIdx)
-                                                : null,
-                                            icon: const Icon(
-                                              Icons.edit_outlined,
-                                            ),
-                                          ),
-                                          IconButton(
-                                            tooltip: 'Delete block',
-                                            onPressed: _isDraftVersion
-                                                ? () => _deleteBlock(bIdx)
-                                                : null,
-                                            icon: const Icon(
-                                              Icons.delete_outline,
-                                              color: Colors.red,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      Align(
-                                        alignment: Alignment.centerLeft,
-                                        child: TextButton.icon(
-                                          onPressed: _isDraftVersion
-                                              ? () => _addWeek(bIdx)
-                                              : null,
-                                          icon: const Icon(Icons.add, size: 18),
-                                          label: const Text('Add week'),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      ...block.weeks.asMap().entries.map((
-                                        weekEntry,
-                                      ) {
-                                        final wIdx = weekEntry.key;
-                                        final w = weekEntry.value;
-                                        return Padding(
-                                          padding: const EdgeInsets.only(
-                                            left: 12,
-                                            top: 4,
-                                          ),
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
+                                          Row(
                                             children: [
-                                              Row(
-                                                children: [
-                                                  Expanded(
-                                                    child: Text(
-                                                      'Week ${w.programWeekOrdinal + 1}: ${ConsumerCountLabel.format(w.templates.length, 'session')}',
-                                                      style: TextStyle(
-                                                        color: w.isDeload
-                                                            ? Colors.purple
-                                                            : AppColors
-                                                                  .textPrimary,
-                                                        fontWeight:
-                                                            FontWeight.w600,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                  Tooltip(
-                                                    message: 'Deload week',
-                                                    child: Switch(
-                                                      value: w.isDeload,
-                                                      onChanged: _isDraftVersion
-                                                          ? (value) =>
-                                                                _setWeekDeload(
-                                                                  bIdx,
-                                                                  wIdx,
-                                                                  value,
-                                                                )
-                                                          : null,
-                                                    ),
-                                                  ),
-                                                  IconButton(
-                                                    tooltip: 'Edit week name',
-                                                    onPressed: _isDraftVersion
-                                                        ? () => _renameWeek(
-                                                            bIdx,
-                                                            wIdx,
-                                                          )
-                                                        : null,
-                                                    icon: const Icon(
-                                                      Icons.edit_outlined,
-                                                      size: 20,
-                                                    ),
-                                                  ),
-                                                  IconButton(
-                                                    tooltip: 'Delete week',
-                                                    onPressed: _isDraftVersion
-                                                        ? () => _deleteWeek(
-                                                            bIdx,
-                                                            wIdx,
-                                                          )
-                                                        : null,
-                                                    icon: const Icon(
-                                                      Icons.delete_outline,
-                                                      size: 20,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                              Align(
-                                                alignment: Alignment.centerLeft,
-                                                child: TextButton.icon(
-                                                  onPressed: _isDraftVersion
-                                                      ? () =>
-                                                            _addSessionTemplate(
-                                                              bIdx,
-                                                              wIdx,
-                                                            )
-                                                      : null,
-                                                  icon: const Icon(
-                                                    Icons.add,
-                                                    size: 16,
-                                                  ),
-                                                  label: const Text(
-                                                    'Add session',
+                                              Expanded(
+                                                child: Text(
+                                                  block.name,
+                                                  style: const TextStyle(
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 16,
                                                   ),
                                                 ),
                                               ),
-                                              ...w.templates.asMap().entries.map((
-                                                templateEntry,
-                                              ) {
-                                                final templateIndex =
-                                                    templateEntry.key;
-                                                final st = templateEntry.value;
-                                                return Padding(
-                                                  padding:
-                                                      const EdgeInsets.only(
-                                                        left: 12,
-                                                        top: 2,
+                                              IconButton(
+                                                tooltip: 'Rename block',
+                                                onPressed: _isDraftVersion
+                                                    ? () => _renameBlock(bIdx)
+                                                    : null,
+                                                icon: const Icon(
+                                                  Icons.edit_outlined,
+                                                ),
+                                              ),
+                                              IconButton(
+                                                tooltip: 'Delete block',
+                                                onPressed: _isDraftVersion
+                                                    ? () => _deleteBlock(bIdx)
+                                                    : null,
+                                                icon: const Icon(
+                                                  Icons.delete_outline,
+                                                  color: Colors.red,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          Align(
+                                            alignment: Alignment.centerLeft,
+                                            child: TextButton.icon(
+                                              onPressed: _isDraftVersion
+                                                  ? () => _addWeek(bIdx)
+                                                  : null,
+                                              icon: const Icon(
+                                                Icons.add,
+                                                size: 18,
+                                              ),
+                                              label: const Text('Add week'),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          ...block.weeks.asMap().entries.map((
+                                            weekEntry,
+                                          ) {
+                                            final wIdx = weekEntry.key;
+                                            final w = weekEntry.value;
+                                            return Padding(
+                                              padding: const EdgeInsets.only(
+                                                left: 12,
+                                                top: 4,
+                                              ),
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Row(
+                                                    children: [
+                                                      Expanded(
+                                                        child: Text(
+                                                          'Week ${w.programWeekOrdinal + 1}: ${ConsumerCountLabel.format(w.templates.length, 'session')}',
+                                                          style: TextStyle(
+                                                            color: w.isDeload
+                                                                ? Colors.purple
+                                                                : AppColors
+                                                                      .textPrimary,
+                                                            fontWeight:
+                                                                FontWeight.w600,
+                                                          ),
+                                                        ),
                                                       ),
-                                                  child: Card(
-                                                    margin: EdgeInsets.zero,
-                                                    color: AppColors
-                                                        .cardBackground,
-                                                    child: Padding(
+                                                      Tooltip(
+                                                        message: 'Deload week',
+                                                        child: Switch(
+                                                          value: w.isDeload,
+                                                          onChanged:
+                                                              _isDraftVersion
+                                                              ? (value) =>
+                                                                    _setWeekDeload(
+                                                                      bIdx,
+                                                                      wIdx,
+                                                                      value,
+                                                                    )
+                                                              : null,
+                                                        ),
+                                                      ),
+                                                      IconButton(
+                                                        tooltip:
+                                                            'Edit week name',
+                                                        onPressed:
+                                                            _isDraftVersion
+                                                            ? () => _renameWeek(
+                                                                bIdx,
+                                                                wIdx,
+                                                              )
+                                                            : null,
+                                                        icon: const Icon(
+                                                          Icons.edit_outlined,
+                                                          size: 20,
+                                                        ),
+                                                      ),
+                                                      IconButton(
+                                                        tooltip: 'Delete week',
+                                                        onPressed:
+                                                            _isDraftVersion
+                                                            ? () => _deleteWeek(
+                                                                bIdx,
+                                                                wIdx,
+                                                              )
+                                                            : null,
+                                                        icon: const Icon(
+                                                          Icons.delete_outline,
+                                                          size: 20,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  Align(
+                                                    alignment:
+                                                        Alignment.centerLeft,
+                                                    child: TextButton.icon(
+                                                      onPressed: _isDraftVersion
+                                                          ? () =>
+                                                                _addSessionTemplate(
+                                                                  bIdx,
+                                                                  wIdx,
+                                                                )
+                                                          : null,
+                                                      icon: const Icon(
+                                                        Icons.add,
+                                                        size: 16,
+                                                      ),
+                                                      label: const Text(
+                                                        'Add session',
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  ...w.templates.asMap().entries.map((
+                                                    templateEntry,
+                                                  ) {
+                                                    final templateIndex =
+                                                        templateEntry.key;
+                                                    final st =
+                                                        templateEntry.value;
+                                                    return Padding(
                                                       padding:
-                                                          const EdgeInsets.all(
-                                                            8,
+                                                          const EdgeInsets.only(
+                                                            left: 12,
+                                                            top: 2,
                                                           ),
-                                                      child: Column(
-                                                        crossAxisAlignment:
-                                                            CrossAxisAlignment
-                                                                .start,
-                                                        children: [
-                                                          Row(
+                                                      child: Card(
+                                                        margin: EdgeInsets.zero,
+                                                        color: AppColors
+                                                            .cardBackground,
+                                                        child: Padding(
+                                                          padding:
+                                                              const EdgeInsets.all(
+                                                                8,
+                                                              ),
+                                                          child: Column(
+                                                            crossAxisAlignment:
+                                                                CrossAxisAlignment
+                                                                    .start,
                                                             children: [
-                                                              Expanded(
-                                                                child: Text(
-                                                                  '${st.name} • ${_weekdayLabel(st.plannedWeekday)}${st.plannedStartMinute == null ? '' : ' • ${_formatTime(st.plannedStartMinute!)}'}',
-                                                                  style: const TextStyle(
-                                                                    fontWeight:
-                                                                        FontWeight
-                                                                            .w600,
-                                                                  ),
-                                                                ),
-                                                              ),
-                                                              IconButton(
-                                                                tooltip:
-                                                                    'Edit workout',
-                                                                onPressed:
-                                                                    _isDraftVersion
-                                                                    ? () => _editSessionTemplate(
-                                                                        bIdx,
-                                                                        wIdx,
-                                                                        templateIndex,
-                                                                      )
-                                                                    : null,
-                                                                icon: const Icon(
-                                                                  Icons
-                                                                      .edit_outlined,
-                                                                  size: 20,
-                                                                ),
-                                                              ),
-                                                              IconButton(
-                                                                tooltip:
-                                                                    'Delete workout',
-                                                                onPressed:
-                                                                    _isDraftVersion
-                                                                    ? () => _deleteSessionTemplate(
-                                                                        bIdx,
-                                                                        wIdx,
-                                                                        templateIndex,
-                                                                      )
-                                                                    : null,
-                                                                icon: const Icon(
-                                                                  Icons
-                                                                      .delete_outline,
-                                                                  size: 20,
-                                                                ),
-                                                              ),
-                                                            ],
-                                                          ),
-                                                          ...st.prescriptions.asMap().entries.map((
-                                                            prescriptionEntry,
-                                                          ) {
-                                                            final prescriptionIndex =
-                                                                prescriptionEntry
-                                                                    .key;
-                                                            final prescription =
-                                                                prescriptionEntry
-                                                                    .value;
-                                                            final exerciseLabel =
-                                                                '${prescription.exerciseNameSnapshot}: ${prescription.plannedSets} × ${prescription.repsRange}${prescription.exerciseId == null ? ' (choose an exercise)' : ''}';
-                                                            return ListTile(
-                                                              dense: true,
-                                                              contentPadding:
-                                                                  EdgeInsets
-                                                                      .zero,
-                                                              title: Text(
-                                                                exerciseLabel,
-                                                              ),
-                                                              leading: Text(
-                                                                '${prescriptionIndex + 1}',
-                                                                semanticsLabel:
-                                                                    'Exercise ${prescriptionIndex + 1}',
-                                                              ),
-                                                              trailing: Wrap(
-                                                                spacing: 0,
+                                                              Row(
                                                                 children: [
-                                                                  IconButton(
-                                                                    tooltip:
-                                                                        'Move exercise up',
-                                                                    onPressed:
-                                                                        !_isDraftVersion ||
-                                                                            prescriptionIndex ==
-                                                                                0
-                                                                        ? null
-                                                                        : () => _movePrescription(
-                                                                            bIdx,
-                                                                            wIdx,
-                                                                            templateIndex,
-                                                                            prescriptionIndex,
-                                                                            -1,
-                                                                          ),
-                                                                    icon: const Icon(
-                                                                      Icons
-                                                                          .keyboard_arrow_up_rounded,
+                                                                  Expanded(
+                                                                    child: Text(
+                                                                      '${st.name} • ${_weekdayLabel(st.plannedWeekday)}${st.plannedStartMinute == null ? '' : ' • ${_formatTime(st.plannedStartMinute!)}'}',
+                                                                      style: const TextStyle(
+                                                                        fontWeight:
+                                                                            FontWeight.w600,
+                                                                      ),
                                                                     ),
                                                                   ),
                                                                   IconButton(
                                                                     tooltip:
-                                                                        'Move exercise down',
-                                                                    onPressed:
-                                                                        !_isDraftVersion ||
-                                                                            prescriptionIndex ==
-                                                                                st.prescriptions.length -
-                                                                                    1
-                                                                        ? null
-                                                                        : () => _movePrescription(
-                                                                            bIdx,
-                                                                            wIdx,
-                                                                            templateIndex,
-                                                                            prescriptionIndex,
-                                                                            1,
-                                                                          ),
-                                                                    icon: const Icon(
-                                                                      Icons
-                                                                          .keyboard_arrow_down_rounded,
-                                                                    ),
-                                                                  ),
-                                                                  IconButton(
-                                                                    tooltip:
-                                                                        'Edit exercise',
+                                                                        'Edit workout',
                                                                     onPressed:
                                                                         _isDraftVersion
-                                                                        ? () => _editPrescription(
+                                                                        ? () => _editSessionTemplate(
                                                                             bIdx,
                                                                             wIdx,
                                                                             templateIndex,
-                                                                            prescriptionIndex,
                                                                           )
                                                                         : null,
                                                                     icon: const Icon(
                                                                       Icons
                                                                           .edit_outlined,
+                                                                      size: 20,
                                                                     ),
                                                                   ),
                                                                   IconButton(
                                                                     tooltip:
-                                                                        'Delete exercise',
+                                                                        'Delete workout',
                                                                     onPressed:
                                                                         _isDraftVersion
-                                                                        ? () => _deletePrescription(
+                                                                        ? () => _deleteSessionTemplate(
                                                                             bIdx,
                                                                             wIdx,
                                                                             templateIndex,
-                                                                            prescriptionIndex,
                                                                           )
                                                                         : null,
                                                                     icon: const Icon(
                                                                       Icons
                                                                           .delete_outline,
+                                                                      size: 20,
                                                                     ),
                                                                   ),
                                                                 ],
                                                               ),
-                                                            );
-                                                          }),
-                                                          if (st
-                                                              .groups
-                                                              .isNotEmpty) ...[
-                                                            const SizedBox(
-                                                              height: 8,
-                                                            ),
-                                                            const Text(
-                                                              'Exercise groups',
-                                                              style: TextStyle(
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w600,
-                                                              ),
-                                                            ),
-                                                            ...st.groups.asMap().entries.map((
-                                                              groupEntry,
-                                                            ) {
-                                                              final group =
-                                                                  groupEntry
-                                                                      .value;
-                                                              final namesById = {
-                                                                for (final prescription
-                                                                    in st
-                                                                        .prescriptions)
-                                                                  if (prescription
-                                                                          .id !=
-                                                                      null)
-                                                                    prescription
-                                                                            .id!:
-                                                                        prescription
-                                                                            .exerciseNameSnapshot,
-                                                              };
-                                                              final memberLabels = group
-                                                                  .members
-                                                                  .map(
-                                                                    (member) =>
-                                                                        namesById[member
-                                                                            .exercisePrescriptionId] ??
-                                                                        'Unavailable exercise',
-                                                                  )
-                                                                  .join(' → ');
-                                                              return ListTile(
-                                                                dense: true,
-                                                                contentPadding:
-                                                                    EdgeInsets
-                                                                        .zero,
-                                                                title: Text(
-                                                                  '${b02ExecutionGroupTypeLabel(group.groupType)} • ${group.roundCount} rounds',
+                                                              ...st.prescriptions.asMap().entries.map((
+                                                                prescriptionEntry,
+                                                              ) {
+                                                                final prescriptionIndex =
+                                                                    prescriptionEntry
+                                                                        .key;
+                                                                final prescription =
+                                                                    prescriptionEntry
+                                                                        .value;
+                                                                final exerciseLabel =
+                                                                    '${prescription.exerciseNameSnapshot}: ${prescription.plannedSets} × ${prescription.repsRange}${prescription.exerciseId == null ? ' (choose an exercise)' : ''}';
+                                                                return ListTile(
+                                                                  dense: true,
+                                                                  contentPadding:
+                                                                      EdgeInsets
+                                                                          .zero,
+                                                                  title: Text(
+                                                                    exerciseLabel,
+                                                                  ),
+                                                                  leading: Text(
+                                                                    '${prescriptionIndex + 1}',
+                                                                    semanticsLabel:
+                                                                        'Exercise ${prescriptionIndex + 1}',
+                                                                  ),
+                                                                  trailing: Wrap(
+                                                                    spacing: 0,
+                                                                    children: [
+                                                                      IconButton(
+                                                                        tooltip:
+                                                                            'Move exercise up',
+                                                                        onPressed:
+                                                                            !_isDraftVersion ||
+                                                                                prescriptionIndex ==
+                                                                                    0
+                                                                            ? null
+                                                                            : () => _movePrescription(
+                                                                                bIdx,
+                                                                                wIdx,
+                                                                                templateIndex,
+                                                                                prescriptionIndex,
+                                                                                -1,
+                                                                              ),
+                                                                        icon: const Icon(
+                                                                          Icons
+                                                                              .keyboard_arrow_up_rounded,
+                                                                        ),
+                                                                      ),
+                                                                      IconButton(
+                                                                        tooltip:
+                                                                            'Move exercise down',
+                                                                        onPressed:
+                                                                            !_isDraftVersion ||
+                                                                                prescriptionIndex ==
+                                                                                    st.prescriptions.length -
+                                                                                        1
+                                                                            ? null
+                                                                            : () => _movePrescription(
+                                                                                bIdx,
+                                                                                wIdx,
+                                                                                templateIndex,
+                                                                                prescriptionIndex,
+                                                                                1,
+                                                                              ),
+                                                                        icon: const Icon(
+                                                                          Icons
+                                                                              .keyboard_arrow_down_rounded,
+                                                                        ),
+                                                                      ),
+                                                                      IconButton(
+                                                                        tooltip:
+                                                                            'Edit exercise',
+                                                                        onPressed:
+                                                                            _isDraftVersion
+                                                                            ? () => _editPrescription(
+                                                                                bIdx,
+                                                                                wIdx,
+                                                                                templateIndex,
+                                                                                prescriptionIndex,
+                                                                              )
+                                                                            : null,
+                                                                        icon: const Icon(
+                                                                          Icons
+                                                                              .edit_outlined,
+                                                                        ),
+                                                                      ),
+                                                                      IconButton(
+                                                                        tooltip:
+                                                                            'Delete exercise',
+                                                                        onPressed:
+                                                                            _isDraftVersion
+                                                                            ? () => _deletePrescription(
+                                                                                bIdx,
+                                                                                wIdx,
+                                                                                templateIndex,
+                                                                                prescriptionIndex,
+                                                                              )
+                                                                            : null,
+                                                                        icon: const Icon(
+                                                                          Icons
+                                                                              .delete_outline,
+                                                                        ),
+                                                                      ),
+                                                                    ],
+                                                                  ),
+                                                                );
+                                                              }),
+                                                              if (st
+                                                                  .groups
+                                                                  .isNotEmpty) ...[
+                                                                const SizedBox(
+                                                                  height: 8,
                                                                 ),
-                                                                subtitle: Text(
-                                                                  'Exercises: $memberLabels${group.restAfterRoundSeconds == null ? '' : ' • ${group.restAfterRoundSeconds}s rest after round'}',
-                                                                ),
-                                                                trailing: PopupMenuButton<String>(
-                                                                  tooltip:
-                                                                      'Group actions',
-                                                                  enabled:
-                                                                      _isDraftVersion,
-                                                                  onSelected: (action) {
-                                                                    switch (action) {
-                                                                      case 'edit':
-                                                                        _editGroup(
-                                                                          bIdx,
-                                                                          wIdx,
-                                                                          templateIndex,
-                                                                          groupEntry
-                                                                              .key,
-                                                                        );
-                                                                      case 'up':
-                                                                        _moveGroup(
-                                                                          bIdx,
-                                                                          wIdx,
-                                                                          templateIndex,
-                                                                          groupEntry
-                                                                              .key,
-                                                                          -1,
-                                                                        );
-                                                                      case 'down':
-                                                                        _moveGroup(
-                                                                          bIdx,
-                                                                          wIdx,
-                                                                          templateIndex,
-                                                                          groupEntry
-                                                                              .key,
-                                                                          1,
-                                                                        );
-                                                                      case 'delete':
-                                                                        _deleteGroup(
-                                                                          bIdx,
-                                                                          wIdx,
-                                                                          templateIndex,
-                                                                          groupEntry
-                                                                              .key,
-                                                                        );
-                                                                    }
-                                                                  },
-                                                                  itemBuilder: (context) => [
-                                                                    const PopupMenuItem(
-                                                                      value:
-                                                                          'edit',
-                                                                      child: Text(
-                                                                        'Edit group',
-                                                                      ),
-                                                                    ),
-                                                                    PopupMenuItem(
-                                                                      value:
-                                                                          'up',
-                                                                      enabled:
-                                                                          groupEntry
-                                                                              .key >
-                                                                          0,
-                                                                      child: const Text(
-                                                                        'Move group up',
-                                                                      ),
-                                                                    ),
-                                                                    PopupMenuItem(
-                                                                      value:
-                                                                          'down',
-                                                                      enabled:
-                                                                          groupEntry
-                                                                              .key <
-                                                                          st.groups.length -
-                                                                              1,
-                                                                      child: const Text(
-                                                                        'Move group down',
-                                                                      ),
-                                                                    ),
-                                                                    const PopupMenuItem(
-                                                                      value:
-                                                                          'delete',
-                                                                      child: Text(
-                                                                        'Delete group',
-                                                                      ),
-                                                                    ),
-                                                                  ],
-                                                                  icon: const Icon(
-                                                                    Icons
-                                                                        .more_vert,
+                                                                const Text(
+                                                                  'Exercise groups',
+                                                                  style: TextStyle(
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .w600,
                                                                   ),
                                                                 ),
-                                                              );
-                                                            }),
-                                                          ],
-                                                          TextButton.icon(
-                                                            onPressed:
-                                                                _isDraftVersion
-                                                                ? () => _addGroup(
-                                                                    bIdx,
-                                                                    wIdx,
-                                                                    templateIndex,
-                                                                  )
-                                                                : null,
-                                                            icon: const Icon(
-                                                              Icons
-                                                                  .account_tree_outlined,
-                                                              size: 16,
-                                                            ),
-                                                            label: const Text(
-                                                              'Add group',
-                                                            ),
+                                                                ...st.groups.asMap().entries.map((
+                                                                  groupEntry,
+                                                                ) {
+                                                                  final group =
+                                                                      groupEntry
+                                                                          .value;
+                                                                  final namesById = {
+                                                                    for (final prescription
+                                                                        in st
+                                                                            .prescriptions)
+                                                                      if (prescription
+                                                                              .id !=
+                                                                          null)
+                                                                        prescription
+                                                                            .id!: prescription
+                                                                            .exerciseNameSnapshot,
+                                                                  };
+                                                                  final memberLabels = group
+                                                                      .members
+                                                                      .map(
+                                                                        (
+                                                                          member,
+                                                                        ) =>
+                                                                            namesById[member.exercisePrescriptionId] ??
+                                                                            'Unavailable exercise',
+                                                                      )
+                                                                      .join(
+                                                                        ' → ',
+                                                                      );
+                                                                  return ListTile(
+                                                                    dense: true,
+                                                                    contentPadding:
+                                                                        EdgeInsets
+                                                                            .zero,
+                                                                    title: Text(
+                                                                      '${b02ExecutionGroupTypeLabel(group.groupType)} • ${group.roundCount} rounds',
+                                                                    ),
+                                                                    subtitle: Text(
+                                                                      'Exercises: $memberLabels${group.restAfterRoundSeconds == null ? '' : ' • ${group.restAfterRoundSeconds}s rest after round'}',
+                                                                    ),
+                                                                    trailing: PopupMenuButton<String>(
+                                                                      tooltip:
+                                                                          'Group actions',
+                                                                      enabled:
+                                                                          _isDraftVersion,
+                                                                      onSelected: (action) {
+                                                                        switch (action) {
+                                                                          case 'edit':
+                                                                            _editGroup(
+                                                                              bIdx,
+                                                                              wIdx,
+                                                                              templateIndex,
+                                                                              groupEntry.key,
+                                                                            );
+                                                                          case 'up':
+                                                                            _moveGroup(
+                                                                              bIdx,
+                                                                              wIdx,
+                                                                              templateIndex,
+                                                                              groupEntry.key,
+                                                                              -1,
+                                                                            );
+                                                                          case 'down':
+                                                                            _moveGroup(
+                                                                              bIdx,
+                                                                              wIdx,
+                                                                              templateIndex,
+                                                                              groupEntry.key,
+                                                                              1,
+                                                                            );
+                                                                          case 'delete':
+                                                                            _deleteGroup(
+                                                                              bIdx,
+                                                                              wIdx,
+                                                                              templateIndex,
+                                                                              groupEntry.key,
+                                                                            );
+                                                                        }
+                                                                      },
+                                                                      itemBuilder: (context) => [
+                                                                        const PopupMenuItem(
+                                                                          value:
+                                                                              'edit',
+                                                                          child: Text(
+                                                                            'Edit group',
+                                                                          ),
+                                                                        ),
+                                                                        PopupMenuItem(
+                                                                          value:
+                                                                              'up',
+                                                                          enabled:
+                                                                              groupEntry.key >
+                                                                              0,
+                                                                          child: const Text(
+                                                                            'Move group up',
+                                                                          ),
+                                                                        ),
+                                                                        PopupMenuItem(
+                                                                          value:
+                                                                              'down',
+                                                                          enabled:
+                                                                              groupEntry.key <
+                                                                              st.groups.length -
+                                                                                  1,
+                                                                          child: const Text(
+                                                                            'Move group down',
+                                                                          ),
+                                                                        ),
+                                                                        const PopupMenuItem(
+                                                                          value:
+                                                                              'delete',
+                                                                          child: Text(
+                                                                            'Delete group',
+                                                                          ),
+                                                                        ),
+                                                                      ],
+                                                                      icon: const Icon(
+                                                                        Icons
+                                                                            .more_vert,
+                                                                      ),
+                                                                    ),
+                                                                  );
+                                                                }),
+                                                              ],
+                                                              TextButton.icon(
+                                                                onPressed:
+                                                                    _isDraftVersion
+                                                                    ? () => _addGroup(
+                                                                        bIdx,
+                                                                        wIdx,
+                                                                        templateIndex,
+                                                                      )
+                                                                    : null,
+                                                                icon: const Icon(
+                                                                  Icons
+                                                                      .account_tree_outlined,
+                                                                  size: 16,
+                                                                ),
+                                                                label: const Text(
+                                                                  'Add group',
+                                                                ),
+                                                              ),
+                                                              TextButton.icon(
+                                                                onPressed:
+                                                                    _isDraftVersion
+                                                                    ? () => _addPrescription(
+                                                                        bIdx,
+                                                                        wIdx,
+                                                                        templateIndex,
+                                                                      )
+                                                                    : null,
+                                                                icon:
+                                                                    const Icon(
+                                                                      Icons.add,
+                                                                      size: 16,
+                                                                    ),
+                                                                label: const Text(
+                                                                  'Add exercise',
+                                                                ),
+                                                              ),
+                                                            ],
                                                           ),
-                                                          TextButton.icon(
-                                                            onPressed:
-                                                                _isDraftVersion
-                                                                ? () => _addPrescription(
-                                                                    bIdx,
-                                                                    wIdx,
-                                                                    templateIndex,
-                                                                  )
-                                                                : null,
-                                                            icon: const Icon(
-                                                              Icons.add,
-                                                              size: 16,
-                                                            ),
-                                                            label: const Text(
-                                                              'Add exercise',
-                                                            ),
-                                                          ),
-                                                        ],
+                                                        ),
                                                       ),
-                                                    ),
-                                                  ),
-                                                );
-                                              }),
-                                            ],
-                                          ),
-                                        );
-                                      }),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
+                                                    );
+                                                  }),
+                                                ],
+                                              ),
+                                            );
+                                          }),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 24),
                           Row(

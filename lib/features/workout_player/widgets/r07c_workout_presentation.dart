@@ -97,10 +97,20 @@ String? r07cFormatWarmupProposal(B02WarmupSetProposal proposal) {
 }
 
 class R07CPerformedSetList extends StatelessWidget {
-  const R07CPerformedSetList({required this.sets, super.key, this.title});
+  const R07CPerformedSetList({
+    required this.sets,
+    super.key,
+    this.title,
+    this.isBusy = false,
+    this.onEdit,
+    this.onDelete,
+  });
 
   final List<B02PerformedSet> sets;
   final String? title;
+  final bool isBusy;
+  final ValueChanged<B02PerformedSet>? onEdit;
+  final ValueChanged<B02PerformedSet>? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -137,6 +147,20 @@ class R07CPerformedSetList extends StatelessWidget {
                         ).copyWith(color: colors.textPrimary),
                       ),
                     ),
+                    if (onEdit != null || onDelete != null) ...[
+                      B05IconAction(
+                        icon: Icons.edit_outlined,
+                        label: 'Edit set ${set.ordinal + 1}',
+                        hint: 'Change the logged load, reps, or RPE',
+                        onPressed: isBusy ? null : () => onEdit?.call(set),
+                      ),
+                      B05IconAction(
+                        icon: Icons.delete_outline_rounded,
+                        label: 'Delete set ${set.ordinal + 1}',
+                        hint: 'Remove this logged set from the workout',
+                        onPressed: isBusy ? null : () => onDelete?.call(set),
+                      ),
+                    ],
                   ],
                 ),
               ),

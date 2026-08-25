@@ -179,11 +179,36 @@ void main() {
 
         expect(find.text('Build your plan'), findsOneWidget);
         expect(find.text('New plan'), findsOneWidget);
-        expect(find.text('Add group'), findsOneWidget);
+        expect(find.text('Days'), findsOneWidget);
+        expect(find.text('Workout'), findsOneWidget);
+        expect(find.text('Exercises'), findsOneWidget);
+        expect(find.text('Sets/reps'), findsOneWidget);
         expect(find.text('Save plan'), findsOneWidget);
         expect(find.text('Review plan'), findsOneWidget);
       },
     );
+
+    testWidgets('consumer plan hierarchy remains usable at large text', (
+      tester,
+    ) async {
+      addTearDown(tester.view.reset);
+      tester.view.physicalSize = const Size(320, 640);
+      tester.view.devicePixelRatio = 1;
+      await tester.pumpWidget(
+        MediaQuery(
+          data: MediaQueryData.fromView(
+            tester.view,
+          ).copyWith(textScaler: const TextScaler.linear(1.6)),
+          child: createWidgetUnderTest(const ProgramAuthorScreen()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Days'), findsOneWidget);
+      await tester.ensureVisible(find.text('Save plan'));
+      expect(find.text('Save plan'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
 
     testWidgets(
       '2. ProgramReviewScreen displays version details and use button',
@@ -205,9 +230,10 @@ void main() {
         expect(find.text('Review your plan'), findsOneWidget);
         expect(find.text('Review Test Plan'), findsOneWidget);
         expect(find.text('Use this plan'), findsOneWidget);
-        await tester.tap(find.text('Block 1'));
+        await tester.ensureVisible(find.text('Advanced details'));
+        await tester.tap(find.text('Advanced details'));
         await tester.pumpAndSettle();
-        expect(find.text('Superset • 3 rounds • 2 exercises'), findsOneWidget);
+        expect(find.text('Superset · 3 rounds'), findsOneWidget);
       },
     );
 
@@ -271,6 +297,9 @@ void main() {
         );
         await tester.pumpAndSettle();
 
+        await tester.ensureVisible(find.text('Advanced plan structure'));
+        await tester.tap(find.text('Advanced plan structure'));
+        await tester.pumpAndSettle();
         expect(find.text('Exercise groups'), findsOneWidget);
         expect(find.text('Superset • 3 rounds'), findsOneWidget);
         expect(

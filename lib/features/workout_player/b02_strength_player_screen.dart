@@ -276,6 +276,7 @@ class _B02StrengthPlayerScreenState
             currentSet: currentSet,
             performedSets: performedSets,
             isPlannedMode: execution is PlannedWorkoutExecutionContext,
+            showPendingEditor: isQuick || !exerciseComplete,
             pendingTechnique: pendingTechnique,
           );
     final primaryLabel = _warmup
@@ -334,7 +335,7 @@ class _B02StrengthPlayerScreenState
           ? _buildRestCard(provider, ui, launch, cursorSlot ?? selected)
           : null,
       setLoggingSlot: setLogging,
-      primaryActionSlot: primaryAction,
+      primaryActionSlot: isQuick || !exerciseComplete ? primaryAction : null,
       primaryActionGap: 10,
       nextExerciseGap: hasOpenRest
           ? 12
@@ -358,6 +359,7 @@ class _B02StrengthPlayerScreenState
             selected: selected,
             slots: slots,
             isQuick: isQuick,
+            exerciseComplete: exerciseComplete,
             hasOpenRest: hasOpenRest,
             groupSafe: groupSafe,
             nextSlot: nextSlot,
@@ -383,6 +385,7 @@ class _B02StrengthPlayerScreenState
     required int currentSet,
     required List<B02PerformedSet> performedSets,
     required bool isPlannedMode,
+    required bool showPendingEditor,
     required B02TechniqueFields pendingTechnique,
   }) {
     final rpe = int.tryParse(_rpes[selected.id] ?? '');
@@ -415,6 +418,7 @@ class _B02StrengthPlayerScreenState
       onEdit: (set) => unawaited(_editLoggedSet(provider, selected, set)),
       onDelete: (set) => unawaited(_deleteLoggedSet(provider, selected, set)),
       onAddSet: !isPlannedMode ? () => _prepareExtraSet(selected) : null,
+      showPendingEditor: showPendingEditor,
       moreContent: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -462,6 +466,7 @@ class _B02StrengthPlayerScreenState
     required B02StrengthExecutionSlot selected,
     required List<B02StrengthExecutionSlot> slots,
     required bool isQuick,
+    required bool exerciseComplete,
     required bool hasOpenRest,
     required bool groupSafe,
     required B02StrengthExecutionSlot? nextSlot,
@@ -475,7 +480,12 @@ class _B02StrengthPlayerScreenState
             style: Theme.of(context).textTheme.bodySmall,
           ),
         ],
-        if (!hasOpenRest)
+        if (!hasOpenRest && exerciseComplete)
+          _PrescribedWorkCompleteCard(
+            plannedSets: selected.plannedSets,
+            workingSets: _workingSetCount(launch.state, selected),
+          ),
+        if (!hasOpenRest && !exerciseComplete)
           if (isQuick) ...[
             B05ActionButton(
               label: 'Add exercise',
@@ -1745,6 +1755,52 @@ class _B02InputIdentity {
 
   @override
   int get hashCode => Object.hash(slotId, actualExerciseId);
+}
+
+class _PrescribedWorkCompleteCard extends StatelessWidget {
+  const _PrescribedWorkCompleteCard({
+    required this.plannedSets,
+    required this.workingSets,
+  });
+
+  final int plannedSets;
+  final int workingSets;
+
+  @override
+  Widget build(BuildContext context) {
+    final success = context.b05Colors.success;
+    return Semantics(
+      container: true,
+      label: 'Prescribed work complete',
+      child: B05Surface(
+        tone: B05SurfaceTone.selected,
+        padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(Icons.check_circle_outline_rounded, color: success.foreground),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Prescribed work complete',
+                    style: B05Typography.title(context),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '$workingSets of $plannedSets working sets logged. There is no pending prescribed set.',
+                    style: B05Typography.body(context),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _R07CExecutionHeader extends StatelessWidget {

@@ -127,6 +127,31 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets(
+    'planned terminal state removes the pending editor but keeps review flow',
+    (tester) async {
+      _setViewport(tester, const Size(390, 844));
+      final launch = (await tester.runAsync(
+        () => _launchPlannedWithWorkingSets(executions, count: 3),
+      ))!;
+      await _pumpPlayer(tester, launch, executions, db, AppTheme.lightTheme);
+
+      expect(find.text('Prescribed work complete'), findsOneWidget);
+      expect(
+        find.textContaining('There is no pending prescribed set.'),
+        findsOneWidget,
+      );
+      expect(find.byType(TextFormField), findsNothing);
+      expect(find.text('Log set 4'), findsNothing);
+      expect(find.bySemanticsLabel('Edit set 1'), findsOneWidget);
+      expect(find.bySemanticsLabel('Delete set 3'), findsOneWidget);
+      await tester.drag(find.byType(ListView).first, const Offset(0, -500));
+      await tester.pumpAndSettle();
+      expect(find.text('Review and finish'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('R07C rest surface keeps wall-clock controls visible', (
     tester,
   ) async {
@@ -428,6 +453,25 @@ Future<B02StrengthExecutionLaunch> _launchPlannedLike(
     executionSnapshotJson: launch.executionSnapshotJson,
     state: prepared.state,
   );
+}
+
+Future<B02StrengthExecutionLaunch> _launchPlannedWithWorkingSets(
+  StrengthExecutionRepository executions, {
+  required int count,
+}) async {
+  final launch = await _launchPlannedLike(executions);
+  final prepared = await executions.prepareExecution(launch);
+  final slot = (await executions.readExecutionSlots(launch)).single;
+  var state = prepared.state;
+  for (var index = 0; index < count; index++) {
+    state = const B02StrengthExecutionDraftService().recordSet(
+      state: state,
+      slot: slot,
+      reps: 8,
+      loadKg: 60,
+    );
+  }
+  return launch.copyWith(state: state);
 }
 
 class _FakeExercisePerformanceReadRepository

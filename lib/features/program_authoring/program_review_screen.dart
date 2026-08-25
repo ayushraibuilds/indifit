@@ -350,55 +350,93 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  ...detail.blocks.map((b) {
-                    return ExpansionTile(
-                      title: Text(
-                        b.name,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      children: detail.weeks.where((w) => w.programBlockId == b.id).map((
-                        w,
-                      ) {
-                        final weekTemplates = detail.sessionTemplates
-                            .where((st) => st.programWeekId == w.id)
-                            .toList(growable: false);
-                        final weekTemplateIds = weekTemplates
-                            .map((template) => template.id)
-                            .toSet();
-                        final weekGroups = detail.groups
-                            .where(
-                              (group) => weekTemplateIds.contains(
-                                group.sessionTemplateId,
+                  ...detail.sessionTemplates.asMap().entries.map((entry) {
+                    final workoutIndex = entry.key;
+                    final workout = entry.value;
+                    final exercises = detail.exercisePrescriptions
+                        .where(
+                          (prescription) =>
+                              prescription.sessionTemplateId == workout.id,
+                        )
+                        .toList(growable: false);
+                    return Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Day ${workoutIndex + 1}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
                               ),
-                            )
-                            .toList(growable: false);
-                        return ListTile(
-                          title: Text(
-                            'Week ${w.programWeekOrdinal + 1}${w.isDeload ? " (Deload)" : ""}',
-                          ),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
+                            ),
+                            Text(
+                              '${_weekdayLabel(workout.plannedWeekday)} · Workout · ${workout.name}',
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              ConsumerCountLabel.format(
+                                exercises.length,
+                                'exercise',
+                              ),
+                              style: const TextStyle(color: Colors.grey),
+                            ),
+                            for (final exercise in exercises)
                               Text(
-                                '${ConsumerCountLabel.format(weekTemplates.length, 'workout')} scheduled',
+                                '• ${exercise.exerciseNameSnapshot} · ${exercise.plannedSets} × ${exercise.repsRange}',
                               ),
-                              ...weekGroups.map((group) {
-                                final memberCount = detail.groupMembers
-                                    .where(
-                                      (member) =>
-                                          member.exerciseGroupId == group.id,
-                                    )
-                                    .length;
-                                return Text(
-                                  '${_groupTypeLabel(group.groupType)} • ${group.roundCount} rounds • $memberCount exercises',
-                                );
-                              }),
-                            ],
-                          ),
-                        );
-                      }).toList(),
+                          ],
+                        ),
+                      ),
                     );
                   }),
+                  const SizedBox(height: 8),
+                  ExpansionTile(
+                    tilePadding: EdgeInsets.zero,
+                    title: const Text('Advanced details'),
+                    subtitle: const Text('Phases, weeks, and exercise groups'),
+                    children: [
+                      for (final block in detail.blocks)
+                        ExpansionTile(
+                          title: Text(
+                            'Phase ${block.ordinal + 1} · ${block.name}',
+                          ),
+                          children: [
+                            for (final week in detail.weeks.where(
+                              (week) => week.programBlockId == block.id,
+                            ))
+                              ListTile(
+                                dense: true,
+                                title: Text(
+                                  'Week ${week.programWeekOrdinal + 1}${week.isDeload ? ' · Deload' : ''}',
+                                ),
+                                subtitle: Text(
+                                  ConsumerCountLabel.format(
+                                    detail.sessionTemplates
+                                        .where(
+                                          (workout) =>
+                                              workout.programWeekId == week.id,
+                                        )
+                                        .length,
+                                    'workout',
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      for (final group in detail.groups)
+                        ListTile(
+                          dense: true,
+                          title: Text(
+                            '${_groupTypeLabel(group.groupType)} · ${group.roundCount} rounds',
+                          ),
+                          subtitle: Text(
+                            '${ConsumerCountLabel.format(detail.groupMembers.where((member) => member.exerciseGroupId == group.id).length, 'exercise')} in this group',
+                          ),
+                        ),
+                    ],
+                  ),
                   const SizedBox(height: 32),
                   if (_activationError != null) ...[
                     Card(
@@ -437,9 +475,24 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
             ),
     );
   }
+
+  static String _weekdayLabel(int weekday) => switch (weekday) {
+    DateTime.monday => 'Mon',
+    DateTime.tuesday => 'Tue',
+    DateTime.wednesday => 'Wed',
+    DateTime.thursday => 'Thu',
+    DateTime.friday => 'Fri',
+    DateTime.saturday => 'Sat',
+    DateTime.sunday => 'Sun',
+    _ => 'Unknown day',
+  };
 }
 
 String _activationFailureMessage(Object error) {
+  if (error is ActivationRejectedException &&
+      error.message.contains('existing workout draft')) {
+    return 'Finish or discard your current workout before using this plan.';
+  }
   return ProductFailurePresentation.fromError(error).message;
 }
 
