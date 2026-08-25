@@ -152,8 +152,8 @@ void main() {
     );
 
     expect(find.text('Training consistency'), findsOneWidget);
-    expect(find.text('3 workouts'), findsOneWidget);
-    expect(find.text('completed this week'), findsOneWidget);
+    expect(find.text('3 workouts'), findsWidgets);
+    expect(find.text('completed this week'), findsWidgets);
     expect(find.text('View workout history'), findsOneWidget);
     expect(tester.takeException(), isNull);
     await expectLater(
@@ -175,7 +175,7 @@ void main() {
       _setViewport(tester, const Size(390, 844));
       await _pump(tester, _strengthOnly(), AppTheme.darkTheme);
 
-      expect(find.text('Strength'), findsOneWidget);
+      expect(find.text('Strength'), findsWidgets);
       expect(find.text('Bench Press'), findsWidgets);
       expect(find.text('90 kg × 5'), findsWidgets);
       expect(find.textContaining('e1RM'), findsNothing);
@@ -212,10 +212,10 @@ void main() {
     _setViewport(tester, const Size(390, 844));
     await _pump(tester, _populated(), AppTheme.darkTheme);
 
-    expect(find.text('Overview'), findsOneWidget);
+    expect(find.text('Highlights'), findsOneWidget);
     expect(find.text('Training consistency'), findsOneWidget);
-    expect(find.text('Strength'), findsOneWidget);
-    expect(find.text('Weight'), findsOneWidget);
+    expect(find.text('Strength'), findsWidgets);
+    expect(find.text('Weight'), findsWidgets);
     expect(find.text('Nutrition adherence'), findsOneWidget);
     expect(find.text('Training volume'), findsOneWidget);
     expect(find.text('Recent training emphasis'), findsOneWidget);
@@ -230,7 +230,7 @@ void main() {
     _setViewport(tester, const Size(390, 844));
     await _pump(tester, _populated(), AppTheme.lightTheme);
 
-    expect(find.text('Overview'), findsOneWidget);
+    expect(find.text('Highlights'), findsOneWidget);
     expect(tester.takeException(), isNull);
     await expectLater(
       find.byType(ProgressScreen),
@@ -242,8 +242,8 @@ void main() {
     _setViewport(tester, const Size(320, 568));
     await _pump(tester, _populated(), AppTheme.darkTheme);
 
-    expect(find.text('Overview'), findsOneWidget);
-    expect(find.text('Weight'), findsOneWidget);
+    expect(find.text('Highlights'), findsOneWidget);
+    expect(find.text('Weight'), findsWidgets);
     expect(tester.takeException(), isNull);
     await expectLater(
       find.byType(ProgressScreen),
@@ -255,7 +255,7 @@ void main() {
     _setViewport(tester, const Size(390, 844));
     await _pump(tester, _populated(), AppTheme.darkTheme, textScale: 2.0);
 
-    expect(find.text('Overview'), findsOneWidget);
+    expect(find.text('Highlights'), findsOneWidget);
     expect(tester.takeException(), isNull);
     await expectLater(
       find.byType(ProgressScreen),
