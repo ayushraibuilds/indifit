@@ -10,9 +10,11 @@ import 'package:indifit/data/repositories/b02_execution_compatibility_read_repos
 import 'package:indifit/features/progress/achievements_screen.dart';
 import 'package:indifit/features/progress/progress_screen.dart';
 import 'package:indifit/features/training/workout_history_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  setUp(() => SharedPreferences.setMockInitialValues({}));
 
   // R07F-0: Outfit is bundled; no runtime font fetching configuration.
 
@@ -57,7 +59,7 @@ void main() {
     await _pump(tester, _oneMeasurement(), AppTheme.darkTheme);
 
     expect(find.text('82.0 kg'), findsWidgets);
-    expect(find.text('Goal 78.0 kg'), findsOneWidget);
+    expect(find.textContaining('Goal'), findsNothing);
     expect(
       find.text('Log another measurement to start seeing your trend.'),
       findsOneWidget,
@@ -96,7 +98,12 @@ void main() {
       final chart = find.byKey(const ValueKey('progress_weight_chart'));
       await tester.ensureVisible(chart);
       expect(chart, findsOneWidget);
-      expect(find.text('Goal 78.0 kg'), findsOneWidget);
+      expect(
+        find.text(
+          'Each point is a recorded local-day value; gaps are not filled.',
+        ),
+        findsOneWidget,
+      );
       expect(tester.takeException(), isNull);
       await expectLater(
         find.byType(ProgressScreen),
@@ -104,6 +111,28 @@ void main() {
       );
     },
   );
+
+  testWidgets('weight history keeps every persisted entry in order', (
+    tester,
+  ) async {
+    _setViewport(tester, const Size(390, 844));
+    await _pump(tester, _historyWithSameDayEntries(), AppTheme.darkTheme);
+
+    final historyButton = find.text('View weight history');
+    await tester.ensureVisible(historyButton);
+    await tester.tap(historyButton);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Weight history'), findsOneWidget);
+    expect(find.text('81.6 kg'), findsOneWidget);
+    expect(find.text('81.8 kg'), findsOneWidget);
+    expect(find.text('82.0 kg'), findsOneWidget);
+    expect(
+      find.textContaining('Earlier entries are shown as recorded.'),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('training consistency section renders week strip dark golden', (
     tester,
@@ -364,10 +393,6 @@ ProgressDashboardSnapshot _oneMeasurement() => ProgressDashboardSnapshot(
   strengthSets: const [],
   muscleBalance: _emptyMuscleModel(),
   unavailableSections: const {},
-  weightGoal: const ProgressWeightGoal(
-    targetKg: 78.0,
-    direction: ProgressWeightGoalDirection.loss,
-  ),
 );
 
 ProgressDashboardSnapshot _twoMeasurements() => ProgressDashboardSnapshot(
@@ -382,10 +407,6 @@ ProgressDashboardSnapshot _twoMeasurements() => ProgressDashboardSnapshot(
   strengthSets: const [],
   muscleBalance: _emptyMuscleModel(),
   unavailableSections: const {},
-  weightGoal: const ProgressWeightGoal(
-    targetKg: 78.0,
-    direction: ProgressWeightGoalDirection.loss,
-  ),
 );
 
 ProgressDashboardSnapshot _weightTrendOnly() => ProgressDashboardSnapshot(
@@ -401,11 +422,23 @@ ProgressDashboardSnapshot _weightTrendOnly() => ProgressDashboardSnapshot(
   strengthSets: const [],
   muscleBalance: _emptyMuscleModel(),
   unavailableSections: const {},
-  weightGoal: const ProgressWeightGoal(
-    targetKg: 78.0,
-    direction: ProgressWeightGoalDirection.loss,
-  ),
 );
+
+ProgressDashboardSnapshot _historyWithSameDayEntries() =>
+    ProgressDashboardSnapshot(
+      nowUtc: DateTime.utc(2026, 8, 9, 12),
+      timezoneId: 'UTC',
+      todayLocalDate: '2026-08-09',
+      measurements: [
+        _measurement('2026-08-01', 82.0, id: 1, hour: 8),
+        _measurement('2026-08-01', 81.8, id: 2, hour: 20),
+        _measurement('2026-08-09', 81.6, id: 3),
+      ],
+      workouts: const [],
+      strengthSets: const [],
+      muscleBalance: _emptyMuscleModel(),
+      unavailableSections: const {},
+    );
 
 ProgressDashboardSnapshot _trainingOnly() => ProgressDashboardSnapshot(
   nowUtc: DateTime.utc(2026, 8, 9, 12),
@@ -586,10 +619,6 @@ ProgressDashboardSnapshot _populated() => ProgressDashboardSnapshot(
   ],
   muscleBalance: _populatedMuscleModel(),
   unavailableSections: const {},
-  weightGoal: const ProgressWeightGoal(
-    targetKg: 78.0,
-    direction: ProgressWeightGoalDirection.loss,
-  ),
   nutritionSummary: const ProgressNutritionSummary(
     days: [
       ProgressNutritionDaySummary(
@@ -681,13 +710,19 @@ ProgressDashboardSnapshot _populated() => ProgressDashboardSnapshot(
   ),
 );
 
-ProgressMeasurementRecord _measurement(String localDate, double weight) =>
-    ProgressMeasurementRecord(
-      id: localDate.hashCode,
-      recordedAt: DateTime.parse('${localDate}T08:00:00Z'),
-      localDate: localDate,
-      weightKg: weight,
-    );
+ProgressMeasurementRecord _measurement(
+  String localDate,
+  double weight, {
+  int? id,
+  int hour = 8,
+}) => ProgressMeasurementRecord(
+  id: id ?? localDate.hashCode,
+  recordedAt: DateTime.parse(
+    '${localDate}T${hour.toString().padLeft(2, '0')}:00:00Z',
+  ),
+  localDate: localDate,
+  weightKg: weight,
+);
 
 ProgressWorkoutRecord _workout(
   int id,

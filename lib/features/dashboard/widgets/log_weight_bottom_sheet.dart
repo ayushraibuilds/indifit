@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
 import '../../../data/repositories/workout_repository.dart';
+import '../../settings/unit_preference.dart';
 
 class LogWeightBottomSheet extends ConsumerStatefulWidget {
   final double currentWeight;
@@ -48,6 +49,7 @@ class LogWeightBottomSheet extends ConsumerStatefulWidget {
 class _LogWeightBottomSheetState extends ConsumerState<LogWeightBottomSheet> {
   late TextEditingController _controller;
   double _selectedWeight = 70.0;
+  String _units = UnitPreferenceNotifier.metric;
   WeightLogStatus? _status;
   bool _loadingStatus = true;
   bool _isSaving = false;
@@ -56,9 +58,13 @@ class _LogWeightBottomSheetState extends ConsumerState<LogWeightBottomSheet> {
   @override
   void initState() {
     super.initState();
-    _selectedWeight = widget.currentWeight;
+    _units = ref.read(unitPreferenceProvider);
+    _selectedWeight = UnitPreferencePresentation.weightForDisplay(
+      widget.currentWeight,
+      _units,
+    );
     _controller = TextEditingController(
-      text: widget.currentWeight.toStringAsFixed(1),
+      text: _selectedWeight.toStringAsFixed(1),
     );
     _checkStatus();
   }
@@ -79,8 +85,11 @@ class _LogWeightBottomSheetState extends ConsumerState<LogWeightBottomSheet> {
           _loadingStatus = false;
           _statusError = false;
           if (status.isEditingToday && status.todayWeight != null) {
-            _selectedWeight = status.todayWeight!;
-            _controller.text = status.todayWeight!.toStringAsFixed(1);
+            _selectedWeight = UnitPreferencePresentation.weightForDisplay(
+              status.todayWeight!,
+              _units,
+            );
+            _controller.text = _selectedWeight.toStringAsFixed(1);
           }
         });
       }
@@ -109,15 +118,42 @@ class _LogWeightBottomSheetState extends ConsumerState<LogWeightBottomSheet> {
   void _adjust(double delta) {
     if (_isSaveDisabled) return;
     setState(() {
-      _selectedWeight = (_selectedWeight + delta).clamp(20.0, 350.0);
+      final minimum = UnitPreferencePresentation.weightForDisplay(
+        minimumLoggedWeightKg,
+        _units,
+      );
+      final maximum = UnitPreferencePresentation.weightForDisplay(
+        maximumLoggedWeightKg,
+        _units,
+      );
+      _selectedWeight = (_selectedWeight + delta).clamp(minimum, maximum);
       _controller.text = _selectedWeight.toStringAsFixed(1);
     });
   }
 
   Future<void> _save() async {
     if (_isSaveDisabled) return;
-    final val = double.tryParse(_controller.text);
-    if (val == null || val < 20.0 || val > 350.0) return;
+    final displayed = double.tryParse(_controller.text.trim());
+    final kilograms = displayed == null
+        ? null
+        : UnitPreferencePresentation.weightForStorage(displayed, _units);
+    if (kilograms == null || !isValidLoggedWeightKg(kilograms)) {
+      final minimum = UnitPreferencePresentation.weightForDisplay(
+        minimumLoggedWeightKg,
+        _units,
+      );
+      final maximum = UnitPreferencePresentation.weightForDisplay(
+        maximumLoggedWeightKg,
+        _units,
+      );
+      final symbol = UnitPreferencePresentation.weightSymbol(_units);
+      setState(
+        () => _errorMessage =
+            'Enter a weight between ${_formatWeightLimit(minimum)} '
+            'and ${_formatWeightLimit(maximum)} $symbol.',
+      );
+      return;
+    }
 
     setState(() {
       _isSaving = true;
@@ -125,7 +161,7 @@ class _LogWeightBottomSheetState extends ConsumerState<LogWeightBottomSheet> {
     });
 
     try {
-      await widget.onSave(val);
+      await widget.onSave(kilograms);
       if (mounted) {
         Navigator.pop(context);
       }
@@ -141,8 +177,25 @@ class _LogWeightBottomSheetState extends ConsumerState<LogWeightBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<String>(unitPreferenceProvider, (previous, next) {
+      if (previous == next) return;
+      final previousUnits = previous ?? _units;
+      final kilograms = UnitPreferencePresentation.weightForStorage(
+        _selectedWeight,
+        previousUnits,
+      );
+      setState(() {
+        _units = next;
+        _selectedWeight = UnitPreferencePresentation.weightForDisplay(
+          kilograms,
+          next,
+        );
+        _controller.text = _selectedWeight.toStringAsFixed(1);
+      });
+    });
     final colors = context.b05Colors;
     final isLocked = _status != null && !_status!.canLog;
+    final weightSymbol = UnitPreferencePresentation.weightSymbol(_units);
 
     return Padding(
       padding: const EdgeInsets.all(24.0),
@@ -184,7 +237,7 @@ class _LogWeightBottomSheetState extends ConsumerState<LogWeightBottomSheet> {
                       )
                     else if (_status?.isEditingToday == true)
                       Text(
-                        'Editing Today\'s Entry (${_selectedWeight.toStringAsFixed(1)} kg)',
+                        'Editing Today\'s Entry (${_selectedWeight.toStringAsFixed(1)} $weightSymbol)',
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
@@ -294,9 +347,9 @@ class _LogWeightBottomSheetState extends ConsumerState<LogWeightBottomSheet> {
                     color: colors.textPrimary,
                   ),
                   decoration: InputDecoration(
-                    labelText: 'Weight (kg)',
+                    labelText: 'Weight ($weightSymbol)',
                     labelStyle: TextStyle(color: colors.textSecondary),
-                    suffixText: 'kg',
+                    suffixText: weightSymbol,
                     suffixStyle: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -338,22 +391,22 @@ class _LogWeightBottomSheetState extends ConsumerState<LogWeightBottomSheet> {
             children: [
               _buildStepChip(
                 context,
-                '-0.5 kg',
+                '-0.5 $weightSymbol',
                 _isSaveDisabled ? null : () => _adjust(-0.5),
               ),
               _buildStepChip(
                 context,
-                '-0.1 kg',
+                '-0.1 $weightSymbol',
                 _isSaveDisabled ? null : () => _adjust(-0.1),
               ),
               _buildStepChip(
                 context,
-                '+0.1 kg',
+                '+0.1 $weightSymbol',
                 _isSaveDisabled ? null : () => _adjust(0.1),
               ),
               _buildStepChip(
                 context,
-                '+0.5 kg',
+                '+0.5 $weightSymbol',
                 _isSaveDisabled ? null : () => _adjust(0.5),
               ),
             ],
@@ -421,3 +474,7 @@ class _LogWeightBottomSheetState extends ConsumerState<LogWeightBottomSheet> {
     );
   }
 }
+
+String _formatWeightLimit(double value) => value == value.roundToDouble()
+    ? value.toStringAsFixed(0)
+    : value.toStringAsFixed(1);

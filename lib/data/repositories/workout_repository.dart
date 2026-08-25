@@ -7,6 +7,17 @@ import '../../core/di/providers.dart';
 import '../database/app_database.dart';
 import 'legacy_program_compatibility_adapter.dart';
 
+/// Existing consumer validation bounds for manually logged body weight.
+/// These are shared by the repository and logging sheet so UI validation
+/// cannot drift from the persistence authority.
+const minimumLoggedWeightKg = 20.0;
+const maximumLoggedWeightKg = 350.0;
+
+bool isValidLoggedWeightKg(double value) =>
+    value.isFinite &&
+    value >= minimumLoggedWeightKg &&
+    value <= maximumLoggedWeightKg;
+
 final workoutRepositoryProvider = Provider<WorkoutRepository>((ref) {
   final db = ref.watch(databaseProvider);
   return WorkoutRepository(db);
@@ -324,6 +335,8 @@ class WorkoutRepository {
                 expression: tbl.recordedAt,
                 mode: OrderingMode.desc,
               ),
+              (tbl) =>
+                  OrderingTerm(expression: tbl.id, mode: OrderingMode.desc),
             ]))
             .get();
 
@@ -378,6 +391,14 @@ class WorkoutRepository {
     double? chest,
     double? arms,
   }) async {
+    if (weight != null && !isValidLoggedWeightKg(weight)) {
+      throw ArgumentError.value(
+        weight,
+        'weight',
+        'Weight must be finite and between $minimumLoggedWeightKg and '
+            '$maximumLoggedWeightKg kg.',
+      );
+    }
     final status = await getWeightLogStatus();
     if (!status.canLog) {
       throw StateError(
@@ -390,11 +411,20 @@ class WorkoutRepository {
     final todayEnd = todayStart.add(const Duration(days: 1));
 
     final existing =
-        await (_db.select(_db.bodyMeasurements)..where(
-              (tbl) =>
-                  tbl.recordedAt.isBiggerOrEqualValue(todayStart) &
-                  tbl.recordedAt.isSmallerThanValue(todayEnd),
-            ))
+        await (_db.select(_db.bodyMeasurements)
+              ..where(
+                (tbl) =>
+                    tbl.recordedAt.isBiggerOrEqualValue(todayStart) &
+                    tbl.recordedAt.isSmallerThanValue(todayEnd),
+              )
+              ..orderBy([
+                (tbl) => OrderingTerm(
+                  expression: tbl.recordedAt,
+                  mode: OrderingMode.desc,
+                ),
+                (tbl) =>
+                    OrderingTerm(expression: tbl.id, mode: OrderingMode.desc),
+              ]))
             .get();
 
     if (existing.isNotEmpty) {
@@ -429,6 +459,14 @@ class WorkoutRepository {
   }
 
   Future<int> logWeightAndSyncProfile({required double weight}) async {
+    if (!isValidLoggedWeightKg(weight)) {
+      throw ArgumentError.value(
+        weight,
+        'weight',
+        'Weight must be finite and between $minimumLoggedWeightKg and '
+            '$maximumLoggedWeightKg kg.',
+      );
+    }
     final status = await getWeightLogStatus();
     if (!status.canLog) {
       throw StateError(
@@ -442,11 +480,20 @@ class WorkoutRepository {
 
     return await _db.transaction(() async {
       final existing =
-          await (_db.select(_db.bodyMeasurements)..where(
-                (tbl) =>
-                    tbl.recordedAt.isBiggerOrEqualValue(todayStart) &
-                    tbl.recordedAt.isSmallerThanValue(todayEnd),
-              ))
+          await (_db.select(_db.bodyMeasurements)
+                ..where(
+                  (tbl) =>
+                      tbl.recordedAt.isBiggerOrEqualValue(todayStart) &
+                      tbl.recordedAt.isSmallerThanValue(todayEnd),
+                )
+                ..orderBy([
+                  (tbl) => OrderingTerm(
+                    expression: tbl.recordedAt,
+                    mode: OrderingMode.desc,
+                  ),
+                  (tbl) =>
+                      OrderingTerm(expression: tbl.id, mode: OrderingMode.desc),
+                ]))
               .get();
 
       int measurementId;
@@ -484,6 +531,7 @@ class WorkoutRepository {
     return await (_db.select(_db.bodyMeasurements)..orderBy([
           (tbl) =>
               OrderingTerm(expression: tbl.recordedAt, mode: OrderingMode.desc),
+          (tbl) => OrderingTerm(expression: tbl.id, mode: OrderingMode.desc),
         ]))
         .get();
   }

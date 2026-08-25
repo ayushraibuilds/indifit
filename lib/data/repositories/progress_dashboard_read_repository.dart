@@ -52,7 +52,6 @@ class ProgressDashboardReadRepository {
   Future<ProgressDashboardSnapshot> read({
     required DateTime nowUtc,
     required String timezoneId,
-    ProgressWeightGoal? weightGoal,
   }) async {
     final unavailable = <ProgressDataSection>{};
     final now = nowUtc.toUtc();
@@ -111,7 +110,6 @@ class ProgressDashboardReadRepository {
       strengthSets: strengthSets,
       muscleBalance: muscleBalance,
       unavailableSections: unavailable,
-      weightGoal: weightGoal,
       nutritionSummary: nutritionSummary,
       strengthExercises: strengthExercises,
       weeklyTrainedDates: weeklyTrainedDates,

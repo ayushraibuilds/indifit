@@ -7,17 +7,18 @@ import 'package:indifit/core/di/providers.dart';
 import 'package:indifit/core/services/local_schedule_date_service.dart';
 import 'package:indifit/core/services/local_timezone_service.dart';
 import 'package:indifit/core/theme/app_theme.dart';
-import 'package:indifit/core/theme/b05_semantic_colors.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/models/b02_muscle_volume_models.dart';
 import 'package:indifit/data/repositories/workout_repository.dart';
 import 'package:indifit/features/progress/progress_dashboard_controller.dart';
 import 'package:indifit/features/progress/progress_dashboard_models.dart';
 import 'package:indifit/features/progress/progress_screen.dart';
+import 'package:indifit/features/settings/unit_preference.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  setUp(() => SharedPreferences.setMockInitialValues({}));
 
   // R07F-0: Outfit is bundled; no runtime font fetching configuration.
 
@@ -136,7 +137,7 @@ void main() {
     await _pump(tester, _oneMeasurement(), AppTheme.darkTheme);
 
     expect(find.text('82.0 kg'), findsWidgets);
-    expect(find.text('Goal 78.0 kg'), findsOneWidget);
+    expect(find.text('Goal 78.0 kg'), findsNothing);
     expect(
       find.text('Log another measurement to start seeing your trend.'),
       findsOneWidget,
@@ -164,6 +165,19 @@ void main() {
     );
     expect(find.byKey(const ValueKey('progress_weight_chart')), findsNothing);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('imperial preference converts observed weights for display', (
+    tester,
+  ) async {
+    _setViewport(tester, const Size(390, 844));
+    SharedPreferences.setMockInitialValues({
+      UnitPreferenceNotifier.key: UnitPreferenceNotifier.imperial,
+    });
+    await _pump(tester, _twoMeasurements(), AppTheme.darkTheme);
+
+    expect(find.text('180.8 lb → 179.9 lb'), findsWidgets);
+    expect(find.textContaining('kg'), findsNothing);
   });
 
   testWidgets('same-day duplicate weigh-ins never become a trend chart', (
@@ -211,7 +225,7 @@ void main() {
     },
   );
 
-  testWidgets('a crossed loss goal is not presented as ongoing success', (
+  testWidgets('legacy weight goal references are not rendered as targets', (
     tester,
   ) async {
     _setViewport(tester, const Size(390, 844));
@@ -231,36 +245,8 @@ void main() {
       AppTheme.darkTheme,
     );
 
-    expect(find.text('1.0 kg below your goal'), findsOneWidget);
-    expect(find.text('Moving closer to your goal'), findsNothing);
-    final overviewWeight = find.text('77.0 kg').first;
-    expect(
-      tester.widget<Text>(overviewWeight).style?.color,
-      isNot(equals(B05SemanticColors.dark.success.indicator)),
-    );
-    expect(tester.takeException(), isNull);
-  });
-
-  testWidgets('an intermediate overshoot also stays neutral', (tester) async {
-    _setViewport(tester, const Size(390, 844));
-    await _pump(
-      tester,
-      _snapshot(
-        measurements: [
-          _measurement('2026-08-01', 82),
-          _measurement('2026-08-05', 77),
-          _measurement('2026-08-09', 79),
-        ],
-        goal: const ProgressWeightGoal(
-          targetKg: 78,
-          direction: ProgressWeightGoalDirection.loss,
-        ),
-      ),
-      AppTheme.darkTheme,
-    );
-
-    expect(find.text('1.0 kg to go'), findsOneWidget);
-    expect(find.text('Moving closer to your goal'), findsNothing);
+    expect(find.text('Goal 78.0 kg'), findsNothing);
+    expect(find.textContaining('your goal'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
@@ -317,7 +303,7 @@ void main() {
       expect(find.text('Strength'), findsWidgets);
       expect(find.text('Training volume'), findsOneWidget);
       expect(find.text('Recent training emphasis'), findsOneWidget);
-      expect(find.text('Moving closer to your goal'), findsOneWidget);
+      expect(find.textContaining('your goal'), findsNothing);
       expect(tester.takeException(), isNull);
       await expectLater(
         find.byType(ProgressScreen),
@@ -542,9 +528,7 @@ void main() {
     await _pump(tester, _populated(), AppTheme.darkTheme);
 
     expect(
-      find.bySemanticsLabel(
-        'Weight: 82.0 kg. 0.8 kg lower than 28 days ago. Goal 78.0 kg, 4.0 kg to go.',
-      ),
+      find.bySemanticsLabel('Weight: 82.0 kg. 0.8 kg lower than 28 days ago.'),
       findsWidgets,
     );
     expect(find.bySemanticsLabel('Weight chart time range'), findsOneWidget);
@@ -584,13 +568,8 @@ void _setViewport(WidgetTester tester, Size size) {
 
 ProgressDashboardSnapshot _zeroData() => _snapshot();
 
-ProgressDashboardSnapshot _oneMeasurement() => _snapshot(
-  measurements: [_measurement('2026-08-09', 82)],
-  goal: const ProgressWeightGoal(
-    targetKg: 78,
-    direction: ProgressWeightGoalDirection.loss,
-  ),
-);
+ProgressDashboardSnapshot _oneMeasurement() =>
+    _snapshot(measurements: [_measurement('2026-08-09', 82)]);
 
 ProgressDashboardSnapshot _twoMeasurements() => _snapshot(
   measurements: [
@@ -629,10 +608,6 @@ ProgressDashboardSnapshot _populated() => _snapshot(
     _strength('2026-08-08', 92.5, 3),
   ],
   muscle: _muscleModel(),
-  goal: const ProgressWeightGoal(
-    targetKg: 78,
-    direction: ProgressWeightGoalDirection.loss,
-  ),
 );
 
 ProgressDashboardSnapshot _strengthOnly() => _snapshot(
@@ -692,10 +667,6 @@ ProgressDashboardSnapshot _responsiveData() => _snapshot(
       exerciseId: 'bulgarian-split-squat',
     ),
   ],
-  goal: const ProgressWeightGoal(
-    targetKg: 78,
-    direction: ProgressWeightGoalDirection.loss,
-  ),
 );
 
 ProgressDashboardSnapshot _snapshot({
