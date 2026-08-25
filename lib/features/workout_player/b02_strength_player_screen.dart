@@ -1220,7 +1220,7 @@ class _B02StrengthPlayerScreenState
             draftId: currentLaunch.draftId,
             scheduledOccurrenceId: execution.occurrenceId,
             slotId: slot.id,
-            expectedExerciseId: slot.exerciseId!,
+            expectedExerciseId: slot.expectedExerciseId ?? slot.exerciseId!,
             currentPerformedExerciseId: actualExerciseId,
             currentExerciseNameSnapshot: actualExerciseName,
           )

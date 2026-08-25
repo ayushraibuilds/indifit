@@ -581,8 +581,11 @@ class B02StrengthExecutionSlot {
   final int? roundOrdinal;
   final int? memberOrdinal;
   final String prescriptionId;
+  final String? expectedExerciseId;
+  final String? expectedExerciseNameSnapshot;
   final String? exerciseId;
   final String exerciseNameSnapshot;
+  final String? substitutionReason;
   final int plannedSets;
 
   /// Frozen, ordinal-addressed set prescriptions for this exercise slot.
@@ -621,8 +624,11 @@ class B02StrengthExecutionSlot {
     required this.roundOrdinal,
     required this.memberOrdinal,
     required this.prescriptionId,
+    this.expectedExerciseId,
+    this.expectedExerciseNameSnapshot,
     required this.exerciseId,
     required this.exerciseNameSnapshot,
+    this.substitutionReason,
     required this.plannedSets,
     this.setPrescriptions = const [],
     this.setPrescriptionOrdinal,
@@ -673,8 +679,11 @@ class B02StrengthExecutionSlot {
       roundOrdinal: roundOrdinal,
       memberOrdinal: memberOrdinal,
       prescriptionId: prescriptionId,
+      expectedExerciseId: expectedExerciseId,
+      expectedExerciseNameSnapshot: expectedExerciseNameSnapshot,
       exerciseId: exerciseId,
       exerciseNameSnapshot: exerciseNameSnapshot,
+      substitutionReason: substitutionReason,
       plannedSets: plannedSets,
       setPrescriptions: setPrescriptions,
       setPrescriptionOrdinal: setPrescriptionOrdinal,

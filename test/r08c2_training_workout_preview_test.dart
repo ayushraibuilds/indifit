@@ -11,7 +11,9 @@ import 'package:indifit/data/repositories/calendar_read_repository.dart';
 import 'package:indifit/data/repositories/calendar_repository.dart';
 import 'package:indifit/data/repositories/program_activation_coordinator.dart';
 import 'package:indifit/data/repositories/program_repository.dart';
+import 'package:indifit/data/services/b02_occurrence_snapshot_customizer.dart';
 import 'package:indifit/features/calendar/occurrence_actions_sheet.dart';
+import 'package:indifit/features/training/training_workout_customization.dart';
 import 'package:indifit/features/training/training_workout_preview.dart';
 
 void main() {
@@ -120,40 +122,24 @@ void main() {
     });
 
     testWidgets(
-      'routes exercise and set customization through the existing flow',
+      'opens the occurrence customization flow without a routing sheet',
       (tester) async {
         _setViewport(tester, const Size(390, 844));
         var starts = 0;
-        var scheduleActions = 0;
+        var customizations = 0;
         await _pumpPreview(
           tester,
           _previewData(),
           onStartWorkout: () => starts++,
-          onOpenScheduleActions: () => scheduleActions++,
+          onOpenCustomization: () => customizations++,
         );
 
         await tester.tap(find.text('Customize today'));
         await tester.pumpAndSettle();
-        expect(find.text('Move or skip this workout'), findsOneWidget);
-        expect(find.text('Edit exercises and sets'), findsOneWidget);
-
-        await tester.tap(find.text('Edit exercises and sets'));
-        await tester.pumpAndSettle();
-        expect(starts, 1);
-        expect(scheduleActions, 0);
-
-        await _pumpPreview(
-          tester,
-          _previewData(),
-          onStartWorkout: () => starts++,
-          onOpenScheduleActions: () => scheduleActions++,
-        );
-        await tester.tap(find.text('Customize today'));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Move or skip this workout'));
-        await tester.pumpAndSettle();
-
-        expect(scheduleActions, 1);
+        expect(customizations, 1);
+        expect(starts, 0);
+        expect(find.text('Move or skip this workout'), findsNothing);
+        expect(find.text('Edit exercises and sets'), findsNothing);
         expect(find.text('Workout preview'), findsNothing);
       },
     );
@@ -206,6 +192,55 @@ void main() {
       expect(find.text('PLANNED CHANGES'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
+
+    testWidgets(
+      'customization editor exposes direct exercise actions and one save',
+      (tester) async {
+        _setViewport(tester, const Size(320, 844));
+        List<OccurrenceExerciseCustomization>? saved;
+        await tester.pumpWidget(
+          MediaQuery(
+            data: const MediaQueryData(textScaler: TextScaler.linear(2)),
+            child: MaterialApp(
+              theme: AppTheme.lightTheme,
+              home: TrainingWorkoutCustomizationScreen(
+                preview: _previewData(),
+                onSave: ({required baseSnapshotJson, required changes}) async {
+                  saved = changes;
+                },
+                onOpenScheduleActions: () {},
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text(
+            'These changes apply to this workout only. Your future plan stays the same.',
+          ),
+          findsOneWidget,
+        );
+        expect(find.text('Replace'), findsNWidgets(2));
+        expect(find.text('Edit target'), findsNWidgets(2));
+        await tester.ensureVisible(find.text('Edit target').first);
+        await tester.pump();
+        await tester.tap(find.text('Edit target').first);
+        await tester.pumpAndSettle();
+        expect(find.text('Edit Bench Press'), findsOneWidget);
+        await tester.enterText(find.byType(TextField).first, '6–8');
+        await tester.tap(find.text('Done').last);
+        await tester.pumpAndSettle();
+        expect(find.text('Save changes'), findsOneWidget);
+        await tester.tap(find.text('Save changes'));
+        await tester.pumpAndSettle();
+
+        expect(saved, isNotNull);
+        expect(saved, hasLength(1));
+        expect(saved!.single.repsRange, '6–8');
+        expect(tester.takeException(), isNull);
+      },
+    );
 
     testWidgets('exposes concise labels and one semantic Start action', (
       tester,
@@ -482,7 +517,7 @@ Future<void> _pumpPreview(
   ThemeData? theme,
   double textScale = 1,
   VoidCallback? onStartWorkout,
-  VoidCallback? onOpenScheduleActions,
+  VoidCallback? onOpenCustomization,
 }) async {
   await tester.pumpWidget(
     MaterialApp(
@@ -496,7 +531,7 @@ Future<void> _pumpPreview(
           key: UniqueKey(),
           preview: preview,
           onStartWorkout: onStartWorkout ?? () {},
-          onOpenScheduleActions: onOpenScheduleActions ?? () {},
+          onOpenCustomization: onOpenCustomization ?? () {},
         ),
       ),
     ),
@@ -509,12 +544,12 @@ class _PreviewHost extends StatefulWidget {
     super.key,
     required this.preview,
     required this.onStartWorkout,
-    required this.onOpenScheduleActions,
+    required this.onOpenCustomization,
   });
 
   final TrainingWorkoutPreviewData preview;
   final VoidCallback onStartWorkout;
-  final VoidCallback onOpenScheduleActions;
+  final VoidCallback onOpenCustomization;
 
   @override
   State<_PreviewHost> createState() => _PreviewHostState();
@@ -531,7 +566,7 @@ class _PreviewHostState extends State<_PreviewHost> {
           builder: (_) => TrainingWorkoutPreviewScreen(
             preview: widget.preview,
             onStartWorkout: widget.onStartWorkout,
-            onOpenScheduleActions: widget.onOpenScheduleActions,
+            onOpenCustomization: widget.onOpenCustomization,
           ),
         ),
       );

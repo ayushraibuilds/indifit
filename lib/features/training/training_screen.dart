@@ -18,6 +18,7 @@ import '../../data/repositories/calendar_read_repository.dart';
 import '../../data/repositories/program_lifecycle_repository.dart';
 import '../../data/repositories/training_next_action_resolver.dart';
 import '../../data/repositories/workout_repository.dart';
+import '../calendar/calendar_controller.dart';
 import '../calendar/occurrence_actions_sheet.dart';
 import '../calendar/workout_contextual_launcher.dart';
 import '../workout_player/b02_strength_execution_controller.dart';
@@ -25,6 +26,7 @@ import '../workout_player/b02_strength_player_screen.dart';
 import '../workout_player/widgets/manual_log_sheet.dart';
 import '../workout_player/workout_player_screen.dart';
 import 'training_plan_lifecycle_controller.dart';
+import 'training_workout_customization.dart';
 import 'training_workout_preview.dart';
 
 /// Read-only, presentation-ready data for the Training landing page.
@@ -526,8 +528,8 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
           builder: (_) => TrainingWorkoutPreviewScreen(
             preview: preview,
             onStartWorkout: () => _startWorkout(context, ref, item),
-            onOpenScheduleActions: () =>
-                _showOccurrenceActions(context, ref, item),
+            onOpenCustomization: () =>
+                _openWorkoutCustomization(context, ref, item, preview),
           ),
         ),
       );
@@ -545,6 +547,33 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
     } finally {
       if (mounted) setState(() => _isOpeningPreview = false);
     }
+  }
+
+  Future<void> _openWorkoutCustomization(
+    BuildContext context,
+    WidgetRef ref,
+    CalendarOccurrenceReadItem item,
+    TrainingWorkoutPreviewData preview,
+  ) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => TrainingWorkoutCustomizationScreen(
+          preview: preview,
+          onSave: ({required baseSnapshotJson, required changes}) async {
+            await ref
+                .read(calendarControllerProvider.notifier)
+                .customizeOccurrence(
+                  item.occurrence.id,
+                  baseSnapshotJson: baseSnapshotJson,
+                  changes: changes,
+                );
+          },
+          onOpenScheduleActions: () =>
+              _showOccurrenceActions(context, ref, item),
+        ),
+      ),
+    );
+    if (context.mounted) ref.invalidate(trainingLandingSnapshotProvider);
   }
 
   Future<void> _showOccurrenceActions(

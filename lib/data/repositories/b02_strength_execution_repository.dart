@@ -722,14 +722,19 @@ class StrengthExecutionRepository {
           final prescription = prescriptionById[member.exercisePrescriptionId];
           final raw = snapshotPrescriptions[member.exercisePrescriptionId];
           final name =
-              prescription?.exerciseNameSnapshot ??
-              raw?['exerciseNameSnapshot'] as String?;
+              raw?['exerciseNameSnapshot'] as String? ??
+              prescription?.exerciseNameSnapshot;
           final repsRange =
-              prescription?.repsRange ?? raw?['repsRange'] as String?;
+              raw?['repsRange'] as String? ?? prescription?.repsRange;
           final plannedSets =
-              prescription?.plannedSets ?? raw?['plannedSets'] as int?;
+              raw?['plannedSets'] as int? ?? prescription?.plannedSets;
           final exerciseId =
-              prescription?.exerciseId ?? raw?['exerciseId'] as String?;
+              raw?['exerciseId'] as String? ?? prescription?.exerciseId;
+          final expectedExerciseId =
+              raw?['expectedExerciseId'] as String? ?? prescription?.exerciseId;
+          final expectedExerciseName =
+              raw?['expectedExerciseNameSnapshot'] as String? ??
+              prescription?.exerciseNameSnapshot;
           if (name == null || repsRange == null || plannedSets == null) {
             throw const B02StrengthExecutionRecoveryException(
               'A grouped exercise prescription is unavailable right now.',
@@ -754,6 +759,9 @@ class StrengthExecutionRepository {
             prescription: prescription,
             raw: raw,
             name: name,
+            expectedExerciseId: expectedExerciseId,
+            expectedExerciseNameSnapshot: expectedExerciseName,
+            substitutionReason: raw?['substitutionReason'] as String?,
             reps: reps,
             // B02 defines one working slot per member per group round. The
             // round ordinal addresses the corresponding frozen set
@@ -791,13 +799,18 @@ class StrengthExecutionRepository {
       final prescription = prescriptionById[entry.key];
       final raw = entry.value;
       final name =
-          prescription?.exerciseNameSnapshot ??
-          raw['exerciseNameSnapshot'] as String?;
-      final repsRange = prescription?.repsRange ?? raw['repsRange'] as String?;
+          raw['exerciseNameSnapshot'] as String? ??
+          prescription?.exerciseNameSnapshot;
+      final repsRange = raw['repsRange'] as String? ?? prescription?.repsRange;
       final plannedSets =
-          prescription?.plannedSets ?? raw['plannedSets'] as int?;
+          raw['plannedSets'] as int? ?? prescription?.plannedSets;
       final exerciseId =
-          prescription?.exerciseId ?? raw['exerciseId'] as String?;
+          raw['exerciseId'] as String? ?? prescription?.exerciseId;
+      final expectedExerciseId =
+          raw['expectedExerciseId'] as String? ?? prescription?.exerciseId;
+      final expectedExerciseName =
+          raw['expectedExerciseNameSnapshot'] as String? ??
+          prescription?.exerciseNameSnapshot;
       if (name == null || repsRange == null || plannedSets == null) continue;
       final reps = _parseRepsRange(repsRange);
       final slot = await _buildSlot(
@@ -808,6 +821,9 @@ class StrengthExecutionRepository {
         prescription: prescription,
         raw: raw,
         name: name,
+        expectedExerciseId: expectedExerciseId,
+        expectedExerciseNameSnapshot: expectedExerciseName,
+        substitutionReason: raw['substitutionReason'] as String?,
         reps: reps,
         plannedSets: plannedSets,
         setPrescriptionOrdinal: null,
@@ -859,6 +875,9 @@ class StrengthExecutionRepository {
     required ExercisePrescription? prescription,
     required Map<String, dynamic>? raw,
     required String name,
+    required String? expectedExerciseId,
+    required String? expectedExerciseNameSnapshot,
+    required String? substitutionReason,
     required (int?, int?) reps,
     required int plannedSets,
     required int? setPrescriptionOrdinal,
@@ -926,23 +945,26 @@ class StrengthExecutionRepository {
     final effectiveItemIncrement = item?.id.isEmpty == true
         ? null
         : item?.weightIncrementKg;
-    final targetLoad =
-        frozenFirst?.targetLoadKg ??
-        strength?.targetLoadKg ??
-        _rawDouble(raw?['targetLoadKg']);
-    final targetBasis =
-        frozenFirst?.loadBasis ??
-        _rawLoadBasis(strength?.loadBasis) ??
-        _rawLoadBasis(raw?['loadBasis']);
+    final targetLoadCleared = raw?['targetLoadClearedForReplacement'] == true;
+    final targetLoad = targetLoadCleared
+        ? null
+        : _rawDouble(raw?['targetLoadKg']) ??
+              frozenFirst?.targetLoadKg ??
+              strength?.targetLoadKg;
+    final targetBasis = targetLoadCleared
+        ? null
+        : _rawLoadBasis(raw?['loadBasis']) ??
+              frozenFirst?.loadBasis ??
+              _rawLoadBasis(strength?.loadBasis);
     final targetMin =
+        _rawInt(raw?['targetRepsMin']) ??
         frozenFirst?.targetRepsMin ??
         strength?.targetRepsMin ??
-        _rawInt(raw?['targetRepsMin']) ??
         reps.$1;
     final targetMax =
+        _rawInt(raw?['targetRepsMax']) ??
         frozenFirst?.targetRepsMax ??
         strength?.targetRepsMax ??
-        _rawInt(raw?['targetRepsMax']) ??
         reps.$2;
     final targetRpe =
         frozenFirst?.targetRpe ??
@@ -964,8 +986,11 @@ class StrengthExecutionRepository {
       roundOrdinal: roundOrdinal,
       memberOrdinal: member?.ordinal,
       prescriptionId: prescription?.id ?? raw?['id'] as String? ?? id,
+      expectedExerciseId: expectedExerciseId,
+      expectedExerciseNameSnapshot: expectedExerciseNameSnapshot,
       exerciseId: exerciseId,
       exerciseNameSnapshot: name,
+      substitutionReason: substitutionReason,
       plannedSets: plannedSets,
       setPrescriptions: setPrescriptions,
       setPrescriptionOrdinal: setPrescriptionOrdinal,

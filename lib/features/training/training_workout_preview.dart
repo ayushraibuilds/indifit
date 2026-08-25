@@ -24,6 +24,7 @@ class TrainingWorkoutPreviewData {
     required this.substitutions,
     this.durationSeconds,
     required this.isSnapshotBacked,
+    this.sourceSnapshotJson,
   });
 
   final CalendarOccurrenceReadItem occurrenceItem;
@@ -34,6 +35,7 @@ class TrainingWorkoutPreviewData {
   final List<TrainingWorkoutPreviewSubstitution> substitutions;
   final int? durationSeconds;
   final bool isSnapshotBacked;
+  final String? sourceSnapshotJson;
 
   bool get hasDetails => exercises.isNotEmpty;
 
@@ -116,6 +118,10 @@ class TrainingWorkoutPreviewData {
       exercises.add(
         TrainingWorkoutPreviewExercise(
           prescriptionId: id,
+          exerciseId: _optionalString(
+            prescription['exerciseId'],
+            'exercise ID',
+          ),
           name: name,
           plannedSets: plannedSets,
           repsRange: repsRange,
@@ -158,6 +164,7 @@ class TrainingWorkoutPreviewData {
       substitutions: _parseSubstitutions(root['substitutions']),
       durationSeconds: durationSeconds,
       isSnapshotBacked: true,
+      sourceSnapshotJson: snapshotJson,
     );
   }
 
@@ -168,6 +175,7 @@ class TrainingWorkoutPreviewData {
         .map(
           (prescription) => TrainingWorkoutPreviewExercise(
             prescriptionId: prescription.id,
+            exerciseId: prescription.exerciseId,
             name: _requiredString(
               prescription.exerciseNameSnapshot,
               'exercise name',
@@ -193,6 +201,7 @@ class TrainingWorkoutPreviewData {
       substitutions: const [],
       durationSeconds: null,
       isSnapshotBacked: false,
+      sourceSnapshotJson: null,
     );
   }
 
@@ -219,6 +228,7 @@ class TrainingWorkoutPreviewData {
 class TrainingWorkoutPreviewExercise {
   const TrainingWorkoutPreviewExercise({
     required this.prescriptionId,
+    this.exerciseId,
     required this.name,
     required this.plannedSets,
     required this.repsRange,
@@ -227,6 +237,7 @@ class TrainingWorkoutPreviewExercise {
   });
 
   final String prescriptionId;
+  final String? exerciseId;
   final String name;
   final int plannedSets;
   final String repsRange;
@@ -336,20 +347,19 @@ class TrainingWorkoutPreviewSubstitution {
   final String actualName;
 }
 
-/// Read-only preview surface. The callbacks deliberately route back to the
-/// existing start/occurrence commands; this widget owns no schedule or draft
-/// mutation and never creates a second picker.
+/// Read-only preview surface. Mutations stay behind the explicit Customize
+/// action; this widget owns no schedule or draft persistence.
 class TrainingWorkoutPreviewScreen extends StatefulWidget {
   const TrainingWorkoutPreviewScreen({
     required this.preview,
     required this.onStartWorkout,
-    required this.onOpenScheduleActions,
+    required this.onOpenCustomization,
     super.key,
   });
 
   final TrainingWorkoutPreviewData preview;
   final VoidCallback onStartWorkout;
-  final VoidCallback onOpenScheduleActions;
+  final VoidCallback onOpenCustomization;
 
   @override
   State<TrainingWorkoutPreviewScreen> createState() =>
@@ -369,63 +379,11 @@ class _TrainingWorkoutPreviewScreenState
     widget.onStartWorkout();
   }
 
-  Future<void> _showCustomizeToday() async {
+  void _openCustomization() {
     if (_actionInFlight || !preview.hasDetails) return;
-    final action = await showModalBottomSheet<_TodayCustomizationAction>(
-      context: context,
-      useSafeArea: true,
-      builder: (sheetContext) => SafeArea(
-        child: ListView(
-          shrinkWrap: true,
-          padding: const EdgeInsets.fromLTRB(
-            B05Layout.space8,
-            B05Layout.space8,
-            B05Layout.space8,
-            B05Layout.space16,
-          ),
-          children: [
-            ListTile(
-              title: Text(
-                'Customize today',
-                style: B05Typography.title(sheetContext),
-              ),
-              subtitle: const Text(
-                'Changes here stay with this workout and do not edit future plan days.',
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.event_repeat_outlined),
-              title: const Text('Move or skip this workout'),
-              subtitle: const Text(
-                'Use the existing schedule controls for today’s occurrence.',
-              ),
-              onTap: () => Navigator.pop(
-                sheetContext,
-                _TodayCustomizationAction.schedule,
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.tune_rounded),
-              title: const Text('Edit exercises and sets'),
-              subtitle: const Text(
-                'Open the workout to use its existing replacement and set controls.',
-              ),
-              onTap: () => Navigator.pop(
-                sheetContext,
-                _TodayCustomizationAction.execution,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-    if (!mounted || action == null) return;
-    if (action == _TodayCustomizationAction.schedule) {
-      Navigator.of(context).pop();
-      widget.onOpenScheduleActions();
-      return;
-    }
-    _startWorkout();
+    setState(() => _actionInFlight = true);
+    Navigator.of(context).pop();
+    widget.onOpenCustomization();
   }
 
   @override
@@ -440,6 +398,10 @@ class _TrainingWorkoutPreviewScreenState
     final canStart =
         preview.hasDetails &&
         (occurrence.status == 'planned' || occurrence.status == 'rescheduled');
+    final canCustomize =
+        canStart &&
+        preview.isSnapshotBacked &&
+        preview.sourceSnapshotJson?.trim().isNotEmpty == true;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Workout preview')),
@@ -515,18 +477,20 @@ class _TrainingWorkoutPreviewScreenState
                 icon: Icons.play_arrow_rounded,
                 onPressed: _actionInFlight ? null : _startWorkout,
               ),
-              const SizedBox(height: B05Layout.space8),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: B05ActionButton(
-                  label: 'Customize today',
-                  hint:
-                      'Move this workout or edit it using existing workout controls.',
-                  icon: Icons.tune_rounded,
-                  emphasis: B05ActionEmphasis.tertiary,
-                  onPressed: _actionInFlight ? null : _showCustomizeToday,
+              if (canCustomize) ...[
+                const SizedBox(height: B05Layout.space8),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: B05ActionButton(
+                    label: 'Customize today',
+                    hint:
+                        'Change this workout without changing future plan days.',
+                    icon: Icons.tune_rounded,
+                    emphasis: B05ActionEmphasis.tertiary,
+                    onPressed: _actionInFlight ? null : _openCustomization,
+                  ),
                 ),
-              ),
+              ],
             ],
             if (!preview.hasDetails) ...[
               const SizedBox(height: B05Layout.space12),
@@ -630,8 +594,6 @@ class _TrainingWorkoutPreviewScreenState
     );
   }
 }
-
-enum _TodayCustomizationAction { schedule, execution }
 
 class _PreviewGroups extends StatelessWidget {
   const _PreviewGroups({required this.groups});
@@ -843,6 +805,11 @@ String _requiredString(Object? value, String label) {
     throw FormatException('The planned $label is unavailable.');
   }
   return value.trim();
+}
+
+String? _optionalString(Object? value, String label) {
+  if (value == null) return null;
+  return _requiredString(value, label);
 }
 
 int _requiredPositiveInt(Object? value, String label) {

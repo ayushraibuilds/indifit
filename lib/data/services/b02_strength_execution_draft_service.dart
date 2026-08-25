@@ -90,15 +90,19 @@ class B02StrengthExecutionDraftService {
       groupMemberOrdinal: slot.memberOrdinal,
       groupRoundOrdinal: slot.roundOrdinal,
       ordinal: existing?.ordinal ?? state.performedExercises.length,
-      expectedExerciseId: slot.exerciseId,
-      expectedExerciseNameSnapshot: slot.exerciseNameSnapshot,
+      expectedExerciseId: slot.expectedExerciseId ?? slot.exerciseId,
+      expectedExerciseNameSnapshot:
+          slot.expectedExerciseNameSnapshot ?? slot.exerciseNameSnapshot,
       actualExerciseId: canonicalExerciseId,
       actualExerciseNameSnapshot:
           actualExerciseNameSnapshot ??
           existing?.actualExerciseNameSnapshot ??
           slot.exerciseNameSnapshot,
       status: completed ? 'completed' : 'partial',
-      substitutionReason: substitutionReason ?? existing?.substitutionReason,
+      substitutionReason:
+          substitutionReason ??
+          existing?.substitutionReason ??
+          slot.substitutionReason,
       sets: sets,
       targetRecommendation: offeredRecommendation,
     );
@@ -261,9 +265,14 @@ class B02StrengthExecutionDraftService {
       groupMemberOrdinal: existing?.groupMemberOrdinal ?? slot.memberOrdinal,
       groupRoundOrdinal: existing?.groupRoundOrdinal ?? slot.roundOrdinal,
       ordinal: existing?.ordinal ?? state.performedExercises.length,
-      expectedExerciseId: existing?.expectedExerciseId ?? slot.exerciseId,
+      expectedExerciseId:
+          existing?.expectedExerciseId ??
+          slot.expectedExerciseId ??
+          slot.exerciseId,
       expectedExerciseNameSnapshot:
-          existing?.expectedExerciseNameSnapshot ?? slot.exerciseNameSnapshot,
+          existing?.expectedExerciseNameSnapshot ??
+          slot.expectedExerciseNameSnapshot ??
+          slot.exerciseNameSnapshot,
       actualExerciseId: replacementId,
       actualExerciseNameSnapshot: replacementName,
       status: 'partial',
@@ -308,12 +317,13 @@ class B02StrengthExecutionDraftService {
       groupMemberOrdinal: slot.memberOrdinal,
       groupRoundOrdinal: slot.roundOrdinal,
       ordinal: existing?.ordinal ?? state.performedExercises.length,
-      expectedExerciseId: slot.exerciseId,
-      expectedExerciseNameSnapshot: slot.exerciseNameSnapshot,
+      expectedExerciseId: slot.expectedExerciseId ?? slot.exerciseId,
+      expectedExerciseNameSnapshot:
+          slot.expectedExerciseNameSnapshot ?? slot.exerciseNameSnapshot,
       actualExerciseId: slot.exerciseId!,
       actualExerciseNameSnapshot: slot.exerciseNameSnapshot,
       status: 'skipped',
-      substitutionReason: reason,
+      substitutionReason: reason ?? slot.substitutionReason,
       sets: existing?.sets ?? const [],
       targetRecommendation: offeredRecommendation,
     );

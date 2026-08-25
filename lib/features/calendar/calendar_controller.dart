@@ -10,6 +10,7 @@ import '../../core/services/local_schedule_date_service.dart';
 import '../../data/database/app_database.dart' show ScheduledSessionOccurrence;
 import '../../data/repositories/calendar_read_repository.dart';
 import '../../data/repositories/calendar_repository.dart';
+import '../../data/services/b02_occurrence_snapshot_customizer.dart';
 import 'calendar_read_model.dart';
 
 /// Calendar state is ephemeral Riverpod state. It has no SharedPreferences or
@@ -143,6 +144,24 @@ class CalendarController extends StateNotifier<CalendarUiState> {
         commandId: _uuid.v4(),
         expectedStatus: _status(occurrence.status),
         reason: reason,
+      ),
+    );
+    await refresh();
+  }
+
+  Future<void> customizeOccurrence(
+    String occurrenceId, {
+    required String baseSnapshotJson,
+    required List<OccurrenceExerciseCustomization> changes,
+  }) async {
+    final occurrence = await _requireOccurrence(occurrenceId);
+    await _calendarRepo.customize(
+      CustomizeOccurrenceCommand(
+        occurrenceId: occurrenceId,
+        commandId: _uuid.v4(),
+        expectedStatus: _status(occurrence.status),
+        baseSnapshotJson: baseSnapshotJson,
+        changes: changes,
       ),
     );
     await refresh();
