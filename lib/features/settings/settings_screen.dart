@@ -60,40 +60,68 @@ class SettingsScreen extends ConsumerWidget {
                 B05Layout.space32,
               ),
               children: [
-                _SectionLabel('PROFILE'),
-                _SettingsGroup(
+                const _SettingsIntro(),
+                _SettingsSection(
+                  title: 'Goals & targets',
                   children: [
                     _SettingsRow(
-                      icon: Icons.person_outline_rounded,
-                      title: 'Personal details',
-                      summary: profile.userName?.trim().isNotEmpty == true
-                          ? profile.userName!.trim()
-                          : 'Add your name and measurements',
-                      onTap: () => _push(
-                        context,
-                        const ProfileScreen(focus: ProfileEditorFocus.personal),
-                      ),
-                    ),
-                    _SettingsRow(
                       icon: Icons.flag_outlined,
-                      title: 'Goal',
+                      title: 'Fitness goal',
                       summary: profile.hasProfile
                           ? SecondaryConsumerCopy.goal(profile.userGoal)
-                          : 'Complete your profile',
+                          : 'Choose what you are working toward',
                       onTap: () => _push(
                         context,
                         const ProfileScreen(focus: ProfileEditorFocus.goal),
                       ),
                     ),
                     _SettingsRow(
+                      icon: Icons.track_changes_outlined,
+                      title: 'Nutrition targets',
+                      summary: 'Calories and macros for each day',
+                      onTap: () =>
+                          _push(context, const NutritionTargetsHubScreen()),
+                    ),
+                    _SettingsRow(
+                      icon: Icons.auto_graph_outlined,
+                      title: 'Coaching',
+                      summary: 'Optional suggestions and consent',
+                      onTap: () =>
+                          _push(context, const NutritionGoalsSubScreen()),
+                    ),
+                  ],
+                ),
+                _SettingsSection(
+                  title: 'Food preferences',
+                  children: [
+                    _SettingsRow(
                       icon: Icons.restaurant_outlined,
-                      title: 'Nutrition preferences',
+                      title: 'Dietary needs',
                       summary: profile.hasProfile
                           ? _dietLabel(profile.dietPreference)
-                          : 'Choose a dietary pattern',
+                          : 'Dietary pattern and foods to avoid',
                       onTap: () =>
                           _push(context, const NutritionConstraintsScreen()),
                     ),
+                    _SettingsRow(
+                      icon: Icons.local_drink_outlined,
+                      title: 'Measuring at home',
+                      summary: 'Cups, bowls, and personal measures',
+                      onTap: () =>
+                          _push(context, const HouseholdMeasuresScreen()),
+                    ),
+                    _SettingsRow(
+                      icon: Icons.restaurant_menu_outlined,
+                      title: 'Regional food preferences',
+                      summary: 'Choose the foods shown for your region',
+                      onTap: () =>
+                          _push(context, const RegionalFoodPacksScreen()),
+                    ),
+                  ],
+                ),
+                _SettingsSection(
+                  title: 'Training preferences',
+                  children: [
                     _SettingsRow(
                       icon: Icons.directions_run_outlined,
                       title: 'Training preferences',
@@ -101,17 +129,31 @@ class SettingsScreen extends ConsumerWidget {
                           ? SecondaryConsumerCopy.activity(
                               profile.userActivityLevel,
                             )
-                          : 'Complete your profile',
+                          : 'Activity and personal limits',
                       onTap: () => _push(
                         context,
                         const ProfileScreen(focus: ProfileEditorFocus.training),
                       ),
                     ),
+                    _SettingsRow(
+                      icon: Icons.fitness_center_outlined,
+                      title: 'Equipment profiles',
+                      summary: 'Equipment used when building a plan',
+                      onTap: () =>
+                          _push(context, const EquipmentProfilesScreen()),
+                    ),
+                    if (playlistAvailable)
+                      _SettingsRow(
+                        icon: Icons.music_note_outlined,
+                        title: 'Workout music',
+                        summary: 'Optional music for workouts',
+                        onTap: () =>
+                            _push(context, const B05PlaylistSettingsScreen()),
+                      ),
                   ],
                 ),
-                const SizedBox(height: B05Layout.space20),
-                _SectionLabel('CONNECTIONS'),
-                _SettingsGroup(
+                _SettingsSection(
+                  title: 'Health & integrations',
                   children: [
                     _SettingsRow(
                       icon: Icons.favorite_border_rounded,
@@ -123,9 +165,20 @@ class SettingsScreen extends ConsumerWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: B05Layout.space20),
-                _SectionLabel('APP'),
-                _SettingsGroup(
+                _SettingsSection(
+                  title: 'Notifications',
+                  children: [
+                    _SettingsRow(
+                      icon: Icons.notifications_none_rounded,
+                      title: 'Notifications & reminders',
+                      summary: 'Choose when IndiFit checks in',
+                      onTap: () =>
+                          _push(context, const NotificationSettingsScreen()),
+                    ),
+                  ],
+                ),
+                _SettingsSection(
+                  title: 'App preferences',
                   children: [
                     _SettingsRow(
                       icon: Icons.palette_outlined,
@@ -138,13 +191,6 @@ class SettingsScreen extends ConsumerWidget {
                       title: 'Units',
                       summary: units,
                       onTap: () => _showUnitPicker(context, ref, units),
-                    ),
-                    _SettingsRow(
-                      icon: Icons.notifications_none_rounded,
-                      title: 'Notifications',
-                      summary: 'Reminders and summaries',
-                      onTap: () =>
-                          _push(context, const NotificationSettingsScreen()),
                     ),
                     _SettingsRow(
                       icon: Icons.dashboard_customize_outlined,
@@ -161,71 +207,42 @@ class SettingsScreen extends ConsumerWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: B05Layout.space20),
-                _SectionLabel('LEARN'),
-                _SettingsGroup(
+                _SettingsSection(
+                  title: 'Data & privacy',
+                  children: [
+                    _SettingsRow(
+                      icon: Icons.shield_outlined,
+                      title: 'Manage your data',
+                      summary: 'Export, restore, and manage local data',
+                      onTap: () =>
+                          _push(context, const DataManagementSubScreen()),
+                    ),
+                  ],
+                ),
+                _SettingsSection(
+                  title: 'Account',
+                  children: [
+                    _SettingsRow(
+                      icon: Icons.person_outline_rounded,
+                      title: 'Personal details',
+                      summary: profile.userName?.trim().isNotEmpty == true
+                          ? profile.userName!.trim()
+                          : 'Add your name and measurements',
+                      onTap: () => _push(
+                        context,
+                        const ProfileScreen(focus: ProfileEditorFocus.personal),
+                      ),
+                    ),
+                  ],
+                ),
+                _SettingsSection(
+                  title: 'Learn',
                   children: [
                     _SettingsRow(
                       icon: Icons.menu_book_outlined,
                       title: 'Learn',
                       summary: 'Short, optional guides',
                       onTap: () => _push(context, const LearnScreen()),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: B05Layout.space20),
-                _SectionLabel('ADVANCED'),
-                _SettingsGroup(
-                  children: [
-                    _SettingsRow(
-                      icon: Icons.local_drink_outlined,
-                      title: 'Household measures',
-                      summary: 'Cups, bowls, and personal measures',
-                      onTap: () =>
-                          _push(context, const HouseholdMeasuresScreen()),
-                    ),
-                    _SettingsRow(
-                      icon: Icons.fitness_center_outlined,
-                      title: 'Equipment profiles',
-                      summary: 'Used when building a plan',
-                      onTap: () =>
-                          _push(context, const EquipmentProfilesScreen()),
-                    ),
-                    if (playlistAvailable)
-                      _SettingsRow(
-                        icon: Icons.music_note_outlined,
-                        title: 'Workout playlist',
-                        summary: 'Optional music for workouts',
-                        onTap: () =>
-                            _push(context, const B05PlaylistSettingsScreen()),
-                      ),
-                    _SettingsRow(
-                      icon: Icons.restaurant_menu_outlined,
-                      title: 'Food library',
-                      summary: 'Regional food packs',
-                      onTap: () =>
-                          _push(context, const RegionalFoodPacksScreen()),
-                    ),
-                    _SettingsRow(
-                      icon: Icons.track_changes_outlined,
-                      title: 'Nutrition targets',
-                      summary: 'Review or adjust your targets',
-                      onTap: () =>
-                          _push(context, const NutritionTargetsHubScreen()),
-                    ),
-                    _SettingsRow(
-                      icon: Icons.auto_graph_outlined,
-                      title: 'Goals & adaptive coaching',
-                      summary: 'Manage goals and coaching preferences',
-                      onTap: () =>
-                          _push(context, const NutritionGoalsSubScreen()),
-                    ),
-                    _SettingsRow(
-                      icon: Icons.sd_storage_outlined,
-                      title: 'Data and backup',
-                      summary: 'Export, restore, and offline options',
-                      onTap: () =>
-                          _push(context, const DataManagementSubScreen()),
                     ),
                   ],
                 ),
@@ -338,6 +355,40 @@ class _SectionLabel extends StatelessWidget {
         fontWeight: FontWeight.w700,
         letterSpacing: .8,
       ),
+    ),
+  );
+}
+
+class _SettingsIntro extends StatelessWidget {
+  const _SettingsIntro();
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: B05Layout.space4),
+    child: Text(
+      'Manage your goals, preferences, and app choices.',
+      style: B05Typography.body(
+        context,
+      ).copyWith(color: context.b05Colors.textSecondary),
+    ),
+  );
+}
+
+class _SettingsSection extends StatelessWidget {
+  const _SettingsSection({required this.title, required this.children});
+
+  final String title;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(top: B05Layout.space20),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _SectionLabel(title),
+        _SettingsGroup(children: children),
+      ],
     ),
   );
 }

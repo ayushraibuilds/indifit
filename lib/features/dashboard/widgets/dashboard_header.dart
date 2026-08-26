@@ -83,7 +83,7 @@ class DashboardHeader extends StatelessWidget {
             color: AppColors.textSecondary,
             size: 20,
           ),
-          tooltip: 'Settings & Goals',
+          tooltip: 'Settings',
           onPressed: () => context.push('/settings'),
         ),
       ],

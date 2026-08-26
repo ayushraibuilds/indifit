@@ -148,6 +148,8 @@ void main() {
 
         // Confirm primary settings groups exist
         expect(find.text('Settings'), findsOneWidget);
+        await tester.drag(find.byType(Scrollable), const Offset(0, -1000));
+        await tester.pump();
         expect(find.text('Appearance'), findsOneWidget);
         expect(find.text('Units'), findsOneWidget);
         expect(find.text('Notifications'), findsOneWidget);

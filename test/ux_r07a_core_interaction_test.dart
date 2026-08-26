@@ -108,6 +108,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    await _scrollSettingsTo(
+      tester,
+      find.widgetWithText(ListTile, 'Personal details'),
+    );
     await tester.tap(find.widgetWithText(ListTile, 'Personal details'));
     await tester.pumpAndSettle();
     expect(find.byType(ProfileScreen), findsOneWidget);
@@ -122,7 +126,12 @@ void main() {
 
     Navigator.of(tester.element(find.byType(ProfileScreen))).pop();
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(ListTile, 'Goal'));
+    await _scrollSettingsToTop(tester);
+    await _scrollSettingsTo(
+      tester,
+      find.widgetWithText(ListTile, 'Fitness goal'),
+    );
+    await tester.tap(find.widgetWithText(ListTile, 'Fitness goal'));
     await tester.pumpAndSettle();
     expect(
       find.descendant(of: find.byType(AppBar), matching: find.text('Goal')),
@@ -132,6 +141,11 @@ void main() {
 
     Navigator.of(tester.element(find.byType(ProfileScreen))).pop();
     await tester.pumpAndSettle();
+    await _scrollSettingsToTop(tester);
+    await _scrollSettingsTo(
+      tester,
+      find.widgetWithText(ListTile, 'Training preferences'),
+    );
     await tester.tap(find.widgetWithText(ListTile, 'Training preferences'));
     await tester.pumpAndSettle();
     expect(
@@ -363,6 +377,25 @@ class _FeedbackNavigationHarness extends StatelessWidget {
       ),
     ),
   );
+}
+
+Future<void> _scrollSettingsTo(WidgetTester tester, Finder target) async {
+  final scrollable = find.byType(Scrollable);
+  for (var attempt = 0; attempt < 24; attempt++) {
+    if (target.evaluate().isNotEmpty) {
+      await tester.ensureVisible(target.first);
+      await tester.pump();
+      return;
+    }
+    await tester.drag(scrollable, const Offset(0, -300));
+    await tester.pump(const Duration(milliseconds: 50));
+  }
+  fail('Could not find Settings content after scrolling: $target');
+}
+
+Future<void> _scrollSettingsToTop(WidgetTester tester) async {
+  await tester.drag(find.byType(Scrollable), const Offset(0, 3000));
+  await tester.pump(const Duration(milliseconds: 50));
 }
 
 class _FakeProfileNotifier extends UserProfileNotifier {
