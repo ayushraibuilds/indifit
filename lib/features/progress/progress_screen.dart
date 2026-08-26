@@ -15,9 +15,11 @@ import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/consumer_task_primitives.dart';
 import '../../core/widgets/indi_fit_bottom_sheet.dart';
 import '../../data/models/b02_muscle_volume_models.dart';
+import '../../data/models/b04_goal_models.dart';
 import '../../data/repositories/workout_repository.dart';
 import '../dashboard/widgets/log_weight_bottom_sheet.dart';
 import '../exercise_library/exercise_history_screen.dart';
+import '../settings/nutrition_targets_hub_screen.dart';
 import '../settings/unit_preference.dart';
 import '../training/workout_history_screen.dart';
 import 'achievements_screen.dart';
@@ -171,7 +173,11 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                   const SizedBox(height: B05Layout.space24),
                   _NutritionAdherenceSection(
                     summary: snapshot.nutritionSummary!,
-                    onLogFood: () => context.go('/food'),
+                    onViewTargets: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const NutritionTargetsHubScreen(),
+                      ),
+                    ),
                   ),
                 ],
                 if (_hasMeaningfulVolume(snapshot)) ...[
@@ -1315,11 +1321,11 @@ class ProgressWeightHistoryScreen extends StatelessWidget {
 class _NutritionAdherenceSection extends StatelessWidget {
   const _NutritionAdherenceSection({
     required this.summary,
-    required this.onLogFood,
+    required this.onViewTargets,
   });
 
   final ProgressNutritionSummary summary;
-  final VoidCallback onLogFood;
+  final VoidCallback onViewTargets;
 
   @override
   Widget build(BuildContext context) {
@@ -1377,6 +1383,11 @@ class _NutritionAdherenceSection extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: B05Layout.space16),
+              _NutritionTargetContext(
+                summary: summary,
+                onViewTargets: onViewTargets,
+              ),
+              const SizedBox(height: B05Layout.space16),
               _NutritionWeekStrip(days: summary.days),
             ],
           ),
@@ -1385,6 +1396,105 @@ class _NutritionAdherenceSection extends StatelessWidget {
     );
   }
 }
+
+class _NutritionTargetContext extends StatelessWidget {
+  const _NutritionTargetContext({
+    required this.summary,
+    required this.onViewTargets,
+  });
+
+  final ProgressNutritionSummary summary;
+  final VoidCallback onViewTargets;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasTargetValues =
+        summary.targetCaloriesKcal != null || summary.targetProteinG != null;
+    final hasTargetContext = hasTargetValues || summary.targetGoalType != null;
+    final values = <String>[
+      if (summary.targetCaloriesKcal != null)
+        '${_formatVolume(summary.targetCaloriesKcal!)} kcal',
+      if (summary.targetProteinG != null)
+        '${_formatNumber(summary.targetProteinG!)} g protein',
+    ];
+
+    return B05Surface(
+      tone: B05SurfaceTone.inset,
+      padding: const EdgeInsets.all(B05Layout.space12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Semantics(
+            container: true,
+            label: [
+              if (hasTargetContext) 'Today’s nutrition target.',
+              if (values.isNotEmpty) '${values.join(' · ')}.',
+              if (summary.targetGoalType != null)
+                'Nutrition goal: ${_nutritionGoalLabel(summary.targetGoalType!)}.',
+              if (!hasTargetContext) 'No nutrition target saved for today.',
+              if (hasTargetContext && !hasTargetValues)
+                'No calorie or macro target values are saved for today.',
+            ].join(' '),
+            child: ExcludeSemantics(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Today’s nutrition target',
+                    style: B05Typography.label(context),
+                  ),
+                  const SizedBox(height: B05Layout.space4),
+                  if (values.isNotEmpty)
+                    Text(
+                      values.join(' · '),
+                      style: B05Typography.title(context),
+                    ),
+                  if (summary.targetGoalType != null) ...[
+                    if (values.isNotEmpty)
+                      const SizedBox(height: B05Layout.space4),
+                    Text(
+                      'Nutrition goal: ${_nutritionGoalLabel(summary.targetGoalType!)}',
+                      style: B05Typography.body(context),
+                    ),
+                  ],
+                  if (!hasTargetContext)
+                    Text(
+                      'No nutrition target saved for today.',
+                      style: B05Typography.body(context),
+                    ),
+                  if (hasTargetContext && !hasTargetValues)
+                    Text(
+                      'No calorie or macro target values are saved for today.',
+                      style: B05Typography.body(context),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: B05Layout.space8),
+          B05ActionButton(
+            label: hasTargetContext
+                ? 'View nutrition targets'
+                : 'Set nutrition target',
+            hint: hasTargetContext
+                ? 'Open the saved nutrition target for today.'
+                : 'Open Nutrition targets to set today’s values.',
+            icon: Icons.open_in_new_rounded,
+            emphasis: B05ActionEmphasis.tertiary,
+            onPressed: onViewTargets,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+String _nutritionGoalLabel(NutritionGoalType value) => switch (value) {
+  NutritionGoalType.loss => 'Weight loss',
+  NutritionGoalType.maintenance => 'Maintain',
+  NutritionGoalType.gain => 'Weight gain',
+  NutritionGoalType.custom => 'Custom goal',
+};
 
 class _NutritionWeekStrip extends StatelessWidget {
   const _NutritionWeekStrip({required this.days});
