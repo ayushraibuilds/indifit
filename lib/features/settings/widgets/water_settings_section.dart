@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/di/user_profile_provider.dart';
-import '../../../core/theme/colors.dart';
+import '../../../core/theme/b05_semantic_colors.dart';
+import '../../../core/widgets/b05_accessibility_primitives.dart';
 import '../settings_controller.dart';
 
 class WaterSettingsSection extends ConsumerStatefulWidget {
@@ -38,6 +39,7 @@ class _WaterSettingsSectionState extends ConsumerState<WaterSettingsSection> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.b05Colors;
     final controller = ref.read(settingsControllerProvider.notifier);
 
     return Column(
@@ -46,175 +48,149 @@ class _WaterSettingsSectionState extends ConsumerState<WaterSettingsSection> {
         Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(B05Layout.space8),
               decoration: BoxDecoration(
-                color: AppColors.infoBlue.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
+                color: colors.interactive,
+                borderRadius: b05Radius(B05SurfaceRadius.small),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.local_drink_rounded,
-                color: AppColors.infoBlue,
-                size: 20,
+                color: colors.info.indicator,
+                size: B05Layout.iconMedium,
               ),
             ),
-            const SizedBox(width: 12),
-            const Expanded(
+            const SizedBox(width: B05Layout.space12),
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     'Hydration Settings',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    style: B05Typography.title(context),
                   ),
-                  SizedBox(height: 2),
+                  const SizedBox(height: 2),
                   Text(
                     'Customize daily water targets and serving volume',
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 12,
-                    ),
+                    style: B05Typography.caption(context),
                   ),
                 ],
               ),
             ),
           ],
         ),
-        const SizedBox(height: 16),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Daily Water Goal',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        'Number of glasses per day (1 - 40 glasses)',
-                        style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 11,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 16),
-                SizedBox(
-                  width: 64,
-                  child: TextField(
-                    controller: _waterGoalController,
-                    keyboardType: TextInputType.number,
-                    textAlign: TextAlign.center,
-                    decoration: const InputDecoration(
-                      contentPadding: EdgeInsets.symmetric(vertical: 8),
+        const SizedBox(height: B05Layout.space16),
+        B05Surface(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Daily Water Goal',
+                      style: B05Typography.label(context),
                     ),
-                    onChanged: (val) {
-                      final parsed = int.tryParse(val);
-                      if (parsed != null && parsed > 0 && parsed <= 40) {
-                        controller.updateWaterGoal(parsed);
-                      }
-                    },
-                  ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Number of glasses per day (1 - 40 glasses)',
+                      style: B05Typography.caption(context),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(width: B05Layout.space16),
+              SizedBox(
+                width: 64,
+                child: TextField(
+                  controller: _waterGoalController,
+                  keyboardType: TextInputType.number,
+                  textAlign: TextAlign.center,
+                  decoration: const InputDecoration(
+                    contentPadding: EdgeInsets.symmetric(vertical: 8),
+                  ),
+                  onChanged: (val) {
+                    final parsed = int.tryParse(val);
+                    if (parsed != null && parsed > 0 && parsed <= 40) {
+                      controller.updateWaterGoal(parsed);
+                    }
+                  },
+                ),
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 12),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Serving (Glass) Size',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        'Custom volume size per glass of water logged (ml)',
-                        style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 11,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 16),
-                SizedBox(
-                  width: 64,
-                  child: TextField(
-                    controller: _glassSizeController,
-                    keyboardType: TextInputType.number,
-                    textAlign: TextAlign.center,
-                    decoration: const InputDecoration(
-                      contentPadding: EdgeInsets.symmetric(vertical: 8),
+        const SizedBox(height: B05Layout.space12),
+        B05Surface(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Serving (Glass) Size',
+                      style: B05Typography.label(context),
                     ),
-                    onChanged: (val) {
-                      final parsed = int.tryParse(val);
-                      if (parsed != null && parsed >= 50 && parsed <= 1000) {
-                        controller.updateGlassSize(parsed);
-                      }
-                    },
-                  ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Custom volume size per glass of water logged (ml)',
+                      style: B05Typography.caption(context),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(width: B05Layout.space16),
+              SizedBox(
+                width: 64,
+                child: TextField(
+                  controller: _glassSizeController,
+                  keyboardType: TextInputType.number,
+                  textAlign: TextAlign.center,
+                  decoration: const InputDecoration(
+                    contentPadding: EdgeInsets.symmetric(vertical: 8),
+                  ),
+                  onChanged: (val) {
+                    final parsed = int.tryParse(val);
+                    if (parsed != null && parsed >= 50 && parsed <= 1000) {
+                      controller.updateGlassSize(parsed);
+                    }
+                  },
+                ),
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 12),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.lightbulb_outline_rounded,
-                  color: Colors.blue,
-                  size: 20,
+        const SizedBox(height: B05Layout.space12),
+        B05Surface(
+          tone: B05SurfaceTone.inset,
+          child: Row(
+            children: [
+              Icon(
+                Icons.lightbulb_outline_rounded,
+                color: colors.info.indicator,
+                size: B05Layout.iconMedium,
+              ),
+              const SizedBox(width: B05Layout.space12),
+              Expanded(
+                child: Builder(
+                  builder: (context) {
+                    final userProfile = ref.watch(userProfileProvider);
+                    final double weight = userProfile.currentWeight;
+                    final int recMl = (weight * 35).round();
+                    final int glassMl =
+                        int.tryParse(_glassSizeController.text) ?? 250;
+                    final int recGlasses =
+                        (recMl / (glassMl > 0 ? glassMl : 250)).round();
+                    return Text(
+                      'Recommended: ~$recMl ml (~$recGlasses glasses) based on ${weight.toStringAsFixed(1)} kg bodyweight (35ml/kg).',
+                      style: B05Typography.caption(context),
+                    );
+                  },
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Builder(
-                    builder: (context) {
-                      final userProfile = ref.watch(userProfileProvider);
-                      final double weight = userProfile.currentWeight;
-                      final int recMl = (weight * 35).round();
-                      final int glassMl =
-                          int.tryParse(_glassSizeController.text) ?? 250;
-                      final int recGlasses =
-                          (recMl / (glassMl > 0 ? glassMl : 250)).round();
-                      return Text(
-                        'Recommended: ~$recMl ml (~$recGlasses glasses) based on ${weight.toStringAsFixed(1)} kg bodyweight (35ml/kg).',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textSecondary,
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ],

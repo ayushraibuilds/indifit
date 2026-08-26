@@ -102,29 +102,25 @@ class _NotificationSettingsSectionState
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(B05Layout.space8),
               decoration: BoxDecoration(
-                color: colors.action.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
+                color: colors.interactive,
+                borderRadius: b05Radius(B05SurfaceRadius.small),
               ),
               child: Icon(
                 Icons.notifications_active_rounded,
                 color: colors.action,
-                size: 20,
+                size: B05Layout.iconMedium,
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: B05Layout.space12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     'Notifications & reminders',
-                    style: TextStyle(
-                      color: colors.textPrimary,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
+                    style: B05Typography.title(context),
                   ),
                   const SizedBox(height: 2),
                   Text(
@@ -136,7 +132,7 @@ class _NotificationSettingsSectionState
             ),
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: B05Layout.space16),
         _buildPermissionCard(context),
         const SizedBox(height: 16),
         Text('Reminders', style: B05Typography.title(context)),
@@ -154,7 +150,6 @@ class _NotificationSettingsSectionState
           ),
         ),
         const SizedBox(height: B05Layout.space12),
-
         SettingsReminderToggle(
           icon: Icons.restaurant_rounded,
           iconColor: colors.success.indicator,
@@ -168,7 +163,6 @@ class _NotificationSettingsSectionState
           ),
         ),
         const SizedBox(height: B05Layout.space12),
-
         SettingsReminderToggle(
           icon: Icons.bedtime_rounded,
           iconColor: colors.info.indicator,
@@ -181,7 +175,7 @@ class _NotificationSettingsSectionState
             val,
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: B05Layout.space12),
         SettingsReminderToggle(
           icon: Icons.auto_awesome_rounded,
           iconColor: colors.action,
@@ -194,7 +188,7 @@ class _NotificationSettingsSectionState
             val,
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: B05Layout.space16),
         _buildQuietHours(context, state, controller),
       ],
     );

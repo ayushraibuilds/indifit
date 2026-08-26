@@ -278,27 +278,46 @@ class SettingsScreen extends ConsumerWidget {
     WidgetRef ref,
     ThemeMode current,
   ) async {
-    await showModalBottomSheet<void>(
+    await showIndiFitBottomSheet<void>(
       context: context,
+      semanticLabel: 'Appearance',
       builder: (sheetContext) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const ListTile(title: Text('Appearance')),
-            for (final mode in ThemeMode.values)
-              RadioListTile<ThemeMode>(
-                title: Text(_themeLabel(mode)),
-                value: mode,
-                // ignore: deprecated_member_use
-                groupValue: current,
-                // ignore: deprecated_member_use
-                onChanged: (value) {
-                  if (value == null) return;
-                  ref.read(themeModeProvider.notifier).setThemeMode(value);
-                  Navigator.pop(sheetContext);
-                },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: B05Layout.space8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: B05Layout.space16,
+                  vertical: B05Layout.space8,
+                ),
+                child: Text(
+                  'Appearance',
+                  style: B05Typography.title(sheetContext),
+                ),
               ),
-          ],
+              for (final mode in ThemeMode.values)
+                // ignore: deprecated_member_use
+                RadioListTile<ThemeMode>(
+                  title: Text(
+                    _themeLabel(mode),
+                    style: B05Typography.label(sheetContext),
+                  ),
+                  value: mode,
+                  // ignore: deprecated_member_use
+                  groupValue: current,
+                  activeColor: sheetContext.b05Colors.action,
+                  // ignore: deprecated_member_use
+                  onChanged: (value) {
+                    if (value == null) return;
+                    ref.read(themeModeProvider.notifier).setThemeMode(value);
+                    Navigator.pop(sheetContext);
+                  },
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -309,30 +328,47 @@ class SettingsScreen extends ConsumerWidget {
     WidgetRef ref,
     String current,
   ) async {
-    await showModalBottomSheet<void>(
+    await showIndiFitBottomSheet<void>(
       context: context,
+      semanticLabel: 'Units',
       builder: (sheetContext) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const ListTile(title: Text('Units')),
-            for (final unit in const ['Metric', 'Imperial'])
-              RadioListTile<String>(
-                title: Text(unit),
-                subtitle: Text(
-                  unit == 'Metric' ? 'kg, cm, and mL' : 'lb, in, and fl oz',
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: B05Layout.space8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: B05Layout.space16,
+                  vertical: B05Layout.space8,
                 ),
-                value: unit,
-                // ignore: deprecated_member_use
-                groupValue: current,
-                // ignore: deprecated_member_use
-                onChanged: (value) {
-                  if (value == null) return;
-                  ref.read(unitPreferenceProvider.notifier).setUnits(value);
-                  Navigator.pop(sheetContext);
-                },
+                child: Text('Units', style: B05Typography.title(sheetContext)),
               ),
-          ],
+              for (final unit in const ['Metric', 'Imperial'])
+                // ignore: deprecated_member_use
+                RadioListTile<String>(
+                  title: Text(
+                    unit,
+                    style: B05Typography.label(sheetContext),
+                  ),
+                  subtitle: Text(
+                    unit == 'Metric' ? 'kg, cm, and mL' : 'lb, in, and fl oz',
+                    style: B05Typography.caption(sheetContext),
+                  ),
+                  value: unit,
+                  // ignore: deprecated_member_use
+                  groupValue: current,
+                  activeColor: sheetContext.b05Colors.action,
+                  // ignore: deprecated_member_use
+                  onChanged: (value) {
+                    if (value == null) return;
+                    ref.read(unitPreferenceProvider.notifier).setUnits(value);
+                    Navigator.pop(sheetContext);
+                  },
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -429,19 +465,35 @@ class _SettingsRow extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => Semantics(
-    button: true,
-    label: '$title, $summary',
-    onTap: onTap,
-    child: ListTile(
-      minVerticalPadding: B05Layout.space8,
-      leading: Icon(icon, color: context.b05Colors.action),
-      title: Text(title, style: B05Typography.label(context)),
-      subtitle: Text(summary, style: B05Typography.caption(context)),
-      trailing: const Icon(Icons.chevron_right_rounded),
+  Widget build(BuildContext context) {
+    final colors = context.b05Colors;
+    return Semantics(
+      button: true,
+      label: '$title, $summary',
       onTap: onTap,
-    ),
-  );
+      child: ListTile(
+        minVerticalPadding: B05Layout.space8,
+        leading: Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: colors.interactive,
+            borderRadius: b05Radius(B05SurfaceRadius.small),
+          ),
+          alignment: Alignment.center,
+          child: Icon(icon, color: colors.action, size: B05Layout.iconMedium),
+        ),
+        title: Text(title, style: B05Typography.label(context)),
+        subtitle: Text(summary, style: B05Typography.caption(context)),
+        trailing: Icon(
+          Icons.chevron_right_rounded,
+          color: colors.textSecondary,
+          size: B05Layout.iconMedium,
+        ),
+        onTap: onTap,
+      ),
+    );
+  }
 }
 
 class _MedicalDisclaimerCard extends StatelessWidget {
@@ -465,7 +517,12 @@ class _MedicalDisclaimerCard extends StatelessWidget {
                   color: colors.danger.foreground,
                 ),
                 const SizedBox(width: B05Layout.space8),
-                Text('Health and safety', style: B05Typography.label(context)),
+                Expanded(
+                  child: Text(
+                    'Health and safety',
+                    style: B05Typography.label(context),
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: B05Layout.space8),

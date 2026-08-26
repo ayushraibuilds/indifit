@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../core/theme/colors.dart';
+
+import '../../core/widgets/b05_accessibility_primitives.dart';
 import 'widgets/water_settings_section.dart';
 
 class WaterSettingsSubScreen extends StatelessWidget {
@@ -10,11 +11,9 @@ class WaterSettingsSubScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Hydration & Water Goal'),
-        backgroundColor: AppColors.surface,
-        elevation: 0,
       ),
       body: const SingleChildScrollView(
-        padding: EdgeInsets.all(20),
+        padding: EdgeInsets.all(B05Layout.space16),
         child: WaterSettingsSection(),
       ),
     );

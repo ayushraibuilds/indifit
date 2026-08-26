@@ -9,12 +9,7 @@ class NotificationSettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Notifications'),
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        foregroundColor: Theme.of(context).colorScheme.onSurface,
-        elevation: 0,
-      ),
+      appBar: AppBar(title: const Text('Notifications')),
       body: const SafeArea(
         child: SingleChildScrollView(
           padding: EdgeInsets.fromLTRB(
