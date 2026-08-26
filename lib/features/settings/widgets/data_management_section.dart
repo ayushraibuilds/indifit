@@ -8,7 +8,6 @@ import '../../../core/router/app_router.dart';
 import '../../../core/services/auto_backup_service.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
 import '../../onboarding/onboarding_screen.dart';
-import '../health_sync_hub_screen.dart';
 import '../settings_controller.dart';
 import 'backup_restore_card.dart';
 import 'privacy_disclosure_card.dart';
@@ -529,38 +528,6 @@ class DataManagementSection extends ConsumerWidget {
               'Send sanitized telemetry to help fix crashes. Zero food/body data is ever included.',
           value: state.crashReportingEnabled,
           onChanged: (val) => controller.toggleCrashReporting(val),
-        ),
-        const SizedBox(height: 12),
-
-        // Health Sync Hub button
-        ElevatedButton.icon(
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const HealthSyncHubScreen(),
-              ),
-            );
-          },
-          icon: Icon(
-            Icons.favorite_rounded,
-            color: context.b05Colors.danger.indicator,
-          ),
-          label: const Text('Apple Health & Health Connect Sync'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: context.b05Colors.danger.container,
-            foregroundColor: context.b05Colors.danger.foreground,
-            minimumSize: const Size.fromHeight(48),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(
-                color: context.b05Colors.danger.indicator.withValues(
-                  alpha: 0.2,
-                ),
-              ),
-            ),
-            elevation: 0,
-          ),
         ),
         const SizedBox(height: 12),
 

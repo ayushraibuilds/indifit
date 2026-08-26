@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/di/health_provider.dart';
 import '../../core/di/providers.dart';
-import '../../core/theme/colors.dart';
-import '../../core/utils/app_logger.dart';
+import '../../core/theme/b05_semantic_colors.dart';
+import '../../core/widgets/b05_accessibility_primitives.dart';
+import '../../core/widgets/consumer_task_primitives.dart';
 import '../../data/repositories/health_service.dart';
 
 class HealthSyncHubScreen extends ConsumerStatefulWidget {
@@ -19,7 +19,6 @@ class HealthSyncHubScreen extends ConsumerStatefulWidget {
 class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
   bool _loading = false;
   String? _lastSyncTimeStr;
-  bool _autoSyncOnOpen = true;
   List<Map<String, dynamic>> _outdoorActivities = [];
   Map<HealthCategory, bool> _categoryStates = {};
   String? _supportingDataError;
@@ -27,482 +26,653 @@ class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
   @override
   void initState() {
     super.initState();
-    _fetchData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _fetchData();
+    });
   }
 
   Future<void> _fetchData() async {
-    setState(() => _loading = true);
-    await ref.read(healthStateProvider.notifier).refresh();
-    await _loadSupportingData();
+    if (mounted) setState(() => _loading = true);
+    try {
+      await ref.read(healthStateProvider.notifier).refresh();
+      await _loadSupportingData();
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _supportingDataError = 'Health data could not be checked. Try again.';
+        });
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   Future<void> _loadSupportingData() async {
+    final service = ref.read(healthServiceProvider);
     try {
-      final service = ref.read(healthServiceProvider);
       final lastSyncIso = await service.getLastSyncTime();
+      final categoryStates = await service.getAllCategoryStates();
+      final healthState = ref.read(healthStateProvider);
+      final connection = _connectionStatus(healthState);
       final db = ref.read(databaseProvider);
-      final activities = await service.importOutdoorActivities(db);
-      final catStates = await service.getAllCategoryStates();
-      final prefs = await SharedPreferences.getInstance();
-      final autoSync = prefs.getBool('auto_sync_health_on_open') ?? true;
+      final activities = _canUseHealthData(connection)
+          ? await service.importOutdoorActivities(db)
+          : <Map<String, dynamic>>[];
 
       String? formattedSync;
       if (lastSyncIso != null) {
-        try {
-          final dt = DateTime.parse(lastSyncIso);
+        final date = DateTime.tryParse(lastSyncIso);
+        if (date != null) {
           formattedSync =
-              'Synced ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
-        } catch (e) {
-          AppLogger.warning('Failed to parse lastSyncIso: $e');
+              'Last read ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
         }
       }
 
-      if (mounted) {
-        setState(() {
-          _lastSyncTimeStr = formattedSync;
-          _autoSyncOnOpen = autoSync;
-          _outdoorActivities = activities;
-          _categoryStates = catStates;
-          _supportingDataError = null;
-          _loading = false;
-        });
-      }
-    } catch (e) {
-      AppLogger.warning('Health supporting data load failed: $e');
-      if (mounted) {
-        setState(() {
-          _supportingDataError = 'Unable to import outdoor activities.';
-          _loading = false;
-        });
-      }
+      if (!mounted) return;
+      setState(() {
+        _lastSyncTimeStr = formattedSync;
+        _outdoorActivities = activities
+            .where((activity) => activity['imported'] == true)
+            .toList(growable: false);
+        _categoryStates = categoryStates;
+        _supportingDataError = null;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _supportingDataError =
+            'Some Health data could not be loaded. Try again.';
+        _outdoorActivities = [];
+        _categoryStates = {};
+      });
     }
   }
 
-  Future<void> _toggleAutoSync(bool val) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('auto_sync_health_on_open', val);
-    setState(() {
-      _autoSyncOnOpen = val;
-    });
-  }
-
-  Future<void> _toggleCategory(HealthCategory category, bool val) async {
+  Future<void> _toggleCategory(HealthCategory category, bool enabled) async {
     final service = ref.read(healthServiceProvider);
-    await service.setCategoryState(category, val);
-    if (val) {
-      await service.requestCategoryPermissions(category);
+    try {
+      await service.setCategoryState(category, enabled);
+      if (enabled) {
+        await service.requestCategoryPermissions(category);
+      }
+      if (!mounted) return;
+      await _fetchData();
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _supportingDataError =
+            'Health permission could not be updated. Try again.';
+      });
     }
-    setState(() {
-      _categoryStates[category] = val;
-    });
-    await _fetchData();
   }
 
   Future<void> _handleConnect() async {
-    setState(() => _loading = true);
-    await ref.read(healthStateProvider.notifier).connectAndRefresh();
-    final healthState = ref.read(healthStateProvider);
-    if (healthState.status == HealthStatus.denied ||
-        healthState.status == HealthStatus.error) {
+    if (mounted) setState(() => _loading = true);
+    try {
+      await ref.read(healthStateProvider.notifier).connectAndRefresh();
       if (!mounted) return;
-      setState(() => _loading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            healthState.errorMessage ??
-                'Health permissions were denied or unavailable on this device.',
-          ),
-          backgroundColor: AppColors.danger,
-        ),
-      );
-      return;
+      await _loadSupportingData();
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _supportingDataError =
+              'Health connection could not be updated. Try again.';
+        });
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
-    await _loadSupportingData();
   }
+
+  Future<void> _handleDisconnect() async {
+    if (mounted) setState(() => _loading = true);
+    try {
+      await ref.read(healthServiceProvider).disconnect();
+      await ref.read(healthStateProvider.notifier).refresh();
+      if (!mounted) return;
+      await _loadSupportingData();
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _supportingDataError =
+              'Health connection could not be updated. Try again.';
+        });
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  HealthConnectionStatus _connectionStatus(HealthState healthState) {
+    return switch (healthState.status) {
+      HealthStatus.notRequested => HealthConnectionStatus.notConnected,
+      HealthStatus.denied => HealthConnectionStatus.denied,
+      HealthStatus.partial => HealthConnectionStatus.partial,
+      HealthStatus.unknown => HealthConnectionStatus.unknown,
+      HealthStatus.unsupported ||
+      HealthStatus.unavailable => HealthConnectionStatus.unavailable,
+      _ => healthState.summary.resolvedConnectionStatus,
+    };
+  }
+
+  static bool _canUseHealthData(HealthConnectionStatus status) =>
+      status == HealthConnectionStatus.connected ||
+      status == HealthConnectionStatus.partial ||
+      status == HealthConnectionStatus.unknown;
+
+  static bool _canEditCategories(HealthConnectionStatus status, bool loading) =>
+      !loading && _canUseHealthData(status);
 
   @override
   Widget build(BuildContext context) {
     final healthState = ref.watch(healthStateProvider);
     final data = healthState.summary;
+    final connection = _connectionStatus(healthState);
     final isLoading =
         _loading ||
         healthState.status == HealthStatus.loading ||
         healthState.status == HealthStatus.refreshing;
+    final platformName = data.platformName ?? 'Health data';
 
-    return Scaffold(
+    return ConsumerTaskScaffold(
       appBar: AppBar(
-        title: const Text('Health Sync Hub'),
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        foregroundColor: Theme.of(context).colorScheme.onSurface,
-        elevation: 0,
+        title: const Text('Health'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded),
+          B05IconAction(
+            icon: Icons.refresh_rounded,
+            label: 'Refresh health data',
+            hint: 'Check Health connection and data again.',
             onPressed: isLoading ? null : _fetchData,
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
+      primaryAction: _buildPrimaryAction(
+        healthState: healthState,
+        connection: connection,
+        isLoading: isLoading,
+      ),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text('Health integration', style: B05Typography.pageTitle(context)),
+          const SizedBox(height: B05Layout.space8),
+          Text(
+            'Choose what IndiFit may use from your health app. Supported walking, running, and cycling activities can be imported. Weight logs saved in IndiFit can be added to your health app when Body weight is allowed.',
+            style: B05Typography.body(context),
+          ),
+          const SizedBox(height: B05Layout.space20),
+          _buildConnectionSurface(
+            context,
+            healthState: healthState,
+            connection: connection,
+            platformName: platformName,
+            isLoading: isLoading,
+          ),
+          const SizedBox(height: B05Layout.space20),
+          _buildSectionLabel(context, 'WHAT INDIFIT MAY USE'),
+          const SizedBox(height: B05Layout.space8),
+          _buildCategorySurface(
+            context,
+            summary: data,
+            connection: connection,
+            isLoading: isLoading,
+          ),
+          if (_outdoorActivities.isNotEmpty) ...[
+            const SizedBox(height: B05Layout.space20),
+            _buildImportedActivities(context),
+          ],
+          if (_supportingDataError != null) ...[
+            const SizedBox(height: B05Layout.space20),
+            ConsumerStatusRow(
+              label: 'Health data could not be loaded',
+              detail: _supportingDataError,
+              error: true,
+              onRetry: isLoading ? null : _fetchData,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget? _buildPrimaryAction({
+    required HealthState healthState,
+    required HealthConnectionStatus connection,
+    required bool isLoading,
+  }) {
+    if (healthState.status == HealthStatus.error) {
+      return B05ActionButton(
+        label: 'Retry',
+        icon: Icons.refresh_rounded,
+        onPressed: isLoading ? null : _fetchData,
+      );
+    }
+    if (healthState.status == HealthStatus.unsupported) return null;
+    if (connection == HealthConnectionStatus.unavailable) {
+      return B05ActionButton(
+        label: 'Retry',
+        icon: Icons.refresh_rounded,
+        onPressed: isLoading ? null : _fetchData,
+        emphasis: B05ActionEmphasis.secondary,
+      );
+    }
+    if (connection == HealthConnectionStatus.connected ||
+        connection == HealthConnectionStatus.partial ||
+        connection == HealthConnectionStatus.unknown) {
+      return B05ActionGroup(
+        children: [
+          B05ActionButton(
+            label: 'Refresh health data',
+            icon: Icons.refresh_rounded,
+            onPressed: isLoading ? null : _fetchData,
+          ),
+          B05ActionButton(
+            label: 'Disconnect',
+            icon: Icons.link_off_rounded,
+            emphasis: B05ActionEmphasis.secondary,
+            onPressed: isLoading ? null : _handleDisconnect,
+          ),
+        ],
+      );
+    }
+    return B05ActionButton(
+      label: 'Connect health data',
+      icon: Icons.health_and_safety_outlined,
+      onPressed: isLoading ? null : _handleConnect,
+    );
+  }
+
+  Widget _buildConnectionSurface(
+    BuildContext context, {
+    required HealthState healthState,
+    required HealthConnectionStatus connection,
+    required String platformName,
+    required bool isLoading,
+  }) {
+    final status = _statusPresentation(
+      healthState: healthState,
+      connection: connection,
+      platformName: platformName,
+    );
+    return B05Surface(
+      child: Semantics(
+        container: true,
+        label: 'Health integration status',
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text(
-              'HEALTH CONNECTIONS',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textSecondary,
-                letterSpacing: 0.5,
-              ),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'Connect Apple Health or Google Health Connect to import your steps, active calories, and sleep metrics directly into IndiFit.',
-              style: TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 13,
-                height: 1.4,
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Connection Status Box
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Connection Status',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 15,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                Text(
-                                  data.isConnected
-                                      ? 'Connected'
-                                      : 'Not Connected',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                    color: data.isConnected
-                                        ? AppColors.success
-                                        : AppColors.textSecondary,
-                                  ),
-                                ),
-                                if (_lastSyncTimeStr != null) ...[
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    '• ${_lastSyncTimeStr!}',
-                                    style: const TextStyle(
-                                      fontSize: 10,
-                                      color: AppColors.textMuted,
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ],
-                        ),
-                        Icon(
-                          data.isConnected
-                              ? Icons.sync_rounded
-                              : Icons.sync_disabled_rounded,
-                          color: data.isConnected
-                              ? AppColors.success
-                              : AppColors.textMuted,
-                          size: 32,
-                        ),
-                      ],
-                    ),
-                    const Divider(height: 32),
-
-                    if (isLoading)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 16.0),
-                        child: CircularProgressIndicator(
-                          color: AppColors.primary,
-                        ),
-                      )
-                    else
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          _buildStatWidget(
-                            Icons.directions_run_rounded,
-                            '${data.steps}',
-                            'Steps',
-                            data.isConnected
-                                ? AppColors.primary
-                                : AppColors.textMuted,
-                          ),
-                          _buildStatWidget(
-                            Icons.local_fire_department_rounded,
-                            '${data.activeCalories.toInt()} kcal',
-                            'Active Cals',
-                            data.isConnected
-                                ? Colors.orangeAccent
-                                : AppColors.textMuted,
-                          ),
-                          _buildStatWidget(
-                            Icons.bedtime_rounded,
-                            '${data.sleepHours.toStringAsFixed(1)}h',
-                            'Sleep',
-                            data.isConnected
-                                ? Colors.purpleAccent
-                                : AppColors.textMuted,
-                          ),
-                        ],
-                      ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Granular Category Permission Toggles
-            const Text(
-              'GRANULAR PERMISSION CATEGORIES',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textSecondary,
-                letterSpacing: 0.5,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Card(
-              child: Column(
-                children: [
-                  SwitchListTile(
-                    title: const Text('Steps Import (Read)'),
-                    subtitle: const Text(
-                      'Import daily step count from native Health app',
-                    ),
-                    value: _categoryStates[HealthCategory.steps] ?? true,
-                    onChanged: (val) =>
-                        _toggleCategory(HealthCategory.steps, val),
-                  ),
-                  const Divider(height: 1),
-                  SwitchListTile(
-                    title: const Text('Active Energy Burned (Read)'),
-                    subtitle: const Text('Import daily active calories burned'),
-                    value: _categoryStates[HealthCategory.activeEnergy] ?? true,
-                    onChanged: (val) =>
-                        _toggleCategory(HealthCategory.activeEnergy, val),
-                  ),
-                  const Divider(height: 1),
-                  SwitchListTile(
-                    title: const Text('Sleep Duration (Read)'),
-                    subtitle: const Text(
-                      'Import sleep sessions without sharing workouts',
-                    ),
-                    value: _categoryStates[HealthCategory.sleep] ?? true,
-                    onChanged: (val) =>
-                        _toggleCategory(HealthCategory.sleep, val),
-                  ),
-                  const Divider(height: 1),
-                  SwitchListTile(
-                    title: const Text('Workout Import (Read)'),
-                    subtitle: const Text(
-                      'Import outdoor walks & runs from Health',
-                    ),
-                    value:
-                        _categoryStates[HealthCategory.workoutImport] ?? true,
-                    onChanged: (val) =>
-                        _toggleCategory(HealthCategory.workoutImport, val),
-                  ),
-                  const Divider(height: 1),
-                  SwitchListTile(
-                    title: const Text('Workout Export (Write)'),
-                    subtitle: const Text(
-                      'Export completed IndiFit workouts to Health',
-                    ),
-                    value:
-                        _categoryStates[HealthCategory.workoutExport] ?? true,
-                    onChanged: (val) =>
-                        _toggleCategory(HealthCategory.workoutExport, val),
-                  ),
-                  const Divider(height: 1),
-                  SwitchListTile(
-                    title: const Text('Body Weight Export (Write)'),
-                    subtitle: const Text(
-                      'Sync logged weight measurements to Health',
-                    ),
-                    value: _categoryStates[HealthCategory.weightExport] ?? true,
-                    onChanged: (val) =>
-                        _toggleCategory(HealthCategory.weightExport, val),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Auto Sync Toggle
-            Card(
-              child: SwitchListTile(
-                secondary: const Icon(
-                  Icons.sync_lock_rounded,
-                  color: AppColors.primary,
-                ),
-                title: const Text(
-                  'Auto-sync on app open',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                ),
-                subtitle: const Text(
-                  'Automatically fetch step and active cals data whenever IndiFit is launched',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                value: _autoSyncOnOpen,
-                activeThumbColor: AppColors.primary,
-                onChanged: _toggleAutoSync,
-              ),
-            ),
-
-            if (_outdoorActivities.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Row(
-                        children: [
-                          Icon(
-                            Icons.nordic_walking_rounded,
-                            color: Colors.green,
-                            size: 20,
-                          ),
-                          SizedBox(width: 8),
-                          Text(
-                            'Imported Outdoor Activities',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
+                      Text(
+                        'Connection status',
+                        style: B05Typography.title(context),
                       ),
-                      const SizedBox(height: 12),
-                      ..._outdoorActivities.map(
-                        (act) => ListTile(
-                          dense: true,
-                          contentPadding: EdgeInsets.zero,
-                          leading: const CircleAvatar(
-                            backgroundColor: AppColors.primaryGlow,
-                            child: Icon(
-                              Icons.directions_run_rounded,
-                              size: 16,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                          title: Text(
-                            act['title'],
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          subtitle: Text(
-                            '${act['durationMinutes']} mins • ${act['calories']} kcal (Source: ${act['sourceName'] ?? 'Health'})',
-                          ),
-                          trailing: Text(
-                            '${(act['date'] as DateTime).month}/${(act['date'] as DateTime).day}',
-                            style: const TextStyle(
-                              fontSize: 11,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
+                      const SizedBox(height: B05Layout.space4),
+                      Text(
+                        'Platform: $platformName',
+                        style: B05Typography.caption(context),
+                      ),
+                      if (_lastSyncTimeStr != null &&
+                          _canUseHealthData(connection)) ...[
+                        const SizedBox(height: B05Layout.space4),
+                        Text(
+                          _lastSyncTimeStr!,
+                          style: B05Typography.caption(context),
                         ),
-                      ),
+                      ],
                     ],
                   ),
                 ),
-              ),
-            ],
-
-            if (_supportingDataError != null) ...[
-              const SizedBox(height: 16),
-              Card(
-                child: ListTile(
-                  leading: const Icon(
-                    Icons.error_outline_rounded,
-                    color: AppColors.danger,
-                  ),
-                  title: Text(_supportingDataError!),
-                  subtitle: const Text(
-                    'Your existing Health connection is unchanged.',
-                  ),
-                  trailing: TextButton(
-                    onPressed: isLoading ? null : _fetchData,
-                    child: const Text('Retry'),
-                  ),
+                Icon(
+                  _statusIcon(connection),
+                  size: B05Layout.iconLarge,
+                  color: context.b05Colors.status(status.status).indicator,
+                  semanticLabel: status.label,
                 ),
-              ),
-            ],
-
-            const SizedBox(height: 24),
-
-            // Connect / Sync Action Button
-            ElevatedButton.icon(
-              onPressed: isLoading ? null : _handleConnect,
-              icon: Icon(
-                data.isConnected
-                    ? Icons.sync_rounded
-                    : Icons.health_and_safety_rounded,
-              ),
-              label: Text(
-                data.isConnected
-                    ? 'Re-Sync Health Data'
-                    : 'Connect Health Service',
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                minimumSize: const Size.fromHeight(50),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
+              ],
             ),
+            const SizedBox(height: B05Layout.space12),
+            if (isLoading)
+              const ConsumerStatusRow(
+                label: 'Checking Health data',
+                detail: 'Checking platform and permission status.',
+                loading: true,
+              )
+            else
+              B05StatusMessage(
+                status: status.status,
+                label: status.label,
+                value: status.detail,
+              ),
+            if (healthState.status == HealthStatus.noData &&
+                _canUseHealthData(connection)) ...[
+              const SizedBox(height: B05Layout.space12),
+              Text(
+                'No step, active energy, or sleep values were returned for today.',
+                style: B05Typography.body(context),
+              ),
+            ] else if (_canShowMetrics(healthState, connection)) ...[
+              const SizedBox(height: B05Layout.space16),
+              _buildMetrics(context, data: healthState.summary),
+            ],
+            if (_canUseHealthData(connection)) ...[
+              const SizedBox(height: B05Layout.space12),
+              Text(
+                'Disconnecting stops future Health use in IndiFit. Existing IndiFit history stays on this device. You can also manage permissions in your device settings.',
+                style: B05Typography.caption(context),
+              ),
+            ],
           ],
         ),
       ),
     );
   }
 
-  Widget _buildStatWidget(
+  Widget _buildCategorySurface(
+    BuildContext context, {
+    required HealthDataSummary summary,
+    required HealthConnectionStatus connection,
+    required bool isLoading,
+  }) {
+    final canEdit = _canEditCategories(connection, isLoading);
+    final descriptors = HealthService.visibleCategoryDescriptors.toList();
+    return B05Surface(
+      padding: EdgeInsets.zero,
+      child: Column(
+        children: [
+          for (var index = 0; index < descriptors.length; index++) ...[
+            _buildCategoryTile(
+              context,
+              descriptor: descriptors[index],
+              summary: summary,
+              canEdit: canEdit,
+              integrationActive: _canUseHealthData(connection),
+            ),
+            if (index < descriptors.length - 1)
+              Divider(height: 1, color: context.b05Colors.border),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCategoryTile(
+    BuildContext context, {
+    required HealthCategoryDescriptor descriptor,
+    required HealthDataSummary summary,
+    required bool canEdit,
+    required bool integrationActive,
+  }) {
+    final category = descriptor.category;
+    final localEnabled =
+        _categoryStates[category] ?? summary.categoryStates[category] ?? true;
+    final permission = summary.permissionFor(category);
+    final switchValue =
+        integrationActive &&
+        localEnabled &&
+        (permission == HealthPermissionStatus.granted ||
+            permission == HealthPermissionStatus.unknown);
+    final statusText = _permissionLabel(permission);
+    return Semantics(
+      container: true,
+      label: '${descriptor.title}, $statusText',
+      child: SwitchListTile(
+        title: Text(descriptor.title, style: B05Typography.label(context)),
+        subtitle: Text(
+          '${descriptor.description} Status: $statusText.',
+          style: B05Typography.caption(context),
+        ),
+        value: switchValue,
+        onChanged: canEdit ? (value) => _toggleCategory(category, value) : null,
+      ),
+    );
+  }
+
+  Widget _buildMetrics(
+    BuildContext context, {
+    required HealthDataSummary data,
+  }) {
+    final metrics = <Widget>[];
+    if (_canDisplayMetric(data, HealthCategory.steps)) {
+      metrics.add(
+        _buildMetric(
+          context,
+          Icons.directions_walk_outlined,
+          '${data.steps}',
+          'Steps',
+        ),
+      );
+    }
+    if (_canDisplayMetric(data, HealthCategory.activeEnergy)) {
+      metrics.add(
+        _buildMetric(
+          context,
+          Icons.local_fire_department_outlined,
+          '${data.activeCalories.toInt()} kcal',
+          'Active energy',
+        ),
+      );
+    }
+    if (_canDisplayMetric(data, HealthCategory.sleep)) {
+      metrics.add(
+        _buildMetric(
+          context,
+          Icons.bedtime_outlined,
+          '${data.sleepHours.toStringAsFixed(1)} h',
+          'Sleep',
+        ),
+      );
+    }
+    if (metrics.isEmpty) {
+      return Text(
+        'No readable daily metrics are available.',
+        style: B05Typography.body(context),
+      );
+    }
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final wideEnough = constraints.maxWidth >= 360;
+        final content = wideEnough
+            ? Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: metrics
+                    .map((metric) => Expanded(child: metric))
+                    .toList(),
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (var index = 0; index < metrics.length; index++) ...[
+                    metrics[index],
+                    if (index < metrics.length - 1)
+                      const SizedBox(height: B05Layout.space12),
+                  ],
+                ],
+              );
+        return B05Surface(
+          tone: B05SurfaceTone.inset,
+          padding: const EdgeInsets.all(B05Layout.space12),
+          child: content,
+        );
+      },
+    );
+  }
+
+  Widget _buildMetric(
+    BuildContext context,
     IconData icon,
     String value,
     String label,
-    Color iconCol,
   ) {
-    return Column(
-      children: [
-        Icon(icon, color: iconCol, size: 28),
-        const SizedBox(height: 8),
-        Text(
-          value,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          label,
-          style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
-        ),
-      ],
+    return Semantics(
+      label: '$label: $value',
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            color: context.b05Colors.action,
+            size: B05Layout.iconLarge,
+          ),
+          const SizedBox(height: B05Layout.space4),
+          Text(value, style: B05Typography.metric(context)),
+          Text(label, style: B05Typography.caption(context)),
+        ],
+      ),
     );
   }
+
+  Widget _buildImportedActivities(BuildContext context) {
+    return B05Surface(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Imported activities', style: B05Typography.title(context)),
+          const SizedBox(height: B05Layout.space8),
+          Text(
+            'Reviewed walking, running, and cycling activities from Health.',
+            style: B05Typography.body(context),
+          ),
+          const SizedBox(height: B05Layout.space8),
+          for (final activity in _outdoorActivities)
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(
+                Icons.directions_run_outlined,
+                color: context.b05Colors.action,
+              ),
+              title: Text(_activityLabel(activity['activityType'])),
+              subtitle: Text('${activity['durationMinutes'] ?? 0} min'),
+            ),
+        ],
+      ),
+    );
+  }
+
+  static bool _canShowMetrics(
+    HealthState healthState,
+    HealthConnectionStatus connection,
+  ) =>
+      healthState.status != HealthStatus.error &&
+      healthState.status != HealthStatus.unknown &&
+      _canUseHealthData(connection);
+
+  static bool _canDisplayMetric(
+    HealthDataSummary data,
+    HealthCategory category,
+  ) {
+    final permission = data.permissionFor(category);
+    return data.hasDataFor(category) &&
+        (permission == HealthPermissionStatus.granted ||
+            permission == HealthPermissionStatus.unknown);
+  }
+
+  static String _permissionLabel(HealthPermissionStatus status) {
+    return switch (status) {
+      HealthPermissionStatus.disabled => 'Off in IndiFit',
+      HealthPermissionStatus.notRequested => 'Not requested',
+      HealthPermissionStatus.granted => 'Allowed',
+      HealthPermissionStatus.denied => 'Not allowed',
+      HealthPermissionStatus.unknown => 'Access status cannot be confirmed',
+      HealthPermissionStatus.unavailable => 'Unavailable on this device',
+    };
+  }
+
+  static String _activityLabel(Object? activityType) => switch (activityType) {
+    'walking' => 'Walking',
+    'running' => 'Running',
+    'cycling' => 'Cycling',
+    _ => 'Imported activity',
+  };
+
+  static _StatusPresentation _statusPresentation({
+    required HealthState healthState,
+    required HealthConnectionStatus connection,
+    required String platformName,
+  }) {
+    if (healthState.status == HealthStatus.error) {
+      return const _StatusPresentation(
+        status: B05SemanticStatus.danger,
+        label: 'Health data unavailable',
+        detail: 'We could not check Health data. Try again.',
+      );
+    }
+    return switch (connection) {
+      HealthConnectionStatus.connected => _StatusPresentation(
+        status: B05SemanticStatus.success,
+        label: 'Connected',
+        detail: 'IndiFit can use the allowed $platformName categories.',
+      ),
+      HealthConnectionStatus.partial => const _StatusPresentation(
+        status: B05SemanticStatus.warning,
+        label: 'Partly connected',
+        detail: 'Only categories marked Allowed can be used.',
+      ),
+      HealthConnectionStatus.unknown => _StatusPresentation(
+        status: B05SemanticStatus.info,
+        label: 'Access status unavailable',
+        detail:
+            '$platformName does not confirm read access. IndiFit only uses data the system returns.',
+      ),
+      HealthConnectionStatus.denied => const _StatusPresentation(
+        status: B05SemanticStatus.danger,
+        label: 'Permission not granted',
+        detail: 'No selected Health categories are available.',
+      ),
+      HealthConnectionStatus.unavailable =>
+        healthState.status == HealthStatus.unsupported
+            ? const _StatusPresentation(
+                status: B05SemanticStatus.unavailable,
+                label: 'Not supported on this platform',
+                detail: 'Health integration is not supported on this platform.',
+              )
+            : const _StatusPresentation(
+                status: B05SemanticStatus.unavailable,
+                label: 'Unavailable',
+                detail: 'Health data is unavailable on this device.',
+              ),
+      HealthConnectionStatus.notConnected => const _StatusPresentation(
+        status: B05SemanticStatus.info,
+        label: 'Not connected',
+        detail: 'Connect to choose the Health categories IndiFit may use.',
+      ),
+    };
+  }
+
+  static IconData _statusIcon(HealthConnectionStatus status) {
+    return switch (status) {
+      HealthConnectionStatus.connected => Icons.check_circle_outline,
+      HealthConnectionStatus.partial => Icons.rule_outlined,
+      HealthConnectionStatus.unknown => Icons.help_outline,
+      HealthConnectionStatus.denied => Icons.lock_outline,
+      HealthConnectionStatus.unavailable => Icons.do_not_disturb_alt_outlined,
+      HealthConnectionStatus.notConnected => Icons.link_off_outlined,
+    };
+  }
+
+  static Widget _buildSectionLabel(BuildContext context, String label) {
+    return Text(
+      label,
+      style: B05Typography.caption(
+        context,
+      ).copyWith(fontWeight: FontWeight.w700, letterSpacing: .8),
+    );
+  }
+}
+
+class _StatusPresentation {
+  final B05SemanticStatus status;
+  final String label;
+  final String detail;
+
+  const _StatusPresentation({
+    required this.status,
+    required this.label,
+    required this.detail,
+  });
 }

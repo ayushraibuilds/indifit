@@ -250,9 +250,10 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      expect(find.text('Health Sync Hub'), findsOneWidget);
-      expect(find.text('GRANULAR PERMISSION CATEGORIES'), findsOneWidget);
-      expect(find.text('Steps Import (Read)'), findsOneWidget);
+      expect(find.text('Health'), findsWidgets);
+      expect(find.text('WHAT INDIFIT MAY USE'), findsOneWidget);
+      expect(find.text('Steps'), findsOneWidget);
+      expect(find.textContaining('(Read)'), findsNothing);
     });
 
     test(

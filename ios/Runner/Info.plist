@@ -33,9 +33,9 @@
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>IndiFit requires access to the photo library to upload food pictures for AI macro estimation.</string>
 	<key>NSHealthShareUsageDescription</key>
-	<string>IndiFit uses your health data to track daily steps, active calories, and sleep metrics.</string>
+	<string>IndiFit reads only the Health categories you allow: steps, active energy, sleep sessions, resting heart rate, and activity sessions.</string>
 	<key>NSHealthUpdateUsageDescription</key>
-	<string>IndiFit updates your fitness activities in Apple Health.</string>
+	<string>IndiFit writes weight logs you save to Apple Health when you allow Body Weight.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

@@ -10,6 +10,7 @@ import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/consumer_task_primitives.dart';
 import '../../core/widgets/indi_fit_bottom_sheet.dart';
+import '../../data/repositories/health_service.dart';
 import '../dashboard/widgets/dashboard_module_customization_panel.dart';
 import '../education/learn_screen.dart';
 import '../equipment/equipment_profiles_screen.dart';
@@ -139,9 +140,7 @@ class SettingsScreen extends ConsumerWidget {
                     _SettingsRow(
                       icon: Icons.favorite_border_rounded,
                       title: 'Health integration',
-                      summary: healthSummary.isConnected
-                          ? 'Connected'
-                          : 'Not connected',
+                      summary: _healthLabel(healthSummary),
                       onTap: () => _push(context, const HealthSyncHubScreen()),
                     ),
                   ],
@@ -247,6 +246,16 @@ class SettingsScreen extends ConsumerWidget {
     ThemeMode.dark => 'Dark',
     ThemeMode.system => 'System',
   };
+
+  static String _healthLabel(HealthDataSummary summary) =>
+      switch (summary.resolvedConnectionStatus) {
+        HealthConnectionStatus.connected => 'Connected',
+        HealthConnectionStatus.partial => 'Partly connected',
+        HealthConnectionStatus.denied => 'Permission not granted',
+        HealthConnectionStatus.unavailable => 'Unavailable',
+        HealthConnectionStatus.unknown => 'Access status unavailable',
+        HealthConnectionStatus.notConnected => 'Not connected',
+      };
 
   static void _push(BuildContext context, Widget screen) {
     Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen));
