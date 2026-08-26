@@ -86,15 +86,6 @@ class SettingsScreen extends ConsumerWidget {
                       ),
                     ),
                     _SettingsRow(
-                      icon: Icons.restaurant_outlined,
-                      title: 'Nutrition preferences',
-                      summary: profile.hasProfile
-                          ? _dietLabel(profile.dietPreference)
-                          : 'Choose a dietary pattern',
-                      onTap: () =>
-                          _push(context, const NutritionConstraintsScreen()),
-                    ),
-                    _SettingsRow(
                       icon: Icons.directions_run_outlined,
                       title: 'Training preferences',
                       summary: profile.hasProfile
@@ -162,6 +153,35 @@ class SettingsScreen extends ConsumerWidget {
                   ],
                 ),
                 const SizedBox(height: B05Layout.space20),
+                _SectionLabel('FOOD & NUTRITION'),
+                _SettingsGroup(
+                  children: [
+                    _SettingsRow(
+                      icon: Icons.restaurant_outlined,
+                      title: 'Dietary needs & preferences',
+                      summary: profile.hasProfile
+                          ? 'Pattern: ${_dietLabel(profile.dietPreference)}'
+                          : 'Pattern, allergies, and restrictions',
+                      onTap: () =>
+                          _push(context, const NutritionConstraintsScreen()),
+                    ),
+                    _SettingsRow(
+                      icon: Icons.local_drink_outlined,
+                      title: 'Household measures',
+                      summary: 'Cups, bowls, and personal measures',
+                      onTap: () =>
+                          _push(context, const HouseholdMeasuresScreen()),
+                    ),
+                    _SettingsRow(
+                      icon: Icons.restaurant_menu_outlined,
+                      title: 'Regional foods',
+                      summary: 'Optional foods to include in search',
+                      onTap: () =>
+                          _push(context, const RegionalFoodPacksScreen()),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: B05Layout.space20),
                 _SectionLabel('LEARN'),
                 _SettingsGroup(
                   children: [
@@ -178,13 +198,6 @@ class SettingsScreen extends ConsumerWidget {
                 _SettingsGroup(
                   children: [
                     _SettingsRow(
-                      icon: Icons.local_drink_outlined,
-                      title: 'Household measures',
-                      summary: 'Cups, bowls, and personal measures',
-                      onTap: () =>
-                          _push(context, const HouseholdMeasuresScreen()),
-                    ),
-                    _SettingsRow(
                       icon: Icons.fitness_center_outlined,
                       title: 'Equipment profiles',
                       summary: 'Used when building a plan',
@@ -199,13 +212,6 @@ class SettingsScreen extends ConsumerWidget {
                         onTap: () =>
                             _push(context, const B05PlaylistSettingsScreen()),
                       ),
-                    _SettingsRow(
-                      icon: Icons.restaurant_menu_outlined,
-                      title: 'Food library',
-                      summary: 'Regional food packs',
-                      onTap: () =>
-                          _push(context, const RegionalFoodPacksScreen()),
-                    ),
                     _SettingsRow(
                       icon: Icons.track_changes_outlined,
                       title: 'Nutrition targets',
