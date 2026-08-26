@@ -148,12 +148,16 @@ void main() {
 
         // Confirm primary settings groups exist
         expect(find.text('Settings'), findsOneWidget);
-        await tester.drag(find.byType(Scrollable), const Offset(0, -1000));
-        await tester.pump();
-        expect(find.text('Appearance'), findsOneWidget);
-        expect(find.text('Units'), findsOneWidget);
-        expect(find.text('Notifications'), findsOneWidget);
-        expect(find.text('Customize Today'), findsOneWidget);
+        for (final label in const [
+          'Appearance',
+          'Units',
+          'Notifications & reminders',
+          'Customize Today',
+        ]) {
+          final row = find.widgetWithText(ListTile, label);
+          await tester.scrollUntilVisible(row, 300);
+          expect(row, findsOneWidget);
+        }
 
         // Confirm stale/unsupported Hydration subscreen entry is absent
         expect(find.text('Hydration'), findsNothing);

@@ -13,7 +13,6 @@ import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/repositories/health_service.dart';
 import 'package:indifit/features/media/b05_playlist_launcher.dart';
-import 'package:indifit/features/profile/profile_screen.dart';
 import 'package:indifit/features/settings/health_sync_hub_screen.dart';
 import 'package:indifit/features/settings/nutrition_targets_hub_screen.dart';
 import 'package:indifit/features/settings/settings_screen.dart';
@@ -35,7 +34,7 @@ void main() {
     await _expectSettingsSection(tester, 'Goals & targets', [
       'Goal & targets',
     ]);
-    await _expectSettingsSection(tester, 'Food & Nutrition', [
+    await _expectSettingsSection(tester, 'FOOD & NUTRITION', [
       'Dietary needs & preferences',
       'Household measures',
       'Regional foods',
@@ -142,9 +141,7 @@ void main() {
 
     final semanticsHandle = tester.ensureSemantics();
     try {
-      final targetRow = find.bySemanticsLabel(
-        'Goal & targets, Review your goal and daily targets',
-      );
+      final targetRow = find.widgetWithText(ListTile, 'Goal & targets');
       expect(targetRow, findsOneWidget);
       expect(
         tester

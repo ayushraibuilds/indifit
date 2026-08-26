@@ -73,7 +73,7 @@ class SettingsScreen extends ConsumerWidget {
                   ],
                 ),
                 _SettingsSection(
-                  title: 'Food & Nutrition',
+                  title: 'FOOD & NUTRITION',
                   children: [
                     _SettingsRow(
                       icon: Icons.restaurant_outlined,

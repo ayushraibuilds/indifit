@@ -128,7 +128,8 @@ void main() {
     Navigator.of(tester.element(find.byType(ProfileScreen))).pop();
     await tester.pumpAndSettle();
     final goalRow = find.widgetWithText(ListTile, 'Goal & targets');
-    await tester.ensureVisible(goalRow);
+    await _scrollSettingsToTop(tester);
+    await _scrollSettingsTo(tester, goalRow);
     await tester.tap(goalRow);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
@@ -143,7 +144,9 @@ void main() {
 
     Navigator.of(tester.element(find.byType(NutritionTargetsHubScreen))).pop();
     await tester.pump(const Duration(milliseconds: 500));
-    await tester.tap(find.widgetWithText(ListTile, 'Training preferences'));
+    final trainingRow = find.widgetWithText(ListTile, 'Training preferences');
+    await _scrollSettingsTo(tester, trainingRow);
+    await tester.tap(trainingRow);
     await tester.pumpAndSettle();
     expect(
       find.descendant(
