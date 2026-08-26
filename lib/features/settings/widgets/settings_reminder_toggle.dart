@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+
 import '../../../core/services/notification_service.dart';
-import '../../../core/theme/colors.dart';
+import '../../../core/theme/b05_semantic_colors.dart';
 
 class SettingsReminderToggle extends StatelessWidget {
   final IconData icon;
@@ -9,6 +12,7 @@ class SettingsReminderToggle extends StatelessWidget {
   final String subtitle;
   final bool value;
   final ValueChanged<bool> onChanged;
+  final Future<void> Function()? onRequestPermission;
 
   const SettingsReminderToggle({
     super.key,
@@ -18,6 +22,7 @@ class SettingsReminderToggle extends StatelessWidget {
     required this.subtitle,
     required this.value,
     required this.onChanged,
+    this.onRequestPermission,
   });
 
   @override
@@ -50,23 +55,29 @@ class SettingsReminderToggle extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: const TextStyle(
-                      color: AppColors.textSecondary,
+                    style: TextStyle(
+                      color: context.b05Colors.textSecondary,
                       fontSize: 12,
                     ),
                   ),
                 ],
               ),
             ),
-            Switch(
-              value: value,
-              onChanged: (newVal) {
-                onChanged(newVal);
-                if (newVal) {
-                  NotificationService.requestPermissions();
-                }
-              },
-              activeThumbColor: AppColors.primary,
+            Semantics(
+              label: '$title notifications',
+              child: Switch(
+                value: value,
+                onChanged: (newVal) {
+                  onChanged(newVal);
+                  if (newVal) {
+                    final request =
+                        onRequestPermission?.call() ??
+                        NotificationService.requestPermissions();
+                    unawaited(request);
+                  }
+                },
+                activeThumbColor: context.b05Colors.action,
+              ),
             ),
           ],
         ),

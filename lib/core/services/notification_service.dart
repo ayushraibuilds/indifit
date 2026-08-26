@@ -16,10 +16,12 @@ import 'crash_reporting_service.dart';
 ///   - Workout reminder: Once daily (morning warm-up window)
 ///   - Meal logging: Twice daily (post-lunch + post-dinner — skips breakfast to avoid morning spam)
 ///   - Evening nudge: Once daily (gentle "did you log today?" before bed)
-///   - Weekly AI report: Once per week (Sunday morning)
+///   - Weekly report: Once per week (Sunday morning)
 ///
 /// Total: up to four notifications on a day with the weekly report.
 /// All configurable via SharedPreferences toggles in Settings screen.
+enum NotificationPermissionStatus { granted, denied, unavailable }
+
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
@@ -99,6 +101,50 @@ class NotificationService {
         ?.requestPermissions(alert: true, badge: true, sound: true);
 
     return (androidGranted ?? false) || (iosGranted ?? false);
+  }
+
+  /// Reads the OS notification permission without changing the app's reminder
+  /// preferences. Unsupported platforms return [NotificationPermissionStatus
+  /// .unavailable] rather than implying that notifications are allowed.
+  static Future<NotificationPermissionStatus> checkPermissionStatus() async {
+    try {
+      final android = _plugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
+      if (android != null) {
+        final enabled = await android.areNotificationsEnabled();
+        if (enabled == null) {
+          return NotificationPermissionStatus.unavailable;
+        }
+        return enabled
+            ? NotificationPermissionStatus.granted
+            : NotificationPermissionStatus.denied;
+      }
+
+      final ios = _plugin
+          .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin
+          >();
+      if (ios != null) {
+        final permissions = await ios.checkPermissions();
+        if (permissions == null) {
+          return NotificationPermissionStatus.unavailable;
+        }
+        return permissions.isEnabled
+            ? NotificationPermissionStatus.granted
+            : NotificationPermissionStatus.denied;
+      }
+    } catch (e, st) {
+      AppLogger.warning('notification permission status unavailable: $e');
+      CrashReportingService.recordCrash(
+        e,
+        st,
+        reason: 'notification permission status check failed',
+      );
+    }
+
+    return NotificationPermissionStatus.unavailable;
   }
 
   /// Show a local push notification when workout rest timer expires
@@ -311,7 +357,7 @@ class NotificationService {
     );
   }
 
-  /// 📊 Weekly AI report — Sunday at 10:00 AM
+  /// 📊 Weekly report — Sunday at 10:00 AM
   static Future<void> _scheduleWeeklyReport(
     bool quietHoursEnabled,
     int quietStart,
@@ -320,13 +366,13 @@ class NotificationService {
     await _scheduleWeeklyNotification(
       id: _idWeeklyReport,
       channelId: _weeklyChannelId,
-      channelName: 'Weekly AI Report',
+      channelName: 'Weekly Reports',
       dayOfWeek: DateTime.sunday,
       hour: 10,
       minute: 0,
-      title: '📊 Your Weekly AI Fitness Report',
+      title: '📊 Your Weekly Report',
       body:
-          'Your personalized weekly summary is ready. See calories, macros, workout volume trends, and AI coaching tips.',
+          'Your weekly summary is ready. Review calories, macros, and workout volume.',
       payload: 'weekly_report',
       quietHoursEnabled: quietHoursEnabled,
       quietHoursStart: quietStart,
