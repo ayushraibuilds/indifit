@@ -1,5 +1,6 @@
 import 'package:intl/intl.dart';
 
+import '../../core/services/local_schedule_date_service.dart';
 import '../../data/models/progress_dashboard_models.dart';
 import '../settings/unit_preference.dart';
 
@@ -41,6 +42,7 @@ abstract final class R08F4TrainingVolumePresentation {
   static R08F4VolumeSummary summarizeVolume({
     required Iterable<ProgressWorkoutRecord> allWorkouts,
     required String todayLocalDate,
+    required String timezoneId,
     required String units,
     int recentDays = 28,
   }) {
@@ -53,8 +55,13 @@ abstract final class R08F4TrainingVolumePresentation {
         )
         .toList(growable: false);
 
-    // Compute cutoff for recent window (default: 28 days / 4 weeks)
-    final recentCutoff = _addCivilDays(todayLocalDate, -(recentDays - 1));
+    // Keep the recent window on the same explicit civil-date authority that
+    // produced each workout's localDate.
+    final recentCutoff = LocalScheduleDateService().addCalendarDays(
+      todayLocalDate,
+      timezoneId,
+      -(recentDays - 1),
+    );
     final eligibleRecent = eligibleAll
         .where((w) => w.localDate.compareTo(recentCutoff) >= 0)
         .toList(growable: false);
@@ -169,18 +176,6 @@ abstract final class R08F4TrainingVolumePresentation {
         ? 'in the last four weeks'
         : 'across recorded strength workouts';
     return '${formatVolume(displayVolume)} $unitWord $timeframe.';
-  }
-
-  static String _addCivilDays(String dateStr, int days) {
-    final parts = dateStr.split('-').map(int.parse).toList(growable: false);
-    final date = DateTime.utc(
-      parts[0],
-      parts[1],
-      parts[2],
-    ).add(Duration(days: days));
-    return '${date.year.toString().padLeft(4, '0')}-'
-        '${date.month.toString().padLeft(2, '0')}-'
-        '${date.day.toString().padLeft(2, '0')}';
   }
 }
 

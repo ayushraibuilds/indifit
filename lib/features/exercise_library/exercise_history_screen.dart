@@ -2,8 +2,10 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:timezone/timezone.dart' as tz;
 
 import '../../core/di/providers.dart';
+import '../../core/services/local_schedule_date_service.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../data/database/app_database.dart';
@@ -53,11 +55,13 @@ class R07CPerformanceEmptyState extends StatelessWidget {
 class ExerciseHistoryScreen extends ConsumerStatefulWidget {
   final String exerciseName;
   final String? stableExerciseId;
+  final String? timezoneId;
 
   const ExerciseHistoryScreen({
     super.key,
     required this.exerciseName,
     this.stableExerciseId,
+    this.timezoneId,
   });
 
   @override
@@ -90,7 +94,8 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
   void didUpdateWidget(covariant ExerciseHistoryScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.exerciseName != widget.exerciseName ||
-        oldWidget.stableExerciseId != widget.stableExerciseId) {
+        oldWidget.stableExerciseId != widget.stableExerciseId ||
+        oldWidget.timezoneId != widget.timezoneId) {
       _historyFuture = _loadHistory();
     }
   }
@@ -275,7 +280,9 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     Text(
-                      DateFormat('MMM d, y').format(record.date.toLocal()),
+                      DateFormat(
+                        'MMM d, y',
+                      ).format(_dateInHistoryTimezone(record.date)),
                       style: B05Typography.label(context),
                     ),
                     if (record.status != null)
@@ -332,7 +339,7 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
       final basis = summary.trendBasis!;
       final values = [
         for (final point in points)
-          '${DateFormat('MMM d').format(point.completedAt.toLocal())}: ${R08F3StrengthPerformancePresentation.formatTrendLoad(point)}${point.isPartial ? ' (partial session)' : ''}',
+          '${DateFormat('MMM d').format(_dateInHistoryTimezone(point.completedAt))}: ${R08F3StrengthPerformancePresentation.formatTrendLoad(point)}${point.isPartial ? ' (partial session)' : ''}',
       ];
       return B05Surface(
         tone: B05SurfaceTone.inset,
@@ -462,7 +469,7 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
                 child: Text(
                   DateFormat(
                     'MMM d',
-                  ).format(points[index].completedAt.toLocal()),
+                  ).format(_dateInHistoryTimezone(points[index].completedAt)),
                   style: B05Typography.caption(context),
                 ),
               );
@@ -483,7 +490,7 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
           getTooltipItems: (spots) => [
             for (final spot in spots)
               LineTooltipItem(
-                '${DateFormat('MMM d').format(points[spot.spotIndex].completedAt.toLocal())}\n${R08F3StrengthPerformancePresentation.formatTrendLoad(points[spot.spotIndex])}',
+                '${DateFormat('MMM d').format(_dateInHistoryTimezone(points[spot.spotIndex].completedAt))}\n${R08F3StrengthPerformancePresentation.formatTrendLoad(points[spot.spotIndex])}',
                 TextStyle(
                   color: colors.textPrimary,
                   fontWeight: FontWeight.w700,
@@ -535,6 +542,21 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
       showHeader: false,
       padding: EdgeInsets.all(B05Layout.space16),
     );
+  }
+
+  DateTime _dateInHistoryTimezone(DateTime instant) {
+    final timezoneId = widget.timezoneId?.trim();
+    if (timezoneId == null || timezoneId.isEmpty) return instant.toLocal();
+    try {
+      return tz.TZDateTime.from(
+        instant.toUtc(),
+        LocalScheduleDateService().locationFor(timezoneId),
+      );
+    } on ArgumentError {
+      // Legacy callers without a valid stored timezone keep their established
+      // device-local presentation. Progress always supplies a validated zone.
+      return instant.toLocal();
+    }
   }
 }
 

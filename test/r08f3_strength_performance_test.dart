@@ -216,6 +216,51 @@ void main() {
     },
   );
 
+  testWidgets('canonical history dates use the Progress snapshot timezone', (
+    tester,
+  ) async {
+    _setViewport(tester, const Size(390, 844));
+    final records = [
+      _record(
+        sessionId: 1,
+        performedExerciseId: 'performed-1',
+        completedAt: DateTime.utc(2026, 8, 1, 12, 30),
+        loadKg: 80,
+        reps: 5,
+      ),
+      _record(
+        sessionId: 2,
+        performedExerciseId: 'performed-2',
+        completedAt: DateTime.utc(2026, 8, 8, 12, 30),
+        loadKg: 82,
+        reps: 5,
+      ),
+    ];
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          b02ExercisePerformanceReadRepositoryProvider.overrideWithValue(
+            _FakePerformanceRepository(database, records),
+          ),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.darkTheme,
+          home: const ExerciseHistoryScreen(
+            exerciseName: 'Bench press',
+            stableExerciseId: 'actual-bench',
+            timezoneId: 'Pacific/Kiritimati',
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.textContaining('Aug 2: 80 kg × 5 reps'), findsOneWidget);
+    expect(find.textContaining('Aug 9: 82 kg × 5 reps'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets(
     'stable canonical query does not fall back to name-based legacy history',
     (tester) async {

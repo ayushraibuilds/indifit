@@ -132,99 +132,102 @@ class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
 
     final unlockedCount = _achievements.where((a) => a.isUnlocked).length;
 
-    return Padding(
+    return ListView(
       padding: const EdgeInsets.all(B05Layout.space16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Unlocked summary banner
-          Semantics(
-            container: true,
-            label:
-                '$unlockedCount of ${_achievements.length} achievements unlocked. Keep training and logging to earn badges.',
-            child: B05Surface(
-              tone: B05SurfaceTone.inset,
-              padding: const EdgeInsets.all(B05Layout.space16),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.emoji_events_rounded,
-                    color: Colors.amber,
+      children: [
+        // Unlocked summary banner
+        Semantics(
+          container: true,
+          label:
+              '$unlockedCount of ${_achievements.length} achievements unlocked. Keep training and logging to earn badges.',
+          child: B05Surface(
+            tone: B05SurfaceTone.inset,
+            padding: const EdgeInsets.all(B05Layout.space16),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.emoji_events_rounded,
+                  color: Colors.amber,
+                  size: 36,
+                ),
+                const SizedBox(width: B05Layout.space12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '$unlockedCount / ${_achievements.length} Unlocked',
+                        style: B05Typography.title(context),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Keep training and logging to earn badges!',
+                        style: B05Typography.caption(context),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: B05Layout.space16),
+
+        if (unlockedCount == 0) ...[
+          B05Surface(
+            tone: B05SurfaceTone.section,
+            padding: const EdgeInsets.all(B05Layout.space20),
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(B05Layout.space12),
+                  decoration: BoxDecoration(
+                    color: colors.action.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.workspace_premium_rounded,
                     size: 36,
+                    color: colors.action,
                   ),
-                  const SizedBox(width: B05Layout.space12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '$unlockedCount / ${_achievements.length} Unlocked',
-                          style: B05Typography.title(context),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Keep training and logging to earn badges!',
-                          style: B05Typography.caption(context),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+                ),
+                const SizedBox(height: B05Layout.space12),
+                Text(
+                  'No Badges Unlocked Yet',
+                  style: B05Typography.title(context),
+                ),
+                const SizedBox(height: B05Layout.space4),
+                Text(
+                  'Start logging workouts, meals, and maintaining your streak to earn your first achievement badge!',
+                  textAlign: TextAlign.center,
+                  style: B05Typography.body(context),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: B05Layout.space16),
+        ],
 
-          if (unlockedCount == 0) ...[
-            B05Surface(
-              tone: B05SurfaceTone.section,
-              padding: const EdgeInsets.all(B05Layout.space20),
-              child: Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(B05Layout.space12),
-                    decoration: BoxDecoration(
-                      color: colors.action.withValues(alpha: 0.15),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.workspace_premium_rounded,
-                      size: 36,
-                      color: colors.action,
-                    ),
-                  ),
-                  const SizedBox(height: B05Layout.space12),
-                  Text(
-                    'No Badges Unlocked Yet',
-                    style: B05Typography.title(context),
-                  ),
-                  const SizedBox(height: B05Layout.space4),
-                  Text(
-                    'Start logging workouts, meals, and maintaining your streak to earn your first achievement badge!',
-                    textAlign: TextAlign.center,
-                    style: B05Typography.body(context),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: B05Layout.space16),
-          ],
+        Text(
+          'ALL BADGES',
+          style: B05Typography.caption(
+            context,
+          ).copyWith(fontWeight: FontWeight.w700, letterSpacing: 0.5),
+        ),
+        const SizedBox(height: B05Layout.space12),
 
-          Text(
-            'ALL BADGES',
-            style: B05Typography.caption(
-              context,
-            ).copyWith(fontWeight: FontWeight.w700, letterSpacing: 0.5),
-          ),
-          const SizedBox(height: B05Layout.space12),
-
-          Expanded(
-            child: GridView.builder(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
+        LayoutBuilder(
+          builder: (context, _) {
+            final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
+            final useSingleColumn = textScale >= 1.5;
+            return GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: useSingleColumn ? 1 : 2,
                 crossAxisSpacing: 12,
                 mainAxisSpacing: 12,
-                childAspectRatio: 0.88,
+                childAspectRatio: useSingleColumn ? 1.3 : 0.88,
               ),
               itemCount: _achievements.length,
               itemBuilder: (context, index) {
@@ -332,10 +335,10 @@ class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
                   ),
                 );
               },
-            ),
-          ),
-        ],
-      ),
+            );
+          },
+        ),
+      ],
     );
   }
 }

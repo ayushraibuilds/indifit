@@ -278,6 +278,7 @@ void main() {
       final volume = R08F4TrainingVolumePresentation.summarizeVolume(
         allWorkouts: workouts,
         todayLocalDate: '2026-08-09',
+        timezoneId: 'Asia/Kolkata',
         units: 'kg',
       );
 
@@ -304,6 +305,7 @@ void main() {
       final volumeImperial = R08F4TrainingVolumePresentation.summarizeVolume(
         allWorkouts: workouts,
         todayLocalDate: '2026-08-09',
+        timezoneId: 'Asia/Kolkata',
         units: UnitPreferenceNotifier.imperial,
       );
 
@@ -349,6 +351,7 @@ void main() {
       final volume = R08F4TrainingVolumePresentation.summarizeVolume(
         allWorkouts: workouts,
         todayLocalDate: '2026-08-09',
+        timezoneId: 'Asia/Kolkata',
         units: 'kg',
       );
 

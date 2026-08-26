@@ -90,6 +90,10 @@ class B02ExercisePerformanceReadRepository {
   }
 
   B02PerformedSet? _toPerformedSet(PerformedSet set) {
+    final actualLoad = set.actualLoadKg;
+    if (actualLoad != null && (!actualLoad.isFinite || actualLoad < 0)) {
+      return null;
+    }
     try {
       return B02PerformedSet(
         id: set.id,

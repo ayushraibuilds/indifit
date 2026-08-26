@@ -301,6 +301,8 @@ class ProgressDashboardReadRepository {
           !const {'completed', 'partial'}.contains(exercise.status) ||
           completedAtUtc.isAfter(nowUtc) ||
           actualLoad == null ||
+          !actualLoad.isFinite ||
+          actualLoad < 0 ||
           actualReps == null ||
           actualReps < 1 ||
           loadBasis == null) {

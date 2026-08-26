@@ -1,9 +1,14 @@
 import 'package:drift/drift.dart' show Value;
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:indifit/core/di/providers.dart';
 import 'package:indifit/core/services/achievement_service.dart';
+import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/repositories/progress_statistics_repository.dart';
 import 'package:indifit/data/repositories/weekly_report_service.dart';
+import 'package:indifit/features/progress/achievements_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -206,5 +211,66 @@ void main() {
         expect(report.summary, contains('6000 total kcal'));
       },
     );
+
+    testWidgets('6. Achievements remains usable at 320 width and 2x text', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(320, 568);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      SharedPreferences.setMockInitialValues({'user_streak_count': 0});
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            databaseProvider.overrideWithValue(db),
+            progressStatisticsRepositoryProvider.overrideWithValue(
+              _FakeAchievementRepository(db),
+            ),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.darkTheme,
+            home: MediaQuery(
+              data: MediaQueryData.fromView(tester.view).copyWith(
+                textScaler: const TextScaler.linear(2),
+                disableAnimations: true,
+              ),
+              child: const AchievementsScreen(),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 50)),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 700));
+
+      await tester.drag(find.byType(ListView), const Offset(0, -1200));
+      await tester.pump();
+      expect(find.text('ALL BADGES'), findsOneWidget);
+      expect(find.text('First Sweat'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
   });
+}
+
+class _FakeAchievementRepository extends ProgressStatisticsRepository {
+  _FakeAchievementRepository(super.database);
+
+  @override
+  Future<LifetimeAchievementStats> getLifetimeStats() async =>
+      const LifetimeAchievementStats(
+        totalWorkouts: 0,
+        totalVolumeKg: 0,
+        totalMealsLogged: 0,
+        totalPrs: 0,
+        thaliLoggedCount: 0,
+        unlockedAchievementIds: {},
+      );
+
+  @override
+  Future<bool> unlockAchievement(String achievementId) async => false;
 }

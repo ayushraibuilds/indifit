@@ -127,7 +127,12 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                 _ProgressHighlights(
                   snapshot: snapshot,
                   onViewTrainingHistory: _openTrainingHistory,
-                  onViewStrengthHistory: _openStrengthHistory,
+                  onViewStrengthHistory: (name, stableExerciseId) =>
+                      _openStrengthHistory(
+                        name,
+                        stableExerciseId,
+                        snapshot.timezoneId,
+                      ),
                   units: units,
                 ),
                 if (snapshot.unavailableSections.isNotEmpty) ...[
@@ -150,7 +155,12 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                   const SizedBox(height: B05Layout.space24),
                   _StrengthSection(
                     snapshot: snapshot,
-                    onViewHistory: _openStrengthHistory,
+                    onViewHistory: (name, stableExerciseId) =>
+                        _openStrengthHistory(
+                          name,
+                          stableExerciseId,
+                          snapshot.timezoneId,
+                        ),
                   ),
                 ],
                 if (snapshot.weightMeasurements.isNotEmpty) ...[
@@ -363,12 +373,17 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     ).push(MaterialPageRoute(builder: (_) => const WorkoutHistoryScreen()));
   }
 
-  void _openStrengthHistory(String exerciseName, String stableExerciseId) {
+  void _openStrengthHistory(
+    String exerciseName,
+    String stableExerciseId,
+    String timezoneId,
+  ) {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => ExerciseHistoryScreen(
           exerciseName: exerciseName,
           stableExerciseId: stableExerciseId,
+          timezoneId: timezoneId,
         ),
       ),
     );
@@ -769,6 +784,7 @@ class _TrainingConsistencySection extends StatelessWidget {
               const SizedBox(height: B05Layout.space16),
               _WeekCalendarStrip(
                 todayLocalDate: snapshot.todayLocalDate,
+                timezoneId: snapshot.timezoneId,
                 trainedDates: snapshot.weeklyTrainedDates,
                 workouts: thisWeek,
               ),
@@ -797,11 +813,13 @@ class _TrainingConsistencySection extends StatelessWidget {
 class _WeekCalendarStrip extends StatelessWidget {
   const _WeekCalendarStrip({
     required this.todayLocalDate,
+    required this.timezoneId,
     required this.trainedDates,
     this.workouts = const [],
   });
 
   final String todayLocalDate;
+  final String timezoneId;
   final Set<String> trainedDates;
   final List<ProgressWorkoutRecord> workouts;
 
@@ -810,9 +828,13 @@ class _WeekCalendarStrip extends StatelessWidget {
     final colors = context.b05Colors;
     const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-    final today = _parseCivilDate(todayLocalDate);
-    final currentWeekday = today.weekday; // 1 = Mon, 7 = Sun
-    final monday = today.subtract(Duration(days: currentWeekday - 1));
+    final dates = LocalScheduleDateService();
+    final currentWeekday = dates.weekday(todayLocalDate, timezoneId);
+    final monday = dates.addCalendarDays(
+      todayLocalDate,
+      timezoneId,
+      DateTime.monday - currentWeekday,
+    );
 
     return Semantics(
       container: true,
@@ -823,8 +845,7 @@ class _WeekCalendarStrip extends StatelessWidget {
             Expanded(
               child: Builder(
                 builder: (context) {
-                  final date = monday.add(Duration(days: i));
-                  final dateStr = _formatCivilDate(date);
+                  final dateStr = dates.addCalendarDays(monday, timezoneId, i);
                   final sessionsOnDate = workouts
                       .where((w) => w.localDate == dateStr)
                       .length;
@@ -1657,6 +1678,7 @@ class _TrainingVolumeSection extends StatelessWidget {
     final summary = R08F4TrainingVolumePresentation.summarizeVolume(
       allWorkouts: snapshot.workouts ?? const <ProgressWorkoutRecord>[],
       todayLocalDate: snapshot.todayLocalDate,
+      timezoneId: snapshot.timezoneId,
       units: units,
     );
 
@@ -2296,9 +2318,12 @@ bool _hasMeaningfulMuscleBalance(ProgressDashboardSnapshot snapshot) =>
 List<ProgressWorkoutRecord> _workoutsThisWeek(
   ProgressDashboardSnapshot snapshot,
 ) {
-  final today = _parseCivilDate(snapshot.todayLocalDate);
-  final start = _formatCivilDate(
-    today.subtract(Duration(days: today.weekday - DateTime.monday)),
+  final dates = LocalScheduleDateService();
+  final weekday = dates.weekday(snapshot.todayLocalDate, snapshot.timezoneId);
+  final start = dates.addCalendarDays(
+    snapshot.todayLocalDate,
+    snapshot.timezoneId,
+    DateTime.monday - weekday,
   );
   return (snapshot.workouts ?? const <ProgressWorkoutRecord>[])
       .where(
@@ -2312,7 +2337,11 @@ List<ProgressWorkoutRecord> _workoutsThisWeek(
 List<ProgressWorkoutRecord> _workoutsInRecentFourWeeks(
   ProgressDashboardSnapshot snapshot,
 ) {
-  final start = _addCivilDays(snapshot.todayLocalDate, -27);
+  final start = LocalScheduleDateService().addCalendarDays(
+    snapshot.todayLocalDate,
+    snapshot.timezoneId,
+    -27,
+  );
   return (snapshot.workouts ?? const <ProgressWorkoutRecord>[])
       .where(
         (workout) =>
@@ -2660,9 +2689,6 @@ String? _measurementTime(
     return null;
   }
 }
-
-String _addCivilDays(String date, int days) =>
-    _formatCivilDate(_parseCivilDate(date).add(Duration(days: days)));
 
 int _civilDayDifference(String start, String end) =>
     _parseCivilDate(end).difference(_parseCivilDate(start)).inDays;

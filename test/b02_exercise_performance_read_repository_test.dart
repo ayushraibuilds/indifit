@@ -247,6 +247,33 @@ void main() {
       expect(await repository.read(stableExerciseId: 'bench'), isEmpty);
     },
   );
+
+  test('fails closed for non-finite persisted load evidence', () async {
+    await _insertExercise(database, 'bench', 'Bench press');
+    final sessionId = await _insertSession(
+      database,
+      name: 'Corrupt load',
+      completedAt: DateTime.utc(2026, 8, 17, 9),
+    );
+    await _insertPerformedExercise(
+      database,
+      id: 'corrupt-bench-performed',
+      sessionId: sessionId,
+      actualExerciseId: 'bench',
+      actualName: 'Bench press',
+    );
+    await _insertPerformedSet(
+      database,
+      id: 'non-finite-load',
+      performedExerciseId: 'corrupt-bench-performed',
+      ordinal: 0,
+      role: B02SetRole.working,
+      loadKg: double.infinity,
+      reps: 5,
+    );
+
+    expect(await repository.read(stableExerciseId: 'bench'), isEmpty);
+  });
 }
 
 Future<void> _insertExercise(
