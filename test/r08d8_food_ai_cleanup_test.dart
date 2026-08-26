@@ -197,7 +197,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 100));
       }
 
-      expect(find.byTooltip('Settings & Goals'), findsOneWidget);
+      expect(find.byTooltip('Settings'), findsOneWidget);
       expect(find.text('AI Meal Planner'), findsNothing);
       expect(find.byType(PopupMenuButton<String>), findsNothing);
     });

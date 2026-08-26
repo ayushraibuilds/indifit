@@ -22,7 +22,6 @@ import '../activity/b02_activity_controller.dart';
 import '../calendar/workout_contextual_launcher.dart';
 import '../coaching/b04_production_surface_widgets.dart';
 import '../settings/nutrition_targets_hub_screen.dart';
-import '../settings/settings_screen.dart';
 import '../workout_player/b02_strength_execution_controller.dart';
 import '../workout_player/b02_strength_player_screen.dart';
 import '../workout_player/workout_player_screen.dart';
@@ -438,11 +437,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               .setSelectedDate(DateTime(date.year, date.month, date.day));
         },
         onRefresh: _refreshToday,
-        onOpenSettings: () {
-          Navigator.of(
-            context,
-          ).push(MaterialPageRoute(builder: (_) => const SettingsScreen()));
-        },
+        onOpenSettings: () => context.push('/settings'),
         onCustomize: _openCustomization,
         onOpenWorkoutPlan: () => context.push('/calendar'),
         onLogMeal: () => unawaited(_openFoodForMeal('')),
