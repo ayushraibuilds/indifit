@@ -206,7 +206,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
           child: Semantics(
             container: true,
             label:
-                'Your progress starts here. Complete a workout, log a weigh-in, or track your meals to start seeing useful trends.',
+                'Your progress starts here. Complete a workout or log a weigh-in to start seeing useful trends.',
             child: B05Surface(
               tone: B05SurfaceTone.inset,
               padding: const EdgeInsets.all(B05Layout.space24),
@@ -602,16 +602,29 @@ class _ProgressHighlightTile extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(highlight.icon, size: B05Layout.iconMedium, color: accent),
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  highlight.icon,
+                  size: B05Layout.iconMedium,
+                  color: accent,
+                ),
+              ),
               const SizedBox(width: B05Layout.space8),
               Expanded(
                 child: Text(
                   highlight.label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: B05Typography.caption(
-                    context,
-                  ).copyWith(color: accent, fontWeight: FontWeight.w700),
+                  style: B05Typography.caption(context).copyWith(
+                    color: colors.textSecondary,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.3,
+                  ),
                 ),
               ),
               if (highlight.onPressed != null)
@@ -627,7 +640,9 @@ class _ProgressHighlightTile extends StatelessWidget {
             highlight.value,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: B05Typography.title(context),
+            style: B05Typography.title(context).copyWith(
+              fontWeight: FontWeight.w800,
+            ),
           ),
           const SizedBox(height: B05Layout.space4),
           Text(
@@ -705,6 +720,7 @@ class _TrainingConsistencySection extends StatelessWidget {
                   ),
                 ),
               ),
+              const SizedBox(height: 2),
               Text(
                 thisWeek.isEmpty ? 'this week' : 'completed this week',
                 style: B05Typography.body(context),
@@ -1569,19 +1585,24 @@ class _MuscleBalanceSection extends StatelessWidget {
                     label:
                         '${muscle.displayName}, ${_formatNumber(muscle.workingSetUnits)} working set units.',
                     child: ExcludeSemantics(
-                      child: Wrap(
-                        alignment: WrapAlignment.spaceBetween,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          Text(
-                            muscle.displayName,
-                            style: B05Typography.label(context),
-                          ),
-                          Text(
-                            '${_formatNumber(muscle.workingSetUnits)} working sets',
-                            style: B05Typography.caption(context),
-                          ),
-                        ],
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: Wrap(
+                          alignment: WrapAlignment.spaceBetween,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          spacing: B05Layout.space8,
+                          runSpacing: B05Layout.space4,
+                          children: [
+                            Text(
+                              muscle.displayName,
+                              style: B05Typography.label(context),
+                            ),
+                            Text(
+                              '${_formatNumber(muscle.workingSetUnits)} working sets',
+                              style: B05Typography.caption(context),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -2072,8 +2093,10 @@ ProgressStrengthSetRecord _heavierStrengthSetForPresentation(
   if (first.loadKg != second.loadKg) {
     return first.loadKg > second.loadKg ? first : second;
   }
-  if (first.reps != second.reps) {
-    return first.reps > second.reps ? first : second;
+  final firstReps = first.reps;
+  final secondReps = second.reps;
+  if (firstReps != secondReps) {
+    return firstReps > secondReps ? first : second;
   }
   return _compareStrengthRecordsForPresentation(first, second) > 0
       ? first
@@ -2308,7 +2331,7 @@ LineChartData _weightChartData({
       drawVerticalLine: false,
       horizontalInterval: (maxY - minY) / 3,
       getDrawingHorizontalLine: (_) =>
-          FlLine(color: colors.border.withValues(alpha: .45), strokeWidth: 1),
+          FlLine(color: colors.border.withValues(alpha: .35), strokeWidth: 1),
     ),
     titlesData: FlTitlesData(
       topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
@@ -2316,7 +2339,7 @@ LineChartData _weightChartData({
       leftTitles: AxisTitles(
         sideTitles: SideTitles(
           showTitles: true,
-          reservedSize: 38,
+          reservedSize: 42,
           interval: (maxY - minY) / 2,
           getTitlesWidget: (value, _) => Text(
             value.toStringAsFixed(0),
@@ -2361,11 +2384,21 @@ LineChartData _weightChartData({
         if (index != null) onTouch(index);
       },
       touchTooltipData: LineTouchTooltipData(
+        getTooltipColor: (_) => colors.surfaceSubtle,
+        tooltipRoundedRadius: 8,
+        tooltipPadding: const EdgeInsets.symmetric(
+          horizontal: 10,
+          vertical: 6,
+        ),
         getTooltipItems: (spots) => [
           for (final spot in spots)
             LineTooltipItem(
               '${_shortCivilDate(_measurementDate(measurements[spot.spotIndex]))}\n${_formatDisplayedWeight(spot.y, units)}',
-              const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+              TextStyle(
+                color: colors.textPrimary,
+                fontWeight: FontWeight.w700,
+                fontSize: 12,
+              ),
             ),
         ],
       ),
@@ -2396,6 +2429,17 @@ LineChartData _weightChartData({
             color: colors.section,
             strokeColor: colors.action,
             strokeWidth: 2,
+          ),
+        ),
+        belowBarData: BarAreaData(
+          show: true,
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              colors.action.withValues(alpha: 0.14),
+              colors.action.withValues(alpha: 0.0),
+            ],
           ),
         ),
       ),

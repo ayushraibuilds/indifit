@@ -426,7 +426,7 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
         drawVerticalLine: false,
         horizontalInterval: ySpan / 2,
         getDrawingHorizontalLine: (_) =>
-            FlLine(color: colors.border.withValues(alpha: .45), strokeWidth: 1),
+            FlLine(color: colors.border.withValues(alpha: .35), strokeWidth: 1),
       ),
       titlesData: FlTitlesData(
         topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
@@ -436,7 +436,7 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
         leftTitles: AxisTitles(
           sideTitles: SideTitles(
             showTitles: true,
-            reservedSize: 42,
+            reservedSize: 44,
             interval: ySpan / 2,
             getTitlesWidget: (value, _) => Text(
               value.toStringAsFixed(0),
@@ -471,7 +471,28 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
         ),
       ),
       borderData: FlBorderData(show: false),
-      lineTouchData: const LineTouchData(enabled: false),
+      lineTouchData: LineTouchData(
+        enabled: true,
+        touchTooltipData: LineTouchTooltipData(
+          getTooltipColor: (_) => colors.surfaceSubtle,
+          tooltipRoundedRadius: 8,
+          tooltipPadding: const EdgeInsets.symmetric(
+            horizontal: 10,
+            vertical: 6,
+          ),
+          getTooltipItems: (spots) => [
+            for (final spot in spots)
+              LineTooltipItem(
+                '${DateFormat('MMM d').format(points[spot.spotIndex].completedAt.toLocal())}\n${R08F3StrengthPerformancePresentation.formatTrendLoad(points[spot.spotIndex])}',
+                TextStyle(
+                  color: colors.textPrimary,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 12,
+                ),
+              ),
+          ],
+        ),
+      ),
       lineBarsData: [
         LineChartBarData(
           spots: [
@@ -493,7 +514,14 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
           ),
           belowBarData: BarAreaData(
             show: true,
-            color: colors.action.withValues(alpha: .08),
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                colors.action.withValues(alpha: 0.16),
+                colors.action.withValues(alpha: 0.0),
+              ],
+            ),
           ),
         ),
       ],
@@ -570,15 +598,23 @@ class _HistoryHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.b05Colors;
     return B05Surface(
-      tone: B05SurfaceTone.selected,
+      tone: B05SurfaceTone.inset,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.history_rounded, color: context.b05Colors.action),
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: colors.action.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.history_rounded, color: colors.action, size: B05Layout.iconMedium),
+              ),
               const SizedBox(width: B05Layout.space12),
               Expanded(
                 child: Column(
