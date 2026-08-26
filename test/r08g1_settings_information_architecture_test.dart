@@ -33,14 +33,12 @@ void main() {
     await _pumpSettings(tester);
 
     await _expectSettingsSection(tester, 'Goals & targets', [
-      'Fitness goal',
-      'Nutrition targets',
-      'Coaching',
+      'Goal & targets',
     ]);
-    await _expectSettingsSection(tester, 'Food preferences', [
-      'Dietary needs',
-      'Measuring at home',
-      'Regional food preferences',
+    await _expectSettingsSection(tester, 'Food & Nutrition', [
+      'Dietary needs & preferences',
+      'Household measures',
+      'Regional foods',
     ]);
     await _expectSettingsSection(tester, 'Training preferences', [
       'Training preferences',
@@ -68,7 +66,14 @@ void main() {
       'CONNECTIONS',
       'ADVANCED',
       'Nutrition preferences',
+      'Fitness goal',
+      'Nutrition targets',
+      'Coaching',
       'Food library',
+      'Food preferences',
+      'Dietary needs',
+      'Measuring at home',
+      'Regional food preferences',
       'Data and backup',
       'Goals & adaptive coaching',
       'Workout playlist',
@@ -88,19 +93,19 @@ void main() {
   ) async {
     await _pumpSettings(tester);
 
-    await tester.tap(find.widgetWithText(ListTile, 'Fitness goal'));
+    await tester.tap(find.widgetWithText(ListTile, 'Goal & targets'));
     await tester.pumpAndSettle();
-    expect(find.byType(ProfileScreen), findsOneWidget);
+    expect(find.byType(NutritionTargetsHubScreen), findsOneWidget);
   });
 
-  testWidgets('Nutrition targets row opens the existing target hub', (
+  testWidgets('Settings exposes one goals destination', (
     tester,
   ) async {
     await _pumpSettings(tester);
 
-    await tester.tap(find.widgetWithText(ListTile, 'Nutrition targets'));
-    await tester.pumpAndSettle();
-    expect(find.byType(NutritionTargetsHubScreen), findsOneWidget);
+    expect(find.widgetWithText(ListTile, 'Goal & targets'), findsOneWidget);
+    expect(find.widgetWithText(ListTile, 'Nutrition targets'), findsNothing);
+    expect(find.widgetWithText(ListTile, 'Coaching'), findsNothing);
   });
 
   testWidgets('Health integration row opens the existing health owner', (
@@ -138,7 +143,7 @@ void main() {
     final semanticsHandle = tester.ensureSemantics();
     try {
       final targetRow = find.bySemanticsLabel(
-        'Nutrition targets, Calories and macros for each day',
+        'Goal & targets, Review your goal and daily targets',
       );
       expect(targetRow, findsOneWidget);
       expect(

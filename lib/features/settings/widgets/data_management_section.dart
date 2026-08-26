@@ -9,7 +9,6 @@ import '../../../core/services/auto_backup_service.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
 import '../../onboarding/onboarding_screen.dart';
 import '../health_sync_hub_screen.dart';
-import '../regional_food_packs_screen.dart';
 import '../settings_controller.dart';
 import 'backup_restore_card.dart';
 import 'privacy_disclosure_card.dart';
@@ -556,38 +555,6 @@ class DataManagementSection extends ConsumerWidget {
               borderRadius: BorderRadius.circular(12),
               side: BorderSide(
                 color: context.b05Colors.danger.indicator.withValues(
-                  alpha: 0.2,
-                ),
-              ),
-            ),
-            elevation: 0,
-          ),
-        ),
-        const SizedBox(height: 12),
-
-        // Regional Food Packs button
-        ElevatedButton.icon(
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const RegionalFoodPacksScreen(),
-              ),
-            );
-          },
-          icon: Icon(
-            Icons.restaurant_menu_rounded,
-            color: context.b05Colors.success.indicator,
-          ),
-          label: const Text('Regional Food Packs'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: context.b05Colors.success.container,
-            foregroundColor: context.b05Colors.success.foreground,
-            minimumSize: const Size.fromHeight(48),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(
-                color: context.b05Colors.success.indicator.withValues(
                   alpha: 0.2,
                 ),
               ),
