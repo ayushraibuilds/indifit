@@ -43,7 +43,6 @@ class _FakeHealthService extends HealthService {
 
 class _FakeHealthNotifier extends HealthStateNotifier {
   _FakeHealthNotifier(super.service) {
-
     state = const HealthState(
       status: HealthStatus.available,
       summary: HealthDataSummary(
@@ -127,14 +126,14 @@ void main() {
       await tester.pumpAndSettle();
 
       // Check section headings
-      expect(find.text('BACKUP & EXPORT'), findsOneWidget);
-      expect(find.text('PRIVACY & STORAGE'), findsOneWidget);
+      expect(find.text('Backup'), findsOneWidget);
+      expect(find.text('Privacy'), findsOneWidget);
       expect(find.text('DANGER ZONE'), findsOneWidget);
 
       // Check Danger Zone contents
       expect(find.text('Irreversible actions'), findsOneWidget);
-      expect(find.text('Reset onboarding wizard'), findsNWidgets(2));
-      expect(find.text('Wipe all local data'), findsNWidgets(2));
+      expect(find.text('Reset onboarding wizard'), findsOneWidget);
+      expect(find.textContaining('Wipe all local data'), findsNothing);
 
       // Consequence explanations
       expect(
@@ -143,9 +142,9 @@ void main() {
       );
       expect(
         find.textContaining('Permanently wipe all food logs'),
-        findsOneWidget,
+        findsNothing,
       );
-      expect(find.textContaining('This cannot be undone'), findsOneWidget);
+      expect(find.textContaining('This cannot be undone'), findsNothing);
 
       // Dead / duplicate navigation removed
       expect(
@@ -177,7 +176,7 @@ void main() {
 
         // Scroll to Danger Zone
         final resetButton = find
-            .widgetWithText(OutlinedButton, 'Reset onboarding wizard')
+            .widgetWithText(OutlinedButton, 'Start setup again')
             .first;
         await tester.scrollUntilVisible(resetButton, 300);
         await tester.pumpAndSettle();
@@ -187,15 +186,10 @@ void main() {
         await tester.pumpAndSettle();
 
         // Verify confirmation dialog appeared
-        expect(find.text('Reset onboarding wizard?'), findsOneWidget);
+        expect(find.text('Start setup again?'), findsOneWidget);
+        expect(find.textContaining('resets setup'), findsOneWidget);
         expect(
-          find.textContaining('return you to the onboarding wizard'),
-          findsOneWidget,
-        );
-        expect(
-          find.textContaining(
-            'recorded meal and workout history will not be deleted',
-          ),
+          find.textContaining('does not delete logged data or backups'),
           findsOneWidget,
         );
 
@@ -206,13 +200,13 @@ void main() {
         await tester.pumpAndSettle();
 
         // Dialog is gone
-        expect(find.text('Reset onboarding wizard?'), findsNothing);
+        expect(find.text('Start setup again?'), findsNothing);
         expect(tester.takeException(), isNull);
       },
     );
 
     testWidgets(
-      'Wipe All Local Data requires confirmation dialog before executing',
+      'Wipe All Local Data remains unavailable without complete authority',
       (tester) async {
         await tester.pumpWidget(
           createTestWidget(child: const DataManagementSubScreen()),
@@ -220,32 +214,8 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
         await tester.pumpAndSettle();
 
-        // Scroll to Danger Zone
-        final wipeButton = find
-            .widgetWithText(FilledButton, 'Wipe all local data')
-            .first;
-        await tester.scrollUntilVisible(wipeButton, 300);
-        await tester.pumpAndSettle();
-
-        // Tap Wipe Data
-        await tester.tap(wipeButton);
-        await tester.pumpAndSettle();
-
-        // Verify confirmation dialog appeared with strong warning
-        expect(find.text('Delete all local data?'), findsOneWidget);
-        expect(
-          find.textContaining('This action is irreversible'),
-          findsOneWidget,
-        );
-
-        // Cancel button dismisses dialog
-        final cancelButton = find.widgetWithText(TextButton, 'Cancel');
-        expect(cancelButton, findsOneWidget);
-        await tester.tap(cancelButton);
-        await tester.pumpAndSettle();
-
-        // Dialog dismissed
-        expect(find.text('Delete all local data?'), findsNothing);
+        expect(find.textContaining('Wipe all local data'), findsNothing);
+        expect(find.textContaining('Delete all local data'), findsNothing);
         expect(tester.takeException(), isNull);
       },
     );
@@ -259,10 +229,10 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pumpAndSettle();
 
-      // Tap Export local backup
-      await tester.tap(find.text('Export local backup'));
+      // Tap Create and share backup
+      await tester.tap(find.text('Create and share backup'));
       await tester.pumpAndSettle();
-      expect(find.text('Export & encrypt backup'), findsOneWidget);
+      expect(find.text('Create a backup'), findsOneWidget);
       await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
 
@@ -273,7 +243,7 @@ void main() {
         find.widgetWithText(AlertDialog, 'Restore a backup'),
         findsOneWidget,
       );
-      expect(find.text('Choose backup file'), findsOneWidget);
+      expect(find.text('Choose a backup file'), findsOneWidget);
       await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
 
@@ -291,14 +261,13 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
         await tester.pumpAndSettle();
 
-        expect(find.text('REMINDERS'), findsOneWidget);
+        expect(find.text('Reminders'), findsOneWidget);
         expect(find.text('Workout Reminder'), findsOneWidget);
         expect(find.text('Meal Logging'), findsOneWidget);
         expect(find.text('Evening Log Nudge'), findsOneWidget);
-        expect(find.text('QUIET HOURS'), findsOneWidget);
         expect(find.text('Quiet Hours'), findsOneWidget);
-        expect(find.text('Start Time'), findsOneWidget);
-        expect(find.text('End Time'), findsOneWidget);
+        expect(find.text('Start time'), findsOneWidget);
+        expect(find.text('End time'), findsOneWidget);
 
         // Unsupported AI report is hidden
         expect(find.text('Weekly AI Report'), findsNothing);
@@ -322,16 +291,17 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
         await tester.pumpAndSettle();
 
-        expect(find.text('HEALTH CONNECTIONS'), findsOneWidget);
-        expect(find.text('Connection Status'), findsOneWidget);
-        expect(find.text('PERMISSION CATEGORIES'), findsOneWidget);
-        expect(find.text('Steps import'), findsOneWidget);
-        expect(find.text('Active energy burned'), findsOneWidget);
-        expect(find.text('Sleep duration'), findsOneWidget);
-        expect(find.text('Workout import'), findsOneWidget);
-        expect(find.text('Workout export'), findsOneWidget);
-        expect(find.text('Body weight export'), findsOneWidget);
-        expect(find.text('Auto-sync on app open'), findsOneWidget);
+        expect(find.text('HEALTH CONNECTION'), findsOneWidget);
+        expect(find.text('Connection status'), findsOneWidget);
+        expect(find.text('WHAT INDIFIT MAY USE'), findsOneWidget);
+        expect(find.text('Steps'), findsAtLeastNWidgets(1));
+        expect(find.text('Active energy'), findsAtLeastNWidgets(1));
+        expect(find.text('Sleep'), findsAtLeastNWidgets(1));
+        expect(find.text('Resting heart rate'), findsOneWidget);
+        expect(find.text('Walking, running, and cycling'), findsOneWidget);
+        expect(find.text('Body weight'), findsOneWidget);
+        expect(find.text('Workout Export (Write)'), findsNothing);
+        expect(find.text('Auto-sync on app open'), findsNothing);
 
         expect(tester.takeException(), isNull);
       },
@@ -353,7 +323,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
         await tester.pumpAndSettle();
 
-        expect(find.text('BACKUP & EXPORT'), findsOneWidget);
+        expect(find.text('Backup'), findsOneWidget);
         expect(tester.takeException(), isNull);
       },
     );
@@ -372,7 +342,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
         await tester.pumpAndSettle();
 
-        expect(find.text('REMINDERS'), findsOneWidget);
+        expect(find.text('Reminders'), findsOneWidget);
         expect(tester.takeException(), isNull);
       },
     );
@@ -391,7 +361,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
         await tester.pumpAndSettle();
 
-        expect(find.text('HEALTH CONNECTIONS'), findsOneWidget);
+        expect(find.text('HEALTH CONNECTION'), findsOneWidget);
         expect(tester.takeException(), isNull);
       },
     );

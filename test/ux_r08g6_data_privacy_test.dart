@@ -20,11 +20,11 @@ void main() {
   ) async {
     await _pumpDataPrivacy(tester);
 
-    expect(find.text('Data & privacy'), findsOneWidget);
+    expect(find.text('Manage your data'), findsOneWidget);
     expect(find.text('Backup'), findsOneWidget);
     expect(find.text('Export'), findsOneWidget);
     expect(find.text('Privacy'), findsOneWidget);
-    expect(find.text('Danger'), findsOneWidget);
+    expect(find.text('DANGER ZONE'), findsOneWidget);
     expect(
       find.widgetWithText(FilledButton, 'Create and share backup'),
       findsOneWidget,
@@ -106,7 +106,7 @@ void main() {
 
       final semanticsHandle = tester.ensureSemantics();
       try {
-        expect(find.text('Data & privacy'), findsOneWidget);
+        expect(find.text('Manage your data'), findsOneWidget);
         await tester.drag(
           find.byType(Scrollable).first,
           const Offset(0, -1200),
