@@ -744,14 +744,15 @@ class TodayNutritionHero extends StatelessWidget {
                   B05ActionButton(
                     label: 'Set a target',
                     emphasis: B05ActionEmphasis.tertiary,
-                    hint: 'Opens nutrition targets to set your daily goals.',
+                    hint:
+                        'Opens Goal & targets to set today’s nutrition target.',
                     onPressed: onOpenTargetSetup,
                   )
                 else
                   B05ActionButton(
                     label: 'View targets',
                     emphasis: B05ActionEmphasis.tertiary,
-                    hint: 'Opens nutrition targets for this date.',
+                    hint: 'Opens Goal & targets for this date.',
                     onPressed: onOpenTargetSetup,
                   ),
               ],
@@ -1149,10 +1150,7 @@ class _MacroRow extends StatelessWidget {
             ],
             if (metric.estimated && !metric.isIncomplete) ...[
               const SizedBox(height: B05Layout.space4),
-              Text(
-                'Estimated',
-                style: B05Typography.caption(context),
-              ),
+              Text('Estimated', style: B05Typography.caption(context)),
             ],
             if (metric.hasTarget && metric.progress != null) ...[
               const SizedBox(height: B05Layout.space4),

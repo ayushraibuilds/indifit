@@ -20,7 +20,6 @@ import 'health_sync_hub_screen.dart';
 import 'household_measures_screen.dart';
 import 'notification_settings_screen.dart';
 import 'nutrition_constraints_screen.dart';
-import 'nutrition_goals_sub_screen.dart';
 import 'nutrition_targets_hub_screen.dart';
 import 'regional_food_packs_screen.dart';
 import 'settings_controller.dart';
@@ -66,54 +65,36 @@ class SettingsScreen extends ConsumerWidget {
                   children: [
                     _SettingsRow(
                       icon: Icons.flag_outlined,
-                      title: 'Fitness goal',
-                      summary: profile.hasProfile
-                          ? SecondaryConsumerCopy.goal(profile.userGoal)
-                          : 'Choose what you are working toward',
-                      onTap: () => _push(
-                        context,
-                        const ProfileScreen(focus: ProfileEditorFocus.goal),
-                      ),
-                    ),
-                    _SettingsRow(
-                      icon: Icons.track_changes_outlined,
-                      title: 'Nutrition targets',
-                      summary: 'Calories and macros for each day',
+                      title: 'Goal & targets',
+                      summary: 'Review your goal and daily targets',
                       onTap: () =>
                           _push(context, const NutritionTargetsHubScreen()),
-                    ),
-                    _SettingsRow(
-                      icon: Icons.auto_graph_outlined,
-                      title: 'Coaching',
-                      summary: 'Optional suggestions and consent',
-                      onTap: () =>
-                          _push(context, const NutritionGoalsSubScreen()),
                     ),
                   ],
                 ),
                 _SettingsSection(
-                  title: 'Food preferences',
+                  title: 'Food & Nutrition',
                   children: [
                     _SettingsRow(
                       icon: Icons.restaurant_outlined,
-                      title: 'Dietary needs',
+                      title: 'Dietary needs & preferences',
                       summary: profile.hasProfile
-                          ? _dietLabel(profile.dietPreference)
-                          : 'Dietary pattern and foods to avoid',
+                          ? 'Pattern: ${_dietLabel(profile.dietPreference)}'
+                          : 'Pattern, allergies, and restrictions',
                       onTap: () =>
                           _push(context, const NutritionConstraintsScreen()),
                     ),
                     _SettingsRow(
                       icon: Icons.local_drink_outlined,
-                      title: 'Measuring at home',
+                      title: 'Household measures',
                       summary: 'Cups, bowls, and personal measures',
                       onTap: () =>
                           _push(context, const HouseholdMeasuresScreen()),
                     ),
                     _SettingsRow(
                       icon: Icons.restaurant_menu_outlined,
-                      title: 'Regional food preferences',
-                      summary: 'Choose the foods shown for your region',
+                      title: 'Regional foods',
+                      summary: 'Optional foods to include in search',
                       onTap: () =>
                           _push(context, const RegionalFoodPacksScreen()),
                     ),

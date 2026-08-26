@@ -161,7 +161,7 @@ void main() {
       expect(find.text('Target for Yesterday'), findsOneWidget);
       expect(find.text('2100 kcal'), findsOneWidget);
       expect(
-        find.textContaining('Earlier target versions are read-only'),
+        find.textContaining('Earlier targets are read-only'),
         findsOneWidget,
       );
       expect(find.text('Save today’s targets'), findsNothing);
@@ -174,7 +174,9 @@ void main() {
 
       expect(find.text('Target for Tomorrow'), findsOneWidget);
       expect(
-        find.textContaining('Future target dates are read-only'),
+        find.textContaining(
+          'Today’s saved target continues to apply unless another target takes effect later',
+        ),
         findsOneWidget,
       );
       expect(find.text('Save today’s targets'), findsNothing);
