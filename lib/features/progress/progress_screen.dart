@@ -182,10 +182,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                 ],
                 if (_hasMeaningfulVolume(snapshot)) ...[
                   const SizedBox(height: B05Layout.space24),
-                  _TrainingVolumeSection(
-                    snapshot: snapshot,
-                    units: units,
-                  ),
+                  _TrainingVolumeSection(snapshot: snapshot, units: units),
                 ],
                 if (_hasMeaningfulMuscleBalance(snapshot)) ...[
                   const SizedBox(height: B05Layout.space24),
@@ -449,22 +446,20 @@ class _ProgressHighlights extends StatelessWidget {
     final highlights = <_ProgressHighlight>[];
     final thisWeek = _workoutsThisWeek(snapshot);
     if (thisWeek.isNotEmpty) {
-      final summary =
-          R08F4TrainingVolumePresentation.summarizeConsistency(thisWeek);
+      final summary = R08F4TrainingVolumePresentation.summarizeConsistency(
+        thisWeek,
+      );
       final sessionCount = summary.sessionCount;
-      final daysCount =
-          snapshot.weeklyTrainedDates.isNotEmpty
-              ? snapshot.weeklyTrainedDates.length
-              : summary.trainingDayCount;
-      final detailText =
-          sessionCount == daysCount
-              ? 'completed this week'
-              : 'across $daysCount ${daysCount == 1 ? 'day' : 'days'} this week';
+      final daysCount = snapshot.weeklyTrainedDates.isNotEmpty
+          ? snapshot.weeklyTrainedDates.length
+          : summary.trainingDayCount;
+      final detailText = sessionCount == daysCount
+          ? 'completed this week'
+          : 'across $daysCount ${daysCount == 1 ? 'day' : 'days'} this week';
       highlights.add(
         _ProgressHighlight(
           label: 'Training',
-          value:
-              '$sessionCount ${sessionCount == 1 ? 'workout' : 'workouts'}',
+          value: '$sessionCount ${sessionCount == 1 ? 'workout' : 'workouts'}',
           detail: detailText,
           icon: Icons.fitness_center_rounded,
           onPressed: onViewTrainingHistory,
@@ -661,9 +656,9 @@ class _ProgressHighlightTile extends StatelessWidget {
             highlight.value,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: B05Typography.title(context).copyWith(
-              fontWeight: FontWeight.w800,
-            ),
+            style: B05Typography.title(
+              context,
+            ).copyWith(fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: B05Layout.space4),
           Text(
@@ -721,10 +716,9 @@ class _TrainingConsistencySection extends StatelessWidget {
     final thisWeekSummary =
         R08F4TrainingVolumePresentation.summarizeConsistency(thisWeek);
     final thisWeekSessionCount = thisWeekSummary.sessionCount;
-    final thisWeekDaysCount =
-        snapshot.weeklyTrainedDates.isNotEmpty
-            ? snapshot.weeklyTrainedDates.length
-            : thisWeekSummary.trainingDayCount;
+    final thisWeekDaysCount = snapshot.weeklyTrainedDates.isNotEmpty
+        ? snapshot.weeklyTrainedDates.length
+        : thisWeekSummary.trainingDayCount;
 
     final lastFourWeeksSummary =
         R08F4TrainingVolumePresentation.summarizeConsistency(lastFourWeeks);
@@ -771,10 +765,7 @@ class _TrainingConsistencySection extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 2),
-              Text(
-                subtitleText,
-                style: B05Typography.body(context),
-              ),
+              Text(subtitleText, style: B05Typography.body(context)),
               const SizedBox(height: B05Layout.space16),
               _WeekCalendarStrip(
                 todayLocalDate: snapshot.todayLocalDate,
@@ -1656,10 +1647,7 @@ class _WeightRangeSelector extends StatelessWidget {
 }
 
 class _TrainingVolumeSection extends StatelessWidget {
-  const _TrainingVolumeSection({
-    required this.snapshot,
-    this.units = 'kg',
-  });
+  const _TrainingVolumeSection({required this.snapshot, this.units = 'kg'});
 
   final ProgressDashboardSnapshot snapshot;
   final String units;
@@ -1672,12 +1660,11 @@ class _TrainingVolumeSection extends StatelessWidget {
       units: units,
     );
 
-    final semanticLabel =
-        R08F4TrainingVolumePresentation.formatVolumeSemantics(
-          displayVolume: summary.displayVolume,
-          units: units,
-          useRecent: summary.useRecent,
-        );
+    final semanticLabel = R08F4TrainingVolumePresentation.formatVolumeSemantics(
+      displayVolume: summary.displayVolume,
+      units: units,
+      useRecent: summary.useRecent,
+    );
     final subtitle = R08F4TrainingVolumePresentation.formatVolumeSubtitle(
       units: units,
       useRecent: summary.useRecent,
@@ -1701,10 +1688,7 @@ class _TrainingVolumeSection extends StatelessWidget {
                   ),
                   style: B05Typography.metric(context),
                 ),
-                Text(
-                  subtitle,
-                  style: B05Typography.body(context),
-                ),
+                Text(subtitle, style: B05Typography.body(context)),
               ],
             ),
           ),
@@ -2546,10 +2530,7 @@ LineChartData _weightChartData({
       touchTooltipData: LineTouchTooltipData(
         getTooltipColor: (_) => colors.surfaceSubtle,
         tooltipRoundedRadius: 8,
-        tooltipPadding: const EdgeInsets.symmetric(
-          horizontal: 10,
-          vertical: 6,
-        ),
+        tooltipPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         getTooltipItems: (spots) => [
           for (final spot in spots)
             LineTooltipItem(

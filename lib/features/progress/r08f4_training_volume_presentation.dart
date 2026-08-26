@@ -16,7 +16,10 @@ abstract final class R08F4TrainingVolumePresentation {
     final list = workouts.toList(growable: false);
     final sessionCount = list.length;
     final trainingDays = <String>{for (final w in list) w.localDate};
-    final workingSetsCount = list.fold<int>(0, (sum, w) => sum + w.workingSetsCount);
+    final workingSetsCount = list.fold<int>(
+      0,
+      (sum, w) => sum + w.workingSetsCount,
+    );
     final partialSessionCount = list.where((w) => w.isPartial).length;
     final activityTypeCounts = <String, int>{};
     for (final w in list) {
@@ -115,8 +118,9 @@ abstract final class R08F4TrainingVolumePresentation {
     int weeks = 4,
   }) {
     if (sessionCount == 0) return '';
-    final setsSuffix =
-        workingSetsCount > 0 ? ' · $workingSetsCount working sets' : '';
+    final setsSuffix = workingSetsCount > 0
+        ? ' · $workingSetsCount working sets'
+        : '';
     if (sessionCount == dayCount) {
       return '$sessionCount ${sessionCount == 1 ? 'workout' : 'workouts'} completed in the last $weeks weeks$setsSuffix';
     }
@@ -158,20 +162,22 @@ abstract final class R08F4TrainingVolumePresentation {
     required String units,
     required bool useRecent,
   }) {
-    final unitWord =
-        UnitPreferencePresentation.isImperial(units) ? 'pounds' : 'kilograms';
-    final timeframe =
-        useRecent
-            ? 'in the last four weeks'
-            : 'across recorded strength workouts';
+    final unitWord = UnitPreferencePresentation.isImperial(units)
+        ? 'pounds'
+        : 'kilograms';
+    final timeframe = useRecent
+        ? 'in the last four weeks'
+        : 'across recorded strength workouts';
     return '${formatVolume(displayVolume)} $unitWord $timeframe.';
   }
 
   static String _addCivilDays(String dateStr, int days) {
     final parts = dateStr.split('-').map(int.parse).toList(growable: false);
-    final date = DateTime.utc(parts[0], parts[1], parts[2]).add(
-      Duration(days: days),
-    );
+    final date = DateTime.utc(
+      parts[0],
+      parts[1],
+      parts[2],
+    ).add(Duration(days: days));
     return '${date.year.toString().padLeft(4, '0')}-'
         '${date.month.toString().padLeft(2, '0')}-'
         '${date.day.toString().padLeft(2, '0')}';

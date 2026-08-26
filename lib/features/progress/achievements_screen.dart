@@ -70,10 +70,7 @@ class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Achievements & Badges'),
-        elevation: 0,
-      ),
+      appBar: AppBar(title: const Text('Achievements & Badges'), elevation: 0),
       body: _buildBody(),
     );
   }
@@ -143,7 +140,8 @@ class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
           // Unlocked summary banner
           Semantics(
             container: true,
-            label: '$unlockedCount of ${_achievements.length} achievements unlocked. Keep training and logging to earn badges.',
+            label:
+                '$unlockedCount of ${_achievements.length} achievements unlocked. Keep training and logging to earn badges.',
             child: B05Surface(
               tone: B05SurfaceTone.inset,
               padding: const EdgeInsets.all(B05Layout.space16),
@@ -214,10 +212,9 @@ class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
 
           Text(
             'ALL BADGES',
-            style: B05Typography.caption(context).copyWith(
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.5,
-            ),
+            style: B05Typography.caption(
+              context,
+            ).copyWith(fontWeight: FontWeight.w700, letterSpacing: 0.5),
           ),
           const SizedBox(height: B05Layout.space12),
 
@@ -317,7 +314,9 @@ class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
                               borderRadius: BorderRadius.circular(4),
                               child: LinearProgressIndicator(
                                 value: animVal,
-                                backgroundColor: colors.border.withValues(alpha: 0.5),
+                                backgroundColor: colors.border.withValues(
+                                  alpha: 0.5,
+                                ),
                                 valueColor: AlwaysStoppedAnimation<Color>(
                                   item.isUnlocked
                                       ? item.color

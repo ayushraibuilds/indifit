@@ -613,7 +613,11 @@ class _HistoryHeader extends StatelessWidget {
                   color: colors.action.withValues(alpha: 0.12),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(Icons.history_rounded, color: colors.action, size: B05Layout.iconMedium),
+                child: Icon(
+                  Icons.history_rounded,
+                  color: colors.action,
+                  size: B05Layout.iconMedium,
+                ),
               ),
               const SizedBox(width: B05Layout.space12),
               Expanded(
