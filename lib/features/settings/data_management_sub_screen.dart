@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../core/theme/colors.dart';
+
 import 'widgets/data_management_section.dart';
 
 class DataManagementSubScreen extends StatelessWidget {
@@ -8,14 +8,17 @@ class DataManagementSubScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Data & Auto-Backup'),
-        backgroundColor: AppColors.surface,
-        elevation: 0,
-      ),
-      body: const SingleChildScrollView(
-        padding: EdgeInsets.all(20),
-        child: DataManagementSection(),
+      appBar: AppBar(title: const Text('Data & privacy')),
+      body: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 640),
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+              children: const [DataManagementSection()],
+            ),
+          ),
+        ),
       ),
     );
   }

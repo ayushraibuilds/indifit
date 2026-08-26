@@ -155,12 +155,10 @@ class ProductFailurePresentation {
     'workout_save_failed' => 'Your workout could not be saved. Try again.',
     'workout_recovery_needed' =>
       'This workout needs to be reopened before you can continue.',
-    'workout_already_completed' =>
-      'This workout has already been saved.',
+    'workout_already_completed' => 'This workout has already been saved.',
     'workout_in_progress_conflict' =>
       'Finish or discard your active workout before starting another.',
-    'no_active_plan' =>
-      'No workout plan is currently active.',
+    'no_active_plan' => 'No workout plan is currently active.',
     'plan_activation_rejected' =>
       'The plan could not be activated. Review your plan and try again.',
     'published_plan' =>
@@ -175,6 +173,8 @@ class ProductFailurePresentation {
       'Coaching settings could not be loaded. Try again.',
     'playlist_unavailable' => 'Music playlists are not available right now.',
     'backup_export_failed' => 'Your backup could not be exported. Try again.',
+    'csv_export_failed' =>
+      'Your food and workout summary could not be copied. Try again.',
     'backup_inspection_failed' =>
       'This backup could not be inspected. Choose another file or try again.',
     _ => 'We couldn’t load this right now. Try again.',

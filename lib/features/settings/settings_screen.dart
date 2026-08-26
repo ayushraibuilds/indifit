@@ -16,6 +16,7 @@ import '../education/learn_screen.dart';
 import '../equipment/equipment_profiles_screen.dart';
 import '../media/b05_playlist_launcher.dart';
 import '../profile/profile_screen.dart';
+import 'about_credits_screen.dart';
 import 'data_management_sub_screen.dart';
 import 'health_sync_hub_screen.dart';
 import 'household_measures_screen.dart';
@@ -223,6 +224,17 @@ class SettingsScreen extends ConsumerWidget {
                       title: 'Learn',
                       summary: 'Short, optional guides',
                       onTap: () => _push(context, const LearnScreen()),
+                    ),
+                  ],
+                ),
+                _SettingsSection(
+                  title: 'About',
+                  children: [
+                    _SettingsRow(
+                      icon: Icons.info_outline_rounded,
+                      title: 'About & credits',
+                      summary: 'Third-party credits and software licenses',
+                      onTap: () => _push(context, const AboutCreditsScreen()),
                     ),
                   ],
                 ),

@@ -83,6 +83,19 @@ class SettingsState {
   }
 }
 
+enum SettingsExportStatus { shared, cancelled, failed }
+
+/// Result of creating the portable backup file and handing it to a destination
+/// through the platform share sheet.
+class SettingsExportResult {
+  final SettingsExportStatus status;
+  final String? message;
+
+  const SettingsExportResult(this.status, {this.message});
+
+  bool get isShared => status == SettingsExportStatus.shared;
+}
+
 class SettingsController extends StateNotifier<SettingsState> {
   final Ref _ref;
 
@@ -174,7 +187,7 @@ class SettingsController extends StateNotifier<SettingsState> {
     state = state.copyWith(glassSize: size);
   }
 
-  Future<String?> performExport(String password) async {
+  Future<SettingsExportResult> performExport(String password) async {
     state = state.copyWith(loading: true);
     File? tempFile;
     try {
@@ -190,18 +203,35 @@ class SettingsController extends StateNotifier<SettingsState> {
       final tempDir = await getTemporaryDirectory();
       final dateStr = DateTime.now().toIso8601String().split('T').first;
       tempFile = File('${tempDir.path}/indifit_backup_$dateStr.indifit-backup');
-      await tempFile.writeAsString(envelopeJson);
+      await tempFile.writeAsString(envelopeJson, flush: true);
 
       final xFile = XFile(tempFile.path);
-      await Share.shareXFiles([
+      final shareResult = await Share.shareXFiles([
         xFile,
-      ], subject: 'IndiFit Health Backup (.indifit-backup)');
+      ], subject: 'IndiFit backup (.indifit-backup)');
 
-      return null;
+      return switch (shareResult.status) {
+        ShareResultStatus.success => const SettingsExportResult(
+          SettingsExportStatus.shared,
+        ),
+        ShareResultStatus.dismissed => const SettingsExportResult(
+          SettingsExportStatus.cancelled,
+          message: 'No backup was shared.',
+        ),
+        ShareResultStatus.unavailable => SettingsExportResult(
+          SettingsExportStatus.failed,
+          message: ProductFailurePresentation.fromCode(
+            'backup_export_failed',
+          ).message,
+        ),
+      };
     } catch (_) {
-      return ProductFailurePresentation.fromCode(
-        'backup_export_failed',
-      ).message;
+      return SettingsExportResult(
+        SettingsExportStatus.failed,
+        message: ProductFailurePresentation.fromCode(
+          'backup_export_failed',
+        ).message,
+      );
     } finally {
       await BackupFileAdapter.cleanupTempFile(tempFile);
       state = state.copyWith(loading: false);
@@ -242,30 +272,23 @@ class SettingsController extends StateNotifier<SettingsState> {
     }
   }
 
-  Future<void> exportCsvData() async {
-    final db = _ref.read(databaseProvider);
-    final foodLogs = await db.select(db.foodLogs).get();
-    final foodCsv = CsvExporter.exportFoodLogsToCsv(foodLogs);
+  Future<String?> exportCsvData() async {
+    try {
+      final db = _ref.read(databaseProvider);
+      final foodLogs = await db.select(db.foodLogs).get();
+      final foodCsv = CsvExporter.exportFoodLogsToCsv(foodLogs);
 
-    final sessions = await db.select(db.workoutSessions).get();
-    final sets = await db.select(db.workoutSets).get();
-    final workoutCsv = CsvExporter.exportWorkoutSessionsToCsv(sessions, sets);
+      final sessions = await db.select(db.workoutSessions).get();
+      final sets = await db.select(db.workoutSets).get();
+      final workoutCsv = CsvExporter.exportWorkoutSessionsToCsv(sessions, sets);
 
-    final fullCsv =
-        '=== FOOD LOGS ===\n$foodCsv\n\n=== WORKOUT SESSIONS ===\n$workoutCsv';
-    await Clipboard.setData(ClipboardData(text: fullCsv));
-  }
-
-  Future<void> deleteAllData() async {
-    final db = _ref.read(databaseProvider);
-    await db.delete(db.foodLogs).go();
-    await db.delete(db.foodItems).go();
-    await db.delete(db.workoutSets).go();
-    await db.delete(db.workoutSessions).go();
-    await db.delete(db.bodyMeasurements).go();
-    await db.delete(db.routineExercises).go();
-    await db.delete(db.routineDays).go();
-    await db.delete(db.workoutRoutines).go();
+      final fullCsv =
+          '=== FOOD LOGS ===\n$foodCsv\n\n=== WORKOUT SESSIONS ===\n$workoutCsv';
+      await Clipboard.setData(ClipboardData(text: fullCsv));
+      return null;
+    } catch (_) {
+      return ProductFailurePresentation.fromCode('csv_export_failed').message;
+    }
   }
 }
 

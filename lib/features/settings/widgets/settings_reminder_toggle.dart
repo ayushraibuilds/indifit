@@ -13,6 +13,7 @@ class SettingsReminderToggle extends StatelessWidget {
   final bool value;
   final ValueChanged<bool> onChanged;
   final Future<void> Function()? onRequestPermission;
+  final bool requestNotificationPermission;
 
   const SettingsReminderToggle({
     super.key,
@@ -23,6 +24,7 @@ class SettingsReminderToggle extends StatelessWidget {
     required this.value,
     required this.onChanged,
     this.onRequestPermission,
+    this.requestNotificationPermission = true,
   });
 
   @override
@@ -70,10 +72,12 @@ class SettingsReminderToggle extends StatelessWidget {
                 onChanged: (newVal) {
                   onChanged(newVal);
                   if (newVal) {
-                    final request =
-                        onRequestPermission?.call() ??
-                        NotificationService.requestPermissions();
-                    unawaited(request);
+                    final request = onRequestPermission?.call();
+                    if (request != null) {
+                      unawaited(request);
+                    } else if (requestNotificationPermission) {
+                      unawaited(NotificationService.requestPermissions());
+                    }
                   }
                 },
                 activeThumbColor: context.b05Colors.action,

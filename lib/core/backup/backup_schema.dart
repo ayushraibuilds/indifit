@@ -4136,13 +4136,17 @@ class BackupEnvelope {
     }
 
     final expectedChecksum = json['checksum'] as String?;
-    if (expectedChecksum != null) {
-      final actualChecksum = sha256.convert(utf8.encode(rawPayload)).toString();
-      if (actualChecksum != expectedChecksum) {
-        throw const FormatException(
-          'Backup file checksum mismatch: File is corrupt or truncated.',
-        );
-      }
+    if (expectedChecksum == null ||
+        !RegExp(r'^[0-9a-f]{64}$').hasMatch(expectedChecksum)) {
+      throw const FormatException(
+        'Backup file is missing a valid SHA-256 checksum.',
+      );
+    }
+    final actualChecksum = sha256.convert(utf8.encode(rawPayload)).toString();
+    if (actualChecksum != expectedChecksum) {
+      throw const FormatException(
+        'Backup file checksum mismatch: File is corrupt or truncated.',
+      );
     }
 
     final rawCounts = json['table_counts'] as Map<String, dynamic>? ?? {};
@@ -4158,7 +4162,7 @@ class BackupEnvelope {
             ).toIso8601String()
           : DateTime.now().toUtc().toIso8601String(),
       isEncrypted: json['is_encrypted'] as bool? ?? false,
-      checksum: expectedChecksum ?? '',
+      checksum: expectedChecksum,
       profileName: json['profile_name'] as String? ?? 'User Profile',
       tableCounts: counts,
       payload: rawPayload,

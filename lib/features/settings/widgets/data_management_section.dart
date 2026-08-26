@@ -7,6 +7,7 @@ import '../../../core/presentation/product_failure_presentation.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/services/auto_backup_service.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
+import '../../../core/widgets/b05_accessibility_primitives.dart';
 import '../../onboarding/onboarding_screen.dart';
 import '../settings_controller.dart';
 import 'backup_restore_card.dart';
@@ -16,148 +17,35 @@ import 'settings_reminder_toggle.dart';
 class DataManagementSection extends ConsumerWidget {
   const DataManagementSection({super.key});
 
-  /// Keeps the synchronous router gate in sync with persisted onboarding
-  /// state after restore/erase flows rewrite the preference.
   Future<void> _syncOnboardingGate(WidgetRef ref) async {
     final prefs = await SharedPreferences.getInstance();
     ref.read(onboardingCompletedProvider.notifier).state =
         prefs.getBool('onboarding_completed') ?? false;
   }
 
-  void _showExportDialog(BuildContext context, WidgetRef ref) {
+  Future<void> _showExportDialog(BuildContext context, WidgetRef ref) async {
     final passwordController = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (dialogCtx) => AlertDialog(
-        title: const Text('Export & Encrypt Backup'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Set a password to protect your backup file. If you leave this blank, the backup will be exported in plain text.',
-              style: TextStyle(
-                fontSize: 12,
-                color: dialogCtx.b05Colors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: passwordController,
-              obscureText: true,
-              decoration: const InputDecoration(
-                labelText: 'Backup Password (Optional)',
-                hintText: 'Leave empty for no encryption',
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogCtx),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () async {
-              final password = passwordController.text;
-              Navigator.pop(dialogCtx);
-              final error = await ref
-                  .read(settingsControllerProvider.notifier)
-                  .performExport(password);
-              if (error != null && context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(error),
-                    backgroundColor: context.b05Colors.danger.indicator,
-                  ),
-                );
-              }
-            },
-            child: const Text('Export Backup'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showRestoreDialog(BuildContext context, WidgetRef ref) {
-    final backupController = TextEditingController();
-    final passwordController = TextEditingController();
-    String? selectedFileContent;
-    String? selectedFileName;
-
-    showDialog(
-      context: context,
-      builder: (dialogCtx) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Restore a backup'),
+    try {
+      final password = await showDialog<String>(
+        context: context,
+        builder: (dialogCtx) => AlertDialog(
+          title: const Text('Create a backup'),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Choose an IndiFit backup file. You can also paste an older IndiFit export below.',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: dialogCtx.b05Colors.textSecondary,
-                  ),
+                  'Creates an IndiFit backup file and opens your device’s sharing options. It is kept temporarily while you choose where to save it. Add a password if you want the file protected.',
+                  style: B05Typography.body(dialogCtx),
                 ),
-                const SizedBox(height: 8),
-                OutlinedButton.icon(
-                  onPressed: () async {
-                    try {
-                      final selected = await BackupFileAdapter.pickBackupFile();
-                      if (selected != null && context.mounted) {
-                        setDialogState(() {
-                          selectedFileName = selected.name;
-                          selectedFileContent = selected.content;
-                        });
-                      }
-                    } catch (_) {
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: const Text(
-                              'The backup file could not be opened. Try again.',
-                            ),
-                            backgroundColor: context.b05Colors.danger.indicator,
-                          ),
-                        );
-                      }
-                    }
-                  },
-                  icon: const Icon(Icons.folder_open_rounded),
-                  label: const Text('Choose Backup File'),
-                ),
-                if (selectedFileName != null) ...[
-                  const SizedBox(height: 8),
-                  Builder(
-                    builder: (innerCtx) => Text(
-                      'Selected: $selectedFileName',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: innerCtx.b05Colors.success.indicator,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 12),
-                TextField(
-                  controller: backupController,
-                  maxLines: 4,
-                  decoration: const InputDecoration(
-                    hintText: 'Optional: paste an older IndiFit export…',
-                  ),
-                ),
-                const SizedBox(height: 16),
+                const SizedBox(height: B05Layout.space16),
                 TextField(
                   controller: passwordController,
                   obscureText: true,
                   decoration: const InputDecoration(
-                    labelText: 'Decryption Password (if encrypted)',
-                    hintText: 'Leave blank if unencrypted',
+                    labelText: 'Optional password',
+                    hintText: 'Leave blank for an unprotected file',
                   ),
                 ),
               ],
@@ -169,154 +57,262 @@ class DataManagementSection extends ConsumerWidget {
               child: const Text('Cancel'),
             ),
             FilledButton(
-              style: FilledButton.styleFrom(
-                backgroundColor: dialogCtx.b05Colors.danger.container,
-                foregroundColor: dialogCtx.b05Colors.danger.foreground,
-              ),
-              onPressed: () async {
-                final rawContent =
-                    selectedFileContent ?? backupController.text.trim();
-                final password = passwordController.text;
-                if (rawContent.isEmpty) return;
+              onPressed: () =>
+                  Navigator.pop(dialogCtx, passwordController.text),
+              child: const Text('Create backup'),
+            ),
+          ],
+        ),
+      );
 
-                BackupInspectionResult result;
-                try {
-                  result = await BackupFileAdapter.inspectBackupContent(
-                    rawContent,
-                    password: password.isEmpty ? null : password,
-                  );
-                } catch (_) {
-                  if (context.mounted) {
-                    await showDialog(
-                      context: context,
-                      builder: (ctx) => AlertDialog(
-                        title: const Text('Backup Inspection Failed'),
-                        content: Text(
-                          ProductFailurePresentation.fromCode(
-                            'backup_inspection_failed',
-                          ).message,
-                          style: const TextStyle(height: 1.4),
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(ctx),
-                            child: const Text('OK'),
-                          ),
-                        ],
+      if (password == null || !context.mounted) return;
+      final result = await ref
+          .read(settingsControllerProvider.notifier)
+          .performExport(password);
+      if (!context.mounted) return;
+
+      final message = switch (result.status) {
+        SettingsExportStatus.shared =>
+          'Sharing completed. Check the destination you chose before relying on this backup.',
+        SettingsExportStatus.cancelled =>
+          result.message ?? 'No backup was shared.',
+        SettingsExportStatus.failed =>
+          result.message ??
+              ProductFailurePresentation.fromCode(
+                'backup_export_failed',
+              ).message,
+      };
+      _showSnack(
+        context,
+        message,
+        error: result.status == SettingsExportStatus.failed,
+      );
+    } finally {
+      passwordController.dispose();
+    }
+  }
+
+  Future<void> _showRestoreDialog(BuildContext context, WidgetRef ref) async {
+    final pasteController = TextEditingController();
+    final passwordController = TextEditingController();
+    String? selectedFileContent;
+    String? selectedFileName;
+
+    try {
+      await showDialog<void>(
+        context: context,
+        builder: (dialogCtx) => StatefulBuilder(
+          builder: (dialogCtx, setDialogState) => AlertDialog(
+            title: const Text('Restore a backup'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Choose an IndiFit backup file, or restore an older IndiFit export. The backup will be checked before anything on this device changes.',
+                    style: B05Typography.body(dialogCtx),
+                  ),
+                  const SizedBox(height: B05Layout.space12),
+                  OutlinedButton.icon(
+                    onPressed: () async {
+                      try {
+                        final selected =
+                            await BackupFileAdapter.pickBackupFile();
+                        if (selected != null && dialogCtx.mounted) {
+                          setDialogState(() {
+                            selectedFileName = selected.name;
+                            selectedFileContent = selected.content;
+                          });
+                        }
+                      } catch (_) {
+                        if (context.mounted) {
+                          _showSnack(
+                            context,
+                            'The backup file could not be opened. Try again.',
+                            error: true,
+                          );
+                        }
+                      }
+                    },
+                    icon: const Icon(Icons.folder_open_rounded),
+                    label: const Text('Choose a backup file'),
+                  ),
+                  if (selectedFileName != null) ...[
+                    const SizedBox(height: B05Layout.space8),
+                    Text(
+                      'Selected: $selectedFileName',
+                      style: TextStyle(
+                        color: dialogCtx.b05Colors.success.foreground,
+                        fontWeight: FontWeight.w600,
                       ),
-                    );
+                    ),
+                  ],
+                  const SizedBox(height: B05Layout.space12),
+                  TextField(
+                    controller: pasteController,
+                    maxLines: 4,
+                    decoration: const InputDecoration(
+                      hintText: 'Paste an older IndiFit export if needed',
+                    ),
+                  ),
+                  const SizedBox(height: B05Layout.space12),
+                  TextField(
+                    controller: passwordController,
+                    obscureText: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Password, if protected',
+                      hintText: 'Leave blank if no password was used',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogCtx),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () async {
+                  final rawContent =
+                      selectedFileContent ?? pasteController.text.trim();
+                  if (rawContent.isEmpty) {
+                    if (context.mounted) {
+                      _showSnack(
+                        context,
+                        'Choose a backup file or paste an export first.',
+                        error: true,
+                      );
+                    }
+                    return;
                   }
-                  return;
-                }
 
-                if (context.mounted) {
-                  final confirm = await showDialog<bool>(
+                  BackupInspectionResult inspection;
+                  try {
+                    inspection = await BackupFileAdapter.inspectBackupContent(
+                      rawContent,
+                      password: passwordController.text.isEmpty
+                          ? null
+                          : passwordController.text,
+                    );
+                  } catch (_) {
+                    if (context.mounted) {
+                      await _showInspectionFailure(context);
+                    }
+                    return;
+                  }
+
+                  if (!context.mounted) return;
+                  final confirmed = await showDialog<bool>(
                     context: context,
-                    builder: (ctx) => AlertDialog(
-                      title: const Text('Restore Inspection Preview'),
-                      content: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'WARNING: Restoring will replace the data currently on this device.',
-                            style: TextStyle(
-                              color: ctx.b05Colors.danger.indicator,
-                              fontWeight: FontWeight.bold,
-                              height: 1.4,
+                    builder: (confirmCtx) => AlertDialog(
+                      title: const Text('Review before restoring'),
+                      content: SingleChildScrollView(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Restoring replaces the supported data currently on this device. Existing data is not merged.',
+                              style: TextStyle(
+                                color: confirmCtx.b05Colors.danger.foreground,
+                                fontWeight: FontWeight.w600,
+                                height: 1.4,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            'Profile: ${result.profileName}',
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          Text('Export Date: ${result.timestamp}'),
-                          Text(
-                            'Encrypted: ${result.isEncrypted ? "Yes (SHA256 Verified)" : "No"}',
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            'Items in backup:',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 11,
-                              color: ctx.b05Colors.textSecondary,
+                            const SizedBox(height: B05Layout.space12),
+                            Text('Profile: ${inspection.profileName}'),
+                            Text(
+                              'Created: ${_formatBackupTimestamp(confirmCtx, inspection.timestamp)}',
                             ),
-                          ),
-                          ...result.tableCounts.entries.map(
-                            (e) => Text(
-                              '• ${e.key}: ${e.value} items',
-                              style: const TextStyle(fontSize: 12),
+                            Text(
+                              'Password protected: ${inspection.isEncrypted ? 'Yes' : 'No'}',
                             ),
-                          ),
-                        ],
+                            ..._backupCountRows(confirmCtx, inspection),
+                          ],
+                        ),
                       ),
                       actions: [
                         TextButton(
-                          onPressed: () => Navigator.pop(ctx, false),
+                          onPressed: () => Navigator.pop(confirmCtx, false),
                           child: const Text('Cancel'),
                         ),
                         FilledButton(
                           style: FilledButton.styleFrom(
-                            backgroundColor: ctx.b05Colors.danger.container,
-                            foregroundColor: ctx.b05Colors.danger.foreground,
+                            backgroundColor:
+                                confirmCtx.b05Colors.danger.container,
+                            foregroundColor:
+                                confirmCtx.b05Colors.danger.foreground,
                           ),
-                          onPressed: () => Navigator.pop(ctx, true),
+                          onPressed: () => Navigator.pop(confirmCtx, true),
                           child: const Text('Restore backup'),
                         ),
                       ],
                     ),
                   );
 
-                  if (confirm == true && context.mounted) {
-                    Navigator.pop(dialogCtx);
-                    try {
-                      await ref
-                          .read(settingsControllerProvider.notifier)
-                          .performRestore(result.payload);
-                      await _syncOnboardingGate(ref);
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Backup restored successfully.'),
-                          ),
-                        );
-                      }
-                    } catch (_) {
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: const Text(
-                              'Restore failed. Your existing data was not changed.',
-                            ),
-                            backgroundColor: context.b05Colors.danger.indicator,
-                          ),
-                        );
-                      }
+                  if (confirmed != true || !context.mounted) return;
+                  Navigator.pop(dialogCtx);
+                  try {
+                    await ref
+                        .read(settingsControllerProvider.notifier)
+                        .performRestore(inspection.payload);
+                    await _syncOnboardingGate(ref);
+                    if (context.mounted) {
+                      _showSnack(context, 'Backup restored.');
+                    }
+                  } catch (_) {
+                    if (context.mounted) {
+                      _showSnack(
+                        context,
+                        'The backup could not be restored. Your existing data was not changed.',
+                        error: true,
+                      );
                     }
                   }
-                }
-              },
-              child: const Text('Inspect Backup'),
-            ),
-          ],
+                },
+                child: const Text('Inspect backup'),
+              ),
+            ],
+          ),
         ),
+      );
+    } finally {
+      pasteController.dispose();
+      passwordController.dispose();
+    }
+  }
+
+  Future<void> _showInspectionFailure(BuildContext context) {
+    return showDialog<void>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        title: const Text('Backup unavailable'),
+        content: Text(
+          ProductFailurePresentation.fromCode(
+            'backup_inspection_failed',
+          ).message,
+          style: B05Typography.body(dialogCtx),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: const Text('OK'),
+          ),
+        ],
       ),
     );
   }
 
-  void _restoreFromAutoBackup(BuildContext context, WidgetRef ref) async {
+  Future<void> _restoreFromAutoBackup(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
     final rawSnapshot = await AutoBackupService.getLatestSnapshotContent();
+    if (!context.mounted) return;
     if (rawSnapshot == null) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('No recent automatic backup snapshot found.'),
-            backgroundColor: context.b05Colors.danger.indicator,
-          ),
-        );
-      }
+      _showSnack(context, 'No recent local snapshot is available.');
       return;
     }
 
@@ -326,209 +322,222 @@ class DataManagementSection extends ConsumerWidget {
       );
       if (!context.mounted) return;
 
-      final confirm = await showDialog<bool>(
+      final confirmed = await showDialog<bool>(
         context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('Restore Auto-Backup Snapshot'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Restore from your most recent automatic background snapshot?',
-                style: TextStyle(height: 1.4),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Profile: ${inspection.profileName}',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              Text('Snapshot Date: ${inspection.timestamp}'),
-              const SizedBox(height: 8),
-              ...inspection.tableCounts.entries.map(
-                (e) => Text(
-                  '• ${e.key}: ${e.value} items',
-                  style: const TextStyle(fontSize: 12),
+        builder: (dialogCtx) => AlertDialog(
+          title: const Text('Restore recent snapshot'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'This replaces the supported data currently on this device with the latest local snapshot.',
+                  style: B05Typography.body(dialogCtx),
                 ),
-              ),
-            ],
+                const SizedBox(height: B05Layout.space12),
+                Text('Profile: ${inspection.profileName}'),
+                Text(
+                  'Created: ${_formatBackupTimestamp(dialogCtx, inspection.timestamp)}',
+                ),
+                ..._backupCountRows(dialogCtx, inspection),
+              ],
+            ),
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
+              onPressed: () => Navigator.pop(dialogCtx, false),
               child: const Text('Cancel'),
             ),
             FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Restore Snapshot'),
+              style: FilledButton.styleFrom(
+                backgroundColor: dialogCtx.b05Colors.danger.container,
+                foregroundColor: dialogCtx.b05Colors.danger.foreground,
+              ),
+              onPressed: () => Navigator.pop(dialogCtx, true),
+              child: const Text('Restore snapshot'),
             ),
           ],
         ),
       );
 
-      if (confirm == true && context.mounted) {
-        await ref
-            .read(settingsControllerProvider.notifier)
-            .performRestore(inspection.payload);
-        await _syncOnboardingGate(ref);
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Auto-backup restored successfully!')),
-          );
-        }
+      if (confirmed != true || !context.mounted) return;
+      await ref
+          .read(settingsControllerProvider.notifier)
+          .performRestore(inspection.payload);
+      await _syncOnboardingGate(ref);
+      if (context.mounted) {
+        _showSnack(context, 'Local snapshot restored.');
       }
     } catch (_) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Automatic restore failed. Try again.'),
-            backgroundColor: context.b05Colors.danger.indicator,
-          ),
+        _showSnack(
+          context,
+          'The local snapshot could not be restored. Your existing data was not changed.',
+          error: true,
         );
       }
     }
   }
 
-  void _confirmDeleteAllData(BuildContext context, WidgetRef ref) async {
-    final confirm = await showDialog<bool>(
+  Future<void> _resetOnboarding(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete All Local Data?'),
+      builder: (dialogCtx) => AlertDialog(
+        title: const Text('Start setup again?'),
         content: const Text(
-          'This action is irreversible. All your logged meals, workout sessions, custom foods, and body measurements will be permanently wiped from this device.',
+          'This only resets setup so you can review your goals and preferences. It does not delete logged data or backups.',
           style: TextStyle(height: 1.4),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () => Navigator.pop(dialogCtx, false),
             child: const Text('Cancel'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: context.b05Colors.danger.container,
-              foregroundColor: context.b05Colors.danger.foreground,
-            ),
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Wipe Data'),
+            onPressed: () => Navigator.pop(dialogCtx, true),
+            child: const Text('Start setup again'),
           ),
         ],
       ),
     );
 
-    if (confirm == true && context.mounted) {
-      await ref.read(settingsControllerProvider.notifier).deleteAllData();
-      await _syncOnboardingGate(ref);
-      if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('All local data wiped.')));
-      }
-    }
-  }
-
-  void _resetOnboarding(BuildContext context, WidgetRef ref) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Reset Onboarding Wizard?'),
-        content: const Text(
-          'This will reset your onboarding completion flag and return you to the setup wizard to re-enter your goals.',
-          style: TextStyle(height: 1.4),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Reset'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm == true && context.mounted) {
+    if (confirmed != true || !context.mounted) return;
+    try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('onboarding_completed', false);
       ref.read(onboardingCompletedProvider.notifier).state = false;
-
+    } catch (_) {
       if (context.mounted) {
-        await Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => const OnboardingScreen()),
-          (route) => false,
+        _showSnack(
+          context,
+          'Setup could not be reset. Your data was not changed.',
+          error: true,
         );
       }
+      return;
+    }
+
+    if (context.mounted) {
+      await Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+        (route) => false,
+      );
     }
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(settingsControllerProvider);
-    final controller = ref.read(settingsControllerProvider.notifier);
+    final isBusy = state.loading;
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: context.b05Colors.selected,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(
-                Icons.storage_rounded,
-                color: context.b05Colors.success.indicator,
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Data & Privacy Management',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Manage local backups, exports, and offline settings',
-                    style: TextStyle(
-                      color: context.b05Colors.textSecondary,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+        Text(
+          'Review what stays on this device, make a copy when you need one, and choose which optional features can connect elsewhere.',
+          style: B05Typography.body(context),
         ),
-        const SizedBox(height: 16),
-
-        // Offline Mode Toggle
+        const SizedBox(height: B05Layout.space24),
+        _sectionHeading(context, 'Backup'),
+        B05Surface(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Backups include supported IndiFit records and settings. Photos and other device files are not included.',
+                style: B05Typography.body(context),
+              ),
+              const SizedBox(height: B05Layout.space16),
+              BackupRestoreCard(
+                onExport: isBusy ? null : () => _showExportDialog(context, ref),
+                onRestore: isBusy
+                    ? null
+                    : () => _showRestoreDialog(context, ref),
+              ),
+              const SizedBox(height: B05Layout.space16),
+              Divider(color: context.b05Colors.border),
+              const SizedBox(height: B05Layout.space12),
+              Text('Automatic backup', style: B05Typography.title(context)),
+              const SizedBox(height: B05Layout.space4),
+              Text(
+                'A local snapshot is created on this device when the app starts. Up to three snapshots are kept. A snapshot may be unavailable if creation did not finish.',
+                style: B05Typography.body(context),
+              ),
+              const SizedBox(height: B05Layout.space8),
+              B05ActionButton(
+                emphasis: B05ActionEmphasis.secondary,
+                icon: Icons.history_rounded,
+                label: 'Restore recent snapshot',
+                hint: 'Inspect and restore the latest local snapshot.',
+                onPressed: isBusy
+                    ? null
+                    : () => _restoreFromAutoBackup(context, ref),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: B05Layout.space24),
+        _sectionHeading(context, 'Export'),
+        B05Surface(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Copy a summary of logged food and workouts as CSV. This is a summary, not a full backup.',
+                style: B05Typography.body(context),
+              ),
+              const SizedBox(height: B05Layout.space12),
+              B05ActionButton(
+                emphasis: B05ActionEmphasis.secondary,
+                icon: Icons.content_copy_rounded,
+                label: 'Copy food & workout CSV',
+                hint: 'Copy logged food and workout rows to the clipboard.',
+                onPressed: isBusy
+                    ? null
+                    : () async {
+                        final error = await ref
+                            .read(settingsControllerProvider.notifier)
+                            .exportCsvData();
+                        if (!context.mounted) return;
+                        _showSnack(
+                          context,
+                          error ?? 'Food and workout CSV copied.',
+                          error: error != null,
+                        );
+                      },
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: B05Layout.space24),
+        _sectionHeading(context, 'Privacy'),
         SettingsReminderToggle(
           icon: Icons.cloud_off_rounded,
           iconColor: context.b05Colors.info.indicator,
-          title: 'No Backend Mode',
-          subtitle: 'Disable all cloud features and backups',
-          value: state.offlineOnly,
-          onChanged: (val) => controller.toggleOfflineOnly(val),
-        ),
-        const SizedBox(height: 12),
-
-        // Crash Reporting Toggle
-        SettingsReminderToggle(
-          icon: Icons.bug_report_rounded,
-          iconColor: context.b05Colors.warning.indicator,
-          title: 'Anonymous Crash Reporting',
+          title: 'Offline mode',
           subtitle:
-              'Send sanitized telemetry to help fix crashes. Zero food/body data is ever included.',
-          value: state.crashReportingEnabled,
-          onChanged: (val) => controller.toggleCrashReporting(val),
+              'Block app-initiated online requests, photo uploads, online food search and crash reporting.',
+          value: state.offlineOnly,
+          requestNotificationPermission: false,
+          onChanged: (value) => ref
+              .read(settingsControllerProvider.notifier)
+              .toggleOfflineOnly(value),
         ),
+        const SizedBox(height: B05Layout.space12),
+        SettingsReminderToggle(
+          icon: Icons.bug_report_outlined,
+          iconColor: context.b05Colors.warning.indicator,
+          title: 'Share crash diagnostics',
+          subtitle: 'Optional and off by default. Offline mode turns this off.',
+          value: state.crashReportingEnabled,
+          requestNotificationPermission: false,
+          onChanged: (value) => ref
+              .read(settingsControllerProvider.notifier)
+              .toggleCrashReporting(value),
+        ),
+        // Compatibility action row retained while the grouped backup section
+        // above remains the primary presentation.
         const SizedBox(height: 12),
 
         // Export / Restore Database Card
@@ -559,94 +568,102 @@ class DataManagementSection extends ConsumerWidget {
             elevation: 0,
           ),
         ),
-        const SizedBox(height: 8),
-
-        // Export CSV button
-        ElevatedButton.icon(
-          onPressed: () async {
-            await controller.exportCsvData();
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text(
-                    'Food & Workout data copied as CSV to clipboard!',
-                  ),
-                ),
-              );
-            }
-          },
-          icon: Icon(
-            Icons.table_chart_rounded,
-            color: context.b05Colors.action,
-          ),
-          label: const Text('Export Food & Workout Data (CSV)'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: context.b05Colors.selected,
-            foregroundColor: context.b05Colors.action,
-            minimumSize: const Size.fromHeight(48),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(
-                color: context.b05Colors.action.withValues(alpha: 0.2),
-              ),
-            ),
-            elevation: 0,
-          ),
+        const SizedBox(height: B05Layout.space12),
+        PrivacyDisclosureCard(
+          offlineOnly: state.offlineOnly,
+          crashReportingEnabled: state.crashReportingEnabled,
         ),
-        const SizedBox(height: 16),
-
-        const PrivacyDisclosureCard(),
-        const SizedBox(height: 16),
-
-        // Reset Onboarding Button
-        ElevatedButton.icon(
-          onPressed: () => _resetOnboarding(context, ref),
-          icon: Icon(
-            Icons.refresh_rounded,
-            color: context.b05Colors.warning.indicator,
-          ),
-          label: const Text('Reset Onboarding Wizard'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: context.b05Colors.warning.container,
-            foregroundColor: context.b05Colors.warning.foreground,
-            minimumSize: const Size.fromHeight(48),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(
-                color: context.b05Colors.warning.indicator.withValues(
-                  alpha: 0.2,
-                ),
+        const SizedBox(height: B05Layout.space24),
+        _sectionHeading(context, 'Danger'),
+        B05Surface(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Review setup again without removing logged data or backups.',
+                style: B05Typography.body(context),
               ),
-            ),
-            elevation: 0,
-          ),
-        ),
-        const SizedBox(height: 12),
-
-        // Delete All Data Button
-        ElevatedButton.icon(
-          onPressed: () => _confirmDeleteAllData(context, ref),
-          icon: Icon(
-            Icons.delete_forever_rounded,
-            color: context.b05Colors.danger.indicator,
-          ),
-          label: const Text('Wipe All Local Data'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: context.b05Colors.danger.container,
-            foregroundColor: context.b05Colors.danger.foreground,
-            minimumSize: const Size.fromHeight(48),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(
-                color: context.b05Colors.danger.indicator.withValues(
-                  alpha: 0.2,
-                ),
+              const SizedBox(height: B05Layout.space12),
+              B05ActionButton(
+                emphasis: B05ActionEmphasis.secondary,
+                icon: Icons.refresh_rounded,
+                label: 'Start setup again',
+                hint: 'Confirm before reopening setup.',
+                onPressed: isBusy ? null : () => _resetOnboarding(context, ref),
               ),
-            ),
-            elevation: 0,
+            ],
           ),
         ),
       ],
     );
+  }
+
+  static Widget _sectionHeading(BuildContext context, String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: B05Layout.space8),
+      child: Text(
+        title,
+        style: Theme.of(context).textTheme.titleMedium!.copyWith(
+          color: context.b05Colors.textPrimary,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+
+  static void _showSnack(
+    BuildContext context,
+    String message, {
+    bool error = false,
+  }) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: error ? context.b05Colors.danger.indicator : null,
+      ),
+    );
+  }
+
+  static String _formatBackupTimestamp(
+    BuildContext context,
+    String rawTimestamp,
+  ) {
+    final parsed = DateTime.tryParse(rawTimestamp)?.toLocal();
+    if (parsed == null) return 'Date unavailable';
+    final localizations = MaterialLocalizations.of(context);
+    final date = localizations.formatMediumDate(parsed);
+    final time = localizations.formatTimeOfDay(TimeOfDay.fromDateTime(parsed));
+    return '$date, $time';
+  }
+
+  static List<Widget> _backupCountRows(
+    BuildContext context,
+    BackupInspectionResult inspection,
+  ) {
+    const labels = <String, String>{
+      'food_logs': 'Logged food',
+      'workout_sessions': 'Workouts',
+      'workout_sets': 'Workout sets',
+      'body_measurements': 'Body measurements',
+      'daily_hydrations': 'Water entries',
+      'achievement_unlocks': 'Achievements',
+      'dashboard_module_preferences': 'Dashboard preferences',
+      'education_content_progress': 'Learning progress',
+      'media_pack_preferences': 'Media preferences',
+      'workout_playlist_preferences': 'Music preference',
+    };
+    final seen = <String>{};
+    final rows = <Widget>[];
+    for (final entry in inspection.tableCounts.entries) {
+      final label = labels[entry.key];
+      if (label == null || !seen.add(label)) continue;
+      rows.add(Text('$label: ${entry.value}'));
+    }
+    if (rows.isEmpty) return const [];
+    return [
+      const SizedBox(height: B05Layout.space12),
+      Text('Included records', style: B05Typography.label(context)),
+      ...rows,
+    ];
   }
 }

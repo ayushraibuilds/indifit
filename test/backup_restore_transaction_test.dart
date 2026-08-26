@@ -133,6 +133,40 @@ void main() {
     );
 
     test(
+      'Restore inspection derives preview facts from the validated payload',
+      () async {
+        final fixture = BackupV5Fixtures.validBackupV5Object();
+        final encoded = BackupFileAdapter.exportToEnvelopeJson(data: fixture);
+        final envelope = jsonDecode(encoded) as Map<String, dynamic>;
+        envelope['profile_name'] = 'Tampered profile label';
+        envelope['timestamp'] = '2099-01-01T00:00:00.000Z';
+        envelope['schema_version'] = 999;
+        envelope['table_counts'] = {'food_logs': 999};
+
+        final inspection = await BackupFileAdapter.inspectBackupContent(
+          jsonEncode(envelope),
+        );
+
+        expect(inspection.profileName, 'User Profile');
+        expect(inspection.timestamp, fixture.timestamp);
+        expect(inspection.schemaVersion, fixture.schemaVersion);
+        expect(inspection.tableCounts['food_logs'], fixture.foodLogs.length);
+      },
+    );
+
+    test('Backup envelopes without a checksum fail closed', () async {
+      final fixture = BackupV5Fixtures.validBackupV5Object();
+      final encoded = BackupFileAdapter.exportToEnvelopeJson(data: fixture);
+      final envelope = jsonDecode(encoded) as Map<String, dynamic>
+        ..remove('checksum');
+
+      await expectLater(
+        BackupFileAdapter.inspectBackupContent(jsonEncode(envelope)),
+        throwsA(isA<FormatException>()),
+      );
+    });
+
+    test(
       'Unsupported backup version fixture throws FormatException on fromJson',
       () {
         final unsupportedMap = BackupV5Fixtures.unsupportedVersionBackupMap();
