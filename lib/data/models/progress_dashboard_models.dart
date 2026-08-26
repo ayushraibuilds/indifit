@@ -1,4 +1,5 @@
 import 'b02_muscle_volume_models.dart';
+import 'b04_goal_models.dart';
 
 /// The presentation-facing facts used by the Progress tab.
 ///
@@ -175,6 +176,7 @@ class ProgressNutritionSummary {
     this.averageProteinG,
     this.targetCaloriesKcal,
     this.targetProteinG,
+    this.targetGoalType,
     required this.hasTarget,
   });
 
@@ -187,6 +189,11 @@ class ProgressNutritionSummary {
   final double? averageProteinG;
   final double? targetCaloriesKcal;
   final double? targetProteinG;
+
+  /// The B04 nutrition goal type effective for the current Progress date.
+  /// This is a read-only projection of the date-scoped target authority; it
+  /// is not a body-weight goal or a second Progress goal authority.
+  final NutritionGoalType? targetGoalType;
   final bool hasTarget;
 
   bool get hasAnyLoggedDays => loggedDaysCount > 0;

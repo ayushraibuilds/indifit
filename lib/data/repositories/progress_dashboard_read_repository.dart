@@ -6,6 +6,7 @@ import '../../core/services/local_schedule_date_service.dart';
 import '../database/app_database.dart';
 import '../models/b02_execution_models.dart';
 import '../models/b02_muscle_volume_models.dart';
+import '../models/b04_goal_models.dart';
 import '../models/progress_dashboard_models.dart';
 import 'b02_muscle_volume_repository.dart';
 import 'nutrition_goal_repository.dart';
@@ -366,6 +367,7 @@ class ProgressDashboardReadRepository {
     var proteinEvidenceDays = 0;
     double? todayTargetCalories;
     double? todayTargetProtein;
+    NutritionGoalType? todayTargetGoalType;
 
     final dates = [
       for (var i = 0; i < 7; i++) _dates.addCalendarDays(monday, timezoneId, i),
@@ -410,6 +412,7 @@ class ProgressDashboardReadRepository {
       if (isToday) {
         todayTargetCalories = targetCalories;
         todayTargetProtein = targetProtein;
+        todayTargetGoalType = targets?.goalVersion?.goalType;
       }
 
       final daily = dailyModels[date];
@@ -476,6 +479,7 @@ class ProgressDashboardReadRepository {
           : null,
       targetCaloriesKcal: todayTargetCalories,
       targetProteinG: todayTargetProtein,
+      targetGoalType: todayTargetGoalType,
       hasTarget: daySummaries.any(
         (day) => day.calorieTargetKcal != null || day.proteinTargetG != null,
       ),
