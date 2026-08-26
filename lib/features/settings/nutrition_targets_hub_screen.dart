@@ -9,13 +9,14 @@ import '../../core/widgets/consumer_task_primitives.dart';
 import '../../data/models/b04_goal_models.dart';
 import '../../data/repositories/nutrition_target_authority.dart';
 import '../coaching/b04_production_surface_controller.dart';
+import '../coaching/b04_production_surface_widgets.dart';
 
-/// Consumer destination for the date-scoped nutrition targets already owned by
-/// B04/R08A.1.
+/// Single consumer destination for the relationship between the canonical
+/// goal, date-scoped nutrition targets, and optional coaching.
 ///
-/// This surface is intentionally separate from adaptive-coaching controls.
-/// It presents the exact target resolved for a selected civil date and sends
-/// edits through [NutritionGoalRepository]'s existing versioned commands.
+/// The sections are presented together, but each command still goes through
+/// its owning B04 authority: target edits use [NutritionGoalRepository],
+/// while coaching consent and eligibility use their append-only repository.
 class NutritionTargetsHubScreen extends ConsumerStatefulWidget {
   const NutritionTargetsHubScreen({super.key});
 
@@ -30,6 +31,7 @@ class _NutritionTargetsHubScreenState
   late final TextEditingController _proteinController;
   late final TextEditingController _carbsController;
   late final TextEditingController _fatController;
+  late final TextEditingController _dateOfBirthController;
 
   String? _selectedDate;
   String? _seededFormKey;
@@ -37,6 +39,9 @@ class _NutritionTargetsHubScreenState
   String? _formError;
   String? _saveMessage;
   bool _saving = false;
+  bool _savingEligibility = false;
+  bool _savingCoachingConsent = false;
+  bool _coachingExpanded = false;
 
   @override
   void initState() {
@@ -45,6 +50,7 @@ class _NutritionTargetsHubScreenState
     _proteinController = TextEditingController();
     _carbsController = TextEditingController();
     _fatController = TextEditingController();
+    _dateOfBirthController = TextEditingController();
   }
 
   @override
@@ -53,6 +59,7 @@ class _NutritionTargetsHubScreenState
     _proteinController.dispose();
     _carbsController.dispose();
     _fatController.dispose();
+    _dateOfBirthController.dispose();
     super.dispose();
   }
 
@@ -158,14 +165,248 @@ class _NutritionTargetsHubScreenState
             ),
           const SizedBox(height: B05Layout.space16),
           _buildHistory(context, user, history),
+          const SizedBox(height: B05Layout.space16),
+          _buildOptionalCoaching(context),
         ],
       ),
     );
   }
 
+  Widget _buildOptionalCoaching(BuildContext context) {
+    return B05Surface(
+      padding: EdgeInsets.zero,
+      child: ExpansionTile(
+        title: const Text('Optional coaching'),
+        subtitle: const Text(
+          'Off by default; goals and targets work without it',
+        ),
+        onExpansionChanged: (expanded) {
+          if (_coachingExpanded == expanded) return;
+          setState(() => _coachingExpanded = expanded);
+        },
+        children: _coachingExpanded
+            ? [
+                _buildOptionalCoachingBody(
+                  context,
+                  ref.watch(b04GoalSettingsControllerProvider),
+                ),
+              ]
+            : const [],
+      ),
+    );
+  }
+
+  Widget _buildOptionalCoachingBody(
+    BuildContext context,
+    B04GoalSettingsState state,
+  ) {
+    if (state.status == B04GoalSettingsStatus.idle || state.isLoading) {
+      return const Padding(
+        padding: EdgeInsets.all(B05Layout.space16),
+        child: ConsumerStatusRow(
+          label: 'Loading optional coaching',
+          detail:
+              'Checking consent and availability. Your targets remain available.',
+          loading: true,
+        ),
+      );
+    }
+    if (state.status == B04GoalSettingsStatus.failure) {
+      return Padding(
+        padding: const EdgeInsets.all(B05Layout.space16),
+        child: B04ReadStatusCard(
+          title: 'Optional coaching unavailable',
+          message:
+              'Your goal and nutrition targets are still available. Coaching settings could not be loaded.',
+          action: TextButton(
+            onPressed: () =>
+                ref.read(b04GoalSettingsControllerProvider.notifier).load(),
+            child: const Text('Retry'),
+          ),
+        ),
+      );
+    }
+
+    final availability = state.availability;
+    final enabled = availability?.preferences.adaptiveCoachingEnabled ?? false;
+    final statusMessage = availability == null
+        ? 'Coaching suggestions are unavailable until the required settings are checked.'
+        : availability.available
+        ? 'Coaching suggestions are available when you choose to use them.'
+        : b04ProductionStateCopy(availability.reasonCode);
+    final eligibilityDetail = availability?.eligibility == null
+        ? 'Add age details only if you want to check whether coaching is available.'
+        : 'Availability uses the age details you chose to save for coaching.';
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        B05Layout.space16,
+        0,
+        B05Layout.space16,
+        B05Layout.space16,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Coaching is separate from your goal and targets. Suggestions never change a target without your explicit action.',
+            style: B05Typography.body(context),
+          ),
+          const SizedBox(height: B05Layout.space12),
+          SwitchListTile.adaptive(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Adaptive coaching'),
+            subtitle: Text(enabled ? 'Enabled' : 'Disabled'),
+            value: enabled,
+            onChanged: _savingCoachingConsent
+                ? null
+                : (_) => enabled
+                      ? _setCoachingConsent(CoachingConsentAction.disable)
+                      : _enableCoaching(),
+          ),
+          if (enabled)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton(
+                onPressed: _savingCoachingConsent
+                    ? null
+                    : () => _setCoachingConsent(CoachingConsentAction.withdraw),
+                child: const Text('Withdraw coaching consent'),
+              ),
+            ),
+          const SizedBox(height: B05Layout.space8),
+          Text('Age details', style: B05Typography.title(context)),
+          const SizedBox(height: B05Layout.space4),
+          Text(
+            'IndiFit never guesses age from activity or food logs. This date is used only to check whether coaching is available.',
+            style: B05Typography.body(context),
+          ),
+          const SizedBox(height: B05Layout.space12),
+          TextField(
+            controller: _dateOfBirthController,
+            keyboardType: TextInputType.datetime,
+            enabled: !_savingEligibility,
+            decoration: const InputDecoration(
+              labelText: 'Date of birth',
+              hintText: 'YYYY-MM-DD',
+            ),
+          ),
+          const SizedBox(height: B05Layout.space8),
+          B05ActionButton(
+            label: _savingEligibility ? 'Saving…' : 'Save age details',
+            icon: Icons.verified_outlined,
+            emphasis: B05ActionEmphasis.secondary,
+            onPressed: _savingEligibility ? null : _saveEligibility,
+          ),
+          const SizedBox(height: B05Layout.space12),
+          B04ReadStatusCard(
+            title: 'Coaching availability',
+            message: statusMessage,
+            detail: eligibilityDetail,
+          ),
+          if (state.consentHistory.isNotEmpty) ...[
+            const SizedBox(height: B05Layout.space12),
+            _buildCoachingHistory(state),
+          ],
+          const SizedBox(height: B05Layout.space12),
+          Semantics(
+            container: true,
+            label: 'Coaching safety note',
+            child: Text(
+              'General wellness guidance only—not medical advice. Suggestions do not diagnose, prescribe treatment, or replace qualified professional care.',
+              style: B05Typography.caption(context),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCoachingHistory(B04GoalSettingsState state) => B05Surface(
+    padding: EdgeInsets.zero,
+    tone: B05SurfaceTone.inset,
+    child: ExpansionTile(
+      title: const Text('Coaching history'),
+      subtitle: const Text('Consent changes only'),
+      children: [
+        for (final event in state.consentHistory)
+          ListTile(
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: B05Layout.space16,
+            ),
+            leading: const Icon(Icons.verified_user_outlined),
+            title: Text('Coaching ${_consentActionLabel(event.action)}'),
+            subtitle: Text(ConsumerDateLabel.dateTime(event.timestampUtc)),
+          ),
+      ],
+    ),
+  );
+
+  Future<void> _enableCoaching() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Review adaptive coaching'),
+        content: const SingleChildScrollView(
+          child: Text(
+            'Adaptive coaching uses your goals and recent activity to suggest changes. Suggestions are never applied automatically—you choose whether to accept each one. You can turn coaching off at any time. This is general wellness guidance, not medical advice.',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Enable adaptive coaching'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    await _setCoachingConsent(CoachingConsentAction.enable);
+  }
+
+  Future<void> _setCoachingConsent(CoachingConsentAction action) async {
+    setState(() => _savingCoachingConsent = true);
+    try {
+      await ref
+          .read(b04GoalSettingsControllerProvider.notifier)
+          .setAdaptiveConsent(action);
+    } catch (_) {
+      if (mounted) {
+        _showMessage('That coaching change could not be saved. Try again.');
+      }
+    } finally {
+      if (mounted) setState(() => _savingCoachingConsent = false);
+    }
+  }
+
+  Future<void> _saveEligibility() async {
+    setState(() => _savingEligibility = true);
+    try {
+      await ref
+          .read(b04GoalSettingsControllerProvider.notifier)
+          .recordEligibility(dateOfBirthLocalDate: _dateOfBirthController.text);
+    } catch (_) {
+      if (mounted) {
+        _showMessage('Those age details could not be saved. Try again.');
+      }
+    } finally {
+      if (mounted) setState(() => _savingEligibility = false);
+    }
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
   Widget _shell(BuildContext context, Widget body) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Nutrition targets')),
+      appBar: AppBar(title: const Text('Goal & targets')),
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
@@ -289,7 +530,7 @@ class _NutritionTargetsHubScreenState
             : 'No target saved for this date',
         message: read.localDate == user.localDate
             ? 'Add the values you want to use for today. Earlier dates stay unchanged.'
-            : 'This date has no saved target version. Nothing is filled in from another day.',
+            : 'This date has no saved target. Nothing is filled in from another day.',
       );
     }
 
@@ -315,16 +556,18 @@ class _NutritionTargetsHubScreenState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Text('Goal', style: B05Typography.title(context)),
+            const SizedBox(height: B05Layout.space4),
+            Text(
+              '${_goalTypeLabel(goal.goalType)} · ${_goalSourceLabel(goal)}',
+              style: B05Typography.body(context),
+            ),
+            const SizedBox(height: B05Layout.space16),
             Text(
               read.localDate == user.localDate
                   ? 'Today’s target'
                   : 'Target for ${ConsumerDateLabel.day(read.localDate, today: _civilDate(user.localDate))}',
               style: B05Typography.title(context),
-            ),
-            const SizedBox(height: B05Layout.space4),
-            Text(
-              '${_goalTypeLabel(goal.goalType)} · ${_goalSourceLabel(goal)}',
-              style: B05Typography.body(context),
             ),
             const SizedBox(height: B05Layout.space16),
             if (values.isEmpty)
@@ -400,7 +643,7 @@ class _NutritionTargetsHubScreenState
           ),
           const SizedBox(height: B05Layout.space4),
           Text(
-            'Changes are saved as a new version effective today. Earlier dates keep their saved target.',
+            'Changes take effect today. Earlier dates keep their saved target.',
             style: B05Typography.body(context),
           ),
           const SizedBox(height: B05Layout.space16),
@@ -527,8 +770,8 @@ class _NutritionTargetsHubScreenState
           Expanded(
             child: Text(
               isPast
-                  ? 'Earlier target versions are read-only here. Change today’s target to create a new version; this date remains unchanged.'
-                  : 'Future target dates are read-only here. Change today’s target to create a new version; future dates stay unchanged.',
+                  ? 'Earlier targets are read-only here. Changes made today do not alter this date.'
+                  : 'Future dates are read-only here. Today’s saved target continues to apply unless another target takes effect later.',
               style: B05Typography.body(context),
             ),
           ),
@@ -546,7 +789,7 @@ class _NutritionTargetsHubScreenState
       padding: EdgeInsets.zero,
       child: ExpansionTile(
         initiallyExpanded: false,
-        title: const Text('Past target versions'),
+        title: const Text('Target history'),
         subtitle: const Text('Review when each saved target took effect'),
         children: [
           history.when(
@@ -577,22 +820,25 @@ class _NutritionTargetsHubScreenState
                     ref.invalidate(nutritionGoalHistoryProvider(user.userId)),
               ),
             ),
-            data: (versions) => versions.isEmpty
-                ? const Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      B05Layout.space16,
-                      0,
-                      B05Layout.space16,
-                      B05Layout.space16,
-                    ),
-                    child: Text('No saved target versions yet.'),
-                  )
-                : Column(
-                    children: [
-                      for (final version in versions.reversed)
-                        _historyRow(context, user, version),
-                    ],
-                  ),
+            data: (versions) {
+              final meaningful = _meaningfulTargetHistory(versions);
+              return meaningful.isEmpty
+                  ? const Padding(
+                      padding: EdgeInsets.fromLTRB(
+                        B05Layout.space16,
+                        0,
+                        B05Layout.space16,
+                        B05Layout.space16,
+                      ),
+                      child: Text('No earlier targets yet.'),
+                    )
+                  : Column(
+                      children: [
+                        for (final version in meaningful.reversed)
+                          _historyRow(context, user, version),
+                      ],
+                    );
+            },
           ),
         ],
       ),
@@ -804,26 +1050,56 @@ class _NutritionTargetsHubScreenState
   static String _goalSourceLabel(NutritionGoalVersionReadModel value) =>
       switch (value.source) {
         NutritionGoalSource.userSet => 'Set by you',
-        NutritionGoalSource.override => 'Manual override',
+        NutritionGoalSource.override => 'Adjusted by you',
         NutritionGoalSource.calculated => 'Calculated target',
         NutritionGoalSource.adaptive => 'Accepted coaching target',
-        NutritionGoalSource.compatibility => 'Imported from earlier settings',
+        NutritionGoalSource.compatibility =>
+          'Carried over from earlier settings',
       };
 
   static String _goalRelationship(
     NutritionGoalVersionReadModel value,
   ) => switch (value.source) {
     NutritionGoalSource.userSet =>
-      'These values are user-set and stay in effect until another saved version takes over.',
+      'These values are user-set and stay in effect until another saved target takes over.',
     NutritionGoalSource.override =>
-      'These values are a manual change to a previously calculated or coached target.',
+      'These values were adjusted after a calculated or coached target.',
     NutritionGoalSource.calculated =>
       'These values were calculated from your saved goal and available profile inputs.',
     NutritionGoalSource.adaptive =>
       'These values were accepted from coaching and remain a saved target.',
     NutritionGoalSource.compatibility =>
-      'These values were imported from earlier settings and can be adjusted for today.',
+      'These values were carried over from earlier settings and can be adjusted for today.',
   };
+
+  static List<NutritionGoalVersionReadModel> _meaningfulTargetHistory(
+    List<NutritionGoalVersionReadModel> versions,
+  ) {
+    final meaningful = <NutritionGoalVersionReadModel>[];
+    for (final version in versions) {
+      if (meaningful.isNotEmpty &&
+          _samePresentedTarget(meaningful.last, version)) {
+        // Preserve every durable row in the repository while avoiding
+        // repeated, unchanged entries in consumer history. The first row
+        // remains the truthful date when these displayed values took effect.
+        continue;
+      } else {
+        meaningful.add(version);
+      }
+    }
+    return meaningful;
+  }
+
+  static bool _samePresentedTarget(
+    NutritionGoalVersionReadModel first,
+    NutritionGoalVersionReadModel second,
+  ) =>
+      first.goalType == second.goalType &&
+      first.source == second.source &&
+      first.calorieTargetKcal == second.calorieTargetKcal &&
+      first.proteinTargetG == second.proteinTargetG &&
+      first.carbsTargetG == second.carbsTargetG &&
+      first.fatTargetG == second.fatTargetG;
 
   static String _effectiveDateLabel(
     NutritionGoalVersionReadModel value,
@@ -874,6 +1150,12 @@ class _TargetMetric {
 
   const _TargetMetric(this.label, this.value);
 }
+
+String _consentActionLabel(CoachingConsentAction action) => switch (action) {
+  CoachingConsentAction.enable => 'enabled',
+  CoachingConsentAction.disable => 'disabled',
+  CoachingConsentAction.withdraw => 'withdrawn',
+};
 
 class _OptionalNumber<T extends num> {
   final T? value;

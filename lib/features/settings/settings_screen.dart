@@ -20,7 +20,6 @@ import 'health_sync_hub_screen.dart';
 import 'household_measures_screen.dart';
 import 'notification_settings_screen.dart';
 import 'nutrition_constraints_screen.dart';
-import 'nutrition_goals_sub_screen.dart';
 import 'nutrition_targets_hub_screen.dart';
 import 'regional_food_packs_screen.dart';
 import 'settings_controller.dart';
@@ -76,14 +75,10 @@ class SettingsScreen extends ConsumerWidget {
                     ),
                     _SettingsRow(
                       icon: Icons.flag_outlined,
-                      title: 'Goal',
-                      summary: profile.hasProfile
-                          ? SecondaryConsumerCopy.goal(profile.userGoal)
-                          : 'Complete your profile',
-                      onTap: () => _push(
-                        context,
-                        const ProfileScreen(focus: ProfileEditorFocus.goal),
-                      ),
+                      title: 'Goal & targets',
+                      summary: 'Review your goal and daily targets',
+                      onTap: () =>
+                          _push(context, const NutritionTargetsHubScreen()),
                     ),
                     _SettingsRow(
                       icon: Icons.restaurant_outlined,
@@ -205,20 +200,6 @@ class SettingsScreen extends ConsumerWidget {
                       summary: 'Regional food packs',
                       onTap: () =>
                           _push(context, const RegionalFoodPacksScreen()),
-                    ),
-                    _SettingsRow(
-                      icon: Icons.track_changes_outlined,
-                      title: 'Nutrition targets',
-                      summary: 'Review or adjust your targets',
-                      onTap: () =>
-                          _push(context, const NutritionTargetsHubScreen()),
-                    ),
-                    _SettingsRow(
-                      icon: Icons.auto_graph_outlined,
-                      title: 'Goals & adaptive coaching',
-                      summary: 'Manage goals and coaching preferences',
-                      onTap: () =>
-                          _push(context, const NutritionGoalsSubScreen()),
                     ),
                     _SettingsRow(
                       icon: Icons.sd_storage_outlined,

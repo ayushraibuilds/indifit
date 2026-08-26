@@ -11,6 +11,7 @@ import 'package:indifit/data/repositories/food_repository.dart';
 import 'package:indifit/features/dashboard/dashboard_controller.dart';
 import 'package:indifit/features/food_log/custom_food_editor_screen.dart';
 import 'package:indifit/features/profile/profile_screen.dart';
+import 'package:indifit/features/settings/nutrition_targets_hub_screen.dart';
 import 'package:indifit/features/settings/settings_screen.dart';
 import 'package:indifit/features/workout_player/widgets/manual_log_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -91,7 +92,7 @@ void main() {
     );
   });
 
-  testWidgets('Settings rows open focused Profile editors', (tester) async {
+  testWidgets('Settings rows open their owned destinations', (tester) async {
     SharedPreferences.setMockInitialValues({
       'user_age': 32,
       'user_height': 175.0,
@@ -122,16 +123,22 @@ void main() {
 
     Navigator.of(tester.element(find.byType(ProfileScreen))).pop();
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(ListTile, 'Goal'));
-    await tester.pumpAndSettle();
+    final goalRow = find.widgetWithText(ListTile, 'Goal & targets');
+    await tester.ensureVisible(goalRow);
+    await tester.tap(goalRow);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.byType(NutritionTargetsHubScreen), findsOneWidget);
     expect(
-      find.descendant(of: find.byType(AppBar), matching: find.text('Goal')),
+      find.descendant(
+        of: find.byType(AppBar),
+        matching: find.text('Goal & targets'),
+      ),
       findsOneWidget,
     );
-    expect(find.text('Goals'), findsOneWidget);
 
-    Navigator.of(tester.element(find.byType(ProfileScreen))).pop();
-    await tester.pumpAndSettle();
+    Navigator.of(tester.element(find.byType(NutritionTargetsHubScreen))).pop();
+    await tester.pump(const Duration(milliseconds: 500));
     await tester.tap(find.widgetWithText(ListTile, 'Training preferences'));
     await tester.pumpAndSettle();
     expect(
@@ -144,7 +151,7 @@ void main() {
     expect(find.text('Goals'), findsNothing);
   });
 
-  testWidgets('focused Goal save does not submit unrelated profile fields', (
+  testWidgets('focused legacy Goal save does not silently refresh targets', (
     tester,
   ) async {
     SharedPreferences.setMockInitialValues({
@@ -181,10 +188,9 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Save profile'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Keep current targets'));
-    await tester.pumpAndSettle();
     await tester.pump(const Duration(seconds: 1));
 
+    expect(find.text('Refresh targets'), findsNothing);
     expect(profile.lastUpdate, isNotNull);
     expect(profile.lastUpdate!['goal'], 'gain');
     for (final field in const [
@@ -197,6 +203,10 @@ void main() {
       'dietPreference',
       'equipmentAccess',
       'injuriesLimitations',
+      'calorieGoal',
+      'proteinGoal',
+      'carbsGoal',
+      'fatGoal',
     ]) {
       expect(profile.lastUpdate![field], isNull, reason: field);
     }

@@ -1506,7 +1506,7 @@ class _NutritionTargetContext extends StatelessWidget {
                 : 'Set nutrition target',
             hint: hasTargetContext
                 ? 'Open the saved nutrition target for today.'
-                : 'Open Nutrition targets to set today’s values.',
+                : 'Open Goal & targets to set today’s values.',
             icon: Icons.open_in_new_rounded,
             emphasis: B05ActionEmphasis.tertiary,
             onPressed: onViewTargets,

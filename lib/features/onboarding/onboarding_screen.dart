@@ -798,7 +798,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   ),
                   const SizedBox(height: B05Layout.space4),
                   Text(
-                    'Saved when you finish. You can edit it later in Settings › Nutrition targets.',
+                    'Saved when you finish. You can edit it later in Settings › Goal & targets.',
                     style: B05Typography.body(context),
                   ),
                   const SizedBox(height: B05Layout.space12),
