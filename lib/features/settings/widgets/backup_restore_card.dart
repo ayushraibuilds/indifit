@@ -14,8 +14,7 @@ class BackupRestoreCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    return B05ActionGroup(
       children: [
         B05ActionButton(
           emphasis: B05ActionEmphasis.primary,
@@ -24,8 +23,6 @@ class BackupRestoreCard extends StatelessWidget {
           hint: 'Create a backup file and choose where to share it.',
           onPressed: onExport,
         ),
-        const SizedBox(height: B05Layout.space8),
-
         B05ActionButton(
           emphasis: B05ActionEmphasis.secondary,
           icon: Icons.upload_file_rounded,

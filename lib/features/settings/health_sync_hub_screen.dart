@@ -201,6 +201,8 @@ class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
             style: B05Typography.body(context),
           ),
           const SizedBox(height: B05Layout.space20),
+          _buildSectionLabel(context, 'HEALTH CONNECTION'),
+          const SizedBox(height: B05Layout.space8),
           _buildConnectionSurface(
             context,
             healthState: healthState,
@@ -295,6 +297,7 @@ class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
       platformName: platformName,
     );
     return B05Surface(
+      tone: B05SurfaceTone.section,
       child: Semantics(
         container: true,
         label: 'Health integration status',
@@ -382,6 +385,7 @@ class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
     final canEdit = _canEditCategories(connection, isLoading);
     final descriptors = HealthService.visibleCategoryDescriptors.toList();
     return B05Surface(
+      tone: B05SurfaceTone.section,
       padding: EdgeInsets.zero,
       child: Column(
         children: [
@@ -421,13 +425,14 @@ class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
     return Semantics(
       container: true,
       label: '${descriptor.title}, $statusText',
-      child: SwitchListTile(
+      child: SwitchListTile.adaptive(
         title: Text(descriptor.title, style: B05Typography.label(context)),
         subtitle: Text(
           '${descriptor.description} Status: $statusText.',
           style: B05Typography.caption(context),
         ),
         value: switchValue,
+        activeTrackColor: context.b05Colors.action,
         onChanged: canEdit ? (value) => _toggleCategory(category, value) : null,
       ),
     );
@@ -529,6 +534,7 @@ class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
 
   Widget _buildImportedActivities(BuildContext context) {
     return B05Surface(
+      tone: B05SurfaceTone.section,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

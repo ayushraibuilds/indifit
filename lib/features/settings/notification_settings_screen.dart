@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../core/widgets/b05_accessibility_primitives.dart';
 import 'widgets/notification_settings_section.dart';
 
 class NotificationSettingsScreen extends StatelessWidget {
@@ -15,7 +17,12 @@ class NotificationSettingsScreen extends StatelessWidget {
       ),
       body: const SafeArea(
         child: SingleChildScrollView(
-          padding: EdgeInsets.all(20),
+          padding: EdgeInsets.fromLTRB(
+            B05Layout.space16,
+            B05Layout.space12,
+            B05Layout.space16,
+            B05Layout.space32,
+          ),
           child: NotificationSettingsSection(),
         ),
       ),

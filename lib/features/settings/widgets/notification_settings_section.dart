@@ -96,7 +96,7 @@ class _NotificationSettingsSectionState
     final colors = context.b05Colors;
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -153,7 +153,8 @@ class _NotificationSettingsSectionState
             val,
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: B05Layout.space12),
+
         SettingsReminderToggle(
           icon: Icons.restaurant_rounded,
           iconColor: colors.success.indicator,
@@ -166,7 +167,8 @@ class _NotificationSettingsSectionState
             val,
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: B05Layout.space12),
+
         SettingsReminderToggle(
           icon: Icons.bedtime_rounded,
           iconColor: colors.info.indicator,
@@ -303,6 +305,7 @@ class _NotificationSettingsSectionState
   ) {
     final colors = context.b05Colors;
     return B05Surface(
+      tone: B05SurfaceTone.section,
       showBorder: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -334,10 +337,13 @@ class _NotificationSettingsSectionState
               Semantics(
                 label: 'Quiet Hours',
                 value: state.quietHoursEnabled ? 'On' : 'Off',
-                child: Switch(
-                  value: state.quietHoursEnabled,
-                  activeThumbColor: colors.action,
-                  onChanged: (val) => controller.updateQuietHours(enabled: val),
+                child: B05TouchTarget(
+                  child: Switch.adaptive(
+                    value: state.quietHoursEnabled,
+                    activeTrackColor: colors.action,
+                    onChanged: (val) =>
+                        controller.updateQuietHours(enabled: val),
+                  ),
                 ),
               ),
             ],

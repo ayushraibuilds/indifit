@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/services/notification_service.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
+import '../../../core/widgets/b05_accessibility_primitives.dart';
 
 class SettingsReminderToggle extends StatelessWidget {
   final IconData icon;
@@ -29,58 +30,57 @@ class SettingsReminderToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    final colors = context.b05Colors;
+    return B05Surface(
+      tone: B05SurfaceTone.section,
+      padding: const EdgeInsets.symmetric(
+        horizontal: B05Layout.space16,
+        vertical: B05Layout.space12,
+      ),
+      child: Semantics(
+        container: true,
+        label: '$title, $subtitle',
+        toggled: value,
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(B05Layout.space8),
               decoration: BoxDecoration(
                 color: iconColor.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: B05Radii.mediumRadius,
               ),
-              child: Icon(icon, color: iconColor, size: 20),
+              child: Icon(icon, color: iconColor, size: B05Layout.iconMedium),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: B05Layout.space12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      color: context.b05Colors.textSecondary,
-                      fontSize: 12,
-                    ),
-                  ),
+                  Text(title, style: B05Typography.label(context)),
+                  const SizedBox(height: B05Layout.space4),
+                  Text(subtitle, style: B05Typography.caption(context)),
                 ],
               ),
             ),
-            Semantics(
-              label: '$title notifications',
-              child: Switch(
-                value: value,
-                onChanged: (newVal) {
-                  onChanged(newVal);
-                  if (newVal) {
-                    final request = onRequestPermission?.call();
-                    if (request != null) {
-                      unawaited(request);
-                    } else if (requestNotificationPermission) {
-                      unawaited(NotificationService.requestPermissions());
+            const SizedBox(width: B05Layout.space8),
+            B05TouchTarget(
+              child: Semantics(
+                label: '$title notifications',
+                child: Switch.adaptive(
+                  value: value,
+                  activeTrackColor: colors.action,
+                  onChanged: (newVal) {
+                    onChanged(newVal);
+                    if (newVal) {
+                      final request = onRequestPermission?.call();
+                      if (request != null) {
+                        unawaited(request);
+                      } else if (requestNotificationPermission) {
+                        unawaited(NotificationService.requestPermissions());
+                      }
                     }
-                  }
-                },
-                activeThumbColor: context.b05Colors.action,
+                  },
+                ),
               ),
             ),
           ],

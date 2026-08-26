@@ -430,6 +430,7 @@ class DataManagementSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(settingsControllerProvider);
     final isBusy = state.loading;
+    final colors = context.b05Colors;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -441,6 +442,7 @@ class DataManagementSection extends ConsumerWidget {
         const SizedBox(height: B05Layout.space24),
         _sectionHeading(context, 'Backup'),
         B05Surface(
+          tone: B05SurfaceTone.section,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -480,6 +482,7 @@ class DataManagementSection extends ConsumerWidget {
         const SizedBox(height: B05Layout.space24),
         _sectionHeading(context, 'Export'),
         B05Surface(
+          tone: B05SurfaceTone.section,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -536,60 +539,68 @@ class DataManagementSection extends ConsumerWidget {
               .read(settingsControllerProvider.notifier)
               .toggleCrashReporting(value),
         ),
-        // Compatibility action row retained while the grouped backup section
-        // above remains the primary presentation.
-        const SizedBox(height: 12),
-
-        // Export / Restore Database Card
-        BackupRestoreCard(
-          onExport: () => _showExportDialog(context, ref),
-          onRestore: () => _showRestoreDialog(context, ref),
-        ),
-        const SizedBox(height: 8),
-
-        // Restore Auto-Backup Snapshot button
-        ElevatedButton.icon(
-          onPressed: () => _restoreFromAutoBackup(context, ref),
-          icon: Icon(
-            Icons.history_rounded,
-            color: context.b05Colors.info.indicator,
-          ),
-          label: const Text('Restore Recent Auto-Backup Snapshot'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: context.b05Colors.info.container,
-            foregroundColor: context.b05Colors.info.foreground,
-            minimumSize: const Size.fromHeight(48),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(
-                color: context.b05Colors.info.indicator.withValues(alpha: 0.2),
-              ),
-            ),
-            elevation: 0,
-          ),
-        ),
         const SizedBox(height: B05Layout.space12),
         PrivacyDisclosureCard(
           offlineOnly: state.offlineOnly,
           crashReportingEnabled: state.crashReportingEnabled,
         ),
         const SizedBox(height: B05Layout.space24),
-        _sectionHeading(context, 'Danger'),
+
+        _SectionHeader(title: 'DANGER ZONE'),
         B05Surface(
+          tone: B05SurfaceTone.inset,
+          showBorder: true,
+          padding: const EdgeInsets.all(B05Layout.space16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.warning_amber_rounded,
+                    color: colors.danger.foreground,
+                    size: B05Layout.iconLarge,
+                  ),
+                  const SizedBox(width: B05Layout.space8),
+                  Expanded(
+                    child: Text(
+                      'Irreversible actions',
+                      style: B05Typography.title(
+                        context,
+                      ).copyWith(color: colors.danger.foreground),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: B05Layout.space8),
               Text(
-                'Review setup again without removing logged data or backups.',
-                style: B05Typography.body(context),
+                'These actions affect your local app data. Please review carefully before proceeding.',
+                style: B05Typography.caption(context),
+              ),
+              const SizedBox(height: B05Layout.space16),
+              Divider(color: colors.border),
+              const SizedBox(height: B05Layout.space12),
+              Text(
+                'Reset onboarding wizard',
+                style: B05Typography.label(context),
+              ),
+              const SizedBox(height: B05Layout.space4),
+              Text(
+                'Re-run setup to re-enter your goals and profile. Your logged meal and workout history remains safe.',
+                style: B05Typography.caption(context),
               ),
               const SizedBox(height: B05Layout.space12),
-              B05ActionButton(
-                emphasis: B05ActionEmphasis.secondary,
-                icon: Icons.refresh_rounded,
-                label: 'Start setup again',
-                hint: 'Confirm before reopening setup.',
-                onPressed: isBusy ? null : () => _resetOnboarding(context, ref),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: B05ActionButton(
+                  icon: Icons.refresh_rounded,
+                  label: 'Start setup again',
+                  hint: 'Confirm before reopening setup.',
+                  emphasis: B05ActionEmphasis.secondary,
+                  onPressed: isBusy
+                      ? null
+                      : () => _resetOnboarding(context, ref),
+                ),
               ),
             ],
           ),
@@ -665,5 +676,29 @@ class DataManagementSection extends ConsumerWidget {
       Text('Included records', style: B05Typography.label(context)),
       ...rows,
     ];
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(
+        left: B05Layout.space4,
+        bottom: B05Layout.space8,
+      ),
+      child: Text(
+        title,
+        style: B05Typography.caption(context).copyWith(
+          color: context.b05Colors.textSecondary,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.8,
+        ),
+      ),
+    );
   }
 }
