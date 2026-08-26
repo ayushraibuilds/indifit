@@ -223,6 +223,14 @@ void main() {
       await tester.tap(find.byIcon(Icons.add_circle_outline));
       await tester.pump();
       await tester.tap(find.widgetWithText(ElevatedButton, 'Add to Breakfast'));
+      final savedSnapshot =
+          (database.select(database.nutritionConsumptionSnapshots)
+                ..where(
+                  (row) => row.userId.equals(kLocalNutritionUserScopeId),
+                ))
+              .watch()
+              .firstWhere((rows) => rows.isNotEmpty);
+      await tester.runAsync(() => savedSnapshot);
       await _pumpLiveSurface(tester, cycles: 20);
 
       expect(find.byType(FoodSearchScreen), findsNothing);
