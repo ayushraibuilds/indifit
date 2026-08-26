@@ -178,6 +178,7 @@ class ProgressDashboardReadRepository {
               durationSeconds: row.durationSeconds,
               workingSetsCount: facts?.workingSetsCount ?? 0,
               volumeIsTrustworthy: volumeIsTrustworthy,
+              completionKind: row.completionKind,
             );
           }(),
     ];

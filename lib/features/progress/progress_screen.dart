@@ -23,6 +23,7 @@ import '../training/workout_history_screen.dart';
 import 'achievements_screen.dart';
 import 'progress_dashboard_controller.dart';
 import 'progress_dashboard_models.dart';
+import 'r08f4_training_volume_presentation.dart';
 
 /// Outcome-first Progress composition.
 ///
@@ -175,7 +176,10 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                 ],
                 if (_hasMeaningfulVolume(snapshot)) ...[
                   const SizedBox(height: B05Layout.space24),
-                  _TrainingVolumeSection(snapshot: snapshot),
+                  _TrainingVolumeSection(
+                    snapshot: snapshot,
+                    units: units,
+                  ),
                 ],
                 if (_hasMeaningfulMuscleBalance(snapshot)) ...[
                   const SizedBox(height: B05Layout.space24),
@@ -439,12 +443,23 @@ class _ProgressHighlights extends StatelessWidget {
     final highlights = <_ProgressHighlight>[];
     final thisWeek = _workoutsThisWeek(snapshot);
     if (thisWeek.isNotEmpty) {
+      final summary =
+          R08F4TrainingVolumePresentation.summarizeConsistency(thisWeek);
+      final sessionCount = summary.sessionCount;
+      final daysCount =
+          snapshot.weeklyTrainedDates.isNotEmpty
+              ? snapshot.weeklyTrainedDates.length
+              : summary.trainingDayCount;
+      final detailText =
+          sessionCount == daysCount
+              ? 'completed this week'
+              : 'across $daysCount ${daysCount == 1 ? 'day' : 'days'} this week';
       highlights.add(
         _ProgressHighlight(
           label: 'Training',
           value:
-              '${thisWeek.length} ${thisWeek.length == 1 ? 'workout' : 'workouts'}',
-          detail: 'completed this week',
+              '$sessionCount ${sessionCount == 1 ? 'workout' : 'workouts'}',
+          detail: detailText,
           icon: Icons.fitness_center_rounded,
           onPressed: onViewTrainingHistory,
           actionLabel: 'View workout history',
@@ -682,6 +697,39 @@ class _TrainingConsistencySection extends StatelessWidget {
       (sum, w) => sum + w.workingSetsCount,
     );
 
+    final thisWeekSummary =
+        R08F4TrainingVolumePresentation.summarizeConsistency(thisWeek);
+    final thisWeekSessionCount = thisWeekSummary.sessionCount;
+    final thisWeekDaysCount =
+        snapshot.weeklyTrainedDates.isNotEmpty
+            ? snapshot.weeklyTrainedDates.length
+            : thisWeekSummary.trainingDayCount;
+
+    final lastFourWeeksSummary =
+        R08F4TrainingVolumePresentation.summarizeConsistency(lastFourWeeks);
+    final recentSessionCount = lastFourWeeksSummary.sessionCount;
+    final recentDaysCount = lastFourWeeksSummary.trainingDayCount;
+
+    final headingText = R08F4TrainingVolumePresentation.formatThisWeekHeading(
+      thisWeekSessionCount,
+    );
+    final subtitleText = R08F4TrainingVolumePresentation.formatThisWeekSubtitle(
+      sessionCount: thisWeekSessionCount,
+      dayCount: thisWeekDaysCount,
+    );
+    final semanticsLabel =
+        R08F4TrainingVolumePresentation.formatThisWeekSemantics(
+          sessionCount: thisWeekSessionCount,
+          dayCount: thisWeekDaysCount,
+        );
+    final fourWeeksSummaryText =
+        R08F4TrainingVolumePresentation.formatRecentHistorySummary(
+          sessionCount: recentSessionCount,
+          dayCount: recentDaysCount,
+          workingSetsCount: totalWorkingSets,
+          weeks: 4,
+        );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -693,32 +741,28 @@ class _TrainingConsistencySection extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Semantics(
-                label: thisWeek.isEmpty
-                    ? 'No workouts completed this week.'
-                    : '${thisWeek.length} ${thisWeek.length == 1 ? 'workout' : 'workouts'} completed this week.',
+                label: semanticsLabel,
                 child: ExcludeSemantics(
                   child: Text(
-                    thisWeek.isEmpty
-                        ? 'No workouts this week'
-                        : '${thisWeek.length} ${thisWeek.length == 1 ? 'workout' : 'workouts'}',
+                    headingText,
                     style: B05Typography.metric(context),
                   ),
                 ),
               ),
               Text(
-                thisWeek.isEmpty ? 'this week' : 'completed this week',
+                subtitleText,
                 style: B05Typography.body(context),
               ),
               const SizedBox(height: B05Layout.space16),
               _WeekCalendarStrip(
                 todayLocalDate: snapshot.todayLocalDate,
                 trainedDates: snapshot.weeklyTrainedDates,
+                workouts: thisWeek,
               ),
-              if (lastFourWeeks.isNotEmpty) ...[
+              if (fourWeeksSummaryText.isNotEmpty) ...[
                 const SizedBox(height: B05Layout.space16),
                 Text(
-                  '${lastFourWeeks.length} ${lastFourWeeks.length == 1 ? 'workout' : 'workouts'} completed in the last 4 weeks'
-                  '${totalWorkingSets > 0 ? ' · $totalWorkingSets working sets' : ''}',
+                  fourWeeksSummaryText,
                   style: B05Typography.caption(context),
                 ),
               ],
@@ -741,10 +785,12 @@ class _WeekCalendarStrip extends StatelessWidget {
   const _WeekCalendarStrip({
     required this.todayLocalDate,
     required this.trainedDates,
+    this.workouts = const [],
   });
 
   final String todayLocalDate;
   final Set<String> trainedDates;
+  final List<ProgressWorkoutRecord> workouts;
 
   @override
   Widget build(BuildContext context) {
@@ -766,15 +812,21 @@ class _WeekCalendarStrip extends StatelessWidget {
                 builder: (context) {
                   final date = monday.add(Duration(days: i));
                   final dateStr = _formatCivilDate(date);
+                  final sessionsOnDate = workouts
+                      .where((w) => w.localDate == dateStr)
+                      .length;
                   final isTrained = trainedDates.contains(dateStr);
                   final isToday = dateStr == todayLocalDate;
                   final dayLabel = days[i];
 
-                  final semanticText = isTrained
-                      ? '$dayLabel, workout completed.'
-                      : isToday
-                      ? '$dayLabel, today.'
-                      : '$dayLabel, rest day.';
+                  final semanticText =
+                      R08F4TrainingVolumePresentation.formatDaySemanticLabel(
+                        dayLabel: dayLabel,
+                        sessionCount: sessionsOnDate > 0
+                            ? sessionsOnDate
+                            : (isTrained ? 1 : 0),
+                        isToday: isToday,
+                      );
 
                   return Semantics(
                     label: semanticText,
@@ -1478,34 +1530,33 @@ class _WeightRangeSelector extends StatelessWidget {
 }
 
 class _TrainingVolumeSection extends StatelessWidget {
-  const _TrainingVolumeSection({required this.snapshot});
+  const _TrainingVolumeSection({
+    required this.snapshot,
+    this.units = 'kg',
+  });
 
   final ProgressDashboardSnapshot snapshot;
+  final String units;
 
   @override
   Widget build(BuildContext context) {
-    final all = (snapshot.workouts ?? const <ProgressWorkoutRecord>[])
-        .where(
-          (workout) =>
-              workout.isCanonicalStrength &&
-              workout.volumeIsTrustworthy &&
-              workout.totalVolumeKg > 0,
-        )
-        .toList(growable: false);
-    final recent = all
-        .where(
-          (workout) =>
-              workout.localDate.compareTo(
-                _addCivilDays(snapshot.todayLocalDate, -27),
-              ) >=
-              0,
-        )
-        .toList(growable: false);
-    final useRecent = recent.isNotEmpty;
-    final total = (useRecent ? recent : all).fold<double>(
-      0,
-      (sum, workout) => sum + workout.totalVolumeKg,
+    final summary = R08F4TrainingVolumePresentation.summarizeVolume(
+      allWorkouts: snapshot.workouts ?? const <ProgressWorkoutRecord>[],
+      todayLocalDate: snapshot.todayLocalDate,
+      units: units,
     );
+
+    final semanticLabel =
+        R08F4TrainingVolumePresentation.formatVolumeSemantics(
+          displayVolume: summary.displayVolume,
+          units: units,
+          useRecent: summary.useRecent,
+        );
+    final subtitle = R08F4TrainingVolumePresentation.formatVolumeSubtitle(
+      units: units,
+      useRecent: summary.useRecent,
+    );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1514,19 +1565,18 @@ class _TrainingVolumeSection extends StatelessWidget {
         B05Surface(
           padding: const EdgeInsets.all(B05Layout.space20),
           child: Semantics(
-            label:
-                '${_formatVolume(total)} kilograms ${useRecent ? 'in the last four weeks' : 'across recorded strength workouts'}.',
+            label: semanticLabel,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _formatVolume(total),
+                  R08F4TrainingVolumePresentation.formatVolume(
+                    summary.displayVolume,
+                  ),
                   style: B05Typography.metric(context),
                 ),
                 Text(
-                  useRecent
-                      ? 'kg recorded in the last 4 weeks'
-                      : 'kg across recorded strength workouts',
+                  subtitle,
                   style: B05Typography.body(context),
                 ),
               ],

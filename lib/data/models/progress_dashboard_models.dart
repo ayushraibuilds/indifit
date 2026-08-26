@@ -65,6 +65,7 @@ class ProgressWorkoutRecord {
     this.durationSeconds = 0,
     this.workingSetsCount = 0,
     this.volumeIsTrustworthy = true,
+    this.completionKind,
   });
 
   final int id;
@@ -83,7 +84,12 @@ class ProgressWorkoutRecord {
   /// a proxy for unavailable volume.
   final bool volumeIsTrustworthy;
 
+  /// The persisted B02 completion kind ('full', 'partial', or null).
+  final String? completionKind;
+
   bool get isCanonicalStrength => activityType == 'strength';
+  bool get isPartial => completionKind == 'partial';
+  bool get isFull => completionKind == 'full' || completionKind == null;
 }
 
 class ProgressStrengthSetRecord {
