@@ -281,14 +281,76 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('R08D.5: Canonical Coordinator Batch Persistence', () {
-    test(
-      'finalizeBatch creates atomic snapshot with distinct food quantities and meal context',
-      () async {
-        final harness = await _Harness.create();
-        addTearDown(harness.close);
+    test('finalizeBatch creates atomic snapshot with distinct food quantities and meal context', () async {
+      final harness = await _Harness.create();
+      addTearDown(harness.close);
 
-        final rice = await harness.catalog.createUserFood(
-          displayName: 'Basmati Rice',
+      final rice = await harness.catalog.createUserFood(
+        displayName: 'Basmati Rice',
+        servingSize: 100,
+        servingUnit: 'g',
+        energyKcal: 130,
+        proteinG: 3,
+        carbohydrateG: 28,
+        fatG: 0.5,
+      );
+      final dal = await harness.catalog.createUserFood(
+        displayName: 'Moong Dal',
+        servingSize: 150,
+        servingUnit: 'g',
+        energyKcal: 160,
+        proteinG: 9,
+        carbohydrateG: 22,
+        fatG: 3,
+      );
+
+      final p1 = await harness.coordinator.preview(
+        option: rice,
+        quantity: rice.baseQuantity,
+      );
+      final p2 = await harness.coordinator.preview(
+        option: dal,
+        quantity: dal.baseQuantity,
+      );
+
+      const userScope = 'local-user';
+      final snapshot = await harness.coordinator.finalizeBatch(
+        userId: userScope,
+        previews: [p1, p2],
+        mealCategory: 'lunch',
+        loggedAt: DateTime.utc(2026, 8, 24, 13, 0),
+        localDate: '2026-08-24',
+        timezoneId: 'Asia/Kolkata',
+      );
+
+      expect(snapshot.mealCategory, 'lunch');
+      expect(snapshot.localDate, '2026-08-24');
+      expect(snapshot.timezoneId, 'Asia/Kolkata');
+      expect(snapshot.items, hasLength(2));
+
+      final history = await harness.readModels.listHistory(
+        userId: userScope,
+      );
+      expect(history.where((r) => !r.isLegacy), hasLength(1));
+      final record = history.firstWhere((r) => !r.isLegacy);
+      expect(record.mealCategory, 'lunch');
+      expect(record.items, hasLength(2));
+      expect(record.items.map((i) => i.foodId), containsAll([rice.id, dal.id]));
+    });
+  });
+
+  group('R08D.5: Normal Mode vs Explicit Multi-Select Mode', () {
+    testWidgets('Normal mode defaults to single-select with no checkboxes and fast add', (tester) async {
+      final harness = await _Harness.create();
+      addTearDown(() async {
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+        unawaited(harness.close());
+      });
+
+      final options = (await tester.runAsync(() async {
+        final r = await harness.catalog.createUserFood(
+          displayName: 'Rice',
           servingSize: 100,
           servingUnit: 'g',
           energyKcal: 130,
@@ -296,119 +358,45 @@ void main() {
           carbohydrateG: 28,
           fatG: 0.5,
         );
-        final dal = await harness.catalog.createUserFood(
-          displayName: 'Moong Dal',
+        final d = await harness.catalog.createUserFood(
+          displayName: 'Dal',
           servingSize: 150,
           servingUnit: 'g',
-          energyKcal: 160,
-          proteinG: 9,
-          carbohydrateG: 22,
+          energyKcal: 150,
+          proteinG: 8,
+          carbohydrateG: 20,
           fatG: 3,
         );
+        return [r, d];
+      }))!;
 
-        final p1 = await harness.coordinator.preview(
-          option: rice,
-          quantity: rice.baseQuantity,
-        );
-        final p2 = await harness.coordinator.preview(
-          option: dal,
-          quantity: dal.baseQuantity,
-        );
+      final recent = [
+        CanonicalRecentFood(
+          option: options[0],
+          quantityLabel: '100 g',
+          loggedAtUtc: DateTime.utc(2026, 8, 24, 12, 0),
+        ),
+        CanonicalRecentFood(
+          option: options[1],
+          quantityLabel: '150 g',
+          loggedAtUtc: DateTime.utc(2026, 8, 24, 12, 5),
+        ),
+      ];
 
-        const userScope = 'local-user';
-        final snapshot = await harness.coordinator.finalizeBatch(
-          userId: userScope,
-          previews: [p1, p2],
-          mealCategory: 'lunch',
-          loggedAt: DateTime.utc(2026, 8, 24, 13, 0),
-          localDate: '2026-08-24',
-          timezoneId: 'Asia/Kolkata',
-        );
+      await _pumpFoodSearch(
+        tester: tester,
+        harness: harness,
+        recent: recent,
+        mealType: 'lunch',
+      );
 
-        expect(snapshot.mealCategory, 'lunch');
-        expect(snapshot.localDate, '2026-08-24');
-        expect(snapshot.timezoneId, 'Asia/Kolkata');
-        expect(snapshot.items, hasLength(2));
+      // In normal mode, no checkboxes exist
+      expect(find.byType(Checkbox), findsNothing);
+      expect(find.byKey(const ValueKey('toggle_multiselect_mode')), findsOneWidget);
+      expect(find.text('Log lunch'), findsOneWidget);
+    });
 
-        final history = await harness.readModels.listHistory(userId: userScope);
-        expect(history.where((r) => !r.isLegacy), hasLength(1));
-        final record = history.firstWhere((r) => !r.isLegacy);
-        expect(record.mealCategory, 'lunch');
-        expect(record.items, hasLength(2));
-        expect(
-          record.items.map((i) => i.foodId),
-          containsAll([rice.id, dal.id]),
-        );
-      },
-    );
-  });
-
-  group('R08D.5: Normal Mode vs Explicit Multi-Select Mode', () {
-    testWidgets(
-      'Normal mode defaults to single-select with no checkboxes and fast add',
-      (tester) async {
-        final harness = await _Harness.create();
-        addTearDown(() async {
-          await tester.pumpWidget(const SizedBox.shrink());
-          await tester.pump();
-          unawaited(harness.close());
-        });
-
-        final options = (await tester.runAsync(() async {
-          final r = await harness.catalog.createUserFood(
-            displayName: 'Rice',
-            servingSize: 100,
-            servingUnit: 'g',
-            energyKcal: 130,
-            proteinG: 3,
-            carbohydrateG: 28,
-            fatG: 0.5,
-          );
-          final d = await harness.catalog.createUserFood(
-            displayName: 'Dal',
-            servingSize: 150,
-            servingUnit: 'g',
-            energyKcal: 150,
-            proteinG: 8,
-            carbohydrateG: 20,
-            fatG: 3,
-          );
-          return [r, d];
-        }))!;
-
-        final recent = [
-          CanonicalRecentFood(
-            option: options[0],
-            quantityLabel: '100 g',
-            loggedAtUtc: DateTime.utc(2026, 8, 24, 12, 0),
-          ),
-          CanonicalRecentFood(
-            option: options[1],
-            quantityLabel: '150 g',
-            loggedAtUtc: DateTime.utc(2026, 8, 24, 12, 5),
-          ),
-        ];
-
-        await _pumpFoodSearch(
-          tester: tester,
-          harness: harness,
-          recent: recent,
-          mealType: 'lunch',
-        );
-
-        // In normal mode, no checkboxes exist
-        expect(find.byType(Checkbox), findsNothing);
-        expect(
-          find.byKey(const ValueKey('toggle_multiselect_mode')),
-          findsOneWidget,
-        );
-        expect(find.text('Log lunch'), findsOneWidget);
-      },
-    );
-
-    testWidgets('Enter and exit multi-select mode via explicit action', (
-      tester,
-    ) async {
+    testWidgets('Enter and exit multi-select mode via explicit action', (tester) async {
       final harness = await _Harness.create();
       addTearDown(() async {
         await tester.pumpWidget(const SizedBox.shrink());
@@ -471,99 +459,96 @@ void main() {
   });
 
   group('R08D.5: Selection, Per-Item Quantity, and Batch Logging', () {
-    testWidgets(
-      'Select multiple foods with distinct units and log atomically',
-      (tester) async {
-        final harness = await _Harness.create();
-        addTearDown(() async {
-          await tester.pumpWidget(const SizedBox.shrink());
-          await tester.pump();
-          unawaited(harness.close());
-        });
+    testWidgets('Select multiple foods with distinct units and log atomically', (tester) async {
+      final harness = await _Harness.create();
+      addTearDown(() async {
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+        unawaited(harness.close());
+      });
 
-        final trackingCoordinator = _TrackingBatchCoordinator(
-          db: harness.db,
-          registry: harness.registry,
-          catalog: harness.catalog,
-          consumption: harness.consumption,
+      final trackingCoordinator = _TrackingBatchCoordinator(
+        db: harness.db,
+        registry: harness.registry,
+        catalog: harness.catalog,
+        consumption: harness.consumption,
+      );
+
+      final options = (await tester.runAsync(() async {
+        final r = await harness.catalog.createUserFood(
+          displayName: 'Brown Rice',
+          servingSize: 100,
+          servingUnit: 'g',
+          energyKcal: 110,
+          proteinG: 3,
+          carbohydrateG: 23,
+          fatG: 1,
         );
-
-        final options = (await tester.runAsync(() async {
-          final r = await harness.catalog.createUserFood(
-            displayName: 'Brown Rice',
-            servingSize: 100,
-            servingUnit: 'g',
-            energyKcal: 110,
-            proteinG: 3,
-            carbohydrateG: 23,
-            fatG: 1,
-          );
-          final c = await harness.catalog.createUserFood(
-            displayName: 'Curd',
-            servingSize: 1,
-            servingUnit: 'cup',
-            energyKcal: 120,
-            proteinG: 6,
-            carbohydrateG: 8,
-            fatG: 4,
-          );
-          return [r, c];
-        }))!;
-
-        final recent = [
-          CanonicalRecentFood(
-            option: options[0],
-            quantityLabel: '100 g',
-            loggedAtUtc: DateTime.utc(2026, 8, 24, 12, 0),
-          ),
-          CanonicalRecentFood(
-            option: options[1],
-            quantityLabel: '1 cup',
-            loggedAtUtc: DateTime.utc(2026, 8, 24, 12, 5),
-          ),
-        ];
-
-        await _pumpFoodSearch(
-          tester: tester,
-          harness: harness,
-          recent: recent,
-          mealType: 'lunch',
-          selectedDate: DateTime(2026, 8, 24),
-          initialMultiSelect: true,
-          coordinatorOverride: trackingCoordinator,
+        final c = await harness.catalog.createUserFood(
+          displayName: 'Curd',
+          servingSize: 1,
+          servingUnit: 'cup',
+          energyKcal: 120,
+          proteinG: 6,
+          carbohydrateG: 8,
+          fatG: 4,
         );
+        return [r, c];
+      }))!;
 
-        final checkboxes = find.byType(Checkbox);
-        expect(checkboxes, findsNWidgets(2));
+      final recent = [
+        CanonicalRecentFood(
+          option: options[0],
+          quantityLabel: '100 g',
+          loggedAtUtc: DateTime.utc(2026, 8, 24, 12, 0),
+        ),
+        CanonicalRecentFood(
+          option: options[1],
+          quantityLabel: '1 cup',
+          loggedAtUtc: DateTime.utc(2026, 8, 24, 12, 5),
+        ),
+      ];
 
-        // Select both
-        await tester.tap(checkboxes.at(0));
-        await _settle(tester);
-        await tester.tap(checkboxes.at(1));
-        await _settle(tester);
+      await _pumpFoodSearch(
+        tester: tester,
+        harness: harness,
+        recent: recent,
+        mealType: 'lunch',
+        selectedDate: DateTime(2026, 8, 24),
+        initialMultiSelect: true,
+        coordinatorOverride: trackingCoordinator,
+      );
 
-        expect(find.text('2 foods selected · 230 kcal'), findsOneWidget);
-        expect(find.text('Add 2 foods to lunch'), findsOneWidget);
+      final checkboxes = find.byType(Checkbox);
+      expect(checkboxes, findsNWidgets(2));
 
-        // Verify each chip has its unit
-        expect(find.textContaining('Brown Rice (100 g)'), findsOneWidget);
-        expect(find.textContaining('Curd (1 cup)'), findsOneWidget);
+      // Select both
+      await tester.tap(checkboxes.at(0));
+      await _settle(tester);
+      await tester.tap(checkboxes.at(1));
+      await _settle(tester);
 
-        // Commit batch
-        await tester.tap(find.text('Add 2 foods to lunch'));
-        await _settle(tester);
+      expect(find.text('2 foods selected · 230 kcal'), findsOneWidget);
+      expect(find.text('Add 2 foods to lunch'), findsOneWidget);
 
-        // Verify coordinator received call with accurate data
-        expect(trackingCoordinator.batchCalls, 1);
-        expect(trackingCoordinator.lastMealCategory, 'lunch');
-        expect(trackingCoordinator.lastLocalDate, '2026-08-24');
-        expect(trackingCoordinator.lastPreviews, hasLength(2));
-        expect(
-          trackingCoordinator.lastPreviews.map((p) => p.effectiveFood.id),
-          containsAll([options[0].id, options[1].id]),
-        );
-      },
-    );
+      // Verify each chip has its unit
+      expect(find.textContaining('Brown Rice (100 g)'), findsOneWidget);
+      expect(find.textContaining('Curd (1 cup)'), findsOneWidget);
+
+      // Commit batch
+      await tester.tap(find.text('Add 2 foods to lunch'));
+      await _settle(tester);
+
+      // Verify coordinator received call with accurate data
+      expect(trackingCoordinator.batchCalls, 1);
+      expect(trackingCoordinator.lastMealCategory, 'lunch');
+      expect(trackingCoordinator.lastLocalDate, '2026-08-24');
+      expect(trackingCoordinator.lastPreviews, hasLength(2));
+      expect(
+        trackingCoordinator.lastPreviews.map((p) => p.effectiveFood.id),
+        containsAll([options[0].id, options[1].id]),
+      );
+    });
 
     testWidgets('Deselect via chip deletion and clear button', (tester) async {
       final harness = await _Harness.create();
@@ -639,9 +624,7 @@ void main() {
       expect(find.textContaining('ADD'), findsNothing);
     });
 
-    testWidgets('Failure during batch commit preserves selection for retry', (
-      tester,
-    ) async {
+    testWidgets('Failure during batch commit preserves selection for retry', (tester) async {
       final harness = await _Harness.create();
       addTearDown(() async {
         await tester.pumpWidget(const SizedBox.shrink());
@@ -696,9 +679,7 @@ void main() {
 
       expect(failingCoordinator.batchCallCount, 1);
       expect(
-        find.text(
-          'Foods could not be added together. Your selection is still here.',
-        ),
+        find.text('Foods could not be added together. Your selection is still here.'),
         findsOneWidget,
       );
       // Selection is preserved!
@@ -707,107 +688,101 @@ void main() {
   });
 
   group('R08D.5: Meal Section Visual Identity & Accessibility', () {
-    testWidgets(
-      'DashboardMealSection renders distinctive icons and labels without color-only semantics',
-      (tester) async {
-        final harness = await _Harness.create();
-        addTearDown(() async {
-          await tester.pumpWidget(const SizedBox.shrink());
-          await tester.pump();
-          unawaited(harness.close());
-        });
+    testWidgets('DashboardMealSection renders distinctive icons and labels without color-only semantics', (tester) async {
+      final harness = await _Harness.create();
+      addTearDown(() async {
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+        unawaited(harness.close());
+      });
 
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              databaseProvider.overrideWithValue(harness.db),
-              foodLogsForDayProvider.overrideWith((ref, date) async => []),
-              canonicalFoodRecordsForDayProvider.overrideWith(
-                (ref, date) async => [],
-              ),
-            ],
-            child: MaterialApp(
-              theme: AppTheme.lightTheme,
-              home: const Scaffold(
-                body: SingleChildScrollView(
-                  child: DashboardMealSection(logs: [], selectedDate: null),
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            databaseProvider.overrideWithValue(harness.db),
+            foodLogsForDayProvider.overrideWith((ref, date) async => []),
+            canonicalFoodRecordsForDayProvider.overrideWith(
+              (ref, date) async => [],
+            ),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.lightTheme,
+            home: const Scaffold(
+              body: SingleChildScrollView(
+                child: DashboardMealSection(
+                  logs: [],
+                  selectedDate: null,
                 ),
               ),
             ),
           ),
-        );
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // Meal titles present
+      expect(find.text('Breakfast'), findsOneWidget);
+      expect(find.text('Lunch'), findsOneWidget);
+      expect(find.text('Dinner'), findsOneWidget);
+      expect(find.text('Snacks'), findsOneWidget);
+
+      // Distinct icons present
+      expect(find.byIcon(Icons.wb_sunny_outlined), findsOneWidget); // Breakfast
+      expect(find.byIcon(Icons.wb_twilight_rounded), findsOneWidget); // Lunch
+      expect(find.byIcon(Icons.nightlight_round), findsOneWidget); // Dinner
+      expect(find.byIcon(Icons.cookie_outlined), findsOneWidget); // Snacks
+    });
+
+    testWidgets('FoodSearchScreen multi-select renders cleanly at 320pt and 2x text scale', (tester) async {
+      tester.view.physicalSize = const Size(320, 844);
+      tester.view.devicePixelRatio = 1;
+      final harness = await _Harness.create();
+      addTearDown(() async {
+        await tester.pumpWidget(const SizedBox.shrink());
         await tester.pump();
-        await tester.pump(const Duration(milliseconds: 100));
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+        unawaited(harness.close());
+      });
 
-        // Meal titles present
-        expect(find.text('Breakfast'), findsOneWidget);
-        expect(find.text('Lunch'), findsOneWidget);
-        expect(find.text('Dinner'), findsOneWidget);
-        expect(find.text('Snacks'), findsOneWidget);
-
-        // Distinct icons present
-        expect(
-          find.byIcon(Icons.wb_sunny_outlined),
-          findsOneWidget,
-        ); // Breakfast
-        expect(find.byIcon(Icons.wb_twilight_rounded), findsOneWidget); // Lunch
-        expect(find.byIcon(Icons.nightlight_round), findsOneWidget); // Dinner
-        expect(find.byIcon(Icons.cookie_outlined), findsOneWidget); // Snacks
-      },
-    );
-
-    testWidgets(
-      'FoodSearchScreen multi-select renders cleanly at 320pt and 2x text scale',
-      (tester) async {
-        tester.view.physicalSize = const Size(320, 844);
-        tester.view.devicePixelRatio = 1;
-        final harness = await _Harness.create();
-        addTearDown(() async {
-          await tester.pumpWidget(const SizedBox.shrink());
-          await tester.pump();
-          tester.view.resetPhysicalSize();
-          tester.view.resetDevicePixelRatio();
-          unawaited(harness.close());
-        });
-
-        final option = (await tester.runAsync(() async {
-          return harness.catalog.createUserFood(
-            displayName: 'Poha with Peanuts and Coriander Garnish',
-            servingSize: 1,
-            servingUnit: 'plate',
-            energyKcal: 260,
-            proteinG: 5,
-            carbohydrateG: 45,
-            fatG: 7,
-          );
-        }))!;
-
-        final recent = [
-          CanonicalRecentFood(
-            option: option,
-            quantityLabel: '1 plate',
-            loggedAtUtc: DateTime.utc(2026, 8, 24, 8, 0),
-          ),
-        ];
-
-        await _pumpFoodSearch(
-          tester: tester,
-          harness: harness,
-          recent: recent,
-          mealType: 'breakfast',
-          initialMultiSelect: true,
-          themeOverride: AppTheme.darkTheme,
-          textScale: 2.0,
+      final option = (await tester.runAsync(() async {
+        return harness.catalog.createUserFood(
+          displayName: 'Poha with Peanuts and Coriander Garnish',
+          servingSize: 1,
+          servingUnit: 'plate',
+          energyKcal: 260,
+          proteinG: 5,
+          carbohydrateG: 45,
+          fatG: 7,
         );
+      }))!;
 
-        expect(find.byType(Checkbox), findsOneWidget);
-        await tester.tap(find.byType(Checkbox).first);
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 200));
+      final recent = [
+        CanonicalRecentFood(
+          option: option,
+          quantityLabel: '1 plate',
+          loggedAtUtc: DateTime.utc(2026, 8, 24, 8, 0),
+        ),
+      ];
 
-        expect(tester.takeException(), isNull);
-        expect(find.text('Add 1 food to breakfast'), findsOneWidget);
-      },
-    );
+      await _pumpFoodSearch(
+        tester: tester,
+        harness: harness,
+        recent: recent,
+        mealType: 'breakfast',
+        initialMultiSelect: true,
+        themeOverride: AppTheme.darkTheme,
+        textScale: 2.0,
+      );
+
+      expect(find.byType(Checkbox), findsOneWidget);
+      await tester.tap(find.byType(Checkbox).first);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('Add 1 food to breakfast'), findsOneWidget);
+    });
   });
 }
