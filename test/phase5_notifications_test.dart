@@ -8,30 +8,19 @@ void main() {
     test(
       'NotificationService onNotificationNavigate callback handles payloads correctly',
       () {
-        String? routedPath;
-
-        NotificationService.onNotificationNavigate = (payload) {
-          if (payload == 'workout') {
-            routedPath = '/workout';
-          } else if (payload.startsWith('meal_')) {
-            final type = payload.replaceFirst('meal_', '');
-            routedPath = '/food?mealType=$type';
-          } else if (payload == 'weekly_report') {
-            routedPath = '/weekly-report';
-          }
-        };
-
-        // Test payload 'workout'
-        NotificationService.onNotificationNavigate!('workout');
-        expect(routedPath, '/workout');
-
-        // Test payload 'meal_lunch'
-        NotificationService.onNotificationNavigate!('meal_lunch');
-        expect(routedPath, '/food?mealType=lunch');
-
-        // Test payload 'weekly_report'
-        NotificationService.onNotificationNavigate!('weekly_report');
-        expect(routedPath, '/weekly-report');
+        expect(
+          NotificationService.destinationForPayload('workout'),
+          '/workout',
+        );
+        expect(
+          NotificationService.destinationForPayload('meal_lunch'),
+          '/food?mealType=lunch',
+        );
+        expect(
+          NotificationService.destinationForPayload('weekly_report'),
+          '/progress',
+        );
+        expect(NotificationService.destinationForPayload('unknown'), isNull);
       },
     );
 

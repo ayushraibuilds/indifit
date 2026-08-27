@@ -147,14 +147,8 @@ class _IndiFitAppState extends ConsumerState<IndiFitApp>
     final themeMode = ref.watch(themeModeProvider);
 
     NotificationService.onNotificationNavigate = (payload) {
-      if (payload == 'workout') {
-        router.go('/workout');
-      } else if (payload.startsWith('meal_')) {
-        final mealType = payload.replaceFirst('meal_', '');
-        router.go('/food?mealType=$mealType');
-      } else if (payload == 'weekly_report') {
-        router.go('/weekly-report');
-      }
+      final destination = NotificationService.destinationForPayload(payload);
+      if (destination != null) router.go(destination);
     };
 
     return MaterialApp.router(

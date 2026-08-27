@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -6,6 +7,7 @@ import 'package:indifit/core/di/providers.dart';
 import 'package:indifit/core/services/local_timezone_service.dart';
 import 'package:indifit/core/utils/tdee_calculator.dart';
 import 'package:indifit/data/database/app_database.dart';
+import 'package:indifit/data/models/b04_goal_models.dart';
 import 'package:indifit/data/repositories/workout_repository.dart';
 import 'package:indifit/features/onboarding/onboarding_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -181,6 +183,110 @@ void main() {
     },
   );
 
+  testWidgets(
+    'finishing a Settings setup reset updates the existing canonical target',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({'onboarding_completed': false});
+      final database = await _pumpDatabase(tester);
+      await tester.runAsync(() async {
+        final profileId = await database
+            .into(database.userProfiles)
+            .insert(
+              UserProfilesCompanion.insert(
+                name: const Value('Existing user'),
+                age: const Value(30),
+                height: const Value(180),
+                weight: const Value(80),
+                sex: const Value('male'),
+                activityLevel: const Value('moderate'),
+                goal: const Value('maintain'),
+                dietPreference: const Value('veg'),
+                calorieGoal: const Value(2100),
+                proteinGoal: const Value(140),
+                carbsGoal: const Value(220),
+                fatGoal: const Value(65),
+              ),
+            );
+        await database
+            .into(database.nutritionGoalVersions)
+            .insert(
+              NutritionGoalVersionsCompanion.insert(
+                id: 'existing-canonical-goal',
+                userId: '$profileId',
+                versionNumber: 1,
+                goalType: NutritionGoalType.maintenance.stableId,
+                targetSource: NutritionGoalSource.userSet.stableId,
+                calorieTargetKcal: const Value(2100),
+                proteinTargetG: const Value(140),
+                carbsTargetG: const Value(220),
+                fatTargetG: const Value(65),
+                effectiveFromLocalDate: '2000-01-01',
+                timezoneId: 'UTC',
+              ),
+            );
+      });
+      final profileNotifier = _ExistingProfileNotifier(database);
+
+      final router = GoRouter(
+        initialLocation: '/onboarding',
+        routes: [
+          GoRoute(
+            path: '/onboarding',
+            builder: (context, state) => const OnboardingScreen(),
+          ),
+          GoRoute(
+            path: '/',
+            builder: (context, state) =>
+                const Scaffold(body: Text('Today shell')),
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            databaseProvider.overrideWithValue(database),
+            userProfileProvider.overrideWith((ref) => profileNotifier),
+            workoutRepositoryProvider.overrideWithValue(
+              _TestWorkoutRepository(database),
+            ),
+          ],
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 250));
+
+      await _moveToReview(tester, goal: 'Gain / build muscle');
+      await tester.tap(find.text('Finish setup'));
+      await tester.pump();
+      for (var attempt = 0; attempt < 20; attempt++) {
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 100)),
+        );
+        await tester.pump(const Duration(milliseconds: 100));
+        if (find.text('Today shell').evaluate().isNotEmpty) break;
+      }
+
+      expect(find.text('Today shell'), findsOneWidget);
+      final versions = await tester.runAsync(
+        () => database.select(database.nutritionGoalVersions).get(),
+      );
+      expect(versions, isNotNull);
+      final persistedVersions = versions!;
+      persistedVersions.sort(
+        (left, right) => left.versionNumber.compareTo(right.versionNumber),
+      );
+      expect(persistedVersions, hasLength(2));
+      expect(persistedVersions.last.goalType, NutritionGoalType.gain.stableId);
+      expect(
+        persistedVersions.last.targetSource,
+        NutritionGoalSource.userSet.stableId,
+      );
+      expect(persistedVersions.last.calorieTargetKcal, isNot(2100));
+    },
+  );
+
   testWidgets('persistence failure stays recoverable and never completes', (
     tester,
   ) async {
@@ -300,6 +406,31 @@ Future<void> _tapVisible(WidgetTester tester, String text) async {
 
 class _TestProfileNotifier extends UserProfileNotifier {
   _TestProfileNotifier() : super();
+
+  @override
+  Future<void> loadProfile() async {}
+}
+
+class _ExistingProfileNotifier extends UserProfileNotifier {
+  _ExistingProfileNotifier(AppDatabase database)
+    : super(database, LocalTimezoneService(read: () async => 'UTC')) {
+    state = const UserProfileState(
+      isLoaded: true,
+      hasProfile: true,
+      calorieGoal: 2100,
+      proteinGoal: 140,
+      carbsGoal: 220,
+      fatGoal: 65,
+      currentWeight: 80,
+      userHeight: 180,
+      userName: 'Existing user',
+      userSex: 'male',
+      userAge: 30,
+      userActivityLevel: 'moderate',
+      userGoal: 'maintain',
+      dietPreference: 'veg',
+    );
+  }
 
   @override
   Future<void> loadProfile() async {}

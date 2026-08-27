@@ -441,8 +441,34 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     await prefs.setString('user_goal', _goal);
     await prefs.setString('user_diet_preference', _dietPreference);
 
-    // Refresh UserProfileNotifier with newly saved parameters
-    await ref.read(userProfileProvider.notifier).loadProfile();
+    // Load the existing profile/goal authority before applying this reviewed
+    // setup. On a first run the compatibility bridge imports the preferences
+    // above. On a Settings-initiated setup reset, the existing Drift profile
+    // already exists, so explicitly persist changed answers through the same
+    // canonical profile and NutritionGoalRepository command path.
+    final profileNotifier = ref.read(userProfileProvider.notifier);
+    await profileNotifier.loadProfile();
+    final currentProfile = ref.read(userProfileProvider);
+    final targetChanged =
+        currentProfile.userGoal != _goal ||
+        currentProfile.calorieGoal != macros.calories ||
+        currentProfile.proteinGoal != macros.proteinG ||
+        currentProfile.carbsGoal != macros.carbsG ||
+        currentProfile.fatGoal != macros.fatG;
+    await profileNotifier.updateProfile(
+      name: _nameController.text.trim(),
+      age: _age,
+      height: _height,
+      weight: _weight,
+      sex: _sex,
+      activityLevel: _activityLevel,
+      goal: targetChanged ? _goal : null,
+      dietPreference: _dietPreference,
+      calorieGoal: targetChanged ? macros.calories : null,
+      proteinGoal: targetChanged ? macros.proteinG : null,
+      carbsGoal: targetChanged ? macros.carbsG : null,
+      fatGoal: targetChanged ? macros.fatG : null,
+    );
 
     // Log canonical initial weight entry in BodyMeasurements Drift table
     await ref

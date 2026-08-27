@@ -22,7 +22,6 @@ import '../../features/profile/profile_screen.dart';
 import '../../features/program_authoring/program_author_screen.dart';
 import '../../features/program_authoring/program_review_screen.dart';
 import '../../features/progress/achievements_screen.dart';
-import '../../features/reports/weekly_report_screen.dart';
 import '../../features/settings/health_sync_hub_screen.dart';
 import '../../features/settings/household_measures_screen.dart';
 import '../../features/settings/nutrition_constraint_review_screen.dart';
@@ -239,9 +238,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/routine-editor',
         builder: (context, state) => const RoutineEditorScreen(),
       ),
+      // The retired AI report must not remain reachable from saved links.
+      // Weekly reminders now open the factual Progress destination.
       GoRoute(
         path: '/weekly-report',
-        builder: (context, state) => const WeeklyReportScreen(),
+        redirect: (context, state) => '/progress',
       ),
       GoRoute(
         path: '/workout-player',

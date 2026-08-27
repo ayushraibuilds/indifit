@@ -8,6 +8,8 @@ import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/features/settings/about_credits_screen.dart';
 import 'package:indifit/features/settings/data_management_sub_screen.dart';
+import 'package:indifit/features/settings/settings_controller.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'fixtures/backup_v5_fixtures.dart';
@@ -82,6 +84,7 @@ void main() {
     expect(find.text('Review before restoring'), findsOneWidget);
     expect(find.textContaining('Existing data is not merged'), findsOneWidget);
     expect(find.widgetWithText(FilledButton, 'Restore backup'), findsOneWidget);
+    expect(find.textContaining('Water'), findsNothing);
 
     await tester.tap(find.widgetWithText(TextButton, 'Cancel').last);
     await tester.pumpAndSettle();
@@ -92,6 +95,19 @@ void main() {
       findsOneWidget,
     );
     expect(tester.takeException(), isNull);
+  });
+
+  test('backup sharing keeps unavailable distinct from failure and cancel', () {
+    final unavailable = SettingsController.exportResultForShareStatus(
+      ShareResultStatus.unavailable,
+    );
+    final cancelled = SettingsController.exportResultForShareStatus(
+      ShareResultStatus.dismissed,
+    );
+
+    expect(unavailable.status, SettingsExportStatus.unavailable);
+    expect(unavailable.message, contains('unavailable'));
+    expect(cancelled.status, SettingsExportStatus.cancelled);
   });
 
   testWidgets(

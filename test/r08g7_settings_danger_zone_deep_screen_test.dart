@@ -131,7 +131,7 @@ void main() {
       expect(find.text('DANGER ZONE'), findsOneWidget);
 
       // Check Danger Zone contents
-      expect(find.text('Irreversible actions'), findsOneWidget);
+      expect(find.text('Setup reset'), findsOneWidget);
       expect(find.text('Reset onboarding wizard'), findsOneWidget);
       expect(find.textContaining('Wipe all local data'), findsNothing);
 

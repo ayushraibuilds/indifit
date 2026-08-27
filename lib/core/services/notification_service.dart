@@ -51,6 +51,19 @@ class NotificationService {
 
   static Function(String payload)? onNotificationNavigate;
 
+  /// Resolves notification payloads only to currently supported destinations.
+  /// The weekly reminder opens factual Progress instead of the retired AI
+  /// report surface.
+  static String? destinationForPayload(String payload) {
+    if (payload == 'workout') return '/workout';
+    if (payload.startsWith('meal_')) {
+      final mealType = payload.replaceFirst('meal_', '');
+      return mealType.isEmpty ? '/food' : '/food?mealType=$mealType';
+    }
+    if (payload == 'weekly_report') return '/progress';
+    return null;
+  }
+
   /// Initialize the notification plugin, timezone data, and Android channels.
   static Future<void> initialize() async {
     tz_data.initializeTimeZones();

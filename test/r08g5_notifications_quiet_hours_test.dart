@@ -53,6 +53,16 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  test(
+    'weekly reminder routes to factual Progress, not the retired AI report',
+    () {
+      expect(
+        NotificationService.destinationForPayload('weekly_report'),
+        '/progress',
+      );
+    },
+  );
+
   testWidgets('shows denied access and routes through the existing requester', (
     tester,
   ) async {

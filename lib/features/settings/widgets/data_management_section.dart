@@ -76,6 +76,9 @@ class DataManagementSection extends ConsumerWidget {
           'Sharing completed. Check the destination you chose before relying on this backup.',
         SettingsExportStatus.cancelled =>
           result.message ?? 'No backup was shared.',
+        SettingsExportStatus.unavailable =>
+          result.message ??
+              'Sharing is unavailable on this device. No backup was shared.',
         SettingsExportStatus.failed =>
           result.message ??
               ProductFailurePresentation.fromCode(
@@ -85,7 +88,9 @@ class DataManagementSection extends ConsumerWidget {
       _showSnack(
         context,
         message,
-        error: result.status == SettingsExportStatus.failed,
+        error:
+            result.status == SettingsExportStatus.unavailable ||
+            result.status == SettingsExportStatus.failed,
       );
     } finally {
       passwordController.dispose();
@@ -266,7 +271,7 @@ class DataManagementSection extends ConsumerWidget {
                     if (context.mounted) {
                       _showSnack(
                         context,
-                        'The backup could not be restored. Your existing data was not changed.',
+                        'The backup could not be restored. Check your data and settings before trying again.',
                         error: true,
                       );
                     }
@@ -373,7 +378,7 @@ class DataManagementSection extends ConsumerWidget {
       if (context.mounted) {
         _showSnack(
           context,
-          'The local snapshot could not be restored. Your existing data was not changed.',
+          'The local snapshot could not be restored. Check your data and settings before trying again.',
           error: true,
         );
       }
@@ -564,7 +569,7 @@ class DataManagementSection extends ConsumerWidget {
                   const SizedBox(width: B05Layout.space8),
                   Expanded(
                     child: Text(
-                      'Irreversible actions',
+                      'Setup reset',
                       style: B05Typography.title(
                         context,
                       ).copyWith(color: colors.danger.foreground),
@@ -574,7 +579,7 @@ class DataManagementSection extends ConsumerWidget {
               ),
               const SizedBox(height: B05Layout.space8),
               Text(
-                'These actions affect your local app data. Please review carefully before proceeding.',
+                'This action changes your setup state. Review what it does before proceeding.',
                 style: B05Typography.caption(context),
               ),
               const SizedBox(height: B05Layout.space16),
@@ -656,7 +661,6 @@ class DataManagementSection extends ConsumerWidget {
       'workout_sessions': 'Workouts',
       'workout_sets': 'Workout sets',
       'body_measurements': 'Body measurements',
-      'daily_hydrations': 'Water entries',
       'achievement_unlocks': 'Achievements',
       'dashboard_module_preferences': 'Dashboard preferences',
       'education_content_progress': 'Learning progress',

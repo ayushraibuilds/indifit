@@ -83,7 +83,7 @@ class SettingsState {
   }
 }
 
-enum SettingsExportStatus { shared, cancelled, failed }
+enum SettingsExportStatus { shared, cancelled, unavailable, failed }
 
 /// Result of creating the portable backup file and handing it to a destination
 /// through the platform share sheet.
@@ -210,21 +210,7 @@ class SettingsController extends StateNotifier<SettingsState> {
         xFile,
       ], subject: 'IndiFit backup (.indifit-backup)');
 
-      return switch (shareResult.status) {
-        ShareResultStatus.success => const SettingsExportResult(
-          SettingsExportStatus.shared,
-        ),
-        ShareResultStatus.dismissed => const SettingsExportResult(
-          SettingsExportStatus.cancelled,
-          message: 'No backup was shared.',
-        ),
-        ShareResultStatus.unavailable => SettingsExportResult(
-          SettingsExportStatus.failed,
-          message: ProductFailurePresentation.fromCode(
-            'backup_export_failed',
-          ).message,
-        ),
-      };
+      return exportResultForShareStatus(shareResult.status);
     } catch (_) {
       return SettingsExportResult(
         SettingsExportStatus.failed,
@@ -237,6 +223,22 @@ class SettingsController extends StateNotifier<SettingsState> {
       state = state.copyWith(loading: false);
     }
   }
+
+  static SettingsExportResult exportResultForShareStatus(
+    ShareResultStatus status,
+  ) => switch (status) {
+    ShareResultStatus.success => const SettingsExportResult(
+      SettingsExportStatus.shared,
+    ),
+    ShareResultStatus.dismissed => const SettingsExportResult(
+      SettingsExportStatus.cancelled,
+      message: 'No backup was shared.',
+    ),
+    ShareResultStatus.unavailable => const SettingsExportResult(
+      SettingsExportStatus.unavailable,
+      message: 'Sharing is unavailable on this device. No backup was shared.',
+    ),
+  };
 
   bool _isRestoring = false;
 
