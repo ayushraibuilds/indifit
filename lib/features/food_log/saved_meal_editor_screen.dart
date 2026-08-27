@@ -226,7 +226,7 @@ class _SavedMealEditorScreenState extends ConsumerState<SavedMealEditorScreen> {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 : const Text(
-                    'SAVE',
+                    'Save',
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
           ),

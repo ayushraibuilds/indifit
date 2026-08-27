@@ -8,6 +8,7 @@ import 'package:indifit/core/nutrition_thali.dart';
 import 'package:indifit/core/typed_quantities.dart';
 import 'package:indifit/data/repositories/nutrition_thali_repository.dart';
 import 'package:indifit/features/food_log/saved_meal_detail_screen.dart';
+import 'package:indifit/features/food_log/saved_meal_editor_screen.dart';
 import 'package:indifit/features/food_log/saved_meal_presentation.dart';
 import 'package:indifit/features/food_log/saved_meals_controller.dart';
 import 'package:indifit/features/food_log/saved_meals_screen.dart';
@@ -139,6 +140,17 @@ void main() {
     );
     expect(delete.style?.backgroundColor?.resolve({}), isNotNull);
     expect(delete.style?.foregroundColor?.resolve({}), isNotNull);
+  });
+
+  testWidgets('Saved Meal editor uses title-case save action', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: SavedMealEditorScreen()),
+    );
+    await tester.pump();
+
+    expect(find.text('Save'), findsOneWidget);
+    expect(find.text('SAVE'), findsNothing);
+    expect(tester.takeException(), isNull);
   });
 }
 
