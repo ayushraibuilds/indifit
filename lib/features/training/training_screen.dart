@@ -199,9 +199,9 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
     TrainingLandingSnapshot data,
   ) async {
     if (_isEndingPlan || data.activeProgramName == null) return;
-    final action = await showModalBottomSheet<String>(
+    final action = await showIndiFitBottomSheet<String>(
       context: context,
-      useSafeArea: true,
+      semanticLabel: 'Manage training plan',
       builder: (sheetContext) => SafeArea(
         child: ListView(
           shrinkWrap: true,
@@ -670,13 +670,11 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
     WidgetRef ref, {
     required bool hasActiveProgram,
   }) {
-    showModalBottomSheet<void>(
+    showIndiFitBottomSheet<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      semanticLabel: 'Training options',
       builder: (sheetContext) => SafeArea(
-        child: B05Surface(
-          radius: B05SurfaceRadius.large,
+        child: Padding(
           padding: const EdgeInsets.fromLTRB(
             B05Layout.space16,
             B05Layout.space12,

@@ -40,7 +40,6 @@ class SettingsReminderToggle extends StatelessWidget {
       child: Semantics(
         container: true,
         label: '$title, $subtitle',
-        toggled: value,
         child: Row(
           children: [
             Container(

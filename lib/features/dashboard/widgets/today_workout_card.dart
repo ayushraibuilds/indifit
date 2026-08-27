@@ -103,6 +103,7 @@ class TodayWorkoutCard extends ConsumerWidget {
                   ),
                   if (!isRestDay)
                     IconButton(
+                      tooltip: 'Start workout',
                       icon: Icon(
                         Icons.play_circle_fill_rounded,
                         color: colors.action,

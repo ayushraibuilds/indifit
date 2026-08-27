@@ -9,6 +9,7 @@ import '../../../core/theme/b05_semantic_colors.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
 import '../../../core/widgets/indi_fit_bottom_sheet.dart';
 import '../../../core/widgets/indi_fit_feedback.dart';
+import '../../../core/widgets/responsive_form_primitives.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/repositories/food_repository.dart';
 import '../../food_log/canonical_food_delete.dart';
@@ -105,11 +106,11 @@ class _MealCard extends ConsumerWidget {
       semanticLabel: ConsumerCopy.logFoodAction,
       builder: (sheetCtx) {
         return SingleChildScrollView(
-          padding: EdgeInsets.only(
+          padding: const EdgeInsets.only(
             left: 20.0,
             right: 20.0,
             top: 12.0,
-            bottom: MediaQuery.of(sheetCtx).viewInsets.bottom + 24.0,
+            bottom: 24.0,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -511,10 +512,14 @@ class _MealCard extends ConsumerWidget {
         title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              presentation.label,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+            Expanded(
+              child: Text(
+                presentation.label,
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
+            const SizedBox(width: 8),
             Text(
               energyLabel,
               style: TextStyle(
@@ -532,6 +537,7 @@ class _MealCard extends ConsumerWidget {
           style: B05Typography.caption(context).copyWith(fontSize: 12),
         ),
         trailing: IconButton(
+          tooltip: 'Add food to ${presentation.label}',
           icon: Icon(Icons.add_circle_outline, color: context.b05Colors.action),
           onPressed: () => _showAddMealSheet(context, ref),
         ),
@@ -659,44 +665,41 @@ class _MealCard extends ConsumerWidget {
               );
             }),
             Divider(color: context.b05Colors.border, height: 20),
-            Row(
+            IndiFitResponsiveFieldGroup(
+              breakpoint: 360,
+              textScaleBreakpoint: 1.3,
+              spacing: 8,
               children: [
-                if (canonicalMealItems.isNotEmpty) ...[
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () => _saveAsReusableMeal(
-                        context,
-                        ref,
-                        canonicalMealItems,
-                        legacyItemCount: mealLogs.length,
-                      ),
-                      icon: const Icon(Icons.bookmark_add_outlined, size: 16),
-                      label: const Text(
-                        'Save meal',
-                        style: TextStyle(fontSize: 12),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: context.b05Colors.action,
-                        side: BorderSide(color: context.b05Colors.border),
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                      ),
+                if (canonicalMealItems.isNotEmpty)
+                  OutlinedButton.icon(
+                    onPressed: () => _saveAsReusableMeal(
+                      context,
+                      ref,
+                      canonicalMealItems,
+                      legacyItemCount: mealLogs.length,
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                ],
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => _copyMeal(context, ref, mealLogs),
-                    icon: const Icon(Icons.copy_all_outlined, size: 16),
+                    icon: const Icon(Icons.bookmark_add_outlined, size: 16),
                     label: const Text(
-                      'Copy meal',
+                      'Save meal',
                       style: TextStyle(fontSize: 12),
                     ),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: context.b05Colors.textSecondary,
+                      foregroundColor: context.b05Colors.action,
                       side: BorderSide(color: context.b05Colors.border),
                       padding: const EdgeInsets.symmetric(vertical: 10),
                     ),
+                  ),
+                OutlinedButton.icon(
+                  onPressed: () => _copyMeal(context, ref, mealLogs),
+                  icon: const Icon(Icons.copy_all_outlined, size: 16),
+                  label: const Text(
+                    'Copy meal',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: context.b05Colors.textSecondary,
+                    side: BorderSide(color: context.b05Colors.border),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
                   ),
                 ),
               ],
@@ -792,7 +795,6 @@ class _CanonicalItemRow extends StatelessWidget {
             IconButton(
               tooltip:
                   'Delete ${displayedItem?.displayLabel ?? record.displayLabel}',
-              visualDensity: VisualDensity.compact,
               onPressed: () => onDelete!(),
               icon: const Icon(Icons.delete_outline_rounded, size: 18),
             ),

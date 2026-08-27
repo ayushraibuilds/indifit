@@ -385,16 +385,12 @@ class _CalendarDateControls extends StatelessWidget {
       view,
       localDate,
     );
-    final dateButton = Semantics(
-      label: 'Selected $selectedLabel',
-      button: true,
-      child: B05ActionButton(
-        label: selectedLabel,
-        icon: Icons.calendar_today_outlined,
-        emphasis: B05ActionEmphasis.tertiary,
-        hint: 'Choose a date to view.',
-        onPressed: onPickDate,
-      ),
+    final dateButton = B05ActionButton(
+      label: selectedLabel,
+      icon: Icons.calendar_today_outlined,
+      emphasis: B05ActionEmphasis.tertiary,
+      hint: 'Choose a date to view.',
+      onPressed: onPickDate,
     );
     final previous = B05IconAction(
       icon: Icons.chevron_left_rounded,

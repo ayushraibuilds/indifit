@@ -2497,6 +2497,7 @@ LineChartData _weightChartData({
         ? 1
         : (minY * 1.01).clamp(minY, double.maxFinite).toDouble();
   }
+  final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
   return LineChartData(
     gridData: FlGridData(
       show: true,
@@ -2511,7 +2512,7 @@ LineChartData _weightChartData({
       leftTitles: AxisTitles(
         sideTitles: SideTitles(
           showTitles: true,
-          reservedSize: 42,
+          reservedSize: (42 * textScale).clamp(42.0, 72.0),
           interval: (maxY - minY) / 2,
           getTitlesWidget: (value, _) => Text(
             value.toStringAsFixed(0),

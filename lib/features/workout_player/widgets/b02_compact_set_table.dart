@@ -299,7 +299,7 @@ class _TableHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
-    final compact = MediaQuery.sizeOf(context).width < 360 || textScale >= 1.5;
+    final compact = MediaQuery.sizeOf(context).width < 380 || textScale >= 1.3;
     return Semantics(
       header: true,
       child: compact ? _buildCompact(context) : _buildWide(context),
@@ -505,7 +505,7 @@ class _SetRow extends StatelessWidget {
 
   bool _isCompact(BuildContext context) {
     final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
-    return MediaQuery.sizeOf(context).width < 360 || textScale >= 1.5;
+    return MediaQuery.sizeOf(context).width < 380 || textScale >= 1.3;
   }
 }
 
@@ -601,7 +601,13 @@ class _PendingSetEditor extends StatelessWidget {
             title: Row(
               children: [
                 const Expanded(child: Text('More for this set')),
-                Text('RPE', style: Theme.of(context).textTheme.labelMedium),
+                Flexible(
+                  child: Text(
+                    'RPE',
+                    style: Theme.of(context).textTheme.labelMedium,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
               ],
             ),
             subtitle: Text(

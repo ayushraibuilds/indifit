@@ -67,6 +67,8 @@ class DashboardDateBar extends StatelessWidget {
                       hint: 'Choose a date to view.',
                       icon: Icons.calendar_today_outlined,
                       emphasis: B05ActionEmphasis.secondary,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       onPressed: () async {
                         final initialDate = target.isBefore(firstDate)
                             ? firstDate

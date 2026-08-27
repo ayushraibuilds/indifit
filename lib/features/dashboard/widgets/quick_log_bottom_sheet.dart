@@ -19,6 +19,7 @@ class QuickLogBottomSheet extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         IconButton(
+          tooltip: label,
           icon: Icon(icon, color: colors.action, size: 28),
           onPressed: () {
             Navigator.pop(context);

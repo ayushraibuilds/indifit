@@ -423,6 +423,7 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
     final maxY = (maximum + padding).toDouble();
     final ySpan = (maxY - minY).abs() < .001 ? 1.0 : maxY - minY;
     final maxX = (points.length - 1).toDouble();
+    final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
     return LineChartData(
       minX: 0,
       maxX: maxX,
@@ -443,7 +444,7 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
         leftTitles: AxisTitles(
           sideTitles: SideTitles(
             showTitles: true,
-            reservedSize: 44,
+            reservedSize: (44 * textScale).clamp(44.0, 72.0),
             interval: ySpan / 2,
             getTitlesWidget: (value, _) => Text(
               value.toStringAsFixed(0),

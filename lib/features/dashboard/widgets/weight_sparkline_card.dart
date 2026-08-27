@@ -28,20 +28,23 @@ class WeightSparklineCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Weight Progress',
-                    style: B05Typography.title(context).copyWith(fontSize: 15),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Current weight: ${currentWeight.toStringAsFixed(1)} kg',
-                    style: B05Typography.caption(context).copyWith(fontSize: 12),
-                  ),
-                ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Weight Progress',
+                      style: B05Typography.title(context).copyWith(fontSize: 15),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Current weight: ${currentWeight.toStringAsFixed(1)} kg',
+                      style: B05Typography.caption(context).copyWith(fontSize: 12),
+                    ),
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
 
               // Weight entry Log button
               OutlinedButton.icon(
@@ -55,6 +58,7 @@ class WeightSparklineCard extends StatelessWidget {
                 style: OutlinedButton.styleFrom(
                   foregroundColor: colors.action,
                   side: BorderSide(color: colors.action),
+                  minimumSize: const Size(64, B05Layout.minTouchTarget),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
                     vertical: 6,
@@ -112,46 +116,51 @@ class WeightSparklineCard extends StatelessWidget {
                     (i) => FlSpot(i.toDouble(), weightHistory[i]),
                   );
 
-                  return LineChart(
-                    LineChartData(
-                      gridData: const FlGridData(show: false),
-                      titlesData: const FlTitlesData(show: false),
-                      borderData: FlBorderData(show: false),
-                      lineTouchData: LineTouchData(
-                        enabled: true,
-                        touchTooltipData: LineTouchTooltipData(
-                          getTooltipItems: (touchedSpots) {
-                            return touchedSpots.map((spot) {
-                              return LineTooltipItem(
-                                '${spot.y.toStringAsFixed(1)} kg',
-                                TextStyle(
-                                  color: colors.textPrimary,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12,
-                                ),
-                              );
-                            }).toList();
-                          },
-                        ),
-                      ),
-                      minX: 0,
-                      maxX: (weightHistory.length - 1).toDouble(),
-                      minY: minW,
-                      maxY: maxW,
-                      lineBarsData: [
-                        LineChartBarData(
-                          spots: spots,
-                          isCurved: true,
-                          color: colors.action,
-                          barWidth: 3,
-                          isStrokeCapRound: true,
-                          dotData: const FlDotData(show: true),
-                          belowBarData: BarAreaData(
-                            show: true,
-                            color: colors.action.withValues(alpha: 0.08),
+                  return Semantics(
+                    container: true,
+                    label:
+                        'Weight progress chart showing ${weightHistory.length} recorded weigh-ins. Latest: ${currentWeight.toStringAsFixed(1)} kg.',
+                    child: LineChart(
+                      LineChartData(
+                        gridData: const FlGridData(show: false),
+                        titlesData: const FlTitlesData(show: false),
+                        borderData: FlBorderData(show: false),
+                        lineTouchData: LineTouchData(
+                          enabled: true,
+                          touchTooltipData: LineTouchTooltipData(
+                            getTooltipItems: (touchedSpots) {
+                              return touchedSpots.map((spot) {
+                                return LineTooltipItem(
+                                  '${spot.y.toStringAsFixed(1)} kg',
+                                  TextStyle(
+                                    color: colors.textPrimary,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                  ),
+                                );
+                              }).toList();
+                            },
                           ),
                         ),
-                      ],
+                        minX: 0,
+                        maxX: (weightHistory.length - 1).toDouble(),
+                        minY: minW,
+                        maxY: maxW,
+                        lineBarsData: [
+                          LineChartBarData(
+                            spots: spots,
+                            isCurved: true,
+                            color: colors.action,
+                            barWidth: 3,
+                            isStrokeCapRound: true,
+                            dotData: const FlDotData(show: true),
+                            belowBarData: BarAreaData(
+                              show: true,
+                              color: colors.action.withValues(alpha: 0.08),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   );
                 },

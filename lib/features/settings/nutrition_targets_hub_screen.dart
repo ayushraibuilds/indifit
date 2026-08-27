@@ -505,13 +505,15 @@ class _NutritionTargetsHubScreenState
     label: label,
     hint: 'Change target date.',
     onTap: onPressed,
-    child: IconButton(
-      tooltip: label,
-      icon: Icon(icon),
-      onPressed: onPressed,
-      constraints: const BoxConstraints(
-        minWidth: B05Layout.minTouchTarget,
-        minHeight: B05Layout.minTouchTarget,
+    child: ExcludeSemantics(
+      child: IconButton(
+        tooltip: label,
+        icon: Icon(icon),
+        onPressed: onPressed,
+        constraints: const BoxConstraints(
+          minWidth: B05Layout.minTouchTarget,
+          minHeight: B05Layout.minTouchTarget,
+        ),
       ),
     ),
   );

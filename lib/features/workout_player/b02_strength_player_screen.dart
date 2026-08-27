@@ -9,6 +9,7 @@ import '../../core/presentation/consumer_copy.dart';
 import '../../core/services/indifit_haptics.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
+import '../../core/widgets/indi_fit_bottom_sheet.dart';
 import '../../core/widgets/indi_fit_feedback.dart';
 import '../../core/widgets/responsive_form_primitives.dart';
 import '../../data/database/app_database.dart';
@@ -983,10 +984,9 @@ class _B02StrengthPlayerScreenState
       final loadController = TextEditingController(
         text: set.actualLoadKg?.toString() ?? '',
       );
-      final result = await showModalBottomSheet<_B02LoggedSetEditValues>(
+      final result = await showIndiFitBottomSheet<_B02LoggedSetEditValues>(
         context: context,
-        isScrollControlled: true,
-        useSafeArea: true,
+        semanticLabel: 'Edit set ${set.ordinal + 1}',
         builder: (sheetContext) {
           int? rpe = set.actualRpe;
           String? repsError;
@@ -1034,11 +1034,11 @@ class _B02StrengthPlayerScreenState
               }
 
               return Padding(
-                padding: EdgeInsets.only(
+                padding: const EdgeInsets.only(
                   left: 20,
                   right: 20,
                   top: 12,
-                  bottom: MediaQuery.viewInsetsOf(context).bottom + 20,
+                  bottom: 20,
                 ),
                 child: SingleChildScrollView(
                   child: Column(
@@ -1271,9 +1271,9 @@ class _B02StrengthPlayerScreenState
       launchForProvider(provider)?.state ?? widget.launch.state,
       slot,
     );
-    final action = await showModalBottomSheet<String>(
+    final action = await showIndiFitBottomSheet<String>(
       context: context,
-      useSafeArea: true,
+      semanticLabel: 'Exercise options',
       builder: (sheetContext) => SafeArea(
         child: Wrap(
           children: [

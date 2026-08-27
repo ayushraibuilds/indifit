@@ -221,6 +221,8 @@ class B05ActionButton extends StatelessWidget {
     this.emphasis = B05ActionEmphasis.primary,
     this.selected = false,
     this.focusOrder,
+    this.maxLines,
+    this.overflow,
   });
 
   final String label;
@@ -230,6 +232,8 @@ class B05ActionButton extends StatelessWidget {
   final B05ActionEmphasis emphasis;
   final bool selected;
   final double? focusOrder;
+  final int? maxLines;
+  final TextOverflow? overflow;
 
   @override
   Widget build(BuildContext context) {
@@ -297,22 +301,28 @@ class B05ActionButton extends StatelessWidget {
           );
   }
 
+  Widget _labelWidget() => Text(
+        label,
+        maxLines: maxLines,
+        overflow: overflow,
+      );
+
   Widget _button(ButtonStyle style) {
     return switch (emphasis) {
       B05ActionEmphasis.primary || B05ActionEmphasis.danger => FilledButton(
         onPressed: onPressed,
         style: style,
-        child: Text(label),
+        child: _labelWidget(),
       ),
       B05ActionEmphasis.secondary => OutlinedButton(
         onPressed: onPressed,
         style: style,
-        child: Text(label),
+        child: _labelWidget(),
       ),
       B05ActionEmphasis.tertiary => TextButton(
         onPressed: onPressed,
         style: style,
-        child: Text(label),
+        child: _labelWidget(),
       ),
     };
   }
@@ -323,19 +333,19 @@ class B05ActionButton extends StatelessWidget {
         onPressed: onPressed,
         style: style,
         icon: Icon(icon, size: B05Layout.iconMedium),
-        label: Text(label),
+        label: _labelWidget(),
       ),
       B05ActionEmphasis.secondary => OutlinedButton.icon(
         onPressed: onPressed,
         style: style,
         icon: Icon(icon, size: B05Layout.iconMedium),
-        label: Text(label),
+        label: _labelWidget(),
       ),
       B05ActionEmphasis.tertiary => TextButton.icon(
         onPressed: onPressed,
         style: style,
         icon: Icon(icon, size: B05Layout.iconMedium),
-        label: Text(label),
+        label: _labelWidget(),
       ),
     };
   }

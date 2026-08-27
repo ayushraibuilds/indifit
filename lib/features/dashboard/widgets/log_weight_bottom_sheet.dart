@@ -257,6 +257,7 @@ class _LogWeightBottomSheetState extends ConsumerState<LogWeightBottomSheet> {
                 ),
               ),
               IconButton(
+                tooltip: 'Close',
                 icon: Icon(Icons.close, color: colors.textSecondary),
                 onPressed: _isSaving ? null : () => Navigator.pop(context),
               ),

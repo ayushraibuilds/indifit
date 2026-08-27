@@ -5,6 +5,7 @@ import '../../../core/di/providers.dart';
 import '../../../core/fixtures/exercise_display_muscles.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
+import '../../../core/widgets/indi_fit_bottom_sheet.dart';
 import '../../../data/models/b02_execution_models.dart';
 import '../../../data/repositories/b07_exercise_context_repository.dart';
 import '../../media/b05_exercise_visual_registry.dart';
@@ -371,9 +372,9 @@ class _B07CueSummary extends StatelessWidget {
     required List<String> cues,
     required List<String> commonMistakes,
   }) {
-    return showModalBottomSheet<void>(
+    return showIndiFitBottomSheet<void>(
       context: context,
-      showDragHandle: true,
+      semanticLabel: 'Exercise technique',
       builder: (context) => SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(
