@@ -13,9 +13,9 @@ import '../../core/presentation/consumer_date_label.dart';
 import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/services/crash_reporting_service.dart';
 import '../../core/services/workout_session_wake_lock_coordinator.dart';
-import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/utils/app_logger.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
+import '../../core/widgets/indi_fit_bottom_sheet.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/calendar_read_repository.dart';
 import '../../data/repositories/training_next_action_resolver.dart';
@@ -261,39 +261,33 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   void _openFoodGuidance() {
-    showModalBottomSheet<void>(
+    showIndiFitBottomSheet<void>(
       context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(B05Layout.space12),
-          child: B05Surface(
-            radius: B05SurfaceRadius.large,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
+      semanticLabel: 'Food guidance',
+      builder: (sheetCtx) => Padding(
+        padding: const EdgeInsets.all(B05Layout.space16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'What can I eat?',
-                        style: B05Typography.title(context),
-                      ),
-                    ),
-                    B05IconAction(
-                      icon: Icons.close_rounded,
-                      label: 'Close food guidance',
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                  ],
+                Expanded(
+                  child: Text(
+                    'What can I eat?',
+                    style: B05Typography.title(sheetCtx),
+                  ),
                 ),
-                const SizedBox(height: B05Layout.space12),
-                const B04CurrentFoodSummary(),
+                B05IconAction(
+                  icon: Icons.close_rounded,
+                  label: 'Close food guidance',
+                  onPressed: () => Navigator.of(sheetCtx).pop(),
+                ),
               ],
             ),
-          ),
+            const SizedBox(height: B05Layout.space12),
+            const B04CurrentFoodSummary(),
+          ],
         ),
       ),
     );
@@ -354,70 +348,42 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   void _openCustomization() {
-    showModalBottomSheet<void>(
+    showIndiFitBottomSheet<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-            B05Layout.space12,
-            B05Layout.space12,
-            B05Layout.space12,
-            B05Layout.space8,
-          ),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.sizeOf(context).height * .82,
-            ),
-            child: B05Surface(
-              padding: const EdgeInsets.fromLTRB(
-                B05Layout.space16,
-                B05Layout.space8,
-                B05Layout.space16,
-                B05Layout.space16,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Semantics(
-                    label: ConsumerCopy.customizeTodayAction,
-                    header: true,
-                    child: Column(
-                      children: [
-                        Container(
-                          width: 36,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: context.b05Colors.border,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                        ),
-                        const SizedBox(height: B05Layout.space8),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                ConsumerCopy.customizeTodayAction,
-                                style: B05Typography.title(context),
-                              ),
-                            ),
-                            B05IconAction(
-                              icon: Icons.close_rounded,
-                              label: 'Close customization',
-                              onPressed: () => Navigator.of(context).pop(),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
+      semanticLabel: ConsumerCopy.customizeTodayAction,
+      maxHeightFactor: 0.85,
+      builder: (sheetCtx) => Padding(
+        padding: const EdgeInsets.fromLTRB(
+          B05Layout.space16,
+          B05Layout.space8,
+          B05Layout.space16,
+          B05Layout.space16,
+        ),
+        child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Semantics(
+            label: ConsumerCopy.customizeTodayAction,
+            header: true,
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    ConsumerCopy.customizeTodayAction,
+                    style: B05Typography.title(sheetCtx),
                   ),
-                  const SizedBox(height: B05Layout.space8),
-                  const Flexible(child: DashboardModuleCustomizationPanel()),
-                ],
-              ),
+                ),
+                B05IconAction(
+                  icon: Icons.close_rounded,
+                  label: 'Close customization',
+                  onPressed: () => Navigator.of(sheetCtx).pop(),
+                ),
+              ],
             ),
           ),
+            const SizedBox(height: B05Layout.space8),
+            const Flexible(child: DashboardModuleCustomizationPanel()),
+          ],
         ),
       ),
     );

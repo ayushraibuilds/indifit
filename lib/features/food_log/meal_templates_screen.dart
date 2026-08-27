@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/theme/colors.dart';
+import '../../core/theme/b05_semantic_colors.dart';
+import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/consumer_task_primitives.dart';
 import '../../data/repositories/food_repository.dart';
 
@@ -54,7 +55,7 @@ class _MealTemplatesScreenState extends ConsumerState<MealTemplatesScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Logged "${template.template.name}" as $mealType!'),
-            backgroundColor: AppColors.success,
+            backgroundColor: context.b05Colors.success.indicator,
           ),
         );
         Navigator.pop(context, true);
@@ -63,9 +64,9 @@ class _MealTemplatesScreenState extends ConsumerState<MealTemplatesScreen> {
       if (mounted) {
         setState(() => _isLogging = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Saved meal could not be logged. Try again.'),
-            backgroundColor: AppColors.danger,
+          SnackBar(
+            content: const Text('Saved meal could not be logged. Try again.'),
+            backgroundColor: context.b05Colors.danger.indicator,
           ),
         );
       }
@@ -175,10 +176,10 @@ class _MealTemplatesScreenState extends ConsumerState<MealTemplatesScreen> {
               onPressed: () => Navigator.pop(dlgCtx),
               child: const Text('Cancel'),
             ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: context.b05Colors.action,
+                foregroundColor: context.b05Colors.onAction,
               ),
               onPressed: () async {
                 if (nameController.text.trim().isEmpty) return;
@@ -218,8 +219,6 @@ class _MealTemplatesScreenState extends ConsumerState<MealTemplatesScreen> {
         title: Text(
           widget.legacyReadOnly ? 'Older saved meals' : 'My saved meals',
         ),
-        backgroundColor: AppColors.surface,
-        elevation: 0,
         actions: widget.legacyReadOnly
             ? null
             : [
@@ -232,47 +231,42 @@ class _MealTemplatesScreenState extends ConsumerState<MealTemplatesScreen> {
       body: templatesAsync.when(
         data: (templates) {
           if (templates.isEmpty) {
+            final colors = context.b05Colors;
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(32.0),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.bookmark_outline_rounded,
                       size: 64,
-                      color: AppColors.textMuted,
+                      color: colors.textDisabled,
                     ),
                     const SizedBox(height: 16),
-                    Text(
-                      widget.legacyReadOnly
-                          ? 'No older saved meals'
-                          : 'No saved meals',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
+                      Text(
+                        widget.legacyReadOnly
+                            ? 'No older saved meals'
+                            : 'No saved meals',
+                        style: B05Typography.title(context).copyWith(fontSize: 18),
                       ),
-                    ),
                     const SizedBox(height: 8),
                     Text(
                       widget.legacyReadOnly
                           ? 'These older saved meals are read-only. New saved meals appear in Saved meals.'
                           : 'Save your usual breakfast, lunch, or meal combinations for 1-tap logging.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 13,
-                      ),
+                      style: B05Typography.caption(context).copyWith(fontSize: 13),
                     ),
                     if (!widget.legacyReadOnly) ...[
                       const SizedBox(height: 24),
-                      ElevatedButton.icon(
+                      FilledButton.icon(
                         onPressed: _showCreateTemplateDialog,
                         icon: const Icon(Icons.add_rounded),
                         label: const Text('Create saved meal'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: colors.action,
+                          foregroundColor: colors.onAction,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -291,7 +285,9 @@ class _MealTemplatesScreenState extends ConsumerState<MealTemplatesScreen> {
             separatorBuilder: (_, _) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
               final item = templates[index];
-              return Card(
+              final colors = context.b05Colors;
+              return B05Surface(
+                radius: B05SurfaceRadius.large,
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
@@ -305,26 +301,23 @@ class _MealTemplatesScreenState extends ConsumerState<MealTemplatesScreen> {
                             children: [
                               Text(
                                 item.template.name,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
+                                style: B05Typography.title(context).copyWith(fontSize: 16),
                               ),
                               const SizedBox(height: 2),
                               Text(
                                 '${item.template.defaultMealType.toUpperCase()} • ${item.totalCalories} kcal',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 12,
-                                  color: AppColors.primary,
+                                  color: colors.action,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ],
                           ),
                           IconButton(
-                            icon: const Icon(
+                            icon: Icon(
                               Icons.delete_outline_rounded,
-                              color: AppColors.danger,
+                              color: colors.danger.indicator,
                               size: 20,
                             ),
                             onPressed: () =>
@@ -351,7 +344,7 @@ class _MealTemplatesScreenState extends ConsumerState<MealTemplatesScreen> {
                             .toList(),
                       ),
                       const SizedBox(height: 12),
-                      ElevatedButton.icon(
+                      FilledButton.icon(
                         onPressed: _isLogging
                             ? null
                             : () => _handleLogTemplate(item),
@@ -359,9 +352,9 @@ class _MealTemplatesScreenState extends ConsumerState<MealTemplatesScreen> {
                         label: Text(
                           'Log ${item.template.name} (${item.totalCalories} kcal)',
                         ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: colors.action,
+                          foregroundColor: colors.onAction,
                           minimumSize: const Size.fromHeight(42),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),

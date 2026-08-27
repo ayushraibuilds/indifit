@@ -8,8 +8,10 @@ import 'package:uuid/uuid.dart';
 
 import '../../core/di/providers.dart';
 import '../../core/presentation/consumer_count_label.dart';
-import '../../core/theme/colors.dart';
+import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/utils/app_logger.dart';
+import '../../core/widgets/b05_accessibility_primitives.dart';
+import '../../core/widgets/indi_fit_bottom_sheet.dart';
 import '../../core/widgets/indi_fit_feedback.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/legacy_program_compatibility_adapter.dart';
@@ -291,9 +293,9 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen>
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Custom split saved!'),
-          backgroundColor: AppColors.success,
+        SnackBar(
+          content: const Text('Custom split saved!'),
+          backgroundColor: context.b05Colors.success.indicator,
         ),
       );
       Navigator.pop(context, true);
@@ -305,13 +307,12 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen>
     final exercises = await repo.searchExercises('');
     if (!mounted) return;
 
-    await showModalBottomSheet(
+    final colors = context.b05Colors;
+
+    await showIndiFitBottomSheet(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      semanticLabel: 'Search exercise library',
+      maxHeightFactor: 0.85,
       builder: (ctx) {
         String query = '';
         return StatefulBuilder(
@@ -321,20 +322,10 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen>
                   (e) => e.name.toLowerCase().contains(query.toLowerCase()),
                 )
                 .toList();
-            return Container(
-              height: MediaQuery.of(ctx).size.height * 0.7,
+            return Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 children: [
-                  Container(
-                    width: 36,
-                    height: 4,
-                    margin: const EdgeInsets.only(bottom: 12),
-                    decoration: BoxDecoration(
-                      color: AppColors.border,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
                   TextField(
                     decoration: const InputDecoration(
                       prefixIcon: Icon(Icons.search),
@@ -358,14 +349,11 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen>
                           ),
                           subtitle: Text(
                             '${ex.muscleGroups} • ${ex.equipment}',
-                            style: const TextStyle(
-                              fontSize: 11,
-                              color: AppColors.textSecondary,
-                            ),
+                            style: B05Typography.caption(ctx).copyWith(fontSize: 11),
                           ),
-                          trailing: const Icon(
+                          trailing: Icon(
                             Icons.add_circle_outline,
-                            color: AppColors.primary,
+                            color: colors.action,
                           ),
                           onTap: () {
                             setState(() {
@@ -443,13 +431,11 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen>
           'Routine Split Builder',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
-        backgroundColor: AppColors.surface,
-        elevation: 0,
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: AppColors.primary,
-          labelColor: AppColors.primary,
-          unselectedLabelColor: AppColors.textSecondary,
+          indicatorColor: context.b05Colors.action,
+          labelColor: context.b05Colors.action,
+          unselectedLabelColor: context.b05Colors.textSecondary,
           tabs: const [
             Tab(
               icon: Icon(Icons.dashboard_customize_rounded),
@@ -475,6 +461,8 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen>
       return const Center(child: Text('No templates found.'));
     }
 
+    final colors = context.b05Colors;
+
     return ListView.builder(
       padding: const EdgeInsets.all(16.0),
       itemCount: _templates.length,
@@ -488,10 +476,10 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen>
             .where((d) => !(d['isRestDay'] as bool? ?? false))
             .length;
 
-        return Card(
-          margin: const EdgeInsets.only(bottom: 16.0),
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 16.0),
+          child: B05Surface(
+            radius: B05SurfaceRadius.large,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -501,10 +489,7 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen>
                     Expanded(
                       child: Text(
                         name,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
+                        style: B05Typography.title(context).copyWith(fontSize: 16),
                       ),
                     ),
                     Container(
@@ -514,8 +499,8 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen>
                       ),
                       decoration: BoxDecoration(
                         color: eq == 'bodyweight'
-                            ? Colors.blue.withValues(alpha: 0.12)
-                            : AppColors.primary.withValues(alpha: 0.12),
+                            ? colors.info.container
+                            : colors.selected,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
@@ -526,8 +511,8 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen>
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
                           color: eq == 'bodyweight'
-                              ? Colors.blue
-                              : AppColors.primary,
+                              ? colors.info.indicator
+                              : colors.action,
                         ),
                       ),
                     ),
@@ -536,18 +521,14 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen>
                 const SizedBox(height: 6),
                 Text(
                   desc,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
-                  ),
+                  style: B05Typography.caption(context).copyWith(fontSize: 12),
                 ),
                 const SizedBox(height: 12),
-                const Text(
+                Text(
                   'DAY PREVIEW',
-                  style: TextStyle(
+                  style: B05Typography.caption(context).copyWith(
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.textMuted,
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -564,18 +545,18 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen>
                       ),
                       decoration: BoxDecoration(
                         color: isRest
-                            ? AppColors.surface
-                            : AppColors.background,
+                            ? colors.inset
+                            : colors.section,
                         borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: AppColors.border),
+                        border: Border.all(color: colors.border),
                       ),
                       child: Text(
                         d['name'],
                         style: TextStyle(
                           fontSize: 10,
                           color: isRest
-                              ? AppColors.textMuted
-                              : AppColors.textPrimary,
+                              ? colors.textDisabled
+                              : colors.textPrimary,
                           fontWeight: isRest
                               ? FontWeight.normal
                               : FontWeight.bold,
@@ -587,13 +568,13 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen>
                 const SizedBox(height: 16),
                 SizedBox(
                   width: double.infinity,
-                  child: ElevatedButton.icon(
+                  child: FilledButton.icon(
                     onPressed: _applyingTemplate
                         ? null
                         : () => _applyTemplate(tpl),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: colors.action,
+                      foregroundColor: colors.onAction,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
@@ -639,12 +620,11 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen>
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     'SPLIT DAYS',
-                    style: TextStyle(
+                    style: B05Typography.caption(context).copyWith(
                       fontWeight: FontWeight.bold,
                       fontSize: 11,
-                      color: AppColors.textMuted,
                     ),
                   ),
                   TextButton.icon(
@@ -674,10 +654,11 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen>
             itemCount: _builderDays.length,
             itemBuilder: (context, dIndex) {
               final day = _builderDays[dIndex];
-              return Card(
-                margin: const EdgeInsets.only(bottom: 12),
-                child: Padding(
-                  padding: const EdgeInsets.all(12.0),
+              final colors = context.b05Colors;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: B05Surface(
+                  radius: B05SurfaceRadius.large,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -703,9 +684,9 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen>
                                 setState(() => day.isRestDay = val),
                           ),
                           IconButton(
-                            icon: const Icon(
+                            icon: Icon(
                               Icons.delete_outline,
-                              color: AppColors.danger,
+                              color: colors.danger.indicator,
                               size: 18,
                             ),
                             onPressed: () {
@@ -781,10 +762,10 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen>
                                   ),
                                 ),
                                 IconButton(
-                                  icon: const Icon(
+                                  icon: Icon(
                                     Icons.close,
                                     size: 16,
-                                    color: AppColors.textMuted,
+                                    color: colors.textDisabled,
                                   ),
                                   onPressed: () {
                                     setState(() {
@@ -817,11 +798,11 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen>
           padding: const EdgeInsets.all(16.0),
           child: SizedBox(
             width: double.infinity,
-            child: ElevatedButton.icon(
+            child: FilledButton.icon(
               onPressed: _saveManualRoutine,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
+              style: FilledButton.styleFrom(
+                backgroundColor: context.b05Colors.action,
+                foregroundColor: context.b05Colors.onAction,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/presentation/daypart_greeting.dart';
-import '../../../core/theme/colors.dart';
+import '../../../core/theme/b05_semantic_colors.dart';
+import '../../../core/widgets/b05_accessibility_primitives.dart';
 
 class DashboardHeader extends StatelessWidget {
   final int streakCount;
@@ -11,6 +12,7 @@ class DashboardHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.b05Colors;
     final localNow = DateTime.now();
     final name = (userName != null && userName!.trim().isNotEmpty)
         ? userName!.trim()
@@ -25,19 +27,13 @@ class DashboardHeader extends StatelessWidget {
             children: [
               Text(
                 '${daypartGreeting(localNow)}, $name',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: B05Typography.title(context).copyWith(fontSize: 18),
                 overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 2),
               Text(
                 daypartSubtitle(localNow),
-                style: const TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 11,
-                ),
+                style: B05Typography.caption(context).copyWith(fontSize: 11),
                 overflow: TextOverflow.ellipsis,
               ),
             ],
@@ -48,39 +44,39 @@ class DashboardHeader extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
           decoration: BoxDecoration(
-            color: AppColors.streakOrange.withValues(alpha: 0.12),
+            color: colors.warning.container,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: AppColors.streakOrange.withValues(alpha: 0.25),
+              color: colors.warning.indicator.withValues(alpha: 0.35),
             ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(
+              Icon(
                 Icons.local_fire_department_rounded,
-                color: AppColors.streakOrange,
+                color: colors.warning.indicator,
                 size: 14,
               ),
               const SizedBox(width: 2),
               Text(
                 '${streakCount}d',
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: AppColors.streakOrange,
+                  color: colors.warning.indicator,
                   fontSize: 11,
                 ),
               ),
             ],
           ),
         ),
-        const SizedBox(width: 4),
+        const SizedBox(width: B05Layout.space4),
 
         // Direct Settings Button
         IconButton(
-          icon: const Icon(
+          icon: Icon(
             Icons.settings_outlined,
-            color: AppColors.textSecondary,
+            color: colors.textSecondary,
             size: 20,
           ),
           tooltip: 'Settings',

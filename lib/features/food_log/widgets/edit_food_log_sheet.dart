@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../core/theme/colors.dart';
+import '../../../core/theme/b05_semantic_colors.dart';
 import '../../../data/database/app_database.dart';
 
 class EditFoodLogSheet extends StatefulWidget {
@@ -194,11 +194,11 @@ class _EditFoodLogSheetState extends State<EditFoodLogSheet> {
                     ],
                   ),
                   const SizedBox(height: 20),
-                  ElevatedButton(
+                  FilledButton(
                     onPressed: _submit,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.black,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: context.b05Colors.action,
+                      foregroundColor: context.b05Colors.onAction,
                       minimumSize: const Size.fromHeight(48),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),

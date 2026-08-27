@@ -9,7 +9,6 @@ import '../../core/di/providers.dart';
 import '../../core/presentation/consumer_count_label.dart';
 import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/theme/b05_semantic_colors.dart';
-import '../../core/theme/colors.dart';
 import '../../core/utils/app_logger.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/consumer_task_primitives.dart';
@@ -211,9 +210,9 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Your routine could not be generated. Try again.'),
-            backgroundColor: AppColors.danger,
+          SnackBar(
+            content: const Text('Your routine could not be generated. Try again.'),
+            backgroundColor: context.b05Colors.danger.indicator,
           ),
         );
       }
@@ -352,9 +351,9 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
                 _draftLoaded && !_skipping && !_savingRoutine && !_loading
                 ? _skipOnboarding
                 : null,
-            child: const Text(
+            child: Text(
               'Skip for now',
-              style: TextStyle(color: AppColors.textMuted),
+              style: TextStyle(color: context.b05Colors.textDisabled),
             ),
           ),
         ],
@@ -428,6 +427,7 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
   }
 
   Widget _buildProgressIndicator() {
+    final colors = context.b05Colors;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       child: Row(
@@ -438,7 +438,7 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
               height: 4,
               margin: const EdgeInsets.symmetric(horizontal: 2),
               decoration: BoxDecoration(
-                color: isActive ? AppColors.primary : AppColors.border,
+                color: isActive ? colors.action : colors.border,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -491,14 +491,14 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'What is your primary fitness goal?',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            style: B05Typography.title(context).copyWith(fontSize: 18),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'We will optimize volume & rep ranges for this objective.',
-            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+            style: B05Typography.caption(context).copyWith(fontSize: 12),
           ),
           const SizedBox(height: 20),
           _buildSelectCard(
@@ -529,14 +529,14 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'What equipment do you have access to?',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            style: B05Typography.title(context).copyWith(fontSize: 18),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'We will only select exercises matching your equipment.',
-            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+            style: B05Typography.caption(context).copyWith(fontSize: 12),
           ),
           const SizedBox(height: 20),
           _buildSelectCard(
@@ -566,18 +566,19 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
   }
 
   Widget _buildFrequencyStep() {
+    final colors = context.b05Colors;
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'How many days per week can you train?',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            style: B05Typography.title(context).copyWith(fontSize: 18),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Consistency beats perfection. Choose a realistic commitment.',
-            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+            style: B05Typography.caption(context).copyWith(fontSize: 12),
           ),
           const SizedBox(height: 24),
           Row(
@@ -607,13 +608,13 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? AppColors.primary
-                            : AppColors.surface,
+                            ? colors.action
+                            : colors.section,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
                           color: isSelected
-                              ? AppColors.primary
-                              : AppColors.border,
+                              ? colors.action
+                              : colors.border,
                         ),
                       ),
                       child: Text(
@@ -622,8 +623,8 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
                           color: isSelected
-                              ? Colors.white
-                              : AppColors.textPrimary,
+                              ? colors.onAction
+                              : colors.textPrimary,
                         ),
                       ),
                     ),
@@ -636,9 +637,9 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
           Center(
             child: Text(
               '$_daysPerWeek days per week split',
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.w600,
-                color: AppColors.primary,
+                color: colors.action,
               ),
             ),
           ),
@@ -652,14 +653,14 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'What is your weightlifting experience level?',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            style: B05Typography.title(context).copyWith(fontSize: 18),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Controls exercise complexity & recovery demands.',
-            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+            style: B05Typography.caption(context).copyWith(fontSize: 12),
           ),
           const SizedBox(height: 20),
           _buildSelectCard(
@@ -693,14 +694,14 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Any injuries or physical limitations?',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            style: B05Typography.title(context).copyWith(fontSize: 18),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'The AI will filter out exercises that stress these areas.',
-            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+            style: B05Typography.caption(context).copyWith(fontSize: 12),
           ),
           const SizedBox(height: 20),
           TextField(
@@ -723,6 +724,7 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
 
   Widget _buildPreviewStep() {
     if (_generatedRoutine == null) return const SizedBox();
+    final colors = context.b05Colors;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -736,17 +738,11 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
                 children: [
                   Text(
                     _generatedRoutine!.name,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: B05Typography.title(context).copyWith(fontSize: 18),
                   ),
                   Text(
                     _generatedRoutine!.notes,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: AppColors.textSecondary,
-                    ),
+                    style: B05Typography.caption(context).copyWith(fontSize: 11),
                   ),
                 ],
               ),
@@ -755,6 +751,10 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
               onPressed: _generateRoutine,
               icon: const Icon(Icons.refresh, size: 14),
               label: const Text('Re-roll', style: TextStyle(fontSize: 11)),
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(color: colors.border),
+                foregroundColor: colors.action,
+              ),
             ),
           ],
         ),
@@ -764,44 +764,44 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
             itemCount: _generatedRoutine!.days.length,
             itemBuilder: (context, index) {
               final day = _generatedRoutine!.days[index];
-              return Card(
-                margin: const EdgeInsets.only(bottom: 12),
-                child: ExpansionTile(
-                  title: Text(
-                    day.dayName,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
-                  ),
-                  subtitle: Text(
-                    day.isRestDay
-                        ? 'Rest Day'
-                        : '${day.exercises.length} exercises',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                  children: day.exercises.map((e) {
-                    return ListTile(
-                      dense: true,
-                      title: Text(
-                        e.name,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                        ),
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: B05Surface(
+                  radius: B05SurfaceRadius.large,
+                  child: ExpansionTile(
+                    title: Text(
+                      day.dayName,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
                       ),
-                      trailing: Text(
-                        '${e.sets} sets × ${e.repsRange} reps',
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: AppColors.primary,
+                    ),
+                    subtitle: Text(
+                      day.isRestDay
+                          ? 'Rest Day'
+                          : '${day.exercises.length} exercises',
+                      style: B05Typography.caption(context).copyWith(fontSize: 11),
+                    ),
+                    children: day.exercises.map((e) {
+                      return ListTile(
+                        dense: true,
+                        title: Text(
+                          e.name,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
-                      ),
-                    );
-                  }).toList(),
+                        trailing: Text(
+                          '${e.sets} sets × ${e.repsRange} reps',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: colors.action,
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
                 ),
               );
             },
@@ -822,6 +822,7 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
         (optionType == 'goal' && _selectedGoal == val) ||
         (optionType == 'equip' && _selectedEquipment == val) ||
         (optionType == 'exp' && _selectedExperience == val);
+    final colors = context.b05Colors;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -846,11 +847,11 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: isSelected
-                  ? AppColors.primary.withValues(alpha: 0.08)
-                  : AppColors.surface,
+                  ? colors.selected
+                  : colors.section,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: isSelected ? AppColors.primary : AppColors.border,
+                color: isSelected ? colors.action : colors.border,
                 width: isSelected ? 2 : 1,
               ),
             ),
@@ -858,7 +859,7 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
               children: [
                 Icon(
                   icon,
-                  color: isSelected ? AppColors.primary : AppColors.textMuted,
+                  color: isSelected ? colors.action : colors.textDisabled,
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -871,17 +872,14 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
                           color: isSelected
-                              ? AppColors.primary
-                              : AppColors.textPrimary,
+                              ? colors.action
+                              : colors.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         desc,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: AppColors.textSecondary,
-                        ),
+                        style: B05Typography.caption(context).copyWith(fontSize: 11),
                       ),
                     ],
                   ),

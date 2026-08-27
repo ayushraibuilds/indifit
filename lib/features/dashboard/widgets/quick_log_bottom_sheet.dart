@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/theme/colors.dart';
+import '../../../core/theme/b05_semantic_colors.dart';
+import '../../../core/widgets/b05_accessibility_primitives.dart';
 import '../../food_log/food_search_screen.dart';
 
 class QuickLogBottomSheet extends StatelessWidget {
@@ -13,11 +14,12 @@ class QuickLogBottomSheet extends StatelessWidget {
     String type,
     IconData icon,
   ) {
+    final colors = context.b05Colors;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         IconButton(
-          icon: Icon(icon, color: AppColors.primary, size: 28),
+          icon: Icon(icon, color: colors.action, size: 28),
           onPressed: () {
             Navigator.pop(context);
             Navigator.push(
@@ -33,7 +35,7 @@ class QuickLogBottomSheet extends StatelessWidget {
         ),
         Text(
           label,
-          style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+          style: B05Typography.caption(context).copyWith(fontSize: 11),
         ),
       ],
     );
@@ -47,9 +49,9 @@ class QuickLogBottomSheet extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Select Meal Type',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            style: B05Typography.title(context).copyWith(fontSize: 16),
           ),
           const SizedBox(height: 16),
           Row(

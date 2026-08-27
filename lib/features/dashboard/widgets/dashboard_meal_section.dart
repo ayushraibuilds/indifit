@@ -6,7 +6,8 @@ import '../../../core/nutrients.dart';
 import '../../../core/nutrition_legacy_read_models.dart';
 import '../../../core/presentation/consumer_copy.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
-import '../../../core/theme/colors.dart';
+import '../../../core/widgets/b05_accessibility_primitives.dart';
+import '../../../core/widgets/indi_fit_bottom_sheet.dart';
 import '../../../core/widgets/indi_fit_feedback.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/repositories/food_repository.dart';
@@ -37,12 +38,11 @@ class DashboardMealSection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'MEALS TODAY',
-          style: TextStyle(
+          style: B05Typography.caption(context).copyWith(
             fontSize: 11,
             fontWeight: FontWeight.bold,
-            color: AppColors.textSecondary,
             letterSpacing: 1.0,
           ),
         ),
@@ -99,13 +99,10 @@ class _MealCard extends ConsumerWidget {
   });
 
   void _showAddMealSheet(BuildContext context, WidgetRef ref) {
-    showModalBottomSheet(
+    final colors = context.b05Colors;
+    showIndiFitBottomSheet(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      semanticLabel: 'Log Food Item',
       builder: (sheetCtx) {
         return SingleChildScrollView(
           padding: EdgeInsets.only(
@@ -118,20 +115,9 @@ class _MealCard extends ConsumerWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Center(
-                child: Container(
-                  width: 36,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    color: AppColors.border,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const Text(
+              Text(
                 ConsumerCopy.logFoodAction,
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style: B05Typography.title(sheetCtx).copyWith(fontSize: 16),
               ),
               const SizedBox(height: 12),
               FutureBuilder<List<FoodLog>>(
@@ -177,8 +163,8 @@ class _MealCard extends ConsumerWidget {
                           'Repeat ${recent.length} recent item${recent.length > 1 ? 's' : ''}',
                         ),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.primary,
-                          side: const BorderSide(color: AppColors.primary),
+                          foregroundColor: colors.action,
+                          side: BorderSide(color: colors.action),
                           minimumSize: const Size.fromHeight(36),
                         ),
                       ),
@@ -189,9 +175,9 @@ class _MealCard extends ConsumerWidget {
               ),
               const SizedBox(height: 8),
               ListTile(
-                leading: const Icon(
+                leading: Icon(
                   Icons.search_rounded,
-                  color: AppColors.primary,
+                  color: colors.action,
                 ),
                 title: const Text(
                   'Search foods',
@@ -213,11 +199,11 @@ class _MealCard extends ConsumerWidget {
                   );
                 },
               ),
-              const Divider(color: AppColors.border),
+              Divider(color: colors.border),
               ListTile(
-                leading: const Icon(
+                leading: Icon(
                   Icons.bookmark_outline_rounded,
-                  color: AppColors.warning,
+                  color: colors.warning.indicator,
                 ),
                 title: const Text(
                   'Saved meals',
@@ -237,11 +223,11 @@ class _MealCard extends ConsumerWidget {
                   );
                 },
               ),
-              const Divider(color: AppColors.border),
+              Divider(color: colors.border),
               ListTile(
-                leading: const Icon(
+                leading: Icon(
                   Icons.menu_book_rounded,
-                  color: AppColors.primary,
+                  color: colors.action,
                 ),
                 title: const Text(
                   'Recipes',
@@ -263,11 +249,11 @@ class _MealCard extends ConsumerWidget {
                   );
                 },
               ),
-              const Divider(color: AppColors.border),
+              Divider(color: colors.border),
               ListTile(
-                leading: const Icon(
+                leading: Icon(
                   Icons.restaurant_menu_rounded,
-                  color: AppColors.success,
+                  color: colors.success.indicator,
                 ),
                 title: const Text(
                   'Build a meal',
@@ -320,50 +306,49 @@ class _MealCard extends ConsumerWidget {
         .where((id) => id.isNotEmpty)
         .toSet();
 
+    final colors = context.b05Colors;
+
     // 1. Pick target date
-    final targetDate = await showModalBottomSheet<DateTime>(
+    final targetDate = await showIndiFitBottomSheet<DateTime>(
       context: context,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      semanticLabel: 'Copy to target date',
       builder: (ctx) {
         final today = DateTime.now();
         final tomorrow = today.add(const Duration(days: 1));
-        return SafeArea(
+        return SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Padding(
-                padding: EdgeInsets.fromLTRB(20, 20, 20, 8),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
                     'Copy to target date…',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    style: B05Typography.title(ctx).copyWith(fontSize: 16),
                   ),
                 ),
               ),
               ListTile(
-                leading: const Icon(
+                leading: Icon(
                   Icons.today_rounded,
-                  color: AppColors.primary,
+                  color: colors.action,
                 ),
                 title: const Text('Today'),
                 onTap: () => Navigator.pop(ctx, today),
               ),
               ListTile(
-                leading: const Icon(
+                leading: Icon(
                   Icons.next_plan_rounded,
-                  color: AppColors.success,
+                  color: colors.success.indicator,
                 ),
                 title: const Text('Tomorrow'),
                 onTap: () => Navigator.pop(ctx, tomorrow),
               ),
               ListTile(
-                leading: const Icon(
+                leading: Icon(
                   Icons.calendar_month_rounded,
-                  color: AppColors.textSecondary,
+                  color: colors.textSecondary,
                 ),
                 title: const Text('Pick custom date…'),
                 onTap: () async {
@@ -389,12 +374,9 @@ class _MealCard extends ConsumerWidget {
 
     // 2. Pick target meal type
     if (!context.mounted) return;
-    final targetType = await showModalBottomSheet<String>(
+    final targetType = await showIndiFitBottomSheet<String>(
       context: context,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      semanticLabel: 'Copy to meal',
       builder: (ctx) {
         final options = <String, String>{
           'breakfast': 'Breakfast',
@@ -402,17 +384,17 @@ class _MealCard extends ConsumerWidget {
           'dinner': 'Dinner',
           'snack': 'Snacks',
         };
-        return SafeArea(
+        return SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Padding(
-                padding: EdgeInsets.fromLTRB(20, 20, 20, 8),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
                     'Copy to meal…',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    style: B05Typography.title(ctx).copyWith(fontSize: 16),
                   ),
                 ),
               ),
@@ -421,11 +403,11 @@ class _MealCard extends ConsumerWidget {
                   title: Text(e.value),
                   trailing:
                       e.key == type && targetDate.day == DateTime.now().day
-                      ? const Text(
+                      ? Text(
                           '(same)',
                           style: TextStyle(
                             fontSize: 12,
-                            color: AppColors.textMuted,
+                            color: colors.textDisabled,
                           ),
                         )
                       : null,
@@ -556,10 +538,10 @@ class _MealCard extends ConsumerWidget {
           mealLogs.isEmpty && (canonicalRecords?.isEmpty ?? true)
               ? 'Tap plus to log item'
               : '${mealLogs.length + (canonicalRecords?.length ?? 0)} items logged',
-          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+          style: B05Typography.caption(context).copyWith(fontSize: 12),
         ),
         trailing: IconButton(
-          icon: const Icon(Icons.add_circle_outline, color: AppColors.primary),
+          icon: Icon(Icons.add_circle_outline, color: context.b05Colors.action),
           onPressed: () => _showAddMealSheet(context, ref),
         ),
         childrenPadding: const EdgeInsets.symmetric(
@@ -572,9 +554,9 @@ class _MealCard extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(vertical: 12.0),
               child: Column(
                 children: [
-                  const Text(
+                  Text(
                     'No food logged yet.',
-                    style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+                    style: TextStyle(color: context.b05Colors.textDisabled, fontSize: 12),
                   ),
                   const SizedBox(height: 8),
                   Wrap(
@@ -600,7 +582,7 @@ class _MealCard extends ConsumerWidget {
                           style: TextStyle(fontSize: 12),
                         ),
                         style: TextButton.styleFrom(
-                          foregroundColor: AppColors.warning,
+                          foregroundColor: context.b05Colors.warning.indicator,
                           padding: const EdgeInsets.symmetric(
                             horizontal: 12,
                             vertical: 4,
@@ -638,7 +620,7 @@ class _MealCard extends ConsumerWidget {
                                 style: const TextStyle(fontSize: 12),
                               ),
                               style: TextButton.styleFrom(
-                                foregroundColor: AppColors.primary,
+                                foregroundColor: context.b05Colors.action,
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 12,
                                   vertical: 4,
@@ -682,7 +664,7 @@ class _MealCard extends ConsumerWidget {
                 ),
               );
             }),
-            const Divider(color: AppColors.border, height: 20),
+            Divider(color: context.b05Colors.border, height: 20),
             Row(
               children: [
                 if (canonicalMealItems.isNotEmpty) ...[
@@ -700,8 +682,8 @@ class _MealCard extends ConsumerWidget {
                         style: TextStyle(fontSize: 12),
                       ),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.primary,
-                        side: const BorderSide(color: AppColors.border),
+                        foregroundColor: context.b05Colors.action,
+                        side: BorderSide(color: context.b05Colors.border),
                         padding: const EdgeInsets.symmetric(vertical: 10),
                       ),
                     ),
@@ -717,8 +699,8 @@ class _MealCard extends ConsumerWidget {
                       style: TextStyle(fontSize: 12),
                     ),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.textSecondary,
-                      side: const BorderSide(color: AppColors.border),
+                      foregroundColor: context.b05Colors.textSecondary,
+                      side: BorderSide(color: context.b05Colors.border),
                       padding: const EdgeInsets.symmetric(vertical: 10),
                     ),
                   ),
@@ -726,14 +708,11 @@ class _MealCard extends ConsumerWidget {
               ],
             ),
             if (mealLogs.isNotEmpty && canonicalMealItems.isNotEmpty)
-              const Padding(
-                padding: EdgeInsets.only(top: 8),
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
                 child: Text(
                   'Older entries stay unchanged. Choose them again when creating a new saved meal.',
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 11,
-                  ),
+                  style: B05Typography.caption(context).copyWith(fontSize: 11),
                 ),
               ),
             const SizedBox(height: 8),
@@ -753,6 +732,7 @@ class _CanonicalItemRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.b05Colors;
     final displayedItem = item ?? record.items.firstOrNull;
     final energy = item?.facts['energy'] ?? record.totals.facts['energy'];
     final isRecipe = displayedItem?.recipeVersionId != null;
@@ -767,15 +747,15 @@ class _CanonicalItemRow extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.06),
+        color: colors.selected,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.18)),
+        border: Border.all(color: colors.action.withValues(alpha: 0.18)),
       ),
       child: Row(
         children: [
           Icon(
             isRecipe ? Icons.menu_book_rounded : Icons.restaurant_rounded,
-            color: AppColors.primary,
+            color: colors.action,
             size: 18,
           ),
           const SizedBox(width: 8),
@@ -793,18 +773,15 @@ class _CanonicalItemRow extends StatelessWidget {
                     ?amount,
                     energyText,
                   ].join(' • '),
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: AppColors.textSecondary,
-                  ),
+                  style: B05Typography.caption(context).copyWith(fontSize: 11),
                 ),
                 if (record.completeness.state !=
                     NutrientCompletenessState.complete)
                   Text(
                     _completenessLabel(record.completeness.state),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
-                      color: AppColors.warning,
+                      color: colors.warning.indicator,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -812,10 +789,10 @@ class _CanonicalItemRow extends StatelessWidget {
             ),
           ),
           if (onDelete == null)
-            const Icon(
+            Icon(
               Icons.lock_outline_rounded,
               size: 16,
-              color: AppColors.textMuted,
+              color: colors.textDisabled,
             )
           else
             IconButton(
@@ -846,6 +823,7 @@ class _LoggedItemRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final colors = context.b05Colors;
     return Dismissible(
       key: ValueKey('food_log_${log.id}'),
       direction: DismissDirection.endToStart,
@@ -853,12 +831,12 @@ class _LoggedItemRow extends ConsumerWidget {
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),
         decoration: BoxDecoration(
-          color: AppColors.danger.withValues(alpha: 0.15),
+          color: colors.danger.container,
           borderRadius: BorderRadius.circular(10),
         ),
-        child: const Icon(
+        child: Icon(
           Icons.delete_sweep_rounded,
-          color: AppColors.danger,
+          color: colors.danger.indicator,
           size: 22,
         ),
       ),
@@ -908,10 +886,7 @@ class _LoggedItemRow extends ConsumerWidget {
                   ),
                   Text(
                     '${log.servingLogged} logged • ${log.calories} kcal',
-                    style: const TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 11,
-                    ),
+                    style: B05Typography.caption(context).copyWith(fontSize: 11),
                   ),
                 ],
               ),
@@ -920,58 +895,47 @@ class _LoggedItemRow extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 IconButton(
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.edit_outlined,
-                    color: AppColors.primary,
+                    color: colors.action,
                     size: 18,
                   ),
                   tooltip: 'Edit entry',
                   onPressed: () {
-                    showModalBottomSheet(
+                    showIndiFitBottomSheet(
                       context: context,
-                      isScrollControlled: true,
-                      backgroundColor: AppColors.surface,
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.vertical(
-                          top: Radius.circular(20),
-                        ),
-                      ),
-                      builder: (context) => Padding(
-                        padding: EdgeInsets.only(
-                          bottom: MediaQuery.of(context).viewInsets.bottom,
-                        ),
-                        child: EditFoodLogSheet(
-                          log: log,
-                          onSave:
-                              ({
-                                required int id,
-                                required String name,
-                                required int calories,
-                                required double proteinG,
-                                required double carbsG,
-                                required double fatG,
-                                required double servingLogged,
-                              }) async {
-                                final repo = ref.read(foodRepositoryProvider);
-                                await repo.updateFoodLog(
-                                  id: id,
-                                  name: name,
-                                  calories: calories,
-                                  proteinG: proteinG,
-                                  carbsG: carbsG,
-                                  fatG: fatG,
-                                  servingLogged: servingLogged,
-                                );
-                              },
-                        ),
+                      semanticLabel: 'Edit food log',
+                      builder: (sheetCtx) => EditFoodLogSheet(
+                        log: log,
+                        onSave:
+                            ({
+                              required int id,
+                              required String name,
+                              required int calories,
+                              required double proteinG,
+                              required double carbsG,
+                              required double fatG,
+                              required double servingLogged,
+                            }) async {
+                              final repo = ref.read(foodRepositoryProvider);
+                              await repo.updateFoodLog(
+                                id: id,
+                                name: name,
+                                calories: calories,
+                                proteinG: proteinG,
+                                carbsG: carbsG,
+                                fatG: fatG,
+                                servingLogged: servingLogged,
+                              );
+                            },
                       ),
                     );
                   },
                 ),
                 IconButton(
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.delete_outline_rounded,
-                    color: AppColors.danger,
+                    color: colors.danger.indicator,
                     size: 18,
                   ),
                   tooltip: 'Delete entry',

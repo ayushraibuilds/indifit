@@ -6,8 +6,8 @@ import '../../core/nutrients.dart';
 import '../../core/nutrition_constraints.dart';
 import '../../core/nutrition_thali.dart';
 import '../../core/theme/b05_semantic_colors.dart';
-import '../../core/theme/colors.dart';
 import '../../core/typed_quantities.dart';
+import '../../core/widgets/b05_accessibility_primitives.dart';
 import 'nutrition_thali_controller.dart';
 
 /// B03-13's bounded composition surface. It delegates identity, quantity
@@ -55,11 +55,8 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: Text('Build meal · ${widget.mealType.toUpperCase()}'),
-        backgroundColor: AppColors.background,
-        elevation: 0,
       ),
       body: _buildBody(context, state),
     );
@@ -211,7 +208,7 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
             state.status == NutritionThaliStatus.searching ||
             state.status == NutritionThaliStatus.ready);
     return Material(
-      color: AppColors.surface,
+      color: context.b05Colors.section,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
         child: Column(
@@ -412,7 +409,6 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
         ? 'Nutrition is unknown for the selected items.'
         : 'Nutrition preview is complete for the selected registry fields.';
     return Card(
-      color: AppColors.surface,
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
@@ -751,7 +747,7 @@ class _FailurePanel extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              const Icon(Icons.error_outline, color: AppColors.danger),
+              Icon(Icons.error_outline, color: context.b05Colors.danger.indicator),
               const SizedBox(width: 12),
               Expanded(child: Text(message)),
               TextButton(onPressed: onRetry, child: const Text('Retry')),
@@ -787,27 +783,28 @@ class _EmptyStateContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    final colors = context.b05Colors;
+    return Center(
       child: Padding(
-        padding: EdgeInsets.all(24),
+        padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
               Icons.restaurant_outlined,
               size: 56,
-              color: AppColors.textMuted,
+              color: colors.textDisabled,
             ),
-            SizedBox(height: 12),
+            const SizedBox(height: 12),
             Text(
               'Your meal is empty',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              style: B05Typography.title(context).copyWith(fontSize: 18),
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             Text(
               'Search for a food or add a saved recipe. This is a free-form meal, not a recommendation.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.textSecondary),
+              style: B05Typography.caption(context).copyWith(fontSize: 13),
             ),
           ],
         ),
