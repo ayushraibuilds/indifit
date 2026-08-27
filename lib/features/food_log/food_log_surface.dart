@@ -5,6 +5,7 @@ import '../../core/di/providers.dart';
 import '../../core/nutrients.dart';
 import '../../core/nutrition_household_measures.dart';
 import '../../core/nutrition_legacy_read_models.dart';
+import '../../core/presentation/consumer_copy.dart';
 import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/typed_quantities.dart';
@@ -382,7 +383,7 @@ class _CanonicalFoodRow extends StatelessWidget {
                               record.completeness.state !=
                                   NutrientCompletenessState.complete))
                         Text(
-                          'Some nutrition information is missing',
+                          ConsumerCopy.nutritionDetailsIncomplete,
                           style: B05Typography.caption(context),
                         ),
                     ],

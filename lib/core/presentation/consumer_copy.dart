@@ -2,6 +2,38 @@
 /// Unknown values intentionally collapse to a useful phrase rather than
 /// leaking a new enum or reason-code string into the product.
 abstract final class ConsumerCopy {
+  static const logFoodAction = 'Log food';
+  static const quickWorkoutAction = 'Quick workout';
+  static const customizeTodayAction = 'Customize today';
+  static const nutritionDetailsIncomplete =
+      'Some nutrition details are incomplete';
+  static const groupDetailsUnavailable =
+      'Some exercise details are unavailable right now.';
+
+  static String historyAction(String subject) {
+    final trimmed = subject.trim();
+    if (trimmed.isEmpty) return 'View history';
+    return 'View ${trimmed[0].toLowerCase()}${trimmed.substring(1)} history';
+  }
+
+  static String logToMeal(String meal) {
+    final trimmed = meal.trim();
+    return trimmed.isEmpty ? 'Log to meal' : 'Log to ${trimmed.toLowerCase()}';
+  }
+
+  static String updateFoodInMeal(String meal) {
+    final trimmed = meal.trim();
+    return trimmed.isEmpty
+        ? 'Update food in meal'
+        : 'Update food in ${trimmed.toLowerCase()}';
+  }
+
+  static String addFoodsToMeal({required int count, required String meal}) {
+    final noun = count == 1 ? 'food' : 'foods';
+    final destination = meal.trim().isEmpty ? 'meal' : meal.toLowerCase();
+    return 'Add $count $noun to $destination';
+  }
+
   static String state(String? value) {
     final key = _key(value);
     return switch (key) {
@@ -162,6 +194,13 @@ abstract final class ConsumerCopy {
         lower.contains('canonical') ||
         lower.contains('persisted') ||
         lower.contains('unresolved') ||
+        lower.contains('provider') ||
+        lower.contains('repository') ||
+        lower.contains('authority') ||
+        lower.contains('occurrence') ||
+        lower.contains('provenance') ||
+        lower.contains('migration') ||
+        lower.contains('legacy') ||
         lower.contains('reason_code') ||
         lower.contains('utc') ||
         lower.contains('candidate') ||

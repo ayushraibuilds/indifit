@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/di/health_provider.dart';
 import '../../core/di/theme_provider.dart';
 import '../../core/di/user_profile_provider.dart';
+import '../../core/presentation/consumer_copy.dart';
 import '../../core/presentation/diet_preference_presentation.dart';
 import '../../core/presentation/secondary_presentation.dart';
 import '../../core/theme/b05_semantic_colors.dart';
@@ -49,7 +50,6 @@ class SettingsScreen extends ConsumerWidget {
               padding: EdgeInsets.all(B05Layout.space16),
               child: ConsumerStatusRow(
                 label: 'Loading settings',
-                detail: 'Getting your preferences ready.',
                 loading: true,
               ),
             )
@@ -175,11 +175,11 @@ class SettingsScreen extends ConsumerWidget {
                     ),
                     _SettingsRow(
                       icon: Icons.dashboard_customize_outlined,
-                      title: 'Customize Today',
+                      title: ConsumerCopy.customizeTodayAction,
                       summary: 'Choose what appears on your home screen',
                       onTap: () => showIndiFitBottomSheet<void>(
                         context: context,
-                        semanticLabel: 'Customize Today',
+                        semanticLabel: ConsumerCopy.customizeTodayAction,
                         builder: (_) => const Padding(
                           padding: EdgeInsets.all(B05Layout.space16),
                           child: DashboardModuleCustomizationPanel(),
@@ -348,10 +348,7 @@ class SettingsScreen extends ConsumerWidget {
               for (final unit in const ['Metric', 'Imperial'])
                 // ignore: deprecated_member_use
                 RadioListTile<String>(
-                  title: Text(
-                    unit,
-                    style: B05Typography.label(sheetContext),
-                  ),
+                  title: Text(unit, style: B05Typography.label(sheetContext)),
                   subtitle: Text(
                     unit == 'Metric' ? 'kg, cm, and mL' : 'lb, in, and fl oz',
                     style: B05Typography.caption(sheetContext),

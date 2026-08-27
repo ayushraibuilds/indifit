@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 
 import '../../core/di/providers.dart';
 import '../../core/nutrition_legacy_read_models.dart';
+import '../../core/presentation/consumer_copy.dart';
 import '../../core/presentation/consumer_number_label.dart';
 import '../../core/presentation/daypart_greeting.dart';
 import '../../core/theme/b05_semantic_colors.dart';
@@ -575,7 +576,7 @@ class _TodayHeaderState extends State<_TodayHeader>
           ),
           B05IconAction(
             icon: Icons.tune_rounded,
-            label: 'Customize Today',
+            label: ConsumerCopy.customizeTodayAction,
             hint: 'Reorder, show, hide, or collapse Today modules.',
             onPressed: widget.onCustomize,
             focusOrder: 0,
@@ -712,7 +713,7 @@ class TodayNutritionHero extends StatelessWidget {
               const SizedBox(height: B05Layout.space12),
               _NutritionNotice(
                 icon: Icons.info_outline_rounded,
-                label: 'Some nutrition details are incomplete',
+                label: ConsumerCopy.nutritionDetailsIncomplete,
                 color: context.b05Colors.unavailable.indicator,
               ),
             ],
@@ -730,7 +731,7 @@ class TodayNutritionHero extends StatelessWidget {
               runSpacing: B05Layout.space8,
               children: [
                 B05ActionButton(
-                  label: 'Log food',
+                  label: ConsumerCopy.logFoodAction,
                   icon: Icons.add_rounded,
                   hint: 'Search foods and log them for this day.',
                   onPressed: onLogFood,
@@ -1939,7 +1940,7 @@ class _NoVisibleModules extends StatelessWidget {
         ),
         const SizedBox(height: B05Layout.space12),
         B05ActionButton(
-          label: 'Customize Today',
+          label: ConsumerCopy.customizeTodayAction,
           icon: Icons.tune_rounded,
           onPressed: onCustomize,
         ),

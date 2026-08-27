@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/di/providers.dart';
+import '../../core/presentation/consumer_copy.dart';
 import '../../core/services/indifit_haptics.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
@@ -561,7 +562,7 @@ class _B02StrengthPlayerScreenState
       }
     }
     return const B02GroupExecutionIntegrity.invalid(
-      'This grouped workout detail is unavailable right now.',
+      ConsumerCopy.groupDetailsUnavailable,
     );
   }
 
@@ -1284,7 +1285,7 @@ class _B02StrengthPlayerScreenState
                 ),
               ),
               subtitle: Text(
-                isQuick ? 'Quick Workout exercise' : 'Planned exercise',
+                isQuick ? 'Quick workout exercise' : 'Planned exercise',
               ),
             ),
             if (isQuick)
@@ -1306,7 +1307,7 @@ class _B02StrengthPlayerScreenState
                 hasLoggedSets
                     ? 'Already logged sets stay with the current exercise.'
                     : isQuick
-                    ? 'Change this exercise in your Quick workout.'
+                    ? 'Change this exercise in your ${ConsumerCopy.quickWorkoutAction}.'
                     : 'Change this exercise for the remaining workout.',
               ),
               onTap: () => Navigator.pop(sheetContext, 'replace'),
@@ -1587,10 +1588,8 @@ class _GroupProgressCard extends StatelessWidget {
               const ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: Icon(Icons.info_outline_rounded),
-                title: Text('Grouped workout unavailable'),
-                subtitle: Text(
-                  'This grouped workout detail is unavailable right now.',
-                ),
+                title: Text('Exercise details unavailable'),
+                subtitle: Text(ConsumerCopy.groupDetailsUnavailable),
               ),
             if (selected.groupId != null &&
                 !launch.state.groups.any(
@@ -1599,10 +1598,8 @@ class _GroupProgressCard extends StatelessWidget {
               const ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: Icon(Icons.info_outline_rounded),
-                title: Text('Grouped workout unavailable'),
-                subtitle: Text(
-                  'This grouped workout detail is unavailable right now.',
-                ),
+                title: Text('Exercise details unavailable'),
+                subtitle: Text(ConsumerCopy.groupDetailsUnavailable),
               ),
             for (final group in launch.state.groups) ...[
               const SizedBox(height: 10),
@@ -1622,11 +1619,11 @@ class _GroupProgressCard extends StatelessWidget {
     if (!integrity.isValid) {
       return Semantics(
         container: true,
-        label: 'Grouped workout detail unavailable',
+        label: 'Exercise details unavailable',
         child: ListTile(
           contentPadding: EdgeInsets.zero,
           leading: const Icon(Icons.info_outline_rounded),
-          title: const Text('Grouped workout unavailable'),
+          title: const Text('Exercise details unavailable'),
           subtitle: Text(integrity.consumerMessage!),
         ),
       );
@@ -1648,7 +1645,7 @@ class _GroupProgressCard extends StatelessWidget {
     return Semantics(
       container: true,
       label:
-          '$name, $completeCount of $expected grouped exercises complete'
+          '$name, $completeCount of $expected exercise slots complete'
           '${current == null ? '' : ', current ${current.exerciseNameSnapshot}'}',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1771,7 +1768,7 @@ class _PrescribedWorkCompleteCard extends StatelessWidget {
     final success = context.b05Colors.success;
     return Semantics(
       container: true,
-      label: 'Prescribed work complete',
+      label: 'Planned sets complete',
       child: B05Surface(
         tone: B05SurfaceTone.selected,
         padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
@@ -1785,12 +1782,12 @@ class _PrescribedWorkCompleteCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Prescribed work complete',
+                    'Planned sets complete',
                     style: B05Typography.title(context),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '$workingSets of $plannedSets working sets logged. There is no pending prescribed set.',
+                    '$workingSets of $plannedSets working sets logged. All planned sets are logged.',
                     style: B05Typography.body(context),
                   ),
                 ],
@@ -2485,10 +2482,7 @@ class _ErrorState extends StatelessWidget {
           Text(message, textAlign: TextAlign.center),
           const SizedBox(height: 16),
           if (canRetry)
-            FilledButton(
-              onPressed: onRetry,
-              child: const Text('Retry recovery'),
-            ),
+            FilledButton(onPressed: onRetry, child: const Text('Try again')),
           TextButton(
             onPressed: onClose,
             child: const Text('Keep workout and go back'),

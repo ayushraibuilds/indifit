@@ -311,7 +311,7 @@ void main() {
         expect(
           find.text(
             planned
-                ? 'Discard draft and start Quick Workout'
+                ? 'Discard draft and start a quick workout'
                 : 'Discard and start new',
           ),
           findsOneWidget,

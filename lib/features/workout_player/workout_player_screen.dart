@@ -468,7 +468,7 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen>
     if (state.activeExercises.isEmpty) {
       return Scaffold(
         appBar: AppBar(title: Text(widget.routineName)),
-        body: const Center(child: Text('No exercises found in routine.')),
+        body: const Center(child: Text('No exercises in this workout yet.')),
       );
     }
 
@@ -606,7 +606,7 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen>
                             _syncInputsWithState();
                           },
                           icon: const Icon(Icons.arrow_back_rounded, size: 16),
-                          label: const Text('Prev Set'),
+                          label: const Text('Previous set'),
                         )
                       else
                         const SizedBox.shrink(),

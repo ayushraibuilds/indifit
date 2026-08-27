@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/nutrients.dart';
 import '../../core/nutrition_thali.dart';
+import '../../core/presentation/consumer_copy.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import 'saved_meal_presentation.dart';
@@ -141,7 +142,7 @@ class _SavedMealDetailScreenState extends State<SavedMealDetailScreen> {
                   colors: colors.warning,
                   message: meal.requiresPartialAcknowledgement
                       ? 'Some core nutrition is incomplete. Review it before logging.'
-                      : 'Some nutrition details are incomplete; unknown values stay unknown.',
+                      : '${ConsumerCopy.nutritionDetailsIncomplete}; unknown values stay unknown.',
                 ),
               ],
               const SizedBox(height: 20),
@@ -179,7 +180,7 @@ class _SavedMealDetailScreenState extends State<SavedMealDetailScreen> {
                         borderRadius: B05Radii.mediumRadius,
                       ),
                     ),
-                    child: const Text('REVIEW PORTIONS'),
+                    child: const Text('Review portions'),
                   );
                   final log = FilledButton(
                     onPressed: logEnabled
@@ -207,8 +208,8 @@ class _SavedMealDetailScreenState extends State<SavedMealDetailScreen> {
                           )
                         : Text(
                             meal.requiresPartialAcknowledgement
-                                ? 'REVIEW & LOG'
-                                : 'LOG TO ${widget.mealType.toUpperCase()}',
+                                ? 'Review & log'
+                                : ConsumerCopy.logToMeal(widget.mealType),
                           ),
                   );
                   if (stack) {

@@ -107,7 +107,7 @@ void main() {
       await tester.pump();
 
       expect(find.text('Composition'), findsOneWidget);
-      expect(find.text('LOG TO LUNCH'), findsOneWidget);
+      expect(find.text('Log to lunch'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );

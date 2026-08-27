@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/di/providers.dart';
 import '../../core/fixtures/workout_draft_codec.dart';
+import '../../core/presentation/consumer_copy.dart';
 import '../../core/presentation/consumer_date_label.dart';
 import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/services/indifit_haptics.dart';
@@ -631,11 +632,7 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
         skipLoadingOnRefresh: false,
         loading: () => const Padding(
           padding: EdgeInsets.all(B05Layout.space16),
-          child: ConsumerStatusRow(
-            label: 'Loading training',
-            detail: 'Finding today’s workout and your plan.',
-            loading: true,
-          ),
+          child: ConsumerStatusRow(label: 'Loading training', loading: true),
         ),
         error: (_, stackTrace) => Padding(
           padding: const EdgeInsets.all(B05Layout.space16),
@@ -917,7 +914,7 @@ _TrainingActionModel _trainingActionFor(TrainingLandingSnapshot data) {
     kind: _TrainingActionKind.openDay,
     title: 'No workout planned today',
     detail:
-        'Nothing needs your attention today. Use Quick Workout if you want to move.',
+        'Nothing needs your attention today. Use ${ConsumerCopy.quickWorkoutAction} if you want to move.',
   );
 }
 
@@ -1050,7 +1047,7 @@ class _DominantTrainingLandingBody extends StatelessWidget {
                   child: Align(
                     alignment: Alignment.centerLeft,
                     child: B05ActionButton(
-                      label: 'View history',
+                      label: ConsumerCopy.historyAction('workout'),
                       icon: Icons.history_rounded,
                       emphasis: B05ActionEmphasis.tertiary,
                       onPressed: onOpenHistory,
@@ -1134,7 +1131,7 @@ class _DominantTrainingAction extends StatelessWidget {
           );
     final quickButton = action.showsQuickWorkout
         ? B05ActionButton(
-            label: 'Quick Workout',
+            label: ConsumerCopy.quickWorkoutAction,
             icon: Icons.bolt_rounded,
             emphasis: B05ActionEmphasis.secondary,
             onPressed: isLaunching ? null : onQuickWorkout,

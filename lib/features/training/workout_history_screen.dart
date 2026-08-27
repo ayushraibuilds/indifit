@@ -7,6 +7,7 @@ import '../../core/presentation/consumer_date_label.dart';
 import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
+import '../../core/widgets/consumer_task_primitives.dart';
 import '../../data/models/b02_execution_models.dart';
 import '../../data/repositories/b02_execution_compatibility_read_repository.dart';
 
@@ -31,10 +32,11 @@ class WorkoutHistoryScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Workout history')),
       body: history.when(
-        loading: () => Center(
-          child: Semantics(
+        loading: () => const Padding(
+          padding: EdgeInsets.all(B05Layout.space20),
+          child: ConsumerStatusRow(
             label: 'Loading workout history',
-            child: CircularProgressIndicator(),
+            loading: true,
           ),
         ),
         error: (_, _) => Center(
@@ -171,11 +173,11 @@ String _detailLabel(B02ActivityHistoryItem item) {
     B02ActivityType.walking =>
       item.hasCardioDetail
           ? '${item.cardioIntervalCount} intervals'
-          : 'Cardio detail not available yet',
+          : 'Cardio details are unavailable',
     B02ActivityType.yoga || B02ActivityType.mobility =>
       item.hasMobilityDetail
           ? 'Mobility detail'
-          : 'Mobility detail not available yet',
+          : 'Mobility details are unavailable',
     B02ActivityType.legacy => 'Details not available',
   };
 }

@@ -136,9 +136,9 @@ void main() {
       ))!;
       await _pumpPlayer(tester, launch, executions, db, AppTheme.lightTheme);
 
-      expect(find.text('Prescribed work complete'), findsOneWidget);
+      expect(find.text('Planned sets complete'), findsOneWidget);
       expect(
-        find.textContaining('There is no pending prescribed set.'),
+        find.textContaining('All planned sets are logged.'),
         findsOneWidget,
       );
       expect(find.byType(TextFormField), findsNothing);

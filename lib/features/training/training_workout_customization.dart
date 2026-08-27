@@ -182,7 +182,7 @@ class _TrainingWorkoutCustomizationScreenState
                 Text('More options', style: B05Typography.label(context)),
                 const SizedBox(height: B05Layout.space4),
                 const Text(
-                  'Adding or removing exercises is not available for scheduled workouts yet.',
+                  'Scheduled workout exercises can’t be changed here.',
                 ),
                 const SizedBox(height: B05Layout.space8),
                 Align(

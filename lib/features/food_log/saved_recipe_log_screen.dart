@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/di/providers.dart';
 import '../../core/nutrients.dart';
+import '../../core/presentation/consumer_copy.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/typed_quantities.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
@@ -163,7 +164,13 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
             child:
                 state.status == SavedRecipeLogStatus.loadingRecipes ||
                     state.status == SavedRecipeLogStatus.idle
-                ? const Center(child: CircularProgressIndicator())
+                ? const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: ConsumerStatusRow(
+                      label: 'Loading recipes',
+                      loading: true,
+                    ),
+                  )
                 : state.recipes.isEmpty && state.drafts.isEmpty
                 ? _buildEmptyRecipes(state.query, controller)
                 : ListView.separated(
@@ -345,7 +352,10 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
     final recipe = state.selectedRecipe!;
     final version = state.selectedVersion;
     if (state.status == SavedRecipeLogStatus.loadingSelection) {
-      return const Center(child: CircularProgressIndicator());
+      return const Padding(
+        padding: EdgeInsets.all(16),
+        child: ConsumerStatusRow(label: 'Loading recipe', loading: true),
+      );
     }
     if (version == null) {
       return SingleChildScrollView(
@@ -732,7 +742,7 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
             const SizedBox(height: 12),
             Text(
               incomplete
-                  ? 'Some nutrition information is missing'
+                  ? ConsumerCopy.nutritionDetailsIncomplete
                   : 'Nutrition information is available',
               style: TextStyle(
                 color: incomplete

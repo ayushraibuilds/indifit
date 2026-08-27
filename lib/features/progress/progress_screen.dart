@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:timezone/timezone.dart' as tz;
 
 import '../../core/navigation/app_navigation.dart';
+import '../../core/presentation/consumer_copy.dart';
 import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/services/indifit_haptics.dart';
 import '../../core/services/local_schedule_date_service.dart';
@@ -93,8 +94,6 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
           padding: EdgeInsets.all(B05Layout.space20),
           child: ConsumerStatusRow(
             label: 'Loading your progress',
-            detail:
-                'Preparing your recent activity, strength, and measurements.',
             loading: true,
           ),
         ),
@@ -546,7 +545,7 @@ class _ProgressHighlights extends StatelessWidget {
           _ProgressHighlight(
             label: 'Measurements',
             value: '${_formatNumber(value.value)} cm',
-            detail: 'latest ${value.label.toLowerCase()}',
+            detail: 'Latest ${value.label.toLowerCase()}',
             icon: Icons.straighten_rounded,
             semanticDetail:
                 '${value.label}: ${_formatNumber(value.value)} centimetres, latest measurement.',
@@ -1040,7 +1039,7 @@ class _StrengthSection extends StatelessWidget {
               ),
               const SizedBox(height: B05Layout.space16),
               B05ActionButton(
-                label: 'View history',
+                label: ConsumerCopy.historyAction('strength'),
                 icon: Icons.history_rounded,
                 emphasis: B05ActionEmphasis.tertiary,
                 onPressed: () =>
@@ -1847,7 +1846,7 @@ class _MeasurementsSection extends StatelessWidget {
               ),
               const SizedBox(height: B05Layout.space12),
               B05ActionButton(
-                label: 'View history',
+                label: ConsumerCopy.historyAction('measurement'),
                 icon: Icons.history_rounded,
                 emphasis: B05ActionEmphasis.tertiary,
                 onPressed: onViewHistory,

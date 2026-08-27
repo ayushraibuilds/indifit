@@ -117,7 +117,7 @@ class _B02ActivityCreationScreenState
                   onPressed: () => ref
                       .read(b02ActivityControllerProvider.notifier)
                       .recover(state.draft!.id),
-                  child: const Text('Retry recovery'),
+                  child: const Text('Try again'),
                 ),
               TextButton(
                 onPressed: () => Navigator.of(context).maybePop(),

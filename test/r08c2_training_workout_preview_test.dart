@@ -105,7 +105,7 @@ void main() {
       expect(find.text("TODAY'S WORKOUT"), findsOneWidget);
       expect(find.text('Start workout'), findsOneWidget);
       expect(find.text('Customize today'), findsOneWidget);
-      expect(find.text('Quick Workout'), findsNothing);
+      expect(find.text('Quick workout'), findsNothing);
       expect(find.text('Show planned targets'), findsOneWidget);
       expect(find.text('PLANNED STRUCTURE'), findsOneWidget);
       expect(find.text('PLANNED EXERCISES'), findsOneWidget);

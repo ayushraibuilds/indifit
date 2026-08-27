@@ -31,9 +31,7 @@ void main() {
   ) async {
     await _pumpSettings(tester);
 
-    await _expectSettingsSection(tester, 'Goals & targets', [
-      'Goal & targets',
-    ]);
+    await _expectSettingsSection(tester, 'Goals & targets', ['Goal & targets']);
     await _expectSettingsSection(tester, 'FOOD & NUTRITION', [
       'Dietary needs & preferences',
       'Household measures',
@@ -52,7 +50,7 @@ void main() {
     await _expectSettingsSection(tester, 'App preferences', [
       'Appearance',
       'Units',
-      'Customize Today',
+      'Customize today',
     ]);
     await _expectSettingsSection(tester, 'Data & privacy', [
       'Manage your data',
@@ -97,9 +95,7 @@ void main() {
     expect(find.byType(NutritionTargetsHubScreen), findsOneWidget);
   });
 
-  testWidgets('Settings exposes one goals destination', (
-    tester,
-  ) async {
+  testWidgets('Settings exposes one goals destination', (tester) async {
     await _pumpSettings(tester);
 
     expect(find.widgetWithText(ListTile, 'Goal & targets'), findsOneWidget);

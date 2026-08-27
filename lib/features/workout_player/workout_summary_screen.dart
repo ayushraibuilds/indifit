@@ -71,7 +71,7 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
         final commandId = widget.completionCommandId;
         if (commandId == null || commandId.trim().isEmpty) {
           throw const ScheduledWorkoutFinalizationException(
-            'This workout is missing a required detail. Reopen it and try again.',
+            'Some workout details are missing. Reopen the workout and try again.',
           );
         }
         await ref

@@ -385,7 +385,7 @@ class TodayNutritionPresentation {
       headline: noConsumption
           ? 'No meals yet'
           : incomplete
-          ? 'Some nutrition is incomplete'
+          ? ConsumerCopy.nutritionDetailsIncomplete
           : 'Nutrition today',
       detail: noConsumption
           ? 'Tap + to add breakfast.'
@@ -850,7 +850,7 @@ TodayFocusPresentation todayFocusPresentation({
   return const TodayFocusPresentation(
     state: TodayPresentationState.empty,
     title: 'No next step',
-    detail: 'There is no canonical action to show right now.',
+    detail: 'There’s no next step right now.',
     action: null,
   );
 }

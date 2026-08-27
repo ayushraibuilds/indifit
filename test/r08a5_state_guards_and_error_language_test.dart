@@ -655,7 +655,7 @@ void main() {
         expect(find.text('Workout in progress'), findsOneWidget);
         expect(find.text('Resume workout'), findsNothing);
         expect(find.text('Start workout'), findsNothing);
-        expect(find.text('Quick Workout'), findsNothing);
+        expect(find.text('Quick workout'), findsNothing);
       },
     );
 

@@ -118,11 +118,11 @@ class _ActivityRow extends StatelessWidget {
             B02ActivityType.walking =>
               record.hasCardioDetail
                   ? '${record.cardioIntervalCount} intervals · cardio detail'
-                  : 'Cardio details not available yet',
+                  : 'Cardio details are unavailable',
             B02ActivityType.yoga || B02ActivityType.mobility =>
               record.hasMobilityDetail
                   ? 'Mobility detail'
-                  : 'Mobility details not available yet',
+                  : 'Mobility details are unavailable',
             B02ActivityType.legacy => 'Earlier workout',
           };
     final source = B02ProgressPresentation.sourceLabel(
@@ -183,7 +183,7 @@ class _GroupRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final members = group.members.isEmpty
-        ? 'Exercise details not available yet'
+        ? 'Exercise details are unavailable'
         : group.members
               .map(
                 (member) => member.wasSubstituted

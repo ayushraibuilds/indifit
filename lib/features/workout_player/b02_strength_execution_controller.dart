@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/di/providers.dart';
+import '../../core/presentation/consumer_copy.dart';
 import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/services/workout_session_wake_lock_coordinator.dart';
 import '../../core/utils/app_logger.dart';
@@ -673,7 +674,7 @@ class B02StrengthExecutionController
             : current.state.groups.firstWhere(
                 (candidate) => candidate.id == slot.groupId,
                 orElse: () => throw const B02ValidationException(
-                  'This workout is missing a required detail. Recover the draft and try again.',
+                  'Some workout details are missing. Reopen the workout and try again.',
                 ),
               );
         if (group == null &&
@@ -682,7 +683,7 @@ class B02StrengthExecutionController
                 slot.roundOrdinal != null ||
                 slot.memberOrdinal != null)) {
           throw const B02ValidationException(
-            'This workout is missing a required detail. Recover the draft and try again.',
+            'Some workout details are missing. Reopen the workout and try again.',
           );
         }
         if (group != null) {
@@ -701,7 +702,7 @@ class B02StrengthExecutionController
               roundOrdinal >= group.roundCount ||
               !memberMatches) {
             throw const B02ValidationException(
-              'This grouped workout detail is unavailable right now.',
+              ConsumerCopy.groupDetailsUnavailable,
             );
           }
         }

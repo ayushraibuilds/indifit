@@ -889,10 +889,10 @@ void main() {
 
         await tester.pumpWidget(buildApp(textScale: 1.0));
         await tester.pump();
-        expect(find.text('Saved Meals'), findsOneWidget);
+        expect(find.text('Saved meals'), findsOneWidget);
         expect(find.text('Screen Meal'), findsOneWidget);
-        expect(find.text('LOG TO LUNCH'), findsOneWidget);
-        expect(find.text('REVIEW PORTIONS'), findsOneWidget);
+        expect(find.text('Log to lunch'), findsOneWidget);
+        expect(find.text('Review portions'), findsOneWidget);
         expect(
           find.text(
             'Nutrition details are partial; unknown values stay unknown.',

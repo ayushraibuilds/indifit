@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/di/providers.dart';
+import '../../core/presentation/consumer_copy.dart';
 import '../../core/services/indifit_haptics.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/indi_fit_feedback.dart';
@@ -95,7 +96,7 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
         _refreshTodaySurfaces();
         showIndiFitSuccessFeedback(
           context,
-          'Logged "${item.draft.name}" to ${widget.mealType.toUpperCase()}!',
+          'Logged "${item.draft.name}" to ${widget.mealType.toLowerCase()}!',
         );
         if (closeAfterSuccess && mounted && Navigator.canPop(context)) {
           Navigator.pop(context, true);
@@ -265,12 +266,12 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Saved Meals'),
+        title: const Text('Saved meals'),
         backgroundColor: context.b05Colors.surface,
         elevation: 0,
         actions: [
           IconButton(
-            tooltip: 'Create Saved Meal',
+            tooltip: 'Create saved meal',
             icon: const Icon(Icons.add_rounded),
             onPressed: () => _openEditor(),
           ),
@@ -687,7 +688,7 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
                   ),
                 ),
                 child: const Text(
-                  'REVIEW PORTIONS',
+                  'Review portions',
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
                 ),
@@ -704,8 +705,8 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
                 ),
                 child: Text(
                   meal.requiresPartialAcknowledgement
-                      ? 'REVIEW & LOG'
-                      : 'LOG TO $targetMealLabel',
+                      ? 'Review & log'
+                      : ConsumerCopy.logToMeal(targetMealLabel),
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     fontSize: 12,

@@ -94,7 +94,7 @@ void main() {
     expect(protein.isAvailable, isFalse);
     expect(protein.value, '—');
     expect(partial.hasIncompleteNutrition, isTrue);
-    expect(partial.headline, 'Some nutrition is incomplete');
+    expect(partial.headline, 'Some nutrition details are incomplete');
 
     final noTarget = TodayNutritionPresentation.from(
       TodayDomainRead.available(_populatedNutrition()),

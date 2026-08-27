@@ -238,7 +238,7 @@ void main() {
         await tester.tap(checkbox);
         await tester.pump();
       }
-      expect(find.text('ADD 4 FOODS TO LUNCH'), findsOneWidget);
+      expect(find.text('Add 4 foods to lunch'), findsOneWidget);
       expect(find.text('4 foods selected · 400 kcal'), findsOneWidget);
 
       final curdCheckbox = find.bySemanticsLabel(
@@ -247,7 +247,7 @@ void main() {
       await tester.ensureVisible(curdCheckbox);
       await tester.tap(curdCheckbox);
       await tester.pump();
-      expect(find.text('ADD 3 FOODS TO LUNCH'), findsOneWidget);
+      expect(find.text('Add 3 foods to lunch'), findsOneWidget);
       expect(find.text('3 foods selected · 300 kcal'), findsOneWidget);
       await expectLater(
         find.byType(FoodSearchScreen),
@@ -256,7 +256,7 @@ void main() {
 
       final batchAdd = find.widgetWithText(
         FilledButton,
-        'ADD 3 FOODS TO LUNCH',
+        'Add 3 foods to lunch',
       );
       final batchAddPosition = tester.getCenter(batchAdd);
       await tester.tapAt(batchAddPosition);
@@ -264,7 +264,7 @@ void main() {
       await tester.pump();
       expect(countingLogger.batchCalls, 1);
       await _settleR07D(tester);
-      expect(find.text('ADD 3 FOODS TO LUNCH'), findsNothing);
+      expect(find.text('Add 3 foods to lunch'), findsNothing);
     },
   );
 
@@ -563,7 +563,7 @@ void main() {
 
     await tester.tap(find.bySemanticsLabel('Add Measured paneer'));
     await _settleR07D(tester);
-    expect(find.text('Log to LUNCH'), findsOneWidget);
+    expect(find.text('Log to lunch'), findsOneWidget);
     expect(
       find.byKey(const ValueKey('food_quantity_review_surface')),
       findsOneWidget,

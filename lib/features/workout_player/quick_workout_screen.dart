@@ -8,6 +8,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../core/di/providers.dart';
 import '../../core/fixtures/b02_execution_draft_codec.dart';
+import '../../core/presentation/consumer_copy.dart';
 import '../../core/services/workout_session_wake_lock_coordinator.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/utils/app_logger.dart';
@@ -232,7 +233,7 @@ class _QuickWorkoutScreenState extends ConsumerState<QuickWorkoutScreen> {
         actions: [
           B05IconAction(
             icon: Icons.close_rounded,
-            label: 'Close Quick Workout',
+            label: 'Close quick workout',
             onPressed: () => context.pop(),
           ),
         ],
@@ -325,8 +326,8 @@ class QuickWorkoutConflictSurface extends StatelessWidget {
           const SizedBox(height: B05Layout.space8),
           Text(
             planned
-                ? '${draft.routineName} is saved. Resume it, or discard only this unfinished workout before starting Quick Workout.'
-                : 'Your saved Quick Workout is ready to continue.',
+                ? '${draft.routineName} is saved. Resume it, or discard only this unfinished workout before starting a quick workout.'
+                : 'Your saved ${ConsumerCopy.quickWorkoutAction} is ready to continue.',
             style: B05Typography.body(context),
           ),
           const SizedBox(height: B05Layout.space20),
@@ -339,7 +340,7 @@ class QuickWorkoutConflictSurface extends StatelessWidget {
               ),
               B05ActionButton(
                 label: planned
-                    ? 'Discard draft and start Quick Workout'
+                    ? 'Discard draft and start a quick workout'
                     : 'Discard and start new',
                 icon: Icons.delete_outline_rounded,
                 emphasis: B05ActionEmphasis.secondary,

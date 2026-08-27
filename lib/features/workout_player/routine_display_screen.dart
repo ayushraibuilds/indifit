@@ -191,13 +191,13 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.directions_run_rounded),
-            tooltip: 'Log typed activity',
+            tooltip: 'Log activity',
             onPressed: () => context.push('/activity-create'),
           ),
           if (_activeRoutine != null) ...[
             IconButton(
               icon: const Icon(Icons.history_rounded),
-              tooltip: 'Log Past Workout',
+              tooltip: 'Log past workout',
               onPressed: () {
                 showIndiFitBottomSheet(
                   context: context,

@@ -238,7 +238,7 @@ class _NutritionRecipeEditorScreenState
                     subtitle: Text(
                       food.hasNumericFacts
                           ? 'Typed nutrition available'
-                          : 'Nutrition facts unavailable; preserved as unknown',
+                          : 'Nutrition details unavailable; unknown values stay unknown',
                     ),
                     onTap: busy ? null : () => _addIngredient(controller, food),
                   ),

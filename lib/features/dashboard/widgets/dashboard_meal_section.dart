@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/nutrients.dart';
 import '../../../core/nutrition_legacy_read_models.dart';
+import '../../../core/presentation/consumer_copy.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
 import '../../../core/theme/colors.dart';
 import '../../../core/widgets/indi_fit_feedback.dart';
@@ -129,7 +130,7 @@ class _MealCard extends ConsumerWidget {
                 ),
               ),
               const Text(
-                'Log Food Item',
+                ConsumerCopy.logFoodAction,
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
@@ -164,7 +165,7 @@ class _MealCard extends ConsumerWidget {
                             Navigator.pop(sheetCtx);
                             showIndiFitSuccessFeedback(
                               context,
-                              'Re-logged recent $title items!',
+                              'Logged recent $title items',
                             );
                           }
                         },
@@ -193,7 +194,7 @@ class _MealCard extends ConsumerWidget {
                   color: AppColors.primary,
                 ),
                 title: const Text(
-                  'Search Food Database',
+                  'Search foods',
                   style: TextStyle(fontWeight: FontWeight.w600),
                 ),
                 subtitle: const Text(
@@ -219,7 +220,7 @@ class _MealCard extends ConsumerWidget {
                   color: AppColors.warning,
                 ),
                 title: const Text(
-                  'Saved Meals',
+                  'Saved meals',
                   style: TextStyle(fontWeight: FontWeight.w600),
                 ),
                 subtitle: const Text('One-tap log your usual multi-item meals'),
@@ -633,7 +634,7 @@ class _MealCard extends ConsumerWidget {
                               },
                               icon: const Icon(Icons.history_rounded, size: 14),
                               label: Text(
-                                'Repeat Last ($cals kcal)',
+                                'Repeat last ($cals kcal)',
                                 style: const TextStyle(fontSize: 12),
                               ),
                               style: TextButton.styleFrom(

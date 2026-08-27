@@ -8,6 +8,7 @@ import 'package:uuid/uuid.dart';
 import '../../core/di/providers.dart';
 import '../../core/fixtures/workout_draft_codec.dart';
 import '../../core/navigation/app_navigation.dart';
+import '../../core/presentation/consumer_copy.dart';
 import '../../core/presentation/consumer_date_label.dart';
 import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/services/crash_reporting_service.dart';
@@ -380,7 +381,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Semantics(
-                    label: 'Customize Today',
+                    label: ConsumerCopy.customizeTodayAction,
                     header: true,
                     child: Column(
                       children: [
@@ -397,7 +398,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           children: [
                             Expanded(
                               child: Text(
-                                'Customize Today',
+                                ConsumerCopy.customizeTodayAction,
                                 style: B05Typography.title(context),
                               ),
                             ),

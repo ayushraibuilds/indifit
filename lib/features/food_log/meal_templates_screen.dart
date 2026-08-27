@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../core/theme/colors.dart';
+import '../../core/widgets/consumer_task_primitives.dart';
 import '../../data/repositories/food_repository.dart';
 
 final mealTemplatesProvider =
@@ -214,7 +216,7 @@ class _MealTemplatesScreenState extends ConsumerState<MealTemplatesScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          widget.legacyReadOnly ? 'Older Saved Meals' : 'My Saved Meals',
+          widget.legacyReadOnly ? 'Older saved meals' : 'My saved meals',
         ),
         backgroundColor: AppColors.surface,
         elevation: 0,
@@ -245,7 +247,7 @@ class _MealTemplatesScreenState extends ConsumerState<MealTemplatesScreen> {
                     Text(
                       widget.legacyReadOnly
                           ? 'No older saved meals'
-                          : 'No Saved Meals',
+                          : 'No saved meals',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 18,
@@ -254,7 +256,7 @@ class _MealTemplatesScreenState extends ConsumerState<MealTemplatesScreen> {
                     const SizedBox(height: 8),
                     Text(
                       widget.legacyReadOnly
-                          ? 'Older saved meals are kept here for compatibility. New saved meals use the Saved Meals screen.'
+                          ? 'These older saved meals are read-only. New saved meals appear in Saved meals.'
                           : 'Save your usual breakfast, lunch, or meal combinations for 1-tap logging.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
@@ -267,7 +269,7 @@ class _MealTemplatesScreenState extends ConsumerState<MealTemplatesScreen> {
                       ElevatedButton.icon(
                         onPressed: _showCreateTemplateDialog,
                         icon: const Icon(Icons.add_rounded),
-                        label: const Text('Create Saved Meal'),
+                        label: const Text('Create saved meal'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
                           foregroundColor: Colors.white,
@@ -373,8 +375,9 @@ class _MealTemplatesScreenState extends ConsumerState<MealTemplatesScreen> {
             },
           );
         },
-        loading: () => const Center(
-          child: CircularProgressIndicator(color: AppColors.primary),
+        loading: () => const Padding(
+          padding: EdgeInsets.all(16),
+          child: ConsumerStatusRow(label: 'Loading saved meals', loading: true),
         ),
         error: (_, _) => const Center(
           child: Text('Saved meals are unavailable. Try again later.'),

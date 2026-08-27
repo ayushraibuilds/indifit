@@ -163,15 +163,15 @@ void main() {
       }
 
       // Check available actions
-      expect(find.text('Search Food Database'), findsOneWidget);
-      expect(find.text('Saved Meals'), findsOneWidget);
+      expect(find.text('Search foods'), findsOneWidget);
+      expect(find.text('Saved meals'), findsOneWidget);
       expect(find.text('Recipes'), findsOneWidget);
       expect(find.text('Build a meal'), findsOneWidget);
 
       // AI Meal Estimator must NOT be present
       expect(find.text('AI Meal Estimator'), findsNothing);
 
-      Navigator.pop(tester.element(find.text('Search Food Database')));
+      Navigator.pop(tester.element(find.text('Search foods')));
       await tester.pump();
     });
 

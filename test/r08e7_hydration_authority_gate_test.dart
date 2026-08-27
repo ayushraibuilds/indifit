@@ -152,7 +152,7 @@ void main() {
           'Appearance',
           'Units',
           'Notifications & reminders',
-          'Customize Today',
+          'Customize today',
         ]) {
           final row = find.widgetWithText(ListTile, label);
           await tester.scrollUntilVisible(row, 300);

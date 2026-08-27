@@ -150,7 +150,7 @@ void main() {
         () => Future<void>.delayed(const Duration(milliseconds: 100)),
       );
       await tester.pump(const Duration(milliseconds: 250));
-      expect(find.text('Log to LUNCH'), findsOneWidget);
+      expect(find.text('Log to lunch'), findsOneWidget);
       expect(find.text('servings'), findsOneWidget);
       expect(
         find.widgetWithText(ElevatedButton, 'Add to Lunch'),
@@ -1080,7 +1080,7 @@ void main() {
     );
     await tester.pump(const Duration(milliseconds: 250));
     await tester.pumpAndSettle();
-    expect(find.text('Log to BREAKFAST'), findsOneWidget);
+    expect(find.text('Log to breakfast'), findsOneWidget);
     await expectLater(
       find.byKey(const ValueKey('food_quantity_review_surface')),
       matchesGoldenFile('goldens/ux_r03_food_quantity_review_dark.png'),

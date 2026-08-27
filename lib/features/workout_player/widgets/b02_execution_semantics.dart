@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../../../core/presentation/consumer_copy.dart';
 import '../../../data/models/b02_execution_models.dart';
 import '../../../data/models/b02_rich_set_helpers.dart';
 
@@ -152,7 +153,7 @@ class B02GroupExecutionIntegrity {
       ..sort((left, right) => left.ordinal.compareTo(right.ordinal));
     if (groupSlots.length != group.roundCount * members.length) {
       return const B02GroupExecutionIntegrity.invalid(
-        'This grouped workout detail is unavailable right now.',
+        ConsumerCopy.groupDetailsUnavailable,
       );
     }
     for (var round = 0; round < group.roundCount; round++) {
@@ -163,7 +164,7 @@ class B02GroupExecutionIntegrity {
       );
       if (roundSlots.length != members.length) {
         return const B02GroupExecutionIntegrity.invalid(
-          'This grouped workout detail is unavailable right now.',
+          ConsumerCopy.groupDetailsUnavailable,
         );
       }
       for (var index = 0; index < members.length; index++) {
@@ -176,7 +177,7 @@ class B02GroupExecutionIntegrity {
             (slot.setPrescriptionOrdinal != null &&
                 slot.setPrescriptionOrdinal != round)) {
           return const B02GroupExecutionIntegrity.invalid(
-            'This grouped workout detail is unavailable right now.',
+            ConsumerCopy.groupDetailsUnavailable,
           );
         }
       }
@@ -194,7 +195,7 @@ class B02GroupExecutionIntegrity {
           state.currentRoundOrdinal != null ||
           state.currentMemberOrdinal != null) {
         return const B02GroupExecutionIntegrity.invalid(
-          'This grouped workout detail is unavailable right now.',
+          ConsumerCopy.groupDetailsUnavailable,
         );
       }
       return const B02GroupExecutionIntegrity.valid();
@@ -211,7 +212,7 @@ class B02GroupExecutionIntegrity {
           (member) => member.ordinal == state.currentMemberOrdinal,
         )) {
       return const B02GroupExecutionIntegrity.invalid(
-        'This grouped workout detail is unavailable right now.',
+        ConsumerCopy.groupDetailsUnavailable,
       );
     }
     final graph = check(group: group, slots: slots);
@@ -225,7 +226,7 @@ class B02GroupExecutionIntegrity {
     return current.length == 1
         ? const B02GroupExecutionIntegrity.valid()
         : const B02GroupExecutionIntegrity.invalid(
-            'This grouped workout detail is unavailable right now.',
+            ConsumerCopy.groupDetailsUnavailable,
           );
   }
 }

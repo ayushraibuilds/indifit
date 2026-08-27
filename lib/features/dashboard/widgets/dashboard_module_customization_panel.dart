@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/presentation/consumer_copy.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
 import '../dashboard_module_registry.dart';
 import '../dashboard_personalization_controller.dart';
@@ -27,7 +28,7 @@ class DashboardModuleCustomizationPanel extends ConsumerWidget {
 
     return Semantics(
       container: true,
-      label: 'Customize Today',
+      label: ConsumerCopy.customizeTodayAction,
       child: switch (state.status) {
         DashboardPersonalizationStatus.loading => Center(
           child: Semantics(

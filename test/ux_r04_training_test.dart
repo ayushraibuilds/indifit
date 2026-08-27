@@ -75,7 +75,7 @@ void main() {
 
     expect(find.bySemanticsLabel(RegExp(r'^What to do now\.')), findsOneWidget);
     expect(find.text('Start workout'), findsOneWidget);
-    expect(find.text('Quick Workout'), findsOneWidget);
+    expect(find.text('Quick workout'), findsOneWidget);
     expect(find.textContaining('Finish this workout'), findsNothing);
     semantics.dispose();
   });
@@ -164,7 +164,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('No workout planned today'), findsOneWidget);
-    expect(find.text('Quick Workout'), findsOneWidget);
+    expect(find.text('Quick workout'), findsOneWidget);
     expect(find.text('Start workout'), findsNothing);
     expect(find.text('Resume workout'), findsNothing);
     expect(tester.takeException(), isNull);
@@ -211,7 +211,7 @@ void main() {
     expect(find.text('Try again'), findsOneWidget);
     expect(find.text('Start workout'), findsNothing);
     expect(find.text('Resume workout'), findsNothing);
-    expect(find.text('Quick Workout'), findsNothing);
+    expect(find.text('Quick workout'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
@@ -242,7 +242,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Set up your training plan'), findsOneWidget);
     expect(find.text('Choose a plan'), findsOneWidget);
-    expect(find.text('Quick Workout'), findsOneWidget);
+    expect(find.text('Quick workout'), findsOneWidget);
     expect(find.text('Start workout'), findsNothing);
     expect(find.text('Resume workout'), findsNothing);
     expect(tester.takeException(), isNull);
@@ -388,8 +388,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Workout complete today'), findsOneWidget);
-      expect(find.text('Quick Workout'), findsOneWidget);
-      await tester.tap(find.text('Quick Workout'));
+      expect(find.text('Quick workout'), findsOneWidget);
+      await tester.tap(find.text('Quick workout'));
       await tester.pumpAndSettle();
       expect(find.text('Quick route opened'), findsOneWidget);
     },

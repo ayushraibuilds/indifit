@@ -176,7 +176,7 @@ void main() {
       expect(result.isValid, isFalse);
       expect(
         result.consumerMessage,
-        'This grouped workout detail is unavailable right now.',
+        'Some exercise details are unavailable right now.',
       );
       expect(result.consumerMessage, isNot(contains('group-1')));
       expect(result.consumerMessage, isNot(contains('UUID')));
@@ -240,7 +240,7 @@ void main() {
     expect(result.isValid, isFalse);
     expect(
       result.consumerMessage,
-      'This grouped workout detail is unavailable right now.',
+      'Some exercise details are unavailable right now.',
     );
     expect(result.consumerMessage, isNot(contains('missing-group')));
   });

@@ -519,7 +519,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Set up your training plan'), findsOneWidget);
     expect(find.text('Choose a plan'), findsOneWidget);
-    expect(find.text('Quick Workout'), findsOneWidget);
+    expect(find.text('Quick workout'), findsOneWidget);
     expect(find.textContaining('saved in history'), findsOneWidget);
   });
 }

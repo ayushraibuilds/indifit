@@ -10,6 +10,7 @@ import '../../core/di/providers.dart';
 import '../../core/nutrients.dart';
 import '../../core/nutrition_household_measures.dart';
 import '../../core/nutrition_legacy_read_models.dart';
+import '../../core/presentation/consumer_copy.dart';
 import '../../core/presentation/consumer_date_label.dart';
 import '../../core/presentation/consumer_number_label.dart';
 import '../../core/presentation/product_failure_presentation.dart';
@@ -1148,8 +1149,12 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                           : 'Adding to ${_mealLabel(selectedMealType)}',
                       child: Text(
                         isCorrection
-                            ? 'UPDATE IN ${selectedMealType.toUpperCase()}'
-                            : 'Log to ${selectedMealType.toUpperCase()}',
+                            ? ConsumerCopy.updateFoodInMeal(
+                                _mealLabel(selectedMealType),
+                              )
+                            : ConsumerCopy.logToMeal(
+                                _mealLabel(selectedMealType),
+                              ),
                         style: TextStyle(
                           color: context.b05Colors.action,
                           fontWeight: FontWeight.w700,
@@ -1952,7 +1957,10 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                 child: Text(
                   _committingSelection
                       ? 'Adding…'
-                      : 'ADD ${_selectedOptions.length} FOOD${_selectedOptions.length == 1 ? '' : 'S'} TO ${_mealLabel(mealType).toUpperCase()}',
+                      : ConsumerCopy.addFoodsToMeal(
+                          count: _selectedOptions.length,
+                          meal: _mealLabel(mealType),
+                        ),
                   textAlign: TextAlign.center,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -3613,7 +3621,7 @@ class _FoodDiarySummary extends StatelessWidget {
             if (presentation.hasIncompleteNutrition) ...[
               const SizedBox(height: 8),
               Text(
-                'Some nutrition is missing; available values stay visible.',
+                '${ConsumerCopy.nutritionDetailsIncomplete}; available values stay visible.',
                 style: B05Typography.caption(context),
               ),
             ],

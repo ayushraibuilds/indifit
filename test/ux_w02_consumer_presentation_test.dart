@@ -31,6 +31,13 @@ void main() {
     'canonical',
     'persisted',
     'unresolved',
+    'provider',
+    'repository',
+    'authority',
+    'occurrence',
+    'provenance',
+    'migration',
+    'legacy',
     'utc',
   ];
 

@@ -6,6 +6,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../../core/di/providers.dart';
 import '../../../core/nutrition_thali.dart';
+import '../../../core/presentation/consumer_copy.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
 import '../../../core/typed_quantities.dart';
 import '../../dashboard/today_surface_controller.dart';
@@ -300,7 +301,7 @@ class _SavedMealEditBeforeLogSheetState
                   color: context.b05Colors.warning.container,
                   padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
                   child: Text(
-                    'Some nutrition details are incomplete and will stay marked as incomplete in this log.',
+                    '${ConsumerCopy.nutritionDetailsIncomplete}. They will stay incomplete in this log.',
                     style: TextStyle(
                       color: context.b05Colors.textSecondary,
                       fontSize: 12,

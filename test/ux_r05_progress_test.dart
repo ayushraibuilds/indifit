@@ -427,7 +427,7 @@ void main() {
       expect(find.text('80 cm'), findsWidgets);
       expect(find.text('2 cm lower than Jul 10'), findsOneWidget);
       expect(find.text('Chest'), findsOneWidget);
-      await tester.tap(find.text('View history'));
+      await tester.tap(find.text('View measurement history'));
       await tester.pumpAndSettle();
       expect(find.text('Measurement history'), findsOneWidget);
       expect(find.text('Waist 80 cm'), findsOneWidget);
