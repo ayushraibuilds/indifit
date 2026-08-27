@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/di/providers.dart';
+import '../../core/navigation/app_navigation.dart';
 import '../../core/services/indifit_haptics.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../data/models/b02_execution_models.dart';
@@ -73,7 +74,7 @@ class _B02StrengthSummaryScreenState
           launch: _completionLaunch ?? widget.launch,
           sessionId: ui.completedSessionId,
           completionKind: ui.completedCompletionKind ?? CompletionKind.full,
-          onDone: () => context.go('/training'),
+          onDone: () => goToTrainingTab(context),
         ),
       );
     }
