@@ -73,7 +73,7 @@ class SaveLoggedMealHelper {
     final mealName = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Save as Reusable Meal'),
+        title: const Text('Save this meal'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -137,10 +137,7 @@ class SaveLoggedMealHelper {
       await thaliRepo.saveDraft(draft);
 
       if (context.mounted) {
-        showIndiFitSuccessFeedback(
-          context,
-          'Saved "$mealName" as a reusable meal.',
-        );
+        showIndiFitSuccessFeedback(context, 'Saved "$mealName".');
       }
       return true;
     } catch (e) {
@@ -171,13 +168,13 @@ class SaveLoggedMealHelper {
       if (!item.quantity.isResolved || quantity == null) {
         throw const SaveLoggedMealError(
           'unresolved_logged_quantity',
-          'One or more logged portions cannot be reused safely. Create a saved meal and choose those items again.',
+          'One or more logged portions cannot be copied safely. Create a saved meal and choose those items again.',
         );
       }
       if (hasFood == hasRecipe) {
         throw const SaveLoggedMealError(
           'unresolved_logged_identity',
-          'One or more logged items no longer have a reusable food or recipe reference. Create a saved meal and choose those items again.',
+          'One or more logged items no longer have the food or recipe details needed to copy them. Create a saved meal and choose those items again.',
         );
       }
       final measureId = quantity.unit == QuantityUnit.householdReference
@@ -187,7 +184,7 @@ class SaveLoggedMealHelper {
           (measureId == null || measureId.trim().isEmpty)) {
         throw const SaveLoggedMealError(
           'unresolved_logged_measure',
-          'One or more logged portions no longer have a reusable measure. Create a saved meal and choose those items again.',
+          'One or more logged portions no longer have a supported measure. Create a saved meal and choose those items again.',
         );
       }
       components.add(
@@ -210,7 +207,7 @@ class SaveLoggedMealHelper {
     if (components.isEmpty) {
       throw const SaveLoggedMealError(
         'empty_logged_meal',
-        'No reusable items were found in this meal.',
+        'No supported items were found in this meal.',
       );
     }
     return List.unmodifiable(components);

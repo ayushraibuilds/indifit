@@ -6,7 +6,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/nutrition_household_measures.dart';
 import 'package:indifit/core/nutrition_thali.dart';
 import 'package:indifit/core/typed_quantities.dart';
+import 'package:indifit/data/database/app_database.dart'
+    show MealTemplate, MealTemplateItem;
+import 'package:indifit/data/repositories/food_repository.dart';
 import 'package:indifit/data/repositories/nutrition_thali_repository.dart';
+import 'package:indifit/features/food_log/meal_templates_screen.dart';
 import 'package:indifit/features/food_log/saved_meal_detail_screen.dart';
 import 'package:indifit/features/food_log/saved_meal_editor_screen.dart';
 import 'package:indifit/features/food_log/saved_meal_presentation.dart';
@@ -130,6 +134,8 @@ void main() {
     );
     await tester.pump();
 
+    expect(find.text('1 item · Saved meal'), findsOneWidget);
+    expect(find.textContaining('Reusable meal'), findsNothing);
     await tester.tap(find.byTooltip('Saved meal actions'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Delete'));
@@ -143,14 +149,55 @@ void main() {
   });
 
   testWidgets('Saved Meal editor uses title-case save action', (tester) async {
-    await tester.pumpWidget(
-      const MaterialApp(home: SavedMealEditorScreen()),
-    );
+    await tester.pumpWidget(const MaterialApp(home: SavedMealEditorScreen()));
     await tester.pump();
 
     expect(find.text('Save'), findsOneWidget);
     expect(find.text('SAVE'), findsNothing);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('older MealTemplates compatibility view is read-only', (
+    tester,
+  ) async {
+    final meal = MealTemplateWithItems(
+      template: MealTemplate(
+        id: 1,
+        name: 'Older lunch',
+        defaultMealType: 'lunch',
+        createdAt: DateTime.utc(2026, 1, 1),
+      ),
+      items: const [
+        MealTemplateItem(
+          id: 1,
+          templateId: 1,
+          name: 'Rice',
+          calories: 200,
+          proteinG: 4,
+          carbsG: 44,
+          fatG: 1,
+          servingLogged: 1,
+          servingUnit: 'serving',
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          mealTemplatesProvider.overrideWith((ref) async => [meal]),
+        ],
+        child: const MaterialApp(
+          home: MealTemplatesScreen(mealType: 'lunch', legacyReadOnly: true),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Older saved meals'), findsOneWidget);
+    expect(find.textContaining('Log Older lunch'), findsOneWidget);
+    expect(find.byIcon(Icons.delete_outline_rounded), findsNothing);
+    expect(find.byIcon(Icons.add_rounded), findsNothing);
   });
 }
 

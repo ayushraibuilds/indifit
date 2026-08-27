@@ -120,7 +120,7 @@ class _SavedMealDetailScreenState extends State<SavedMealDetailScreen> {
                     ],
                     const SizedBox(height: 6),
                     Text(
-                      '${meal.itemCount} ${meal.itemCount == 1 ? 'item' : 'items'} · Reusable meal',
+                      '${meal.itemCount} ${meal.itemCount == 1 ? 'item' : 'items'} · Saved meal',
                       style: B05Typography.caption(context),
                     ),
                   ],

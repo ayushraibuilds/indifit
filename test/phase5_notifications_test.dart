@@ -10,7 +10,7 @@ void main() {
       () {
         expect(
           NotificationService.destinationForPayload('workout'),
-          '/workout',
+          '/training',
         );
         expect(
           NotificationService.destinationForPayload('meal_lunch'),

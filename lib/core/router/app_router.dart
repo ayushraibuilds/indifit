@@ -17,7 +17,6 @@ import '../../features/exercise_library/exercise_library_screen.dart';
 import '../../features/food_log/nutrition_estimate_review_screen.dart';
 import '../../features/food_log/nutrition_recipe_editor_screen.dart';
 import '../../features/onboarding/onboarding_screen.dart';
-import '../../features/onboarding/routine_wizard_screen.dart';
 import '../../features/profile/profile_screen.dart';
 import '../../features/program_authoring/program_author_screen.dart';
 import '../../features/program_authoring/program_review_screen.dart';
@@ -32,7 +31,6 @@ import '../../features/training/workout_history_screen.dart';
 import '../../features/workout_player/b02_strength_player_screen.dart';
 import '../../features/workout_player/b02_strength_summary_screen.dart';
 import '../../features/workout_player/quick_workout_screen.dart';
-import '../../features/workout_player/routine_display_screen.dart';
 import '../../features/workout_player/routine_editor_screen.dart';
 import '../../features/workout_player/workout_execution_route.dart';
 import '../../features/workout_player/workout_player_screen.dart';
@@ -45,16 +43,15 @@ final onboardingCompletedProvider = StateProvider<bool>((ref) => false);
 /// Pure onboarding routing gate used by [appRouterProvider]'s redirect.
 ///
 /// Kept as a top-level function so the routing contract (first launch,
-/// completed onboarding, wizard exemption) is unit-testable without
+/// completed onboarding) is unit-testable without
 /// mounting any screen.
 String? onboardingGateRedirect({
   required bool onboardingCompleted,
   required String location,
 }) {
   final goingToOnboarding = location == '/onboarding';
-  final goingToWizard = location == '/routine-wizard';
 
-  if (!onboardingCompleted && !goingToOnboarding && !goingToWizard) {
+  if (!onboardingCompleted && !goingToOnboarding) {
     return '/onboarding';
   }
   if (onboardingCompleted && goingToOnboarding) {
@@ -137,17 +134,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/onboarding',
         builder: (context, state) => const OnboardingScreen(),
       ),
+      // Retired AI routine generation and the legacy Training Split surface
+      // must not compete with the reviewed Training planning experience.
       GoRoute(
         path: '/routine-wizard',
-        builder: (context, state) {
-          final goal = state.uri.queryParameters['goal'];
-          return RoutineWizardScreen(initialGoal: goal);
-        },
+        redirect: (context, state) => '/plan-library',
       ),
-      GoRoute(
-        path: '/workout',
-        builder: (context, state) => const RoutineDisplayScreen(),
-      ),
+      GoRoute(path: '/workout', redirect: (context, state) => '/training'),
       GoRoute(
         path: '/training',
         builder: (context, state) =>

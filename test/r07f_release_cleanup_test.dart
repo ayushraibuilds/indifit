@@ -175,7 +175,7 @@ void main() {
       );
     });
 
-    test('incomplete onboarding: onboarding and wizard stay reachable', () {
+    test('incomplete onboarding: only onboarding stays reachable', () {
       expect(
         onboardingGateRedirect(
           onboardingCompleted: false,
@@ -188,7 +188,7 @@ void main() {
           onboardingCompleted: false,
           location: '/routine-wizard',
         ),
-        isNull,
+        '/onboarding',
       );
     });
 

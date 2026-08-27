@@ -178,7 +178,7 @@ class _ProgramCalendarScreenState extends ConsumerState<ProgramCalendarScreen> {
       return CalendarEmptyState(
         view: state.view,
         hasActiveProgram: false,
-        onAction: () => context.push('/routine-wizard'),
+        onAction: () => context.push('/plan-library'),
       );
     }
     final selectedOccurrences = state.selectedDateOccurrences;

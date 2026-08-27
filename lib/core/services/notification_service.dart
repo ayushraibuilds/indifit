@@ -55,7 +55,7 @@ class NotificationService {
   /// The weekly reminder opens factual Progress instead of the retired AI
   /// report surface.
   static String? destinationForPayload(String payload) {
-    if (payload == 'workout') return '/workout';
+    if (payload == 'workout') return '/training';
     if (payload.startsWith('meal_')) {
       final mealType = payload.replaceFirst('meal_', '');
       return mealType.isEmpty ? '/food' : '/food?mealType=$mealType';

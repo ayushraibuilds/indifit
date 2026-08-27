@@ -384,7 +384,7 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
     }
 
     final detail = summary.hasMultipleOccurrencesPerSession
-        ? 'A session contains this exercise more than once. Each occurrence is preserved below instead of merged into a chart.'
+        ? 'A session contains this exercise more than once. Each entry is preserved below instead of merged into a chart.'
         : summary.sessionCount == 1
         ? 'One session saved. More sessions will show a factual comparison.'
         : summary.hasIncompleteTrend

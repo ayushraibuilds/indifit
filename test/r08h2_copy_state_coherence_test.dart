@@ -13,6 +13,7 @@ void main() {
       ConsumerCopy.nutritionDetailsIncomplete,
       'Some nutrition details are incomplete',
     );
+    expect(ConsumerCopy.earlierEntry, 'Earlier entry');
     expect(ConsumerCopy.historyAction('workout'), 'View workout history');
     expect(ConsumerCopy.historyAction('strength'), 'View strength history');
     expect(ConsumerCopy.logToMeal('LUNCH'), 'Log to lunch');

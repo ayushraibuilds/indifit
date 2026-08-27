@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/presentation/consumer_copy.dart';
 import '../../core/raw_cooked_transformations.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/typed_quantities.dart';
@@ -446,7 +447,7 @@ class _NutritionRecipeEditorScreenState
     NutritionPreparationState.cooked => 'Cooked',
     NutritionPreparationState.unspecified => 'Standard',
     NutritionPreparationState.unknown => 'Unknown',
-    NutritionPreparationState.legacy => 'Legacy',
+    NutritionPreparationState.legacy => ConsumerCopy.earlierEntry,
   };
 
   String _formatPrepMethod(NutritionPreparationMethod method) =>
@@ -461,7 +462,7 @@ class _NutritionRecipeEditorScreenState
         NutritionPreparationMethod.drained => 'Drained',
         NutritionPreparationMethod.prepared => 'Prepared',
         NutritionPreparationMethod.unknown => 'Standard',
-        NutritionPreparationMethod.legacy => 'Legacy',
+        NutritionPreparationMethod.legacy => ConsumerCopy.earlierEntry,
       };
 
   Future<void> _saveDraft() async {

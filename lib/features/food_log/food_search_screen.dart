@@ -2173,12 +2173,12 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         const SizedBox(height: 16),
         _sectionHeader(
           title: 'Saved & recipes',
-          subtitle: 'Reusable meals and recipes you make often.',
+          subtitle: 'Saved meals and recipes you make often.',
         ),
         _buildNavigationCard(
           icon: Icons.bookmark_outline_rounded,
           title: 'Saved meals',
-          detail: 'One-tap log your reusable meal combinations.',
+          detail: 'Quickly log meal combinations you saved.',
           onTap: _openSavedMeals,
         ),
         _buildNavigationCard(
@@ -3264,7 +3264,7 @@ class _FoodDiaryScreenState extends ConsumerState<FoodDiaryScreen> {
             Text('Food tools', style: B05Typography.title(context)),
             const SizedBox(height: 2),
             Text(
-              'Repeat from history or use a reusable meal when helpful.',
+              'Repeat from history or use a saved meal when helpful.',
               style: B05Typography.caption(context),
             ),
             const SizedBox(height: 8),
@@ -3277,7 +3277,7 @@ class _FoodDiaryScreenState extends ConsumerState<FoodDiaryScreen> {
             _FoodDiaryShortcut(
               icon: Icons.bookmark_outline_rounded,
               title: 'Saved meals',
-              detail: 'Log a reusable meal combination.',
+              detail: 'Log a meal combination you saved.',
               onTap: () => _openSavedMeals(context),
             ),
             _FoodDiaryShortcut(

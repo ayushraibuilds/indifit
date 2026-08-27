@@ -7,6 +7,7 @@ abstract final class ConsumerCopy {
   static const customizeTodayAction = 'Customize today';
   static const nutritionDetailsIncomplete =
       'Some nutrition details are incomplete';
+  static const earlierEntry = 'Earlier entry';
   static const groupDetailsUnavailable =
       'Some exercise details are unavailable right now.';
 

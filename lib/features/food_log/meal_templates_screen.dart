@@ -320,15 +320,17 @@ class _MealTemplatesScreenState extends ConsumerState<MealTemplatesScreen> {
                               ),
                             ],
                           ),
-                          IconButton(
-                            icon: Icon(
-                              Icons.delete_outline_rounded,
-                              color: colors.danger.indicator,
-                              size: 20,
+                          if (!widget.legacyReadOnly)
+                            IconButton(
+                              tooltip: 'Delete ${item.template.name}',
+                              icon: Icon(
+                                Icons.delete_outline_rounded,
+                                color: colors.danger.indicator,
+                                size: 20,
+                              ),
+                              onPressed: () =>
+                                  _handleDeleteTemplate(item.template.id),
                             ),
-                            onPressed: () =>
-                                _handleDeleteTemplate(item.template.id),
-                          ),
                         ],
                       ),
                       const SizedBox(height: 8),
