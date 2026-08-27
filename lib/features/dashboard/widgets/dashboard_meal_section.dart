@@ -102,7 +102,7 @@ class _MealCard extends ConsumerWidget {
     final colors = context.b05Colors;
     showIndiFitBottomSheet(
       context: context,
-      semanticLabel: 'Log Food Item',
+      semanticLabel: ConsumerCopy.logFoodAction,
       builder: (sheetCtx) {
         return SingleChildScrollView(
           padding: EdgeInsets.only(
@@ -175,10 +175,7 @@ class _MealCard extends ConsumerWidget {
               ),
               const SizedBox(height: 8),
               ListTile(
-                leading: Icon(
-                  Icons.search_rounded,
-                  color: colors.action,
-                ),
+                leading: Icon(Icons.search_rounded, color: colors.action),
                 title: const Text(
                   'Search foods',
                   style: TextStyle(fontWeight: FontWeight.w600),
@@ -225,10 +222,7 @@ class _MealCard extends ConsumerWidget {
               ),
               Divider(color: colors.border),
               ListTile(
-                leading: Icon(
-                  Icons.menu_book_rounded,
-                  color: colors.action,
-                ),
+                leading: Icon(Icons.menu_book_rounded, color: colors.action),
                 title: const Text(
                   'Recipes',
                   style: TextStyle(fontWeight: FontWeight.w600),
@@ -330,10 +324,7 @@ class _MealCard extends ConsumerWidget {
                 ),
               ),
               ListTile(
-                leading: Icon(
-                  Icons.today_rounded,
-                  color: colors.action,
-                ),
+                leading: Icon(Icons.today_rounded, color: colors.action),
                 title: const Text('Today'),
                 onTap: () => Navigator.pop(ctx, today),
               ),
@@ -556,7 +547,10 @@ class _MealCard extends ConsumerWidget {
                 children: [
                   Text(
                     'No food logged yet.',
-                    style: TextStyle(color: context.b05Colors.textDisabled, fontSize: 12),
+                    style: TextStyle(
+                      color: context.b05Colors.textDisabled,
+                      fontSize: 12,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Wrap(
@@ -886,7 +880,9 @@ class _LoggedItemRow extends ConsumerWidget {
                   ),
                   Text(
                     '${log.servingLogged} logged • ${log.calories} kcal',
-                    style: B05Typography.caption(context).copyWith(fontSize: 11),
+                    style: B05Typography.caption(
+                      context,
+                    ).copyWith(fontSize: 11),
                   ),
                 ],
               ),

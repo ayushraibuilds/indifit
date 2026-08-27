@@ -244,19 +244,23 @@ class _MealTemplatesScreenState extends ConsumerState<MealTemplatesScreen> {
                       color: colors.textDisabled,
                     ),
                     const SizedBox(height: 16),
-                      Text(
-                        widget.legacyReadOnly
-                            ? 'No older saved meals'
-                            : 'No saved meals',
-                        style: B05Typography.title(context).copyWith(fontSize: 18),
-                      ),
+                    Text(
+                      widget.legacyReadOnly
+                          ? 'No older saved meals'
+                          : 'No saved meals',
+                      style: B05Typography.title(
+                        context,
+                      ).copyWith(fontSize: 18),
+                    ),
                     const SizedBox(height: 8),
                     Text(
                       widget.legacyReadOnly
                           ? 'These older saved meals are read-only. New saved meals appear in Saved meals.'
                           : 'Save your usual breakfast, lunch, or meal combinations for 1-tap logging.',
                       textAlign: TextAlign.center,
-                      style: B05Typography.caption(context).copyWith(fontSize: 13),
+                      style: B05Typography.caption(
+                        context,
+                      ).copyWith(fontSize: 13),
                     ),
                     if (!widget.legacyReadOnly) ...[
                       const SizedBox(height: 24),
@@ -301,7 +305,9 @@ class _MealTemplatesScreenState extends ConsumerState<MealTemplatesScreen> {
                             children: [
                               Text(
                                 item.template.name,
-                                style: B05Typography.title(context).copyWith(fontSize: 16),
+                                style: B05Typography.title(
+                                  context,
+                                ).copyWith(fontSize: 16),
                               ),
                               const SizedBox(height: 2),
                               Text(

@@ -360,27 +360,27 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           B05Layout.space16,
         ),
         child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Semantics(
-            label: ConsumerCopy.customizeTodayAction,
-            header: true,
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    ConsumerCopy.customizeTodayAction,
-                    style: B05Typography.title(sheetCtx),
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Semantics(
+              label: ConsumerCopy.customizeTodayAction,
+              header: true,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      ConsumerCopy.customizeTodayAction,
+                      style: B05Typography.title(sheetCtx),
+                    ),
                   ),
-                ),
-                B05IconAction(
-                  icon: Icons.close_rounded,
-                  label: 'Close customization',
-                  onPressed: () => Navigator.of(sheetCtx).pop(),
-                ),
-              ],
+                  B05IconAction(
+                    icon: Icons.close_rounded,
+                    label: 'Close customization',
+                    onPressed: () => Navigator.of(sheetCtx).pop(),
+                  ),
+                ],
+              ),
             ),
-          ),
             const SizedBox(height: B05Layout.space8),
             const Flexible(child: DashboardModuleCustomizationPanel()),
           ],
