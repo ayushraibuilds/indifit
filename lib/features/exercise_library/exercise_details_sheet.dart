@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/di/providers.dart';
 import '../../core/fixtures/exercise_display_muscles.dart';
+import '../../core/fixtures/exercise_family_metadata.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/indi_fit_bottom_sheet.dart';
@@ -11,15 +12,30 @@ import '../media/b05_exercise_visual_registry.dart';
 import '../workout_player/widgets/plate_calculator_sheet.dart';
 import 'exercise_history_screen.dart';
 
-class ExerciseDetailsSheet extends ConsumerWidget {
+class ExerciseDetailsSheet extends ConsumerStatefulWidget {
   final Exercise exercise;
+  final List<Exercise> familyExercises;
 
-  const ExerciseDetailsSheet({super.key, required this.exercise});
+  const ExerciseDetailsSheet({
+    super.key,
+    required this.exercise,
+    this.familyExercises = const [],
+  });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ExerciseDetailsSheet> createState() =>
+      _ExerciseDetailsSheetState();
+}
+
+class _ExerciseDetailsSheetState extends ConsumerState<ExerciseDetailsSheet> {
+  late Exercise _exercise = widget.exercise;
+
+  @override
+  Widget build(BuildContext context) {
+    final exercise = _exercise;
     final colors = context.b05Colors;
-    final registry = ref.watch(b05ExerciseVisualRegistryProvider).valueOrNull ??
+    final registry =
+        ref.watch(b05ExerciseVisualRegistryProvider).valueOrNull ??
         const B05ExerciseVisualRegistry.empty();
     final displayMuscles = ExerciseDisplayMuscles.fromMuscleGroups(
       exercise.muscleGroups,
@@ -124,6 +140,35 @@ class ExerciseDetailsSheet extends ConsumerWidget {
                 ),
             ],
           ),
+          if (_familyFor(exercise) case final family?) ...[
+            const SizedBox(height: B05Layout.space16),
+            Text(
+              'VARIATIONS',
+              style: B05Typography.caption(
+                context,
+              ).copyWith(fontWeight: FontWeight.w700, letterSpacing: .6),
+            ),
+            const SizedBox(height: B05Layout.space8),
+            Wrap(
+              spacing: B05Layout.space8,
+              runSpacing: B05Layout.space8,
+              children: [
+                for (final member in family.members)
+                  if (_exerciseFor(member.exerciseId) case final option?)
+                    Semantics(
+                      button: true,
+                      selected: option.stableId == exercise.stableId,
+                      label:
+                          '${option.name}. ${_memberLabel(member)} variation${option.stableId == exercise.stableId ? ', selected' : ''}',
+                      child: ChoiceChip(
+                        label: Text(_memberLabel(member)),
+                        selected: option.stableId == exercise.stableId,
+                        onSelected: (_) => setState(() => _exercise = option),
+                      ),
+                    ),
+              ],
+            ),
+          ],
           const SizedBox(height: B05Layout.space12),
           Text(
             'PERFORMANCE',
@@ -222,6 +267,37 @@ class ExerciseDetailsSheet extends ConsumerWidget {
       ),
     );
   }
+
+  ExerciseFamilyMetadata? _familyFor(Exercise exercise) {
+    final family = reviewedExerciseFamilyRegistry.familyForExerciseId(
+      exercise.stableId,
+    );
+    if (family == null ||
+        widget.familyExercises.length != family.members.length) {
+      return null;
+    }
+    final availableIds = widget.familyExercises
+        .map((item) => item.stableId?.trim())
+        .whereType<String>()
+        .toSet();
+    return family.members.every(
+          (member) => availableIds.contains(member.exerciseId),
+        )
+        ? family
+        : null;
+  }
+
+  Exercise? _exerciseFor(String exerciseId) {
+    for (final exercise in widget.familyExercises) {
+      if (exercise.stableId?.trim() == exerciseId) return exercise;
+    }
+    return null;
+  }
+
+  static String _memberLabel(ExerciseFamilyMemberMetadata member) =>
+      member.role == ExerciseFamilyMemberRole.base
+      ? 'Base'
+      : member.variantLabel!;
 }
 
 class _ExerciseGuideContent extends StatelessWidget {

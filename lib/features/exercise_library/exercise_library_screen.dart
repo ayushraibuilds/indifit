@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/di/providers.dart';
 import '../../core/fixtures/exercise_display_muscles.dart';
+import '../../core/fixtures/exercise_family_metadata.dart';
 import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
@@ -15,6 +16,7 @@ import '../../data/repositories/workout_repository.dart';
 import '../education/learn_screen.dart';
 import '../media/b05_exercise_visual_registry.dart';
 import 'exercise_details_sheet.dart';
+import 'exercise_family_presentation.dart';
 
 class ExerciseLibraryScreen extends ConsumerStatefulWidget {
   const ExerciseLibraryScreen({super.key});
@@ -27,7 +29,8 @@ class ExerciseLibraryScreen extends ConsumerStatefulWidget {
 class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
   final TextEditingController _searchController = TextEditingController();
   Timer? _debounceTimer;
-  List<Exercise> _exercises = [];
+  List<ExerciseFamilyPresentationItem> _exercises = [];
+  List<Exercise> _catalogue = [];
   String _selectedMuscle = 'All';
   String _selectedEquipment = 'All';
   bool _loading = false;
@@ -89,8 +92,10 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
     try {
       final repo = ref.read(workoutRepositoryProvider);
 
-      // Search matches name, equipment, or muscle in database
-      final rawList = await repo.searchExercises(_searchController.text);
+      // The catalogue is filtered locally so an exact variant search can stay
+      // independent while its explicitly mapped siblings remain available in
+      // Exercise Detail. Family identity never comes from this text search.
+      final rawList = await repo.searchExercises('');
 
       final queryText = _searchController.text.trim().toLowerCase();
       final tokens = queryText.isEmpty
@@ -106,16 +111,20 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
       }).toList();
 
       // Calculate counts for each muscle filter badge using canonical PRIMARY display muscle.
-      final Map<String, int> counts = {'All': searchMatches.length};
+      final Map<String, int> counts = {
+        'All': buildExerciseFamilyPresentation(searchMatches).length,
+      };
       for (final m in _muscleFilters) {
         if (m == 'All') continue;
-        counts[m] = searchMatches
-            .where(
-              (ex) => ExerciseDisplayMuscles.fromMuscleGroups(
-                ex.muscleGroups,
-              ).matchesPrimary(m),
-            )
-            .length;
+        counts[m] = buildExerciseFamilyPresentation(
+          searchMatches
+              .where(
+                (ex) => ExerciseDisplayMuscles.fromMuscleGroups(
+                  ex.muscleGroups,
+                ).matchesPrimary(m),
+              )
+              .toList(growable: false),
+        ).length;
       }
 
       // Filter by PRIMARY muscle category and equipment
@@ -156,7 +165,8 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
 
       if (!mounted) return;
       setState(() {
-        _exercises = filtered;
+        _catalogue = rawList;
+        _exercises = buildExerciseFamilyPresentation(filtered);
         _muscleCounts = counts;
         _loading = false;
       });
@@ -183,7 +193,8 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final registry = ref.watch(b05ExerciseVisualRegistryProvider).valueOrNull ??
+    final registry =
+        ref.watch(b05ExerciseVisualRegistryProvider).valueOrNull ??
         const B05ExerciseVisualRegistry.empty();
 
     return Scaffold(
@@ -338,10 +349,7 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
 
             // Error Card
             if (_failure != null) ...[
-              ProductFailureCard(
-                failure: _failure!,
-                onRetry: _loadExercises,
-              ),
+              ProductFailureCard(failure: _failure!, onRetry: _loadExercises),
               const SizedBox(height: 12),
             ],
 
@@ -356,8 +364,8 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
                           ScrollViewKeyboardDismissBehavior.onDrag,
                       itemCount: _exercises.length,
                       itemBuilder: (context, index) {
-                        final ex = _exercises[index];
-                        return _buildExerciseRow(context, ex, registry);
+                        final item = _exercises[index];
+                        return _buildExerciseRow(context, item, registry);
                       },
                     ),
             ),
@@ -369,9 +377,10 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
 
   Widget _buildExerciseRow(
     BuildContext context,
-    Exercise ex,
+    ExerciseFamilyPresentationItem item,
     B05ExerciseVisualRegistry registry,
   ) {
+    final ex = item.primaryExercise;
     final displayMuscles = ExerciseDisplayMuscles.fromMuscleGroups(
       ex.muscleGroups,
     );
@@ -383,10 +392,24 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
     final secondaryText = secondaryMuscles.isNotEmpty
         ? 'Also works ${secondaryMuscles.join(', ')}'
         : null;
+    final family = reviewedExerciseFamilyRegistry.familyForExerciseId(
+      ex.stableId,
+    );
+    final member = family?.memberFor(ex.stableId ?? '');
+    final variationText = item.isFamily
+        ? '${item.variantCount} variations'
+        : member?.role == ExerciseFamilyMemberRole.variant
+        ? '${member!.variantLabel} variation'
+        : null;
 
-    final semanticLabel = secondaryText != null
-        ? '${ex.name}. Primary muscle $primaryMuscle. Equipment $equipment. $secondaryText. Tap to view details.'
-        : '${ex.name}. Primary muscle $primaryMuscle. Equipment $equipment. Tap to view details.';
+    final semanticLabel = [
+      ex.name,
+      'Primary muscle $primaryMuscle',
+      'Equipment $equipment',
+      ?variationText,
+      ?secondaryText,
+      'Tap to view details',
+    ].join('. ');
 
     return Card(
       margin: const EdgeInsets.only(bottom: B05Layout.space8),
@@ -428,9 +451,9 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
           ),
           title: Text(
             ex.name,
-            style: B05Typography.body(context).copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+            style: B05Typography.body(
+              context,
+            ).copyWith(fontWeight: FontWeight.bold),
           ),
           subtitle: Padding(
             padding: const EdgeInsets.only(top: 2.0),
@@ -439,10 +462,18 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
               children: [
                 Text(
                   '$primaryMuscle · $equipment',
-                  style: B05Typography.caption(context).copyWith(
-                    color: context.b05Colors.textSecondary,
-                  ),
+                  style: B05Typography.caption(
+                    context,
+                  ).copyWith(color: context.b05Colors.textSecondary),
                 ),
+                if (variationText != null)
+                  Text(
+                    variationText,
+                    style: B05Typography.caption(context).copyWith(
+                      color: context.b05Colors.action,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 if (secondaryText != null)
                   Text(
                     secondaryText,
@@ -460,10 +491,16 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
             size: B05Layout.iconMedium,
           ),
           onTap: () {
+            final familyExercises = family == null
+                ? const <Exercise>[]
+                : exercisesForFamily(family, _catalogue);
             showIndiFitBottomSheet<void>(
               context: context,
               semanticLabel: 'Exercise details',
-              builder: (context) => ExerciseDetailsSheet(exercise: ex),
+              builder: (context) => ExerciseDetailsSheet(
+                exercise: ex,
+                familyExercises: familyExercises,
+              ),
             );
           },
         ),

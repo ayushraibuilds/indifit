@@ -4,12 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/fixtures/exercise_display_muscles.dart';
+import '../../core/fixtures/exercise_family_metadata.dart';
 import '../../core/presentation/product_failure_presentation.dart';
+import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/consumer_task_primitives.dart';
 import '../../core/widgets/indi_fit_bottom_sheet.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/exercise_picker_repository.dart';
+import '../exercise_library/exercise_family_presentation.dart';
 import 'exercise_picker_models.dart';
 
 export 'exercise_picker_models.dart';
@@ -128,6 +131,7 @@ class _ExercisePickerState extends ConsumerState<ExercisePicker> {
       if (id.trim().isNotEmpty) id.trim(),
   };
   final Map<String, ExercisePickerSelection> _selectedExercises = {};
+  final Set<String> _expandedFamilyIds = {};
 
   ExercisePickerRepository get _repository =>
       widget.repository ?? ref.read(exercisePickerRepositoryProvider);
@@ -175,6 +179,7 @@ class _ExercisePickerState extends ConsumerState<ExercisePicker> {
         _equipmentOptions = results[1] as List<String>;
         _recentExercises = results[2] as List<Exercise>;
         _exercises = results[3] as List<Exercise>;
+        _expandSelectedFamilies();
         if (widget.allowMultiple) {
           for (final exercise in [..._recentExercises, ..._exercises]) {
             final stableId = exercise.stableId?.trim();
@@ -219,6 +224,7 @@ class _ExercisePickerState extends ConsumerState<ExercisePicker> {
       if (!mounted) return;
       setState(() {
         _exercises = results;
+        _expandSelectedFamilies();
         _loading = false;
       });
     } catch (error) {
@@ -236,6 +242,22 @@ class _ExercisePickerState extends ConsumerState<ExercisePicker> {
         title: 'Exercises unavailable',
       );
     });
+  }
+
+  void _expandSelectedFamilies() {
+    final selectedIds = <String>{
+      ..._selectedExerciseIds,
+      if (widget.selectionContext.selectedExerciseId?.trim().isNotEmpty == true)
+        widget.selectionContext.selectedExerciseId!.trim(),
+    };
+    for (final exerciseId in selectedIds) {
+      final family = reviewedExerciseFamilyRegistry.familyForExerciseId(
+        exerciseId,
+      );
+      if (family != null && exerciseId != family.baseExerciseId) {
+        _expandedFamilyIds.add(family.familyId);
+      }
+    }
   }
 
   void _selectPrimary(String? value) {
@@ -660,13 +682,39 @@ class _ExercisePickerState extends ConsumerState<ExercisePicker> {
         actionIcon: query.isEmpty ? null : Icons.clear_rounded,
       );
     }
+    final rows = <_PickerPresentationRow>[];
+    for (final item in buildExerciseFamilyPresentation(_exercises)) {
+      final family = item.family;
+      rows.add(
+        _PickerPresentationRow(exercise: item.primaryExercise, family: family),
+      );
+      if (family != null && _expandedFamilyIds.contains(family.familyId)) {
+        for (final variant in item.visibleVariants) {
+          rows.add(
+            _PickerPresentationRow(
+              exercise: variant,
+              family: family,
+              member: family.memberFor(variant.stableId ?? ''),
+              isVariant: true,
+            ),
+          );
+        }
+      }
+    }
     return ListView.separated(
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-      itemCount: _exercises.length,
+      itemCount: rows.length,
       separatorBuilder: (_, _) => const Divider(height: 1),
       itemBuilder: (context, index) {
-        final exercise = _exercises[index];
-        return _buildExerciseRow(context, exercise, replacementContext);
+        final row = rows[index];
+        return _buildExerciseRow(
+          context,
+          row.exercise,
+          replacementContext,
+          family: row.family,
+          member: row.member,
+          isVariant: row.isVariant,
+        );
       },
     );
   }
@@ -710,8 +758,11 @@ class _ExercisePickerState extends ConsumerState<ExercisePicker> {
   Widget _buildExerciseRow(
     BuildContext context,
     Exercise exercise,
-    ExerciseReplacementPickerContext? replacementContext,
-  ) {
+    ExerciseReplacementPickerContext? replacementContext, {
+    ExerciseFamilyMetadata? family,
+    ExerciseFamilyMemberMetadata? member,
+    bool isVariant = false,
+  }) {
     final muscles = ExerciseDisplayMuscles.fromMuscleGroups(
       exercise.muscleGroups,
     );
@@ -739,10 +790,15 @@ class _ExercisePickerState extends ConsumerState<ExercisePicker> {
     final unavailableReason = isCurrent
         ? 'This exercise is already selected.'
         : candidate?.consumerUnavailableReason;
-    final title = exercise.name.trim();
+    final title = isVariant ? member!.variantLabel! : exercise.name.trim();
+    final familyText = family == null
+        ? null
+        : isVariant
+        ? 'Variation of ${_familyBaseName(family)}'
+        : '${family.members.length - 1} variations';
     final semanticLabel = unavailableReason == null
-        ? '$title. Primary muscle $primary. Equipment $equipment.'
-        : '$title. Primary muscle $primary. Equipment $equipment. '
+        ? '${isVariant ? '${_familyBaseName(family!)}. $title variation' : title}. Primary muscle $primary. Equipment $equipment.'
+        : '${isVariant ? '${_familyBaseName(family!)}. $title variation' : title}. Primary muscle $primary. Equipment $equipment. '
               '$unavailableReason';
 
     return Semantics(
@@ -763,6 +819,15 @@ class _ExercisePickerState extends ConsumerState<ExercisePicker> {
           horizontal: B05Layout.space4,
           vertical: B05Layout.space4,
         ),
+        leading: isVariant
+            ? Padding(
+                padding: const EdgeInsets.only(left: B05Layout.space8),
+                child: Icon(
+                  Icons.subdirectory_arrow_right_rounded,
+                  color: context.b05Colors.textSecondary,
+                ),
+              )
+            : null,
         enabled: isSelectable && !_committing,
         selected: selected,
         title: Text(title),
@@ -772,6 +837,13 @@ class _ExercisePickerState extends ConsumerState<ExercisePicker> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('$primary · $equipment'),
+              if (familyText != null)
+                Text(
+                  familyText,
+                  style: B05Typography.caption(
+                    context,
+                  ).copyWith(color: context.b05Colors.action),
+                ),
               if (secondary != null)
                 Text(secondary, style: B05Typography.caption(context)),
               if (unavailableReason != null)
@@ -779,24 +851,65 @@ class _ExercisePickerState extends ConsumerState<ExercisePicker> {
             ],
           ),
         ),
-        trailing: Icon(
-          !isSelectable
-              ? Icons.lock_outline_rounded
-              : selected
-              ? Icons.check_circle_outline_rounded
-              : replacementContext == null
-              ? Icons.add_circle_outline_rounded
-              : Icons.swap_horiz_rounded,
-          semanticLabel: selected
-              ? 'Selected'
-              : isSelectable
-              ? 'Available'
-              : 'Unavailable',
-        ),
+        trailing: family != null && !isVariant
+            ? IconButton(
+                tooltip: _expandedFamilyIds.contains(family.familyId)
+                    ? 'Hide variations for ${exercise.name}'
+                    : 'Show variations for ${exercise.name}',
+                onPressed: _committing
+                    ? null
+                    : () => setState(() {
+                        if (!_expandedFamilyIds.add(family.familyId)) {
+                          _expandedFamilyIds.remove(family.familyId);
+                        }
+                      }),
+                icon: Icon(
+                  _expandedFamilyIds.contains(family.familyId)
+                      ? Icons.expand_less_rounded
+                      : Icons.expand_more_rounded,
+                ),
+              )
+            : Icon(
+                !isSelectable
+                    ? Icons.lock_outline_rounded
+                    : selected
+                    ? Icons.check_circle_outline_rounded
+                    : replacementContext == null
+                    ? Icons.add_circle_outline_rounded
+                    : Icons.swap_horiz_rounded,
+                semanticLabel: selected
+                    ? 'Selected'
+                    : isSelectable
+                    ? 'Available'
+                    : 'Unavailable',
+              ),
         onTap: isSelectable && !_committing
             ? () => _selectExercise(exercise)
             : null,
       ),
     );
   }
+
+  String _familyBaseName(ExerciseFamilyMetadata family) {
+    for (final exercise in _exercises) {
+      if (exercise.stableId?.trim() == family.baseExerciseId) {
+        return exercise.name.trim();
+      }
+    }
+    return 'Exercise';
+  }
+}
+
+class _PickerPresentationRow {
+  const _PickerPresentationRow({
+    required this.exercise,
+    this.family,
+    this.member,
+    this.isVariant = false,
+  });
+
+  final Exercise exercise;
+  final ExerciseFamilyMetadata? family;
+  final ExerciseFamilyMemberMetadata? member;
+  final bool isVariant;
 }
