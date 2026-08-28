@@ -256,7 +256,7 @@ class _EquipmentProfilesScreenState
             const SizedBox(width: B05Layout.space12),
             Expanded(
               child: Text(
-                'Equipment profiles define what gear is available in your gym or training space. Your active profile informs exercise compatibility and load increments.',
+                'Equipment profiles define what gear is available in your gym or training space. Your active profile helps IndiFit suggest suitable exercises and show the right weight steps.',
                 style: B05Typography.caption(context),
               ),
             ),

@@ -6,9 +6,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:timezone/timezone.dart' as tz;
 
+import '../../core/di/user_profile_provider.dart';
 import '../../core/navigation/app_navigation.dart';
 import '../../core/presentation/consumer_copy.dart';
 import '../../core/presentation/product_failure_presentation.dart';
+import '../../core/presentation/secondary_presentation.dart';
 import '../../core/services/indifit_haptics.dart';
 import '../../core/services/local_schedule_date_service.dart';
 import '../../core/theme/b05_semantic_colors.dart';
@@ -58,6 +60,15 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     } on StateError {
       units = 'kg';
     }
+    String? fitnessGoalLabel;
+    try {
+      final profile = ref.watch(userProfileProvider);
+      if (profile.isLoaded && profile.hasProfile) {
+        fitnessGoalLabel = SecondaryConsumerCopy.goal(profile.userGoal);
+      }
+    } on StateError {
+      fitnessGoalLabel = null;
+    }
     return Scaffold(
       appBar: AppBar(
         title: const Text('Progress'),
@@ -81,12 +92,12 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
         ],
       ),
       body: widget.preview == null
-          ? _buildProductionBody(units)
-          : _buildSnapshot(widget.preview!, units),
+          ? _buildProductionBody(units, fitnessGoalLabel)
+          : _buildSnapshot(widget.preview!, units, fitnessGoalLabel),
     );
   }
 
-  Widget _buildProductionBody(String units) {
+  Widget _buildProductionBody(String units, String? fitnessGoalLabel) {
     final snapshot = ref.watch(progressDashboardSnapshotProvider);
     return snapshot.when(
       loading: () => const Center(
@@ -99,11 +110,15 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
         ),
       ),
       error: (_, _) => _failureState(),
-      data: (snapshot) => _buildSnapshot(snapshot, units),
+      data: (snapshot) => _buildSnapshot(snapshot, units, fitnessGoalLabel),
     );
   }
 
-  Widget _buildSnapshot(ProgressDashboardSnapshot snapshot, String units) {
+  Widget _buildSnapshot(
+    ProgressDashboardSnapshot snapshot,
+    String units,
+    String? fitnessGoalLabel,
+  ) {
     if (snapshot.hasKnownZeroData) return _emptyState(snapshot);
     if (snapshot.hasPrimaryDataFailureWithoutUsefulFacts) {
       return _failureState();
@@ -182,6 +197,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                   const SizedBox(height: B05Layout.space24),
                   _NutritionAdherenceSection(
                     summary: snapshot.nutritionSummary!,
+                    fitnessGoalLabel: fitnessGoalLabel,
                     onViewTargets: () => Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (_) => const NutritionTargetsHubScreen(),
@@ -1348,10 +1364,12 @@ class ProgressWeightHistoryScreen extends StatelessWidget {
 class _NutritionAdherenceSection extends StatelessWidget {
   const _NutritionAdherenceSection({
     required this.summary,
+    required this.fitnessGoalLabel,
     required this.onViewTargets,
   });
 
   final ProgressNutritionSummary summary;
+  final String? fitnessGoalLabel;
   final VoidCallback onViewTargets;
 
   @override
@@ -1412,6 +1430,7 @@ class _NutritionAdherenceSection extends StatelessWidget {
               const SizedBox(height: B05Layout.space16),
               _NutritionTargetContext(
                 summary: summary,
+                fitnessGoalLabel: fitnessGoalLabel,
                 onViewTargets: onViewTargets,
               ),
               const SizedBox(height: B05Layout.space16),
@@ -1427,10 +1446,12 @@ class _NutritionAdherenceSection extends StatelessWidget {
 class _NutritionTargetContext extends StatelessWidget {
   const _NutritionTargetContext({
     required this.summary,
+    required this.fitnessGoalLabel,
     required this.onViewTargets,
   });
 
   final ProgressNutritionSummary summary;
+  final String? fitnessGoalLabel;
   final VoidCallback onViewTargets;
 
   @override
@@ -1456,8 +1477,10 @@ class _NutritionTargetContext extends StatelessWidget {
             label: [
               if (hasTargetContext) 'Today’s nutrition target.',
               if (values.isNotEmpty) '${values.join(' · ')}.',
+              if (hasTargetContext && fitnessGoalLabel != null)
+                'Fitness goal: $fitnessGoalLabel.',
               if (summary.targetGoalType != null)
-                'Nutrition goal: ${_nutritionGoalLabel(summary.targetGoalType!)}.',
+                'Nutrition strategy: ${_nutritionStrategyLabel(summary.targetGoalType!)}.',
               if (!hasTargetContext) 'No nutrition target saved for today.',
               if (hasTargetContext && !hasTargetValues)
                 'No calorie or macro target values are saved for today.',
@@ -1476,11 +1499,19 @@ class _NutritionTargetContext extends StatelessWidget {
                       values.join(' · '),
                       style: B05Typography.title(context),
                     ),
-                  if (summary.targetGoalType != null) ...[
+                  if (hasTargetContext && fitnessGoalLabel != null) ...[
                     if (values.isNotEmpty)
                       const SizedBox(height: B05Layout.space4),
                     Text(
-                      'Nutrition goal: ${_nutritionGoalLabel(summary.targetGoalType!)}',
+                      'Fitness goal: $fitnessGoalLabel',
+                      style: B05Typography.body(context),
+                    ),
+                  ],
+                  if (summary.targetGoalType != null) ...[
+                    if (values.isNotEmpty || fitnessGoalLabel != null)
+                      const SizedBox(height: B05Layout.space4),
+                    Text(
+                      'Nutrition strategy: ${_nutritionStrategyLabel(summary.targetGoalType!)}',
                       style: B05Typography.body(context),
                     ),
                   ],
@@ -1516,12 +1547,8 @@ class _NutritionTargetContext extends StatelessWidget {
   }
 }
 
-String _nutritionGoalLabel(NutritionGoalType value) => switch (value) {
-  NutritionGoalType.loss => 'Weight loss',
-  NutritionGoalType.maintenance => 'Maintain',
-  NutritionGoalType.gain => 'Weight gain',
-  NutritionGoalType.custom => 'Custom goal',
-};
+String _nutritionStrategyLabel(NutritionGoalType value) =>
+    SecondaryConsumerCopy.nutritionStrategy(value.stableId);
 
 class _NutritionWeekStrip extends StatelessWidget {
   const _NutritionWeekStrip({required this.days});

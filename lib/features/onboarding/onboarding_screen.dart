@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/di/providers.dart';
 import '../../core/presentation/diet_preference_presentation.dart';
+import '../../core/presentation/secondary_presentation.dart';
 import '../../core/router/app_router.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/utils/tdee_calculator.dart';
@@ -195,11 +196,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     );
   }
 
-  String _goalLabel() => switch (_goal) {
-    'lose' => 'Lose weight',
-    'gain' => 'Build muscle',
-    _ => 'Maintain current weight',
-  };
+  String _goalLabel() => SecondaryConsumerCopy.goal(_goal);
 
   String _activityLabel() => switch (_activityLevel) {
     'sedentary' => 'Sedentary',
@@ -1015,7 +1012,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       child: Column(
         children: [
           OnboardingSelectionCard(
-            title: 'Lose weight',
+            title: SecondaryConsumerCopy.goal('lose'),
             subtitle: 'Reduce body weight while supporting training.',
             icon: Icons.trending_down,
             selected: _goal == 'lose',
@@ -1023,7 +1020,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           ),
           const SizedBox(height: 16),
           OnboardingSelectionCard(
-            title: 'Maintain',
+            title: SecondaryConsumerCopy.goal('maintain'),
             subtitle: 'Keep your weight around its current level.',
             icon: Icons.compare_arrows,
             selected: _goal == 'maintain',
@@ -1031,7 +1028,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           ),
           const SizedBox(height: 16),
           OnboardingSelectionCard(
-            title: 'Gain / build muscle',
+            title: SecondaryConsumerCopy.goal('gain'),
             subtitle: 'Support muscle and body-weight gain.',
             icon: Icons.trending_up,
             selected: _goal == 'gain',

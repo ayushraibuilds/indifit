@@ -41,7 +41,11 @@ void main() {
       await _pumpForAsyncState(tester);
 
       expect(find.text('Goal & targets'), findsOneWidget);
-      expect(find.text('Goal'), findsWidgets);
+      expect(find.text('Fitness goal'), findsOneWidget);
+      expect(find.text('Build muscle'), findsOneWidget);
+      expect(find.text('Nutrition strategy'), findsWidgets);
+      expect(find.text('Maintenance'), findsWidgets);
+      expect(find.text('Weight gain'), findsNothing);
       expect(find.text('Today’s target'), findsOneWidget);
       expect(find.text('2100 kcal'), findsOneWidget);
       expect(find.text('Save today’s targets'), findsOneWidget);
@@ -62,6 +66,12 @@ void main() {
       expect(find.text('Adaptive coaching'), findsOneWidget);
       expect(find.text('Age details'), findsOneWidget);
       expect(find.text('Date of birth'), findsOneWidget);
+      expect(
+        find.text(
+          'Coaching availability couldn\'t be checked right now.',
+        ),
+        findsOneWidget,
+      );
       expect(
         find.textContaining('Coaching is separate from your goal'),
         findsOneWidget,
@@ -113,7 +123,7 @@ void main() {
     expect(find.text('Save today’s targets'), findsOneWidget);
   });
 
-  testWidgets('ineligible coaching does not block target editing', (
+  testWidgets('missing DOB stays unknown and does not deny coaching', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -126,9 +136,40 @@ void main() {
             available: false,
             reasonCode: 'unknown_age',
             enabled: true,
+          ),
+        ),
+        targets: {'2026-08-06': _target(_goal(), '2026-08-06')},
+      ),
+    );
+    await _pumpForAsyncState(tester);
+    await _expandCoaching(tester);
+
+    expect(
+      find.text(
+        'Add your date of birth to check whether adaptive coaching is available.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.textContaining('unavailable for this age'), findsNothing);
+    expect(find.textContaining('ineligible'), findsNothing);
+    expect(find.text('2100 kcal'), findsOneWidget);
+    expect(find.text('Save today’s targets'), findsOneWidget);
+  });
+
+  testWidgets('known ineligible age is described truthfully', (tester) async {
+    await tester.pumpWidget(
+      _app(
+        database,
+        dates,
+        state: _state(
+          goal: _goal(),
+          availability: _availability(
+            available: false,
+            reasonCode: 'underage',
+            enabled: false,
             eligibility: _eligibility(
-              result: CoachingEligibilityResult.unknownAge,
-              reasonCode: 'unknown_age',
+              result: CoachingEligibilityResult.underage,
+              reasonCode: 'underage',
             ),
           ),
         ),
@@ -139,13 +180,9 @@ void main() {
     await _expandCoaching(tester);
 
     expect(
-      find.textContaining(
-        'Coaching suggestions are unavailable until we have your age details',
-      ),
+      find.textContaining('Coaching suggestions are unavailable for this age'),
       findsOneWidget,
     );
-    expect(find.text('2100 kcal'), findsOneWidget);
-    expect(find.text('Save today’s targets'), findsOneWidget);
   });
 
   testWidgets('coaching requires disclosure and explicit consent', (
@@ -161,6 +198,10 @@ void main() {
             available: false,
             reasonCode: 'coaching_consent_required',
             enabled: false,
+            eligibility: _eligibility(
+              result: CoachingEligibilityResult.eligible,
+              reasonCode: 'eligible',
+            ),
           ),
         ),
         targets: {'2026-08-06': _target(_goal(), '2026-08-06')},
@@ -170,6 +211,10 @@ void main() {
     await _expandCoaching(tester);
 
     expect(find.text('Disabled'), findsOneWidget);
+    expect(
+      find.text('Adaptive coaching is available when you choose to use it.'),
+      findsOneWidget,
+    );
     await tester.ensureVisible(find.text('Adaptive coaching'));
     await tester.tap(find.text('Adaptive coaching'));
     await tester.pumpAndSettle();
@@ -213,9 +258,7 @@ void main() {
       await _expandCoaching(tester);
 
       expect(
-        find.text(
-          'Coaching suggestions are available when you choose to use them.',
-        ),
+        find.text('Adaptive coaching is available when you choose to use it.'),
         findsOneWidget,
       );
       expect(find.text('Enabled'), findsOneWidget);
@@ -226,6 +269,74 @@ void main() {
       expect(find.text('Coaching enabled'), findsOneWidget);
       expect(find.text('eligible'), findsNothing);
       expect(find.text('2100 kcal'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'coaching history stays collapsed and groups meaningful same-day changes',
+    (tester) async {
+      await tester.pumpWidget(
+        _app(
+          database,
+          dates,
+          state: _state(
+            goal: _goal(),
+            availability: _availability(
+              available: true,
+              reasonCode: 'eligible',
+              enabled: true,
+              eligibility: _eligibility(
+                result: CoachingEligibilityResult.eligible,
+                reasonCode: 'eligible',
+              ),
+            ),
+            consentHistory: [
+              _consentEvent(id: 'enable-1'),
+              _consentEvent(id: 'enable-no-op'),
+              _consentEvent(
+                id: 'disable-1',
+                action: CoachingConsentAction.disable,
+              ),
+              _consentEvent(id: 'enable-2'),
+            ],
+          ),
+          targets: {'2026-08-06': _target(_goal(), '2026-08-06')},
+        ),
+      );
+      await _pumpForAsyncState(tester);
+      await _expandCoaching(tester);
+
+      expect(find.text('Coaching history'), findsOneWidget);
+      expect(find.text('3 consent changes'), findsNothing);
+      await tester.ensureVisible(find.text('Coaching history'));
+      await tester.tap(find.text('Coaching history'));
+      await _pumpForAsyncState(tester);
+
+      expect(find.text('3 consent changes'), findsOneWidget);
+      expect(find.text('Enabled → Disabled → Enabled · Today'), findsOneWidget);
+      expect(find.textContaining('target changed'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'fitness goal remains Build muscle beside a distinct gain strategy',
+    (tester) async {
+      final goal = _goal(goalType: NutritionGoalType.gain);
+      await tester.pumpWidget(
+        _app(
+          database,
+          dates,
+          state: _state(goal: goal),
+          targets: {'2026-08-06': _target(goal, '2026-08-06')},
+        ),
+      );
+      await _pumpForAsyncState(tester);
+
+      expect(find.text('Fitness goal'), findsOneWidget);
+      expect(find.text('Build muscle'), findsOneWidget);
+      expect(find.text('Nutrition strategy'), findsWidgets);
+      expect(find.textContaining('Calorie surplus'), findsWidgets);
+      expect(find.text('Weight gain'), findsNothing);
     },
   );
 
@@ -294,7 +405,7 @@ void main() {
     await _pumpForAsyncState(tester);
 
     // One current-goal summary and one meaningful history row.
-    expect(find.text('Maintain · Set by you'), findsNWidgets(2));
+    expect(find.text('Maintenance · Set by you'), findsNWidgets(2));
   });
 
   testWidgets(
@@ -360,6 +471,7 @@ Widget _app(
       nutritionGoalHistoryProvider.overrideWith(
         (ref, userId) async => history ?? [state.activeGoal!],
       ),
+      userProfileProvider.overrideWith((ref) => _GoalProfileNotifier()),
     ],
     child: MaterialApp(
       theme: AppTheme.lightTheme,
@@ -399,30 +511,32 @@ NutritionTargetsForDate _target(
   goalVersion: goal,
 );
 
-NutritionGoalVersionReadModel _goal({String effectiveFrom = '2026-08-06'}) =>
-    NutritionGoalVersionReadModel(
-      id: 'goal-${effectiveFrom.replaceAll('-', '')}',
-      userId: '1',
-      versionNumber: effectiveFrom == '2026-08-06' ? 2 : 1,
-      goalType: NutritionGoalType.maintenance,
-      source: NutritionGoalSource.userSet,
-      calorieTargetKcal: effectiveFrom == '2026-08-06' ? 2100 : 1900,
-      proteinTargetG: 140,
-      carbsTargetG: 220,
-      fatTargetG: 65,
-      policyVersion: null,
-      calculationVersion: null,
-      algorithmVersion: null,
-      effectiveFromLocalDate: effectiveFrom,
-      effectiveToLocalDate: null,
-      timezoneId: 'Asia/Kolkata',
-      supersedesGoalVersionId: null,
-      evidenceFingerprint: null,
-      exactResultNumerator: null,
-      exactResultDenominator: null,
-      normalizedMaintenanceKcal: null,
-      createdAtUtc: DateTime.utc(2026, 8, 6, 12),
-    );
+NutritionGoalVersionReadModel _goal({
+  String effectiveFrom = '2026-08-06',
+  NutritionGoalType goalType = NutritionGoalType.maintenance,
+}) => NutritionGoalVersionReadModel(
+  id: 'goal-${effectiveFrom.replaceAll('-', '')}',
+  userId: '1',
+  versionNumber: effectiveFrom == '2026-08-06' ? 2 : 1,
+  goalType: goalType,
+  source: NutritionGoalSource.userSet,
+  calorieTargetKcal: effectiveFrom == '2026-08-06' ? 2100 : 1900,
+  proteinTargetG: 140,
+  carbsTargetG: 220,
+  fatTargetG: 65,
+  policyVersion: null,
+  calculationVersion: null,
+  algorithmVersion: null,
+  effectiveFromLocalDate: effectiveFrom,
+  effectiveToLocalDate: null,
+  timezoneId: 'Asia/Kolkata',
+  supersedesGoalVersionId: null,
+  evidenceFingerprint: null,
+  exactResultNumerator: null,
+  exactResultDenominator: null,
+  normalizedMaintenanceKcal: null,
+  createdAtUtc: DateTime.utc(2026, 8, 6, 12),
+);
 
 CoachingAvailabilityReadModel _availability({
   required bool available,
@@ -458,11 +572,14 @@ CoachingEligibilityReadModel _eligibility({
   evaluationUtc: DateTime.utc(2026, 8, 6, 12),
 );
 
-CoachingConsentEventReadModel _consentEvent() => CoachingConsentEventReadModel(
-  id: 'consent-1',
+CoachingConsentEventReadModel _consentEvent({
+  String id = 'consent-1',
+  CoachingConsentAction action = CoachingConsentAction.enable,
+}) => CoachingConsentEventReadModel(
+  id: id,
   userId: '1',
   category: CoachingConsentCategory.adaptiveCoaching,
-  action: CoachingConsentAction.enable,
+  action: action,
   consentPolicyVersion: 'test-policy',
   copyVersion: 'test-copy',
   timestampUtc: DateTime.utc(2026, 8, 6, 12),
@@ -471,6 +588,24 @@ CoachingConsentEventReadModel _consentEvent() => CoachingConsentEventReadModel(
   actorSource: 'test',
   relatedOrSupersededEventId: null,
 );
+
+class _GoalProfileNotifier extends UserProfileNotifier {
+  _GoalProfileNotifier() : super() {
+    state = const UserProfileState(
+      isLoaded: true,
+      hasProfile: true,
+      calorieGoal: 2400,
+      proteinGoal: 160,
+      carbsGoal: 280,
+      fatGoal: 75,
+      currentWeight: 80,
+      userGoal: 'gain',
+    );
+  }
+
+  @override
+  Future<void> loadProfile() async {}
+}
 
 Future<void> _pumpForAsyncState(WidgetTester tester) async {
   for (var index = 0; index < 10; index++) {

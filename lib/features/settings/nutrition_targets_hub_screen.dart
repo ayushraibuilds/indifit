@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/di/providers.dart';
 import '../../core/presentation/consumer_date_label.dart';
+import '../../core/presentation/secondary_presentation.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/consumer_task_primitives.dart';
@@ -92,6 +93,10 @@ class _NutritionTargetsHubScreenState
   Widget _buildForUser(BuildContext context, B04ProductionUserContext user) {
     _selectedDate ??= user.localDate;
     final selectedDate = _selectedDate!;
+    final profile = ref.watch(userProfileProvider);
+    final fitnessGoalLabel = profile.isLoaded && profile.hasProfile
+        ? SecondaryConsumerCopy.goal(profile.userGoal)
+        : null;
     final query = NutritionTargetDateQuery(
       localDate: selectedDate,
       timezoneId: user.timezoneId,
@@ -135,7 +140,7 @@ class _NutritionTargetsHubScreenState
       ),
       data: (read) {
         _seedForm(user, read);
-        return _buildContent(context, user, read, history);
+        return _buildContent(context, user, read, history, fitnessGoalLabel);
       },
     );
   }
@@ -145,6 +150,7 @@ class _NutritionTargetsHubScreenState
     B04ProductionUserContext user,
     NutritionTargetsForDate read,
     AsyncValue<List<NutritionGoalVersionReadModel>> history,
+    String? fitnessGoalLabel,
   ) {
     final isToday = read.localDate == user.localDate;
     return _shell(
@@ -154,7 +160,12 @@ class _NutritionTargetsHubScreenState
         children: [
           _buildDateNavigation(context, user),
           const SizedBox(height: B05Layout.space16),
-          _buildTargetSummary(context, user, read),
+          _buildTargetSummary(
+            context,
+            user,
+            read,
+            isToday ? fitnessGoalLabel : null,
+          ),
           const SizedBox(height: B05Layout.space16),
           if (isToday)
             _buildTodayEditor(context, user, read)
@@ -229,13 +240,11 @@ class _NutritionTargetsHubScreenState
 
     final availability = state.availability;
     final enabled = availability?.preferences.adaptiveCoachingEnabled ?? false;
-    final statusMessage = availability == null
-        ? 'Coaching suggestions are unavailable until the required settings are checked.'
-        : availability.available
-        ? 'Coaching suggestions are available when you choose to use them.'
-        : b04ProductionStateCopy(availability.reasonCode);
-    final eligibilityDetail = availability?.eligibility == null
-        ? 'Add age details only if you want to check whether coaching is available.'
+    final statusMessage = _coachingAvailabilityMessage(availability);
+    final eligibilityDetail = availability == null
+        ? 'Your goal and nutrition target remain available.'
+        : availability.eligibility == null
+        ? 'No age details are available for this check.'
         : 'Availability uses the age details you chose to save for coaching.';
 
     return Padding(
@@ -322,25 +331,39 @@ class _NutritionTargetsHubScreenState
     );
   }
 
-  Widget _buildCoachingHistory(B04GoalSettingsState state) => B05Surface(
-    padding: EdgeInsets.zero,
-    tone: B05SurfaceTone.inset,
-    child: ExpansionTile(
-      title: const Text('Coaching history'),
-      subtitle: const Text('Consent changes only'),
-      children: [
-        for (final event in state.consentHistory)
-          ListTile(
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: B05Layout.space16,
+  Widget _buildCoachingHistory(B04GoalSettingsState state) {
+    final groups = _coachingHistoryGroups(state.consentHistory);
+    return B05Surface(
+      padding: EdgeInsets.zero,
+      tone: B05SurfaceTone.inset,
+      child: ExpansionTile(
+        title: const Text('Coaching history'),
+        subtitle: const Text('Consent changes'),
+        children: [
+          for (final group in groups)
+            ListTile(
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: B05Layout.space16,
+              ),
+              leading: const Icon(Icons.verified_user_outlined),
+              title: Text(
+                group.events.length == 1
+                    ? 'Coaching ${_consentActionLabel(group.events.single.action)}'
+                    : '${group.events.length} consent changes',
+              ),
+              subtitle: Text(
+                group.events.length == 1
+                    ? ConsumerDateLabel.day(
+                        group.localDate,
+                        today: _civilDate(state.context!.localDate),
+                      )
+                    : '${group.events.map((event) => _consentActionLabel(event.action, sentenceCase: true)).join(' → ')} · ${ConsumerDateLabel.day(group.localDate, today: _civilDate(state.context!.localDate))}',
+              ),
             ),
-            leading: const Icon(Icons.verified_user_outlined),
-            title: Text('Coaching ${_consentActionLabel(event.action)}'),
-            subtitle: Text(ConsumerDateLabel.dateTime(event.timestampUtc)),
-          ),
-      ],
-    ),
-  );
+        ],
+      ),
+    );
+  }
 
   Future<void> _enableCoaching() async {
     final confirmed = await showDialog<bool>(
@@ -522,6 +545,7 @@ class _NutritionTargetsHubScreenState
     BuildContext context,
     B04ProductionUserContext user,
     NutritionTargetsForDate read,
+    String? fitnessGoalLabel,
   ) {
     final goal = read.goalVersion;
     if (goal == null) {
@@ -558,10 +582,16 @@ class _NutritionTargetsHubScreenState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Goal', style: B05Typography.title(context)),
+            if (fitnessGoalLabel != null) ...[
+              Text('Fitness goal', style: B05Typography.title(context)),
+              const SizedBox(height: B05Layout.space4),
+              Text(fitnessGoalLabel, style: B05Typography.body(context)),
+              const SizedBox(height: B05Layout.space12),
+            ],
+            Text('Nutrition strategy', style: B05Typography.title(context)),
             const SizedBox(height: B05Layout.space4),
             Text(
-              '${_goalTypeLabel(goal.goalType)} · ${_goalSourceLabel(goal)}',
+              '${_nutritionStrategyLabel(goal.goalType)} · ${_goalSourceLabel(goal)}',
               style: B05Typography.body(context),
             ),
             const SizedBox(height: B05Layout.space16),
@@ -652,23 +682,23 @@ class _NutritionTargetsHubScreenState
           DropdownButtonFormField<NutritionGoalType>(
             initialValue: _goalType,
             isExpanded: true,
-            decoration: const InputDecoration(labelText: 'Goal'),
+            decoration: const InputDecoration(labelText: 'Nutrition strategy'),
             items: const [
               DropdownMenuItem(
                 value: NutritionGoalType.loss,
-                child: Text('Weight loss', overflow: TextOverflow.ellipsis),
+                child: Text('Calorie deficit', overflow: TextOverflow.ellipsis),
               ),
               DropdownMenuItem(
                 value: NutritionGoalType.maintenance,
-                child: Text('Maintain', overflow: TextOverflow.ellipsis),
+                child: Text('Maintenance', overflow: TextOverflow.ellipsis),
               ),
               DropdownMenuItem(
                 value: NutritionGoalType.gain,
-                child: Text('Weight gain', overflow: TextOverflow.ellipsis),
+                child: Text('Calorie surplus', overflow: TextOverflow.ellipsis),
               ),
               DropdownMenuItem(
                 value: NutritionGoalType.custom,
-                child: Text('Custom', overflow: TextOverflow.ellipsis),
+                child: Text('Custom targets', overflow: TextOverflow.ellipsis),
               ),
             ],
             onChanged: _saving
@@ -880,7 +910,7 @@ class _NutritionTargetsHubScreenState
               : context.b05Colors.textSecondary,
         ),
         title: Text(
-          '${_goalTypeLabel(version.goalType)} · ${_goalSourceLabel(version)}',
+          '${_nutritionStrategyLabel(version.goalType)} · ${_goalSourceLabel(version)}',
         ),
         subtitle: Text(
           'From ${ConsumerDateLabel.day(version.effectiveFromLocalDate, today: _civilDate(user.localDate))}${values.isEmpty ? '' : ' · ${values.join(' · ')}'}',
@@ -1042,12 +1072,8 @@ class _NutritionTargetsHubScreenState
     return ConsumerDateLabel.day(date, today: _civilDate(today));
   }
 
-  static String _goalTypeLabel(NutritionGoalType value) => switch (value) {
-    NutritionGoalType.loss => 'Weight loss',
-    NutritionGoalType.maintenance => 'Maintain',
-    NutritionGoalType.gain => 'Weight gain',
-    NutritionGoalType.custom => 'Custom goal',
-  };
+  static String _nutritionStrategyLabel(NutritionGoalType value) =>
+      SecondaryConsumerCopy.nutritionStrategy(value.stableId);
 
   static String _goalSourceLabel(NutritionGoalVersionReadModel value) =>
       switch (value.source) {
@@ -1153,11 +1179,72 @@ class _TargetMetric {
   const _TargetMetric(this.label, this.value);
 }
 
-String _consentActionLabel(CoachingConsentAction action) => switch (action) {
-  CoachingConsentAction.enable => 'enabled',
-  CoachingConsentAction.disable => 'disabled',
-  CoachingConsentAction.withdraw => 'withdrawn',
-};
+String _coachingAvailabilityMessage(CoachingAvailabilityReadModel? value) {
+  if (value == null) {
+    return 'Coaching availability couldn\'t be checked right now.';
+  }
+  final eligibility = value.eligibility;
+  if (eligibility == null) {
+    return 'Add your date of birth to check whether adaptive coaching is available.';
+  }
+  return switch (eligibility.result) {
+    CoachingEligibilityResult.eligible =>
+      'Adaptive coaching is available when you choose to use it.',
+    CoachingEligibilityResult.underage =>
+      'Coaching suggestions are unavailable for this age. Your logged activity and target remain available.',
+    CoachingEligibilityResult.unknownAge ||
+    CoachingEligibilityResult.withheldAge =>
+      'Add your date of birth to check whether adaptive coaching is available.',
+    CoachingEligibilityResult.conflictingAge ||
+    CoachingEligibilityResult.invalidEvidence =>
+      'Coaching availability couldn\'t be checked from those age details. Check your date of birth and try again.',
+    CoachingEligibilityResult.policyUnavailable =>
+      'Coaching availability couldn\'t be checked right now.',
+  };
+}
+
+List<_CoachingHistoryGroup> _coachingHistoryGroups(
+  List<CoachingConsentEventReadModel> events,
+) {
+  final meaningful = <CoachingConsentEventReadModel>[];
+  for (final event in events) {
+    if (meaningful.isNotEmpty && meaningful.last.action == event.action) {
+      continue;
+    }
+    meaningful.add(event);
+  }
+
+  final groups = <_CoachingHistoryGroup>[];
+  for (final event in meaningful) {
+    if (groups.isNotEmpty && groups.last.localDate == event.localDate) {
+      groups.last.events.add(event);
+    } else {
+      groups.add(_CoachingHistoryGroup(event.localDate, [event]));
+    }
+  }
+  return groups;
+}
+
+class _CoachingHistoryGroup {
+  final String localDate;
+  final List<CoachingConsentEventReadModel> events;
+
+  _CoachingHistoryGroup(this.localDate, this.events);
+}
+
+String _consentActionLabel(
+  CoachingConsentAction action, {
+  bool sentenceCase = false,
+}) {
+  final label = switch (action) {
+    CoachingConsentAction.enable => 'enabled',
+    CoachingConsentAction.disable => 'disabled',
+    CoachingConsentAction.withdraw => 'withdrawn',
+  };
+  return sentenceCase
+      ? '${label[0].toUpperCase()}${label.substring(1)}'
+      : label;
+}
 
 class _OptionalNumber<T extends num> {
   final T? value;

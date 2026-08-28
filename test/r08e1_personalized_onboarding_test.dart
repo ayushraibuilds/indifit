@@ -25,7 +25,7 @@ void main() {
 
     await _moveToReview(
       tester,
-      goal: 'Gain / build muscle',
+      goal: 'Build muscle',
       activity: 'Very Active',
       diet: 'Vegan',
     );
@@ -93,7 +93,7 @@ void main() {
       await _moveToReview(
         tester,
         sex: 'Female',
-        goal: 'Gain / build muscle',
+        goal: 'Build muscle',
         activity: 'Very Active',
         diet: 'Non-Vegetarian',
       );
@@ -257,7 +257,7 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 250));
 
-      await _moveToReview(tester, goal: 'Gain / build muscle');
+      await _moveToReview(tester, goal: 'Build muscle');
       await tester.tap(find.text('Finish setup'));
       await tester.pump();
       for (var attempt = 0; attempt < 20; attempt++) {

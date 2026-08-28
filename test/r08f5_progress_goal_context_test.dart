@@ -176,7 +176,7 @@ void main() {
       _snapshot(
         targetCalories: 2200,
         targetProtein: 140,
-        targetGoalType: NutritionGoalType.maintenance,
+        targetGoalType: NutritionGoalType.gain,
       ),
       database: database,
       dates: dates,
@@ -185,7 +185,9 @@ void main() {
 
     expect(find.text('Today’s nutrition target'), findsOneWidget);
     expect(find.text('2,200 kcal · 140 g protein'), findsOneWidget);
-    expect(find.text('Nutrition goal: Maintain'), findsOneWidget);
+    expect(find.text('Fitness goal: Build muscle'), findsOneWidget);
+    expect(find.text('Nutrition strategy: Calorie surplus'), findsOneWidget);
+    expect(find.textContaining('Weight gain'), findsNothing);
     expect(find.text('View nutrition targets'), findsOneWidget);
     expect(find.textContaining('kg to goal'), findsNothing);
     expect(find.textContaining('on track'), findsNothing);
@@ -220,7 +222,8 @@ void main() {
       expect(find.text('No nutrition target saved for today.'), findsOneWidget);
       expect(find.text('Set nutrition target'), findsOneWidget);
       expect(find.text('2,200 kcal · 140 g protein'), findsNothing);
-      expect(find.text('Nutrition goal: Maintain'), findsNothing);
+      expect(find.textContaining('Nutrition strategy:'), findsNothing);
+      expect(find.textContaining('Fitness goal:'), findsNothing);
       expect(tester.takeException(), isNull);
     },
   );
@@ -328,6 +331,7 @@ Future<void> _pump(
         localTimezoneServiceProvider.overrideWithValue(
           LocalTimezoneService(read: () async => 'Asia/Kolkata', dates: dates),
         ),
+        userProfileProvider.overrideWith((ref) => _GoalProfileNotifier()),
       ],
       child: MaterialApp(
         theme: AppTheme.darkTheme,
@@ -345,6 +349,24 @@ Future<void> _pump(
     ),
   );
   await tester.pumpAndSettle();
+}
+
+class _GoalProfileNotifier extends UserProfileNotifier {
+  _GoalProfileNotifier() : super() {
+    state = const UserProfileState(
+      isLoaded: true,
+      hasProfile: true,
+      calorieGoal: 2400,
+      proteinGoal: 160,
+      carbsGoal: 280,
+      fatGoal: 75,
+      currentWeight: 80,
+      userGoal: 'gain',
+    );
+  }
+
+  @override
+  Future<void> loadProfile() async {}
 }
 
 class _RecordingNavigatorObserver extends NavigatorObserver {

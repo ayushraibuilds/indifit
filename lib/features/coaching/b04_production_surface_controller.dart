@@ -205,6 +205,7 @@ class B04GoalSettingsController extends StateNotifier<B04GoalSettingsState> {
       );
       final consentHistory = await _preferences.listConsentHistory(
         userId: context.userId,
+        category: CoachingConsentCategory.adaptiveCoaching,
       );
       if (!mounted) return;
       state = B04GoalSettingsState(
@@ -259,6 +260,7 @@ class B04GoalSettingsController extends StateNotifier<B04GoalSettingsState> {
     final context = state.context;
     if (context == null) return;
     final prior = state.availability?.preferences.adaptiveCoachingEvent;
+    if (prior?.action == action) return;
     final timestampUtc = _nextConsentTimestamp(prior);
     await _preferences.recordConsent(
       CoachingConsentCommand(
@@ -345,16 +347,18 @@ String b04ProductionStateCopy(String reasonCode) => switch (reasonCode) {
     'Adaptive coaching is off. Review the disclosure before enabling it.',
   'coaching_unavailable_age' || 'underage' =>
     'Coaching suggestions are unavailable for this age. Your logged activity and target remain available.',
-  'unknown_age' || 'withheld_age' || 'conflicting_age' || 'invalid_evidence' =>
-    'Coaching suggestions are unavailable until we have your age details. Your target stays the same.',
+  'unknown_age' || 'withheld_age' =>
+    'Add your date of birth to check whether adaptive coaching is available. Your target stays the same.',
+  'conflicting_age' || 'invalid_evidence' =>
+    'Coaching availability couldn\'t be checked from those age details. Check your date of birth and try again. Your target stays the same.',
   'eligibility_underage' =>
     'Coaching suggestions are unavailable for this age. Your logged activity and target remain available.',
-  'eligibility_unknown_age' ||
-  'eligibility_withheld_age' ||
-  'eligibility_conflicting_age' ||
-  'eligibility_invalid_evidence' ||
+  'eligibility_unknown_age' || 'eligibility_withheld_age' =>
+    'Add your date of birth to check whether adaptive coaching is available. Your target stays the same.',
+  'eligibility_conflicting_age' || 'eligibility_invalid_evidence' =>
+    'Coaching availability couldn\'t be checked from those age details. Check your date of birth and try again. Your target stays the same.',
   'eligibility_policy_unavailable' =>
-    'Coaching suggestions are unavailable until we have your age details. Your target stays the same.',
+    'Coaching availability couldn\'t be checked right now. Your target stays the same.',
   'adaptive_policy_hold' =>
     'Coaching suggestions are unavailable right now. Your target stays the same.',
   'adaptive_policy_inactive' =>
@@ -382,7 +386,7 @@ String b04ProductionStateCopy(String reasonCode) => switch (reasonCode) {
   'clinician_managed_plan' =>
     'This goal or request is outside supported coaching. Your target stays the same.',
   'eligibility_unavailable' =>
-    'Add your date of birth to personalise coaching suggestions.',
+    'Add your date of birth to check whether adaptive coaching is available.',
   'eligibility_not_evaluated_for_context' =>
     'Age details are unavailable for this period. Your target stays the same.',
   'goal_unavailable' || 'goal_missing' || 'goal_target_missing' =>

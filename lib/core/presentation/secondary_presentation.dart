@@ -252,8 +252,16 @@ abstract final class SecondaryConsumerCopy {
   static String goal(String value) => switch (value.trim().toLowerCase()) {
     'lose' => 'Lose weight',
     'gain' => 'Build muscle',
-    _ => 'Maintain and feel strong',
+    _ => 'Maintain',
   };
+
+  static String nutritionStrategy(String value) =>
+      switch (value.trim().toLowerCase()) {
+        'loss' || 'lose' => 'Calorie deficit',
+        'gain' => 'Calorie surplus',
+        'custom' => 'Custom targets',
+        _ => 'Maintenance',
+      };
 
   static String activity(String value) => switch (value.trim().toLowerCase()) {
     'sedentary' => 'Mostly seated',

@@ -212,7 +212,7 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
     if (summary.occurrenceCount == summary.sessionCount) {
       return '$sessions saved for this exercise.';
     }
-    return '$sessions saved · ${summary.occurrenceCount} exercise occurrences preserved.';
+    return '$sessions saved · ${summary.occurrenceCount} exercise entries saved.';
   }
 
   Widget _buildHistoryAndChartTab(List<Map<String, dynamic>> history) {

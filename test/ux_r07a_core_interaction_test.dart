@@ -189,7 +189,7 @@ void main() {
       same(profile),
     );
 
-    await tester.tap(find.text('Maintain and feel strong'));
+    await tester.tap(find.text('Maintain'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Build muscle').last);
     await tester.pumpAndSettle();

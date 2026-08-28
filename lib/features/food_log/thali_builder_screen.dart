@@ -474,7 +474,7 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
                     _controller.acknowledgePartial(value ?? false),
                 title: const Text('I understand this preview is incomplete'),
                 subtitle: const Text(
-                  'Unknown values remain unknown in the saved snapshot.',
+                  'Unknown values remain unknown in the saved meal.',
                 ),
               ),
           ],

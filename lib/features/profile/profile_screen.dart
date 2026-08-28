@@ -430,7 +430,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         ),
                         DropdownMenuItem(
                           value: 'maintain',
-                          child: Text('Maintain and feel strong'),
+                          child: Text('Maintain'),
                         ),
                         DropdownMenuItem(
                           value: 'gain',

@@ -317,7 +317,7 @@ class DataManagementSection extends ConsumerWidget {
     final rawSnapshot = await AutoBackupService.getLatestSnapshotContent();
     if (!context.mounted) return;
     if (rawSnapshot == null) {
-      _showSnack(context, 'No recent local snapshot is available.');
+      _showSnack(context, 'No recent recovery copy is available.');
       return;
     }
 
@@ -330,14 +330,14 @@ class DataManagementSection extends ConsumerWidget {
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (dialogCtx) => AlertDialog(
-          title: const Text('Restore recent snapshot'),
+          title: const Text('Restore recent recovery copy'),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'This replaces the supported data currently on this device with the latest local snapshot.',
+                  'This replaces the supported data currently on this device with the latest automatic recovery copy.',
                   style: B05Typography.body(dialogCtx),
                 ),
                 const SizedBox(height: B05Layout.space12),
@@ -360,7 +360,7 @@ class DataManagementSection extends ConsumerWidget {
                 foregroundColor: dialogCtx.b05Colors.danger.foreground,
               ),
               onPressed: () => Navigator.pop(dialogCtx, true),
-              child: const Text('Restore snapshot'),
+              child: const Text('Restore recovery copy'),
             ),
           ],
         ),
@@ -372,13 +372,13 @@ class DataManagementSection extends ConsumerWidget {
           .performRestore(inspection.payload);
       await _syncOnboardingGate(ref);
       if (context.mounted) {
-        _showSnack(context, 'Local snapshot restored.');
+        _showSnack(context, 'Recovery copy restored.');
       }
     } catch (_) {
       if (context.mounted) {
         _showSnack(
           context,
-          'The local snapshot could not be restored. Check your data and settings before trying again.',
+          'The recovery copy could not be restored. Check your data and settings before trying again.',
           error: true,
         );
       }
@@ -468,15 +468,15 @@ class DataManagementSection extends ConsumerWidget {
               Text('Automatic backup', style: B05Typography.title(context)),
               const SizedBox(height: B05Layout.space4),
               Text(
-                'A local snapshot is created on this device when the app starts. Up to three snapshots are kept. A snapshot may be unavailable if creation did not finish.',
+                'An automatic recovery copy is created on this device when the app starts. Up to three copies are kept. A recovery copy may be unavailable if creation did not finish.',
                 style: B05Typography.body(context),
               ),
               const SizedBox(height: B05Layout.space8),
               B05ActionButton(
                 emphasis: B05ActionEmphasis.secondary,
                 icon: Icons.history_rounded,
-                label: 'Restore recent snapshot',
-                hint: 'Inspect and restore the latest local snapshot.',
+                label: 'Restore recent recovery copy',
+                hint: 'Inspect and restore the latest automatic recovery copy.',
                 onPressed: isBusy
                     ? null
                     : () => _restoreFromAutoBackup(context, ref),

@@ -380,9 +380,18 @@ void main() {
       expect(find.text('Keep your feet grounded.'), findsOneWidget);
       expect(find.text('Your personal cues'), findsOneWidget);
       expect(
-        find.bySemanticsLabel('Unavailable: Muscle contribution is unknown'),
+        find.bySemanticsLabel('Unavailable: Muscle contribution unavailable'),
         findsOneWidget,
       );
+      expect(
+        find.text(
+          'Detailed muscle contribution isn\'t available for this exercise.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.textContaining('B02'), findsNothing);
+      expect(find.textContaining('mapping'), findsNothing);
+      expect(find.textContaining('%'), findsNothing);
       expect(tester.takeException(), isNull);
       semantics.dispose();
     },

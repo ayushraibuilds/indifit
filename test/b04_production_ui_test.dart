@@ -70,8 +70,23 @@ void main() {
         nowUtc: () => DateTime.utc(2026, 8, 6, 10),
       );
 
+      await preferences.recordConsent(
+        CoachingConsentCommand(
+          userId: 'user-a',
+          category: CoachingConsentCategory.optionalAi,
+          action: CoachingConsentAction.enable,
+          consentPolicyVersion: kB04AdaptiveConsentPolicyVersion,
+          copyVersion: kB04AdaptiveConsentCopyVersion,
+          timestampUtc: DateTime.utc(2026, 8, 6, 9, 30),
+          localDate: '2026-08-06',
+          timezoneId: 'Asia/Kolkata',
+          actorSource: 'test',
+        ),
+      );
+
       await controller.load();
       expect(controller.state.status, B04GoalSettingsStatus.ready);
+      expect(controller.state.consentHistory, isEmpty);
       expect(
         controller.state.availability!.preferences.adaptiveCoachingEnabled,
         isFalse,
@@ -113,6 +128,10 @@ void main() {
         controller.state.consentHistory.single.copyVersion,
         kB04AdaptiveConsentCopyVersion,
       );
+      final goalBeforeNoOp = controller.state.activeGoal;
+      await controller.setAdaptiveConsent(CoachingConsentAction.enable);
+      expect(controller.state.consentHistory, hasLength(1));
+      expect(controller.state.activeGoal, same(goalBeforeNoOp));
 
       await controller.setAdaptiveConsent(CoachingConsentAction.disable);
       expect(
@@ -128,6 +147,8 @@ void main() {
         isFalse,
       );
       expect(controller.state.consentHistory, hasLength(4));
+      expect(controller.state.activeGoal!.calorieTargetKcal, 2000);
+      expect(controller.state.goalHistory, hasLength(1));
 
       await controller.saveUserSetGoal(
         goalType: NutritionGoalType.loss,
@@ -141,7 +162,7 @@ void main() {
       expect(controller.state.goalHistory, hasLength(2));
       expect(
         b04ProductionStateCopy(controller.state.availability!.reasonCode),
-        contains('unavailable'),
+        startsWith('Add your date of birth'),
       );
 
       controller.dispose();
@@ -149,7 +170,7 @@ void main() {
   );
 
   test(
-    'unknown age remains unavailable without punitive wording while user goals stay readable',
+    'unknown age remains unknown while user goals stay readable',
     () async {
       final goals = NutritionGoalRepository(database: db);
       final preferences = CoachingPreferenceRepository(
@@ -206,7 +227,11 @@ void main() {
       expect(availability.reasonCode, 'unknown_age');
       expect(
         b04ProductionStateCopy('unknown_age'),
-        allOf(contains('unavailable'), isNot(contains('punitive'))),
+        allOf(
+          startsWith('Add your date of birth'),
+          isNot(contains('unavailable for this age')),
+          isNot(contains('ineligible')),
+        ),
       );
       expect(
         (await goals.activeGoal(
