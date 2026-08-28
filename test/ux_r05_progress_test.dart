@@ -136,6 +136,11 @@ void main() {
     _setViewport(tester, const Size(390, 844));
     await _pump(tester, _oneMeasurement(), AppTheme.darkTheme);
 
+    expect(find.text('Highlights'), findsNothing);
+    expect(
+      find.byKey(const ValueKey('progress_highlight_weight')),
+      findsNothing,
+    );
     expect(find.text('82.0 kg'), findsWidgets);
     expect(find.text('Goal 78.0 kg'), findsNothing);
     expect(
@@ -301,7 +306,7 @@ void main() {
       expect(find.text('Highlights'), findsOneWidget);
       expect(find.text('Training consistency'), findsOneWidget);
       expect(find.text('Strength'), findsWidgets);
-      expect(find.text('Training volume'), findsOneWidget);
+      expect(find.text('Loaded volume'), findsOneWidget);
       expect(find.text('Recent training emphasis'), findsOneWidget);
       expect(find.textContaining('your goal'), findsNothing);
       expect(tester.takeException(), isNull);
@@ -403,7 +408,7 @@ void main() {
     await _pump(tester, _strengthOnly(), AppTheme.darkTheme);
 
     expect(find.text('Bench Press'), findsOneWidget);
-    expect(find.text('90 kg × 5'), findsWidgets);
+    expect(find.text('90 kg × 5'), findsOneWidget);
     expect(
       find.textContaining('+7.5 kg at 5 reps vs previous session'),
       findsWidgets,

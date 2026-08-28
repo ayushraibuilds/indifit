@@ -23,6 +23,7 @@ import '../../data/repositories/workout_repository.dart';
 import '../activity/b02_activity_controller.dart';
 import '../calendar/workout_contextual_launcher.dart';
 import '../coaching/b04_production_surface_widgets.dart';
+import '../progress/achievements_screen.dart';
 import '../settings/nutrition_targets_hub_screen.dart';
 import '../workout_player/b02_strength_execution_controller.dart';
 import '../workout_player/b02_strength_player_screen.dart';
@@ -391,6 +392,32 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<DashboardState>(dashboardControllerProvider, (previous, next) {
+      final previousTitles =
+          previous?.newlyUnlockedAchievementTitles ?? const [];
+      final nextTitles = next.newlyUnlockedAchievementTitles;
+      if (nextTitles.isEmpty || _sameTitles(previousTitles, nextTitles)) {
+        return;
+      }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final plural = nextTitles.length == 1 ? 'Achievement' : 'Achievements';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            behavior: SnackBarBehavior.floating,
+            content: Text('$plural unlocked: ${nextTitles.join(', ')}'),
+            action: SnackBarAction(
+              label: 'View',
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const AchievementsScreen()),
+                );
+              },
+            ),
+          ),
+        );
+      });
+    });
     final state = ref.watch(dashboardControllerProvider);
     final profile = ref.watch(userProfileProvider);
     final userName = profile.userName?.trim();
@@ -423,4 +450,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       ),
     );
   }
+}
+
+bool _sameTitles(List<String> first, List<String> second) {
+  if (first.length != second.length) return false;
+  for (var index = 0; index < first.length; index++) {
+    if (first[index] != second[index]) return false;
+  }
+  return true;
 }

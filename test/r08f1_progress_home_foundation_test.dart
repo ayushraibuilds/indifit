@@ -1,3 +1,4 @@
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/theme/app_theme.dart';
@@ -13,10 +14,26 @@ void main() {
 
     expect(find.text('Highlights'), findsOneWidget);
     expect(find.text('Overview'), findsNothing);
-    expect(find.text('3 workouts'), findsWidgets);
-    expect(find.text('90 kg × 5'), findsWidgets);
+    expect(find.text('3 training days'), findsOneWidget);
+    expect(find.text('2 sessions'), findsOneWidget);
     expect(find.text('80.8 kg'), findsWidgets);
-    expect(find.text('2,100 kcal'), findsWidgets);
+    expect(find.textContaining('2,100 kcal'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('progress_highlight_training')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('progress_highlight_strength')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('progress_highlight_weight')),
+      findsNothing,
+    );
+    expect(
+      find.byKey(const ValueKey('progress_highlight_nutrition')),
+      findsNothing,
+    );
     expect(find.textContaining('e1RM'), findsNothing);
     expect(find.textContaining('readiness'), findsNothing);
     expect(find.textContaining('calories burned'), findsNothing);
@@ -61,12 +78,48 @@ void main() {
       AppTheme.lightTheme,
     );
 
-    expect(find.text('Highlights'), findsOneWidget);
-    expect(find.text('Weight'), findsWidgets);
+    expect(find.text('Highlights'), findsNothing);
+    expect(find.text('Weight'), findsOneWidget);
     expect(find.text('Training'), findsNothing);
     expect(find.text('Strength'), findsNothing);
     expect(find.text('Nutrition'), findsNothing);
     expect(find.text('Some progress details are unavailable'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('known training without sets keeps the strength state compact', (
+    tester,
+  ) async {
+    _setViewport(tester, const Size(390, 844));
+    await _pump(
+      tester,
+      ProgressDashboardSnapshot(
+        nowUtc: DateTime.utc(2026, 8, 9, 12),
+        timezoneId: 'UTC',
+        todayLocalDate: '2026-08-09',
+        measurements: const [],
+        workouts: [
+          ProgressWorkoutRecord(
+            id: 1,
+            name: 'Strength session',
+            completedAtUtc: DateTime.utc(2026, 8, 8, 8),
+            localDate: '2026-08-08',
+            activityType: 'strength',
+            totalVolumeKg: 0,
+          ),
+        ],
+        strengthSets: const [],
+        muscleBalance: null,
+        unavailableSections: const {},
+      ),
+      AppTheme.lightTheme,
+    );
+
+    expect(
+      find.text('Your logged working sets will appear here after you train.'),
+      findsOneWidget,
+    );
+    expect(find.byType(LineChart), findsNothing);
     expect(tester.takeException(), isNull);
   });
 

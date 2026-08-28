@@ -177,6 +177,11 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                         ),
                   ),
                 ],
+                if (_hasKnownStrengthActivity(snapshot) &&
+                    (snapshot.strengthSets?.isEmpty ?? false)) ...[
+                  const SizedBox(height: B05Layout.space24),
+                  const _StrengthEmptySection(),
+                ],
                 if (snapshot.weightMeasurements.isNotEmpty) ...[
                   const SizedBox(height: B05Layout.space24),
                   _WeightSection(
@@ -483,17 +488,18 @@ class _ProgressHighlights extends StatelessWidget {
       final daysCount = snapshot.weeklyTrainedDates.isNotEmpty
           ? snapshot.weeklyTrainedDates.length
           : summary.trainingDayCount;
-      final detailText = sessionCount == daysCount
-          ? 'completed this week'
-          : 'across $daysCount ${daysCount == 1 ? 'day' : 'days'} this week';
+      final dayLabel = daysCount == 1 ? 'training day' : 'training days';
+      final sessionLabel = sessionCount == 1 ? 'workout' : 'workouts';
       highlights.add(
         _ProgressHighlight(
           label: 'Training',
-          value: '$sessionCount ${sessionCount == 1 ? 'workout' : 'workouts'}',
-          detail: detailText,
+          value: '$daysCount $dayLabel',
+          detail: '$sessionCount $sessionLabel this week',
           icon: Icons.fitness_center_rounded,
           onPressed: onViewTrainingHistory,
           actionLabel: 'View workout history',
+          semanticDetail:
+              '$sessionCount $sessionLabel completed across $daysCount $dayLabel this week.',
         ),
       );
     }
@@ -505,14 +511,17 @@ class _ProgressHighlights extends StatelessWidget {
       highlights.add(
         _ProgressHighlight(
           label: 'Strength',
-          value: _formatSet(strength.heaviest),
+          value:
+              '${_distinctStrengthSessionCount(strength.records)} ${_distinctStrengthSessionCount(strength.records) == 1 ? 'session' : 'sessions'}',
           detail: strength.comparisonText == null
-              ? strength.exerciseName
+              ? '${strength.exerciseName} · latest ${_formatSet(strength.heaviest)}'
               : '${strength.exerciseName} · ${strength.comparisonText}',
           icon: Icons.show_chart_rounded,
           onPressed: () =>
               onViewStrengthHistory(strength.exerciseName, strength.exerciseId),
           actionLabel: 'View strength history',
+          semanticDetail:
+              '${strength.exerciseName}; latest recorded set ${_formatSet(strength.heaviest)}.',
         ),
       );
     }
@@ -520,54 +529,34 @@ class _ProgressHighlights extends StatelessWidget {
     final allWeights = snapshot.weightMeasurements.toList(growable: true)
       ..sort(_compareMeasurementsChronologically);
     final dailyWeights = _dailyWeightObservations(allWeights);
-    if (dailyWeights.isNotEmpty) {
+    if (dailyWeights.length >= 3) {
+      final first = dailyWeights.first;
       final latest = dailyWeights.last;
-      final detail = _weightOverviewDetail(allWeights, units);
+      final difference = latest.weightKg! - first.weightKg!;
+      final days = _civilDayDifference(
+        _measurementDate(first),
+        _measurementDate(latest),
+      );
+      final period = days > 0
+          ? 'since ${_shortCivilDate(_measurementDate(first))}'
+          : 'across recorded measurements';
+      final value = difference == 0
+          ? '${dailyWeights.length} measurements'
+          : '${_formatWeight(difference.abs(), units)} ${difference < 0 ? 'lower' : 'higher'}';
+      final detail = difference == 0 ? 'No change $period' : period;
+      final semanticChange = difference == 0
+          ? 'No change $period'
+          : '${_formatWeight(difference.abs(), units)} ${difference < 0 ? 'lower' : 'higher'} $period';
       highlights.add(
         _ProgressHighlight(
           label: 'Weight',
-          value: _formatWeight(latest.weightKg!, units),
+          value: value,
           detail: detail,
           icon: _weightDirectionIcon(allWeights),
-          semanticDetail: _weightSemantics(allWeights, units),
-        ),
-      );
-    }
-
-    final nutrition = snapshot.nutritionSummary;
-    if (nutrition != null && nutrition.hasAnyLoggedDays) {
-      final detail = _nutritionAdherenceLabel(nutrition);
-      highlights.add(
-        _ProgressHighlight(
-          label: 'Nutrition',
-          value: nutrition.averageCaloriesKcal != null
-              ? '${_formatVolume(nutrition.averageCaloriesKcal!)} kcal'
-              : '${nutrition.loggedDaysCount} days logged',
-          detail: detail,
-          icon: Icons.restaurant_rounded,
           semanticDetail:
-              'Nutrition: ${nutrition.averageCaloriesKcal != null ? '${_formatVolume(nutrition.averageCaloriesKcal!)} average calories across ${nutrition.calorieEvidenceDaysCount} complete days. ' : ''}$detail.',
+              'Weight: $semanticChange; the detailed Weight section shows the latest observation and history.',
         ),
       );
-    }
-
-    if (highlights.isEmpty && snapshot.bodyMeasurements.isNotEmpty) {
-      final measurements = snapshot.bodyMeasurements.toList(growable: true)
-        ..sort(_compareMeasurementsNewestFirst);
-      final bodyValues = _bodyMeasurementValues(measurements);
-      if (bodyValues.isNotEmpty) {
-        final value = bodyValues.first;
-        highlights.add(
-          _ProgressHighlight(
-            label: 'Measurements',
-            value: '${_formatNumber(value.value)} cm',
-            detail: 'Latest ${value.label.toLowerCase()}',
-            icon: Icons.straighten_rounded,
-            semanticDetail:
-                '${value.label}: ${_formatNumber(value.value)} centimetres, latest measurement.',
-          ),
-        );
-      }
     }
 
     if (highlights.isEmpty) return const SizedBox.shrink();
@@ -1069,6 +1058,33 @@ class _StrengthSection extends StatelessWidget {
   }
 }
 
+class _StrengthEmptySection extends StatelessWidget {
+  const _StrengthEmptySection();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _SectionHeading(title: 'Strength'),
+        const SizedBox(height: B05Layout.space8),
+        Semantics(
+          container: true,
+          label: 'Your logged working sets will appear here after you train.',
+          child: B05Surface(
+            tone: B05SurfaceTone.inset,
+            padding: const EdgeInsets.all(B05Layout.space16),
+            child: Text(
+              'Your logged working sets will appear here after you train.',
+              style: B05Typography.body(context),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _WeightSection extends StatefulWidget {
   const _WeightSection({
     required this.snapshot,
@@ -1153,7 +1169,9 @@ class _WeightSectionState extends State<_WeightSection> {
         ),
         const SizedBox(height: B05Layout.space8),
         B05Surface(
-          padding: const EdgeInsets.all(B05Layout.space20),
+          padding: EdgeInsets.all(
+            hasChart ? B05Layout.space20 : B05Layout.space16,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1374,7 +1392,13 @@ class _NutritionAdherenceSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final titleText = _nutritionAdherenceLabel(summary);
+    final completeDays = _completeNutritionDays(summary);
+    final hasRichHistory = completeDays.length >= 2;
+    final headlineSemantics = _nutritionHeadlineSemantics(
+      summary: summary,
+      completeDays: completeDays,
+      hasRichHistory: hasRichHistory,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1382,62 +1406,117 @@ class _NutritionAdherenceSection extends StatelessWidget {
         const _SectionHeading(title: 'Nutrition adherence'),
         const SizedBox(height: B05Layout.space8),
         B05Surface(
-          padding: const EdgeInsets.all(B05Layout.space20),
+          padding: EdgeInsets.all(
+            hasRichHistory ? B05Layout.space20 : B05Layout.space16,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Semantics(
-                label:
-                    'Nutrition weekly adherence: $titleText.'
-                    '${summary.averageCaloriesKcal != null ? ' Average ${summary.averageCaloriesKcal!.round()} calories across ${summary.calorieEvidenceDaysCount} complete days.' : ''}',
+                label: headlineSemantics,
                 child: ExcludeSemantics(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        summary.averageCaloriesKcal != null
-                            ? '${_formatVolume(summary.averageCaloriesKcal!)} kcal'
-                            : '${summary.loggedDaysCount} days logged',
-                        style: B05Typography.metric(context),
-                      ),
-                      if (summary.averageCaloriesKcal != null) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          'Average across ${summary.calorieEvidenceDaysCount} complete ${summary.calorieEvidenceDaysCount == 1 ? 'day' : 'days'}',
-                          style: B05Typography.caption(context),
-                        ),
-                      ],
-                      const SizedBox(height: 2),
-                      Text(titleText, style: B05Typography.body(context)),
-                      if (summary.averageProteinG != null &&
-                          summary.targetProteinG != null) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          'Avg protein: ${summary.averageProteinG!.round()} / ${summary.targetProteinG!.round()} g across ${summary.proteinEvidenceDaysCount} complete ${summary.proteinEvidenceDaysCount == 1 ? 'day' : 'days'}',
-                          style: B05Typography.caption(context),
-                        ),
-                      ] else if (summary.averageProteinG != null) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          'Avg protein: ${summary.averageProteinG!.round()} g across ${summary.proteinEvidenceDaysCount} complete ${summary.proteinEvidenceDaysCount == 1 ? 'day' : 'days'}',
-                          style: B05Typography.caption(context),
-                        ),
-                      ],
-                    ],
+                  child: _NutritionHeadline(
+                    summary: summary,
+                    completeDays: completeDays,
+                    hasRichHistory: hasRichHistory,
                   ),
                 ),
               ),
-              const SizedBox(height: B05Layout.space16),
+              SizedBox(
+                height: hasRichHistory ? B05Layout.space16 : B05Layout.space12,
+              ),
               _NutritionTargetContext(
                 summary: summary,
                 fitnessGoalLabel: fitnessGoalLabel,
                 onViewTargets: onViewTargets,
               ),
-              const SizedBox(height: B05Layout.space16),
-              _NutritionWeekStrip(days: summary.days),
+              if (hasRichHistory) ...[
+                const SizedBox(height: B05Layout.space16),
+                _NutritionWeekStrip(days: summary.days),
+              ],
             ],
           ),
         ),
+      ],
+    );
+  }
+}
+
+class _NutritionHeadline extends StatelessWidget {
+  const _NutritionHeadline({
+    required this.summary,
+    required this.completeDays,
+    required this.hasRichHistory,
+  });
+
+  final ProgressNutritionSummary summary;
+  final List<ProgressNutritionDaySummary> completeDays;
+  final bool hasRichHistory;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!hasRichHistory) {
+      final day = completeDays.isEmpty ? null : completeDays.last;
+      final factLine = _nutritionCompactFactLine(day);
+      final status = completeDays.length == 1
+          ? '1 complete logged day'
+          : '${summary.loggedDaysCount} ${summary.loggedDaysCount == 1 ? 'logged day' : 'logged days'} · Some nutrition details are incomplete';
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            factLine ?? status,
+            style: factLine == null
+                ? B05Typography.title(context)
+                : B05Typography.title(
+                    context,
+                  ).copyWith(fontWeight: FontWeight.w800),
+          ),
+          if (factLine != null) ...[
+            const SizedBox(height: 4),
+            Text(status, style: B05Typography.caption(context)),
+          ],
+        ],
+      );
+    }
+
+    final hasCalorieAverage =
+        summary.averageCaloriesKcal != null &&
+        summary.calorieEvidenceDaysCount >= 2;
+    final hasProteinAverage =
+        summary.averageProteinG != null &&
+        summary.proteinEvidenceDaysCount >= 2;
+    final titleText = _nutritionAdherenceLabel(summary);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          hasCalorieAverage
+              ? '${_formatVolume(summary.averageCaloriesKcal!)} kcal'
+              : hasProteinAverage
+              ? '${_formatNumber(summary.averageProteinG!)} g protein'
+              : '${completeDays.length} complete logged days',
+          style: B05Typography.metric(context),
+        ),
+        if (hasCalorieAverage) ...[
+          const SizedBox(height: 2),
+          Text(
+            'Average across ${summary.calorieEvidenceDaysCount} complete ${summary.calorieEvidenceDaysCount == 1 ? 'day' : 'days'}',
+            style: B05Typography.caption(context),
+          ),
+        ],
+        const SizedBox(height: 2),
+        Text(titleText, style: B05Typography.body(context)),
+        if (hasProteinAverage && summary.averageProteinG != null) ...[
+          const SizedBox(height: 4),
+          Text(
+            summary.targetProteinG != null
+                ? 'Avg protein: ${_formatNumber(summary.averageProteinG!)} / ${_formatNumber(summary.targetProteinG!)} g across ${summary.proteinEvidenceDaysCount} complete ${summary.proteinEvidenceDaysCount == 1 ? 'day' : 'days'}'
+                : 'Avg protein: ${_formatNumber(summary.averageProteinG!)} g across ${summary.proteinEvidenceDaysCount} complete ${summary.proteinEvidenceDaysCount == 1 ? 'day' : 'days'}',
+            style: B05Typography.caption(context),
+          ),
+        ],
       ],
     );
   }
@@ -1717,16 +1796,20 @@ class _TrainingVolumeSection extends StatelessWidget {
       units: units,
       useRecent: summary.useRecent,
     );
+    final comparison = R08F4TrainingVolumePresentation.formatVolumeComparison(
+      summary,
+    );
+    final semanticComparison = comparison == null ? '' : ' $comparison.';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionHeading(title: 'Training volume'),
+        const _SectionHeading(title: 'Loaded volume'),
         const SizedBox(height: B05Layout.space8),
         B05Surface(
           padding: const EdgeInsets.all(B05Layout.space20),
           child: Semantics(
-            label: semanticLabel,
+            label: '$semanticLabel$semanticComparison',
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -1737,6 +1820,10 @@ class _TrainingVolumeSection extends StatelessWidget {
                   style: B05Typography.metric(context),
                 ),
                 Text(subtitle, style: B05Typography.body(context)),
+                if (comparison != null) ...[
+                  const SizedBox(height: 4),
+                  Text(comparison, style: B05Typography.caption(context)),
+                ],
               ],
             ),
           ),
@@ -2337,6 +2424,12 @@ bool _hasMeaningfulVolume(ProgressDashboardSnapshot snapshot) =>
           workout.totalVolumeKg > 0,
     );
 
+bool _hasKnownStrengthActivity(ProgressDashboardSnapshot snapshot) =>
+    snapshot.strengthSets != null &&
+    (snapshot.workouts ?? const <ProgressWorkoutRecord>[]).any(
+      (workout) => workout.isCanonicalStrength,
+    );
+
 bool _hasMeaningfulMuscleBalance(ProgressDashboardSnapshot snapshot) =>
     snapshot.muscleBalance != null &&
     snapshot.muscleBalance!.muscles.any((muscle) => muscle.workingSetUnits > 0);
@@ -2419,18 +2512,6 @@ List<ProgressMeasurementRecord> _dailyWeightObservations(
   final daily = latestByLocalDate.values.toList(growable: true)
     ..sort(_compareMeasurementsChronologically);
   return daily;
-}
-
-String _weightOverviewDetail(
-  List<ProgressMeasurementRecord> measurements,
-  String units,
-) {
-  final dailyMeasurements = _dailyWeightObservations(measurements);
-  if (dailyMeasurements.length == 1) return 'latest weight';
-  if (dailyMeasurements.length == 2) {
-    return '${_formatWeight(dailyMeasurements.first.weightKg!, units)} → ${_formatWeight(dailyMeasurements.last.weightKg!, units)}';
-  }
-  return _weightDetail(measurements, units);
 }
 
 String _weightDetail(
@@ -2681,6 +2762,61 @@ String _nutritionAdherenceLabel(ProgressNutritionSummary summary) {
     return '${summary.loggedDaysCount} ${summary.loggedDaysCount == 1 ? 'day' : 'days'} with meals logged · ${summary.calorieEvidenceDaysCount} complete calorie ${summary.calorieEvidenceDaysCount == 1 ? 'day' : 'days'}';
   }
   return '${summary.loggedDaysCount} ${summary.loggedDaysCount == 1 ? 'day' : 'days'} with meals logged';
+}
+
+List<ProgressNutritionDaySummary> _completeNutritionDays(
+  ProgressNutritionSummary summary,
+) => summary.days
+    .where(
+      (day) =>
+          day.hasFoodLog &&
+          !day.isNutrientIncomplete &&
+          day.caloriesKcal != null &&
+          day.proteinG != null,
+    )
+    .toList(growable: false);
+
+String? _nutritionCompactFactLine(ProgressNutritionDaySummary? day) {
+  if (day == null) return null;
+  final facts = <String>[
+    if (day.caloriesKcal != null) '${_formatVolume(day.caloriesKcal!)} kcal',
+    if (day.proteinG != null && day.proteinTargetG != null)
+      '${_formatNumber(day.proteinG!)} / ${_formatNumber(day.proteinTargetG!)} g protein',
+    if (day.proteinG != null && day.proteinTargetG == null)
+      '${_formatNumber(day.proteinG!)} g protein',
+  ];
+  return facts.isEmpty ? null : facts.join(' · ');
+}
+
+String _nutritionHeadlineSemantics({
+  required ProgressNutritionSummary summary,
+  required List<ProgressNutritionDaySummary> completeDays,
+  required bool hasRichHistory,
+}) {
+  if (!hasRichHistory) {
+    final day = completeDays.isEmpty ? null : completeDays.last;
+    final factLine = _nutritionCompactFactLine(day);
+    if (factLine != null) {
+      return 'Nutrition: $factLine. ${completeDays.length} complete logged day.';
+    }
+    return 'Nutrition: ${summary.loggedDaysCount} ${summary.loggedDaysCount == 1 ? 'logged day' : 'logged days'}. Some nutrition details are incomplete.';
+  }
+
+  final facts = <String>['Nutrition adherence.'];
+  if (summary.averageCaloriesKcal != null &&
+      summary.calorieEvidenceDaysCount >= 2) {
+    facts.add(
+      'Average ${summary.averageCaloriesKcal!.round()} calories across ${summary.calorieEvidenceDaysCount} complete days.',
+    );
+  }
+  if (summary.averageProteinG != null &&
+      summary.proteinEvidenceDaysCount >= 2) {
+    facts.add(
+      'Average ${summary.averageProteinG!.round()} grams protein across ${summary.proteinEvidenceDaysCount} complete days.',
+    );
+  }
+  facts.add('${_nutritionAdherenceLabel(summary)}.');
+  return facts.join(' ');
 }
 
 String _formatNumber(double value) {

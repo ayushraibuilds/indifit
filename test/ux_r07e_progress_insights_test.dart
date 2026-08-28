@@ -58,6 +58,11 @@ void main() {
     _setViewport(tester, const Size(390, 844));
     await _pump(tester, _oneMeasurement(), AppTheme.darkTheme);
 
+    expect(find.text('Highlights'), findsNothing);
+    expect(
+      find.byKey(const ValueKey('progress_highlight_weight')),
+      findsNothing,
+    );
     expect(find.text('82.0 kg'), findsWidgets);
     expect(find.textContaining('Goal'), findsNothing);
     expect(
@@ -181,8 +186,13 @@ void main() {
     );
 
     expect(find.text('Training consistency'), findsOneWidget);
-    expect(find.text('3 workouts'), findsWidgets);
+    expect(find.text('3 training days'), findsOneWidget);
+    expect(find.text('3 workouts'), findsOneWidget);
     expect(find.text('completed this week'), findsWidgets);
+    expect(
+      find.text('Your logged working sets will appear here after you train.'),
+      findsOneWidget,
+    );
     expect(find.text('View workout history'), findsOneWidget);
     expect(tester.takeException(), isNull);
     await expectLater(
@@ -206,7 +216,7 @@ void main() {
 
       expect(find.text('Strength'), findsWidgets);
       expect(find.text('Bench Press'), findsWidgets);
-      expect(find.text('90 kg × 5'), findsWidgets);
+      expect(find.text('90 kg × 5'), findsOneWidget);
       expect(find.textContaining('e1RM'), findsNothing);
       expect(find.textContaining('vs previous session'), findsWidgets);
       expect(tester.takeException(), isNull);
@@ -237,6 +247,46 @@ void main() {
     );
   });
 
+  testWidgets('one complete nutrition day stays compact and factual', (
+    tester,
+  ) async {
+    _setViewport(tester, const Size(390, 844));
+    await _pump(tester, _oneNutritionDay(), AppTheme.darkTheme);
+
+    expect(find.text('Nutrition adherence'), findsOneWidget);
+    expect(find.text('640 kcal · 19 / 162 g protein'), findsOneWidget);
+    expect(find.text('1 complete logged day'), findsOneWidget);
+    expect(find.textContaining('Average'), findsNothing);
+    expect(
+      find.bySemanticsLabel('Weekly nutrition adherence day by day'),
+      findsNothing,
+    );
+    expect(tester.takeException(), isNull);
+    await expectLater(
+      find.byType(ProgressScreen),
+      matchesGoldenFile('goldens/ux_r08f_progress_one_nutrition_day_dark.png'),
+    );
+  });
+
+  testWidgets('logged nutrition without complete facts stays compact', (
+    tester,
+  ) async {
+    _setViewport(tester, const Size(390, 844));
+    await _pump(tester, _incompleteNutritionDay(), AppTheme.darkTheme);
+
+    expect(find.text('Nutrition adherence'), findsOneWidget);
+    expect(
+      find.textContaining('Some nutrition details are incomplete'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('Average'), findsNothing);
+    expect(
+      find.bySemanticsLabel('Weekly nutrition adherence day by day'),
+      findsNothing,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('populated overview dark golden', (tester) async {
     _setViewport(tester, const Size(390, 844));
     await _pump(tester, _populated(), AppTheme.darkTheme);
@@ -246,7 +296,7 @@ void main() {
     expect(find.text('Strength'), findsWidgets);
     expect(find.text('Weight'), findsWidgets);
     expect(find.text('Nutrition adherence'), findsOneWidget);
-    expect(find.text('Training volume'), findsOneWidget);
+    expect(find.text('Loaded volume'), findsOneWidget);
     expect(find.text('Recent training emphasis'), findsOneWidget);
     expect(tester.takeException(), isNull);
     await expectLater(
@@ -583,6 +633,71 @@ ProgressDashboardSnapshot _nutritionOnly() => ProgressDashboardSnapshot(
     hasTarget: true,
   ),
 );
+
+ProgressDashboardSnapshot _oneNutritionDay() => ProgressDashboardSnapshot(
+  nowUtc: DateTime.utc(2026, 8, 9, 12),
+  timezoneId: 'Asia/Kolkata',
+  todayLocalDate: '2026-08-09',
+  measurements: const [],
+  workouts: const [],
+  strengthSets: const [],
+  muscleBalance: _emptyMuscleModel(),
+  unavailableSections: const {},
+  nutritionSummary: const ProgressNutritionSummary(
+    days: [
+      ProgressNutritionDaySummary(
+        localDate: '2026-08-08',
+        dayLabel: 'Sat',
+        isToday: false,
+        caloriesKcal: 640,
+        proteinG: 19,
+        proteinTargetG: 162,
+        hasFoodLog: true,
+        isProteinTargetMet: false,
+        isNutrientIncomplete: false,
+      ),
+    ],
+    loggedDaysCount: 1,
+    calorieEvidenceDaysCount: 1,
+    proteinEvidenceDaysCount: 1,
+    proteinTargetMetDaysCount: 0,
+    averageCaloriesKcal: 640,
+    averageProteinG: 19,
+    targetProteinG: 162,
+    hasTarget: true,
+  ),
+);
+
+ProgressDashboardSnapshot _incompleteNutritionDay() =>
+    ProgressDashboardSnapshot(
+      nowUtc: DateTime.utc(2026, 8, 9, 12),
+      timezoneId: 'Asia/Kolkata',
+      todayLocalDate: '2026-08-09',
+      measurements: const [],
+      workouts: const [],
+      strengthSets: const [],
+      muscleBalance: _emptyMuscleModel(),
+      unavailableSections: const {},
+      nutritionSummary: const ProgressNutritionSummary(
+        days: [
+          ProgressNutritionDaySummary(
+            localDate: '2026-08-08',
+            dayLabel: 'Sat',
+            isToday: false,
+            caloriesKcal: 640,
+            hasFoodLog: true,
+            isProteinTargetMet: false,
+            isNutrientIncomplete: false,
+          ),
+        ],
+        loggedDaysCount: 1,
+        calorieEvidenceDaysCount: 1,
+        proteinEvidenceDaysCount: 0,
+        proteinTargetMetDaysCount: 0,
+        averageCaloriesKcal: 640,
+        hasTarget: false,
+      ),
+    );
 
 ProgressDashboardSnapshot _populated() => ProgressDashboardSnapshot(
   nowUtc: DateTime.utc(2026, 8, 9, 12),

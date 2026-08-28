@@ -73,10 +73,38 @@ abstract final class R08F4TrainingVolumePresentation {
       (sum, w) => sum + w.totalVolumeKg,
     );
 
+    // Compare like-for-like four-week windows only when the current window
+    // has evidence and the immediately preceding window has evidence too.
+    // An all-time fallback is intentionally not compared with a recent
+    // window, because those periods do not have the same denominator.
+    final previousPeriodStart = LocalScheduleDateService().addCalendarDays(
+      todayLocalDate,
+      timezoneId,
+      -(recentDays * 2 - 1),
+    );
+    final eligiblePrevious = useRecent
+        ? eligibleAll
+              .where(
+                (w) =>
+                    w.localDate.compareTo(previousPeriodStart) >= 0 &&
+                    w.localDate.compareTo(recentCutoff) < 0,
+              )
+              .toList(growable: false)
+        : const <ProgressWorkoutRecord>[];
+    final previousPeriodVolumeKg = eligiblePrevious.isEmpty
+        ? null
+        : eligiblePrevious.fold<double>(0, (sum, w) => sum + w.totalVolumeKg);
+
     final displayVolume = UnitPreferencePresentation.weightForDisplay(
       totalVolumeKg,
       units,
     );
+    final previousPeriodDisplayVolume = previousPeriodVolumeKg == null
+        ? null
+        : UnitPreferencePresentation.weightForDisplay(
+            previousPeriodVolumeKg,
+            units,
+          );
     final symbol = UnitPreferencePresentation.weightSymbol(units);
     final isImperial = UnitPreferencePresentation.isImperial(units);
 
@@ -88,6 +116,9 @@ abstract final class R08F4TrainingVolumePresentation {
       useRecent: useRecent,
       contributingSessionCount: selectedWorkouts.length,
       hasTrustworthyVolume: eligibleAll.isNotEmpty,
+      previousPeriodVolumeKg: previousPeriodVolumeKg,
+      previousPeriodDisplayVolume: previousPeriodDisplayVolume,
+      previousPeriodContributingSessionCount: eligiblePrevious.length,
     );
   }
 
@@ -160,8 +191,8 @@ abstract final class R08F4TrainingVolumePresentation {
   }) {
     final symbol = UnitPreferencePresentation.weightSymbol(units);
     return useRecent
-        ? '$symbol recorded in the last 4 weeks'
-        : '$symbol across recorded strength workouts';
+        ? '$symbol loaded in the last 4 weeks'
+        : '$symbol loaded across recorded strength sessions';
   }
 
   static String formatVolumeSemantics({
@@ -174,8 +205,28 @@ abstract final class R08F4TrainingVolumePresentation {
         : 'kilograms';
     final timeframe = useRecent
         ? 'in the last four weeks'
-        : 'across recorded strength workouts';
-    return '${formatVolume(displayVolume)} $unitWord $timeframe.';
+        : 'across recorded strength sessions';
+    return '${formatVolume(displayVolume)} $unitWord of loaded volume $timeframe.';
+  }
+
+  /// Returns a comparison only when both periods contain compatible loaded
+  /// volume. A missing prior period remains a single factual metric.
+  static String? formatVolumeComparison(R08F4VolumeSummary summary) {
+    if (!summary.hasComparablePreviousPeriod) return null;
+
+    final differenceKg =
+        summary.totalVolumeKg - summary.previousPeriodVolumeKg!;
+    if (differenceKg == 0) return 'Same as the previous 4 weeks';
+
+    final units = summary.isImperial
+        ? UnitPreferenceNotifier.imperial
+        : UnitPreferenceNotifier.metric;
+    final difference = UnitPreferencePresentation.weightForDisplay(
+      differenceKg.abs(),
+      units,
+    );
+    final direction = differenceKg > 0 ? 'more' : 'less';
+    return '${formatVolume(difference)} ${summary.unitSymbol} $direction than the previous 4 weeks';
   }
 }
 
@@ -209,6 +260,9 @@ class R08F4VolumeSummary {
     required this.useRecent,
     required this.contributingSessionCount,
     required this.hasTrustworthyVolume,
+    this.previousPeriodVolumeKg,
+    this.previousPeriodDisplayVolume,
+    this.previousPeriodContributingSessionCount = 0,
   });
 
   final double totalVolumeKg;
@@ -218,4 +272,13 @@ class R08F4VolumeSummary {
   final bool useRecent;
   final int contributingSessionCount;
   final bool hasTrustworthyVolume;
+  final double? previousPeriodVolumeKg;
+  final double? previousPeriodDisplayVolume;
+  final int previousPeriodContributingSessionCount;
+
+  bool get hasComparablePreviousPeriod =>
+      useRecent &&
+      previousPeriodVolumeKg != null &&
+      previousPeriodDisplayVolume != null &&
+      previousPeriodContributingSessionCount > 0;
 }

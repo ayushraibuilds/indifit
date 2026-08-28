@@ -42,8 +42,8 @@ abstract final class IndiFitIcons {
   );
 
   static const progress = IndiFitNavigationIconPair(
-    unselected: Icons.auto_graph_outlined,
-    selected: Icons.auto_graph_rounded,
+    unselected: Icons.trending_up_outlined,
+    selected: Icons.trending_up_rounded,
   );
 
   // Common actions.

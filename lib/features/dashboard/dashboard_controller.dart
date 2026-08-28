@@ -164,12 +164,27 @@ class DashboardController extends StateNotifier<DashboardState> {
       final currentlyUnlocked = achievements
           .where((a) => a.isUnlocked)
           .toList();
+
+      // Establish a quiet baseline for accounts that already have qualifying
+      // history. Feedback is reserved for a later authoritative refresh,
+      // such as the one performed after a successful save.
+      if (!prefs.containsKey('unlocked_achievement_ids')) {
+        await prefs.setStringList(
+          'unlocked_achievement_ids',
+          currentlyUnlocked.map((a) => a.id).toList(),
+        );
+        return;
+      }
+
       final newUnlocks = currentlyUnlocked
           .where((a) => !storedIds.contains(a.id))
           .toList();
 
       if (newUnlocks.isNotEmpty) {
-        final updatedIds = currentlyUnlocked.map((a) => a.id).toList();
+        final updatedIds = {
+          ...storedIds,
+          ...currentlyUnlocked.map((a) => a.id),
+        }.toList();
         await prefs.setStringList('unlocked_achievement_ids', updatedIds);
         state = state.copyWith(
           newlyUnlockedAchievementTitles: newUnlocks

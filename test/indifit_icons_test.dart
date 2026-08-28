@@ -27,8 +27,8 @@ void main() {
       expect(IndiFitIcons.training.selected, Icons.fitness_center_rounded);
       expect(IndiFitIcons.food.unselected, Icons.restaurant_outlined);
       expect(IndiFitIcons.food.selected, Icons.restaurant_rounded);
-      expect(IndiFitIcons.progress.unselected, Icons.auto_graph_outlined);
-      expect(IndiFitIcons.progress.selected, Icons.auto_graph_rounded);
+      expect(IndiFitIcons.progress.unselected, Icons.trending_up_outlined);
+      expect(IndiFitIcons.progress.selected, Icons.trending_up_rounded);
     });
 
     test('exposes only concrete typed Material concepts', () {

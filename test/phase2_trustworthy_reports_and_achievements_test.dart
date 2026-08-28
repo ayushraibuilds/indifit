@@ -8,6 +8,7 @@ import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/repositories/progress_statistics_repository.dart';
 import 'package:indifit/data/repositories/weekly_report_service.dart';
+import 'package:indifit/features/dashboard/dashboard_controller.dart';
 import 'package:indifit/features/progress/achievements_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -47,6 +48,63 @@ void main() {
       final unlockedCount = achievements.where((a) => a.isUnlocked).length;
       expect(unlockedCount, equals(0));
     });
+
+    test(
+      '1a. Achievement feedback baselines existing history and stays idempotent',
+      () async {
+        final container = ProviderContainer(
+          overrides: [databaseProvider.overrideWithValue(db)],
+        );
+        addTearDown(container.dispose);
+
+        final controller = container.read(dashboardControllerProvider.notifier);
+        await controller.loadStateData();
+
+        var prefs = await SharedPreferences.getInstance();
+        expect(prefs.getStringList('unlocked_achievement_ids'), isEmpty);
+
+        await db
+            .into(db.workoutSessions)
+            .insert(
+              WorkoutSessionsCompanion.insert(
+                name: 'First logged session',
+                totalVolume: 0,
+                durationSeconds: 1800,
+                estimatedCalories: 0,
+                completedAt: Value(DateTime.now()),
+              ),
+            );
+
+        await controller.loadStateData();
+        expect(
+          container
+              .read(dashboardControllerProvider)
+              .newlyUnlockedAchievementTitles,
+          ['First Sweat'],
+        );
+
+        prefs = await SharedPreferences.getInstance();
+        expect(prefs.getStringList('unlocked_achievement_ids'), [
+          'first_workout',
+        ]);
+
+        // Re-reading unchanged history must not emit another unlock event or
+        // duplicate the persisted identifier.
+        await controller.loadStateData();
+        expect(
+          container
+              .read(dashboardControllerProvider)
+              .newlyUnlockedAchievementTitles,
+          ['First Sweat'],
+        );
+        expect(
+          (await SharedPreferences.getInstance()).getStringList(
+            'unlocked_achievement_ids',
+          ),
+          ['first_workout'],
+        );
+      },
+    );
 
     test(
       '2. Logging 1 workout session unlocks "first_workout" and persists timestamp in SQLite',
