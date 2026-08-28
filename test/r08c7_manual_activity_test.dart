@@ -493,6 +493,8 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
+      await tester.tap(find.text('Browse all exercises'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Bench Press'));
       await tester.pump();
 
@@ -527,4 +529,7 @@ final class _C7ExerciseSource implements ExerciseCatalogSource {
   @override
   Future<Exercise?> readByStableId(String stableId) async =>
       stableId.trim() == exercise.stableId ? exercise : null;
+
+  @override
+  Future<List<Exercise>> readRecent() async => const [];
 }

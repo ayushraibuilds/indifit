@@ -176,7 +176,14 @@ void main() {
       expect(find.text('Next set · 1'), findsOneWidget);
       expect(find.byType(TextFormField), findsNWidgets(2));
       expect(find.text('Add set'), findsOneWidget);
+      expect(find.text('RPE'), findsNothing);
+      await tester.tap(find.text('More for this set'));
+      await tester.pumpAndSettle();
       expect(find.text('RPE'), findsOneWidget);
+      expect(
+        find.text('RPE is optional. RPE 8 ≈ about 2 good reps left.'),
+        findsOneWidget,
+      );
       expect(tester.takeException(), isNull);
     },
   );

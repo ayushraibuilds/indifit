@@ -19,6 +19,20 @@ void main() {
 
   group('R08B.4 shared catalog search and identity', () {
     test(
+      'empty query is intentional discovery, not an implicit catalogue dump',
+      () async {
+        expect(await repository.search(), isEmpty);
+        final browsed = await repository.search(
+          const ExercisePickerQuery(browseAll: true),
+        );
+        expect(
+          browsed.map((exercise) => exercise.stableId),
+          containsAll(<String>['bench-id', 'replacement-id', 'triceps-id']),
+        );
+      },
+    );
+
+    test(
       'search matches canonical name, equipment, and secondary muscle',
       () async {
         final name = await repository.search(
@@ -196,11 +210,40 @@ void main() {
   });
 
   group('R08B.4 picker presentation', () {
+    testWidgets('default state is search-first and browse all is explicit', (
+      tester,
+    ) async {
+      await tester.pumpWidget(_host(_picker(repository)));
+      await _settlePicker(tester);
+
+      expect(find.text('Find an exercise'), findsOneWidget);
+      expect(find.text('Browse all exercises'), findsOneWidget);
+      expect(find.byType(ListTile), findsNothing);
+
+      await _browseAll(tester);
+      expect(find.byType(ListTile), findsAtLeastNWidgets(1));
+    });
+
+    testWidgets('Recent is shown only when the source provides evidence', (
+      tester,
+    ) async {
+      final recent = ExercisePickerRepository.fromSource(
+        _FakeExerciseSource(_exercises, recent: [_exercises[1]]),
+      );
+      await tester.pumpWidget(_host(_picker(recent)));
+      await _settlePicker(tester);
+
+      expect(find.text('Recent'), findsOneWidget);
+      expect(find.text('Incline Dumbbell Press'), findsOneWidget);
+      expect(find.text('Flat Barbell Bench Press'), findsNothing);
+    });
+
     testWidgets(
       'renders dense rows with primary muscle, equipment, and quiet secondary context',
       (tester) async {
         await tester.pumpWidget(_host(_picker(repository)));
         await _settlePicker(tester);
+        await _browseAll(tester);
 
         expect(find.text('Flat Barbell Bench Press'), findsOneWidget);
         expect(find.text('Chest · Barbell'), findsOneWidget);
@@ -267,6 +310,7 @@ void main() {
         ),
       );
       await _settlePicker(tester);
+      await _browseAll(tester);
 
       await tester.tap(find.text('Flat Barbell Bench Press'));
       await tester.pump();
@@ -313,6 +357,7 @@ void main() {
           ),
         );
         await _settlePicker(tester);
+        await _browseAll(tester);
 
         expect(
           find.text('This exercise is not available for this workout.'),
@@ -354,6 +399,7 @@ void main() {
         );
         await tester.tap(find.text('Open picker'));
         await _settlePicker(tester);
+        await _browseAll(tester);
         await tester.tap(find.text('Incline Dumbbell Press'));
         await tester.pumpAndSettle();
         result = await resultFuture;
@@ -391,6 +437,7 @@ void main() {
       );
       await tester.tap(find.text('Open picker'));
       await _settlePicker(tester);
+      await _browseAll(tester);
       await tester.tap(find.text('Incline Dumbbell Press'));
       await tester.pump();
       expect(
@@ -459,6 +506,7 @@ void main() {
       await _settlePicker(tester);
       expect(find.byType(ExercisePicker), findsOneWidget);
       expect(find.byType(TextField), findsOneWidget);
+      await _browseAll(tester);
       expect(find.byType(ListTile), findsAtLeastNWidgets(1));
     });
   });
@@ -494,6 +542,11 @@ Widget _launcherHost({required void Function(BuildContext) onOpen}) {
 Future<void> _settlePicker(WidgetTester tester) async {
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 300));
+}
+
+Future<void> _browseAll(WidgetTester tester) async {
+  await tester.tap(find.text('Browse all exercises'));
+  await tester.pump(const Duration(milliseconds: 120));
 }
 
 ExercisePicker _picker(ExercisePickerRepository repository) {
@@ -545,9 +598,10 @@ QuickExerciseReplacementTarget _quickTarget() {
 }
 
 final class _FakeExerciseSource implements ExerciseCatalogSource {
-  _FakeExerciseSource(this.rows);
+  _FakeExerciseSource(this.rows, {this.recent = const []});
 
   final List<Exercise> rows;
+  final List<Exercise> recent;
 
   @override
   Future<List<Exercise>> readAll() async => List<Exercise>.of(rows);
@@ -560,6 +614,9 @@ final class _FakeExerciseSource implements ExerciseCatalogSource {
     }
     return null;
   }
+
+  @override
+  Future<List<Exercise>> readRecent() async => List<Exercise>.of(recent);
 }
 
 const _exercises = <Exercise>[

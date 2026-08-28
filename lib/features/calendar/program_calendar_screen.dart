@@ -978,16 +978,20 @@ class CalendarEmptyState extends StatelessWidget {
                   ? 'No workouts are scheduled this month. Open your training plan to choose another day.'
                   : 'Choose a plan when you’re ready to schedule workouts.',
           };
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: ProductEmptyState(
-          icon: Icons.event_note_rounded,
-          title: title,
-          message: message,
-          action: onAction,
-          actionLabel: actionLabel,
-          actionIcon: Icons.fitness_center_rounded,
+    return Align(
+      alignment: Alignment.topCenter,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 520),
+          child: ProductEmptyState(
+            icon: Icons.event_note_rounded,
+            title: title,
+            message: message,
+            action: onAction,
+            actionLabel: actionLabel,
+            actionIcon: Icons.fitness_center_rounded,
+          ),
         ),
       ),
     );

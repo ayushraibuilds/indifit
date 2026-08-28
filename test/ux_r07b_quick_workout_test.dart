@@ -396,7 +396,14 @@ void main() {
         await tester.pump(const Duration(milliseconds: 20));
       }
       expect(find.text('Weight (kg)'), findsOneWidget);
+      expect(find.text('RPE'), findsNothing);
+      await tester.tap(find.text('More for this set'));
+      await tester.pumpAndSettle();
       expect(find.text('RPE'), findsWidgets);
+      expect(
+        find.text('RPE is optional. RPE 8 ≈ about 2 good reps left.'),
+        findsOneWidget,
+      );
       await tester.scrollUntilVisible(
         find.text('Log set'),
         180,
@@ -404,6 +411,8 @@ void main() {
       );
       expect(find.text('Log set'), findsOneWidget);
       expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
     }
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();

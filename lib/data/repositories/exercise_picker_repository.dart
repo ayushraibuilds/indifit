@@ -13,6 +13,10 @@ abstract interface class ExerciseCatalogSource {
   Future<List<Exercise>> readAll();
 
   Future<Exercise?> readByStableId(String stableId);
+
+  /// Returns canonical exercises with trustworthy recent-use evidence.
+  /// Sources without that evidence intentionally return no rows.
+  Future<List<Exercise>> readRecent() async => const [];
 }
 
 final class DriftExerciseCatalogSource implements ExerciseCatalogSource {
@@ -35,6 +39,44 @@ final class DriftExerciseCatalogSource implements ExerciseCatalogSource {
       database.exercises,
     )..where((table) => table.stableId.equals(id))).getSingleOrNull();
   }
+
+  @override
+  Future<List<Exercise>> readRecent() async {
+    final performed = database.performedExercises;
+    final sessions = database.workoutSessions;
+    final rows =
+        await (database.select(performed).join([
+                innerJoin(sessions, sessions.id.equalsExp(performed.sessionId)),
+              ])
+              ..where(sessions.activityType.equals('strength'))
+              ..orderBy([
+                OrderingTerm(
+                  expression: sessions.completedAt,
+                  mode: OrderingMode.desc,
+                ),
+                OrderingTerm(
+                  expression: performed.ordinal,
+                  mode: OrderingMode.asc,
+                ),
+              ]))
+            .get();
+    final ids = <String>[];
+    for (final row in rows) {
+      final id = row.readTable(performed).actualExerciseId.trim();
+      if (id.isNotEmpty && !ids.contains(id)) ids.add(id);
+      if (ids.length == 8) break;
+    }
+    if (ids.isEmpty) return const [];
+    final exercises = <Exercise>[];
+    for (final id in ids) {
+      final exercise = await readByStableId(id);
+      if (exercise?.stableId?.trim().isNotEmpty == true &&
+          exercise!.name.trim().isNotEmpty) {
+        exercises.add(exercise);
+      }
+    }
+    return exercises;
+  }
 }
 
 @immutable
@@ -43,16 +85,19 @@ class ExercisePickerQuery {
     this.text = '',
     this.primaryMuscle,
     this.equipment,
+    this.browseAll = false,
   });
 
   final String text;
   final String? primaryMuscle;
   final String? equipment;
+  final bool browseAll;
 
   ExercisePickerQuery copyWith({
     String? text,
     Object? primaryMuscle = _unset,
     Object? equipment = _unset,
+    bool? browseAll,
   }) {
     return ExercisePickerQuery(
       text: text ?? this.text,
@@ -62,6 +107,7 @@ class ExercisePickerQuery {
       equipment: identical(equipment, _unset)
           ? this.equipment
           : equipment as String?,
+      browseAll: browseAll ?? this.browseAll,
     );
   }
 }
@@ -84,6 +130,12 @@ class ExercisePickerRepository {
     ExercisePickerQuery query = const ExercisePickerQuery(),
   ]) async {
     final filter = query;
+    if (!filter.browseAll &&
+        filter.text.trim().isEmpty &&
+        _cleanFilter(filter.primaryMuscle) == null &&
+        _cleanFilter(filter.equipment) == null) {
+      return const [];
+    }
     final all = await source.readAll();
     final textTokens = _tokens(filter.text);
     final primary = _cleanFilter(filter.primaryMuscle);
@@ -136,6 +188,8 @@ class ExercisePickerRepository {
   Future<Exercise?> readByStableId(String stableId) {
     return source.readByStableId(stableId.trim());
   }
+
+  Future<List<Exercise>> readRecent() => source.readRecent();
 
   Future<List<String>> readPrimaryMuscles() async {
     final rows = await source.readAll();

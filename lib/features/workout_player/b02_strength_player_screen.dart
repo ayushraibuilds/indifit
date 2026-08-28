@@ -64,6 +64,7 @@ class _B02StrengthPlayerScreenState
   final _loggedSetCounts = <String, int>{};
   final _editedInputFields =
       <({String slotId, B02PreviousPerformanceInputField field})>{};
+  final _extraSetReady = <String>{};
   late final B02PreviousPerformanceLookupCoordinator _previousLookup;
   String? _selectedSlotId;
   bool _warmup = false;
@@ -231,6 +232,7 @@ class _B02StrengthPlayerScreenState
     final isQuick = execution is QuickWorkoutExecutionContext;
     final exerciseComplete =
         !isQuick && workingSetCount >= selected.plannedSets;
+    final hasExtraSetReady = _extraSetReady.contains(selected.id);
     final currentSet = workingSetCount + 1;
     final performedSets = _performedSets(launch.state, selected);
     final groupSafe = _groupIntegrity(launch.state, selected, slots).isValid;
@@ -278,13 +280,16 @@ class _B02StrengthPlayerScreenState
             currentSet: currentSet,
             performedSets: performedSets,
             isPlannedMode: execution is PlannedWorkoutExecutionContext,
-            showPendingEditor: isQuick || !exerciseComplete,
+            exerciseComplete: exerciseComplete,
+            showPendingEditor: isQuick || !exerciseComplete || hasExtraSetReady,
             pendingTechnique: pendingTechnique,
           );
     final primaryLabel = _warmup
         ? 'Log warm-up set'
         : exerciseComplete
-        ? 'Exercise complete'
+        ? hasExtraSetReady
+              ? 'Log extra set'
+              : 'Exercise complete'
         : 'Log set';
     final primaryAction = SizedBox(
       width: double.infinity,
@@ -296,7 +301,7 @@ class _B02StrengthPlayerScreenState
                 _isSubmittingSet ||
                 !groupSafe ||
                 !selected.hasCanonicalExercise ||
-                (!_warmup && exerciseComplete)
+                (!_warmup && exerciseComplete && !hasExtraSetReady)
             ? null
             : () => _record(provider, selected),
       ),
@@ -332,12 +337,14 @@ class _B02StrengthPlayerScreenState
             ? null
             : (value) => setState(() => _selectedSlotId = value),
       ),
-      currentExerciseSlot: currentTarget,
+      currentExerciseSlot: null,
       restSlot: hasOpenRest
           ? _buildRestCard(provider, ui, launch, cursorSlot ?? selected)
           : null,
       setLoggingSlot: setLogging,
-      primaryActionSlot: isQuick || !exerciseComplete ? primaryAction : null,
+      primaryActionSlot: isQuick || !exerciseComplete || hasExtraSetReady
+          ? primaryAction
+          : null,
       primaryActionGap: 10,
       nextExerciseGap: hasOpenRest
           ? 12
@@ -347,6 +354,10 @@ class _B02StrengthPlayerScreenState
       nextExerciseSlot: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (currentTarget != null) ...[
+            currentTarget,
+            const SizedBox(height: 12),
+          ],
           B07ExerciseContextPanel(
             key: ValueKey<String>('b07-context:${actualExerciseId ?? ''}'),
             canonicalExerciseId: actualExerciseId ?? '',
@@ -387,6 +398,7 @@ class _B02StrengthPlayerScreenState
     required int currentSet,
     required List<B02PerformedSet> performedSets,
     required bool isPlannedMode,
+    required bool exerciseComplete,
     required bool showPendingEditor,
     required B02TechniqueFields pendingTechnique,
   }) {
@@ -419,7 +431,9 @@ class _B02StrengthPlayerScreenState
           _markInputEdited(selected.id, B02PreviousPerformanceInputField.reps),
       onEdit: (set) => unawaited(_editLoggedSet(provider, selected, set)),
       onDelete: (set) => unawaited(_deleteLoggedSet(provider, selected, set)),
-      onAddSet: !isPlannedMode ? () => _prepareExtraSet(selected) : null,
+      onAddSet: !isPlannedMode || exerciseComplete
+          ? () => _prepareExtraSet(selected)
+          : null,
       showPendingEditor: showPendingEditor,
       moreContent: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -668,6 +682,7 @@ class _B02StrengthPlayerScreenState
         oldLoad?.dispose();
       });
       _rpes.remove(slot.id);
+      _extraSetReady.remove(slot.id);
       _pendingTechniques.removeWhere((key, _) => key.startsWith('${slot.id}:'));
       _editedInputFields.removeWhere((field) => field.slotId == slot.id);
     }
@@ -927,13 +942,16 @@ class _B02StrengthPlayerScreenState
             : _executionFor(currentLaunch);
         if (mounted && currentExecution is QuickWorkoutExecutionContext) {
           setState(() {
-            _repControllerFor(slot).text = slot.targetRepsMin?.toString() ?? '';
+            _repControllerFor(slot).text = _initialRepsFor(slot) ?? '';
             _rpes[slot.id] = '';
             _warmup = false;
+            _extraSetReady.remove(slot.id);
             _pendingTechniques.remove(
               _pendingTechniqueKey(slot, currentSet, isWarmup: roleWasWarmup),
             );
           });
+        } else if (mounted && _extraSetReady.remove(slot.id)) {
+          setState(() {});
         }
       }
     } finally {
@@ -946,7 +964,8 @@ class _B02StrengthPlayerScreenState
 
   void _prepareExtraSet(B02StrengthExecutionSlot slot) {
     setState(() {
-      _repControllerFor(slot).text = slot.targetRepsMin?.toString() ?? '';
+      _extraSetReady.add(slot.id);
+      _repControllerFor(slot).text = _initialRepsFor(slot) ?? '';
       _rpes[slot.id] = '';
       _warmup = false;
     });
@@ -963,7 +982,22 @@ class _B02StrengthPlayerScreenState
   TextEditingController _repControllerFor(B02StrengthExecutionSlot slot) {
     return _repControllers.putIfAbsent(
       slot.id,
-      () => TextEditingController(text: slot.targetRepsMin?.toString() ?? ''),
+      () => TextEditingController(text: _initialRepsFor(slot) ?? ''),
+    );
+  }
+
+  String? _initialRepsFor(B02StrengthExecutionSlot slot) {
+    if (!_hasUsefulTarget(slot) || slot.targetRepsMin == null) return null;
+    return slot.targetRepsMin.toString();
+  }
+
+  bool _hasUsefulTarget(B02StrengthExecutionSlot slot) {
+    return r07cHasUsefulTarget(
+      loadKg: slot.targetLoadKg,
+      loadBasis: slot.targetLoadBasis,
+      minReps: slot.targetRepsMin,
+      maxReps: slot.targetRepsMax,
+      rpe: slot.targetRpe,
     );
   }
 
@@ -1088,32 +1122,47 @@ class _B02StrengthPlayerScreenState
                           ),
                         ],
                       ),
-                      const SizedBox(height: 12),
-                      DropdownButtonFormField<int>(
-                        isExpanded: true,
-                        initialValue: rpe,
-                        decoration: const InputDecoration(labelText: 'RPE'),
-                        items: [
-                          const DropdownMenuItem<int>(
-                            value: null,
-                            child: Text('Not set'),
+                      ExpansionTile(
+                        tilePadding: EdgeInsets.zero,
+                        childrenPadding: EdgeInsets.zero,
+                        title: const Text('More for this set'),
+                        subtitle: const Text('Optional set details'),
+                        children: [
+                          DropdownButtonFormField<int>(
+                            isExpanded: true,
+                            initialValue: rpe,
+                            decoration: const InputDecoration(labelText: 'RPE'),
+                            items: [
+                              const DropdownMenuItem<int>(
+                                value: null,
+                                child: Text('Not set'),
+                              ),
+                              for (var effort = 1; effort <= 10; effort++)
+                                DropdownMenuItem(
+                                  value: effort,
+                                  child: Text('$effort'),
+                                ),
+                            ],
+                            onChanged: (value) =>
+                                setModalState(() => rpe = value),
                           ),
-                          for (var effort = 1; effort <= 10; effort++)
-                            DropdownMenuItem(
-                              value: effort,
-                              child: Text('$effort'),
+                          const SizedBox(height: 4),
+                          const Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              'RPE is optional. RPE 8 ≈ about 2 good reps left.',
                             ),
+                          ),
+                          const SizedBox(height: 12),
+                          B02ExecutionAdvancedControls(
+                            initialValue: technique,
+                            headerReps: int.tryParse(repsController.text),
+                            onChanged: (value) => setModalState(() {
+                              technique = value;
+                              techniqueError = null;
+                            }),
+                          ),
                         ],
-                        onChanged: (value) => setModalState(() => rpe = value),
-                      ),
-                      const SizedBox(height: 12),
-                      B02ExecutionAdvancedControls(
-                        initialValue: technique,
-                        headerReps: int.tryParse(repsController.text),
-                        onChanged: (value) => setModalState(() {
-                          technique = value;
-                          techniqueError = null;
-                        }),
                       ),
                       if (techniqueError != null)
                         Padding(
@@ -1830,10 +1879,8 @@ class _R07CExecutionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.b05Colors;
-    final position = executionContext is QuickWorkoutExecutionContext
-        ? 'Quick workout'
-        : 'Exercise ${exerciseIndex + 1} of $exerciseCount';
     final exercisePosition = 'Exercise ${exerciseIndex + 1} of $exerciseCount';
+    final position = exercisePosition;
     final status =
         groupContext ??
         (exerciseComplete
@@ -1917,14 +1964,14 @@ class _R07CExerciseStrip extends StatelessWidget {
         children: [
           for (var index = 0; index < slots.length; index++) ...[
             if (index > 0) const SizedBox(width: 8),
-            _exerciseChip(context, slots[index]),
+            _exerciseChip(slots[index], index),
           ],
         ],
       ),
     );
   }
 
-  Widget _exerciseChip(BuildContext context, B02StrengthExecutionSlot slot) {
+  Widget _exerciseChip(B02StrengthExecutionSlot slot, int index) {
     final selected = slot.id == selectedId;
     final complete = state.performedExercises.any(
       (exercise) =>
@@ -1935,21 +1982,22 @@ class _R07CExerciseStrip extends StatelessWidget {
                   exercise.groupMemberOrdinal == slot.memberOrdinal)) &&
           exercise.status == 'completed',
     );
-    final label = slot.exerciseNameSnapshot.trim().isEmpty
+    final name = slot.exerciseNameSnapshot.trim().isEmpty
         ? 'Exercise'
         : slot.exerciseNameSnapshot;
-    return Semantics(
-      button: true,
-      selected: selected,
-      label: '${complete ? 'Completed ' : ''}$label',
-      onTap: onSelected == null ? null : () => onSelected!(slot.id),
-      child: ChoiceChip(
+    return Tooltip(
+      message: name,
+      child: Semantics(
+        button: true,
         selected: selected,
-        onSelected: onSelected == null ? null : (_) => onSelected!(slot.id),
-        avatar: complete ? const Icon(Icons.check_rounded, size: 16) : null,
-        label: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 180),
-          child: Text(label, overflow: TextOverflow.ellipsis),
+        label:
+            '${complete ? 'Completed ' : ''}$name, exercise ${index + 1} of ${slots.length}',
+        onTap: onSelected == null ? null : () => onSelected!(slot.id),
+        child: ChoiceChip(
+          selected: selected,
+          onSelected: onSelected == null ? null : (_) => onSelected!(slot.id),
+          avatar: complete ? const Icon(Icons.check_rounded, size: 16) : null,
+          label: Text('${index + 1}'),
         ),
       ),
     );
@@ -2324,11 +2372,12 @@ class _RestCardState extends State<_RestCard> {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Center(
-                  child: Text(
-                    'Next set: ${widget.slot.targetRepsMin ?? '—'}${widget.slot.targetRepsMax == null || widget.slot.targetRepsMax == widget.slot.targetRepsMin ? '' : '–${widget.slot.targetRepsMax}'} reps',
+                if (_hasUsefulTarget(widget.slot))
+                  Center(
+                    child: Text(
+                      'Next set: ${widget.slot.targetRepsMin ?? '—'}${widget.slot.targetRepsMax == null || widget.slot.targetRepsMax == widget.slot.targetRepsMin ? '' : '–${widget.slot.targetRepsMax}'} reps',
+                    ),
                   ),
-                ),
                 const SizedBox(height: 12),
                 Wrap(
                   spacing: 8,
@@ -2392,6 +2441,16 @@ class _RestCardState extends State<_RestCard> {
     final minutes = remaining ~/ 60;
     final seconds = remaining % 60;
     return '$minutes:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  bool _hasUsefulTarget(B02StrengthExecutionSlot slot) {
+    return r07cHasUsefulTarget(
+      loadKg: slot.targetLoadKg,
+      loadBasis: slot.targetLoadBasis,
+      minReps: slot.targetRepsMin,
+      maxReps: slot.targetRepsMax,
+      rpe: slot.targetRpe,
+    );
   }
 
   B02RestPeriod? _openPeriod(_RestCard value) {

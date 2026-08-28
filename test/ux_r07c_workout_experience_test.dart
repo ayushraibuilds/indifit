@@ -61,6 +61,14 @@ void main() {
     final launch = (await tester.runAsync(() => _launch(executions)))!;
     await _pumpPlayer(tester, launch, executions, db, AppTheme.lightTheme);
 
+    expect(find.text('Quick workout'), findsOneWidget);
+    expect(find.text('QUICK WORKOUT'), findsNothing);
+    expect(find.text('EXERCISE 1 OF 1'), findsOneWidget);
+    expect(find.byTooltip('Workout options'), findsOneWidget);
+    expect(find.byTooltip('Exercise actions'), findsOneWidget);
+    expect(find.text('0:00'), findsOneWidget);
+    expect(find.textContaining('1–20'), findsNothing);
+    expect(find.textContaining('1-20'), findsNothing);
     expect(find.text('Log set'), findsOneWidget);
     expect(find.text('Suggested'), findsNothing);
     final fields = find.byType(TextFormField);
@@ -145,6 +153,15 @@ void main() {
       expect(find.text('Log set 4'), findsNothing);
       expect(find.bySemanticsLabel('Edit set 1'), findsOneWidget);
       expect(find.bySemanticsLabel('Delete set 3'), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.text('Add set'),
+        220,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.tap(find.text('Add set'));
+      await tester.pump();
+      expect(find.text('Next set · 4'), findsOneWidget);
+      expect(find.text('Log extra set'), findsOneWidget);
       await tester.drag(find.byType(ListView).first, const Offset(0, -500));
       await tester.pumpAndSettle();
       expect(find.text('Review and finish'), findsOneWidget);

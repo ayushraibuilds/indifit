@@ -663,4 +663,7 @@ final class _WorkoutRepositoryExerciseCatalogSource
     }
     return null;
   }
+
+  @override
+  Future<List<Exercise>> readRecent() async => const [];
 }

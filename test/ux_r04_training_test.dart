@@ -45,6 +45,8 @@ void main() {
       expect(find.text('Start workout'), findsOneWidget);
       expect(find.text('Upper / Lower Strength'), findsOneWidget);
       expect(find.text('Lower body'), findsOneWidget);
+      expect(find.text('Plan Library'), findsOneWidget);
+      expect(find.text('Builder'), findsNothing);
       expect(find.text('Manage plan'), findsNothing);
       expect(tester.takeException(), isNull);
       await expectLater(

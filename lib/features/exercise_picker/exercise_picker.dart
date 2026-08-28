@@ -113,6 +113,7 @@ class _ExercisePickerState extends ConsumerState<ExercisePicker> {
   final _searchController = TextEditingController();
   Timer? _searchTimer;
   List<Exercise> _exercises = const [];
+  List<Exercise> _recentExercises = const [];
   List<String> _primaryMuscles = const [];
   List<String> _equipmentOptions = const [];
   String? _selectedPrimaryMuscle;
@@ -120,6 +121,7 @@ class _ExercisePickerState extends ConsumerState<ExercisePicker> {
   ProductFailurePresentation? _failure;
   var _loading = true;
   var _committing = false;
+  var _browseAll = false;
   ExercisePickerSelection? _pendingSelection;
   late final Set<String> _selectedExerciseIds = {
     for (final id in widget.initialSelectedExerciseIds)
@@ -157,11 +159,13 @@ class _ExercisePickerState extends ConsumerState<ExercisePicker> {
       final results = await Future.wait<Object>([
         _repository.readPrimaryMuscles(),
         _repository.readEquipmentOptions(),
+        _repository.readRecent(),
         _repository.search(
           ExercisePickerQuery(
             text: _searchController.text,
             primaryMuscle: _selectedPrimaryMuscle,
             equipment: _selectedEquipment,
+            browseAll: _browseAll,
           ),
         ),
       ]);
@@ -169,9 +173,10 @@ class _ExercisePickerState extends ConsumerState<ExercisePicker> {
       setState(() {
         _primaryMuscles = results[0] as List<String>;
         _equipmentOptions = results[1] as List<String>;
-        _exercises = results[2] as List<Exercise>;
+        _recentExercises = results[2] as List<Exercise>;
+        _exercises = results[3] as List<Exercise>;
         if (widget.allowMultiple) {
-          for (final exercise in _exercises) {
+          for (final exercise in [..._recentExercises, ..._exercises]) {
             final stableId = exercise.stableId?.trim();
             if (stableId != null && _selectedExerciseIds.contains(stableId)) {
               _selectedExercises.putIfAbsent(
@@ -208,6 +213,7 @@ class _ExercisePickerState extends ConsumerState<ExercisePicker> {
           text: _searchController.text,
           primaryMuscle: _selectedPrimaryMuscle,
           equipment: _selectedEquipment,
+          browseAll: _browseAll,
         ),
       );
       if (!mounted) return;
@@ -233,12 +239,33 @@ class _ExercisePickerState extends ConsumerState<ExercisePicker> {
   }
 
   void _selectPrimary(String? value) {
-    setState(() => _selectedPrimaryMuscle = value);
+    setState(() {
+      _selectedPrimaryMuscle = value;
+      if (value != null) _browseAll = false;
+      if (value == null &&
+          _selectedEquipment == null &&
+          _searchController.text.trim().isEmpty) {
+        _browseAll = false;
+      }
+    });
     unawaited(_loadResults());
   }
 
   void _selectEquipment(String? value) {
-    setState(() => _selectedEquipment = value);
+    setState(() {
+      _selectedEquipment = value;
+      if (value != null) _browseAll = false;
+      if (value == null &&
+          _selectedPrimaryMuscle == null &&
+          _searchController.text.trim().isEmpty) {
+        _browseAll = false;
+      }
+    });
+    unawaited(_loadResults());
+  }
+
+  void _browseAllExercises() {
+    setState(() => _browseAll = true);
     unawaited(_loadResults());
   }
 
@@ -511,52 +538,62 @@ class _ExercisePickerState extends ConsumerState<ExercisePicker> {
   }
 
   Widget _buildFilters(BuildContext context) {
-    return SizedBox(
-      height: B05Layout.minTouchTarget,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        children: [
-          _buildFilterChip(
-            context: context,
-            label: 'All muscles',
-            filterType: 'primary muscle',
-            selected: _selectedPrimaryMuscle == null,
-            onSelected: _selectPrimary,
-            value: null,
-          ),
-          ..._primaryMuscles.map(
-            (muscle) => _buildFilterChip(
-              context: context,
-              label: muscle,
-              filterType: 'primary muscle',
-              selected: _selectedPrimaryMuscle == muscle,
-              onSelected: _selectPrimary,
-              value: muscle,
-            ),
-          ),
-          if (_equipmentOptions.isNotEmpty) ...[
-            const SizedBox(width: B05Layout.space8),
-            _buildFilterChip(
-              context: context,
-              label: 'All equipment',
-              filterType: 'equipment',
-              selected: _selectedEquipment == null,
-              onSelected: _selectEquipment,
-              value: null,
-            ),
-            ..._equipmentOptions.map(
-              (equipment) => _buildFilterChip(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Browse by muscle or equipment',
+          style: B05Typography.caption(context),
+        ),
+        const SizedBox(height: B05Layout.space4),
+        SizedBox(
+          height: B05Layout.minTouchTarget,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            children: [
+              _buildFilterChip(
                 context: context,
-                label: equipment,
-                filterType: 'equipment',
-                selected: _selectedEquipment == equipment,
-                onSelected: _selectEquipment,
-                value: equipment,
+                label: 'All muscles',
+                filterType: 'primary muscle',
+                selected: _selectedPrimaryMuscle == null,
+                onSelected: _selectPrimary,
+                value: null,
               ),
-            ),
-          ],
-        ],
-      ),
+              ..._primaryMuscles.map(
+                (muscle) => _buildFilterChip(
+                  context: context,
+                  label: muscle,
+                  filterType: 'primary muscle',
+                  selected: _selectedPrimaryMuscle == muscle,
+                  onSelected: _selectPrimary,
+                  value: muscle,
+                ),
+              ),
+              if (_equipmentOptions.isNotEmpty) ...[
+                const SizedBox(width: B05Layout.space8),
+                _buildFilterChip(
+                  context: context,
+                  label: 'All equipment',
+                  filterType: 'equipment',
+                  selected: _selectedEquipment == null,
+                  onSelected: _selectEquipment,
+                  value: null,
+                ),
+                ..._equipmentOptions.map(
+                  (equipment) => _buildFilterChip(
+                    context: context,
+                    label: equipment,
+                    filterType: 'equipment',
+                    selected: _selectedEquipment == equipment,
+                    onSelected: _selectEquipment,
+                    value: equipment,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -602,6 +639,16 @@ class _ExercisePickerState extends ConsumerState<ExercisePicker> {
     }
     if (_exercises.isEmpty) {
       final query = _searchController.text.trim();
+      final discovery =
+          query.isEmpty &&
+          !_browseAll &&
+          _selectedPrimaryMuscle == null &&
+          _selectedEquipment == null;
+      final hasBrowseOptions =
+          _primaryMuscles.isNotEmpty || _equipmentOptions.isNotEmpty;
+      if (discovery && hasBrowseOptions) {
+        return _buildDiscovery(context, replacementContext);
+      }
       return ProductEmptyState(
         icon: Icons.search_off_rounded,
         title: query.isEmpty ? 'No exercises yet' : 'No matching exercises',
@@ -621,6 +668,42 @@ class _ExercisePickerState extends ConsumerState<ExercisePicker> {
         final exercise = _exercises[index];
         return _buildExerciseRow(context, exercise, replacementContext);
       },
+    );
+  }
+
+  Widget _buildDiscovery(
+    BuildContext context,
+    ExerciseReplacementPickerContext? replacementContext,
+  ) {
+    return ListView(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      children: [
+        if (_recentExercises.isNotEmpty) ...[
+          Text('Recent', style: B05Typography.label(context)),
+          const SizedBox(height: B05Layout.space4),
+          for (final exercise in _recentExercises.take(5)) ...[
+            _buildExerciseRow(context, exercise, replacementContext),
+            const Divider(height: 1),
+          ],
+          const SizedBox(height: B05Layout.space16),
+        ],
+        Text('Find an exercise', style: B05Typography.title(context)),
+        const SizedBox(height: B05Layout.space4),
+        Text(
+          'Search by name, or use Browse by muscle or equipment above.',
+          style: B05Typography.body(context),
+        ),
+        const SizedBox(height: B05Layout.space12),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: B05ActionButton(
+            label: 'Browse all exercises',
+            icon: Icons.view_list_rounded,
+            emphasis: B05ActionEmphasis.secondary,
+            onPressed: _committing ? null : _browseAllExercises,
+          ),
+        ),
+      ],
     );
   }
 

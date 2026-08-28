@@ -72,7 +72,7 @@ void main() {
 
     expect(set.targetRpe, 8);
     expect(set.actualRpe, isNull);
-    expect(row.actualLabel, '80 kg · 8 reps');
+    expect(row.actualLabel, '80 kg × 8');
   });
 
   test(

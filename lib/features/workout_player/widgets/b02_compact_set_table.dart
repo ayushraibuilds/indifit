@@ -111,8 +111,10 @@ class B02CompactSetRow {
     final load = r07cFormatLoad(actualLoadKg, actualLoadBasis);
     if (load.isEmpty && actualReps == null && actualRpe == null) return null;
     return [
-      if (load.isNotEmpty) load,
-      if (actualReps != null) '$actualReps ${actualReps == 1 ? 'rep' : 'reps'}',
+      if (load.isNotEmpty && actualReps != null) '$load × $actualReps',
+      if (load.isNotEmpty && actualReps == null) load,
+      if (load.isEmpty && actualReps != null)
+        '$actualReps ${actualReps == 1 ? 'rep' : 'reps'}',
       if (actualRpe != null) 'RPE $actualRpe',
     ].join(' · ');
   }
@@ -556,7 +558,7 @@ class _PendingSetEditor extends StatelessWidget {
                   style: B05Typography.label(context),
                 ),
               ),
-              if (slot.targetRepsMin != null || slot.targetLoadKg != null)
+              if (_hasUsefulTarget)
                 Flexible(
                   child: Text(
                     'Enter actuals',
@@ -598,22 +600,9 @@ class _PendingSetEditor extends StatelessWidget {
           ExpansionTile(
             tilePadding: EdgeInsets.zero,
             childrenPadding: EdgeInsets.zero,
-            title: Row(
-              children: [
-                const Expanded(child: Text('More for this set')),
-                Flexible(
-                  child: Text(
-                    'RPE',
-                    style: Theme.of(context).textTheme.labelMedium,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
+            title: const Text('More for this set'),
             subtitle: Text(
-              rpe == null
-                  ? (isWarmup ? 'Warm-up set' : 'RPE and set role')
-                  : 'RPE $rpe${isWarmup ? ' · Warm-up' : ''}',
+              isWarmup ? 'Warm-up set · Optional details' : 'Optional details',
             ),
             children: [
               DropdownButtonFormField<int>(
@@ -629,6 +618,11 @@ class _PendingSetEditor extends StatelessWidget {
                     DropdownMenuItem(value: effort, child: Text('$effort')),
                 ],
                 onChanged: isBusy ? null : onRpeChanged,
+              ),
+              const SizedBox(height: 4),
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text('RPE is optional. RPE 8 ≈ about 2 good reps left.'),
               ),
               const SizedBox(height: 8),
               DropdownButtonFormField<String>(
@@ -656,4 +650,12 @@ class _PendingSetEditor extends StatelessWidget {
       ),
     );
   }
+
+  bool get _hasUsefulTarget => r07cHasUsefulTarget(
+    loadKg: slot.targetLoadKg,
+    loadBasis: slot.targetLoadBasis,
+    minReps: slot.targetRepsMin,
+    maxReps: slot.targetRepsMax,
+    rpe: slot.targetRpe,
+  );
 }

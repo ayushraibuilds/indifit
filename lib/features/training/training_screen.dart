@@ -654,7 +654,6 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
               ? null
               : () => _resumeDraft(context, ref, _resumableDraftFor(data)!),
           onOpenPlan: () => context.push('/plan-library'),
-          onOpenBuilder: () => context.push('/program-author'),
           onOpenPlanActions: () => _showPlanActions(context, ref, data),
           onOpenCalendar: () => context.push('/calendar'),
           onOpenExercises: () => context.push('/exercises'),
@@ -939,7 +938,6 @@ class _DominantTrainingLandingBody extends StatelessWidget {
     required this.onStartQuickWorkout,
     required this.onResumeDraft,
     required this.onOpenPlan,
-    required this.onOpenBuilder,
     required this.onOpenPlanActions,
     required this.onOpenCalendar,
     required this.onOpenExercises,
@@ -953,7 +951,6 @@ class _DominantTrainingLandingBody extends StatelessWidget {
   final VoidCallback onStartQuickWorkout;
   final VoidCallback? onResumeDraft;
   final VoidCallback onOpenPlan;
-  final VoidCallback onOpenBuilder;
   final VoidCallback onOpenPlanActions;
   final VoidCallback onOpenCalendar;
   final VoidCallback onOpenExercises;
@@ -1064,7 +1061,6 @@ class _DominantTrainingLandingBody extends StatelessWidget {
           onOpenHistory: onOpenHistory,
           onOpenCalendar: onOpenCalendar,
           onOpenPlan: onOpenPlan,
-          onOpenBuilder: onOpenBuilder,
         ),
       ],
     );
@@ -1294,14 +1290,12 @@ class _TrainingSecondaryNavigation extends StatelessWidget {
     required this.onOpenHistory,
     required this.onOpenCalendar,
     required this.onOpenPlan,
-    required this.onOpenBuilder,
   });
 
   final VoidCallback onOpenExercises;
   final VoidCallback onOpenHistory;
   final VoidCallback onOpenCalendar;
   final VoidCallback onOpenPlan;
-  final VoidCallback onOpenBuilder;
 
   @override
   Widget build(BuildContext context) => B05Surface(
@@ -1335,12 +1329,6 @@ class _TrainingSecondaryNavigation extends StatelessWidget {
           icon: Icons.collections_bookmark_outlined,
           emphasis: B05ActionEmphasis.tertiary,
           onPressed: onOpenPlan,
-        ),
-        B05ActionButton(
-          label: 'Builder',
-          icon: Icons.edit_note_rounded,
-          emphasis: B05ActionEmphasis.tertiary,
-          onPressed: onOpenBuilder,
         ),
       ],
     ),
