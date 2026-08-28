@@ -761,10 +761,10 @@ void main() {
       expect(find.text('Search results'), findsOneWidget);
       expect(find.text('Family Paneer'), findsNWidgets(2));
       expect(find.text('Custom'), findsOneWidget);
-      expect(find.textContaining('200 g pack'), findsOneWidget);
+      expect(find.textContaining('Package: 200 g'), findsOneWidget);
       expect(
         find.bySemanticsLabel(
-          'Family Paneer, custom food, 250 kcal, 18.0 g protein',
+          RegExp(r'^Family Paneer, custom food, .*250.*18'),
         ),
         findsOneWidget,
       );

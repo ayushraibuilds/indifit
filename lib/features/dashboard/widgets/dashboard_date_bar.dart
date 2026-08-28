@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
-import '../../../core/presentation/consumer_date_label.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
 
@@ -36,87 +36,91 @@ class DashboardDateBar extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: B05Layout.space4),
         child: FocusTraversalGroup(
           policy: OrderedTraversalPolicy(),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+          child: Row(
+            key: const ValueKey('dashboard-date-bar-row'),
             children: [
-              Row(
-                children: [
-                  B05IconAction(
-                    icon: Icons.chevron_left_rounded,
-                    label: canMoveBack
-                        ? 'Previous day'
-                        : 'Earlier dates unavailable',
-                    hint: 'Shows the previous day on Today.',
-                    onPressed: canMoveBack
-                        ? () => onDateChanged(
-                            DateTime(
-                              selectedDate.year,
-                              selectedDate.month,
-                              selectedDate.day - 1,
-                            ),
-                          )
-                        : null,
-                    focusOrder: 0,
+              B05IconAction(
+                key: const ValueKey('dashboard-date-bar-previous'),
+                icon: Icons.chevron_left_rounded,
+                label: canMoveBack
+                    ? 'Previous day'
+                    : 'Earlier dates unavailable',
+                hint: 'Shows the previous day for this date.',
+                onPressed: canMoveBack
+                    ? () => onDateChanged(
+                        DateTime(
+                          selectedDate.year,
+                          selectedDate.month,
+                          selectedDate.day - 1,
+                        ),
+                      )
+                    : null,
+                focusOrder: 0,
+              ),
+              Expanded(
+                child: Semantics(
+                  container: true,
+                  label: 'Selected date',
+                  value: _spokenDate(selectedDate),
+                  child: B05ActionButton(
+                    key: const ValueKey('dashboard-date-bar-selected-date'),
+                    label: _compactDateLabel(selectedDate, todayDay),
+                    hint: 'Choose a date to view.',
+                    emphasis: B05ActionEmphasis.secondary,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    onPressed: () async {
+                      final initialDate = target.isBefore(firstDate)
+                          ? firstDate
+                          : target.isAfter(lastDate)
+                          ? lastDate
+                          : target;
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: initialDate,
+                        firstDate: firstDate,
+                        lastDate: lastDate,
+                      );
+                      if (picked != null) onDateChanged(picked);
+                    },
+                    focusOrder: 1,
                   ),
-                  Expanded(
-                    child: B05ActionButton(
-                      label: ConsumerDateLabel.day(
-                        _dateKey(selectedDate),
-                        today: now,
-                      ),
-                      hint: 'Choose a date to view.',
-                      icon: Icons.calendar_today_outlined,
-                      emphasis: B05ActionEmphasis.secondary,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      onPressed: () async {
-                        final initialDate = target.isBefore(firstDate)
-                            ? firstDate
-                            : target.isAfter(lastDate)
-                            ? lastDate
-                            : target;
-                        final picked = await showDatePicker(
-                          context: context,
-                          initialDate: initialDate,
-                          firstDate: firstDate,
-                          lastDate: lastDate,
-                        );
-                        if (picked != null) onDateChanged(picked);
-                      },
-                      focusOrder: 1,
-                    ),
-                  ),
-                  B05IconAction(
-                    icon: Icons.chevron_right_rounded,
-                    label: canMoveForward
-                        ? 'Next day'
-                        : 'Later dates unavailable',
-                    hint: canMoveForward
-                        ? 'Shows the next day on Today.'
-                        : 'The latest selectable date is one year from today.',
-                    onPressed: canMoveForward
-                        ? () => onDateChanged(
-                            DateTime(
-                              selectedDate.year,
-                              selectedDate.month,
-                              selectedDate.day + 1,
-                            ),
-                          )
-                        : null,
-                    focusOrder: 2,
-                  ),
-                ],
+                ),
+              ),
+              B05IconAction(
+                key: const ValueKey('dashboard-date-bar-next'),
+                icon: Icons.chevron_right_rounded,
+                label: canMoveForward ? 'Next day' : 'Later dates unavailable',
+                hint: canMoveForward
+                    ? 'Shows the next day for this date.'
+                    : 'The latest selectable date is one year from today.',
+                onPressed: canMoveForward
+                    ? () => onDateChanged(
+                        DateTime(
+                          selectedDate.year,
+                          selectedDate.month,
+                          selectedDate.day + 1,
+                        ),
+                      )
+                    : null,
+                focusOrder: 2,
               ),
               if (target != todayDay)
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: B05ActionButton(
-                    label: 'Today',
-                    icon: Icons.today_outlined,
-                    hint: 'Return to today.',
-                    emphasis: B05ActionEmphasis.tertiary,
-                    onPressed: () => onDateChanged(todayDay),
-                    focusOrder: 3,
+                Semantics(
+                  container: true,
+                  label: 'Go to today',
+                  hint: 'Return to today.',
+                  button: true,
+                  onTap: () => onDateChanged(todayDay),
+                  child: ExcludeSemantics(
+                    child: B05ActionButton(
+                      key: const ValueKey('dashboard-date-bar-today'),
+                      label: 'Today',
+                      hint: 'Return to today.',
+                      emphasis: B05ActionEmphasis.tertiary,
+                      onPressed: () => onDateChanged(todayDay),
+                      focusOrder: 3,
+                    ),
                   ),
                 ),
             ],
@@ -128,8 +132,9 @@ class DashboardDateBar extends StatelessWidget {
 
   DateTime _day(DateTime value) => DateTime(value.year, value.month, value.day);
 
-  String _dateKey(DateTime value) =>
-      '${value.year.toString().padLeft(4, '0')}-'
-      '${value.month.toString().padLeft(2, '0')}-'
-      '${value.day.toString().padLeft(2, '0')}';
+  String _compactDateLabel(DateTime value, DateTime todayDay) =>
+      value == todayDay ? 'Today' : DateFormat('EEE, d MMM').format(value);
+
+  String _spokenDate(DateTime value) =>
+      DateFormat('EEEE, d MMMM y').format(_day(value));
 }

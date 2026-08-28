@@ -74,14 +74,11 @@ void main() {
     );
     await tester.pump();
     await tester.scrollUntilVisible(
-      find.text('Reset to defaults'),
+      find.text('Reset to default'),
       240,
       scrollable: find.byType(Scrollable),
     );
-    final resetButton = find.widgetWithText(
-      OutlinedButton,
-      'Reset to defaults',
-    );
+    final resetButton = find.widgetWithText(OutlinedButton, 'Reset to default');
     expect(tester.widget<OutlinedButton>(resetButton).onPressed, isNotNull);
     expect(
       tester
@@ -249,11 +246,11 @@ void main() {
     );
     await tester.pump();
     await tester.scrollUntilVisible(
-      find.text('Reset to defaults'),
+      find.text('Reset to default'),
       240,
       scrollable: find.byType(Scrollable),
     );
-    await tester.tap(find.widgetWithText(OutlinedButton, 'Reset to defaults'));
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Reset to default'));
     await tester.pump();
     expect(resetCalled, isTrue);
   });

@@ -290,16 +290,27 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                 style: B05Typography.body(sheetContext),
               ),
               const SizedBox(height: 8),
-              for (final meal in const [
-                ('breakfast', 'Breakfast', Icons.wb_sunny_outlined),
-                ('lunch', 'Lunch', Icons.wb_sunny_rounded),
-                ('dinner', 'Dinner', Icons.nightlight_round),
-                ('snack', 'Snack', Icons.cookie_outlined),
-              ])
+              for (final meal in MealPresentationRegistry.values)
                 ListTile(
-                  leading: Icon(meal.$3),
-                  title: Text(meal.$2),
-                  onTap: () => Navigator.of(sheetContext).pop(meal.$1),
+                  leading: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: sheetContext.b05Colors
+                          .meal(meal.accent!)
+                          .container,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: Icon(
+                        meal.icon,
+                        color: sheetContext.b05Colors
+                            .meal(meal.accent!)
+                            .indicator,
+                      ),
+                    ),
+                  ),
+                  title: Text(meal.label),
+                  onTap: () => Navigator.of(sheetContext).pop(meal.stableId),
                 ),
             ],
           ),
@@ -473,6 +484,26 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     _rankedSearchResults = NutritionFoodSearchRanking.rank(
       query: query,
       candidates: candidates,
+      history: _searchHistory(),
+    );
+  }
+
+  NutritionFoodSearchHistory _searchHistory() {
+    final frequencyByIdentity = <String, int>{};
+    final recentIdentities = <String>{};
+    for (final recent in _canonicalRecentResults) {
+      final identity = 'canonical::${recent.option.id}';
+      frequencyByIdentity[identity] = recent.frequencyCount;
+      recentIdentities.add(identity);
+    }
+    for (final food in _recentResults) {
+      final identity = 'canonical::legacy-food-item::${food.id}';
+      frequencyByIdentity[identity] = 1;
+      recentIdentities.add(identity);
+    }
+    return NutritionFoodSearchHistory(
+      frequencyByIdentity: frequencyByIdentity,
+      recentIdentities: recentIdentities,
     );
   }
 
@@ -675,7 +706,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         nutritionFoodCatalogRepositoryProvider.future,
       );
       final option = await catalog.ensureProviderFood(
-        displayName: result.name,
+        displayName: _consumerFoodName(result.name),
         sourceReference: reference,
         servingSize: result.servingSize,
         servingUnit: result.servingUnit,
@@ -683,7 +714,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         proteinG: result.protein,
         carbohydrateG: result.carbs,
         fatG: result.fat,
-        brand: result.brand,
+        brand: _consumerMetadata(result.brand),
       );
       await _showLogDialog(option);
     } catch (error) {
@@ -706,7 +737,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         nutritionFoodCatalogRepositoryProvider.future,
       );
       final option = await catalog.ensureProviderFood(
-        displayName: result.name,
+        displayName: _consumerFoodName(result.name),
         sourceReference: reference,
         servingSize: result.servingSize,
         servingUnit: result.servingUnit,
@@ -714,7 +745,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         proteinG: result.protein,
         carbohydrateG: result.carbs,
         fatG: result.fat,
-        brand: result.brand,
+        brand: _consumerMetadata(result.brand),
       );
       await _addOptionFast(option);
     } catch (_) {
@@ -2335,15 +2366,10 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
           spacing: 8,
           runSpacing: 8,
           children: [
-            for (final meal in const [
-              ('breakfast', 'Breakfast'),
-              ('lunch', 'Lunch'),
-              ('dinner', 'Dinner'),
-              ('snack', 'Snack'),
-            ])
+            for (final meal in MealPresentationRegistry.values)
               OutlinedButton(
-                onPressed: () => _openMealLogger(meal.$1),
-                child: Text(meal.$2),
+                onPressed: () => _openMealLogger(meal.stableId),
+                child: Text(meal.label),
               ),
           ],
         ),
@@ -2355,25 +2381,21 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       _buildLocalItemRow(food, recent: true);
 
   Widget _buildCanonicalSearchRow(NutritionFoodOption option) {
-    final energy = _optionFactLabel(option, 'energy', 'kcal', 0);
-    final protein = _optionFactLabel(option, 'protein', 'g protein', 1);
-    final brand = option.brand?.trim();
+    final displayName = _consumerFoodName(option.displayName);
+    final brand = _consumerBrand(option.brand, displayName);
+    final nutrition = _canonicalNutritionSummary(option);
     final isCustom =
         option.sourceType == 'user' || option.sourceType == 'user_entered';
     final identityLabel = brand == null || brand.isEmpty
-        ? option.displayName
-        : '$brand ${option.displayName}';
+        ? displayName
+        : '$brand $displayName';
     final isSelected = _selectedOptions.containsKey(option.id);
     final title = brand == null || brand.isEmpty
-        ? Text(option.displayName, maxLines: 2, overflow: TextOverflow.ellipsis)
+        ? Text(displayName, maxLines: 2, overflow: TextOverflow.ellipsis)
         : Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                option.displayName,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
+              Text(displayName, maxLines: 1, overflow: TextOverflow.ellipsis),
               Text(
                 brand,
                 style: B05Typography.caption(context),
@@ -2388,8 +2410,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         container: true,
         explicitChildNodes: true,
         button: true,
-        label:
-            '$identityLabel${isCustom ? ', custom food' : ''}, $energy, $protein',
+        label: '$identityLabel${isCustom ? ', custom food' : ''}, $nutrition',
         hint: _isMultiSelect
             ? (isSelected
                   ? 'Tap to deselect from multi-food add.'
@@ -2399,7 +2420,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
           minVerticalPadding: 8,
           leading: _isMultiSelect
               ? Semantics(
-                  label: 'Select ${option.displayName} for a multi-food add',
+                  label: 'Select $displayName for a multi-food add',
                   child: Checkbox(
                     value: isSelected,
                     onChanged: (_) => _toggleCanonicalSelection(option),
@@ -2427,7 +2448,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
             ],
           ),
           subtitle: Text(
-            '${_quantityUnitLabel(option.baseQuantity, option: option)} · $energy · $protein',
+            nutrition,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
@@ -2435,7 +2456,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
               ? (isSelected
                     ? IconButton(
                         icon: const Icon(Icons.tune_rounded, size: 20),
-                        tooltip: 'Adjust portion for ${option.displayName}',
+                        tooltip: 'Adjust portion for $displayName',
                         onPressed: () =>
                             unawaited(_editSelectedQuantity(option)),
                       )
@@ -2455,12 +2476,13 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
 
   Widget _buildCanonicalRecentItemRow(CanonicalRecentFood recent) {
     final option = recent.option;
-    final energy = _optionFactLabel(option, 'energy', 'kcal', 0);
-    final protein = _optionFactLabel(option, 'protein', 'g protein', 1);
-    final brand = option.brand?.trim();
+    final displayName = _consumerFoodName(option.displayName);
+    final brand = _consumerBrand(option.brand, displayName);
+    final nutrition = _canonicalNutritionSummary(option);
+    final quantity = _consumerMetadata(recent.quantityLabel) ?? 'Serving';
     final identityLabel = brand == null || brand.isEmpty
-        ? option.displayName
-        : '$brand ${option.displayName}';
+        ? displayName
+        : '$brand $displayName';
     final isSelected = _selectedOptions.containsKey(option.id);
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
@@ -2468,17 +2490,17 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         container: true,
         explicitChildNodes: true,
         button: true,
-        label: '$identityLabel, ${recent.quantityLabel}, $energy, $protein',
+        label: '$identityLabel, $quantity, $nutrition',
         hint: _isMultiSelect
             ? (isSelected
                   ? 'Tap to deselect from multi-food add.'
                   : 'Tap to select for multi-food add.')
-            : 'Tap Add to log ${recent.quantityLabel}, or open to adjust the amount.',
+            : 'Tap Add to log $quantity, or open to adjust the amount.',
         child: ListTile(
           minVerticalPadding: 10,
           leading: _isMultiSelect
               ? Semantics(
-                  label: 'Select ${option.displayName} for a multi-food add',
+                  label: 'Select $displayName for a multi-food add',
                   child: Checkbox(
                     value: isSelected,
                     onChanged: (_) => _toggleCanonicalSelection(
@@ -2490,7 +2512,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
               : null,
           title: brand == null || brand.isEmpty
               ? Text(
-                  option.displayName,
+                  displayName,
                   style: B05Typography.label(context),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -2499,7 +2521,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      option.displayName,
+                      displayName,
                       style: B05Typography.label(context),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -2513,7 +2535,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                   ],
                 ),
           subtitle: Text(
-            '${recent.quantityLabel} · ${_lastLoggedLabel(recent.loggedAtUtc)}${recent.frequencyCount > 1 ? ' · ${recent.frequencyCount} logged' : ''} · $energy · $protein',
+            '$quantity · ${_lastLoggedLabel(recent.loggedAtUtc)}${recent.frequencyCount > 1 ? ' · ${recent.frequencyCount} logged' : ''} · $nutrition',
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
@@ -2521,7 +2543,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
               ? (isSelected
                     ? IconButton(
                         icon: const Icon(Icons.tune_rounded, size: 20),
-                        tooltip: 'Adjust portion for ${option.displayName}',
+                        tooltip: 'Adjust portion for $displayName',
                         onPressed: () =>
                             unawaited(_editSelectedQuantity(option)),
                       )
@@ -2551,7 +2573,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     final option = recent.option;
     final isAdding = _fastAddInFlight.contains(option.id);
     return _buildFastAddAction(
-      foodName: option.displayName,
+      foodName: _consumerFoodName(option.displayName),
       isAdding: isAdding,
       onPressed: isAdding ? null : () => unawaited(_addRecentFast(recent)),
     );
@@ -2560,7 +2582,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   Widget _buildCanonicalFastAddAction(NutritionFoodOption option) {
     final isAdding = _fastAddInFlight.contains(option.id);
     return _buildFastAddAction(
-      foodName: option.displayName,
+      foodName: _consumerFoodName(option.displayName),
       isAdding: isAdding,
       onPressed: isAdding ? null : () => unawaited(_addOptionFast(option)),
     );
@@ -2605,21 +2627,6 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         ),
       ),
     );
-  }
-
-  String _optionFactLabel(
-    NutritionFoodOption option,
-    String nutrientId,
-    String unit,
-    int precision,
-  ) {
-    final fact = option.facts[nutrientId];
-    if (fact == null || !fact.isAvailable) return '—';
-    String format(NutrientAmount? amount) => amount == null
-        ? '—'
-        : '${amount.value.format(decimalPlaces: precision)} $unit';
-    if (fact.lower == null && fact.upper == null) return format(fact.point);
-    return '${format(fact.lower)}–${format(fact.upper)}';
   }
 
   String _lastLoggedLabel(DateTime timestamp) {
@@ -2805,6 +2812,29 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       ? option!.servingUnitLabel!.trim()
       : quantity.definition.displayLabel;
 
+  String? _canonicalBasisLabel(
+    Quantity quantity, {
+    NutritionFoodOption? option,
+  }) {
+    if (quantity.unit == QuantityUnit.serving) {
+      final servingLabel = option?.servingUnitLabel?.trim();
+      if (servingLabel != null && servingLabel.isNotEmpty) {
+        return servingLabel;
+      }
+      return quantity.amount.toString() == '1'
+          ? 'serving'
+          : '${quantity.amount} servings';
+    }
+    if (quantity.unit == QuantityUnit.householdReference) {
+      final measure = quantity.context.householdMeasure?.measureType.trim();
+      if (measure == null || measure.isEmpty) return null;
+      return '${quantity.amount} $measure';
+    }
+    final symbol = quantity.definition.symbol.trim();
+    if (symbol.isEmpty || symbol == '?') return null;
+    return '${quantity.amount} $symbol';
+  }
+
   String _transformationLabel(dynamic transformation) {
     final source = _preparationLabel(transformation.sourceState);
     final target = _preparationLabel(transformation.targetState);
@@ -2824,8 +2854,13 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   }
 
   Widget _buildLocalItemRow(FoodItem food, {bool recent = false}) {
-    final serving =
-        '${_numberLabel(food.servingSize)} ${food.servingUnit.trim()}';
+    final displayName = _consumerFoodName(food.name);
+    final serving = _localServingLabel(food);
+    final metadata = [
+      '${_numberLabel(food.calories)} kcal',
+      '${_numberLabel(food.proteinG)} g protein',
+      if (serving != null) 'Per $serving',
+    ].join(' · ');
     final isSelected = _selectedOptions.values.any(
       (option) => option.sourceReference == 'legacy-food-item:${food.id}',
     );
@@ -2835,7 +2870,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         container: true,
         explicitChildNodes: true,
         button: true,
-        label: '${food.name}, ${food.calories} kilocalories, $serving',
+        label: '$displayName, $metadata',
         hint: _isMultiSelect
             ? (isSelected
                   ? 'Tap to deselect from multi-food add.'
@@ -2845,7 +2880,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
           minVerticalPadding: 10,
           leading: _isMultiSelect
               ? Semantics(
-                  label: 'Select ${food.name} for a multi-food add',
+                  label: 'Select $displayName for a multi-food add',
                   child: Checkbox(
                     value: isSelected,
                     onChanged: (_) => unawaited(_toggleLegacySelection(food)),
@@ -2856,7 +2891,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
             children: [
               Expanded(
                 child: Text(
-                  food.name,
+                  displayName,
                   style: B05Typography.label(context),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -2880,7 +2915,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
             ],
           ),
           subtitle: Text(
-            '${_numberLabel(food.calories)} kcal · ${_numberLabel(food.proteinG)} g protein · $serving${recent ? ' · Recent' : ''}',
+            '$metadata${recent ? ' · Recent' : ''}',
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
@@ -2888,7 +2923,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
               ? (isSelected
                     ? IconButton(
                         icon: const Icon(Icons.tune_rounded, size: 20),
-                        tooltip: 'Adjust portion for ${food.name}',
+                        tooltip: 'Adjust portion for $displayName',
                         onPressed: () async {
                           final selectedOption = _selectedOptions.values
                               .where(
@@ -2904,7 +2939,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                       )
                     : null)
               : _buildFastAddAction(
-                  foodName: food.name,
+                  foodName: displayName,
                   onPressed: () => unawaited(_openLegacyFastAdd(food)),
                 ),
           onTap: () {
@@ -2920,16 +2955,18 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   }
 
   Widget _buildOnlineItemRow(FoodApiResult food) {
-    final serving =
-        '${_formatProviderNumber(food.servingSize)} ${food.servingUnit}';
-    final brand = food.brand?.trim();
-    final packageQuantity = food.packageQuantity?.trim();
-    final packageDetail = packageQuantity == null || packageQuantity.isEmpty
-        ? ''
-        : ' · $packageQuantity pack';
+    final displayName = _consumerFoodName(food.name);
+    final serving = _providerServingLabel(food);
+    final brand = _consumerBrand(food.brand, displayName);
+    final packageDetail = _providerPackageLabel(food.packageQuantity);
+    final nutrition = _providerNutritionSummary(
+      food,
+      serving: serving,
+      package: packageDetail,
+    );
     final identityLabel = brand == null || brand.isEmpty
-        ? food.name
-        : '$brand ${food.name}';
+        ? displayName
+        : '$brand $displayName';
     final reference = _providerReference(food);
     final canLog = reference != null;
     final isSelected =
@@ -2944,7 +2981,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         explicitChildNodes: true,
         button: true,
         label:
-            '$identityLabel, ${_formatProviderValue(food.calories, 'kcal')}$packageDetail, $serving${canLog ? '' : ', unavailable for logging'}',
+            '$identityLabel, $nutrition${canLog ? '' : ', unavailable for logging'}',
         hint: canLog
             ? (_isMultiSelect
                   ? (isSelected
@@ -2956,7 +2993,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
           minVerticalPadding: 10,
           leading: _isMultiSelect
               ? Semantics(
-                  label: 'Select ${food.name} for a multi-food add',
+                  label: 'Select $displayName for a multi-food add',
                   child: Checkbox(
                     value: isSelected,
                     onChanged: canLog
@@ -2967,7 +3004,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
               : null,
           title: brand == null || brand.isEmpty
               ? Text(
-                  food.name,
+                  displayName,
                   style: B05Typography.label(context),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -2976,7 +3013,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      food.name,
+                      displayName,
                       style: B05Typography.label(context),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -2990,7 +3027,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                   ],
                 ),
           subtitle: Text(
-            '${_formatProviderValue(food.calories, 'kcal')} · ${_formatProviderValue(food.protein, 'g protein')} · $serving$packageDetail',
+            nutrition,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
@@ -2998,7 +3035,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
               ? (isSelected
                     ? IconButton(
                         icon: const Icon(Icons.tune_rounded, size: 20),
-                        tooltip: 'Adjust portion for ${food.name}',
+                        tooltip: 'Adjust portion for $displayName',
                         onPressed: () async {
                           final selectedOption = _selectedOptions.values
                               .where((opt) => opt.sourceReference == reference)
@@ -3010,7 +3047,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                       )
                     : null)
               : _buildFastAddAction(
-                  foodName: food.name,
+                  foodName: displayName,
                   onPressed: canLog
                       ? () => unawaited(_openProviderFastAdd(food))
                       : null,
@@ -3030,8 +3067,134 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     );
   }
 
-  String _formatProviderValue(double? value, String unit) =>
-      value == null ? '—' : '${value.toStringAsFixed(1)} $unit';
+  String? _localServingLabel(FoodItem food) {
+    final unit = _consumerMetadata(food.servingUnit);
+    if (unit == null || food.servingSize <= 0) return null;
+    return '${_numberLabel(food.servingSize)} $unit';
+  }
+
+  String? _providerServingLabel(FoodApiResult food) {
+    final unit = _consumerMetadata(food.servingUnit);
+    if (unit == null || !food.servingSize.isFinite || food.servingSize <= 0) {
+      return null;
+    }
+    return '${_formatProviderNumber(food.servingSize)} $unit';
+  }
+
+  String? _providerPackageLabel(String? value) {
+    final clean = _consumerMetadata(value);
+    if (clean == null) return null;
+    final normalized = clean.replaceAll(RegExp(r'\s+'), ' ');
+    final match = RegExp(
+      r'^(\d+(?:\.\d+)?)\s*(kg|g|mg|l|ml)\s*(?:pack(?:age)?)?$',
+      caseSensitive: false,
+    ).firstMatch(normalized);
+    if (match != null) {
+      return 'Package: ${_formatProviderNumber(double.parse(match.group(1)!))} ${match.group(2)!.toLowerCase()}';
+    }
+    return 'Package: $normalized';
+  }
+
+  String _providerNutritionSummary(
+    FoodApiResult food, {
+    required String? serving,
+    required String? package,
+  }) {
+    final facts = <String>[
+      if (food.calories != null && food.calories!.isFinite)
+        '${_formatProviderNumber(food.calories!)} kcal',
+      if (food.protein != null && food.protein!.isFinite)
+        '${_formatProviderNumber(food.protein!)} g protein',
+      if (food.carbs != null && food.carbs!.isFinite)
+        '${_formatProviderNumber(food.carbs!)} g carbs',
+      if (food.fat != null && food.fat!.isFinite)
+        '${_formatProviderNumber(food.fat!)} g fat',
+    ];
+    if (facts.isEmpty) {
+      return [
+        'Nutrition details unavailable',
+        if (serving != null) 'Per $serving',
+        ?package,
+      ].join(' · ');
+    }
+    return [
+      ...facts,
+      if (serving != null) 'Per $serving',
+      ?package,
+    ].join(' · ');
+  }
+
+  String _canonicalNutritionSummary(NutritionFoodOption option) {
+    final facts = <String>[
+      ..._optionFactLabels(option, 'energy', 'kcal', 0),
+      ..._optionFactLabels(option, 'protein', 'g protein', 1),
+      ..._optionFactLabels(option, 'carbohydrate', 'g carbs', 1),
+      ..._optionFactLabels(option, 'fat', 'g fat', 1),
+    ];
+    final basis = _canonicalBasisLabel(option.baseQuantity, option: option);
+    if (facts.isEmpty) {
+      return [
+        'Nutrition details unavailable',
+        if (basis != null) 'Per $basis',
+      ].join(' · ');
+    }
+    return [...facts, if (basis != null) 'Per $basis'].join(' · ');
+  }
+
+  List<String> _optionFactLabels(
+    NutritionFoodOption option,
+    String nutrientId,
+    String unit,
+    int precision,
+  ) {
+    final fact = option.facts[nutrientId];
+    if (fact == null || !fact.isAvailable) return const [];
+    String? format(NutrientAmount? amount) => amount == null
+        ? null
+        : '${amount.value.format(decimalPlaces: precision)} $unit';
+    final lower = format(fact.lower);
+    final upper = format(fact.upper);
+    final point = format(fact.point);
+    if (lower != null || upper != null) {
+      return [
+        [?lower, ?upper].join('–'),
+      ];
+    }
+    return point == null ? const [] : [point];
+  }
+
+  String _consumerFoodName(String? value) {
+    final clean = _consumerMetadata(value);
+    if (clean == null) return 'Food';
+    final bracketed = RegExp(r'^\[(.*)\]$').firstMatch(clean);
+    final unwrapped = bracketed?.group(1)?.trim() ?? clean;
+    final result = unwrapped.replaceFirst(RegExp(r'[.,;:]$'), '').trim();
+    return result.isEmpty ? 'Food' : result;
+  }
+
+  String? _consumerMetadata(String? value) {
+    final compact = value?.trim().replaceAll(RegExp(r'\s+'), ' ');
+    if (compact == null ||
+        compact.isEmpty ||
+        compact == '—' ||
+        compact == '-') {
+      return null;
+    }
+    final bracketed = RegExp(r'^\[(.*)\]$').firstMatch(compact);
+    final clean = bracketed?.group(1)?.trim() ?? compact;
+    if (clean.isEmpty || clean == '—' || clean == '-') return null;
+    return clean;
+  }
+
+  String? _consumerBrand(String? value, String foodName) {
+    final brand = _consumerMetadata(value);
+    if (brand == null) return null;
+    final displayBrand = _consumerFoodName(brand);
+    if (displayBrand.toLowerCase() == foodName.trim().toLowerCase()) {
+      return null;
+    }
+    return displayBrand;
+  }
 
   String _formatProviderNumber(double value) => value == value.roundToDouble()
       ? value.toStringAsFixed(0)
@@ -3182,11 +3345,9 @@ class _FoodDiaryScreenState extends ConsumerState<FoodDiaryScreen> {
       targetRead: diary.valueOrNull?.targets,
     );
     final records = daily?.records ?? canonical.valueOrNull ?? [];
-    final meals = <({String type, String label})>[
-      (type: 'breakfast', label: 'Breakfast'),
-      (type: 'lunch', label: 'Lunch'),
-      (type: 'dinner', label: 'Dinner'),
-      (type: 'snack', label: 'Snacks'),
+    final meals = [
+      for (final presentation in MealPresentationRegistry.values)
+        (type: presentation.stableId, label: presentation.label),
     ];
 
     return Scaffold(
@@ -3317,39 +3478,47 @@ class _FoodDiaryScreenState extends ConsumerState<FoodDiaryScreen> {
     if (mounted) _refreshDiaryReads();
   }
 
-  Future<String?> _chooseMeal(BuildContext context) =>
-      showModalBottomSheet<String>(
-        context: context,
-        builder: (sheetContext) => SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Choose a meal',
-                    style: B05Typography.title(sheetContext),
+  Future<String?> _chooseMeal(
+    BuildContext context,
+  ) => showModalBottomSheet<String>(
+    context: context,
+    builder: (sheetContext) => SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Choose a meal',
+                style: B05Typography.title(sheetContext),
+              ),
+            ),
+          ),
+          for (final item in MealPresentationRegistry.values)
+            ListTile(
+              title: Text(item.label),
+              leading: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: sheetContext.b05Colors.meal(item.accent!).container,
+                  shape: BoxShape.circle,
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: Icon(
+                    item.icon,
+                    color: sheetContext.b05Colors.meal(item.accent!).indicator,
                   ),
                 ),
               ),
-              for (final item in const [
-                ('breakfast', 'Breakfast'),
-                ('lunch', 'Lunch'),
-                ('dinner', 'Dinner'),
-                ('snack', 'Snacks'),
-              ])
-                ListTile(
-                  title: Text(item.$2),
-                  leading: const Icon(Icons.restaurant_outlined),
-                  onTap: () => Navigator.of(sheetContext).pop(item.$1),
-                ),
-              const SizedBox(height: 8),
-            ],
-          ),
-        ),
-      );
+              onTap: () => Navigator.of(sheetContext).pop(item.stableId),
+            ),
+          const SizedBox(height: 8),
+        ],
+      ),
+    ),
+  );
 
   Future<void> _openMealPicker(BuildContext context) async {
     final meal = await _chooseMeal(context);

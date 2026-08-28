@@ -339,7 +339,7 @@ void main() {
 
       expect(find.text('Plan ahead'), findsOneWidget);
       expect(find.bySemanticsLabel('Start workout'), findsNothing);
-      expect(find.bySemanticsLabel('Today'), findsOneWidget);
+      expect(find.bySemanticsLabel('Go to today'), findsOneWidget);
     },
   );
 

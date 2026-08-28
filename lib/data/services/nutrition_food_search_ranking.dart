@@ -295,8 +295,10 @@ class NutritionFoodSearchResult {
 /// Pure deterministic ranking for local, canonical, and provider candidates.
 ///
 /// The score is deliberately an explainable composition: lexical match is
-/// dominant, then bounded locality, generic-name, and facts-availability
-/// tie-breaks apply. Usage history and popularity are intentionally excluded.
+/// dominant, then bounded local-authority, facts-availability, and relevant
+/// history tie-breaks apply. Usage history can only help a candidate that is
+/// already a meaningful lexical match; it never creates a result or makes a
+/// provider product outrank a useful local match.
 /// The UI consumes the ordered candidates and never exposes the score.
 class NutritionFoodSearchRanking {
   const NutritionFoodSearchRanking._();
@@ -308,10 +310,17 @@ class NutritionFoodSearchRanking {
   static const int _substring = 220;
   static const int _remoteWeakToken = 175;
   static const int _fuzzy = 300;
-  static const int _localityBoost = 35;
+  static const int _localityBoost = 80;
   static const int _customBoost = 30;
   static const int _genericBoost = 22;
-  static const int _factsAvailabilityBoost = 12;
+  static const int _factsAvailabilityBoost = 40;
+  static const int _historyRecentBoost = 8;
+  static const int _historyFrequencyStep = 2;
+  // A generic provider exact match must not displace a reviewed/local food
+  // whose name contains the requested common food (for example the bundled
+  // "Whole Wheat Roti / Chapati" entry for a `roti` query). Explicit brand or
+  // numeric product intent bypasses this penalty below.
+  static const int _remotePenalty = 260;
   static const int _remoteMinimum = 260;
 
   static List<NutritionFoodSearchResult> rank({
@@ -330,7 +339,7 @@ class NutritionFoodSearchRanking {
     for (final candidate in candidates) {
       final evaluation = _evaluate(candidate, normalizedQuery, queryVariants);
       if (evaluation.match == NutritionFoodSearchMatch.none) continue;
-      final score = _score(candidate, evaluation, normalizedQuery);
+      final score = _score(candidate, evaluation, normalizedQuery, history);
       final result = NutritionFoodSearchResult(
         candidate: candidate,
         match: evaluation.match,
@@ -501,10 +510,16 @@ class NutritionFoodSearchRanking {
     NutritionFoodSearchCandidate candidate,
     _Evaluation evaluation,
     String normalizedQuery,
+    NutritionFoodSearchHistory history,
   ) {
     var score = evaluation.lexicalScore;
     if (candidate.source != NutritionFoodSearchSource.remote) {
       score += _localityBoost;
+    } else if (!_hasExplicitProductIntent(candidate, normalizedQuery)) {
+      // Provider results are useful fallback discovery, but they should not
+      // displace a reviewed/local result solely because provider metadata is
+      // verbose or happens to contain the query token.
+      score -= _remotePenalty;
     }
     if (candidate.isCustom &&
         (evaluation.match == NutritionFoodSearchMatch.exact ||
@@ -515,7 +530,23 @@ class NutritionFoodSearchRanking {
     if (candidate.brand == null && !brandIntent) score += _genericBoost;
 
     if (candidate.hasNumericFacts) score += _factsAvailabilityBoost;
+    if (candidate.source != NutritionFoodSearchSource.remote &&
+        evaluation.match.index >= NutritionFoodSearchMatch.token.index) {
+      final frequency = history.frequencyFor(candidate).clamp(0, 5).toInt();
+      if (frequency > 0) {
+        score += frequency * _historyFrequencyStep;
+      }
+      if (history.isRecent(candidate)) score += _historyRecentBoost;
+    }
     return score;
+  }
+
+  static bool _hasExplicitProductIntent(
+    NutritionFoodSearchCandidate candidate,
+    String normalizedQuery,
+  ) {
+    if (_queryNamesBrand(candidate.brand, normalizedQuery)) return true;
+    return RegExp(r'\d').hasMatch(normalizedQuery);
   }
 
   static bool _remotePassesThreshold(
@@ -648,7 +679,7 @@ class NutritionFoodSearchRanking {
         : NutritionFoodSearchVocabulary.normalize(brand);
     if (cleanBrand.isEmpty) return false;
     final queryTokens = _tokens(query).toSet();
-    return _tokens(cleanBrand).every(queryTokens.contains);
+    return _tokens(cleanBrand).any(queryTokens.contains);
   }
 
   static bool _brandContainsQuery(String? brand, String query) {

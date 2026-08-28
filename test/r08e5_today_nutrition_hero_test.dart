@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/nutrients.dart';
 import 'package:indifit/core/nutrition_legacy_read_models.dart';
+import 'package:indifit/core/presentation/today_onboarding_handoff.dart';
 import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/core/typed_quantities.dart';
 import 'package:indifit/data/database/app_database.dart';
@@ -98,7 +99,7 @@ void main() {
   );
 
   testWidgets(
-    'current-date hero without target shows consumed facts, No daily target set notice, Log food, and Set a target',
+    'current-date sparse nutrition without target shows consumed facts and no remaining target math',
     (tester) async {
       final selectedDate = DateTime(2026, 8, 10);
       final daily = _createNutritionDaily(
@@ -125,20 +126,20 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('650'), findsOneWidget);
-      expect(find.text('kcal logged'), findsOneWidget);
-      expect(find.text('Calories logged'), findsOneWidget);
-      expect(find.text('No daily target set'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('today-sparse-nutrition')),
+        findsOneWidget,
+      );
+      expect(find.text('650 kcal logged'), findsOneWidget);
+      expect(find.text('No daily target for this date'), findsOneWidget);
+      expect(find.text('Remaining'), findsNothing);
 
-      // Macro factual values without broken progress bars
-      expect(find.text('Protein'), findsOneWidget);
-      expect(find.text('40 g'), findsOneWidget);
-      expect(find.text('Carbs'), findsOneWidget);
-      expect(find.text('80 g'), findsOneWidget);
-      expect(find.text('Fat'), findsOneWidget);
-      expect(find.text('20 g'), findsOneWidget);
-      expect(find.text('Fiber'), findsOneWidget);
-      expect(find.text('10 g'), findsOneWidget);
+      // Known macro facts remain visible as one compact line without broken
+      // progress bars.
+      expect(
+        find.text('Protein 40 g · Carbs 80 g · Fat 20 g · Fiber 10 g'),
+        findsOneWidget,
+      );
 
       // Action buttons
       expect(find.text('Log food'), findsOneWidget);
@@ -150,6 +151,92 @@ void main() {
       await tester.pump();
     },
   );
+
+  testWidgets(
+    'current-date sparse nutrition without target and without food stays compact',
+    (tester) async {
+      final selectedDate = DateTime(2026, 8, 10);
+
+      await tester.pumpWidget(
+        _buildApp(
+          database: database,
+          selectedDate: selectedDate,
+          now: selectedDate,
+          snapshot: _createSnapshot(
+            selectedDate: selectedDate,
+            nutrition: _createEmptyNutritionDaily(localDate: '2026-08-10'),
+            targets: null,
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(
+        find.byKey(const ValueKey('today-sparse-nutrition')),
+        findsOneWidget,
+      );
+      expect(find.text('Nutrition'), findsOneWidget);
+      expect(find.text('Nothing logged for this day'), findsOneWidget);
+      expect(find.text('No daily target for this date'), findsNothing);
+      expect(find.text('0'), findsNothing);
+      expect(find.text('Protein'), findsNothing);
+      expect(find.text('Carbs'), findsNothing);
+      expect(find.text('Fat'), findsNothing);
+      expect(find.text('Fiber'), findsNothing);
+      expect(find.text('Log food'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+    },
+  );
+
+  testWidgets('first-session Today handoff shows canonical targets once', (
+    tester,
+  ) async {
+    final selectedDate = DateTime(2026, 8, 10);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(todayOnboardingHandoffPendingKey, true);
+    final target = _createTargetsForDate(
+      localDate: '2026-08-10',
+      calorieKcal: 2000,
+      proteinG: 150,
+      carbsG: 200,
+      fatG: 65,
+    );
+
+    await tester.pumpWidget(
+      _buildApp(
+        database: database,
+        selectedDate: selectedDate,
+        now: selectedDate,
+        snapshot: _createSnapshot(
+          selectedDate: selectedDate,
+          nutrition: _createEmptyNutritionDaily(localDate: '2026-08-10'),
+          targets: target,
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.text('Your starting targets are ready'), findsOneWidget);
+    expect(find.text('2,000 kcal · 150 g protein'), findsOneWidget);
+    expect(find.text('Review targets'), findsOneWidget);
+    expect(find.text('Log food'), findsWidgets);
+
+    await tester.tap(find.text('Dismiss'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.text('Your starting targets are ready'), findsNothing);
+    expect(
+      (await SharedPreferences.getInstance()).getBool(
+        todayOnboardingHandoffPendingKey,
+      ),
+      isFalse,
+    );
+  });
 
   testWidgets(
     'historical past date hero shows truthful facts and GATES OUT What can I eat?',
@@ -313,7 +400,7 @@ void main() {
         find.text('Some nutrition details are incomplete'),
         findsOneWidget,
       );
-      expect(find.text('No daily target set'), findsOneWidget);
+      expect(find.text('No daily target for this date'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump();

@@ -91,40 +91,60 @@ class DashboardModuleCustomizationList extends StatelessWidget {
       );
     }
 
-    final children = <Widget>[
-      const _CustomizationIntro(),
-      if (isSaving)
-        Semantics(
-          liveRegion: true,
-          label: 'Saving your Today changes',
-          child: const Padding(
-            padding: EdgeInsets.only(bottom: B05Layout.space8),
-            child: LinearProgressIndicator(),
-          ),
-        ),
-      for (var index = 0; index < entries.length; index++)
-        _DashboardModuleCustomizationRow(
-          item: entries[index].item,
-          index: index,
-          count: entries.length,
-          sourceIndex: entries[index].sourceIndex,
-          enabled: !isSaving,
-          onMove: onMove,
-          onVisibilityChanged: onVisibilityChanged,
-          onCollapsedChanged: onCollapsedChanged,
-        ),
-      if (onReset != null)
-        _ResetTodayCustomization(
-          enabled: canReset && !isSaving,
-          onPressed: onReset!,
-        ),
-    ];
-
     return FocusTraversalGroup(
       policy: WidgetOrderTraversalPolicy(),
-      child: ListView.builder(
-        itemCount: children.length,
-        itemBuilder: (context, index) => children[index],
+      child: ReorderableListView(
+        buildDefaultDragHandles: false,
+        padding: EdgeInsets.zero,
+        cacheExtent: 2000,
+        header: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const _CustomizationIntro(),
+            if (isSaving)
+              Semantics(
+                liveRegion: true,
+                label: 'Saving your Today changes',
+                child: const Padding(
+                  padding: EdgeInsets.only(bottom: B05Layout.space8),
+                  child: LinearProgressIndicator(),
+                ),
+              ),
+          ],
+        ),
+        footer: onReset == null
+            ? null
+            : _ResetTodayCustomization(
+                enabled: canReset && !isSaving,
+                onPressed: onReset!,
+              ),
+        children: [
+          for (var index = 0; index < entries.length; index++)
+            _DashboardModuleCustomizationRow(
+              key: ValueKey(
+                'today-customize-row-${entries[index].item.moduleId}',
+              ),
+              item: entries[index].item,
+              index: index,
+              entries: entries,
+              enabled: !isSaving,
+              onMove: onMove,
+              onVisibilityChanged: onVisibilityChanged,
+              onCollapsedChanged: onCollapsedChanged,
+            ),
+        ],
+        onReorder: (oldIndex, newIndex) {
+          if (isSaving || oldIndex == newIndex) return;
+          if (newIndex > oldIndex) newIndex -= 1;
+          if (newIndex == oldIndex) return;
+          final targetIndex = newIndex.clamp(0, entries.length - 1).toInt();
+          unawaited(
+            onMove(
+              entries[oldIndex].item.moduleId,
+              entries[targetIndex].sourceIndex,
+            ),
+          );
+        },
       ),
     );
   }
@@ -145,7 +165,7 @@ class _CustomizationIntro extends StatelessWidget {
         ),
         const SizedBox(height: B05Layout.space4),
         Text(
-          'Use the switches to show or hide sections. You can change this anytime.',
+          'Use switches to show or hide sections, and drag handles to reorder them.',
           style: B05Typography.body(context),
         ),
       ],
@@ -156,8 +176,7 @@ class _CustomizationIntro extends StatelessWidget {
 class _DashboardModuleCustomizationRow extends StatelessWidget {
   final DashboardModuleLayoutItem item;
   final int index;
-  final int count;
-  final int sourceIndex;
+  final List<_CustomizationEntry> entries;
   final bool enabled;
   final Future<void> Function(String moduleId, int targetIndex) onMove;
   final Future<void> Function(String moduleId, bool isVisible)
@@ -166,10 +185,10 @@ class _DashboardModuleCustomizationRow extends StatelessWidget {
   onCollapsedChanged;
 
   const _DashboardModuleCustomizationRow({
+    super.key,
     required this.item,
     required this.index,
-    required this.count,
-    required this.sourceIndex,
+    required this.entries,
     required this.enabled,
     required this.onMove,
     required this.onVisibilityChanged,
@@ -183,79 +202,63 @@ class _DashboardModuleCustomizationRow extends StatelessWidget {
     final description = descriptor.customizationDescription.trim().isEmpty
         ? 'Show this section on Today.'
         : descriptor.customizationDescription;
+    final earlierTarget = index > 0 ? entries[index - 1].sourceIndex : null;
+    final laterTarget = index < entries.length - 1
+        ? entries[index + 1].sourceIndex
+        : null;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: B05Layout.space4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Semantics(
-            container: true,
-            label: label,
-            value: item.isVisible ? 'Shown' : 'Hidden',
-            hint: description,
-            child: SwitchListTile(
-              key: ValueKey('today-customize-toggle-${item.moduleId}'),
-              contentPadding: EdgeInsets.zero,
-              title: Text(label),
-              subtitle: Text(description),
-              value: item.isVisible,
-              onChanged: enabled
-                  ? (value) =>
-                        unawaited(onVisibilityChanged(item.moduleId, value))
-                  : null,
-            ),
-          ),
           Row(
-            mainAxisAlignment: MainAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              if (index > 0)
-                B05IconAction(
-                  icon: Icons.keyboard_arrow_up_rounded,
-                  label: 'Move $label earlier',
-                  onPressed: enabled
-                      ? () => unawaited(onMove(item.moduleId, sourceIndex - 1))
-                      : null,
-                ),
-              if (index < count - 1)
-                B05IconAction(
-                  icon: Icons.keyboard_arrow_down_rounded,
-                  label: 'Move $label later',
-                  onPressed: enabled
-                      ? () => unawaited(onMove(item.moduleId, sourceIndex + 1))
-                      : null,
-                ),
-              if (descriptor.collapsible)
-                SizedBox(
-                  width: _minimumTodayControlSize.width,
-                  height: _minimumTodayControlSize.height,
-                  child: PopupMenuButton<String>(
-                    enabled: enabled,
-                    constraints: const BoxConstraints(
-                      minWidth: 48,
-                      minHeight: 48,
-                    ),
-                    tooltip: 'More options for $label',
-                    onSelected: (value) {
-                      if (value == 'collapse') {
-                        unawaited(
-                          onCollapsedChanged(item.moduleId, !item.isCollapsed),
-                        );
-                      }
-                    },
-                    itemBuilder: (context) => [
-                      PopupMenuItem<String>(
-                        value: 'collapse',
-                        child: Text(
-                          item.isCollapsed
-                              ? 'Start expanded'
-                              : 'Start minimized',
-                        ),
-                      ),
-                    ],
-                    icon: const Icon(Icons.more_horiz_rounded),
+              Semantics(
+                container: true,
+                label: 'Reorder $label',
+                hint: 'Drag to move this section earlier or later.',
+                child: ReorderableDragStartListener(
+                  index: index,
+                  enabled: enabled,
+                  child: const SizedBox(
+                    width: 48,
+                    height: 48,
+                    child: Icon(Icons.drag_handle_rounded),
                   ),
                 ),
+              ),
+              Expanded(
+                child: Semantics(
+                  container: true,
+                  label: label,
+                  value: item.isVisible ? 'Shown' : 'Hidden',
+                  hint: description,
+                  child: SwitchListTile(
+                    key: ValueKey('today-customize-toggle-${item.moduleId}'),
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(label),
+                    value: item.isVisible,
+                    onChanged: enabled
+                        ? (value) => unawaited(
+                            onVisibilityChanged(item.moduleId, value),
+                          )
+                        : null,
+                  ),
+                ),
+              ),
+              _CustomizationMoreMenu(
+                label: label,
+                enabled: enabled,
+                earlierTargetIndex: earlierTarget,
+                laterTargetIndex: laterTarget,
+                onMove: (targetIndex) => onMove(item.moduleId, targetIndex),
+                collapsible: descriptor.collapsible,
+                isCollapsed: item.isCollapsed,
+                onCollapsedChanged: (value) =>
+                    onCollapsedChanged(item.moduleId, value),
+              ),
             ],
           ),
           const Divider(height: B05Layout.space16),
@@ -263,6 +266,67 @@ class _DashboardModuleCustomizationRow extends StatelessWidget {
       ),
     );
   }
+}
+
+class _CustomizationMoreMenu extends StatelessWidget {
+  const _CustomizationMoreMenu({
+    required this.label,
+    required this.enabled,
+    required this.earlierTargetIndex,
+    required this.laterTargetIndex,
+    required this.onMove,
+    required this.collapsible,
+    required this.isCollapsed,
+    required this.onCollapsedChanged,
+  });
+
+  final String label;
+  final bool enabled;
+  final int? earlierTargetIndex;
+  final int? laterTargetIndex;
+  final Future<void> Function(int targetIndex) onMove;
+  final bool collapsible;
+  final bool isCollapsed;
+  final Future<void> Function(bool isCollapsed) onCollapsedChanged;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+    width: _minimumTodayControlSize.width,
+    height: _minimumTodayControlSize.height,
+    child: PopupMenuButton<String>(
+      enabled: enabled,
+      constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+      tooltip: 'More options for $label',
+      onSelected: (value) {
+        switch (value) {
+          case 'earlier' when earlierTargetIndex != null:
+            unawaited(onMove(earlierTargetIndex!));
+          case 'later' when laterTargetIndex != null:
+            unawaited(onMove(laterTargetIndex!));
+          case 'collapse' when collapsible:
+            unawaited(onCollapsedChanged(!isCollapsed));
+        }
+      },
+      itemBuilder: (context) => [
+        if (earlierTargetIndex != null)
+          const PopupMenuItem<String>(
+            value: 'earlier',
+            child: Text('Move earlier'),
+          ),
+        if (laterTargetIndex != null)
+          const PopupMenuItem<String>(
+            value: 'later',
+            child: Text('Move later'),
+          ),
+        if (collapsible)
+          PopupMenuItem<String>(
+            value: 'collapse',
+            child: Text(isCollapsed ? 'Start expanded' : 'Start minimized'),
+          ),
+      ],
+      icon: const Icon(Icons.more_horiz_rounded),
+    ),
+  );
 }
 
 class _ResetTodayCustomization extends StatelessWidget {
@@ -283,7 +347,7 @@ class _ResetTodayCustomization extends StatelessWidget {
     child: SizedBox(
       width: double.infinity,
       child: B05ActionButton(
-        label: 'Reset to defaults',
+        label: 'Reset to default',
         hint: 'Show the default Today sections again.',
         icon: Icons.refresh_rounded,
         emphasis: B05ActionEmphasis.secondary,

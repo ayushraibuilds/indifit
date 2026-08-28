@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/backup/backup_file_adapter.dart';
 import '../../../core/presentation/product_failure_presentation.dart';
+import '../../../core/presentation/today_onboarding_handoff.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/services/auto_backup_service.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
@@ -411,6 +412,7 @@ class DataManagementSection extends ConsumerWidget {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('onboarding_completed', false);
+      await clearTodayOnboardingHandoff();
       ref.read(onboardingCompletedProvider.notifier).state = false;
     } catch (_) {
       if (context.mounted) {

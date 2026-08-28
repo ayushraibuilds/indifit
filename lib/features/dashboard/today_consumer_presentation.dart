@@ -277,6 +277,7 @@ class TodayNutritionPresentation {
   final List<TodayNutritionMetricPresentation> macros;
   final List<TodayMealPresentation> meals;
   final bool hasAcceptedCalorieTarget;
+  final bool targetUnavailable;
   final bool hasIncompleteNutrition;
   final bool isNoConsumptionKnown;
 
@@ -288,6 +289,7 @@ class TodayNutritionPresentation {
     this.macros = const [],
     this.meals = const [],
     this.hasAcceptedCalorieTarget = false,
+    this.targetUnavailable = false,
     this.hasIncompleteNutrition = false,
     this.isNoConsumptionKnown = false,
   });
@@ -317,6 +319,7 @@ class TodayNutritionPresentation {
     // A supplied target read is authoritative even when it resolves to no
     // goal for the requested historical date. The legacy goal parameter is a
     // compatibility path for older presentation fixtures only.
+    final targetUnavailable = targetRead != null && !targetRead.isAvailable;
     final acceptedGoal = targetRead != null
         ? (targetRead.isAvailable ? targetRead.value?.goalVersion : null)
         : (goal?.isAvailable == true ? goal!.value : null);
@@ -396,6 +399,7 @@ class TodayNutritionPresentation {
       macros: macros,
       meals: _mealRows(daily.records),
       hasAcceptedCalorieTarget: calorieTarget != null && calorieTarget > 0,
+      targetUnavailable: targetUnavailable,
       hasIncompleteNutrition: incomplete,
       isNoConsumptionKnown: noConsumption,
     );

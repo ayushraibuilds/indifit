@@ -41,6 +41,8 @@ void main() {
         ),
       ]);
       final layout = registry.normalize(const []);
+      String? movedModule;
+      int? movedTarget;
       final semantics = tester.ensureSemantics();
 
       await tester.pumpWidget(
@@ -54,7 +56,10 @@ void main() {
                 child: DashboardModuleCustomizationList(
                   layout: layout,
                   isSaving: false,
-                  onMove: (_, _) async {},
+                  onMove: (moduleId, targetIndex) async {
+                    movedModule = moduleId;
+                    movedTarget = targetIndex;
+                  },
                   onVisibilityChanged: (_, _) async {},
                   onCollapsedChanged: (moduleId, isCollapsed) =>
                       Future<void>.value(),
@@ -72,6 +77,16 @@ void main() {
       );
       expect(find.byTooltip('More options for Meals'), findsOneWidget);
       expect(find.byTooltip('More options for Workout'), findsOneWidget);
+      expect(find.byIcon(Icons.drag_handle_rounded), findsAtLeastNWidgets(2));
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey('today-customize-row-next')),
+        200,
+        scrollable: find.byType(Scrollable),
+      );
+      expect(find.byTooltip('More options for Next action'), findsOneWidget);
+      expect(find.textContaining('Position'), findsNothing);
+      expect(find.text('Visible'), findsNothing);
+      expect(find.textContaining('Starts expanded'), findsNothing);
       expect(find.byType(FocusTraversalGroup), findsAtLeastNWidgets(1));
       expect(
         tester.getSize(find.byTooltip('More options for Meals')).height,
@@ -80,6 +95,14 @@ void main() {
 
       await tester.sendKeyEvent(LogicalKeyboardKey.tab);
       expect(FocusManager.instance.primaryFocus, isNotNull);
+
+      await tester.tap(find.byTooltip('More options for Meals'));
+      await tester.pumpAndSettle();
+      expect(find.text('Move earlier'), findsOneWidget);
+      await tester.tap(find.text('Move earlier'));
+      await tester.pump();
+      expect(movedModule, 'meals');
+      expect(movedTarget, 0);
 
       semantics.dispose();
     },

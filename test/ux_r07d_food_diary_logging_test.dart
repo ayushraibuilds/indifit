@@ -453,14 +453,14 @@ void main() {
       );
       await _settleR07D(tester);
 
-      expect(find.text('Yesterday'), findsOneWidget);
+      expect(find.text('Wed, 12 Aug'), findsOneWidget);
       await tester.tap(find.bySemanticsLabel('Next day'));
       await _settleR07D(tester);
       expect(find.text('Today'), findsOneWidget);
 
       await tester.tap(find.bySemanticsLabel('Previous day'));
       await _settleR07D(tester);
-      expect(find.text('Yesterday'), findsOneWidget);
+      expect(find.text('Wed, 12 Aug'), findsOneWidget);
       await tester.tap(find.widgetWithText(TextButton, 'Today'));
       await _settleR07D(tester);
       expect(find.text('Today'), findsOneWidget);

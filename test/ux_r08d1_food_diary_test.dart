@@ -7,6 +7,7 @@ import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/data/models/b04_goal_models.dart';
 import 'package:indifit/data/repositories/nutrition_target_authority.dart';
 import 'package:indifit/features/dashboard/today_surface_controller.dart';
+import 'package:indifit/features/dashboard/widgets/dashboard_date_bar.dart';
 import 'package:indifit/features/food_log/food_log_surface.dart';
 import 'package:indifit/features/food_log/food_search_screen.dart';
 
@@ -88,6 +89,43 @@ void main() {
     expect(find.byType(LinearProgressIndicator), findsNothing);
   });
 
+  testWidgets('diary reuses the compact date navigator for historical days', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    final semantics = tester.ensureSemantics();
+    try {
+      await tester.pumpWidget(
+        _foodDiaryApp(
+          selectedDate: DateTime(2026, 8, 12),
+          today: DateTime(2026, 8, 13),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.byType(DashboardDateBar), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('dashboard-date-bar-row')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('dashboard-date-bar-today')),
+        findsOneWidget,
+      );
+      expect(find.bySemanticsLabel('Go to today'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    } finally {
+      semantics.dispose();
+    }
+  });
+
   testWidgets('empty diary keeps meal hierarchy and one dominant add action', (
     tester,
   ) async {
@@ -124,6 +162,42 @@ void main() {
     expect(find.text('Search foods'), findsNothing);
     expect(find.text('Saved meals'), findsOneWidget);
     expect(find.text('Saved recipes'), findsOneWidget);
+  });
+
+  testWidgets('meal picker reuses distinct diary identity for every meal', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_foodDiaryApp());
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    await tester.tap(find.byKey(const ValueKey('food_diary_primary_add')));
+    await tester.pumpAndSettle();
+
+    final sheet = find.byType(BottomSheet);
+    expect(sheet, findsOneWidget);
+    expect(
+      find.descendant(
+        of: sheet,
+        matching: find.byIcon(Icons.wb_sunny_outlined),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: sheet,
+        matching: find.byIcon(Icons.wb_twilight_rounded),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: sheet, matching: find.byIcon(Icons.nightlight_round)),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: sheet, matching: find.byIcon(Icons.cookie_outlined)),
+      findsOneWidget,
+    );
   });
 
   testWidgets(
@@ -177,6 +251,8 @@ Widget _foodDiaryApp({
   TodayDomainRead<NutritionTargetsForDate?>? targets,
   double textScale = 1,
   ThemeData? theme,
+  DateTime? selectedDate,
+  DateTime? today,
 }) {
   return ProviderScope(
     overrides: [
@@ -215,8 +291,8 @@ Widget _foodDiaryApp({
         child: child ?? const SizedBox.shrink(),
       ),
       home: FoodDiaryScreen(
-        selectedDate: DateTime(2026, 8, 13),
-        today: DateTime(2026, 8, 13),
+        selectedDate: selectedDate ?? DateTime(2026, 8, 13),
+        today: today ?? DateTime(2026, 8, 13),
       ),
     ),
   );

@@ -93,6 +93,72 @@ void main() {
       );
 
       testWidgets(
+        'DashboardDateBar keeps current and historical dates in one compact semantic row',
+        (tester) async {
+          DateTime? changedDate;
+          final semantics = tester.ensureSemantics();
+          try {
+            await tester.pumpWidget(
+              _wrapResponsiveTest(
+                DashboardDateBar(
+                  selectedDate: DateTime(2026, 8, 28),
+                  onDateChanged: (date) => changedDate = date,
+                  today: DateTime(2026, 8, 28),
+                ),
+                size: const Size(320, 640),
+                textScale: 2,
+              ),
+            );
+            await tester.pumpAndSettle();
+
+            expect(
+              find.byKey(const ValueKey('dashboard-date-bar-row')),
+              findsOneWidget,
+            );
+            expect(
+              find.byKey(const ValueKey('dashboard-date-bar-today')),
+              findsNothing,
+            );
+            expect(find.bySemanticsLabel('Previous day'), findsOneWidget);
+            expect(find.bySemanticsLabel('Next day'), findsOneWidget);
+            expect(find.bySemanticsLabel('Selected date'), findsOneWidget);
+            expect(
+              tester
+                  .getSize(find.byKey(const ValueKey('dashboard-date-bar-row')))
+                  .height,
+              lessThan(100),
+            );
+
+            await tester.pumpWidget(
+              _wrapResponsiveTest(
+                DashboardDateBar(
+                  selectedDate: DateTime(2026, 8, 27),
+                  onDateChanged: (date) => changedDate = date,
+                  today: DateTime(2026, 8, 28),
+                ),
+                size: const Size(320, 640),
+                textScale: 2,
+              ),
+            );
+            await tester.pumpAndSettle();
+
+            expect(
+              find.byKey(const ValueKey('dashboard-date-bar-today')),
+              findsOneWidget,
+            );
+            expect(find.bySemanticsLabel('Go to today'), findsOneWidget);
+            await tester.tap(
+              find.byKey(const ValueKey('dashboard-date-bar-today')),
+            );
+            expect(changedDate, DateTime(2026, 8, 28));
+            expect(tester.takeException(), isNull);
+          } finally {
+            semantics.dispose();
+          }
+        },
+      );
+
+      testWidgets(
         'WeightSparklineCard header is protected against overflow and has accessible chart semantics',
         (tester) async {
           await tester.pumpWidget(

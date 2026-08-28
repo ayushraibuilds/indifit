@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/di/providers.dart';
 import '../../core/presentation/diet_preference_presentation.dart';
 import '../../core/presentation/secondary_presentation.dart';
+import '../../core/presentation/today_onboarding_handoff.dart';
 import '../../core/router/app_router.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/utils/tdee_calculator.dart';
@@ -376,6 +377,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     try {
       await _draftWrite;
       await _draftStore.markProfileOnboardingSkipped();
+      await clearTodayOnboardingHandoff();
       ref.read(onboardingCompletedProvider.notifier).state = true;
       if (mounted) context.go('/');
     } catch (_) {
@@ -475,6 +477,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     // Complete onboarding flag
     await prefs.setBool('onboarding_completed', true);
     await prefs.remove('onboarding_skipped');
+    await markTodayOnboardingHandoffPending();
 
     // Notify router that onboarding is now complete
     ref.read(onboardingCompletedProvider.notifier).state = true;
