@@ -18,6 +18,13 @@ import '../../core/services/crash_reporting_service.dart';
 import '../../core/services/notification_service.dart';
 import '../../core/utils/csv_exporter.dart';
 
+int _boundedPreference(
+  int? value, {
+  required int min,
+  required int max,
+  required int fallback,
+}) => value != null && value >= min && value <= max ? value : fallback;
+
 class SettingsState {
   final bool remindWorkout;
   final bool remindMeals;
@@ -27,6 +34,18 @@ class SettingsState {
   final bool quietHoursEnabled;
   final int quietHoursStart;
   final int quietHoursEnd;
+  final List<int> workoutReminderDays;
+  final int workoutReminderHour;
+  final int workoutReminderMinute;
+  final int lunchReminderHour;
+  final int lunchReminderMinute;
+  final int dinnerReminderHour;
+  final int dinnerReminderMinute;
+  final int dailyLoggingReminderHour;
+  final int dailyLoggingReminderMinute;
+  final int weeklyProgressDay;
+  final int weeklyProgressHour;
+  final int weeklyProgressMinute;
   final bool offlineOnly;
   final bool crashReportingEnabled;
   final bool loading;
@@ -42,6 +61,21 @@ class SettingsState {
     this.quietHoursEnabled = true,
     this.quietHoursStart = 22,
     this.quietHoursEnd = 7,
+    this.workoutReminderDays = NotificationService.defaultWorkoutReminderDays,
+    this.workoutReminderHour = NotificationService.defaultWorkoutReminderHour,
+    this.workoutReminderMinute =
+        NotificationService.defaultWorkoutReminderMinute,
+    this.lunchReminderHour = NotificationService.defaultLunchReminderHour,
+    this.lunchReminderMinute = NotificationService.defaultLunchReminderMinute,
+    this.dinnerReminderHour = NotificationService.defaultDinnerReminderHour,
+    this.dinnerReminderMinute = NotificationService.defaultDinnerReminderMinute,
+    this.dailyLoggingReminderHour =
+        NotificationService.defaultDailyLoggingReminderHour,
+    this.dailyLoggingReminderMinute =
+        NotificationService.defaultDailyLoggingReminderMinute,
+    this.weeklyProgressDay = NotificationService.defaultWeeklyProgressDay,
+    this.weeklyProgressHour = NotificationService.defaultWeeklyProgressHour,
+    this.weeklyProgressMinute = NotificationService.defaultWeeklyProgressMinute,
     this.offlineOnly = false,
     this.crashReportingEnabled = false,
     this.loading = true,
@@ -58,6 +92,18 @@ class SettingsState {
     bool? quietHoursEnabled,
     int? quietHoursStart,
     int? quietHoursEnd,
+    List<int>? workoutReminderDays,
+    int? workoutReminderHour,
+    int? workoutReminderMinute,
+    int? lunchReminderHour,
+    int? lunchReminderMinute,
+    int? dinnerReminderHour,
+    int? dinnerReminderMinute,
+    int? dailyLoggingReminderHour,
+    int? dailyLoggingReminderMinute,
+    int? weeklyProgressDay,
+    int? weeklyProgressHour,
+    int? weeklyProgressMinute,
     bool? offlineOnly,
     bool? crashReportingEnabled,
     bool? loading,
@@ -73,6 +119,21 @@ class SettingsState {
       quietHoursEnabled: quietHoursEnabled ?? this.quietHoursEnabled,
       quietHoursStart: quietHoursStart ?? this.quietHoursStart,
       quietHoursEnd: quietHoursEnd ?? this.quietHoursEnd,
+      workoutReminderDays: workoutReminderDays ?? this.workoutReminderDays,
+      workoutReminderHour: workoutReminderHour ?? this.workoutReminderHour,
+      workoutReminderMinute:
+          workoutReminderMinute ?? this.workoutReminderMinute,
+      lunchReminderHour: lunchReminderHour ?? this.lunchReminderHour,
+      lunchReminderMinute: lunchReminderMinute ?? this.lunchReminderMinute,
+      dinnerReminderHour: dinnerReminderHour ?? this.dinnerReminderHour,
+      dinnerReminderMinute: dinnerReminderMinute ?? this.dinnerReminderMinute,
+      dailyLoggingReminderHour:
+          dailyLoggingReminderHour ?? this.dailyLoggingReminderHour,
+      dailyLoggingReminderMinute:
+          dailyLoggingReminderMinute ?? this.dailyLoggingReminderMinute,
+      weeklyProgressDay: weeklyProgressDay ?? this.weeklyProgressDay,
+      weeklyProgressHour: weeklyProgressHour ?? this.weeklyProgressHour,
+      weeklyProgressMinute: weeklyProgressMinute ?? this.weeklyProgressMinute,
       offlineOnly: offlineOnly ?? this.offlineOnly,
       crashReportingEnabled:
           crashReportingEnabled ?? this.crashReportingEnabled,
@@ -119,6 +180,74 @@ class SettingsController extends StateNotifier<SettingsState> {
       quietHoursStart:
           prefs.getInt(NotificationService.prefQuietHoursStart) ?? 22,
       quietHoursEnd: prefs.getInt(NotificationService.prefQuietHoursEnd) ?? 7,
+      workoutReminderDays:
+          NotificationService.workoutReminderDaysFromPreferences(prefs),
+      workoutReminderHour: _boundedPreference(
+        prefs.getInt(NotificationService.prefWorkoutReminderHour),
+        min: 0,
+        max: 23,
+        fallback: NotificationService.defaultWorkoutReminderHour,
+      ),
+      workoutReminderMinute: _boundedPreference(
+        prefs.getInt(NotificationService.prefWorkoutReminderMinute),
+        min: 0,
+        max: 59,
+        fallback: NotificationService.defaultWorkoutReminderMinute,
+      ),
+      lunchReminderHour: _boundedPreference(
+        prefs.getInt(NotificationService.prefLunchReminderHour),
+        min: 0,
+        max: 23,
+        fallback: NotificationService.defaultLunchReminderHour,
+      ),
+      lunchReminderMinute: _boundedPreference(
+        prefs.getInt(NotificationService.prefLunchReminderMinute),
+        min: 0,
+        max: 59,
+        fallback: NotificationService.defaultLunchReminderMinute,
+      ),
+      dinnerReminderHour: _boundedPreference(
+        prefs.getInt(NotificationService.prefDinnerReminderHour),
+        min: 0,
+        max: 23,
+        fallback: NotificationService.defaultDinnerReminderHour,
+      ),
+      dinnerReminderMinute: _boundedPreference(
+        prefs.getInt(NotificationService.prefDinnerReminderMinute),
+        min: 0,
+        max: 59,
+        fallback: NotificationService.defaultDinnerReminderMinute,
+      ),
+      dailyLoggingReminderHour: _boundedPreference(
+        prefs.getInt(NotificationService.prefDailyLoggingReminderHour),
+        min: 0,
+        max: 23,
+        fallback: NotificationService.defaultDailyLoggingReminderHour,
+      ),
+      dailyLoggingReminderMinute: _boundedPreference(
+        prefs.getInt(NotificationService.prefDailyLoggingReminderMinute),
+        min: 0,
+        max: 59,
+        fallback: NotificationService.defaultDailyLoggingReminderMinute,
+      ),
+      weeklyProgressDay: _boundedPreference(
+        prefs.getInt(NotificationService.prefWeeklyProgressDay),
+        min: DateTime.monday,
+        max: DateTime.sunday,
+        fallback: NotificationService.defaultWeeklyProgressDay,
+      ),
+      weeklyProgressHour: _boundedPreference(
+        prefs.getInt(NotificationService.prefWeeklyProgressHour),
+        min: 0,
+        max: 23,
+        fallback: NotificationService.defaultWeeklyProgressHour,
+      ),
+      weeklyProgressMinute: _boundedPreference(
+        prefs.getInt(NotificationService.prefWeeklyProgressMinute),
+        min: 0,
+        max: 59,
+        fallback: NotificationService.defaultWeeklyProgressMinute,
+      ),
       offlineOnly: prefs.getBool('offline_only') ?? false,
       crashReportingEnabled:
           prefs.getBool(CrashReportingService.prefCrashReportingEnabled) ??
@@ -149,6 +278,92 @@ class SettingsController extends StateNotifier<SettingsState> {
     }
     await NotificationService.scheduleAllReminders(_ref.read(databaseProvider));
     await loadPreferences();
+  }
+
+  Future<void> updateWorkoutReminderSchedule({
+    required List<int> days,
+    required int hour,
+    required int minute,
+  }) async {
+    final normalizedDays = days.toSet().toList()..sort();
+    if (normalizedDays.isEmpty ||
+        normalizedDays.any(
+          (day) => day < DateTime.monday || day > DateTime.sunday,
+        )) {
+      throw ArgumentError.value(days, 'days', 'Select at least one valid day.');
+    }
+    _validateTime(hour, minute);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(
+      NotificationService.prefWorkoutReminderDays,
+      normalizedDays.map((day) => '$day').toList(),
+    );
+    await prefs.setInt(NotificationService.prefWorkoutReminderHour, hour);
+    await prefs.setInt(NotificationService.prefWorkoutReminderMinute, minute);
+    await _rescheduleAndReload();
+  }
+
+  Future<void> updateMealReminderSchedule({
+    required int lunchHour,
+    required int lunchMinute,
+    required int dinnerHour,
+    required int dinnerMinute,
+  }) async {
+    _validateTime(lunchHour, lunchMinute);
+    _validateTime(dinnerHour, dinnerMinute);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(NotificationService.prefLunchReminderHour, lunchHour);
+    await prefs.setInt(
+      NotificationService.prefLunchReminderMinute,
+      lunchMinute,
+    );
+    await prefs.setInt(NotificationService.prefDinnerReminderHour, dinnerHour);
+    await prefs.setInt(
+      NotificationService.prefDinnerReminderMinute,
+      dinnerMinute,
+    );
+    await _rescheduleAndReload();
+  }
+
+  Future<void> updateDailyLoggingReminderSchedule({
+    required int hour,
+    required int minute,
+  }) async {
+    _validateTime(hour, minute);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(NotificationService.prefDailyLoggingReminderHour, hour);
+    await prefs.setInt(
+      NotificationService.prefDailyLoggingReminderMinute,
+      minute,
+    );
+    await _rescheduleAndReload();
+  }
+
+  Future<void> updateWeeklyProgressSchedule({
+    required int day,
+    required int hour,
+    required int minute,
+  }) async {
+    if (day < DateTime.monday || day > DateTime.sunday) {
+      throw ArgumentError.value(day, 'day', 'Use a valid weekday.');
+    }
+    _validateTime(hour, minute);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(NotificationService.prefWeeklyProgressDay, day);
+    await prefs.setInt(NotificationService.prefWeeklyProgressHour, hour);
+    await prefs.setInt(NotificationService.prefWeeklyProgressMinute, minute);
+    await _rescheduleAndReload();
+  }
+
+  Future<void> _rescheduleAndReload() async {
+    await NotificationService.scheduleAllReminders(_ref.read(databaseProvider));
+    await loadPreferences();
+  }
+
+  static void _validateTime(int hour, int minute) {
+    if (hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+      throw ArgumentError('Use a valid local time.');
+    }
   }
 
   Future<void> toggleOfflineOnly(bool value) async {

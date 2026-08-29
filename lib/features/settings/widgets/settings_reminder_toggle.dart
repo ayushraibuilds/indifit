@@ -15,6 +15,8 @@ class SettingsReminderToggle extends StatelessWidget {
   final ValueChanged<bool> onChanged;
   final Future<void> Function()? onRequestPermission;
   final bool requestNotificationPermission;
+  final String? actionLabel;
+  final VoidCallback? onAction;
 
   const SettingsReminderToggle({
     super.key,
@@ -26,6 +28,8 @@ class SettingsReminderToggle extends StatelessWidget {
     required this.onChanged,
     this.onRequestPermission,
     this.requestNotificationPermission = true,
+    this.actionLabel,
+    this.onAction,
   });
 
   @override
@@ -40,48 +44,70 @@ class SettingsReminderToggle extends StatelessWidget {
       child: Semantics(
         container: true,
         label: '$title, $subtitle',
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Container(
-              padding: const EdgeInsets.all(B05Layout.space8),
-              decoration: BoxDecoration(
-                color: iconColor.withValues(alpha: 0.12),
-                borderRadius: B05Radii.mediumRadius,
-              ),
-              child: Icon(icon, color: iconColor, size: B05Layout.iconMedium),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(B05Layout.space8),
+                  decoration: BoxDecoration(
+                    color: iconColor.withValues(alpha: 0.12),
+                    borderRadius: B05Radii.mediumRadius,
+                  ),
+                  child: Icon(
+                    icon,
+                    color: iconColor,
+                    size: B05Layout.iconMedium,
+                  ),
+                ),
+                const SizedBox(width: B05Layout.space12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title, style: B05Typography.label(context)),
+                      const SizedBox(height: B05Layout.space4),
+                      Text(subtitle, style: B05Typography.caption(context)),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: B05Layout.space8),
+                B05TouchTarget(
+                  child: Semantics(
+                    label: '$title notifications',
+                    child: Switch.adaptive(
+                      value: value,
+                      activeTrackColor: colors.action,
+                      onChanged: (newVal) {
+                        onChanged(newVal);
+                        if (newVal) {
+                          final request = onRequestPermission?.call();
+                          if (request != null) {
+                            unawaited(request);
+                          } else if (requestNotificationPermission) {
+                            unawaited(NotificationService.requestPermissions());
+                          }
+                        }
+                      },
+                    ),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(width: B05Layout.space12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: B05Typography.label(context)),
-                  const SizedBox(height: B05Layout.space4),
-                  Text(subtitle, style: B05Typography.caption(context)),
-                ],
-              ),
-            ),
-            const SizedBox(width: B05Layout.space8),
-            B05TouchTarget(
-              child: Semantics(
-                label: '$title notifications',
-                child: Switch.adaptive(
-                  value: value,
-                  activeTrackColor: colors.action,
-                  onChanged: (newVal) {
-                    onChanged(newVal);
-                    if (newVal) {
-                      final request = onRequestPermission?.call();
-                      if (request != null) {
-                        unawaited(request);
-                      } else if (requestNotificationPermission) {
-                        unawaited(NotificationService.requestPermissions());
-                      }
-                    }
-                  },
+            if (actionLabel != null && onAction != null) ...[
+              const SizedBox(height: B05Layout.space4),
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: B05TouchTarget(
+                  child: TextButton.icon(
+                    onPressed: onAction,
+                    icon: const Icon(Icons.edit_calendar_outlined, size: 18),
+                    label: Text(actionLabel!),
+                  ),
                 ),
               ),
-            ),
+            ],
           ],
         ),
       ),

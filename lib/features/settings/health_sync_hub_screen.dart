@@ -189,6 +189,7 @@ class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
       primaryAction: _buildPrimaryAction(
         healthState: healthState,
         connection: connection,
+        platformName: platformName,
         isLoading: isLoading,
       ),
       body: Column(
@@ -197,7 +198,9 @@ class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
           Text('Health integration', style: B05Typography.pageTitle(context)),
           const SizedBox(height: B05Layout.space8),
           Text(
-            'Choose what IndiFit may use from your health app. Supported walking, running, and cycling activities can be imported. Weight logs saved in IndiFit can be added to your health app when Body weight is allowed.',
+            _canUseHealthData(connection)
+                ? 'Choose what IndiFit may use from your health app. Supported walking, running, and cycling activities can be imported. Weight logs saved in IndiFit can be added to your health app when Body weight is allowed.'
+                : _disconnectedIntroduction(platformName),
             style: B05Typography.body(context),
           ),
           const SizedBox(height: B05Layout.space20),
@@ -210,15 +213,17 @@ class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
             platformName: platformName,
             isLoading: isLoading,
           ),
-          const SizedBox(height: B05Layout.space20),
-          _buildSectionLabel(context, 'WHAT INDIFIT MAY USE'),
-          const SizedBox(height: B05Layout.space8),
-          _buildCategorySurface(
-            context,
-            summary: data,
-            connection: connection,
-            isLoading: isLoading,
-          ),
+          if (_canUseHealthData(connection)) ...[
+            const SizedBox(height: B05Layout.space20),
+            _buildSectionLabel(context, 'WHAT INDIFIT MAY USE'),
+            const SizedBox(height: B05Layout.space8),
+            _buildCategorySurface(
+              context,
+              summary: data,
+              connection: connection,
+              isLoading: isLoading,
+            ),
+          ],
           if (_outdoorActivities.isNotEmpty) ...[
             const SizedBox(height: B05Layout.space20),
             _buildImportedActivities(context),
@@ -240,6 +245,7 @@ class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
   Widget? _buildPrimaryAction({
     required HealthState healthState,
     required HealthConnectionStatus connection,
+    required String platformName,
     required bool isLoading,
   }) {
     if (healthState.status == HealthStatus.error) {
@@ -278,10 +284,23 @@ class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
       );
     }
     return B05ActionButton(
-      label: 'Connect health data',
+      label: _connectLabel(platformName),
       icon: Icons.health_and_safety_outlined,
       onPressed: isLoading ? null : _handleConnect,
     );
+  }
+
+  static String _connectLabel(String platformName) {
+    if (platformName == 'Apple Health') return 'Connect Apple Health';
+    if (platformName == 'Health Connect') return 'Connect Health Connect';
+    return 'Connect health data';
+  }
+
+  static String _disconnectedIntroduction(String platformName) {
+    final source = platformName == 'Health data'
+        ? 'your health app'
+        : platformName;
+    return 'Connect $source to optionally use supported health data in IndiFit, including steps, activity, sleep, and other available categories.';
   }
 
   Widget _buildConnectionSurface(

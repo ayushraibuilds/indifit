@@ -43,6 +43,7 @@ class _NutritionTargetsHubScreenState
   bool _savingEligibility = false;
   bool _savingCoachingConsent = false;
   bool _coachingExpanded = false;
+  bool _ageDetailsExpanded = false;
 
   @override
   void initState() {
@@ -184,25 +185,74 @@ class _NutritionTargetsHubScreenState
   }
 
   Widget _buildOptionalCoaching(BuildContext context) {
+    final state = ref.watch(b04GoalSettingsControllerProvider);
+    final enabled =
+        state.availability?.preferences.adaptiveCoachingEnabled ?? false;
+    final canChangeConsent =
+        state.status == B04GoalSettingsStatus.ready &&
+        state.availability != null &&
+        !state.isLoading;
     return B05Surface(
+      key: const ValueKey('adaptive-coaching-shell'),
       padding: EdgeInsets.zero,
-      child: ExpansionTile(
-        title: const Text('Optional coaching'),
-        subtitle: const Text(
-          'Off by default; goals and targets work without it',
-        ),
-        onExpansionChanged: (expanded) {
-          if (_coachingExpanded == expanded) return;
-          setState(() => _coachingExpanded = expanded);
-        },
-        children: _coachingExpanded
-            ? [
-                _buildOptionalCoachingBody(
-                  context,
-                  ref.watch(b04GoalSettingsControllerProvider),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SwitchListTile.adaptive(
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: B05Layout.space16,
+              vertical: B05Layout.space4,
+            ),
+            title: const Text('Adaptive coaching'),
+            subtitle: Text(
+              state.isLoading || state.status == B04GoalSettingsStatus.idle
+                  ? 'Checking current state…'
+                  : state.availability == null ||
+                        state.status == B04GoalSettingsStatus.failure
+                  ? 'Current state unavailable · Your targets remain unchanged.'
+                  : enabled
+                  ? 'On · IndiFit can suggest future adjustments. You approve every change.'
+                  : 'Off · IndiFit can suggest future target changes. Nothing changes unless you approve it.',
+            ),
+            value: enabled,
+            onChanged: !canChangeConsent || _savingCoachingConsent
+                ? null
+                : (_) => enabled
+                      ? _setCoachingConsent(CoachingConsentAction.disable)
+                      : _enableCoaching(),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              B05Layout.space8,
+              0,
+              B05Layout.space8,
+              B05Layout.space8,
+            ),
+            child: Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: TextButton.icon(
+                onPressed: () => setState(() {
+                  _coachingExpanded = !_coachingExpanded;
+                  if (!_coachingExpanded) _ageDetailsExpanded = false;
+                }),
+                icon: Icon(
+                  _coachingExpanded
+                      ? Icons.expand_less_rounded
+                      : Icons.tune_rounded,
                 ),
-              ]
-            : const [],
+                label: Text(
+                  _coachingExpanded
+                      ? 'Hide coaching details'
+                      : _coachingActionLabel(state),
+                ),
+              ),
+            ),
+          ),
+          if (_coachingExpanded) ...[
+            Divider(height: 1, color: context.b05Colors.border),
+            _buildOptionalCoachingBody(context, state),
+          ],
+        ],
       ),
     );
   }
@@ -246,6 +296,14 @@ class _NutritionTargetsHubScreenState
         : availability.eligibility == null
         ? 'No age details are available for this check.'
         : 'Availability uses the age details you chose to save for coaching.';
+    final eligibility = availability?.eligibility;
+    final needsAgeDetails =
+        eligibility == null ||
+        eligibility.result == CoachingEligibilityResult.unknownAge ||
+        eligibility.result == CoachingEligibilityResult.withheldAge ||
+        eligibility.result == CoachingEligibilityResult.conflictingAge ||
+        eligibility.result == CoachingEligibilityResult.invalidEvidence;
+    final showAgeDetails = needsAgeDetails || _ageDetailsExpanded;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(
@@ -257,21 +315,10 @@ class _NutritionTargetsHubScreenState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Coaching is separate from your goal and targets. Suggestions never change a target without your explicit action.',
-            style: B05Typography.body(context),
-          ),
-          const SizedBox(height: B05Layout.space12),
-          SwitchListTile.adaptive(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('Adaptive coaching'),
-            subtitle: Text(enabled ? 'Enabled' : 'Disabled'),
-            value: enabled,
-            onChanged: _savingCoachingConsent
-                ? null
-                : (_) => enabled
-                      ? _setCoachingConsent(CoachingConsentAction.disable)
-                      : _enableCoaching(),
+          B04ReadStatusCard(
+            title: 'Coaching availability',
+            message: statusMessage,
+            detail: eligibilityDetail,
           ),
           if (enabled)
             Align(
@@ -283,52 +330,88 @@ class _NutritionTargetsHubScreenState
                 child: const Text('Withdraw coaching consent'),
               ),
             ),
-          const SizedBox(height: B05Layout.space8),
-          Text('Age details', style: B05Typography.title(context)),
-          const SizedBox(height: B05Layout.space4),
-          Text(
-            'IndiFit never guesses age from activity or food logs. This date is used only to check whether coaching is available.',
-            style: B05Typography.body(context),
-          ),
-          const SizedBox(height: B05Layout.space12),
-          TextField(
-            controller: _dateOfBirthController,
-            keyboardType: TextInputType.datetime,
-            enabled: !_savingEligibility,
-            decoration: const InputDecoration(
-              labelText: 'Date of birth',
-              hintText: 'YYYY-MM-DD',
+          if (!needsAgeDetails && !_ageDetailsExpanded)
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: TextButton(
+                onPressed: () => setState(() => _ageDetailsExpanded = true),
+                child: const Text('Update date of birth'),
+              ),
             ),
-          ),
-          const SizedBox(height: B05Layout.space8),
-          B05ActionButton(
-            label: _savingEligibility ? 'Saving…' : 'Save age details',
-            icon: Icons.verified_outlined,
-            emphasis: B05ActionEmphasis.secondary,
-            onPressed: _savingEligibility ? null : _saveEligibility,
-          ),
-          const SizedBox(height: B05Layout.space12),
-          B04ReadStatusCard(
-            title: 'Coaching availability',
-            message: statusMessage,
-            detail: eligibilityDetail,
-          ),
+          if (showAgeDetails) ...[
+            const SizedBox(height: B05Layout.space12),
+            Text('Age details', style: B05Typography.title(context)),
+            const SizedBox(height: B05Layout.space4),
+            Text(
+              'Your date of birth is used only to check whether coaching is available.',
+              style: B05Typography.body(context),
+            ),
+            const SizedBox(height: B05Layout.space12),
+            TextField(
+              controller: _dateOfBirthController,
+              keyboardType: TextInputType.datetime,
+              enabled: !_savingEligibility,
+              decoration: const InputDecoration(
+                labelText: 'Date of birth',
+                hintText: 'YYYY-MM-DD',
+              ),
+            ),
+            const SizedBox(height: B05Layout.space8),
+            B05ActionButton(
+              label: _savingEligibility ? 'Saving…' : 'Check availability',
+              icon: Icons.verified_outlined,
+              emphasis: B05ActionEmphasis.secondary,
+              onPressed: _savingEligibility ? null : _saveEligibility,
+            ),
+          ],
           if (state.consentHistory.isNotEmpty) ...[
             const SizedBox(height: B05Layout.space12),
             _buildCoachingHistory(state),
           ],
           const SizedBox(height: B05Layout.space12),
-          Semantics(
-            container: true,
-            label: 'Coaching safety note',
-            child: Text(
-              'General wellness guidance only—not medical advice. Suggestions do not diagnose, prescribe treatment, or replace qualified professional care.',
-              style: B05Typography.caption(context),
+          B05Surface(
+            padding: EdgeInsets.zero,
+            tone: B05SurfaceTone.inset,
+            child: ExpansionTile(
+              title: const Text('About adaptive coaching'),
+              subtitle: const Text('General wellness guidance'),
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    B05Layout.space16,
+                    0,
+                    B05Layout.space16,
+                    B05Layout.space16,
+                  ),
+                  child: Semantics(
+                    container: true,
+                    label: 'Coaching safety note',
+                    child: Text(
+                      'Suggestions never change a target without your approval. They do not diagnose, prescribe treatment, or replace qualified professional care.',
+                      style: B05Typography.caption(context),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
       ),
     );
+  }
+
+  String _coachingActionLabel(B04GoalSettingsState state) {
+    if (state.status == B04GoalSettingsStatus.failure) return 'Try again';
+    if (state.availability == null) return 'View details';
+    final eligibility = state.availability?.eligibility?.result;
+    if (eligibility == null ||
+        eligibility == CoachingEligibilityResult.unknownAge ||
+        eligibility == CoachingEligibilityResult.withheldAge ||
+        eligibility == CoachingEligibilityResult.conflictingAge ||
+        eligibility == CoachingEligibilityResult.invalidEvidence) {
+      return 'Check availability';
+    }
+    return 'Manage coaching';
   }
 
   Widget _buildCoachingHistory(B04GoalSettingsState state) {

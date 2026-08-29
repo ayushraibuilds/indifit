@@ -34,7 +34,14 @@ void main() {
         _app(
           database,
           dates,
-          state: _state(goal: _goal()),
+          state: _state(
+            goal: _goal(),
+            availability: _availability(
+              available: false,
+              reasonCode: 'unknown_age',
+              enabled: false,
+            ),
+          ),
           targets: {'2026-08-06': _target(_goal(), '2026-08-06')},
         ),
       );
@@ -49,8 +56,9 @@ void main() {
       expect(find.text('Today’s target'), findsOneWidget);
       expect(find.text('2100 kcal'), findsOneWidget);
       expect(find.text('Save today’s targets'), findsOneWidget);
-      expect(find.text('Optional coaching'), findsOneWidget);
-      expect(find.text('Adaptive coaching'), findsNothing);
+      expect(find.text('Adaptive coaching'), findsOneWidget);
+      expect(find.textContaining('Off · IndiFit can suggest'), findsOneWidget);
+      expect(find.text('Check availability'), findsOneWidget);
       expect(find.text('Date of birth'), findsNothing);
       expect(find.text('Goals & adaptive coaching'), findsNothing);
       expect(find.text('Refresh targets'), findsNothing);
@@ -61,6 +69,15 @@ void main() {
       expect(find.textContaining('reason ID'), findsNothing);
       expect(find.textContaining('target ID'), findsNothing);
 
+      await tester.ensureVisible(
+        find.byKey(const ValueKey('adaptive-coaching-shell')),
+      );
+      await tester.pumpAndSettle();
+      await expectLater(
+        find.byKey(const ValueKey('adaptive-coaching-shell')),
+        matchesGoldenFile('goldens/phase5_coaching_off_light.png'),
+      );
+
       await _expandCoaching(tester);
 
       expect(find.text('Adaptive coaching'), findsOneWidget);
@@ -68,16 +85,23 @@ void main() {
       expect(find.text('Date of birth'), findsOneWidget);
       expect(
         find.text(
-          'Coaching availability couldn\'t be checked right now.',
+          'Add your date of birth to check whether adaptive coaching is available.',
         ),
         findsOneWidget,
       );
-      expect(
-        find.textContaining('Coaching is separate from your goal'),
-        findsOneWidget,
-      );
+      expect(find.text('Coaching availability'), findsOneWidget);
       expect(find.text('2100 kcal'), findsOneWidget);
       expect(find.text('Save today’s targets'), findsOneWidget);
+      await tester.ensureVisible(
+        find.text(
+          'Add your date of birth to check whether adaptive coaching is available.',
+        ),
+      );
+      await tester.pumpAndSettle();
+      await expectLater(
+        find.byType(NutritionTargetsHubScreen),
+        matchesGoldenFile('goldens/phase5_coaching_missing_dob_light.png'),
+      );
     },
   );
 
@@ -210,13 +234,14 @@ void main() {
     await _pumpForAsyncState(tester);
     await _expandCoaching(tester);
 
-    expect(find.text('Disabled'), findsOneWidget);
+    expect(find.textContaining('Off · IndiFit can suggest'), findsOneWidget);
     expect(
       find.text('Adaptive coaching is available when you choose to use it.'),
       findsOneWidget,
     );
-    await tester.ensureVisible(find.text('Adaptive coaching'));
-    await tester.tap(find.text('Adaptive coaching'));
+    final coachingSwitch = find.byType(Switch).last;
+    await tester.ensureVisible(coachingSwitch);
+    await tester.tap(coachingSwitch);
     await tester.pumpAndSettle();
     expect(find.text('Review adaptive coaching'), findsOneWidget);
     expect(
@@ -227,7 +252,7 @@ void main() {
 
     await tester.tap(find.text('Cancel'));
     await tester.pumpAndSettle();
-    expect(find.text('Disabled'), findsOneWidget);
+    expect(find.textContaining('Off · IndiFit can suggest'), findsOneWidget);
     expect(find.text('Withdraw coaching consent'), findsNothing);
   });
 
@@ -261,8 +286,12 @@ void main() {
         find.text('Adaptive coaching is available when you choose to use it.'),
         findsOneWidget,
       );
-      expect(find.text('Enabled'), findsOneWidget);
+      expect(find.textContaining('On · IndiFit can suggest'), findsOneWidget);
       expect(find.text('Coaching history'), findsOneWidget);
+      await expectLater(
+        find.byKey(const ValueKey('adaptive-coaching-shell')),
+        matchesGoldenFile('goldens/phase5_coaching_managed_light.png'),
+      );
       await tester.ensureVisible(find.text('Coaching history'));
       await tester.tap(find.text('Coaching history'));
       await _pumpForAsyncState(tester);
@@ -446,21 +475,25 @@ Widget _app(
   List<NutritionGoalVersionReadModel>? history,
   MediaQueryData? media,
 }) {
-  final controller = B04GoalSettingsController(
-    loadContext: () async => _context,
-    goals: NutritionGoalRepository(database: database, dates: dates),
-    preferences: CoachingPreferenceRepository(database: database, dates: dates),
-    dates: dates,
-    nowUtc: () => DateTime.utc(2026, 8, 6, 12),
-  );
-  controller.state = state;
-
   return ProviderScope(
     overrides: [
       databaseProvider.overrideWithValue(database),
       localScheduleDateServiceProvider.overrideWithValue(dates),
       b04ProductionUserContextProvider.overrideWith((ref) async => _context),
-      b04GoalSettingsControllerProvider.overrideWith((ref) => controller),
+      b04GoalSettingsControllerProvider.overrideWith((ref) {
+        final controller = B04GoalSettingsController(
+          loadContext: () async => _context,
+          goals: NutritionGoalRepository(database: database, dates: dates),
+          preferences: CoachingPreferenceRepository(
+            database: database,
+            dates: dates,
+          ),
+          dates: dates,
+          nowUtc: () => DateTime.utc(2026, 8, 6, 12),
+        );
+        controller.state = state;
+        return controller;
+      }),
       nutritionTargetsForDateProvider.overrideWith((ref, query) async {
         final target = targets[query.localDate];
         if (target == null) {
@@ -614,8 +647,10 @@ Future<void> _pumpForAsyncState(WidgetTester tester) async {
 }
 
 Future<void> _expandCoaching(WidgetTester tester) async {
-  final tile = find.text('Optional coaching');
-  await tester.ensureVisible(tile);
-  await tester.tap(tile);
+  final action = find.textContaining(
+    RegExp('Check availability|Manage coaching|View details|Try again'),
+  );
+  await tester.ensureVisible(action);
+  await tester.tap(action);
   await _pumpForAsyncState(tester);
 }

@@ -13,12 +13,12 @@ import 'crash_reporting_service.dart';
 /// Non-annoying, engagement-optimized local notification service.
 ///
 /// Schedule philosophy:
-///   - Workout reminder: Once daily (morning warm-up window)
-///   - Meal logging: Twice daily (post-lunch + post-dinner — skips breakfast to avoid morning spam)
-///   - Evening nudge: Once daily (gentle "did you log today?" before bed)
-///   - Weekly report: Once per week (Sunday morning)
+///   - Workout reminder: On the user's selected weekdays
+///   - Meal logging: Twice daily (post-lunch + post-dinner — skips breakfast)
+///   - Daily logging reminder: Once daily when food or training is missing
+///   - Weekly report: Once per week
 ///
-/// Total: up to four notifications on a day with the weekly report.
+/// Total: up to five notifications on a day with the weekly report.
 /// All configurable via SharedPreferences toggles in Settings screen.
 enum NotificationPermissionStatus { granted, denied, unavailable }
 
@@ -48,6 +48,42 @@ class NotificationService {
   static const String prefQuietHoursEnabled = 'pref_quiet_hours_enabled';
   static const String prefQuietHoursStart = 'pref_quiet_hours_start';
   static const String prefQuietHoursEnd = 'pref_quiet_hours_end';
+  static const String prefWorkoutReminderDays = 'pref_workout_reminder_days';
+  static const String prefWorkoutReminderHour = 'pref_workout_reminder_hour';
+  static const String prefWorkoutReminderMinute =
+      'pref_workout_reminder_minute';
+  static const String prefLunchReminderHour = 'pref_lunch_reminder_hour';
+  static const String prefLunchReminderMinute = 'pref_lunch_reminder_minute';
+  static const String prefDinnerReminderHour = 'pref_dinner_reminder_hour';
+  static const String prefDinnerReminderMinute = 'pref_dinner_reminder_minute';
+  static const String prefDailyLoggingReminderHour =
+      'pref_daily_logging_reminder_hour';
+  static const String prefDailyLoggingReminderMinute =
+      'pref_daily_logging_reminder_minute';
+  static const String prefWeeklyProgressDay = 'pref_weekly_progress_day';
+  static const String prefWeeklyProgressHour = 'pref_weekly_progress_hour';
+  static const String prefWeeklyProgressMinute = 'pref_weekly_progress_minute';
+
+  static const List<int> defaultWorkoutReminderDays = [
+    DateTime.monday,
+    DateTime.tuesday,
+    DateTime.wednesday,
+    DateTime.thursday,
+    DateTime.friday,
+    DateTime.saturday,
+    DateTime.sunday,
+  ];
+  static const int defaultWorkoutReminderHour = 7;
+  static const int defaultWorkoutReminderMinute = 30;
+  static const int defaultLunchReminderHour = 13;
+  static const int defaultLunchReminderMinute = 30;
+  static const int defaultDinnerReminderHour = 20;
+  static const int defaultDinnerReminderMinute = 30;
+  static const int defaultDailyLoggingReminderHour = 21;
+  static const int defaultDailyLoggingReminderMinute = 15;
+  static const int defaultWeeklyProgressDay = DateTime.sunday;
+  static const int defaultWeeklyProgressHour = 10;
+  static const int defaultWeeklyProgressMinute = 0;
 
   static Function(String payload)? onNotificationNavigate;
 
@@ -200,6 +236,52 @@ class NotificationService {
     final eveningEnabled = prefs.getBool(prefRemindEvening) ?? false;
     final weeklyEnabled = prefs.getBool(prefRemindWeekly) ?? false;
 
+    final workoutDays = workoutReminderDaysFromPreferences(prefs);
+    final workoutHour = _validHourOrDefault(
+      prefs.getInt(prefWorkoutReminderHour),
+      defaultWorkoutReminderHour,
+    );
+    final workoutMinute = _validMinuteOrDefault(
+      prefs.getInt(prefWorkoutReminderMinute),
+      defaultWorkoutReminderMinute,
+    );
+    final lunchHour = _validHourOrDefault(
+      prefs.getInt(prefLunchReminderHour),
+      defaultLunchReminderHour,
+    );
+    final lunchMinute = _validMinuteOrDefault(
+      prefs.getInt(prefLunchReminderMinute),
+      defaultLunchReminderMinute,
+    );
+    final dinnerHour = _validHourOrDefault(
+      prefs.getInt(prefDinnerReminderHour),
+      defaultDinnerReminderHour,
+    );
+    final dinnerMinute = _validMinuteOrDefault(
+      prefs.getInt(prefDinnerReminderMinute),
+      defaultDinnerReminderMinute,
+    );
+    final dailyLoggingHour = _validHourOrDefault(
+      prefs.getInt(prefDailyLoggingReminderHour),
+      defaultDailyLoggingReminderHour,
+    );
+    final dailyLoggingMinute = _validMinuteOrDefault(
+      prefs.getInt(prefDailyLoggingReminderMinute),
+      defaultDailyLoggingReminderMinute,
+    );
+    final weeklyDay = _validWeekdayOrDefault(
+      prefs.getInt(prefWeeklyProgressDay),
+      defaultWeeklyProgressDay,
+    );
+    final weeklyHour = _validHourOrDefault(
+      prefs.getInt(prefWeeklyProgressHour),
+      defaultWeeklyProgressHour,
+    );
+    final weeklyMinute = _validMinuteOrDefault(
+      prefs.getInt(prefWeeklyProgressMinute),
+      defaultWeeklyProgressMinute,
+    );
+
     final quietHoursEnabled = prefs.getBool(prefQuietHoursEnabled) ?? true;
     final quietHoursStart = prefs.getInt(prefQuietHoursStart) ?? 22; // 10 PM
     final quietHoursEnd = prefs.getInt(prefQuietHoursEnd) ?? 7; // 7 AM
@@ -248,6 +330,9 @@ class NotificationService {
 
     if (workoutEnabled && !hasWorkoutToday) {
       await _scheduleWorkoutReminder(
+        workoutDays,
+        workoutHour,
+        workoutMinute,
         quietHoursEnabled,
         quietHoursStart,
         quietHoursEnd,
@@ -257,6 +342,10 @@ class NotificationService {
       await _scheduleMealReminders(
         hasLunchToday,
         hasDinnerToday,
+        lunchHour,
+        lunchMinute,
+        dinnerHour,
+        dinnerMinute,
         quietHoursEnabled,
         quietHoursStart,
         quietHoursEnd,
@@ -264,6 +353,8 @@ class NotificationService {
     }
     if (eveningEnabled && (!hasAnyFoodToday || !hasWorkoutToday)) {
       await _scheduleEveningNudge(
+        dailyLoggingHour,
+        dailyLoggingMinute,
         quietHoursEnabled,
         quietHoursStart,
         quietHoursEnd,
@@ -271,6 +362,9 @@ class NotificationService {
     }
     if (weeklyEnabled) {
       await _scheduleWeeklyReport(
+        weeklyDay,
+        weeklyHour,
+        weeklyMinute,
         quietHoursEnabled,
         quietHoursStart,
         quietHoursEnd,
@@ -284,31 +378,41 @@ class NotificationService {
   // Individual schedulers
   // ────────────────────────────────────────
 
-  /// 🏋️ Daily workout reminder at 7:30 AM
+  /// Workout reminders on the selected local weekdays and time.
   static Future<void> _scheduleWorkoutReminder(
+    List<int> days,
+    int hour,
+    int minute,
     bool quietHoursEnabled,
     int quietStart,
     int quietEnd,
   ) async {
-    await _scheduleDailyNotification(
-      id: _idWorkout,
-      channelId: _workoutChannelId,
-      channelName: 'Workout Reminders',
-      hour: 7,
-      minute: 30,
-      title: '🏋️ Time to Train!',
-      body: 'Your muscles are waiting. Open IndiFit and start your workout.',
-      payload: 'workout',
-      quietHoursEnabled: quietHoursEnabled,
-      quietHoursStart: quietStart,
-      quietHoursEnd: quietEnd,
-    );
+    for (final day in days) {
+      await _scheduleWeeklyNotification(
+        id: _idWorkout + day,
+        channelId: _workoutChannelId,
+        channelName: 'Workout Reminders',
+        dayOfWeek: day,
+        hour: hour,
+        minute: minute,
+        title: '🏋️ Time to Train!',
+        body: 'Open IndiFit when you are ready to start your workout.',
+        payload: 'workout',
+        quietHoursEnabled: quietHoursEnabled,
+        quietHoursStart: quietStart,
+        quietHoursEnd: quietEnd,
+      );
+    }
   }
 
   /// 🍱 Meal logging reminders — only post-lunch and post-dinner
   static Future<void> _scheduleMealReminders(
     bool hasLunchToday,
     bool hasDinnerToday,
+    int lunchHour,
+    int lunchMinute,
+    int dinnerHour,
+    int dinnerMinute,
     bool quietHoursEnabled,
     int quietStart,
     int quietEnd,
@@ -318,11 +422,10 @@ class NotificationService {
         id: _idMealLunch,
         channelId: _mealChannelId,
         channelName: 'Meal Reminders',
-        hour: 13,
-        minute: 30,
+        hour: lunchHour,
+        minute: lunchMinute,
         title: '🍱 Log your lunch',
-        body:
-            'Ate something good? Snap a photo or search for it to track macros.',
+        body: 'Open IndiFit to search and log your lunch.',
         payload: 'meal_lunch',
         quietHoursEnabled: quietHoursEnabled,
         quietHoursStart: quietStart,
@@ -335,11 +438,10 @@ class NotificationService {
         id: _idMealDinner,
         channelId: _mealChannelId,
         channelName: 'Meal Reminders',
-        hour: 20,
-        minute: 30,
+        hour: dinnerHour,
+        minute: dinnerMinute,
         title: '🍽️ Log your dinner',
-        body:
-            'Almost done for the day — log dinner to complete your macro tracker.',
+        body: 'Open IndiFit to search and log your dinner.',
         payload: 'meal_dinner',
         quietHoursEnabled: quietHoursEnabled,
         quietHoursStart: quietStart,
@@ -348,8 +450,10 @@ class NotificationService {
     }
   }
 
-  /// 🌙 Evening nudge at 9:15 PM
+  /// Daily logging reminder when food or workout evidence is still missing.
   static Future<void> _scheduleEveningNudge(
+    int hour,
+    int minute,
     bool quietHoursEnabled,
     int quietStart,
     int quietEnd,
@@ -357,12 +461,11 @@ class NotificationService {
     await _scheduleDailyNotification(
       id: _idEveningNudge,
       channelId: _nudgeChannelId,
-      channelName: 'Daily Nudge',
-      hour: 21,
-      minute: 15,
-      title: '🌙 Log your day',
-      body:
-          'Take 30 seconds to log anything you missed — meals or workouts. Keep your streak alive!',
+      channelName: 'Daily Logging Reminders',
+      hour: hour,
+      minute: minute,
+      title: '🌙 Review today’s logs',
+      body: 'Review anything you haven’t logged today—meals or workouts.',
       payload: 'evening_nudge',
       quietHoursEnabled: quietHoursEnabled,
       quietHoursStart: quietStart,
@@ -370,8 +473,11 @@ class NotificationService {
     );
   }
 
-  /// 📊 Weekly report — Sunday at 10:00 AM
+  /// Weekly factual Progress reminder at the selected local day and time.
   static Future<void> _scheduleWeeklyReport(
+    int dayOfWeek,
+    int hour,
+    int minute,
     bool quietHoursEnabled,
     int quietStart,
     int quietEnd,
@@ -380,9 +486,9 @@ class NotificationService {
       id: _idWeeklyReport,
       channelId: _weeklyChannelId,
       channelName: 'Weekly Reports',
-      dayOfWeek: DateTime.sunday,
-      hour: 10,
-      minute: 0,
+      dayOfWeek: dayOfWeek,
+      hour: hour,
+      minute: minute,
       title: '📊 Your Weekly Report',
       body:
           'Your weekly summary is ready. Review calories, macros, and workout volume.',
@@ -512,25 +618,12 @@ class NotificationService {
       scheduled = scheduled.add(const Duration(days: 1));
     }
 
-    if (quietHoursEnabled &&
-        isInQuietHours(
-          scheduled.hour,
-          scheduled.minute,
-          quietHoursStart,
-          quietHoursEnd,
-        )) {
-      scheduled = tz.TZDateTime(
-        tz.local,
-        scheduled.year,
-        scheduled.month,
-        scheduled.day,
-        quietHoursEnd,
-        0,
-      );
-      if (scheduled.isBefore(now)) {
-        scheduled = scheduled.add(const Duration(days: 1));
-      }
-    }
+    scheduled = _deferUntilQuietHoursEnd(
+      scheduled,
+      enabled: quietHoursEnabled,
+      startHour: quietHoursStart,
+      endHour: quietHoursEnd,
+    );
 
     return scheduled;
   }
@@ -543,6 +636,31 @@ class NotificationService {
     }
   }
 
+  static List<int> workoutReminderDaysFromPreferences(SharedPreferences prefs) {
+    final stored = prefs.getStringList(prefWorkoutReminderDays);
+    if (stored == null) return defaultWorkoutReminderDays;
+    final days =
+        stored
+            .map(int.tryParse)
+            .whereType<int>()
+            .where((day) => day >= DateTime.monday && day <= DateTime.sunday)
+            .toSet()
+            .toList()
+          ..sort();
+    return days.isEmpty ? defaultWorkoutReminderDays : days;
+  }
+
+  static int _validHourOrDefault(int? value, int fallback) =>
+      value != null && value >= 0 && value <= 23 ? value : fallback;
+
+  static int _validMinuteOrDefault(int? value, int fallback) =>
+      value != null && value >= 0 && value <= 59 ? value : fallback;
+
+  static int _validWeekdayOrDefault(int? value, int fallback) =>
+      value != null && value >= DateTime.monday && value <= DateTime.sunday
+      ? value
+      : fallback;
+
   static tz.TZDateTime _nextInstanceOfDayAndTime(
     int dayOfWeek,
     int hour,
@@ -551,17 +669,51 @@ class NotificationService {
     int quietHoursStart = 22,
     int quietHoursEnd = 7,
   }) {
-    var scheduled = _nextInstanceOfTime(
+    final now = tz.TZDateTime.now(tz.local);
+    var scheduled = tz.TZDateTime(
+      tz.local,
+      now.year,
+      now.month,
+      now.day,
       hour,
       minute,
-      quietHoursEnabled: quietHoursEnabled,
-      quietHoursStart: quietHoursStart,
-      quietHoursEnd: quietHoursEnd,
     );
+    if (scheduled.isBefore(now)) {
+      scheduled = scheduled.add(const Duration(days: 1));
+    }
     while (scheduled.weekday != dayOfWeek) {
       scheduled = scheduled.add(const Duration(days: 1));
     }
-    return scheduled;
+    return _deferUntilQuietHoursEnd(
+      scheduled,
+      enabled: quietHoursEnabled,
+      startHour: quietHoursStart,
+      endHour: quietHoursEnd,
+    );
+  }
+
+  static tz.TZDateTime _deferUntilQuietHoursEnd(
+    tz.TZDateTime scheduled, {
+    required bool enabled,
+    required int startHour,
+    required int endHour,
+  }) {
+    if (!enabled ||
+        !isInQuietHours(scheduled.hour, scheduled.minute, startHour, endHour)) {
+      return scheduled;
+    }
+
+    final endsNextDay = startHour > endHour && scheduled.hour >= startHour;
+    final endDate = endsNextDay
+        ? scheduled.add(const Duration(days: 1))
+        : scheduled;
+    return tz.TZDateTime(
+      tz.local,
+      endDate.year,
+      endDate.month,
+      endDate.day,
+      endHour,
+    );
   }
 
   static const String prefLastScheduledTimezoneId =

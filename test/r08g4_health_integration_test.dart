@@ -229,10 +229,35 @@ void main() {
       expect(find.text('Not connected'), findsOneWidget);
       expect(find.text('Connect health data'), findsOneWidget);
       expect(find.text('Disconnect'), findsNothing);
-      expect(tester.widget<Switch>(find.byType(Switch).first).value, isFalse);
+      expect(find.byType(Switch), findsNothing);
+      expect(find.text('WHAT INDIFIT MAY USE'), findsNothing);
       expect(find.textContaining('(Read)'), findsNothing);
       expect(find.textContaining('(Write)'), findsNothing);
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('disconnected state names the available platform first', (
+      tester,
+    ) async {
+      final service = _FakeHealthService(
+        summary: const HealthDataSummary(
+          availability: HealthPlatformAvailability.supported,
+          connectionStatus: HealthConnectionStatus.notConnected,
+          platformName: 'Apple Health',
+        ),
+      );
+      await _pumpScreen(tester, service);
+
+      expect(find.text('Connect Apple Health'), findsOneWidget);
+      expect(
+        find.textContaining('Connect Apple Health to optionally use'),
+        findsOneWidget,
+      );
+      expect(find.text('WHAT INDIFIT MAY USE'), findsNothing);
+      await expectLater(
+        find.byType(HealthSyncHubScreen),
+        matchesGoldenFile('goldens/phase5_health_disconnected_light.png'),
+      );
     });
 
     testWidgets('denied state does not relabel categories as unrequested', (
@@ -248,8 +273,8 @@ void main() {
       await _pumpScreen(tester, service);
 
       expect(find.text('Permission not granted'), findsOneWidget);
-      expect(find.textContaining('Status: Not allowed'), findsWidgets);
-      expect(find.textContaining('Status: Not requested'), findsNothing);
+      expect(find.text('WHAT INDIFIT MAY USE'), findsNothing);
+      expect(find.byType(Switch), findsNothing);
     });
 
     testWidgets(
@@ -265,10 +290,7 @@ void main() {
         await _pumpScreen(tester, service, notifier: notifier, settle: false);
 
         expect(find.text('Checking Health data'), findsOneWidget);
-        expect(
-          tester.widget<Switch>(find.byType(Switch).first).onChanged,
-          isNull,
-        );
+        expect(find.byType(Switch), findsNothing);
 
         notifier.refreshCompleter.complete();
         await tester.pumpAndSettle();
@@ -324,6 +346,10 @@ void main() {
         expect(
           find.textContaining('Existing IndiFit history stays'),
           findsOneWidget,
+        );
+        await expectLater(
+          find.byType(HealthSyncHubScreen),
+          matchesGoldenFile('goldens/phase5_health_connected_dark.png'),
         );
         expect(tester.takeException(), isNull);
       },
@@ -435,10 +461,7 @@ void main() {
           expect(find.text('Not supported on this platform'), findsOneWidget);
           expect(find.text('Connect health data'), findsNothing);
           expect(find.bySemanticsLabel('Refresh health data'), findsOneWidget);
-          expect(
-            find.textContaining('Status: Unavailable on this device'),
-            findsWidgets,
-          );
+          expect(find.text('WHAT INDIFIT MAY USE'), findsNothing);
           expect(tester.takeException(), isNull);
         } finally {
           semanticsHandle.dispose();

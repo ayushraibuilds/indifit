@@ -1,11 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/di/providers.dart';
 import 'package:indifit/core/services/notification_service.dart';
 import 'package:indifit/core/theme/app_theme.dart';
+import 'package:indifit/core/widgets/indi_fit_bottom_sheet.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/features/settings/widgets/notification_settings_section.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -15,6 +17,11 @@ void main() {
 
   setUp(() {
     SharedPreferences.setMockInitialValues({});
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          const MethodChannel('dexterous.com/flutter/local_notifications'),
+          (_) async => true,
+        );
   });
 
   testWidgets('renders supported reminders and separates OS access state', (
@@ -45,7 +52,11 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Allowed'), findsOneWidget);
-    expect(find.text('Weekly Progress Report'), findsOneWidget);
+    expect(find.text('Weekly progress report'), findsOneWidget);
+    expect(find.text('Daily logging reminder'), findsOneWidget);
+    expect(find.text('Evening Log Nudge'), findsNothing);
+    expect(find.text('Edit schedule'), findsNWidgets(2));
+    expect(find.text('Edit times'), findsOneWidget);
     expect(find.text('Weekly AI Report'), findsNothing);
     expect(find.text('Water Intake'), findsNothing);
     expect(find.textContaining('Hydration'), findsNothing);
@@ -104,6 +115,10 @@ void main() {
     expect(
       find.textContaining('device is blocking notifications'),
       findsOneWidget,
+    );
+    await expectLater(
+      find.byType(Scaffold),
+      matchesGoldenFile('goldens/phase5_notifications_blocked_light.png'),
     );
     expect(tester.takeException(), isNull);
   });
@@ -172,6 +187,86 @@ void main() {
     expect(find.text('10:00 PM'), findsOneWidget);
     expect(find.text('7:00 AM'), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('workout schedule editor exposes days and time on demand', (
+    tester,
+  ) async {
+    await _pumpSection(tester, size: const Size(320, 568), textScale: 2);
+
+    final edit = find.text('Edit schedule').first;
+    await tester.ensureVisible(edit);
+    await tester.tap(edit);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Workout reminder schedule'), findsOneWidget);
+    expect(find.text('Days'), findsOneWidget);
+    expect(find.text('Mon'), findsOneWidget);
+    expect(find.text('Sun'), findsOneWidget);
+    expect(find.text('Reminder time'), findsOneWidget);
+    expect(find.text('Save schedule'), findsOneWidget);
+    await expectLater(
+      find.byType(IndiFitBottomSheet),
+      matchesGoldenFile('goldens/phase5_notification_schedule_editor_dark.png'),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('stored schedules are rendered instead of fixed copy', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      NotificationService.prefWorkoutReminderDays: ['1', '3', '5'],
+      NotificationService.prefWorkoutReminderHour: 6,
+      NotificationService.prefWorkoutReminderMinute: 45,
+      NotificationService.prefLunchReminderHour: 12,
+      NotificationService.prefLunchReminderMinute: 15,
+      NotificationService.prefDinnerReminderHour: 19,
+      NotificationService.prefDinnerReminderMinute: 40,
+      NotificationService.prefWeeklyProgressDay: DateTime.saturday,
+      NotificationService.prefWeeklyProgressHour: 9,
+      NotificationService.prefWeeklyProgressMinute: 20,
+    });
+    await _pumpSection(tester);
+
+    expect(find.textContaining('Mon · Wed · Fri · 6:45 AM'), findsOneWidget);
+    expect(
+      find.textContaining('Lunch 12:15 PM · Dinner 7:40 PM'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('Saturday · 9:20 AM'), findsOneWidget);
+    await expectLater(
+      find.byType(NotificationSettingsSection),
+      matchesGoldenFile('goldens/phase5_notifications_editable_dark.png'),
+    );
+  });
+
+  testWidgets('workout day edits save through the production schedule path', (
+    tester,
+  ) async {
+    await _pumpSection(tester);
+
+    final edit = find.text('Edit schedule').first;
+    await tester.ensureVisible(edit);
+    await tester.tap(edit);
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilterChip, 'Tue'));
+    await tester.pump();
+    final save = find.text('Save schedule');
+    await tester.ensureVisible(save);
+    await tester.tap(save);
+    await tester.pumpAndSettle();
+
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getStringList(NotificationService.prefWorkoutReminderDays), [
+      '1',
+      '3',
+      '4',
+      '5',
+      '6',
+      '7',
+    ]);
+    expect(find.text('Save schedule'), findsNothing);
   });
 
   testWidgets('remains usable at narrow width and large text', (tester) async {

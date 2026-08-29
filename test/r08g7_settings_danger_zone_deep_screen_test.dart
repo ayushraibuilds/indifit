@@ -262,9 +262,9 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('Reminders'), findsOneWidget);
-        expect(find.text('Workout Reminder'), findsOneWidget);
-        expect(find.text('Meal Logging'), findsOneWidget);
-        expect(find.text('Evening Log Nudge'), findsOneWidget);
+        expect(find.text('Workout reminder'), findsOneWidget);
+        expect(find.text('Meal logging'), findsOneWidget);
+        expect(find.text('Daily logging reminder'), findsOneWidget);
         expect(find.text('Quiet Hours'), findsOneWidget);
         expect(find.text('Start time'), findsOneWidget);
         expect(find.text('End time'), findsOneWidget);
@@ -283,7 +283,7 @@ void main() {
 
   group('R08G.7 — Health Sync Hub Screen', () {
     testWidgets(
-      'Health sync hub renders connection status, permissions and sync action',
+      'Health sync hub shows permissions after the connection is active',
       (tester) async {
         await tester.pumpWidget(
           createTestWidget(child: const HealthSyncHubScreen()),
@@ -294,12 +294,7 @@ void main() {
         expect(find.text('HEALTH CONNECTION'), findsOneWidget);
         expect(find.text('Connection status'), findsOneWidget);
         expect(find.text('WHAT INDIFIT MAY USE'), findsOneWidget);
-        expect(find.text('Steps'), findsAtLeastNWidgets(1));
-        expect(find.text('Active energy'), findsAtLeastNWidgets(1));
-        expect(find.text('Sleep'), findsAtLeastNWidgets(1));
-        expect(find.text('Resting heart rate'), findsOneWidget);
-        expect(find.text('Walking, running, and cycling'), findsOneWidget);
-        expect(find.text('Body weight'), findsOneWidget);
+        expect(find.byType(Switch), findsWidgets);
         expect(find.text('Workout Export (Write)'), findsNothing);
         expect(find.text('Auto-sync on app open'), findsNothing);
 
