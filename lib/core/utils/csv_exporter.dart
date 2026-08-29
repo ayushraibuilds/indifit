@@ -42,7 +42,7 @@ class CsvExporter {
   ) {
     final buffer = StringBuffer();
     buffer.writeln(
-      'Session ID,Routine Name,Completed Date,Exercise Name,Set Number,Weight (kg),Reps,Is PR,Is Warmup,RPE',
+      'Session ID,Routine Name,Completed Date,Exercise Name,Set Number,Weight (kg),Reps,Is Warmup,RPE',
     );
 
     final setMap = <int, List<WorkoutSet>>{};
@@ -65,7 +65,6 @@ class CsvExporter {
             '',
             '',
             'false',
-            'false',
             '',
           ].join(','),
         );
@@ -80,7 +79,6 @@ class CsvExporter {
               s.setNumber,
               s.weight.toStringAsFixed(1),
               s.reps,
-              s.isPr ? 'true' : 'false',
               s.isWarmUp ? 'true' : 'false',
               s.rpe ?? '',
             ].join(','),

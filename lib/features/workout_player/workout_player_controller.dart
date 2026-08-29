@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
-import 'package:vibration/vibration.dart';
 
 import '../../core/di/providers.dart';
 import '../../core/fixtures/workout_draft_codec.dart';
@@ -19,15 +18,10 @@ class WorkoutPlayerState {
   final List<WorkoutSetsCompanion> loggedSets;
   final List<RoutineExercise> activeExercises;
   final List<WorkoutSet> priorSets;
-  final WorkoutSet? bestPrSet;
   final double suggestedWeight;
   final bool isWarmUp;
   final String selectedSetType;
   final int? selectedRpe;
-  final bool showPrConfetti;
-  final String prExerciseName;
-  final double prWeight;
-  final int prReps;
 
   const WorkoutPlayerState({
     this.currentExerciseIndex = 0,
@@ -36,15 +30,10 @@ class WorkoutPlayerState {
     this.loggedSets = const [],
     this.activeExercises = const [],
     this.priorSets = const [],
-    this.bestPrSet,
     this.suggestedWeight = 20.0,
     this.isWarmUp = false,
     this.selectedSetType = 'working',
     this.selectedRpe,
-    this.showPrConfetti = false,
-    this.prExerciseName = '',
-    this.prWeight = 0.0,
-    this.prReps = 0,
   });
 
   WorkoutPlayerState copyWith({
@@ -54,15 +43,10 @@ class WorkoutPlayerState {
     List<WorkoutSetsCompanion>? loggedSets,
     List<RoutineExercise>? activeExercises,
     List<WorkoutSet>? priorSets,
-    WorkoutSet? bestPrSet,
     double? suggestedWeight,
     bool? isWarmUp,
     String? selectedSetType,
     int? selectedRpe,
-    bool? showPrConfetti,
-    String? prExerciseName,
-    double? prWeight,
-    int? prReps,
   }) {
     return WorkoutPlayerState(
       currentExerciseIndex: currentExerciseIndex ?? this.currentExerciseIndex,
@@ -71,15 +55,10 @@ class WorkoutPlayerState {
       loggedSets: loggedSets ?? this.loggedSets,
       activeExercises: activeExercises ?? this.activeExercises,
       priorSets: priorSets ?? this.priorSets,
-      bestPrSet: bestPrSet ?? this.bestPrSet,
       suggestedWeight: suggestedWeight ?? this.suggestedWeight,
       isWarmUp: isWarmUp ?? this.isWarmUp,
       selectedSetType: selectedSetType ?? this.selectedSetType,
       selectedRpe: selectedRpe,
-      showPrConfetti: showPrConfetti ?? this.showPrConfetti,
-      prExerciseName: prExerciseName ?? this.prExerciseName,
-      prWeight: prWeight ?? this.prWeight,
-      prReps: prReps ?? this.prReps,
     );
   }
 }
@@ -173,7 +152,6 @@ class WorkoutPlayerController extends StateNotifier<WorkoutPlayerState> {
     final latestSets = await repo.getLatestSetsForExercise(
       currentEx.exerciseName,
     );
-    final prSet = await repo.getPersonalRecord(currentEx.exerciseName);
 
     double suggested = 20.0;
     if (latestSets.isNotEmpty) {
@@ -196,11 +174,7 @@ class WorkoutPlayerController extends StateNotifier<WorkoutPlayerState> {
       }
     }
 
-    state = state.copyWith(
-      priorSets: latestSets,
-      bestPrSet: prSet,
-      suggestedWeight: suggested,
-    );
+    state = state.copyWith(priorSets: latestSets, suggestedWeight: suggested);
   }
 
   /// The retained B01 player has no typed modality field. Its compatibility
@@ -245,7 +219,7 @@ class WorkoutPlayerController extends StateNotifier<WorkoutPlayerState> {
     }
   }
 
-  Future<bool> recordSet({
+  Future<void> recordSet({
     required double weight,
     required int reps,
     int? durationSeconds,
@@ -253,22 +227,6 @@ class WorkoutPlayerController extends StateNotifier<WorkoutPlayerState> {
     double? inclinePercentage,
   }) async {
     final currentEx = state.activeExercises[state.currentExerciseIndex];
-    final repo = _ref.read(workoutRepositoryProvider);
-    final previousPr = await repo.getPersonalRecord(currentEx.exerciseName);
-
-    bool isPr = false;
-    final current1Rm = weight * (1 + reps / 30.0);
-
-    if (previousPr != null) {
-      final prev1Rm = previousPr.weight * (1 + previousPr.reps / 30.0);
-      if (current1Rm > prev1Rm) {
-        isPr = true;
-        triggerPrConfetti(currentEx.exerciseName, weight, reps);
-      }
-    } else {
-      isPr = true;
-      triggerPrConfetti(currentEx.exerciseName, weight, reps);
-    }
 
     final newSet = WorkoutSetsCompanion.insert(
       sessionId: 0,
@@ -276,7 +234,9 @@ class WorkoutPlayerController extends StateNotifier<WorkoutPlayerState> {
       weight: weight,
       reps: reps,
       setNumber: state.currentSetIndex + 1,
-      isPr: Value(isPr),
+      // Retain the legacy field for draft/backup compatibility, but do not
+      // manufacture PR truth without a canonical PR-event authority.
+      isPr: const Value(false),
       isWarmUp: Value(state.isWarmUp),
       rpe: Value(state.selectedRpe),
       setType: Value(state.selectedSetType),
@@ -289,7 +249,6 @@ class WorkoutPlayerController extends StateNotifier<WorkoutPlayerState> {
     state = state.copyWith(loggedSets: updatedLoggedSets);
 
     await saveDraft();
-    return isPr;
   }
 
   Future<void> advanceSetOrExercise() async {
@@ -331,25 +290,6 @@ class WorkoutPlayerController extends StateNotifier<WorkoutPlayerState> {
       state = state.copyWith(currentSetIndex: setIndex);
       prefillInputs();
     }
-  }
-
-  void triggerPrConfetti(String exerciseName, double weight, int reps) {
-    state = state.copyWith(
-      prExerciseName: exerciseName,
-      prWeight: weight,
-      prReps: reps,
-      showPrConfetti: true,
-    );
-
-    Vibration.hasVibrator().then((hasVib) {
-      if (hasVib == true) {
-        Vibration.vibrate(pattern: [0, 100, 100, 200]);
-      }
-    });
-
-    Future.delayed(const Duration(seconds: 3), () {
-      state = state.copyWith(showPrConfetti: false);
-    });
   }
 
   Future<void> substituteExercise(String newExerciseName) async {

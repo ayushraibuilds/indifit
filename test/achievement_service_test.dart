@@ -9,7 +9,6 @@ void main() {
         currentStreakDays: 30,
         totalVolumeKg: 10500.0,
         totalLoggedMealsCount: 50,
-        prCount: 1,
         loggedThali: true,
       );
 

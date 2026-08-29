@@ -68,7 +68,8 @@ void main() {
       expect(csv, contains('Push Day A'));
       expect(csv, contains('Bench Press'));
       expect(csv, contains('80.0'));
-      expect(csv, contains('true'));
+      expect(csv, isNot(contains('Is PR')));
+      expect(csv, contains('false,8'));
     });
 
     test('exports body measurements to CSV', () {

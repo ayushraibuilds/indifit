@@ -114,6 +114,43 @@ void main() {
 
       await Future.delayed(const Duration(milliseconds: 50));
     });
+
+    test('legacy logging does not manufacture personal-record truth', () async {
+      final controllerProvider =
+          StateNotifierProvider<WorkoutPlayerController, WorkoutPlayerState>((
+            ref,
+          ) {
+            return WorkoutPlayerController(
+              ref,
+              routineName: 'Legacy compatibility workout',
+              initialExercises: const [
+                RoutineExercise(
+                  id: 1,
+                  dayId: 1,
+                  exerciseName: 'Bench Press',
+                  sets: 1,
+                  repsRange: '8',
+                  orderIndex: 1,
+                ),
+              ],
+            );
+          });
+
+      final container = ProviderContainer(
+        overrides: [
+          databaseProvider.overrideWithValue(db),
+          workoutRepositoryProvider.overrideWithValue(WorkoutRepository(db)),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container
+          .read(controllerProvider.notifier)
+          .recordSet(weight: 100, reps: 8);
+      final loggedSet = container.read(controllerProvider).loggedSets.single;
+
+      expect(loggedSet.isPr.value, isFalse);
+    });
   });
 
   group('Wave 1 Streak Freeze Shield Tests', () {

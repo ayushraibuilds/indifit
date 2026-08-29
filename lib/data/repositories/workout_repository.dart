@@ -301,29 +301,7 @@ class WorkoutRepository {
         .get();
   }
 
-  // 8. Calculate personal record (PR) from past sets based on estimated 1RM
-  Future<WorkoutSet?> getPersonalRecord(String exerciseName) async {
-    final sets = await (_db.select(
-      _db.workoutSets,
-    )..where((tbl) => tbl.exerciseName.equals(exerciseName))).get();
-
-    if (sets.isEmpty) return null;
-
-    WorkoutSet? bestSet;
-    double max1Rm = 0.0;
-
-    for (final s in sets) {
-      // Epley formula for 1RM calculation
-      final oneRm = s.weight * (1 + s.reps / 30.0);
-      if (oneRm > max1Rm) {
-        max1Rm = oneRm;
-        bestSet = s;
-      }
-    }
-    return bestSet;
-  }
-
-  // 9. Log body measurements with 7-day rate-limiting
+  // 8. Log body measurements with 7-day rate-limiting
   Future<WeightLogStatus> getWeightLogStatus() async {
     final now = DateTime.now();
     final todayStart = DateTime(now.year, now.month, now.day);

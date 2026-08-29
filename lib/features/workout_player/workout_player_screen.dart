@@ -8,7 +8,6 @@ import 'package:uuid/uuid.dart';
 
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
-import '../../core/widgets/confetti_overlay.dart';
 import '../../core/widgets/indi_fit_bottom_sheet.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/workout_repository.dart';
@@ -172,13 +171,7 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen>
     final recommendedRest =
         controller.currentExerciseCompatibilityMetadata.recommendedRestSeconds;
     if (mounted) {
-      final updatedState = ref.read(_controllerProvider);
-      if (updatedState.showPrConfetti) {
-        await Future.delayed(const Duration(milliseconds: 1500));
-      }
-      if (mounted) {
-        await RestTimerBottomSheet.show(context, recommendedRest);
-      }
+      await RestTimerBottomSheet.show(context, recommendedRest);
     }
 
     final totalSetsRequired = currentEx.sets;
@@ -246,7 +239,7 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen>
                   ),
                   const SizedBox(height: B05Layout.space8),
                   Text(
-                    'Review recent sets, personal records and estimated strength.',
+                    'Review recent logged sets for this exercise.',
                     style: B05Typography.caption(context),
                   ),
                   Divider(color: colors.border, height: B05Layout.space24),
@@ -291,76 +284,34 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen>
                                       ),
                                       const SizedBox(height: B05Layout.space8),
                                       ...sets.map((s) {
-                                        final oneRm =
-                                            s.weight * (1 + s.reps / 30.0);
                                         return Padding(
                                           padding: const EdgeInsets.symmetric(
                                             vertical: 4.0,
                                           ),
                                           child: Wrap(
-                                            alignment:
-                                                WrapAlignment.spaceBetween,
-                                            runSpacing: B05Layout.space4,
+                                            crossAxisAlignment:
+                                                WrapCrossAlignment.center,
                                             children: [
-                                              Wrap(
-                                                crossAxisAlignment:
-                                                    WrapCrossAlignment.center,
-                                                children: [
-                                                  if (s.isPr)
-                                                    Padding(
-                                                      padding: EdgeInsets.only(
-                                                        right: B05Layout.space4,
+                                              Text(
+                                                'Set ${s.setNumber}: ${s.weight.toStringAsFixed(1)} kg × ${s.reps} reps',
+                                                style: B05Typography.caption(
+                                                  context,
+                                                ),
+                                              ),
+                                              if (s.durationSeconds != null)
+                                                Padding(
+                                                  padding:
+                                                      const EdgeInsets.only(
+                                                        left: B05Layout.space8,
                                                       ),
-                                                      child: Icon(
-                                                        Icons
-                                                            .emoji_events_rounded,
-                                                        color: colors
-                                                            .warning
-                                                            .indicator,
-                                                        size:
-                                                            B05Layout.iconSmall,
-                                                      ),
-                                                    ),
-                                                  Text(
-                                                    'Set ${s.setNumber}: ${s.weight.toStringAsFixed(1)} kg × ${s.reps} reps',
+                                                  child: Text(
+                                                    '(${s.durationSeconds}s${s.distanceKm != null ? ", ${s.distanceKm}km" : ""})',
                                                     style:
                                                         B05Typography.caption(
                                                           context,
-                                                        ).copyWith(
-                                                          fontWeight: s.isPr
-                                                              ? FontWeight.bold
-                                                              : FontWeight
-                                                                    .normal,
                                                         ),
                                                   ),
-                                                  if (s.durationSeconds != null)
-                                                    Padding(
-                                                      padding:
-                                                          const EdgeInsets.only(
-                                                            left: B05Layout
-                                                                .space8,
-                                                          ),
-                                                      child: Text(
-                                                        '(${s.durationSeconds}s${s.distanceKm != null ? ", ${s.distanceKm}km" : ""})',
-                                                        style:
-                                                            B05Typography.caption(
-                                                              context,
-                                                            ),
-                                                      ),
-                                                    ),
-                                                ],
-                                              ),
-                                              Text(
-                                                '1RM: ${oneRm.toStringAsFixed(1)} kg',
-                                                style:
-                                                    B05Typography.caption(
-                                                      context,
-                                                    ).copyWith(
-                                                      color: colors.action,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                    ),
-                                              ),
+                                                ),
                                             ],
                                           ),
                                         );
@@ -524,8 +475,7 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen>
                           ),
                           B05IconAction(
                             icon: Icons.history_rounded,
-                            label:
-                                'View exercise history and estimated strength',
+                            label: 'View exercise history',
                             onPressed: () => _showExerciseHistorySheet(
                               currentEx.exerciseName,
                             ),
@@ -563,7 +513,6 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen>
                   const SizedBox(height: 8),
                   PriorSessionCard(
                     priorSets: state.priorSets,
-                    bestPrSet: state.bestPrSet,
                     suggestedWeight: state.suggestedWeight,
                   ),
                   const SizedBox(height: 12),
@@ -715,37 +664,6 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen>
                 ],
               ),
             ),
-            if (state.showPrConfetti)
-              ConfettiOverlay(
-                isPlaying: true,
-                child: Container(
-                  color: colors.selected.withValues(alpha: 0.92),
-                  child: Center(
-                    child: B05Surface(
-                      radius: B05SurfaceRadius.large,
-                      padding: const EdgeInsets.all(B05Layout.space24),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Text('👑', style: TextStyle(fontSize: 48)),
-                          const SizedBox(height: B05Layout.space8),
-                          Text(
-                            'NEW PERSONAL RECORD!',
-                            style: B05Typography.title(
-                              context,
-                            ).copyWith(color: colors.action),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '${state.prExerciseName}: ${state.prWeight.toStringAsFixed(1)} kg x ${state.prReps} reps',
-                            style: B05Typography.caption(context),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
           ],
         ),
       ),

@@ -147,13 +147,12 @@ void main() {
         final firstWorkoutBadge = achievements.firstWhere(
           (a) => a.id == 'first_workout',
         );
-        final firstPrBadge = achievements.firstWhere((a) => a.id == 'first_pr');
         final heavyMoverBadge = achievements.firstWhere(
           (a) => a.id == 'volume_5000',
         );
 
         expect(firstWorkoutBadge.isUnlocked, isTrue);
-        expect(firstPrBadge.isUnlocked, isTrue);
+        expect(achievements.any((a) => a.id == 'first_pr'), isFalse);
         expect(heavyMoverBadge.isUnlocked, isFalse);
 
         // Record unlock transactionally
