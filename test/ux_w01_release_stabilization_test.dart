@@ -11,6 +11,7 @@ import 'package:indifit/data/database/app_database.dart'
     hide NutritionConstraintDefinition, NutritionUserConstraint;
 import 'package:indifit/data/repositories/nutrition_constraint_repository.dart';
 import 'package:indifit/data/repositories/workout_repository.dart';
+import 'package:indifit/features/exercise_picker/exercise_picker.dart';
 import 'package:indifit/features/onboarding/b05_adaptive_onboarding.dart';
 import 'package:indifit/features/onboarding/onboarding_screen.dart';
 import 'package:indifit/features/settings/nutrition_constraints_controller.dart';
@@ -378,12 +379,25 @@ void main() {
 
     await tester.tap(find.text('Tap to add exercises to this log'));
     await tester.pumpAndSettle();
+    expect(find.text('Find an exercise'), findsOneWidget);
+    expect(find.text('Bench Press'), findsNothing);
+    await tester.tap(find.text('Browse all exercises'));
+    await tester.pumpAndSettle();
+
+    final bench = (await repository.searchExercises('')).single;
+    expect(
+      ExercisePickerSelection.fromExercise(bench).exerciseId,
+      'exercise-bench-v1',
+    );
     expect(find.text('Bench Press'), findsOneWidget);
     await tester.tap(find.text('Bench Press'));
     await tester.pumpAndSettle();
+    expect(find.text('Done (1)'), findsOneWidget);
     await tester.tap(find.text('Done (1)'));
     await tester.pumpAndSettle();
 
+    expect(find.text('Bench Press'), findsOneWidget);
+    expect(find.byTooltip('Remove Bench Press'), findsOneWidget);
     expect(find.text('Set 1'), findsOneWidget);
     final firstSetWeight = find.byType(TextField).at(2);
     await tester.enterText(firstSetWeight, '55');

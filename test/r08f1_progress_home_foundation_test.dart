@@ -14,16 +14,30 @@ void main() {
 
     expect(find.text('Highlights'), findsOneWidget);
     expect(find.text('Overview'), findsNothing);
-    expect(find.text('3 training days'), findsOneWidget);
-    expect(find.text('2 sessions'), findsOneWidget);
-    expect(find.text('80.8 kg'), findsWidgets);
-    expect(find.textContaining('2,100 kcal'), findsOneWidget);
+    final training = find.byKey(const ValueKey('progress_highlight_training'));
+    final strength = find.byKey(const ValueKey('progress_highlight_strength'));
+    expect(training, findsOneWidget);
+    expect(strength, findsOneWidget);
     expect(
-      find.byKey(const ValueKey('progress_highlight_training')),
+      find.descendant(of: training, matching: find.text('3 training days')),
       findsOneWidget,
     );
     expect(
-      find.byKey(const ValueKey('progress_highlight_strength')),
+      find.descendant(
+        of: training,
+        matching: find.text('3 workouts this week'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: strength, matching: find.text('2 sessions')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: strength,
+        matching: find.textContaining('Bench Press'),
+      ),
       findsOneWidget,
     );
     expect(
@@ -34,6 +48,12 @@ void main() {
       find.byKey(const ValueKey('progress_highlight_nutrition')),
       findsNothing,
     );
+    final highlightTiles = find.byWidgetPredicate((widget) {
+      final key = widget.key;
+      return key is ValueKey<String> &&
+          key.value.startsWith('progress_highlight_');
+    });
+    expect(highlightTiles, findsNWidgets(2));
     expect(find.textContaining('e1RM'), findsNothing);
     expect(find.textContaining('readiness'), findsNothing);
     expect(find.textContaining('calories burned'), findsNothing);
