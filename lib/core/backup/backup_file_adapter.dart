@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:isolate';
 
 import 'package:crypto/crypto.dart';
 import 'package:file_picker/file_picker.dart';
@@ -185,7 +186,9 @@ class BackupFileAdapter {
         );
       }
       try {
-        jsonPayload = EncryptionHelper.decrypt(envelope.payload, password);
+        jsonPayload = await Isolate.run(
+          () => EncryptionHelper.decrypt(envelope.payload, password),
+        );
       } catch (e) {
         throw FormatException(
           'Incorrect encryption password or corrupted payload: $e',
@@ -369,11 +372,47 @@ class BackupFileAdapter {
     required BackupV10Data data,
     String? password,
   }) {
+    return _exportV10ToEnvelopeJson(
+      data: data,
+      password: password,
+      deviceRecovery: false,
+    );
+  }
+
+  /// Runs password derivation away from the UI isolate. Manual backup V2 uses
+  /// a deliberately expensive KDF and must not stall animations or input.
+  static Future<String> exportV10ToEnvelopeJsonAsync({
+    required BackupV10Data data,
+    String? password,
+  }) => Isolate.run(
+    () => exportV10ToEnvelopeJson(data: data, password: password),
+  );
+
+  /// Automatic recovery copies use a random device-bound secret rather than
+  /// a human password, while retaining the same authenticated V2 envelope.
+  static Future<String> exportV10ToDeviceRecoveryEnvelopeJson({
+    required BackupV10Data data,
+    required String deviceSecret,
+  }) => Isolate.run(
+    () => _exportV10ToEnvelopeJson(
+      data: data,
+      password: deviceSecret,
+      deviceRecovery: true,
+    ),
+  );
+
+  static String _exportV10ToEnvelopeJson({
+    required BackupV10Data data,
+    required String? password,
+    required bool deviceRecovery,
+  }) {
     final rawDataJson = jsonEncode(data.toJson());
     var finalPayload = rawDataJson;
     var isEncrypted = false;
     if (password != null && password.isNotEmpty) {
-      finalPayload = EncryptionHelper.encrypt(rawDataJson, password);
+      finalPayload = deviceRecovery
+          ? EncryptionHelper.encryptDeviceRecovery(rawDataJson, password)
+          : EncryptionHelper.encrypt(rawDataJson, password);
       isEncrypted = true;
     }
     final checksum = sha256.convert(utf8.encode(finalPayload)).toString();

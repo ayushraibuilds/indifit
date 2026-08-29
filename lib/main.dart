@@ -13,6 +13,7 @@ import 'core/services/crash_reporting_service.dart';
 import 'core/services/notification_service.dart';
 import 'core/theme/app_theme.dart';
 import 'core/utils/app_logger.dart';
+import 'data/database/app_database.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -94,6 +95,12 @@ class IndiFitApp extends ConsumerStatefulWidget {
 
 class _IndiFitAppState extends ConsumerState<IndiFitApp>
     with WidgetsBindingObserver {
+  final List<StreamSubscription<dynamic>> _reminderDataSubscriptions = [];
+  Timer? _reminderReconcileDebounce;
+  bool _reminderReconcileRunning = false;
+  bool _reminderReconcilePending = false;
+  bool _reminderTimezoneRefreshPending = false;
+
   @override
   void initState() {
     super.initState();
@@ -112,11 +119,8 @@ class _IndiFitAppState extends ConsumerState<IndiFitApp>
   /// reschedule as before.
   void _runPostFrameBootstrap() {
     final db = ref.read(databaseProvider);
-    unawaited(
-      NotificationService.scheduleAllReminders(db).catchError((e) {
-        AppLogger.warning('Startup reminder scheduling failed: $e');
-      }),
-    );
+    _startReminderDataWatchers(db);
+    unawaited(_reconcileReminders());
     unawaited(
       AutoBackupService.performBackup(db).catchError((e) {
         AppLogger.warning('Auto-backup startup check failed: $e');
@@ -124,8 +128,67 @@ class _IndiFitAppState extends ConsumerState<IndiFitApp>
     );
   }
 
+  /// Reminder state depends on both legacy and canonical nutrition writes plus
+  /// completed workout sessions. Reconcile centrally so every write path gets
+  /// the same stale-reminder protection without UI-specific hooks.
+  void _startReminderDataWatchers(AppDatabase db) {
+    if (_reminderDataSubscriptions.isNotEmpty) return;
+    _reminderDataSubscriptions.addAll([
+      db.select(db.workoutSessions).watch().skip(1).listen((_) {
+        _queueReminderReconciliation();
+      }),
+      db.select(db.foodLogs).watch().skip(1).listen((_) {
+        _queueReminderReconciliation();
+      }),
+      db.select(db.nutritionConsumptionSnapshots).watch().skip(1).listen((_) {
+        _queueReminderReconciliation();
+      }),
+    ]);
+  }
+
+  void _queueReminderReconciliation({bool refreshTimezone = false}) {
+    _reminderTimezoneRefreshPending |= refreshTimezone;
+    _reminderReconcileDebounce?.cancel();
+    _reminderReconcileDebounce = Timer(const Duration(milliseconds: 300), () {
+      unawaited(_reconcileReminders());
+    });
+  }
+
+  /// Serializes cancel-and-replan operations. Writes that arrive while a plan
+  /// is being built collapse into one additional pass rather than racing it.
+  Future<void> _reconcileReminders() async {
+    _reminderReconcilePending = true;
+    if (_reminderReconcileRunning) return;
+
+    _reminderReconcileRunning = true;
+    try {
+      while (_reminderReconcilePending) {
+        _reminderReconcilePending = false;
+        final refreshTimezone = _reminderTimezoneRefreshPending;
+        _reminderTimezoneRefreshPending = false;
+        final db = ref.read(databaseProvider);
+        var alreadyRescheduled = false;
+        if (refreshTimezone) {
+          alreadyRescheduled =
+              await NotificationService.checkAndUpdateTimezoneAndReschedule(db);
+        }
+        if (!alreadyRescheduled) {
+          await NotificationService.scheduleAllReminders(db);
+        }
+      }
+    } catch (e) {
+      AppLogger.warning('Reminder reconciliation failed: $e');
+    } finally {
+      _reminderReconcileRunning = false;
+    }
+  }
+
   @override
   void dispose() {
+    _reminderReconcileDebounce?.cancel();
+    for (final subscription in _reminderDataSubscriptions) {
+      unawaited(subscription.cancel());
+    }
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -134,8 +197,7 @@ class _IndiFitAppState extends ConsumerState<IndiFitApp>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       ref.read(civilDateRevisionProvider.notifier).refresh();
-      final db = ref.read(databaseProvider);
-      NotificationService.checkAndUpdateTimezoneAndReschedule(db);
+      _queueReminderReconciliation(refreshTimezone: true);
     }
   }
 

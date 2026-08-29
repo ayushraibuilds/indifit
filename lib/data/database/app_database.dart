@@ -16,6 +16,7 @@ import '../../core/fixtures/food_identity_manifest.dart';
 import '../../core/nutrients.dart';
 import '../../core/nutrition_constraints.dart';
 import '../../core/services/crash_reporting_service.dart';
+import '../../core/services/platform_storage_protection.dart';
 import '../../core/utils/app_logger.dart';
 import '../models/b02_execution_models.dart';
 import 'b01_legacy_import_support.dart';
@@ -2339,7 +2340,14 @@ class AppDatabase extends _$AppDatabase {
 LazyDatabase _openConnection() {
   return LazyDatabase(() async {
     final dbFolder = await getApplicationDocumentsDirectory();
+    await PlatformStorageProtection.protectSensitivePath(dbFolder.path);
     final file = File(p.join(dbFolder.path, 'indifit.db'));
+    for (final suffix in const ['', '-wal', '-shm', '-journal']) {
+      final existingFile = File('${file.path}$suffix');
+      if (await existingFile.exists()) {
+        await PlatformStorageProtection.protectSensitivePath(existingFile.path);
+      }
+    }
     return NativeDatabase.createInBackground(file);
   });
 }

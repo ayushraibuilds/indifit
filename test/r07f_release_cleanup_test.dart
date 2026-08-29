@@ -126,12 +126,18 @@ void main() {
 
   group('Startup first-frame classification', () {
     final mainSource = File('lib/main.dart').readAsStringSync();
+    final preRunAppSource = mainSource.substring(
+      0,
+      mainSource.indexOf('class IndiFitApp'),
+    );
 
     test('reminder scheduling and auto-backup do not block runApp', () {
       // They must be invoked from the post-frame bootstrap, not awaited in
       // main() before runApp.
       expect(
-        mainSource.contains('await NotificationService.scheduleAllReminders'),
+        preRunAppSource.contains(
+          'await NotificationService.scheduleAllReminders',
+        ),
         isFalse,
       );
       expect(

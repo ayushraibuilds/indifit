@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -52,6 +53,7 @@ void main() {
           NotificationService.destinationForPayload('weekly_report'),
           '/progress',
         );
+        expect(NotificationService.destinationForPayload('evening_nudge'), '/');
         expect(NotificationService.destinationForPayload('unknown'), isNull);
       },
     );
@@ -159,6 +161,79 @@ void main() {
           platformCalls.where((call) => call.method == 'zonedSchedule'),
           hasLength(3),
         );
+      },
+    );
+
+    test(
+      'today evidence skips only today while preserving every recurring series',
+      () async {
+        final now = DateTime.now();
+        final localDate =
+            '${now.year.toString().padLeft(4, '0')}-'
+            '${now.month.toString().padLeft(2, '0')}-'
+            '${now.day.toString().padLeft(2, '0')}';
+        SharedPreferences.setMockInitialValues({
+          NotificationService.prefRemindWorkout: true,
+          NotificationService.prefWorkoutReminderDays: [now.weekday.toString()],
+          NotificationService.prefWorkoutReminderHour: now.hour,
+          NotificationService.prefWorkoutReminderMinute: now.minute,
+          NotificationService.prefRemindMeals: true,
+          NotificationService.prefLunchReminderHour: now.hour,
+          NotificationService.prefLunchReminderMinute: now.minute,
+          NotificationService.prefDinnerReminderHour: now.hour,
+          NotificationService.prefDinnerReminderMinute: now.minute,
+          NotificationService.prefRemindEvening: true,
+          NotificationService.prefDailyLoggingReminderHour: now.hour,
+          NotificationService.prefDailyLoggingReminderMinute: now.minute,
+        });
+
+        await database
+            .into(database.workoutSessions)
+            .insert(
+              WorkoutSessionsCompanion.insert(
+                name: 'Completed workout',
+                totalVolume: 100,
+                durationSeconds: 1800,
+                estimatedCalories: 0,
+                completedAt: Value(now.toUtc()),
+              ),
+            );
+        for (final meal in const ['lunch', 'dinner']) {
+          await database
+              .into(database.nutritionConsumptionSnapshots)
+              .insert(
+                NutritionConsumptionSnapshotsCompanion.insert(
+                  id: 'today-$meal',
+                  userId: 'user',
+                  loggedAt: now.toUtc(),
+                  mealCategory: meal,
+                  sourceType: 'food',
+                  calculatorVersion: 'test',
+                  completeness: 'complete',
+                  estimateStatus: 'none',
+                  localDate: Value(localDate),
+                  timezoneId: const Value('Asia/Kolkata'),
+                ),
+              );
+        }
+
+        await NotificationService.scheduleAllReminders(database);
+
+        final scheduledCalls = platformCalls
+            .where((call) => call.method == 'zonedSchedule')
+            .toList();
+        expect(scheduledCalls, hasLength(4));
+        for (final call in scheduledCalls) {
+          final arguments = Map<String, Object?>.from(call.arguments as Map);
+          final scheduled = DateTime.parse(
+            arguments['scheduledDateTime']! as String,
+          );
+          expect((
+            scheduled.year,
+            scheduled.month,
+            scheduled.day,
+          ), isNot((now.year, now.month, now.day)));
+        }
       },
     );
 

@@ -96,6 +96,7 @@ class NotificationService {
       final mealType = payload.replaceFirst('meal_', '');
       return mealType.isEmpty ? '/food' : '/food?mealType=$mealType';
     }
+    if (payload == 'evening_nudge') return '/';
     if (payload == 'weekly_report') return '/progress';
     return null;
   }
@@ -294,30 +295,51 @@ class NotificationService {
     if (db != null) {
       try {
         final now = DateTime.now();
-        final startOfDay = DateTime(now.year, now.month, now.day);
-        final endOfDay = DateTime(now.year, now.month, now.day, 23, 59, 59);
+        final startOfDay = DateTime(now.year, now.month, now.day).toUtc();
+        final endOfDay = DateTime(now.year, now.month, now.day + 1).toUtc();
+        final localDate = _localDateKey(now);
 
         final sessions =
             await (db.select(db.workoutSessions)..where(
                   (tbl) =>
-                      tbl.completedAt.isBetweenValues(startOfDay, endOfDay),
+                      tbl.completedAt.isBiggerOrEqualValue(startOfDay) &
+                      tbl.completedAt.isSmallerThanValue(endOfDay),
                 ))
                 .get();
         hasWorkoutToday = sessions.isNotEmpty;
 
         final foodLogs =
             await (db.select(db.foodLogs)..where(
-                  (tbl) => tbl.loggedAt.isBetweenValues(startOfDay, endOfDay),
+                  (tbl) =>
+                      tbl.loggedAt.isBiggerOrEqualValue(startOfDay) &
+                      tbl.loggedAt.isSmallerThanValue(endOfDay),
                 ))
                 .get();
 
-        hasAnyFoodToday = foodLogs.isNotEmpty;
-        hasLunchToday = foodLogs.any(
-          (l) => l.mealType.toLowerCase() == 'lunch',
-        );
-        hasDinnerToday = foodLogs.any(
-          (l) => l.mealType.toLowerCase() == 'dinner',
-        );
+        final datedSnapshots = await (db.select(
+          db.nutritionConsumptionSnapshots,
+        )..where((tbl) => tbl.localDate.equals(localDate))).get();
+        final undatedSnapshots =
+            await (db.select(db.nutritionConsumptionSnapshots)..where(
+                  (tbl) =>
+                      tbl.localDate.isNull() &
+                      tbl.loggedAt.isBiggerOrEqualValue(startOfDay) &
+                      tbl.loggedAt.isSmallerThanValue(endOfDay),
+                ))
+                .get();
+        final canonicalMealCategories = <String>{
+          for (final snapshot in [...datedSnapshots, ...undatedSnapshots])
+            snapshot.mealCategory.toLowerCase(),
+        };
+
+        hasAnyFoodToday =
+            foodLogs.isNotEmpty || canonicalMealCategories.isNotEmpty;
+        hasLunchToday =
+            foodLogs.any((l) => l.mealType.toLowerCase() == 'lunch') ||
+            canonicalMealCategories.contains('lunch');
+        hasDinnerToday =
+            foodLogs.any((l) => l.mealType.toLowerCase() == 'dinner') ||
+            canonicalMealCategories.contains('dinner');
       } catch (e, st) {
         AppLogger.warning('syncDailyNotifications db check failed: $e');
         CrashReportingService.recordCrash(
@@ -328,7 +350,7 @@ class NotificationService {
       }
     }
 
-    if (workoutEnabled && !hasWorkoutToday) {
+    if (workoutEnabled) {
       await _scheduleWorkoutReminder(
         workoutDays,
         workoutHour,
@@ -336,6 +358,7 @@ class NotificationService {
         quietHoursEnabled,
         quietHoursStart,
         quietHoursEnd,
+        skipToday: hasWorkoutToday,
       );
     }
     if (mealsEnabled) {
@@ -351,13 +374,14 @@ class NotificationService {
         quietHoursEnd,
       );
     }
-    if (eveningEnabled && (!hasAnyFoodToday || !hasWorkoutToday)) {
+    if (eveningEnabled) {
       await _scheduleEveningNudge(
         dailyLoggingHour,
         dailyLoggingMinute,
         quietHoursEnabled,
         quietHoursStart,
         quietHoursEnd,
+        skipToday: hasAnyFoodToday && hasWorkoutToday,
       );
     }
     if (weeklyEnabled) {
@@ -385,8 +409,9 @@ class NotificationService {
     int minute,
     bool quietHoursEnabled,
     int quietStart,
-    int quietEnd,
-  ) async {
+    int quietEnd, {
+    bool skipToday = false,
+  }) async {
     for (final day in days) {
       await _scheduleWeeklyNotification(
         id: _idWorkout + day,
@@ -401,6 +426,7 @@ class NotificationService {
         quietHoursEnabled: quietHoursEnabled,
         quietHoursStart: quietStart,
         quietHoursEnd: quietEnd,
+        skipToday: skipToday,
       );
     }
   }
@@ -417,37 +443,35 @@ class NotificationService {
     int quietStart,
     int quietEnd,
   ) async {
-    if (!hasLunchToday) {
-      await _scheduleDailyNotification(
-        id: _idMealLunch,
-        channelId: _mealChannelId,
-        channelName: 'Meal Reminders',
-        hour: lunchHour,
-        minute: lunchMinute,
-        title: '🍱 Log your lunch',
-        body: 'Open IndiFit to search and log your lunch.',
-        payload: 'meal_lunch',
-        quietHoursEnabled: quietHoursEnabled,
-        quietHoursStart: quietStart,
-        quietHoursEnd: quietEnd,
-      );
-    }
+    await _scheduleDailyNotification(
+      id: _idMealLunch,
+      channelId: _mealChannelId,
+      channelName: 'Meal Reminders',
+      hour: lunchHour,
+      minute: lunchMinute,
+      title: '🍱 Log your lunch',
+      body: 'Open IndiFit to search and log your lunch.',
+      payload: 'meal_lunch',
+      quietHoursEnabled: quietHoursEnabled,
+      quietHoursStart: quietStart,
+      quietHoursEnd: quietEnd,
+      skipToday: hasLunchToday,
+    );
 
-    if (!hasDinnerToday) {
-      await _scheduleDailyNotification(
-        id: _idMealDinner,
-        channelId: _mealChannelId,
-        channelName: 'Meal Reminders',
-        hour: dinnerHour,
-        minute: dinnerMinute,
-        title: '🍽️ Log your dinner',
-        body: 'Open IndiFit to search and log your dinner.',
-        payload: 'meal_dinner',
-        quietHoursEnabled: quietHoursEnabled,
-        quietHoursStart: quietStart,
-        quietHoursEnd: quietEnd,
-      );
-    }
+    await _scheduleDailyNotification(
+      id: _idMealDinner,
+      channelId: _mealChannelId,
+      channelName: 'Meal Reminders',
+      hour: dinnerHour,
+      minute: dinnerMinute,
+      title: '🍽️ Log your dinner',
+      body: 'Open IndiFit to search and log your dinner.',
+      payload: 'meal_dinner',
+      quietHoursEnabled: quietHoursEnabled,
+      quietHoursStart: quietStart,
+      quietHoursEnd: quietEnd,
+      skipToday: hasDinnerToday,
+    );
   }
 
   /// Daily logging reminder when food or workout evidence is still missing.
@@ -456,8 +480,9 @@ class NotificationService {
     int minute,
     bool quietHoursEnabled,
     int quietStart,
-    int quietEnd,
-  ) async {
+    int quietEnd, {
+    bool skipToday = false,
+  }) async {
     await _scheduleDailyNotification(
       id: _idEveningNudge,
       channelId: _nudgeChannelId,
@@ -470,6 +495,7 @@ class NotificationService {
       quietHoursEnabled: quietHoursEnabled,
       quietHoursStart: quietStart,
       quietHoursEnd: quietEnd,
+      skipToday: skipToday,
     );
   }
 
@@ -515,6 +541,7 @@ class NotificationService {
     bool quietHoursEnabled = false,
     int quietHoursStart = 22,
     int quietHoursEnd = 7,
+    bool skipToday = false,
   }) async {
     final scheduledTime = _nextInstanceOfTime(
       hour,
@@ -522,6 +549,7 @@ class NotificationService {
       quietHoursEnabled: quietHoursEnabled,
       quietHoursStart: quietHoursStart,
       quietHoursEnd: quietHoursEnd,
+      skipToday: skipToday,
     );
 
     await _plugin.zonedSchedule(
@@ -560,6 +588,7 @@ class NotificationService {
     bool quietHoursEnabled = false,
     int quietHoursStart = 22,
     int quietHoursEnd = 7,
+    bool skipToday = false,
   }) async {
     final scheduledTime = _nextInstanceOfDayAndTime(
       dayOfWeek,
@@ -568,6 +597,7 @@ class NotificationService {
       quietHoursEnabled: quietHoursEnabled,
       quietHoursStart: quietHoursStart,
       quietHoursEnd: quietHoursEnd,
+      skipToday: skipToday,
     );
 
     await _plugin.zonedSchedule(
@@ -604,6 +634,7 @@ class NotificationService {
     bool quietHoursEnabled = false,
     int quietHoursStart = 22,
     int quietHoursEnd = 7,
+    bool skipToday = false,
   }) {
     final now = tz.TZDateTime.now(tz.local);
     var scheduled = tz.TZDateTime(
@@ -615,6 +646,9 @@ class NotificationService {
       minute,
     );
     if (scheduled.isBefore(now)) {
+      scheduled = scheduled.add(const Duration(days: 1));
+    }
+    if (skipToday && _isSameCivilDate(scheduled, now)) {
       scheduled = scheduled.add(const Duration(days: 1));
     }
 
@@ -668,6 +702,7 @@ class NotificationService {
     bool quietHoursEnabled = false,
     int quietHoursStart = 22,
     int quietHoursEnd = 7,
+    bool skipToday = false,
   }) {
     final now = tz.TZDateTime.now(tz.local);
     var scheduled = tz.TZDateTime(
@@ -684,6 +719,9 @@ class NotificationService {
     while (scheduled.weekday != dayOfWeek) {
       scheduled = scheduled.add(const Duration(days: 1));
     }
+    if (skipToday && _isSameCivilDate(scheduled, now)) {
+      scheduled = scheduled.add(const Duration(days: 7));
+    }
     return _deferUntilQuietHoursEnd(
       scheduled,
       enabled: quietHoursEnabled,
@@ -691,6 +729,14 @@ class NotificationService {
       endHour: quietHoursEnd,
     );
   }
+
+  static String _localDateKey(DateTime value) =>
+      '${value.year.toString().padLeft(4, '0')}-'
+      '${value.month.toString().padLeft(2, '0')}-'
+      '${value.day.toString().padLeft(2, '0')}';
+
+  static bool _isSameCivilDate(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
 
   static tz.TZDateTime _deferUntilQuietHoursEnd(
     tz.TZDateTime scheduled, {

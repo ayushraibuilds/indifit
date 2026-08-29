@@ -410,7 +410,7 @@ class SettingsController extends StateNotifier<SettingsState> {
       final prefs = await SharedPreferences.getInstance();
       final backupData = await BackupV10Data.createFromDatabase(db, prefs);
 
-      final envelopeJson = BackupFileAdapter.exportV10ToEnvelopeJson(
+      final envelopeJson = await BackupFileAdapter.exportV10ToEnvelopeJsonAsync(
         data: backupData,
         password: password,
       );
