@@ -218,7 +218,7 @@ class _SavedMealEditBeforeLogSheetState
   @override
   Widget build(BuildContext context) {
     final activeItemCount = _enabledItemIds.length;
-    final mealName = widget.mealType.toUpperCase();
+    final mealName = widget.mealType.toLowerCase();
 
     return SafeArea(
       child: Padding(
@@ -478,11 +478,7 @@ class _SavedMealEditBeforeLogSheetState
                             ),
                           )
                         : Text(
-                            'ADD $activeItemCount ${activeItemCount == 1 ? 'ITEM' : 'ITEMS'} TO $mealName',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.5,
-                            ),
+                            'Add $activeItemCount ${activeItemCount == 1 ? 'item' : 'items'} to $mealName',
                           ),
                   ),
                 ),

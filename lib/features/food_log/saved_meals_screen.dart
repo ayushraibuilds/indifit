@@ -7,6 +7,8 @@ import '../../core/di/providers.dart';
 import '../../core/presentation/consumer_copy.dart';
 import '../../core/services/indifit_haptics.dart';
 import '../../core/theme/b05_semantic_colors.dart';
+import '../../core/widgets/b05_accessibility_primitives.dart';
+import '../../core/widgets/consumer_task_primitives.dart';
 import '../../core/widgets/indi_fit_feedback.dart';
 import '../../core/widgets/skeleton_loader.dart';
 import '../dashboard/today_surface_controller.dart';
@@ -130,7 +132,7 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
     if (result != null && mounted) {
       showIndiFitSuccessFeedback(
         context,
-        'Logged "${item.draft.name}" to ${widget.mealType.toUpperCase()}!',
+        'Logged "${item.draft.name}" to ${widget.mealType.toLowerCase()}!',
       );
       if (closeAfterSuccess && mounted && Navigator.canPop(context)) {
         Navigator.pop(context, true);
@@ -302,32 +304,18 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
             ),
           ),
 
-          if (state.errorMessage != null)
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: context.b05Colors.danger.container,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.error_outline,
-                    color: context.b05Colors.danger.indicator,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      state.errorMessage!,
-                      style: TextStyle(
-                        color: context.b05Colors.danger.foreground,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ),
-                ],
+          if (state.errorMessage != null &&
+              !(state.status == SavedMealsStatus.failure &&
+                  state.meals.isEmpty))
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: ConsumerStatusRow(
+                label: 'Saved meals unavailable',
+                detail: state.errorMessage,
+                error: true,
+                onRetry: () => ref
+                    .read(savedMealsControllerProvider.notifier)
+                    .loadSavedMeals(query: state.query),
               ),
             ),
 
@@ -381,95 +369,56 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
 
   Widget _buildEmptyState() {
     final hasSearch = _searchController.text.trim().isNotEmpty;
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.bookmark_border_rounded,
-              size: 56,
-              color: context.b05Colors.textSecondary,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              !hasSearch
-                  ? 'No saved meals yet'
-                  : 'No saved meals match "${_searchController.text}"',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              hasSearch
-                  ? 'Try a different name or create a new saved meal.'
-                  : 'Save the foods and recipes you eat together to log them again quickly.',
-              style: TextStyle(
-                color: context.b05Colors.textSecondary,
-                fontSize: 13,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton.icon(
-              onPressed: () => _openEditor(),
-              icon: const Icon(Icons.add_rounded),
-              label: const Text('Create saved meal'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: context.b05Colors.action,
-                foregroundColor: context.b05Colors.onAction,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-            ),
-          ],
-        ),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+      child: ProductEmptyState(
+        icon: Icons.bookmark_border_rounded,
+        title: !hasSearch
+            ? 'No saved meals yet'
+            : 'No saved meals match "${_searchController.text}"',
+        message: hasSearch
+            ? 'Try a different name or create a new saved meal.'
+            : 'Save the foods and recipes you eat together to log them again quickly.',
+        action: _openEditor,
+        actionLabel: 'Create saved meal',
+        actionIcon: Icons.add_rounded,
       ),
     );
   }
 
   Widget _buildFailureState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
+    final state = ref.watch(savedMealsControllerProvider);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+      child: B05Surface(
+        tone: B05SurfaceTone.inset,
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Icon(
               Icons.cloud_off_rounded,
-              size: 48,
+              size: B05Layout.iconLarge,
               color: context.b05Colors.danger.indicator,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: B05Layout.space12),
             Text(
               'Saved meals could not be loaded',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
+              style: B05Typography.title(context),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: B05Layout.space4),
             Text(
-              'Your saved meals are still safe. Try again when you’re ready.',
-              style: TextStyle(
-                color: context.b05Colors.textSecondary,
-                fontSize: 13,
-              ),
-              textAlign: TextAlign.center,
+              state.errorMessage ??
+                  'Your saved meals are still safe. Try again when you’re ready.',
+              style: B05Typography.body(context),
             ),
-            const SizedBox(height: 20),
-            OutlinedButton.icon(
+            const SizedBox(height: B05Layout.space16),
+            B05ActionButton(
+              label: 'Try again',
+              icon: Icons.refresh_rounded,
+              emphasis: B05ActionEmphasis.secondary,
               onPressed: () => ref
                   .read(savedMealsControllerProvider.notifier)
-                  .loadSavedMeals(
-                    query: ref.read(savedMealsControllerProvider).query,
-                  ),
-              icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Try again'),
+                  .loadSavedMeals(query: state.query),
             ),
           ],
         ),
@@ -497,13 +446,8 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
         state.status == SavedMealsStatus.finalizing;
     final actionsDisabled = !meal.isLoggable || actionInFlight;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: context.b05Colors.surfaceSubtle,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: context.b05Colors.border),
-      ),
-      padding: const EdgeInsets.all(16),
+    return B05Surface(
+      tone: B05SurfaceTone.section,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -541,19 +485,14 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
                         children: [
                           Text(
                             meal.draft.name,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style: B05Typography.title(context),
                           ),
                           const SizedBox(height: 2),
                           Text(
                             '${meal.itemCount} items · $calText · $protText',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: context.b05Colors.textSecondary,
-                              fontWeight: FontWeight.w500,
-                            ),
+                            style: B05Typography.caption(
+                              context,
+                            ).copyWith(fontWeight: FontWeight.w500),
                           ),
                         ],
                       ),
@@ -642,10 +581,7 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
           const SizedBox(height: 12),
           Text(
             meal.summary,
-            style: TextStyle(
-              fontSize: 13,
-              color: context.b05Colors.textSecondary,
-            ),
+            style: B05Typography.caption(context),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
@@ -677,43 +613,22 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
               final stackActions =
                   constraints.maxWidth < 380 ||
                   MediaQuery.textScalerOf(context).scale(1) > 1.25;
-              final review = OutlinedButton(
+              final review = B05ActionButton(
+                label: 'Review portions',
+                emphasis: B05ActionEmphasis.secondary,
                 onPressed: actionsDisabled
                     ? null
                     : () => _handleEditBeforeLog(meal),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                child: const Text(
-                  'Review portions',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               );
-              final log = ElevatedButton(
+              final log = B05ActionButton(
+                label: meal.requiresPartialAcknowledgement
+                    ? 'Review & log'
+                    : ConsumerCopy.logToMeal(targetMealLabel),
                 onPressed: actionsDisabled ? null : () => _handleQuickLog(meal),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: context.b05Colors.action,
-                  foregroundColor: context.b05Colors.onAction,
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                child: Text(
-                  meal.requiresPartialAcknowledgement
-                      ? 'Review & log'
-                      : ConsumerCopy.logToMeal(targetMealLabel),
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.5,
-                  ),
-                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               );
               if (stackActions) {
                 return Column(

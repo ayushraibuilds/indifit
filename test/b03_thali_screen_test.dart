@@ -59,8 +59,12 @@ void main() {
           );
 
       await tester.pumpWidget(app(1, makeController()));
+      expect(find.text('Build meal · Lunch'), findsOneWidget);
       expect(find.text('Your meal is empty'), findsOneWidget);
       expect(find.text('Add food or saved recipe'), findsOneWidget);
+      expect(find.text('Meal name'), findsOneWidget);
+      expect(find.text('Save meal'), findsOneWidget);
+      expect(find.text('Draft name'), findsNothing);
       expect(tester.takeException(), isNull);
 
       await tester.pumpWidget(app(2, makeController()));

@@ -340,7 +340,7 @@ class _WorkoutContextualActionsState
                             ? 'Resume workout'
                             : 'Start workout',
                         hint: _isInProgress
-                            ? 'Resumes this existing workout draft.'
+                            ? 'Resumes this workout.'
                             : isFuture
                             ? 'Starts this scheduled future workout in the player.'
                             : 'Starts this scheduled workout in the player.',

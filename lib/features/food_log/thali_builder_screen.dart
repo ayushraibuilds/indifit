@@ -43,6 +43,21 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
   NutritionThaliController get _controller =>
       ref.read(nutritionThaliControllerProvider(widget.mealType).notifier);
 
+  String get _mealTypeLabel {
+    final words = widget.mealType
+        .trim()
+        .replaceAll('_', ' ')
+        .split(RegExp(r'\s+'));
+    final label = words
+        .where((word) => word.isNotEmpty)
+        .map(
+          (word) =>
+              '${word[0].toUpperCase()}${word.substring(1).toLowerCase()}',
+        )
+        .join(' ');
+    return label.isEmpty ? 'Meal' : label;
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(nutritionThaliControllerProvider(widget.mealType));
@@ -56,7 +71,7 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Build meal · ${widget.mealType.toUpperCase()}'),
+        title: Text('Build meal · $_mealTypeLabel'),
       ),
       body: _buildBody(context, state),
     );
@@ -76,7 +91,7 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
 
     final draft = state.draft;
     if (draft == null) {
-      return const Center(child: Text('No meal draft is available.'));
+      return const Center(child: Text('No meal is available right now.'));
     }
     final isBusy =
         state.status == NutritionThaliStatus.saving ||
@@ -135,7 +150,7 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
         enabled: enabled,
         onChanged: _controller.setName,
         decoration: const InputDecoration(
-          labelText: 'Draft name',
+          labelText: 'Meal name',
           prefixIcon: Icon(Icons.edit_outlined),
         ),
       ),
@@ -261,7 +276,7 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
             dense: true,
             leading: const Icon(Icons.restaurant_outlined),
             title: Text(option.displayName),
-            subtitle: const Text('Food · identity retained'),
+            subtitle: const Text('Food'),
             trailing: const Icon(Icons.add_circle_outline),
             onTap: () => _controller.addFood(option),
           ),
@@ -276,9 +291,9 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
           ),
         if (state.foodResults.isEmpty && state.recipeResults.isEmpty)
           const ListTile(
-            title: Text('No matching active foods or saved recipes'),
+            title: Text('No matching foods or saved recipes'),
             subtitle: Text(
-              'Try another search. Draft or archived recipes are not offered.',
+              'Try another search. Only ready-to-use recipes are shown.',
             ),
           ),
       ],
@@ -311,7 +326,7 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
                   ),
                   const SizedBox(width: 8),
                   Text(switch (state.status) {
-                    NutritionThaliStatus.saving => 'Saving draft…',
+                    NutritionThaliStatus.saving => 'Saving meal…',
                     NutritionThaliStatus.previewLoading =>
                       'Calculating preview…',
                     NutritionThaliStatus.finalizing => 'Logging meal…',
@@ -329,7 +344,7 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
                       ? _controller.saveDraft
                       : null,
                   icon: const Icon(Icons.bookmark_outline),
-                  label: const Text('Save draft'),
+                  label: const Text('Save meal'),
                 ),
               ),
               const SizedBox(width: 8),
