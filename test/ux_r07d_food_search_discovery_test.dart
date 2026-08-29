@@ -86,6 +86,36 @@ void main() {
       expect(results.first.candidate.displayName, 'Poha (Flattened Rice)');
     });
 
+    test(
+      'common Indian-food queries prefer useful local entries over remote noise',
+      () {
+        final scenarios = <String, (String, String)>{
+          'poha': ('Poha (Kanda Poha)', 'Poha packaged snack'),
+          'dosa': ('Masala Dosa', 'Dosa instant mix'),
+          'rice': ('Basmati White Rice (Cooked)', 'Rice milk beverage'),
+          'roti': ('Whole Wheat Roti / Chapati', 'Roti packaged bread'),
+          'chapati': ('Whole Wheat Roti / Chapati', 'Chapati packaged bread'),
+          'dal': ('Toor Dal / Yellow Dal Tadka', 'Dal packaged soup'),
+          'paneer': ('Paneer', 'Paneer packaged snack'),
+        };
+
+        for (final entry in scenarios.entries) {
+          final local = _food(entry.value.$1, entry.key.hashCode);
+          final remote = _remote(
+            entry.value.$2,
+            providerId: 'remote-${entry.key}',
+          );
+          final results = _rank(entry.key, candidates: [remote, local]);
+
+          expect(
+            results.first.candidate,
+            same(local),
+            reason: 'Expected a useful local ${entry.key} result first.',
+          );
+        }
+      },
+    );
+
     test('pane prefix ranks Paneer above unrelated remote products', () {
       final results = _rank(
         'pane',
@@ -231,7 +261,7 @@ void main() {
       expect(bounded.first.candidate.displayName, 'Milk');
     });
 
-    test('provider history uses its stable provider identity', () {
+    test('provider history does not change discovery relevance', () {
       final branded = _remote(
         'Taaza Milk',
         providerId: 'amul-taaza',
@@ -247,7 +277,7 @@ void main() {
         ),
       ).single;
 
-      expect(boosted.score, baseline.score + 54);
+      expect(boosted.score, baseline.score);
     });
 
     test('custom exact match is strong without merging provider identity', () {

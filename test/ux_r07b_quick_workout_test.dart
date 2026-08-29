@@ -19,6 +19,8 @@ import 'package:indifit/features/workout_player/b02_strength_player_screen.dart'
 import 'package:indifit/features/workout_player/b02_strength_summary_screen.dart';
 import 'package:indifit/features/workout_player/quick_workout_screen.dart';
 
+DateTime _testNowUtc() => DateTime.utc(2026, 8, 10, 8);
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -74,6 +76,7 @@ void main() {
     final controller = B02StrengthExecutionController(
       StrengthExecutionCompatibilityAdapter(executions),
       initialLaunch: launch,
+      nowUtc: _testNowUtc,
     );
     await controller.loadSlots();
     return controller;
@@ -308,7 +311,7 @@ void main() {
         expect(
           find.text(
             planned
-                ? 'Discard draft and start Quick Workout'
+                ? 'Discard draft and start a quick workout'
                 : 'Discard and start new',
           ),
           findsOneWidget,
@@ -381,7 +384,10 @@ void main() {
             theme: AppTheme.lightTheme,
             home: MediaQuery(
               data: MediaQueryData(textScaler: TextScaler.linear(matrix.$2)),
-              child: B02StrengthPlayerScreen(launch: launch),
+              child: B02StrengthPlayerScreen(
+                launch: launch,
+                nowUtc: _testNowUtc,
+              ),
             ),
           ),
         ),
@@ -390,7 +396,14 @@ void main() {
         await tester.pump(const Duration(milliseconds: 20));
       }
       expect(find.text('Weight (kg)'), findsOneWidget);
+      expect(find.text('RPE'), findsNothing);
+      await tester.tap(find.text('More for this set'));
+      await tester.pumpAndSettle();
       expect(find.text('RPE'), findsWidgets);
+      expect(
+        find.text('RPE is optional. RPE 8 ≈ about 2 good reps left.'),
+        findsOneWidget,
+      );
       await tester.scrollUntilVisible(
         find.text('Log set'),
         180,
@@ -398,6 +411,8 @@ void main() {
       );
       expect(find.text('Log set'), findsOneWidget);
       expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
     }
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();
@@ -423,7 +438,7 @@ void main() {
         ],
         child: MaterialApp(
           theme: AppTheme.lightTheme,
-          home: B02StrengthPlayerScreen(launch: launch),
+          home: B02StrengthPlayerScreen(launch: launch, nowUtc: _testNowUtc),
         ),
       ),
     );
@@ -484,7 +499,10 @@ void main() {
           theme: AppTheme.darkTheme,
           home: MediaQuery(
             data: const MediaQueryData(textScaler: TextScaler.linear(2)),
-            child: B02StrengthPlayerScreen(launch: recovered),
+            child: B02StrengthPlayerScreen(
+              launch: recovered,
+              nowUtc: _testNowUtc,
+            ),
           ),
         ),
       ),

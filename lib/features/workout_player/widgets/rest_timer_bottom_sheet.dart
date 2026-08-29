@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:vibration/vibration.dart';
-import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../../core/services/notification_service.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
@@ -14,7 +13,6 @@ class RestTimerBottomSheet extends StatefulWidget {
   const RestTimerBottomSheet({super.key, required this.recommendedRestSeconds});
 
   static Future<void> show(BuildContext context, int restSeconds) async {
-    await WakelockPlus.enable();
     if (context.mounted) {
       await showIndiFitBottomSheet<void>(
         context: context,
@@ -23,7 +21,6 @@ class RestTimerBottomSheet extends StatefulWidget {
             RestTimerBottomSheet(recommendedRestSeconds: restSeconds),
       );
     }
-    await WakelockPlus.disable();
   }
 
   @override
@@ -31,18 +28,23 @@ class RestTimerBottomSheet extends StatefulWidget {
 }
 
 class _RestTimerBottomSheetState extends State<RestTimerBottomSheet> {
-  late int _secondsRemaining;
+  late final DateTime _startedAtUtc;
+  late DateTime _deadlineUtc;
+  late DateTime _nowUtc;
   Timer? _timer;
 
   @override
   void initState() {
     super.initState();
-    _secondsRemaining = widget.recommendedRestSeconds;
+    _startedAtUtc = DateTime.now().toUtc();
+    _deadlineUtc = _startedAtUtc.add(
+      Duration(seconds: widget.recommendedRestSeconds.clamp(0, 86400)),
+    );
+    _nowUtc = _startedAtUtc;
     _timer = Timer.periodic(const Duration(seconds: 1), (t) {
-      if (_secondsRemaining > 0) {
-        setState(() {
-          _secondsRemaining--;
-        });
+      final now = DateTime.now().toUtc();
+      if (now.isBefore(_deadlineUtc)) {
+        if (mounted) setState(() => _nowUtc = now);
       } else {
         t.cancel();
         NotificationService.showRestTimerFinishedNotification();
@@ -67,8 +69,9 @@ class _RestTimerBottomSheetState extends State<RestTimerBottomSheet> {
   @override
   Widget build(BuildContext context) {
     final colors = context.b05Colors;
+    final secondsRemaining = _remainingSeconds;
     final progress = widget.recommendedRestSeconds > 0
-        ? _secondsRemaining / widget.recommendedRestSeconds
+        ? secondsRemaining / widget.recommendedRestSeconds
         : 0.0;
 
     return PopScope(
@@ -129,9 +132,17 @@ class _RestTimerBottomSheetState extends State<RestTimerBottomSheet> {
                     valueColor: AlwaysStoppedAnimation<Color>(colors.action),
                   ),
                 ),
-                Text(
-                  '${_secondsRemaining}s',
-                  style: B05Typography.metric(context).copyWith(fontSize: 32),
+                Semantics(
+                  label: 'Rest remaining $secondsRemaining seconds',
+                  liveRegion: false,
+                  child: ExcludeSemantics(
+                    child: Text(
+                      '${secondsRemaining}s',
+                      style: B05Typography.metric(
+                        context,
+                      ).copyWith(fontSize: 32),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -140,7 +151,12 @@ class _RestTimerBottomSheetState extends State<RestTimerBottomSheet> {
               children: [
                 Expanded(
                   child: B05ActionButton(
-                    onPressed: () => setState(() => _secondsRemaining += 30),
+                    onPressed: () => setState(() {
+                      _deadlineUtc = _deadlineUtc.add(
+                        const Duration(seconds: 30),
+                      );
+                      _nowUtc = DateTime.now().toUtc();
+                    }),
                     icon: Icons.add_rounded,
                     label: 'Add 30 sec',
                     emphasis: B05ActionEmphasis.secondary,
@@ -160,5 +176,10 @@ class _RestTimerBottomSheetState extends State<RestTimerBottomSheet> {
         ),
       ),
     );
+  }
+
+  int get _remainingSeconds {
+    final remaining = _deadlineUtc.difference(_nowUtc).inSeconds;
+    return remaining < 0 ? 0 : remaining;
   }
 }

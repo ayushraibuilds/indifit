@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/theme/colors.dart';
+import '../../../core/theme/b05_semantic_colors.dart';
 import '../../../data/repositories/workout_repository.dart';
+import '../../settings/unit_preference.dart';
 
 class LogWeightBottomSheet extends ConsumerStatefulWidget {
   final double currentWeight;
@@ -21,7 +22,7 @@ class LogWeightBottomSheet extends ConsumerStatefulWidget {
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppColors.surface,
+      backgroundColor: context.b05Colors.section,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -48,6 +49,7 @@ class LogWeightBottomSheet extends ConsumerStatefulWidget {
 class _LogWeightBottomSheetState extends ConsumerState<LogWeightBottomSheet> {
   late TextEditingController _controller;
   double _selectedWeight = 70.0;
+  String _units = UnitPreferenceNotifier.metric;
   WeightLogStatus? _status;
   bool _loadingStatus = true;
   bool _isSaving = false;
@@ -56,9 +58,13 @@ class _LogWeightBottomSheetState extends ConsumerState<LogWeightBottomSheet> {
   @override
   void initState() {
     super.initState();
-    _selectedWeight = widget.currentWeight;
+    _units = ref.read(unitPreferenceProvider);
+    _selectedWeight = UnitPreferencePresentation.weightForDisplay(
+      widget.currentWeight,
+      _units,
+    );
     _controller = TextEditingController(
-      text: widget.currentWeight.toStringAsFixed(1),
+      text: _selectedWeight.toStringAsFixed(1),
     );
     _checkStatus();
   }
@@ -79,8 +85,11 @@ class _LogWeightBottomSheetState extends ConsumerState<LogWeightBottomSheet> {
           _loadingStatus = false;
           _statusError = false;
           if (status.isEditingToday && status.todayWeight != null) {
-            _selectedWeight = status.todayWeight!;
-            _controller.text = status.todayWeight!.toStringAsFixed(1);
+            _selectedWeight = UnitPreferencePresentation.weightForDisplay(
+              status.todayWeight!,
+              _units,
+            );
+            _controller.text = _selectedWeight.toStringAsFixed(1);
           }
         });
       }
@@ -109,15 +118,42 @@ class _LogWeightBottomSheetState extends ConsumerState<LogWeightBottomSheet> {
   void _adjust(double delta) {
     if (_isSaveDisabled) return;
     setState(() {
-      _selectedWeight = (_selectedWeight + delta).clamp(20.0, 350.0);
+      final minimum = UnitPreferencePresentation.weightForDisplay(
+        minimumLoggedWeightKg,
+        _units,
+      );
+      final maximum = UnitPreferencePresentation.weightForDisplay(
+        maximumLoggedWeightKg,
+        _units,
+      );
+      _selectedWeight = (_selectedWeight + delta).clamp(minimum, maximum);
       _controller.text = _selectedWeight.toStringAsFixed(1);
     });
   }
 
   Future<void> _save() async {
     if (_isSaveDisabled) return;
-    final val = double.tryParse(_controller.text);
-    if (val == null || val < 20.0 || val > 350.0) return;
+    final displayed = double.tryParse(_controller.text.trim());
+    final kilograms = displayed == null
+        ? null
+        : UnitPreferencePresentation.weightForStorage(displayed, _units);
+    if (kilograms == null || !isValidLoggedWeightKg(kilograms)) {
+      final minimum = UnitPreferencePresentation.weightForDisplay(
+        minimumLoggedWeightKg,
+        _units,
+      );
+      final maximum = UnitPreferencePresentation.weightForDisplay(
+        maximumLoggedWeightKg,
+        _units,
+      );
+      final symbol = UnitPreferencePresentation.weightSymbol(_units);
+      setState(
+        () => _errorMessage =
+            'Enter a weight between ${_formatWeightLimit(minimum)} '
+            'and ${_formatWeightLimit(maximum)} $symbol.',
+      );
+      return;
+    }
 
     setState(() {
       _isSaving = true;
@@ -125,7 +161,7 @@ class _LogWeightBottomSheetState extends ConsumerState<LogWeightBottomSheet> {
     });
 
     try {
-      await widget.onSave(val);
+      await widget.onSave(kilograms);
       if (mounted) {
         Navigator.pop(context);
       }
@@ -141,7 +177,25 @@ class _LogWeightBottomSheetState extends ConsumerState<LogWeightBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<String>(unitPreferenceProvider, (previous, next) {
+      if (previous == next) return;
+      final previousUnits = previous ?? _units;
+      final kilograms = UnitPreferencePresentation.weightForStorage(
+        _selectedWeight,
+        previousUnits,
+      );
+      setState(() {
+        _units = next;
+        _selectedWeight = UnitPreferencePresentation.weightForDisplay(
+          kilograms,
+          next,
+        );
+        _controller.text = _selectedWeight.toStringAsFixed(1);
+      });
+    });
+    final colors = context.b05Colors;
     final isLocked = _status != null && !_status!.canLog;
+    final weightSymbol = UnitPreferencePresentation.weightSymbol(_units);
 
     return Padding(
       padding: const EdgeInsets.all(24.0),
@@ -155,58 +209,56 @@ class _LogWeightBottomSheetState extends ConsumerState<LogWeightBottomSheet> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Log Body Weight',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
+                        color: colors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 2),
                     if (_loadingStatus)
-                      const Text(
+                      Text(
                         'Checking lock status...',
                         style: TextStyle(
-                          fontSize: 11,
-                          color: AppColors.textMuted,
+                          fontSize: 12,
+                          color: colors.textSecondary,
                         ),
                       )
                     else if (isLocked)
                       Text(
                         'Locked for ${_status!.daysUntilUnlock} days',
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 11,
+                        style: TextStyle(
+                          fontSize: 12,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.warning,
+                          color: colors.warning.indicator,
                         ),
                       )
                     else if (_status?.isEditingToday == true)
                       Text(
-                        'Editing Today\'s Entry (${_selectedWeight.toStringAsFixed(1)} kg)',
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 11,
+                        'Editing Today\'s Entry (${_selectedWeight.toStringAsFixed(1)} $weightSymbol)',
+                        style: TextStyle(
+                          fontSize: 12,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.primary,
+                          color: colors.action,
                         ),
                       )
                     else
-                      const Text(
+                      Text(
                         'New Weekly Entry',
                         style: TextStyle(
-                          fontSize: 11,
+                          fontSize: 12,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.success,
+                          color: colors.success.indicator,
                         ),
                       ),
                   ],
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.close, color: AppColors.textSecondary),
+                tooltip: 'Close',
+                icon: Icon(Icons.close, color: colors.textSecondary),
                 onPressed: _isSaving ? null : () => Navigator.pop(context),
               ),
             ],
@@ -216,25 +268,25 @@ class _LogWeightBottomSheetState extends ConsumerState<LogWeightBottomSheet> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppColors.warning.withValues(alpha: 0.12),
+                color: colors.warning.container,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: AppColors.warning.withValues(alpha: 0.3),
+                  color: colors.warning.indicator.withValues(alpha: 0.3),
                 ),
               ),
               child: Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.lock_clock_rounded,
-                    color: AppColors.warning,
+                    color: colors.warning.indicator,
                     size: 20,
                   ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       'Weight logging is locked for ${_status!.daysUntilUnlock} more days. Weekly tracking avoids noise from daily water weight.',
-                      style: const TextStyle(
-                        color: AppColors.warning,
+                      style: TextStyle(
+                        color: colors.warning.foreground,
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                         height: 1.3,
@@ -250,25 +302,25 @@ class _LogWeightBottomSheetState extends ConsumerState<LogWeightBottomSheet> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppColors.danger.withValues(alpha: 0.12),
+                color: colors.danger.container,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: AppColors.danger.withValues(alpha: 0.3),
+                  color: colors.danger.indicator.withValues(alpha: 0.3),
                 ),
               ),
               child: Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.error_outline_rounded,
-                    color: AppColors.danger,
+                    color: colors.danger.indicator,
                     size: 20,
                   ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       _errorMessage!,
-                      style: const TextStyle(
-                        color: AppColors.danger,
+                      style: TextStyle(
+                        color: colors.danger.foreground,
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                         height: 1.3,
@@ -290,17 +342,19 @@ class _LogWeightBottomSheetState extends ConsumerState<LogWeightBottomSheet> {
                     decimal: true,
                   ),
                   autofocus: !_isSaveDisabled,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
+                    color: colors.textPrimary,
                   ),
                   decoration: InputDecoration(
-                    labelText: 'Weight (kg)',
-                    suffixText: 'kg',
-                    suffixStyle: const TextStyle(
+                    labelText: 'Weight ($weightSymbol)',
+                    labelStyle: TextStyle(color: colors.textSecondary),
+                    suffixText: weightSymbol,
+                    suffixStyle: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.textSecondary,
+                      color: colors.textSecondary,
                     ),
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16,
@@ -308,6 +362,15 @@ class _LogWeightBottomSheetState extends ConsumerState<LogWeightBottomSheet> {
                     ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: colors.border),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: colors.border),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: colors.focus, width: 2),
                     ),
                   ),
                   onChanged: (val) {
@@ -328,19 +391,23 @@ class _LogWeightBottomSheetState extends ConsumerState<LogWeightBottomSheet> {
             runSpacing: 8,
             children: [
               _buildStepChip(
-                '-0.5 kg',
+                context,
+                '-0.5 $weightSymbol',
                 _isSaveDisabled ? null : () => _adjust(-0.5),
               ),
               _buildStepChip(
-                '-0.1 kg',
+                context,
+                '-0.1 $weightSymbol',
                 _isSaveDisabled ? null : () => _adjust(-0.1),
               ),
               _buildStepChip(
-                '+0.1 kg',
+                context,
+                '+0.1 $weightSymbol',
                 _isSaveDisabled ? null : () => _adjust(0.1),
               ),
               _buildStepChip(
-                '+0.5 kg',
+                context,
+                '+0.5 $weightSymbol',
                 _isSaveDisabled ? null : () => _adjust(0.5),
               ),
             ],
@@ -352,19 +419,21 @@ class _LogWeightBottomSheetState extends ConsumerState<LogWeightBottomSheet> {
             child: ElevatedButton(
               onPressed: _isSaveDisabled ? null : _save,
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
+                backgroundColor: colors.action,
+                foregroundColor: colors.onAction,
+                disabledBackgroundColor: colors.disabled,
+                disabledForegroundColor: colors.textDisabled,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
               child: _isSaving
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 20,
                       height: 20,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: Colors.white,
+                        color: colors.onAction,
                       ),
                     )
                   : Text(
@@ -385,15 +454,28 @@ class _LogWeightBottomSheetState extends ConsumerState<LogWeightBottomSheet> {
     );
   }
 
-  Widget _buildStepChip(String label, VoidCallback? onTap) {
+  Widget _buildStepChip(
+    BuildContext context,
+    String label,
+    VoidCallback? onTap,
+  ) {
+    final colors = context.b05Colors;
     return ActionChip(
       label: Text(
         label,
-        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: colors.textPrimary,
+        ),
       ),
-      backgroundColor: AppColors.cardBackground,
-      side: const BorderSide(color: AppColors.border),
+      backgroundColor: colors.inset,
+      side: BorderSide(color: colors.border),
       onPressed: onTap,
     );
   }
 }
+
+String _formatWeightLimit(double value) => value == value.roundToDouble()
+    ? value.toStringAsFixed(0)
+    : value.toStringAsFixed(1);

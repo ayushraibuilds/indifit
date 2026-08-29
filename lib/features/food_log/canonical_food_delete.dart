@@ -1,37 +1,90 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:uuid/uuid.dart';
 
 import '../../core/di/providers.dart';
 import '../../core/nutrition_household_measures.dart';
 import '../../core/nutrition_legacy_read_models.dart';
+import '../../core/theme/b05_semantic_colors.dart';
 import '../dashboard/today_surface_controller.dart';
 
-/// Consumer-facing delete flow for canonical B03 direct-food history.
+/// Consumer-facing delete flow for one canonical B03 direct-food item.
 ///
-/// The UI uses ordinary delete terminology while the repository preserves the
-/// immutable record through its append-only retraction command.
+/// The UI uses ordinary delete terminology while the coordinator preserves
+/// immutable history through an exact-item correction or retraction command.
 Future<bool> showCanonicalFoodDelete({
   required BuildContext context,
   required WidgetRef ref,
   required NutritionHistoricalReadRecord record,
 }) async {
+  final item = record.items
+      .where(
+        (candidate) =>
+            candidate.originSourceType == 'direct_food' &&
+            candidate.foodId != null,
+      )
+      .firstOrNull;
+  if (item == null ||
+      record.items
+              .where(
+                (candidate) =>
+                    candidate.originSourceType == 'direct_food' &&
+                    candidate.foodId != null,
+              )
+              .length !=
+          1) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          behavior: SnackBarBehavior.floating,
+          content: Text('Choose one food entry at a time.'),
+        ),
+      );
+    }
+    return false;
+  }
+  return showCanonicalFoodItemDelete(
+    context: context,
+    ref: ref,
+    record: record,
+    item: item,
+  );
+}
+
+/// Deletes one exact persisted item from a canonical direct-food snapshot.
+Future<bool> showCanonicalFoodItemDelete({
+  required BuildContext context,
+  required WidgetRef ref,
+  required NutritionHistoricalReadRecord record,
+  required NutritionHistoricalReadItem item,
+}) async {
   final localDate = record.localDate.trim();
   final meal = record.mealCategory.trim().toLowerCase();
-  if (localDate.isEmpty || meal.isEmpty) return false;
+  if (localDate.isEmpty ||
+      meal.isEmpty ||
+      item.originSourceType != 'direct_food' ||
+      item.foodId == null ||
+      item.stableId.trim().isEmpty) {
+    return false;
+  }
+  final label = item.displayLabel?.trim().isNotEmpty == true
+      ? item.displayLabel!.trim()
+      : 'this food';
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (dialogContext) => AlertDialog(
+      backgroundColor: dialogContext.b05Colors.section,
       title: const Text('Delete this food?'),
-      content: Text(
-        'This will remove it from your ${_mealLabel(meal)} totals.',
-      ),
+      content: Text('Remove “$label” from your ${_mealLabel(meal)} totals?'),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(dialogContext).pop(false),
           child: const Text('Cancel'),
         ),
         FilledButton(
+          style: FilledButton.styleFrom(
+            backgroundColor: dialogContext.b05Colors.danger.container,
+            foregroundColor: dialogContext.b05Colors.danger.foreground,
+          ),
           onPressed: () => Navigator.of(dialogContext).pop(true),
           child: const Text('Delete'),
         ),
@@ -41,15 +94,24 @@ Future<bool> showCanonicalFoodDelete({
   if (confirmed != true || !context.mounted) return false;
 
   try {
-    final repository = await ref.read(
-      nutritionConsumptionRepositoryProvider.future,
+    final coordinator = await ref.read(
+      nutritionFoodLoggingCoordinatorProvider.future,
     );
-    await repository.retractConsumption(
+    final timezoneId = record is NutritionCanonicalSnapshotReadModel
+        ? record.snapshot.timezoneId ??
+              await ref.read(localTimezoneServiceProvider).currentTimezoneId()
+        : await ref.read(localTimezoneServiceProvider).currentTimezoneId();
+    await coordinator.correctDirectFoodItem(
       userId: kLocalNutritionUserScopeId,
       snapshotId: record.stableId,
-      expectedLocalDate: localDate,
+      itemId: item.stableId,
       expectedMealCategory: meal,
-      commandId: 'food-retraction-command::${const Uuid().v4()}',
+      mealCategory: meal,
+      localDate: localDate,
+      timezoneId: timezoneId,
+      loggedAtUtc: record.loggedAtUtc,
+      commandId: 'food-delete-command::${record.stableId}::${item.stableId}',
+      correctionReason: 'User deleted logged food.',
     );
     ref.read(todayNutritionRevisionProvider.notifier).state++;
     ref.invalidate(b04ProductionRecommendationContextProvider);
@@ -58,7 +120,7 @@ Future<bool> showCanonicalFoodDelete({
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           behavior: SnackBarBehavior.floating,
-          content: Text('Food deleted from ${_mealLabel(meal)}'),
+          content: Text('$label deleted from ${_mealLabel(meal)}'),
         ),
       );
     }

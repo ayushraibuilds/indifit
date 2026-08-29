@@ -9,6 +9,7 @@ import 'package:indifit/data/repositories/health_service.dart';
 import 'package:indifit/data/repositories/workout_repository.dart';
 import 'package:indifit/features/dashboard/dashboard_controller.dart';
 import 'package:indifit/features/dashboard/widgets/log_weight_bottom_sheet.dart';
+import 'package:indifit/features/settings/unit_preference.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // ---------------------------------------------------------------------------
@@ -375,6 +376,26 @@ void main() {
       expect(measurements.single.chest, 101.0);
     });
 
+    test(
+      '6c. Persistence rejects non-finite and out-of-range weights',
+      () async {
+        final workoutRepo = WorkoutRepository(db);
+        for (final invalid in [
+          double.nan,
+          double.infinity,
+          double.negativeInfinity,
+          minimumLoggedWeightKg - 0.1,
+          maximumLoggedWeightKg + 0.1,
+        ]) {
+          await expectLater(
+            workoutRepo.logWeightAndSyncProfile(weight: invalid),
+            throwsArgumentError,
+          );
+        }
+        expect(await db.select(db.bodyMeasurements).get(), isEmpty);
+      },
+    );
+
     // 7. Bottom sheet closes only after successful persistence
     testWidgets('7. Bottom sheet closes only after successful persistence', (
       tester,
@@ -480,6 +501,77 @@ void main() {
         isNotNull,
         reason: 'Save button must be recoverable after failure',
       );
+    });
+
+    testWidgets('invalid weight input exposes validation without saving', (
+      tester,
+    ) async {
+      final unlockedRepo = _UnlockedWorkoutRepository(db);
+      var saveCalled = false;
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            workoutRepositoryProvider.overrideWithValue(unlockedRepo),
+            healthServiceProvider.overrideWithValue(mockHealth),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: LogWeightBottomSheet(
+                currentWeight: 75.0,
+                onSave: (w) async => saveCalled = true,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.enterText(find.byType(TextField), 'NaN');
+      await tester.tap(find.byType(ElevatedButton));
+      await tester.pump();
+
+      expect(saveCalled, isFalse);
+      expect(
+        find.text('Enter a weight between 20 and 350 kg.'),
+        findsOneWidget,
+      );
+      expect(find.byType(LogWeightBottomSheet), findsOneWidget);
+    });
+
+    testWidgets('imperial input converts once and persists canonical kg', (
+      tester,
+    ) async {
+      final unlockedRepo = _UnlockedWorkoutRepository(db);
+      SharedPreferences.setMockInitialValues({
+        UnitPreferenceNotifier.key: UnitPreferenceNotifier.imperial,
+      });
+      double? savedKilograms;
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            workoutRepositoryProvider.overrideWithValue(unlockedRepo),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: LogWeightBottomSheet(
+                currentWeight: 100,
+                onSave: (value) async => savedKilograms = value,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.widgetWithText(TextField, 'Weight (lb)'), findsOneWidget);
+      expect(find.text('+0.5 lb'), findsOneWidget);
+      await tester.enterText(find.byType(TextField), '220.5');
+      await tester.tap(find.byType(ElevatedButton));
+      await tester.pump();
+
+      expect(savedKilograms, closeTo(100.017, 0.002));
     });
   });
 

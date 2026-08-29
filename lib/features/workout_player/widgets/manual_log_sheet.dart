@@ -1,26 +1,37 @@
-import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
 
+import '../../../core/di/providers.dart';
 import '../../../core/presentation/consumer_date_label.dart';
 import '../../../core/presentation/product_failure_presentation.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
 import '../../../core/widgets/consumer_task_primitives.dart';
-import '../../../core/widgets/indi_fit_bottom_sheet.dart';
 import '../../../core/widgets/indi_fit_feedback.dart';
 import '../../../core/widgets/responsive_form_primitives.dart';
 import '../../../data/database/app_database.dart';
+import '../../../data/models/b02_execution_models.dart';
+import '../../../data/repositories/exercise_picker_repository.dart';
 import '../../../data/repositories/workout_repository.dart';
+import '../../exercise_picker/exercise_picker.dart';
 
+/// Retrospective strength entry for a workout that has already happened.
+///
+/// This surface deliberately does not start a B02 draft. It collects actual
+/// facts and hands them to the canonical strength history writer. Planned
+/// prescription, elapsed-session state, occurrence identity, and resume state
+/// therefore cannot be fabricated by this form.
 class ManualLogSheet extends ConsumerStatefulWidget {
   final DateTime selectedDate;
   final String? initialWorkoutName;
+  final List<ExercisePickerSelection> initialExercises;
 
   const ManualLogSheet({
     super.key,
     required this.selectedDate,
     this.initialWorkoutName,
+    this.initialExercises = const [],
   });
 
   @override
@@ -28,19 +39,32 @@ class ManualLogSheet extends ConsumerStatefulWidget {
 }
 
 class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
-  late TextEditingController _nameController;
-  late TextEditingController _durationController;
+  late final TextEditingController _nameController;
+  late final TextEditingController _durationController;
   final List<_ManualExerciseInput> _exercises = [];
+  final String _submissionKey = 'manual-strength:${const Uuid().v4()}';
+  late DateTime _selectedDate;
   var _saving = false;
   String? _saveError;
 
   @override
   void initState() {
     super.initState();
+    _selectedDate = _dateOnly(widget.selectedDate);
     _nameController = TextEditingController(
       text: widget.initialWorkoutName ?? 'Completed Workout',
     );
     _durationController = TextEditingController(text: '45');
+    final initialIds = <String>{};
+    for (final selection in widget.initialExercises) {
+      if (!initialIds.add(selection.exerciseId)) continue;
+      _exercises.add(
+        _ManualExerciseInput(
+          exerciseId: selection.exerciseId,
+          exerciseName: selection.exerciseNameSnapshot,
+        ),
+      );
+    }
   }
 
   @override
@@ -53,145 +77,150 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
     super.dispose();
   }
 
-  void _addExercise() async {
-    final repo = ref.read(workoutRepositoryProvider);
-    final allExercises = await repo.searchExercises('');
-    if (!mounted) return;
-
-    await showIndiFitBottomSheet(
+  Future<void> _addExercise() async {
+    final selections = await showExerciseMultiPicker(
       context: context,
-      semanticLabel: 'Choose exercise',
-      builder: (ctx) {
-        String query = '';
-        return StatefulBuilder(
-          builder: (ctx, setModalState) {
-            final filtered = allExercises
-                .where(
-                  (e) => e.name.toLowerCase().contains(query.toLowerCase()),
-                )
-                .toList();
-            return Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-              child: Column(
-                children: [
-                  TextField(
-                    decoration: const InputDecoration(
-                      prefixIcon: Icon(Icons.search),
-                      hintText: 'Search exercise library...',
-                    ),
-                    onTapOutside: (_) => FocusScope.of(ctx).unfocus(),
-                    onChanged: (val) => setModalState(() => query = val),
-                  ),
-                  const SizedBox(height: 12),
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: filtered.length,
-                      itemBuilder: (ctx, i) {
-                        final ex = filtered[i];
-                        return ListTile(
-                          title: Text(
-                            ex.name,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                          ),
-                          subtitle: Text(
-                            '${ex.muscleGroups} • ${ex.equipment}',
-                            style: B05Typography.caption(ctx),
-                          ),
-                          trailing: Icon(
-                            Icons.add_circle_outline,
-                            color: ctx.b05Colors.action,
-                          ),
-                          onTap: () {
-                            setState(() {
-                              _exercises.add(
-                                _ManualExerciseInput(
-                                  exerciseName: ex.name,
-                                  sets: [
-                                    _SetInput(weightKg: 40.0, reps: 10),
-                                    _SetInput(weightKg: 40.0, reps: 10),
-                                    _SetInput(weightKg: 40.0, reps: 10),
-                                  ],
-                                ),
-                              );
-                            });
-                            Navigator.pop(ctx);
-                          },
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
+      repository: _exercisePickerRepository,
+      selectionContext: const ExerciseLibraryPickerContext(
+        title: 'Add exercises',
+        semanticLabel: 'Add exercises to completed workout',
+      ),
+      initialSelectedExerciseIds: {
+        for (final exercise in _exercises) exercise.exerciseId,
       },
     );
+    if (!mounted || selections == null) return;
+    final existingIds = _exercises
+        .map((exercise) => exercise.exerciseId)
+        .toSet();
+    setState(() {
+      for (final selection in selections) {
+        if (!existingIds.add(selection.exerciseId)) continue;
+        _exercises.add(
+          _ManualExerciseInput(
+            exerciseId: selection.exerciseId,
+            exerciseName: selection.exerciseNameSnapshot,
+          ),
+        );
+      }
+    });
+  }
+
+  ExercisePickerRepository get _exercisePickerRepository {
+    // The legacy repository remains a read-only catalog bridge here so old
+    // callers/tests that provide a catalog fixture keep working. Selection
+    // still returns the exact stable ID and all writes use B02 authorities.
+    return ExercisePickerRepository.fromSource(
+      _WorkoutRepositoryExerciseCatalogSource(
+        ref.read(workoutRepositoryProvider),
+      ),
+    );
+  }
+
+  Future<void> _pickDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(2000),
+      lastDate: _dateOnly(DateTime.now().add(const Duration(days: 1))),
+      helpText: 'Choose workout date',
+    );
+    if (!mounted || picked == null) return;
+    setState(() => _selectedDate = _dateOnly(picked));
   }
 
   Future<void> _saveLoggedSession() async {
     if (_saving) return;
     final name = _nameController.text.trim();
-    if (name.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a session title.')),
-      );
+    final durationMinutes = int.tryParse(_durationController.text.trim());
+    final validation = _validate(name: name, durationMinutes: durationMinutes);
+    if (validation != null) {
+      setState(() => _saveError = validation);
       return;
     }
 
-    if (_exercises.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please add at least one exercise.')),
-      );
-      return;
-    }
-
-    final durationMins = int.tryParse(_durationController.text) ?? 45;
-    final repo = ref.read(workoutRepositoryProvider);
-
-    final setCompanions = <WorkoutSetsCompanion>[];
-    double totalVol = 0.0;
-    for (final ex in _exercises) {
-      for (int i = 0; i < ex.sets.length; i++) {
-        final s = ex.sets[i];
-        totalVol += (s.weightKg * s.reps);
-        setCompanions.add(
-          WorkoutSetsCompanion(
-            exerciseName: Value(ex.exerciseName),
-            setNumber: Value(i + 1),
-            reps: Value(s.reps),
-            weight: Value(s.weightKg),
+    final performedExercises = <B02PerformedExerciseDraft>[];
+    try {
+      for (
+        var exerciseOrdinal = 0;
+        exerciseOrdinal < _exercises.length;
+        exerciseOrdinal++
+      ) {
+        final exercise = _exercises[exerciseOrdinal];
+        final sets = <B02PerformedSet>[];
+        for (
+          var setOrdinal = 0;
+          setOrdinal < exercise.sets.length;
+          setOrdinal++
+        ) {
+          final input = exercise.sets[setOrdinal];
+          final reps = int.tryParse(input.repsController.text.trim());
+          final loadText = input.loadController.text.trim();
+          final load = loadText.isEmpty ? null : double.tryParse(loadText);
+          if (reps == null || reps < 1) {
+            throw const B02ValidationException(
+              'Enter positive reps for every recorded set.',
+            );
+          }
+          if (loadText.isNotEmpty && (load == null || load < 0)) {
+            throw const B02ValidationException(
+              'Enter a valid non-negative load or leave load blank.',
+            );
+          }
+          sets.add(
+            B02PerformedSet(
+              id: '${exercise.exerciseId}:set:$setOrdinal',
+              performedExerciseId: exercise.exerciseId,
+              ordinal: setOrdinal,
+              role: input.isWarmup ? B02SetRole.warmup : B02SetRole.working,
+              actualLoadKg: load,
+              actualLoadBasis: load == null ? null : B02LoadBasis.totalExternal,
+              actualReps: reps,
+              actualRpe: input.rpe,
+            ),
+          );
+        }
+        performedExercises.add(
+          B02PerformedExerciseDraft(
+            id: exercise.exerciseId,
+            ordinal: exerciseOrdinal,
+            actualExerciseId: exercise.exerciseId,
+            actualExerciseNameSnapshot: exercise.exerciseName,
+            status: 'completed',
+            sets: sets,
           ),
         );
       }
+    } on B02ValidationException catch (error) {
+      setState(() => _saveError = error.message);
+      return;
     }
-
-    final int estCalories = (durationMins * 5.5).round();
 
     setState(() {
       _saving = true;
       _saveError = null;
     });
     try {
-      await repo.logSession(
-        name: name,
-        volume: totalVol,
-        durationSeconds: durationMins * 60,
-        calories: estCalories,
-        sets: setCompanions,
-        completedAt: widget.selectedDate,
-      );
-
-      if (mounted) {
-        setState(() => _saving = false);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(indiFitSuccessSnackBar('✓ Workout logged'));
-        Navigator.pop(context, true);
-      }
+      final completedAt = DateTime(
+        _selectedDate.year,
+        _selectedDate.month,
+        _selectedDate.day,
+        12,
+      ).toUtc();
+      await ref
+          .read(strengthExecutionCompatibilityAdapterProvider)
+          .saveManualCompletedWorkout(
+            routineName: name,
+            durationSeconds: durationMinutes! * 60,
+            completedAtUtc: completedAt,
+            performedExercises: performedExercises,
+            idempotencyKey: _submissionKey,
+          );
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(indiFitSuccessSnackBar('✓ Workout logged'));
+      Navigator.of(context).pop(true);
     } catch (error) {
       if (!mounted) return;
       setState(() {
@@ -205,18 +234,32 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
     }
   }
 
+  String? _validate({required String name, required int? durationMinutes}) {
+    if (name.isEmpty) return 'Enter a workout title.';
+    if (durationMinutes == null || durationMinutes < 1) {
+      return 'Enter a positive duration in minutes.';
+    }
+    if (_exercises.isEmpty) {
+      return 'Add at least one exercise.';
+    }
+    if (_exercises.any((exercise) => exercise.sets.isEmpty)) {
+      return 'Add at least one set for each exercise.';
+    }
+    return null;
+  }
+
   void _addSet(_ManualExerciseInput exercise) {
-    late final _SetInput newSet;
+    final previous = exercise.sets.isEmpty ? null : exercise.sets.last;
+    late final _ManualSetInput newSet;
     setState(() {
-      final lastWeight = exercise.sets.isNotEmpty
-          ? exercise.sets.last.weightKg
-          : 40.0;
-      final lastReps = exercise.sets.isNotEmpty ? exercise.sets.last.reps : 10;
-      newSet = _SetInput(weightKg: lastWeight, reps: lastReps);
+      newSet = _ManualSetInput(
+        load: previous?.loadController.text ?? '',
+        reps: previous?.repsController.text ?? '',
+        isWarmup: previous?.isWarmup ?? false,
+        rpe: previous?.rpe,
+      );
       exercise.sets.add(newSet);
     });
-    // Keep the newly-created set and its correction controls reachable when
-    // the sheet is shorter than the completed workout form.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final target = newSet.key.currentContext;
@@ -226,9 +269,35 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
     });
   }
 
+  void _removeSet(_ManualExerciseInput exercise, int setIndex) {
+    setState(() => exercise.sets.removeAt(setIndex).dispose());
+    _revealExerciseHeader(exercise);
+  }
+
+  void _removeExercise(int exerciseIndex) {
+    final anchor = exerciseIndex + 1 < _exercises.length
+        ? _exercises[exerciseIndex + 1]
+        : exerciseIndex > 0
+        ? _exercises[exerciseIndex - 1]
+        : null;
+    setState(() => _exercises.removeAt(exerciseIndex).dispose());
+    if (anchor != null) _revealExerciseHeader(anchor);
+  }
+
+  void _revealExerciseHeader(_ManualExerciseInput exercise) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final target = exercise.key.currentContext;
+      if (target != null) {
+        Scrollable.ensureVisible(target, alignment: 0, duration: Duration.zero);
+      }
+    });
+  }
+
   Widget _buildExerciseCard(_ManualExerciseInput exercise, int exerciseIndex) {
     final colors = context.b05Colors;
     return Padding(
+      key: exercise.key,
       padding: const EdgeInsets.only(bottom: 12),
       child: B05Surface(
         padding: const EdgeInsets.all(12),
@@ -250,27 +319,23 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
                   tooltip: 'Remove ${exercise.exerciseName}',
                   icon: Icon(
                     Icons.close,
-                    size: 16,
+                    size: 18,
                     color: colors.textSecondary,
                   ),
-                  onPressed: () {
-                    setState(() {
-                      _exercises.removeAt(exerciseIndex).dispose();
-                    });
-                  },
+                  onPressed: _saving
+                      ? null
+                      : () => _removeExercise(exerciseIndex),
                 ),
               ],
             ),
-            // Keep the set action adjacent to the exercise heading so it
-            // remains reachable before the lower set rows on compact sheets.
             TextButton.icon(
-              onPressed: () => _addSet(exercise),
-              icon: const Icon(Icons.add, size: 14),
-              label: const Text('Add Set', style: TextStyle(fontSize: 11)),
+              onPressed: _saving ? null : () => _addSet(exercise),
+              icon: const Icon(Icons.add, size: 16),
+              label: const Text('Add Set', style: TextStyle(fontSize: 12)),
             ),
-            ...exercise.sets.asMap().entries.map((setEntry) {
-              final setIndex = setEntry.key;
-              final setInput = setEntry.value;
+            ...exercise.sets.asMap().entries.map((entry) {
+              final setIndex = entry.key;
+              final setInput = entry.value;
               return KeyedSubtree(
                 key: setInput.key,
                 child: Padding(
@@ -293,11 +358,9 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
                               size: 18,
                               color: colors.textSecondary,
                             ),
-                            onPressed: () {
-                              setState(() {
-                                exercise.sets.removeAt(setIndex).dispose();
-                              });
-                            },
+                            onPressed: _saving || exercise.sets.length == 1
+                                ? null
+                                : () => _removeSet(exercise, setIndex),
                           ),
                         ],
                       ),
@@ -305,21 +368,21 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
                         spacing: 8,
                         children: [
                           TextField(
-                            controller: setInput.weightController,
+                            controller: setInput.loadController,
+                            enabled: !_saving,
                             keyboardType: const TextInputType.numberWithOptions(
                               decimal: true,
                             ),
                             decoration: const InputDecoration(
-                              labelText: 'Weight (kg)',
+                              labelText: 'Load (kg, optional)',
                               isDense: true,
                             ),
                             onTapOutside: (_) =>
                                 FocusScope.of(context).unfocus(),
-                            onChanged: (value) => setInput.weightKg =
-                                double.tryParse(value) ?? 0.0,
                           ),
                           TextField(
                             controller: setInput.repsController,
+                            enabled: !_saving,
                             keyboardType: TextInputType.number,
                             decoration: const InputDecoration(
                               labelText: 'Reps',
@@ -327,8 +390,44 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
                             ),
                             onTapOutside: (_) =>
                                 FocusScope.of(context).unfocus(),
-                            onChanged: (value) =>
-                                setInput.reps = int.tryParse(value) ?? 0,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Wrap(
+                        spacing: 8,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 220),
+                            child: DropdownButton<int?>(
+                              isExpanded: true,
+                              value: setInput.rpe,
+                              hint: const Text('RPE'),
+                              onChanged: _saving
+                                  ? null
+                                  : (value) =>
+                                        setState(() => setInput.rpe = value),
+                              items: [
+                                const DropdownMenuItem<int?>(
+                                  value: null,
+                                  child: Text('RPE not set'),
+                                ),
+                                for (var value = 1; value <= 10; value++)
+                                  DropdownMenuItem<int?>(
+                                    value: value,
+                                    child: Text('RPE $value'),
+                                  ),
+                              ],
+                            ),
+                          ),
+                          FilterChip(
+                            label: const Text('Warm-up set'),
+                            selected: setInput.isWarmup,
+                            onSelected: _saving
+                                ? null
+                                : (value) =>
+                                      setState(() => setInput.isWarmup = value),
                           ),
                         ],
                       ),
@@ -345,189 +444,172 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final dateStr = ConsumerDateLabel.dateTime(widget.selectedDate);
-
-    return Material(
-      color: context.b05Colors.section,
-      surfaceTintColor: Colors.transparent,
-      child: SafeArea(
-        top: true,
-        bottom: true,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: SingleChildScrollView(
-                  keyboardDismissBehavior:
-                      ScrollViewKeyboardDismissBehavior.onDrag,
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      LayoutBuilder(
-                        builder: (context, constraints) {
-                          final largeText =
-                              MediaQuery.textScalerOf(context).scale(14) / 14 >=
-                              1.4;
-                          final compact =
-                              constraints.maxWidth < 420 || largeText;
-                          final title = const Text(
-                            'Log Completed Workout',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          );
-                          final date = B05Surface(
-                            tone: B05SurfaceTone.selected,
-                            radius: B05SurfaceRadius.small,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: B05Layout.space8,
-                              vertical: B05Layout.space4,
-                            ),
-                            child: Text(
-                              dateStr,
-                              style: B05Typography.caption(
-                                context,
-                              ).copyWith(color: context.b05Colors.action),
-                            ),
-                          );
-                          final close = IconButton(
-                            tooltip: 'Close',
-                            onPressed: () => Navigator.of(context).maybePop(),
-                            icon: const Icon(Icons.close),
-                          );
-                          if (compact) {
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Expanded(child: title),
-                                    close,
-                                  ],
-                                ),
-                                Align(
-                                  alignment: Alignment.centerLeft,
-                                  child: date,
-                                ),
-                              ],
-                            );
-                          }
-                          return Row(
-                            children: [
-                              Expanded(child: title),
-                              date,
-                              close,
-                            ],
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                      IndiFitResponsiveFieldGroup(
-                        children: [
-                          TextField(
-                            controller: _nameController,
-                            decoration: const InputDecoration(
-                              labelText: 'Workout Title',
-                              isDense: true,
-                            ),
-                            onTapOutside: (_) =>
-                                FocusScope.of(context).unfocus(),
-                          ),
-                          TextField(
-                            controller: _durationController,
-                            keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(
-                              labelText: 'Duration (min)',
-                              isDense: true,
-                            ),
-                            onTapOutside: (_) =>
-                                FocusScope.of(context).unfocus(),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Wrap(
-                        alignment: WrapAlignment.spaceBetween,
-                        runSpacing: 4,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          Text(
-                            'EXERCISES LOGGED',
-                            style: B05Typography.caption(context).copyWith(
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: .6,
-                            ),
-                          ),
-                          TextButton.icon(
-                            onPressed: _addExercise,
-                            icon: const Icon(Icons.add, size: 16),
-                            label: const Text(
-                              'Add Exercise',
-                              style: TextStyle(fontSize: 12),
-                            ),
-                          ),
-                        ],
-                      ),
-                      if (_exercises.isEmpty)
-                        ProductEmptyState(
-                          icon: Icons.fitness_center_rounded,
-                          title: 'Add your first exercise',
-                          message:
-                              'Choose the exercises and sets you completed.',
-                          action: _addExercise,
-                          actionLabel: 'Tap to add exercises to this log',
-                          actionIcon: Icons.add,
-                        )
-                      else
-                        Column(
-                          children: [
-                            for (
-                              var index = 0;
-                              index < _exercises.length;
-                              index++
-                            )
-                              _buildExerciseCard(_exercises[index], index),
-                          ],
+    final dateLabel = ConsumerDateLabel.dateTime(_selectedDate);
+    return Semantics(
+      container: true,
+      explicitChildNodes: true,
+      child: Material(
+        color: context.b05Colors.section,
+        surfaceTintColor: Colors.transparent,
+        child: SafeArea(
+          top: true,
+          bottom: true,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Expanded(
+                      child: Text(
+                        'Log Completed Workout',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
                         ),
-                      if (_saveError != null) ...[
-                        const SizedBox(height: 12),
-                        ConsumerStatusRow(
-                          label: 'Workout could not be saved',
-                          detail: _saveError,
-                          error: true,
-                          onRetry: _saving ? null : _saveLoggedSession,
-                        ),
-                      ],
-                    ],
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'Close',
+                      onPressed: _saving
+                          ? null
+                          : () => Navigator.of(context).maybePop(),
+                      icon: const Icon(Icons.close),
+                    ),
+                  ],
+                ),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    onPressed: _saving ? null : _pickDate,
+                    icon: const Icon(Icons.calendar_today_outlined, size: 16),
+                    label: Text('Workout date, $dateLabel'),
                   ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: B05ActionButton(
-                  onPressed: _saving ? null : _saveLoggedSession,
-                  icon: Icons.check_circle_rounded,
-                  label: _saving ? 'Saving workout…' : 'Save Workout Session',
+                const SizedBox(height: 4),
+                Expanded(
+                  child: SingleChildScrollView(
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        IndiFitResponsiveFieldGroup(
+                          children: [
+                            TextField(
+                              controller: _nameController,
+                              enabled: !_saving,
+                              decoration: const InputDecoration(
+                                labelText: 'Workout Title',
+                                isDense: true,
+                              ),
+                              onTapOutside: (_) =>
+                                  FocusScope.of(context).unfocus(),
+                            ),
+                            TextField(
+                              controller: _durationController,
+                              enabled: !_saving,
+                              keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(
+                                labelText: 'Duration (min)',
+                                isDense: true,
+                              ),
+                              onTapOutside: (_) =>
+                                  FocusScope.of(context).unfocus(),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Wrap(
+                          alignment: WrapAlignment.spaceBetween,
+                          runSpacing: 4,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            Text(
+                              'EXERCISES LOGGED',
+                              style: B05Typography.caption(context).copyWith(
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: .6,
+                              ),
+                            ),
+                            TextButton.icon(
+                              onPressed: _saving ? null : _addExercise,
+                              icon: const Icon(Icons.add, size: 16),
+                              label: const Text(
+                                'Add Exercise',
+                                style: TextStyle(fontSize: 12),
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (_exercises.isEmpty)
+                          ProductEmptyState(
+                            icon: Icons.fitness_center_rounded,
+                            title: 'Add your first exercise',
+                            message:
+                                'Choose the exercises and sets you completed.',
+                            action: _saving ? null : _addExercise,
+                            actionLabel: 'Tap to add exercises to this log',
+                            actionIcon: Icons.add,
+                          )
+                        else
+                          Column(
+                            children: [
+                              for (
+                                var index = 0;
+                                index < _exercises.length;
+                                index++
+                              )
+                                _buildExerciseCard(_exercises[index], index),
+                            ],
+                          ),
+                        if (_saveError != null) ...[
+                          const SizedBox(height: 12),
+                          ConsumerStatusRow(
+                            label: 'Workout could not be saved',
+                            detail: _saveError,
+                            error: true,
+                            onRetry: _saving ? null : _saveLoggedSession,
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: B05ActionButton(
+                    onPressed: _saving ? null : _saveLoggedSession,
+                    icon: Icons.check_circle_rounded,
+                    label: _saving ? 'Saving workout…' : 'Save Workout Session',
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
+
+  static DateTime _dateOnly(DateTime value) =>
+      DateTime(value.year, value.month, value.day);
 }
 
 class _ManualExerciseInput {
-  String exerciseName;
-  List<_SetInput> sets;
+  final GlobalKey key = GlobalKey();
+  final String exerciseId;
+  final String exerciseName;
+  final List<_ManualSetInput> sets = [
+    _ManualSetInput(),
+    _ManualSetInput(),
+    _ManualSetInput(),
+  ];
 
-  _ManualExerciseInput({required this.exerciseName, required this.sets});
+  _ManualExerciseInput({required this.exerciseId, required this.exerciseName});
 
   void dispose() {
     for (final set in sets) {
@@ -536,20 +618,52 @@ class _ManualExerciseInput {
   }
 }
 
-class _SetInput {
+class _ManualSetInput {
   final GlobalKey key = GlobalKey();
-  double weightKg;
-  int reps;
-  late final TextEditingController weightController;
+  late final TextEditingController loadController;
   late final TextEditingController repsController;
+  bool isWarmup;
+  int? rpe;
 
-  _SetInput({required this.weightKg, required this.reps}) {
-    weightController = TextEditingController(text: '$weightKg');
-    repsController = TextEditingController(text: '$reps');
+  _ManualSetInput({
+    String load = '',
+    String reps = '',
+    this.isWarmup = false,
+    this.rpe,
+  }) {
+    loadController = TextEditingController(text: load);
+    repsController = TextEditingController(text: reps);
   }
 
   void dispose() {
-    weightController.dispose();
+    loadController.dispose();
     repsController.dispose();
   }
+}
+
+/// Read-only compatibility source for the picker. The old repository's
+/// search method is intentionally used only to discover catalog rows; it is
+/// not a write authority for the new historical record.
+final class _WorkoutRepositoryExerciseCatalogSource
+    implements ExerciseCatalogSource {
+  final WorkoutRepository repository;
+
+  const _WorkoutRepositoryExerciseCatalogSource(this.repository);
+
+  @override
+  Future<List<Exercise>> readAll() => repository.searchExercises('');
+
+  @override
+  Future<Exercise?> readByStableId(String stableId) async {
+    final clean = stableId.trim();
+    if (clean.isEmpty) return null;
+    final exercises = await repository.searchExercises('');
+    for (final exercise in exercises) {
+      if (exercise.stableId?.trim() == clean) return exercise;
+    }
+    return null;
+  }
+
+  @override
+  Future<List<Exercise>> readRecent() async => const [];
 }

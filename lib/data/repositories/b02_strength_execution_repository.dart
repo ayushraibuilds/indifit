@@ -9,6 +9,7 @@ import '../../core/fixtures/equipment_fixtures.dart';
 import '../../core/fixtures/workout_draft_codec.dart';
 import '../database/app_database.dart';
 import '../models/b02_execution_models.dart';
+import '../models/b02_rich_set_helpers.dart';
 import '../services/b02_workout_preparation_orchestrator.dart';
 import 'b02_target_recommendation_repository.dart';
 import 'calendar_repository.dart';
@@ -82,6 +83,8 @@ class StrengthExecutionRepository {
   final EquipmentProfileRepository _equipmentRepo;
   final ExercisePreferenceRepository _preferenceRepo;
   final B02WorkoutPreparationOrchestrator _preparation;
+  final Map<int, Future<void>> _draftMutationTails = {};
+  final Map<String, Future<int>> _manualCompletionTails = {};
 
   StrengthExecutionRepository({
     required AppDatabase db,
@@ -103,6 +106,142 @@ class StrengthExecutionRepository {
              evidenceRepository: B02TargetEvidenceRepository(db),
              nowUtc: nowUtc,
            );
+
+  /// Saves a completed strength workout that happened outside an IndiFit
+  /// schedule. This is deliberately a direct history write: it does not
+  /// create a WorkoutDraft, elapsed-time authority, occurrence, or resume
+  /// state. The performed graph still goes through the same canonical B02
+  /// tables and validation used by active completion.
+  ///
+  /// [idempotencyKey] is owned by the caller for the lifetime of one form
+  /// submission. Reusing it returns the same saved session; a new key is a
+  /// new manual historical record. This is bounded submission protection, not
+  /// a global duplicate-detection policy.
+  Future<int> saveManualCompletedWorkout({
+    required String routineName,
+    required int durationSeconds,
+    required DateTime completedAtUtc,
+    required List<B02PerformedExerciseDraft> performedExercises,
+    String? idempotencyKey,
+  }) {
+    final key = idempotencyKey?.trim().isNotEmpty == true
+        ? idempotencyKey!.trim()
+        : 'manual-strength:${_uuid.v4()}';
+    final inFlight = _manualCompletionTails[key];
+    if (inFlight != null) return inFlight;
+    final future = _saveManualCompletedWorkout(
+      routineName: routineName,
+      durationSeconds: durationSeconds,
+      completedAtUtc: completedAtUtc,
+      performedExercises: performedExercises,
+      idempotencyKey: key,
+    );
+    _manualCompletionTails[key] = future;
+    return future.whenComplete(() {
+      if (identical(_manualCompletionTails[key], future)) {
+        _manualCompletionTails.remove(key);
+      }
+    });
+  }
+
+  Future<int> _saveManualCompletedWorkout({
+    required String routineName,
+    required int durationSeconds,
+    required DateTime completedAtUtc,
+    required List<B02PerformedExerciseDraft> performedExercises,
+    required String idempotencyKey,
+  }) async {
+    final cleanName = routineName.trim();
+    if (cleanName.isEmpty) {
+      throw const B02StrengthExecutionFinalizationException(
+        'A manual workout needs a name.',
+      );
+    }
+    final state = B02ExecutionDraftState(
+      snapshotId: idempotencyKey,
+      snapshotVersion: B02ExecutionDraftState.schemaVersion,
+      activityType: B02ActivityType.strength,
+      routineName: cleanName,
+      elapsedSeconds: durationSeconds,
+      currentExerciseOrdinal: 0,
+      currentSetOrdinal: 0,
+      performedExercises: List.unmodifiable(performedExercises),
+    );
+    await _validateBeforeMutation(
+      state: state,
+      completionKind: CompletionKind.full,
+      requirePrescriptionAncestry: false,
+    );
+
+    final actualIds = state.performedExercises
+        .map((exercise) => exercise.actualExerciseId)
+        .toSet();
+    final actualRows = await (_db.select(
+      _db.exercises,
+    )..where((table) => table.stableId.isIn(actualIds))).get();
+    final namesById = <String, String>{
+      for (final row in actualRows) row.stableId!: row.name.trim(),
+    };
+    for (final exercise in state.performedExercises) {
+      if (namesById[exercise.actualExerciseId] !=
+          exercise.actualExerciseNameSnapshot.trim()) {
+        throw const B02StrengthExecutionFinalizationException(
+          'A manual exercise identity is not available in the exercise library.',
+        );
+      }
+    }
+
+    return _db.transaction(() async {
+      final existing = await (_db.select(
+        _db.workoutSessions,
+      )..where((table) => table.uuid.equals(idempotencyKey))).getSingleOrNull();
+      if (existing != null) {
+        if (existing.activityType != B02ActivityType.strength.dbValue) {
+          throw const B02StrengthExecutionFinalizationException(
+            'This workout entry is already used for another activity.',
+          );
+        }
+        return existing.id;
+      }
+      final sessionId = await _db
+          .into(_db.workoutSessions)
+          .insert(
+            WorkoutSessionsCompanion.insert(
+              name: cleanName,
+              totalVolume: _calculateVolume(state),
+              durationSeconds: durationSeconds,
+              estimatedCalories: 0,
+              completedAt: Value(completedAtUtc.toUtc()),
+              uuid: Value(idempotencyKey),
+              completionKind: Value(CompletionKind.full.dbValue),
+              activityType: Value(B02ActivityType.strength.dbValue),
+              activitySchemaVersion: const Value(1),
+              executionSnapshotJson: Value(
+                B02ExecutionDraftCodec.encode(state),
+              ),
+            ),
+          );
+      await _persistDetail(sessionId: sessionId, state: state);
+      return sessionId;
+    });
+  }
+
+  /// Serializes mutations for one durable draft across controllers that share
+  /// this repository instance. This protects provider recreation: a pending
+  /// lifecycle save from a disposed controller cannot overtake a newer
+  /// controller's save or completion request.
+  Future<T> _serializeDraftMutation<T>(
+    int draftId,
+    Future<T> Function() operation,
+  ) {
+    final previous = _draftMutationTails[draftId] ?? Future<void>.value();
+    final next = previous.then<T>((_) => operation());
+    _draftMutationTails[draftId] = next.then<void>(
+      (_) {},
+      onError: (Object error, StackTrace stackTrace) {},
+    );
+    return next;
+  }
 
   Future<B02StrengthExecutionCoverage> checkScheduledCoverage(
     String occurrenceId,
@@ -167,6 +306,7 @@ class StrengthExecutionRepository {
     required String occurrenceId,
     required String commandId,
     bool confirmedOutsideEffectiveDate = false,
+    DateTime? nowUtc,
   }) async {
     final occurrence = await _calendarRepo.getOccurrence(occurrenceId);
     if (occurrence == null) {
@@ -197,6 +337,7 @@ class StrengthExecutionRepository {
       return _upgradeOrReadScheduledDraft(
         occurrenceId: occurrenceId,
         snapshotJson: snapshot,
+        nowUtc: nowUtc,
       );
     });
   }
@@ -283,6 +424,7 @@ class StrengthExecutionRepository {
                     activityType: B02ActivityType.strength,
                     routineName: cleanName,
                     elapsedSeconds: 0,
+                    activeSegmentStartedAtUtc: now,
                     currentExerciseOrdinal: 0,
                     currentSetOrdinal: 0,
                     groups: validatedGroups,
@@ -308,6 +450,25 @@ class StrengthExecutionRepository {
   /// mutable exercise list still lives beside the B02 draft and its performed
   /// sets are finalized by the same canonical session writer.
   Future<B02StrengthExecutionLaunch> addUnscheduledExercise({
+    required B02StrengthExecutionLaunch launch,
+    required String exerciseId,
+    required String exerciseName,
+    int plannedSets = 1,
+    String repsRange = '1-20',
+  }) {
+    return _serializeDraftMutation(
+      launch.draftId,
+      () => _addUnscheduledExercise(
+        launch: launch,
+        exerciseId: exerciseId,
+        exerciseName: exerciseName,
+        plannedSets: plannedSets,
+        repsRange: repsRange,
+      ),
+    );
+  }
+
+  Future<B02StrengthExecutionLaunch> _addUnscheduledExercise({
     required B02StrengthExecutionLaunch launch,
     required String exerciseId,
     required String exerciseName,
@@ -367,6 +528,19 @@ class StrengthExecutionRepository {
   /// exercise with history is never silently destroyed; it simply stops being
   /// an active, selectable slot for the remainder of the draft.
   Future<B02StrengthExecutionLaunch> removeUnscheduledExercise({
+    required B02StrengthExecutionLaunch launch,
+    required String prescriptionId,
+  }) {
+    return _serializeDraftMutation(
+      launch.draftId,
+      () => _removeUnscheduledExercise(
+        launch: launch,
+        prescriptionId: prescriptionId,
+      ),
+    );
+  }
+
+  Future<B02StrengthExecutionLaunch> _removeUnscheduledExercise({
     required B02StrengthExecutionLaunch launch,
     required String prescriptionId,
   }) async {
@@ -447,6 +621,19 @@ class StrengthExecutionRepository {
     );
   }
 
+  /// Returns only canonical catalog identities for the execution replacement
+  /// boundary. It does not decide equivalence, muscle similarity, equipment
+  /// similarity, or replacement policy.
+  Future<Map<String, String>> readCanonicalExercises() async {
+    final rows = await _db.select(_db.exercises).get();
+    return {
+      for (final row in rows)
+        if (row.stableId?.trim().isNotEmpty == true &&
+            row.name.trim().isNotEmpty)
+          row.stableId!.trim(): row.name.trim(),
+    };
+  }
+
   /// Resolves the frozen group graph to canonical prescription/exercise
   /// metadata for the player. This is deliberately a repository read: the UI
   /// must never infer stable IDs or modality from a display name.
@@ -525,22 +712,43 @@ class StrengthExecutionRepository {
         : null;
 
     final slots = <B02StrengthExecutionSlot>[];
-    for (final group in launch.state.groups) {
+    final orderedGroups = [...launch.state.groups]
+      ..sort((left, right) => left.ordinal.compareTo(right.ordinal));
+    for (final group in orderedGroups) {
+      final orderedMembers = [...group.members]
+        ..sort((left, right) => left.ordinal.compareTo(right.ordinal));
       for (var round = 0; round < group.roundCount; round++) {
-        for (final member in group.members) {
+        for (final member in orderedMembers) {
           final prescription = prescriptionById[member.exercisePrescriptionId];
           final raw = snapshotPrescriptions[member.exercisePrescriptionId];
           final name =
-              prescription?.exerciseNameSnapshot ??
-              raw?['exerciseNameSnapshot'] as String?;
+              raw?['exerciseNameSnapshot'] as String? ??
+              prescription?.exerciseNameSnapshot;
           final repsRange =
-              prescription?.repsRange ?? raw?['repsRange'] as String?;
+              raw?['repsRange'] as String? ?? prescription?.repsRange;
           final plannedSets =
-              prescription?.plannedSets ?? raw?['plannedSets'] as int?;
+              raw?['plannedSets'] as int? ?? prescription?.plannedSets;
           final exerciseId =
-              prescription?.exerciseId ?? raw?['exerciseId'] as String?;
+              raw?['exerciseId'] as String? ?? prescription?.exerciseId;
+          final expectedExerciseId =
+              raw?['expectedExerciseId'] as String? ?? prescription?.exerciseId;
+          final expectedExerciseName =
+              raw?['expectedExerciseNameSnapshot'] as String? ??
+              prescription?.exerciseNameSnapshot;
           if (name == null || repsRange == null || plannedSets == null) {
-            continue;
+            throw const B02StrengthExecutionRecoveryException(
+              'A grouped exercise prescription is unavailable right now.',
+            );
+          }
+          if (plannedSets < 1) {
+            throw const B02StrengthExecutionRecoveryException(
+              'A grouped exercise prescription is unavailable right now.',
+            );
+          }
+          if (name.trim().isEmpty || repsRange.trim().isEmpty) {
+            throw const B02StrengthExecutionRecoveryException(
+              'A grouped exercise prescription is unavailable right now.',
+            );
           }
           final reps = _parseRepsRange(repsRange);
           final slot = await _buildSlot(
@@ -551,8 +759,16 @@ class StrengthExecutionRepository {
             prescription: prescription,
             raw: raw,
             name: name,
+            expectedExerciseId: expectedExerciseId,
+            expectedExerciseNameSnapshot: expectedExerciseName,
+            substitutionReason: raw?['substitutionReason'] as String?,
             reps: reps,
-            plannedSets: plannedSets,
+            // B02 defines one working slot per member per group round. The
+            // round ordinal addresses the corresponding frozen set
+            // prescription; the exercise prescription's standalone
+            // planned-set count must not be multiplied by round count.
+            plannedSets: 1,
+            setPrescriptionOrdinal: round,
             exerciseId:
                 exerciseId != null && resolvedStableIds.contains(exerciseId)
                 ? exerciseId
@@ -574,7 +790,7 @@ class StrengthExecutionRepository {
         }
       }
     }
-    final groupedPrescriptionIds = launch.state.groups
+    final groupedPrescriptionIds = orderedGroups
         .expand((group) => group.members)
         .map((member) => member.exercisePrescriptionId)
         .toSet();
@@ -583,13 +799,18 @@ class StrengthExecutionRepository {
       final prescription = prescriptionById[entry.key];
       final raw = entry.value;
       final name =
-          prescription?.exerciseNameSnapshot ??
-          raw['exerciseNameSnapshot'] as String?;
-      final repsRange = prescription?.repsRange ?? raw['repsRange'] as String?;
+          raw['exerciseNameSnapshot'] as String? ??
+          prescription?.exerciseNameSnapshot;
+      final repsRange = raw['repsRange'] as String? ?? prescription?.repsRange;
       final plannedSets =
-          prescription?.plannedSets ?? raw['plannedSets'] as int?;
+          raw['plannedSets'] as int? ?? prescription?.plannedSets;
       final exerciseId =
-          prescription?.exerciseId ?? raw['exerciseId'] as String?;
+          raw['exerciseId'] as String? ?? prescription?.exerciseId;
+      final expectedExerciseId =
+          raw['expectedExerciseId'] as String? ?? prescription?.exerciseId;
+      final expectedExerciseName =
+          raw['expectedExerciseNameSnapshot'] as String? ??
+          prescription?.exerciseNameSnapshot;
       if (name == null || repsRange == null || plannedSets == null) continue;
       final reps = _parseRepsRange(repsRange);
       final slot = await _buildSlot(
@@ -600,8 +821,12 @@ class StrengthExecutionRepository {
         prescription: prescription,
         raw: raw,
         name: name,
+        expectedExerciseId: expectedExerciseId,
+        expectedExerciseNameSnapshot: expectedExerciseName,
+        substitutionReason: raw['substitutionReason'] as String?,
         reps: reps,
         plannedSets: plannedSets,
+        setPrescriptionOrdinal: null,
         exerciseId: exerciseId != null && resolvedStableIds.contains(exerciseId)
             ? exerciseId
             : null,
@@ -650,8 +875,12 @@ class StrengthExecutionRepository {
     required ExercisePrescription? prescription,
     required Map<String, dynamic>? raw,
     required String name,
+    required String? expectedExerciseId,
+    required String? expectedExerciseNameSnapshot,
+    required String? substitutionReason,
     required (int?, int?) reps,
     required int plannedSets,
+    required int? setPrescriptionOrdinal,
     required String? exerciseId,
     required Exercise? exercise,
     required List<StrengthSetPrescription> strengthRows,
@@ -659,7 +888,40 @@ class StrengthExecutionRepository {
     required bool isDeloadWeek,
     required EquipmentProfileAggregate? profile,
   }) async {
-    final strength = strengthRows.isEmpty ? null : strengthRows.first;
+    final setPrescriptions = _readSetPrescriptions(
+      raw: raw,
+      rows: strengthRows,
+      prescriptionId: prescription?.id ?? raw?['id'] as String? ?? id,
+    );
+    if (group != null &&
+        setPrescriptions.isNotEmpty &&
+        setPrescriptions.length != group.roundCount) {
+      throw const B02StrengthExecutionRecoveryException(
+        'This grouped exercise prescription is unavailable right now.',
+      );
+    }
+    final strength = setPrescriptionOrdinal == null
+        ? (strengthRows.isEmpty ? null : strengthRows.first)
+        : strengthRows
+              .where((row) => row.ordinal == setPrescriptionOrdinal)
+              .firstOrNull;
+    if (group != null && strengthRows.isNotEmpty && strength == null) {
+      throw const B02StrengthExecutionRecoveryException(
+        'This grouped exercise prescription is unavailable right now.',
+      );
+    }
+    final frozenFirst = setPrescriptionOrdinal == null
+        ? (setPrescriptions.isEmpty ? null : setPrescriptions.first)
+        : setPrescriptions
+              .where((item) => item.ordinal == setPrescriptionOrdinal)
+              .firstOrNull;
+    if (setPrescriptionOrdinal != null &&
+        setPrescriptions.isNotEmpty &&
+        frozenFirst == null) {
+      throw const B02StrengthExecutionRecoveryException(
+        'This grouped exercise prescription is unavailable right now.',
+      );
+    }
     final preference = exerciseId == null
         ? null
         : await _preferenceRepo.getExecutionPreference(stableId: exerciseId);
@@ -683,18 +945,38 @@ class StrengthExecutionRepository {
     final effectiveItemIncrement = item?.id.isEmpty == true
         ? null
         : item?.weightIncrementKg;
-    final targetLoad =
-        strength?.targetLoadKg ?? _rawDouble(raw?['targetLoadKg']);
-    final targetBasis =
-        _rawLoadBasis(strength?.loadBasis) ?? _rawLoadBasis(raw?['loadBasis']);
+    final targetLoadCleared = raw?['targetLoadClearedForReplacement'] == true;
+    final targetLoad = targetLoadCleared
+        ? null
+        : _rawDouble(raw?['targetLoadKg']) ??
+              frozenFirst?.targetLoadKg ??
+              strength?.targetLoadKg;
+    final targetBasis = targetLoadCleared
+        ? null
+        : _rawLoadBasis(raw?['loadBasis']) ??
+              frozenFirst?.loadBasis ??
+              _rawLoadBasis(strength?.loadBasis);
     final targetMin =
-        strength?.targetRepsMin ?? _rawInt(raw?['targetRepsMin']) ?? reps.$1;
+        _rawInt(raw?['targetRepsMin']) ??
+        frozenFirst?.targetRepsMin ??
+        strength?.targetRepsMin ??
+        reps.$1;
     final targetMax =
-        strength?.targetRepsMax ?? _rawInt(raw?['targetRepsMax']) ?? reps.$2;
-    final targetRpe = strength?.targetRpe ?? _rawInt(raw?['targetRpe']);
-    final effortMode = strength?.effortMode == null
-        ? _rawEffortMode(raw?['effortMode'])
-        : B02EffortMode.parse(strength!.effortMode);
+        _rawInt(raw?['targetRepsMax']) ??
+        frozenFirst?.targetRepsMax ??
+        strength?.targetRepsMax ??
+        reps.$2;
+    final targetRpe =
+        frozenFirst?.targetRpe ??
+        strength?.targetRpe ??
+        _rawInt(raw?['targetRpe']);
+    final effortMode =
+        frozenFirst?.technique.effortMode ??
+        (strength?.effortMode == null
+            ? _rawEffortMode(raw?['effortMode'])
+            : B02EffortMode.parse(strength!.effortMode));
+    final endedAtFailure =
+        frozenFirst?.technique.endedAtFailure ?? raw?['endedAtFailure'] == true;
     return B02StrengthExecutionSlot(
       id: id,
       groupId: group?.id,
@@ -704,27 +986,137 @@ class StrengthExecutionRepository {
       roundOrdinal: roundOrdinal,
       memberOrdinal: member?.ordinal,
       prescriptionId: prescription?.id ?? raw?['id'] as String? ?? id,
+      expectedExerciseId: expectedExerciseId,
+      expectedExerciseNameSnapshot: expectedExerciseNameSnapshot,
       exerciseId: exerciseId,
       exerciseNameSnapshot: name,
+      substitutionReason: substitutionReason,
       plannedSets: plannedSets,
+      setPrescriptions: setPrescriptions,
+      setPrescriptionOrdinal: setPrescriptionOrdinal,
       targetRepsMin: targetMin,
       targetRepsMax: targetMax,
       targetRpe: targetRpe,
       targetLoadKg: targetLoad,
       targetLoadBasis: targetBasis,
       prescribedRestSeconds:
-          strength?.restSeconds ?? _rawInt(raw?['restSeconds']),
+          frozenFirst?.restSeconds ??
+          strength?.restSeconds ??
+          _rawInt(raw?['restSeconds']),
       memberTransitionRestSeconds: member?.transitionRestSeconds,
       groupRestAfterRoundSeconds: group?.restAfterRoundSeconds,
       templateDefaultRestSeconds: templateDefaultRestSeconds,
       exercisePreferenceRestSeconds: preference?.customRestSeconds,
       effortMode: effortMode,
-      endedAtFailure: raw?['endedAtFailure'] == true,
+      endedAtFailure: endedAtFailure,
       executionPreference: preference,
       effectiveItemIncrementKg: effectiveItemIncrement,
       profileDefaultIncrementKg: profile?.profile.defaultWeightIncrementKg,
       isDeloadWeek: isDeloadWeek,
     );
+  }
+
+  List<B02StrengthSetPrescription> _readSetPrescriptions({
+    required Map<String, dynamic>? raw,
+    required List<StrengthSetPrescription> rows,
+    required String prescriptionId,
+  }) {
+    final hasFrozenValue = raw?.containsKey('strengthSetPrescriptions') == true;
+    final rawValue = raw?['strengthSetPrescriptions'];
+    if (hasFrozenValue && rawValue is! List) {
+      throw const B02StrengthExecutionRecoveryException(
+        'This workout prescription is unavailable right now.',
+      );
+    }
+    if (rawValue is List) {
+      final parsed = <B02StrengthSetPrescription>[];
+      try {
+        for (final value in rawValue) {
+          if (value is! Map) {
+            throw const B02ValidationException(
+              'A set prescription is not an object.',
+            );
+          }
+          final prescription = B02StrengthSetPrescription.fromJson(
+            Map<String, dynamic>.from(value),
+          );
+          if (prescription.exercisePrescriptionId != prescriptionId) {
+            throw const B02ValidationException(
+              'A set prescription points to another exercise.',
+            );
+          }
+          parsed.add(prescription);
+        }
+      } on Object {
+        throw const B02StrengthExecutionRecoveryException(
+          'This workout prescription is unavailable right now.',
+        );
+      }
+      parsed.sort((left, right) => left.ordinal.compareTo(right.ordinal));
+      for (var index = 0; index < parsed.length; index++) {
+        if (parsed[index].ordinal != index) {
+          throw const B02StrengthExecutionRecoveryException(
+            'This workout prescription is unavailable right now.',
+          );
+        }
+      }
+      return parsed;
+    }
+
+    final parsed = [for (final row in rows) _setPrescriptionFromRow(row)]
+      ..sort((left, right) => left.ordinal.compareTo(right.ordinal));
+    for (var index = 0; index < parsed.length; index++) {
+      if (parsed[index].ordinal != index) {
+        throw const B02StrengthExecutionRecoveryException(
+          'This workout prescription is unavailable right now.',
+        );
+      }
+    }
+    return parsed;
+  }
+
+  B02StrengthSetPrescription _setPrescriptionFromRow(
+    StrengthSetPrescription row,
+  ) {
+    try {
+      final technique = row.techniquePlanJson == null
+          ? B02TechniqueFields(
+              effortMode: row.effortMode == null
+                  ? B02EffortMode.standard
+                  : B02EffortMode.parse(row.effortMode!),
+              tempoEccentricSeconds: row.tempoEccentricSeconds,
+              tempoBottomPauseSeconds: row.tempoBottomPauseSeconds,
+              tempoConcentricSeconds: row.tempoConcentricSeconds,
+              tempoLockoutPauseSeconds: row.tempoLockoutPauseSeconds,
+              pausedRepPosition: row.pausedRepPosition == null
+                  ? null
+                  : B02PausedRepPosition.parse(row.pausedRepPosition!),
+              pausedRepSeconds: row.pausedRepSeconds,
+              assistanceMode: row.assistanceMode == null
+                  ? null
+                  : B02AssistanceMode.parse(row.assistanceMode!),
+              assistanceKg: row.assistanceKg,
+            )
+          : B02TechniqueDraftCodec.decode(row.techniquePlanJson!);
+      return B02StrengthSetPrescription(
+        id: row.id,
+        exercisePrescriptionId: row.exercisePrescriptionId,
+        ordinal: row.ordinal,
+        targetLoadKg: row.targetLoadKg,
+        loadBasis: row.loadBasis == null
+            ? null
+            : B02LoadBasis.parse(row.loadBasis!),
+        targetRepsMin: row.targetRepsMin,
+        targetRepsMax: row.targetRepsMax,
+        targetRpe: row.targetRpe,
+        restSeconds: row.restSeconds,
+        technique: technique,
+      );
+    } on B02ValidationException {
+      throw const B02StrengthExecutionRecoveryException(
+        'This workout prescription is unavailable right now.',
+      );
+    }
   }
 
   static Map<String, dynamic> _snapshotObject(Object? raw) {
@@ -762,6 +1154,17 @@ class StrengthExecutionRepository {
   }
 
   Future<void> saveDraft({
+    required int draftId,
+    required B02ExecutionDraftState state,
+    DateTime? nowUtc,
+  }) {
+    return _serializeDraftMutation(
+      draftId,
+      () => _saveDraft(draftId: draftId, state: state, nowUtc: nowUtc),
+    );
+  }
+
+  Future<void> _saveDraft({
     required int draftId,
     required B02ExecutionDraftState state,
     DateTime? nowUtc,
@@ -825,6 +1228,27 @@ class StrengthExecutionRepository {
     CompletionKind completionKind = CompletionKind.full,
     String? reason,
     DateTime? completedAtUtc,
+  }) {
+    return _serializeDraftMutation(
+      draftId,
+      () => _finalizeDraft(
+        draftId: draftId,
+        commandId: commandId,
+        state: state,
+        completionKind: completionKind,
+        reason: reason,
+        completedAtUtc: completedAtUtc,
+      ),
+    );
+  }
+
+  Future<int> _finalizeDraft({
+    required int draftId,
+    required String commandId,
+    required B02ExecutionDraftState state,
+    CompletionKind completionKind = CompletionKind.full,
+    String? reason,
+    DateTime? completedAtUtc,
   }) async {
     if (commandId.trim().isEmpty) {
       throw ArgumentError.value(commandId, 'commandId', 'Must not be blank.');
@@ -836,10 +1260,14 @@ class StrengthExecutionRepository {
       completedAtUtc: completedAtUtc,
     );
     final completionMarker = _completionMarker(
+      draftId: draftId,
+      payload: payload,
+    );
+    final completionMarkerPrefix = _completionMarkerPrefix(draftId);
+    final legacyCompletionMarker = _legacyCompletionMarker(
       commandId: commandId,
       payload: payload,
     );
-    final completionMarkerPrefix = _completionMarkerPrefix(commandId);
     return _db.transaction(() async {
       final markerSession =
           await (_db.select(_db.workoutSessions)
@@ -852,6 +1280,21 @@ class StrengthExecutionRepository {
           );
         }
         return markerSession.id;
+      }
+      // Retain replay compatibility with sessions written before R08A.3
+      // switched the marker from a screen command to the durable draft ID.
+      final legacyMarkerSession =
+          await (_db.select(_db.workoutSessions)
+                ..where((table) => table.uuid.equals(legacyCompletionMarker)))
+              .getSingleOrNull();
+      if (legacyMarkerSession != null) {
+        if (legacyMarkerSession.activityType !=
+            B02ActivityType.strength.dbValue) {
+          throw const B02StrengthExecutionFinalizationException(
+            'Completion command marker belongs to a non-strength session.',
+          );
+        }
+        return legacyMarkerSession.id;
       }
       final conflictingMarker =
           await (_db.select(_db.workoutSessions)
@@ -867,13 +1310,12 @@ class StrengthExecutionRepository {
       )..where((table) => table.id.equals(draftId))).getSingleOrNull();
       final occurrenceId = draft?.scheduledOccurrenceId;
       final existing = occurrenceId == null
-          ? await (_db.select(_db.occurrenceEvents)
-                  ..where((table) => table.commandId.equals(commandId)))
-                .getSingleOrNull()
+          ? null
           : await (_db.select(_db.occurrenceEvents)..where(
                   (table) =>
                       table.occurrenceId.equals(occurrenceId) &
-                      table.commandId.equals(commandId),
+                      table.commandId.equals(commandId) &
+                      table.eventType.isIn(['completed', 'partiallyCompleted']),
                 ))
                 .getSingleOrNull();
       if (existing != null) {
@@ -971,6 +1413,13 @@ class StrengthExecutionRepository {
   }
 
   Future<void> discardDraft({required int draftId, String? commandId}) async {
+    return _serializeDraftMutation(
+      draftId,
+      () => _discardDraft(draftId: draftId, commandId: commandId),
+    );
+  }
+
+  Future<void> _discardDraft({required int draftId, String? commandId}) async {
     await _db.transaction(() async {
       final draft = await (_db.select(
         _db.workoutDrafts,
@@ -1003,6 +1452,7 @@ class StrengthExecutionRepository {
   Future<B02StrengthExecutionLaunch> _upgradeOrReadScheduledDraft({
     required String occurrenceId,
     required String snapshotJson,
+    DateTime? nowUtc,
   }) async {
     final draft =
         await (_db.select(_db.workoutDrafts)..where(
@@ -1024,6 +1474,7 @@ class StrengthExecutionRepository {
     final state = _stateFromSnapshot(
       snapshotJson: snapshotJson,
       snapshotId: occurrenceId,
+      activeSegmentStartedAtUtc: (nowUtc ?? _nowUtc()).toUtc(),
     );
     final changed =
         await (_db.update(
@@ -1090,6 +1541,7 @@ class StrengthExecutionRepository {
   B02ExecutionDraftState _stateFromSnapshot({
     required String snapshotJson,
     required String snapshotId,
+    DateTime? activeSegmentStartedAtUtc,
   }) {
     final snapshot = _decodeSnapshot(snapshotJson);
     final routineName = snapshot['routineName'];
@@ -1117,6 +1569,7 @@ class StrengthExecutionRepository {
       activityType: B02ActivityType.strength,
       routineName: routineName.trim(),
       elapsedSeconds: 0,
+      activeSegmentStartedAtUtc: activeSegmentStartedAtUtc,
       currentExerciseOrdinal: 0,
       currentSetOrdinal: 0,
       groups: groups,
@@ -1592,14 +2045,25 @@ class StrengthExecutionRepository {
     'completedAtUtc': completedAtUtc?.toUtc().toIso8601String(),
   });
 
-  static String _completionMarkerPrefix(String commandId) =>
-      'b02-completion:${base64Url.encode(utf8.encode(commandId))}:';
+  /// The draft ID is the durable identity of an active B02 execution. The
+  /// payload hash rejects a different completion request while allowing a
+  /// provider/controller reconstruction to replay the same logical finish
+  /// with a fresh screen command ID.
+  static String _completionMarkerPrefix(int draftId) =>
+      'b02-draft-completion:$draftId:';
 
   static String _completionMarker({
+    required int draftId,
+    required String payload,
+  }) =>
+      '${_completionMarkerPrefix(draftId)}'
+      '${sha256.convert(utf8.encode(payload))}';
+
+  static String _legacyCompletionMarker({
     required String commandId,
     required String payload,
   }) =>
-      '${_completionMarkerPrefix(commandId)}'
+      'b02-completion:${base64Url.encode(utf8.encode(commandId))}:'
       '${sha256.convert(utf8.encode(payload))}';
 
   static double _calculateVolume(B02ExecutionDraftState state) {
@@ -1707,10 +2171,12 @@ class StrengthExecutionCompatibilityAdapter {
     required String occurrenceId,
     required String commandId,
     bool confirmedOutsideEffectiveDate = false,
+    DateTime? nowUtc,
   }) => _repository.startScheduledOccurrence(
     occurrenceId: occurrenceId,
     commandId: commandId,
     confirmedOutsideEffectiveDate: confirmedOutsideEffectiveDate,
+    nowUtc: nowUtc,
   );
 
   Future<B02StrengthExecutionLaunch> resumeScheduledOccurrence(
@@ -1719,6 +2185,9 @@ class StrengthExecutionCompatibilityAdapter {
 
   Future<B02StrengthExecutionLaunch> readDraft(int draftId) =>
       _repository.readDraft(draftId);
+
+  Future<Map<String, String>> readCanonicalExercises() =>
+      _repository.readCanonicalExercises();
 
   Future<List<B02StrengthExecutionSlot>> readExecutionSlots(
     B02StrengthExecutionLaunch launch,
@@ -1733,11 +2202,13 @@ class StrengthExecutionCompatibilityAdapter {
     required String executionSnapshotJson,
     Iterable<B02ExerciseGroup> groups = const [],
     String? snapshotId,
+    DateTime? nowUtc,
   }) => _repository.startUnscheduledDraft(
     routineName: routineName,
     executionSnapshotJson: executionSnapshotJson,
     groups: groups,
     snapshotId: snapshotId,
+    nowUtc: nowUtc,
   );
 
   Future<B02StrengthExecutionLaunch> addUnscheduledExercise({
@@ -1766,6 +2237,20 @@ class StrengthExecutionCompatibilityAdapter {
     required int draftId,
     required B02ExecutionDraftState state,
   }) => _repository.saveDraft(draftId: draftId, state: state);
+
+  Future<int> saveManualCompletedWorkout({
+    required String routineName,
+    required int durationSeconds,
+    required DateTime completedAtUtc,
+    required List<B02PerformedExerciseDraft> performedExercises,
+    String? idempotencyKey,
+  }) => _repository.saveManualCompletedWorkout(
+    routineName: routineName,
+    durationSeconds: durationSeconds,
+    completedAtUtc: completedAtUtc,
+    performedExercises: performedExercises,
+    idempotencyKey: idempotencyKey,
+  );
 
   Future<int> finalizeDraft({
     required int draftId,

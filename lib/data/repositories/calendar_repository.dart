@@ -6,6 +6,7 @@ import 'package:uuid/uuid.dart';
 import '../../core/fixtures/workout_draft_codec.dart';
 import '../../core/services/local_schedule_date_service.dart';
 import '../database/app_database.dart';
+import '../services/b02_occurrence_snapshot_customizer.dart';
 
 enum OccurrenceStatus {
   planned,
@@ -171,6 +172,22 @@ class StartOccurrenceCommand extends OccurrenceCommand {
   });
 }
 
+/// Applies a deliberately chosen edit to one unstarted occurrence's launch
+/// snapshot. The program version, session template, prescription IDs, and
+/// occurrence row identity remain unchanged.
+class CustomizeOccurrenceCommand extends OccurrenceCommand {
+  final String baseSnapshotJson;
+  final List<OccurrenceExerciseCustomization> changes;
+
+  const CustomizeOccurrenceCommand({
+    required super.occurrenceId,
+    required super.commandId,
+    required super.expectedStatus,
+    required this.baseSnapshotJson,
+    required this.changes,
+  });
+}
+
 class DiscardStartedOccurrenceCommand extends OccurrenceCommand {
   const DiscardStartedOccurrenceCommand({
     required super.occurrenceId,
@@ -245,6 +262,128 @@ class CalendarRepository {
     return (_db.select(
       _db.scheduledSessionOccurrences,
     )..where((table) => table.id.equals(occurrenceId))).getSingleOrNull();
+  }
+
+  /// Reads the exact prescription snapshot that a scheduled occurrence would
+  /// use at launch, without changing its lifecycle or creating a draft.
+  ///
+  /// A started occurrence already owns an immutable execution snapshot, so it
+  /// is returned as-is even after the active plan changes. An unstarted
+  /// occurrence with a prepared customization snapshot returns that exact
+  /// prepared content, while still requiring the active-plan guard. A plain
+  /// unstarted occurrence is projected through the same ancestry builder used
+  /// by [start]; it is never rebuilt from display names.
+  Future<String> readWorkoutPreviewSnapshot(String occurrenceId) async {
+    final occurrence = await getOccurrence(occurrenceId);
+    if (occurrence == null) {
+      throw const InvalidOccurrenceTransitionException(
+        'Workout was not found.',
+      );
+    }
+    final existing = occurrence.executionSnapshotJson?.trim();
+    if (existing != null && existing.isNotEmpty) {
+      _decodeAndValidateOccurrenceSnapshot(existing, occurrence);
+      if (occurrence.status == OccurrenceStatus.planned.dbValue ||
+          occurrence.status == OccurrenceStatus.rescheduled.dbValue) {
+        await _requireActivePlan(occurrence);
+      }
+      return existing;
+    }
+    await _requireActivePlan(occurrence);
+    return _buildExecutionSnapshot(occurrence);
+  }
+
+  /// Saves a per-occurrence launch snapshot without changing the published
+  /// program or the occurrence's schedule/status. This is the only mutation
+  /// path for the Training customization surface; it is intentionally
+  /// unavailable after start or for terminal history.
+  Future<OccurrenceMutationResult> customize(
+    CustomizeOccurrenceCommand command,
+  ) async {
+    _validateCommand(command);
+    if (command.expectedStatus != OccurrenceStatus.planned &&
+        command.expectedStatus != OccurrenceStatus.rescheduled) {
+      throw const InvalidOccurrenceTransitionException(
+        'Only an unstarted workout can be customized.',
+      );
+    }
+    if (command.baseSnapshotJson.trim().isEmpty || command.changes.isEmpty) {
+      throw const InvalidOccurrenceTransitionException(
+        'Choose a workout change before saving.',
+      );
+    }
+    return _db.transaction(() async {
+      final existing = await _existingEvent(
+        command.occurrenceId,
+        command.commandId,
+      );
+      if (existing != null) {
+        return _idempotentResult(
+          command.occurrenceId,
+          existing,
+          expectedEventType: 'customized',
+        );
+      }
+      final occurrence = await _requireCommandSource(command);
+      await _requireActivePlan(occurrence);
+      _requireUnstarted(occurrence, 'customize');
+
+      final currentSnapshot = occurrence.executionSnapshotJson?.trim();
+      final baseSnapshot = currentSnapshot == null || currentSnapshot.isEmpty
+          ? await _buildExecutionSnapshot(occurrence)
+          : currentSnapshot;
+      if (baseSnapshot != command.baseSnapshotJson) _throwStale();
+      _decodeAndValidateOccurrenceSnapshot(baseSnapshot, occurrence);
+
+      final canonicalExercises = await (_db.select(_db.exercises)).get();
+      final canonicalById = <String, String>{
+        for (final exercise in canonicalExercises)
+          if (exercise.stableId?.trim().isNotEmpty == true &&
+              exercise.name.trim().isNotEmpty)
+            exercise.stableId!.trim(): exercise.name.trim(),
+      };
+      final customizedSnapshot = const B02OccurrenceSnapshotCustomizer().apply(
+        snapshotJson: baseSnapshot,
+        occurrenceId: occurrence.id,
+        changes: command.changes,
+        canonicalExercises: canonicalById,
+      );
+      final changed =
+          await (_db.update(_db.scheduledSessionOccurrences)..where(
+                (table) =>
+                    table.id.equals(occurrence.id) &
+                    table.status.equals(command.expectedStatus.dbValue),
+              ))
+              .write(
+                ScheduledSessionOccurrencesCompanion(
+                  executionSnapshotJson: Value(customizedSnapshot),
+                ),
+              );
+      if (changed != 1) _throwStale();
+      final event = await _insertEvent(
+        occurrenceId: occurrence.id,
+        commandId: command.commandId,
+        eventType: 'customized',
+        fromStatus: occurrence.status,
+        toStatus: occurrence.status,
+        beforeLocalDate: occurrence.effectiveLocalDate,
+        beforeTimezoneId: occurrence.effectiveTimezoneId,
+        afterLocalDate: occurrence.effectiveLocalDate,
+        afterTimezoneId: occurrence.effectiveTimezoneId,
+        metadata: {
+          'snapshotVersion': 1,
+          'prescriptionIds': [
+            for (final change in command.changes) change.prescriptionId,
+          ],
+        },
+        occurredAtUtc: _nowUtc().toUtc(),
+      );
+      return OccurrenceMutationResult(
+        occurrence: (await getOccurrence(occurrence.id))!,
+        event: event,
+        wasIdempotent: false,
+      );
+    });
   }
 
   Future<List<ScheduledSessionOccurrence>> getOccurrencesInLocalDateRange({
@@ -745,7 +884,7 @@ class CalendarRepository {
           'Another occurrence is already in progress and requires recovery.',
         );
       }
-      final snapshot = await _buildExecutionSnapshot(
+      final snapshot = await _snapshotForStart(
         occurrence,
         executionContext: command.executionContext,
       );
@@ -795,7 +934,11 @@ class CalendarRepository {
         beforeTimezoneId: occurrence.effectiveTimezoneId,
         afterLocalDate: occurrence.effectiveLocalDate,
         afterTimezoneId: occurrence.effectiveTimezoneId,
-        metadata: {'snapshotVersion': 1},
+        metadata: {
+          'snapshotVersion': 1,
+          'usedPreparedSnapshot':
+              occurrence.executionSnapshotJson?.trim().isNotEmpty == true,
+        },
         occurredAtUtc: now,
       );
       return OccurrenceMutationResult(
@@ -843,6 +986,27 @@ class CalendarRepository {
               occurrence.originalTimezoneId == occurrence.effectiveTimezoneId
           ? OccurrenceStatus.planned
           : OccurrenceStatus.rescheduled;
+      final customizationEvents =
+          await (_db.select(_db.occurrenceEvents)..where(
+                (table) =>
+                    table.occurrenceId.equals(occurrence.id) &
+                    table.eventType.equals('customized'),
+              ))
+              .get();
+      String? preparedSnapshot;
+      if (customizationEvents.isNotEmpty) {
+        final frozen = occurrence.executionSnapshotJson;
+        if (frozen == null || frozen.trim().isEmpty) {
+          throw const InvalidOccurrenceTransitionException(
+            'This customized workout snapshot is unavailable right now.',
+          );
+        }
+        final prepared = _decodeAndValidateOccurrenceSnapshot(
+          frozen,
+          occurrence,
+        )..remove('personalExerciseContext');
+        preparedSnapshot = jsonEncode(prepared);
+      }
       await (_db.delete(_db.workoutDrafts)..where(
             (table) => table.scheduledOccurrenceId.equals(occurrence.id),
           ))
@@ -856,7 +1020,7 @@ class CalendarRepository {
               .write(
                 ScheduledSessionOccurrencesCompanion(
                   status: Value(restoredStatus.dbValue),
-                  executionSnapshotJson: const Value(null),
+                  executionSnapshotJson: Value(preparedSnapshot),
                   startedAtUtc: const Value(null),
                 ),
               );
@@ -1101,6 +1265,73 @@ class CalendarRepository {
     }
   }
 
+  Future<String> _snapshotForStart(
+    ScheduledSessionOccurrence occurrence, {
+    Map<String, dynamic>? executionContext,
+  }) async {
+    // A customization is a prepared launch snapshot on the existing
+    // occurrence row. Starting promotes it to the immutable execution
+    // snapshot; it never rebuilds from the published template afterward.
+    final stored = occurrence.executionSnapshotJson?.trim();
+    if (stored == null || stored.isEmpty) {
+      return _buildExecutionSnapshot(
+        occurrence,
+        executionContext: executionContext,
+      );
+    }
+    final snapshot = _decodeAndValidateOccurrenceSnapshot(stored, occurrence);
+    if (executionContext != null) {
+      snapshot['personalExerciseContext'] = executionContext;
+      return jsonEncode(snapshot);
+    }
+    return stored;
+  }
+
+  Map<String, dynamic> _decodeAndValidateOccurrenceSnapshot(
+    String snapshotJson,
+    ScheduledSessionOccurrence occurrence,
+  ) {
+    final dynamic decoded;
+    try {
+      decoded = jsonDecode(snapshotJson);
+    } on Object {
+      throw const InvalidOccurrenceTransitionException(
+        'This workout snapshot is unavailable right now.',
+      );
+    }
+    if (decoded is! Map) {
+      throw const InvalidOccurrenceTransitionException(
+        'This workout snapshot is unavailable right now.',
+      );
+    }
+    final snapshot = Map<String, dynamic>.from(decoded);
+    if (snapshot['occurrenceId'] != occurrence.id) {
+      throw const InvalidOccurrenceTransitionException(
+        'This workout snapshot belongs to another scheduled workout.',
+      );
+    }
+    final template = snapshot['template'];
+    if (template is! Map || template['id'] != occurrence.sessionTemplateId) {
+      throw const InvalidOccurrenceTransitionException(
+        'This workout snapshot no longer matches its scheduled workout.',
+      );
+    }
+    final version = snapshot['programVersion'];
+    if (version is! Map || version['id'] != occurrence.programVersionId) {
+      throw const InvalidOccurrenceTransitionException(
+        'This workout snapshot no longer matches its training plan.',
+      );
+    }
+    if (snapshot['routineName'] is! String ||
+        (snapshot['routineName'] as String).trim().isEmpty ||
+        snapshot['prescriptions'] is! List) {
+      throw const InvalidOccurrenceTransitionException(
+        'This workout snapshot is unavailable right now.',
+      );
+    }
+    return snapshot;
+  }
+
   Future<String> _buildExecutionSnapshot(
     ScheduledSessionOccurrence occurrence, {
     Map<String, dynamic>? executionContext,
@@ -1161,6 +1392,21 @@ class CalendarRepository {
                 ..where((table) => table.exerciseGroupId.isIn(groupIds))
                 ..orderBy([(table) => OrderingTerm(expression: table.ordinal)]))
               .get();
+    final strengthSetRows = prescriptions.isEmpty
+        ? <StrengthSetPrescription>[]
+        : await (_db.select(_db.strengthSetPrescriptions)
+                ..where(
+                  (table) => table.exercisePrescriptionId.isIn(
+                    prescriptions.map((prescription) => prescription.id),
+                  ),
+                )
+                ..orderBy([(table) => OrderingTerm(expression: table.ordinal)]))
+              .get();
+    final strengthSetsByPrescription =
+        <String, List<StrengthSetPrescription>>{};
+    for (final row in strengthSetRows) {
+      (strengthSetsByPrescription[row.exercisePrescriptionId] ??= []).add(row);
+    }
     final snapshot = <String, dynamic>{
       'version': 1,
       'occurrenceId': occurrence.id,
@@ -1202,6 +1448,27 @@ class CalendarRepository {
               'exerciseNameSnapshot': prescription.exerciseNameSnapshot,
               'plannedSets': prescription.plannedSets,
               'repsRange': prescription.repsRange,
+              'strengthSetPrescriptions':
+                  (strengthSetsByPrescription[prescription.id] ?? const [])
+                      .map(
+                        (set) => {
+                          'id': set.id,
+                          'exercisePrescriptionId': set.exercisePrescriptionId,
+                          'ordinal': set.ordinal,
+                          if (set.targetLoadKg != null)
+                            'targetLoadKg': set.targetLoadKg,
+                          if (set.loadBasis != null) 'loadBasis': set.loadBasis,
+                          if (set.targetRepsMin != null)
+                            'targetRepsMin': set.targetRepsMin,
+                          if (set.targetRepsMax != null)
+                            'targetRepsMax': set.targetRepsMax,
+                          if (set.targetRpe != null) 'targetRpe': set.targetRpe,
+                          if (set.restSeconds != null)
+                            'restSeconds': set.restSeconds,
+                          'technique': _snapshotTechnique(set),
+                        },
+                      )
+                      .toList(),
             },
           )
           .toList(),
@@ -1233,6 +1500,48 @@ class CalendarRepository {
       snapshot['personalExerciseContext'] = executionContext;
     }
     return jsonEncode(snapshot);
+  }
+
+  Map<String, dynamic> _snapshotTechnique(StrengthSetPrescription row) {
+    final payload = row.techniquePlanJson;
+    if (payload != null && payload.trim().isNotEmpty) {
+      try {
+        final decoded = jsonDecode(payload);
+        if (decoded is Map) {
+          return Map<String, dynamic>.from(decoded);
+        }
+      } on Object {
+        // Fall through to the relational fields only when the payload is
+        // absent. A present malformed payload must not be silently flattened.
+        throw const InvalidOccurrenceTransitionException(
+          'A strength prescription has invalid technique details.',
+        );
+      }
+      throw const InvalidOccurrenceTransitionException(
+        'A strength prescription has invalid technique details.',
+      );
+    }
+    return {
+      'effortMode': row.effortMode ?? 'standard',
+      'endedAtFailure': false,
+      'isDropSet': false,
+      'isRestPause': false,
+      if (row.tempoEccentricSeconds != null)
+        'tempoEccentricSeconds': row.tempoEccentricSeconds,
+      if (row.tempoBottomPauseSeconds != null)
+        'tempoBottomPauseSeconds': row.tempoBottomPauseSeconds,
+      if (row.tempoConcentricSeconds != null)
+        'tempoConcentricSeconds': row.tempoConcentricSeconds,
+      if (row.tempoLockoutPauseSeconds != null)
+        'tempoLockoutPauseSeconds': row.tempoLockoutPauseSeconds,
+      if (row.pausedRepPosition != null)
+        'pausedRepPosition': row.pausedRepPosition,
+      if (row.pausedRepSeconds != null)
+        'pausedRepSeconds': row.pausedRepSeconds,
+      if (row.assistanceMode != null) 'assistanceMode': row.assistanceMode,
+      if (row.assistanceKg != null) 'assistanceKg': row.assistanceKg,
+      'segments': const <dynamic>[],
+    };
   }
 
   Future<OccurrenceEvent> _insertEvent({

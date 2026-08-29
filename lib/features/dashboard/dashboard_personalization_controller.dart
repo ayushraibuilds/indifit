@@ -107,6 +107,9 @@ class DashboardPersonalizationController
     ),
   );
 
+  Future<void> resetToDefaults() =>
+      _run(() => _repository.resetToDefaults(userId: _userId));
+
   /// A caller must invoke this explicitly; passive reads never repair data.
   Future<void> reconcile() =>
       _run(() => _repository.reconcile(userId: _userId));

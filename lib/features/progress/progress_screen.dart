@@ -3,23 +3,32 @@ import 'dart:async';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:timezone/timezone.dart' as tz;
 
+import '../../core/di/user_profile_provider.dart';
+import '../../core/navigation/app_navigation.dart';
+import '../../core/presentation/consumer_copy.dart';
 import '../../core/presentation/product_failure_presentation.dart';
+import '../../core/presentation/secondary_presentation.dart';
 import '../../core/services/indifit_haptics.dart';
+import '../../core/services/local_schedule_date_service.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/consumer_task_primitives.dart';
 import '../../core/widgets/indi_fit_bottom_sheet.dart';
 import '../../data/models/b02_muscle_volume_models.dart';
+import '../../data/models/b04_goal_models.dart';
 import '../../data/repositories/workout_repository.dart';
 import '../dashboard/widgets/log_weight_bottom_sheet.dart';
 import '../exercise_library/exercise_history_screen.dart';
+import '../settings/nutrition_targets_hub_screen.dart';
+import '../settings/unit_preference.dart';
 import '../training/workout_history_screen.dart';
 import 'achievements_screen.dart';
 import 'progress_dashboard_controller.dart';
 import 'progress_dashboard_models.dart';
+import 'r08f4_training_volume_presentation.dart';
 
 /// Outcome-first Progress composition.
 ///
@@ -42,6 +51,24 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Some deterministic preview fixtures intentionally render without a
+    // ProviderScope; production and scoped previews still consume the shared
+    // unit preference authority.
+    var units = 'kg';
+    try {
+      units = ref.watch(unitPreferenceProvider);
+    } on StateError {
+      units = 'kg';
+    }
+    String? fitnessGoalLabel;
+    try {
+      final profile = ref.watch(userProfileProvider);
+      if (profile.isLoaded && profile.hasProfile) {
+        fitnessGoalLabel = SecondaryConsumerCopy.goal(profile.userGoal);
+      }
+    } on StateError {
+      fitnessGoalLabel = null;
+    }
     return Scaffold(
       appBar: AppBar(
         title: const Text('Progress'),
@@ -65,12 +92,12 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
         ],
       ),
       body: widget.preview == null
-          ? _buildProductionBody()
-          : _buildSnapshot(widget.preview!),
+          ? _buildProductionBody(units, fitnessGoalLabel)
+          : _buildSnapshot(widget.preview!, units, fitnessGoalLabel),
     );
   }
 
-  Widget _buildProductionBody() {
+  Widget _buildProductionBody(String units, String? fitnessGoalLabel) {
     final snapshot = ref.watch(progressDashboardSnapshotProvider);
     return snapshot.when(
       loading: () => const Center(
@@ -78,18 +105,20 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
           padding: EdgeInsets.all(B05Layout.space20),
           child: ConsumerStatusRow(
             label: 'Loading your progress',
-            detail:
-                'Preparing your recent activity, strength, and measurements.',
             loading: true,
           ),
         ),
       ),
       error: (_, _) => _failureState(),
-      data: _buildSnapshot,
+      data: (snapshot) => _buildSnapshot(snapshot, units, fitnessGoalLabel),
     );
   }
 
-  Widget _buildSnapshot(ProgressDashboardSnapshot snapshot) {
+  Widget _buildSnapshot(
+    ProgressDashboardSnapshot snapshot,
+    String units,
+    String? fitnessGoalLabel,
+  ) {
     if (snapshot.hasKnownZeroData) return _emptyState(snapshot);
     if (snapshot.hasPrimaryDataFailureWithoutUsefulFacts) {
       return _failureState();
@@ -109,9 +138,16 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _ProgressOverview(
+                _ProgressHighlights(
                   snapshot: snapshot,
-                  selectedWeights: _weightsForRange(snapshot, range),
+                  onViewTrainingHistory: _openTrainingHistory,
+                  onViewStrengthHistory: (name, stableExerciseId) =>
+                      _openStrengthHistory(
+                        name,
+                        stableExerciseId,
+                        snapshot.timezoneId,
+                      ),
+                  units: units,
                 ),
                 if (snapshot.unavailableSections.isNotEmpty) ...[
                   const SizedBox(height: B05Layout.space12),
@@ -133,8 +169,18 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                   const SizedBox(height: B05Layout.space24),
                   _StrengthSection(
                     snapshot: snapshot,
-                    onViewHistory: _openStrengthHistory,
+                    onViewHistory: (name, stableExerciseId) =>
+                        _openStrengthHistory(
+                          name,
+                          stableExerciseId,
+                          snapshot.timezoneId,
+                        ),
                   ),
+                ],
+                if (_hasKnownStrengthActivity(snapshot) &&
+                    (snapshot.strengthSets?.isEmpty ?? false)) ...[
+                  const SizedBox(height: B05Layout.space24),
+                  const _StrengthEmptySection(),
                 ],
                 if (snapshot.weightMeasurements.isNotEmpty) ...[
                   const SizedBox(height: B05Layout.space24),
@@ -147,6 +193,8 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                       setState(() => _weightRange = value);
                     },
                     onLogWeight: () => _logWeight(snapshot),
+                    onViewHistory: () => _openWeightHistory(snapshot, units),
+                    units: units,
                   ),
                 ],
                 if (snapshot.nutritionSummary != null &&
@@ -154,12 +202,17 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                   const SizedBox(height: B05Layout.space24),
                   _NutritionAdherenceSection(
                     summary: snapshot.nutritionSummary!,
-                    onLogFood: () => context.go('/food'),
+                    fitnessGoalLabel: fitnessGoalLabel,
+                    onViewTargets: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const NutritionTargetsHubScreen(),
+                      ),
+                    ),
                   ),
                 ],
                 if (_hasMeaningfulVolume(snapshot)) ...[
                   const SizedBox(height: B05Layout.space24),
-                  _TrainingVolumeSection(snapshot: snapshot),
+                  _TrainingVolumeSection(snapshot: snapshot, units: units),
                 ],
                 if (_hasMeaningfulMuscleBalance(snapshot)) ...[
                   const SizedBox(height: B05Layout.space24),
@@ -190,7 +243,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
           child: Semantics(
             container: true,
             label:
-                'Your progress starts here. Complete a workout, log a weigh-in, or track your meals to start seeing useful trends.',
+                'Your progress starts here. Complete a workout or log a weigh-in to start seeing useful trends.',
             child: B05Surface(
               tone: B05SurfaceTone.inset,
               padding: const EdgeInsets.all(B05Layout.space24),
@@ -332,7 +385,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     });
   }
 
-  void _startWorkout() => context.go('/training');
+  void _startWorkout() => goToTrainingTab(context);
 
   void _openTrainingHistory() {
     Navigator.of(
@@ -340,12 +393,17 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     ).push(MaterialPageRoute(builder: (_) => const WorkoutHistoryScreen()));
   }
 
-  void _openStrengthHistory(String exerciseName, String stableExerciseId) {
+  void _openStrengthHistory(
+    String exerciseName,
+    String stableExerciseId,
+    String timezoneId,
+  ) {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => ExerciseHistoryScreen(
           exerciseName: exerciseName,
           stableExerciseId: stableExerciseId,
+          timezoneId: timezoneId,
         ),
       ),
     );
@@ -356,6 +414,19 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
       MaterialPageRoute(
         builder: (_) => ProgressMeasurementHistoryScreen(
           measurements: snapshot.bodyMeasurements,
+        ),
+      ),
+    );
+  }
+
+  void _openWeightHistory(ProgressDashboardSnapshot snapshot, String units) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ProgressWeightHistoryScreen(
+          measurements: snapshot.weightMeasurements,
+          todayLocalDate: snapshot.todayLocalDate,
+          timezoneId: snapshot.timezoneId,
+          units: units,
         ),
       ),
     );
@@ -391,31 +462,44 @@ enum _ProgressTimeRange {
   }
 }
 
-class _ProgressOverview extends StatelessWidget {
-  const _ProgressOverview({
+class _ProgressHighlights extends StatelessWidget {
+  const _ProgressHighlights({
     required this.snapshot,
-    required this.selectedWeights,
+    required this.onViewTrainingHistory,
+    required this.onViewStrengthHistory,
+    required this.units,
   });
 
   final ProgressDashboardSnapshot snapshot;
-  final List<ProgressMeasurementRecord> selectedWeights;
+  final VoidCallback onViewTrainingHistory;
+  final void Function(String name, String stableExerciseId)
+  onViewStrengthHistory;
+  final String units;
 
   @override
   Widget build(BuildContext context) {
-    final dailyWeights = _dailyWeightObservations(selectedWeights);
-    final metrics = <Widget>[];
-
+    final highlights = <_ProgressHighlight>[];
     final thisWeek = _workoutsThisWeek(snapshot);
     if (thisWeek.isNotEmpty) {
-      metrics.add(
-        _OverviewMetric(
-          value: '${thisWeek.length}',
-          label: thisWeek.length == 1
-              ? 'workout this week'
-              : 'workouts this week',
-          semanticLabel:
-              '${thisWeek.length} ${thisWeek.length == 1 ? 'workout' : 'workouts'} completed this week',
-          direction: Icons.calendar_today_rounded,
+      final summary = R08F4TrainingVolumePresentation.summarizeConsistency(
+        thisWeek,
+      );
+      final sessionCount = summary.sessionCount;
+      final daysCount = snapshot.weeklyTrainedDates.isNotEmpty
+          ? snapshot.weeklyTrainedDates.length
+          : summary.trainingDayCount;
+      final dayLabel = daysCount == 1 ? 'training day' : 'training days';
+      final sessionLabel = sessionCount == 1 ? 'workout' : 'workouts';
+      highlights.add(
+        _ProgressHighlight(
+          label: 'Training',
+          value: '$daysCount $dayLabel',
+          detail: '$sessionCount $sessionLabel this week',
+          icon: Icons.fitness_center_rounded,
+          onPressed: onViewTrainingHistory,
+          actionLabel: 'View workout history',
+          semanticDetail:
+              '$sessionCount $sessionLabel completed across $daysCount $dayLabel this week.',
         ),
       );
     }
@@ -424,79 +508,86 @@ class _ProgressOverview extends StatelessWidget {
       snapshot.strengthSets ?? const [],
     );
     if (strength != null) {
-      metrics.add(
-        _OverviewMetric(
-          value: _formatSet(strength.heaviest),
-          label: strength.comparisonText ?? strength.exerciseName,
-          semanticLabel:
-              '${strength.exerciseName}, ${_formatSet(strength.heaviest)}. ${strength.comparisonText ?? 'Heaviest recorded performed set.'}',
-          direction: Icons.fitness_center_rounded,
+      highlights.add(
+        _ProgressHighlight(
+          label: 'Strength',
+          value:
+              '${_distinctStrengthSessionCount(strength.records)} ${_distinctStrengthSessionCount(strength.records) == 1 ? 'session' : 'sessions'}',
+          detail: strength.comparisonText == null
+              ? '${strength.exerciseName} · latest ${_formatSet(strength.heaviest)}'
+              : '${strength.exerciseName} · ${strength.comparisonText}',
+          icon: Icons.show_chart_rounded,
+          onPressed: () =>
+              onViewStrengthHistory(strength.exerciseName, strength.exerciseId),
+          actionLabel: 'View strength history',
+          semanticDetail:
+              '${strength.exerciseName}; latest recorded set ${_formatSet(strength.heaviest)}.',
         ),
       );
     }
 
-    if (dailyWeights.isNotEmpty) {
+    final allWeights = snapshot.weightMeasurements.toList(growable: true)
+      ..sort(_compareMeasurementsChronologically);
+    final dailyWeights = _dailyWeightObservations(allWeights);
+    if (dailyWeights.length >= 3) {
+      final first = dailyWeights.first;
       final latest = dailyWeights.last;
-      metrics.add(
-        _OverviewMetric(
-          value: _formatWeight(latest.weightKg!),
-          label: _weightOverviewDetail(selectedWeights),
-          semanticLabel: _weightSemantics(snapshot, selectedWeights),
-          direction: _weightDirectionIcon(selectedWeights),
-          color: _goalAwareTrendColor(context, snapshot, selectedWeights),
-          statusLabel: _weightGoalTrendLabel(snapshot, selectedWeights),
+      final difference = latest.weightKg! - first.weightKg!;
+      final days = _civilDayDifference(
+        _measurementDate(first),
+        _measurementDate(latest),
+      );
+      final period = days > 0
+          ? 'since ${_shortCivilDate(_measurementDate(first))}'
+          : 'across recorded measurements';
+      final value = difference == 0
+          ? '${dailyWeights.length} measurements'
+          : '${_formatWeight(difference.abs(), units)} ${difference < 0 ? 'lower' : 'higher'}';
+      final detail = difference == 0 ? 'No change $period' : period;
+      final semanticChange = difference == 0
+          ? 'No change $period'
+          : '${_formatWeight(difference.abs(), units)} ${difference < 0 ? 'lower' : 'higher'} $period';
+      highlights.add(
+        _ProgressHighlight(
+          label: 'Weight',
+          value: value,
+          detail: detail,
+          icon: _weightDirectionIcon(allWeights),
+          semanticDetail:
+              'Weight: $semanticChange; the detailed Weight section shows the latest observation and history.',
         ),
       );
     }
 
-    if (snapshot.nutritionSummary != null &&
-        snapshot.nutritionSummary!.hasAnyLoggedDays) {
-      final nut = snapshot.nutritionSummary!;
-      final label = _nutritionAdherenceLabel(nut);
-      metrics.add(
-        _OverviewMetric(
-          value: nut.averageCaloriesKcal != null
-              ? '${_formatVolume(nut.averageCaloriesKcal!)} kcal'
-              : '${nut.loggedDaysCount} days logged',
-          label: label,
-          semanticLabel:
-              'Nutrition: ${nut.averageCaloriesKcal != null ? '${_formatVolume(nut.averageCaloriesKcal!)} average calories across ${nut.calorieEvidenceDaysCount} complete days. ' : ''}$label.',
-          direction: Icons.restaurant_rounded,
-        ),
-      );
-    }
-
-    if (metrics.isEmpty && snapshot.bodyMeasurements.isNotEmpty) {
-      final measurements = snapshot.bodyMeasurements.toList(growable: true)
-        ..sort(_compareMeasurementsNewestFirst);
-      final bodyValues = _bodyMeasurementValues(measurements);
-      if (bodyValues.isNotEmpty) {
-        final value = bodyValues.first;
-        metrics.add(
-          _OverviewMetric(
-            value: '${_formatNumber(value.value)} cm',
-            label: 'latest ${value.label.toLowerCase()}',
-            semanticLabel:
-                '${value.label}: ${_formatNumber(value.value)} centimetres, latest measurement.',
-            direction: Icons.straighten_rounded,
-          ),
-        );
-      }
-    }
-
-    if (metrics.isEmpty) return const SizedBox.shrink();
+    if (highlights.isEmpty) return const SizedBox.shrink();
 
     return Semantics(
       container: true,
-      label: 'Overview',
+      label: 'Progress highlights',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const _SectionHeading(title: 'Overview'),
+          const _SectionHeading(title: 'Highlights'),
           const SizedBox(height: B05Layout.space8),
-          B05Surface(
-            padding: const EdgeInsets.all(B05Layout.space20),
-            child: Wrap(spacing: 24, runSpacing: 20, children: metrics),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
+              final twoColumns = constraints.maxWidth >= 330 && textScale < 1.5;
+              final width = twoColumns
+                  ? (constraints.maxWidth - B05Layout.space12) / 2
+                  : constraints.maxWidth;
+              return Wrap(
+                spacing: B05Layout.space12,
+                runSpacing: B05Layout.space12,
+                children: [
+                  for (final highlight in highlights)
+                    SizedBox(
+                      width: width,
+                      child: _ProgressHighlightTile(highlight: highlight),
+                    ),
+                ],
+              );
+            },
           ),
         ],
       ),
@@ -504,67 +595,120 @@ class _ProgressOverview extends StatelessWidget {
   }
 }
 
-class _OverviewMetric extends StatelessWidget {
-  const _OverviewMetric({
-    required this.value,
+class _ProgressHighlight {
+  const _ProgressHighlight({
     required this.label,
-    required this.semanticLabel,
-    required this.direction,
-    this.color,
-    this.statusLabel,
+    required this.value,
+    required this.detail,
+    required this.icon,
+    this.semanticDetail,
+    this.onPressed,
+    this.actionLabel,
   });
 
-  final String value;
   final String label;
-  final String semanticLabel;
-  final IconData direction;
-  final Color? color;
-  final String? statusLabel;
+  final String value;
+  final String detail;
+  final IconData icon;
+  final String? semanticDetail;
+  final VoidCallback? onPressed;
+  final String? actionLabel;
+}
+
+class _ProgressHighlightTile extends StatelessWidget {
+  const _ProgressHighlightTile({required this.highlight});
+
+  final _ProgressHighlight highlight;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.b05Colors;
-    final valueColor = color ?? colors.textPrimary;
-    return Semantics(
-      label: semanticLabel,
-      child: ExcludeSemantics(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minWidth: 132, maxWidth: 240),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
+    final accent = colors.action;
+    final semanticLabel =
+        '${highlight.label}: ${highlight.value}. '
+        '${highlight.semanticDetail ?? highlight.detail}';
+    final surface = B05Surface(
+      tone: highlight.onPressed == null
+          ? B05SurfaceTone.inset
+          : B05SurfaceTone.interactive,
+      padding: const EdgeInsets.all(B05Layout.space16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(direction, size: 16, color: valueColor),
-                  const SizedBox(width: B05Layout.space4),
-                  Flexible(
-                    child: Text(
-                      value,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: B05Typography.title(
-                        context,
-                      ).copyWith(color: valueColor),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 2),
-              Text(label, style: B05Typography.caption(context)),
-              if (statusLabel case final status?) ...[
-                const SizedBox(height: 2),
-                Text(
-                  status,
-                  style: B05Typography.caption(
-                    context,
-                  ).copyWith(color: colors.success.foreground),
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
                 ),
-              ],
+                child: Icon(
+                  highlight.icon,
+                  size: B05Layout.iconMedium,
+                  color: accent,
+                ),
+              ),
+              const SizedBox(width: B05Layout.space8),
+              Expanded(
+                child: Text(
+                  highlight.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: B05Typography.caption(context).copyWith(
+                    color: colors.textSecondary,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+              ),
+              if (highlight.onPressed != null)
+                Icon(
+                  Icons.chevron_right_rounded,
+                  size: B05Layout.iconSmall,
+                  color: colors.textSecondary,
+                ),
             ],
           ),
-        ),
+          const SizedBox(height: B05Layout.space8),
+          Text(
+            highlight.value,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: B05Typography.title(
+              context,
+            ).copyWith(fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: B05Layout.space4),
+          Text(
+            highlight.detail,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: B05Typography.caption(context),
+          ),
+        ],
+      ),
+    );
+    final interactiveSurface = highlight.onPressed == null
+        ? surface
+        : Material(
+            type: MaterialType.transparency,
+            child: InkWell(
+              borderRadius: b05Radius(B05SurfaceRadius.medium),
+              onTap: highlight.onPressed,
+              child: surface,
+            ),
+          );
+    return Semantics(
+      container: true,
+      label: semanticLabel,
+      button: highlight.onPressed != null,
+      enabled: highlight.onPressed != null,
+      onTap: highlight.onPressed,
+      hint: highlight.actionLabel,
+      child: KeyedSubtree(
+        key: ValueKey('progress_highlight_${highlight.label.toLowerCase()}'),
+        child: ExcludeSemantics(child: interactiveSurface),
       ),
     );
   }
@@ -588,6 +732,38 @@ class _TrainingConsistencySection extends StatelessWidget {
       (sum, w) => sum + w.workingSetsCount,
     );
 
+    final thisWeekSummary =
+        R08F4TrainingVolumePresentation.summarizeConsistency(thisWeek);
+    final thisWeekSessionCount = thisWeekSummary.sessionCount;
+    final thisWeekDaysCount = snapshot.weeklyTrainedDates.isNotEmpty
+        ? snapshot.weeklyTrainedDates.length
+        : thisWeekSummary.trainingDayCount;
+
+    final lastFourWeeksSummary =
+        R08F4TrainingVolumePresentation.summarizeConsistency(lastFourWeeks);
+    final recentSessionCount = lastFourWeeksSummary.sessionCount;
+    final recentDaysCount = lastFourWeeksSummary.trainingDayCount;
+
+    final headingText = R08F4TrainingVolumePresentation.formatThisWeekHeading(
+      thisWeekSessionCount,
+    );
+    final subtitleText = R08F4TrainingVolumePresentation.formatThisWeekSubtitle(
+      sessionCount: thisWeekSessionCount,
+      dayCount: thisWeekDaysCount,
+    );
+    final semanticsLabel =
+        R08F4TrainingVolumePresentation.formatThisWeekSemantics(
+          sessionCount: thisWeekSessionCount,
+          dayCount: thisWeekDaysCount,
+        );
+    final fourWeeksSummaryText =
+        R08F4TrainingVolumePresentation.formatRecentHistorySummary(
+          sessionCount: recentSessionCount,
+          dayCount: recentDaysCount,
+          workingSetsCount: totalWorkingSets,
+          weeks: 4,
+        );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -599,32 +775,27 @@ class _TrainingConsistencySection extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Semantics(
-                label: thisWeek.isEmpty
-                    ? 'No workouts completed this week.'
-                    : '${thisWeek.length} ${thisWeek.length == 1 ? 'workout' : 'workouts'} completed this week.',
+                label: semanticsLabel,
                 child: ExcludeSemantics(
                   child: Text(
-                    thisWeek.isEmpty
-                        ? 'No workouts this week'
-                        : '${thisWeek.length} ${thisWeek.length == 1 ? 'workout' : 'workouts'}',
+                    headingText,
                     style: B05Typography.metric(context),
                   ),
                 ),
               ),
-              Text(
-                thisWeek.isEmpty ? 'this week' : 'completed this week',
-                style: B05Typography.body(context),
-              ),
+              const SizedBox(height: 2),
+              Text(subtitleText, style: B05Typography.body(context)),
               const SizedBox(height: B05Layout.space16),
               _WeekCalendarStrip(
                 todayLocalDate: snapshot.todayLocalDate,
+                timezoneId: snapshot.timezoneId,
                 trainedDates: snapshot.weeklyTrainedDates,
+                workouts: thisWeek,
               ),
-              if (lastFourWeeks.isNotEmpty) ...[
+              if (fourWeeksSummaryText.isNotEmpty) ...[
                 const SizedBox(height: B05Layout.space16),
                 Text(
-                  '${lastFourWeeks.length} ${lastFourWeeks.length == 1 ? 'workout' : 'workouts'} completed in the last 4 weeks'
-                  '${totalWorkingSets > 0 ? ' · $totalWorkingSets working sets' : ''}',
+                  fourWeeksSummaryText,
                   style: B05Typography.caption(context),
                 ),
               ],
@@ -646,20 +817,28 @@ class _TrainingConsistencySection extends StatelessWidget {
 class _WeekCalendarStrip extends StatelessWidget {
   const _WeekCalendarStrip({
     required this.todayLocalDate,
+    required this.timezoneId,
     required this.trainedDates,
+    this.workouts = const [],
   });
 
   final String todayLocalDate;
+  final String timezoneId;
   final Set<String> trainedDates;
+  final List<ProgressWorkoutRecord> workouts;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.b05Colors;
     const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-    final today = _parseCivilDate(todayLocalDate);
-    final currentWeekday = today.weekday; // 1 = Mon, 7 = Sun
-    final monday = today.subtract(Duration(days: currentWeekday - 1));
+    final dates = LocalScheduleDateService();
+    final currentWeekday = dates.weekday(todayLocalDate, timezoneId);
+    final monday = dates.addCalendarDays(
+      todayLocalDate,
+      timezoneId,
+      DateTime.monday - currentWeekday,
+    );
 
     return Semantics(
       container: true,
@@ -670,17 +849,22 @@ class _WeekCalendarStrip extends StatelessWidget {
             Expanded(
               child: Builder(
                 builder: (context) {
-                  final date = monday.add(Duration(days: i));
-                  final dateStr = _formatCivilDate(date);
+                  final dateStr = dates.addCalendarDays(monday, timezoneId, i);
+                  final sessionsOnDate = workouts
+                      .where((w) => w.localDate == dateStr)
+                      .length;
                   final isTrained = trainedDates.contains(dateStr);
                   final isToday = dateStr == todayLocalDate;
                   final dayLabel = days[i];
 
-                  final semanticText = isTrained
-                      ? '$dayLabel, workout completed.'
-                      : isToday
-                      ? '$dayLabel, today.'
-                      : '$dayLabel, rest day.';
+                  final semanticText =
+                      R08F4TrainingVolumePresentation.formatDaySemanticLabel(
+                        dayLabel: dayLabel,
+                        sessionCount: sessionsOnDate > 0
+                            ? sessionsOnDate
+                            : (isTrained ? 1 : 0),
+                        isToday: isToday,
+                      );
 
                   return Semantics(
                     label: semanticText,
@@ -747,10 +931,70 @@ class _StrengthSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final highlight = _selectStrengthHighlight(
+    final highlights = _selectStrengthHighlights(
       snapshot.strengthSets ?? const [],
     );
-    if (highlight == null) return const SizedBox.shrink();
+    if (highlights.isEmpty) return const SizedBox.shrink();
+
+    if (highlights.length > 1) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _SectionHeading(title: 'Strength'),
+          const SizedBox(height: B05Layout.space8),
+          B05Surface(
+            padding: const EdgeInsets.all(B05Layout.space16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Saved actual sets from strength sessions.',
+                  style: B05Typography.body(context),
+                ),
+                const SizedBox(height: B05Layout.space8),
+                for (final highlight in highlights)
+                  Semantics(
+                    button: true,
+                    label:
+                        'View actual performance history for ${highlight.exerciseName}',
+                    hint: 'Open this exercise’s recorded sets over time',
+                    onTap: () => onViewHistory(
+                      highlight.exerciseName,
+                      highlight.exerciseId,
+                    ),
+                    child: ExcludeSemantics(
+                      child: ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        minVerticalPadding: B05Layout.space8,
+                        title: Text(
+                          highlight.exerciseName,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: B05Typography.title(context),
+                        ),
+                        subtitle: Text(
+                          '${_formatSet(highlight.heaviest)} · ${_distinctStrengthSessionCount(highlight.records)} ${_distinctStrengthSessionCount(highlight.records) == 1 ? 'session' : 'sessions'}',
+                          style: B05Typography.caption(context),
+                        ),
+                        trailing: Icon(
+                          Icons.chevron_right_rounded,
+                          color: context.b05Colors.textSecondary,
+                        ),
+                        onTap: () => onViewHistory(
+                          highlight.exerciseName,
+                          highlight.exerciseId,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+
+    final highlight = highlights.first;
 
     final setFormatted = _formatSet(highlight.heaviest);
     return Column(
@@ -800,13 +1044,40 @@ class _StrengthSection extends StatelessWidget {
               ),
               const SizedBox(height: B05Layout.space16),
               B05ActionButton(
-                label: 'View history',
+                label: ConsumerCopy.historyAction('strength'),
                 icon: Icons.history_rounded,
                 emphasis: B05ActionEmphasis.tertiary,
                 onPressed: () =>
                     onViewHistory(highlight.exerciseName, highlight.exerciseId),
               ),
             ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _StrengthEmptySection extends StatelessWidget {
+  const _StrengthEmptySection();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _SectionHeading(title: 'Strength'),
+        const SizedBox(height: B05Layout.space8),
+        Semantics(
+          container: true,
+          label: 'Your logged working sets will appear here after you train.',
+          child: B05Surface(
+            tone: B05SurfaceTone.inset,
+            padding: const EdgeInsets.all(B05Layout.space16),
+            child: Text(
+              'Your logged working sets will appear here after you train.',
+              style: B05Typography.body(context),
+            ),
           ),
         ),
       ],
@@ -822,6 +1093,8 @@ class _WeightSection extends StatefulWidget {
     required this.measurements,
     required this.onRangeSelected,
     required this.onLogWeight,
+    required this.onViewHistory,
+    required this.units,
   });
 
   final ProgressDashboardSnapshot snapshot;
@@ -830,6 +1103,8 @@ class _WeightSection extends StatefulWidget {
   final List<ProgressMeasurementRecord> measurements;
   final ValueChanged<_ProgressTimeRange> onRangeSelected;
   final VoidCallback onLogWeight;
+  final VoidCallback onViewHistory;
+  final String units;
 
   @override
   State<_WeightSection> createState() => _WeightSectionState();
@@ -850,6 +1125,7 @@ class _WeightSectionState extends State<_WeightSection> {
     final dailyMeasurements = _dailyWeightObservations(measurements);
     final latest = dailyMeasurements.last;
     final hasChart = _hasWeightChartHistory(measurements);
+    final hasSameDayEntries = measurements.length != dailyMeasurements.length;
     final allMeasurements = _dailyWeightObservations(
       widget.snapshot.weightMeasurements,
     );
@@ -893,28 +1169,26 @@ class _WeightSectionState extends State<_WeightSection> {
         ),
         const SizedBox(height: B05Layout.space8),
         B05Surface(
-          padding: const EdgeInsets.all(B05Layout.space20),
+          padding: EdgeInsets.all(
+            hasChart ? B05Layout.space20 : B05Layout.space16,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Semantics(
-                label: _weightSemantics(widget.snapshot, measurements),
+                label: _weightSemantics(measurements, widget.units),
                 child: ExcludeSemantics(
                   child: Text(
-                    _formatWeight(latest.weightKg!),
+                    _formatWeight(latest.weightKg!, widget.units),
                     style: B05Typography.metric(context),
                   ),
                 ),
               ),
               const SizedBox(height: B05Layout.space4),
               Text(
-                _weightDetail(measurements),
+                _weightDetail(measurements, widget.units),
                 style: B05Typography.body(context),
               ),
-              if (widget.snapshot.weightGoal case final goal?) ...[
-                const SizedBox(height: B05Layout.space12),
-                _WeightGoalSummary(goal: goal, currentWeight: latest.weightKg!),
-              ],
               if (showRangeSelector) ...[
                 const SizedBox(height: B05Layout.space16),
                 _WeightRangeSelector(
@@ -947,7 +1221,7 @@ class _WeightSectionState extends State<_WeightSection> {
                 const SizedBox(height: B05Layout.space20),
                 Semantics(
                   container: true,
-                  label: _weightSemantics(widget.snapshot, measurements),
+                  label: _weightSemantics(measurements, widget.units),
                   hint:
                       'Drag across the chart to inspect each recorded weight.',
                   child: SizedBox(
@@ -957,7 +1231,7 @@ class _WeightSectionState extends State<_WeightSection> {
                       _weightChartData(
                         context: context,
                         measurements: dailyMeasurements,
-                        goal: widget.snapshot.weightGoal,
+                        units: widget.units,
                         onTouch: (index) =>
                             setState(() => _touchedPoint = index),
                       ),
@@ -967,11 +1241,198 @@ class _WeightSectionState extends State<_WeightSection> {
                 ),
                 const SizedBox(height: B05Layout.space8),
                 Text(
-                  '${_shortCivilDate(_measurementDate(selected))} · ${_formatWeight(selected.weightKg!)}',
+                  '${_shortCivilDate(_measurementDate(selected))} · ${_formatWeight(selected.weightKg!, widget.units)}',
                   style: B05Typography.caption(
                     context,
                   ).copyWith(color: colors.textPrimary),
                 ),
+                const SizedBox(height: B05Layout.space4),
+                Text(
+                  hasSameDayEntries
+                      ? 'Chart shows the latest value for each local day; history keeps every entry.'
+                      : 'Each point is a recorded local-day value; gaps are not filled.',
+                  style: B05Typography.caption(context),
+                ),
+              ],
+              const SizedBox(height: B05Layout.space12),
+              B05ActionButton(
+                label: 'View weight history',
+                icon: Icons.history_rounded,
+                emphasis: B05ActionEmphasis.tertiary,
+                onPressed: widget.onViewHistory,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Full-fidelity weight history. The chart intentionally uses one value per
+/// local day for trend readability, while this screen keeps every persisted
+/// weight record in deterministic newest-first order.
+class ProgressWeightHistoryScreen extends StatelessWidget {
+  const ProgressWeightHistoryScreen({
+    super.key,
+    required this.measurements,
+    required this.todayLocalDate,
+    required this.timezoneId,
+    required this.units,
+  });
+
+  final List<ProgressMeasurementRecord> measurements;
+  final String todayLocalDate;
+  final String timezoneId;
+  final String units;
+
+  @override
+  Widget build(BuildContext context) {
+    final ordered =
+        measurements
+            .where(
+              (measurement) =>
+                  measurement.weightKg != null &&
+                  measurement.weightKg!.isFinite &&
+                  measurement.weightKg! > 0,
+            )
+            .toList(growable: true)
+          ..sort(_compareMeasurementsNewestFirst);
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Weight history')),
+      body: ordered.isEmpty
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(B05Layout.space24),
+                child: Text(
+                  'No weight entries yet.',
+                  style: B05Typography.body(context),
+                ),
+              ),
+            )
+          : ListView.separated(
+              padding: const EdgeInsets.fromLTRB(
+                B05Layout.space20,
+                B05Layout.space16,
+                B05Layout.space20,
+                B05Layout.space24,
+              ),
+              itemCount: ordered.length + 1,
+              separatorBuilder: (_, index) => index == ordered.length - 1
+                  ? const SizedBox(height: B05Layout.space16)
+                  : const SizedBox(height: B05Layout.space8),
+              itemBuilder: (context, index) {
+                if (index == ordered.length) {
+                  return Text(
+                    'Today’s entry can be edited from Log weight. Earlier entries are shown as recorded.',
+                    style: B05Typography.caption(context),
+                  );
+                }
+                final measurement = ordered[index];
+                final weight = measurement.weightKg!;
+                final date = _fullCivilDate(measurement.localDate);
+                final time = _measurementTime(measurement, timezoneId);
+                final today = measurement.localDate == todayLocalDate;
+                final latest = index == 0;
+                final dateLabel = [if (today) 'Today', date, ?time].join(' · ');
+                return Semantics(
+                  container: true,
+                  label:
+                      '${latest ? 'Latest. ' : ''}$dateLabel. ${_formatWeight(weight, units)}.',
+                  child: B05Surface(
+                    tone: B05SurfaceTone.interactive,
+                    padding: const EdgeInsets.all(B05Layout.space16),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                dateLabel,
+                                style: B05Typography.label(context),
+                              ),
+                              const SizedBox(height: B05Layout.space4),
+                              Text(
+                                latest
+                                    ? 'Latest recorded weight'
+                                    : 'Recorded weight',
+                                style: B05Typography.caption(context),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: B05Layout.space12),
+                        Text(
+                          _formatWeight(weight, units),
+                          style: B05Typography.label(context),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+    );
+  }
+}
+
+class _NutritionAdherenceSection extends StatelessWidget {
+  const _NutritionAdherenceSection({
+    required this.summary,
+    required this.fitnessGoalLabel,
+    required this.onViewTargets,
+  });
+
+  final ProgressNutritionSummary summary;
+  final String? fitnessGoalLabel;
+  final VoidCallback onViewTargets;
+
+  @override
+  Widget build(BuildContext context) {
+    final completeDays = _completeNutritionDays(summary);
+    final hasRichHistory = completeDays.length >= 2;
+    final headlineSemantics = _nutritionHeadlineSemantics(
+      summary: summary,
+      completeDays: completeDays,
+      hasRichHistory: hasRichHistory,
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _SectionHeading(title: 'Nutrition adherence'),
+        const SizedBox(height: B05Layout.space8),
+        B05Surface(
+          padding: EdgeInsets.all(
+            hasRichHistory ? B05Layout.space20 : B05Layout.space16,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Semantics(
+                label: headlineSemantics,
+                child: ExcludeSemantics(
+                  child: _NutritionHeadline(
+                    summary: summary,
+                    completeDays: completeDays,
+                    hasRichHistory: hasRichHistory,
+                  ),
+                ),
+              ),
+              SizedBox(
+                height: hasRichHistory ? B05Layout.space16 : B05Layout.space12,
+              ),
+              _NutritionTargetContext(
+                summary: summary,
+                fitnessGoalLabel: fitnessGoalLabel,
+                onViewTargets: onViewTargets,
+              ),
+              if (hasRichHistory) ...[
+                const SizedBox(height: B05Layout.space16),
+                _NutritionWeekStrip(days: summary.days),
               ],
             ],
           ),
@@ -981,79 +1442,192 @@ class _WeightSectionState extends State<_WeightSection> {
   }
 }
 
-class _NutritionAdherenceSection extends StatelessWidget {
-  const _NutritionAdherenceSection({
+class _NutritionHeadline extends StatelessWidget {
+  const _NutritionHeadline({
     required this.summary,
-    required this.onLogFood,
+    required this.completeDays,
+    required this.hasRichHistory,
   });
 
   final ProgressNutritionSummary summary;
-  final VoidCallback onLogFood;
+  final List<ProgressNutritionDaySummary> completeDays;
+  final bool hasRichHistory;
 
   @override
   Widget build(BuildContext context) {
+    if (!hasRichHistory) {
+      final day = completeDays.isEmpty ? null : completeDays.last;
+      final factLine = _nutritionCompactFactLine(day);
+      final status = completeDays.length == 1
+          ? '1 complete logged day'
+          : '${summary.loggedDaysCount} ${summary.loggedDaysCount == 1 ? 'logged day' : 'logged days'} · Some nutrition details are incomplete';
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            factLine ?? status,
+            style: factLine == null
+                ? B05Typography.title(context)
+                : B05Typography.title(
+                    context,
+                  ).copyWith(fontWeight: FontWeight.w800),
+          ),
+          if (factLine != null) ...[
+            const SizedBox(height: 4),
+            Text(status, style: B05Typography.caption(context)),
+          ],
+        ],
+      );
+    }
+
+    final hasCalorieAverage =
+        summary.averageCaloriesKcal != null &&
+        summary.calorieEvidenceDaysCount >= 2;
+    final hasProteinAverage =
+        summary.averageProteinG != null &&
+        summary.proteinEvidenceDaysCount >= 2;
     final titleText = _nutritionAdherenceLabel(summary);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionHeading(title: 'Nutrition adherence'),
-        const SizedBox(height: B05Layout.space8),
-        B05Surface(
-          padding: const EdgeInsets.all(B05Layout.space20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Semantics(
-                label:
-                    'Nutrition weekly adherence: $titleText.'
-                    '${summary.averageCaloriesKcal != null ? ' Average ${summary.averageCaloriesKcal!.round()} calories across ${summary.calorieEvidenceDaysCount} complete days.' : ''}',
-                child: ExcludeSemantics(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        summary.averageCaloriesKcal != null
-                            ? '${_formatVolume(summary.averageCaloriesKcal!)} kcal'
-                            : '${summary.loggedDaysCount} days logged',
-                        style: B05Typography.metric(context),
-                      ),
-                      if (summary.averageCaloriesKcal != null) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          'Average across ${summary.calorieEvidenceDaysCount} complete ${summary.calorieEvidenceDaysCount == 1 ? 'day' : 'days'}',
-                          style: B05Typography.caption(context),
-                        ),
-                      ],
-                      const SizedBox(height: 2),
-                      Text(titleText, style: B05Typography.body(context)),
-                      if (summary.averageProteinG != null &&
-                          summary.targetProteinG != null) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          'Avg protein: ${summary.averageProteinG!.round()} / ${summary.targetProteinG!.round()} g across ${summary.proteinEvidenceDaysCount} complete ${summary.proteinEvidenceDaysCount == 1 ? 'day' : 'days'}',
-                          style: B05Typography.caption(context),
-                        ),
-                      ] else if (summary.averageProteinG != null) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          'Avg protein: ${summary.averageProteinG!.round()} g across ${summary.proteinEvidenceDaysCount} complete ${summary.proteinEvidenceDaysCount == 1 ? 'day' : 'days'}',
-                          style: B05Typography.caption(context),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: B05Layout.space16),
-              _NutritionWeekStrip(days: summary.days),
-            ],
-          ),
+        Text(
+          hasCalorieAverage
+              ? '${_formatVolume(summary.averageCaloriesKcal!)} kcal'
+              : hasProteinAverage
+              ? '${_formatNumber(summary.averageProteinG!)} g protein'
+              : '${completeDays.length} complete logged days',
+          style: B05Typography.metric(context),
         ),
+        if (hasCalorieAverage) ...[
+          const SizedBox(height: 2),
+          Text(
+            'Average across ${summary.calorieEvidenceDaysCount} complete ${summary.calorieEvidenceDaysCount == 1 ? 'day' : 'days'}',
+            style: B05Typography.caption(context),
+          ),
+        ],
+        const SizedBox(height: 2),
+        Text(titleText, style: B05Typography.body(context)),
+        if (hasProteinAverage && summary.averageProteinG != null) ...[
+          const SizedBox(height: 4),
+          Text(
+            summary.targetProteinG != null
+                ? 'Avg protein: ${_formatNumber(summary.averageProteinG!)} / ${_formatNumber(summary.targetProteinG!)} g across ${summary.proteinEvidenceDaysCount} complete ${summary.proteinEvidenceDaysCount == 1 ? 'day' : 'days'}'
+                : 'Avg protein: ${_formatNumber(summary.averageProteinG!)} g across ${summary.proteinEvidenceDaysCount} complete ${summary.proteinEvidenceDaysCount == 1 ? 'day' : 'days'}',
+            style: B05Typography.caption(context),
+          ),
+        ],
       ],
     );
   }
 }
+
+class _NutritionTargetContext extends StatelessWidget {
+  const _NutritionTargetContext({
+    required this.summary,
+    required this.fitnessGoalLabel,
+    required this.onViewTargets,
+  });
+
+  final ProgressNutritionSummary summary;
+  final String? fitnessGoalLabel;
+  final VoidCallback onViewTargets;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasTargetValues =
+        summary.targetCaloriesKcal != null || summary.targetProteinG != null;
+    final hasTargetContext = hasTargetValues || summary.targetGoalType != null;
+    final values = <String>[
+      if (summary.targetCaloriesKcal != null)
+        '${_formatVolume(summary.targetCaloriesKcal!)} kcal',
+      if (summary.targetProteinG != null)
+        '${_formatNumber(summary.targetProteinG!)} g protein',
+    ];
+
+    return B05Surface(
+      tone: B05SurfaceTone.inset,
+      padding: const EdgeInsets.all(B05Layout.space12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Semantics(
+            container: true,
+            label: [
+              if (hasTargetContext) 'Today’s nutrition target.',
+              if (values.isNotEmpty) '${values.join(' · ')}.',
+              if (hasTargetContext && fitnessGoalLabel != null)
+                'Fitness goal: $fitnessGoalLabel.',
+              if (summary.targetGoalType != null)
+                'Nutrition strategy: ${_nutritionStrategyLabel(summary.targetGoalType!)}.',
+              if (!hasTargetContext) 'No nutrition target saved for today.',
+              if (hasTargetContext && !hasTargetValues)
+                'No calorie or macro target values are saved for today.',
+            ].join(' '),
+            child: ExcludeSemantics(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Today’s nutrition target',
+                    style: B05Typography.label(context),
+                  ),
+                  const SizedBox(height: B05Layout.space4),
+                  if (values.isNotEmpty)
+                    Text(
+                      values.join(' · '),
+                      style: B05Typography.title(context),
+                    ),
+                  if (hasTargetContext && fitnessGoalLabel != null) ...[
+                    if (values.isNotEmpty)
+                      const SizedBox(height: B05Layout.space4),
+                    Text(
+                      'Fitness goal: $fitnessGoalLabel',
+                      style: B05Typography.body(context),
+                    ),
+                  ],
+                  if (summary.targetGoalType != null) ...[
+                    if (values.isNotEmpty || fitnessGoalLabel != null)
+                      const SizedBox(height: B05Layout.space4),
+                    Text(
+                      'Nutrition strategy: ${_nutritionStrategyLabel(summary.targetGoalType!)}',
+                      style: B05Typography.body(context),
+                    ),
+                  ],
+                  if (!hasTargetContext)
+                    Text(
+                      'No nutrition target saved for today.',
+                      style: B05Typography.body(context),
+                    ),
+                  if (hasTargetContext && !hasTargetValues)
+                    Text(
+                      'No calorie or macro target values are saved for today.',
+                      style: B05Typography.body(context),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: B05Layout.space8),
+          B05ActionButton(
+            label: hasTargetContext
+                ? 'View nutrition targets'
+                : 'Set nutrition target',
+            hint: hasTargetContext
+                ? 'Open the saved nutrition target for today.'
+                : 'Open Goal & targets to set today’s values.',
+            icon: Icons.open_in_new_rounded,
+            emphasis: B05ActionEmphasis.tertiary,
+            onPressed: onViewTargets,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+String _nutritionStrategyLabel(NutritionGoalType value) =>
+    SecondaryConsumerCopy.nutritionStrategy(value.stableId);
 
 class _NutritionWeekStrip extends StatelessWidget {
   const _NutritionWeekStrip({required this.days});
@@ -1157,85 +1731,6 @@ class _NutritionWeekStrip extends StatelessWidget {
   }
 }
 
-class _WeightGoalSummary extends StatelessWidget {
-  const _WeightGoalSummary({required this.goal, required this.currentWeight});
-
-  final ProgressWeightGoal goal;
-  final double currentWeight;
-
-  @override
-  Widget build(BuildContext context) {
-    final targetLabel =
-        goal.direction == ProgressWeightGoalDirection.maintenance
-        ? 'Target ${_formatWeight(goal.targetKg)}'
-        : 'Goal ${_formatWeight(goal.targetKg)}';
-    final progressLabel = _weightGoalProgressLabel(goal, currentWeight);
-    return Semantics(
-      label: progressLabel == null
-          ? targetLabel
-          : '$targetLabel. $progressLabel.',
-      child: B05Surface(
-        tone: B05SurfaceTone.inset,
-        radius: B05SurfaceRadius.small,
-        padding: const EdgeInsets.symmetric(
-          horizontal: B05Layout.space12,
-          vertical: B05Layout.space8,
-        ),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
-            final stacked = constraints.maxWidth < 330 || textScale >= 1.5;
-            final target = Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.flag_outlined,
-                  size: 18,
-                  color: context.b05Colors.action,
-                ),
-                const SizedBox(width: B05Layout.space8),
-                Flexible(
-                  child: Text(
-                    targetLabel,
-                    style: B05Typography.caption(context),
-                  ),
-                ),
-              ],
-            );
-            final progressText = Text(
-              progressLabel ?? '',
-              style: B05Typography.label(context),
-            );
-            if (progressLabel == null) {
-              return target;
-            }
-            if (stacked) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  target,
-                  const SizedBox(height: B05Layout.space4),
-                  Padding(
-                    padding: const EdgeInsets.only(left: 26),
-                    child: progressText,
-                  ),
-                ],
-              );
-            }
-            return Row(
-              children: [
-                Expanded(child: target),
-                const SizedBox(width: B05Layout.space8),
-                progressText,
-              ],
-            );
-          },
-        ),
-      ),
-    );
-  }
-}
-
 class _WeightRangeSelector extends StatelessWidget {
   const _WeightRangeSelector({
     required this.ranges,
@@ -1278,57 +1773,57 @@ class _WeightRangeSelector extends StatelessWidget {
 }
 
 class _TrainingVolumeSection extends StatelessWidget {
-  const _TrainingVolumeSection({required this.snapshot});
+  const _TrainingVolumeSection({required this.snapshot, this.units = 'kg'});
 
   final ProgressDashboardSnapshot snapshot;
+  final String units;
 
   @override
   Widget build(BuildContext context) {
-    final all = (snapshot.workouts ?? const <ProgressWorkoutRecord>[])
-        .where(
-          (workout) =>
-              workout.isCanonicalStrength &&
-              workout.volumeIsTrustworthy &&
-              workout.totalVolumeKg > 0,
-        )
-        .toList(growable: false);
-    final recent = all
-        .where(
-          (workout) =>
-              workout.localDate.compareTo(
-                _addCivilDays(snapshot.todayLocalDate, -27),
-              ) >=
-              0,
-        )
-        .toList(growable: false);
-    final useRecent = recent.isNotEmpty;
-    final total = (useRecent ? recent : all).fold<double>(
-      0,
-      (sum, workout) => sum + workout.totalVolumeKg,
+    final summary = R08F4TrainingVolumePresentation.summarizeVolume(
+      allWorkouts: snapshot.workouts ?? const <ProgressWorkoutRecord>[],
+      todayLocalDate: snapshot.todayLocalDate,
+      timezoneId: snapshot.timezoneId,
+      units: units,
     );
+
+    final semanticLabel = R08F4TrainingVolumePresentation.formatVolumeSemantics(
+      displayVolume: summary.displayVolume,
+      units: units,
+      useRecent: summary.useRecent,
+    );
+    final subtitle = R08F4TrainingVolumePresentation.formatVolumeSubtitle(
+      units: units,
+      useRecent: summary.useRecent,
+    );
+    final comparison = R08F4TrainingVolumePresentation.formatVolumeComparison(
+      summary,
+    );
+    final semanticComparison = comparison == null ? '' : ' $comparison.';
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionHeading(title: 'Training volume'),
+        const _SectionHeading(title: 'Loaded volume'),
         const SizedBox(height: B05Layout.space8),
         B05Surface(
           padding: const EdgeInsets.all(B05Layout.space20),
           child: Semantics(
-            label:
-                '${_formatVolume(total)} kilograms ${useRecent ? 'in the last four weeks' : 'across recorded strength workouts'}.',
+            label: '$semanticLabel$semanticComparison',
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _formatVolume(total),
+                  R08F4TrainingVolumePresentation.formatVolume(
+                    summary.displayVolume,
+                  ),
                   style: B05Typography.metric(context),
                 ),
-                Text(
-                  useRecent
-                      ? 'kg recorded in the last 4 weeks'
-                      : 'kg across recorded strength workouts',
-                  style: B05Typography.body(context),
-                ),
+                Text(subtitle, style: B05Typography.body(context)),
+                if (comparison != null) ...[
+                  const SizedBox(height: 4),
+                  Text(comparison, style: B05Typography.caption(context)),
+                ],
               ],
             ),
           ),
@@ -1369,19 +1864,24 @@ class _MuscleBalanceSection extends StatelessWidget {
                     label:
                         '${muscle.displayName}, ${_formatNumber(muscle.workingSetUnits)} working set units.',
                     child: ExcludeSemantics(
-                      child: Wrap(
-                        alignment: WrapAlignment.spaceBetween,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          Text(
-                            muscle.displayName,
-                            style: B05Typography.label(context),
-                          ),
-                          Text(
-                            '${_formatNumber(muscle.workingSetUnits)} working sets',
-                            style: B05Typography.caption(context),
-                          ),
-                        ],
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: Wrap(
+                          alignment: WrapAlignment.spaceBetween,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          spacing: B05Layout.space8,
+                          runSpacing: B05Layout.space4,
+                          children: [
+                            Text(
+                              muscle.displayName,
+                              style: B05Typography.label(context),
+                            ),
+                            Text(
+                              '${_formatNumber(muscle.workingSetUnits)} working sets',
+                              style: B05Typography.caption(context),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -1460,7 +1960,7 @@ class _MeasurementsSection extends StatelessWidget {
               ),
               const SizedBox(height: B05Layout.space12),
               B05ActionButton(
-                label: 'View history',
+                label: ConsumerCopy.historyAction('measurement'),
                 icon: Icons.history_rounded,
                 emphasis: B05ActionEmphasis.tertiary,
                 onPressed: onViewHistory,
@@ -1789,11 +2289,21 @@ class _StrengthHighlight {
 _StrengthHighlight? _selectStrengthHighlight(
   List<ProgressStrengthSetRecord> records,
 ) {
-  if (records.isEmpty) return null;
+  final highlights = _selectStrengthHighlights(records);
+  return highlights.isEmpty ? null : highlights.first;
+}
+
+List<_StrengthHighlight> _selectStrengthHighlights(
+  List<ProgressStrengthSetRecord> records,
+) {
+  if (records.isEmpty) return const [];
   final groups = <String, List<ProgressStrengthSetRecord>>{};
   for (final record in records) {
-    groups.putIfAbsent(record.exerciseId, () => []).add(record);
+    final exerciseId = record.exerciseId.trim();
+    if (exerciseId.isEmpty || record.exerciseName.trim().isEmpty) continue;
+    groups.putIfAbsent(exerciseId, () => []).add(record);
   }
+  if (groups.isEmpty) return const [];
   final highlights = <_StrengthHighlight>[];
   for (final entry in groups.entries) {
     final values = entry.value;
@@ -1838,8 +2348,11 @@ _StrengthHighlight? _selectStrengthHighlight(
     if (byLatest != 0) return byLatest;
     return second.records.length.compareTo(first.records.length);
   });
-  return highlights.first;
+  return List.unmodifiable(highlights);
 }
+
+int _distinctStrengthSessionCount(List<ProgressStrengthSetRecord> records) =>
+    records.map(_presentationStrengthSessionKey).toSet().length;
 
 int _compareStrengthRecordsForPresentation(
   ProgressStrengthSetRecord first,
@@ -1859,8 +2372,10 @@ ProgressStrengthSetRecord _heavierStrengthSetForPresentation(
   if (first.loadKg != second.loadKg) {
     return first.loadKg > second.loadKg ? first : second;
   }
-  if (first.reps != second.reps) {
-    return first.reps > second.reps ? first : second;
+  final firstReps = first.reps;
+  final secondReps = second.reps;
+  if (firstReps != secondReps) {
+    return firstReps > secondReps ? first : second;
   }
   return _compareStrengthRecordsForPresentation(first, second) > 0
       ? first
@@ -1909,6 +2424,12 @@ bool _hasMeaningfulVolume(ProgressDashboardSnapshot snapshot) =>
           workout.totalVolumeKg > 0,
     );
 
+bool _hasKnownStrengthActivity(ProgressDashboardSnapshot snapshot) =>
+    snapshot.strengthSets != null &&
+    (snapshot.workouts ?? const <ProgressWorkoutRecord>[]).any(
+      (workout) => workout.isCanonicalStrength,
+    );
+
 bool _hasMeaningfulMuscleBalance(ProgressDashboardSnapshot snapshot) =>
     snapshot.muscleBalance != null &&
     snapshot.muscleBalance!.muscles.any((muscle) => muscle.workingSetUnits > 0);
@@ -1916,9 +2437,12 @@ bool _hasMeaningfulMuscleBalance(ProgressDashboardSnapshot snapshot) =>
 List<ProgressWorkoutRecord> _workoutsThisWeek(
   ProgressDashboardSnapshot snapshot,
 ) {
-  final today = _parseCivilDate(snapshot.todayLocalDate);
-  final start = _formatCivilDate(
-    today.subtract(Duration(days: today.weekday - DateTime.monday)),
+  final dates = LocalScheduleDateService();
+  final weekday = dates.weekday(snapshot.todayLocalDate, snapshot.timezoneId);
+  final start = dates.addCalendarDays(
+    snapshot.todayLocalDate,
+    snapshot.timezoneId,
+    DateTime.monday - weekday,
   );
   return (snapshot.workouts ?? const <ProgressWorkoutRecord>[])
       .where(
@@ -1932,7 +2456,11 @@ List<ProgressWorkoutRecord> _workoutsThisWeek(
 List<ProgressWorkoutRecord> _workoutsInRecentFourWeeks(
   ProgressDashboardSnapshot snapshot,
 ) {
-  final start = _addCivilDays(snapshot.todayLocalDate, -27);
+  final start = LocalScheduleDateService().addCalendarDays(
+    snapshot.todayLocalDate,
+    snapshot.timezoneId,
+    -27,
+  );
   return (snapshot.workouts ?? const <ProgressWorkoutRecord>[])
       .where(
         (workout) =>
@@ -1971,7 +2499,9 @@ List<ProgressMeasurementRecord> _dailyWeightObservations(
       measurements
           .where(
             (measurement) =>
-                measurement.weightKg != null && measurement.weightKg! > 0,
+                measurement.weightKg != null &&
+                measurement.weightKg!.isFinite &&
+                measurement.weightKg! > 0,
           )
           .toList(growable: true)
         ..sort(_compareMeasurementsChronologically);
@@ -1984,16 +2514,10 @@ List<ProgressMeasurementRecord> _dailyWeightObservations(
   return daily;
 }
 
-String _weightOverviewDetail(List<ProgressMeasurementRecord> measurements) {
-  final dailyMeasurements = _dailyWeightObservations(measurements);
-  if (dailyMeasurements.length == 1) return 'latest weight';
-  if (dailyMeasurements.length == 2) {
-    return '${_formatWeight(dailyMeasurements.first.weightKg!)} → ${_formatWeight(dailyMeasurements.last.weightKg!)}';
-  }
-  return _weightDetail(measurements);
-}
-
-String _weightDetail(List<ProgressMeasurementRecord> measurements) {
+String _weightDetail(
+  List<ProgressMeasurementRecord> measurements,
+  String units,
+) {
   final dailyMeasurements = _dailyWeightObservations(measurements);
   if (dailyMeasurements.length == 1) {
     return measurements.length > 1
@@ -2001,7 +2525,7 @@ String _weightDetail(List<ProgressMeasurementRecord> measurements) {
         : 'Latest weigh-in';
   }
   if (dailyMeasurements.length == 2) {
-    return '${_formatWeight(dailyMeasurements.first.weightKg!)} → ${_formatWeight(dailyMeasurements.last.weightKg!)}';
+    return '${_formatWeight(dailyMeasurements.first.weightKg!, units)} → ${_formatWeight(dailyMeasurements.last.weightKg!, units)}';
   }
   final first = dailyMeasurements.first;
   final last = dailyMeasurements.last;
@@ -2020,23 +2544,17 @@ String _weightDetail(List<ProgressMeasurementRecord> measurements) {
   }
   final relation = difference < 0 ? 'lower' : 'higher';
   return days > 0
-      ? '${_formatWeight(difference.abs())} $relation than $days days ago'
-      : '${_formatWeight(difference.abs())} $relation across recorded measurements';
+      ? '${_formatWeight(difference.abs(), units)} $relation than $days days ago'
+      : '${_formatWeight(difference.abs(), units)} $relation across recorded measurements';
 }
 
 String _weightSemantics(
-  ProgressDashboardSnapshot snapshot,
   List<ProgressMeasurementRecord> measurements,
+  String units,
 ) {
   final latest = _dailyWeightObservations(measurements).last;
-  final detail = _weightDetail(measurements);
-  final goal = snapshot.weightGoal;
-  final goalText = goal == null
-      ? ''
-      : goal.direction == ProgressWeightGoalDirection.maintenance
-      ? ' Target ${_formatWeight(goal.targetKg)}.'
-      : ' Goal ${_formatWeight(goal.targetKg)}, ${_weightGoalProgressLabel(goal, latest.weightKg!)}.';
-  return 'Weight: ${_formatWeight(latest.weightKg!)}. $detail.$goalText';
+  final detail = _weightDetail(measurements, units);
+  return 'Weight: ${_formatWeight(latest.weightKg!, units)}. $detail.';
 }
 
 IconData _weightDirectionIcon(List<ProgressMeasurementRecord> measurements) {
@@ -2049,92 +2567,10 @@ IconData _weightDirectionIcon(List<ProgressMeasurementRecord> measurements) {
   return Icons.horizontal_rule_rounded;
 }
 
-/// At-goal language follows the value the product displays (one decimal), so
-/// an invisible floating-point difference cannot turn a shown target into a
-/// misleading remaining-distance claim.
-bool _isAtWeightGoal(double currentWeight, double targetWeight) =>
-    currentWeight.toStringAsFixed(1) == targetWeight.toStringAsFixed(1);
-
-String? _weightGoalProgressLabel(
-  ProgressWeightGoal goal,
-  double currentWeight,
-) {
-  if (goal.direction == ProgressWeightGoalDirection.maintenance) return null;
-  if (_isAtWeightGoal(currentWeight, goal.targetKg)) return 'At your goal';
-
-  final distance = _formatWeight((currentWeight - goal.targetKg).abs());
-  return switch (goal.direction) {
-    ProgressWeightGoalDirection.loss =>
-      currentWeight > goal.targetKg
-          ? '$distance to go'
-          : '$distance below your goal',
-    ProgressWeightGoalDirection.gain =>
-      currentWeight < goal.targetKg
-          ? '$distance to go'
-          : '$distance above your goal',
-    ProgressWeightGoalDirection.maintenance => null,
-  };
-}
-
-bool _hasPassedWeightGoal(
-  List<ProgressMeasurementRecord> measurements,
-  double targetWeight,
-) {
-  final hasAboveTarget = measurements.any(
-    (measurement) => measurement.weightKg! > targetWeight,
-  );
-  final hasBelowTarget = measurements.any(
-    (measurement) => measurement.weightKg! < targetWeight,
-  );
-  final reachedBeforeLatest = measurements
-      .take(measurements.length - 1)
-      .any(
-        (measurement) => _isAtWeightGoal(measurement.weightKg!, targetWeight),
-      );
-  return (hasAboveTarget && hasBelowTarget) || reachedBeforeLatest;
-}
-
-bool _isMovingTowardWeightGoal(
-  ProgressWeightGoal goal,
-  List<ProgressMeasurementRecord> measurements,
-) {
-  if (goal.direction == ProgressWeightGoalDirection.maintenance) return false;
-  final dailyMeasurements = _dailyWeightObservations(measurements);
-  if (dailyMeasurements.length < 2) return false;
-  final last = dailyMeasurements.last;
-  if (_isAtWeightGoal(last.weightKg!, goal.targetKg)) return true;
-  if (_hasPassedWeightGoal(dailyMeasurements, goal.targetKg)) return false;
-  return (last.weightKg! - goal.targetKg).abs() <
-      (dailyMeasurements.first.weightKg! - goal.targetKg).abs();
-}
-
-String? _weightGoalTrendLabel(
-  ProgressDashboardSnapshot snapshot,
-  List<ProgressMeasurementRecord> measurements,
-) {
-  final goal = snapshot.weightGoal;
-  if (goal == null || !_hasWeightChartHistory(measurements)) return null;
-  if (!_isMovingTowardWeightGoal(goal, measurements)) return null;
-  final latest = _dailyWeightObservations(measurements).last;
-  return _isAtWeightGoal(latest.weightKg!, goal.targetKg)
-      ? 'At your goal'
-      : 'Moving closer to your goal';
-}
-
-Color? _goalAwareTrendColor(
-  BuildContext context,
-  ProgressDashboardSnapshot snapshot,
-  List<ProgressMeasurementRecord> measurements,
-) {
-  return _weightGoalTrendLabel(snapshot, measurements) == null
-      ? null
-      : context.b05Colors.success.indicator;
-}
-
 LineChartData _weightChartData({
   required BuildContext context,
   required List<ProgressMeasurementRecord> measurements,
-  required ProgressWeightGoal? goal,
+  required String units,
   required ValueChanged<int> onTouch,
 }) {
   final colors = context.b05Colors;
@@ -2143,26 +2579,40 @@ LineChartData _weightChartData({
     firstDate,
     _measurementDate(measurements.last),
   );
-  final weights = measurements.map((record) => record.weightKg!).toList();
+  final weights = measurements
+      .map(
+        (record) => UnitPreferencePresentation.weightForDisplay(
+          record.weightKg!,
+          units,
+        ),
+      )
+      .toList();
   final minimum = weights.reduce(
     (first, second) => first < second ? first : second,
   );
   final maximum = weights.reduce(
     (first, second) => first > second ? first : second,
   );
-  final spread = maximum - minimum;
+  final rawSpread = maximum - minimum;
+  final spread = rawSpread.isFinite ? rawSpread : maximum;
   final padding = spread < .5 ? .5 : spread * .25;
-  final minY = (minimum - padding).clamp(0, double.infinity).toDouble();
-  final maxY = maximum + padding;
-  final canShowGoalLine =
-      goal != null && goal.targetKg >= minY && goal.targetKg <= maxY;
+  final rawMinY = (minimum - padding).clamp(0, double.infinity).toDouble();
+  final rawMaxY = maximum + padding;
+  final minY = rawMinY.isFinite ? rawMinY : 0.0;
+  var maxY = rawMaxY.isFinite ? rawMaxY : maximum;
+  if (maxY <= minY) {
+    maxY = minY == 0
+        ? 1
+        : (minY * 1.01).clamp(minY, double.maxFinite).toDouble();
+  }
+  final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
   return LineChartData(
     gridData: FlGridData(
       show: true,
       drawVerticalLine: false,
       horizontalInterval: (maxY - minY) / 3,
       getDrawingHorizontalLine: (_) =>
-          FlLine(color: colors.border.withValues(alpha: .45), strokeWidth: 1),
+          FlLine(color: colors.border.withValues(alpha: .35), strokeWidth: 1),
     ),
     titlesData: FlTitlesData(
       topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
@@ -2170,7 +2620,7 @@ LineChartData _weightChartData({
       leftTitles: AxisTitles(
         sideTitles: SideTitles(
           showTitles: true,
-          reservedSize: 38,
+          reservedSize: (42 * textScale).clamp(42.0, 72.0),
           interval: (maxY - minY) / 2,
           getTitlesWidget: (value, _) => Text(
             value.toStringAsFixed(0),
@@ -2215,33 +2665,22 @@ LineChartData _weightChartData({
         if (index != null) onTouch(index);
       },
       touchTooltipData: LineTouchTooltipData(
+        getTooltipColor: (_) => colors.surfaceSubtle,
+        tooltipRoundedRadius: 8,
+        tooltipPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         getTooltipItems: (spots) => [
           for (final spot in spots)
             LineTooltipItem(
-              '${_shortCivilDate(_measurementDate(measurements[spot.spotIndex]))}\n${_formatWeight(spot.y)}',
-              const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+              '${_shortCivilDate(_measurementDate(measurements[spot.spotIndex]))}\n${_formatDisplayedWeight(spot.y, units)}',
+              TextStyle(
+                color: colors.textPrimary,
+                fontWeight: FontWeight.w700,
+                fontSize: 12,
+              ),
             ),
         ],
       ),
     ),
-    extraLinesData: canShowGoalLine
-        ? ExtraLinesData(
-            horizontalLines: [
-              HorizontalLine(
-                y: goal.targetKg,
-                color: colors.action.withValues(alpha: .8),
-                strokeWidth: 1,
-                dashArray: [6, 4],
-                label: HorizontalLineLabel(
-                  show: true,
-                  alignment: Alignment.topRight,
-                  labelResolver: (_) => 'Goal',
-                  style: B05Typography.caption(context),
-                ),
-              ),
-            ],
-          )
-        : const ExtraLinesData(),
     lineBarsData: [
       LineChartBarData(
         spots: [
@@ -2251,7 +2690,10 @@ LineChartData _weightChartData({
                 firstDate,
                 _measurementDate(measurements[index]),
               ).toDouble(),
-              measurements[index].weightKg!,
+              UnitPreferencePresentation.weightForDisplay(
+                measurements[index].weightKg!,
+                units,
+              ),
             ),
         ],
         isCurved: false,
@@ -2269,14 +2711,27 @@ LineChartData _weightChartData({
         ),
         belowBarData: BarAreaData(
           show: true,
-          color: colors.action.withValues(alpha: .08),
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              colors.action.withValues(alpha: 0.14),
+              colors.action.withValues(alpha: 0.0),
+            ],
+          ),
         ),
       ),
     ],
   );
 }
 
-String _formatWeight(double value) => '${value.toStringAsFixed(1)} kg';
+String _formatWeight(double kilograms, String units) => _formatDisplayedWeight(
+  UnitPreferencePresentation.weightForDisplay(kilograms, units),
+  units,
+);
+
+String _formatDisplayedWeight(double value, String units) =>
+    '${value.toStringAsFixed(1)} ${UnitPreferencePresentation.weightSymbol(units)}';
 
 String _formatSet(
   ProgressStrengthSetRecord record,
@@ -2309,6 +2764,61 @@ String _nutritionAdherenceLabel(ProgressNutritionSummary summary) {
   return '${summary.loggedDaysCount} ${summary.loggedDaysCount == 1 ? 'day' : 'days'} with meals logged';
 }
 
+List<ProgressNutritionDaySummary> _completeNutritionDays(
+  ProgressNutritionSummary summary,
+) => summary.days
+    .where(
+      (day) =>
+          day.hasFoodLog &&
+          !day.isNutrientIncomplete &&
+          day.caloriesKcal != null &&
+          day.proteinG != null,
+    )
+    .toList(growable: false);
+
+String? _nutritionCompactFactLine(ProgressNutritionDaySummary? day) {
+  if (day == null) return null;
+  final facts = <String>[
+    if (day.caloriesKcal != null) '${_formatVolume(day.caloriesKcal!)} kcal',
+    if (day.proteinG != null && day.proteinTargetG != null)
+      '${_formatNumber(day.proteinG!)} / ${_formatNumber(day.proteinTargetG!)} g protein',
+    if (day.proteinG != null && day.proteinTargetG == null)
+      '${_formatNumber(day.proteinG!)} g protein',
+  ];
+  return facts.isEmpty ? null : facts.join(' · ');
+}
+
+String _nutritionHeadlineSemantics({
+  required ProgressNutritionSummary summary,
+  required List<ProgressNutritionDaySummary> completeDays,
+  required bool hasRichHistory,
+}) {
+  if (!hasRichHistory) {
+    final day = completeDays.isEmpty ? null : completeDays.last;
+    final factLine = _nutritionCompactFactLine(day);
+    if (factLine != null) {
+      return 'Nutrition: $factLine. ${completeDays.length} complete logged day.';
+    }
+    return 'Nutrition: ${summary.loggedDaysCount} ${summary.loggedDaysCount == 1 ? 'logged day' : 'logged days'}. Some nutrition details are incomplete.';
+  }
+
+  final facts = <String>['Nutrition adherence.'];
+  if (summary.averageCaloriesKcal != null &&
+      summary.calorieEvidenceDaysCount >= 2) {
+    facts.add(
+      'Average ${summary.averageCaloriesKcal!.round()} calories across ${summary.calorieEvidenceDaysCount} complete days.',
+    );
+  }
+  if (summary.averageProteinG != null &&
+      summary.proteinEvidenceDaysCount >= 2) {
+    facts.add(
+      'Average ${summary.averageProteinG!.round()} grams protein across ${summary.proteinEvidenceDaysCount} complete days.',
+    );
+  }
+  facts.add('${_nutritionAdherenceLabel(summary)}.');
+  return facts.join(' ');
+}
+
 String _formatNumber(double value) {
   final whole = value.roundToDouble() == value;
   return whole ? value.toStringAsFixed(0) : value.toStringAsFixed(1);
@@ -2321,8 +2831,27 @@ String _shortCivilDate(String value) {
   return DateFormat.MMMd().format(date);
 }
 
-String _addCivilDays(String date, int days) =>
-    _formatCivilDate(_parseCivilDate(date).add(Duration(days: days)));
+String _fullCivilDate(String value) {
+  final date = _parseCivilDate(value);
+  return DateFormat.yMMMd().format(date);
+}
+
+String? _measurementTime(
+  ProgressMeasurementRecord measurement,
+  String timezoneId,
+) {
+  try {
+    final local = tz.TZDateTime.from(
+      measurement.recordedAt.toUtc(),
+      LocalScheduleDateService().locationFor(timezoneId),
+    );
+    return DateFormat.jm().format(local);
+  } on Object {
+    // A date label remains authoritative even if an older record cannot be
+    // converted through the current timezone database.
+    return null;
+  }
+}
 
 int _civilDayDifference(String start, String end) =>
     _parseCivilDate(end).difference(_parseCivilDate(start)).inDays;

@@ -6,6 +6,8 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/di/providers.dart';
 import '../../core/presentation/diet_preference_presentation.dart';
+import '../../core/presentation/secondary_presentation.dart';
+import '../../core/presentation/today_onboarding_handoff.dart';
 import '../../core/router/app_router.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/utils/tdee_calculator.dart';
@@ -63,6 +65,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   String? _draftError;
   var _isCompleting = false;
   var _isSkipping = false;
+  var _showingPayoff = false;
   String? _completionError;
   String? _skipError;
 
@@ -154,6 +157,59 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     if (page <= 4) return 2;
     if (page <= 6) return 1;
     return 3;
+  }
+
+  Gender get _selectedGender => _sex == 'female' ? Gender.female : Gender.male;
+
+  ActivityLevel get _selectedActivityLevel => switch (_activityLevel) {
+    'sedentary' => ActivityLevel.sedentary,
+    'light' => ActivityLevel.lightlyActive,
+    'active' => ActivityLevel.veryActive,
+    _ => ActivityLevel.moderatelyActive,
+  };
+
+  FitnessGoal get _selectedFitnessGoal => switch (_goal) {
+    'lose' => FitnessGoal.weightLoss,
+    'gain' => FitnessGoal.muscleGain,
+    _ => FitnessGoal.maintain,
+  };
+
+  /// The payoff and completion preview share the same existing nutrition
+  /// authority. The review never writes these values; Finish setup does.
+  MacroTargets _currentNutritionTargets() {
+    final age = int.tryParse(_ageController.text) ?? _age;
+    final height = double.tryParse(_heightController.text) ?? _height;
+    final weight = double.tryParse(_weightController.text) ?? _weight;
+    final bmr = TdeeCalculator.calculateBmr(
+      weightKg: weight,
+      heightCm: height,
+      ageYears: age,
+      gender: _selectedGender,
+    );
+    final tdee = TdeeCalculator.calculateTdee(
+      bmr: bmr,
+      activityLevel: _selectedActivityLevel,
+    );
+    return TdeeCalculator.calculateMacros(
+      tdee: tdee,
+      goal: _selectedFitnessGoal,
+      weightKg: weight,
+    );
+  }
+
+  String _goalLabel() => SecondaryConsumerCopy.goal(_goal);
+
+  String _activityLabel() => switch (_activityLevel) {
+    'sedentary' => 'Sedentary',
+    'light' => 'Lightly active',
+    'active' => 'Very active',
+    _ => 'Moderately active',
+  };
+
+  String _dietLabel() {
+    final uiValue = DietPreferencePresentation.uiValueFor(_dietPreference);
+    final option = DietPreferencePresentation.optionForUiValue(uiValue);
+    return option?.label.split(' (').first ?? 'Not selected';
   }
 
   void _dismissInputFocus() {
@@ -250,6 +306,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           curve: Curves.easeInOut,
         );
       }
+    } else if (!_showingPayoff) {
+      setState(() {
+        _showingPayoff = true;
+        _completionError = null;
+      });
+      unawaited(_saveDraft().catchError((_) {}));
     } else {
       _completeOnboarding();
     }
@@ -257,6 +319,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   void _prevPage() {
     _dismissInputFocus();
+    if (_showingPayoff) {
+      setState(() {
+        _showingPayoff = false;
+        _completionError = null;
+      });
+      return;
+    }
     if (_currentPage > 0) {
       final previousPage = _currentPage - 1;
       if (B05MotionPolicy.reduceMotion(context)) {
@@ -308,6 +377,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     try {
       await _draftWrite;
       await _draftStore.markProfileOnboardingSkipped();
+      await clearTodayOnboardingHandoff();
       ref.read(onboardingCompletedProvider.notifier).state = true;
       if (mounted) context.go('/');
     } catch (_) {
@@ -326,34 +396,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     _weight = double.tryParse(_weightController.text) ?? 70.0;
     _targetWeight = double.tryParse(_targetWeightController.text) ?? _weight;
 
-    final gender = _sex == 'female' ? Gender.female : Gender.male;
-    final actLevel = switch (_activityLevel) {
-      'sedentary' => ActivityLevel.sedentary,
-      'light' => ActivityLevel.lightlyActive,
-      'active' => ActivityLevel.veryActive,
-      _ => ActivityLevel.moderatelyActive,
-    };
-    final fitnessGoal = switch (_goal) {
-      'lose' => FitnessGoal.weightLoss,
-      'gain' => FitnessGoal.muscleGain,
-      _ => FitnessGoal.maintain,
-    };
-
-    final bmr = TdeeCalculator.calculateBmr(
-      weightKg: _weight,
-      heightCm: _height,
-      ageYears: _age,
-      gender: gender,
-    );
-    final tdee = TdeeCalculator.calculateTdee(
-      bmr: bmr,
-      activityLevel: actLevel,
-    );
-    final macros = TdeeCalculator.calculateMacros(
-      tdee: tdee,
-      goal: fitnessGoal,
-      weightKg: _weight,
-    );
+    final macros = _currentNutritionTargets();
 
     double dailyCalories = macros.calories.toDouble();
     double dailyProtein = macros.proteinG;
@@ -397,8 +440,34 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     await prefs.setString('user_goal', _goal);
     await prefs.setString('user_diet_preference', _dietPreference);
 
-    // Refresh UserProfileNotifier with newly saved parameters
-    await ref.read(userProfileProvider.notifier).loadProfile();
+    // Load the existing profile/goal authority before applying this reviewed
+    // setup. On a first run the compatibility bridge imports the preferences
+    // above. On a Settings-initiated setup reset, the existing Drift profile
+    // already exists, so explicitly persist changed answers through the same
+    // canonical profile and NutritionGoalRepository command path.
+    final profileNotifier = ref.read(userProfileProvider.notifier);
+    await profileNotifier.loadProfile();
+    final currentProfile = ref.read(userProfileProvider);
+    final targetChanged =
+        currentProfile.userGoal != _goal ||
+        currentProfile.calorieGoal != macros.calories ||
+        currentProfile.proteinGoal != macros.proteinG ||
+        currentProfile.carbsGoal != macros.carbsG ||
+        currentProfile.fatGoal != macros.fatG;
+    await profileNotifier.updateProfile(
+      name: _nameController.text.trim(),
+      age: _age,
+      height: _height,
+      weight: _weight,
+      sex: _sex,
+      activityLevel: _activityLevel,
+      goal: targetChanged ? _goal : null,
+      dietPreference: _dietPreference,
+      calorieGoal: targetChanged ? macros.calories : null,
+      proteinGoal: targetChanged ? macros.proteinG : null,
+      carbsGoal: targetChanged ? macros.carbsG : null,
+      fatGoal: targetChanged ? macros.fatG : null,
+    );
 
     // Log canonical initial weight entry in BodyMeasurements Drift table
     await ref
@@ -408,6 +477,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     // Complete onboarding flag
     await prefs.setBool('onboarding_completed', true);
     await prefs.remove('onboarding_skipped');
+    await markTodayOnboardingHandoffPending();
 
     // Notify router that onboarding is now complete
     ref.read(onboardingCompletedProvider.notifier).state = true;
@@ -517,7 +587,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 _buildAboutPage(),
                 _buildGoalPage(),
                 _buildActivityPage(),
-                _buildDietPage(),
+                _showingPayoff ? _buildPayoffPage() : _buildDietPage(),
               ],
             ),
           ),
@@ -526,10 +596,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       primaryAction: B05ActionButton(
         label: _isCompleting
             ? 'Saving your profile…'
-            : _completionError != null && _currentPage == _totalPages - 1
+            : _completionError != null &&
+                  _currentPage == _totalPages - 1 &&
+                  _showingPayoff
             ? 'Retry setup'
-            : _currentPage == _totalPages - 1
+            : _currentPage == _totalPages - 1 && _showingPayoff
             ? 'Finish setup'
+            : _currentPage == _totalPages - 1
+            ? 'Review setup'
             : 'Next Step',
         onPressed: _isCompleting ? null : _nextPage,
       ),
@@ -672,6 +746,222 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     );
   }
 
+  Widget _buildPayoffPage() {
+    final name = _nameController.text.trim();
+    final title = name.isEmpty
+        ? 'Here’s your starting setup'
+        : '$name, here’s your starting setup';
+    final macros = _currentNutritionTargets();
+    return OnboardingPageContainer(
+      title: title,
+      subtitle: 'Review what IndiFit will save from your answers.',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          B05Surface(
+            tone: B05SurfaceTone.selected,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Personalized for you',
+                  style: B05Typography.title(context),
+                ),
+                const SizedBox(height: B05Layout.space4),
+                Text(
+                  'These choices will shape your starting profile and daily target.',
+                  style: B05Typography.body(context),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: B05Layout.space16),
+          _buildPayoffFact(
+            label: 'Profile details',
+            value:
+                '${_ageController.text.trim()} years · ${_heightController.text.trim()} cm · ${_weightController.text.trim()} kg',
+            icon: Icons.person_outline_rounded,
+            page: 0,
+            hint: 'Change your profile details.',
+          ),
+          const SizedBox(height: B05Layout.space8),
+          _buildPayoffFact(
+            label: 'Main goal',
+            value: _goalLabel(),
+            icon: Icons.track_changes_rounded,
+            page: 1,
+            hint: 'Change your main goal.',
+          ),
+          const SizedBox(height: B05Layout.space8),
+          _buildPayoffFact(
+            label: 'Activity context',
+            value: _activityLabel(),
+            icon: Icons.directions_walk_rounded,
+            page: 2,
+            hint: 'Change your activity context.',
+          ),
+          const SizedBox(height: B05Layout.space8),
+          _buildPayoffFact(
+            label: 'Food preference',
+            value: _dietLabel(),
+            icon: Icons.restaurant_menu_rounded,
+            page: 3,
+            hint: 'Change your food preference.',
+          ),
+          const SizedBox(height: B05Layout.space16),
+          B05Surface(
+            tone: B05SurfaceTone.inset,
+            child: Semantics(
+              container: true,
+              label:
+                  'Starting daily target: ${macros.calories} kilocalories, ${macros.proteinG} grams protein, ${macros.carbsG} grams carbohydrates, ${macros.fatG} grams fat.',
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Starting daily target',
+                    style: B05Typography.title(context),
+                  ),
+                  const SizedBox(height: B05Layout.space4),
+                  Text(
+                    'Saved when you finish. You can edit it later in Settings › Goal & targets.',
+                    style: B05Typography.body(context),
+                  ),
+                  const SizedBox(height: B05Layout.space12),
+                  Wrap(
+                    spacing: B05Layout.space8,
+                    runSpacing: B05Layout.space8,
+                    children: [
+                      _buildPayoffMetric(
+                        label: 'Calories',
+                        value: '${macros.calories} kcal',
+                      ),
+                      _buildPayoffMetric(
+                        label: 'Protein',
+                        value: '${macros.proteinG} g',
+                      ),
+                      _buildPayoffMetric(
+                        label: 'Carbs',
+                        value: '${macros.carbsG} g',
+                      ),
+                      _buildPayoffMetric(
+                        label: 'Fat',
+                        value: '${macros.fatG} g',
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPayoffFact({
+    required String label,
+    required String value,
+    required IconData icon,
+    required int page,
+    required String hint,
+  }) {
+    final colors = context.b05Colors;
+    return Semantics(
+      container: true,
+      label: '$label: $value',
+      child: B05Surface(
+        tone: B05SurfaceTone.section,
+        showBorder: true,
+        padding: const EdgeInsets.all(B05Layout.space12),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
+            final stackAction = constraints.maxWidth < 320 || textScale >= 1.6;
+            final detail = Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(icon, color: colors.action, size: B05Layout.iconMedium),
+                const SizedBox(width: B05Layout.space12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(label, style: B05Typography.caption(context)),
+                      const SizedBox(height: B05Layout.space4),
+                      Text(value, style: B05Typography.label(context)),
+                    ],
+                  ),
+                ),
+              ],
+            );
+            final action = B05ActionButton(
+              label: 'Adjust',
+              hint: hint,
+              emphasis: B05ActionEmphasis.tertiary,
+              onPressed: () => _editOnboardingPage(page),
+            );
+            if (stackAction) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  detail,
+                  Align(alignment: Alignment.centerLeft, child: action),
+                ],
+              );
+            }
+            return Row(
+              children: [
+                Expanded(child: detail),
+                action,
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPayoffMetric({required String label, required String value}) {
+    return Semantics(
+      container: true,
+      label: '$label: $value',
+      child: B05Surface(
+        tone: B05SurfaceTone.section,
+        padding: const EdgeInsets.symmetric(
+          horizontal: B05Layout.space12,
+          vertical: B05Layout.space8,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: B05Typography.caption(context)),
+            const SizedBox(height: B05Layout.space4),
+            Text(value, style: B05Typography.label(context)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _editOnboardingPage(int page) {
+    if (_isCompleting) return;
+    _dismissInputFocus();
+    setState(() {
+      _showingPayoff = false;
+      _completionError = null;
+    });
+    if (B05MotionPolicy.reduceMotion(context)) {
+      _pageController.jumpToPage(page);
+    } else {
+      _pageController.animateToPage(
+        page,
+        duration: B05MotionPolicy.transitionDuration(context),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
   Widget _buildActivityPage() {
     return OnboardingPageContainer(
       title: 'How do you move most days?',
@@ -725,7 +1015,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       child: Column(
         children: [
           OnboardingSelectionCard(
-            title: 'Lose weight',
+            title: SecondaryConsumerCopy.goal('lose'),
             subtitle: 'Reduce body weight while supporting training.',
             icon: Icons.trending_down,
             selected: _goal == 'lose',
@@ -733,7 +1023,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           ),
           const SizedBox(height: 16),
           OnboardingSelectionCard(
-            title: 'Maintain',
+            title: SecondaryConsumerCopy.goal('maintain'),
             subtitle: 'Keep your weight around its current level.',
             icon: Icons.compare_arrows,
             selected: _goal == 'maintain',
@@ -741,7 +1031,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           ),
           const SizedBox(height: 16),
           OnboardingSelectionCard(
-            title: 'Gain / build muscle',
+            title: SecondaryConsumerCopy.goal('gain'),
             subtitle: 'Support muscle and body-weight gain.',
             icon: Icons.trending_up,
             selected: _goal == 'gain',

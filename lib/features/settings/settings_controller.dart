@@ -18,6 +18,13 @@ import '../../core/services/crash_reporting_service.dart';
 import '../../core/services/notification_service.dart';
 import '../../core/utils/csv_exporter.dart';
 
+int _boundedPreference(
+  int? value, {
+  required int min,
+  required int max,
+  required int fallback,
+}) => value != null && value >= min && value <= max ? value : fallback;
+
 class SettingsState {
   final bool remindWorkout;
   final bool remindMeals;
@@ -27,6 +34,18 @@ class SettingsState {
   final bool quietHoursEnabled;
   final int quietHoursStart;
   final int quietHoursEnd;
+  final List<int> workoutReminderDays;
+  final int workoutReminderHour;
+  final int workoutReminderMinute;
+  final int lunchReminderHour;
+  final int lunchReminderMinute;
+  final int dinnerReminderHour;
+  final int dinnerReminderMinute;
+  final int dailyLoggingReminderHour;
+  final int dailyLoggingReminderMinute;
+  final int weeklyProgressDay;
+  final int weeklyProgressHour;
+  final int weeklyProgressMinute;
   final bool offlineOnly;
   final bool crashReportingEnabled;
   final bool loading;
@@ -42,6 +61,21 @@ class SettingsState {
     this.quietHoursEnabled = true,
     this.quietHoursStart = 22,
     this.quietHoursEnd = 7,
+    this.workoutReminderDays = NotificationService.defaultWorkoutReminderDays,
+    this.workoutReminderHour = NotificationService.defaultWorkoutReminderHour,
+    this.workoutReminderMinute =
+        NotificationService.defaultWorkoutReminderMinute,
+    this.lunchReminderHour = NotificationService.defaultLunchReminderHour,
+    this.lunchReminderMinute = NotificationService.defaultLunchReminderMinute,
+    this.dinnerReminderHour = NotificationService.defaultDinnerReminderHour,
+    this.dinnerReminderMinute = NotificationService.defaultDinnerReminderMinute,
+    this.dailyLoggingReminderHour =
+        NotificationService.defaultDailyLoggingReminderHour,
+    this.dailyLoggingReminderMinute =
+        NotificationService.defaultDailyLoggingReminderMinute,
+    this.weeklyProgressDay = NotificationService.defaultWeeklyProgressDay,
+    this.weeklyProgressHour = NotificationService.defaultWeeklyProgressHour,
+    this.weeklyProgressMinute = NotificationService.defaultWeeklyProgressMinute,
     this.offlineOnly = false,
     this.crashReportingEnabled = false,
     this.loading = true,
@@ -58,6 +92,18 @@ class SettingsState {
     bool? quietHoursEnabled,
     int? quietHoursStart,
     int? quietHoursEnd,
+    List<int>? workoutReminderDays,
+    int? workoutReminderHour,
+    int? workoutReminderMinute,
+    int? lunchReminderHour,
+    int? lunchReminderMinute,
+    int? dinnerReminderHour,
+    int? dinnerReminderMinute,
+    int? dailyLoggingReminderHour,
+    int? dailyLoggingReminderMinute,
+    int? weeklyProgressDay,
+    int? weeklyProgressHour,
+    int? weeklyProgressMinute,
     bool? offlineOnly,
     bool? crashReportingEnabled,
     bool? loading,
@@ -73,6 +119,21 @@ class SettingsState {
       quietHoursEnabled: quietHoursEnabled ?? this.quietHoursEnabled,
       quietHoursStart: quietHoursStart ?? this.quietHoursStart,
       quietHoursEnd: quietHoursEnd ?? this.quietHoursEnd,
+      workoutReminderDays: workoutReminderDays ?? this.workoutReminderDays,
+      workoutReminderHour: workoutReminderHour ?? this.workoutReminderHour,
+      workoutReminderMinute:
+          workoutReminderMinute ?? this.workoutReminderMinute,
+      lunchReminderHour: lunchReminderHour ?? this.lunchReminderHour,
+      lunchReminderMinute: lunchReminderMinute ?? this.lunchReminderMinute,
+      dinnerReminderHour: dinnerReminderHour ?? this.dinnerReminderHour,
+      dinnerReminderMinute: dinnerReminderMinute ?? this.dinnerReminderMinute,
+      dailyLoggingReminderHour:
+          dailyLoggingReminderHour ?? this.dailyLoggingReminderHour,
+      dailyLoggingReminderMinute:
+          dailyLoggingReminderMinute ?? this.dailyLoggingReminderMinute,
+      weeklyProgressDay: weeklyProgressDay ?? this.weeklyProgressDay,
+      weeklyProgressHour: weeklyProgressHour ?? this.weeklyProgressHour,
+      weeklyProgressMinute: weeklyProgressMinute ?? this.weeklyProgressMinute,
       offlineOnly: offlineOnly ?? this.offlineOnly,
       crashReportingEnabled:
           crashReportingEnabled ?? this.crashReportingEnabled,
@@ -81,6 +142,19 @@ class SettingsState {
       glassSize: glassSize ?? this.glassSize,
     );
   }
+}
+
+enum SettingsExportStatus { shared, cancelled, unavailable, failed }
+
+/// Result of creating the portable backup file and handing it to a destination
+/// through the platform share sheet.
+class SettingsExportResult {
+  final SettingsExportStatus status;
+  final String? message;
+
+  const SettingsExportResult(this.status, {this.message});
+
+  bool get isShared => status == SettingsExportStatus.shared;
 }
 
 class SettingsController extends StateNotifier<SettingsState> {
@@ -106,6 +180,74 @@ class SettingsController extends StateNotifier<SettingsState> {
       quietHoursStart:
           prefs.getInt(NotificationService.prefQuietHoursStart) ?? 22,
       quietHoursEnd: prefs.getInt(NotificationService.prefQuietHoursEnd) ?? 7,
+      workoutReminderDays:
+          NotificationService.workoutReminderDaysFromPreferences(prefs),
+      workoutReminderHour: _boundedPreference(
+        prefs.getInt(NotificationService.prefWorkoutReminderHour),
+        min: 0,
+        max: 23,
+        fallback: NotificationService.defaultWorkoutReminderHour,
+      ),
+      workoutReminderMinute: _boundedPreference(
+        prefs.getInt(NotificationService.prefWorkoutReminderMinute),
+        min: 0,
+        max: 59,
+        fallback: NotificationService.defaultWorkoutReminderMinute,
+      ),
+      lunchReminderHour: _boundedPreference(
+        prefs.getInt(NotificationService.prefLunchReminderHour),
+        min: 0,
+        max: 23,
+        fallback: NotificationService.defaultLunchReminderHour,
+      ),
+      lunchReminderMinute: _boundedPreference(
+        prefs.getInt(NotificationService.prefLunchReminderMinute),
+        min: 0,
+        max: 59,
+        fallback: NotificationService.defaultLunchReminderMinute,
+      ),
+      dinnerReminderHour: _boundedPreference(
+        prefs.getInt(NotificationService.prefDinnerReminderHour),
+        min: 0,
+        max: 23,
+        fallback: NotificationService.defaultDinnerReminderHour,
+      ),
+      dinnerReminderMinute: _boundedPreference(
+        prefs.getInt(NotificationService.prefDinnerReminderMinute),
+        min: 0,
+        max: 59,
+        fallback: NotificationService.defaultDinnerReminderMinute,
+      ),
+      dailyLoggingReminderHour: _boundedPreference(
+        prefs.getInt(NotificationService.prefDailyLoggingReminderHour),
+        min: 0,
+        max: 23,
+        fallback: NotificationService.defaultDailyLoggingReminderHour,
+      ),
+      dailyLoggingReminderMinute: _boundedPreference(
+        prefs.getInt(NotificationService.prefDailyLoggingReminderMinute),
+        min: 0,
+        max: 59,
+        fallback: NotificationService.defaultDailyLoggingReminderMinute,
+      ),
+      weeklyProgressDay: _boundedPreference(
+        prefs.getInt(NotificationService.prefWeeklyProgressDay),
+        min: DateTime.monday,
+        max: DateTime.sunday,
+        fallback: NotificationService.defaultWeeklyProgressDay,
+      ),
+      weeklyProgressHour: _boundedPreference(
+        prefs.getInt(NotificationService.prefWeeklyProgressHour),
+        min: 0,
+        max: 23,
+        fallback: NotificationService.defaultWeeklyProgressHour,
+      ),
+      weeklyProgressMinute: _boundedPreference(
+        prefs.getInt(NotificationService.prefWeeklyProgressMinute),
+        min: 0,
+        max: 59,
+        fallback: NotificationService.defaultWeeklyProgressMinute,
+      ),
       offlineOnly: prefs.getBool('offline_only') ?? false,
       crashReportingEnabled:
           prefs.getBool(CrashReportingService.prefCrashReportingEnabled) ??
@@ -136,6 +278,92 @@ class SettingsController extends StateNotifier<SettingsState> {
     }
     await NotificationService.scheduleAllReminders(_ref.read(databaseProvider));
     await loadPreferences();
+  }
+
+  Future<void> updateWorkoutReminderSchedule({
+    required List<int> days,
+    required int hour,
+    required int minute,
+  }) async {
+    final normalizedDays = days.toSet().toList()..sort();
+    if (normalizedDays.isEmpty ||
+        normalizedDays.any(
+          (day) => day < DateTime.monday || day > DateTime.sunday,
+        )) {
+      throw ArgumentError.value(days, 'days', 'Select at least one valid day.');
+    }
+    _validateTime(hour, minute);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(
+      NotificationService.prefWorkoutReminderDays,
+      normalizedDays.map((day) => '$day').toList(),
+    );
+    await prefs.setInt(NotificationService.prefWorkoutReminderHour, hour);
+    await prefs.setInt(NotificationService.prefWorkoutReminderMinute, minute);
+    await _rescheduleAndReload();
+  }
+
+  Future<void> updateMealReminderSchedule({
+    required int lunchHour,
+    required int lunchMinute,
+    required int dinnerHour,
+    required int dinnerMinute,
+  }) async {
+    _validateTime(lunchHour, lunchMinute);
+    _validateTime(dinnerHour, dinnerMinute);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(NotificationService.prefLunchReminderHour, lunchHour);
+    await prefs.setInt(
+      NotificationService.prefLunchReminderMinute,
+      lunchMinute,
+    );
+    await prefs.setInt(NotificationService.prefDinnerReminderHour, dinnerHour);
+    await prefs.setInt(
+      NotificationService.prefDinnerReminderMinute,
+      dinnerMinute,
+    );
+    await _rescheduleAndReload();
+  }
+
+  Future<void> updateDailyLoggingReminderSchedule({
+    required int hour,
+    required int minute,
+  }) async {
+    _validateTime(hour, minute);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(NotificationService.prefDailyLoggingReminderHour, hour);
+    await prefs.setInt(
+      NotificationService.prefDailyLoggingReminderMinute,
+      minute,
+    );
+    await _rescheduleAndReload();
+  }
+
+  Future<void> updateWeeklyProgressSchedule({
+    required int day,
+    required int hour,
+    required int minute,
+  }) async {
+    if (day < DateTime.monday || day > DateTime.sunday) {
+      throw ArgumentError.value(day, 'day', 'Use a valid weekday.');
+    }
+    _validateTime(hour, minute);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(NotificationService.prefWeeklyProgressDay, day);
+    await prefs.setInt(NotificationService.prefWeeklyProgressHour, hour);
+    await prefs.setInt(NotificationService.prefWeeklyProgressMinute, minute);
+    await _rescheduleAndReload();
+  }
+
+  Future<void> _rescheduleAndReload() async {
+    await NotificationService.scheduleAllReminders(_ref.read(databaseProvider));
+    await loadPreferences();
+  }
+
+  static void _validateTime(int hour, int minute) {
+    if (hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+      throw ArgumentError('Use a valid local time.');
+    }
   }
 
   Future<void> toggleOfflineOnly(bool value) async {
@@ -174,7 +402,7 @@ class SettingsController extends StateNotifier<SettingsState> {
     state = state.copyWith(glassSize: size);
   }
 
-  Future<String?> performExport(String password) async {
+  Future<SettingsExportResult> performExport(String password) async {
     state = state.copyWith(loading: true);
     File? tempFile;
     try {
@@ -190,23 +418,42 @@ class SettingsController extends StateNotifier<SettingsState> {
       final tempDir = await getTemporaryDirectory();
       final dateStr = DateTime.now().toIso8601String().split('T').first;
       tempFile = File('${tempDir.path}/indifit_backup_$dateStr.indifit-backup');
-      await tempFile.writeAsString(envelopeJson);
+      await tempFile.writeAsString(envelopeJson, flush: true);
 
       final xFile = XFile(tempFile.path);
-      await Share.shareXFiles([
+      final shareResult = await Share.shareXFiles([
         xFile,
-      ], subject: 'IndiFit Health Backup (.indifit-backup)');
+      ], subject: 'IndiFit backup (.indifit-backup)');
 
-      return null;
+      return exportResultForShareStatus(shareResult.status);
     } catch (_) {
-      return ProductFailurePresentation.fromCode(
-        'backup_export_failed',
-      ).message;
+      return SettingsExportResult(
+        SettingsExportStatus.failed,
+        message: ProductFailurePresentation.fromCode(
+          'backup_export_failed',
+        ).message,
+      );
     } finally {
       await BackupFileAdapter.cleanupTempFile(tempFile);
       state = state.copyWith(loading: false);
     }
   }
+
+  static SettingsExportResult exportResultForShareStatus(
+    ShareResultStatus status,
+  ) => switch (status) {
+    ShareResultStatus.success => const SettingsExportResult(
+      SettingsExportStatus.shared,
+    ),
+    ShareResultStatus.dismissed => const SettingsExportResult(
+      SettingsExportStatus.cancelled,
+      message: 'No backup was shared.',
+    ),
+    ShareResultStatus.unavailable => const SettingsExportResult(
+      SettingsExportStatus.unavailable,
+      message: 'Sharing is unavailable on this device. No backup was shared.',
+    ),
+  };
 
   bool _isRestoring = false;
 
@@ -242,30 +489,23 @@ class SettingsController extends StateNotifier<SettingsState> {
     }
   }
 
-  Future<void> exportCsvData() async {
-    final db = _ref.read(databaseProvider);
-    final foodLogs = await db.select(db.foodLogs).get();
-    final foodCsv = CsvExporter.exportFoodLogsToCsv(foodLogs);
+  Future<String?> exportCsvData() async {
+    try {
+      final db = _ref.read(databaseProvider);
+      final foodLogs = await db.select(db.foodLogs).get();
+      final foodCsv = CsvExporter.exportFoodLogsToCsv(foodLogs);
 
-    final sessions = await db.select(db.workoutSessions).get();
-    final sets = await db.select(db.workoutSets).get();
-    final workoutCsv = CsvExporter.exportWorkoutSessionsToCsv(sessions, sets);
+      final sessions = await db.select(db.workoutSessions).get();
+      final sets = await db.select(db.workoutSets).get();
+      final workoutCsv = CsvExporter.exportWorkoutSessionsToCsv(sessions, sets);
 
-    final fullCsv =
-        '=== FOOD LOGS ===\n$foodCsv\n\n=== WORKOUT SESSIONS ===\n$workoutCsv';
-    await Clipboard.setData(ClipboardData(text: fullCsv));
-  }
-
-  Future<void> deleteAllData() async {
-    final db = _ref.read(databaseProvider);
-    await db.delete(db.foodLogs).go();
-    await db.delete(db.foodItems).go();
-    await db.delete(db.workoutSets).go();
-    await db.delete(db.workoutSessions).go();
-    await db.delete(db.bodyMeasurements).go();
-    await db.delete(db.routineExercises).go();
-    await db.delete(db.routineDays).go();
-    await db.delete(db.workoutRoutines).go();
+      final fullCsv =
+          '=== FOOD LOGS ===\n$foodCsv\n\n=== WORKOUT SESSIONS ===\n$workoutCsv';
+      await Clipboard.setData(ClipboardData(text: fullCsv));
+      return null;
+    } catch (_) {
+      return ProductFailurePresentation.fromCode('csv_export_failed').message;
+    }
   }
 }
 

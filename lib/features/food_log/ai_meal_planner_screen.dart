@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../core/theme/colors.dart';
+import '../../core/theme/b05_semantic_colors.dart';
+import '../../core/widgets/b05_accessibility_primitives.dart';
+import '../../core/widgets/indi_fit_bottom_sheet.dart';
 import '../../data/repositories/food_repository.dart';
 import '../../data/repositories/meal_plan_service.dart';
 
@@ -67,36 +69,35 @@ class _AiMealPlannerScreenState extends ConsumerState<AiMealPlannerScreen> {
 
   void _showGroceryList() {
     final groceryList = _currentPlanResult?.groceryList ?? [];
+    final colors = context.b05Colors;
 
-    showModalBottomSheet(
+    showIndiFitBottomSheet(
       context: context,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
+      semanticLabel: 'Weekly Grocery Checklist',
+      maxHeightFactor: 0.85,
+      builder: (sheetCtx) {
         return Padding(
           padding: const EdgeInsets.all(24.0),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Weekly Grocery Checklist 🛒',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: B05Typography.title(sheetCtx).copyWith(fontSize: 18),
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 'Est. ingredients to prepare your 7-day meal plan.',
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                style: B05Typography.caption(sheetCtx).copyWith(fontSize: 12),
               ),
-              const Divider(color: AppColors.border, height: 24),
+              Divider(color: colors.border, height: 24),
               Expanded(
                 child: groceryList.isEmpty
-                    ? const Center(
+                    ? Center(
                         child: Text(
                           'No grocery list generated.',
-                          style: TextStyle(color: AppColors.textSecondary),
+                          style: B05Typography.caption(sheetCtx),
                         ),
                       )
                     : ListView.builder(
@@ -107,11 +108,11 @@ class _AiMealPlannerScreenState extends ConsumerState<AiMealPlannerScreen> {
                       ),
               ),
               const SizedBox(height: 12),
-              ElevatedButton(
-                onPressed: () => Navigator.pop(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
+              FilledButton(
+                onPressed: () => Navigator.pop(sheetCtx),
+                style: FilledButton.styleFrom(
+                  backgroundColor: colors.action,
+                  foregroundColor: colors.onAction,
                   minimumSize: const Size.fromHeight(48),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -131,9 +132,9 @@ class _AiMealPlannerScreenState extends ConsumerState<AiMealPlannerScreen> {
       padding: const EdgeInsets.symmetric(vertical: 6.0),
       child: Row(
         children: [
-          const Icon(
+          Icon(
             Icons.check_box_outline_blank_rounded,
-            color: AppColors.textMuted,
+            color: context.b05Colors.textDisabled,
             size: 20,
           ),
           const SizedBox(width: 8),
@@ -150,31 +151,30 @@ class _AiMealPlannerScreenState extends ConsumerState<AiMealPlannerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.b05Colors;
     return Scaffold(
       appBar: AppBar(
         title: const Text('AI Meal Planner'),
-        backgroundColor: AppColors.background,
-        elevation: 0,
       ),
       body: Column(
         children: [
           Container(
             width: double.infinity,
-            color: Colors.orange.withValues(alpha: 0.08),
+            color: colors.warning.container,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: const Row(
+            child: Row(
               children: [
                 Icon(
                   Icons.warning_amber_rounded,
-                  color: Colors.orange,
+                  color: colors.warning.indicator,
                   size: 16,
                 ),
-                SizedBox(width: 8),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     'AI recommendations are estimates. Verify ingredients for food allergies and consult a health professional.',
                     style: TextStyle(
-                      color: AppColors.textSecondary,
+                      color: colors.warning.foreground,
                       fontSize: 10.5,
                     ),
                   ),
@@ -198,17 +198,18 @@ class _AiMealPlannerScreenState extends ConsumerState<AiMealPlannerScreen> {
   }
 
   Widget _buildSetupLayout() {
+    final colors = context.b05Colors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Weekly Meal Planner Wizard',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+          style: B05Typography.title(context).copyWith(fontSize: 18),
         ),
         const SizedBox(height: 8),
-        const Text(
+        Text(
           'Design an Indian macro-balanced weekly diet plan instantly using AI.',
-          style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+          style: B05Typography.caption(context).copyWith(fontSize: 13),
         ),
         const SizedBox(height: 20),
 
@@ -218,20 +219,17 @@ class _AiMealPlannerScreenState extends ConsumerState<AiMealPlannerScreen> {
             padding: const EdgeInsets.all(20.0),
             child: Column(
               children: [
-                const Text(
+                Text(
                   'Daily Calorie Budget Target',
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 12,
-                  ),
+                  style: B05Typography.caption(context).copyWith(fontSize: 12),
                 ),
                 const SizedBox(height: 10),
                 Text(
                   '$_calorieGoal kcal',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
+                    color: colors.action,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -239,10 +237,10 @@ class _AiMealPlannerScreenState extends ConsumerState<AiMealPlannerScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     IconButton(
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.remove_circle_outline,
                         size: 28,
-                        color: AppColors.textSecondary,
+                        color: colors.textSecondary,
                       ),
                       onPressed: () => setState(
                         () => _calorieGoal = (_calorieGoal - 100).clamp(
@@ -253,10 +251,10 @@ class _AiMealPlannerScreenState extends ConsumerState<AiMealPlannerScreen> {
                     ),
                     const SizedBox(width: 24),
                     IconButton(
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.add_circle_outline,
                         size: 28,
-                        color: AppColors.primary,
+                        color: colors.action,
                       ),
                       onPressed: () => setState(
                         () => _calorieGoal = (_calorieGoal + 100).clamp(
@@ -274,12 +272,11 @@ class _AiMealPlannerScreenState extends ConsumerState<AiMealPlannerScreen> {
         const SizedBox(height: 20),
 
         // Preference Selection
-        const Text(
+        Text(
           'DIET PREFERENCE',
-          style: TextStyle(
+          style: B05Typography.caption(context).copyWith(
             fontSize: 11,
             fontWeight: FontWeight.bold,
-            color: AppColors.textSecondary,
             letterSpacing: 1.0,
           ),
         ),
@@ -295,11 +292,11 @@ class _AiMealPlannerScreenState extends ConsumerState<AiMealPlannerScreen> {
         ),
         const Spacer(),
 
-        ElevatedButton(
+        FilledButton(
           onPressed: _generatePlan,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            foregroundColor: Colors.white,
+          style: FilledButton.styleFrom(
+            backgroundColor: colors.action,
+            foregroundColor: colors.onAction,
             minimumSize: const Size.fromHeight(50),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
@@ -316,6 +313,7 @@ class _AiMealPlannerScreenState extends ConsumerState<AiMealPlannerScreen> {
 
   Widget _buildPreferenceChip(String val, String label) {
     final active = _dietPreference == val;
+    final colors = context.b05Colors;
     return Expanded(
       child: GestureDetector(
         onTap: () => setState(() => _dietPreference = val),
@@ -323,9 +321,9 @@ class _AiMealPlannerScreenState extends ConsumerState<AiMealPlannerScreen> {
           padding: const EdgeInsets.symmetric(vertical: 12),
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: active ? AppColors.primaryGlow : AppColors.cardBackground,
+            color: active ? colors.selected : colors.section,
             border: Border.all(
-              color: active ? AppColors.primary : AppColors.border,
+              color: active ? colors.action : colors.border,
             ),
             borderRadius: BorderRadius.circular(12),
           ),
@@ -334,7 +332,7 @@ class _AiMealPlannerScreenState extends ConsumerState<AiMealPlannerScreen> {
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.bold,
-              color: active ? AppColors.primary : AppColors.textSecondary,
+              color: active ? colors.action : colors.textSecondary,
             ),
           ),
         ),
@@ -389,6 +387,7 @@ class _AiMealPlannerScreenState extends ConsumerState<AiMealPlannerScreen> {
             itemCount: 7,
             itemBuilder: (context, index) {
               final isSelected = _selectedDayIndex == index;
+              final colors = context.b05Colors;
               return Padding(
                 padding: const EdgeInsets.only(right: 8.0),
                 child: ChoiceChip(
@@ -401,11 +400,11 @@ class _AiMealPlannerScreenState extends ConsumerState<AiMealPlannerScreen> {
                       });
                     }
                   },
-                  selectedColor: AppColors.primaryGlow,
+                  selectedColor: colors.selected,
                   labelStyle: TextStyle(
                     color: isSelected
-                        ? AppColors.primary
-                        : AppColors.textSecondary,
+                        ? colors.action
+                        : colors.textSecondary,
                     fontWeight: isSelected
                         ? FontWeight.bold
                         : FontWeight.normal,
@@ -413,7 +412,7 @@ class _AiMealPlannerScreenState extends ConsumerState<AiMealPlannerScreen> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                     side: BorderSide(
-                      color: isSelected ? AppColors.primary : AppColors.border,
+                      color: isSelected ? colors.action : colors.border,
                     ),
                   ),
                 ),
@@ -462,8 +461,8 @@ class _AiMealPlannerScreenState extends ConsumerState<AiMealPlannerScreen> {
               child: OutlinedButton.icon(
                 onPressed: _showGroceryList,
                 style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: AppColors.primary),
-                  foregroundColor: AppColors.primary,
+                  side: BorderSide(color: context.b05Colors.action),
+                  foregroundColor: context.b05Colors.action,
                   minimumSize: const Size(0, 48),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -478,17 +477,15 @@ class _AiMealPlannerScreenState extends ConsumerState<AiMealPlannerScreen> {
             ),
             const SizedBox(width: 10),
             Expanded(
-              child: ElevatedButton(
+              child: OutlinedButton(
                 onPressed: () => setState(() => _planGenerated = false),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.cardBackground,
-                  foregroundColor: Colors.white,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: context.b05Colors.textSecondary,
+                  side: BorderSide(color: context.b05Colors.border),
                   minimumSize: const Size(0, 48),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
-                    side: const BorderSide(color: AppColors.border),
                   ),
-                  elevation: 0,
                 ),
                 child: const Text('Reset Planner'),
               ),
@@ -572,7 +569,7 @@ class _AiMealPlannerScreenState extends ConsumerState<AiMealPlannerScreen> {
           content: Text(
             'Logged planned meal "$name" to ${mealType.toUpperCase()}!',
           ),
-          backgroundColor: AppColors.success,
+          backgroundColor: context.b05Colors.success.indicator,
         ),
       );
     }
@@ -580,13 +577,15 @@ class _AiMealPlannerScreenState extends ConsumerState<AiMealPlannerScreen> {
 
   Widget _buildMealSectionCard(String title, String desc, IconData icon) {
     final canLog = desc != 'N/A' && desc.trim().isNotEmpty;
-    return Card(
+    final colors = context.b05Colors;
+    return B05Surface(
+      radius: B05SurfaceRadius.large,
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: AppColors.primary, size: 24),
+            Icon(icon, color: colors.action, size: 24),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
@@ -594,16 +593,12 @@ class _AiMealPlannerScreenState extends ConsumerState<AiMealPlannerScreen> {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
+                    style: B05Typography.title(context).copyWith(fontSize: 14),
                   ),
                   const SizedBox(height: 6),
                   Text(
                     desc,
-                    style: const TextStyle(
-                      color: AppColors.textSecondary,
+                    style: B05Typography.caption(context).copyWith(
                       fontSize: 12,
                       height: 1.3,
                     ),
@@ -613,9 +608,9 @@ class _AiMealPlannerScreenState extends ConsumerState<AiMealPlannerScreen> {
             ),
             if (canLog)
               IconButton(
-                icon: const Icon(
+                icon: Icon(
                   Icons.add_task_rounded,
-                  color: AppColors.primary,
+                  color: colors.action,
                   size: 20,
                 ),
                 tooltip: 'Log This Meal',
@@ -628,21 +623,22 @@ class _AiMealPlannerScreenState extends ConsumerState<AiMealPlannerScreen> {
   }
 
   Widget _buildLoadingState() {
-    return const Center(
+    final colors = context.b05Colors;
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          CircularProgressIndicator(color: AppColors.primary),
-          SizedBox(height: 24),
+          CircularProgressIndicator(color: colors.action),
+          const SizedBox(height: 24),
           Text(
             'AI is creating your meal plans...',
-            style: TextStyle(fontWeight: FontWeight.bold),
+            style: B05Typography.title(context),
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           Text(
             'Balancing portion sizes and local Indian macro splits using Gemini...',
             textAlign: TextAlign.center,
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+            style: B05Typography.caption(context).copyWith(fontSize: 12),
           ),
         ],
       ),

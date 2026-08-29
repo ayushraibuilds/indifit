@@ -327,6 +327,46 @@ void main() {
   );
 
   test(
+    'draft-scoped completion marker converges concurrent and fresh retries',
+    () async {
+      final launch = await executions.startUnscheduledDraft(
+        routineName: 'Concurrent finish',
+        executionSnapshotJson:
+            '{"version":1,"routineName":"Concurrent finish"}',
+      );
+      final state = performedState(launch);
+      await executions.saveDraft(draftId: launch.draftId, state: state);
+
+      final results = await Future.wait([
+        executions.finalizeDraft(
+          draftId: launch.draftId,
+          commandId: 'finish-concurrent-a',
+          state: state,
+        ),
+        executions.finalizeDraft(
+          draftId: launch.draftId,
+          commandId: 'finish-concurrent-b',
+          state: state,
+        ),
+      ]);
+
+      expect(results[0], results[1]);
+      expect(
+        await executions.finalizeDraft(
+          draftId: launch.draftId,
+          commandId: 'finish-concurrent-reconstructed',
+          state: state,
+        ),
+        results[0],
+      );
+      expect(await db.select(db.workoutSessions).get(), hasLength(1));
+      expect(await db.select(db.performedExercises).get(), hasLength(1));
+      expect(await db.select(db.performedSets).get(), hasLength(1));
+      expect(await db.select(db.workoutDrafts).get(), isEmpty);
+    },
+  );
+
+  test(
     'partial completion is explicit and rollback leaves no session or detail',
     () async {
       final occurrenceId = await makeOccurrence(grouped: true);

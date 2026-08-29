@@ -4,24 +4,48 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/di/providers.dart';
+import '../../core/presentation/consumer_copy.dart';
 import '../../core/services/indifit_haptics.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
+import '../../core/widgets/indi_fit_bottom_sheet.dart';
 import '../../core/widgets/indi_fit_feedback.dart';
 import '../../core/widgets/responsive_form_primitives.dart';
 import '../../data/database/app_database.dart';
 import '../../data/models/b02_execution_models.dart';
+import '../../data/models/b02_previous_performance_models.dart';
+import '../../data/models/b02_rich_set_helpers.dart';
 import '../../data/repositories/b02_strength_execution_repository.dart';
+import '../../data/services/b02_execution_progression.dart';
+import '../../data/services/b02_rest_recommendation_service.dart';
+import '../exercise_picker/exercise_picker.dart';
+import 'b02_previous_performance_integration.dart';
 import 'b02_strength_execution_controller.dart';
+import 'b02_workout_elapsed.dart';
 import 'quick_workout_screen.dart';
+import 'widgets/b02_compact_set_table.dart';
+import 'widgets/b02_execution_advanced_controls.dart';
+import 'widgets/b02_execution_semantics.dart';
+import 'widgets/b07_exercise_context.dart';
 import 'widgets/r07c_workout_presentation.dart';
+import 'workout_execution_context.dart';
+import 'workout_execution_route.dart';
+import 'workout_execution_shell.dart';
 
 /// B02's compact, offline-first player. All mutations go through the
 /// successor controller; the widget only collects input and presents state.
 class B02StrengthPlayerScreen extends ConsumerStatefulWidget {
   final B02StrengthExecutionLaunch launch;
+  final WorkoutExecutionContext? executionContext;
+  final DateTime Function()? nowUtc;
 
-  const B02StrengthPlayerScreen({super.key, required this.launch});
+  const B02StrengthPlayerScreen({
+    super.key,
+    required this.launch,
+    this.executionContext,
+    this.nowUtc,
+  });
 
   @override
   ConsumerState<B02StrengthPlayerScreen> createState() =>
@@ -31,24 +55,37 @@ class B02StrengthPlayerScreen extends ConsumerStatefulWidget {
 class _B02StrengthPlayerScreenState
     extends ConsumerState<B02StrengthPlayerScreen>
     with WidgetsBindingObserver {
-  final _reps = <String, String>{};
-  final _loads = <String, String>{};
+  final _repControllers = <String, TextEditingController>{};
+  final _loadControllers = <String, TextEditingController>{};
   final _rpes = <String, String>{};
+  final _pendingTechniques = <String, B02TechniqueFields>{};
+  final _mutatingSetIds = <String>{};
+  final _inputIdentities = <String, _B02InputIdentity>{};
+  final _loggedSetCounts = <String, int>{};
+  final _editedInputFields =
+      <({String slotId, B02PreviousPerformanceInputField field})>{};
+  final _extraSetReady = <String>{};
+  late final B02PreviousPerformanceLookupCoordinator _previousLookup;
   String? _selectedSlotId;
-  final _substitutionIds = <String, String?>{};
-  final _substitutionNames = <String, String?>{};
   bool _warmup = false;
   var _isSubmittingSet = false;
+  var _isClosing = false;
+  var _allowPop = false;
 
   @override
   void initState() {
     super.initState();
+    _previousLookup = B02PreviousPerformanceLookupCoordinator(
+      resolve: (query) =>
+          ref.read(b02PreviousPerformanceRepositoryProvider).resolve(query),
+    );
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         final provider = b02StrengthExecutionScreenControllerProvider(
           widget.launch,
         );
+        unawaited(ref.read(provider.notifier).reconcileWakeLock());
         if (ref.read(provider).slots.isEmpty) {
           ref.read(provider.notifier).loadSlots();
         }
@@ -59,6 +96,13 @@ class _B02StrengthPlayerScreenState
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _previousLookup.invalidate();
+    for (final controller in _repControllers.values) {
+      controller.dispose();
+    }
+    for (final controller in _loadControllers.values) {
+      controller.dispose();
+    }
     super.dispose();
   }
 
@@ -68,7 +112,8 @@ class _B02StrengthPlayerScreenState
       b02StrengthExecutionScreenControllerProvider(widget.launch).notifier,
     );
     if (state == AppLifecycleState.resumed) {
-      controller.resumeElapsed();
+      unawaited(controller.resumeElapsed());
+      unawaited(controller.reconcileWakeLock());
     } else if (state == AppLifecycleState.inactive ||
         state == AppLifecycleState.paused ||
         state == AppLifecycleState.detached) {
@@ -83,34 +128,14 @@ class _B02StrengthPlayerScreenState
     );
     final ui = ref.watch(provider);
     final launch = ui.launch ?? widget.launch;
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          tooltip: 'Close workout',
-          onPressed: ui.isBusy ? null : () => _closeWorkout(provider),
-          icon: const Icon(Icons.close_rounded),
-        ),
-        title: Text(launch.state.routineName),
-        actions: [
-          PopupMenuButton<String>(
-            tooltip: 'Workout options',
-            enabled: !ui.isBusy,
-            onSelected: (value) {
-              switch (value) {
-                case 'review':
-                  unawaited(_openSummary(provider));
-                case 'discard':
-                  _discard(provider);
-              }
-            },
-            itemBuilder: (context) => const [
-              PopupMenuItem(value: 'review', child: Text('Review workout')),
-              PopupMenuItem(value: 'discard', child: Text('Discard draft')),
-            ],
-          ),
-        ],
-      ),
-      body: _buildBody(context, provider, ui, launch),
+    final execution = _executionFor(launch);
+    return PopScope(
+      canPop: _allowPop,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop || _isClosing) return;
+        unawaited(_closeWorkout(provider));
+      },
+      child: _buildBody(context, provider, ui, launch, execution),
     );
   }
 
@@ -119,19 +144,33 @@ class _B02StrengthPlayerScreenState
     dynamic provider,
     B02StrengthExecutionUiState ui,
     B02StrengthExecutionLaunch launch,
+    WorkoutExecutionContext execution,
   ) {
     if (ui.status == B02StrengthExecutionStatus.loading && ui.launch == null) {
-      return const Center(child: CircularProgressIndicator());
+      return WorkoutExecutionShell(
+        execution: execution,
+        isBusy: true,
+        contentOverride: const Center(child: CircularProgressIndicator()),
+      );
     }
     if (ui.status == B02StrengthExecutionStatus.failure ||
         ui.status == B02StrengthExecutionStatus.recovery) {
-      return _ErrorState(
-        message: ui.errorMessage ?? 'The draft needs recovery.',
-        canRetry: ui.launch != null,
-        onRetry: ui.launch == null
-            ? null
-            : () => ref.read(provider.notifier).loadSlots(),
-        onClose: () => context.pop(),
+      return WorkoutExecutionShell(
+        execution: execution,
+        isBusy: ui.isBusy,
+        onClose: () => _closeWorkout(provider),
+        onReview: () => _openSummary(provider),
+        onDiscard: () => _discard(provider),
+        contentOverride: _ErrorState(
+          message:
+              ui.errorMessage ??
+              'This saved workout needs to be reopened before you can continue.',
+          canRetry: ui.launch != null,
+          onRetry: ui.launch == null
+              ? null
+              : () => ref.read(provider.notifier).loadSlots(),
+          onClose: () => context.pop(),
+        ),
       );
     }
     final slots = ui.slots;
@@ -139,290 +178,353 @@ class _B02StrengthPlayerScreenState
       final hasPerformedSets = launch.state.performedExercises.any(
         (exercise) => exercise.sets.isNotEmpty,
       );
-      return ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          const Text('No exercises in this workout yet.'),
-          const SizedBox(height: 8),
-          const Text('Add an exercise to keep this draft ready for logging.'),
-          const SizedBox(height: 16),
-          if (launch.occurrenceId == null)
-            FilledButton.icon(
-              onPressed: ui.isBusy ? null : () => _openExercisePicker(provider),
-              icon: const Icon(Icons.add_rounded),
-              label: const Text('Add exercise'),
+      final isQuick = execution is QuickWorkoutExecutionContext;
+      return WorkoutExecutionShell(
+        execution: execution,
+        isBusy: ui.isBusy,
+        onClose: () => _closeWorkout(provider),
+        onReview: hasPerformedSets ? () => _openSummary(provider) : null,
+        onDiscard: () => _discard(provider),
+        contentOverride: ListView(
+          padding: const EdgeInsets.all(20),
+          children: [
+            const Text('No exercises in this workout yet.'),
+            const SizedBox(height: 8),
+            const Text(
+              'Add an exercise to make this workout ready for logging.',
             ),
-          if (hasPerformedSets)
-            FilledButton.tonal(
-              onPressed: ui.isBusy ? null : () => _openSummary(provider),
-              child: const Text('Review and finish saved sets'),
+            const SizedBox(height: 16),
+            if (isQuick)
+              B05ActionButton(
+                label: 'Add exercise',
+                icon: Icons.add_rounded,
+                onPressed: ui.isBusy
+                    ? null
+                    : () => _openExercisePicker(provider),
+              ),
+            if (hasPerformedSets)
+              B05ActionButton(
+                label: 'Review and finish saved sets',
+                emphasis: B05ActionEmphasis.secondary,
+                onPressed: ui.isBusy ? null : () => _openSummary(provider),
+              ),
+            B05ActionButton(
+              label: 'Back',
+              emphasis: B05ActionEmphasis.tertiary,
+              onPressed: ui.isBusy ? null : () => _closeWorkout(provider),
             ),
-          TextButton(
-            onPressed: ui.isBusy ? null : () => _closeWorkout(provider),
-            child: const Text('Back'),
-          ),
-        ],
+          ],
+        ),
       );
     }
+    final cursorSlot = B02ExecutionProgression.cursorSlot(
+      state: launch.state,
+      slots: slots,
+    );
+    final preferredSlotId = _selectedSlotId ?? cursorSlot?.id;
     final selected = slots.firstWhere(
-      (slot) => slot.id == (_selectedSlotId ?? slots.first.id),
+      (slot) => slot.id == (preferredSlotId ?? slots.first.id),
       orElse: () => slots.first,
     );
     _selectedSlotId ??= selected.id;
     final workingSetCount = _workingSetCount(launch.state, selected);
-    final hasOpenRest = _hasOpenRest(launch.state, selected);
-    final isQuick = launch.occurrenceId == null;
+    final hasOpenRest = _hasOpenRest(launch.state);
+    final isQuick = execution is QuickWorkoutExecutionContext;
     final exerciseComplete =
         !isQuick && workingSetCount >= selected.plannedSets;
+    final hasExtraSetReady = _extraSetReady.contains(selected.id);
     final currentSet = workingSetCount + 1;
     final performedSets = _performedSets(launch.state, selected);
-    _loads.putIfAbsent(
-      selected.id,
-      () => selected.targetLoadKg?.toString() ?? '',
+    final groupSafe = _groupIntegrity(launch.state, selected, slots).isValid;
+    _loggedSetCounts[selected.id] = performedSets.length;
+    final actualExerciseId = _actualExerciseId(launch.state, selected);
+    final nextSlot = B02ExecutionProgression.nextSlot(
+      state: launch.state,
+      slots: slots,
+      current: selected,
     );
-    _reps.putIfAbsent(
-      selected.id,
-      () => selected.targetRepsMin?.toString() ?? '',
+    _syncInputIdentity(selected, actualExerciseId);
+    final pendingTechnique = _pendingTechniqueFor(selected, currentSet);
+    final previousKey = _previousPerformanceKey(
+      launch.state,
+      selected,
+      pendingTechnique,
     );
-    return ListView(
-      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
+    if (previousKey != null) {
+      _schedulePreviousPerformanceLookup(previousKey);
+    }
+    final previousPerformance = _previousLookup.activeKey == previousKey
+        ? _previousLookup.activeResult
+        : null;
+    final currentTarget =
+        _hasUsefulTargetContext(launch.state, selected, previousPerformance)
+        ? _R07CTargetContext(
+            slot: selected,
+            state: launch.state,
+            previousPerformance: previousPerformance,
+            onApply: ui.isBusy
+                ? null
+                : () => _applySuggestedTarget(launch.state, selected),
+            onChange: ui.isBusy
+                ? null
+                : () => _overrideTarget(provider, selected),
+          )
+        : null;
+    final setLogging = !groupSafe
+        ? null
+        : _buildSetLoggingSlot(
+            provider: provider,
+            ui: ui,
+            launch: launch,
+            selected: selected,
+            currentSet: currentSet,
+            performedSets: performedSets,
+            isPlannedMode: execution is PlannedWorkoutExecutionContext,
+            exerciseComplete: exerciseComplete,
+            showPendingEditor: isQuick || !exerciseComplete || hasExtraSetReady,
+            pendingTechnique: pendingTechnique,
+          );
+    final primaryLabel = _warmup
+        ? 'Log warm-up set'
+        : exerciseComplete
+        ? hasExtraSetReady
+              ? 'Log extra set'
+              : 'Exercise complete'
+        : 'Log set';
+    final primaryAction = SizedBox(
+      width: double.infinity,
+      child: B05ActionButton(
+        label: primaryLabel,
+        hint: _warmup ? 'Save this warm-up set' : 'Save this set',
+        onPressed:
+            ui.isBusy ||
+                _isSubmittingSet ||
+                !groupSafe ||
+                !selected.hasCanonicalExercise ||
+                (!_warmup && exerciseComplete && !hasExtraSetReady)
+            ? null
+            : () => _record(provider, selected),
+      ),
+    );
+    return WorkoutExecutionShell(
+      execution: execution,
+      isBusy: ui.isBusy,
+      onClose: () => _closeWorkout(provider),
+      onReview: () => _openSummary(provider),
+      onDiscard: () => _discard(provider),
+      workoutContextSlot: _R07CExecutionHeader(
+        executionContext: execution,
+        exerciseIndex: slots.indexOf(selected),
+        exerciseCount: slots.length,
+        currentSet: currentSet,
+        plannedSets: selected.plannedSets,
+        exerciseComplete: exerciseComplete,
+        groupContext: selected.groupType == null
+            ? null
+            : _groupContext(selected),
+        exerciseName: _actualExerciseName(launch.state, selected),
+        elapsedState: launch.state,
+        nowUtc: widget.nowUtc,
+        onActions: ui.isBusy || !groupSafe
+            ? null
+            : () => _showExerciseActions(provider, selected),
+      ),
+      exerciseProgressSlot: _R07CExerciseStrip(
+        slots: slots,
+        state: launch.state,
+        selectedId: selected.id,
+        onSelected: ui.isBusy
+            ? null
+            : (value) => setState(() => _selectedSlotId = value),
+      ),
+      currentExerciseSlot: null,
+      restSlot: hasOpenRest
+          ? _buildRestCard(provider, ui, launch, cursorSlot ?? selected)
+          : null,
+      setLoggingSlot: setLogging,
+      primaryActionSlot: isQuick || !exerciseComplete || hasExtraSetReady
+          ? primaryAction
+          : null,
+      primaryActionGap: 10,
+      nextExerciseGap: hasOpenRest
+          ? 12
+          : isQuick
+          ? 10
+          : 0,
+      nextExerciseSlot: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (currentTarget != null) ...[
+            currentTarget,
+            const SizedBox(height: 12),
+          ],
+          B07ExerciseContextPanel(
+            key: ValueKey<String>('b07-context:${actualExerciseId ?? ''}'),
+            canonicalExerciseId: actualExerciseId ?? '',
+            exerciseNameSnapshot: _actualExerciseName(launch.state, selected),
+          ),
+          const SizedBox(height: 12),
+          _buildNextExerciseSlot(
+            context: context,
+            provider: provider,
+            ui: ui,
+            launch: launch,
+            selected: selected,
+            slots: slots,
+            isQuick: isQuick,
+            exerciseComplete: exerciseComplete,
+            hasOpenRest: hasOpenRest,
+            groupSafe: groupSafe,
+            nextSlot: nextSlot,
+          ),
+        ],
+      ),
+      completionSlot: SizedBox(
+        width: double.infinity,
+        child: B05ActionButton(
+          label: isQuick ? 'Finish workout' : 'Review and finish',
+          emphasis: B05ActionEmphasis.secondary,
+          onPressed: ui.isBusy ? null : () => _openSummary(provider),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSetLoggingSlot({
+    required dynamic provider,
+    required B02StrengthExecutionUiState ui,
+    required B02StrengthExecutionLaunch launch,
+    required B02StrengthExecutionSlot selected,
+    required int currentSet,
+    required List<B02PerformedSet> performedSets,
+    required bool isPlannedMode,
+    required bool exerciseComplete,
+    required bool showPendingEditor,
+    required B02TechniqueFields pendingTechnique,
+  }) {
+    final rpe = int.tryParse(_rpes[selected.id] ?? '');
+    final techniqueKey = _pendingTechniqueKey(
+      selected,
+      currentSet,
+      isWarmup: _warmup,
+    );
+    final prescribedTechnique = _warmup
+        ? null
+        : selected.techniqueForSet(currentSet - 1);
+    return B02CompactSetTable(
+      slot: selected,
+      loggedSets: performedSets,
+      isPlannedMode: isPlannedMode,
+      isBusy: ui.isBusy || _isSubmittingSet,
+      currentSet: currentSet,
+      loadController: _loadControllerFor(selected),
+      repsController: _repControllerFor(selected),
+      rpe: rpe,
+      isWarmup: _warmup,
+      loadLabel: _loadLabel(selected.targetLoadBasis),
+      onRpeChanged: (value) =>
+          setState(() => _rpes[selected.id] = value?.toString() ?? ''),
+      onWarmupChanged: (value) => setState(() => _warmup = value),
+      onLoadChanged: (_) =>
+          _markInputEdited(selected.id, B02PreviousPerformanceInputField.load),
+      onRepsChanged: (_) =>
+          _markInputEdited(selected.id, B02PreviousPerformanceInputField.reps),
+      onEdit: (set) => unawaited(_editLoggedSet(provider, selected, set)),
+      onDelete: (set) => unawaited(_deleteLoggedSet(provider, selected, set)),
+      onAddSet: !isPlannedMode || exerciseComplete
+          ? () => _prepareExtraSet(selected)
+          : null,
+      showPendingEditor: showPendingEditor,
+      moreContent: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          B02ExecutionAdvancedControls(
+            initialValue: pendingTechnique,
+            prescribedValue: prescribedTechnique,
+            // The pending reps field is an editable actual, not a frozen
+            // prescription header. Segment totals are checked at log time.
+            headerReps: null,
+            onChanged: (value) =>
+                setState(() => _pendingTechniques[techniqueKey] = value),
+          ),
+          if (launch.state.warmupRecommendation != null) ...[
+            const SizedBox(height: 8),
+            _WarmupCard(
+              recommendation: launch.state.warmupRecommendation!,
+              onAccept: ui.isBusy
+                  ? null
+                  : () => ref
+                        .read(provider.notifier)
+                        .chooseWarmup(B02WarmupDecision.accepted),
+              onSkip: ui.isBusy
+                  ? null
+                  : () => ref
+                        .read(provider.notifier)
+                        .chooseWarmup(B02WarmupDecision.skipped),
+              onEdit: ui.isBusy
+                  ? null
+                  : () => _editWarmup(
+                      provider,
+                      launch.state.warmupRecommendation!,
+                    ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNextExerciseSlot({
+    required BuildContext context,
+    required dynamic provider,
+    required B02StrengthExecutionUiState ui,
+    required B02StrengthExecutionLaunch launch,
+    required B02StrengthExecutionSlot selected,
+    required List<B02StrengthExecutionSlot> slots,
+    required bool isQuick,
+    required bool exerciseComplete,
+    required bool hasOpenRest,
+    required bool groupSafe,
+    required B02StrengthExecutionSlot? nextSlot,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _R07CExecutionHeader(
-          isQuick: isQuick,
-          exerciseIndex: slots.indexOf(selected),
-          exerciseCount: slots.length,
-          currentSet: currentSet,
-          plannedSets: selected.plannedSets,
-          exerciseComplete: exerciseComplete,
-          groupContext: selected.groupType == null
-              ? null
-              : _groupContext(selected),
-          exerciseName: _actualExerciseName(launch.state, selected),
-          elapsedSeconds: launch.state.elapsedSeconds,
-          onActions: ui.isBusy
-              ? null
-              : () => _showExerciseActions(provider, selected),
-        ),
-        const SizedBox(height: 12),
-        _R07CExerciseStrip(
-          slots: slots,
-          state: launch.state,
-          selectedId: selected.id,
-          onSelected: ui.isBusy
-              ? null
-              : (value) => setState(() => _selectedSlotId = value),
-        ),
-        const SizedBox(height: 12),
-        _R07CTargetContext(
-          slot: selected,
-          state: launch.state,
-          onApply: ui.isBusy
-              ? null
-              : () => _applySuggestedTarget(launch.state, selected),
-          onChange: ui.isBusy
-              ? null
-              : () => _overrideTarget(provider, selected),
-        ),
-        if (_hasUsefulTargetContext(launch.state, selected))
-          const SizedBox(height: 12),
         if (hasOpenRest) ...[
-          _buildRestCard(provider, ui, launch, selected),
-          const SizedBox(height: 12),
           Text(
             'The next set is ready when you are.',
             style: Theme.of(context).textTheme.bodySmall,
           ),
-        ] else ...[
-          B05Surface(
-            padding: const EdgeInsets.fromLTRB(14, 14, 14, 8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Log set $currentSet',
-                  style: B05Typography.title(context),
-                ),
-                const SizedBox(height: 10),
-                IndiFitResponsiveFieldGroup(
-                  spacing: 10,
-                  breakpoint: 350,
-                  children: [
-                    TextFormField(
-                      key: ValueKey('load-${selected.id}'),
-                      initialValue: _loads[selected.id],
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      textInputAction: TextInputAction.next,
-                      decoration: InputDecoration(
-                        labelText: _loadLabel(selected.targetLoadBasis),
-                      ),
-                      onChanged: (value) => _loads[selected.id] = value,
-                    ),
-                    TextFormField(
-                      key: ValueKey('reps-${selected.id}'),
-                      initialValue: _reps[selected.id],
-                      keyboardType: TextInputType.number,
-                      textInputAction: TextInputAction.done,
-                      decoration: const InputDecoration(labelText: 'Reps'),
-                      onChanged: (value) => _reps[selected.id] = value,
-                      onEditingComplete: () =>
-                          FocusManager.instance.primaryFocus?.unfocus(),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                ExpansionTile(
-                  tilePadding: EdgeInsets.zero,
-                  childrenPadding: EdgeInsets.zero,
-                  title: Row(
-                    children: [
-                      const Expanded(child: Text('More for this set')),
-                      Text(
-                        'RPE',
-                        style: Theme.of(context).textTheme.labelMedium,
-                      ),
-                    ],
-                  ),
-                  subtitle: Text(
-                    _rpes[selected.id]?.isNotEmpty == true
-                        ? 'RPE ${_rpes[selected.id]}'
-                        : _warmup
-                        ? 'Warm-up set'
-                        : 'RPE and set type',
-                  ),
-                  children: [
-                    _RpeSelector(
-                      value: int.tryParse(_rpes[selected.id] ?? ''),
-                      onChanged: (value) => setState(
-                        () => _rpes[selected.id] = value?.toString() ?? '',
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    DropdownButtonFormField<String>(
-                      isExpanded: true,
-                      initialValue: _warmup ? 'warmup' : 'working',
-                      decoration: const InputDecoration(labelText: 'Set type'),
-                      items: const [
-                        DropdownMenuItem(
-                          value: 'working',
-                          child: Text('Working'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'warmup',
-                          child: Text('Warm-up'),
-                        ),
-                      ],
-                      onChanged: ui.isBusy
-                          ? null
-                          : (value) =>
-                                setState(() => _warmup = value == 'warmup'),
-                    ),
-                    if (launch.state.warmupRecommendation != null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: _WarmupCard(
-                          recommendation: launch.state.warmupRecommendation!,
-                          onAccept: ui.isBusy
-                              ? null
-                              : () => ref
-                                    .read(provider.notifier)
-                                    .chooseWarmup(B02WarmupDecision.accepted),
-                          onSkip: ui.isBusy
-                              ? null
-                              : () => ref
-                                    .read(provider.notifier)
-                                    .chooseWarmup(B02WarmupDecision.skipped),
-                          onEdit: ui.isBusy
-                              ? null
-                              : () => _editWarmup(
-                                  provider,
-                                  launch.state.warmupRecommendation!,
-                                ),
-                        ),
-                      ),
-                  ],
-                ),
-              ],
-            ),
+        ],
+        if (!hasOpenRest && exerciseComplete)
+          _PrescribedWorkCompleteCard(
+            plannedSets: selected.plannedSets,
+            workingSets: _workingSetCount(launch.state, selected),
           ),
-          const SizedBox(height: 10),
-          SizedBox(
-            width: double.infinity,
-            child: B05ActionButton(
-              label: _warmup
-                  ? 'Log warm-up set'
-                  : exerciseComplete
-                  ? 'Exercise complete'
-                  : 'Log set',
-              hint: _warmup ? 'Save this warm-up set' : 'Save this set',
-              onPressed:
-                  ui.isBusy ||
-                      _isSubmittingSet ||
-                      !selected.hasCanonicalExercise ||
-                      (!_warmup && exerciseComplete)
-                  ? null
-                  : () => _record(provider, selected),
-            ),
-          ),
-          if (performedSets.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            R07CPerformedSetList(title: 'Logged sets', sets: performedSets),
-          ],
+        if (!hasOpenRest && !exerciseComplete)
           if (isQuick) ...[
-            const SizedBox(height: 10),
-            B05ActionButton(
-              label: 'Add set',
-              icon: Icons.add_rounded,
-              emphasis: B05ActionEmphasis.secondary,
-              onPressed: ui.isBusy ? null : () => _prepareExtraSet(selected),
-            ),
-            const SizedBox(height: 4),
             B05ActionButton(
               label: 'Add exercise',
               icon: Icons.playlist_add_rounded,
               emphasis: B05ActionEmphasis.secondary,
-              onPressed: ui.isBusy ? null : () => _openExercisePicker(provider),
+              onPressed: ui.isBusy || !groupSafe
+                  ? null
+                  : () => _openExercisePicker(provider),
             ),
           ] else
             Align(
               alignment: Alignment.centerLeft,
               child: TextButton.icon(
-                onPressed: ui.isBusy
+                onPressed: ui.isBusy || !groupSafe
                     ? null
                     : () => ref.read(provider.notifier).skipSlot(selected),
                 icon: const Icon(Icons.skip_next_rounded),
                 label: const Text('Skip exercise'),
               ),
             ),
-        ],
-        ExpansionTile(
-          tilePadding: EdgeInsets.zero,
-          title: const Text('Form cues'),
-          children: const [
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Padding(
-                padding: EdgeInsets.only(bottom: 12),
-                child: Text(
-                  'Open exercise details for setup and technique guidance.',
-                ),
-              ),
-            ),
-          ],
-        ),
+        B07NextExerciseContext(currentSlot: selected, nextSlot: nextSlot),
         const SizedBox(height: 12),
-        _GroupProgressCard(launch: launch, slots: slots),
-        const SizedBox(height: 12),
-        SizedBox(
-          width: double.infinity,
-          child: B05ActionButton(
-            label: isQuick ? 'Finish workout' : 'Review and finish',
-            emphasis: B05ActionEmphasis.secondary,
-            onPressed: ui.isBusy ? null : () => _openSummary(provider),
-          ),
-        ),
+        _GroupProgressCard(launch: launch, slots: slots, selected: selected),
       ],
     );
   }
@@ -431,12 +533,52 @@ class _B02StrengthPlayerScreenState
     B02ExecutionDraftState state,
     B02StrengthExecutionSlot slot,
   ) {
-    final performed = state.performedExercises.where(
-      (exercise) => exercise.id == 'performed:${slot.id}',
+    final performed = _performedForSlot(state, slot);
+    return performed?.actualExerciseNameSnapshot ?? slot.exerciseNameSnapshot;
+  }
+
+  String? _actualExerciseId(
+    B02ExecutionDraftState state,
+    B02StrengthExecutionSlot slot,
+  ) {
+    return _performedForSlot(state, slot)?.actualExerciseId ?? slot.exerciseId;
+  }
+
+  B02PerformedExerciseDraft? _performedForSlot(
+    B02ExecutionDraftState state,
+    B02StrengthExecutionSlot slot,
+  ) {
+    for (final exercise in state.performedExercises) {
+      final direct = exercise.id == 'performed:${slot.id}';
+      final sameFrozenSlot =
+          exercise.sourceExercisePrescriptionId == slot.prescriptionId &&
+          exercise.groupRoundOrdinal == slot.roundOrdinal &&
+          exercise.groupMemberOrdinal == slot.memberOrdinal;
+      if (direct || sameFrozenSlot) return exercise;
+    }
+    return null;
+  }
+
+  B02GroupExecutionIntegrity _groupIntegrity(
+    B02ExecutionDraftState state,
+    B02StrengthExecutionSlot slot,
+    Iterable<B02StrengthExecutionSlot> slots,
+  ) {
+    final currentPosition = B02GroupExecutionIntegrity.checkCurrentPosition(
+      state: state,
+      slots: slots,
     );
-    return performed.isEmpty
-        ? (_substitutionNames[slot.id] ?? slot.exerciseNameSnapshot)
-        : performed.first.actualExerciseNameSnapshot;
+    if (!currentPosition.isValid) return currentPosition;
+    final groupId = slot.groupId;
+    if (groupId == null) return const B02GroupExecutionIntegrity.valid();
+    for (final group in state.groups) {
+      if (group.id == groupId) {
+        return B02GroupExecutionIntegrity.check(group: group, slots: slots);
+      }
+    }
+    return const B02GroupExecutionIntegrity.invalid(
+      ConsumerCopy.groupDetailsUnavailable,
+    );
   }
 
   String _loadLabel(B02LoadBasis? basis) => switch (basis) {
@@ -495,6 +637,7 @@ class _B02StrengthPlayerScreenState
   bool _hasUsefulTargetContext(
     B02ExecutionDraftState state,
     B02StrengthExecutionSlot slot,
+    B02PreviousExercisePerformance? previousPerformance,
   ) {
     final recommendation = state.targetRecommendations[slot.id];
     final override = state.targetOverrides[slot.id];
@@ -517,13 +660,165 @@ class _B02StrengthPlayerScreenState
           slot.targetRepsMax,
       rpe: override?.targetRpe ?? recommendation?.targetRpe ?? slot.targetRpe,
     );
-    final last = r07cFormatLastPerformance(
-      loadKg: _asDouble(recommendation?.completeness['previousLoadKg']),
-      loadBasis: recommendation?.loadBasis,
-      reps: _asInt(recommendation?.completeness['previousReps']),
-      rpe: _asInt(recommendation?.completeness['previousRpe']),
+    return usefulTarget ||
+        B02PreviousPerformancePresentation.lastTime(previousPerformance) !=
+            null;
+  }
+
+  void _syncInputIdentity(
+    B02StrengthExecutionSlot slot,
+    String? actualExerciseId,
+  ) {
+    final next = _B02InputIdentity(
+      slotId: slot.id,
+      actualExerciseId: actualExerciseId,
     );
-    return usefulTarget || last != null;
+    final previous = _inputIdentities[slot.id];
+    if (previous != null && previous != next) {
+      final oldReps = _repControllers.remove(slot.id);
+      final oldLoad = _loadControllers.remove(slot.id);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        oldReps?.dispose();
+        oldLoad?.dispose();
+      });
+      _rpes.remove(slot.id);
+      _extraSetReady.remove(slot.id);
+      _pendingTechniques.removeWhere((key, _) => key.startsWith('${slot.id}:'));
+      _editedInputFields.removeWhere((field) => field.slotId == slot.id);
+    }
+    _inputIdentities[slot.id] = next;
+  }
+
+  void _markInputEdited(String slotId, B02PreviousPerformanceInputField field) {
+    _editedInputFields.add((slotId: slotId, field: field));
+  }
+
+  B02PreviousPerformanceRequestKey? _previousPerformanceKey(
+    B02ExecutionDraftState state,
+    B02StrengthExecutionSlot slot,
+    B02TechniqueFields technique,
+  ) {
+    final actualExerciseId = _actualExerciseId(state, slot)?.trim();
+    if (actualExerciseId == null || actualExerciseId.isEmpty) return null;
+    final recommendation = state.targetRecommendations[slot.id];
+    final override = state.targetOverrides[slot.id];
+    final loadBasis =
+        override?.loadBasis ??
+        recommendation?.loadBasis ??
+        slot.targetLoadBasis;
+    if (loadBasis == null) return null;
+    return B02PreviousPerformanceRequestKey(
+      slotId: slot.id,
+      actualExerciseId: actualExerciseId,
+      role: _warmup ? B02SetRole.warmup : B02SetRole.working,
+      loadBasis: loadBasis,
+      effortMode: technique.effortMode,
+      endedAtFailure: technique.endedAtFailure,
+      assistanceMode: technique.assistanceMode,
+      assistanceKg: technique.assistanceKg,
+      tempoEccentricSeconds: technique.tempoEccentricSeconds,
+      tempoBottomPauseSeconds: technique.tempoBottomPauseSeconds,
+      tempoConcentricSeconds: technique.tempoConcentricSeconds,
+      tempoLockoutPauseSeconds: technique.tempoLockoutPauseSeconds,
+      pausedRepPosition: technique.pausedRepPosition,
+      pausedRepSeconds: technique.pausedRepSeconds,
+      hasTechniqueSegments: technique.segments.isNotEmpty,
+    );
+  }
+
+  String _pendingTechniqueKey(
+    B02StrengthExecutionSlot slot,
+    int currentSet, {
+    required bool isWarmup,
+  }) => '${slot.id}:$currentSet:${isWarmup ? 'warmup' : 'working'}';
+
+  B02TechniqueFields _pendingTechniqueFor(
+    B02StrengthExecutionSlot slot,
+    int currentSet,
+  ) {
+    final key = _pendingTechniqueKey(slot, currentSet, isWarmup: _warmup);
+    final prescriptionOrdinal = slot.setPrescriptionOrdinal ?? currentSet - 1;
+    return _pendingTechniques.putIfAbsent(
+      key,
+      () => _warmup
+          ? B02TechniqueFields()
+          : slot.techniqueForSet(prescriptionOrdinal) ??
+                B02TechniqueFields(
+                  effortMode: slot.effortMode,
+                  endedAtFailure: slot.endedAtFailure,
+                ),
+    );
+  }
+
+  void _schedulePreviousPerformanceLookup(
+    B02PreviousPerformanceRequestKey key,
+  ) {
+    final query = B02PreviousPerformanceQuery(
+      canonicalExerciseId: key.actualExerciseId,
+      setContext: B02PreviousPerformanceSetContext(
+        role: key.role,
+        loadBasis: key.loadBasis,
+        effortMode: key.effortMode,
+        endedAtFailure: key.endedAtFailure,
+        assistanceMode: key.assistanceMode,
+        assistanceKg: key.assistanceKg,
+        tempoEccentricSeconds: key.tempoEccentricSeconds,
+        tempoBottomPauseSeconds: key.tempoBottomPauseSeconds,
+        tempoConcentricSeconds: key.tempoConcentricSeconds,
+        tempoLockoutPauseSeconds: key.tempoLockoutPauseSeconds,
+        pausedRepPosition: key.pausedRepPosition,
+        pausedRepSeconds: key.pausedRepSeconds,
+        hasTechniqueSegments: key.hasTechniqueSegments,
+      ),
+      asOfUtc: (widget.nowUtc?.call() ?? DateTime.now()).toUtc(),
+    );
+    unawaited(
+      _previousLookup.request(
+        key: key,
+        query: query,
+        onAccepted: (result) {
+          if (!mounted || _previousLookup.activeKey != key) return;
+          _applySafePrefill(key, result);
+          if (mounted) setState(() {});
+        },
+      ),
+    );
+  }
+
+  void _applySafePrefill(
+    B02PreviousPerformanceRequestKey key,
+    B02PreviousExercisePerformance result,
+  ) {
+    if (!_previousLookup.claimPrefill(key)) return;
+    final prefill = result.safePrefill;
+    if (result.status != B02PreviousPerformanceStatus.available ||
+        prefill == null ||
+        prefill.loadBasis != key.loadBasis ||
+        prefill.role != key.role ||
+        (_loggedSetCounts[key.slotId] ?? 0) != 0 ||
+        _inputIdentities[key.slotId]?.actualExerciseId !=
+            key.actualExerciseId) {
+      return;
+    }
+    final loadController = _loadControllers[key.slotId];
+    final repsController = _repControllers[key.slotId];
+    if (loadController != null &&
+        !_editedInputFields.contains((
+          slotId: key.slotId,
+          field: B02PreviousPerformanceInputField.load,
+        )) &&
+        loadController.text.trim().isEmpty &&
+        prefill.loadKg != null) {
+      loadController.text = prefill.loadKg.toString();
+    }
+    if (repsController != null &&
+        !_editedInputFields.contains((
+          slotId: key.slotId,
+          field: B02PreviousPerformanceInputField.reps,
+        )) &&
+        repsController.text.trim().isEmpty) {
+      repsController.text = prefill.reps.toString();
+    }
   }
 
   void _applySuggestedTarget(
@@ -533,62 +828,46 @@ class _B02StrengthPlayerScreenState
     final recommendation = state.targetRecommendations[slot.id];
     if (recommendation == null) return;
     setState(() {
-      _loads[slot.id] = recommendation.recommendedLoadKg?.toString() ?? '';
-      _reps[slot.id] = recommendation.targetRepsMin?.toString() ?? '';
+      _loadControllerFor(slot).text =
+          recommendation.recommendedLoadKg?.toString() ?? '';
+      _repControllerFor(slot).text =
+          recommendation.targetRepsMin?.toString() ?? '';
     });
     FocusManager.instance.primaryFocus?.unfocus();
   }
 
-  static double? _asDouble(Object? value) => switch (value) {
-    num number => number.toDouble(),
-    _ => null,
-  };
-
-  static int? _asInt(Object? value) => switch (value) {
-    int number => number,
-    num number => number.toInt(),
-    _ => null,
-  };
-
-  bool _hasOpenRest(
-    B02ExecutionDraftState state,
-    B02StrengthExecutionSlot slot,
-  ) {
-    return state.restPeriods.any(
-      (period) =>
-          period.endedAtUtc == null && b02RestPeriodBelongsToSlot(period, slot),
-    );
+  bool _hasOpenRest(B02ExecutionDraftState state) {
+    // B02 permits exactly one open period per draft. The current cursor may
+    // already have advanced to the next member/slot, so filtering by that
+    // cursor would hide a valid rest belonging to the completed slot.
+    return state.restPeriods.any((period) => period.endedAtUtc == null);
   }
 
   static String _groupContext(B02StrengthExecutionSlot slot) {
     if (slot.groupType == null) return 'Standalone exercise';
-    final type = switch (slot.groupType!) {
-      B02GroupType.superset => 'Superset',
-      B02GroupType.circuit => 'Circuit',
-      B02GroupType.giantSet => 'Giant set',
-    };
+    final type = b02ExecutionGroupTypeLabel(slot.groupType!);
     final name = slot.groupLabel?.trim().isNotEmpty == true
         ? slot.groupLabel!.trim()
         : type;
-    return '$name · Round ${(slot.roundOrdinal ?? 0) + 1} · Exercise ${(slot.memberOrdinal ?? 0) + 1}';
+    return '$name · Round ${(slot.roundOrdinal ?? 0) + 1} · Member ${(slot.memberOrdinal ?? 0) + 1}';
   }
 
   Widget _buildRestCard(
     dynamic provider,
     B02StrengthExecutionUiState ui,
     B02StrengthExecutionLaunch launch,
-    B02StrengthExecutionSlot selected,
+    B02StrengthExecutionSlot nextSlot,
   ) => _RestCard(
-    slot: selected,
+    slot: nextSlot,
     state: launch.state,
     onBegin: ui.isBusy
         ? null
-        : () => ref.read(provider.notifier).beginRest(selected),
+        : () => ref.read(provider.notifier).beginRest(nextSlot),
     onCustom: ui.isBusy
         ? null
         : (seconds) => ref
               .read(provider.notifier)
-              .beginRest(selected, selectedSeconds: seconds),
+              .beginRest(nextSlot, selectedSeconds: seconds),
     onExtend: ui.isBusy
         ? null
         : (periodId) =>
@@ -605,11 +884,27 @@ class _B02StrengthPlayerScreenState
 
   Future<void> _record(dynamic provider, B02StrengthExecutionSlot slot) async {
     if (_isSubmittingSet) return;
-    final reps = int.tryParse(_reps[slot.id] ?? '');
+    final roleWasWarmup = _warmup;
+    final reps = int.tryParse(_repControllerFor(slot).text);
     if (reps == null || reps < 1) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Enter positive actual repetitions.')),
+        const SnackBar(
+          content: Text('Enter your completed reps to log this set.'),
+        ),
       );
+      return;
+    }
+    final currentLaunch = launchForProvider(provider);
+    final currentSet = currentLaunch == null
+        ? 1
+        : _workingSetCount(currentLaunch.state, slot) + 1;
+    final technique = _pendingTechniqueFor(slot, currentSet);
+    try {
+      B02RichSetValidator.validateTechnique(technique, headerReps: reps);
+    } on B02ValidationException catch (error) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
       return;
     }
     setState(() => _isSubmittingSet = true);
@@ -618,30 +913,45 @@ class _B02StrengthPlayerScreenState
       await controller.recordSet(
         slot: slot,
         reps: reps,
-        loadKg: double.tryParse(_loads[slot.id] ?? ''),
+        loadKg: double.tryParse(_loadControllerFor(slot).text),
         actualLoadBasis: slot.targetLoadBasis,
         rpe: int.tryParse(_rpes[slot.id] ?? ''),
-        role: _warmup ? B02SetRole.warmup : B02SetRole.working,
-        actualExerciseId: _substitutionIds[slot.id],
-        actualExerciseNameSnapshot: _substitutionNames[slot.id],
-        substitutionReason: _substitutionIds[slot.id] == null
-            ? null
-            : 'User-selected substitution',
+        role: roleWasWarmup ? B02SetRole.warmup : B02SetRole.working,
+        startRestAfterRecord: !roleWasWarmup,
+        technique: technique,
       );
       if (!mounted) return;
       final saved = ref.read(provider);
       if (saved.status != B02StrengthExecutionStatus.failure &&
           saved.status != B02StrengthExecutionStatus.recovery) {
         unawaited(IndiFitHaptics.confirmation());
-        if (!_warmup) {
-          await controller.beginRest(slot);
+        final afterSave = ref.read(provider);
+        final cursorLaunch = afterSave.launch;
+        final cursor = cursorLaunch == null
+            ? null
+            : B02ExecutionProgression.cursorSlot(
+                state: cursorLaunch.state,
+                slots: afterSave.slots,
+              );
+        if (mounted && cursor != null) {
+          setState(() => _selectedSlotId = cursor.id);
         }
-        if (mounted && launchForProvider(provider)?.occurrenceId == null) {
+        final currentLaunch = launchForProvider(provider);
+        final currentExecution = currentLaunch == null
+            ? null
+            : _executionFor(currentLaunch);
+        if (mounted && currentExecution is QuickWorkoutExecutionContext) {
           setState(() {
-            _reps[slot.id] = slot.targetRepsMin?.toString() ?? '';
+            _repControllerFor(slot).text = _initialRepsFor(slot) ?? '';
             _rpes[slot.id] = '';
             _warmup = false;
+            _extraSetReady.remove(slot.id);
+            _pendingTechniques.remove(
+              _pendingTechniqueKey(slot, currentSet, isWarmup: roleWasWarmup),
+            );
           });
+        } else if (mounted && _extraSetReady.remove(slot.id)) {
+          setState(() {});
         }
       }
     } finally {
@@ -654,11 +964,284 @@ class _B02StrengthPlayerScreenState
 
   void _prepareExtraSet(B02StrengthExecutionSlot slot) {
     setState(() {
-      _reps[slot.id] = slot.targetRepsMin?.toString() ?? '';
+      _extraSetReady.add(slot.id);
+      _repControllerFor(slot).text = _initialRepsFor(slot) ?? '';
       _rpes[slot.id] = '';
       _warmup = false;
     });
     FocusManager.instance.primaryFocus?.unfocus();
+  }
+
+  TextEditingController _loadControllerFor(B02StrengthExecutionSlot slot) {
+    return _loadControllers.putIfAbsent(
+      slot.id,
+      () => TextEditingController(text: slot.targetLoadKg?.toString() ?? ''),
+    );
+  }
+
+  TextEditingController _repControllerFor(B02StrengthExecutionSlot slot) {
+    return _repControllers.putIfAbsent(
+      slot.id,
+      () => TextEditingController(text: _initialRepsFor(slot) ?? ''),
+    );
+  }
+
+  String? _initialRepsFor(B02StrengthExecutionSlot slot) {
+    if (!_hasUsefulTarget(slot) || slot.targetRepsMin == null) return null;
+    return slot.targetRepsMin.toString();
+  }
+
+  bool _hasUsefulTarget(B02StrengthExecutionSlot slot) {
+    return r07cHasUsefulTarget(
+      loadKg: slot.targetLoadKg,
+      loadBasis: slot.targetLoadBasis,
+      minReps: slot.targetRepsMin,
+      maxReps: slot.targetRepsMax,
+      rpe: slot.targetRpe,
+    );
+  }
+
+  Future<void> _editLoggedSet(
+    dynamic provider,
+    B02StrengthExecutionSlot slot,
+    B02PerformedSet set,
+  ) async {
+    if (!_mutatingSetIds.add(set.id)) return;
+    try {
+      // The row action may be tapped while the pending-set field still owns
+      // the keyboard. Close that transient input surface before presenting
+      // the edit sheet so its safe-area inset is measured from the viewport.
+      FocusManager.instance.primaryFocus?.unfocus();
+      final repsController = TextEditingController(
+        text: set.actualReps?.toString() ?? '',
+      );
+      final loadController = TextEditingController(
+        text: set.actualLoadKg?.toString() ?? '',
+      );
+      final result = await showIndiFitBottomSheet<_B02LoggedSetEditValues>(
+        context: context,
+        semanticLabel: 'Edit set ${set.ordinal + 1}',
+        builder: (sheetContext) {
+          int? rpe = set.actualRpe;
+          String? repsError;
+          String? loadError;
+          String? techniqueError;
+          var technique = set.technique;
+          final canEditReps = set.technique.segments.isEmpty;
+          return StatefulBuilder(
+            builder: (context, setModalState) {
+              void save() {
+                final reps = int.tryParse(repsController.text.trim());
+                final rawLoad = loadController.text.trim();
+                final load = rawLoad.isEmpty ? null : double.tryParse(rawLoad);
+                final nextRepsError = reps == null || reps < 1
+                    ? 'Enter at least 1 rep.'
+                    : null;
+                final nextLoadError =
+                    rawLoad.isNotEmpty && (load == null || load < 0)
+                    ? 'Enter a valid load.'
+                    : null;
+                if (nextRepsError != null || nextLoadError != null) {
+                  setModalState(() {
+                    repsError = nextRepsError;
+                    loadError = nextLoadError;
+                  });
+                  return;
+                }
+                try {
+                  B02RichSetValidator.validateTechnique(
+                    technique,
+                    headerReps: reps,
+                  );
+                } on B02ValidationException catch (error) {
+                  setModalState(() => techniqueError = error.message);
+                  return;
+                }
+                Navigator.of(sheetContext).pop(
+                  _B02LoggedSetEditValues(
+                    reps: reps!,
+                    loadKg: load,
+                    rpe: rpe,
+                    technique: technique,
+                  ),
+                );
+              }
+
+              return Padding(
+                padding: const EdgeInsets.only(
+                  left: 20,
+                  right: 20,
+                  top: 12,
+                  bottom: 20,
+                ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        'Edit set ${set.ordinal + 1}',
+                        style: B05Typography.title(context),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        set.role == B02SetRole.warmup
+                            ? 'Warm-up set'
+                            : 'Logged set',
+                        style: B05Typography.caption(context),
+                      ),
+                      const SizedBox(height: 16),
+                      IndiFitResponsiveFieldGroup(
+                        spacing: 10,
+                        breakpoint: 350,
+                        children: [
+                          TextFormField(
+                            controller: loadController,
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
+                            decoration: InputDecoration(
+                              labelText: 'Load (kg)',
+                              helperText:
+                                  set.actualLoadBasis == B02LoadBasis.bodyweight
+                                  ? 'Bodyweight'
+                                  : null,
+                              errorText: loadError,
+                            ),
+                          ),
+                          TextFormField(
+                            controller: repsController,
+                            readOnly: !canEditReps,
+                            keyboardType: TextInputType.number,
+                            decoration: InputDecoration(
+                              labelText: 'Reps',
+                              helperText: canEditReps
+                                  ? null
+                                  : 'Advanced set details are kept together.',
+                              errorText: repsError,
+                            ),
+                          ),
+                        ],
+                      ),
+                      ExpansionTile(
+                        tilePadding: EdgeInsets.zero,
+                        childrenPadding: EdgeInsets.zero,
+                        title: const Text('More for this set'),
+                        subtitle: const Text('Optional set details'),
+                        children: [
+                          DropdownButtonFormField<int>(
+                            isExpanded: true,
+                            initialValue: rpe,
+                            decoration: const InputDecoration(labelText: 'RPE'),
+                            items: [
+                              const DropdownMenuItem<int>(
+                                value: null,
+                                child: Text('Not set'),
+                              ),
+                              for (var effort = 1; effort <= 10; effort++)
+                                DropdownMenuItem(
+                                  value: effort,
+                                  child: Text('$effort'),
+                                ),
+                            ],
+                            onChanged: (value) =>
+                                setModalState(() => rpe = value),
+                          ),
+                          const SizedBox(height: 4),
+                          const Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              'RPE is optional. RPE 8 ≈ about 2 good reps left.',
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          B02ExecutionAdvancedControls(
+                            initialValue: technique,
+                            headerReps: int.tryParse(repsController.text),
+                            onChanged: (value) => setModalState(() {
+                              technique = value;
+                              techniqueError = null;
+                            }),
+                          ),
+                        ],
+                      ),
+                      if (techniqueError != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Text(
+                            techniqueError!,
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.error,
+                            ),
+                          ),
+                        ),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          TextButton(
+                            onPressed: () => Navigator.of(sheetContext).pop(),
+                            child: const Text('Cancel'),
+                          ),
+                          const SizedBox(width: 8),
+                          FilledButton(
+                            onPressed: save,
+                            child: const Text('Save changes'),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      );
+      repsController.dispose();
+      loadController.dispose();
+      if (result == null || !mounted) return;
+      final loadBasis = result.loadKg == null
+          ? set.actualLoadBasis == B02LoadBasis.bodyweight
+                ? B02LoadBasis.bodyweight
+                : null
+          : set.actualLoadBasis ??
+                slot.targetLoadBasis ??
+                B02LoadBasis.totalExternal;
+      final saved = await ref
+          .read(provider.notifier)
+          .editSet(
+            slot: slot,
+            setId: set.id,
+            reps: result.reps,
+            loadKg: result.loadKg,
+            actualLoadBasis: loadBasis,
+            rpe: result.rpe,
+            technique: result.technique,
+          );
+      if (saved && mounted) {
+        showIndiFitSuccessFeedback(context, 'Set updated');
+      }
+    } finally {
+      _mutatingSetIds.remove(set.id);
+    }
+  }
+
+  Future<void> _deleteLoggedSet(
+    dynamic provider,
+    B02StrengthExecutionSlot slot,
+    B02PerformedSet set,
+  ) async {
+    if (!_mutatingSetIds.add(set.id)) return;
+    try {
+      final saved = await ref
+          .read(provider.notifier)
+          .deleteSet(slot: slot, setId: set.id);
+      if (saved && mounted) {
+        showIndiFitSuccessFeedback(context, 'Set deleted');
+      }
+    } finally {
+      _mutatingSetIds.remove(set.id);
+    }
   }
 
   Future<void> _openExercisePicker(dynamic provider) async {
@@ -682,25 +1265,76 @@ class _B02StrengthPlayerScreenState
     }
   }
 
+  Future<void> _openReplacementPicker(
+    dynamic provider,
+    B02StrengthExecutionSlot slot,
+  ) async {
+    final currentLaunch = launchForProvider(provider);
+    if (currentLaunch == null) return;
+    final execution = _executionFor(currentLaunch);
+    final actualExerciseId = _actualExerciseId(currentLaunch.state, slot);
+    if (actualExerciseId == null || !slot.hasCanonicalExercise) return;
+    final actualExerciseName = _actualExerciseName(currentLaunch.state, slot);
+    final target = execution is PlannedWorkoutExecutionContext
+        ? PlannedExerciseReplacementTarget(
+            draftId: currentLaunch.draftId,
+            scheduledOccurrenceId: execution.occurrenceId,
+            slotId: slot.id,
+            expectedExerciseId: slot.expectedExerciseId ?? slot.exerciseId!,
+            currentPerformedExerciseId: actualExerciseId,
+            currentExerciseNameSnapshot: actualExerciseName,
+          )
+        : QuickExerciseReplacementTarget(
+            draftId: currentLaunch.draftId,
+            slotId: slot.id,
+            currentPerformedExerciseId: actualExerciseId,
+            currentExerciseNameSnapshot: actualExerciseName,
+          );
+    final authority =
+        ref.read(provider.notifier) as CanonicalExerciseReplacementAuthority;
+    final compatibility = await authority.readCompatibility(target: target);
+    if (!mounted) return;
+    final result = await showExerciseReplacementPicker(
+      context: context,
+      selectionContext: ExerciseReplacementPickerContext(
+        target: target,
+        compatibility: compatibility,
+      ),
+      onReplacementCommit: authority.commit,
+    );
+    if (result?.committed == true && mounted) {
+      showIndiFitSuccessFeedback(context, 'Exercise replaced');
+    }
+  }
+
   Future<void> _showExerciseActions(
     dynamic provider,
     B02StrengthExecutionSlot slot,
   ) async {
-    final isQuick = launchForProvider(provider)?.occurrenceId == null;
+    final currentLaunch = launchForProvider(provider);
+    final currentExecution = currentLaunch == null
+        ? null
+        : _executionFor(currentLaunch);
+    final isQuick = currentExecution is QuickWorkoutExecutionContext;
     final hasLoggedSets = _hasLoggedSet(
       launchForProvider(provider)?.state ?? widget.launch.state,
       slot,
     );
-    final action = await showModalBottomSheet<String>(
+    final action = await showIndiFitBottomSheet<String>(
       context: context,
-      useSafeArea: true,
+      semanticLabel: 'Exercise options',
       builder: (sheetContext) => SafeArea(
         child: Wrap(
           children: [
             ListTile(
-              title: Text(slot.exerciseNameSnapshot),
+              title: Text(
+                _actualExerciseName(
+                  launchForProvider(provider)?.state ?? widget.launch.state,
+                  slot,
+                ),
+              ),
               subtitle: Text(
-                isQuick ? 'Quick Workout exercise' : 'Planned exercise',
+                isQuick ? 'Quick workout exercise' : 'Planned exercise',
               ),
             ),
             if (isQuick)
@@ -715,18 +1349,24 @@ class _B02StrengthPlayerScreenState
                 title: const Text('Remove exercise'),
                 onTap: () => Navigator.pop(sheetContext, 'remove'),
               ),
-            if (!isQuick && !hasLoggedSets)
-              ListTile(
-                leading: const Icon(Icons.swap_horiz_rounded),
-                title: const Text('Substitute exercise'),
-                onTap: () => Navigator.pop(sheetContext, 'substitute'),
+            ListTile(
+              leading: const Icon(Icons.swap_horiz_rounded),
+              title: const Text('Replace exercise'),
+              subtitle: Text(
+                hasLoggedSets
+                    ? 'Already logged sets stay with the current exercise.'
+                    : isQuick
+                    ? 'Change this exercise in your ${ConsumerCopy.quickWorkoutAction}.'
+                    : 'Change this exercise for the remaining workout.',
               ),
+              onTap: () => Navigator.pop(sheetContext, 'replace'),
+            ),
             if (!isQuick && hasLoggedSets)
               const ListTile(
                 leading: Icon(Icons.lock_outline_rounded),
-                title: Text('Substitution locked'),
+                title: Text('Logged sets are protected'),
                 subtitle: Text(
-                  'A different exercise cannot replace sets already logged.',
+                  'They stay attached to the exercise you logged.',
                 ),
               ),
           ],
@@ -766,21 +1406,8 @@ class _B02StrengthPlayerScreenState
       }
       return;
     }
-    if (action == 'substitute') {
-      final exercise = await showModalBottomSheet<Exercise>(
-        context: context,
-        isScrollControlled: true,
-        useSafeArea: true,
-        builder: (_) => const QuickExercisePicker(),
-      );
-      if (exercise?.stableId == null || !mounted) return;
-      setState(() {
-        _substitutionIds[slot.id] = exercise!.stableId;
-        _substitutionNames[slot.id] = exercise.name;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        indiFitSuccessSnackBar('Substitution ready for the next set'),
-      );
+    if (action == 'replace') {
+      await _openReplacementPicker(provider, slot);
     }
   }
 
@@ -790,33 +1417,53 @@ class _B02StrengthPlayerScreenState
     if (!mounted) return;
     final launch = ref.read(provider).launch;
     if (launch == null) return;
-    await context.push('/b02-strength-summary', extra: {'launch': launch});
-    if (mounted) controller.resumeElapsed();
+    await context.push(
+      '/b02-strength-summary',
+      extra: WorkoutExecutionRouteData(_executionFor(launch)),
+    );
+    if (mounted) unawaited(controller.resumeElapsed());
+  }
+
+  WorkoutExecutionContext _executionFor(B02StrengthExecutionLaunch launch) {
+    final origin =
+        widget.executionContext ??
+        WorkoutExecutionContext.fromLaunch(widget.launch);
+    return origin.rebind(launch);
   }
 
   Future<void> _closeWorkout(dynamic provider) async {
-    final close = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Save and close workout?'),
-        content: const Text(
-          'Your sets and elapsed workout time will be saved so you can resume later.',
+    if (_isClosing) return;
+    _isClosing = true;
+    try {
+      final close = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Save and close workout?'),
+          content: const Text(
+            'Your sets and elapsed workout time will be saved so you can resume later.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Keep training'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Save and close'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Keep training'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Save and close'),
-          ),
-        ],
-      ),
-    );
-    if (close != true || !mounted) return;
-    await ref.read(provider.notifier).pauseElapsed();
-    if (mounted) context.pop();
+      );
+      if (close != true || !mounted) return;
+      final paused = await ref.read(provider.notifier).pauseElapsed();
+      if (!paused || !mounted) return;
+      setState(() => _allowPop = true);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) context.pop();
+      });
+    } finally {
+      if (!_allowPop) _isClosing = false;
+    }
   }
 
   Future<void> _overrideTarget(
@@ -911,8 +1558,8 @@ class _B02StrengthPlayerScreenState
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Discard draft?'),
-        content: const Text('This removes only the unfinished B02 draft.'),
+        title: const Text('Discard workout?'),
+        content: const Text('This removes only this unfinished workout.'),
         actions: [
           TextButton(
             onPressed: () => context.pop(false),
@@ -935,11 +1582,42 @@ class _B02StrengthPlayerScreenState
 class _GroupProgressCard extends StatelessWidget {
   final B02StrengthExecutionLaunch launch;
   final List<B02StrengthExecutionSlot> slots;
+  final B02StrengthExecutionSlot selected;
 
-  const _GroupProgressCard({required this.launch, required this.slots});
+  const _GroupProgressCard({
+    required this.launch,
+    required this.slots,
+    required this.selected,
+  });
 
   @override
   Widget build(BuildContext context) {
+    if (launch.state.groups.isEmpty && selected.groupId == null) {
+      final completed = launch.state.performedExercises
+          .where((exercise) => exercise.status == 'completed')
+          .length;
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Workout progress',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 6),
+              Text('$completed of ${slots.length} exercises complete'),
+              const SizedBox(height: 10),
+            ],
+          ),
+        ),
+      );
+    }
+    final cursorIntegrity = B02GroupExecutionIntegrity.checkCurrentPosition(
+      state: launch.state,
+      slots: slots,
+    );
     final completed = launch.state.performedExercises
         .where((exercise) => exercise.status == 'completed')
         .length;
@@ -955,29 +1633,225 @@ class _GroupProgressCard extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text('$completed of ${slots.length} exercises complete'),
-            const SizedBox(height: 10),
-            for (final group in launch.state.groups) Text(_groupLabel(group)),
+            if (!cursorIntegrity.isValid)
+              const ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(Icons.info_outline_rounded),
+                title: Text('Exercise details unavailable'),
+                subtitle: Text(ConsumerCopy.groupDetailsUnavailable),
+              ),
+            if (selected.groupId != null &&
+                !launch.state.groups.any(
+                  (group) => group.id == selected.groupId,
+                ))
+              const ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(Icons.info_outline_rounded),
+                title: Text('Exercise details unavailable'),
+                subtitle: Text(ConsumerCopy.groupDetailsUnavailable),
+              ),
+            for (final group in launch.state.groups) ...[
+              const SizedBox(height: 10),
+              _buildGroup(context, group),
+            ],
           ],
         ),
       ),
     );
   }
 
-  String _groupLabel(B02ExerciseGroup group) {
-    final name =
-        group.label ??
-        switch (group.groupType) {
-          B02GroupType.superset => 'Superset',
-          B02GroupType.circuit => 'Circuit',
-          B02GroupType.giantSet => 'Giant set',
-        };
-    return '$name · ${group.roundCount} ${group.roundCount == 1 ? 'round' : 'rounds'} · ${group.members.length} ${group.members.length == 1 ? 'exercise' : 'exercises'}';
+  Widget _buildGroup(BuildContext context, B02ExerciseGroup group) {
+    final integrity = B02GroupExecutionIntegrity.check(
+      group: group,
+      slots: slots,
+    );
+    if (!integrity.isValid) {
+      return Semantics(
+        container: true,
+        label: 'Exercise details unavailable',
+        child: ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: const Icon(Icons.info_outline_rounded),
+          title: const Text('Exercise details unavailable'),
+          subtitle: Text(integrity.consumerMessage!),
+        ),
+      );
+    }
+    final name = group.label?.trim().isNotEmpty == true
+        ? group.label!.trim()
+        : b02ExecutionGroupTypeLabel(group.groupType);
+    final groupSlots = slots.where((slot) => slot.groupId == group.id);
+    final completeCount = launch.state.performedExercises
+        .where(
+          (exercise) =>
+              exercise.performedExerciseGroupId == group.id &&
+              exercise.status == 'completed',
+        )
+        .length;
+    final expected = group.roundCount * group.members.length;
+    final current = _canonicalCurrentSlot(group);
+    final next = current == null ? null : _nextSlot(group, groupSlots, current);
+    return Semantics(
+      container: true,
+      label:
+          '$name, $completeCount of $expected exercise slots complete'
+          '${current == null ? '' : ', current ${current.exerciseNameSnapshot}'}',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '$name · ${group.roundCount} ${group.roundCount == 1 ? 'round' : 'rounds'}',
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
+          const SizedBox(height: 2),
+          Text('$completeCount of $expected exercise slots complete'),
+          if (current != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              'Current: ${current.exerciseNameSnapshot} · Round ${(current.roundOrdinal ?? 0) + 1}',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
+          if (next != null) ...[
+            const SizedBox(height: 2),
+            Text(
+              'Next: ${next.exerciseNameSnapshot}',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  B02StrengthExecutionSlot? _canonicalCurrentSlot(B02ExerciseGroup group) {
+    final state = launch.state;
+    if (state.currentGroupId != group.id ||
+        state.currentRoundOrdinal == null ||
+        state.currentMemberOrdinal == null) {
+      return null;
+    }
+    for (final slot in slots) {
+      if (slot.groupId == group.id &&
+          slot.roundOrdinal == state.currentRoundOrdinal &&
+          slot.memberOrdinal == state.currentMemberOrdinal) {
+        return slot;
+      }
+    }
+    return null;
+  }
+
+  B02StrengthExecutionSlot? _nextSlot(
+    B02ExerciseGroup group,
+    Iterable<B02StrengthExecutionSlot> groupSlots,
+    B02StrengthExecutionSlot current,
+  ) {
+    final roundSlots = b02GroupRoundSlots(
+      slots: groupSlots,
+      groupId: group.id,
+      roundOrdinal: current.roundOrdinal ?? 0,
+    );
+    final currentIndex = roundSlots.indexWhere(
+      (slot) => slot.memberOrdinal == current.memberOrdinal,
+    );
+    if (currentIndex >= 0 && currentIndex + 1 < roundSlots.length) {
+      return roundSlots[currentIndex + 1];
+    }
+    final nextRound = (current.roundOrdinal ?? 0) + 1;
+    if (nextRound >= group.roundCount) return null;
+    final nextRoundSlots = b02GroupRoundSlots(
+      slots: groupSlots,
+      groupId: group.id,
+      roundOrdinal: nextRound,
+    );
+    return nextRoundSlots.isEmpty ? null : nextRoundSlots.first;
+  }
+}
+
+class _B02LoggedSetEditValues {
+  const _B02LoggedSetEditValues({
+    required this.reps,
+    required this.loadKg,
+    required this.rpe,
+    required this.technique,
+  });
+
+  final int reps;
+  final double? loadKg;
+  final int? rpe;
+  final B02TechniqueFields technique;
+}
+
+@immutable
+class _B02InputIdentity {
+  const _B02InputIdentity({
+    required this.slotId,
+    required this.actualExerciseId,
+  });
+
+  final String slotId;
+  final String? actualExerciseId;
+
+  @override
+  bool operator ==(Object other) {
+    return other is _B02InputIdentity &&
+        other.slotId == slotId &&
+        other.actualExerciseId == actualExerciseId;
+  }
+
+  @override
+  int get hashCode => Object.hash(slotId, actualExerciseId);
+}
+
+class _PrescribedWorkCompleteCard extends StatelessWidget {
+  const _PrescribedWorkCompleteCard({
+    required this.plannedSets,
+    required this.workingSets,
+  });
+
+  final int plannedSets;
+  final int workingSets;
+
+  @override
+  Widget build(BuildContext context) {
+    final success = context.b05Colors.success;
+    return Semantics(
+      container: true,
+      label: 'Planned sets complete',
+      child: B05Surface(
+        tone: B05SurfaceTone.selected,
+        padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(Icons.check_circle_outline_rounded, color: success.foreground),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Planned sets complete',
+                    style: B05Typography.title(context),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '$workingSets of $plannedSets working sets logged. All planned sets are logged.',
+                    style: B05Typography.body(context),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
 class _R07CExecutionHeader extends StatelessWidget {
   const _R07CExecutionHeader({
-    required this.isQuick,
+    required this.executionContext,
     required this.exerciseIndex,
     required this.exerciseCount,
     required this.currentSet,
@@ -985,11 +1859,12 @@ class _R07CExecutionHeader extends StatelessWidget {
     required this.exerciseComplete,
     required this.groupContext,
     required this.exerciseName,
-    required this.elapsedSeconds,
+    required this.elapsedState,
+    required this.nowUtc,
     required this.onActions,
   });
 
-  final bool isQuick;
+  final WorkoutExecutionContext executionContext;
   final int exerciseIndex;
   final int exerciseCount;
   final int currentSet;
@@ -997,20 +1872,20 @@ class _R07CExecutionHeader extends StatelessWidget {
   final bool exerciseComplete;
   final String? groupContext;
   final String exerciseName;
-  final int elapsedSeconds;
+  final B02ExecutionDraftState elapsedState;
+  final DateTime Function()? nowUtc;
   final VoidCallback? onActions;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.b05Colors;
-    final position = isQuick
-        ? 'Quick workout'
-        : 'Exercise ${exerciseIndex + 1} of $exerciseCount';
+    final exercisePosition = 'Exercise ${exerciseIndex + 1} of $exerciseCount';
+    final position = exercisePosition;
     final status =
         groupContext ??
         (exerciseComplete
             ? 'Exercise complete'
-            : 'Set $currentSet${isQuick ? '' : ' of $plannedSets'}');
+            : 'Set $currentSet${executionContext is QuickWorkoutExecutionContext ? '' : ' of $plannedSets'}');
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1021,18 +1896,24 @@ class _R07CExecutionHeader extends StatelessWidget {
               Row(
                 children: [
                   Flexible(
-                    child: Text(
-                      position.toUpperCase(),
-                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                        color: colors.action,
-                        letterSpacing: 0.6,
-                        fontWeight: FontWeight.w700,
+                    child: Semantics(
+                      label: '${executionContext.modeLabel}, $exercisePosition',
+                      child: Text(
+                        position.toUpperCase(),
+                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          color: colors.action,
+                          letterSpacing: 0.6,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Text(
-                    _formatElapsed(elapsedSeconds),
+                  B02LiveElapsedText(
+                    accumulatedSeconds: elapsedState.elapsedSeconds,
+                    activeSegmentStartedAtUtc:
+                        elapsedState.activeSegmentStartedAtUtc,
+                    nowUtc: nowUtc ?? _systemNowUtc,
                     style: Theme.of(context).textTheme.labelMedium,
                   ),
                 ],
@@ -1059,11 +1940,7 @@ class _R07CExecutionHeader extends StatelessWidget {
     );
   }
 
-  static String _formatElapsed(int seconds) {
-    final minutes = seconds ~/ 60;
-    final remainder = seconds % 60;
-    return '$minutes:${remainder.toString().padLeft(2, '0')}';
-  }
+  static DateTime _systemNowUtc() => DateTime.now().toUtc();
 }
 
 class _R07CExerciseStrip extends StatelessWidget {
@@ -1087,36 +1964,40 @@ class _R07CExerciseStrip extends StatelessWidget {
         children: [
           for (var index = 0; index < slots.length; index++) ...[
             if (index > 0) const SizedBox(width: 8),
-            _exerciseChip(context, slots[index]),
+            _exerciseChip(slots[index], index),
           ],
         ],
       ),
     );
   }
 
-  Widget _exerciseChip(BuildContext context, B02StrengthExecutionSlot slot) {
+  Widget _exerciseChip(B02StrengthExecutionSlot slot, int index) {
     final selected = slot.id == selectedId;
     final complete = state.performedExercises.any(
       (exercise) =>
           (exercise.id == 'performed:${slot.id}' ||
-              exercise.sourceExercisePrescriptionId == slot.prescriptionId) &&
+              (exercise.sourceExercisePrescriptionId == slot.prescriptionId &&
+                  exercise.performedExerciseGroupId == slot.groupId &&
+                  exercise.groupRoundOrdinal == slot.roundOrdinal &&
+                  exercise.groupMemberOrdinal == slot.memberOrdinal)) &&
           exercise.status == 'completed',
     );
-    final label = slot.exerciseNameSnapshot.trim().isEmpty
+    final name = slot.exerciseNameSnapshot.trim().isEmpty
         ? 'Exercise'
         : slot.exerciseNameSnapshot;
-    return Semantics(
-      button: true,
-      selected: selected,
-      label: '${complete ? 'Completed ' : ''}$label',
-      onTap: onSelected == null ? null : () => onSelected!(slot.id),
-      child: ChoiceChip(
+    return Tooltip(
+      message: name,
+      child: Semantics(
+        button: true,
         selected: selected,
-        onSelected: onSelected == null ? null : (_) => onSelected!(slot.id),
-        avatar: complete ? const Icon(Icons.check_rounded, size: 16) : null,
-        label: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 180),
-          child: Text(label, overflow: TextOverflow.ellipsis),
+        label:
+            '${complete ? 'Completed ' : ''}$name, exercise ${index + 1} of ${slots.length}',
+        onTap: onSelected == null ? null : () => onSelected!(slot.id),
+        child: ChoiceChip(
+          selected: selected,
+          onSelected: onSelected == null ? null : (_) => onSelected!(slot.id),
+          avatar: complete ? const Icon(Icons.check_rounded, size: 16) : null,
+          label: Text('${index + 1}'),
         ),
       ),
     );
@@ -1126,12 +2007,14 @@ class _R07CExerciseStrip extends StatelessWidget {
 class _R07CTargetContext extends StatelessWidget {
   final B02StrengthExecutionSlot slot;
   final B02ExecutionDraftState state;
+  final B02PreviousExercisePerformance? previousPerformance;
   final VoidCallback? onApply;
   final VoidCallback? onChange;
 
   const _R07CTargetContext({
     required this.slot,
     required this.state,
+    required this.previousPerformance,
     required this.onApply,
     required this.onChange,
   });
@@ -1174,16 +2057,8 @@ class _R07CTargetContext extends StatelessWidget {
             rpe: rpe,
           )
         : null;
-    final previousLoad = _asDouble(
-      recommendation?.completeness['previousLoadKg'],
-    );
-    final previousReps = _asInt(recommendation?.completeness['previousReps']);
-    final previousRpe = _asInt(recommendation?.completeness['previousRpe']);
-    final last = r07cFormatLastPerformance(
-      loadKg: previousLoad,
-      loadBasis: recommendation?.loadBasis,
-      reps: previousReps,
-      rpe: previousRpe,
+    final last = B02PreviousPerformancePresentation.lastTime(
+      previousPerformance,
     );
     if (last == null && target == null) return const SizedBox.shrink();
     return B05Surface(
@@ -1236,37 +2111,6 @@ class _R07CTargetContext extends StatelessWidget {
       ),
     );
   }
-
-  static double? _asDouble(Object? value) => switch (value) {
-    num number => number.toDouble(),
-    _ => null,
-  };
-
-  static int? _asInt(Object? value) => switch (value) {
-    int number => number,
-    num number => number.toInt(),
-    _ => null,
-  };
-}
-
-class _RpeSelector extends StatelessWidget {
-  final int? value;
-  final ValueChanged<int?> onChanged;
-
-  const _RpeSelector({required this.value, required this.onChanged});
-
-  @override
-  Widget build(BuildContext context) => DropdownButtonFormField<int>(
-    isExpanded: true,
-    initialValue: value,
-    decoration: const InputDecoration(labelText: 'RPE'),
-    items: [
-      const DropdownMenuItem<int>(value: null, child: Text('RPE')),
-      for (var effort = 1; effort <= 10; effort++)
-        DropdownMenuItem(value: effort, child: Text('$effort')),
-    ],
-    onChanged: onChanged,
-  );
 }
 
 class _WarmupCard extends StatelessWidget {
@@ -1398,6 +2242,9 @@ class _RestCardState extends State<_RestCard> {
   @override
   void didUpdateWidget(covariant _RestCard oldWidget) {
     super.didUpdateWidget(oldWidget);
+    // Rebuilds and restored route instances repaint from the durable start
+    // timestamp immediately; they never carry a decremented local counter.
+    _now = DateTime.now().toUtc();
     _syncTicker();
   }
 
@@ -1411,130 +2258,179 @@ class _RestCardState extends State<_RestCard> {
   Widget build(BuildContext context) {
     final period = _openPeriod(widget);
     final remaining = period == null ? null : _remainingLabel(period);
-    return Card(
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.timer_outlined, color: context.b05Colors.action),
-                const SizedBox(width: 8),
-                Text('REST', style: Theme.of(context).textTheme.labelLarge),
-              ],
-            ),
-            const SizedBox(height: 8),
-            if (period == null) ...[
-              Text(
-                'Ready when you are',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                widget.slot.groupType == null
-                    ? 'Take a breather before your next set.'
-                    : 'Rest before the next exercise in this group.',
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
+    final remainingSeconds = period == null
+        ? null
+        : b02RestRemainingSeconds(period, _now);
+    return Semantics(
+      container: true,
+      label: period == null ? 'Rest controls' : 'Rest in progress',
+      child: Card(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
                 children: [
-                  FilledButton(
-                    onPressed: widget.onBegin,
-                    child: const Text('Start rest'),
-                  ),
-                  OutlinedButton(
-                    onPressed: widget.onCustom == null
-                        ? null
-                        : () async {
-                            final controller = TextEditingController();
-                            final value = await showDialog<int>(
-                              context: context,
-                              builder: (context) => AlertDialog(
-                                title: const Text('Custom rest'),
-                                content: TextField(
-                                  controller: controller,
-                                  autofocus: true,
-                                  keyboardType: TextInputType.number,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Seconds',
-                                  ),
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => context.pop(),
-                                    child: const Text('Cancel'),
-                                  ),
-                                  FilledButton(
-                                    onPressed: () => context.pop(
-                                      int.tryParse(controller.text),
+                  Icon(Icons.timer_outlined, color: context.b05Colors.action),
+                  const SizedBox(width: 8),
+                  Text('REST', style: Theme.of(context).textTheme.labelLarge),
+                ],
+              ),
+              const SizedBox(height: 8),
+              if (period == null) ...[
+                Text(
+                  'Ready when you are',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  widget.slot.groupType == null
+                      ? 'Take a breather before your next set.'
+                      : 'Rest before the next exercise in this group.',
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    FilledButton(
+                      onPressed: widget.onBegin,
+                      child: const Text('Start rest'),
+                    ),
+                    OutlinedButton(
+                      onPressed: widget.onCustom == null
+                          ? null
+                          : () async {
+                              final controller = TextEditingController();
+                              final value = await showDialog<int>(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: const Text('Custom rest'),
+                                  content: TextField(
+                                    controller: controller,
+                                    autofocus: true,
+                                    keyboardType: TextInputType.number,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Seconds',
                                     ),
-                                    child: const Text('Start'),
                                   ),
-                                ],
-                              ),
-                            );
-                            controller.dispose();
-                            if (value != null && value >= 0) {
-                              widget.onCustom?.call(value);
-                            }
-                          },
-                    child: const Text('Custom'),
-                  ),
-                ],
-              ),
-            ] else ...[
-              Center(
-                child: Text(
-                  remaining!,
-                  style: Theme.of(context).textTheme.displaySmall,
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => context.pop(),
+                                      child: const Text('Cancel'),
+                                    ),
+                                    FilledButton(
+                                      onPressed: () => context.pop(
+                                        int.tryParse(controller.text),
+                                      ),
+                                      child: const Text('Start'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                              controller.dispose();
+                              if (value != null && value >= 0) {
+                                widget.onCustom?.call(value);
+                              }
+                            },
+                      child: const Text('Custom'),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(height: 4),
-              Center(
-                child: Text(
-                  'Next set: ${widget.slot.targetRepsMin ?? '—'}${widget.slot.targetRepsMax == null || widget.slot.targetRepsMax == widget.slot.targetRepsMin ? '' : '–${widget.slot.targetRepsMax}'} reps',
+              ] else ...[
+                Center(
+                  child: SizedBox.square(
+                    dimension: 92,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        CircularProgressIndicator(
+                          value:
+                              period.selectedSeconds == null ||
+                                  period.selectedSeconds == 0
+                              ? 0
+                              : (remainingSeconds! / period.selectedSeconds!)
+                                    .clamp(0.0, 1.0),
+                          strokeWidth: 5,
+                          backgroundColor: Theme.of(
+                            context,
+                          ).colorScheme.surfaceContainerLow,
+                        ),
+                        Semantics(
+                          label: 'Rest remaining $remaining',
+                          liveRegion: false,
+                          child: ExcludeSemantics(
+                            child: Text(
+                              remaining!,
+                              style: Theme.of(context).textTheme.titleLarge,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                alignment: WrapAlignment.center,
-                children: [
-                  OutlinedButton(
-                    onPressed: widget.onDecrease == null
-                        ? null
-                        : () {
-                            unawaited(IndiFitHaptics.selection());
-                            widget.onDecrease?.call(period.id);
-                          },
-                    child: const Text('−15 sec'),
+                const SizedBox(height: 4),
+                if (_hasUsefulTarget(widget.slot))
+                  Center(
+                    child: Text(
+                      'Next set: ${widget.slot.targetRepsMin ?? '—'}${widget.slot.targetRepsMax == null || widget.slot.targetRepsMax == widget.slot.targetRepsMin ? '' : '–${widget.slot.targetRepsMax}'} reps',
+                    ),
                   ),
-                  OutlinedButton(
-                    onPressed: widget.onExtend == null
-                        ? null
-                        : () {
-                            unawaited(IndiFitHaptics.selection());
-                            widget.onExtend?.call(period.id);
-                          },
-                    child: const Text('+15 sec'),
-                  ),
-                  TextButton(
-                    onPressed: widget.onSkip == null
-                        ? null
-                        : () {
-                            unawaited(IndiFitHaptics.selection());
-                            widget.onSkip?.call(period.id);
-                          },
-                    child: const Text('Skip'),
-                  ),
-                ],
-              ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  alignment: WrapAlignment.center,
+                  children: [
+                    Semantics(
+                      button: true,
+                      label: 'Decrease rest by 15 seconds',
+                      child: OutlinedButton(
+                        onPressed: widget.onDecrease == null
+                            ? null
+                            : () {
+                                unawaited(IndiFitHaptics.selection());
+                                widget.onDecrease?.call(period.id);
+                              },
+                        child: const Text('−15 sec'),
+                      ),
+                    ),
+                    Semantics(
+                      button: true,
+                      label: 'Increase rest by 15 seconds',
+                      child: OutlinedButton(
+                        onPressed: widget.onExtend == null
+                            ? null
+                            : () {
+                                unawaited(IndiFitHaptics.selection());
+                                widget.onExtend?.call(period.id);
+                              },
+                        child: const Text('+15 sec'),
+                      ),
+                    ),
+                    Semantics(
+                      button: true,
+                      label: 'Skip rest',
+                      child: TextButton(
+                        onPressed: widget.onSkip == null
+                            ? null
+                            : () {
+                                unawaited(IndiFitHaptics.selection());
+                                widget.onSkip?.call(period.id);
+                              },
+                        // Keep the compact visible action label stable for the
+                        // existing player surface; the surrounding Semantics
+                        // label retains the clearer "Skip rest" announcement.
+                        child: const Text('Skip'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
@@ -1547,13 +2443,19 @@ class _RestCardState extends State<_RestCard> {
     return '$minutes:${seconds.toString().padLeft(2, '0')}';
   }
 
+  bool _hasUsefulTarget(B02StrengthExecutionSlot slot) {
+    return r07cHasUsefulTarget(
+      loadKg: slot.targetLoadKg,
+      loadBasis: slot.targetLoadBasis,
+      minReps: slot.targetRepsMin,
+      maxReps: slot.targetRepsMax,
+      rpe: slot.targetRpe,
+    );
+  }
+
   B02RestPeriod? _openPeriod(_RestCard value) {
     final open = value.state.restPeriods
-        .where(
-          (period) =>
-              period.endedAtUtc == null &&
-              b02RestPeriodBelongsToSlot(period, value.slot),
-        )
+        .where((period) => period.endedAtUtc == null)
         .toList();
     return open.isEmpty ? null : open.last;
   }
@@ -1572,6 +2474,7 @@ class _RestCardState extends State<_RestCard> {
         if (b02RestRemainingSeconds(open, now) == 0) {
           _ticker?.cancel();
           _ticker = null;
+          setState(() => _now = now);
           if (!_finishingElapsedRest) {
             _finishingElapsedRest = true;
             unawaited(_completeElapsedRest(open.id));
@@ -1592,18 +2495,25 @@ class _RestCardState extends State<_RestCard> {
       final completed = await widget.onElapsed(periodId);
       if (completed && mounted) {
         unawaited(IndiFitHaptics.confirmation());
+      } else if (!completed && mounted) {
+        _finishingElapsedRest = false;
+        _now = DateTime.now().toUtc();
+        _syncTicker();
       }
     } catch (_) {
       // A failed durable completion must not create tactile success feedback.
+      if (mounted) {
+        _finishingElapsedRest = false;
+        _now = DateTime.now().toUtc();
+        _syncTicker();
+      }
     }
   }
 }
 
 @visibleForTesting
 int b02RestRemainingSeconds(B02RestPeriod period, DateTime now) {
-  final total = period.selectedSeconds ?? period.recommendedSeconds ?? 0;
-  final elapsed = now.toUtc().difference(period.startedAtUtc).inSeconds;
-  return (total - elapsed).clamp(0, total);
+  return B02RestTimerSnapshot(period).remainingSeconds(now);
 }
 
 class _ErrorState extends StatelessWidget {
@@ -1631,13 +2541,10 @@ class _ErrorState extends StatelessWidget {
           Text(message, textAlign: TextAlign.center),
           const SizedBox(height: 16),
           if (canRetry)
-            FilledButton(
-              onPressed: onRetry,
-              child: const Text('Retry recovery'),
-            ),
+            FilledButton(onPressed: onRetry, child: const Text('Try again')),
           TextButton(
             onPressed: onClose,
-            child: const Text('Keep draft and go back'),
+            child: const Text('Keep workout and go back'),
           ),
         ],
       ),

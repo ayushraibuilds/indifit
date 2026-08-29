@@ -302,9 +302,26 @@ class BackupData {
         'prefRemindWater',
         'prefRemindEvening',
         'prefRemindWeekly',
+        'pref_remind_meals',
+        'pref_remind_evening',
+        'pref_remind_weekly',
         'prefQuietHoursEnabled',
         'prefQuietHoursStart',
         'prefQuietHoursEnd',
+        'pref_quiet_hours_enabled',
+        'pref_quiet_hours_start',
+        'pref_quiet_hours_end',
+        'pref_workout_reminder_hour',
+        'pref_workout_reminder_minute',
+        'pref_lunch_reminder_hour',
+        'pref_lunch_reminder_minute',
+        'pref_dinner_reminder_hour',
+        'pref_dinner_reminder_minute',
+        'pref_daily_logging_reminder_hour',
+        'pref_daily_logging_reminder_minute',
+        'pref_weekly_progress_day',
+        'pref_weekly_progress_hour',
+        'pref_weekly_progress_minute',
         'weekly_action_type',
         'weekly_action_text',
         'weekly_action_target',
@@ -319,6 +336,7 @@ class BackupData {
       final stringListKeys = [
         'installed_food_packs',
         'unlocked_achievement_ids',
+        'pref_workout_reminder_days',
       ];
       for (final key in stringListKeys) {
         final listVal = prefs.getStringList(key);
@@ -4136,13 +4154,17 @@ class BackupEnvelope {
     }
 
     final expectedChecksum = json['checksum'] as String?;
-    if (expectedChecksum != null) {
-      final actualChecksum = sha256.convert(utf8.encode(rawPayload)).toString();
-      if (actualChecksum != expectedChecksum) {
-        throw const FormatException(
-          'Backup file checksum mismatch: File is corrupt or truncated.',
-        );
-      }
+    if (expectedChecksum == null ||
+        !RegExp(r'^[0-9a-f]{64}$').hasMatch(expectedChecksum)) {
+      throw const FormatException(
+        'Backup file is missing a valid SHA-256 checksum.',
+      );
+    }
+    final actualChecksum = sha256.convert(utf8.encode(rawPayload)).toString();
+    if (actualChecksum != expectedChecksum) {
+      throw const FormatException(
+        'Backup file checksum mismatch: File is corrupt or truncated.',
+      );
     }
 
     final rawCounts = json['table_counts'] as Map<String, dynamic>? ?? {};
@@ -4158,7 +4180,7 @@ class BackupEnvelope {
             ).toIso8601String()
           : DateTime.now().toUtc().toIso8601String(),
       isEncrypted: json['is_encrypted'] as bool? ?? false,
-      checksum: expectedChecksum ?? '',
+      checksum: expectedChecksum,
       profileName: json['profile_name'] as String? ?? 'User Profile',
       tableCounts: counts,
       payload: rawPayload,

@@ -1,5 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/di/providers.dart';
+import '../../core/fixtures/exercise_display_muscles.dart';
+import '../../core/fixtures/exercise_family_metadata.dart';
+import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/consumer_task_primitives.dart';
@@ -8,7 +14,9 @@ import '../../core/widgets/skeleton_loader.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/workout_repository.dart';
 import '../education/learn_screen.dart';
+import '../media/b05_exercise_visual_registry.dart';
 import 'exercise_details_sheet.dart';
+import 'exercise_family_presentation.dart';
 
 class ExerciseLibraryScreen extends ConsumerStatefulWidget {
   const ExerciseLibraryScreen({super.key});
@@ -20,11 +28,15 @@ class ExerciseLibraryScreen extends ConsumerStatefulWidget {
 
 class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
   final TextEditingController _searchController = TextEditingController();
-  List<Exercise> _exercises = [];
+  Timer? _debounceTimer;
+  List<ExerciseFamilyPresentationItem> _exercises = [];
+  List<Exercise> _catalogue = [];
   String _selectedMuscle = 'All';
+  String _selectedEquipment = 'All';
   bool _loading = false;
+  ProductFailurePresentation? _failure;
 
-  final List<String> _muscleFilters = [
+  final List<String> _muscleFilters = const [
     'All',
     'Chest',
     'Back',
@@ -37,9 +49,7 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
     'Core',
   ];
 
-  String _selectedEquipment = 'All';
-
-  final List<String> _equipmentFilters = [
+  final List<String> _equipmentFilters = const [
     'All',
     'Bodyweight',
     'Barbell',
@@ -47,6 +57,8 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
     'Cable',
     'Machine',
   ];
+
+  Map<String, int> _muscleCounts = {};
 
   @override
   void initState() {
@@ -57,45 +69,72 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
     _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     super.dispose();
   }
 
   void _onSearchChanged() {
-    _loadExercises();
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 100), () {
+      if (mounted) _loadExercises();
+    });
+    setState(() {});
   }
 
-  Map<String, int> _muscleCounts = {};
-
   Future<void> _loadExercises() async {
-    setState(() => _loading = true);
+    setState(() {
+      _loading = true;
+      _failure = null;
+    });
 
     try {
       final repo = ref.read(workoutRepositoryProvider);
 
-      // Fuzzy search based on query
-      final list = await repo.searchExercises(_searchController.text);
+      // The catalogue is filtered locally so an exact variant search can stay
+      // independent while its explicitly mapped siblings remain available in
+      // Exercise Detail. Family identity never comes from this text search.
+      final rawList = await repo.searchExercises('');
 
-      // Calculate counts for each muscle filter badge
-      final Map<String, int> counts = {'All': list.length};
+      final queryText = _searchController.text.trim().toLowerCase();
+      final tokens = queryText.isEmpty
+          ? const <String>[]
+          : queryText.split(RegExp(r'\s+'));
+
+      // Perform normalized token matching across name, equipment, and muscles
+      final searchMatches = rawList.where((ex) {
+        if (tokens.isEmpty) return true;
+        final searchable = '${ex.name} ${ex.equipment} ${ex.muscleGroups}'
+            .toLowerCase();
+        return tokens.every(searchable.contains);
+      }).toList();
+
+      // Calculate counts for each muscle filter badge using canonical PRIMARY display muscle.
+      final Map<String, int> counts = {
+        'All': buildExerciseFamilyPresentation(searchMatches).length,
+      };
       for (final m in _muscleFilters) {
         if (m == 'All') continue;
-        counts[m] = list
-            .where(
-              (ex) => ex.muscleGroups.toLowerCase().contains(m.toLowerCase()),
-            )
-            .length;
+        counts[m] = buildExerciseFamilyPresentation(
+          searchMatches
+              .where(
+                (ex) => ExerciseDisplayMuscles.fromMuscleGroups(
+                  ex.muscleGroups,
+                ).matchesPrimary(m),
+              )
+              .toList(growable: false),
+        ).length;
       }
 
-      // Filter by muscle and equipment
-      List<Exercise> filtered = list;
+      // Filter by PRIMARY muscle category and equipment
+      List<Exercise> filtered = searchMatches;
       if (_selectedMuscle != 'All') {
         filtered = filtered
             .where(
-              (ex) => ex.muscleGroups.toLowerCase().contains(
-                _selectedMuscle.toLowerCase(),
-              ),
+              (ex) => ExerciseDisplayMuscles.fromMuscleGroups(
+                ex.muscleGroups,
+              ).matchesPrimary(_selectedMuscle),
             )
             .toList();
       }
@@ -109,18 +148,55 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
             .toList();
       }
 
+      // Sort: if search query present, sort by relevance score then alphabetical; else alphabetical
+      if (tokens.isNotEmpty) {
+        filtered.sort((a, b) {
+          final scoreA = _searchScore(a.name, queryText);
+          final scoreB = _searchScore(b.name, queryText);
+          final cmp = scoreB.compareTo(scoreA);
+          if (cmp != 0) return cmp;
+          return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+        });
+      } else {
+        filtered.sort(
+          (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+        );
+      }
+
+      if (!mounted) return;
       setState(() {
-        _exercises = filtered;
+        _catalogue = rawList;
+        _exercises = buildExerciseFamilyPresentation(filtered);
         _muscleCounts = counts;
         _loading = false;
       });
     } catch (e) {
-      setState(() => _loading = false);
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _exercises = [];
+        _failure = ProductFailurePresentation.fromError(
+          e,
+          title: 'Exercises unavailable',
+        );
+      });
     }
+  }
+
+  static int _searchScore(String name, String query) {
+    final lowerName = name.toLowerCase().trim();
+    final lowerQuery = query.toLowerCase().trim();
+    if (lowerName == lowerQuery) return 3;
+    if (lowerName.startsWith(lowerQuery)) return 2;
+    return 1;
   }
 
   @override
   Widget build(BuildContext context) {
+    final registry =
+        ref.watch(b05ExerciseVisualRegistryProvider).valueOrNull ??
+        const B05ExerciseVisualRegistry.empty();
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Exercise Library'),
@@ -144,23 +220,29 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
         child: Column(
           children: [
             // Search Input
-            TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Search bench press, squat, curl...',
-                prefixIcon: Icon(
-                  Icons.search_rounded,
-                  color: context.b05Colors.textDisabled,
+            Semantics(
+              textField: true,
+              label: 'Search exercises',
+              child: TextField(
+                controller: _searchController,
+                textInputAction: TextInputAction.search,
+                decoration: InputDecoration(
+                  hintText: 'Search bench press, squat, curl...',
+                  prefixIcon: Icon(
+                    Icons.search_rounded,
+                    color: context.b05Colors.textDisabled,
+                  ),
+                  suffixIcon: _searchController.text.isNotEmpty
+                      ? IconButton(
+                          tooltip: 'Clear search',
+                          icon: Icon(
+                            Icons.clear,
+                            color: context.b05Colors.textSecondary,
+                          ),
+                          onPressed: () => _searchController.clear(),
+                        )
+                      : null,
                 ),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: Icon(
-                          Icons.clear,
-                          color: context.b05Colors.textSecondary,
-                        ),
-                        onPressed: () => _searchController.clear(),
-                      )
-                    : null,
               ),
             ),
             const SizedBox(height: 8),
@@ -265,6 +347,12 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
             ),
             const SizedBox(height: 12),
 
+            // Error Card
+            if (_failure != null) ...[
+              ProductFailureCard(failure: _failure!, onRetry: _loadExercises),
+              const SizedBox(height: 12),
+            ],
+
             // Exercises List
             Expanded(
               child: _loading
@@ -272,42 +360,149 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
                   : _exercises.isEmpty
                   ? _buildEmptyState(context)
                   : ListView.builder(
+                      keyboardDismissBehavior:
+                          ScrollViewKeyboardDismissBehavior.onDrag,
                       itemCount: _exercises.length,
                       itemBuilder: (context, index) {
-                        final ex = _exercises[index];
-                        final muscles = ex.muscleGroups.split(',');
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 8.0),
-                          child: ListTile(
-                            title: Text(
-                              ex.name,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            subtitle: Text(
-                              '${ex.equipment} • ${muscles.join(', ')}',
-                              style: const TextStyle(fontSize: 12),
-                            ),
-                            trailing: Icon(
-                              Icons.info_outline_rounded,
-                              color: context.b05Colors.action,
-                              size: B05Layout.iconMedium,
-                            ),
-                            onTap: () {
-                              showIndiFitBottomSheet<void>(
-                                context: context,
-                                semanticLabel: 'Exercise details',
-                                builder: (context) =>
-                                    ExerciseDetailsSheet(exercise: ex),
-                              );
-                            },
-                          ),
-                        );
+                        final item = _exercises[index];
+                        return _buildExerciseRow(context, item, registry);
                       },
                     ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildExerciseRow(
+    BuildContext context,
+    ExerciseFamilyPresentationItem item,
+    B05ExerciseVisualRegistry registry,
+  ) {
+    final ex = item.primaryExercise;
+    final displayMuscles = ExerciseDisplayMuscles.fromMuscleGroups(
+      ex.muscleGroups,
+    );
+    final primaryMuscle = displayMuscles.primary ?? 'General';
+    final equipment = ex.equipment.trim().isNotEmpty
+        ? ex.equipment.trim()
+        : 'Bodyweight';
+    final secondaryMuscles = displayMuscles.secondary;
+    final secondaryText = secondaryMuscles.isNotEmpty
+        ? 'Also works ${secondaryMuscles.join(', ')}'
+        : null;
+    final family = reviewedExerciseFamilyRegistry.familyForExerciseId(
+      ex.stableId,
+    );
+    final member = family?.memberFor(ex.stableId ?? '');
+    final variationText = item.isFamily
+        ? '${item.variantCount} variations'
+        : member?.role == ExerciseFamilyMemberRole.variant
+        ? '${member!.variantLabel} variation'
+        : null;
+
+    final semanticLabel = [
+      ex.name,
+      'Primary muscle $primaryMuscle',
+      'Equipment $equipment',
+      ?variationText,
+      ?secondaryText,
+      'Tap to view details',
+    ].join('. ');
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: B05Layout.space8),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: context.b05Colors.border),
+      ),
+      child: Semantics(
+        button: true,
+        label: semanticLabel,
+        child: ListTile(
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: B05Layout.space12,
+            vertical: B05Layout.space4,
+          ),
+          leading: Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: context.b05Colors.inset,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: context.b05Colors.border),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(7),
+              child: ExerciseVisual(
+                canonicalExerciseUuid: ex.stableId ?? '',
+                registry: registry,
+                displayMuscles: ExerciseVisualMuscleFacts(
+                  primaryMuscle: displayMuscles.primary,
+                  secondaryMuscles: displayMuscles.secondary,
+                ),
+                equipment: ex.equipment,
+                decorative: true,
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+          title: Text(
+            ex.name,
+            style: B05Typography.body(
+              context,
+            ).copyWith(fontWeight: FontWeight.bold),
+          ),
+          subtitle: Padding(
+            padding: const EdgeInsets.only(top: 2.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '$primaryMuscle · $equipment',
+                  style: B05Typography.caption(
+                    context,
+                  ).copyWith(color: context.b05Colors.textSecondary),
+                ),
+                if (variationText != null)
+                  Text(
+                    variationText,
+                    style: B05Typography.caption(context).copyWith(
+                      color: context.b05Colors.action,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                if (secondaryText != null)
+                  Text(
+                    secondaryText,
+                    style: B05Typography.caption(context).copyWith(
+                      color: context.b05Colors.textDisabled,
+                      fontSize: 11,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          trailing: Icon(
+            Icons.info_outline_rounded,
+            color: context.b05Colors.action,
+            size: B05Layout.iconMedium,
+          ),
+          onTap: () {
+            final familyExercises = family == null
+                ? const <Exercise>[]
+                : exercisesForFamily(family, _catalogue);
+            showIndiFitBottomSheet<void>(
+              context: context,
+              semanticLabel: 'Exercise details',
+              builder: (context) => ExerciseDetailsSheet(
+                exercise: ex,
+                familyExercises: familyExercises,
+              ),
+            );
+          },
         ),
       ),
     );

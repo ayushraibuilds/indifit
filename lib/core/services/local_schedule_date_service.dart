@@ -112,6 +112,11 @@ class LocalScheduleDateService {
     return _format(local.year, local.month, local.day);
   }
 
+  /// Returns the injectable UTC clock used by this date authority. Consumers
+  /// that schedule a civil-date boundary signal must use the same clock as
+  /// [todayIn] so deterministic tests and timezone transitions do not drift.
+  DateTime nowUtc() => _nowUtc().toUtc();
+
   /// Converts an event instant to the stored civil date for its explicit
   /// timezone. Historical callers must use this persisted location rather
   /// than the device's current timezone.

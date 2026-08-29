@@ -252,6 +252,55 @@ class ActivitySessionRepository {
   ActivitySessionRepository(this._db, [Uuid? uuid])
     : _uuid = uuid ?? const Uuid();
 
+  /// Persists a typed activity that already happened. This direct historical
+  /// path intentionally bypasses [WorkoutDrafts]: Other Activity has no live
+  /// timer, resume state, scheduled occurrence, or active-session meaning.
+  /// The same completion transaction and typed detail tables are used by the
+  /// retained draft/import flows.
+  Future<int> saveManualActivity({
+    required String routineName,
+    required B02ActivityType activityType,
+    B02CardioSessionDetail? cardioDetail,
+    B02MobilitySessionDetail? mobilityDetail,
+    required DateTime completedAtUtc,
+    String? idempotencyKey,
+  }) async {
+    final cleanName = _requiredName(routineName);
+    _validateActivityDetails(
+      activityType: activityType,
+      cardioDetail: cardioDetail,
+      mobilityDetail: mobilityDetail,
+      expectedInputMode: B02InputMode.manual,
+    );
+    final durationSeconds =
+        cardioDetail?.durationSeconds ?? mobilityDetail?.durationSeconds;
+    if (durationSeconds == null || durationSeconds < 1) {
+      throw const B02ValidationException(
+        'A typed activity requires duration at completion.',
+      );
+    }
+    final state = B02ExecutionDraftState(
+      snapshotId: idempotencyKey?.trim().isNotEmpty == true
+          ? idempotencyKey!.trim()
+          : 'manual-activity:${_uuid.v4()}',
+      snapshotVersion: B02ExecutionDraftState.schemaVersion,
+      activityType: activityType,
+      routineName: cleanName,
+      elapsedSeconds: durationSeconds,
+      currentExerciseOrdinal: 0,
+      currentSetOrdinal: 0,
+      cardioDetail: cardioDetail,
+      mobilityDetail: mobilityDetail,
+    );
+    return _complete(
+      state: state,
+      durationSeconds: durationSeconds,
+      estimatedCalories: 0,
+      completedAtUtc: completedAtUtc.toUtc(),
+      provenance: null,
+    );
+  }
+
   Future<B02ActivityDraftRecord> startManualDraft({
     required String routineName,
     required B02ActivityType activityType,
@@ -511,8 +560,19 @@ class ActivitySessionRepository {
     )..where((table) => table.id.equals(sessionId))).getSingleOrNull();
     if (session == null) return null;
     final type = B02ActivityType.parse(session.activityType);
-    if (type == B02ActivityType.legacy) return null;
-    return _readHistoryRecord(session);
+    if (type == B02ActivityType.legacy || type == B02ActivityType.strength) {
+      return null;
+    }
+    final record = await _readHistoryRecord(session);
+    final hasRequiredDetail = switch (type) {
+      B02ActivityType.running ||
+      B02ActivityType.cycling ||
+      B02ActivityType.walking => record.cardioDetail != null,
+      B02ActivityType.yoga ||
+      B02ActivityType.mobility => record.mobilityDetail != null,
+      _ => false,
+    };
+    return hasRequiredDetail ? record : null;
   }
 
   Future<int> _complete({
@@ -533,7 +593,14 @@ class ActivitySessionRepository {
           await (_db.select(_db.workoutSessions)
                 ..where((table) => table.uuid.equals(state.snapshotId)))
               .getSingleOrNull();
-      if (existing != null) return existing.id;
+      if (existing != null) {
+        if (existing.activityType != state.activityType.dbValue) {
+          throw const B02ValidationException(
+            'This activity entry is already used for another activity type.',
+          );
+        }
+        return existing.id;
+      }
 
       final sessionId = await _db
           .into(_db.workoutSessions)

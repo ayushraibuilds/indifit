@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
+import '../../core/widgets/indi_fit_bottom_sheet.dart';
 import '../../data/database/app_database.dart';
 import 'food_contextual_action_controller.dart';
 import 'meal_presentation_registry.dart';
@@ -31,16 +32,12 @@ class _FoodContextualActionsState extends ConsumerState<FoodContextualActions> {
 
   Future<void> _edit() async {
     if (!mounted) return;
-    await showModalBottomSheet<void>(
+    await showIndiFitBottomSheet<void>(
       context: context,
-      isScrollControlled: true,
-      builder: (sheetContext) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.viewInsetsOf(sheetContext).bottom,
-        ),
-        child: EditFoodLogSheet(
-          log: _log,
-          onSave:
+      semanticLabel: 'Edit food entry',
+      builder: (sheetContext) => EditFoodLogSheet(
+        log: _log,
+        onSave:
               ({
                 required int id,
                 required String name,
@@ -64,7 +61,6 @@ class _FoodContextualActionsState extends ConsumerState<FoodContextualActions> {
                 if (mounted) _showSuccess('Food entry updated.');
               },
         ),
-      ),
     );
   }
 
@@ -82,6 +78,7 @@ class _FoodContextualActionsState extends ConsumerState<FoodContextualActions> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
+        backgroundColor: dialogContext.b05Colors.section,
         title: const Text('Delete food entry?'),
         content: Text('Remove “${_log.name}” from this logged meal?'),
         actions: [
@@ -90,6 +87,10 @@ class _FoodContextualActionsState extends ConsumerState<FoodContextualActions> {
             child: const Text('Cancel'),
           ),
           FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: dialogContext.b05Colors.danger.container,
+              foregroundColor: dialogContext.b05Colors.danger.foreground,
+            ),
             onPressed: () => Navigator.pop(dialogContext, true),
             child: const Text('Delete'),
           ),
@@ -108,8 +109,9 @@ class _FoodContextualActionsState extends ConsumerState<FoodContextualActions> {
   }
 
   Future<void> _showActionMenu() async {
-    final action = await showModalBottomSheet<_FoodMenuAction>(
+    final action = await showIndiFitBottomSheet<_FoodMenuAction>(
       context: context,
+      semanticLabel: 'Food entry actions',
       builder: (sheetContext) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(B05Layout.space16),
@@ -131,7 +133,7 @@ class _FoodContextualActionsState extends ConsumerState<FoodContextualActions> {
               B05ActionButton(
                 label: 'Delete food entry',
                 icon: Icons.delete_outline,
-                emphasis: B05ActionEmphasis.secondary,
+                emphasis: B05ActionEmphasis.danger,
                 onPressed: () =>
                     Navigator.pop(sheetContext, _FoodMenuAction.delete),
               ),
@@ -304,7 +306,7 @@ class _FoodContextualActionsState extends ConsumerState<FoodContextualActions> {
                       label: 'Delete food',
                       hint: 'Confirm before deleting this entry.',
                       icon: Icons.delete_outline,
-                      emphasis: B05ActionEmphasis.secondary,
+                      emphasis: B05ActionEmphasis.danger,
                       onPressed: busy ? null : _delete,
                       focusOrder: 3,
                     ),

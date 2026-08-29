@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/di/providers.dart';
 import '../../core/nutrients.dart';
 import '../../core/nutrition_protein_distribution.dart';
+import '../../core/widgets/consumer_task_primitives.dart';
 import 'protein_distribution_controller.dart';
 
 class ProteinDistributionScreen extends ConsumerWidget {
@@ -25,10 +26,11 @@ class ProteinDistributionScreen extends ConsumerWidget {
       body: SafeArea(
         child: switch (state.status) {
           NutritionProteinDistributionStatus.idle ||
-          NutritionProteinDistributionStatus.loading => Center(
-            child: Semantics(
-              label: 'Loading protein distribution',
-              child: CircularProgressIndicator(),
+          NutritionProteinDistributionStatus.loading => const Padding(
+            padding: EdgeInsets.all(16),
+            child: ConsumerStatusRow(
+              label: 'Loading protein details',
+              loading: true,
             ),
           ),
           NutritionProteinDistributionStatus.empty => _EmptyState(
@@ -311,9 +313,9 @@ class _LeucineSummary extends StatelessWidget {
     final summary = distribution.totalLeucine;
     final text = switch (distribution.leucineAvailability) {
       NutritionLeucineAvailability.unavailable =>
-        'Leucine data unavailable in the nutrient registry.',
+        'Leucine details are unavailable for these meals.',
       NutritionLeucineAvailability.unknown =>
-        'Leucine data unavailable for these logged meals.',
+        'Leucine details are unavailable for these meals.',
       NutritionLeucineAvailability.measuredOrReviewed =>
         'Measured/reviewed leucine: ${_valueText(summary)}',
       NutritionLeucineAvailability.estimated =>

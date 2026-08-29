@@ -5,12 +5,24 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/di/providers.dart';
 import '../../core/nutrients.dart';
+import '../../core/presentation/consumer_copy.dart';
 import '../../core/theme/b05_semantic_colors.dart';
+import '../../core/typed_quantities.dart';
+import '../../core/widgets/b05_accessibility_primitives.dart';
+import '../../core/widgets/consumer_task_primitives.dart';
 import '../../data/repositories/nutrition_recipe_log_coordinator.dart';
 import '../../data/repositories/nutrition_recipe_repository.dart';
 import '../dashboard/today_surface_controller.dart';
 import 'nutrition_recipe_editor_screen.dart';
 import 'saved_recipe_log_controller.dart';
+
+final _savedRecipeIngredientNameProvider = FutureProvider.autoDispose
+    .family<String?, String>((ref, foodId) async {
+      final catalogue = await ref.watch(
+        nutritionFoodCatalogRepositoryProvider.future,
+      );
+      return (await catalogue.getOption(foodId))?.displayName;
+    });
 
 class SavedRecipeLogScreen extends ConsumerStatefulWidget {
   final String mealType;
@@ -100,12 +112,24 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
         children: [
           TextField(
             controller: _searchController,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: 'Search saved recipes',
-              prefixIcon: Icon(Icons.search_rounded),
-              border: OutlineInputBorder(),
+              prefixIcon: const Icon(Icons.search_rounded),
+              suffixIcon: _searchController.text.isNotEmpty
+                  ? IconButton(
+                      tooltip: 'Clear search',
+                      icon: const Icon(Icons.clear_rounded),
+                      onPressed: () {
+                        _searchController.clear();
+                        controller.loadRecipes(query: '');
+                        setState(() {});
+                      },
+                    )
+                  : null,
+              border: const OutlineInputBorder(),
             ),
             onChanged: (value) {
+              setState(() {});
               _searchTimer?.cancel();
               _searchTimer = Timer(const Duration(milliseconds: 300), () {
                 controller.loadRecipes(query: value);
@@ -141,9 +165,15 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
             child:
                 state.status == SavedRecipeLogStatus.loadingRecipes ||
                     state.status == SavedRecipeLogStatus.idle
-                ? const Center(child: CircularProgressIndicator())
+                ? const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: ConsumerStatusRow(
+                      label: 'Loading recipes',
+                      loading: true,
+                    ),
+                  )
                 : state.recipes.isEmpty && state.drafts.isEmpty
-                ? _buildEmptyRecipes(state.query)
+                ? _buildEmptyRecipes(state.query, controller)
                 : ListView.separated(
                     padding: const EdgeInsets.only(top: 4, bottom: 24),
                     itemCount: state.recipes.length,
@@ -218,7 +248,12 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
         subtitle: Text(
           recipe.currentVersionId == null
               ? 'Still being prepared'
+              : recipe.description != null &&
+                    recipe.description!.trim().isNotEmpty
+              ? recipe.description!
               : 'Ready to add',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
@@ -244,6 +279,7 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
                 final confirm = await showDialog<bool>(
                   context: context,
                   builder: (ctx) => AlertDialog(
+                    backgroundColor: ctx.b05Colors.section,
                     title: Text('Delete "${recipe.name}"?'),
                     content: const Text(
                       'This recipe will be archived from future logging. Previously logged meals in your diary will remain untouched.',
@@ -253,11 +289,11 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
                         onPressed: () => Navigator.pop(ctx, false),
                         child: const Text('Cancel'),
                       ),
-                      ElevatedButton(
+                      FilledButton(
                         onPressed: () => Navigator.pop(ctx, true),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
-                          foregroundColor: Colors.white,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: ctx.b05Colors.danger.container,
+                          foregroundColor: ctx.b05Colors.danger.foreground,
                         ),
                         child: const Text('Delete'),
                       ),
@@ -277,33 +313,36 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
     );
   }
 
-  Widget _buildEmptyRecipes(String query) {
+  Widget _buildEmptyRecipes(String query, SavedRecipeLogController controller) {
+    final isSearching = query.trim().isNotEmpty;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.menu_book_outlined,
-              size: 56,
-              color: context.b05Colors.textSecondary,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              query.trim().isEmpty
-                  ? 'No saved recipes yet'
-                  : 'No saved recipes match “$query”',
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Create a recipe for meals you make often.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: context.b05Colors.textSecondary),
-            ),
-          ],
+        child: ProductEmptyState(
+          icon: Icons.menu_book_outlined,
+          title: isSearching
+              ? 'No saved recipes match “$query”'
+              : 'No saved recipes yet',
+          message: isSearching
+              ? 'Try searching with a different recipe name.'
+              : 'Create a recipe for meals you make often.',
+          action: isSearching
+              ? () {
+                  _searchController.clear();
+                  controller.loadRecipes(query: '');
+                  setState(() {});
+                }
+              : () async {
+                  await Navigator.push<bool>(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const NutritionRecipeEditorScreen(),
+                    ),
+                  );
+                  if (mounted) unawaited(controller.loadRecipes());
+                },
+          actionLabel: isSearching ? 'Clear search' : 'Create recipe',
+          actionIcon: isSearching ? Icons.clear_rounded : Icons.add_rounded,
         ),
       ),
     );
@@ -314,7 +353,10 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
     final recipe = state.selectedRecipe!;
     final version = state.selectedVersion;
     if (state.status == SavedRecipeLogStatus.loadingSelection) {
-      return const Center(child: CircularProgressIndicator());
+      return const Padding(
+        padding: EdgeInsets.all(16),
+        child: ConsumerStatusRow(label: 'Loading recipe', loading: true),
+      );
     }
     if (version == null) {
       return SingleChildScrollView(
@@ -361,6 +403,14 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
               context,
             ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
           ),
+          if (recipe.description != null &&
+              recipe.description!.trim().isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(
+              recipe.description!,
+              style: TextStyle(color: context.b05Colors.textSecondary),
+            ),
+          ],
           const SizedBox(height: 4),
           Text(
             'Updated ${_formatDate(version.updatedAt)}',
@@ -392,6 +442,107 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
                     },
             ),
           ],
+          const SizedBox(height: 16),
+          // Yield / Servings Callout
+          if (hasServing || version.yieldQuantity != null)
+            B05Surface(
+              tone: B05SurfaceTone.inset,
+              padding: const EdgeInsets.all(B05Layout.space12),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.room_service_outlined,
+                    color: context.b05Colors.action,
+                    size: 20,
+                  ),
+                  const SizedBox(width: B05Layout.space8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          hasServing
+                              ? 'Makes ${_formatServingCount(version.servingDefinition!.count)} serving${version.servingDefinition!.count.asDouble == 1.0 ? '' : 's'}'
+                              : 'Total yield: ${version.yieldQuantity!.amount} ${version.yieldQuantity!.definition.displayLabel}',
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                        Text(
+                          'Nutrition scales proportionally when logging portions.',
+                          style: TextStyle(
+                            color: context.b05Colors.textSecondary,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          const SizedBox(height: 20),
+          // Ingredients Breakdown Section
+          Row(
+            children: [
+              Text(
+                'INGREDIENTS',
+                style: B05Typography.caption(
+                  context,
+                ).copyWith(fontWeight: FontWeight.w700, letterSpacing: .6),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '(${version.ingredients.length})',
+                style: TextStyle(
+                  color: context.b05Colors.textSecondary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          if (version.ingredients.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Text(
+                'No ingredients listed in this recipe version.',
+                style: TextStyle(color: context.b05Colors.textSecondary),
+              ),
+            )
+          else
+            ...version.ingredients.map(
+              (ingredient) => Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: B05Surface(
+                  tone: B05SurfaceTone.inset,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: B05Layout.space12,
+                    vertical: B05Layout.space8,
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.circle,
+                        size: 8,
+                        color: context.b05Colors.action,
+                      ),
+                      const SizedBox(width: B05Layout.space8),
+                      Expanded(
+                        child: _SavedRecipeIngredientName(
+                          foodId: ingredient.foodId,
+                        ),
+                      ),
+                      Text(
+                        '${ingredient.quantity.amount} ${ingredient.quantity.definition.displayLabel}',
+                        style: TextStyle(
+                          color: context.b05Colors.textSecondary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           const SizedBox(height: 20),
           const Text(
             'How much?',
@@ -473,7 +624,7 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
             _buildPreview(context, state.preview!, state),
             const SizedBox(height: 16),
           ],
-          if (state.status != SavedRecipeLogStatus.success)
+          if (state.status != SavedRecipeLogStatus.success) ...[
             Row(
               children: [
                 Expanded(
@@ -499,6 +650,29 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
                 ],
               ],
             ),
+            const SizedBox(height: 10),
+            Center(
+              child: TextButton.icon(
+                onPressed: isFinalizing
+                    ? null
+                    : () async {
+                        await Navigator.push<bool>(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => NutritionRecipeEditorScreen(
+                              recipeId: recipe.id,
+                            ),
+                          ),
+                        );
+                        if (context.mounted) {
+                          unawaited(controller.selectRecipe(recipe));
+                        }
+                      },
+                icon: const Icon(Icons.edit_outlined, size: 18),
+                label: const Text('Edit recipe'),
+              ),
+            ),
+          ],
           if (isSuccess) _buildSuccess(context, state),
         ],
       ),
@@ -569,7 +743,7 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
             const SizedBox(height: 12),
             Text(
               incomplete
-                  ? 'Some nutrition information is missing'
+                  ? ConsumerCopy.nutritionDetailsIncomplete
                   : 'Nutrition information is available',
               style: TextStyle(
                 color: incomplete
@@ -708,7 +882,7 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
       localDate: localDate,
       timezoneId: timezoneId,
     );
-    await _returnToTodayAfterSuccessfulSave();
+    _refreshAfterSuccessfulSave();
   }
 
   Future<void> _retryWithStoredTimezone(
@@ -730,10 +904,10 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
       localDate: localDate,
       timezoneId: timezoneId,
     );
-    await _returnToTodayAfterSuccessfulSave();
+    _refreshAfterSuccessfulSave();
   }
 
-  Future<void> _returnToTodayAfterSuccessfulSave() async {
+  void _refreshAfterSuccessfulSave() {
     if (!mounted ||
         ref.read(savedRecipeLogControllerProvider).status !=
             SavedRecipeLogStatus.success) {
@@ -742,7 +916,6 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
     ref.read(todayNutritionRevisionProvider.notifier).state++;
     ref.invalidate(b04ProductionRecommendationContextProvider);
     ref.invalidate(b04CurrentFoodControllerProvider);
-    Navigator.of(context).pop(true);
   }
 
   String _formatDate(DateTime value) =>
@@ -756,8 +929,44 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
     _ => 'meal',
   };
 
+  static String _formatServingCount(QuantityAmount count) {
+    final d = count.asDouble;
+    if (d == d.roundToDouble()) {
+      return d.toInt().toString();
+    }
+    return count.format(decimalPlaces: 1);
+  }
+
   static String _localDateKey(DateTime value) =>
       '${value.year.toString().padLeft(4, '0')}-'
       '${value.month.toString().padLeft(2, '0')}-'
       '${value.day.toString().padLeft(2, '0')}';
+}
+
+class _SavedRecipeIngredientName extends ConsumerWidget {
+  const _SavedRecipeIngredientName({required this.foodId});
+
+  final String foodId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final name = ref.watch(_savedRecipeIngredientNameProvider(foodId));
+    return Text(
+      name.valueOrNull ?? _safeIngredientFallback(foodId),
+      style: const TextStyle(fontWeight: FontWeight.w600),
+    );
+  }
+}
+
+String _safeIngredientFallback(String foodId) {
+  if (!foodId.startsWith('food::')) return 'Ingredient unavailable';
+  final raw = foodId.substring(6).replaceAll('_', ' ').replaceAll('-', ' ');
+  return raw
+      .split(' ')
+      .map(
+        (word) => word.isNotEmpty
+            ? '${word[0].toUpperCase()}${word.substring(1)}'
+            : '',
+      )
+      .join(' ');
 }

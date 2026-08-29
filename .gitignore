@@ -54,3 +54,8 @@ app.*.map.json
 # Build artifacts & APKs
 test_builds/
 *.apk
+
+# R08-0.3 RepDB files are private/local acquisition artifacts. Keep the
+# directory sentinel and provenance manifest source-controlled, but never raw
+# RepDB WebPs.
+assets/generated/repdb/**/*.webp

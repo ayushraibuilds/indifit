@@ -218,34 +218,45 @@ class BackupFileAdapter {
       );
     }
 
+    // Envelope labels are convenient for file browsers, but they are outside
+    // the checksummed payload and must never become restore-preview authority.
+    // Derive every user-visible fact from the fully decoded payload instead.
+    final payloadMetadata = BackupEnvelope.create(
+      data: backupData,
+      payloadText: jsonPayload,
+      isEncrypted: false,
+    );
+    final payloadTableCounts = <String, int>{
+      ...payloadMetadata.tableCounts,
+      ...?backupV8Data?.nutrition.tables.map(
+        (key, rows) => MapEntry(key, rows.length),
+      ),
+      ...?backupV9Data?.adaptiveCoaching.tables.map(
+        (key, rows) => MapEntry(key, rows.length),
+      ),
+      ...?backupV10Data?.b05.tables.map(
+        (key, rows) => MapEntry(key, rows.length),
+      ),
+    };
+    final payloadSchemaVersion =
+        backupV10Data?.schemaVersion ??
+        backupV9Data?.schemaVersion ??
+        backupV8Data?.schemaVersion ??
+        backupData.schemaVersion;
+    final payloadTimestamp =
+        backupV10Data?.timestamp ??
+        backupV9Data?.timestamp ??
+        backupV8Data?.timestamp ??
+        backupData.timestamp;
+
     return BackupInspectionResult(
       envelope: envelope,
       backupData: backupData,
       isEncrypted: envelope.isEncrypted,
-      profileName: envelope.profileName.isNotEmpty
-          ? envelope.profileName
-          : (backupData.userProfile?.name ?? 'User Profile'),
-      schemaVersion: envelope.schemaVersion,
-      timestamp: envelope.timestamp,
-      tableCounts: envelope.tableCounts.isNotEmpty
-          ? envelope.tableCounts
-          : {
-              'food_logs': backupData.foodLogs.length,
-              'workout_sessions': backupData.workoutSessions.length,
-              'workout_sets': backupData.workoutSets.length,
-              'body_measurements': backupData.bodyMeasurements.length,
-              'daily_hydrations': backupData.dailyHydrations.length,
-              'achievement_unlocks': backupData.achievementUnlocks.length,
-              ...?backupV8Data?.nutrition.tables.map(
-                (key, rows) => MapEntry(key, rows.length),
-              ),
-              ...?backupV9Data?.adaptiveCoaching.tables.map(
-                (key, rows) => MapEntry(key, rows.length),
-              ),
-              ...?backupV10Data?.b05.tables.map(
-                (key, rows) => MapEntry(key, rows.length),
-              ),
-            },
+      profileName: backupData.userProfile?.name ?? 'User Profile',
+      schemaVersion: payloadSchemaVersion,
+      timestamp: payloadTimestamp,
+      tableCounts: payloadTableCounts,
       backupV8Data: backupV8Data,
       backupV9Data: backupV9Data,
       backupV10Data: backupV10Data,

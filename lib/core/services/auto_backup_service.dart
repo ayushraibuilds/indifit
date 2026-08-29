@@ -40,7 +40,7 @@ class AutoBackupService {
         await f1.copy(f2.path);
       }
 
-      await f1.writeAsString(jsonStr);
+      await f1.writeAsString(jsonStr, flush: true);
       AppLogger.info(
         'Auto-backup snapshot created successfully',
         'AutoBackupService',

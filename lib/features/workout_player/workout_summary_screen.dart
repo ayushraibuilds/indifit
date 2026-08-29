@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../core/di/providers.dart';
 import '../../core/presentation/product_failure_presentation.dart';
+import '../../core/services/workout_session_wake_lock_coordinator.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../data/database/app_database.dart';
@@ -68,7 +71,7 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
         final commandId = widget.completionCommandId;
         if (commandId == null || commandId.trim().isEmpty) {
           throw const ScheduledWorkoutFinalizationException(
-            'This workout is missing a required detail. Reopen it and try again.',
+            'Some workout details are missing. Reopen the workout and try again.',
           );
         }
         await ref
@@ -98,6 +101,17 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
         // Legacy/unscheduled behavior intentionally stays unchanged.
         await repo.deleteActiveDraft();
       }
+
+      // The durable save/finalization above is authoritative. Screen-awake
+      // cleanup is best effort and cannot turn a successful workout into a
+      // failure state.
+      unawaited(
+        ref
+            .read(workoutSessionWakeLockCoordinatorProvider)
+            .clearActiveSession(
+              legacyWorkoutSessionWakeLockKey(widget.scheduledOccurrenceId),
+            ),
+      );
 
       if (mounted && Navigator.of(context).canPop()) {
         Navigator.pop(context); // Exit summary and return to split view
@@ -138,6 +152,8 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        // Keep the neutral legacy route title stable; the body explicitly
+        // identifies this as a pre-save review.
         title: const Text('Workout Summary'),
         automaticallyImplyLeading: false, // Don't allow backing out to player
       ),
@@ -154,7 +170,7 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
                     ),
                     const SizedBox(height: B05Layout.space12),
                     Text(
-                      'Workout complete',
+                      'Review workout',
                       style: B05Typography.pageTitle(context),
                     ),
                     const SizedBox(height: B05Layout.space4),
@@ -165,6 +181,11 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
                         color: context.b05Colors.action,
                         fontWeight: FontWeight.w600,
                       ),
+                    ),
+                    const SizedBox(height: B05Layout.space8),
+                    const Text(
+                      'Review your logged sets before saving this workout.',
+                      textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: B05Layout.space24),
 
@@ -224,7 +245,7 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
                     Align(
                       alignment: Alignment.centerLeft,
                       child: Text(
-                        'Exercises completed',
+                        'Exercises logged',
                         style: B05Typography.caption(
                           context,
                         ).copyWith(fontWeight: FontWeight.w700),
@@ -285,11 +306,10 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
                     ? null
                     : () {
                         final text =
-                            'Crushed my workout today! 🏋️\n'
+                            'Workout review\n'
                             'Routine: ${widget.routineName}\n'
-                            'Volume Lifted: ${totalVolume.round()} kg\n'
-                            'Duration: $durationText\n'
-                            'Logged with IndiFit App ⚡';
+                            'Logged sets: ${widget.loggedSets.length}\n'
+                            'Duration: $durationText';
                         Share.share(text);
                       },
               ),

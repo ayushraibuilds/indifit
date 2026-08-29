@@ -21,11 +21,14 @@ import 'package:indifit/data/repositories/food_repository.dart';
 import 'package:indifit/data/repositories/nutrition_consumption_repository.dart';
 import 'package:indifit/data/repositories/nutrition_food_catalog_repository.dart';
 import 'package:indifit/data/repositories/nutrition_food_logging_coordinator.dart';
+import 'package:indifit/data/repositories/nutrition_thali_repository.dart';
 import 'package:indifit/data/repositories/nutrition_transformation_repository.dart';
 import 'package:indifit/features/dashboard/main_navigation_scaffold.dart';
 import 'package:indifit/features/food_log/ai_meal_logger_screen.dart';
 import 'package:indifit/features/food_log/food_log_surface.dart';
 import 'package:indifit/features/food_log/food_search_screen.dart';
+import 'package:indifit/features/food_log/saved_meals_controller.dart';
+import 'package:indifit/features/food_log/saved_meals_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -147,7 +150,7 @@ void main() {
         () => Future<void>.delayed(const Duration(milliseconds: 100)),
       );
       await tester.pump(const Duration(milliseconds: 250));
-      expect(find.text('Log to LUNCH'), findsOneWidget);
+      expect(find.text('Log to lunch'), findsOneWidget);
       expect(find.text('servings'), findsOneWidget);
       expect(
         find.widgetWithText(ElevatedButton, 'Add to Lunch'),
@@ -604,11 +607,17 @@ void main() {
     await _pumpFood(tester);
 
     await tester.enterText(find.byType(TextField).first, 'first');
-    await tester.pump(const Duration(milliseconds: 800));
+    await tester.pump(const Duration(milliseconds: 299));
+    expect(online.completers, isNot(contains('first')));
+    await tester.pump(const Duration(milliseconds: 1));
     expect(online.completers, contains('first'));
     await tester.enterText(find.byType(TextField).first, 'second');
     expect(online.tokens['first']!.isCancelled, isTrue);
-    await tester.pump(const Duration(milliseconds: 800));
+    expect(find.text('Stale first result'), findsNothing);
+    await tester.pump(const Duration(milliseconds: 299));
+    expect(online.completers, isNot(contains('second')));
+    await tester.pump(const Duration(milliseconds: 1));
+    expect(online.completers, contains('second'));
     online.completers['second']!.complete([
       FoodApiResult(
         name: 'Second result',
@@ -636,6 +645,11 @@ void main() {
 
     expect(find.text('Second result'), findsOneWidget);
     expect(find.text('Stale first result'), findsNothing);
+
+    await tester.enterText(find.byType(TextField).first, '');
+    await tester.pump();
+    expect(find.text('Second result'), findsNothing);
+    expect(find.text('Search results'), findsNothing);
   });
 
   testWidgets('remote provider results remain distinct from local foods', (
@@ -747,10 +761,10 @@ void main() {
       expect(find.text('Search results'), findsOneWidget);
       expect(find.text('Family Paneer'), findsNWidgets(2));
       expect(find.text('Custom'), findsOneWidget);
-      expect(find.textContaining('200 g pack'), findsOneWidget);
+      expect(find.textContaining('Package: 200 g'), findsOneWidget);
       expect(
         find.bySemanticsLabel(
-          'Family Paneer, custom food, 250 kcal, 18.0 g protein',
+          RegExp(r'^Family Paneer, custom food, .*250.*18'),
         ),
         findsOneWidget,
       );
@@ -808,53 +822,54 @@ void main() {
     expect(find.text('Online search unavailable'), findsNothing);
   });
 
-  testWidgets('AI completion unwinds the food entry route to its caller', (
-    tester,
-  ) async {
-    _setViewport(tester, const Size(390, 2000));
-    final database = AppDatabase.memory();
-    late ProviderContainer container;
-    addTearDown(() async {
-      await tester.pumpWidget(const SizedBox.shrink());
-      container.dispose();
-      tester.view.resetPhysicalSize();
-      tester.view.resetDevicePixelRatio();
-      await database.close();
-    });
-    await tester.pumpWidget(
-      _foodApp(
-        database: database,
-        repository: _TestFoodRepository(database),
-        mealType: 'breakfast',
-        selectedDate: DateTime(2026, 8, 9),
-        home: const _FoodRouteHarness(),
-      ),
-    );
-    container = ProviderScope.containerOf(
-      tester.element(find.byType(_FoodRouteHarness)),
-    );
-    unawaited(
-      tester
-          .state<_FoodRouteHarnessState>(find.byType(_FoodRouteHarness))
-          .openFoodFlow(),
-    );
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
-    expect(find.byType(FoodSearchScreen), findsOneWidget);
-    tester.testTextInput.hide();
-    await tester.pump(const Duration(seconds: 3));
-    expect(find.text('Describe with AI'), findsOneWidget);
-    await tester.tap(find.widgetWithText(ListTile, 'Describe with AI'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 750));
-    expect(find.byType(AiMealLoggerScreen), findsOneWidget);
-    Navigator.of(tester.element(find.byType(AiMealLoggerScreen))).pop(true);
-    await tester.pump(const Duration(milliseconds: 750));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
-    expect(find.text('Saved result'), findsOneWidget);
-    expect(find.byType(FoodSearchScreen), findsNothing);
-  });
+  testWidgets(
+    'Saved meals completion unwinds the food entry route to its caller',
+    (tester) async {
+      _setViewport(tester, const Size(390, 2000));
+      final database = AppDatabase.memory();
+      late ProviderContainer container;
+      addTearDown(() async {
+        await tester.pumpWidget(const SizedBox.shrink());
+        container.dispose();
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+        await database.close();
+      });
+      await tester.pumpWidget(
+        _foodApp(
+          database: database,
+          repository: _TestFoodRepository(database),
+          mealType: 'breakfast',
+          selectedDate: DateTime(2026, 8, 9),
+          home: const _FoodRouteHarness(),
+        ),
+      );
+      container = ProviderScope.containerOf(
+        tester.element(find.byType(_FoodRouteHarness)),
+      );
+      unawaited(
+        tester
+            .state<_FoodRouteHarnessState>(find.byType(_FoodRouteHarness))
+            .openFoodFlow(),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.byType(FoodSearchScreen), findsOneWidget);
+      tester.testTextInput.hide();
+      await tester.pump(const Duration(seconds: 3));
+      expect(find.text('Saved meals'), findsOneWidget);
+      await tester.tap(find.widgetWithText(ListTile, 'Saved meals'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 750));
+      expect(find.byType(SavedMealsScreen), findsOneWidget);
+      Navigator.of(tester.element(find.byType(SavedMealsScreen))).pop(true);
+      await tester.pump(const Duration(milliseconds: 750));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.text('Saved result'), findsOneWidget);
+      expect(find.byType(FoodSearchScreen), findsNothing);
+    },
+  );
 
   testWidgets('recent and saved landing state golden', (tester) async {
     _setViewport(tester, const Size(390, 844));
@@ -1065,7 +1080,7 @@ void main() {
     );
     await tester.pump(const Duration(milliseconds: 250));
     await tester.pumpAndSettle();
-    expect(find.text('Log to BREAKFAST'), findsOneWidget);
+    expect(find.text('Log to breakfast'), findsOneWidget);
     await expectLater(
       find.byKey(const ValueKey('food_quantity_review_surface')),
       matchesGoldenFile('goldens/ux_r03_food_quantity_review_dark.png'),
@@ -1183,6 +1198,9 @@ Widget _foodApp({
       if (apiService != null)
         foodApiServiceProvider.overrideWithValue(apiService),
       canonicalRecentFoodsProvider.overrideWith((ref) async => canonicalRecent),
+      savedMealsControllerProvider.overrideWith(
+        (ref) => _StaticSavedMealsController(),
+      ),
       foodLogsForDayProvider.overrideWith((ref, date) async => []),
       canonicalFoodRecordsForDayProvider.overrideWith((ref, date) async => []),
       foodDiaryReadModelProvider.overrideWith((ref, date) async {
@@ -1215,6 +1233,7 @@ Widget _foodApp({
       data: MediaQueryData(
         size: mediaSize ?? Size.zero,
         textScaler: TextScaler.linear(textScale),
+        disableAnimations: true,
       ),
       child: MaterialApp(
         theme: theme ?? AppTheme.darkTheme,
@@ -1228,6 +1247,16 @@ Widget _foodApp({
       ),
     ),
   );
+}
+
+class _StaticSavedMealsController extends SavedMealsController {
+  _StaticSavedMealsController()
+    : super(
+        thaliRepoFuture: Completer<NutritionThaliRepository>().future,
+        userId: kLocalNutritionUserScopeId,
+      ) {
+    state = const SavedMealsState(status: SavedMealsStatus.ready);
+  }
 }
 
 void _setViewport(WidgetTester tester, Size size) {
@@ -1561,6 +1590,7 @@ class _FoodRouteHarnessState extends State<_FoodRouteHarness> {
         builder: (_) => FoodSearchScreen(
           mealType: 'breakfast',
           selectedDate: DateTime(2026, 8, 9),
+          returnToParentOnSave: true,
         ),
       ),
     );

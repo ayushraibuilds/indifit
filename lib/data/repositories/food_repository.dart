@@ -34,12 +34,18 @@ class FoodRepository {
 
     final cleanQuery = query.toLowerCase().trim();
 
-    // Search by name or hindi name containing the query with null protection
+    // Search only fields that already belong to the local food record. The
+    // ranking layer still decides relevance; this query merely makes
+    // searchable metadata (brand/category/region) discoverable offline.
     return (await (_db.select(_db.foodItems)..where(
           (tbl) =>
               tbl.name.lower().contains(cleanQuery) |
               (tbl.nameHindi.isNotNull() &
-                  tbl.nameHindi.lower().contains(cleanQuery)),
+                  tbl.nameHindi.lower().contains(cleanQuery)) |
+              (tbl.brand.isNotNull() & tbl.brand.lower().contains(cleanQuery)) |
+              tbl.category.lower().contains(cleanQuery) |
+              (tbl.regionPack.isNotNull() &
+                  tbl.regionPack.lower().contains(cleanQuery)),
         ))
         .get());
   }

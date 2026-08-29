@@ -71,7 +71,7 @@ class ProgramAuthoringController
       status: ProgramAuthoringStatus.failure,
       errorMessage: ProductFailurePresentation.fromError(
         error,
-        title: 'Program could not be saved',
+        title: 'Plan could not be saved',
         code: 'program_save_failed',
       ).message,
     );

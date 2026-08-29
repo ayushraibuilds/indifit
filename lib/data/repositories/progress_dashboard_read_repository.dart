@@ -6,10 +6,12 @@ import '../../core/services/local_schedule_date_service.dart';
 import '../database/app_database.dart';
 import '../models/b02_execution_models.dart';
 import '../models/b02_muscle_volume_models.dart';
+import '../models/b04_goal_models.dart';
 import '../models/progress_dashboard_models.dart';
 import 'b02_muscle_volume_repository.dart';
 import 'nutrition_goal_repository.dart';
 import 'nutrition_read_model_repository.dart';
+import 'nutrition_target_authority.dart';
 import 'workout_repository.dart';
 
 /// Read-only composition for the consumer Progress tab.
@@ -24,25 +26,33 @@ class ProgressDashboardReadRepository {
     WorkoutRepository? workouts,
     B02MuscleVolumeRepository? muscleVolume,
     NutritionReadModelRepository? nutrition,
+    NutritionTargetAuthority? nutritionTargets,
+    @Deprecated('Use nutritionTargets.')
     NutritionGoalRepository? nutritionGoals,
     LocalScheduleDateService? dates,
   }) : _workouts = workouts ?? WorkoutRepository(_database),
        _muscleVolume = muscleVolume ?? B02MuscleVolumeRepository(_database),
        _nutrition = nutrition,
-       _nutritionGoals = nutritionGoals,
+       _nutritionTargets =
+           nutritionTargets ??
+           (nutritionGoals == null
+               ? null
+               : NutritionTargetAuthority(
+                   goals: nutritionGoals,
+                   dates: dates ?? LocalScheduleDateService(),
+                 )),
        _dates = dates ?? LocalScheduleDateService();
 
   final AppDatabase _database;
   final WorkoutRepository _workouts;
   final B02MuscleVolumeRepository _muscleVolume;
   final NutritionReadModelRepository? _nutrition;
-  final NutritionGoalRepository? _nutritionGoals;
+  final NutritionTargetAuthority? _nutritionTargets;
   final LocalScheduleDateService _dates;
 
   Future<ProgressDashboardSnapshot> read({
     required DateTime nowUtc,
     required String timezoneId,
-    ProgressWeightGoal? weightGoal,
   }) async {
     final unavailable = <ProgressDataSection>{};
     final now = nowUtc.toUtc();
@@ -101,7 +111,6 @@ class ProgressDashboardReadRepository {
       strengthSets: strengthSets,
       muscleBalance: muscleBalance,
       unavailableSections: unavailable,
-      weightGoal: weightGoal,
       nutritionSummary: nutritionSummary,
       strengthExercises: strengthExercises,
       weeklyTrainedDates: weeklyTrainedDates,
@@ -170,6 +179,7 @@ class ProgressDashboardReadRepository {
               durationSeconds: row.durationSeconds,
               workingSetsCount: facts?.workingSetsCount ?? 0,
               volumeIsTrustworthy: volumeIsTrustworthy,
+              completionKind: row.completionKind,
             );
           }(),
     ];
@@ -287,8 +297,12 @@ class ProgressDashboardReadRepository {
       final actualLoad = set.actualLoadKg;
       final actualReps = set.actualReps;
       final loadBasis = set.actualLoadBasis;
-      if (completedAtUtc.isAfter(nowUtc) ||
+      if (!const {'full', 'partial'}.contains(session.completionKind) ||
+          !const {'completed', 'partial'}.contains(exercise.status) ||
+          completedAtUtc.isAfter(nowUtc) ||
           actualLoad == null ||
+          !actualLoad.isFinite ||
+          actualLoad < 0 ||
           actualReps == null ||
           actualReps < 1 ||
           loadBasis == null) {
@@ -356,6 +370,7 @@ class ProgressDashboardReadRepository {
     var proteinEvidenceDays = 0;
     double? todayTargetCalories;
     double? todayTargetProtein;
+    NutritionGoalType? todayTargetGoalType;
 
     final dates = [
       for (var i = 0; i < 7; i++) _dates.addCalendarDays(monday, timezoneId, i),
@@ -390,17 +405,17 @@ class ProgressDashboardReadRepository {
         continue;
       }
 
-      final activeGoal = _nutritionGoals == null
+      final targets = _nutritionTargets == null
           ? null
-          : await _nutritionGoals.activeGoalForPrimaryProfile(
-              localDate: date,
-              timezoneId: timezoneId,
+          : await _nutritionTargets.resolve(
+              NutritionTargetDateQuery(localDate: date, timezoneId: timezoneId),
             );
-      final targetCalories = activeGoal?.calorieTargetKcal?.toDouble();
-      final targetProtein = activeGoal?.proteinTargetG;
+      final targetCalories = targets?.calorieTargetKcal?.toDouble();
+      final targetProtein = targets?.proteinTargetG;
       if (isToday) {
         todayTargetCalories = targetCalories;
         todayTargetProtein = targetProtein;
+        todayTargetGoalType = targets?.goalVersion?.goalType;
       }
 
       final daily = dailyModels[date];
@@ -467,6 +482,7 @@ class ProgressDashboardReadRepository {
           : null,
       targetCaloriesKcal: todayTargetCalories,
       targetProteinG: todayTargetProtein,
+      targetGoalType: todayTargetGoalType,
       hasTarget: daySummaries.any(
         (day) => day.calorieTargetKcal != null || day.proteinTargetG != null,
       ),

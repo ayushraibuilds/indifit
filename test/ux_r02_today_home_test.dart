@@ -94,7 +94,7 @@ void main() {
     expect(protein.isAvailable, isFalse);
     expect(protein.value, '—');
     expect(partial.hasIncompleteNutrition, isTrue);
-    expect(partial.headline, 'Some nutrition is incomplete');
+    expect(partial.headline, 'Some nutrition details are incomplete');
 
     final noTarget = TodayNutritionPresentation.from(
       TodayDomainRead.available(_populatedNutrition()),
@@ -257,7 +257,7 @@ void main() {
     expect(find.bySemanticsLabel('View workout'), findsOneWidget);
   });
 
-  testWidgets('Next Up does not duplicate the generic workout CTA', (
+  testWidgets('Next Up hides when there is no canonical next action', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -269,7 +269,7 @@ void main() {
     );
     await _settleToday(tester);
 
-    expect(find.bySemanticsLabel('Choose workout'), findsOneWidget);
+    expect(find.bySemanticsLabel('Choose workout'), findsNothing);
   });
 
   testWidgets('meal source refresh redraws subtotal, ring, and macros', (
@@ -339,7 +339,7 @@ void main() {
 
       expect(find.text('Plan ahead'), findsOneWidget);
       expect(find.bySemanticsLabel('Start workout'), findsNothing);
-      expect(find.bySemanticsLabel('Today'), findsOneWidget);
+      expect(find.bySemanticsLabel('Go to today'), findsOneWidget);
     },
   );
 

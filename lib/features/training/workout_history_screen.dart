@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/di/providers.dart';
 import '../../core/presentation/consumer_date_label.dart';
 import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
+import '../../core/widgets/consumer_task_primitives.dart';
 import '../../data/models/b02_execution_models.dart';
 import '../../data/repositories/b02_execution_compatibility_read_repository.dart';
 
@@ -30,10 +32,11 @@ class WorkoutHistoryScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Workout history')),
       body: history.when(
-        loading: () => Center(
-          child: Semantics(
+        loading: () => const Padding(
+          padding: EdgeInsets.all(B05Layout.space20),
+          child: ConsumerStatusRow(
             label: 'Loading workout history',
-            child: CircularProgressIndicator(),
+            loading: true,
           ),
         ),
         error: (_, _) => Center(
@@ -60,8 +63,16 @@ class WorkoutHistoryScreen extends ConsumerWidget {
                 itemCount: items.length,
                 separatorBuilder: (_, _) =>
                     const SizedBox(height: B05Layout.space8),
-                itemBuilder: (context, index) =>
-                    _WorkoutHistoryRow(item: items[index]),
+                itemBuilder: (context, index) => _WorkoutHistoryRow(
+                  item: items[index],
+                  onOpen: items[index].isCanonical
+                      ? () => context.push(
+                          items[index].activityType == B02ActivityType.strength
+                              ? '/workout-history/${items[index].sessionId}'
+                              : '/activity-history/${items[index].sessionId}',
+                        )
+                      : null,
+                ),
               ),
       ),
     );
@@ -69,55 +80,73 @@ class WorkoutHistoryScreen extends ConsumerWidget {
 }
 
 class _WorkoutHistoryRow extends StatelessWidget {
-  const _WorkoutHistoryRow({required this.item});
+  const _WorkoutHistoryRow({required this.item, this.onOpen});
 
   final B02ActivityHistoryItem item;
+  final VoidCallback? onOpen;
 
   @override
   Widget build(BuildContext context) {
     final detail = _detailLabel(item);
-    // Legacy rows keep a short provenance note; current rows need no label.
-    final source = item.isLegacy ? 'Earlier workout' : null;
+    final source = _historyContextLabel(item);
+    final status = item.isPartial ? 'Partially completed' : 'Completed';
     final date = ConsumerDateLabel.dateTime(item.completedAt);
-    return Semantics(
-      label:
-          '${item.name}, $date${source == null ? '' : ', $source'}, $detail.',
-      child: B05Surface(
-        tone: B05SurfaceTone.interactive,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(Icons.fitness_center_rounded, color: context.b05Colors.action),
-            const SizedBox(width: B05Layout.space12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(item.name, style: B05Typography.label(context)),
-                  const SizedBox(height: B05Layout.space4),
-                  Text(
-                    '$date · ${_activityLabel(item.activityType)}',
-                    style: B05Typography.caption(context),
-                  ),
-                  const SizedBox(height: B05Layout.space4),
-                  Text(detail, style: B05Typography.caption(context)),
-                  if (source != null) ...[
-                    const SizedBox(height: B05Layout.space4),
-                    Text(
-                      source,
-                      style: B05Typography.caption(
-                        context,
-                      ).copyWith(color: context.b05Colors.textSecondary),
-                    ),
-                  ],
-                ],
-              ),
+    final row = B05Surface(
+      tone: B05SurfaceTone.interactive,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.fitness_center_rounded, color: context.b05Colors.action),
+          const SizedBox(width: B05Layout.space12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(item.name, style: B05Typography.label(context)),
+                const SizedBox(height: B05Layout.space4),
+                Text(
+                  '$date · ${_activityLabel(item.activityType)} · $source',
+                  style: B05Typography.caption(context),
+                ),
+                const SizedBox(height: B05Layout.space4),
+                Text(
+                  '${_formatDuration(item.durationSeconds)} · $detail · $status',
+                  style: B05Typography.caption(context),
+                ),
+              ],
             ),
+          ),
+          if (onOpen != null) ...[
+            const SizedBox(width: B05Layout.space8),
+            Icon(Icons.chevron_right_rounded, color: context.b05Colors.action),
           ],
-        ),
+        ],
       ),
     );
+    return Semantics(
+      button: onOpen != null,
+      label: '${item.name}, $date, $source, $detail, $status.',
+      child: onOpen == null
+          ? row
+          : InkWell(
+              onTap: onOpen,
+              borderRadius: BorderRadius.circular(16),
+              child: row,
+            ),
+    );
   }
+}
+
+String _historyContextLabel(B02ActivityHistoryItem item) {
+  if (item.isLegacy) return 'Earlier workout';
+  if (item.scheduledOccurrenceId != null) return 'Planned workout';
+  if (item.activityType == B02ActivityType.strength) {
+    // The canonical session schema does not distinguish Quick from manual
+    // historical strength input. Keep that difference truthful instead of
+    // guessing from a display name.
+    return 'Independent workout';
+  }
+  return 'Logged activity';
 }
 
 String _activityLabel(B02ActivityType type) => switch (type) {
@@ -144,11 +173,18 @@ String _detailLabel(B02ActivityHistoryItem item) {
     B02ActivityType.walking =>
       item.hasCardioDetail
           ? '${item.cardioIntervalCount} intervals'
-          : 'Cardio detail not available yet',
+          : 'Cardio details are unavailable',
     B02ActivityType.yoga || B02ActivityType.mobility =>
       item.hasMobilityDetail
           ? 'Mobility detail'
-          : 'Mobility detail not available yet',
+          : 'Mobility details are unavailable',
     B02ActivityType.legacy => 'Details not available',
   };
+}
+
+String _formatDuration(int seconds) {
+  final minutes = seconds ~/ 60;
+  final remainder = seconds % 60;
+  if (remainder == 0) return '$minutes min';
+  return '$minutes min ${remainder}s';
 }

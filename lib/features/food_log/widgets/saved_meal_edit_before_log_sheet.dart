@@ -6,10 +6,11 @@ import 'package:uuid/uuid.dart';
 
 import '../../../core/di/providers.dart';
 import '../../../core/nutrition_thali.dart';
+import '../../../core/presentation/consumer_copy.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
-import '../../../core/theme/colors.dart';
 import '../../../core/typed_quantities.dart';
 import '../../dashboard/today_surface_controller.dart';
+import '../saved_meal_presentation.dart';
 
 class SavedMealEditBeforeLogSheet extends ConsumerStatefulWidget {
   final NutritionThaliDraft draft;
@@ -217,7 +218,7 @@ class _SavedMealEditBeforeLogSheetState
   @override
   Widget build(BuildContext context) {
     final activeItemCount = _enabledItemIds.length;
-    final mealName = widget.mealType.toUpperCase();
+    final mealName = widget.mealType.toLowerCase();
 
     return SafeArea(
       child: Padding(
@@ -272,21 +273,21 @@ class _SavedMealEditBeforeLogSheetState
 
               if (_errorMessage != null)
                 Container(
-                  color: AppColors.danger.withValues(alpha: 0.1),
+                  color: context.b05Colors.danger.container,
                   padding: const EdgeInsets.all(12),
                   child: Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.error_outline,
-                        color: AppColors.danger,
+                        color: context.b05Colors.danger.indicator,
                         size: 20,
                       ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           _errorMessage!,
-                          style: const TextStyle(
-                            color: AppColors.danger,
+                          style: TextStyle(
+                            color: context.b05Colors.danger.foreground,
                             fontSize: 13,
                           ),
                         ),
@@ -297,10 +298,10 @@ class _SavedMealEditBeforeLogSheetState
 
               if (_hasPartialNutrition)
                 Container(
-                  color: AppColors.warning.withValues(alpha: 0.1),
+                  color: context.b05Colors.warning.container,
                   padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
                   child: Text(
-                    'Some nutrition details are incomplete and will stay marked as incomplete in this log.',
+                    '${ConsumerCopy.nutritionDetailsIncomplete}. They will stay incomplete in this log.',
                     style: TextStyle(
                       color: context.b05Colors.textSecondary,
                       fontSize: 12,
@@ -337,10 +338,17 @@ class _SavedMealEditBeforeLogSheetState
                     final item = _items[index];
                     final isEnabled = _enabledItemIds.contains(item.id);
                     final multiplier = _quantityMultipliers[item.id] ?? 1.0;
-                    final effectiveAmount =
-                        item.quantity.amount.asDouble * multiplier;
-                    final displayQty =
-                        '${effectiveAmount == effectiveAmount.roundToDouble() ? effectiveAmount.toInt() : effectiveAmount.toStringAsFixed(1)} ${item.quantity.unit.name}';
+                    final displayQty = savedMealQuantityLabel(
+                      item.copyWith(
+                        quantity: Quantity(
+                          amount: item.quantity.amount.multiply(
+                            QuantityAmount.fromNum(multiplier),
+                          ),
+                          unit: item.quantity.unit,
+                          context: item.quantity.context,
+                        ),
+                      ),
+                    );
 
                     return Padding(
                       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -352,7 +360,7 @@ class _SavedMealEditBeforeLogSheetState
                           final toggle = Checkbox(
                             value: isEnabled,
                             onChanged: (_) => _toggleItem(item.id),
-                            activeColor: AppColors.primary,
+                            activeColor: context.b05Colors.action,
                           );
                           final details = Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -389,7 +397,7 @@ class _SavedMealEditBeforeLogSheetState
                                         Icons.remove_circle_outline,
                                         size: 22,
                                       ),
-                                      color: AppColors.primary,
+                                      color: context.b05Colors.action,
                                       onPressed: () =>
                                           _adjustMultiplier(item.id, -0.25),
                                     ),
@@ -406,7 +414,7 @@ class _SavedMealEditBeforeLogSheetState
                                         Icons.add_circle_outline,
                                         size: 22,
                                       ),
-                                      color: AppColors.primary,
+                                      color: context.b05Colors.action,
                                       onPressed: () =>
                                           _adjustMultiplier(item.id, 0.25),
                                     ),
@@ -454,27 +462,23 @@ class _SavedMealEditBeforeLogSheetState
                         ? null
                         : _commitLog,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
+                      backgroundColor: context.b05Colors.action,
+                      foregroundColor: context.b05Colors.onAction,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
                     child: _isCommitting
-                        ? const SizedBox(
+                        ? SizedBox(
                             width: 24,
                             height: 24,
                             child: CircularProgressIndicator(
-                              color: Colors.white,
+                              color: context.b05Colors.onAction,
                               strokeWidth: 2,
                             ),
                           )
                         : Text(
-                            'ADD $activeItemCount ${activeItemCount == 1 ? 'ITEM' : 'ITEMS'} TO $mealName',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.5,
-                            ),
+                            'Add $activeItemCount ${activeItemCount == 1 ? 'item' : 'items'} to $mealName',
                           ),
                   ),
                 ),

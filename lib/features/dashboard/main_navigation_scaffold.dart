@@ -106,8 +106,8 @@ class _MainNavigationScaffoldState extends State<MainNavigationScaffold> {
             label: 'Food',
           ),
           NavigationDestination(
-            icon: Icon(Icons.auto_graph_outlined),
-            selectedIcon: Icon(Icons.auto_graph_rounded),
+            icon: Icon(Icons.trending_up_outlined),
+            selectedIcon: Icon(Icons.trending_up_rounded),
             label: 'Progress',
           ),
         ],

@@ -1,9 +1,22 @@
+import 'dart:async';
+
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import '../../core/di/providers.dart';
 import '../database/app_database.dart';
 import 'legacy_program_compatibility_adapter.dart';
+
+/// Existing consumer validation bounds for manually logged body weight.
+/// These are shared by the repository and logging sheet so UI validation
+/// cannot drift from the persistence authority.
+const minimumLoggedWeightKg = 20.0;
+const maximumLoggedWeightKg = 350.0;
+
+bool isValidLoggedWeightKg(double value) =>
+    value.isFinite &&
+    value >= minimumLoggedWeightKg &&
+    value <= maximumLoggedWeightKg;
 
 final workoutRepositoryProvider = Provider<WorkoutRepository>((ref) {
   final db = ref.watch(databaseProvider);
@@ -288,29 +301,7 @@ class WorkoutRepository {
         .get();
   }
 
-  // 8. Calculate personal record (PR) from past sets based on estimated 1RM
-  Future<WorkoutSet?> getPersonalRecord(String exerciseName) async {
-    final sets = await (_db.select(
-      _db.workoutSets,
-    )..where((tbl) => tbl.exerciseName.equals(exerciseName))).get();
-
-    if (sets.isEmpty) return null;
-
-    WorkoutSet? bestSet;
-    double max1Rm = 0.0;
-
-    for (final s in sets) {
-      // Epley formula for 1RM calculation
-      final oneRm = s.weight * (1 + s.reps / 30.0);
-      if (oneRm > max1Rm) {
-        max1Rm = oneRm;
-        bestSet = s;
-      }
-    }
-    return bestSet;
-  }
-
-  // 9. Log body measurements with 7-day rate-limiting
+  // 8. Log body measurements with 7-day rate-limiting
   Future<WeightLogStatus> getWeightLogStatus() async {
     final now = DateTime.now();
     final todayStart = DateTime(now.year, now.month, now.day);
@@ -322,6 +313,8 @@ class WorkoutRepository {
                 expression: tbl.recordedAt,
                 mode: OrderingMode.desc,
               ),
+              (tbl) =>
+                  OrderingTerm(expression: tbl.id, mode: OrderingMode.desc),
             ]))
             .get();
 
@@ -376,6 +369,14 @@ class WorkoutRepository {
     double? chest,
     double? arms,
   }) async {
+    if (weight != null && !isValidLoggedWeightKg(weight)) {
+      throw ArgumentError.value(
+        weight,
+        'weight',
+        'Weight must be finite and between $minimumLoggedWeightKg and '
+            '$maximumLoggedWeightKg kg.',
+      );
+    }
     final status = await getWeightLogStatus();
     if (!status.canLog) {
       throw StateError(
@@ -388,11 +389,20 @@ class WorkoutRepository {
     final todayEnd = todayStart.add(const Duration(days: 1));
 
     final existing =
-        await (_db.select(_db.bodyMeasurements)..where(
-              (tbl) =>
-                  tbl.recordedAt.isBiggerOrEqualValue(todayStart) &
-                  tbl.recordedAt.isSmallerThanValue(todayEnd),
-            ))
+        await (_db.select(_db.bodyMeasurements)
+              ..where(
+                (tbl) =>
+                    tbl.recordedAt.isBiggerOrEqualValue(todayStart) &
+                    tbl.recordedAt.isSmallerThanValue(todayEnd),
+              )
+              ..orderBy([
+                (tbl) => OrderingTerm(
+                  expression: tbl.recordedAt,
+                  mode: OrderingMode.desc,
+                ),
+                (tbl) =>
+                    OrderingTerm(expression: tbl.id, mode: OrderingMode.desc),
+              ]))
             .get();
 
     if (existing.isNotEmpty) {
@@ -427,6 +437,14 @@ class WorkoutRepository {
   }
 
   Future<int> logWeightAndSyncProfile({required double weight}) async {
+    if (!isValidLoggedWeightKg(weight)) {
+      throw ArgumentError.value(
+        weight,
+        'weight',
+        'Weight must be finite and between $minimumLoggedWeightKg and '
+            '$maximumLoggedWeightKg kg.',
+      );
+    }
     final status = await getWeightLogStatus();
     if (!status.canLog) {
       throw StateError(
@@ -440,11 +458,20 @@ class WorkoutRepository {
 
     return await _db.transaction(() async {
       final existing =
-          await (_db.select(_db.bodyMeasurements)..where(
-                (tbl) =>
-                    tbl.recordedAt.isBiggerOrEqualValue(todayStart) &
-                    tbl.recordedAt.isSmallerThanValue(todayEnd),
-              ))
+          await (_db.select(_db.bodyMeasurements)
+                ..where(
+                  (tbl) =>
+                      tbl.recordedAt.isBiggerOrEqualValue(todayStart) &
+                      tbl.recordedAt.isSmallerThanValue(todayEnd),
+                )
+                ..orderBy([
+                  (tbl) => OrderingTerm(
+                    expression: tbl.recordedAt,
+                    mode: OrderingMode.desc,
+                  ),
+                  (tbl) =>
+                      OrderingTerm(expression: tbl.id, mode: OrderingMode.desc),
+                ]))
               .get();
 
       int measurementId;
@@ -482,6 +509,7 @@ class WorkoutRepository {
     return await (_db.select(_db.bodyMeasurements)..orderBy([
           (tbl) =>
               OrderingTerm(expression: tbl.recordedAt, mode: OrderingMode.desc),
+          (tbl) => OrderingTerm(expression: tbl.id, mode: OrderingMode.desc),
         ]))
         .get();
   }
@@ -561,6 +589,38 @@ class WorkoutRepository {
   /// snapshot is skipped so consumers do not invalidate while mounting.
   Stream<void> watchActiveDraftInvalidation() =>
       _db.select(_db.workoutDrafts).watch().skip(1).map<void>((_) {});
+
+  /// Emits when a training read model can change because the active draft or
+  /// completed session history changed. The initial values from both Drift
+  /// watches are skipped; only durable mutations invalidate consumers.
+  ///
+  /// This is deliberately a read invalidation signal, not a second workout
+  /// state authority. Completion of a scheduled B02 workout also changes the
+  /// occurrence, which is watched by [CalendarReadRepository] consumers.
+  Stream<void> watchTrainingInvalidation() {
+    late final StreamController<void> controller;
+    final subscriptions = <StreamSubscription<void>>[];
+    controller = StreamController<void>(
+      onListen: () {
+        final streams = <Stream<void>>[
+          _db.select(_db.workoutDrafts).watch().map<void>((_) {}),
+          _db.select(_db.workoutSessions).watch().map<void>((_) {}),
+        ];
+        for (final stream in streams) {
+          subscriptions.add(
+            stream.skip(1).listen(controller.add, onError: controller.addError),
+          );
+        }
+      },
+      onCancel: () async {
+        await Future.wait(
+          subscriptions.map((subscription) => subscription.cancel()),
+        );
+        subscriptions.clear();
+      },
+    );
+    return controller.stream;
+  }
 
   Future<int> saveWorkoutDraft(WorkoutDraftsCompanion draft) async {
     // Delete any previous drafts first to maintain at most one active draft

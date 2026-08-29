@@ -1,106 +1,68 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/b05_semantic_colors.dart';
+import '../../../core/widgets/b05_accessibility_primitives.dart';
 
-class PrivacyDisclosureCard extends StatefulWidget {
-  final bool initialTelemetryEnabled;
-  final ValueChanged<bool>? onTelemetryChanged;
+/// A factual explanation of the app's local-first and opt-in network
+/// behaviour. The controls themselves live beside this explanation so there
+/// is one owner for each persisted privacy preference.
+class PrivacyDisclosureCard extends StatelessWidget {
+  final bool offlineOnly;
+  final bool crashReportingEnabled;
 
   const PrivacyDisclosureCard({
     super.key,
-    this.initialTelemetryEnabled = false,
-    this.onTelemetryChanged,
+    this.offlineOnly = false,
+    this.crashReportingEnabled = false,
   });
-
-  @override
-  State<PrivacyDisclosureCard> createState() => _PrivacyDisclosureCardState();
-}
-
-class _PrivacyDisclosureCardState extends State<PrivacyDisclosureCard> {
-  late bool _telemetryEnabled;
-
-  @override
-  void initState() {
-    super.initState();
-    _telemetryEnabled = widget.initialTelemetryEnabled;
-  }
 
   @override
   Widget build(BuildContext context) {
     final colors = context.b05Colors;
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: colors.section,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: colors.border),
-      ),
+    final offlineCopy = offlineOnly
+        ? 'Offline mode is on, so app-initiated online requests are blocked.'
+        : 'Offline mode is off, so online features can be used when you choose them.';
+    final crashCopy = crashReportingEnabled
+        ? 'Crash diagnostics are currently enabled.'
+        : 'Crash diagnostics are currently off.';
+
+    return B05Surface(
+      padding: const EdgeInsets.all(B05Layout.space16),
+      showBorder: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Icon(
-                Icons.privacy_tip_rounded,
-                color: colors.success.indicator,
-                size: 18,
+                Icons.privacy_tip_outlined,
+                color: colors.info.indicator,
+                size: B05Layout.iconMedium,
               ),
-              const SizedBox(width: 8),
-              const Text(
-                '100% On-Device Data Storage',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '• Local Primary Storage: All food logs, custom routines, weight measurements, and settings remain stored inside an offline SQLite database on your device.\n\n'
-            '• Cloud AI Features: When enabled, AI meal estimation, photo analysis, routine generation, and Open Food Facts lookups send text or photo queries to secure servers.\n\n'
-            '• Strict Offline Mode: Turning on Offline Mode blocks app-initiated remote requests, photo uploads, external food lookups, video links, and remote diagnostic reporting.',
-            style: TextStyle(
-              color: colors.textSecondary,
-              fontSize: 11,
-              height: 1.4,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Divider(color: colors.border),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
+              const SizedBox(width: B05Layout.space8),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Anonymous Diagnostic Logging',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Help improve stability by sending non-personal crash logs.',
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: colors.textDisabled,
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  'How your data is handled',
+                  style: B05Typography.title(context),
                 ),
               ),
-              Switch.adaptive(
-                value: _telemetryEnabled,
-                onChanged: (val) {
-                  setState(() => _telemetryEnabled = val);
-                  widget.onTelemetryChanged?.call(val);
-                },
-                activeTrackColor: colors.action,
-              ),
             ],
           ),
+          const SizedBox(height: B05Layout.space8),
+          Text(
+            'Most IndiFit data is stored on this device. A backup or food and workout summary leaves the app only when you choose to share or copy it.',
+            style: B05Typography.body(context),
+          ),
+          const SizedBox(height: B05Layout.space12),
+          Text(
+            'AI meal tools can send text or photo queries when you use them. Online food search can send the search text needed for that feature. Photos and other device files are not included in backups. Crash diagnostics are optional and off by default.',
+            style: B05Typography.body(context),
+          ),
+          const SizedBox(height: B05Layout.space12),
+          B05StatusMessage(status: B05SemanticStatus.info, label: offlineCopy),
+          const SizedBox(height: B05Layout.space8),
+          B05StatusMessage(status: B05SemanticStatus.info, label: crashCopy),
         ],
       ),
     );

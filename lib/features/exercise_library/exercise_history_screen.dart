@@ -1,15 +1,19 @@
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:timezone/timezone.dart' as tz;
 
 import '../../core/di/providers.dart';
+import '../../core/services/local_schedule_date_service.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
-import '../../core/widgets/responsive_form_primitives.dart';
 import '../../data/database/app_database.dart';
 import '../../data/models/b02_execution_models.dart';
 import '../../data/repositories/b02_exercise_performance_read_repository.dart';
 import '../../data/repositories/workout_repository.dart';
+import '../progress/r08f3_strength_performance_presentation.dart';
+import '../workout_player/widgets/plate_calculator_sheet.dart';
 import '../workout_player/widgets/r07c_workout_presentation.dart';
 
 class R07CPerformanceEmptyState extends StatelessWidget {
@@ -51,11 +55,13 @@ class R07CPerformanceEmptyState extends StatelessWidget {
 class ExerciseHistoryScreen extends ConsumerStatefulWidget {
   final String exerciseName;
   final String? stableExerciseId;
+  final String? timezoneId;
 
   const ExerciseHistoryScreen({
     super.key,
     required this.exerciseName,
     this.stableExerciseId,
+    this.timezoneId,
   });
 
   @override
@@ -66,12 +72,6 @@ class ExerciseHistoryScreen extends ConsumerStatefulWidget {
 class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final TextEditingController _targetWeightController = TextEditingController(
-    text: '60',
-  );
-  double _barWeight = 20.0;
-  Map<double, int> _calculatedPlates = {};
-  double _unmatchedWeight = 0.0;
   late Future<_ExerciseHistory> _historyFuture;
   var _historyInitialized = false;
 
@@ -79,7 +79,6 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    _calculatePlatesNeeded();
   }
 
   @override
@@ -95,7 +94,8 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
   void didUpdateWidget(covariant ExerciseHistoryScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.exerciseName != widget.exerciseName ||
-        oldWidget.stableExerciseId != widget.stableExerciseId) {
+        oldWidget.stableExerciseId != widget.stableExerciseId ||
+        oldWidget.timezoneId != widget.timezoneId) {
       _historyFuture = _loadHistory();
     }
   }
@@ -106,9 +106,10 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
       final canonical = await ref
           .read(b02ExercisePerformanceReadRepositoryProvider)
           .read(stableExerciseId: stableExerciseId);
-      if (canonical.isNotEmpty) {
-        return _ExerciseHistory.canonical(canonical);
-      }
+      // A stable ID is an exact canonical query. Do not silently replace an
+      // empty canonical result with legacy name history for a similarly named
+      // exercise.
+      return _ExerciseHistory.canonical(canonical);
     }
     final legacy = await ref
         .read(workoutRepositoryProvider)
@@ -123,46 +124,7 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
   @override
   void dispose() {
     _tabController.dispose();
-    _targetWeightController.dispose();
     super.dispose();
-  }
-
-  void _calculatePlatesNeeded() {
-    final target = double.tryParse(_targetWeightController.text) ?? 0.0;
-    if (target <= _barWeight) {
-      setState(() {
-        _calculatedPlates = {};
-        _unmatchedWeight = 0.0;
-      });
-      return;
-    }
-
-    double weightPerSide = (target - _barWeight) / 2.0;
-    final denominations = [25.0, 20.0, 15.0, 10.0, 5.0, 2.5, 1.25];
-    final Map<double, int> result = {};
-
-    for (final denom in denominations) {
-      if (weightPerSide >= denom) {
-        final count = (weightPerSide / denom).floor();
-        result[denom] = count;
-        weightPerSide -= count * denom;
-      }
-    }
-
-    setState(() {
-      _calculatedPlates = result;
-      _unmatchedWeight = weightPerSide;
-    });
-  }
-
-  Color _getPlateColor(double weight) {
-    if (weight >= 25) return const Color(0xFFEF4444); // Red
-    if (weight >= 20) return const Color(0xFF3B82F6); // Blue
-    if (weight >= 15) return const Color(0xFFFBBF24); // Yellow
-    if (weight >= 10) return const Color(0xFF10B981); // Green
-    if (weight >= 5) return Colors.white70; // White
-    if (weight >= 2.5) return Colors.grey; // Black
-    return Colors.blueGrey; // Silver/Grey
   }
 
   @override
@@ -222,20 +184,35 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
 
   Widget _buildCanonicalHistoryTab(List<B02ExercisePerformanceRecord> history) {
     if (history.isEmpty) return const R07CPerformanceEmptyState();
+    final summary = R08F3StrengthPerformancePresentation.summarize(history);
     return _buildActualHistory(
       heading: 'Actual performance',
-      detail:
-          '${history.length} ${history.length == 1 ? 'session' : 'sessions'} saved for this exercise.',
+      detail: _canonicalHistoryDetail(summary),
+      summary: summary,
       records: [
         for (final record in history)
           _PerformanceHistoryItem(
             date: record.completedAt,
             sessionName: record.sessionName,
-            status: _statusLabel(record.exerciseStatus),
+            status: _statusLabel(record.exerciseStatus, record.completionKind),
+            isCanonical: true,
+            wasSubstituted: record.wasSubstituted,
+            expectedExerciseName: record.expectedExerciseName,
             sets: record.sets,
           ),
       ],
     );
+  }
+
+  static String _canonicalHistoryDetail(
+    R08F3StrengthPerformanceSummary summary,
+  ) {
+    final sessions =
+        '${summary.sessionCount} ${summary.sessionCount == 1 ? 'session' : 'sessions'}';
+    if (summary.occurrenceCount == summary.sessionCount) {
+      return '$sessions saved for this exercise.';
+    }
+    return '$sessions saved · ${summary.occurrenceCount} exercise entries saved.';
   }
 
   Widget _buildHistoryAndChartTab(List<Map<String, dynamic>> history) {
@@ -277,31 +254,17 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
     required String heading,
     required String detail,
     required List<_PerformanceHistoryItem> records,
+    R08F3StrengthPerformanceSummary? summary,
   }) => SingleChildScrollView(
     padding: const EdgeInsets.all(B05Layout.space16),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        B05Surface(
-          tone: B05SurfaceTone.selected,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(Icons.history_rounded, color: context.b05Colors.action),
-              const SizedBox(width: B05Layout.space12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(heading, style: B05Typography.title(context)),
-                    const SizedBox(height: B05Layout.space4),
-                    Text(detail, style: B05Typography.body(context)),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
+        _HistoryHeader(heading: heading, detail: detail, summary: summary),
+        if (summary != null) ...[
+          const SizedBox(height: B05Layout.space16),
+          _buildCanonicalTrend(summary),
+        ],
         const SizedBox(height: B05Layout.space16),
         Text('RECENT SESSIONS', style: B05Typography.label(context)),
         const SizedBox(height: B05Layout.space8),
@@ -317,7 +280,9 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     Text(
-                      DateFormat('MMM d, y').format(record.date.toLocal()),
+                      DateFormat(
+                        'MMM d, y',
+                      ).format(_dateInHistoryTimezone(record.date)),
                       style: B05Typography.label(context),
                     ),
                     if (record.status != null)
@@ -331,8 +296,22 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
                 ),
                 const SizedBox(height: B05Layout.space4),
                 Text(record.sessionName, style: B05Typography.body(context)),
+                if (record.wasSubstituted) ...[
+                  const SizedBox(height: B05Layout.space4),
+                  Text(
+                    record.expectedExerciseName == null
+                        ? 'Replacement used in this session'
+                        : 'Performed instead of ${record.expectedExerciseName}',
+                    style: B05Typography.caption(
+                      context,
+                    ).copyWith(color: context.b05Colors.textSecondary),
+                  ),
+                ],
                 const SizedBox(height: B05Layout.space12),
-                R07CPerformedSetList(sets: record.sets),
+                if (record.isCanonical)
+                  _R08F3PerformedSetList(sets: record.sets)
+                else
+                  R07CPerformedSetList(sets: record.sets),
               ],
             ),
           ),
@@ -342,288 +321,243 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
     ),
   );
 
-  static String _statusLabel(String status) => switch (status) {
-    'completed' => 'Completed',
-    'partial' => 'Partially complete',
-    'skipped' => 'Skipped',
-    'inProgress' => 'In progress',
-    _ => 'Logged',
-  };
+  static String _statusLabel(String status, [String? completionKind]) {
+    if (completionKind == 'partial') return 'Partially complete';
+    return switch (status) {
+      'completed' => 'Completed',
+      'partial' => 'Partially complete',
+      'skipped' => 'Skipped',
+      'inProgress' => 'In progress',
+      _ => 'Logged',
+    };
+  }
 
-  Widget _buildPlateCalculatorTab() {
+  Widget _buildCanonicalTrend(R08F3StrengthPerformanceSummary summary) {
     final colors = context.b05Colors;
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
+    if (summary.canShowTrend) {
+      final points = summary.trendPoints;
+      final basis = summary.trendBasis!;
+      final values = [
+        for (final point in points)
+          '${DateFormat('MMM d').format(_dateInHistoryTimezone(point.completedAt))}: ${R08F3StrengthPerformancePresentation.formatTrendLoad(point)}${point.isPartial ? ' (partial session)' : ''}',
+      ];
+      return B05Surface(
+        tone: B05SurfaceTone.inset,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Recorded load over sessions',
+              style: B05Typography.title(context),
+            ),
+            const SizedBox(height: B05Layout.space4),
+            Text(
+              'Heaviest recorded working load · ${R08F3StrengthPerformancePresentation.formatLoadBasis(basis)}',
+              style: B05Typography.caption(context),
+            ),
+            const SizedBox(height: B05Layout.space12),
+            Semantics(
+              container: true,
+              label: 'Recorded load over sessions. ${values.join('. ')}.',
+              hint: 'The session values are also listed below the chart.',
+              child: ExcludeSemantics(
+                child: SizedBox(
+                  key: const ValueKey('exercise_performance_load_chart'),
+                  height: 180,
+                  child: LineChart(
+                    _performanceChartData(context, points),
+                    duration: B05MotionPolicy.transitionDuration(context),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: B05Layout.space8),
+            Text(
+              'Session values: ${values.join(' · ')}',
+              style: B05Typography.caption(
+                context,
+              ).copyWith(color: colors.textPrimary),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final detail = summary.hasMultipleOccurrencesPerSession
+        ? 'A session contains this exercise more than once. Each entry is preserved below instead of merged into a chart.'
+        : summary.sessionCount == 1
+        ? 'One session saved. More sessions will show a factual comparison.'
+        : summary.hasIncompleteTrend
+        ? 'Some sessions do not have comparable load details. Their saved sets remain below.'
+        : 'Recorded sets use different load units. Compare each saved session below.';
+    return B05Surface(
+      tone: B05SurfaceTone.inset,
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'PLATE LOADING CALCULATOR',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              color: colors.textSecondary,
-              letterSpacing: 0.5,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                children: [
-                  IndiFitResponsiveFieldGroup(
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Target Weight (kg)',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: colors.textSecondary,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          TextField(
-                            controller: _targetWeightController,
-                            keyboardType: TextInputType.number,
-                            onChanged: (_) => _calculatePlatesNeeded(),
-                            decoration: const InputDecoration(
-                              hintText: 'e.g. 100',
-                            ),
-                          ),
-                        ],
-                      ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Barbell Weight (kg)',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: colors.textSecondary,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          DropdownButtonFormField<double>(
-                            initialValue: _barWeight,
-                            isExpanded: true,
-                            dropdownColor: Theme.of(
-                              context,
-                            ).colorScheme.surface,
-                            decoration: const InputDecoration(
-                              contentPadding: EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
-                              ),
-                            ),
-                            items: const [
-                              DropdownMenuItem(
-                                value: 20.0,
-                                child: Text(
-                                  '20 kg (Std)',
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              DropdownMenuItem(
-                                value: 15.0,
-                                child: Text('15 kg'),
-                              ),
-                              DropdownMenuItem(
-                                value: 10.0,
-                                child: Text('10 kg'),
-                              ),
-                            ],
-                            onChanged: (val) {
-                              if (val != null) {
-                                setState(() {
-                                  _barWeight = val;
-                                });
-                                _calculatePlatesNeeded();
-                              }
-                            },
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          Text(
-            'LOADING PER SIDE',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              color: colors.textSecondary,
-              letterSpacing: 0.5,
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          if (_calculatedPlates.isEmpty && _unmatchedWeight == 0.0)
-            B05Surface(
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Center(
-                  child: Text(
-                    'Target weight is equal to or less than the barbell weight.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: colors.textSecondary, fontSize: 12),
-                  ),
-                ),
-              ),
-            )
-          else
-            B05Surface(
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  children: [
-                    // Visual plate layout
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          // Barbell shaft left
-                          Container(width: 24, height: 6, color: Colors.grey),
-                          // Loaded plates list
-                          if (_calculatedPlates.isEmpty)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 8,
-                              ),
-                              decoration: BoxDecoration(
-                                color: colors.surfaceSubtle,
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                'Empty Bar',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: colors.textDisabled,
-                                ),
-                              ),
-                            )
-                          else
-                            ..._calculatedPlates.entries.map((entry) {
-                              final double plateWeight = entry.key;
-                              final int count = entry.value;
-                              return Row(
-                                children: List.generate(
-                                  count,
-                                  (_) => Container(
-                                    margin: const EdgeInsets.symmetric(
-                                      horizontal: 2,
-                                    ),
-                                    width: plateWeight >= 20 ? 14 : 8,
-                                    height: plateWeight >= 20 ? 56 : 38,
-                                    decoration: BoxDecoration(
-                                      color: _getPlateColor(plateWeight),
-                                      borderRadius: BorderRadius.circular(4),
-                                      border: Border.all(color: colors.border),
-                                    ),
-                                    alignment: Alignment.center,
-                                    child: RotatedBox(
-                                      quarterTurns: 1,
-                                      child: Text(
-                                        plateWeight % 1 == 0
-                                            ? '${plateWeight.toInt()}'
-                                            : '$plateWeight',
-                                        style: TextStyle(
-                                          color:
-                                              plateWeight >= 20 ||
-                                                  plateWeight <= 2.5
-                                              ? Colors.white
-                                              : Colors.black,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 9,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              );
-                            }),
-                          // Barbell sleeve end
-                          Container(width: 12, height: 12, color: Colors.grey),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Detail breakdown list
-                    ..._calculatedPlates.entries.map(
-                      (entry) => Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 6.0),
-                        child: Wrap(
-                          alignment: WrapAlignment.spaceBetween,
-                          runSpacing: 8,
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  width: 14,
-                                  height: 14,
-                                  decoration: BoxDecoration(
-                                    color: _getPlateColor(entry.key),
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  '${entry.key} kg Plate',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            Text(
-                              'x ${entry.value} per side',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: colors.action,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                    if (_unmatchedWeight > 0.0) ...[
-                      Divider(color: colors.border, height: 24),
-                      Wrap(
-                        alignment: WrapAlignment.spaceBetween,
-                        runSpacing: 8,
-                        children: [
-                          Text(
-                            'Still to load',
-                            style: TextStyle(color: colors.warning.foreground),
-                          ),
-                          Text(
-                            '${_unmatchedWeight.toStringAsFixed(2)} kg per side',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: colors.warning.foreground,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
+          Icon(Icons.show_chart_rounded, color: colors.textSecondary),
+          const SizedBox(width: B05Layout.space12),
+          Expanded(child: Text(detail, style: B05Typography.body(context))),
         ],
       ),
     );
+  }
+
+  LineChartData _performanceChartData(
+    BuildContext context,
+    List<R08F3StrengthTrendPoint> points,
+  ) {
+    final colors = context.b05Colors;
+    final loads = points.map((point) => point.loadKg).toList(growable: false);
+    final minimum = loads.reduce(
+      (first, second) => first < second ? first : second,
+    );
+    final maximum = loads.reduce(
+      (first, second) => first > second ? first : second,
+    );
+    final spread = maximum - minimum;
+    final padding = spread == 0
+        ? (maximum == 0 ? 1 : maximum * .15)
+        : spread * .2;
+    final minY = (minimum - padding).clamp(0, double.infinity).toDouble();
+    final maxY = (maximum + padding).toDouble();
+    final ySpan = (maxY - minY).abs() < .001 ? 1.0 : maxY - minY;
+    final maxX = (points.length - 1).toDouble();
+    final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
+    return LineChartData(
+      minX: 0,
+      maxX: maxX,
+      minY: minY,
+      maxY: maxY,
+      gridData: FlGridData(
+        show: true,
+        drawVerticalLine: false,
+        horizontalInterval: ySpan / 2,
+        getDrawingHorizontalLine: (_) =>
+            FlLine(color: colors.border.withValues(alpha: .35), strokeWidth: 1),
+      ),
+      titlesData: FlTitlesData(
+        topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        rightTitles: const AxisTitles(
+          sideTitles: SideTitles(showTitles: false),
+        ),
+        leftTitles: AxisTitles(
+          sideTitles: SideTitles(
+            showTitles: true,
+            reservedSize: (44 * textScale).clamp(44.0, 72.0),
+            interval: ySpan / 2,
+            getTitlesWidget: (value, _) => Text(
+              value.toStringAsFixed(0),
+              style: B05Typography.caption(context),
+            ),
+          ),
+        ),
+        bottomTitles: AxisTitles(
+          sideTitles: SideTitles(
+            showTitles: true,
+            reservedSize: 28,
+            interval: maxX == 0 ? 1 : maxX,
+            getTitlesWidget: (value, _) {
+              final index = value.round();
+              if (index < 0 || index >= points.length) {
+                return const SizedBox.shrink();
+              }
+              if (index != 0 && index != points.length - 1) {
+                return const SizedBox.shrink();
+              }
+              return Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(
+                  DateFormat(
+                    'MMM d',
+                  ).format(_dateInHistoryTimezone(points[index].completedAt)),
+                  style: B05Typography.caption(context),
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+      borderData: FlBorderData(show: false),
+      lineTouchData: LineTouchData(
+        enabled: true,
+        touchTooltipData: LineTouchTooltipData(
+          getTooltipColor: (_) => colors.surfaceSubtle,
+          tooltipRoundedRadius: 8,
+          tooltipPadding: const EdgeInsets.symmetric(
+            horizontal: 10,
+            vertical: 6,
+          ),
+          getTooltipItems: (spots) => [
+            for (final spot in spots)
+              LineTooltipItem(
+                '${DateFormat('MMM d').format(_dateInHistoryTimezone(points[spot.spotIndex].completedAt))}\n${R08F3StrengthPerformancePresentation.formatTrendLoad(points[spot.spotIndex])}',
+                TextStyle(
+                  color: colors.textPrimary,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 12,
+                ),
+              ),
+          ],
+        ),
+      ),
+      lineBarsData: [
+        LineChartBarData(
+          spots: [
+            for (var index = 0; index < points.length; index++)
+              FlSpot(index.toDouble(), points[index].loadKg),
+          ],
+          isCurved: false,
+          color: colors.action,
+          barWidth: 3,
+          isStrokeCapRound: true,
+          dotData: FlDotData(
+            show: true,
+            getDotPainter: (_, _, _, _) => FlDotCirclePainter(
+              radius: 4,
+              color: colors.section,
+              strokeColor: colors.action,
+              strokeWidth: 2,
+            ),
+          ),
+          belowBarData: BarAreaData(
+            show: true,
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                colors.action.withValues(alpha: 0.16),
+                colors.action.withValues(alpha: 0.0),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPlateCalculatorTab() {
+    return const PlateCalculatorView(
+      initialTargetWeight: 60.0,
+      isEditable: true,
+      showHeader: false,
+      padding: EdgeInsets.all(B05Layout.space16),
+    );
+  }
+
+  DateTime _dateInHistoryTimezone(DateTime instant) {
+    final timezoneId = widget.timezoneId?.trim();
+    if (timezoneId == null || timezoneId.isEmpty) return instant.toLocal();
+    try {
+      return tz.TZDateTime.from(
+        instant.toUtc(),
+        LocalScheduleDateService().locationFor(timezoneId),
+      );
+    } on ArgumentError {
+      // Legacy callers without a valid stored timezone keep their established
+      // device-local presentation. Progress always supplies a validated zone.
+      return instant.toLocal();
+    }
   }
 }
 
@@ -660,12 +594,182 @@ class _PerformanceHistoryItem {
     required this.sessionName,
     required this.sets,
     this.status,
+    this.isCanonical = false,
+    this.wasSubstituted = false,
+    this.expectedExerciseName,
   });
 
   final DateTime date;
   final String sessionName;
   final String? status;
+  final bool isCanonical;
+  final bool wasSubstituted;
+  final String? expectedExerciseName;
   final List<B02PerformedSet> sets;
+}
+
+class _HistoryHeader extends StatelessWidget {
+  const _HistoryHeader({
+    required this.heading,
+    required this.detail,
+    this.summary,
+  });
+
+  final String heading;
+  final String detail;
+  final R08F3StrengthPerformanceSummary? summary;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.b05Colors;
+    return B05Surface(
+      tone: B05SurfaceTone.inset,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: colors.action.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.history_rounded,
+                  color: colors.action,
+                  size: B05Layout.iconMedium,
+                ),
+              ),
+              const SizedBox(width: B05Layout.space12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(heading, style: B05Typography.title(context)),
+                    const SizedBox(height: B05Layout.space4),
+                    Text(detail, style: B05Typography.body(context)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (summary != null &&
+              (summary!.latestRecordedSet != null ||
+                  summary!.heaviestRecordedSet != null ||
+                  summary!.comparisonText != null ||
+                  summary!.partialSessionCount > 0)) ...[
+            const SizedBox(height: B05Layout.space16),
+            Divider(color: context.b05Colors.border),
+            const SizedBox(height: B05Layout.space12),
+            if (summary!.latestRecordedSet case final latest?) ...[
+              Text(
+                'Latest recorded set',
+                style: B05Typography.caption(context),
+              ),
+              const SizedBox(height: B05Layout.space4),
+              Semantics(
+                label:
+                    'Latest recorded set: ${R08F3StrengthPerformancePresentation.formatActualFact(latest)}',
+                child: ExcludeSemantics(
+                  child: Text(
+                    R08F3StrengthPerformancePresentation.formatActualFact(
+                      latest,
+                    ),
+                    style: B05Typography.title(context),
+                  ),
+                ),
+              ),
+            ],
+            if (summary!.heaviestRecordedSet case final heaviest?) ...[
+              const SizedBox(height: B05Layout.space8),
+              Text(
+                'Heaviest working set (${R08F3StrengthPerformancePresentation.formatLoadBasis(summary!.trendBasis!)})',
+                style: B05Typography.caption(context),
+              ),
+              const SizedBox(height: B05Layout.space4),
+              Semantics(
+                label:
+                    'Heaviest working set, ${R08F3StrengthPerformancePresentation.formatLoadBasis(summary!.trendBasis!)}: ${R08F3StrengthPerformancePresentation.formatActualFact(heaviest)}',
+                child: ExcludeSemantics(
+                  child: Text(
+                    R08F3StrengthPerformancePresentation.formatActualFact(
+                      heaviest,
+                    ),
+                    style: B05Typography.title(context),
+                  ),
+                ),
+              ),
+            ],
+            if (summary!.comparisonText case final comparison?) ...[
+              const SizedBox(height: B05Layout.space8),
+              Text(comparison, style: B05Typography.body(context)),
+            ],
+            if (summary!.partialSessionCount > 0) ...[
+              const SizedBox(height: B05Layout.space8),
+              Text(
+                '${summary!.partialSessionCount} ${summary!.partialSessionCount == 1 ? 'partial session is' : 'partial sessions are'} labelled below.',
+                style: B05Typography.caption(context),
+              ),
+            ],
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _R08F3PerformedSetList extends StatelessWidget {
+  const _R08F3PerformedSetList({required this.sets});
+
+  final List<B02PerformedSet> sets;
+
+  @override
+  Widget build(BuildContext context) {
+    if (sets.isEmpty) return const SizedBox.shrink();
+    final colors = context.b05Colors;
+    return B05Surface(
+      tone: B05SurfaceTone.inset,
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (final set in sets)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Semantics(
+                label:
+                    'Logged set ${R08F3StrengthPerformancePresentation.formatActualSet(set)}',
+                child: ExcludeSemantics(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.check_circle_rounded,
+                        size: 18,
+                        color: colors.success.foreground,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          R08F3StrengthPerformancePresentation.formatActualSet(
+                            set,
+                          ),
+                          style: B05Typography.body(
+                            context,
+                          ).copyWith(color: colors.textPrimary),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 }
 
 class _HistoryErrorState extends StatelessWidget {

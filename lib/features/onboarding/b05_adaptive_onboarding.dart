@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/fixtures/b05_foundation_registry.dart';
 import '../../core/nutrition_household_measures.dart';
 import '../../core/presentation/diet_preference_presentation.dart';
+import '../../core/presentation/today_onboarding_handoff.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../education/b05_education_content.dart';
@@ -401,6 +402,7 @@ class B05OnboardingDraftStore {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('onboarding_completed', true);
     await prefs.setBool('onboarding_skipped', true);
+    await clearTodayOnboardingHandoff();
     await clearProfileDraft();
   }
 

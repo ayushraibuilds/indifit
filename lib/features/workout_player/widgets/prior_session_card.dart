@@ -6,13 +6,11 @@ import '../../../data/database/app_database.dart';
 
 class PriorSessionCard extends StatelessWidget {
   final List<WorkoutSet> priorSets;
-  final WorkoutSet? bestPrSet;
   final double suggestedWeight;
 
   const PriorSessionCard({
     super.key,
     required this.priorSets,
-    this.bestPrSet,
     required this.suggestedWeight,
   });
 
@@ -24,68 +22,23 @@ class PriorSessionCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final stackHeader =
-                  constraints.maxWidth < B05Layout.compactBreakpoint ||
-                  MediaQuery.textScalerOf(context).scale(1) > 1.3;
-              final heading = Row(
-                children: [
-                  Icon(
-                    Icons.history_rounded,
-                    color: colors.action,
-                    size: B05Layout.iconSmall,
-                  ),
-                  const SizedBox(width: B05Layout.space8),
-                  Expanded(
-                    child: Text(
-                      'Last time',
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: B05Typography.label(context),
-                    ),
-                  ),
-                ],
-              );
-              final prBadge = bestPrSet == null
-                  ? null
-                  : B05Surface(
-                      tone: B05SurfaceTone.inset,
-                      radius: B05SurfaceRadius.small,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: B05Layout.space8,
-                        vertical: B05Layout.space4,
-                      ),
-                      child: Text(
-                        'PR: ${bestPrSet!.weight.toStringAsFixed(1)} kg × ${bestPrSet!.reps}',
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: B05Typography.caption(context).copyWith(
-                          color: colors.warning.indicator,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    );
-
-              if (prBadge == null) return heading;
-              if (stackHeader) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    heading,
-                    const SizedBox(height: B05Layout.space8),
-                    prBadge,
-                  ],
-                );
-              }
-              return Row(
-                children: [
-                  Expanded(child: heading),
-                  const SizedBox(width: B05Layout.space8),
-                  Flexible(child: prBadge),
-                ],
-              );
-            },
+          Row(
+            children: [
+              Icon(
+                Icons.history_rounded,
+                color: colors.action,
+                size: B05Layout.iconSmall,
+              ),
+              const SizedBox(width: B05Layout.space8),
+              Expanded(
+                child: Text(
+                  'Last time',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: B05Typography.label(context),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
           if (priorSets.isEmpty)

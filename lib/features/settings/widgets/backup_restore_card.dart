@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import '../../../core/theme/colors.dart';
+
+import '../../../core/widgets/b05_accessibility_primitives.dart';
 
 class BackupRestoreCard extends StatelessWidget {
-  final VoidCallback onExport;
-  final VoidCallback onRestore;
+  final VoidCallback? onExport;
+  final VoidCallback? onRestore;
 
   const BackupRestoreCard({
     super.key,
@@ -13,41 +14,22 @@ class BackupRestoreCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return B05ActionGroup(
       children: [
-        // Export a local backup.
-        ElevatedButton.icon(
+        B05ActionButton(
+          emphasis: B05ActionEmphasis.primary,
+          icon: Icons.ios_share_rounded,
+          label: 'Create and share backup',
+          hint: 'Create a backup file and choose where to share it.',
           onPressed: onExport,
-          icon: const Icon(Icons.download_rounded),
-          label: const Text('Export Local Backup (Encrypted)'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary.withValues(alpha: 0.12),
-            foregroundColor: AppColors.primary,
-            minimumSize: const Size.fromHeight(48),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(color: AppColors.primary.withValues(alpha: 0.2)),
-            ),
-            elevation: 0,
-          ),
         ),
-        const SizedBox(height: 12),
-
-        // Restore a local backup.
-        ElevatedButton.icon(
+        B05ActionButton(
+          emphasis: B05ActionEmphasis.secondary,
+          icon: Icons.upload_file_rounded,
+          label: 'Restore a backup',
+          hint:
+              'Choose a backup to inspect before replacing data on this device.',
           onPressed: onRestore,
-          icon: const Icon(Icons.upload_rounded, color: Colors.blueAccent),
-          label: const Text('Restore a backup'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.blueAccent.withValues(alpha: 0.12),
-            foregroundColor: Colors.blueAccent,
-            minimumSize: const Size.fromHeight(48),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(color: Colors.blueAccent.withValues(alpha: 0.2)),
-            ),
-            elevation: 0,
-          ),
         ),
       ],
     );

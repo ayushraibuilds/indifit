@@ -7,6 +7,10 @@ enum HealthStatus {
   loading,
   notRequested,
   denied,
+  partial,
+  unknown,
+  unsupported,
+  unavailable,
   available,
   noData,
   error,
@@ -55,25 +59,21 @@ class HealthStateNotifier extends StateNotifier<HealthState> {
       final summary = await _healthService.fetchTodayHealthData();
       if (!mounted) return;
 
-      if (summary.isError) {
-        state = HealthState(
-          status: HealthStatus.error,
-          summary: summary,
-          errorMessage: summary.statusMessage,
-        );
-      } else if (!summary.isConnected) {
-        state = HealthState(
-          status: HealthStatus.notRequested,
-          summary: summary,
-          errorMessage: summary.statusMessage,
-        );
-      } else if (summary.steps == 0 &&
-          summary.activeCalories == 0.0 &&
-          summary.sleepHours == 0.0) {
-        state = HealthState(status: HealthStatus.noData, summary: summary);
-      } else {
-        state = HealthState(status: HealthStatus.available, summary: summary);
-      }
+      final status = _statusForSummary(summary);
+      state = HealthState(
+        status: status,
+        summary: summary,
+        errorMessage: switch (status) {
+          HealthStatus.error ||
+          HealthStatus.notRequested ||
+          HealthStatus.denied ||
+          HealthStatus.partial ||
+          HealthStatus.unknown ||
+          HealthStatus.unsupported ||
+          HealthStatus.unavailable => summary.statusMessage,
+          _ => null,
+        },
+      );
     } catch (error) {
       if (!mounted) return;
       state = HealthState(
@@ -109,9 +109,40 @@ class HealthStateNotifier extends StateNotifier<HealthState> {
     if (!mounted) return;
 
     if (!granted) {
-      state = const HealthState(
-        status: HealthStatus.denied,
-        errorMessage: 'Health permissions denied by user.',
+      final requestStatus = _healthService.lastPermissionRequestStatus;
+      final status = switch (requestStatus) {
+        HealthConnectionStatus.unavailable => HealthStatus.unavailable,
+        HealthConnectionStatus.notConnected => HealthStatus.notRequested,
+        _ => HealthStatus.denied,
+      };
+      final connectionStatus = switch (status) {
+        HealthStatus.unavailable => HealthConnectionStatus.unavailable,
+        HealthStatus.notRequested => HealthConnectionStatus.notConnected,
+        _ => HealthConnectionStatus.denied,
+      };
+      state = HealthState(
+        status: status,
+        summary: state.summary.copyWith(
+          isConnected: false,
+          isError: false,
+          connectionStatus: connectionStatus,
+          integrationEnabled: false,
+          permissionStates: const {},
+          statusMessage: switch (status) {
+            HealthStatus.unavailable =>
+              'Health data is unavailable on this device.',
+            HealthStatus.notRequested => 'No Health categories are selected.',
+            _ =>
+              'Health permissions were denied. No selected Health permissions are available.',
+          },
+        ),
+        errorMessage: switch (status) {
+          HealthStatus.unavailable =>
+            'Health data is unavailable on this device.',
+          HealthStatus.notRequested => 'No Health categories are selected.',
+          _ =>
+            'Health permissions were denied. No selected Health permissions are available.',
+        },
       );
       return;
     }
@@ -122,6 +153,32 @@ class HealthStateNotifier extends StateNotifier<HealthState> {
   Future<void> refresh() async {
     state = state.copyWith(status: HealthStatus.refreshing);
     await loadHealthData();
+  }
+
+  static HealthStatus _statusForSummary(HealthDataSummary summary) {
+    if (summary.isError) return HealthStatus.error;
+    switch (summary.availability) {
+      case HealthPlatformAvailability.unsupported:
+        return HealthStatus.unsupported;
+      case HealthPlatformAvailability.unavailable:
+      case HealthPlatformAvailability.error:
+        return HealthStatus.unavailable;
+      case HealthPlatformAvailability.unknown:
+      case HealthPlatformAvailability.supported:
+        break;
+    }
+
+    return switch (summary.resolvedConnectionStatus) {
+      HealthConnectionStatus.notConnected => HealthStatus.notRequested,
+      HealthConnectionStatus.denied => HealthStatus.denied,
+      HealthConnectionStatus.partial => HealthStatus.partial,
+      HealthConnectionStatus.unknown => HealthStatus.unknown,
+      HealthConnectionStatus.unavailable => HealthStatus.unavailable,
+      HealthConnectionStatus.connected =>
+        summary.hasDailyMetricData
+            ? HealthStatus.available
+            : HealthStatus.noData,
+    };
   }
 }
 

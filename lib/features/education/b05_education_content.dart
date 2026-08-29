@@ -1064,16 +1064,16 @@ class _B05ExerciseEducationPanelState
             if (model.muscles.isUnknown && model.muscles.labels.isEmpty)
               const B05StatusMessage(
                 status: B05SemanticStatus.unavailable,
-                label: 'Muscle contribution is unknown',
+                label: 'Muscle contribution unavailable',
                 value:
-                    'No reviewed B02 mapping is available for this exercise.',
+                    'Detailed muscle contribution isn\'t available for this exercise.',
               )
             else ...[
               if (model.muscles.isUnknown)
                 const B05StatusMessage(
                   status: B05SemanticStatus.warning,
                   label: 'Some muscle contributions are unknown',
-                  value: 'Known reviewed B02 labels are shown below.',
+                  value: 'Available muscle details are shown below.',
                 ),
               ...B02MuscleRole.values.map((role) {
                 final labels = model.muscles

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/di/providers.dart';
 import '../../core/nutrition_constraints.dart';
 import '../../core/presentation/consumer_copy.dart';
+import '../../core/widgets/b05_accessibility_primitives.dart';
 import 'nutrition_constraint_review_controller.dart';
 
 class NutritionConstraintEvaluationReviewScreen extends ConsumerStatefulWidget {
@@ -93,38 +94,43 @@ class NutritionConstraintEvaluationReviewCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Semantics(
-              container: true,
-              label:
-                  'Overall dietary evaluation: $outcomeLabel. No known conflict is not guaranteed safety.',
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Overall result',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 6),
-                  Text(outcomeLabel),
-                  const SizedBox(height: 6),
-                  const Text(
-                    'This check uses the information available for this item. No known conflict is not a safety guarantee.',
-                  ),
-                ],
-              ),
+        B05Surface(
+          child: Semantics(
+            container: true,
+            label:
+                'Overall dietary evaluation: $outcomeLabel. No known conflict is not guaranteed safety.',
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Overall result',
+                  style: B05Typography.title(context),
+                ),
+                const SizedBox(height: B05Layout.space4),
+                Text(
+                  outcomeLabel,
+                  style: B05Typography.label(context),
+                ),
+                const SizedBox(height: B05Layout.space4),
+                Text(
+                  'This check uses the information available for this item. No known conflict is not a safety guarantee.',
+                  style: B05Typography.body(context),
+                ),
+              ],
             ),
           ),
         ),
-        for (final item in evaluation.evaluations)
+        const SizedBox(height: B05Layout.space12),
+        for (final item in evaluation.evaluations) ...[
           _EvaluationDetail(evaluation: item),
+          const SizedBox(height: B05Layout.space12),
+        ],
         if (evaluation.evaluations.isEmpty)
-          const Card(
-            child: Padding(
-              padding: EdgeInsets.all(16),
-              child: Text('No active dietary needs were evaluated.'),
+          B05Surface(
+            tone: B05SurfaceTone.inset,
+            child: Text(
+              'No active dietary needs were evaluated.',
+              style: B05Typography.body(context),
             ),
           ),
       ],
@@ -138,41 +144,46 @@ class _EvaluationDetail extends StatelessWidget {
   const _EvaluationDetail({required this.evaluation});
 
   @override
-  Widget build(BuildContext context) => Card(
-    margin: const EdgeInsets.only(bottom: 12),
-    child: Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            evaluation.type.displayLabel,
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 4),
-          Text('Item: ${_targetLabel(evaluation.targetKey)}'),
-          Text('Result: ${_outcomeLabel(evaluation.outcome)}'),
-          if (evaluation.acknowledged)
-            const Text('Your acknowledgement does not change the check.'),
-          const SizedBox(height: 8),
-          if (evaluation.evidence.isEmpty)
-            const Text('More information is needed to complete this check.')
-          else ...[
-            Text(
-              '${evaluation.evidence.length} ${evaluation.evidence.length == 1 ? 'check' : 'checks'} completed.',
-            ),
-          ],
-          if (evaluation.affectedComponentIds.isNotEmpty)
-            const Text(
-              'This check covers more than one ingredient or component.',
-            ),
-          if (evaluation.missingEvidence.isNotEmpty ||
-              evaluation.reasonCodes.isNotEmpty)
-            const Text(
-              'Why? I need a little more information before I can show this safely.',
-            ),
+  Widget build(BuildContext context) => B05Surface(
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          evaluation.type.displayLabel,
+          style: B05Typography.title(context),
+        ),
+        const SizedBox(height: B05Layout.space4),
+        Text('Item: ${_targetLabel(evaluation.targetKey)}', style: B05Typography.body(context)),
+        Text('Result: ${_outcomeLabel(evaluation.outcome)}', style: B05Typography.label(context)),
+        if (evaluation.acknowledged) ...[
+          const SizedBox(height: B05Layout.space4),
+          Text('Your acknowledgement does not change the check.', style: B05Typography.caption(context)),
         ],
-      ),
+        const SizedBox(height: B05Layout.space8),
+        if (evaluation.evidence.isEmpty)
+          Text('More information is needed to complete this check.', style: B05Typography.caption(context))
+        else ...[
+          Text(
+            '${evaluation.evidence.length} ${evaluation.evidence.length == 1 ? 'check' : 'checks'} completed.',
+            style: B05Typography.caption(context),
+          ),
+        ],
+        if (evaluation.affectedComponentIds.isNotEmpty) ...[
+          const SizedBox(height: B05Layout.space4),
+          Text(
+            'This check covers more than one ingredient or component.',
+            style: B05Typography.caption(context),
+          ),
+        ],
+        if (evaluation.missingEvidence.isNotEmpty ||
+            evaluation.reasonCodes.isNotEmpty) ...[
+          const SizedBox(height: B05Layout.space4),
+          Text(
+            'Why? I need a little more information before I can show this safely.',
+            style: B05Typography.caption(context),
+          ),
+        ],
+      ],
     ),
   );
 }

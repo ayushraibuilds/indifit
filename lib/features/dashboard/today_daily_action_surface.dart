@@ -4,14 +4,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/di/providers.dart';
 import '../../core/nutrition_legacy_read_models.dart';
+import '../../core/presentation/consumer_copy.dart';
 import '../../core/presentation/consumer_number_label.dart';
 import '../../core/presentation/daypart_greeting.dart';
+import '../../core/presentation/today_onboarding_handoff.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
+import '../../data/database/app_database.dart';
 import '../../data/models/b02_progress_read_models.dart';
+import '../../data/models/b04_current_food_models.dart';
 import '../../data/repositories/calendar_read_repository.dart';
 import '../food_log/food_search_screen.dart';
+import '../nutrition/current_food_controller.dart';
 import 'dashboard_module_registry.dart';
 import 'dashboard_personalization_controller.dart';
 import 'today_consumer_presentation.dart';
@@ -30,8 +36,39 @@ TodayDateRelation todayDateRelation(DateTime selectedDate, DateTime now) {
   return TodayDateRelation.today;
 }
 
+/// Returns the visible context for the selected civil date without changing
+/// the date authority. The short relative word makes historical and future
+/// browsing obvious while the full date keeps the context unambiguous.
+String todayDateContextLabel(DateTime selectedDate, DateTime now) {
+  final formatted = DateFormat('EEEE, d MMMM').format(selectedDate);
+  return switch (todayDateRelation(selectedDate, now)) {
+    TodayDateRelation.today => 'Today · $formatted',
+    TodayDateRelation.past => 'Past day · $formatted',
+    TodayDateRelation.future => 'Upcoming · $formatted',
+  };
+}
+
+/// Returns true only for a current-day B04 result that already contains a
+/// canonical, actionable candidate card. The Today surface does not infer
+/// usefulness from calories, macros, or local thresholds.
+bool todayMealIdeasAreAvailable({
+  required TodayDateRelation dateRelation,
+  required B04CurrentFoodState state,
+  String? expectedLocalDate,
+}) {
+  if (dateRelation != TodayDateRelation.today ||
+      state.status != B04CurrentFoodControllerStatus.ready) {
+    return false;
+  }
+  final guidance = state.guidance;
+  return guidance != null &&
+      guidance.status == B04CurrentFoodGuidanceStatus.available &&
+      guidance.cards.isNotEmpty &&
+      (expectedLocalDate == null || guidance.localDate == expectedLocalDate);
+}
+
 class TodayNextActionChoice {
-  final TodayNextAction action;
+  final TodayNextAction? action;
   final String label;
   final String hint;
 
@@ -40,10 +77,13 @@ class TodayNextActionChoice {
     required this.label,
     required this.hint,
   });
+
+  bool get shouldRender => action != null;
 }
 
-/// Selects only among routes already owned by the application. It does not
-/// rank workouts, calculate a recommendation, or infer a nutrition target.
+/// Compatibility projection for callers that still consume the older choice
+/// shape. The current/next decision remains entirely in
+/// [todayFocusPresentation], which consumes the shared R08A.2 resolver.
 TodayNextActionChoice chooseTodayNextAction({
   required TodayDateRelation dateRelation,
   TodaySurfaceSnapshot? snapshot,
@@ -55,28 +95,16 @@ TodayNextActionChoice chooseTodayNextAction({
       hint: 'Shows actions that are available today.',
     );
   }
-  final scheduled = snapshot?.calendar.value == null
-      ? false
-      : todayVisibleWorkoutOccurrences(snapshot!.calendar.value!).isNotEmpty;
-  if (scheduled == true) {
-    return const TodayNextActionChoice(
-      action: TodayNextAction.openWorkoutPlan,
-      label: 'View today’s workout',
-      hint: 'Opens your workout plan for today.',
-    );
-  }
-  final nutrition = snapshot?.nutrition.value;
-  if (nutrition != null && nutrition.records.isEmpty) {
-    return const TodayNextActionChoice(
-      action: TodayNextAction.logMeal,
-      label: 'Log your first meal',
-      hint: 'Opens the food logging flow for this day.',
-    );
-  }
-  return const TodayNextActionChoice(
-    action: TodayNextAction.openWorkoutPlan,
-    label: 'Open workout plan',
-    hint: 'Choose a workout or take a recovery day.',
+  final focus = todayFocusPresentation(
+    dateRelation: dateRelation,
+    snapshot: snapshot,
+  );
+  return TodayNextActionChoice(
+    action: focus.action,
+    label: focus.actionLabel ?? 'No next action',
+    hint: focus.action == null
+        ? focus.detail
+        : '${focus.title}. ${focus.detail}',
   );
 }
 
@@ -96,8 +124,9 @@ TodayNutritionSummaryState todayNutritionSummaryState(
   return TodayNutritionSummaryState.known;
 }
 
-/// The R2 Today composition. It reads source-owned B01–B04 projections and
-/// B05 layout preferences; it does not query Drift or calculate domain facts.
+/// The Today foundation composition. It reads source-owned B01–B04
+/// projections and B05 layout preferences; it does not query Drift or
+/// calculate domain facts.
 class TodayDailyActionSurface extends ConsumerWidget {
   const TodayDailyActionSurface({
     required this.selectedDate,
@@ -113,7 +142,9 @@ class TodayDailyActionSurface extends ConsumerWidget {
     this.now,
     this.onLogMealForMeal,
     this.onStartWorkout,
+    this.onResumeWorkout,
     this.onOpenFoodGuidance,
+    this.onOpenNutritionTargets,
   });
 
   final DateTime selectedDate;
@@ -131,7 +162,9 @@ class TodayDailyActionSurface extends ConsumerWidget {
   /// ordinary food-search route. [onLogMeal] remains the compatible default.
   final Future<void> Function(String mealType)? onLogMealForMeal;
   final Future<void> Function(CalendarOccurrenceReadItem item)? onStartWorkout;
+  final Future<void> Function(WorkoutDraft draft)? onResumeWorkout;
   final VoidCallback? onOpenFoodGuidance;
+  final VoidCallback? onOpenNutritionTargets;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -144,7 +177,7 @@ class TodayDailyActionSurface extends ConsumerWidget {
     final snapshotAsync = ref.watch(todaySurfaceSnapshotProvider(selectedDate));
     final referenceNow = now ?? DateTime.now();
     final relation = todayDateRelation(selectedDate, referenceNow);
-    final layout = personalization.layout.isEmpty
+    final configuredLayout = personalization.layout.isEmpty
         ? standardDashboardModuleRegistry.normalize(const [])
         : personalization.layout;
     final snapshot = snapshotAsync.valueOrNull;
@@ -158,6 +191,7 @@ class TodayDailyActionSurface extends ConsumerWidget {
                 )
               : null),
       loading: loading,
+      targetRead: snapshot?.targets,
       goal: snapshot?.goal,
     );
     final workout = TodayWorkoutPresentation.from(
@@ -168,6 +202,8 @@ class TodayDailyActionSurface extends ConsumerWidget {
                 )
               : null),
       loading: loading,
+      resolution: snapshot?.nextActionResolution,
+      localDate: snapshot?.localDate ?? todaySurfaceDateKey(selectedDate),
     );
     final activity = TodayActivityPresentation.from(
       snapshot?.progress ??
@@ -193,9 +229,31 @@ class TodayDailyActionSurface extends ConsumerWidget {
       loading: loading,
       unavailable: unavailable,
     );
-    final nextUpVisible = layout.any(
-      (item) => item.moduleId == 'today.next_action' && item.isVisible,
-    );
+    final nextUpVisible =
+        nextUp.shouldRender &&
+        configuredLayout.any(
+          (item) => item.moduleId == 'today.next_action' && item.isVisible,
+        );
+    // The B02 read is a trailing range ending on the selected date. For a
+    // future date that range can include present-day records, which must not
+    // be presented as evidence for that future Today context.
+    final evidenceDateSupported = relation != TodayDateRelation.future;
+    final layout = [
+      for (final item in configuredLayout)
+        if (_shouldRenderTodayModule(
+          item: item,
+          nextUp: nextUp,
+          activity: activity,
+          progress: progress,
+          evidenceDateSupported: evidenceDateSupported,
+          hideWorkoutDuplicate:
+              nextUpVisible &&
+              (nextUp.action == TodayNextAction.resumeWorkout ||
+                  nextUp.action == TodayNextAction.startWorkout ||
+                  nextUp.action == TodayNextAction.openWorkoutPlan),
+        ))
+          item,
+    ];
 
     return ColoredBox(
       color: context.b05Colors.page,
@@ -223,7 +281,7 @@ class TodayDailyActionSurface extends ConsumerWidget {
                     onOpenSettings: onOpenSettings,
                     onCustomize: onCustomize,
                   ),
-                  const SizedBox(height: B05Layout.space12),
+                  const SizedBox(height: B05Layout.space8),
                   DashboardDateBar(
                     selectedDate: selectedDate,
                     today: referenceNow,
@@ -244,7 +302,18 @@ class TodayDailyActionSurface extends ConsumerWidget {
                         onRetry: personalizationController.retry,
                       ),
                     ),
-                  const SizedBox(height: B05Layout.space16),
+                  if (relation == TodayDateRelation.today &&
+                      nutrition.state != TodayPresentationState.loading &&
+                      nutrition.state != TodayPresentationState.unavailable &&
+                      nutrition.hasAcceptedCalorieTarget) ...[
+                    const SizedBox(height: B05Layout.space8),
+                    _TodayOnboardingHandoff(
+                      presentation: nutrition,
+                      onReviewTargets: onOpenNutritionTargets ?? onOpenSettings,
+                      onLogFood: () => _openMeal(''),
+                    ),
+                  ],
+                  const SizedBox(height: B05Layout.space12),
                   for (final item in layout)
                     if (item.isVisible) ...[
                       _module(
@@ -259,7 +328,8 @@ class TodayDailyActionSurface extends ConsumerWidget {
                         progress: progress,
                         hideWorkoutDuplicate:
                             nextUpVisible &&
-                            (nextUp.action == TodayNextAction.startWorkout ||
+                            (nextUp.action == TodayNextAction.resumeWorkout ||
+                                nextUp.action == TodayNextAction.startWorkout ||
                                 nextUp.action ==
                                     TodayNextAction.openWorkoutPlan),
                         onRetry: () => ref.invalidate(
@@ -267,16 +337,17 @@ class TodayDailyActionSurface extends ConsumerWidget {
                         ),
                         onLogMeal: _openMeal,
                         onStartWorkout: _startWorkout,
-                        onOpenFoodGuidance: onOpenFoodGuidance ?? () {},
+                        onResumeWorkout: _resumeWorkout,
+                        onOpenFoodGuidance: onOpenFoodGuidance,
                         selectedDate: selectedDate,
                         onExpand: () => personalizationController.setCollapsed(
                           item.moduleId,
                           false,
                         ),
                       ),
-                      const SizedBox(height: B05Layout.space12),
+                      const SizedBox(height: B05Layout.space8),
                     ],
-                  if (!layout.any((item) => item.isVisible))
+                  if (!configuredLayout.any((item) => item.isVisible))
                     _NoVisibleModules(onCustomize: onCustomize),
                 ],
               ),
@@ -285,6 +356,42 @@ class TodayDailyActionSurface extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  bool _shouldRenderTodayModule({
+    required DashboardModuleLayoutItem item,
+    required TodayFocusPresentation nextUp,
+    required TodayActivityPresentation activity,
+    required TodayProgressPresentation progress,
+    required bool evidenceDateSupported,
+    required bool hideWorkoutDuplicate,
+  }) {
+    if (!item.isVisible) return false;
+    if (item.moduleId == 'today.next_action' && !nextUp.shouldRender) {
+      return false;
+    }
+    if (item.moduleId == 'today.activity' &&
+        (!evidenceDateSupported || !activity.shouldRender)) {
+      return false;
+    }
+    if (item.moduleId == 'today.progress' &&
+        (!evidenceDateSupported || !progress.shouldRender)) {
+      return false;
+    }
+    // A collapsed module is an explicit user choice. Keep its compact row
+    // available while a renderable source is loading; empty/error optional
+    // evidence has already failed closed above.
+    if (item.isCollapsed && item.descriptor.collapsible) return true;
+    return switch (item.moduleId) {
+      'today.workout' => !hideWorkoutDuplicate,
+      // Meal rows retain their direct add actions even on an empty day. The
+      // activity and progress descriptors are hidden by default and remain
+      // available through Customize Today when a person wants them.
+      'today.meal_rows' => true,
+      'today.activity' || 'today.progress' => true,
+      'today.next_action' || 'today.meals' => true,
+      _ => false,
+    };
   }
 
   void _openMeal(String mealType) {
@@ -305,6 +412,15 @@ class TodayDailyActionSurface extends ConsumerWidget {
     unawaited(callback(item));
   }
 
+  void _resumeWorkout(WorkoutDraft draft) {
+    final callback = onResumeWorkout;
+    if (callback == null) {
+      onOpenWorkoutPlan();
+      return;
+    }
+    unawaited(callback(draft));
+  }
+
   Widget _module({
     required BuildContext context,
     required WidgetRef ref,
@@ -319,7 +435,8 @@ class TodayDailyActionSurface extends ConsumerWidget {
     required VoidCallback onRetry,
     required ValueChanged<String> onLogMeal,
     required ValueChanged<CalendarOccurrenceReadItem> onStartWorkout,
-    required VoidCallback onOpenFoodGuidance,
+    required ValueChanged<WorkoutDraft> onResumeWorkout,
+    required VoidCallback? onOpenFoodGuidance,
     required Future<void> Function() onExpand,
     required DateTime selectedDate,
   }) {
@@ -330,11 +447,13 @@ class TodayDailyActionSurface extends ConsumerWidget {
       );
     }
     return switch (item.moduleId) {
-      'today.meals' => _TodayNutritionHero(
+      'today.meals' => TodayNutritionHero(
         presentation: nutrition,
         onLogFood: () => onLogMeal(''),
         onOpenFoodGuidance: onOpenFoodGuidance,
-        onOpenTargetSetup: onOpenSettings,
+        dateRelation: relation,
+        selectedDate: selectedDate,
+        onOpenTargetSetup: onOpenNutritionTargets ?? onOpenSettings,
         onRetry: onRetry,
       ),
       'today.next_action' => _TodayNextUpModule(
@@ -343,6 +462,7 @@ class TodayDailyActionSurface extends ConsumerWidget {
         onLogMeal: () => onLogMeal(''),
         onReturnToToday: () => onDateChanged(now ?? DateTime.now()),
         onStartWorkout: onStartWorkout,
+        onResumeWorkout: onResumeWorkout,
         onRetry: onRetry,
       ),
       'today.meal_rows' => _TodayMealsModule(
@@ -436,12 +556,12 @@ class _TodayHeaderState extends State<_TodayHeader>
   Widget build(BuildContext context) {
     final name = widget.userName.trim();
     final greeting = daypartGreeting(_localNow);
-    final date = DateFormat('EEEE, d MMMM').format(widget.selectedDate);
+    final dateContext = todayDateContextLabel(widget.selectedDate, _localNow);
     return Semantics(
       container: true,
       header: true,
       label: name.isEmpty || name == 'there' ? greeting : '$greeting, $name',
-      value: date,
+      value: dateContext,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -458,7 +578,7 @@ class _TodayHeaderState extends State<_TodayHeader>
                   style: B05Typography.pageTitle(context),
                 ),
                 const SizedBox(height: B05Layout.space4),
-                Text(date, style: B05Typography.body(context)),
+                Text(dateContext, style: B05Typography.body(context)),
                 if (widget.streakCount > 0) ...[
                   const SizedBox(height: B05Layout.space8),
                   _StreakChip(count: widget.streakCount),
@@ -468,7 +588,7 @@ class _TodayHeaderState extends State<_TodayHeader>
           ),
           B05IconAction(
             icon: Icons.tune_rounded,
-            label: 'Customize Today',
+            label: ConsumerCopy.customizeTodayAction,
             hint: 'Reorder, show, hide, or collapse Today modules.',
             onPressed: widget.onCustomize,
             focusOrder: 0,
@@ -528,18 +648,120 @@ class _StreakChip extends StatelessWidget {
   }
 }
 
-class _TodayNutritionHero extends StatelessWidget {
-  const _TodayNutritionHero({
+class _TodayOnboardingHandoff extends ConsumerWidget {
+  const _TodayOnboardingHandoff({
+    required this.presentation,
+    required this.onReviewTargets,
+    required this.onLogFood,
+  });
+
+  final TodayNutritionPresentation presentation;
+  final VoidCallback onReviewTargets;
+  final VoidCallback onLogFood;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final pending = ref.watch(todayOnboardingHandoffPendingProvider);
+    if (pending.valueOrNull != true) return const SizedBox.shrink();
+
+    final calories = presentation.calories?.targetValue;
+    final protein = presentation.macros
+        .where((metric) => metric.nutrientId == 'protein')
+        .firstOrNull
+        ?.targetValue;
+    final targetSummary = [
+      if (calories != null) '${_handoffNumber(calories)} kcal',
+      if (protein != null) '${_handoffNumber(protein)} g protein',
+    ].join(' · ');
+    final semanticLabel = targetSummary.isEmpty
+        ? 'Your starting targets are ready.'
+        : 'Your starting targets are ready. $targetSummary.';
+
+    return Semantics(
+      container: true,
+      label: semanticLabel,
+      child: B05Surface(
+        tone: B05SurfaceTone.selected,
+        padding: const EdgeInsets.all(B05Layout.space12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Your starting targets are ready',
+              style: B05Typography.title(context),
+            ),
+            if (targetSummary.isNotEmpty) ...[
+              const SizedBox(height: B05Layout.space4),
+              Text(targetSummary, style: B05Typography.body(context)),
+            ],
+            const SizedBox(height: B05Layout.space12),
+            B05ActionGroup(
+              children: [
+                B05ActionButton(
+                  label: 'Review targets',
+                  icon: Icons.track_changes_outlined,
+                  emphasis: B05ActionEmphasis.secondary,
+                  hint: 'Open your saved daily nutrition targets.',
+                  onPressed: () => unawaited(
+                    _acknowledgeAndRun(ref, context, onReviewTargets),
+                  ),
+                ),
+                B05ActionButton(
+                  label: 'Log food',
+                  icon: Icons.add_rounded,
+                  hint: 'Add your first food for today.',
+                  onPressed: () =>
+                      unawaited(_acknowledgeAndRun(ref, context, onLogFood)),
+                ),
+                B05ActionButton(
+                  label: 'Dismiss',
+                  emphasis: B05ActionEmphasis.tertiary,
+                  hint: 'Dismiss this starting-target message.',
+                  onPressed: () =>
+                      unawaited(acknowledgeTodayOnboardingHandoff(ref)),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _acknowledgeAndRun(
+    WidgetRef ref,
+    BuildContext context,
+    VoidCallback action,
+  ) async {
+    try {
+      await acknowledgeTodayOnboardingHandoff(ref);
+    } finally {
+      if (context.mounted) action();
+    }
+  }
+}
+
+String _handoffNumber(double value) => value == value.roundToDouble()
+    ? NumberFormat.decimalPattern().format(value.toInt())
+    : NumberFormat.decimalPattern().format(value);
+
+class TodayNutritionHero extends StatelessWidget {
+  const TodayNutritionHero({
     required this.presentation,
     required this.onLogFood,
     required this.onOpenFoodGuidance,
+    required this.dateRelation,
+    required this.selectedDate,
     required this.onOpenTargetSetup,
     required this.onRetry,
+    super.key,
   });
 
   final TodayNutritionPresentation presentation;
   final VoidCallback onLogFood;
-  final VoidCallback onOpenFoodGuidance;
+  final VoidCallback? onOpenFoodGuidance;
+  final TodayDateRelation dateRelation;
+  final DateTime selectedDate;
   final VoidCallback onOpenTargetSetup;
   final VoidCallback onRetry;
 
@@ -553,6 +775,16 @@ class _TodayNutritionHero extends StatelessWidget {
         title: 'Nutrition unavailable',
         detail: 'Try again to load your meals and nutrition.',
         onRetry: onRetry,
+      );
+    }
+    if (!presentation.hasAcceptedCalorieTarget) {
+      return _TodaySparseNutritionModule(
+        presentation: presentation,
+        onLogFood: onLogFood,
+        onOpenTargetSetup: onOpenTargetSetup,
+        dateRelation: dateRelation,
+        selectedDate: selectedDate,
+        onOpenFoodGuidance: onOpenFoodGuidance,
       );
     }
     return Semantics(
@@ -600,15 +832,7 @@ class _TodayNutritionHero extends StatelessWidget {
               const SizedBox(height: B05Layout.space12),
               _NutritionNotice(
                 icon: Icons.info_outline_rounded,
-                label: 'Some nutrition is incomplete',
-                color: context.b05Colors.unavailable.indicator,
-              ),
-            ],
-            if (!presentation.hasAcceptedCalorieTarget) ...[
-              const SizedBox(height: B05Layout.space12),
-              _NutritionNotice(
-                icon: Icons.track_changes_outlined,
-                label: 'No daily target set',
+                label: ConsumerCopy.nutritionDetailsIncomplete,
                 color: context.b05Colors.unavailable.indicator,
               ),
             ],
@@ -618,30 +842,195 @@ class _TodayNutritionHero extends StatelessWidget {
               runSpacing: B05Layout.space8,
               children: [
                 B05ActionButton(
-                  label: 'Log food',
+                  label: ConsumerCopy.logFoodAction,
                   icon: Icons.add_rounded,
                   hint: 'Search foods and log them for this day.',
                   onPressed: onLogFood,
                 ),
-                B05ActionButton(
-                  label: 'What can I eat?',
-                  icon: Icons.lightbulb_outline_rounded,
-                  hint: 'Shows a concise meal suggestion when one is ready.',
-                  emphasis: B05ActionEmphasis.secondary,
-                  onPressed: onOpenFoodGuidance,
+                _TodayMealIdeasAction(
+                  dateRelation: dateRelation,
+                  selectedDate: selectedDate,
+                  onOpenFoodGuidance: onOpenFoodGuidance,
                 ),
-                if (!presentation.hasAcceptedCalorieTarget)
-                  B05ActionButton(
-                    label: 'Set a target',
-                    emphasis: B05ActionEmphasis.tertiary,
-                    hint: 'Opens settings where you can set your own target.',
-                    onPressed: onOpenTargetSetup,
-                  ),
+                B05ActionButton(
+                  label: 'View targets',
+                  emphasis: B05ActionEmphasis.tertiary,
+                  hint: 'Opens Goal & targets for this date.',
+                  onPressed: onOpenTargetSetup,
+                ),
               ],
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _TodaySparseNutritionModule extends StatelessWidget {
+  const _TodaySparseNutritionModule({
+    required this.presentation,
+    required this.onLogFood,
+    required this.onOpenTargetSetup,
+    required this.dateRelation,
+    required this.selectedDate,
+    required this.onOpenFoodGuidance,
+  });
+
+  final TodayNutritionPresentation presentation;
+  final VoidCallback onLogFood;
+  final VoidCallback onOpenTargetSetup;
+  final TodayDateRelation dateRelation;
+  final DateTime selectedDate;
+  final VoidCallback? onOpenFoodGuidance;
+
+  @override
+  Widget build(BuildContext context) {
+    final noFood = presentation.isNoConsumptionKnown;
+    final calories = presentation.calories;
+    final loggedCalories = calories?.isAvailable == true
+        ? '${calories!.value} ${calories.unit} logged'
+        : 'Food logged';
+    final loggedMacros = presentation.macros
+        .where((metric) => metric.isAvailable)
+        .map((metric) => '${metric.label} ${metric.value} ${metric.unit}')
+        .toList(growable: false);
+    final targetContext = presentation.targetUnavailable
+        ? 'Target unavailable for this date'
+        : 'No daily target for this date';
+    final detail = noFood ? 'Nothing logged for this day' : loggedCalories;
+
+    return Semantics(
+      container: true,
+      label: noFood
+          ? 'Nutrition. Nothing logged for this day.'
+          : 'Nutrition. $loggedCalories. $targetContext.',
+      child: B05Surface(
+        key: const ValueKey('today-sparse-nutrition'),
+        padding: const EdgeInsets.all(B05Layout.space12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Nutrition', style: B05Typography.title(context)),
+            const SizedBox(height: B05Layout.space4),
+            Text(detail, style: B05Typography.body(context)),
+            if (!noFood && loggedMacros.isNotEmpty) ...[
+              const SizedBox(height: B05Layout.space8),
+              Text(
+                loggedMacros.join(' · '),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: B05Typography.caption(context),
+              ),
+            ],
+            if (!noFood && presentation.hasIncompleteNutrition) ...[
+              const SizedBox(height: B05Layout.space8),
+              Text(
+                ConsumerCopy.nutritionDetailsIncomplete,
+                style: B05Typography.caption(context),
+              ),
+            ],
+            if (!noFood || presentation.targetUnavailable) ...[
+              const SizedBox(height: B05Layout.space8),
+              Text(targetContext, style: B05Typography.caption(context)),
+            ],
+            const SizedBox(height: B05Layout.space12),
+            B05ActionGroup(
+              children: [
+                B05ActionButton(
+                  label: 'Log food',
+                  icon: Icons.add_rounded,
+                  hint: 'Search foods and log them for this day.',
+                  onPressed: onLogFood,
+                ),
+                _TodayMealIdeasAction(
+                  dateRelation: dateRelation,
+                  selectedDate: selectedDate,
+                  onOpenFoodGuidance: onOpenFoodGuidance,
+                ),
+                B05ActionButton(
+                  label: 'Set a target',
+                  emphasis: B05ActionEmphasis.tertiary,
+                  hint: 'Open Goal & targets for this date.',
+                  onPressed: onOpenTargetSetup,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TodayMealIdeasAction extends ConsumerStatefulWidget {
+  const _TodayMealIdeasAction({
+    required this.dateRelation,
+    required this.selectedDate,
+    required this.onOpenFoodGuidance,
+  });
+
+  final TodayDateRelation dateRelation;
+  final DateTime selectedDate;
+  final VoidCallback? onOpenFoodGuidance;
+
+  @override
+  ConsumerState<_TodayMealIdeasAction> createState() =>
+      _TodayMealIdeasActionState();
+}
+
+class _TodayMealIdeasActionState extends ConsumerState<_TodayMealIdeasAction> {
+  Object? _loadedContext;
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.dateRelation != TodayDateRelation.today ||
+        widget.onOpenFoodGuidance == null) {
+      return const SizedBox.shrink();
+    }
+
+    final contextAsync = ref.watch(b04ProductionRecommendationContextProvider);
+    final currentFoodContext = contextAsync.isLoading || contextAsync.hasError
+        ? null
+        : contextAsync.valueOrNull;
+    // Subscribe before scheduling the first load. Otherwise the short-circuit
+    // below can skip the watch while [needsLoad] is true, leaving this action
+    // unaware when the controller transitions from loading to ready.
+    final currentFoodState = ref.watch(b04CurrentFoodControllerProvider);
+    final expectedLocalDate = todaySurfaceDateKey(widget.selectedDate);
+    final contextMatchesDate =
+        currentFoodContext != null &&
+        currentFoodContext.window.startLocalDate == expectedLocalDate;
+    final needsLoad =
+        contextMatchesDate && !identical(_loadedContext, currentFoodContext);
+    if (needsLoad) {
+      _loadedContext = currentFoodContext;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        unawaited(
+          ref
+              .read(b04CurrentFoodControllerProvider.notifier)
+              .loadProduction(context: currentFoodContext),
+        );
+      });
+    }
+
+    final available =
+        contextMatchesDate &&
+        !needsLoad &&
+        todayMealIdeasAreAvailable(
+          dateRelation: widget.dateRelation,
+          state: currentFoodState,
+          expectedLocalDate: expectedLocalDate,
+        );
+    if (!available) return const SizedBox.shrink();
+
+    return B05ActionButton(
+      label: 'What can I eat?',
+      icon: Icons.lightbulb_outline_rounded,
+      hint: 'Shows a concise meal suggestion when one is ready.',
+      emphasis: B05ActionEmphasis.secondary,
+      onPressed: widget.onOpenFoodGuidance!,
     );
   }
 }
@@ -904,10 +1293,10 @@ class _MacroRow extends StatelessWidget {
       _ => context.b05Colors.unavailable,
     };
     final icon = switch (metric.nutrientId) {
-      'protein' => Icons.egg_alt_outlined,
-      'carbohydrate' => Icons.grain_outlined,
-      'fat' => Icons.oil_barrel_outlined,
-      'fibre' => Icons.eco_outlined,
+      'protein' => Icons.egg_alt_rounded,
+      'carbohydrate' => Icons.grain_rounded,
+      'fat' => Icons.opacity_rounded,
+      'fibre' => Icons.eco_rounded,
       _ => Icons.circle_outlined,
     };
     final compact = MediaQuery.textScalerOf(context).scale(1) > 1.35;
@@ -958,15 +1347,17 @@ class _MacroRow extends StatelessWidget {
                 ),
               ),
             ],
-            if (metric.estimated || metric.isIncomplete) ...[
+            if (metric.estimated && !metric.isIncomplete) ...[
               const SizedBox(height: B05Layout.space4),
-              Text(
-                metric.estimated ? 'Estimated' : 'Some details are incomplete',
-                style: B05Typography.caption(context),
-              ),
+              Text('Estimated', style: B05Typography.caption(context)),
             ],
-            const SizedBox(height: B05Layout.space4),
-            _MacroProgress(metric: metric, color: role.indicator),
+            if (metric.hasTarget && metric.progress != null) ...[
+              const SizedBox(height: B05Layout.space4),
+              _MacroProgress(metric: metric, color: role.indicator),
+            ] else if (!metric.isAvailable) ...[
+              const SizedBox(height: B05Layout.space4),
+              Text('Not available', style: B05Typography.caption(context)),
+            ],
           ],
         ),
       ),
@@ -986,7 +1377,7 @@ class _MacroProgress extends StatelessWidget {
       return Text('Not available', style: B05Typography.caption(context));
     }
     if (!metric.hasTarget || metric.progress == null) {
-      return Text('No target set', style: B05Typography.caption(context));
+      return const SizedBox.shrink();
     }
     return TweenAnimationBuilder<double>(
       tween: Tween<double>(end: metric.upperProgress ?? metric.progress!),
@@ -1083,6 +1474,7 @@ class _TodayNextUpModule extends StatelessWidget {
     required this.onLogMeal,
     required this.onReturnToToday,
     required this.onStartWorkout,
+    required this.onResumeWorkout,
     required this.onRetry,
   });
 
@@ -1091,6 +1483,7 @@ class _TodayNextUpModule extends StatelessWidget {
   final VoidCallback onLogMeal;
   final VoidCallback onReturnToToday;
   final ValueChanged<CalendarOccurrenceReadItem> onStartWorkout;
+  final ValueChanged<WorkoutDraft> onResumeWorkout;
   final VoidCallback onRetry;
 
   @override
@@ -1098,6 +1491,7 @@ class _TodayNextUpModule extends StatelessWidget {
     if (presentation.state == TodayPresentationState.loading) {
       return const _TodayModuleSkeleton(label: 'Preparing your next step');
     }
+    if (!presentation.shouldRender) return const SizedBox.shrink();
     if (presentation.state == TodayPresentationState.unavailable) {
       return _TodayUnavailableModule(
         title: 'Next up unavailable',
@@ -1109,12 +1503,15 @@ class _TodayNextUpModule extends StatelessWidget {
     final callback = switch (action) {
       TodayNextAction.startWorkout when presentation.workout != null =>
         () => onStartWorkout(presentation.workout!),
+      TodayNextAction.resumeWorkout when presentation.activeDraft != null =>
+        () => onResumeWorkout(presentation.activeDraft!),
       TodayNextAction.openWorkoutPlan => onOpenWorkoutPlan,
       TodayNextAction.logMeal => onLogMeal,
       TodayNextAction.returnToToday => onReturnToToday,
       _ => onOpenWorkoutPlan,
     };
     final icon = switch (action) {
+      TodayNextAction.resumeWorkout => Icons.play_circle_outline_rounded,
       TodayNextAction.startWorkout => Icons.play_arrow_rounded,
       TodayNextAction.openWorkoutPlan => Icons.fitness_center_rounded,
       TodayNextAction.logMeal => Icons.restaurant_outlined,
@@ -1741,7 +2138,7 @@ class _NoVisibleModules extends StatelessWidget {
         ),
         const SizedBox(height: B05Layout.space12),
         B05ActionButton(
-          label: 'Customize Today',
+          label: ConsumerCopy.customizeTodayAction,
           icon: Icons.tune_rounded,
           onPressed: onCustomize,
         ),

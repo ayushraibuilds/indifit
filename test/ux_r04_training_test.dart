@@ -6,6 +6,7 @@ import 'package:indifit/core/di/providers.dart';
 import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/repositories/calendar_read_repository.dart';
+import 'package:indifit/data/repositories/training_next_action_resolver.dart';
 import 'package:indifit/features/calendar/calendar_read_model.dart';
 import 'package:indifit/features/calendar/program_calendar_screen.dart';
 import 'package:indifit/features/exercise_library/exercise_details_sheet.dart';
@@ -44,6 +45,8 @@ void main() {
       expect(find.text('Start workout'), findsOneWidget);
       expect(find.text('Upper / Lower Strength'), findsOneWidget);
       expect(find.text('Lower body'), findsOneWidget);
+      expect(find.text('Plan Library'), findsOneWidget);
+      expect(find.text('Builder'), findsNothing);
       expect(find.text('Manage plan'), findsNothing);
       expect(tester.takeException(), isNull);
       await expectLater(
@@ -54,6 +57,165 @@ void main() {
       );
     });
   }
+
+  testWidgets('Training gives the canonical Start action visual priority', (
+    tester,
+  ) async {
+    _setViewport(tester, const Size(390, 844));
+    final semantics = tester.ensureSemantics();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          trainingLandingSnapshotProvider.overrideWith(
+            (ref) async => _populatedTrainingSnapshot,
+          ),
+        ],
+        child: _app(AppTheme.lightTheme, const TrainingScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.bySemanticsLabel(RegExp(r'^What to do now\.')), findsOneWidget);
+    expect(find.text('Start workout'), findsOneWidget);
+    expect(find.text('Quick workout'), findsOneWidget);
+    expect(find.textContaining('Finish this workout'), findsNothing);
+    semantics.dispose();
+  });
+
+  testWidgets('Training opens the exact active plan overview', (tester) async {
+    final today = _populatedTrainingSnapshot.todayWorkout!;
+    final snapshot = TrainingLandingSnapshot(
+      localDate: _populatedTrainingSnapshot.localDate,
+      timezoneId: _populatedTrainingSnapshot.timezoneId,
+      todayWorkout: today,
+      upcoming: _populatedTrainingSnapshot.upcoming,
+      recentSessions: _populatedTrainingSnapshot.recentSessions,
+      activeProgramName: _populatedTrainingSnapshot.activeProgramName,
+      nextActionResolution: TrainingNextActionResolution(
+        localDate: _populatedTrainingSnapshot.localDate,
+        activeProgramVersionId: today.version.id,
+        activeDraft: null,
+        hasActiveDraft: false,
+        currentOccurrence: null,
+        todayOccurrence: today,
+        overdueOccurrence: null,
+        nextOccurrence: _populatedTrainingSnapshot.upcoming.first,
+        todayCompletedOccurrence: null,
+        upcomingOccurrences: _populatedTrainingSnapshot.upcoming,
+      ),
+    );
+    final router = GoRouter(
+      initialLocation: '/training',
+      routes: [
+        GoRoute(
+          path: '/training',
+          builder: (context, state) => const TrainingScreen(),
+        ),
+        GoRoute(
+          path: '/plan-overview/:versionId',
+          builder: (context, state) =>
+              Text('plan overview ${state.pathParameters['versionId']}'),
+        ),
+        GoRoute(
+          path: '/plan-library',
+          builder: (context, state) => const Text('plan library'),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          trainingLandingSnapshotProvider.overrideWith((ref) async => snapshot),
+        ],
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Plan actions'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('View plan'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('plan overview ${today.version.id}'), findsOneWidget);
+    expect(find.text('plan library'), findsNothing);
+  });
+
+  testWidgets('Training treats an empty plan day as an intentional open day', (
+    tester,
+  ) async {
+    _setViewport(tester, const Size(390, 844));
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          trainingLandingSnapshotProvider.overrideWith(
+            (ref) async => const TrainingLandingSnapshot(
+              localDate: '2026-08-10',
+              timezoneId: 'Asia/Kolkata',
+              todayWorkout: null,
+              upcoming: [],
+              recentSessions: [],
+              activeProgramName: 'Upper / Lower Strength',
+            ),
+          ),
+        ],
+        child: _app(AppTheme.lightTheme, const TrainingScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('No workout planned today'), findsOneWidget);
+    expect(find.text('Quick workout'), findsOneWidget);
+    expect(find.text('Start workout'), findsNothing);
+    expect(find.text('Resume workout'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Training fails closed when active workout state is unknown', (
+    tester,
+  ) async {
+    _setViewport(tester, const Size(390, 844));
+    const unavailable = TrainingNextActionResolution(
+      localDate: '2026-08-10',
+      activeProgramVersionId: 'version-1',
+      activeDraft: null,
+      hasActiveDraft: false,
+      activeDraftReadAvailable: false,
+      currentOccurrence: null,
+      todayOccurrence: null,
+      overdueOccurrence: null,
+      nextOccurrence: null,
+      todayCompletedOccurrence: null,
+      upcomingOccurrences: [],
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          trainingLandingSnapshotProvider.overrideWith(
+            (ref) async => const TrainingLandingSnapshot(
+              localDate: '2026-08-10',
+              timezoneId: 'Asia/Kolkata',
+              todayWorkout: null,
+              upcoming: [],
+              recentSessions: [],
+              activeProgramName: 'Upper / Lower Strength',
+              nextActionResolution: unavailable,
+            ),
+          ),
+        ],
+        child: _app(AppTheme.lightTheme, const TrainingScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Workout state unavailable'), findsOneWidget);
+    expect(find.text('Try again'), findsOneWidget);
+    expect(find.text('Start workout'), findsNothing);
+    expect(find.text('Resume workout'), findsNothing);
+    expect(find.text('Quick workout'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('Training empty state remains useful at 320 and 2x text', (
     tester,
@@ -80,10 +242,11 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.text('Nothing planned today'), findsOneWidget);
-    expect(find.text('No training plan yet'), findsOneWidget);
-    expect(find.text('View plan'), findsOneWidget);
-    expect(find.text('Log workout'), findsOneWidget);
+    expect(find.text('Set up your training plan'), findsOneWidget);
+    expect(find.text('Choose a plan'), findsOneWidget);
+    expect(find.text('Quick workout'), findsOneWidget);
+    expect(find.text('Start workout'), findsNothing);
+    expect(find.text('Resume workout'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
@@ -124,8 +287,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Resume Quick workout'), findsOneWidget);
-      expect(find.textContaining('active time'), findsOneWidget);
+      expect(find.text('Quick workout'), findsOneWidget);
+      expect(find.text('Resume workout'), findsOneWidget);
+      expect(find.text('Start workout'), findsNothing);
       expect(tester.takeException(), isNull);
     },
   );
@@ -172,13 +336,13 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Resume Saved push workout'), findsOneWidget);
+      expect(find.text('Saved push workout'), findsOneWidget);
+      expect(find.text('Resume workout'), findsOneWidget);
       expect(find.text('Start workout'), findsNothing);
       expect(
-        find.text('Resume your saved workout before starting today’s plan.'),
+        find.text('Finish this workout before starting another.'),
         findsOneWidget,
       );
-      expect(find.textContaining('Exercise 1 · 3 × 8–10'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );
@@ -225,9 +389,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Workout complete for today.'), findsOneWidget);
-      expect(find.text('Quick Workout'), findsOneWidget);
-      await tester.tap(find.text('Quick Workout'));
+      expect(find.text('Workout complete today'), findsOneWidget);
+      expect(find.text('Quick workout'), findsOneWidget);
+      await tester.tap(find.text('Quick workout'));
       await tester.pumpAndSettle();
       expect(find.text('Quick route opened'), findsOneWidget);
     },
@@ -262,7 +426,7 @@ void main() {
     );
   });
 
-  testWidgets('Training keeps Travel inside More and only with a plan', (
+  testWidgets('Training More options does not show deprecated Travel Mode', (
     tester,
   ) async {
     _setViewport(tester, const Size(390, 844));
@@ -279,7 +443,10 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('More training options'));
     await tester.pumpAndSettle();
-    expect(find.text('Travel mode'), findsOneWidget);
+    expect(find.text('Travel mode'), findsNothing);
+    expect(find.text('Manage plan'), findsOneWidget);
+    expect(find.text('Equipment and preferences'), findsOneWidget);
+    expect(find.text('Log completed workout'), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pumpAndSettle();
@@ -309,7 +476,7 @@ void main() {
 
   test('Training only launches actionable B01 occurrence states', () {
     expect(
-      canLaunchTrainingOccurrence(
+      isActionableTrainingOccurrence(
         _calendarItem(
           name: 'Planned',
           localDate: '2026-08-09',
@@ -320,7 +487,7 @@ void main() {
       isTrue,
     );
     expect(
-      canLaunchTrainingOccurrence(
+      isActionableTrainingOccurrence(
         _calendarItem(
           name: 'Resume',
           localDate: '2026-08-09',
@@ -332,7 +499,7 @@ void main() {
     );
     for (final status in const ['completed', 'partiallyCompleted', 'skipped']) {
       expect(
-        canLaunchTrainingOccurrence(
+        isActionableTrainingOccurrence(
           _calendarItem(
             name: status,
             localDate: '2026-08-09',
@@ -343,32 +510,6 @@ void main() {
         isFalse,
       );
     }
-  });
-
-  test('Training prioritizes an in-progress workout on Today', () {
-    final completed = _calendarItem(
-      name: 'Completed first',
-      localDate: '2026-08-09',
-      status: 'completed',
-      prescriptionCount: 1,
-    );
-    final planned = _calendarItem(
-      name: 'Planned later',
-      localDate: '2026-08-09',
-      status: 'planned',
-      prescriptionCount: 1,
-    );
-    final resume = _calendarItem(
-      name: 'Resume now',
-      localDate: '2026-08-09',
-      status: 'inProgress',
-      prescriptionCount: 1,
-    );
-
-    expect(
-      selectTrainingTodayWorkout([completed, planned, resume], '2026-08-09'),
-      same(resume),
-    );
   });
 
   testWidgets(

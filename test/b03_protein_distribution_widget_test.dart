@@ -48,7 +48,10 @@ void main() {
       expect(find.textContaining('5.0–15.0 g'), findsWidgets);
       expect(find.textContaining('Estimated'), findsWidgets);
       await tester.scrollUntilVisible(find.text('Leucine data'), 400);
-      expect(find.textContaining('Leucine data unavailable'), findsOneWidget);
+      expect(
+        find.textContaining('Leucine details are unavailable for these meals.'),
+        findsOneWidget,
+      );
       expect(find.bySemanticsLabel(RegExp(r'Protein total:')), findsOneWidget);
       expect(find.textContaining('You need'), findsNothing);
       expect(find.textContaining('optimal'), findsNothing);

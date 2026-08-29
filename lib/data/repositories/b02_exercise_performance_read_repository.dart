@@ -56,6 +56,14 @@ class B02ExercisePerformanceReadRepository {
       final set = _toPerformedSet(persistedSet);
       if (set == null || !_hasLoggedActual(set)) continue;
 
+      final completionKind = persistedSession.completionKind;
+      if (!const {'full', 'partial'}.contains(completionKind) ||
+          !const {'completed', 'partial'}.contains(persistedExercise.status)) {
+        // Do not present malformed completion state as completed evidence.
+        // The affected occurrence is left out instead of being guessed.
+        continue;
+      }
+
       final key = '${persistedSession.id}:${persistedExercise.id}';
       final record = records.putIfAbsent(
         key,
@@ -64,6 +72,11 @@ class B02ExercisePerformanceReadRepository {
           performedExerciseId: persistedExercise.id,
           sessionName: persistedSession.name,
           completedAt: persistedSession.completedAt.toUtc(),
+          completionKind: completionKind!,
+          actualExerciseId: persistedExercise.actualExerciseId,
+          expectedExerciseId: persistedExercise.expectedExerciseId,
+          expectedExerciseName: persistedExercise.expectedExerciseNameSnapshot,
+          substitutionReason: persistedExercise.substitutionReason,
           exerciseStatus: persistedExercise.status,
           exerciseOrdinal: persistedExercise.ordinal,
         ),
@@ -77,6 +90,10 @@ class B02ExercisePerformanceReadRepository {
   }
 
   B02PerformedSet? _toPerformedSet(PerformedSet set) {
+    final actualLoad = set.actualLoadKg;
+    if (actualLoad != null && (!actualLoad.isFinite || actualLoad < 0)) {
+      return null;
+    }
     try {
       return B02PerformedSet(
         id: set.id,
@@ -123,6 +140,11 @@ class B02ExercisePerformanceRecord {
     required this.performedExerciseId,
     required this.sessionName,
     required this.completedAt,
+    this.completionKind = 'full',
+    this.actualExerciseId = '',
+    this.expectedExerciseId,
+    this.expectedExerciseName,
+    this.substitutionReason,
     required this.exerciseStatus,
     required this.exerciseOrdinal,
     required this.sets,
@@ -132,9 +154,19 @@ class B02ExercisePerformanceRecord {
   final String performedExerciseId;
   final String sessionName;
   final DateTime completedAt;
+  final String completionKind;
+  final String actualExerciseId;
+  final String? expectedExerciseId;
+  final String? expectedExerciseName;
+  final String? substitutionReason;
   final String exerciseStatus;
   final int exerciseOrdinal;
   final List<B02PerformedSet> sets;
+
+  bool get isPartial => completionKind == 'partial';
+
+  bool get wasSubstituted =>
+      expectedExerciseId != null && expectedExerciseId != actualExerciseId;
 }
 
 class _MutableRecord {
@@ -143,6 +175,11 @@ class _MutableRecord {
     required this.performedExerciseId,
     required this.sessionName,
     required this.completedAt,
+    required this.completionKind,
+    required this.actualExerciseId,
+    required this.expectedExerciseId,
+    required this.expectedExerciseName,
+    required this.substitutionReason,
     required this.exerciseStatus,
     required this.exerciseOrdinal,
   });
@@ -151,6 +188,11 @@ class _MutableRecord {
   final String performedExerciseId;
   final String sessionName;
   final DateTime completedAt;
+  final String completionKind;
+  final String actualExerciseId;
+  final String? expectedExerciseId;
+  final String? expectedExerciseName;
+  final String? substitutionReason;
   final String exerciseStatus;
   final int exerciseOrdinal;
   final List<B02PerformedSet> sets = [];
@@ -160,6 +202,11 @@ class _MutableRecord {
     performedExerciseId: performedExerciseId,
     sessionName: sessionName,
     completedAt: completedAt,
+    completionKind: completionKind,
+    actualExerciseId: actualExerciseId,
+    expectedExerciseId: expectedExerciseId,
+    expectedExerciseName: expectedExerciseName,
+    substitutionReason: substitutionReason,
     exerciseStatus: exerciseStatus,
     exerciseOrdinal: exerciseOrdinal,
     sets: List.unmodifiable(sets),

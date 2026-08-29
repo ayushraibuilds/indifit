@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/services/achievement_service.dart';
-import '../../core/theme/app_colors_extension.dart';
-import '../../core/theme/colors.dart';
+import '../../core/theme/b05_semantic_colors.dart';
+import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../data/repositories/progress_statistics_repository.dart';
 import '../dashboard/dashboard_controller.dart';
 
@@ -70,27 +70,24 @@ class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Achievements & Badges'),
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        foregroundColor: Theme.of(context).colorScheme.onSurface,
-        elevation: 0,
-      ),
+      appBar: AppBar(title: const Text('Achievements & Badges'), elevation: 0),
       body: _buildBody(),
     );
   }
 
   Widget _buildBody() {
+    final colors = context.b05Colors;
+
     if (_isLoading) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
+            CircularProgressIndicator(color: colors.action),
+            const SizedBox(height: B05Layout.space16),
             Text(
               'Evaluating your achievements...',
-              style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+              style: B05Typography.caption(context),
             ),
           ],
         ),
@@ -100,34 +97,32 @@ class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
     if (_errorMessage != null) {
       return Center(
         child: Padding(
-          padding: const EdgeInsets.all(24.0),
+          padding: const EdgeInsets.all(B05Layout.space24),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(
+              Icon(
                 Icons.error_outline_rounded,
-                color: Colors.redAccent,
+                color: colors.danger.indicator,
                 size: 48,
               ),
-              const SizedBox(height: 16),
-              const Text(
+              const SizedBox(height: B05Layout.space16),
+              Text(
                 'Failed to load achievements',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                style: B05Typography.title(context),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: B05Layout.space8),
               Text(
                 _errorMessage!,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 12,
-                ),
+                style: B05Typography.body(context),
               ),
-              const SizedBox(height: 20),
-              ElevatedButton.icon(
+              const SizedBox(height: B05Layout.space20),
+              B05ActionButton(
                 onPressed: _loadData,
-                icon: const Icon(Icons.refresh_rounded),
-                label: const Text('Retry'),
+                icon: Icons.refresh_rounded,
+                label: 'Retry',
+                emphasis: B05ActionEmphasis.secondary,
               ),
             ],
           ),
@@ -137,19 +132,17 @@ class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
 
     final unlockedCount = _achievements.where((a) => a.isUnlocked).length;
 
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Unlocked summary banner
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: context.appColors.border),
-            ),
+    return ListView(
+      padding: const EdgeInsets.all(B05Layout.space16),
+      children: [
+        // Unlocked summary banner
+        Semantics(
+          container: true,
+          label:
+              '$unlockedCount of ${_achievements.length} achievements unlocked. Keep training and logging to earn badges.',
+          child: B05Surface(
+            tone: B05SurfaceTone.inset,
+            padding: const EdgeInsets.all(B05Layout.space16),
             child: Row(
               children: [
                 const Icon(
@@ -157,222 +150,195 @@ class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
                   color: Colors.amber,
                   size: 36,
                 ),
-                const SizedBox(width: 14),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '$unlockedCount / ${_achievements.length} Unlocked',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: Theme.of(context).colorScheme.onSurface,
+                const SizedBox(width: B05Layout.space12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '$unlockedCount / ${_achievements.length} Unlocked',
+                        style: B05Typography.title(context),
                       ),
-                    ),
-                    const SizedBox(height: 2),
-                    const Text(
-                      'Keep training and logging to earn badges!',
-                      style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 11,
+                      const SizedBox(height: 2),
+                      Text(
+                        'Keep training and logging to earn badges!',
+                        style: B05Typography.caption(context),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 16),
+        ),
+        const SizedBox(height: B05Layout.space16),
 
-          if (unlockedCount == 0) ...[
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    AppColors.primary.withValues(alpha: 0.12),
-                    AppColors.surface,
-                  ],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
+        if (unlockedCount == 0) ...[
+          B05Surface(
+            tone: B05SurfaceTone.section,
+            padding: const EdgeInsets.all(B05Layout.space20),
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(B05Layout.space12),
+                  decoration: BoxDecoration(
+                    color: colors.action.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.workspace_premium_rounded,
+                    size: 36,
+                    color: colors.action,
+                  ),
                 ),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: AppColors.primary.withValues(alpha: 0.3),
+                const SizedBox(height: B05Layout.space12),
+                Text(
+                  'No Badges Unlocked Yet',
+                  style: B05Typography.title(context),
                 ),
-              ),
-              child: Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.15),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.workspace_premium_rounded,
-                      size: 36,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  const Text(
-                    'No Badges Unlocked Yet',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'Start logging workouts, meals, and maintaining your streak to earn your first achievement badge!',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 11,
-                      height: 1.4,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-          ],
-
-          const Text(
-            'ALL BADGES',
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textMuted,
-              letterSpacing: 0.5,
+                const SizedBox(height: B05Layout.space4),
+                Text(
+                  'Start logging workouts, meals, and maintaining your streak to earn your first achievement badge!',
+                  textAlign: TextAlign.center,
+                  style: B05Typography.body(context),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: B05Layout.space16),
+        ],
 
-          Expanded(
-            child: GridView.builder(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
+        Text(
+          'ALL BADGES',
+          style: B05Typography.caption(
+            context,
+          ).copyWith(fontWeight: FontWeight.w700, letterSpacing: 0.5),
+        ),
+        const SizedBox(height: B05Layout.space12),
+
+        LayoutBuilder(
+          builder: (context, _) {
+            final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
+            final useSingleColumn = textScale >= 1.5;
+            return GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: useSingleColumn ? 1 : 2,
                 crossAxisSpacing: 12,
                 mainAxisSpacing: 12,
-                childAspectRatio: 0.9,
+                childAspectRatio: useSingleColumn ? 1.3 : 0.88,
               ),
               itemCount: _achievements.length,
               itemBuilder: (context, index) {
                 final item = _achievements[index];
-                return Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: item.isUnlocked
-                        ? item.color.withValues(alpha: 0.08)
-                        : AppColors.cardBackground,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: item.isUnlocked ? item.color : AppColors.border,
-                      width: item.isUnlocked ? 1.5 : 1.0,
-                    ),
-                    boxShadow: item.isUnlocked
-                        ? [
-                            BoxShadow(
-                              color: item.color.withValues(alpha: 0.2),
-                              blurRadius: 8,
-                              spreadRadius: 1,
-                            ),
-                          ]
-                        : null,
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          CircleAvatar(
-                            radius: 26,
-                            backgroundColor: item.isUnlocked
-                                ? item.color.withValues(alpha: 0.2)
-                                : AppColors.border.withValues(alpha: 0.4),
-                            child: Icon(
-                              item.icon,
-                              color: item.isUnlocked
-                                  ? item.color
-                                  : AppColors.textMuted,
-                              size: 26,
-                            ),
-                          ),
-                          if (item.isUnlocked)
-                            Positioned(
-                              right: 0,
-                              bottom: 0,
-                              child: Container(
-                                padding: const EdgeInsets.all(2),
-                                decoration: const BoxDecoration(
-                                  color: AppColors.surface,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(
-                                  Icons.check_circle_rounded,
-                                  color: item.color,
-                                  size: 14,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        item.title,
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
-                          color: item.isUnlocked
-                              ? Theme.of(context).colorScheme.onSurface
-                              : AppColors.textMuted,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        item.description,
-                        style: const TextStyle(
-                          fontSize: 10,
-                          color: AppColors.textSecondary,
-                        ),
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 8),
-                      TweenAnimationBuilder<double>(
-                        tween: Tween<double>(
-                          begin: 0.0,
-                          end: item.progressPercentage,
-                        ),
-                        duration: const Duration(milliseconds: 600),
-                        curve: Curves.easeOutCubic,
-                        builder: (context, animVal, _) {
-                          return ClipRRect(
-                            borderRadius: BorderRadius.circular(4),
-                            child: LinearProgressIndicator(
-                              value: animVal,
-                              backgroundColor: AppColors.border,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                item.isUnlocked
+                final semanticLabel =
+                    '${item.title}: ${item.description}. '
+                    '${item.isUnlocked ? 'Unlocked.' : 'Locked. ${(item.progressPercentage * 100).toInt()}% progress.'}';
+
+                return Semantics(
+                  container: true,
+                  label: semanticLabel,
+                  child: B05Surface(
+                    tone: item.isUnlocked
+                        ? B05SurfaceTone.selected
+                        : B05SurfaceTone.inset,
+                    radius: B05SurfaceRadius.large,
+                    padding: const EdgeInsets.all(B05Layout.space12),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            CircleAvatar(
+                              radius: 26,
+                              backgroundColor: item.isUnlocked
+                                  ? item.color.withValues(alpha: 0.2)
+                                  : colors.border.withValues(alpha: 0.4),
+                              child: Icon(
+                                item.icon,
+                                color: item.isUnlocked
                                     ? item.color
-                                    : AppColors.textMuted,
+                                    : colors.textDisabled,
+                                size: 26,
                               ),
-                              minHeight: 4,
                             ),
-                          );
-                        },
-                      ),
-                    ],
+                            if (item.isUnlocked)
+                              Positioned(
+                                right: 0,
+                                bottom: 0,
+                                child: Container(
+                                  padding: const EdgeInsets.all(2),
+                                  decoration: BoxDecoration(
+                                    color: colors.section,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    Icons.check_circle_rounded,
+                                    color: item.color,
+                                    size: 14,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: B05Layout.space8),
+                        Text(
+                          item.title,
+                          style: B05Typography.label(context).copyWith(
+                            color: item.isUnlocked
+                                ? colors.textPrimary
+                                : colors.textSecondary,
+                            fontWeight: FontWeight.w700,
+                          ),
+                          textAlign: TextAlign.center,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          item.description,
+                          style: B05Typography.caption(context),
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: B05Layout.space8),
+                        TweenAnimationBuilder<double>(
+                          tween: Tween<double>(
+                            begin: 0.0,
+                            end: item.progressPercentage,
+                          ),
+                          duration: const Duration(milliseconds: 600),
+                          curve: Curves.easeOutCubic,
+                          builder: (context, animVal, _) {
+                            return ClipRRect(
+                              borderRadius: BorderRadius.circular(4),
+                              child: LinearProgressIndicator(
+                                value: animVal,
+                                backgroundColor: colors.border.withValues(
+                                  alpha: 0.5,
+                                ),
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  item.isUnlocked
+                                      ? item.color
+                                      : colors.textDisabled,
+                                ),
+                                minHeight: 4,
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
                   ),
                 );
               },
-            ),
-          ),
-        ],
-      ),
+            );
+          },
+        ),
+      ],
     );
   }
 }

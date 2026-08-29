@@ -5,12 +5,14 @@ import '../../core/di/providers.dart';
 import '../../core/nutrients.dart';
 import '../../core/nutrition_household_measures.dart';
 import '../../core/nutrition_legacy_read_models.dart';
+import '../../core/presentation/consumer_copy.dart';
 import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/typed_quantities.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/food_repository.dart';
+import '../../data/repositories/nutrition_target_authority.dart';
 import '../dashboard/today_surface_controller.dart';
 import 'food_contextual_actions.dart';
 import 'meal_presentation_registry.dart';
@@ -46,9 +48,18 @@ final canonicalFoodRecordsForDayProvider = FutureProvider.autoDispose
     });
 
 class FoodDiaryReadModel {
-  const FoodDiaryReadModel({required this.daily});
+  const FoodDiaryReadModel({
+    required this.daily,
+    this.targets = const TodayDomainRead<NutritionTargetsForDate?>.available(
+      null,
+    ),
+  });
 
   final NutritionDailyReadModel daily;
+
+  /// The target read is separate from food totals so a target-source failure
+  /// cannot hide otherwise available logged-food history.
+  final TodayDomainRead<NutritionTargetsForDate?> targets;
 }
 
 /// Food-root read boundary. It asks the canonical B03 read model for both the
@@ -57,6 +68,7 @@ class FoodDiaryReadModel {
 final foodDiaryReadModelProvider = FutureProvider.autoDispose
     .family<FoodDiaryReadModel, DateTime>((ref, date) async {
       ref.watch(todayNutritionRevisionProvider);
+      ref.watch(nutritionTargetAuthorityChangesProvider);
       final repository = await ref.watch(
         nutritionReadModelRepositoryProvider.future,
       );
@@ -64,7 +76,27 @@ final foodDiaryReadModelProvider = FutureProvider.autoDispose
         userId: kLocalNutritionUserScopeId,
         localDate: _localDateKey(date),
       );
-      return FoodDiaryReadModel(daily: daily);
+      TodayDomainRead<NutritionTargetsForDate?> targets;
+      try {
+        final timezoneId = await ref
+            .watch(localTimezoneServiceProvider)
+            .currentTimezoneId();
+        targets = TodayDomainRead<NutritionTargetsForDate?>.available(
+          await ref
+              .watch(nutritionTargetAuthorityProvider)
+              .resolve(
+                NutritionTargetDateQuery(
+                  localDate: _localDateKey(date),
+                  timezoneId: timezoneId,
+                ),
+              ),
+        );
+      } catch (_) {
+        targets = const TodayDomainRead<NutritionTargetsForDate?>.unavailable(
+          'Nutrition target unavailable',
+        );
+      }
+      return FoodDiaryReadModel(daily: daily, targets: targets);
     });
 
 /// A compact production food-log surface used by the existing food-search/log
@@ -76,12 +108,18 @@ class FoodLogEntriesPanel extends ConsumerWidget {
     this.includeCanonical = true,
     this.mealType,
     this.onCanonicalRecordTap,
+    this.onCanonicalItemTap,
   });
 
   final DateTime date;
   final bool includeCanonical;
   final String? mealType;
   final ValueChanged<NutritionHistoricalReadRecord>? onCanonicalRecordTap;
+  final void Function(
+    NutritionHistoricalReadRecord record,
+    NutritionHistoricalReadItem item,
+  )?
+  onCanonicalItemTap;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -162,6 +200,7 @@ class FoodLogEntriesPanel extends ConsumerWidget {
           _CanonicalFoodRows(
             records: canonicalItems,
             onRecordTap: onCanonicalRecordTap,
+            onItemTap: onCanonicalItemTap,
           ),
         if (legacyItems.isNotEmpty)
           ConstrainedBox(
@@ -197,10 +236,19 @@ String? _normalizeMealType(String? value) {
 }
 
 class _CanonicalFoodRows extends StatelessWidget {
-  const _CanonicalFoodRows({required this.records, this.onRecordTap});
+  const _CanonicalFoodRows({
+    required this.records,
+    this.onRecordTap,
+    this.onItemTap,
+  });
 
   final List<NutritionHistoricalReadRecord> records;
   final ValueChanged<NutritionHistoricalReadRecord>? onRecordTap;
+  final void Function(
+    NutritionHistoricalReadRecord record,
+    NutritionHistoricalReadItem item,
+  )?
+  onItemTap;
 
   @override
   Widget build(BuildContext context) {
@@ -211,8 +259,24 @@ class _CanonicalFoodRows extends StatelessWidget {
     return Column(
       children: [
         for (final entry in grouped.entries) ...[
-          for (final record in entry.value)
-            _CanonicalFoodRow(record: record, onTap: onRecordTap),
+          for (final record in entry.value) ...[
+            if (record.items.any(
+              (item) =>
+                  item.originSourceType == 'direct_food' && item.foodId != null,
+            ))
+              for (final item in record.items.where(
+                (item) =>
+                    item.originSourceType == 'direct_food' &&
+                    item.foodId != null,
+              ))
+                _CanonicalFoodRow(
+                  record: record,
+                  item: item,
+                  onItemTap: onItemTap,
+                )
+            else
+              _CanonicalFoodRow(record: record, onTap: onRecordTap),
+          ],
           if (entry.key != grouped.keys.last)
             const SizedBox(height: B05Layout.space8),
         ],
@@ -222,10 +286,21 @@ class _CanonicalFoodRows extends StatelessWidget {
 }
 
 class _CanonicalFoodRow extends StatelessWidget {
-  const _CanonicalFoodRow({required this.record, this.onTap});
+  const _CanonicalFoodRow({
+    required this.record,
+    this.item,
+    this.onTap,
+    this.onItemTap,
+  });
 
   final NutritionHistoricalReadRecord record;
+  final NutritionHistoricalReadItem? item;
   final ValueChanged<NutritionHistoricalReadRecord>? onTap;
+  final void Function(
+    NutritionHistoricalReadRecord record,
+    NutritionHistoricalReadItem item,
+  )?
+  onItemTap;
 
   @override
   Widget build(BuildContext context) {
@@ -233,26 +308,36 @@ class _CanonicalFoodRow extends StatelessWidget {
     final role = context.b05Colors.meal(
       presentation.accent ?? B05MealAccent.snack,
     );
-    final label = record.items
-        .map((item) => item.displayLabel)
-        .whereType<String>()
-        .where((value) => value.trim().isNotEmpty)
-        .join(', ');
-    final displayName = label.isEmpty ? record.displayLabel : label;
-    final serving = record.items
-        .map((item) => _historicalQuantityLabel(item.quantity))
-        .where((value) => value != null)
-        .join(' · ');
-    final actionTap =
-        onTap != null &&
-            record.items.any(
-              (item) =>
-                  item.originSourceType == 'direct_food' && item.foodId != null,
-            )
-        ? onTap
-        : null;
-    final energy = _factLabel(record.totals.facts['energy'], 'kcal', 0);
-    final protein = _factLabel(record.totals.facts['protein'], 'g protein', 1);
+    final displayName = item?.displayLabel?.trim().isNotEmpty == true
+        ? item!.displayLabel!
+        : record.displayLabel;
+    final serving = item == null
+        ? record.items
+              .map((entry) => _historicalQuantityLabel(entry.quantity))
+              .where((value) => value != null)
+              .join(' · ')
+        : _historicalQuantityLabel(item!.quantity) ?? '';
+    final actionTap = item != null
+        ? onItemTap == null
+              ? null
+              : () => onItemTap!(record, item!)
+        : onTap == null
+        ? null
+        : () => onTap!(record);
+    final energy = _factLabel(
+      item?.facts['energy'] ?? record.totals.facts['energy'],
+      'kcal',
+      0,
+    );
+    final protein = _factLabel(
+      item?.facts['protein'] ?? record.totals.facts['protein'],
+      'g protein',
+      1,
+    );
+    final hasMissingItemFacts =
+        item != null &&
+        (item!.facts['energy']?.isAvailable != true ||
+            item!.facts['protein']?.isAvailable != true);
     return Semantics(
       container: true,
       label: '${presentation.label}: $displayName',
@@ -260,7 +345,7 @@ class _CanonicalFoodRow extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: actionTap == null ? null : () => actionTap(record),
+          onTap: actionTap,
           borderRadius: B05Radii.smallRadius,
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: B05Layout.space8),
@@ -293,10 +378,12 @@ class _CanonicalFoodRow extends StatelessWidget {
                         ].join(' · '),
                         style: B05Typography.caption(context),
                       ),
-                      if (record.completeness.state !=
-                          NutrientCompletenessState.complete)
+                      if (hasMissingItemFacts ||
+                          (item == null &&
+                              record.completeness.state !=
+                                  NutrientCompletenessState.complete))
                         Text(
-                          'Some nutrition information is missing',
+                          ConsumerCopy.nutritionDetailsIncomplete,
                           style: B05Typography.caption(context),
                         ),
                     ],
@@ -307,7 +394,7 @@ class _CanonicalFoodRow extends StatelessWidget {
                     icon: Icons.more_horiz_rounded,
                     label: 'Actions for $displayName',
                     hint: 'Edit, copy, or delete this entry.',
-                    onPressed: () => actionTap(record),
+                    onPressed: actionTap,
                   ),
               ],
             ),

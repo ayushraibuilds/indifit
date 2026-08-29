@@ -208,7 +208,7 @@ class _B05FocusRingState extends State<B05FocusRing> {
   }
 }
 
-enum B05ActionEmphasis { primary, secondary, tertiary }
+enum B05ActionEmphasis { primary, secondary, tertiary, danger }
 
 /// A labelled action with a semantic hint, focus order and shared touch target.
 class B05ActionButton extends StatelessWidget {
@@ -221,6 +221,8 @@ class B05ActionButton extends StatelessWidget {
     this.emphasis = B05ActionEmphasis.primary,
     this.selected = false,
     this.focusOrder,
+    this.maxLines,
+    this.overflow,
   });
 
   final String label;
@@ -230,6 +232,8 @@ class B05ActionButton extends StatelessWidget {
   final B05ActionEmphasis emphasis;
   final bool selected;
   final double? focusOrder;
+  final int? maxLines;
+  final TextOverflow? overflow;
 
   @override
   Widget build(BuildContext context) {
@@ -258,6 +262,15 @@ class B05ActionButton extends StatelessWidget {
         minimumSize: B05Layout.minimumTouchTarget,
         padding: const EdgeInsets.symmetric(horizontal: B05Layout.space8),
         shape: RoundedRectangleBorder(borderRadius: B05Radii.smallRadius),
+      ),
+      B05ActionEmphasis.danger => FilledButton.styleFrom(
+        backgroundColor: colors.danger.container,
+        foregroundColor: colors.danger.foreground,
+        disabledBackgroundColor: colors.disabled,
+        disabledForegroundColor: colors.textDisabled,
+        minimumSize: B05Layout.minimumTouchTarget,
+        padding: const EdgeInsets.symmetric(horizontal: B05Layout.space16),
+        shape: RoundedRectangleBorder(borderRadius: B05Radii.mediumRadius),
       ),
     };
     final button = B05TouchTarget(
@@ -288,45 +301,51 @@ class B05ActionButton extends StatelessWidget {
           );
   }
 
+  Widget _labelWidget() => Text(
+        label,
+        maxLines: maxLines,
+        overflow: overflow,
+      );
+
   Widget _button(ButtonStyle style) {
     return switch (emphasis) {
-      B05ActionEmphasis.primary => FilledButton(
+      B05ActionEmphasis.primary || B05ActionEmphasis.danger => FilledButton(
         onPressed: onPressed,
         style: style,
-        child: Text(label),
+        child: _labelWidget(),
       ),
       B05ActionEmphasis.secondary => OutlinedButton(
         onPressed: onPressed,
         style: style,
-        child: Text(label),
+        child: _labelWidget(),
       ),
       B05ActionEmphasis.tertiary => TextButton(
         onPressed: onPressed,
         style: style,
-        child: Text(label),
+        child: _labelWidget(),
       ),
     };
   }
 
   Widget _iconButton(ButtonStyle style) {
     return switch (emphasis) {
-      B05ActionEmphasis.primary => FilledButton.icon(
+      B05ActionEmphasis.primary || B05ActionEmphasis.danger => FilledButton.icon(
         onPressed: onPressed,
         style: style,
         icon: Icon(icon, size: B05Layout.iconMedium),
-        label: Text(label),
+        label: _labelWidget(),
       ),
       B05ActionEmphasis.secondary => OutlinedButton.icon(
         onPressed: onPressed,
         style: style,
         icon: Icon(icon, size: B05Layout.iconMedium),
-        label: Text(label),
+        label: _labelWidget(),
       ),
       B05ActionEmphasis.tertiary => TextButton.icon(
         onPressed: onPressed,
         style: style,
         icon: Icon(icon, size: B05Layout.iconMedium),
-        label: Text(label),
+        label: _labelWidget(),
       ),
     };
   }

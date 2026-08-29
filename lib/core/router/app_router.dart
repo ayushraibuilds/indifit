@@ -4,9 +4,9 @@ import 'package:go_router/go_router.dart';
 
 import '../../data/database/app_database.dart';
 import '../../data/models/b02_execution_models.dart';
-import '../../data/repositories/b02_strength_execution_repository.dart';
 import '../../data/repositories/workout_execution_compatibility_adapter.dart';
 import '../../features/activity/b02_activity_creation_screen.dart';
+import '../../features/activity/b02_activity_history_detail_screen.dart';
 import '../../features/calendar/program_calendar_screen.dart';
 import '../../features/dashboard/main_navigation_scaffold.dart';
 import '../../features/education/learn_screen.dart';
@@ -14,28 +14,25 @@ import '../../features/equipment/equipment_profile_editor_screen.dart';
 import '../../features/equipment/equipment_profiles_screen.dart';
 import '../../features/equipment/exercise_preference_editor_screen.dart';
 import '../../features/exercise_library/exercise_library_screen.dart';
-import '../../features/food_log/ai_meal_logger_screen.dart';
-import '../../features/food_log/ai_meal_planner_screen.dart';
 import '../../features/food_log/nutrition_estimate_review_screen.dart';
 import '../../features/food_log/nutrition_recipe_editor_screen.dart';
 import '../../features/onboarding/onboarding_screen.dart';
-import '../../features/onboarding/routine_wizard_screen.dart';
 import '../../features/profile/profile_screen.dart';
 import '../../features/program_authoring/program_author_screen.dart';
 import '../../features/program_authoring/program_review_screen.dart';
 import '../../features/progress/achievements_screen.dart';
-import '../../features/reports/weekly_report_screen.dart';
 import '../../features/settings/health_sync_hub_screen.dart';
 import '../../features/settings/household_measures_screen.dart';
 import '../../features/settings/nutrition_constraint_review_screen.dart';
 import '../../features/settings/nutrition_constraints_screen.dart';
 import '../../features/settings/settings_screen.dart';
-import '../../features/travel/travel_mode_screen.dart';
+import '../../features/training/plan_library_screen.dart';
+import '../../features/training/workout_history_screen.dart';
 import '../../features/workout_player/b02_strength_player_screen.dart';
 import '../../features/workout_player/b02_strength_summary_screen.dart';
 import '../../features/workout_player/quick_workout_screen.dart';
-import '../../features/workout_player/routine_display_screen.dart';
 import '../../features/workout_player/routine_editor_screen.dart';
+import '../../features/workout_player/workout_execution_route.dart';
 import '../../features/workout_player/workout_player_screen.dart';
 import '../../features/workout_player/workout_summary_screen.dart';
 
@@ -46,16 +43,15 @@ final onboardingCompletedProvider = StateProvider<bool>((ref) => false);
 /// Pure onboarding routing gate used by [appRouterProvider]'s redirect.
 ///
 /// Kept as a top-level function so the routing contract (first launch,
-/// completed onboarding, wizard exemption) is unit-testable without
+/// completed onboarding) is unit-testable without
 /// mounting any screen.
 String? onboardingGateRedirect({
   required bool onboardingCompleted,
   required String location,
 }) {
   final goingToOnboarding = location == '/onboarding';
-  final goingToWizard = location == '/routine-wizard';
 
-  if (!onboardingCompleted && !goingToOnboarding && !goingToWizard) {
+  if (!onboardingCompleted && !goingToOnboarding) {
     return '/onboarding';
   }
   if (onboardingCompleted && goingToOnboarding) {
@@ -83,6 +79,19 @@ DateTime? parseFoodRouteDate(String? raw) {
     return null;
   }
   return parsed;
+}
+
+B02ActivityType? parseManualActivityRouteType(String? raw) {
+  if (raw == null) return B02ActivityType.running;
+  try {
+    final parsed = B02ActivityType.parse(raw.trim());
+    return parsed == B02ActivityType.strength ||
+            parsed == B02ActivityType.legacy
+        ? null
+        : parsed;
+  } on B02ValidationException {
+    return null;
+  }
 }
 
 String? parseFoodRouteMealType(String? raw) {
@@ -125,17 +134,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/onboarding',
         builder: (context, state) => const OnboardingScreen(),
       ),
+      // Retired AI routine generation and the legacy Training Split surface
+      // must not compete with the reviewed Training planning experience.
       GoRoute(
         path: '/routine-wizard',
-        builder: (context, state) {
-          final goal = state.uri.queryParameters['goal'];
-          return RoutineWizardScreen(initialGoal: goal);
-        },
+        redirect: (context, state) => '/plan-library',
       ),
-      GoRoute(
-        path: '/workout',
-        builder: (context, state) => const RoutineDisplayScreen(),
-      ),
+      GoRoute(path: '/workout', redirect: (context, state) => '/training'),
       GoRoute(
         path: '/training',
         builder: (context, state) =>
@@ -162,26 +167,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           date: state.uri.queryParameters['date'],
         ),
       ),
-      GoRoute(
-        path: '/food/ai',
-        builder: (context, state) {
-          final mealType = parseFoodRouteMealType(
-            state.uri.queryParameters['mealType'],
-          );
-          if (mealType == null) {
-            return foodRouteDestination(
-              date: state.uri.queryParameters['date'],
-            );
-          }
-          final selectedDate = parseFoodRouteDate(
-            state.uri.queryParameters['date'],
-          );
-          return AiMealLoggerScreen(
-            mealType: mealType,
-            selectedDate: selectedDate,
-          );
-        },
-      ),
+      // Former AI meal logging route fails safely into Food diary without
+      // mounting unavailable surfaces.
+      GoRoute(path: '/food/ai', redirect: (context, state) => '/food'),
       GoRoute(
         path: '/food/estimate-review',
         builder: (context, state) {
@@ -233,10 +221,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           recipeVersionId: state.uri.queryParameters['recipeVersionId'],
         ),
       ),
-      GoRoute(
-        path: '/meal-planner',
-        builder: (context, state) => const AiMealPlannerScreen(),
-      ),
+      // Former AI meal planner route fails safely into Food diary.
+      GoRoute(path: '/meal-planner', redirect: (context, state) => '/food'),
       GoRoute(
         path: '/achievements',
         builder: (context, state) => const AchievementsScreen(),
@@ -245,9 +231,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/routine-editor',
         builder: (context, state) => const RoutineEditorScreen(),
       ),
+      // The retired AI report must not remain reachable from saved links.
+      // Weekly reminders now open the factual Progress destination.
       GoRoute(
         path: '/weekly-report',
-        builder: (context, state) => const WeeklyReportScreen(),
+        redirect: (context, state) => '/progress',
       ),
       GoRoute(
         path: '/workout-player',
@@ -289,27 +277,63 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/b02-strength-player',
         builder: (context, state) {
-          final extra = state.extra as Map<String, dynamic>? ?? {};
-          final launch = extra['launch'];
-          if (launch is! B02StrengthExecutionLaunch) {
+          final routeData = workoutExecutionRouteDataFromExtra(state.extra);
+          if (routeData == null) {
             return const Scaffold(
               body: Center(child: Text('This workout draft is unavailable.')),
             );
           }
-          return B02StrengthPlayerScreen(launch: launch);
+          return B02StrengthPlayerScreen(
+            launch: routeData.execution.launch,
+            executionContext: routeData.execution,
+          );
         },
       ),
       GoRoute(
         path: '/b02-strength-summary',
         builder: (context, state) {
-          final extra = state.extra as Map<String, dynamic>? ?? {};
-          final launch = extra['launch'];
-          if (launch is! B02StrengthExecutionLaunch) {
+          final routeData = workoutExecutionRouteDataFromExtra(state.extra);
+          if (routeData == null) {
             return const Scaffold(
               body: Center(child: Text('This workout draft is unavailable.')),
             );
           }
-          return B02StrengthSummaryScreen(launch: launch);
+          return B02StrengthSummaryScreen(
+            launch: routeData.execution.launch,
+            executionContext: routeData.execution,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/workout-history',
+        builder: (context, state) => const WorkoutHistoryScreen(),
+      ),
+      GoRoute(
+        path: '/workout-history/:sessionId',
+        builder: (context, state) {
+          final sessionId = int.tryParse(
+            state.pathParameters['sessionId'] ?? '',
+          );
+          if (sessionId == null || sessionId < 1) {
+            return const Scaffold(
+              body: Center(child: Text('Workout details are unavailable.')),
+            );
+          }
+          return B02StrengthHistoryDetailScreen(sessionId: sessionId);
+        },
+      ),
+      GoRoute(
+        path: '/activity-history/:sessionId',
+        builder: (context, state) {
+          final sessionId = int.tryParse(
+            state.pathParameters['sessionId'] ?? '',
+          );
+          if (sessionId == null || sessionId < 1) {
+            return const Scaffold(
+              body: Center(child: Text('Activity details are unavailable.')),
+            );
+          }
+          return B02ActivityHistoryDetailScreen(sessionId: sessionId);
         },
       ),
       GoRoute(
@@ -320,18 +344,23 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/activity-create',
         builder: (context, state) {
           final rawType = state.uri.queryParameters['type'];
-          B02ActivityType type = B02ActivityType.running;
-          if (rawType != null) {
-            try {
-              type = B02ActivityType.parse(rawType);
-            } catch (_) {
-              type = B02ActivityType.running;
-            }
+          final type = parseManualActivityRouteType(rawType);
+          final rawDate = state.uri.queryParameters['date'];
+          final selectedDate = parseFoodRouteDate(rawDate);
+          final rawDraftId = state.uri.queryParameters['draftId'];
+          final draftId = rawDraftId == null ? null : int.tryParse(rawDraftId);
+          if (type == null ||
+              (rawDate != null && selectedDate == null) ||
+              (rawDraftId != null && (draftId == null || draftId < 1))) {
+            return const Scaffold(
+              body: Center(child: Text('Activity entry is unavailable.')),
+            );
           }
-          final draftId = int.tryParse(
-            state.uri.queryParameters['draftId'] ?? '',
+          return B02ActivityCreationScreen(
+            initialType: type,
+            draftId: draftId,
+            selectedDate: selectedDate,
           );
-          return B02ActivityCreationScreen(initialType: type, draftId: draftId);
         },
       ),
       GoRoute(
@@ -359,6 +388,21 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         ),
       ),
       GoRoute(
+        path: '/plan-library',
+        builder: (context, state) => const PlanLibraryScreen(),
+      ),
+      GoRoute(
+        path: '/plan-overview/:versionId',
+        builder: (context, state) =>
+            PlanOverviewScreen(versionId: state.pathParameters['versionId']!),
+      ),
+      GoRoute(
+        path: '/plan-library/:programId',
+        builder: (context, state) => PlanLibraryDetailScreen(
+          programId: state.pathParameters['programId']!,
+        ),
+      ),
+      GoRoute(
         path: '/equipment-profiles',
         builder: (context, state) => const EquipmentProfilesScreen(),
       ),
@@ -380,10 +424,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           );
         },
       ),
-      GoRoute(
-        path: '/travel-mode',
-        builder: (context, state) => const TravelModeScreen(),
-      ),
+      // Former Travel Mode route fails safely into Training without loading
+      // deprecated surfaces.
+      GoRoute(path: '/travel-mode', redirect: (context, state) => '/training'),
     ],
   );
 });

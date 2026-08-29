@@ -280,7 +280,7 @@ void main() {
         );
         await tester.pump();
 
-        final logButton = find.text('LOG TO LUNCH');
+        final logButton = find.text('Log to lunch');
         await tester.tap(logButton);
         await tester.tap(logButton);
         await tester.pumpAndSettle();

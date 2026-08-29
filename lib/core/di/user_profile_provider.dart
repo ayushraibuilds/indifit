@@ -89,9 +89,12 @@ class UserProfileState {
 
 class UserProfileNotifier extends StateNotifier<UserProfileState> {
   final AppDatabase? _db;
+  final LocalTimezoneService _timezones;
+  Future<void>? _profileLoad;
 
-  UserProfileNotifier([this._db])
-    : super(
+  UserProfileNotifier([this._db, LocalTimezoneService? timezones])
+    : _timezones = timezones ?? LocalTimezoneService(),
+      super(
         const UserProfileState(
           calorieGoal: 2000,
           proteinGoal: 120.0,
@@ -103,7 +106,17 @@ class UserProfileNotifier extends StateNotifier<UserProfileState> {
     loadProfile();
   }
 
-  Future<void> loadProfile() async {
+  Future<void> loadProfile() {
+    final inFlight = _profileLoad;
+    if (inFlight != null) return inFlight;
+    final load = _loadProfileOnce();
+    _profileLoad = load;
+    return load.whenComplete(() {
+      if (identical(_profileLoad, load)) _profileLoad = null;
+    });
+  }
+
+  Future<void> _loadProfileOnce() async {
     final prefs = await SharedPreferences.getInstance();
     final onboardingSkipped = prefs.getBool('onboarding_skipped') ?? false;
     var hasProfile =
@@ -359,7 +372,7 @@ class UserProfileNotifier extends StateNotifier<UserProfileState> {
 
   Future<String> _readTimezoneId() async {
     try {
-      return await LocalTimezoneService().currentTimezoneId();
+      return await _timezones.currentTimezoneId();
     } catch (_) {
       return 'UTC';
     }
@@ -652,5 +665,6 @@ class UserProfileNotifier extends StateNotifier<UserProfileState> {
 final userProfileProvider =
     StateNotifierProvider<UserProfileNotifier, UserProfileState>((ref) {
       final db = ref.watch(databaseProvider);
-      return UserProfileNotifier(db);
+      final timezones = ref.watch(localTimezoneServiceProvider);
+      return UserProfileNotifier(db, timezones);
     });

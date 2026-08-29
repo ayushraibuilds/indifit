@@ -6,10 +6,14 @@ import 'package:uuid/uuid.dart';
 
 import '../../core/di/providers.dart';
 import '../../core/presentation/consumer_count_label.dart';
+import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/theme/colors.dart';
 import '../../core/utils/app_logger.dart';
+import '../../data/models/b02_execution_models.dart';
 import '../../data/repositories/program_activation_coordinator.dart';
 import '../../data/repositories/program_repository.dart';
+import '../../data/repositories/workout_repository.dart';
+import '../workout_player/widgets/b02_execution_semantics.dart';
 
 /// Screen for reviewing program graph, selecting start local date and timezone, and publishing/activating.
 class ProgramReviewScreen extends ConsumerStatefulWidget {
@@ -59,7 +63,10 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
         widget.programVersionId,
       );
       if (detail == null) {
-        setState(() => _errorMessage = 'This program is no longer available.');
+        setState(() {
+          _errorMessage = 'This plan is no longer available.';
+          _isLoading = false;
+        });
         return;
       }
 
@@ -69,7 +76,7 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
       });
     } catch (_) {
       setState(() {
-        _errorMessage = 'This program could not be loaded. Try again.';
+        _errorMessage = 'This plan could not be loaded. Try again.';
         _isLoading = false;
       });
     }
@@ -124,7 +131,7 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
         const SnackBar(
           behavior: SnackBarBehavior.floating,
           content: Text(
-            'Program activated, but no workouts were scheduled. Review the plan before leaving this screen.',
+            'The plan is ready, but it has no workouts scheduled yet.',
           ),
         ),
       );
@@ -137,7 +144,7 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
       SnackBar(
         behavior: SnackBarBehavior.floating,
         content: Text(
-          '✓ Program activated · ${ConsumerCountLabel.format(result.occurrences.length, 'workout')} scheduled',
+          'Plan ready · ${ConsumerCountLabel.format(result.occurrences.length, 'workout')} scheduled',
         ),
       ),
     );
@@ -148,6 +155,27 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
 
   Future<bool> _confirmPlanSwitchIfNeeded(ProgramDetailAggregate detail) async {
     try {
+      final workoutRepo = ref.read(workoutRepositoryProvider);
+      final activeDraft = await workoutRepo.getActiveDraft();
+      if (activeDraft != null) {
+        if (!mounted) return false;
+        await showDialog<void>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('Workout in progress'),
+            content: Text(
+              'You have an active workout in progress (${activeDraft.routineName}). Finish or leave it before using another plan.',
+            ),
+            actions: [
+              FilledButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+        return false;
+      }
       final dates = ref.read(localScheduleDateServiceProvider);
       final timezoneId = await ref
           .read(localTimezoneServiceProvider)
@@ -219,10 +247,7 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          'Review & Activate',
-          style: TextStyle(fontFamily: 'Outfit'),
-        ),
+        title: Text('Review your plan', style: TextStyle(fontFamily: 'Outfit')),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -262,7 +287,7 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    'Activation Settings',
+                    'When will it start?',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -275,7 +300,7 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    title: const Text('Start Local Date'),
+                    title: const Text('Start date'),
                     subtitle: Text(
                       DateFormat(
                         'd MMM y',
@@ -288,7 +313,7 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
                   DropdownButtonFormField<String>(
                     initialValue: _selectedTimezone,
                     decoration: const InputDecoration(
-                      labelText: 'Program timezone',
+                      labelText: 'Plan timezone',
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.public_rounded),
                     ),
@@ -312,12 +337,12 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'Existing scheduled workouts from earlier versions stay on their original dates unless you explicitly cancel them.',
+                    'Existing scheduled workouts stay on their original dates unless you change them separately.',
                     style: TextStyle(color: Colors.grey),
                   ),
                   const SizedBox(height: 24),
                   Text(
-                    'Program Overview',
+                    'Plan overview',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -325,61 +350,99 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  ...detail.blocks.map((b) {
-                    return ExpansionTile(
-                      title: Text(
-                        b.name,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      children: detail.weeks.where((w) => w.programBlockId == b.id).map((
-                        w,
-                      ) {
-                        final weekTemplates = detail.sessionTemplates
-                            .where((st) => st.programWeekId == w.id)
-                            .toList(growable: false);
-                        final weekTemplateIds = weekTemplates
-                            .map((template) => template.id)
-                            .toSet();
-                        final weekGroups = detail.groups
-                            .where(
-                              (group) => weekTemplateIds.contains(
-                                group.sessionTemplateId,
+                  ...detail.sessionTemplates.asMap().entries.map((entry) {
+                    final workoutIndex = entry.key;
+                    final workout = entry.value;
+                    final exercises = detail.exercisePrescriptions
+                        .where(
+                          (prescription) =>
+                              prescription.sessionTemplateId == workout.id,
+                        )
+                        .toList(growable: false);
+                    return Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Day ${workoutIndex + 1}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
                               ),
-                            )
-                            .toList(growable: false);
-                        return ListTile(
-                          title: Text(
-                            'Week ${w.programWeekOrdinal + 1}${w.isDeload ? " (Deload)" : ""}',
-                          ),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
+                            ),
+                            Text(
+                              '${_weekdayLabel(workout.plannedWeekday)} · Workout · ${workout.name}',
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              ConsumerCountLabel.format(
+                                exercises.length,
+                                'exercise',
+                              ),
+                              style: const TextStyle(color: Colors.grey),
+                            ),
+                            for (final exercise in exercises)
                               Text(
-                                '${ConsumerCountLabel.format(weekTemplates.length, 'workout')} scheduled',
+                                '• ${exercise.exerciseNameSnapshot} · ${exercise.plannedSets} × ${exercise.repsRange}',
                               ),
-                              ...weekGroups.map((group) {
-                                final memberCount = detail.groupMembers
-                                    .where(
-                                      (member) =>
-                                          member.exerciseGroupId == group.id,
-                                    )
-                                    .length;
-                                return Text(
-                                  '${group.groupType} • ${group.roundCount} rounds • $memberCount members',
-                                );
-                              }),
-                            ],
-                          ),
-                        );
-                      }).toList(),
+                          ],
+                        ),
+                      ),
                     );
                   }),
+                  const SizedBox(height: 8),
+                  ExpansionTile(
+                    tilePadding: EdgeInsets.zero,
+                    title: const Text('Advanced details'),
+                    subtitle: const Text('Phases, weeks, and exercise groups'),
+                    children: [
+                      for (final block in detail.blocks)
+                        ExpansionTile(
+                          title: Text(
+                            'Phase ${block.ordinal + 1} · ${block.name}',
+                          ),
+                          children: [
+                            for (final week in detail.weeks.where(
+                              (week) => week.programBlockId == block.id,
+                            ))
+                              ListTile(
+                                dense: true,
+                                title: Text(
+                                  'Week ${week.programWeekOrdinal + 1}${week.isDeload ? ' · Deload' : ''}',
+                                ),
+                                subtitle: Text(
+                                  ConsumerCountLabel.format(
+                                    detail.sessionTemplates
+                                        .where(
+                                          (workout) =>
+                                              workout.programWeekId == week.id,
+                                        )
+                                        .length,
+                                    'workout',
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      for (final group in detail.groups)
+                        ListTile(
+                          dense: true,
+                          title: Text(
+                            '${_groupTypeLabel(group.groupType)} · ${group.roundCount} rounds',
+                          ),
+                          subtitle: Text(
+                            '${ConsumerCountLabel.format(detail.groupMembers.where((member) => member.exerciseGroupId == group.id).length, 'exercise')} in this group',
+                          ),
+                        ),
+                    ],
+                  ),
                   const SizedBox(height: 32),
                   if (_activationError != null) ...[
                     Card(
                       child: ListTile(
                         leading: const Icon(Icons.error_outline),
-                        title: const Text('Program not activated'),
+                        title: const Text('Plan could not be started'),
                         subtitle: Text(_activationError!),
                       ),
                     ),
@@ -393,8 +456,8 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
                       icon: const Icon(Icons.rocket_launch_rounded),
                       label: Text(
                         _activationError == null
-                            ? 'Publish & Activate Program'
-                            : 'Retry activation',
+                            ? 'Use this plan'
+                            : 'Try again',
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
@@ -412,12 +475,31 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
             ),
     );
   }
+
+  static String _weekdayLabel(int weekday) => switch (weekday) {
+    DateTime.monday => 'Mon',
+    DateTime.tuesday => 'Tue',
+    DateTime.wednesday => 'Wed',
+    DateTime.thursday => 'Thu',
+    DateTime.friday => 'Fri',
+    DateTime.saturday => 'Sat',
+    DateTime.sunday => 'Sun',
+    _ => 'Unknown day',
+  };
 }
 
 String _activationFailureMessage(Object error) {
   if (error is ActivationRejectedException &&
       error.message.contains('existing workout draft')) {
-    return 'Finish or discard your current workout before activating this program.';
+    return 'Finish or discard your current workout before using this plan.';
   }
-  return 'The program could not be activated. Your plan is still available to review and retry.';
+  return ProductFailurePresentation.fromError(error).message;
+}
+
+String _groupTypeLabel(String raw) {
+  try {
+    return b02ExecutionGroupTypeLabel(B02GroupType.parse(raw));
+  } catch (_) {
+    return 'Grouped exercises';
+  }
 }

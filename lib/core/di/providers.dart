@@ -8,12 +8,16 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/database/app_database.dart';
+import '../../data/models/b04_goal_models.dart';
 import '../../data/models/b04_recommendation_context_models.dart';
+import '../../data/repositories/b02_execution_compatibility_read_repository.dart';
 import '../../data/repositories/b02_exercise_performance_read_repository.dart';
+import '../../data/repositories/b02_previous_performance_repository.dart';
 import '../../data/repositories/b02_progress_read_repository.dart';
 import '../../data/repositories/b02_strength_execution_repository.dart';
 import '../../data/repositories/b04_briefing_read_repositories.dart';
 import '../../data/repositories/b04_recommendation_history_repository.dart';
+import '../../data/repositories/b07_exercise_context_repository.dart';
 import '../../data/repositories/calendar_read_repository.dart';
 import '../../data/repositories/calendar_repository.dart';
 import '../../data/repositories/coaching_preference_repository.dart';
@@ -31,8 +35,11 @@ import '../../data/repositories/nutrition_protein_distribution_repository.dart';
 import '../../data/repositories/nutrition_read_model_repository.dart';
 import '../../data/repositories/nutrition_recipe_log_coordinator.dart';
 import '../../data/repositories/nutrition_recipe_repository.dart';
+import '../../data/repositories/nutrition_target_authority.dart';
 import '../../data/repositories/nutrition_thali_repository.dart';
 import '../../data/repositories/nutrition_transformation_repository.dart';
+import '../../data/repositories/plan_library_read_repository.dart';
+import '../../data/repositories/plan_overview_read_repository.dart';
 import '../../data/repositories/program_activation_coordinator.dart';
 import '../../data/repositories/program_lifecycle_repository.dart';
 import '../../data/repositories/program_repository.dart';
@@ -54,6 +61,7 @@ import '../../features/dashboard/b04_daily_briefing_controller.dart';
 import '../../features/food_log/nutrition_estimate_review_controller.dart';
 import '../../features/food_log/nutrition_thali_controller.dart';
 import '../../features/food_log/saved_recipe_log_controller.dart';
+import '../../features/media/b05_exercise_visual_registry.dart';
 import '../../features/nutrition/current_food_controller.dart';
 import '../../features/nutrition/protein_distribution_controller.dart';
 import '../../features/progress/b04_weekly_review_controller.dart';
@@ -65,8 +73,10 @@ import '../nutrition_calculation_service.dart';
 import '../nutrition_household_measures.dart';
 import '../privacy/nutrition_estimate_privacy.dart';
 import '../privacy/privacy_policy.dart';
+import '../services/civil_date_revision_notifier.dart';
 import '../services/local_schedule_date_service.dart';
 import '../services/local_timezone_service.dart';
+import '../services/workout_session_wake_lock_coordinator.dart';
 
 export 'user_profile_provider.dart';
 
@@ -75,6 +85,16 @@ final databaseProvider = Provider<AppDatabase>((ref) {
   ref.onDispose(() => db.close());
   return db;
 });
+
+/// One app-scoped owner for the active workout's screen-awake intent. It is
+/// intentionally not auto-disposed with an individual player route.
+final workoutSessionWakeLockCoordinatorProvider =
+    Provider<WorkoutSessionWakeLockCoordinator>((ref) {
+      final coordinator = WorkoutSessionWakeLockCoordinator();
+      coordinator.attachToAppLifecycle();
+      ref.onDispose(coordinator.dispose);
+      return coordinator;
+    });
 
 final nutritionRecipeRepositoryProvider = Provider<NutritionRecipeRepository>(
   (ref) => NutritionRecipeRepository(db: ref.watch(databaseProvider)),
@@ -306,6 +326,51 @@ final nutritionGoalRepositoryProvider = Provider<NutritionGoalRepository>(
     dates: ref.watch(localScheduleDateServiceProvider),
   ),
 );
+
+/// Persisted goal-version and primary-profile writes invalidate every
+/// date-scoped nutrition target consumer. The profile table participates
+/// because it owns the primary local profile identity resolved by B04.
+final nutritionTargetAuthorityChangesProvider =
+    StreamProvider.autoDispose<Object>((ref) {
+      final database = ref.watch(databaseProvider);
+      return database
+          .tableUpdates(
+            TableUpdateQuery.onAllTables([
+              database.nutritionGoalVersions,
+              database.userProfiles,
+            ]),
+          )
+          .map<Object>((_) => Object());
+    });
+
+/// One consumer-facing target resolver shared by Today, Food, and Progress.
+/// The resolver is stateless; each Riverpod read boundary watches the durable
+/// goal-version stream so its date reads are recomputed after a change.
+final nutritionTargetAuthorityProvider = Provider<NutritionTargetAuthority>((
+  ref,
+) {
+  return NutritionTargetAuthority(
+    goals: ref.watch(nutritionGoalRepositoryProvider),
+    dates: ref.watch(localScheduleDateServiceProvider),
+  );
+});
+
+final nutritionTargetsForDateProvider = FutureProvider.autoDispose
+    .family<NutritionTargetsForDate, NutritionTargetDateQuery>((ref, query) {
+      ref.watch(nutritionTargetAuthorityChangesProvider);
+      return ref.watch(nutritionTargetAuthorityProvider).resolve(query);
+    });
+
+/// Read-only history for the Nutrition Targets hub. Values still come from
+/// the goal-version repository; this provider adds no current-target or
+/// date-resolution semantics of its own.
+final nutritionGoalHistoryProvider = FutureProvider.autoDispose
+    .family<List<NutritionGoalVersionReadModel>, String>((ref, userId) {
+      ref.watch(nutritionTargetAuthorityChangesProvider);
+      return ref
+          .watch(nutritionGoalRepositoryProvider)
+          .listVersions(userId: userId);
+    });
 
 final coachingPreferenceRepositoryProvider =
     Provider<CoachingPreferenceRepository>(
@@ -773,6 +838,100 @@ final programRepositoryProvider = Provider<ProgramRepository>((ref) {
   return ProgramRepository(ref.watch(databaseProvider));
 });
 
+final planLibraryReadRepositoryProvider = Provider<PlanLibraryReadRepository>(
+  (ref) => PlanLibraryReadRepository(
+    ref.watch(databaseProvider),
+    programs: ref.watch(programRepositoryProvider),
+  ),
+);
+
+/// The Plan Library is a read projection of the canonical program graph and
+/// active-version pointer. Mutations still flow through B01 repositories and
+/// coordinators; this signal only makes mounted library routes reconcile.
+final planLibraryRevisionProvider = StreamProvider.autoDispose<Object>((ref) {
+  final db = ref.watch(databaseProvider);
+  return db
+      .tableUpdates(
+        TableUpdateQuery.onAllTables([
+          db.programs,
+          db.programVersions,
+          db.programBlocks,
+          db.programWeeks,
+          db.sessionTemplates,
+          db.exercisePrescriptions,
+          db.exerciseGroups,
+          db.exerciseGroupMembers,
+          db.trainingPlanSettings,
+        ]),
+      )
+      // Table-update streams establish their subscription with an initial
+      // emission. Ignore that baseline so the read provider does not
+      // invalidate itself while it is still constructing its first value.
+      .skip(1)
+      .map<Object>((_) => Object());
+});
+
+final planLibrarySnapshotProvider =
+    FutureProvider.autoDispose<PlanLibrarySnapshot>((ref) {
+      ref.watch(planLibraryRevisionProvider);
+      return ref.watch(planLibraryReadRepositoryProvider).read();
+    });
+
+final planOverviewReadRepositoryProvider = Provider<PlanOverviewReadRepository>(
+  (ref) {
+    return PlanOverviewReadRepository(
+      plans: ref.watch(planLibraryReadRepositoryProvider),
+      calendar: ref.watch(calendarReadRepositoryProvider),
+      history: B02ExecutionCompatibilityReadRepository(
+        ref.watch(databaseProvider),
+      ),
+    );
+  },
+);
+
+/// One read invalidation boundary for the plan overview. The overview does
+/// not own any of these tables; this only asks its composed read authorities
+/// to refresh when structure, occurrences, or saved history changes.
+final planOverviewRevisionProvider = StreamProvider.autoDispose<Object>((ref) {
+  final db = ref.watch(databaseProvider);
+  return db
+      .tableUpdates(
+        TableUpdateQuery.onAllTables([
+          db.programs,
+          db.programVersions,
+          db.programBlocks,
+          db.programWeeks,
+          db.sessionTemplates,
+          db.exercisePrescriptions,
+          db.exerciseGroups,
+          db.exerciseGroupMembers,
+          db.trainingPlanSettings,
+          db.scheduledSessionOccurrences,
+          db.workoutSessions,
+          db.performedExerciseGroups,
+          db.performedExercises,
+          db.performedSets,
+          db.performedSetSegments,
+          db.cardioSessionDetails,
+          db.cardioIntervals,
+          db.mobilitySessionDetails,
+        ]),
+      )
+      .skip(1)
+      .map<Object>((_) => Object());
+});
+
+final planOverviewSnapshotProvider = FutureProvider.autoDispose
+    .family<PlanOverviewSnapshot?, String>((ref, versionId) async {
+      ref.watch(planOverviewRevisionProvider);
+      final timezoneId = await ref
+          .watch(localTimezoneServiceProvider)
+          .currentTimezoneId();
+      return ref
+          .watch(planOverviewReadRepositoryProvider)
+          .read(versionId: versionId, timezoneId: timezoneId);
+    });
+
 final localScheduleDateServiceProvider = Provider<LocalScheduleDateService>((
   ref,
 ) {
@@ -784,6 +943,18 @@ final localTimezoneServiceProvider = Provider<LocalTimezoneService>((ref) {
     dates: ref.watch(localScheduleDateServiceProvider),
   );
 });
+
+/// One shared date-boundary dependency for date-scoped consumer surfaces.
+/// Database mutations still flow through their canonical repository watches;
+/// this revision only handles a civil-date change while the app remains open.
+final civilDateRevisionProvider =
+    StateNotifierProvider<CivilDateRevisionNotifier, int>((ref) {
+      return CivilDateRevisionNotifier(
+        dates: ref.watch(localScheduleDateServiceProvider),
+        timezoneId: () =>
+            ref.read(localTimezoneServiceProvider).currentTimezoneId(),
+      );
+    });
 
 final programActivationCoordinatorProvider =
     Provider<ProgramActivationCoordinator>((ref) {
@@ -857,6 +1028,34 @@ final exercisePreferenceAggregateProvider =
           .watchPreference(stableId: lookup.stableId, rawName: lookup.rawName);
     });
 
+/// The existing R08-0 exact-UUID visual registry, loaded through the packaged
+/// manifest boundary. Missing local/private RepDB files are expected: the
+/// registry remains useful for exact binding, while [ExerciseVisual] falls
+/// through to the canonical muscle map or semantic icon.
+final b05ExerciseVisualRegistryProvider =
+    FutureProvider<B05ExerciseVisualRegistry>((ref) async {
+      try {
+        return await B05AssetBundleExerciseVisualRegistrySource(
+          bundle: rootBundle,
+        ).load();
+      } catch (_) {
+        return const B05ExerciseVisualRegistry.empty();
+      }
+    });
+
+final b07ExerciseContextRepositoryProvider =
+    Provider<B07ExerciseContextRepository>(
+      (ref) => B07ExerciseContextRepository(ref.watch(databaseProvider)),
+    );
+
+/// Exact actual-exercise context keyed by the canonical performed UUID.
+/// Riverpod's family key also prevents a late A lookup from painting over a
+/// replacement B lookup.
+final b07ExerciseContextProvider =
+    FutureProvider.family<B07ExerciseContextResult, String>((ref, id) {
+      return ref.watch(b07ExerciseContextRepositoryProvider).resolve(id);
+    });
+
 final workoutExecutionCompatibilityAdapterProvider =
     Provider<WorkoutExecutionCompatibilityAdapter>((ref) {
       return WorkoutExecutionCompatibilityAdapter(
@@ -880,6 +1079,13 @@ final b02ExercisePerformanceReadRepositoryProvider =
     Provider<B02ExercisePerformanceReadRepository>(
       (ref) =>
           B02ExercisePerformanceReadRepository(ref.watch(databaseProvider)),
+    );
+
+/// UI-independent B.3 boundary. B.2 can consume factual previous evidence
+/// without importing a player widget or the progression recommendation rule.
+final b02PreviousPerformanceRepositoryProvider =
+    Provider<B02PreviousPerformanceRepository>(
+      (ref) => B02PreviousPerformanceRepository(ref.watch(databaseProvider)),
     );
 
 final strengthExecutionCompatibilityAdapterProvider =

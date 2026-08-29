@@ -5,8 +5,9 @@ import '../../core/di/providers.dart';
 import '../../core/nutrients.dart';
 import '../../core/nutrition_constraints.dart';
 import '../../core/nutrition_thali.dart';
-import '../../core/theme/colors.dart';
+import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/typed_quantities.dart';
+import '../../core/widgets/b05_accessibility_primitives.dart';
 import 'nutrition_thali_controller.dart';
 
 /// B03-13's bounded composition surface. It delegates identity, quantity
@@ -42,6 +43,21 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
   NutritionThaliController get _controller =>
       ref.read(nutritionThaliControllerProvider(widget.mealType).notifier);
 
+  String get _mealTypeLabel {
+    final words = widget.mealType
+        .trim()
+        .replaceAll('_', ' ')
+        .split(RegExp(r'\s+'));
+    final label = words
+        .where((word) => word.isNotEmpty)
+        .map(
+          (word) =>
+              '${word[0].toUpperCase()}${word.substring(1).toLowerCase()}',
+        )
+        .join(' ');
+    return label.isEmpty ? 'Meal' : label;
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(nutritionThaliControllerProvider(widget.mealType));
@@ -54,11 +70,8 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text('Build meal · ${widget.mealType.toUpperCase()}'),
-        backgroundColor: AppColors.background,
-        elevation: 0,
+        title: Text('Build meal · $_mealTypeLabel'),
       ),
       body: _buildBody(context, state),
     );
@@ -78,7 +91,7 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
 
     final draft = state.draft;
     if (draft == null) {
-      return const Center(child: Text('No meal draft is available.'));
+      return const Center(child: Text('No meal is available right now.'));
     }
     final isBusy =
         state.status == NutritionThaliStatus.saving ||
@@ -137,7 +150,7 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
         enabled: enabled,
         onChanged: _controller.setName,
         decoration: const InputDecoration(
-          labelText: 'Draft name',
+          labelText: 'Meal name',
           prefixIcon: Icon(Icons.edit_outlined),
         ),
       ),
@@ -184,7 +197,10 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
                 ),
                 IconButton(
                   tooltip: 'Remove $label',
-                  icon: const Icon(Icons.delete_outline),
+                  icon: Icon(
+                    Icons.delete_outline,
+                    color: context.b05Colors.danger.indicator,
+                  ),
                   onPressed: () => _controller.removeItem(item.id),
                 ),
               ],
@@ -207,7 +223,7 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
             state.status == NutritionThaliStatus.searching ||
             state.status == NutritionThaliStatus.ready);
     return Material(
-      color: AppColors.surface,
+      color: context.b05Colors.section,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
         child: Column(
@@ -260,7 +276,7 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
             dense: true,
             leading: const Icon(Icons.restaurant_outlined),
             title: Text(option.displayName),
-            subtitle: const Text('Food · identity retained'),
+            subtitle: const Text('Food'),
             trailing: const Icon(Icons.add_circle_outline),
             onTap: () => _controller.addFood(option),
           ),
@@ -275,9 +291,9 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
           ),
         if (state.foodResults.isEmpty && state.recipeResults.isEmpty)
           const ListTile(
-            title: Text('No matching active foods or saved recipes'),
+            title: Text('No matching foods or saved recipes'),
             subtitle: Text(
-              'Try another search. Draft or archived recipes are not offered.',
+              'Try another search. Only ready-to-use recipes are shown.',
             ),
           ),
       ],
@@ -310,7 +326,7 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
                   ),
                   const SizedBox(width: 8),
                   Text(switch (state.status) {
-                    NutritionThaliStatus.saving => 'Saving draft…',
+                    NutritionThaliStatus.saving => 'Saving meal…',
                     NutritionThaliStatus.previewLoading =>
                       'Calculating preview…',
                     NutritionThaliStatus.finalizing => 'Logging meal…',
@@ -328,7 +344,7 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
                       ? _controller.saveDraft
                       : null,
                   icon: const Icon(Icons.bookmark_outline),
-                  label: const Text('Save draft'),
+                  label: const Text('Save meal'),
                 ),
               ),
               const SizedBox(width: 8),
@@ -408,7 +424,6 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
         ? 'Nutrition is unknown for the selected items.'
         : 'Nutrition preview is complete for the selected registry fields.';
     return Card(
-      color: AppColors.surface,
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
@@ -474,7 +489,7 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
                     _controller.acknowledgePartial(value ?? false),
                 title: const Text('I understand this preview is incomplete'),
                 subtitle: const Text(
-                  'Unknown values remain unknown in the saved snapshot.',
+                  'Unknown values remain unknown in the saved meal.',
                 ),
               ),
           ],
@@ -747,7 +762,7 @@ class _FailurePanel extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              const Icon(Icons.error_outline, color: AppColors.danger),
+              Icon(Icons.error_outline, color: context.b05Colors.danger.indicator),
               const SizedBox(width: 12),
               Expanded(child: Text(message)),
               TextButton(onPressed: onRetry, child: const Text('Retry')),
@@ -783,27 +798,28 @@ class _EmptyStateContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    final colors = context.b05Colors;
+    return Center(
       child: Padding(
-        padding: EdgeInsets.all(24),
+        padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
               Icons.restaurant_outlined,
               size: 56,
-              color: AppColors.textMuted,
+              color: colors.textDisabled,
             ),
-            SizedBox(height: 12),
+            const SizedBox(height: 12),
             Text(
               'Your meal is empty',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              style: B05Typography.title(context).copyWith(fontSize: 18),
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             Text(
               'Search for a food or add a saved recipe. This is a free-form meal, not a recommendation.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.textSecondary),
+              style: B05Typography.caption(context).copyWith(fontSize: 13),
             ),
           ],
         ),

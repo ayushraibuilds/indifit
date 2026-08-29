@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:indifit/core/di/providers.dart';
+import 'package:indifit/core/services/local_schedule_date_service.dart';
 import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/repositories/calendar_read_repository.dart';
@@ -97,6 +99,11 @@ void main() {
       ProviderScope(
         overrides: [
           workoutOccurrenceActionGatewayProvider.overrideWithValue(gateway),
+          localScheduleDateServiceProvider.overrideWithValue(
+            LocalScheduleDateService(
+              nowUtc: () => DateTime.utc(2026, 8, 7, 12),
+            ),
+          ),
         ],
         child: MediaQuery(
           data: const MediaQueryData(

@@ -1,9 +1,15 @@
 import 'package:drift/drift.dart' show Value;
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:indifit/core/di/providers.dart';
 import 'package:indifit/core/services/achievement_service.dart';
+import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/repositories/progress_statistics_repository.dart';
 import 'package:indifit/data/repositories/weekly_report_service.dart';
+import 'package:indifit/features/dashboard/dashboard_controller.dart';
+import 'package:indifit/features/progress/achievements_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -42,6 +48,63 @@ void main() {
       final unlockedCount = achievements.where((a) => a.isUnlocked).length;
       expect(unlockedCount, equals(0));
     });
+
+    test(
+      '1a. Achievement feedback baselines existing history and stays idempotent',
+      () async {
+        final container = ProviderContainer(
+          overrides: [databaseProvider.overrideWithValue(db)],
+        );
+        addTearDown(container.dispose);
+
+        final controller = container.read(dashboardControllerProvider.notifier);
+        await controller.loadStateData();
+
+        var prefs = await SharedPreferences.getInstance();
+        expect(prefs.getStringList('unlocked_achievement_ids'), isEmpty);
+
+        await db
+            .into(db.workoutSessions)
+            .insert(
+              WorkoutSessionsCompanion.insert(
+                name: 'First logged session',
+                totalVolume: 0,
+                durationSeconds: 1800,
+                estimatedCalories: 0,
+                completedAt: Value(DateTime.now()),
+              ),
+            );
+
+        await controller.loadStateData();
+        expect(
+          container
+              .read(dashboardControllerProvider)
+              .newlyUnlockedAchievementTitles,
+          ['First Sweat'],
+        );
+
+        prefs = await SharedPreferences.getInstance();
+        expect(prefs.getStringList('unlocked_achievement_ids'), [
+          'first_workout',
+        ]);
+
+        // Re-reading unchanged history must not emit another unlock event or
+        // duplicate the persisted identifier.
+        await controller.loadStateData();
+        expect(
+          container
+              .read(dashboardControllerProvider)
+              .newlyUnlockedAchievementTitles,
+          ['First Sweat'],
+        );
+        expect(
+          (await SharedPreferences.getInstance()).getStringList(
+            'unlocked_achievement_ids',
+          ),
+          ['first_workout'],
+        );
+      },
+    );
 
     test(
       '2. Logging 1 workout session unlocks "first_workout" and persists timestamp in SQLite',
@@ -84,13 +147,12 @@ void main() {
         final firstWorkoutBadge = achievements.firstWhere(
           (a) => a.id == 'first_workout',
         );
-        final firstPrBadge = achievements.firstWhere((a) => a.id == 'first_pr');
         final heavyMoverBadge = achievements.firstWhere(
           (a) => a.id == 'volume_5000',
         );
 
         expect(firstWorkoutBadge.isUnlocked, isTrue);
-        expect(firstPrBadge.isUnlocked, isTrue);
+        expect(achievements.any((a) => a.id == 'first_pr'), isFalse);
         expect(heavyMoverBadge.isUnlocked, isFalse);
 
         // Record unlock transactionally
@@ -206,5 +268,66 @@ void main() {
         expect(report.summary, contains('6000 total kcal'));
       },
     );
+
+    testWidgets('6. Achievements remains usable at 320 width and 2x text', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(320, 568);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      SharedPreferences.setMockInitialValues({'user_streak_count': 0});
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            databaseProvider.overrideWithValue(db),
+            progressStatisticsRepositoryProvider.overrideWithValue(
+              _FakeAchievementRepository(db),
+            ),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.darkTheme,
+            home: MediaQuery(
+              data: MediaQueryData.fromView(tester.view).copyWith(
+                textScaler: const TextScaler.linear(2),
+                disableAnimations: true,
+              ),
+              child: const AchievementsScreen(),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 50)),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 700));
+
+      await tester.drag(find.byType(ListView), const Offset(0, -1200));
+      await tester.pump();
+      expect(find.text('ALL BADGES'), findsOneWidget);
+      expect(find.text('First Sweat'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
   });
+}
+
+class _FakeAchievementRepository extends ProgressStatisticsRepository {
+  _FakeAchievementRepository(super.database);
+
+  @override
+  Future<LifetimeAchievementStats> getLifetimeStats() async =>
+      const LifetimeAchievementStats(
+        totalWorkouts: 0,
+        totalVolumeKg: 0,
+        totalMealsLogged: 0,
+        totalPrs: 0,
+        thaliLoggedCount: 0,
+        unlockedAchievementIds: {},
+      );
+
+  @override
+  Future<bool> unlockAchievement(String achievementId) async => false;
 }

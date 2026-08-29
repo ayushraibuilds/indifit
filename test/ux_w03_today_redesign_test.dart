@@ -77,7 +77,7 @@ void main() {
     expect(unavailable.detail, isNot(contains('source failed')));
   });
 
-  test('Today progress presentation does not re-aggregate B02 history', () {
+  test('Today progress presentation uses factual B02 history evidence', () {
     final presentation = TodayProgressPresentation.from(
       TodayDomainRead.available(
         B02ProgressReadModel(
@@ -131,9 +131,9 @@ void main() {
     );
 
     expect(presentation.state, TodayPresentationState.ready);
-    expect(presentation.headline, 'Your week is taking shape');
-    expect(presentation.detail, isNot(contains('90 minutes')));
-    expect(presentation.detail, isNot(contains('2 sessions')));
+    expect(presentation.headline, '2 sessions completed');
+    expect(presentation.detail, 'Latest: Strength session');
+    expect(presentation.supporting, contains('Aug 1'));
   });
 
   test(

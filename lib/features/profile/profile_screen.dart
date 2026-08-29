@@ -7,7 +7,6 @@ import '../../core/di/user_profile_provider.dart';
 import '../../core/presentation/diet_preference_presentation.dart';
 import '../../core/presentation/secondary_presentation.dart';
 import '../../core/theme/b05_semantic_colors.dart';
-import '../../core/utils/tdee_calculator.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/consumer_task_primitives.dart';
 import '../../core/widgets/responsive_form_primitives.dart';
@@ -202,93 +201,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       return;
     }
 
-    final bodyOrGoalChanged =
-        (editsPersonal &&
-            (p.userAge != age ||
-                (p.userHeight ?? 0) != height ||
-                p.currentWeight != weight ||
-                p.userSex != sex)) ||
-        (editsGoal && p.userGoal != goal) ||
-        (editsTraining && p.userActivityLevel != activity);
+    final goalChanged = editsGoal && p.userGoal != goal;
 
-    bool recalculateGoals = false;
-
-    if (bodyOrGoalChanged) {
-      final choice = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          backgroundColor: context.b05Colors.section,
-          title: Row(
-            children: [
-              Icon(
-                Icons.auto_awesome_rounded,
-                color: context.b05Colors.action,
-                size: 22,
-              ),
-              const SizedBox(width: B05Layout.space8),
-              const Text('Refresh your targets?'),
-            ],
-          ),
-          content: const Text(
-            'Your measurements or goal have changed. Would you like to refresh your daily nutrition targets?',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Keep current targets'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Refresh targets'),
-            ),
-          ],
-        ),
-      );
-
-      if (choice == null) return; // User dismissed/cancelled dialog
-      recalculateGoals = choice;
-    }
-
-    int? newCals;
-    double? newProtein;
-    double? newCarbs;
-    double? newFat;
-
-    if (recalculateGoals) {
-      final gender = _selectedSex == 'female' ? Gender.female : Gender.male;
-      final actLevel = switch (_selectedActivity) {
-        'sedentary' => ActivityLevel.sedentary,
-        'light' => ActivityLevel.lightlyActive,
-        'active' => ActivityLevel.veryActive,
-        _ => ActivityLevel.moderatelyActive,
-      };
-      final fitnessGoal = switch (_selectedGoal) {
-        'lose' => FitnessGoal.weightLoss,
-        'gain' => FitnessGoal.muscleGain,
-        _ => FitnessGoal.maintain,
-      };
-
-      final bmr = TdeeCalculator.calculateBmr(
-        gender: gender,
-        weightKg: weight ?? p.currentWeight,
-        heightCm: height ?? p.userHeight ?? 170,
-        ageYears: age ?? p.userAge,
-      );
-      final tdee = TdeeCalculator.calculateTdee(
-        bmr: bmr,
-        activityLevel: actLevel,
-      );
-      final macros = TdeeCalculator.calculateMacros(
-        tdee: tdee,
-        goal: fitnessGoal,
-        weightKg: weight ?? p.currentWeight,
-      );
-
-      newCals = macros.calories;
-      newProtein = macros.proteinG;
-      newCarbs = macros.carbsG;
-      newFat = macros.fatG;
-    }
+    // Profile values are compatibility mirrors. Changing measurements or the
+    // mirror goal must not recalculate or overwrite the canonical,
+    // date-scoped target. The dedicated Goal & targets destination owns that
+    // command through NutritionGoalRepository.
 
     // Haptics are optional feedback and must never delay or prevent the
     // persisted profile patch.
@@ -313,10 +231,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               : null,
           equipmentAccess: editsTraining ? equipment : null,
           injuriesLimitations: editsTraining ? injuries : null,
-          calorieGoal: newCals,
-          proteinGoal: newProtein,
-          carbsGoal: newCarbs,
-          fatGoal: newFat,
         );
 
     await ref.read(dashboardControllerProvider.notifier).loadStateData();
@@ -325,8 +239,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            recalculateGoals
-                ? 'Profile updated and nutrition targets refreshed.'
+            goalChanged
+                ? 'Profile updated. Nutrition targets stay as saved; edit them separately.'
                 : 'Profile updated.',
           ),
           backgroundColor: context.b05Colors.success.indicator,
@@ -516,7 +430,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         ),
                         DropdownMenuItem(
                           value: 'maintain',
-                          child: Text('Maintain and feel strong'),
+                          child: Text('Maintain'),
                         ),
                         DropdownMenuItem(
                           value: 'gain',

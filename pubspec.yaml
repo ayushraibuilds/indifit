@@ -85,6 +85,8 @@ flutter:
     - assets/data/
     - assets/data/regional/
     - assets/data/meal_plans/
+    - assets/third_party/asset_manifest.json
+    - assets/generated/repdb/
 
   # Offline-first typography: Outfit is bundled as a variable font so the app
   # never fetches fonts over the network at runtime.

@@ -7,18 +7,24 @@ import 'package:uuid/uuid.dart';
 
 import '../../core/di/providers.dart';
 import '../../core/fixtures/workout_draft_codec.dart';
+import '../../core/navigation/app_navigation.dart';
+import '../../core/presentation/consumer_copy.dart';
 import '../../core/presentation/consumer_date_label.dart';
 import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/services/crash_reporting_service.dart';
-import '../../core/theme/b05_semantic_colors.dart';
+import '../../core/services/workout_session_wake_lock_coordinator.dart';
 import '../../core/utils/app_logger.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
+import '../../core/widgets/indi_fit_bottom_sheet.dart';
+import '../../data/database/app_database.dart';
 import '../../data/repositories/calendar_read_repository.dart';
+import '../../data/repositories/training_next_action_resolver.dart';
 import '../../data/repositories/workout_repository.dart';
 import '../activity/b02_activity_controller.dart';
 import '../calendar/workout_contextual_launcher.dart';
 import '../coaching/b04_production_surface_widgets.dart';
-import '../settings/settings_screen.dart';
+import '../progress/achievements_screen.dart';
+import '../settings/nutrition_targets_hub_screen.dart';
 import '../workout_player/b02_strength_execution_controller.dart';
 import '../workout_player/b02_strength_player_screen.dart';
 import '../workout_player/workout_player_screen.dart';
@@ -29,6 +35,9 @@ import 'widgets/dashboard_module_customization_panel.dart';
 
 /// B05's daily action surface. It composes source-owned B01–B04 reads and
 /// existing routes; it is not another dashboard data authority.
+bool shouldShowDashboardActivityRecoveryPrompt(WorkoutDraft? draft) =>
+    draft != null && !isTrainingResumableDraft(draft);
+
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
@@ -49,15 +58,23 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     try {
       final repo = ref.read(workoutRepositoryProvider);
       final draft = await repo.getActiveDraft();
-      if (draft == null || !mounted) return;
+      // Today and Training already expose the one canonical Resume action for
+      // workout drafts. Keep this launch-time recovery prompt only for the
+      // competing non-training activity drafts that those surfaces cannot
+      // resume themselves.
+      if (draft == null ||
+          !mounted ||
+          !shouldShowDashboardActivityRecoveryPrompt(draft)) {
+        return;
+      }
 
       await showDialog(
         context: context,
         barrierDismissible: false,
         builder: (dialogContext) => AlertDialog(
-          title: const Text('Resume workout?'),
+          title: const Text('Resume activity?'),
           content: Text(
-            'You have an unfinished workout session ("${draft.routineName}") from your last visit. Would you like to resume it?',
+            'You have an unfinished activity ("${draft.routineName}") from your last visit. Would you like to resume it?',
           ),
           actions: [
             TextButton(
@@ -73,6 +90,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 } else {
                   await repo.deleteActiveDraft();
                 }
+                final wakeLock = ref.read(
+                  workoutSessionWakeLockCoordinatorProvider,
+                );
+                unawaited(
+                  wakeLock.clearActiveSession(
+                    b02WorkoutSessionWakeLockKey(draft.id),
+                  ),
+                );
+                unawaited(
+                  wakeLock.clearActiveSession(
+                    legacyWorkoutSessionWakeLockKey(
+                      draft.scheduledOccurrenceId,
+                    ),
+                  ),
+                );
               },
               child: const Text('Discard'),
             ),
@@ -158,7 +190,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   await _refreshToday();
                 }
               },
-              child: const Text('Resume'),
+              child: const Text('Resume activity'),
             ),
           ],
         ),
@@ -180,6 +212,39 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     ref.invalidate(todaySurfaceSnapshotProvider(selectedDate));
   }
 
+  Future<void> _resumeTodayWorkout(WorkoutDraft draft) async {
+    if (draft.activityType == 'strength' && draft.executionStateJson != null) {
+      try {
+        final controller = ref.read(
+          b02StrengthExecutionControllerProvider.notifier,
+        );
+        await controller.recover(draft.id);
+        final recovered = ref.read(b02StrengthExecutionControllerProvider);
+        if (!mounted ||
+            recovered.status != B02StrengthExecutionStatus.ready ||
+            recovered.launch == null) {
+          throw StateError('The saved workout could not be recovered.');
+        }
+        await Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => B02StrengthPlayerScreen(launch: recovered.launch!),
+          ),
+        );
+        if (mounted) await _refreshToday();
+        return;
+      } catch (_) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Saved workout unavailable. Try again.'),
+          ),
+        );
+        return;
+      }
+    }
+    if (mounted) goToTrainingTab(context);
+  }
+
   Future<void> _openFoodForMeal(String mealType) async {
     final date = ref.read(dashboardControllerProvider).selectedDate;
     final dateValue =
@@ -197,39 +262,33 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   void _openFoodGuidance() {
-    showModalBottomSheet<void>(
+    showIndiFitBottomSheet<void>(
       context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(B05Layout.space12),
-          child: B05Surface(
-            radius: B05SurfaceRadius.large,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
+      semanticLabel: 'Food guidance',
+      builder: (sheetCtx) => Padding(
+        padding: const EdgeInsets.all(B05Layout.space16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'What can I eat?',
-                        style: B05Typography.title(context),
-                      ),
-                    ),
-                    B05IconAction(
-                      icon: Icons.close_rounded,
-                      label: 'Close food guidance',
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                  ],
+                Expanded(
+                  child: Text(
+                    'What can I eat?',
+                    style: B05Typography.title(sheetCtx),
+                  ),
                 ),
-                const SizedBox(height: B05Layout.space12),
-                const B04CurrentFoodSummary(),
+                B05IconAction(
+                  icon: Icons.close_rounded,
+                  label: 'Close food guidance',
+                  onPressed: () => Navigator.of(sheetCtx).pop(),
+                ),
               ],
             ),
-          ),
+            const SizedBox(height: B05Layout.space12),
+            const B04CurrentFoodSummary(),
+          ],
         ),
       ),
     );
@@ -290,70 +349,42 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   void _openCustomization() {
-    showModalBottomSheet<void>(
+    showIndiFitBottomSheet<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-            B05Layout.space12,
-            B05Layout.space12,
-            B05Layout.space12,
-            B05Layout.space8,
-          ),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.sizeOf(context).height * .82,
-            ),
-            child: B05Surface(
-              padding: const EdgeInsets.fromLTRB(
-                B05Layout.space16,
-                B05Layout.space8,
-                B05Layout.space16,
-                B05Layout.space16,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
+      semanticLabel: ConsumerCopy.customizeTodayAction,
+      maxHeightFactor: 0.85,
+      builder: (sheetCtx) => Padding(
+        padding: const EdgeInsets.fromLTRB(
+          B05Layout.space16,
+          B05Layout.space8,
+          B05Layout.space16,
+          B05Layout.space16,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Semantics(
+              label: ConsumerCopy.customizeTodayAction,
+              header: true,
+              child: Row(
                 children: [
-                  Semantics(
-                    label: 'Customize Today dashboard',
-                    header: true,
-                    child: Column(
-                      children: [
-                        Container(
-                          width: 36,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: context.b05Colors.border,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                        ),
-                        const SizedBox(height: B05Layout.space8),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                'Customize Today',
-                                style: B05Typography.title(context),
-                              ),
-                            ),
-                            B05IconAction(
-                              icon: Icons.close_rounded,
-                              label: 'Close customization',
-                              onPressed: () => Navigator.of(context).pop(),
-                            ),
-                          ],
-                        ),
-                      ],
+                  Expanded(
+                    child: Text(
+                      ConsumerCopy.customizeTodayAction,
+                      style: B05Typography.title(sheetCtx),
                     ),
                   ),
-                  const SizedBox(height: B05Layout.space8),
-                  const Flexible(child: DashboardModuleCustomizationPanel()),
+                  B05IconAction(
+                    icon: Icons.close_rounded,
+                    label: 'Close customization',
+                    onPressed: () => Navigator.of(sheetCtx).pop(),
+                  ),
                 ],
               ),
             ),
-          ),
+            const SizedBox(height: B05Layout.space8),
+            const Flexible(child: DashboardModuleCustomizationPanel()),
+          ],
         ),
       ),
     );
@@ -361,6 +392,32 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<DashboardState>(dashboardControllerProvider, (previous, next) {
+      final previousTitles =
+          previous?.newlyUnlockedAchievementTitles ?? const [];
+      final nextTitles = next.newlyUnlockedAchievementTitles;
+      if (nextTitles.isEmpty || _sameTitles(previousTitles, nextTitles)) {
+        return;
+      }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final plural = nextTitles.length == 1 ? 'Achievement' : 'Achievements';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            behavior: SnackBarBehavior.floating,
+            content: Text('$plural unlocked: ${nextTitles.join(', ')}'),
+            action: SnackBarAction(
+              label: 'View',
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const AchievementsScreen()),
+                );
+              },
+            ),
+          ),
+        );
+      });
+    });
     final state = ref.watch(dashboardControllerProvider);
     final profile = ref.watch(userProfileProvider);
     final userName = profile.userName?.trim();
@@ -375,18 +432,30 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               .setSelectedDate(DateTime(date.year, date.month, date.day));
         },
         onRefresh: _refreshToday,
-        onOpenSettings: () {
-          Navigator.of(
-            context,
-          ).push(MaterialPageRoute(builder: (_) => const SettingsScreen()));
-        },
+        onOpenSettings: () => context.push('/settings'),
         onCustomize: _openCustomization,
         onOpenWorkoutPlan: () => context.push('/calendar'),
         onLogMeal: () => unawaited(_openFoodForMeal('')),
         onLogMealForMeal: _openFoodForMeal,
         onStartWorkout: _startTodayWorkout,
+        onResumeWorkout: _resumeTodayWorkout,
         onOpenFoodGuidance: _openFoodGuidance,
+        onOpenNutritionTargets: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => const NutritionTargetsHubScreen(),
+            ),
+          );
+        },
       ),
     );
   }
+}
+
+bool _sameTitles(List<String> first, List<String> second) {
+  if (first.length != second.length) return false;
+  for (var index = 0; index < first.length; index++) {
+    if (first[index] != second[index]) return false;
+  }
+  return true;
 }

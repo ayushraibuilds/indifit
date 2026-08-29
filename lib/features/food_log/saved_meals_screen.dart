@@ -4,12 +4,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/di/providers.dart';
+import '../../core/presentation/consumer_copy.dart';
 import '../../core/services/indifit_haptics.dart';
 import '../../core/theme/b05_semantic_colors.dart';
+import '../../core/widgets/b05_accessibility_primitives.dart';
+import '../../core/widgets/consumer_task_primitives.dart';
 import '../../core/widgets/indi_fit_feedback.dart';
 import '../../core/widgets/skeleton_loader.dart';
 import '../dashboard/today_surface_controller.dart';
 import 'meal_templates_screen.dart';
+import 'saved_meal_detail_screen.dart';
 import 'saved_meal_editor_screen.dart';
 import 'saved_meals_controller.dart';
 import 'widgets/saved_meal_edit_before_log_sheet.dart';
@@ -50,18 +54,23 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
     });
   }
 
-  Future<void> _handleQuickLog(SavedMealDisplayItem item) async {
+  Future<bool> _handleQuickLog(
+    SavedMealDisplayItem item, {
+    bool closeAfterSuccess = true,
+  }) async {
     if (!item.isLoggable ||
         _quickLogInFlight ||
         ref.read(savedMealsControllerProvider).status ==
             SavedMealsStatus.finalizing) {
-      return;
+      return false;
     }
     setState(() => _quickLogInFlight = true);
     try {
       if (item.requiresPartialAcknowledgement) {
-        await _handleEditBeforeLog(item);
-        return;
+        return await _handleEditBeforeLog(
+          item,
+          closeAfterSuccess: closeAfterSuccess,
+        );
       }
 
       final now = DateTime.now().toUtc();
@@ -75,7 +84,7 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
       final loggedAt = widget.selectedDate == null
           ? now
           : dates.instantForLocalDate(localDate, timezoneId);
-      if (!mounted) return;
+      if (!mounted) return false;
       final controller = ref.read(savedMealsControllerProvider.notifier);
       final snapshot = await controller.logSavedMeal(
         draft: item.draft,
@@ -86,24 +95,27 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
       );
 
       if (snapshot != null && mounted) {
-        unawaited(IndiFitHaptics.confirmation());
         _refreshTodaySurfaces();
-        ScaffoldMessenger.of(context).showSnackBar(
-          indiFitSuccessSnackBar(
-            'Logged "${item.draft.name}" to ${widget.mealType.toUpperCase()}!',
-          ),
+        showIndiFitSuccessFeedback(
+          context,
+          'Logged "${item.draft.name}" to ${widget.mealType.toLowerCase()}!',
         );
-        if (mounted && Navigator.canPop(context)) {
+        if (closeAfterSuccess && mounted && Navigator.canPop(context)) {
           Navigator.pop(context, true);
         }
+        return true;
       }
+      return false;
     } finally {
       _quickLogInFlight = false;
       if (mounted) setState(() {});
     }
   }
 
-  Future<void> _handleEditBeforeLog(SavedMealDisplayItem item) async {
+  Future<bool> _handleEditBeforeLog(
+    SavedMealDisplayItem item, {
+    bool closeAfterSuccess = true,
+  }) async {
     final result = await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -118,19 +130,19 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
     );
 
     if (result != null && mounted) {
-      unawaited(IndiFitHaptics.confirmation());
-      ScaffoldMessenger.of(context).showSnackBar(
-        indiFitSuccessSnackBar(
-          'Logged "${item.draft.name}" to ${widget.mealType.toUpperCase()}!',
-        ),
+      showIndiFitSuccessFeedback(
+        context,
+        'Logged "${item.draft.name}" to ${widget.mealType.toLowerCase()}!',
       );
-      if (mounted && Navigator.canPop(context)) {
+      if (closeAfterSuccess && mounted && Navigator.canPop(context)) {
         Navigator.pop(context, true);
       }
+      return true;
     }
+    return false;
   }
 
-  Future<void> _handleDelete(SavedMealDisplayItem item) async {
+  Future<bool> _handleDelete(SavedMealDisplayItem item) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -158,7 +170,7 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
     if (confirm != true ||
         !mounted ||
         !_deletingSavedMealIds.add(item.draft.id)) {
-      return;
+      return false;
     }
     setState(() {});
     try {
@@ -168,12 +180,56 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
         item.draft.id,
         reload: false,
       );
-      if (!deleted || !mounted) return;
+      if (!deleted || !mounted) return false;
       unawaited(IndiFitHaptics.warning());
       await controller.loadSavedMeals(query: query);
+      return true;
     } finally {
       _deletingSavedMealIds.remove(item.draft.id);
       if (mounted) setState(() {});
+    }
+  }
+
+  Future<bool> _openEditor({SavedMealDisplayItem? item}) async {
+    final saved = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => SavedMealEditorScreen(
+          thaliDraft: item?.draft,
+          defaultMealType: widget.mealType,
+        ),
+      ),
+    );
+    if (saved == true && mounted) {
+      await ref
+          .read(savedMealsControllerProvider.notifier)
+          .loadSavedMeals(query: ref.read(savedMealsControllerProvider).query);
+    }
+    return saved == true;
+  }
+
+  Future<void> _openMealDetail(SavedMealDisplayItem meal) async {
+    final result = await Navigator.push<SavedMealDetailResult>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => SavedMealDetailScreen(
+          meal: meal,
+          mealType: widget.mealType,
+          onQuickLog: () => _handleQuickLog(meal, closeAfterSuccess: false),
+          onReviewPortions: () =>
+              _handleEditBeforeLog(meal, closeAfterSuccess: false),
+          onEdit: () => _openEditor(item: meal),
+          onDelete: () => _handleDelete(meal),
+        ),
+      ),
+    );
+    if (!mounted) return;
+    if (result == SavedMealDetailResult.logged) {
+      if (Navigator.canPop(context)) Navigator.pop(context, true);
+    } else if (result == SavedMealDetailResult.updated) {
+      await ref
+          .read(savedMealsControllerProvider.notifier)
+          .loadSavedMeals(query: ref.read(savedMealsControllerProvider).query);
     }
   }
 
@@ -212,29 +268,14 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Saved Meals'),
+        title: const Text('Saved meals'),
         backgroundColor: context.b05Colors.surface,
         elevation: 0,
         actions: [
           IconButton(
-            tooltip: 'Create Saved Meal',
+            tooltip: 'Create saved meal',
             icon: const Icon(Icons.add_rounded),
-            onPressed: () async {
-              final created = await Navigator.push<bool>(
-                context,
-                MaterialPageRoute(
-                  builder: (_) =>
-                      SavedMealEditorScreen(defaultMealType: widget.mealType),
-                ),
-              );
-              if (created == true && mounted) {
-                unawaited(
-                  ref
-                      .read(savedMealsControllerProvider.notifier)
-                      .loadSavedMeals(),
-                );
-              }
-            },
+            onPressed: () => _openEditor(),
           ),
         ],
       ),
@@ -263,32 +304,18 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
             ),
           ),
 
-          if (state.errorMessage != null)
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: context.b05Colors.danger.container,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.error_outline,
-                    color: context.b05Colors.danger.indicator,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      state.errorMessage!,
-                      style: TextStyle(
-                        color: context.b05Colors.danger.foreground,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ),
-                ],
+          if (state.errorMessage != null &&
+              !(state.status == SavedMealsStatus.failure &&
+                  state.meals.isEmpty))
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: ConsumerStatusRow(
+                label: 'Saved meals unavailable',
+                detail: state.errorMessage,
+                error: true,
+                onRetry: () => ref
+                    .read(savedMealsControllerProvider.notifier)
+                    .loadSavedMeals(query: state.query),
               ),
             ),
 
@@ -306,6 +333,9 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
                       SkeletonCard(height: 96),
                     ],
                   )
+                : state.status == SavedMealsStatus.failure &&
+                      state.meals.isEmpty
+                ? _buildFailureState()
                 : state.meals.isEmpty
                 ? _buildEmptyState()
                 : ListView.separated(
@@ -338,63 +368,57 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
+    final hasSearch = _searchController.text.trim().isNotEmpty;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+      child: ProductEmptyState(
+        icon: Icons.bookmark_border_rounded,
+        title: !hasSearch
+            ? 'No saved meals yet'
+            : 'No saved meals match "${_searchController.text}"',
+        message: hasSearch
+            ? 'Try a different name or create a new saved meal.'
+            : 'Save the foods and recipes you eat together to log them again quickly.',
+        action: _openEditor,
+        actionLabel: 'Create saved meal',
+        actionIcon: Icons.add_rounded,
+      ),
+    );
+  }
+
+  Widget _buildFailureState() {
+    final state = ref.watch(savedMealsControllerProvider);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+      child: B05Surface(
+        tone: B05SurfaceTone.inset,
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Icon(
-              Icons.bookmark_border_rounded,
-              size: 56,
-              color: context.b05Colors.textSecondary,
+              Icons.cloud_off_rounded,
+              size: B05Layout.iconLarge,
+              color: context.b05Colors.danger.indicator,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: B05Layout.space12),
             Text(
-              _searchController.text.trim().isEmpty
-                  ? 'No saved meals yet'
-                  : 'No saved meals match "${_searchController.text}"',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
+              'Saved meals could not be loaded',
+              style: B05Typography.title(context),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: B05Layout.space4),
             Text(
-              'Save your commonly eaten meal combinations to log them faster in one tap.',
-              style: TextStyle(
-                color: context.b05Colors.textSecondary,
-                fontSize: 13,
-              ),
-              textAlign: TextAlign.center,
+              state.errorMessage ??
+                  'Your saved meals are still safe. Try again when you’re ready.',
+              style: B05Typography.body(context),
             ),
-            const SizedBox(height: 20),
-            ElevatedButton.icon(
-              onPressed: () async {
-                final created = await Navigator.push<bool>(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) =>
-                        SavedMealEditorScreen(defaultMealType: widget.mealType),
-                  ),
-                );
-                if (created == true && mounted) {
-                  unawaited(
-                    ref
-                        .read(savedMealsControllerProvider.notifier)
-                        .loadSavedMeals(),
-                  );
-                }
-              },
-              icon: const Icon(Icons.add_rounded),
-              label: const Text('Create saved meal'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: context.b05Colors.action,
-                foregroundColor: context.b05Colors.onAction,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
+            const SizedBox(height: B05Layout.space16),
+            B05ActionButton(
+              label: 'Try again',
+              icon: Icons.refresh_rounded,
+              emphasis: B05ActionEmphasis.secondary,
+              onPressed: () => ref
+                  .read(savedMealsControllerProvider.notifier)
+                  .loadSavedMeals(query: state.query),
             ),
           ],
         ),
@@ -422,13 +446,8 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
         state.status == SavedMealsStatus.finalizing;
     final actionsDisabled = !meal.isLoggable || actionInFlight;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: context.b05Colors.surfaceSubtle,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: context.b05Colors.border),
-      ),
-      padding: const EdgeInsets.all(16),
+    return B05Surface(
+      tone: B05SurfaceTone.section,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -449,27 +468,42 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      meal.draft.name,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                child: Semantics(
+                  container: true,
+                  button: true,
+                  enabled: !actionInFlight,
+                  label: 'View ${meal.draft.name} composition',
+                  hint: 'Double tap to review this saved meal.',
+                  onTap: actionInFlight ? null : () => _openMealDetail(meal),
+                  child: InkWell(
+                    onTap: actionInFlight ? null : () => _openMealDetail(meal),
+                    borderRadius: BorderRadius.circular(8),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            meal.draft.name,
+                            style: B05Typography.title(context),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            '${meal.itemCount} items · $calText · $protText',
+                            style: B05Typography.caption(
+                              context,
+                            ).copyWith(fontWeight: FontWeight.w500),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '${meal.itemCount} items · $calText · $protText',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: context.b05Colors.textSecondary,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
+              ),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: context.b05Colors.textSecondary,
+                semanticLabel: 'View composition',
               ),
               PopupMenuButton<String>(
                 icon: const Icon(Icons.more_vert_rounded),
@@ -478,21 +512,7 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
                   if (action == 'edit_before_log') {
                     _handleEditBeforeLog(meal);
                   } else if (action == 'edit_template') {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => SavedMealEditorScreen(
-                          thaliDraft: meal.draft,
-                          defaultMealType: widget.mealType,
-                        ),
-                      ),
-                    ).then((updated) {
-                      if (updated == true && mounted) {
-                        ref
-                            .read(savedMealsControllerProvider.notifier)
-                            .loadSavedMeals();
-                      }
-                    });
+                    _openEditor(item: meal);
                   } else if (action == 'delete') {
                     _handleDelete(meal);
                   }
@@ -514,9 +534,10 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
                       ],
                     ),
                   ),
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: 'edit_template',
-                    child: Row(
+                    enabled: !actionInFlight,
+                    child: const Row(
                       children: [
                         Icon(Icons.edit_rounded, size: 18),
                         SizedBox(width: 8),
@@ -534,12 +555,19 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
                     enabled: !deleting,
                     child: Row(
                       children: [
-                        const Icon(Icons.delete_outline_rounded, size: 18),
+                        Icon(
+                          Icons.delete_outline_rounded,
+                          size: 18,
+                          color: context.b05Colors.danger.indicator,
+                        ),
                         const SizedBox(width: 8),
-                        const Flexible(
+                        Flexible(
                           child: Text(
                             'Delete',
                             overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: context.b05Colors.danger.foreground,
+                            ),
                           ),
                         ),
                       ],
@@ -553,10 +581,7 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
           const SizedBox(height: 12),
           Text(
             meal.summary,
-            style: TextStyle(
-              fontSize: 13,
-              color: context.b05Colors.textSecondary,
-            ),
+            style: B05Typography.caption(context),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
@@ -588,43 +613,22 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
               final stackActions =
                   constraints.maxWidth < 380 ||
                   MediaQuery.textScalerOf(context).scale(1) > 1.25;
-              final review = OutlinedButton(
+              final review = B05ActionButton(
+                label: 'Review portions',
+                emphasis: B05ActionEmphasis.secondary,
                 onPressed: actionsDisabled
                     ? null
                     : () => _handleEditBeforeLog(meal),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                child: const Text(
-                  'REVIEW PORTIONS',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               );
-              final log = ElevatedButton(
+              final log = B05ActionButton(
+                label: meal.requiresPartialAcknowledgement
+                    ? 'Review & log'
+                    : ConsumerCopy.logToMeal(targetMealLabel),
                 onPressed: actionsDisabled ? null : () => _handleQuickLog(meal),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: context.b05Colors.action,
-                  foregroundColor: context.b05Colors.onAction,
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                child: Text(
-                  meal.requiresPartialAcknowledgement
-                      ? 'REVIEW & LOG'
-                      : 'LOG TO $targetMealLabel',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.5,
-                  ),
-                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               );
               if (stackActions) {
                 return Column(

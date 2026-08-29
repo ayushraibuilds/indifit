@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../core/presentation/product_failure_presentation.dart';
 import '../../data/models/b02_execution_models.dart';
@@ -12,11 +13,13 @@ import 'b02_activity_controller.dart';
 class B02ActivityCreationScreen extends ConsumerStatefulWidget {
   final B02ActivityType initialType;
   final int? draftId;
+  final DateTime? selectedDate;
 
   const B02ActivityCreationScreen({
     super.key,
     this.initialType = B02ActivityType.running,
     this.draftId,
+    this.selectedDate,
   });
 
   @override
@@ -36,7 +39,10 @@ class _B02ActivityCreationScreenState
   final _workSeconds = TextEditingController();
   final _recoverySeconds = TextEditingController();
   final _formService = const B02ActivityFormService();
+  final String _submissionKey = 'manual-activity:${const Uuid().v4()}';
+  late DateTime _selectedDate;
   bool _interval = false;
+  bool _saving = false;
   String? _validationError;
 
   @override
@@ -47,11 +53,16 @@ class _B02ActivityCreationScreenState
             widget.initialType == B02ActivityType.legacy
         ? B02ActivityType.running
         : widget.initialType;
+    _selectedDate = _dateOnly(widget.selectedDate ?? DateTime.now());
     if (widget.draftId != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         ref
             .read(b02ActivityControllerProvider.notifier)
             .recover(widget.draftId!);
+      });
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(b02ActivityControllerProvider.notifier).reset();
       });
     }
   }
@@ -77,7 +88,7 @@ class _B02ActivityCreationScreenState
   Widget build(BuildContext context) {
     final state = ref.watch(b02ActivityControllerProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('Log activity')),
+      appBar: AppBar(title: const Text('Log other activity')),
       body: _buildBody(context, state),
     );
   }
@@ -106,7 +117,7 @@ class _B02ActivityCreationScreenState
                   onPressed: () => ref
                       .read(b02ActivityControllerProvider.notifier)
                       .recover(state.draft!.id),
-                  child: const Text('Retry recovery'),
+                  child: const Text('Try again'),
                 ),
               TextButton(
                 onPressed: () => Navigator.of(context).maybePop(),
@@ -149,10 +160,10 @@ class _B02ActivityCreationScreenState
       children: [
         const ListTile(
           contentPadding: EdgeInsets.zero,
-          leading: Icon(Icons.cloud_off_outlined),
-          title: Text('Offline-first activity'),
+          leading: Icon(Icons.history_outlined),
+          title: Text('Record something you already did'),
           subtitle: Text(
-            'Drafts are saved locally and can be recovered after restart.',
+            'Save the facts you know. This will not start a workout or timer.',
           ),
         ),
         const SizedBox(height: 8),
@@ -172,25 +183,42 @@ class _B02ActivityCreationScreenState
               ChoiceChip(
                 label: Text(_label(value)),
                 selected: _type == value,
-                onSelected: (_) => setState(() {
-                  _type = value;
-                  _validationError = null;
-                }),
+                onSelected: _saving
+                    ? null
+                    : (_) => setState(() {
+                        _type = value;
+                        _validationError = null;
+                      }),
               ),
           ],
         ),
         const SizedBox(height: 14),
         TextField(
           controller: _name,
+          enabled: !_saving,
           decoration: const InputDecoration(labelText: 'Session name'),
         ),
         const SizedBox(height: 10),
         TextField(
           controller: _duration,
+          enabled: !_saving,
           keyboardType: TextInputType.number,
           decoration: const InputDecoration(
-            labelText: 'Duration (seconds)',
+            labelText: 'Duration (minutes)',
             helperText: 'Required',
+          ),
+        ),
+        const SizedBox(height: 4),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Semantics(
+            button: true,
+            label: 'Activity date, ${_dateLabel()}',
+            child: TextButton.icon(
+              onPressed: _saving ? null : _pickDate,
+              icon: const Icon(Icons.calendar_today_outlined, size: 16),
+              label: Text('Activity date · ${_dateLabel()}'),
+            ),
           ),
         ),
         if (cardio) ...[
@@ -207,7 +235,9 @@ class _B02ActivityCreationScreenState
             title: const Text('Interval workout'),
             subtitle: const Text('Add ordered work/recovery segments.'),
             value: _interval,
-            onChanged: (value) => setState(() => _interval = value),
+            onChanged: _saving
+                ? null
+                : (value) => setState(() => _interval = value),
           ),
           if (_interval)
             Row(
@@ -268,9 +298,9 @@ class _B02ActivityCreationScreenState
         SizedBox(
           height: 48,
           child: FilledButton.icon(
-            onPressed: _start,
-            icon: const Icon(Icons.play_arrow),
-            label: const Text('Start activity'),
+            onPressed: _saving ? null : _save,
+            icon: const Icon(Icons.check_circle_outline),
+            label: const Text('Save activity'),
           ),
         ),
       ],
@@ -318,18 +348,21 @@ class _B02ActivityCreationScreenState
     );
   }
 
-  Future<void> _start() async {
-    final duration = int.tryParse(_duration.text.trim());
-    if (_name.text.trim().isEmpty || duration == null || duration < 1) {
+  Future<void> _save() async {
+    final durationMinutes = int.tryParse(_duration.text.trim());
+    if (_name.text.trim().isEmpty ||
+        durationMinutes == null ||
+        durationMinutes < 1) {
       setState(
-        () => _validationError = 'Enter a session name and positive duration.',
+        () => _validationError =
+            'Enter an activity name and positive duration in minutes.',
       );
       return;
     }
     try {
       final details = _formService.build(
         activityType: _type,
-        durationSeconds: duration,
+        durationSeconds: durationMinutes * 60,
         distanceMetres: int.tryParse(_distance.text.trim()),
         style: _style.text,
         intensity: _intensity.text,
@@ -337,26 +370,61 @@ class _B02ActivityCreationScreenState
         isIntervalWorkout: _interval,
         workSeconds: int.tryParse(_workSeconds.text.trim()),
         recoverySeconds: int.tryParse(_recoverySeconds.text.trim()),
+        intervalIdPrefix: _submissionKey,
       );
+      setState(() {
+        _saving = true;
+        _validationError = null;
+      });
       await ref
           .read(b02ActivityControllerProvider.notifier)
-          .startManual(
+          .saveManualActivity(
             routineName: _name.text.trim(),
             activityType: _type,
             cardioDetail: details.cardioDetail,
             mobilityDetail: details.mobilityDetail,
+            completedAtUtc: DateTime(
+              _selectedDate.year,
+              _selectedDate.month,
+              _selectedDate.day,
+              12,
+            ).toUtc(),
+            idempotencyKey: _submissionKey,
           );
+      if (mounted) setState(() => _saving = false);
     } on B02ValidationException catch (error) {
-      setState(() => _validationError = error.message);
+      setState(() {
+        _saving = false;
+        _validationError = error.message;
+      });
     } catch (error) {
-      setState(
-        () => _validationError = ProductFailurePresentation.fromError(
+      setState(() {
+        _saving = false;
+        _validationError = ProductFailurePresentation.fromError(
           error,
-          title: 'Activity could not be started',
-        ).message,
-      );
+          title: 'Activity could not be saved',
+        ).message;
+      });
     }
   }
+
+  Future<void> _pickDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(2000),
+      lastDate: _dateOnly(DateTime.now().add(const Duration(days: 1))),
+      helpText: 'Choose activity date',
+    );
+    if (!mounted || picked == null) return;
+    setState(() => _selectedDate = _dateOnly(picked));
+  }
+
+  String _dateLabel() =>
+      MaterialLocalizations.of(context).formatMediumDate(_selectedDate);
+
+  static DateTime _dateOnly(DateTime value) =>
+      DateTime(value.year, value.month, value.day);
 
   bool _isCardio(B02ActivityType type) => const {
     B02ActivityType.running,

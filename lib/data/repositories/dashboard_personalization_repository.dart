@@ -63,6 +63,16 @@ class DashboardPersonalizationRepository {
     return normalized;
   }
 
+  /// Restores the registry defaults through the same durable preference
+  /// table used by every other personalization command.
+  Future<List<DashboardModuleLayoutItem>> resetToDefaults({
+    required String userId,
+  }) {
+    final owner = _owner(userId);
+    final defaults = _renumber(_registry.normalize(const []));
+    return _persistMutation(owner, defaults);
+  }
+
   Future<List<DashboardModuleLayoutItem>> reorder({
     required String userId,
     required String moduleId,

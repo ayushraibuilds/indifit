@@ -39,7 +39,6 @@ class AchievementService {
       currentStreakDays: currentStreakDays,
       totalVolumeKg: stats.totalVolumeKg,
       totalLoggedMealsCount: stats.totalMealsLogged,
-      prCount: stats.totalPrs,
       loggedThali: stats.thaliLoggedCount > 0,
       unlockedTimestamps: stats.unlockedAchievementIds,
     );
@@ -50,7 +49,6 @@ class AchievementService {
     required int currentStreakDays,
     required double totalVolumeKg,
     required int totalLoggedMealsCount,
-    int prCount = 0,
     bool loggedThali = false,
     Map<String, DateTime>? unlockedTimestamps,
   }) {
@@ -163,16 +161,6 @@ class AchievementService {
         currentProgress: totalLoggedMealsCount.toDouble(),
         maxProgress: 50.0,
         thresholdMet: totalLoggedMealsCount >= 50,
-      ),
-      buildItem(
-        id: 'first_pr',
-        title: 'PR Breaker',
-        description: 'Hit your very first Personal Record (PR).',
-        icon: Icons.emoji_events_rounded,
-        color: AppColors.achievementGold,
-        currentProgress: prCount.toDouble(),
-        maxProgress: 1.0,
-        thresholdMet: prCount >= 1,
       ),
       buildItem(
         id: 'first_thali',

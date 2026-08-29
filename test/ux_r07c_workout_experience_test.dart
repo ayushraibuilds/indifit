@@ -6,11 +6,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/di/providers.dart';
+import 'package:indifit/core/fixtures/exercise_display_muscles.dart';
 import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/models/b02_execution_models.dart';
 import 'package:indifit/data/repositories/b02_exercise_performance_read_repository.dart';
 import 'package:indifit/data/repositories/b02_strength_execution_repository.dart';
+import 'package:indifit/data/repositories/b07_exercise_context_repository.dart';
 import 'package:indifit/data/repositories/calendar_repository.dart';
 import 'package:indifit/data/services/b02_rest_recommendation_service.dart';
 import 'package:indifit/data/services/b02_strength_execution_draft_service.dart';
@@ -57,8 +59,16 @@ void main() {
   ) async {
     _setViewport(tester, const Size(390, 844));
     final launch = (await tester.runAsync(() => _launch(executions)))!;
-    await _pumpPlayer(tester, launch, executions, AppTheme.lightTheme);
+    await _pumpPlayer(tester, launch, executions, db, AppTheme.lightTheme);
 
+    expect(find.text('Quick workout'), findsOneWidget);
+    expect(find.text('QUICK WORKOUT'), findsNothing);
+    expect(find.text('EXERCISE 1 OF 1'), findsOneWidget);
+    expect(find.byTooltip('Workout options'), findsOneWidget);
+    expect(find.byTooltip('Exercise actions'), findsOneWidget);
+    expect(find.text('0:00'), findsOneWidget);
+    expect(find.textContaining('1–20'), findsNothing);
+    expect(find.textContaining('1-20'), findsNothing);
     expect(find.text('Log set'), findsOneWidget);
     expect(find.text('Suggested'), findsNothing);
     final fields = find.byType(TextFormField);
@@ -81,7 +91,7 @@ void main() {
     final launch = (await tester.runAsync(
       () => _launchPlannedLike(executions),
     ))!;
-    await _pumpPlayer(tester, launch, executions, AppTheme.lightTheme);
+    await _pumpPlayer(tester, launch, executions, db, AppTheme.lightTheme);
 
     expect(find.text('Suggested'), findsOneWidget);
     expect(find.text('Log set'), findsOneWidget);
@@ -103,17 +113,74 @@ void main() {
     expect(find.text('Review and finish'), findsOneWidget);
   });
 
+  testWidgets('R08B2 repeated Log set taps persist one set', (tester) async {
+    _setViewport(tester, const Size(390, 844));
+    final launch = (await tester.runAsync(() => _launch(executions)))!;
+    await _pumpPlayer(tester, launch, executions, db, AppTheme.lightTheme);
+
+    await tester.enterText(find.byType(TextFormField).at(1), '8');
+    await tester.tap(find.text('Log set'));
+    await tester.pump();
+    await tester.tap(find.text('Log set'), warnIfMissed: false);
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 500)),
+    );
+    await tester.pump();
+
+    final saved = (await tester.runAsync(
+      () => executions.readDraft(launch.draftId),
+    ))!;
+    expect(saved.state.performedExercises.single.sets, hasLength(1));
+    expect(find.text('REST'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'planned terminal state removes the pending editor but keeps review flow',
+    (tester) async {
+      _setViewport(tester, const Size(390, 844));
+      final launch = (await tester.runAsync(
+        () => _launchPlannedWithWorkingSets(executions, count: 3),
+      ))!;
+      await _pumpPlayer(tester, launch, executions, db, AppTheme.lightTheme);
+
+      expect(find.text('Planned sets complete'), findsOneWidget);
+      expect(
+        find.textContaining('All planned sets are logged.'),
+        findsOneWidget,
+      );
+      expect(find.byType(TextFormField), findsNothing);
+      expect(find.text('Log set 4'), findsNothing);
+      expect(find.bySemanticsLabel('Edit set 1'), findsOneWidget);
+      expect(find.bySemanticsLabel('Delete set 3'), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.text('Add set'),
+        220,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.tap(find.text('Add set'));
+      await tester.pump();
+      expect(find.text('Next set · 4'), findsOneWidget);
+      expect(find.text('Log extra set'), findsOneWidget);
+      await tester.drag(find.byType(ListView).first, const Offset(0, -500));
+      await tester.pumpAndSettle();
+      expect(find.text('Review and finish'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('R07C rest surface keeps wall-clock controls visible', (
     tester,
   ) async {
     _setViewport(tester, const Size(390, 844));
     final launch = (await tester.runAsync(() => _launchWithRest(executions)))!;
-    await _pumpPlayer(tester, launch, executions, AppTheme.darkTheme);
+    await _pumpPlayer(tester, launch, executions, db, AppTheme.darkTheme);
 
     expect(find.text('REST'), findsOneWidget);
     expect(find.text('−15 sec'), findsOneWidget);
     expect(find.text('+15 sec'), findsOneWidget);
     expect(find.text('Skip'), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
     expect(tester.takeException(), isNull);
     await expectLater(
       find.byType(B02StrengthPlayerScreen),
@@ -229,6 +296,7 @@ void main() {
             tester,
             launch,
             executions,
+            db,
             theme,
             textScale: scale,
           );
@@ -274,6 +342,7 @@ Future<void> _pumpPlayer(
   WidgetTester tester,
   B02StrengthExecutionLaunch launch,
   StrengthExecutionRepository executions,
+  AppDatabase database,
   ThemeData theme, {
   double textScale = 1,
 }) async {
@@ -288,6 +357,9 @@ Future<void> _pumpPlayer(
         b02StrengthExecutionScreenControllerProvider.overrideWith(
           (ref, _) => controller,
         ),
+        b07ExerciseContextRepositoryProvider.overrideWithValue(
+          _GoldenB07ExerciseContextRepository(database),
+        ),
       ],
       child: MaterialApp(
         theme: theme,
@@ -296,7 +368,10 @@ Future<void> _pumpPlayer(
             textScaler: TextScaler.linear(textScale),
             disableAnimations: true,
           ),
-          child: B02StrengthPlayerScreen(launch: launch),
+          child: B02StrengthPlayerScreen(
+            launch: launch,
+            nowUtc: () => DateTime.utc(2026, 8, 13, 8),
+          ),
         ),
       ),
     ),
@@ -397,6 +472,25 @@ Future<B02StrengthExecutionLaunch> _launchPlannedLike(
   );
 }
 
+Future<B02StrengthExecutionLaunch> _launchPlannedWithWorkingSets(
+  StrengthExecutionRepository executions, {
+  required int count,
+}) async {
+  final launch = await _launchPlannedLike(executions);
+  final prepared = await executions.prepareExecution(launch);
+  final slot = (await executions.readExecutionSlots(launch)).single;
+  var state = prepared.state;
+  for (var index = 0; index < count; index++) {
+    state = const B02StrengthExecutionDraftService().recordSet(
+      state: state,
+      slot: slot,
+      reps: 8,
+      loadKg: 60,
+    );
+  }
+  return launch.copyWith(state: state);
+}
+
 class _FakeExercisePerformanceReadRepository
     extends B02ExercisePerformanceReadRepository {
   _FakeExercisePerformanceReadRepository(super.database, this.records);
@@ -409,5 +503,28 @@ class _FakeExercisePerformanceReadRepository
   }) async {
     expect(stableExerciseId, 'r07c-bench');
     return records;
+  }
+}
+
+class _GoldenB07ExerciseContextRepository extends B07ExerciseContextRepository {
+  _GoldenB07ExerciseContextRepository(super.database);
+
+  @override
+  Future<B07ExerciseContextResult> resolve(String canonicalExerciseId) async {
+    if (canonicalExerciseId != 'r07c-bench') {
+      return const B07ExerciseContextResult.unavailable();
+    }
+    return B07ExerciseContextResult.available(
+      B07ExerciseContext(
+        canonicalExerciseId: 'r07c-bench',
+        canonicalName: 'Bench press',
+        equipment: 'Barbell',
+        displayMuscles: ExerciseDisplayMuscles.fromMuscleGroups(
+          'Chest,Triceps',
+        ),
+        formCues: const ['Brace your feet', 'Keep the bar path controlled'],
+        commonMistakes: const ['Bouncing the bar'],
+      ),
+    );
   }
 }

@@ -87,17 +87,35 @@ class DashboardState {
 
 class DashboardController extends StateNotifier<DashboardState> {
   final Ref _ref;
+  late DateTime _automaticDate;
+  var _followsAutomaticDate = true;
 
   DashboardController(
     this._ref, {
     DashboardState? initialState,
     bool loadOnInit = true,
   }) : super(initialState ?? DashboardState()) {
+    _automaticDate = _day(state.selectedDate);
+    _followsAutomaticDate = _sameDay(_automaticDate, _day(DateTime.now()));
     if (loadOnInit) loadStateData();
   }
 
   void setSelectedDate(DateTime date) {
-    state = state.copyWith(selectedDate: date);
+    final normalized = _day(date);
+    _followsAutomaticDate = _sameDay(normalized, _day(DateTime.now()));
+    if (_followsAutomaticDate) _automaticDate = normalized;
+    state = state.copyWith(selectedDate: normalized);
+  }
+
+  /// Keeps the default Today selection aligned with a civil-date transition
+  /// while preserving an explicitly browsed past/future date.
+  void refreshForCivilDate(DateTime today) {
+    if (!_followsAutomaticDate) return;
+    final normalized = _day(today);
+    if (_sameDay(state.selectedDate, _automaticDate)) {
+      _automaticDate = normalized;
+      state = state.copyWith(selectedDate: normalized);
+    }
   }
 
   Future<void> loadStateData() async {
@@ -146,12 +164,27 @@ class DashboardController extends StateNotifier<DashboardState> {
       final currentlyUnlocked = achievements
           .where((a) => a.isUnlocked)
           .toList();
+
+      // Establish a quiet baseline for accounts that already have qualifying
+      // history. Feedback is reserved for a later authoritative refresh,
+      // such as the one performed after a successful save.
+      if (!prefs.containsKey('unlocked_achievement_ids')) {
+        await prefs.setStringList(
+          'unlocked_achievement_ids',
+          currentlyUnlocked.map((a) => a.id).toList(),
+        );
+        return;
+      }
+
       final newUnlocks = currentlyUnlocked
           .where((a) => !storedIds.contains(a.id))
           .toList();
 
       if (newUnlocks.isNotEmpty) {
-        final updatedIds = currentlyUnlocked.map((a) => a.id).toList();
+        final updatedIds = {
+          ...storedIds,
+          ...currentlyUnlocked.map((a) => a.id),
+        }.toList();
         await prefs.setStringList('unlocked_achievement_ids', updatedIds);
         state = state.copyWith(
           newlyUnlockedAchievementTitles: newUnlocks
@@ -510,7 +543,18 @@ class DashboardController extends StateNotifier<DashboardState> {
   }
 }
 
+DateTime _day(DateTime value) => DateTime(value.year, value.month, value.day);
+
+bool _sameDay(DateTime first, DateTime second) =>
+    first.year == second.year &&
+    first.month == second.month &&
+    first.day == second.day;
+
 final dashboardControllerProvider =
     StateNotifierProvider<DashboardController, DashboardState>((ref) {
-      return DashboardController(ref);
+      final controller = DashboardController(ref);
+      ref.listen<int>(civilDateRevisionProvider, (_, _) {
+        controller.refreshForCivilDate(DateTime.now());
+      });
+      return controller;
     });

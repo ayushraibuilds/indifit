@@ -50,8 +50,6 @@ void main() {
     'lib/features/settings/widgets/notification_settings_section.dart',
     'lib/features/settings/widgets/settings_reminder_toggle.dart',
     'lib/features/settings/widgets/water_settings_section.dart',
-    'lib/features/travel/travel_mode_screen.dart',
-    'lib/features/travel/travel_preview_sheet.dart',
     'lib/features/workout_player/routine_editor_screen.dart',
   };
 

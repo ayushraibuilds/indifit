@@ -264,7 +264,10 @@ void main() {
           await tester.pump(const Duration(milliseconds: 20));
         }
 
-        expect(find.textContaining('still saved as a draft'), findsOneWidget);
+        expect(
+          find.text('Your workout is still here. Nothing was lost.'),
+          findsOneWidget,
+        );
         expect(find.text('Retry'), findsOneWidget);
         expect(find.text('Return to workout'), findsOneWidget);
         expect(controller.state.launch, isNotNull);

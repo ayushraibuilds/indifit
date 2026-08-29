@@ -60,6 +60,48 @@ class B02ActivityController extends StateNotifier<B02ActivityControllerState> {
   B02ActivityController(this._repository)
     : super(const B02ActivityControllerState.idle());
 
+  Future<void> saveManualActivity({
+    required String routineName,
+    required B02ActivityType activityType,
+    B02CardioSessionDetail? cardioDetail,
+    B02MobilitySessionDetail? mobilityDetail,
+    required DateTime completedAtUtc,
+    required String idempotencyKey,
+  }) async {
+    if (state.status == B02ActivityControllerStatus.loading) return;
+    state = const B02ActivityControllerState(
+      status: B02ActivityControllerStatus.loading,
+    );
+    try {
+      final sessionId = await _repository.saveManualActivity(
+        routineName: routineName,
+        activityType: activityType,
+        cardioDetail: cardioDetail,
+        mobilityDetail: mobilityDetail,
+        completedAtUtc: completedAtUtc,
+        idempotencyKey: idempotencyKey,
+      );
+      if (!mounted) return;
+      state = B02ActivityControllerState(
+        status: B02ActivityControllerStatus.completed,
+        completedSessionId: sessionId,
+      );
+    } catch (error) {
+      if (!mounted) return;
+      state = B02ActivityControllerState(
+        status: B02ActivityControllerStatus.failure,
+        errorMessage: ProductFailurePresentation.fromError(
+          error,
+          title: 'Activity could not be saved',
+        ).message,
+      );
+    }
+  }
+
+  void reset() {
+    if (mounted) state = const B02ActivityControllerState.idle();
+  }
+
   Future<void> startManual({
     required String routineName,
     required B02ActivityType activityType,

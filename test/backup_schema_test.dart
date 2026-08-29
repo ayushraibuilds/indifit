@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/backup/backup_schema.dart';
+import 'package:indifit/core/services/notification_service.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -30,6 +31,25 @@ void main() {
       'prefQuietHoursEnabled': true,
       'prefQuietHoursStart': 22,
       'prefQuietHoursEnd': 7,
+      NotificationService.prefRemindWorkout: true,
+      NotificationService.prefRemindMeals: false,
+      NotificationService.prefRemindEvening: true,
+      NotificationService.prefRemindWeekly: true,
+      NotificationService.prefQuietHoursEnabled: true,
+      NotificationService.prefQuietHoursStart: 22,
+      NotificationService.prefQuietHoursEnd: 7,
+      NotificationService.prefWorkoutReminderDays: ['1', '3', '5'],
+      NotificationService.prefWorkoutReminderHour: 6,
+      NotificationService.prefWorkoutReminderMinute: 45,
+      NotificationService.prefLunchReminderHour: 12,
+      NotificationService.prefLunchReminderMinute: 15,
+      NotificationService.prefDinnerReminderHour: 19,
+      NotificationService.prefDinnerReminderMinute: 40,
+      NotificationService.prefDailyLoggingReminderHour: 20,
+      NotificationService.prefDailyLoggingReminderMinute: 5,
+      NotificationService.prefWeeklyProgressDay: DateTime.saturday,
+      NotificationService.prefWeeklyProgressHour: 9,
+      NotificationService.prefWeeklyProgressMinute: 20,
       'weekly_action_type': 'workout',
       'weekly_action_text': 'Complete 4 workouts',
       'weekly_action_target': 4,
@@ -66,6 +86,18 @@ void main() {
       expect(restored.version, equals(7));
       expect(restored.userPreferences['water_logged'], equals(5));
       expect(restored.userPreferences['user_streak_count'], equals(14));
+      expect(
+        restored.userPreferences[NotificationService.prefWorkoutReminderDays],
+        ['1', '3', '5'],
+      );
+      expect(
+        restored.userPreferences[NotificationService.prefWorkoutReminderHour],
+        6,
+      );
+      expect(
+        restored.userPreferences[NotificationService.prefWeeklyProgressDay],
+        DateTime.saturday,
+      );
     });
 
     test(

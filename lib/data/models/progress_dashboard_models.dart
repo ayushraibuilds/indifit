@@ -1,4 +1,5 @@
 import 'b02_muscle_volume_models.dart';
+import 'b04_goal_models.dart';
 
 /// The presentation-facing facts used by the Progress tab.
 ///
@@ -16,6 +17,9 @@ enum ProgressDataSection {
 enum ProgressWeightGoalDirection { loss, gain, maintenance }
 
 class ProgressWeightGoal {
+  /// Compatibility input reserved for a future canonical goal read model.
+  /// Progress does not render this value until an owning authority supplies
+  /// it; legacy onboarding preferences are not a target authority.
   const ProgressWeightGoal({required this.targetKg, required this.direction});
 
   final double targetKg;
@@ -62,6 +66,7 @@ class ProgressWorkoutRecord {
     this.durationSeconds = 0,
     this.workingSetsCount = 0,
     this.volumeIsTrustworthy = true,
+    this.completionKind,
   });
 
   final int id;
@@ -80,7 +85,12 @@ class ProgressWorkoutRecord {
   /// a proxy for unavailable volume.
   final bool volumeIsTrustworthy;
 
+  /// The persisted B02 completion kind ('full', 'partial', or null).
+  final String? completionKind;
+
   bool get isCanonicalStrength => activityType == 'strength';
+  bool get isPartial => completionKind == 'partial';
+  bool get isFull => completionKind == 'full' || completionKind == null;
 }
 
 class ProgressStrengthSetRecord {
@@ -172,6 +182,7 @@ class ProgressNutritionSummary {
     this.averageProteinG,
     this.targetCaloriesKcal,
     this.targetProteinG,
+    this.targetGoalType,
     required this.hasTarget,
   });
 
@@ -184,6 +195,11 @@ class ProgressNutritionSummary {
   final double? averageProteinG;
   final double? targetCaloriesKcal;
   final double? targetProteinG;
+
+  /// The B04 nutrition goal type effective for the current Progress date.
+  /// This is a read-only projection of the date-scoped target authority; it
+  /// is not a body-weight goal or a second Progress goal authority.
+  final NutritionGoalType? targetGoalType;
   final bool hasTarget;
 
   bool get hasAnyLoggedDays => loggedDaysCount > 0;
@@ -216,6 +232,9 @@ class ProgressDashboardSnapshot {
   final List<ProgressStrengthSetRecord>? strengthSets;
   final B02MuscleVolumeReadModel? muscleBalance;
   final Set<ProgressDataSection> unavailableSections;
+
+  /// Reserved compatibility input. Consumer Progress must only render a goal
+  /// after a canonical body-target authority is introduced.
   final ProgressWeightGoal? weightGoal;
   final ProgressNutritionSummary? nutritionSummary;
   final List<ProgressStrengthExerciseSummary>? strengthExercises;
@@ -230,7 +249,9 @@ class ProgressDashboardSnapshot {
       (measurements ?? const [])
           .where(
             (measurement) =>
-                measurement.weightKg != null && measurement.weightKg! > 0,
+                measurement.weightKg != null &&
+                measurement.weightKg!.isFinite &&
+                measurement.weightKg! > 0,
           )
           .toList(growable: false);
 

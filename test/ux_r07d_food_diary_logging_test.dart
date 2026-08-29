@@ -220,6 +220,7 @@ void main() {
             home: FoodSearchScreen(
               mealType: 'lunch',
               selectedDate: DateTime(2026, 8, 13),
+              initialMultiSelect: true,
             ),
           ),
         ),
@@ -237,7 +238,7 @@ void main() {
         await tester.tap(checkbox);
         await tester.pump();
       }
-      expect(find.text('ADD 4 FOODS TO LUNCH'), findsOneWidget);
+      expect(find.text('Add 4 foods to lunch'), findsOneWidget);
       expect(find.text('4 foods selected · 400 kcal'), findsOneWidget);
 
       final curdCheckbox = find.bySemanticsLabel(
@@ -246,7 +247,7 @@ void main() {
       await tester.ensureVisible(curdCheckbox);
       await tester.tap(curdCheckbox);
       await tester.pump();
-      expect(find.text('ADD 3 FOODS TO LUNCH'), findsOneWidget);
+      expect(find.text('Add 3 foods to lunch'), findsOneWidget);
       expect(find.text('3 foods selected · 300 kcal'), findsOneWidget);
       await expectLater(
         find.byType(FoodSearchScreen),
@@ -255,7 +256,7 @@ void main() {
 
       final batchAdd = find.widgetWithText(
         FilledButton,
-        'ADD 3 FOODS TO LUNCH',
+        'Add 3 foods to lunch',
       );
       final batchAddPosition = tester.getCenter(batchAdd);
       await tester.tapAt(batchAddPosition);
@@ -263,7 +264,7 @@ void main() {
       await tester.pump();
       expect(countingLogger.batchCalls, 1);
       await _settleR07D(tester);
-      expect(find.text('ADD 3 FOODS TO LUNCH'), findsNothing);
+      expect(find.text('Add 3 foods to lunch'), findsNothing);
     },
   );
 
@@ -303,6 +304,7 @@ void main() {
           option: options,
           quantityLabel: '1 katori',
           loggedAtUtc: DateTime.utc(2026, 8, 12, 9),
+          historicalQuantity: options.baseQuantity,
         ),
       ];
 
@@ -451,14 +453,14 @@ void main() {
       );
       await _settleR07D(tester);
 
-      expect(find.text('Yesterday'), findsOneWidget);
+      expect(find.text('Wed, 12 Aug'), findsOneWidget);
       await tester.tap(find.bySemanticsLabel('Next day'));
       await _settleR07D(tester);
       expect(find.text('Today'), findsOneWidget);
 
       await tester.tap(find.bySemanticsLabel('Previous day'));
       await _settleR07D(tester);
-      expect(find.text('Yesterday'), findsOneWidget);
+      expect(find.text('Wed, 12 Aug'), findsOneWidget);
       await tester.tap(find.widgetWithText(TextButton, 'Today'));
       await _settleR07D(tester);
       expect(find.text('Today'), findsOneWidget);
@@ -561,7 +563,7 @@ void main() {
 
     await tester.tap(find.bySemanticsLabel('Add Measured paneer'));
     await _settleR07D(tester);
-    expect(find.text('Log to LUNCH'), findsOneWidget);
+    expect(find.text('Log to lunch'), findsOneWidget);
     expect(
       find.byKey(const ValueKey('food_quantity_review_surface')),
       findsOneWidget,

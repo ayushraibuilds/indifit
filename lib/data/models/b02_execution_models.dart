@@ -377,6 +377,16 @@ int? _optionalInt(Object? raw, String field) {
   return _requiredInt(raw, field);
 }
 
+DateTime? _optionalUtcDateTime(Object? raw, String field) {
+  if (raw == null) return null;
+  final value = _requiredString(raw, field);
+  final parsed = DateTime.tryParse(value);
+  if (parsed == null) {
+    throw B02ValidationException('$field must be an ISO-8601 date.');
+  }
+  return parsed.toUtc();
+}
+
 double _requiredDouble(Object? raw, String field) {
   if (raw is! num) {
     throw B02ValidationException('$field must be a number.');
@@ -571,9 +581,23 @@ class B02StrengthExecutionSlot {
   final int? roundOrdinal;
   final int? memberOrdinal;
   final String prescriptionId;
+  final String? expectedExerciseId;
+  final String? expectedExerciseNameSnapshot;
   final String? exerciseId;
   final String exerciseNameSnapshot;
+  final String? substitutionReason;
   final int plannedSets;
+
+  /// Frozen, ordinal-addressed set prescriptions for this exercise slot.
+  ///
+  /// The slot still carries the compact target fields used by the common
+  /// table. This list preserves the richer B02 prescription without making
+  /// widgets reconstruct it from display order or exercise names.
+  final List<B02StrengthSetPrescription> setPrescriptions;
+
+  /// The frozen set-prescription ordinal represented by this grouped round.
+  /// Standalone slots address their set prescriptions from zero.
+  final int? setPrescriptionOrdinal;
   final int? targetRepsMin;
   final int? targetRepsMax;
   final int? targetRpe;
@@ -600,9 +624,14 @@ class B02StrengthExecutionSlot {
     required this.roundOrdinal,
     required this.memberOrdinal,
     required this.prescriptionId,
+    this.expectedExerciseId,
+    this.expectedExerciseNameSnapshot,
     required this.exerciseId,
     required this.exerciseNameSnapshot,
+    this.substitutionReason,
     required this.plannedSets,
+    this.setPrescriptions = const [],
+    this.setPrescriptionOrdinal,
     required this.targetRepsMin,
     required this.targetRepsMax,
     required this.targetRpe,
@@ -623,6 +652,17 @@ class B02StrengthExecutionSlot {
 
   bool get hasCanonicalExercise => exerciseId?.trim().isNotEmpty == true;
 
+  B02StrengthSetPrescription? prescriptionForSet(int setOrdinal) {
+    for (final prescription in setPrescriptions) {
+      if (prescription.ordinal == setOrdinal) return prescription;
+    }
+    return null;
+  }
+
+  B02TechniqueFields? techniqueForSet(int setOrdinal) {
+    return prescriptionForSet(setOrdinal)?.technique;
+  }
+
   B02StrengthExecutionSlot copyWith({
     int? targetRepsMin,
     int? targetRepsMax,
@@ -639,9 +679,14 @@ class B02StrengthExecutionSlot {
       roundOrdinal: roundOrdinal,
       memberOrdinal: memberOrdinal,
       prescriptionId: prescriptionId,
+      expectedExerciseId: expectedExerciseId,
+      expectedExerciseNameSnapshot: expectedExerciseNameSnapshot,
       exerciseId: exerciseId,
       exerciseNameSnapshot: exerciseNameSnapshot,
+      substitutionReason: substitutionReason,
       plannedSets: plannedSets,
+      setPrescriptions: setPrescriptions,
+      setPrescriptionOrdinal: setPrescriptionOrdinal,
       targetRepsMin: targetRepsMin ?? this.targetRepsMin,
       targetRepsMax: targetRepsMax ?? this.targetRepsMax,
       targetRpe: targetRpe ?? this.targetRpe,
@@ -662,11 +707,16 @@ class B02StrengthExecutionSlot {
   }
 
   String get groupDescription {
-    final type = groupType?.dbValue ?? 'standalone';
+    final type = switch (groupType) {
+      B02GroupType.superset => 'Superset',
+      B02GroupType.circuit => 'Circuit',
+      B02GroupType.giantSet => 'Giant set',
+      null => 'Standalone exercise',
+    };
     final group = groupLabel?.trim().isNotEmpty == true
         ? groupLabel!.trim()
         : 'Group ${((groupOrdinal ?? 0) + 1)}';
-    return groupType == null ? 'Standalone exercise' : '$group · $type';
+    return groupType == null ? type : '$group · $type';
   }
 }
 
@@ -2336,12 +2386,20 @@ class B02ExerciseExecutionPreference {
 
 class B02ExecutionDraftState {
   static const int schemaVersion = 2;
+  static const Object _unset = Object();
 
   final String snapshotId;
   final int snapshotVersion;
   final B02ActivityType activityType;
   final String routineName;
   final int elapsedSeconds;
+
+  /// The start of the currently active foreground segment, if any.
+  ///
+  /// This is deliberately part of the durable execution state rather than a
+  /// controller-only stopwatch. A null value means the draft is paused or is
+  /// otherwise not accruing foreground time.
+  final DateTime? activeSegmentStartedAtUtc;
   final int? currentGroupOrdinal;
   final String? currentGroupId;
   final int? currentRoundOrdinal;
@@ -2364,6 +2422,7 @@ class B02ExecutionDraftState {
     required this.activityType,
     required this.routineName,
     required this.elapsedSeconds,
+    DateTime? activeSegmentStartedAtUtc,
     this.currentGroupOrdinal,
     this.currentGroupId,
     this.currentRoundOrdinal,
@@ -2379,7 +2438,8 @@ class B02ExecutionDraftState {
     this.warmupSlotId,
     this.cardioDetail,
     this.mobilityDetail,
-  }) : targetRecommendations = Map.unmodifiable(targetRecommendations),
+  }) : activeSegmentStartedAtUtc = activeSegmentStartedAtUtc?.toUtc(),
+       targetRecommendations = Map.unmodifiable(targetRecommendations),
        targetOverrides = Map.unmodifiable(targetOverrides) {
     _requiredString(snapshotId, 'snapshot id');
     _atLeast(snapshotVersion, 1, 'snapshot version');
@@ -2509,6 +2569,10 @@ class B02ExecutionDraftState {
       activityType: B02ActivityType.parse(json['activityType']),
       routineName: _requiredString(json['routineName'], 'routine name'),
       elapsedSeconds: _requiredInt(json['elapsedSeconds'], 'elapsed seconds'),
+      activeSegmentStartedAtUtc: _optionalUtcDateTime(
+        json['activeSegmentStartedAtUtc'],
+        'active segment start',
+      ),
       currentGroupOrdinal: _optionalInt(
         json['currentGroupOrdinal'],
         'current group ordinal',
@@ -2547,10 +2611,11 @@ class B02ExecutionDraftState {
 
   B02ExecutionDraftState copyWith({
     int? elapsedSeconds,
-    int? currentGroupOrdinal,
-    String? currentGroupId,
-    int? currentRoundOrdinal,
-    int? currentMemberOrdinal,
+    Object? activeSegmentStartedAtUtc = _unset,
+    Object? currentGroupOrdinal = _unset,
+    Object? currentGroupId = _unset,
+    Object? currentRoundOrdinal = _unset,
+    Object? currentMemberOrdinal = _unset,
     int? currentExerciseOrdinal,
     int? currentSetOrdinal,
     List<B02PerformedExerciseDraft>? performedExercises,
@@ -2568,10 +2633,21 @@ class B02ExecutionDraftState {
       activityType: activityType,
       routineName: routineName,
       elapsedSeconds: elapsedSeconds ?? this.elapsedSeconds,
-      currentGroupOrdinal: currentGroupOrdinal ?? this.currentGroupOrdinal,
-      currentGroupId: currentGroupId ?? this.currentGroupId,
-      currentRoundOrdinal: currentRoundOrdinal ?? this.currentRoundOrdinal,
-      currentMemberOrdinal: currentMemberOrdinal ?? this.currentMemberOrdinal,
+      activeSegmentStartedAtUtc: identical(activeSegmentStartedAtUtc, _unset)
+          ? this.activeSegmentStartedAtUtc
+          : (activeSegmentStartedAtUtc as DateTime?)?.toUtc(),
+      currentGroupOrdinal: identical(currentGroupOrdinal, _unset)
+          ? this.currentGroupOrdinal
+          : currentGroupOrdinal as int?,
+      currentGroupId: identical(currentGroupId, _unset)
+          ? this.currentGroupId
+          : currentGroupId as String?,
+      currentRoundOrdinal: identical(currentRoundOrdinal, _unset)
+          ? this.currentRoundOrdinal
+          : currentRoundOrdinal as int?,
+      currentMemberOrdinal: identical(currentMemberOrdinal, _unset)
+          ? this.currentMemberOrdinal
+          : currentMemberOrdinal as int?,
       currentExerciseOrdinal:
           currentExerciseOrdinal ?? this.currentExerciseOrdinal,
       currentSetOrdinal: currentSetOrdinal ?? this.currentSetOrdinal,
@@ -2595,6 +2671,10 @@ class B02ExecutionDraftState {
     'activityType': activityType.dbValue,
     'routineName': routineName,
     'elapsedSeconds': elapsedSeconds,
+    if (activeSegmentStartedAtUtc != null)
+      'activeSegmentStartedAtUtc': activeSegmentStartedAtUtc!
+          .toUtc()
+          .toIso8601String(),
     if (currentGroupOrdinal != null) 'currentGroupOrdinal': currentGroupOrdinal,
     if (currentGroupId != null) 'currentGroupId': currentGroupId,
     if (currentRoundOrdinal != null) 'currentRoundOrdinal': currentRoundOrdinal,

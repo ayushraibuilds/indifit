@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/di/providers.dart';
 import '../../core/fixtures/b05_foundation_registry.dart';
+import '../../core/fixtures/b05_third_party_asset_manifest.dart';
 import '../../core/nutrition_household_measures.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
@@ -28,8 +29,9 @@ class B05NoApprovedMediaManifestSource implements B05MediaManifestSource {
   Future<B05MediaManifest?> load() async => null;
 }
 
-/// Asset-bundle manifest boundary for the later approved package. It requires
-/// the approved ID set instead of inventing a top-20 catalogue in B05 code.
+/// Asset-bundle manifest boundary for an approved package. The approved UUID
+/// set is supplied explicitly; B05 no longer invents or requires a top-20
+/// catalogue.
 class B05AssetBundleMediaManifestSource implements B05MediaManifestSource {
   final AssetBundle bundle;
   final String manifestAssetPath;
@@ -55,6 +57,77 @@ class B05AssetBundleMediaManifestSource implements B05MediaManifestSource {
   }
 }
 
+/// Deterministically adapts the single third-party provenance manifest into
+/// the existing B05 media contract. The JSON provenance file remains the only
+/// editable authority; this is an in-memory presentation adapter.
+class B05AssetBundleThirdPartyMediaManifestSource
+    implements B05MediaManifestSource {
+  final AssetBundle bundle;
+  final String manifestAssetPath;
+
+  const B05AssetBundleThirdPartyMediaManifestSource({
+    required this.bundle,
+    this.manifestAssetPath = 'assets/third_party/asset_manifest.json',
+  });
+
+  @override
+  Future<B05MediaManifest?> load() async {
+    final raw = await bundle.loadString(manifestAssetPath);
+    final provenance = B05ThirdPartyAssetManifest.fromJson(jsonDecode(raw));
+    final source = provenance.sources.singleWhere(
+      (candidate) => candidate.sourceKey == 'repdb_free_tier',
+    );
+    final contentLicense = source.contentLicenses.first;
+    final assets = <B05MediaAssetContract>[];
+    for (final asset in provenance.assets) {
+      final assetSetId = asset.assetSetId;
+      final role = asset.mediaRole;
+      final destination = asset.localDestination;
+      final disclosure = asset.techniqueDisclosure;
+      if (asset.sourceKey != 'repdb_free_tier' ||
+          asset.approvalStatus != 'production' ||
+          assetSetId == null ||
+          disclosure == null) {
+        continue;
+      }
+      assets.add(
+        B05MediaAssetContract(
+          exerciseId: assetSetId,
+          assetId: asset.assetKey,
+          assetSetId: assetSetId,
+          mediaRole: role,
+          sourceRelativePath: asset.sourceRelativePath,
+          localDestination: destination,
+          canonicalExerciseUuids: asset.canonicalExerciseUuids,
+          techniqueDisclosure: disclosure.text,
+          checksum: asset.checksum,
+          sourceLicense: '${contentLicense.name} ${contentLicense.version}',
+          attribution: source.attribution.text,
+          distributionRights: source.redistributionConstraints.join('; '),
+          stillFallbackId: 'canonical-muscle-map',
+          reducedMotionFallbackId: 'canonical-muscle-map',
+        ),
+      );
+    }
+    final manifest = B05MediaManifest(
+      pack: B05MediaPackContract(
+        packId: provenance.manifestId,
+        manifestIdentity: provenance.manifestId,
+        contentVersion: '${provenance.manifestId}-contract-2',
+        checksumAlgorithm: B05MediaAcceptanceTemplate.checksumAlgorithm,
+        sourceLicense: '${contentLicense.name} ${contentLicense.version}',
+        attribution: source.attribution.text,
+        distributionRights: source.redistributionConstraints.join('; '),
+        offlineFallbackId: 'canonical-muscle-map',
+        reducedMotionFallbackId: 'canonical-muscle-map',
+      ),
+      assets: assets,
+    );
+    manifest.validateStructure();
+    return manifest;
+  }
+}
+
 /// Checks both the foundation contract and the exact approved ID set supplied
 /// by product. A count-only check is insufficient because an arbitrary set of
 /// twenty exercises must never be mistaken for the approved pack.
@@ -67,19 +140,16 @@ class B05MediaManifestValidator {
       );
 
   void validate(B05MediaManifest manifest) {
-    if (approvedExerciseIds.length !=
-        B05MediaAcceptanceTemplate.requiredExerciseCount) {
-      throw B05RegistryValidationException(
-        'media_approval_ids',
-        'The approved media packet must provide exactly 20 stable exercise IDs.',
-      );
+    manifest.validateStructure();
+    if (approvedExerciseIds.isEmpty) return;
+    final manifestIds = <String>{};
+    for (final asset in manifest.assets) {
+      if (asset.canonicalExerciseUuids.isEmpty) {
+        manifestIds.add(asset.exerciseId);
+      } else {
+        manifestIds.addAll(asset.canonicalExerciseUuids);
+      }
     }
-    manifest.validateStructure(
-      requiredAssetCount: B05MediaAcceptanceTemplate.requiredExerciseCount,
-    );
-    final manifestIds = manifest.assets
-        .map((asset) => asset.exerciseId)
-        .toSet();
     if (manifestIds.length != approvedExerciseIds.length ||
         !manifestIds.containsAll(approvedExerciseIds)) {
       throw B05RegistryValidationException(
@@ -286,9 +356,7 @@ class B05MediaBundleController extends StateNotifier<B05MediaBundleState> {
         return;
       }
 
-      manifest.validateStructure(
-        requiredAssetCount: B05MediaAcceptanceTemplate.requiredExerciseCount,
-      );
+      manifest.validateStructure();
       if (preference != null &&
           (preference.packId != manifest.pack.packId ||
               preference.manifestIdentity != manifest.pack.manifestIdentity)) {
@@ -358,7 +426,11 @@ class B05MediaBundleController extends StateNotifier<B05MediaBundleState> {
       );
     }
     final asset = state.manifest?.assets
-        .where((candidate) => candidate.exerciseId == id)
+        .where(
+          (candidate) =>
+              candidate.exerciseId == id ||
+              candidate.canonicalExerciseUuids.contains(id),
+        )
         .firstOrNull;
     if (asset == null) {
       return const B05MediaExerciseView(
@@ -396,6 +468,14 @@ class B05MediaBundleController extends StateNotifier<B05MediaBundleState> {
         message: state.message,
       ),
     };
+  }
+
+  B05MediaVisualAssetSetContract? visualAssetSet(String canonicalExerciseUuid) {
+    final id = canonicalExerciseUuid.trim();
+    if (id.isEmpty) return null;
+    return state.manifest?.visualAssetSets
+        .where((set) => set.canonicalExerciseUuids.contains(id))
+        .firstOrNull;
   }
 }
 

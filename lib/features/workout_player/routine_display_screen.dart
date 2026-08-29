@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/di/providers.dart';
+import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/services/indifit_haptics.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
@@ -190,13 +191,13 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.directions_run_rounded),
-            tooltip: 'Log typed activity',
+            tooltip: 'Log activity',
             onPressed: () => context.push('/activity-create'),
           ),
           if (_activeRoutine != null) ...[
             IconButton(
               icon: const Icon(Icons.history_rounded),
-              tooltip: 'Log Past Workout',
+              tooltip: 'Log past workout',
               onPressed: () {
                 showIndiFitBottomSheet(
                   context: context,
@@ -710,9 +711,5 @@ class ActiveProgramManagementSurface extends StatelessWidget {
 }
 
 String _routinePlanLifecycleMessage(ProgramLifecycleException error) {
-  if (error.code == 'blocked') return error.message;
-  if (error.code == 'no_active_plan') {
-    return 'This plan is no longer active. Return to Training to choose what is next.';
-  }
-  return 'Plan action unavailable. Try again.';
+  return ProductFailurePresentation.fromError(error).message;
 }
