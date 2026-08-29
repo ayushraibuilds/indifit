@@ -40,7 +40,7 @@ Since you do not have a paid Apple Developer account ($99/year), you can use the
 3. Check the **Automatically manage signing** box.
 4. Under **Team**, select your Apple ID (Personal Team). 
    - *If your Apple ID is not listed, click "Add an Account..." and log in with your normal iCloud email/password (no developer fee required).*
-5. In **Bundle Identifier**, change the package suffix slightly if there's a conflict (e.g., change `com.indifit.IndiFit` to `com.indifit.IndiFitDev`).
+5. The public-release bundle identifier is `com.indifit.indifit` and must not change after store registration. For personal-device development only, use a clearly separate identifier such as `com.indifit.indifit.dev` if Apple's portal reports a conflict; never archive that development identity for distribution.
 
 ### Step 4: Enable Developer Mode on your iPhone
 1. On your iPhone, go to **Settings** > **Privacy & Security**.
