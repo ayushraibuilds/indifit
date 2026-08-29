@@ -527,7 +527,7 @@ class DataManagementSection extends ConsumerWidget {
           iconColor: context.b05Colors.info.indicator,
           title: 'Offline mode',
           subtitle:
-              'Block app-initiated online requests, photo uploads, online food search and crash reporting.',
+              'Block app-initiated online food search and crash reporting.',
           value: state.offlineOnly,
           requestNotificationPermission: false,
           onChanged: (value) => ref

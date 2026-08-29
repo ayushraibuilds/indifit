@@ -37,18 +37,18 @@ void main() {
     });
   });
 
-  group('Photo-AI disclosure truthfulness', () {
-    testWidgets('privacy card states photos are sent, not processed locally', (
+  group('R09-A V1 disclosure truthfulness', () {
+    testWidgets('privacy card states connected AI is not part of V1', (
       tester,
     ) async {
       await tester.pumpWidget(
         const MaterialApp(home: Scaffold(body: PrivacyDisclosureCard())),
       );
-      expect(find.textContaining('send text or photo queries'), findsOneWidget);
       expect(
-        find.textContaining('processed only on this device'),
-        findsNothing,
+        find.textContaining('does not send your logs or photos'),
+        findsOneWidget,
       );
+      expect(find.textContaining('send text or photo queries'), findsNothing);
     });
   });
 

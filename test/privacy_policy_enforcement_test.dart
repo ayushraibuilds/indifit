@@ -287,9 +287,24 @@ void main() {
 
         await controller.toggleOfflineOnly(false);
         expect(container.read(privacyPolicyProvider).isOfflineOnly, isFalse);
-        expect(container.read(privacyPolicyProvider).isAiAllowed, isTrue);
+        expect(container.read(privacyPolicyProvider).isAiAllowed, isFalse);
+        expect(
+          container.read(privacyPolicyProvider).isOpenFoodFactsAllowed,
+          isTrue,
+        );
       },
     );
+
+    test('V1 blocks connected AI even when Offline Mode is off', () {
+      const policy = PrivacyPolicy(
+        isOfflineOnly: false,
+        isTelemetryEnabled: false,
+      );
+
+      expect(policy.isAiAllowed, isFalse);
+      expect(policy.isImageUploadAllowed, isFalse);
+      expect(policy.isOpenFoodFactsAllowed, isTrue);
+    });
 
     test(
       'PrivacyPolicyNotifier loads persisted offline state synchronously on startup',

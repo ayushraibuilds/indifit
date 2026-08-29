@@ -218,13 +218,11 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
               },
             ),
             IconButton(
-              icon: const Icon(Icons.psychology_rounded),
-              tooltip: 'Re-generate Split with AI',
+              icon: const Icon(Icons.library_add_check_rounded),
+              tooltip: 'Choose another plan',
               onPressed: () async {
-                final success = await context.push<bool>('/routine-wizard');
-                if (success == true) {
-                  await _loadActiveRoutine();
-                }
+                await context.push('/plan-library');
+                await _loadActiveRoutine();
               },
             ),
           ],
@@ -268,19 +266,19 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
               ),
               padding: const EdgeInsets.all(20),
               child: Icon(
-                Icons.psychology_rounded,
+                Icons.fitness_center_rounded,
                 size: 56,
                 color: colors.action,
               ),
             ),
             const SizedBox(height: 24),
             Text(
-              'No Workout Split Generated',
+              'No workout plan selected',
               style: B05Typography.title(context),
             ),
             const SizedBox(height: 12),
             Text(
-              'Our AI Fitness Coach can design a custom training split matching your equipment, experience, and schedules.',
+              'Choose a reviewed plan that fits your schedule, or build your own training split.',
               textAlign: TextAlign.center,
               style: B05Typography.body(context),
             ),
@@ -289,14 +287,12 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
               width: double.infinity,
               child: FilledButton.icon(
                 onPressed: () async {
-                  final success = await context.push<bool>('/routine-wizard');
-                  if (success == true) {
-                    await _loadActiveRoutine();
-                  }
+                  await context.push('/plan-library');
+                  await _loadActiveRoutine();
                 },
-                icon: const Icon(Icons.auto_awesome_rounded, size: 18),
+                icon: const Icon(Icons.library_add_check_rounded, size: 18),
                 label: const Text(
-                  'Generate Split with AI',
+                  'Browse plans',
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),

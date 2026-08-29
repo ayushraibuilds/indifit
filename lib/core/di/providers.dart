@@ -606,16 +606,17 @@ final savedRecipeLogControllerProvider =
     });
 
 final dioProvider = Provider<Dio>((ref) {
-  // AppConfig.apiKey validates the build key and throws a deterministic StateError
-  // in BOTH debug and release modes if missing, ensuring release builds never
-  // silently ship with an unconfigured empty key.
-  final apiKey = AppConfig.apiKey;
+  // R09-A: this client exists only for legacy/post-V1 connected services. A
+  // mobile release must remain fully usable without embedding a shared backend
+  // credential. When a developer explicitly supplies one, add it only to this
+  // dedicated client; Open Food Facts uses a separate credential-free client.
+  final apiKey = AppConfig.rawApiKey.trim();
   final dio = Dio(
     BaseOptions(
       connectTimeout: const Duration(seconds: 15),
       receiveTimeout: const Duration(seconds: 15),
       sendTimeout: const Duration(seconds: 15),
-      headers: {'x-indifit-key': apiKey},
+      headers: {if (apiKey.isNotEmpty) 'x-indifit-key': apiKey},
     ),
   );
   dio.interceptors.add(PrivacyNetworkInterceptor(ref));

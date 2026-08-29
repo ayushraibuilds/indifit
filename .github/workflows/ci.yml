@@ -51,7 +51,7 @@ jobs:
           keytool -genkeypair -noprompt -storetype JKS -keystore android/app/ci-release.keystore -alias ci_release_alias -keyalg RSA -keysize 2048 -validity 10000 -storepass ci_release_password -keypass ci_release_password -dname "CN=IndiFit, OU=Dev, O=IndiFit, L=Local, S=Local, C=IN"
 
       - name: Build Release APK
-        run: flutter build apk --release --dart-define=INDIFIT_API_KEY=ci_build_test_key
+        run: flutter build apk --release
 
   ios_release:
     name: iOS Release Build
@@ -71,7 +71,7 @@ jobs:
         run: flutter pub get
 
       - name: Build Unsigned Release App
-        run: flutter build ios --release --no-codesign --dart-define=INDIFIT_API_KEY=ci_build_test_key
+        run: flutter build ios --release --no-codesign
 
   backend_ci:
     name: Backend CI Checks

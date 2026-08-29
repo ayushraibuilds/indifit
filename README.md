@@ -1,12 +1,18 @@
 # IndiFit 🏋️
 
-IndiFit is an offline-first, AI-powered gym tracker and nutrition planner tailored for Indian food and training habits.
+IndiFit is an offline-first workout and nutrition tracker tailored for Indian food and training habits.
 
 ## Key Features
-- **Offline-First Storage**: Powered by Drift (SQLite) to log workouts, track body stats, search food, and manage rest timers 100% offline.
-- **Indian Food Database**: Auto-seeded on first install with 413 common Indian dishes and macros (Whole wheat roti, Dal tadka, Paneer butter masala, Rajma chawal, Chole, etc.).
-- **FastAPI AI Integration**: Proxied server-side calls utilizing Gemini (free/multimodal) and DeepSeek V4-Flash to build onboarding programs, estimate food via photo/text descriptions, and compile weekly report summaries.
+- **Offline Core**: Drift (SQLite) stores workouts, nutrition logs, body measurements, plans, preferences, and recovery copies on the device. Core logging and review flows work without a network connection.
+- **Indian Food Catalogue**: The app bundles 573 base food entries and 25 optional regional-pack entries with nutrition facts and provenance metadata.
+- **Optional Online Food Lookup**: When Offline Mode is off, users can deliberately search or scan packaged foods through Open Food Facts. Local results remain available if the provider cannot be reached.
 - **Interactive Workout Player**: Responsive set counters, haptic circular countdown rest timers, and personal record confetti celebrations.
+- **Progress & Health Connections**: Review recorded workout/nutrition trends and optionally connect supported Health Connect or HealthKit categories.
+- **Portable Data**: Create and restore JSON backups, optionally protect manual backup files with a password, and copy a food/workout CSV summary.
+
+## V1 Product Contract
+
+V1 has no user-facing generative-AI features and does not require an IndiFit backend credential to start or use the app. Historical AI client/backend code remains in the repository for post-V1 redesign work but is not part of the V1 product surface.
 
 ---
 
@@ -68,5 +74,5 @@ Testing on Android is completely free and does not expire:
 - **State Management**: Riverpod (`flutter_riverpod`)
 - **Local Cache & Storage**: Drift SQLite Database (`drift` + `sqlite3_flutter_libs`)
 - **Backend Sync**: Local-only for v1 (Cloud sync planned for future versions)
-- **Networking**: Dio Client (`dio`)
+- **Optional Networking**: Open Food Facts lookup and opt-in crash diagnostics, both blocked by Offline Mode
 - **Visuals**: Lottie animations + Fl Chart

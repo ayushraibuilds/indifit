@@ -4,7 +4,6 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'core/config/app_config.dart';
 import 'core/di/providers.dart';
 import 'core/di/theme_provider.dart';
 import 'core/privacy/privacy_policy.dart';
@@ -17,7 +16,6 @@ import 'core/utils/app_logger.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  AppConfig.validateBootstrapConfig();
 
   // Log uncaught Flutter framework errors
   FlutterError.onError = (FlutterErrorDetails details) {

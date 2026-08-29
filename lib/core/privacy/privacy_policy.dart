@@ -1,21 +1,26 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../config/app_config.dart';
+
 /// Centralized Privacy & Network Policy model.
 class PrivacyPolicy {
   final bool isOfflineOnly;
   final bool isTelemetryEnabled;
+  final bool connectedAiEnabled;
 
   const PrivacyPolicy({
     required this.isOfflineOnly,
     required this.isTelemetryEnabled,
+    this.connectedAiEnabled = AppConfig.connectedAiEnabled,
   });
 
-  /// Backend AI text generation is permitted only when offline-only mode is disabled.
-  bool get isAiAllowed => !isOfflineOnly;
+  /// Connected AI is outside the V1 product contract, independent of the
+  /// user's online-food and diagnostics preferences.
+  bool get isAiAllowed => connectedAiEnabled && !isOfflineOnly;
 
-  /// Meal photo uploads to backend AI are permitted only when offline-only mode is disabled.
-  bool get isImageUploadAllowed => !isOfflineOnly;
+  /// V1 never uploads meal photos.
+  bool get isImageUploadAllowed => isAiAllowed;
 
   /// Third-party Open Food Facts lookups are permitted only when offline-only mode is disabled.
   bool get isOpenFoodFactsAllowed => !isOfflineOnly;
