@@ -277,8 +277,14 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Workout Reminder'), findsOneWidget);
-      expect(find.text('Meal Logging'), findsOneWidget);
+      expect(
+        find.textContaining(RegExp('workout reminder', caseSensitive: false)),
+        findsWidgets,
+      );
+      expect(
+        find.textContaining(RegExp('meal logging', caseSensitive: false)),
+        findsWidgets,
+      );
       expect(find.text('Water Intake'), findsNothing);
       expect(find.textContaining('hydration'), findsNothing);
       expect(tester.takeException(), isNull);

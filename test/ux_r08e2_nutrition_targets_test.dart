@@ -8,6 +8,7 @@ import 'package:indifit/core/services/local_schedule_date_service.dart';
 import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/models/b04_goal_models.dart';
+import 'package:indifit/data/repositories/coaching_preference_repository.dart';
 import 'package:indifit/data/repositories/nutrition_goal_repository.dart';
 import 'package:indifit/data/repositories/nutrition_target_authority.dart';
 import 'package:indifit/features/coaching/b04_production_surface_controller.dart';
@@ -467,6 +468,9 @@ void main() {
                   timezoneId: 'Asia/Kolkata',
                 ),
               ),
+              b04GoalSettingsControllerProvider.overrideWith(
+                (ref) => _readyCoachingController(database, dates),
+              ),
               nutritionTargetsForDateProvider(
                 const NutritionTargetDateQuery(
                   localDate: '2026-08-06',
@@ -517,6 +521,9 @@ Widget _app(
         timezoneId: 'Asia/Kolkata',
       ),
     ),
+    b04GoalSettingsControllerProvider.overrideWith(
+      (ref) => _readyCoachingController(database, dates, goalsOverride),
+    ),
     if (goalsOverride != null)
       nutritionGoalRepositoryProvider.overrideWithValue(goalsOverride),
     if (targetsByDate != null)
@@ -540,6 +547,29 @@ Future<void> _pumpForAsyncState(WidgetTester tester) async {
   for (var index = 0; index < 12; index++) {
     await tester.pump(const Duration(milliseconds: 100));
   }
+}
+
+B04GoalSettingsController _readyCoachingController(
+  AppDatabase database,
+  LocalScheduleDateService dates, [
+  NutritionGoalRepository? goals,
+]) {
+  const context = B04ProductionUserContext(
+    userId: '1',
+    localDate: '2026-08-06',
+    timezoneId: 'Asia/Kolkata',
+  );
+  final controller = B04GoalSettingsController(
+    loadContext: () async => context,
+    goals: goals ?? NutritionGoalRepository(database: database, dates: dates),
+    preferences: CoachingPreferenceRepository(database: database, dates: dates),
+    dates: dates,
+  );
+  controller.state = const B04GoalSettingsState(
+    status: B04GoalSettingsStatus.ready,
+    context: context,
+  );
+  return controller;
 }
 
 Future<int> _insertProfile(AppDatabase database) =>
