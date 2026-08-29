@@ -15,6 +15,7 @@ import 'package:indifit/data/repositories/b07_exercise_context_repository.dart';
 import 'package:indifit/data/repositories/calendar_repository.dart';
 import 'package:indifit/data/services/b02_strength_execution_draft_service.dart';
 import 'package:indifit/features/media/b05_exercise_visual_registry.dart';
+import 'package:indifit/features/media/indifit_muscle_map.dart';
 import 'package:indifit/features/workout_player/b02_strength_execution_controller.dart';
 import 'package:indifit/features/workout_player/b02_strength_player_screen.dart';
 import 'package:indifit/features/workout_player/widgets/b07_exercise_context.dart';
@@ -179,14 +180,33 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 40));
 
-      expect(find.text('REST'), findsOneWidget);
+      final execution = controller.state.launch!.state;
+      final loggedSet = execution.performedExercises.single.sets.single;
+      final activeRest = execution.restPeriods.single;
+      expect(loggedSet.actualReps, 8);
+      expect(loggedSet.actualLoadKg, 60);
+      expect(activeRest.performedSetId, loggedSet.id);
+      expect(activeRest.selectedSeconds, 120);
+      expect(activeRest.endedAtUtc, isNull);
+
+      await tester.scrollUntilVisible(
+        find.bySemanticsLabel('Rest in progress'),
+        400,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.bySemanticsLabel('Rest in progress'), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.text('−15 sec'), findsOneWidget);
+      expect(find.text('+15 sec'), findsOneWidget);
+      expect(find.text('Skip'), findsOneWidget);
+
       await tester.scrollUntilVisible(
         find.byType(B07ExerciseContextPanel),
         400,
         scrollable: find.byType(Scrollable).first,
       );
       expect(find.byType(B07ExerciseContextPanel), findsOneWidget);
-      expect(find.byType(TextFormField), findsNWidgets(2));
+      expect(find.byType(IndiFitMuscleMap), findsOneWidget);
       expect(find.textContaining('assets/generated/repdb'), findsNothing);
       expect(find.textContaining('FileSystemException'), findsNothing);
       expect(tester.takeException(), isNull);
