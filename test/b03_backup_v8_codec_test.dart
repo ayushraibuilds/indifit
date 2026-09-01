@@ -7,12 +7,13 @@ import 'package:indifit/core/backup/backup_v8.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'support/indifit_test_harness.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   test('v8 export is deterministic and excludes catalogue seed rows', () async {
-    final source = AppDatabase.memory();
-    addTearDown(source.close);
+    final source = registerTestDatabaseScope().create();
     await _populateNutritionGraph(source);
 
     final backup = await BackupV8Data.createFromDatabase(source);
@@ -35,8 +36,7 @@ void main() {
   test(
     'v8 envelope export and inspection preserve the typed payload',
     () async {
-      final db = AppDatabase.memory();
-      addTearDown(db.close);
+      final db = registerTestDatabaseScope().create();
       await _populateNutritionGraph(db);
       final backup = await BackupV8Data.createFromDatabase(db);
       final envelope = BackupFileAdapter.exportV8ToEnvelopeJson(data: backup);
@@ -54,19 +54,18 @@ void main() {
   test(
     'v8 round-trip preserves portable nutrition graph and preferences',
     () async {
-      final source = AppDatabase.memory();
-      final target = AppDatabase.memory();
-      addTearDown(source.close);
-      addTearDown(target.close);
+      final databases = registerTestDatabaseScope();
+      final source = databases.create();
+      final target = databases.create();
       await _populateNutritionGraph(source);
-      SharedPreferences.setMockInitialValues({'water_logged': 7});
+      setIndiFitTestPreferences({'water_logged': 7});
       final sourcePrefs = await SharedPreferences.getInstance();
       final backup = await BackupV8Data.createFromDatabase(source, sourcePrefs);
       final decoded = BackupV8Data.fromJson(
         jsonDecode(jsonEncode(backup.toJson())) as Map<String, dynamic>,
       );
 
-      SharedPreferences.setMockInitialValues({'water_logged': 2});
+      setIndiFitTestPreferences({'water_logged': 2});
       final targetPrefs = await SharedPreferences.getInstance();
       await decoded.restoreToDatabase(target, targetPrefs);
 
@@ -147,10 +146,9 @@ void main() {
   test(
     'v8 prevalidation rejects newer versions and missing references atomically',
     () async {
-      final source = AppDatabase.memory();
-      final target = AppDatabase.memory();
-      addTearDown(source.close);
-      addTearDown(target.close);
+      final databases = registerTestDatabaseScope();
+      final source = databases.create();
+      final target = databases.create();
       await _populateNutritionGraph(source);
       final valid = await BackupV8Data.createFromDatabase(source);
       final missing =
@@ -245,8 +243,7 @@ void main() {
   test(
     'v8 rejects malformed nutrient states and reviewed measure ownership',
     () async {
-      final source = AppDatabase.memory();
-      addTearDown(source.close);
+      final source = registerTestDatabaseScope().create();
       await _populateNutritionGraph(source);
       final valid = await BackupV8Data.createFromDatabase(source);
 
@@ -310,10 +307,9 @@ void main() {
   test(
     'v8 restore preserves reviewed measures and replaces only user measures',
     () async {
-      final source = AppDatabase.memory();
-      final target = AppDatabase.memory();
-      addTearDown(source.close);
-      addTearDown(target.close);
+      final databases = registerTestDatabaseScope();
+      final source = databases.create();
+      final target = databases.create();
       await _populateNutritionGraph(source);
       await target
           .into(target.nutritionHouseholdMeasures)
@@ -349,8 +345,7 @@ void main() {
   );
 
   test('v8 rejects orphan and cross-vessel calibration ancestry', () async {
-    final source = AppDatabase.memory();
-    addTearDown(source.close);
+    final source = registerTestDatabaseScope().create();
     await _populateNutritionGraph(source);
     final valid = await BackupV8Data.createFromDatabase(source);
 
@@ -402,8 +397,7 @@ void main() {
   });
 
   test('v5, v6 and v7 imports remain legacy-only', () async {
-    final source = AppDatabase.memory();
-    addTearDown(source.close);
+    final source = registerTestDatabaseScope().create();
     final current = await BackupV8Data.createFromDatabase(source);
     final base =
         jsonDecode(jsonEncode(current.toJson())) as Map<String, dynamic>;
@@ -439,10 +433,9 @@ void main() {
   test(
     'v8 restore rolls back nutrition rows and preferences, then retries',
     () async {
-      final source = AppDatabase.memory();
-      final target = AppDatabase.memory();
-      addTearDown(source.close);
-      addTearDown(target.close);
+      final databases = registerTestDatabaseScope();
+      final source = databases.create();
+      final target = databases.create();
       await _populateNutritionGraph(source);
       final backup = await BackupV8Data.createFromDatabase(source);
       await target
@@ -465,7 +458,7 @@ void main() {
         SELECT RAISE(ABORT, 'simulated v8 restore failure');
       END;
     ''');
-      SharedPreferences.setMockInitialValues({'water_logged': 3});
+      setIndiFitTestPreferences({'water_logged': 3});
       final prefs = await SharedPreferences.getInstance();
       final payload =
           jsonDecode(jsonEncode(backup.toJson())) as Map<String, dynamic>;

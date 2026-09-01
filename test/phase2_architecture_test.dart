@@ -4,13 +4,14 @@ import 'package:go_router/go_router.dart';
 import 'package:indifit/core/di/user_profile_provider.dart';
 import 'package:indifit/core/router/app_router.dart';
 import 'package:indifit/data/database/app_database.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+
+import 'support/indifit_test_harness.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(() {
-    SharedPreferences.setMockInitialValues({});
+    setIndiFitTestPreferences();
   });
 
   group('Phase 2 Architecture & Persistence Tests', () {
@@ -40,6 +41,7 @@ void main() {
         final db = AppDatabase.memory();
 
         final notifier = UserProfileNotifier(db);
+        await notifier.loadProfile();
 
         expect(notifier.state.calorieGoal, 2000);
 

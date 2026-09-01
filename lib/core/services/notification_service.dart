@@ -102,9 +102,11 @@ class NotificationService {
   }
 
   /// Initialize the notification plugin, timezone data, and Android channels.
-  static Future<void> initialize() async {
+  static Future<void> initialize([
+    Future<String> Function()? readTimezoneId,
+  ]) async {
     tz_data.initializeTimeZones();
-    await _configureLocalTimeZone();
+    await _configureLocalTimeZone(readTimezoneId: readTimezoneId);
 
     const androidSettings = AndroidInitializationSettings(
       '@mipmap/ic_launcher',
@@ -770,8 +772,9 @@ class NotificationService {
   /// updates persisted timezone metadata, and reschedules notifications.
   static Future<bool> checkAndUpdateTimezoneAndReschedule([
     AppDatabase? db,
+    Future<String> Function()? readTimezoneId,
   ]) async {
-    await _configureLocalTimeZone();
+    await _configureLocalTimeZone(readTimezoneId: readTimezoneId);
     final prefs = await SharedPreferences.getInstance();
 
     final currentTzId = tz.local.name;
@@ -793,13 +796,17 @@ class NotificationService {
     return false;
   }
 
-  static Future<void> _configureLocalTimeZone() async {
+  static Future<void> _configureLocalTimeZone({
+    Future<String> Function()? readTimezoneId,
+  }) async {
     // Platform APIs return an IANA identifier (for example Europe/London),
     // unlike DateTime.timeZoneName which is commonly an ambiguous abbreviation
     // such as IST or PST. This is essential for travel and DST correctness.
     try {
-      final nativeTimeZone = await FlutterTimezone.getLocalTimezone();
-      tz.setLocalLocation(tz.getLocation(nativeTimeZone.identifier));
+      final identifier = readTimezoneId != null
+          ? await readTimezoneId()
+          : (await FlutterTimezone.getLocalTimezone()).identifier;
+      tz.setLocalLocation(tz.getLocation(identifier));
       return;
     } catch (e) {
       AppLogger.warning('Native timezone lookup failed: $e');

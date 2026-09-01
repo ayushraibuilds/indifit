@@ -7,7 +7,11 @@ import 'package:indifit/data/repositories/equipment_preference_repository.dart';
 import 'package:indifit/data/services/b02_rest_recommendation_service.dart';
 import 'package:indifit/data/services/b02_warmup_recommendation_service.dart';
 
+import 'support/indifit_test_harness.dart';
+
 void main() {
+  initializeIndiFitTestHarness();
+
   final service = const WarmupRecommendationService();
   final rest = const RestRecommendationService();
 

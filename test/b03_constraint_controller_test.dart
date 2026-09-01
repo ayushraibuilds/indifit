@@ -110,9 +110,14 @@ void main() {
         userId: 'user-1',
       );
       await controller.load();
+      addTearDown(() async {
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      });
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            databaseProvider.overrideWithValue(db),
             nutritionConstraintManagementControllerProvider.overrideWith(
               (ref) => controller,
             ),

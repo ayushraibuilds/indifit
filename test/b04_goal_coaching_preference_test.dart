@@ -13,20 +13,22 @@ import 'package:indifit/data/repositories/coaching_preference_repository.dart';
 import 'package:indifit/data/repositories/nutrition_goal_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'support/indifit_test_harness.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late AppDatabase db;
   late NutritionGoalRepository goals;
   late CoachingPreferenceRepository preferences;
+  late TestDatabaseScope databases;
 
   setUp(() {
-    db = AppDatabase.memory();
+    databases = registerTestDatabaseScope();
+    db = databases.create();
     goals = NutritionGoalRepository(database: db);
     preferences = CoachingPreferenceRepository(database: db);
   });
-
-  tearDown(() => db.close());
 
   NutritionGoalCommand legacyCommand({
     String userId = 'user-a',
@@ -81,6 +83,13 @@ void main() {
         ),
       );
       expect(retry.id, replacement.id);
+      expect(await goals.listVersions(userId: 'user-a'), hasLength(2));
+
+      final compatibilityRetry = await goals.ensureCompatibilityImport(
+        userId: 'user-a',
+        legacyProfile: legacyCommand(),
+      );
+      expect(compatibilityRetry.id, imported.id);
       expect(await goals.listVersions(userId: 'user-a'), hasLength(2));
 
       final oldRead = await goals.activeGoal(
@@ -653,7 +662,7 @@ void main() {
   test(
     'profile updates use canonical goal history and failed database writes do not update legacy state',
     () async {
-      SharedPreferences.setMockInitialValues({});
+      setIndiFitTestPreferences();
       await db.into(db.userProfiles).insert(UserProfilesCompanion.insert());
       final profileNotifier = UserProfileNotifier(db);
       await profileNotifier.loadProfile();
@@ -677,8 +686,9 @@ void main() {
       );
 
       final beforeFailure = profileNotifier.state;
-      final closedDb = AppDatabase.memory();
+      final closedDb = databases.create();
       final failedNotifier = UserProfileNotifier(closedDb);
+      await failedNotifier.loadProfile();
       await closedDb.close();
       await expectLater(
         failedNotifier.updateProfile(goal: 'loss', calorieGoal: 1700),
@@ -694,7 +704,9 @@ void main() {
     () async {
       final directory = await Directory.systemTemp.createTemp('b04-goals-');
       final file = File('${directory.path}/goals.db');
-      final first = AppDatabase.executor(NativeDatabase(file));
+      final first = databases.open(
+        () => AppDatabase.executor(NativeDatabase(file)),
+      );
       await first
           .into(first.userProfiles)
           .insert(UserProfilesCompanion.insert());
@@ -719,7 +731,9 @@ void main() {
       );
       await first.close();
 
-      final reopened = AppDatabase.executor(NativeDatabase(file));
+      final reopened = databases.open(
+        () => AppDatabase.executor(NativeDatabase(file)),
+      );
       final reopenedGoals = NutritionGoalRepository(database: reopened);
       final reopenedPreferences = CoachingPreferenceRepository(
         database: reopened,
@@ -733,7 +747,7 @@ void main() {
       );
 
       final backup = await BackupV9Data.createFromDatabase(reopened);
-      final restored = AppDatabase.memory();
+      final restored = databases.create();
       final decoded = BackupV9Data.fromJson(backup.toJson());
       await decoded.restoreToDatabase(restored);
       expect(

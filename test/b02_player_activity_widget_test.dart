@@ -15,8 +15,13 @@ void main() {
     'typed activity form switches to mobility fields without distance',
     (tester) async {
       await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(home: B02ActivityCreationScreen()),
+        ProviderScope(
+          child: MaterialApp(
+            // This test owns interaction behavior, not Flutter's optional
+            // runtime-compiled Material splash shader.
+            theme: ThemeData(splashFactory: InkRipple.splashFactory),
+            home: const B02ActivityCreationScreen(),
+          ),
         ),
       );
       expect(find.text('Distance (metres, optional)'), findsOneWidget);

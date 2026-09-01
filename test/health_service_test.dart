@@ -1,7 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/data/repositories/health_service.dart';
 
+import 'support/indifit_test_harness.dart';
+
 void main() {
+  setUp(setIndiFitTestPreferences);
+
   group('HealthDataSummary Tests', () {
     test('default summary has zero metrics and disconnected status', () {
       const summary = HealthDataSummary();

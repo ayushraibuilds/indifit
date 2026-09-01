@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:indifit/core/di/providers.dart';
 import 'package:indifit/core/nutrients.dart';
 import 'package:indifit/core/nutrition_legacy_read_models.dart';
 import 'package:indifit/core/presentation/today_onboarding_handoff.dart';
@@ -85,7 +86,10 @@ void main() {
       expect(find.text('25 g'), findsOneWidget);
 
       // Semantics check
-      expect(find.bySemanticsLabel(RegExp(r'Protein: 120 / 150 g')), findsOneWidget);
+      expect(
+        find.bySemanticsLabel(RegExp(r'Protein: 120 / 150 g')),
+        findsOneWidget,
+      );
 
       // Action buttons
       expect(find.text('Log food'), findsOneWidget);
@@ -593,6 +597,11 @@ Widget _buildApp({
 }) {
   return ProviderScope(
     overrides: [
+      b04ProductionRecommendationContextProvider.overrideWith(
+        (ref) async => throw StateError(
+          'Recommendation context is unavailable in this presentation fixture.',
+        ),
+      ),
       dashboardPersonalizationControllerProvider.overrideWith(
         (ref) => DashboardPersonalizationController(
           repository: DashboardPersonalizationRepository(
@@ -603,17 +612,17 @@ Widget _buildApp({
         ),
       ),
       if (isLoading)
-        todaySurfaceSnapshotProvider(selectedDate).overrideWith(
-          (ref) => Completer<TodaySurfaceSnapshot>().future,
-        )
+        todaySurfaceSnapshotProvider(
+          selectedDate,
+        ).overrideWith((ref) => Completer<TodaySurfaceSnapshot>().future)
       else if (onReadSnapshot != null)
-        todaySurfaceSnapshotProvider(selectedDate).overrideWith(
-          (ref) async => onReadSnapshot(),
-        )
+        todaySurfaceSnapshotProvider(
+          selectedDate,
+        ).overrideWith((ref) async => onReadSnapshot())
       else if (snapshot != null)
-        todaySurfaceSnapshotProvider(selectedDate).overrideWith(
-          (ref) async => snapshot,
-        ),
+        todaySurfaceSnapshotProvider(
+          selectedDate,
+        ).overrideWith((ref) async => snapshot),
     ],
     child: MaterialApp(
       theme: AppTheme.lightTheme,
@@ -766,7 +775,9 @@ NutritionDailyReadModel _createNutritionDaily({
   );
 }
 
-NutritionDailyReadModel _createEmptyNutritionDaily({required String localDate}) {
+NutritionDailyReadModel _createEmptyNutritionDaily({
+  required String localDate,
+}) {
   return NutritionDailyReadModel(
     userId: 'local-nutrition-user',
     localDate: localDate,
@@ -834,8 +845,8 @@ NutrientAggregationResult _makeAggregation(
     completeness: NutrientCompleteness(
       state: missingNutrientIds.isEmpty
           ? (available.isEmpty
-              ? NutrientCompletenessState.complete
-              : NutrientCompletenessState.complete)
+                ? NutrientCompletenessState.complete
+                : NutrientCompletenessState.complete)
           : NutrientCompletenessState.partial,
       requestedNutrientIds: [...facts.keys, ...missingNutrientIds],
       availableNutrientIds: available,

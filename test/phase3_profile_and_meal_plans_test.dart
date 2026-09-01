@@ -9,13 +9,11 @@ void main() {
 
   group('Phase 3: Personalisation & Meal Quality Unit Tests', () {
     late AppDatabase db;
-    late UserProfileNotifier profileNotifier;
     late MealPlanService mealPlanService;
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
       db = AppDatabase.memory();
-      profileNotifier = UserProfileNotifier(db);
       mealPlanService = MealPlanService();
     });
 
@@ -26,6 +24,7 @@ void main() {
     test(
       '1. Profile state initializes with defaults and updates dietPreference atomically',
       () async {
+        final profileNotifier = UserProfileNotifier(db);
         await profileNotifier.loadProfile();
         expect(profileNotifier.state.dietPreference, equals('veg'));
         expect(profileNotifier.state.currentWeight, equals(74.5));

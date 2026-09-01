@@ -10,21 +10,21 @@ import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/repositories/nutrition_consumption_repository.dart';
 import 'package:indifit/data/repositories/nutrition_read_model_repository.dart';
 
+import 'support/indifit_test_harness.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late AppDatabase db;
+  late TestDatabaseScope databases;
   late NutrientRegistry registry;
 
   setUp(() {
-    db = AppDatabase.memory();
+    databases = registerTestDatabaseScope();
+    db = databases.create();
     registry = NutrientRegistry.fromAssetFileSync(
       'assets/data/nutrient_registry.json',
     );
-  });
-
-  tearDown(() async {
-    await db.close();
   });
 
   test(
@@ -775,8 +775,7 @@ void main() {
       (await NutritionBackupGraph.capture(db)).toJson(),
     );
 
-    final restored = AppDatabase.memory();
-    addTearDown(restored.close);
+    final restored = databases.create();
     await graph.restoreInto(restored);
     final restoredRepository = NutritionConsumptionRepository(
       db: restored,
@@ -1047,8 +1046,7 @@ void main() {
     expect(roundTripNutrients, hasLength(1));
     expect(roundTripNutrients!.single['lineage'], contains('fact'));
 
-    final restored = AppDatabase.memory();
-    addTearDown(restored.close);
+    final restored = databases.create();
     await roundTrip.restoreInto(restored);
     final restoredRepo = NutritionConsumptionRepository(
       db: restored,

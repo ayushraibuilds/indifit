@@ -1,6 +1,16 @@
 # IndiFit Canonical Product and Engineering Roadmap
 
-Status: Approved
+> **Post-V1 authority update (2026-08-30):** This file is the approved
+> 2026-07-29 architecture/planning baseline, but parts of its feature backlog
+> predate the frozen R08 decisions. Use
+> [`post-v1-roadmap.md`](post-v1-roadmap.md) for current post-V1 eligibility and
+> sequencing, with
+> [`POST_V1_IMPLEMENTATION_PLAN.md`](../implementation/POST_V1_IMPLEMENTATION_PLAN.md)
+> for delivery order. In particular, later decisions reject the old synthetic
+> e1RM/inferred-PR path, homemade workout calorie estimates, numeric readiness
+> scores, and unsourced strength standards.
+
+Status: Approved historical architecture baseline; superseded for post-V1 prioritization
 Owner: Ayush
 Architecture baseline: schema v14 / backup v5
 Last reviewed commit: 056f959

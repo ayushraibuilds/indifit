@@ -14,6 +14,8 @@ import 'package:indifit/data/repositories/b04_recommendation_history_repository.
 import 'package:indifit/data/repositories/coaching_preference_repository.dart';
 import 'package:indifit/data/repositories/nutrition_goal_repository.dart';
 
+import 'support/indifit_test_harness.dart';
+
 const _userId = 'history-user';
 const _timezoneId = 'Asia/Kolkata';
 final _issuedAt = DateTime.utc(2026, 8, 6, 12);
@@ -22,14 +24,14 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late AppDatabase db;
+  late TestDatabaseScope databases;
   late B04RecommendationHistoryRepository history;
 
   setUp(() {
-    db = AppDatabase.memory();
+    databases = registerTestDatabaseScope();
+    db = databases.create();
     history = B04RecommendationHistoryRepository(database: db);
   });
-
-  tearDown(() => db.close());
 
   test(
     'issued history freezes typed lineage and survives later corrections',
@@ -779,8 +781,7 @@ void main() {
       );
       expect(await db.select(db.recommendations).get(), hasLength(1));
       final sourceBackup = await BackupV9Data.createFromDatabase(db);
-      final targetDb = AppDatabase.memory();
-      addTearDown(targetDb.close);
+      final targetDb = databases.create();
       final decoded = BackupV9Data.fromJson(
         jsonDecode(jsonEncode(sourceBackup.toJson())) as Map<String, dynamic>,
       );

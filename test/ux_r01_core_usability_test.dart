@@ -11,6 +11,7 @@ import 'package:indifit/core/services/local_schedule_date_service.dart';
 import 'package:indifit/core/services/local_timezone_service.dart';
 import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/data/database/app_database.dart';
+import 'package:indifit/data/repositories/food_repository.dart';
 import 'package:indifit/features/coaching/b04_production_surface_controller.dart';
 import 'package:indifit/features/dashboard/today_surface_controller.dart';
 import 'package:indifit/features/food_log/ai_meal_logger_screen.dart';
@@ -46,12 +47,14 @@ void main() {
   ) async {
     SharedPreferences.setMockInitialValues({'offline_only': true});
     final prefs = await SharedPreferences.getInstance();
-    final database = AppDatabase.memory();
 
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          databaseProvider.overrideWithValue(database),
+          foodRepositoryProvider.overrideWithValue(
+            const _EmptyFoodSearchRepository(),
+          ),
+          canonicalRecentFoodsProvider.overrideWith((ref) async => const []),
           foodLogsForDayProvider.overrideWith((ref, date) async => []),
           privacyPolicyProvider.overrideWith(
             (ref) => PrivacyPolicyNotifier(prefs),
@@ -306,6 +309,16 @@ void main() {
       await target.close();
     },
   );
+}
+
+class _EmptyFoodSearchRepository implements FoodRepository {
+  const _EmptyFoodSearchRepository();
+
+  @override
+  Future<List<FoodItem>> getRecentFoods(int limit) async => const [];
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class _BreakfastReflectionHarness extends ConsumerWidget {

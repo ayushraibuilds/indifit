@@ -15,6 +15,8 @@ import 'package:indifit/data/database/app_database.dart'
     hide NutritionConstraintDefinition, NutritionUserConstraint;
 import 'package:indifit/data/repositories/calendar_read_repository.dart';
 import 'package:indifit/data/repositories/nutrition_constraint_repository.dart';
+import 'package:indifit/features/calendar/calendar_controller.dart';
+import 'package:indifit/features/calendar/calendar_read_model.dart';
 import 'package:indifit/features/calendar/occurrence_actions_sheet.dart';
 import 'package:indifit/features/calendar/program_calendar_screen.dart';
 import 'package:indifit/features/exercise_library/exercise_details_sheet.dart';
@@ -32,6 +34,8 @@ import 'package:indifit/features/workout_player/widgets/plate_calculator_sheet.d
 import 'package:indifit/features/workout_player/workout_player_screen.dart';
 import 'package:indifit/features/workout_player/workout_summary_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'support/indifit_test_harness.dart';
 
 late AppDatabase _certificationDatabase;
 
@@ -213,6 +217,7 @@ void main() {
         brightness: Brightness.dark,
         builder: () => const ProgramCalendarScreen(),
         target: () => find.byType(ConsumerStatusRow).last,
+        pinCalendarLoading: true,
       ),
       _GoldenRoute(
         name: 'calendar workout actions sheet dark',
@@ -670,6 +675,7 @@ class _GoldenRoute {
     required this.brightness,
     required this.builder,
     this.target,
+    this.pinCalendarLoading = false,
     this.size = const Size(390, 844),
     this.textScale = 1,
   });
@@ -679,6 +685,7 @@ class _GoldenRoute {
   final Brightness brightness;
   final Widget Function() builder;
   final Finder Function()? target;
+  final bool pinCalendarLoading;
   final Size size;
   final double textScale;
 }
@@ -745,6 +752,7 @@ Future<void> _expectProductionRouteGolden(
           disableAnimations: true,
           textScaler: TextScaler.linear(golden.textScale),
         ),
+        pinCalendarLoading: golden.pinCalendarLoading,
         child: golden.builder(),
       ),
     );
@@ -889,22 +897,49 @@ Widget _providerApp({
   required ThemeData theme,
   required MediaQueryData media,
   required Widget child,
+  bool pinCalendarLoading = false,
 }) {
   return ProviderScope(
     overrides: [
       databaseProvider.overrideWithValue(database),
+      workoutSessionWakeLockCoordinatorProvider.overrideWithValue(
+        createTestWorkoutWakeLockCoordinator(),
+      ),
       userProfileProvider.overrideWith(
         (ref) => _CertificationProfileNotifier(),
       ),
       nutritionConstraintManagementControllerProvider.overrideWith(
         (ref) => _CertificationConstraintController(database),
       ),
+      if (pinCalendarLoading)
+        calendarControllerProvider.overrideWith(
+          (ref) => _CertificationLoadingCalendarController(),
+        ),
     ],
     child: MediaQuery(
       data: media,
       child: MaterialApp(theme: theme, home: child),
     ),
   );
+}
+
+class _CertificationLoadingCalendarController
+    extends StateNotifier<CalendarUiState>
+    implements CalendarController {
+  _CertificationLoadingCalendarController()
+    : super(
+        const CalendarUiState(
+          selectedLocalDate: '2026-08-08',
+          timezoneId: 'Asia/Kolkata',
+          isLoading: true,
+        ),
+      );
+
+  @override
+  CalendarUiState get currentState => state;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => Future<void>.value();
 }
 
 class _CertificationProfileNotifier extends UserProfileNotifier {

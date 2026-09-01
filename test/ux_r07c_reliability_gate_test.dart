@@ -252,6 +252,9 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
+              b02StrengthHistoryDetailProvider.overrideWith(
+                (ref, sessionId) async => null,
+              ),
               b02StrengthExecutionScreenControllerProvider.overrideWith(
                 (ref, _) => controller,
               ),

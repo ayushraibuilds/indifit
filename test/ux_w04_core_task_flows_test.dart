@@ -17,7 +17,8 @@ import 'package:indifit/features/workout_player/player_setup_cues_panel.dart';
 import 'package:indifit/features/workout_player/player_setup_presentation.dart';
 import 'package:indifit/features/workout_player/widgets/exercise_set_input_card.dart';
 import 'package:indifit/features/workout_player/widgets/manual_log_sheet.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+
+import 'support/indifit_test_harness.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -41,6 +42,15 @@ void main() {
         child: child,
       ),
     );
+  }
+
+  AppDatabase createWidgetDatabase(WidgetTester tester) {
+    final databases = registerTestDatabaseScope();
+    addTearDown(() async {
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+    });
+    return databases.create();
   }
 
   testWidgets('task shell keeps the primary action above the keyboard', (
@@ -98,9 +108,8 @@ void main() {
     tester,
   ) async {
     await setCompactViewport(tester);
-    SharedPreferences.setMockInitialValues({});
-    final database = AppDatabase.memory();
-    addTearDown(database.close);
+    setIndiFitTestPreferences();
+    final database = createWidgetDatabase(tester);
     await tester.pumpWidget(
       ProviderScope(
         overrides: [databaseProvider.overrideWithValue(database)],
@@ -122,8 +131,7 @@ void main() {
     tester,
   ) async {
     await setCompactViewport(tester);
-    final database = AppDatabase.memory();
-    addTearDown(database.close);
+    final database = createWidgetDatabase(tester);
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -154,8 +162,7 @@ void main() {
   });
 
   test('empty logged-food snapshot resolves without a stream wait', () async {
-    final database = AppDatabase.memory();
-    addTearDown(database.close);
+    final database = registerTestDatabaseScope().create();
     final container = ProviderContainer(
       overrides: [databaseProvider.overrideWithValue(database)],
     );
@@ -168,8 +175,7 @@ void main() {
   });
 
   testWidgets('meal task remains legible in both themes', (tester) async {
-    final database = AppDatabase.memory();
-    addTearDown(database.close);
+    final database = createWidgetDatabase(tester);
     for (final theme in [AppTheme.lightTheme, AppTheme.darkTheme]) {
       await tester.pumpWidget(
         ProviderScope(
@@ -201,8 +207,7 @@ void main() {
     tester,
   ) async {
     await setCompactViewport(tester);
-    final database = AppDatabase.memory();
-    addTearDown(database.close);
+    final database = createWidgetDatabase(tester);
     await tester.pumpWidget(
       ProviderScope(
         overrides: [databaseProvider.overrideWithValue(database)],
@@ -239,8 +244,7 @@ void main() {
       distance.dispose();
       incline.dispose();
     });
-    final database = AppDatabase.memory();
-    addTearDown(database.close);
+    final database = createWidgetDatabase(tester);
     await tester.pumpWidget(
       ProviderScope(
         overrides: [databaseProvider.overrideWithValue(database)],
@@ -348,11 +352,14 @@ void main() {
   testWidgets('progress empty state resolves without a stream wait', (
     tester,
   ) async {
-    final database = AppDatabase.memory();
-    SharedPreferences.setMockInitialValues({});
+    final database = createWidgetDatabase(tester);
+    setIndiFitTestPreferences();
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [databaseProvider.overrideWithValue(database)],
+        overrides: [
+          databaseProvider.overrideWithValue(database),
+          userProfileProvider.overrideWith((ref) => UserProfileNotifier()),
+        ],
         child: MaterialApp(
           theme: AppTheme.lightTheme,
           home: const ProgressScreen(),

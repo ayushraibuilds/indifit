@@ -115,7 +115,7 @@ MainNavigationScaffold foodRouteDestination({String? mealType, String? date}) =>
     );
 
 final appRouterProvider = Provider<GoRouter>((ref) {
-  return GoRouter(
+  final router = GoRouter(
     initialLocation: '/',
     // R07F-0: synchronous redirect. The gate is seeded once from
     // SharedPreferences in main() and kept current by onboarding completion,
@@ -429,4 +429,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/travel-mode', redirect: (context, state) => '/training'),
     ],
   );
+  ref.onDispose(router.dispose);
+  return router;
 });

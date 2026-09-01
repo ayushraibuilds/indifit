@@ -6,6 +6,8 @@ import 'package:indifit/core/backup/backup_schema.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'support/indifit_test_harness.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -13,10 +15,9 @@ void main() {
     test(
       'round-trips every B01 table and extended execution ancestry',
       () async {
-        final source = AppDatabase.memory();
-        final target = AppDatabase.memory();
-        addTearDown(source.close);
-        addTearDown(target.close);
+        final databases = registerTestDatabaseScope();
+        final source = databases.create();
+        final target = databases.create();
 
         await _populateCompleteB01Graph(source);
         final sourcePrefs = await _prefs({'pref_remind_workout': true});
@@ -167,10 +168,9 @@ void main() {
     test(
       'rejects orphaned v6 graph before preferences or database mutate',
       () async {
-        final source = AppDatabase.memory();
-        final target = AppDatabase.memory();
-        addTearDown(source.close);
-        addTearDown(target.close);
+        final databases = registerTestDatabaseScope();
+        final source = databases.create();
+        final target = databases.create();
 
         await _populateCompleteB01Graph(source);
         final valid = await BackupData.createFromDatabase(source);
@@ -205,10 +205,9 @@ void main() {
     test(
       'rejects invalid B01 enum, event, civil date and IANA zone before mutation',
       () async {
-        final source = AppDatabase.memory();
-        final target = AppDatabase.memory();
-        addTearDown(source.close);
-        addTearDown(target.close);
+        final databases = registerTestDatabaseScope();
+        final source = databases.create();
+        final target = databases.create();
         await _populateCompleteB01Graph(source);
         final valid = await BackupData.createFromDatabase(source);
         await target
@@ -258,7 +257,7 @@ const _customExerciseStableId = '11111111-1111-4111-8111-111111111111';
 const _snapshotJson = '{"schemaVersion":1,"occurrenceId":"occ-1"}';
 
 Future<SharedPreferences> _prefs(Map<String, Object> values) async {
-  SharedPreferences.setMockInitialValues(values);
+  setIndiFitTestPreferences(values);
   return SharedPreferences.getInstance();
 }
 

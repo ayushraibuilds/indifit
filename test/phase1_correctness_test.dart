@@ -121,6 +121,7 @@ void main() {
     test('UserProfileNotifier updates custom nutrition goals', () async {
       final db = AppDatabase.memory();
       final notifier = UserProfileNotifier(db);
+      await notifier.loadProfile();
 
       await notifier.updateGoals(
         calorieGoal: 2400,

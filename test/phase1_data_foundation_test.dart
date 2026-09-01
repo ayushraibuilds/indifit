@@ -6,19 +6,19 @@ import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/repositories/progress_statistics_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'support/indifit_test_harness.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('Phase 1: Shared Data Foundation Unit & Integration Tests', () {
     late AppDatabase db;
+    late TestDatabaseScope databases;
 
     setUp(() async {
-      SharedPreferences.setMockInitialValues({});
-      db = AppDatabase.memory();
-    });
-
-    tearDown(() async {
-      await db.close();
+      setIndiFitTestPreferences();
+      databases = registerTestDatabaseScope();
+      db = databases.create();
     });
 
     test(
@@ -159,7 +159,7 @@ void main() {
         );
 
         // Perform atomic restore to a fresh database
-        final freshDb = AppDatabase.memory();
+        final freshDb = databases.create();
         await parsed.restoreToDatabase(freshDb);
 
         final restoredProfiles = await freshDb
@@ -175,8 +175,6 @@ void main() {
         expect(restoredProfiles.first.name, equals('Jane Doe'));
         expect(restoredHydrations.first.totalMl, equals(2250));
         expect(restoredUnlocks.first.achievementId, equals('century_club'));
-
-        await freshDb.close();
       },
     );
 

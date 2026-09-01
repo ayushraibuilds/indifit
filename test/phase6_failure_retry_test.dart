@@ -259,7 +259,7 @@ void main() {
     test(
       '7. Timezone resolver handles injected IANA locations and DST transitions cleanly',
       () async {
-        await NotificationService.initialize();
+        await NotificationService.initialize(() async => 'Asia/Kolkata');
         final prefs = await SharedPreferences.getInstance();
 
         await prefs.setString(
@@ -269,7 +269,10 @@ void main() {
         await prefs.setInt(NotificationService.prefLastUtcOffsetMinutes, 0);
 
         final rescheduled =
-            await NotificationService.checkAndUpdateTimezoneAndReschedule(db);
+            await NotificationService.checkAndUpdateTimezoneAndReschedule(
+              db,
+              () async => 'Asia/Kolkata',
+            );
         expect(rescheduled, isTrue);
       },
     );

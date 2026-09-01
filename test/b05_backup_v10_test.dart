@@ -8,16 +8,17 @@ import 'package:indifit/core/backup/backup_v10.dart';
 import 'package:indifit/core/backup/backup_v9.dart';
 import 'package:indifit/data/database/app_database.dart';
 
+import 'support/indifit_test_harness.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   test(
     'Backup v10 round-trips typed B05 preferences and inspection payload',
     () async {
-      final source = AppDatabase.memory();
-      final target = AppDatabase.memory();
-      addTearDown(source.close);
-      addTearDown(target.close);
+      final databases = registerTestDatabaseScope();
+      final source = databases.create();
+      final target = databases.create();
 
       await _populateB05(source);
       final backup = await BackupV10Data.createFromDatabase(source);
@@ -92,10 +93,9 @@ void main() {
   test(
     'v5-v9 imports restore an empty B05 graph without fabrication',
     () async {
-      final source = AppDatabase.memory();
-      final target = AppDatabase.memory();
-      addTearDown(source.close);
-      addTearDown(target.close);
+      final databases = registerTestDatabaseScope();
+      final source = databases.create();
+      final target = databases.create();
       await _populateB05(target);
 
       final v9 = await BackupV9Data.createFromDatabase(source);
@@ -119,10 +119,9 @@ void main() {
   );
 
   test('v10 restore rolls back B05 rows when the transaction fails', () async {
-    final source = AppDatabase.memory();
-    final target = AppDatabase.memory();
-    addTearDown(source.close);
-    addTearDown(target.close);
+    final databases = registerTestDatabaseScope();
+    final source = databases.create();
+    final target = databases.create();
     await _populateB05(source);
     await target
         .into(target.workoutPlaylistPreferences)
@@ -156,8 +155,7 @@ void main() {
   test(
     'B05 graph rejects physical availability and malformed typed rows',
     () async {
-      final source = AppDatabase.memory();
-      addTearDown(source.close);
+      final source = registerTestDatabaseScope().create();
       await _populateB05(source);
       final validPayload = (await BackupV10Data.createFromDatabase(
         source,

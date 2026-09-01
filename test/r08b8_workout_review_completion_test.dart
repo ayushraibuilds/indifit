@@ -10,6 +10,7 @@ import 'package:indifit/data/repositories/b02_execution_compatibility_read_repos
 import 'package:indifit/data/repositories/b02_strength_execution_repository.dart';
 import 'package:indifit/data/repositories/calendar_repository.dart';
 import 'package:indifit/features/workout_player/b02_strength_summary_screen.dart';
+import 'support/indifit_test_harness.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -128,6 +129,9 @@ void main() {
         ProviderScope(
           overrides: [
             databaseProvider.overrideWithValue(db),
+            workoutSessionWakeLockCoordinatorProvider.overrideWithValue(
+              createTestWorkoutWakeLockCoordinator(),
+            ),
             b02StrengthHistoryDetailProvider(
               sessionId,
             ).overrideWith((ref) async => history),
@@ -207,7 +211,12 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [databaseProvider.overrideWithValue(db)],
+        overrides: [
+          databaseProvider.overrideWithValue(db),
+          workoutSessionWakeLockCoordinatorProvider.overrideWithValue(
+            createTestWorkoutWakeLockCoordinator(),
+          ),
+        ],
         child: MaterialApp(
           theme: AppTheme.lightTheme,
           home: B02StrengthSummaryScreen(launch: launch),

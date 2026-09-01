@@ -12,20 +12,22 @@ import 'package:indifit/data/repositories/nutrition_estimate_repository.dart';
 import 'package:indifit/data/repositories/nutrition_read_model_repository.dart';
 import 'package:indifit/features/food_log/nutrition_estimate_review_controller.dart';
 
+import 'support/indifit_test_harness.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late AppDatabase db;
+  late TestDatabaseScope databases;
   late NutrientRegistry registry;
 
   setUp(() {
-    db = AppDatabase.memory();
+    databases = registerTestDatabaseScope();
+    db = databases.create();
     registry = NutrientRegistry.fromAssetFileSync(
       'assets/data/nutrient_registry.json',
     );
   });
-
-  tearDown(() async => db.close());
 
   test('strict parser preserves ranges, unknown nutrients, and provenance', () {
     final draft = NutritionEstimateResponseParser.parse(
@@ -509,8 +511,7 @@ void main() {
       expect(json, isNot(contains('image_path')));
       expect(json, isNot(contains('api_key')));
       final decoded = BackupV8Data.fromJson(jsonDecode(json));
-      final target = AppDatabase.memory();
-      addTearDown(target.close);
+      final target = databases.create();
       await decoded.restoreToDatabase(target);
       expect(
         await target.select(target.nutritionEstimates).get(),

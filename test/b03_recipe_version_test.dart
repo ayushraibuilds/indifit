@@ -6,6 +6,8 @@ import 'package:indifit/core/typed_quantities.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/repositories/nutrition_recipe_repository.dart';
 
+import 'support/indifit_test_harness.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -482,10 +484,9 @@ void main() {
   test(
     'Backup v8 round-trip preserves recipe IDs, ancestry, order, and quantities',
     () async {
-      final sourceDb = AppDatabase.memory();
-      final targetDb = AppDatabase.memory();
-      addTearDown(sourceDb.close);
-      addTearDown(targetDb.close);
+      final databases = registerTestDatabaseScope();
+      final sourceDb = databases.create();
+      final targetDb = databases.create();
       await _seedFoods(sourceDb, const ['backup-food']);
       final repository = NutritionRecipeRepository(db: sourceDb);
       final draft = await repository.createRecipe(

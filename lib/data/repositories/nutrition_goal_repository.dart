@@ -112,9 +112,12 @@ class NutritionGoalRepository {
     required NutritionGoalCommand legacyProfile,
   }) async {
     final owner = _owner(userId);
-    final existing = await (_db.select(
-      _db.nutritionGoalVersions,
-    )..where((row) => row.userId.equals(owner))).getSingleOrNull();
+    final existing =
+        await (_db.select(_db.nutritionGoalVersions)
+              ..where((row) => row.userId.equals(owner))
+              ..orderBy([(row) => OrderingTerm.asc(row.versionNumber)])
+              ..limit(1))
+            .getSingleOrNull();
     if (existing != null) return _fromRow(existing);
     final command = NutritionGoalCommand(
       userId: owner,

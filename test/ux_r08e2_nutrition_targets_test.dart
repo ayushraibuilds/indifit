@@ -14,6 +14,8 @@ import 'package:indifit/data/repositories/nutrition_target_authority.dart';
 import 'package:indifit/features/coaching/b04_production_surface_controller.dart';
 import 'package:indifit/features/settings/nutrition_targets_hub_screen.dart';
 
+import 'support/indifit_test_harness.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -21,6 +23,7 @@ void main() {
   late LocalScheduleDateService dates;
 
   setUp(() {
+    setIndiFitTestPreferences();
     database = AppDatabase.memory();
     dates = LocalScheduleDateService(
       nowUtc: () => DateTime.utc(2026, 8, 6, 12),
@@ -398,6 +401,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          userProfileProvider.overrideWith((ref) => UserProfileNotifier()),
           b04ProductionUserContextProvider.overrideWith(
             (ref) async => throw StateError('profile unavailable'),
           ),
@@ -460,6 +464,7 @@ void main() {
           ProviderScope(
             overrides: [
               databaseProvider.overrideWithValue(database),
+              userProfileProvider.overrideWith((ref) => UserProfileNotifier()),
               localScheduleDateServiceProvider.overrideWithValue(dates),
               b04ProductionUserContextProvider.overrideWith(
                 (ref) async => const B04ProductionUserContext(
@@ -513,6 +518,7 @@ Widget _app(
 }) => ProviderScope(
   overrides: [
     databaseProvider.overrideWithValue(database),
+    userProfileProvider.overrideWith((ref) => UserProfileNotifier()),
     localScheduleDateServiceProvider.overrideWithValue(dates),
     b04ProductionUserContextProvider.overrideWith(
       (ref) async => const B04ProductionUserContext(

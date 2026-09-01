@@ -115,7 +115,6 @@ void main() {
         // cancel cleanly.
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pump();
-        router.dispose();
         container.dispose();
         // Drift's watched-query close can wait on the Flutter fake-async zone.
         // Disposal above releases every listener; let the native close finish

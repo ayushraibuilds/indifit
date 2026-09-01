@@ -4,15 +4,13 @@ import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/models/b02_execution_models.dart';
 import 'package:indifit/data/repositories/b02_execution_compatibility_read_repository.dart';
 
+import 'support/indifit_test_harness.dart';
+
 void main() {
   late AppDatabase db;
 
   setUp(() {
-    db = AppDatabase.memory();
-  });
-
-  tearDown(() async {
-    await db.close();
+    db = registerTestDatabaseScope().create();
   });
 
   test(

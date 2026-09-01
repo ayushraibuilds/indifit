@@ -10,21 +10,23 @@ import 'package:indifit/data/repositories/food_repository.dart';
 import 'package:indifit/data/repositories/nutrition_legacy_adapter.dart';
 import 'package:indifit/data/repositories/nutrition_read_model_repository.dart';
 
+import 'support/indifit_test_harness.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late AppDatabase db;
+  late TestDatabaseScope databases;
   late NutrientRegistry registry;
 
   setUp(() async {
-    db = AppDatabase.memory();
+    databases = registerTestDatabaseScope();
+    db = databases.create();
     registry = NutrientRegistry.fromAssetFileSync(
       'assets/data/nutrient_registry.json',
     );
     await _insertLog(db);
   });
-
-  tearDown(() => db.close());
 
   test(
     'legacy correction appends, reads effectively, and is idempotent',
@@ -119,8 +121,7 @@ void main() {
             )
             as Map<String, dynamic>,
       );
-      final restored = AppDatabase.memory();
-      addTearDown(restored.close);
+      final restored = databases.create();
       await backup.restoreToDatabase(restored);
       final restoredRows = await restored.select(restored.foodLogs).get();
       expect(restoredRows.single.name, 'Original dal');

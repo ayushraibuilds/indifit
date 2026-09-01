@@ -7,6 +7,8 @@ import 'package:indifit/core/typed_quantities.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/repositories/nutrition_transformation_repository.dart';
 
+import 'support/indifit_test_harness.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -333,9 +335,11 @@ void main() {
 
   group('B03-09 transformation repository', () {
     late AppDatabase db;
+    late TestDatabaseScope databases;
 
     setUp(() async {
-      db = AppDatabase.memory();
+      databases = registerTestDatabaseScope();
+      db = databases.create();
       await _insertUserFood(db, 'user-rice');
       await db
           .into(db.nutritionFoodPreparations)
@@ -360,8 +364,6 @@ void main() {
             ),
           );
     });
-
-    tearDown(() => db.close());
 
     test('user overrides are versioned, separate, and archiveable', () async {
       final repository = NutritionTransformationRepository(
@@ -449,21 +451,17 @@ void main() {
         final decoded = BackupV8Data.fromJson(
           jsonDecode(encoded) as Map<String, dynamic>,
         );
-        final target = AppDatabase.memory();
-        try {
-          await decoded.restoreToDatabase(target);
-          final restored = await NutritionTransformationRepository(
-            db: target,
-          ).getById(transformation.id);
-          expect(restored, isNotNull);
-          expect(restored!.direction, transformation.direction);
-          expect(
-            jsonEncode(restored.toJson()),
-            jsonEncode(transformation.toJson()),
-          );
-        } finally {
-          await target.close();
-        }
+        final target = databases.create();
+        await decoded.restoreToDatabase(target);
+        final restored = await NutritionTransformationRepository(
+          db: target,
+        ).getById(transformation.id);
+        expect(restored, isNotNull);
+        expect(restored!.direction, transformation.direction);
+        expect(
+          jsonEncode(restored.toJson()),
+          jsonEncode(transformation.toJson()),
+        );
       },
     );
 
@@ -522,8 +520,7 @@ void main() {
         rows[0] = row;
 
         final tampered = BackupV8Data.fromJson(payload);
-        final target = AppDatabase.memory();
-        addTearDown(target.close);
+        final target = databases.create();
         expect(
           () => tampered.restoreToDatabase(target),
           throwsA(

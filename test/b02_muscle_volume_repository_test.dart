@@ -4,6 +4,8 @@ import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/models/b02_muscle_volume_models.dart';
 import 'package:indifit/data/repositories/b02_muscle_volume_repository.dart';
 
+import 'support/indifit_test_harness.dart';
+
 const _benchId = '089ec703-a25e-5b12-a39a-78b17ee33742';
 const _squatId = 'd3b5ab04-74f6-5155-9621-50238644eeda';
 const _customId = 'legacy-custom-unresolved-001';
@@ -11,9 +13,11 @@ const _customId = 'legacy-custom-unresolved-001';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   late AppDatabase db;
+  late TestDatabaseScope databases;
 
   setUp(() async {
-    db = AppDatabase.memory();
+    databases = registerTestDatabaseScope();
+    db = databases.create();
     await _ensureExercise(db, _benchId, 'Flat Barbell Bench Press');
     await _ensureExercise(db, _squatId, 'Barbell Squat');
     await _ensureExercise(
@@ -24,8 +28,6 @@ void main() {
     );
     await B02MuscleCatalogRepository(db).seedReviewedCatalog();
   });
-
-  tearDown(() => db.close());
 
   test(
     'reads canonical sets by civil date, excludes legacy/warmup/outside rows',
@@ -185,8 +187,7 @@ void main() {
   });
 
   test('seed validates before mutation and rolls back conflicts', () async {
-    final conflictDb = AppDatabase.memory();
-    addTearDown(conflictDb.close);
+    final conflictDb = databases.create();
     final originalMuscleCount =
         (await conflictDb.select(conflictDb.muscles).get()).length;
     final originalMappingCount =

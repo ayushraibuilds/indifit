@@ -12,8 +12,11 @@ import 'package:indifit/data/repositories/travel_repository.dart';
 import 'package:indifit/features/calendar/calendar_controller.dart';
 import 'package:indifit/features/calendar/calendar_read_model.dart';
 import 'package:indifit/features/calendar/program_calendar_screen.dart';
+import 'package:indifit/features/calendar/workout_contextual_action_controller.dart';
 import 'package:indifit/features/calendar/workout_contextual_actions.dart';
 import 'package:indifit/features/training/training_screen.dart';
+
+import 'support/indifit_test_harness.dart';
 
 /// Stub [CalendarController] that never opens Drift stream subscriptions.
 /// Prevents lingering timer assertions in widget tests that only verify
@@ -21,13 +24,13 @@ import 'package:indifit/features/training/training_screen.dart';
 class _StubCalendarController extends StateNotifier<CalendarUiState>
     implements CalendarController {
   _StubCalendarController()
-      : super(
-          const CalendarUiState(
-            selectedLocalDate: '2026-08-23',
-            timezoneId: 'Asia/Kolkata',
-            isLoading: false,
-          ),
-        );
+    : super(
+        const CalendarUiState(
+          selectedLocalDate: '2026-08-23',
+          timezoneId: 'Asia/Kolkata',
+          isLoading: false,
+        ),
+      );
 
   @override
   CalendarUiState get currentState => state;
@@ -39,96 +42,88 @@ class _StubCalendarController extends StateNotifier<CalendarUiState>
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  // Separate databases for widget vs DB tests to avoid Drift stream conflicts.
-  late final AppDatabase widgetDb;
-  late final AppDatabase dataDb;
-  late final CalendarRepository calendarRepo;
-  late final CalendarReadRepository calendarReadRepo;
-  late final EquipmentProfileRepository equipRepo;
-  late final TravelRepository travelRepo;
+  late TestDatabaseScope databases;
 
-  setUpAll(() {
-    widgetDb = AppDatabase.memory();
-    dataDb = AppDatabase.memory();
-    calendarRepo = CalendarRepository(widgetDb);
-    calendarReadRepo = CalendarReadRepository(widgetDb);
-    equipRepo = EquipmentProfileRepository(dataDb);
-    travelRepo = TravelRepository(
-      db: dataDb,
-      calendarRepo: CalendarRepository(dataDb),
-      equipmentRepo: equipRepo,
-    );
+  setUp(() {
+    databases = TestDatabaseScope();
   });
 
   group('R08C.10 — Remove Travel Mode from Release Product', () {
     // ── Widget tests: use pump(), never pumpAndSettle() ──
 
-    testWidgets(
-      '1. No release entry in Training landing More options sheet',
-      (tester) async {
-        tester.view.physicalSize = const Size(390, 844);
-        tester.view.devicePixelRatio = 1.0;
-        addTearDown(tester.view.resetPhysicalSize);
+    testWidgets('1. No release entry in Training landing More options sheet', (
+      tester,
+    ) async {
+      final widgetDb = databases.create();
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      _closeDatabaseAfterWidget(tester, databases);
 
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              databaseProvider.overrideWithValue(widgetDb),
-              trainingLandingSnapshotProvider.overrideWith(
-                (ref) async => const TrainingLandingSnapshot(
-                  localDate: '2026-08-23',
-                  timezoneId: 'Asia/Kolkata',
-                  todayWorkout: null,
-                  upcoming: [],
-                  recentSessions: [],
-                  activeProgramName: 'Hypertrophy Phase 1',
-                ),
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            databaseProvider.overrideWithValue(widgetDb),
+            trainingLandingSnapshotProvider.overrideWith(
+              (ref) async => const TrainingLandingSnapshot(
+                localDate: '2026-08-23',
+                timezoneId: 'Asia/Kolkata',
+                todayWorkout: null,
+                upcoming: [],
+                recentSessions: [],
+                activeProgramName: 'Hypertrophy Phase 1',
               ),
-            ],
-            child: MaterialApp(
-              theme: AppTheme.darkTheme,
-              home: const TrainingScreen(),
             ),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.darkTheme,
+            home: const TrainingScreen(),
           ),
-        );
-        // Let the FutureProvider resolve + one animation frame.
-        for (var i = 0; i < 5; i++) {
-          await tester.pump(const Duration(milliseconds: 100));
-        }
+        ),
+      );
+      // Let the FutureProvider resolve + one animation frame.
+      for (var i = 0; i < 5; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
 
-        final moreButton = find.byTooltip('More training options');
-        expect(moreButton, findsOneWidget);
-        await tester.tap(moreButton);
-        for (var i = 0; i < 5; i++) {
-          await tester.pump(const Duration(milliseconds: 100));
-        }
+      final moreButton = find.byTooltip('More training options');
+      expect(moreButton, findsOneWidget);
+      await tester.tap(moreButton);
+      for (var i = 0; i < 5; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
 
-        // Must NOT contain Travel mode entry or "Coming soon"
-        expect(find.text('Travel mode'), findsNothing);
-        expect(find.text('Adjust training for a trip.'), findsNothing);
-        expect(find.text('Coming soon'), findsNothing);
+      // Must NOT contain Travel mode entry or "Coming soon"
+      expect(find.text('Travel mode'), findsNothing);
+      expect(find.text('Adjust training for a trip.'), findsNothing);
+      expect(find.text('Coming soon'), findsNothing);
 
-        // Canonical options remain present
-        expect(find.text('Manage plan'), findsOneWidget);
-        expect(find.text('Equipment and preferences'), findsOneWidget);
-        expect(find.text('Log completed workout'), findsOneWidget);
-        expect(find.text('Log other activity'), findsOneWidget);
-      },
-    );
+      // Canonical options remain present
+      expect(find.text('Manage plan'), findsOneWidget);
+      expect(find.text('Equipment and preferences'), findsOneWidget);
+      expect(find.text('Log completed workout'), findsOneWidget);
+      expect(find.text('Log other activity'), findsOneWidget);
+    });
 
     testWidgets(
       '2. No release entry or travel banner in ProgramCalendarScreen',
       (tester) async {
+        final widgetDb = databases.create();
+        final calendarRepo = CalendarRepository(widgetDb);
+        final calendarReadRepo = CalendarReadRepository(widgetDb);
         tester.view.physicalSize = const Size(390, 844);
         tester.view.devicePixelRatio = 1.0;
         addTearDown(tester.view.resetPhysicalSize);
+        _closeDatabaseAfterWidget(tester, databases);
 
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
               databaseProvider.overrideWithValue(widgetDb),
               calendarRepositoryProvider.overrideWithValue(calendarRepo),
-              calendarReadRepositoryProvider.overrideWithValue(calendarReadRepo),
+              calendarReadRepositoryProvider.overrideWithValue(
+                calendarReadRepo,
+              ),
               calendarControllerProvider.overrideWith(
                 (ref) => _StubCalendarController(),
               ),
@@ -164,12 +159,15 @@ void main() {
     testWidgets(
       '3. WorkoutContextualActions does not display travel equipment tag',
       (tester) async {
+        _unmountWidget(tester);
         final mockOccurrence = _createMockOccurrenceItem();
 
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
-              databaseProvider.overrideWithValue(widgetDb),
+              workoutOccurrenceActionGatewayProvider.overrideWithValue(
+                const _StubWorkoutOccurrenceActionGateway(),
+              ),
             ],
             child: MaterialApp(
               theme: AppTheme.lightTheme,
@@ -194,13 +192,8 @@ void main() {
     testWidgets(
       '4. Stale/deep route /travel-mode safely redirects to /training',
       (tester) async {
-        tester.view.physicalSize = const Size(390, 844);
-        tester.view.devicePixelRatio = 1.0;
-        addTearDown(tester.view.resetPhysicalSize);
-
         final container = ProviderContainer(
           overrides: [
-            databaseProvider.overrideWithValue(widgetDb),
             onboardingCompletedProvider.overrideWith((ref) => true),
             trainingLandingSnapshotProvider.overrideWith(
               (ref) async => const TrainingLandingSnapshot(
@@ -214,98 +207,64 @@ void main() {
             ),
           ],
         );
-        addTearDown(container.dispose);
-
         final router = container.read(appRouterProvider);
+        router.go('/travel-mode');
+        addTearDown(() async {
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.pump();
+          container.dispose();
+        });
 
         await tester.pumpWidget(
           UncontrolledProviderScope(
             container: container,
-            child: MaterialApp.router(
-              routerConfig: router,
-            ),
+            child: MaterialApp.router(routerConfig: router),
           ),
         );
         for (var i = 0; i < 5; i++) {
           await tester.pump(const Duration(milliseconds: 100));
         }
 
-        // Trigger deep link to /travel-mode
-        router.go('/travel-mode');
-        for (var i = 0; i < 5; i++) {
-          await tester.pump(const Duration(milliseconds: 100));
-        }
-
-        // Router redirects safely to /training
         expect(router.routeInformationProvider.value.uri.path, '/training');
         expect(find.byType(TrainingScreen), findsOneWidget);
         expect(find.text('Travel Mode'), findsNothing);
       },
     );
 
-    testWidgets(
-      '5. Surrounding Training routes remain valid',
-      (tester) async {
-        final container = ProviderContainer(
-          overrides: [
-            databaseProvider.overrideWithValue(widgetDb),
-            onboardingCompletedProvider.overrideWith((ref) => true),
-            trainingLandingSnapshotProvider.overrideWith(
-              (ref) async => const TrainingLandingSnapshot(
-                localDate: '2026-08-23',
-                timezoneId: 'Asia/Kolkata',
-                todayWorkout: null,
-                upcoming: [],
-                recentSessions: [],
-                activeProgramName: null,
-              ),
-            ),
-          ],
-        );
-        addTearDown(container.dispose);
+    test('5. Surrounding Training routes remain valid', () {
+      final container = ProviderContainer(
+        overrides: [onboardingCompletedProvider.overrideWith((ref) => true)],
+      );
+      addTearDown(container.dispose);
 
-        final router = container.read(appRouterProvider);
+      final router = container.read(appRouterProvider);
 
-        await tester.pumpWidget(
-          UncontrolledProviderScope(
-            container: container,
-            child: MaterialApp.router(
-              routerConfig: router,
-            ),
-          ),
-        );
-        for (var i = 0; i < 5; i++) {
-          await tester.pump(const Duration(milliseconds: 100));
-        }
+      router.go('/training');
+      expect(router.routeInformationProvider.value.uri.path, '/training');
 
-        router.go('/training');
-        for (var i = 0; i < 3; i++) {
-          await tester.pump(const Duration(milliseconds: 100));
-        }
-        expect(router.routeInformationProvider.value.uri.path, '/training');
+      router.go('/exercises');
+      expect(router.routeInformationProvider.value.uri.path, '/exercises');
 
-        router.go('/exercises');
-        for (var i = 0; i < 3; i++) {
-          await tester.pump(const Duration(milliseconds: 100));
-        }
-        expect(router.routeInformationProvider.value.uri.path, '/exercises');
-
-        router.go('/equipment-profiles');
-        for (var i = 0; i < 3; i++) {
-          await tester.pump(const Duration(milliseconds: 100));
-        }
-        expect(
-          router.routeInformationProvider.value.uri.path,
-          '/equipment-profiles',
-        );
-      },
-    );
+      router.go('/equipment-profiles');
+      expect(
+        router.routeInformationProvider.value.uri.path,
+        '/equipment-profiles',
+      );
+    });
 
     // ── Pure data tests: use tester.runAsync to bridge real async ──
 
     testWidgets(
       '6. Persisted database compatibility — TravelRepository and tables remain intact',
       (tester) async {
+        final dataDb = databases.create();
+        final equipRepo = EquipmentProfileRepository(dataDb);
+        final travelRepo = TravelRepository(
+          db: dataDb,
+          calendarRepo: CalendarRepository(dataDb),
+          equipmentRepo: equipRepo,
+        );
+        addTearDown(databases.close);
         await tester.runAsync(() async {
           final activeTravel = await travelRepo.getActiveTravelContext();
           expect(activeTravel, isNull);
@@ -313,11 +272,14 @@ void main() {
           final memberships = await travelRepo.getActiveTravelMembershipIds();
           expect(memberships, isEmpty);
 
-          final allTravelRows = await dataDb.select(dataDb.travelContexts).get();
+          final allTravelRows = await dataDb
+              .select(dataDb.travelContexts)
+              .get();
           expect(allTravelRows, isEmpty);
 
-          final allMembershipRows =
-              await dataDb.select(dataDb.travelContextOccurrences).get();
+          final allMembershipRows = await dataDb
+              .select(dataDb.travelContextOccurrences)
+              .get();
           expect(allMembershipRows, isEmpty);
         });
       },
@@ -326,9 +288,13 @@ void main() {
     testWidgets(
       '7. EquipmentPreferenceRepository can archive profile without active travel',
       (tester) async {
+        final dataDb = databases.create();
+        final equipRepo = EquipmentProfileRepository(dataDb);
+        addTearDown(databases.close);
         await tester.runAsync(() async {
-          final profileId =
-              await equipRepo.createProfile(name: 'Temporary Gym');
+          final profileId = await equipRepo.createProfile(
+            name: 'Temporary Gym',
+          );
           final profile = await equipRepo.getProfileById(profileId);
           expect(profile, isNotNull);
 
@@ -338,6 +304,42 @@ void main() {
         });
       },
     );
+  });
+}
+
+class _StubWorkoutOccurrenceActionGateway
+    implements WorkoutOccurrenceActionGateway {
+  const _StubWorkoutOccurrenceActionGateway();
+
+  @override
+  Future<ScheduledSessionOccurrence?> getOccurrence(
+    String occurrenceId,
+  ) async => null;
+
+  @override
+  Future<OccurrenceMutationResult> restore(RestoreOccurrenceCommand command) =>
+      throw UnsupportedError('Presentation-only test gateway.');
+
+  @override
+  Future<OccurrenceMutationResult> skip(SkipOccurrenceCommand command) =>
+      throw UnsupportedError('Presentation-only test gateway.');
+}
+
+void _closeDatabaseAfterWidget(
+  WidgetTester tester,
+  TestDatabaseScope databases,
+) {
+  addTearDown(() async {
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+    await databases.close();
+  });
+}
+
+void _unmountWidget(WidgetTester tester) {
+  addTearDown(() async {
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
   });
 }
 

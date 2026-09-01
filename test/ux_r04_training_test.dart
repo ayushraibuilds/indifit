@@ -14,13 +14,10 @@ import 'package:indifit/features/training/training_screen.dart';
 import 'package:indifit/features/workout_player/routine_display_screen.dart';
 import 'package:indifit/features/workout_player/widgets/manual_log_sheet.dart';
 
+import 'support/indifit_test_harness.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  late final AppDatabase database;
-
-  setUpAll(() {
-    database = AppDatabase.memory();
-  });
 
   for (final brightness in Brightness.values) {
     testWidgets('Training landing ${brightness.name} golden', (tester) async {
@@ -588,6 +585,7 @@ void main() {
   testWidgets('manual logging keeps a compact golden after stacking fields', (
     tester,
   ) async {
+    final database = registerTestDatabaseScope().create();
     _setViewport(tester, const Size(320, 568));
     addTearDown(() async {
       await tester.pumpWidget(const SizedBox.shrink());
@@ -617,6 +615,7 @@ void main() {
   testWidgets('exercise detail keeps history and guide behind clear actions', (
     tester,
   ) async {
+    final database = registerTestDatabaseScope().create();
     _setViewport(tester, const Size(390, 844));
     addTearDown(() async {
       await tester.pumpWidget(const SizedBox.shrink());
