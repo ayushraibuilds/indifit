@@ -92,6 +92,9 @@ SnackBar indiFitUndoSnackBar(
       ).textTheme.bodyMedium?.copyWith(color: colors.textPrimary),
     ),
     duration: duration,
+    // SnackBarAction defaults to persistent in current Flutter. Undo is a
+    // bounded affordance here, so retain the action without pinning feedback.
+    persist: false,
     action: SnackBarAction(
       label: 'Undo',
       textColor: colors.action,

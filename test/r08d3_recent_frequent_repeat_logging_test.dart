@@ -583,6 +583,9 @@ void main() {
 
         // Check feedback
         expect(find.textContaining('Added Thick Dahi to snack'), findsOneWidget);
+        await tester.pump(const Duration(seconds: 4));
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.textContaining('Added Thick Dahi to snack'), findsNothing);
 
         // Verify the persisted consumption
         final history = await tester.runAsync(
