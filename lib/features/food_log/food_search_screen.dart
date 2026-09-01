@@ -207,6 +207,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   List<FoodItem> _localResults = [];
+  Map<int, FoodSearchPresentationAuthority> _localSearchAuthority = const {};
   List<NutritionFoodOption> _canonicalResults = [];
   List<FoodApiResult> _onlineResults = [];
   List<NutritionFoodSearchResult> _rankedSearchResults = [];
@@ -458,6 +459,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     // for its debounce interval.
     setState(() {
       _localResults = [];
+      _localSearchAuthority = const {};
       _canonicalResults = [];
       _onlineResults = [];
       _rankedSearchResults = [];
@@ -475,7 +477,12 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   void _rebuildSearchRanking(String query) {
     final candidates = <NutritionFoodSearchCandidate>[
       for (final food in _localResults)
-        NutritionFoodSearchCandidate.legacy(food),
+        NutritionFoodSearchCandidate.legacy(
+          food,
+          canonicalIdentityId: _localSearchAuthority[food.id]?.canonicalFoodId,
+          presentationKind: _localSearchAuthority[food.id]?.kind,
+          variantOfFoodId: _localSearchAuthority[food.id]?.variantOfFoodId,
+        ),
       for (final option in _canonicalResults)
         NutritionFoodSearchCandidate.canonical(option),
       for (final food in _onlineResults)
@@ -537,6 +544,27 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     return byId.values.toList(growable: false);
   }
 
+  Future<void> _loadLocalSearchAuthority({
+    required List<FoodItem> foods,
+    required String query,
+    required int generation,
+  }) async {
+    final repository = ref.read(foodRepositoryProvider);
+    Map<int, FoodSearchPresentationAuthority> authority = const {};
+    try {
+      authority = await repository.readSearchPresentationAuthority(
+        foods.map((food) => food.id),
+      );
+    } catch (_) {
+      // Presentation metadata must fail open; identities remain independent.
+    }
+    if (!mounted || generation != _searchGeneration) return;
+    setState(() {
+      _localSearchAuthority = authority;
+      _rebuildSearchRanking(query);
+    });
+  }
+
   Future<void> _performSearch(String text) async {
     if (!mounted) return;
     final query = text.trim();
@@ -546,6 +574,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       _onlineSearchCancelToken = null;
       setState(() {
         _localResults = [];
+        _localSearchAuthority = const {};
         _canonicalResults = [];
         _onlineResults = [];
         _searching = false;
@@ -572,10 +601,18 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     if (!mounted || generation != _searchGeneration) return;
     setState(() {
       _localResults = local;
+      _localSearchAuthority = const {};
       _rebuildSearchRanking(query);
       _searching = false;
       _searchingOnline = true;
     });
+    unawaited(
+      _loadLocalSearchAuthority(
+        foods: local,
+        query: query,
+        generation: generation,
+      ),
+    );
 
     try {
       final online = await ref
@@ -3100,16 +3137,19 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     required String? serving,
     required String? package,
   }) {
-    final facts = <String>[
+    final primaryFacts = <String>[
       if (food.calories != null && food.calories!.isFinite)
         '${_formatProviderNumber(food.calories!)} kcal',
       if (food.protein != null && food.protein!.isFinite)
         '${_formatProviderNumber(food.protein!)} g protein',
-      if (food.carbs != null && food.carbs!.isFinite)
+    ];
+    final fallbackFacts = <String>[
+      if (primaryFacts.isEmpty && food.carbs != null && food.carbs!.isFinite)
         '${_formatProviderNumber(food.carbs!)} g carbs',
-      if (food.fat != null && food.fat!.isFinite)
+      if (primaryFacts.isEmpty && food.fat != null && food.fat!.isFinite)
         '${_formatProviderNumber(food.fat!)} g fat',
     ];
+    final facts = [...primaryFacts, ...fallbackFacts];
     if (facts.isEmpty) {
       return [
         'Nutrition details unavailable',

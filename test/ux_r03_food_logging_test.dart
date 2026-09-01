@@ -930,6 +930,29 @@ void main() {
     );
   });
 
+  testWidgets('roti relevance uses a narrow dark result screen', (
+    tester,
+  ) async {
+    await _pumpRelevanceSearchGolden(tester, query: 'roti');
+    expect(find.text('Whole Wheat Roti / Chapati'), findsOneWidget);
+    expect(find.text('Whole Wheat Roti / Chapati (Double)'), findsNothing);
+    await expectLater(
+      find.byType(FoodSearchScreen),
+      matchesGoldenFile('goldens/rc_m1_food_search_roti_dark.png'),
+    );
+  });
+
+  testWidgets('dal relevance uses a narrow dark result screen', (tester) async {
+    await _pumpRelevanceSearchGolden(tester, query: 'dal');
+    expect(find.text('Dal Fry (Chana & Toor)'), findsOneWidget);
+    expect(find.text('Dal Makhani'), findsOneWidget);
+    expect(find.text('Chana Masala (Black Chickpeas)'), findsNothing);
+    await expectLater(
+      find.byType(FoodSearchScreen),
+      matchesGoldenFile('goldens/rc_m1_food_search_dal_dark.png'),
+    );
+  });
+
   testWidgets('search results light golden', (tester) async {
     await _pumpSearchGolden(tester, theme: AppTheme.lightTheme);
     await expectLater(
@@ -1329,6 +1352,60 @@ Future<void> _pumpSearchGolden(
   expect(tester.takeException(), isNull);
 }
 
+Future<void> _pumpRelevanceSearchGolden(
+  WidgetTester tester, {
+  required String query,
+}) async {
+  _setViewport(tester, const Size(360, 780));
+  final database = AppDatabase.memory();
+  final seeded = (await tester.runAsync(() async {
+    final foods = await database.select(database.foodItems).get();
+    final authority = await FoodRepository(
+      database,
+    ).readSearchPresentationAuthority(foods.map((food) => food.id));
+    return (foods: foods, authority: authority);
+  }))!;
+  final registry = NutrientRegistry.fromAssetFileSync(
+    'assets/data/nutrient_registry.json',
+  );
+  late ProviderContainer container;
+  addTearDown(() async {
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+    container.dispose();
+    tester.view.resetPhysicalSize();
+    tester.view.resetDevicePixelRatio();
+    await database.close();
+  });
+  await tester.pumpWidget(
+    _foodApp(
+      database: database,
+      repository: _AcceptanceFoodRepository(
+        database,
+        foods: seeded.foods,
+        authority: seeded.authority,
+      ),
+      catalog: _NoCustomSearchCatalogRepository(
+        database: database,
+        registry: registry,
+      ),
+      apiService: _TestFoodApiService(),
+      theme: AppTheme.darkTheme,
+      mealType: 'breakfast',
+      selectedDate: DateTime(2026, 9, 1),
+      mediaSize: const Size(360, 780),
+    ),
+  );
+  container = ProviderScope.containerOf(
+    tester.element(find.byType(FoodSearchScreen)),
+  );
+  await _pumpFood(tester);
+  await tester.enterText(find.byType(TextField), query);
+  await tester.pump(const Duration(milliseconds: 900));
+  expect(find.text('Search results'), findsOneWidget);
+  expect(tester.takeException(), isNull);
+}
+
 Future<void> _pumpAiGolden(
   WidgetTester tester, {
   required ThemeData theme,
@@ -1385,6 +1462,38 @@ class _TestFoodRepository extends FoodRepository {
 
   @override
   Future<List<FoodItem>> searchFoodLocal(String query) async => searchResults;
+
+  @override
+  Future<Map<int, FoodSearchPresentationAuthority>>
+  readSearchPresentationAuthority(Iterable<int> legacyFoodItemIds) async =>
+      const {};
+}
+
+class _AcceptanceFoodRepository extends FoodRepository {
+  _AcceptanceFoodRepository(
+    super.database, {
+    required this.foods,
+    required this.authority,
+  });
+
+  final List<FoodItem> foods;
+  final Map<int, FoodSearchPresentationAuthority> authority;
+
+  @override
+  Future<List<FoodItem>> getRecentFoods(int limit) async => const [];
+
+  @override
+  Future<List<FoodItem>> searchFoodLocal(String query) async => foods;
+
+  @override
+  Future<Map<int, FoodSearchPresentationAuthority>>
+  readSearchPresentationAuthority(Iterable<int> legacyFoodItemIds) async {
+    final requested = legacyFoodItemIds.toSet();
+    return {
+      for (final entry in authority.entries)
+        if (requested.contains(entry.key)) entry.key: entry.value,
+    };
+  }
 }
 
 class _NoCustomSearchCatalogRepository extends NutritionFoodCatalogRepository {
@@ -1422,6 +1531,11 @@ class _QueryAwareFoodRepository extends FoodRepository {
 
   @override
   Future<List<FoodItem>> getRecentFoods(int limit) async => const [];
+
+  @override
+  Future<Map<int, FoodSearchPresentationAuthority>>
+  readSearchPresentationAuthority(Iterable<int> legacyFoodItemIds) async =>
+      const {};
 
   @override
   Future<List<FoodItem>> searchFoodLocal(String query) async => switch (query) {

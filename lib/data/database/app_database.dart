@@ -357,9 +357,12 @@ class AppDatabase extends _$AppDatabase {
       await _createV19Indexes();
       await _seedV17NutrientRegistry(contracts.registry);
       await _seedV17ConstraintTaxonomy();
+      // Reviewed legacy mappings require the local integer rows to exist.
+      // Seed those rows before the canonical B03 identity graph so a fresh
+      // install receives the same mapping authority as an upgraded database.
+      await seedFoodsFromAsset();
       await _seedV17FoodIdentity(contracts.manifest);
       await _ensureTrainingPlanSettings();
-      await seedFoodsFromAsset();
       await seedExercisesFromAsset();
       await _seedReviewedMuscleCatalogIfPossible();
     },
@@ -368,6 +371,7 @@ class AppDatabase extends _$AppDatabase {
       if (schemaVersionOverride != 16) {
         await _ensurePreReleaseV17VesselGraph();
         if (await _tableExists('nutrition_foods')) {
+          await _repairMissingV17LegacyFoodMappings();
           // Triggers are part of the durable v17 boundary. Reinstall them on
           // every open so a v17 database created before a boundary repair
           // cannot bypass the same checks through raw SQL, restore, or a
@@ -380,6 +384,24 @@ class AppDatabase extends _$AppDatabase {
       }
     },
   );
+
+  /// Repairs only the fresh-install seed-order gap where canonical foods were
+  /// present but the reviewed legacy mapping table was empty. Existing rows,
+  /// identities, nutrition facts, and history are never rewritten.
+  Future<void> _repairMissingV17LegacyFoodMappings() async {
+    if (!await _tableExists('nutrition_legacy_food_mappings') ||
+        !await _tableExists('food_items')) {
+      return;
+    }
+    final mapping = await (select(
+      nutritionLegacyFoodMappings,
+    )..limit(1)).getSingleOrNull();
+    if (mapping != null) return;
+    final legacy = await (select(foodItems)..limit(1)).getSingleOrNull();
+    if (legacy == null) return;
+    final contracts = await _loadV17Contracts();
+    await _seedV17FoodIdentity(contracts.manifest);
+  }
 
   /// Full seed used on first install.
   Future<void> seedFoodsFromAsset() async {
