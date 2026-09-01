@@ -1,6 +1,6 @@
 # IndiFit Post-V1 Incremental Cleanup Program
 
-- Status: Active; V1 frozen, C0A complete, C0B next
+- Status: Active; V1 frozen, C0A and C0B complete, C1A next
 - Effective date: 2026-08-30
 - Structural recount: `aaa8032`
 - Portfolio plan: [`POST_V1_IMPLEMENTATION_PLAN.md`](POST_V1_IMPLEMENTATION_PLAN.md)
@@ -171,6 +171,13 @@ Exit criteria:
 - the reported parallel-only failure has a reproduced cause and disposition.
 
 ### C0B — Contract freeze and characterization
+
+**Status:** Complete on 2026-09-01. Route, preference, schema v20, backup
+v5-v10, fragile-flow, navigation, preference-ownership, and visual/state
+contracts are recorded in
+[`post-v1/C0B_CONTRACT_BASELINE.md`](post-v1/C0B_CONTRACT_BASELINE.md).
+The consolidated contract/backup/fragile-flow suite passes 120/120 and the
+focused visual/accessibility certification passes 37/37.
 
 Capture machine-checkable inventories or tests for:
 

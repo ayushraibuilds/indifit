@@ -1,6 +1,6 @@
 # IndiFit Post-V1 Prioritized Implementation Plan
 
-- Status: Active; Gate 0 and PV1-ENG-01 complete, PV1-ENG-02 next
+- Status: Active; Gate 0, PV1-ENG-01, and PV1-ENG-02 complete; PV1-ENG-03 next
 - Effective date: 2026-08-30
 - Product roadmap: [`post-v1-roadmap.md`](../roadmap/post-v1-roadmap.md)
 - Cleanup execution program: [`POST_V1_CLEANUP_PROGRAM.md`](POST_V1_CLEANUP_PROGRAM.md)
@@ -176,6 +176,11 @@ Acceptance:
 #### PV1-ENG-02 — Fragile-flow characterization
 
 **Priority:** P1; may run in parallel only after ENG-01 contracts are frozen
+
+**Status:** Complete on 2026-09-01. C0B exit evidence is recorded in
+[`post-v1/C0B_CONTRACT_BASELINE.md`](post-v1/C0B_CONTRACT_BASELINE.md): the
+consolidated contract/backup/fragile-flow suite passes 120/120 and the focused
+visual/accessibility certification passes 37/37.
 
 Detailed contract inventory and weak-flow scope: C0B in
 [`POST_V1_CLEANUP_PROGRAM.md`](POST_V1_CLEANUP_PROGRAM.md).

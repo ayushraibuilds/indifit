@@ -40,6 +40,24 @@ import '../../features/workout_player/workout_summary_screen.dart';
 /// SharedPreferences in main.dart and updated when onboarding finishes.
 final onboardingCompletedProvider = StateProvider<bool>((ref) => false);
 
+/// Saved/deep-link entry points retained only as compatibility redirects.
+///
+/// Keeping this table explicit makes route retirement reviewable without
+/// restoring the superseded consumer surfaces.
+const compatibilityRouteRedirects = <String, String>{
+  '/routine-wizard': '/plan-library',
+  '/workout': '/training',
+  '/workouts': '/training',
+  '/food/ai': '/food',
+  '/settings/profile': '/profile',
+  '/meal-planner': '/food',
+  '/weekly-report': '/progress',
+  '/travel-mode': '/training',
+};
+
+String? compatibilityRouteRedirect(String location) =>
+    compatibilityRouteRedirects[location];
+
 /// Pure onboarding routing gate used by [appRouterProvider]'s redirect.
 ///
 /// Kept as a top-level function so the routing contract (first launch,
@@ -106,6 +124,14 @@ String? parseFoodRouteMealType(String? raw) {
   };
 }
 
+/// Parses a SQLite row identifier carried in a route path or query string.
+/// Zero, negative, missing, and malformed values all use the existing
+/// unavailable-state path instead of becoming database queries.
+int? parsePositiveRouteId(String? raw) {
+  final value = raw == null ? null : int.tryParse(raw);
+  return value != null && value > 0 ? value : null;
+}
+
 MainNavigationScaffold foodRouteDestination({String? mealType, String? date}) =>
     MainNavigationScaffold(
       initialIndex: 2,
@@ -138,9 +164,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // must not compete with the reviewed Training planning experience.
       GoRoute(
         path: '/routine-wizard',
-        redirect: (context, state) => '/plan-library',
+        redirect: (context, state) =>
+            compatibilityRouteRedirect(state.matchedLocation),
       ),
-      GoRoute(path: '/workout', redirect: (context, state) => '/training'),
+      GoRoute(
+        path: '/workout',
+        redirect: (context, state) =>
+            compatibilityRouteRedirect(state.matchedLocation),
+      ),
       GoRoute(
         path: '/training',
         builder: (context, state) =>
@@ -153,7 +184,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       // Preserve the former Training entry point without reintroducing a
       // competing bottom-navigation concept.
-      GoRoute(path: '/workouts', redirect: (context, state) => '/training'),
+      GoRoute(
+        path: '/workouts',
+        redirect: (context, state) =>
+            compatibilityRouteRedirect(state.matchedLocation),
+      ),
       // Exercise Library now lives under Training, but a saved or external
       // deep link still opens the same production library safely.
       GoRoute(
@@ -169,7 +204,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       // Former AI meal logging route fails safely into Food diary without
       // mounting unavailable surfaces.
-      GoRoute(path: '/food/ai', redirect: (context, state) => '/food'),
+      GoRoute(
+        path: '/food/ai',
+        redirect: (context, state) =>
+            compatibilityRouteRedirect(state.matchedLocation),
+      ),
       GoRoute(
         path: '/food/estimate-review',
         builder: (context, state) {
@@ -199,7 +238,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/settings/profile',
-        redirect: (context, state) => '/profile',
+        redirect: (context, state) =>
+            compatibilityRouteRedirect(state.matchedLocation),
       ),
       GoRoute(path: '/learn', builder: (context, state) => const LearnScreen()),
       GoRoute(
@@ -222,7 +262,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         ),
       ),
       // Former AI meal planner route fails safely into Food diary.
-      GoRoute(path: '/meal-planner', redirect: (context, state) => '/food'),
+      GoRoute(
+        path: '/meal-planner',
+        redirect: (context, state) =>
+            compatibilityRouteRedirect(state.matchedLocation),
+      ),
       GoRoute(
         path: '/achievements',
         builder: (context, state) => const AchievementsScreen(),
@@ -235,7 +279,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // Weekly reminders now open the factual Progress destination.
       GoRoute(
         path: '/weekly-report',
-        redirect: (context, state) => '/progress',
+        redirect: (context, state) =>
+            compatibilityRouteRedirect(state.matchedLocation),
       ),
       GoRoute(
         path: '/workout-player',
@@ -311,10 +356,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/workout-history/:sessionId',
         builder: (context, state) {
-          final sessionId = int.tryParse(
-            state.pathParameters['sessionId'] ?? '',
+          final sessionId = parsePositiveRouteId(
+            state.pathParameters['sessionId'],
           );
-          if (sessionId == null || sessionId < 1) {
+          if (sessionId == null) {
             return const Scaffold(
               body: Center(child: Text('Workout details are unavailable.')),
             );
@@ -325,10 +370,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/activity-history/:sessionId',
         builder: (context, state) {
-          final sessionId = int.tryParse(
-            state.pathParameters['sessionId'] ?? '',
+          final sessionId = parsePositiveRouteId(
+            state.pathParameters['sessionId'],
           );
-          if (sessionId == null || sessionId < 1) {
+          if (sessionId == null) {
             return const Scaffold(
               body: Center(child: Text('Activity details are unavailable.')),
             );
@@ -348,10 +393,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           final rawDate = state.uri.queryParameters['date'];
           final selectedDate = parseFoodRouteDate(rawDate);
           final rawDraftId = state.uri.queryParameters['draftId'];
-          final draftId = rawDraftId == null ? null : int.tryParse(rawDraftId);
+          final draftId = parsePositiveRouteId(rawDraftId);
           if (type == null ||
               (rawDate != null && selectedDate == null) ||
-              (rawDraftId != null && (draftId == null || draftId < 1))) {
+              (rawDraftId != null && draftId == null)) {
             return const Scaffold(
               body: Center(child: Text('Activity entry is unavailable.')),
             );
@@ -426,7 +471,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       // Former Travel Mode route fails safely into Training without loading
       // deprecated surfaces.
-      GoRoute(path: '/travel-mode', redirect: (context, state) => '/training'),
+      GoRoute(
+        path: '/travel-mode',
+        redirect: (context, state) =>
+            compatibilityRouteRedirect(state.matchedLocation),
+      ),
     ],
   );
   ref.onDispose(router.dispose);
