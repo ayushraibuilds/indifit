@@ -15,6 +15,7 @@ import 'package:indifit/data/repositories/program_activation_coordinator.dart';
 import 'package:indifit/data/repositories/program_repository.dart';
 import 'package:indifit/features/training/plan_library_screen.dart';
 import 'package:indifit/features/training/workout_history_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 final _now = DateTime.utc(2026, 8, 24, 10);
 
@@ -26,6 +27,7 @@ void main() {
   late LocalScheduleDateService dates;
 
   setUp(() async {
+    SharedPreferences.setMockInitialValues({'onboarding_skipped': true});
     db = AppDatabase.memory();
     programs = ProgramRepository(db);
     dates = LocalScheduleDateService(nowUtc: () => _now);
@@ -66,7 +68,13 @@ void main() {
       expect(exact, isNotNull);
       expect(exact!.version.id, draftVersionId);
       expect(exact.version.status, 'draft');
-      expect(library.entries.single.version.id, publishedVersionId);
+      expect(
+        library.entries
+            .firstWhere((entry) => entry.program.name == 'Versioned plan')
+            .version
+            .id,
+        publishedVersionId,
+      );
     },
   );
 
@@ -170,6 +178,8 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          databaseProvider.overrideWithValue(db),
+          userProfileProvider.overrideWith((ref) => _NoProfileNotifier()),
           planLibrarySnapshotProvider.overrideWith((ref) async => snapshot),
         ],
         child: MaterialApp.router(routerConfig: router),
@@ -384,6 +394,23 @@ Future<void> _pumpFuture(WidgetTester tester) async {
     () => Future<void>.delayed(const Duration(milliseconds: 100)),
   );
   await tester.pump();
+}
+
+class _NoProfileNotifier extends UserProfileNotifier {
+  _NoProfileNotifier() : super() {
+    state = const UserProfileState(
+      isLoaded: true,
+      hasProfile: false,
+      calorieGoal: 2000,
+      proteinGoal: 120,
+      carbsGoal: 230,
+      fatGoal: 65,
+      currentWeight: 70,
+    );
+  }
+
+  @override
+  Future<void> loadProfile() => Future<void>.value();
 }
 
 Future<void> _pumpRoute(WidgetTester tester) async {
