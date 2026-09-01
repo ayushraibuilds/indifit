@@ -17,6 +17,7 @@ class ConsumerTaskScaffold extends StatelessWidget {
     this.scrollable = true,
     this.padding = const EdgeInsets.fromLTRB(20, 16, 20, 24),
     this.maxContentWidth = 640,
+    this.hidePrimaryActionWhenKeyboardVisible = false,
   });
 
   final PreferredSizeWidget? appBar;
@@ -25,10 +26,14 @@ class ConsumerTaskScaffold extends StatelessWidget {
   final bool scrollable;
   final EdgeInsetsGeometry padding;
   final double maxContentWidth;
+  final bool hidePrimaryActionWhenKeyboardVisible;
 
   @override
   Widget build(BuildContext context) {
     final mediaQuery = MediaQuery.of(context);
+    final keyboardVisible = mediaQuery.viewInsets.bottom > 0;
+    final hidePrimaryAction =
+        hidePrimaryActionWhenKeyboardVisible && keyboardVisible;
     final content = ConstrainedBox(
       constraints: BoxConstraints(maxWidth: maxContentWidth),
       child: Padding(
@@ -42,6 +47,44 @@ class ConsumerTaskScaffold extends StatelessWidget {
             : body,
       ),
     );
+    final primaryActionSlot = primaryAction == null
+        ? null
+        : SafeArea(
+            top: false,
+            minimum: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: maxContentWidth),
+              child: SizedBox(width: double.infinity, child: primaryAction),
+            ),
+          );
+    final scaffoldBody = Column(
+      children: [
+        Expanded(
+          child: Align(alignment: Alignment.topCenter, child: content),
+        ),
+        if (primaryActionSlot != null && !hidePrimaryAction) primaryActionSlot,
+      ],
+    );
+    final keyboardAwareBody = hidePrimaryAction && primaryActionSlot != null
+        ? Stack(
+            fit: StackFit.expand,
+            children: [
+              scaffoldBody,
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: IgnorePointer(
+                  child: Opacity(
+                    opacity: 0,
+                    alwaysIncludeSemantics: true,
+                    child: primaryActionSlot,
+                  ),
+                ),
+              ),
+            ],
+          )
+        : scaffoldBody;
 
     return Scaffold(
       appBar: appBar,
@@ -49,29 +92,9 @@ class ConsumerTaskScaffold extends StatelessWidget {
       body: SafeArea(
         top: appBar == null,
         bottom: false,
-        child: AnimatedPadding(
-          duration: B05MotionPolicy.transitionDuration(context),
-          curve: Curves.easeOut,
+        child: Padding(
           padding: EdgeInsets.only(bottom: mediaQuery.viewInsets.bottom),
-          child: Column(
-            children: [
-              Expanded(
-                child: Align(alignment: Alignment.topCenter, child: content),
-              ),
-              if (primaryAction != null)
-                SafeArea(
-                  top: false,
-                  minimum: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(maxWidth: maxContentWidth),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: primaryAction,
-                    ),
-                  ),
-                ),
-            ],
-          ),
+          child: keyboardAwareBody,
         ),
       ),
     );
