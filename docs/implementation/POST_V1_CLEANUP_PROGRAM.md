@@ -1,6 +1,6 @@
 # IndiFit Post-V1 Incremental Cleanup Program
 
-- Status: Active; V1 frozen, C0A and C0B complete, C1A next
+- Status: Active; V1 frozen, C0A, C0B, and C1A complete, C1B next
 - Effective date: 2026-08-30
 - Structural recount: `aaa8032`
 - Portfolio plan: [`POST_V1_IMPLEMENTATION_PLAN.md`](POST_V1_IMPLEMENTATION_PLAN.md)
@@ -207,7 +207,14 @@ characterized—not when an arbitrary global percentage is reached.
 
 ### C1A — Evidence inventory
 
-Treat all 37 reported unreachable files as suspects. For each candidate record:
+**Status:** Complete on 2026-09-01. The current recount and all 38 candidate
+classifications are recorded in
+[`post-v1/C1A_RETIRED_SURFACE_INVENTORY.md`](post-v1/C1A_RETIRED_SURFACE_INVENTORY.md).
+The inventory authorizes no deletion; C1B proceeds through its bounded,
+evidence-gated packages.
+
+Treat the 37 originally reported unreachable files—and the 38-file refreshed
+set—as suspects. For each candidate record:
 
 - production imports, exports, parts, generated references, and dynamic
   registries;
@@ -498,7 +505,8 @@ The first implementation batch is:
    CI evidence.
 2. **C0B:** route/preference/schema/index/backup/UI contract freeze plus the six
    weak-flow characterization groups.
-3. **C1A:** classification ledger for the 37 retired-surface suspects.
+3. **C1A:** classification ledger for the refreshed 38 retired-surface
+   suspects.
 
 C1B deletion and C2 extraction do not start until the C0 hard gate passes. This
 batch offers the highest risk reduction and makes every later cleanup package

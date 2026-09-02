@@ -1,6 +1,6 @@
 # IndiFit Post-V1 Prioritized Implementation Plan
 
-- Status: Active; Gate 0, PV1-ENG-01, and PV1-ENG-02 complete; PV1-ENG-03 next
+- Status: Active; Gate 0 and PV1-ENG-01/02/03 complete; PV1-ENG-04A next
 - Effective date: 2026-08-30
 - Product roadmap: [`post-v1-roadmap.md`](../roadmap/post-v1-roadmap.md)
 - Cleanup execution program: [`POST_V1_CLEANUP_PROGRAM.md`](POST_V1_CLEANUP_PROGRAM.md)
@@ -208,6 +208,11 @@ recorded, and no known harness pollution remains mislabeled as a product bug.
 - **Dependency:** Wave 1 gate
 
 #### PV1-ENG-03 — Reachability and ownership inventory
+
+**Status:** Complete on 2026-09-01. The checked-in
+[`post-v1/C1A_RETIRED_SURFACE_INVENTORY.md`](post-v1/C1A_RETIRED_SURFACE_INVENTORY.md)
+classifies the refreshed 38-file candidate set and defines bounded C1B
+packages. No production deletion was performed in the inventory task.
 
 Classify each candidate as:
 
