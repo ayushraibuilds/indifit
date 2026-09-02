@@ -1,4 +1,5 @@
 import '../database/app_database.dart';
+import 'offline_starter_plan_catalog.dart';
 import 'program_repository.dart';
 
 /// Consumer-safe metadata derived from one persisted program version graph.
@@ -37,17 +38,21 @@ class PlanLibraryEntry {
     required this.detail,
     required this.metadata,
     required this.isActive,
+    this.starterPlan,
   });
 
   final ProgramDetailAggregate detail;
   final PlanLibraryMetadata metadata;
   final bool isActive;
+  final OfflineStarterPlan? starterPlan;
 
   Program get program => detail.program;
 
   ProgramVersion get version => detail.version;
 
   bool get isDraft => version.status == 'draft';
+
+  bool get isBundled => starterPlan != null;
 
   /// Drafts are intentionally visible when they are the only usable version
   /// of a saved plan, but they are not presented as ready-to-use plans.
@@ -80,18 +85,36 @@ class PlanLibrarySnapshot {
 
 /// Read boundary for the Plan Library.
 ///
+/// Before projecting rows it asks [ProgramRepository] to idempotently install
+/// the reviewed bundled source graphs. It performs no direct writes and owns
+/// no lifecycle transition.
+///
 /// The library presents one best display version per non-archived program:
 /// the exact active version when selected, otherwise the newest published
 /// version, otherwise the newest draft. It never infers a plan from history,
 /// names, or scheduled occurrences.
 class PlanLibraryReadRepository {
-  PlanLibraryReadRepository(this.db, {ProgramRepository? programs})
-    : programs = programs ?? ProgramRepository(db);
+  factory PlanLibraryReadRepository(
+    AppDatabase db, {
+    ProgramRepository? programs,
+    OfflineStarterPlanCatalogRepository? starterPlans,
+  }) {
+    final canonicalPrograms = programs ?? ProgramRepository(db);
+    return PlanLibraryReadRepository._(
+      db,
+      canonicalPrograms,
+      starterPlans ?? OfflineStarterPlanCatalogRepository(canonicalPrograms),
+    );
+  }
+
+  PlanLibraryReadRepository._(this.db, this.programs, this.starterPlans);
 
   final AppDatabase db;
   final ProgramRepository programs;
+  final OfflineStarterPlanCatalogRepository starterPlans;
 
   Future<PlanLibrarySnapshot> read() async {
+    await starterPlans.ensureAvailable();
     final settings = await (db.select(
       db.trainingPlanSettings,
     )..where((table) => table.id.equals(1))).getSingleOrNull();
@@ -115,6 +138,7 @@ class PlanLibraryReadRepository {
           detail: detail,
           metadata: _metadataFor(detail),
           isActive: version.id == activeVersionId,
+          starterPlan: OfflineStarterPlanCatalog.forProgramId(program.id),
         ),
       );
     }
@@ -129,7 +153,21 @@ class PlanLibraryReadRepository {
       if (first.isActive != second.isActive) {
         return first.isActive ? -1 : 1;
       }
-      return second.program.createdAtUtc.compareTo(first.program.createdAtUtc);
+      if (first.isBundled != second.isBundled) {
+        return first.isBundled ? -1 : 1;
+      }
+      if (first.starterPlan case final firstStarter?) {
+        final secondStarter = second.starterPlan!;
+        return OfflineStarterPlanCatalog.plans
+            .indexOf(firstStarter)
+            .compareTo(OfflineStarterPlanCatalog.plans.indexOf(secondStarter));
+      }
+      final created = second.program.createdAtUtc.compareTo(
+        first.program.createdAtUtc,
+      );
+      return created != 0
+          ? created
+          : first.program.name.compareTo(second.program.name);
     });
 
     return PlanLibrarySnapshot(
@@ -146,6 +184,7 @@ class PlanLibraryReadRepository {
   Future<PlanLibraryEntry?> readVersion(String versionId) async {
     final cleanVersionId = versionId.trim();
     if (cleanVersionId.isEmpty) return null;
+    await starterPlans.ensureAvailable();
 
     final settings = await (db.select(
       db.trainingPlanSettings,
@@ -164,6 +203,7 @@ class PlanLibraryReadRepository {
       detail: detail,
       metadata: _metadataFor(detail),
       isActive: cleanVersionId == activeVersionId,
+      starterPlan: OfflineStarterPlanCatalog.forProgramId(detail.program.id),
     );
   }
 

@@ -10,11 +10,13 @@ import 'package:indifit/core/services/local_timezone_service.dart';
 import 'package:indifit/core/widgets/skeleton_loader.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/repositories/calendar_read_repository.dart';
+import 'package:indifit/data/repositories/offline_starter_plan_catalog.dart';
 import 'package:indifit/data/repositories/plan_library_read_repository.dart';
 import 'package:indifit/data/repositories/program_activation_coordinator.dart';
 import 'package:indifit/data/repositories/program_repository.dart';
 import 'package:indifit/data/repositories/workout_repository.dart';
 import 'package:indifit/features/training/plan_library_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 final now = DateTime.utc(2026, 8, 24, 10);
 late AppDatabase db;
@@ -25,6 +27,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(() async {
+    SharedPreferences.setMockInitialValues({'onboarding_skipped': true});
     db = AppDatabase.memory();
     programs = ProgramRepository(db);
     dates = LocalScheduleDateService(nowUtc: () => now);
@@ -58,7 +61,7 @@ void main() {
 
       final snapshot = await PlanLibraryReadRepository(db).read();
 
-      expect(snapshot.entries, hasLength(2));
+      expect(snapshot.entries, hasLength(10));
       expect(snapshot.entries.first.version.id, planB);
       expect(snapshot.entries.first.isActive, isTrue);
       expect(snapshot.entries.first.metadata.weekCount, 2);
@@ -66,16 +69,33 @@ void main() {
       expect(snapshot.entries.first.metadata.exerciseCount, 4);
       expect(snapshot.entries.first.metadata.trainingDaysPerWeek, 2);
       expect(snapshot.entries.first.metadata.blockNames, ['Base block']);
-      expect(snapshot.entries.last.program.name, 'Plan A');
+      expect(
+        snapshot.entries.any((entry) => entry.program.name == 'Plan A'),
+        isTrue,
+      );
     },
   );
 
-  test('empty library stays empty and does not invent plan metadata', () async {
-    final snapshot = await PlanLibraryReadRepository(db).read();
+  test(
+    'fresh library exposes the reviewed offline starter catalogue',
+    () async {
+      final snapshot = await PlanLibraryReadRepository(db).read();
 
-    expect(snapshot.entries, isEmpty);
-    expect(snapshot.activeProgramVersionId, isNull);
-  });
+      expect(
+        snapshot.entries,
+        hasLength(OfflineStarterPlanCatalog.plans.length),
+      );
+      expect(
+        snapshot.entries,
+        everyElement(
+          predicate<PlanLibraryEntry>((entry) {
+            return entry.isBundled && entry.isReadyToUse;
+          }),
+        ),
+      );
+      expect(snapshot.activeProgramVersionId, isNull);
+    },
+  );
 
   test('invalid active pointer fails closed', () async {
     final versionId = await createPublishedPlan('Archived active plan');
@@ -97,38 +117,45 @@ void main() {
     );
   });
 
-  test('published plan copy and activation preserve the canonical source', () async {
-    final sourceVersionId = await createPublishedPlan('Canonical source');
-    final copiedVersionId = await programs.copyToNewDraftVersion(sourceVersionId);
-    final activation = ProgramActivationCoordinator(
-      db,
-      dates: dates,
-      nowUtc: () => now,
-    );
+  test(
+    'published plan copy and activation preserve the canonical source',
+    () async {
+      final sourceVersionId = await createPublishedPlan('Canonical source');
+      final copiedVersionId = await programs.copyToNewDraftVersion(
+        sourceVersionId,
+      );
+      final activation = ProgramActivationCoordinator(
+        db,
+        dates: dates,
+        nowUtc: () => now,
+      );
 
-    await activation.activate(
-      ActivateProgramVersionCommand(
-        programVersionId: copiedVersionId,
-        commandId: 'r08c3-activate-copied',
-        activationLocalDate: '2026-08-24',
-        timezoneId: 'Asia/Kolkata',
-      ),
-    );
+      await activation.activate(
+        ActivateProgramVersionCommand(
+          programVersionId: copiedVersionId,
+          commandId: 'r08c3-activate-copied',
+          activationLocalDate: '2026-08-24',
+          timezoneId: 'Asia/Kolkata',
+        ),
+      );
 
-    final versions = await db.select(db.programVersions).get();
-    final source = versions.singleWhere((version) => version.id == sourceVersionId);
-    final copied = versions.singleWhere(
-      (version) => version.id == copiedVersionId,
-    );
-    final settings = (await db.select(db.trainingPlanSettings).get()).single;
-    expect(source.status, 'published');
-    expect(copied.status, 'published');
-    expect(settings.activeProgramVersionId, copiedVersionId);
-    expect(
-      await db.select(db.scheduledSessionOccurrences).get(),
-      hasLength(4),
-    );
-  });
+      final versions = await db.select(db.programVersions).get();
+      final source = versions.singleWhere(
+        (version) => version.id == sourceVersionId,
+      );
+      final copied = versions.singleWhere(
+        (version) => version.id == copiedVersionId,
+      );
+      final settings = (await db.select(db.trainingPlanSettings).get()).single;
+      expect(source.status, 'published');
+      expect(copied.status, 'published');
+      expect(settings.activeProgramVersionId, copiedVersionId);
+      expect(
+        await db.select(db.scheduledSessionOccurrences).get(),
+        hasLength(4),
+      );
+    },
+  );
 
   test('switch activation retains prior occurrence history', () async {
     final currentSourceVersionId = await createPublishedPlan('Current source');
@@ -164,10 +191,7 @@ void main() {
 
     final settings = (await db.select(db.trainingPlanSettings).get()).single;
     expect(settings.activeProgramVersionId, nextVersionId);
-    expect(
-      await db.select(db.scheduledSessionOccurrences).get(),
-      hasLength(8),
-    );
+    expect(await db.select(db.scheduledSessionOccurrences).get(), hasLength(8));
   });
 
   testWidgets('populated library marks the active plan and supports search', (
@@ -234,7 +258,9 @@ void main() {
         await createPublishedPlan('Use Me');
         snapshot = await PlanLibraryReadRepository(db).read();
       });
-      final sourceEntry = snapshot.entries.single;
+      final sourceEntry = snapshot.entries.firstWhere(
+        (entry) => entry.program.name == 'Use Me',
+      );
       final copyRepo = _CopyingProgramRepository(db, 'copied-version');
       final activation = _ImmediateActivationCoordinator(
         db,
@@ -246,9 +272,7 @@ void main() {
         tester,
         PlanLibraryDetailScreen(programId: sourceEntry.program.id),
         extraOverrides: [
-          planLibrarySnapshotProvider.overrideWith(
-            (ref) async => snapshot,
-          ),
+          planLibrarySnapshotProvider.overrideWith((ref) async => snapshot),
           programRepositoryProvider.overrideWithValue(copyRepo),
           programActivationCoordinatorProvider.overrideWithValue(activation),
           workoutRepositoryProvider.overrideWithValue(
@@ -301,9 +325,7 @@ void main() {
         tester,
         PlanLibraryDetailScreen(programId: nextEntry.program.id),
         extraOverrides: [
-          planLibrarySnapshotProvider.overrideWith(
-            (ref) async => snapshot,
-          ),
+          planLibrarySnapshotProvider.overrideWith((ref) async => snapshot),
           programRepositoryProvider.overrideWithValue(copyRepo),
           programActivationCoordinatorProvider.overrideWithValue(activation),
           workoutRepositoryProvider.overrideWithValue(
@@ -341,15 +363,15 @@ void main() {
         await createPublishedPlan('Blocked Plan');
         snapshot = await PlanLibraryReadRepository(db).read();
       });
-      final entry = snapshot.entries.single;
+      final entry = snapshot.entries.firstWhere(
+        (item) => item.program.name == 'Blocked Plan',
+      );
 
       await pumpApp(
         tester,
         PlanLibraryDetailScreen(programId: entry.program.id),
         extraOverrides: [
-          planLibrarySnapshotProvider.overrideWith(
-            (ref) async => snapshot,
-          ),
+          planLibrarySnapshotProvider.overrideWith((ref) async => snapshot),
           workoutRepositoryProvider.overrideWithValue(
             _StaticWorkoutRepository(
               db,
@@ -382,7 +404,7 @@ void main() {
   );
 
   testWidgets(
-    'loading, empty, error, narrow width, large text, and semantics are intentional',
+    'loading, catalogue, error, narrow width, large text, and semantics are intentional',
     (tester) async {
       await pumpApp(
         tester,
@@ -419,7 +441,8 @@ void main() {
           textScaler: TextScaler.linear(2),
         ),
       );
-      expect(find.text('No saved plans yet'), findsOneWidget);
+      expect(find.text('Beginner — 3-Day Full Body'), findsWidgets);
+      expect(find.text('No saved plans yet'), findsNothing);
       expect(tester.takeException(), isNull);
 
       final semantics = tester.ensureSemantics();

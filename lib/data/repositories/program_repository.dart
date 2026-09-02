@@ -114,6 +114,31 @@ class ProgramBlockInput {
   });
 }
 
+/// One reviewed, immutable source graph shipped with the offline app.
+///
+/// Bundled sources use deterministic identities so catalogue initialization is
+/// idempotent. Choosing one still creates a normal user-owned draft version;
+/// this input does not add another activation or execution authority.
+class BundledProgramSourceInput {
+  final String programId;
+  final String sourceVersionId;
+  final String name;
+  final String? goal;
+  final String? notes;
+  final DateTime publishedAtUtc;
+  final List<ProgramBlockInput> blocks;
+
+  const BundledProgramSourceInput({
+    required this.programId,
+    required this.sourceVersionId,
+    required this.name,
+    this.goal,
+    this.notes,
+    required this.publishedAtUtc,
+    required this.blocks,
+  });
+}
+
 /// Complete, ordered, immutable read model for a version graph.
 class ProgramDetailAggregate {
   final Program program;
@@ -293,6 +318,111 @@ class ProgramRepository {
         blocks: blocks,
       );
       return programId;
+    });
+  }
+
+  /// Installs reviewed offline starter sources through the canonical B01
+  /// graph validation and persistence boundary.
+  ///
+  /// Existing sources are never overwritten. Their published version remains
+  /// immutable, while selection uses [copyToNewDraftVersion] before ordinary
+  /// activation and occurrence materialisation.
+  Future<void> ensureBundledProgramSources(
+    List<BundledProgramSourceInput> sources,
+  ) async {
+    if (sources.isEmpty) return;
+
+    final programIds = <String>{};
+    final versionIds = <String>{};
+    for (final source in sources) {
+      _requireText(source.programId, 'Bundled program ID');
+      _requireText(source.sourceVersionId, 'Bundled source version ID');
+      _requireText(source.name, 'Bundled program name');
+      if (!programIds.add(source.programId.trim())) {
+        throw ArgumentError(
+          'Bundled program IDs must be unique: ${source.programId}.',
+        );
+      }
+      if (!versionIds.add(source.sourceVersionId.trim())) {
+        throw ArgumentError(
+          'Bundled source version IDs must be unique: ${source.sourceVersionId}.',
+        );
+      }
+    }
+
+    final existingPrograms = await (db.select(
+      db.programs,
+    )..where((table) => table.id.isIn(programIds))).get();
+    final existingVersions = await (db.select(
+      db.programVersions,
+    )..where((table) => table.id.isIn(versionIds))).get();
+    if (existingPrograms.length == sources.length &&
+        existingVersions.length == sources.length) {
+      for (final source in sources) {
+        _validateExistingBundledSource(
+          source,
+          existingPrograms,
+          existingVersions,
+        );
+      }
+      return;
+    }
+
+    for (final source in sources) {
+      await _validateGraph(source.blocks);
+    }
+
+    await db.transaction(() async {
+      for (final source in sources) {
+        final existingProgram =
+            await (db.select(db.programs)
+                  ..where((table) => table.id.equals(source.programId)))
+                .getSingleOrNull();
+        final existingVersion =
+            await (db.select(db.programVersions)
+                  ..where((table) => table.id.equals(source.sourceVersionId)))
+                .getSingleOrNull();
+        if (existingProgram != null || existingVersion != null) {
+          if (existingProgram == null || existingVersion == null) {
+            throw StateError(
+              'Bundled program source ${source.programId} is incomplete.',
+            );
+          }
+          _validateExistingBundledSource(
+            source,
+            [existingProgram],
+            [existingVersion],
+          );
+          continue;
+        }
+
+        final publishedAt = source.publishedAtUtc.toUtc();
+        await db
+            .into(db.programs)
+            .insert(
+              ProgramsCompanion.insert(
+                id: source.programId,
+                name: source.name.trim(),
+                goal: Value(_nullableTrim(source.goal)),
+                notes: Value(_nullableTrim(source.notes)),
+                createdAtUtc: publishedAt,
+              ),
+            );
+        await db
+            .into(db.programVersions)
+            .insert(
+              ProgramVersionsCompanion.insert(
+                id: source.sourceVersionId,
+                programId: source.programId,
+                versionNumber: 1,
+                status: 'published',
+                origin: const Value('user'),
+                createdAtUtc: publishedAt,
+                publishedAtUtc: Value(publishedAt),
+              ),
+            );
+        await _insertVersionGraph(source.sourceVersionId, source.blocks);
+      }
     });
   }
 
@@ -1392,6 +1522,41 @@ class ProgramRepository {
     if (settings?.activeProgramVersionId == versionId) {
       throw StateError(
         'The active program version must be replaced or cleared first.',
+      );
+    }
+  }
+
+  static void _validateExistingBundledSource(
+    BundledProgramSourceInput source,
+    Iterable<Program> programs,
+    Iterable<ProgramVersion> versions,
+  ) {
+    Program? program;
+    for (final row in programs) {
+      if (row.id == source.programId) {
+        program = row;
+        break;
+      }
+    }
+    ProgramVersion? version;
+    for (final row in versions) {
+      if (row.id == source.sourceVersionId) {
+        version = row;
+        break;
+      }
+    }
+    if (program == null || version == null) {
+      throw StateError(
+        'Bundled program source ${source.programId} is incomplete.',
+      );
+    }
+    if (program.archivedAtUtc != null ||
+        version.programId != source.programId ||
+        version.status != 'published' ||
+        version.versionNumber != 1 ||
+        version.archivedAtUtc != null) {
+      throw StateError(
+        'Bundled program source ${source.programId} is unavailable.',
       );
     }
   }

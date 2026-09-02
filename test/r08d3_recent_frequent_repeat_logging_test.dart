@@ -677,6 +677,9 @@ void main() {
           find.textContaining('Added Thick Dahi to snack'),
           findsOneWidget,
         );
+        await tester.pump(const Duration(seconds: 4));
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.textContaining('Added Thick Dahi to snack'), findsNothing);
 
         expect(recorder.finalizeCalls, 1);
         expect(recorder.localDate, '2026-08-24');

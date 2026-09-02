@@ -26,6 +26,7 @@ class OnboardingScreen extends ConsumerStatefulWidget {
 
 class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final PageController _pageController = PageController();
+  final ScrollController _aboutScrollController = ScrollController();
   int _currentPage = 0;
   final int _totalPages = 4;
 
@@ -54,6 +55,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final TextEditingController _targetWeightController = TextEditingController(
     text: '70',
   );
+  final FocusNode _nameFocusNode = FocusNode(debugLabel: 'onboarding-name');
+  final FocusNode _ageFocusNode = FocusNode(debugLabel: 'onboarding-age');
+  final FocusNode _heightFocusNode = FocusNode(debugLabel: 'onboarding-height');
+  final FocusNode _weightFocusNode = FocusNode(debugLabel: 'onboarding-weight');
 
   String? _ageError;
   String? _heightError;
@@ -68,6 +73,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   var _showingPayoff = false;
   String? _completionError;
   String? _skipError;
+  double? _lastKeyboardInset;
 
   @override
   void initState() {
@@ -75,7 +81,49 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     _ageController.addListener(_validateAge);
     _heightController.addListener(_validateHeight);
     _weightController.addListener(_validateWeight);
+    _nameFocusNode.addListener(_onAboutFieldFocusChange);
+    _ageFocusNode.addListener(_onAboutFieldFocusChange);
+    _heightFocusNode.addListener(_onAboutFieldFocusChange);
+    _weightFocusNode.addListener(_onAboutFieldFocusChange);
     _loadDraft();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
+    if (_lastKeyboardInset != keyboardInset) {
+      _lastKeyboardInset = keyboardInset;
+      if (keyboardInset > 0) _scheduleFocusedFieldVisibility();
+    }
+  }
+
+  void _onAboutFieldFocusChange() {
+    if (_hasAboutFieldFocus) _scheduleFocusedFieldVisibility();
+  }
+
+  bool get _hasAboutFieldFocus =>
+      _nameFocusNode.hasFocus ||
+      _ageFocusNode.hasFocus ||
+      _heightFocusNode.hasFocus ||
+      _weightFocusNode.hasFocus;
+
+  void _scheduleFocusedFieldVisibility() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _ensureFocusedFieldVisibility();
+    });
+  }
+
+  void _ensureFocusedFieldVisibility() {
+    if (!mounted || _currentPage != 0 || !_hasAboutFieldFocus) return;
+    final focusedContext = FocusManager.instance.primaryFocus?.context;
+    if (focusedContext == null) return;
+    Scrollable.ensureVisible(
+      focusedContext,
+      alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
+      duration: B05MotionPolicy.transitionDuration(context),
+      curve: Curves.easeOut,
+    );
   }
 
   Future<void> _loadDraft() async {
@@ -258,11 +306,20 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   @override
   void dispose() {
     _pageController.dispose();
+    _aboutScrollController.dispose();
     _nameController.dispose();
     _ageController.dispose();
     _heightController.dispose();
     _weightController.dispose();
     _targetWeightController.dispose();
+    _nameFocusNode.removeListener(_onAboutFieldFocusChange);
+    _ageFocusNode.removeListener(_onAboutFieldFocusChange);
+    _heightFocusNode.removeListener(_onAboutFieldFocusChange);
+    _weightFocusNode.removeListener(_onAboutFieldFocusChange);
+    _nameFocusNode.dispose();
+    _ageFocusNode.dispose();
+    _heightFocusNode.dispose();
+    _weightFocusNode.dispose();
     super.dispose();
   }
 
@@ -607,6 +664,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             : 'Next Step',
         onPressed: _isCompleting ? null : _nextPage,
       ),
+      hidePrimaryActionWhenKeyboardVisible: true,
     );
   }
 
@@ -654,6 +712,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     return OnboardingPageContainer(
       title: 'Welcome to IndiFit!',
       subtitle: 'A few details help us make your starting point useful.',
+      scrollController: _aboutScrollController,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -678,68 +737,100 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             onTap: () => _selectOnboardingChoice(() => _sex = 'female'),
           ),
           const SizedBox(height: B05Layout.space24),
-          TextField(
-            controller: _nameController,
-            maxLength: 100,
-            buildCounter:
-                (_, {required currentLength, required isFocused, maxLength}) =>
-                    null,
-            textInputAction: TextInputAction.done,
-            onChanged: (_) => unawaited(_saveDraft().catchError((_) {})),
-            onEditingComplete: _dismissInputFocus,
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(color: colors.textPrimary),
-            decoration: InputDecoration(
-              labelText: 'Name (optional)',
-              hintText: 'e.g. Rahul, Priya',
-              prefixIcon: Icon(
-                Icons.person_outline_rounded,
-                color: colors.action,
-              ),
-              filled: true,
-              fillColor: colors.inset,
-              border: OutlineInputBorder(
-                borderRadius: B05Radii.largeRadius,
-                borderSide: BorderSide(color: colors.border),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: B05Radii.largeRadius,
-                borderSide: BorderSide(color: colors.border),
-              ),
+          FocusTraversalGroup(
+            policy: OrderedTraversalPolicy(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                FocusTraversalOrder(
+                  order: const NumericFocusOrder(1),
+                  child: TextField(
+                    controller: _nameController,
+                    focusNode: _nameFocusNode,
+                    maxLength: 100,
+                    buildCounter:
+                        (
+                          _, {
+                          required currentLength,
+                          required isFocused,
+                          maxLength,
+                        }) => null,
+                    textInputAction: TextInputAction.next,
+                    onChanged: (_) =>
+                        unawaited(_saveDraft().catchError((_) {})),
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: colors.textPrimary,
+                    ),
+                    decoration: InputDecoration(
+                      labelText: 'Name (optional)',
+                      hintText: 'e.g. Rahul, Priya',
+                      prefixIcon: Icon(
+                        Icons.person_outline_rounded,
+                        color: colors.action,
+                      ),
+                      filled: true,
+                      fillColor: colors.inset,
+                      border: OutlineInputBorder(
+                        borderRadius: B05Radii.largeRadius,
+                        borderSide: BorderSide(color: colors.border),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: B05Radii.largeRadius,
+                        borderSide: BorderSide(color: colors.border),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: B05Layout.space20),
+                Text('How old are you?', style: B05Typography.label(context)),
+                const SizedBox(height: B05Layout.space8),
+                FocusTraversalOrder(
+                  order: const NumericFocusOrder(2),
+                  child: OnboardingNumberInputField(
+                    controller: _ageController,
+                    focusNode: _ageFocusNode,
+                    label: 'Age',
+                    suffix: 'years',
+                    icon: Icons.calendar_today,
+                    errorText: _ageError,
+                    onChanged: (_) =>
+                        unawaited(_saveDraft().catchError((_) {})),
+                    textInputAction: TextInputAction.next,
+                  ),
+                ),
+                const SizedBox(height: B05Layout.space12),
+                FocusTraversalOrder(
+                  order: const NumericFocusOrder(3),
+                  child: OnboardingNumberInputField(
+                    controller: _heightController,
+                    focusNode: _heightFocusNode,
+                    label: 'Height',
+                    suffix: 'cm',
+                    icon: Icons.height,
+                    errorText: _heightError,
+                    onChanged: (_) =>
+                        unawaited(_saveDraft().catchError((_) {})),
+                    textInputAction: TextInputAction.next,
+                  ),
+                ),
+                const SizedBox(height: B05Layout.space12),
+                FocusTraversalOrder(
+                  order: const NumericFocusOrder(4),
+                  child: OnboardingNumberInputField(
+                    controller: _weightController,
+                    focusNode: _weightFocusNode,
+                    label: 'Current weight',
+                    suffix: 'kg',
+                    icon: Icons.scale,
+                    errorText: _weightError,
+                    onChanged: (_) =>
+                        unawaited(_saveDraft().catchError((_) {})),
+                    onEditingComplete: _dismissInputFocus,
+                    textInputAction: TextInputAction.done,
+                  ),
+                ),
+              ],
             ),
-          ),
-          const SizedBox(height: B05Layout.space20),
-          Text('How old are you?', style: B05Typography.label(context)),
-          const SizedBox(height: B05Layout.space8),
-          OnboardingNumberInputField(
-            controller: _ageController,
-            label: 'Age',
-            suffix: 'years',
-            icon: Icons.calendar_today,
-            errorText: _ageError,
-            onChanged: (_) => unawaited(_saveDraft().catchError((_) {})),
-            onEditingComplete: _dismissInputFocus,
-          ),
-          const SizedBox(height: B05Layout.space12),
-          OnboardingNumberInputField(
-            controller: _heightController,
-            label: 'Height',
-            suffix: 'cm',
-            icon: Icons.height,
-            errorText: _heightError,
-            onChanged: (_) => unawaited(_saveDraft().catchError((_) {})),
-            onEditingComplete: _dismissInputFocus,
-          ),
-          const SizedBox(height: B05Layout.space12),
-          OnboardingNumberInputField(
-            controller: _weightController,
-            label: 'Current weight',
-            suffix: 'kg',
-            icon: Icons.scale,
-            errorText: _weightError,
-            onChanged: (_) => unawaited(_saveDraft().catchError((_) {})),
-            onEditingComplete: _dismissInputFocus,
           ),
         ],
       ),

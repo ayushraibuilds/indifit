@@ -14,6 +14,7 @@ import '../../data/database/app_database.dart';
 import '../../data/models/b02_execution_models.dart';
 import '../../data/repositories/b02_execution_compatibility_read_repository.dart';
 import '../../data/repositories/calendar_read_repository.dart';
+import '../../data/repositories/offline_starter_plan_catalog.dart';
 import '../../data/repositories/plan_library_read_repository.dart';
 import '../../data/repositories/plan_overview_read_repository.dart';
 import '../../data/repositories/program_activation_coordinator.dart';
@@ -31,6 +32,9 @@ class PlanLibraryScreen extends ConsumerStatefulWidget {
 class _PlanLibraryScreenState extends ConsumerState<PlanLibraryScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _query = '';
+  StarterPlanEnvironment? _environment;
+  int? _dayFilter;
+  StarterPlanExperience? _experience;
 
   @override
   void dispose() {
@@ -41,6 +45,7 @@ class _PlanLibraryScreenState extends ConsumerState<PlanLibraryScreen> {
   @override
   Widget build(BuildContext context) {
     final plans = ref.watch(planLibrarySnapshotProvider);
+    final profile = ref.watch(userProfileProvider);
     return Scaffold(
       appBar: AppBar(title: const Text('Plan Library')),
       body: plans.when(
@@ -53,21 +58,33 @@ class _PlanLibraryScreenState extends ConsumerState<PlanLibraryScreen> {
         error: (error, _) => _PlanLibraryError(
           onRetry: () => ref.invalidate(planLibrarySnapshotProvider),
         ),
-        data: (snapshot) => _buildContent(context, snapshot),
+        data: (snapshot) => _buildContent(context, snapshot, profile),
       ),
     );
   }
 
-  Widget _buildContent(BuildContext context, PlanLibrarySnapshot snapshot) {
+  Widget _buildContent(
+    BuildContext context,
+    PlanLibrarySnapshot snapshot,
+    UserProfileState profile,
+  ) {
     final visibleEntries = snapshot.entries
-        .where((entry) => _matchesQuery(entry, _query))
+        .where(
+          (entry) => _matchesQuery(entry, _query) && _matchesFilters(entry),
+        )
         .toList(growable: false);
     final activeEntries = visibleEntries
         .where((entry) => entry.isActive)
         .toList(growable: false);
     final active = activeEntries.isEmpty ? null : activeEntries.first;
+    final recommendation = _showsRecommendation
+        ? _recommendedEntry(snapshot, profile)
+        : null;
     final available = visibleEntries
-        .where((entry) => !entry.isActive)
+        .where(
+          (entry) =>
+              !entry.isActive && entry.version.id != recommendation?.version.id,
+        )
         .toList(growable: false);
 
     return SafeArea(
@@ -97,6 +114,18 @@ class _PlanLibraryScreenState extends ConsumerState<PlanLibraryScreen> {
                         setState(() => _query = '');
                       },
                     ),
+                    const SizedBox(height: B05Layout.space16),
+                    _PlanLibraryFilters(
+                      environment: _environment,
+                      dayFilter: _dayFilter,
+                      experience: _experience,
+                      onEnvironmentChanged: (value) =>
+                          setState(() => _environment = value),
+                      onDayChanged: (value) =>
+                          setState(() => _dayFilter = value),
+                      onExperienceChanged: (value) =>
+                          setState(() => _experience = value),
+                    ),
                   ],
                   const SizedBox(height: B05Layout.space24),
                   if (visibleEntries.isEmpty && snapshot.entries.isNotEmpty)
@@ -104,7 +133,12 @@ class _PlanLibraryScreenState extends ConsumerState<PlanLibraryScreen> {
                       query: _query,
                       onClear: () {
                         _searchController.clear();
-                        setState(() => _query = '');
+                        setState(() {
+                          _query = '';
+                          _environment = null;
+                          _dayFilter = null;
+                          _experience = null;
+                        });
                       },
                     )
                   else ...[
@@ -118,12 +152,26 @@ class _PlanLibraryScreenState extends ConsumerState<PlanLibraryScreen> {
                         entry: active,
                         onTap: () => _openPlan(context, active),
                       ),
+                      if (recommendation != null || available.isNotEmpty)
+                        const SizedBox(height: B05Layout.space24),
+                    ],
+                    if (recommendation != null) ...[
+                      _SectionHeading(
+                        title: 'Recommended for you',
+                        detail:
+                            'Based on the equipment saved in your profile. You can choose any plan.',
+                      ),
+                      const SizedBox(height: B05Layout.space8),
+                      PlanLibraryCard(
+                        entry: recommendation,
+                        onTap: () => _openPlan(context, recommendation),
+                      ),
                       if (available.isNotEmpty)
                         const SizedBox(height: B05Layout.space24),
                     ],
                     if (available.isNotEmpty) ...[
                       _SectionHeading(
-                        title: active == null ? 'Plans' : 'Choose another plan',
+                        title: 'Browse plans',
                         detail: active == null
                             ? 'Open a plan to see its schedule before using it.'
                             : 'Your completed history stays saved when you switch.',
@@ -163,6 +211,46 @@ class _PlanLibraryScreenState extends ConsumerState<PlanLibraryScreen> {
 
   void _openPlan(BuildContext context, PlanLibraryEntry entry) {
     context.push('/plan-overview/${entry.version.id}');
+  }
+
+  bool get _showsRecommendation =>
+      _query.trim().isEmpty &&
+      _environment == null &&
+      _dayFilter == null &&
+      _experience == null;
+
+  bool _matchesFilters(PlanLibraryEntry entry) {
+    final starter = entry.starterPlan;
+    if (_environment != null && starter?.environment != _environment) {
+      return false;
+    }
+    if (_experience != null && starter?.experience != _experience) {
+      return false;
+    }
+    final days = starter?.daysPerWeek ?? entry.metadata.trainingDaysPerWeek;
+    if (_dayFilter == 5) {
+      return days != null && days >= 5;
+    }
+    if (_dayFilter != null && days != _dayFilter) return false;
+    return true;
+  }
+
+  PlanLibraryEntry? _recommendedEntry(
+    PlanLibrarySnapshot snapshot,
+    UserProfileState profile,
+  ) {
+    if (!profile.isLoaded || !profile.hasProfile) return null;
+    final targetId = switch (profile.equipmentAccess.trim().toLowerCase()) {
+      'dumbbells' => 'dumbbell-full-body-3-day',
+      'bodyweight' => 'bodyweight-basics-3-day',
+      'full_gym' || 'gym' => 'beginner-full-body-3-day',
+      _ => null,
+    };
+    if (targetId == null) return null;
+    for (final entry in snapshot.entries) {
+      if (!entry.isActive && entry.starterPlan?.id == targetId) return entry;
+    }
+    return null;
   }
 }
 
@@ -396,6 +484,8 @@ class PlanLibraryCard extends StatelessWidget {
         ? 'Current plan'
         : entry.isDraft
         ? 'Continue setup'
+        : entry.isBundled
+        ? 'Starter plan'
         : 'Available';
     final semanticLabel = [
       entry.program.name,
@@ -585,7 +675,9 @@ class _PlanDetailsBody extends StatelessWidget {
                       child: TextButton.icon(
                         onPressed: onEditPlan,
                         icon: const Icon(Icons.edit_outlined),
-                        label: const Text('Edit plan'),
+                        label: Text(
+                          entry.isBundled ? 'Customize a copy' : 'Edit plan',
+                        ),
                       ),
                     ),
                   ],
@@ -1009,6 +1101,13 @@ class _PlanMetadataLine extends StatelessWidget {
         icon: Icons.event_available_outlined,
         label: entry.metadata.scheduleLabel,
       ),
+      if (entry.starterPlan case final starter?)
+        _InlineFact(
+          icon: starter.environment == StarterPlanEnvironment.gym
+              ? Icons.fitness_center_outlined
+              : Icons.home_outlined,
+          label: starter.environment.label,
+        ),
       _InlineFact(
         icon: Icons.fitness_center_outlined,
         label:
@@ -1042,6 +1141,11 @@ class _PlanMetadataPanel extends StatelessWidget {
               value:
                   '${entry.metadata.exerciseCount} ${_pluralize('exercise', entry.metadata.exerciseCount)}',
             ),
+            if (entry.starterPlan case final starter?) ...[
+              _DetailFact(label: 'Setting', value: starter.environment.label),
+              _DetailFact(label: 'Level', value: starter.experience.label),
+              _DetailFact(label: 'Equipment', value: starter.equipment),
+            ],
           ],
         ),
       ],
@@ -1082,7 +1186,13 @@ class _InlineFact extends StatelessWidget {
     children: [
       Icon(icon, size: B05Layout.iconSmall, color: context.b05Colors.action),
       const SizedBox(width: B05Layout.space4),
-      Text(label, style: B05Typography.caption(context)),
+      Flexible(
+        child: Text(
+          label,
+          overflow: TextOverflow.ellipsis,
+          style: B05Typography.caption(context),
+        ),
+      ),
     ],
   );
 }
@@ -1204,6 +1314,105 @@ class _LibraryIntro extends StatelessWidget {
         style: B05Typography.body(context),
       ),
     ],
+  );
+}
+
+class _PlanLibraryFilters extends StatelessWidget {
+  const _PlanLibraryFilters({
+    required this.environment,
+    required this.dayFilter,
+    required this.experience,
+    required this.onEnvironmentChanged,
+    required this.onDayChanged,
+    required this.onExperienceChanged,
+  });
+
+  final StarterPlanEnvironment? environment;
+  final int? dayFilter;
+  final StarterPlanExperience? experience;
+  final ValueChanged<StarterPlanEnvironment?> onEnvironmentChanged;
+  final ValueChanged<int?> onDayChanged;
+  final ValueChanged<StarterPlanExperience?> onExperienceChanged;
+
+  @override
+  Widget build(BuildContext context) => B05Surface(
+    tone: B05SurfaceTone.inset,
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Browse plans', style: B05Typography.title(context)),
+        const SizedBox(height: B05Layout.space8),
+        _PlanFilterRow<StarterPlanEnvironment>(
+          semanticLabel: 'Training setting filter',
+          selected: environment,
+          allLabel: 'All settings',
+          values: StarterPlanEnvironment.values,
+          labelFor: (value) => value.label,
+          onChanged: onEnvironmentChanged,
+        ),
+        const SizedBox(height: B05Layout.space8),
+        _PlanFilterRow<int>(
+          semanticLabel: 'Training days filter',
+          selected: dayFilter,
+          allLabel: 'All days',
+          values: const [3, 4, 5],
+          labelFor: (value) => value == 5 ? '5+ days' : '$value days',
+          onChanged: onDayChanged,
+        ),
+        const SizedBox(height: B05Layout.space8),
+        _PlanFilterRow<StarterPlanExperience>(
+          semanticLabel: 'Experience filter',
+          selected: experience,
+          allLabel: 'All levels',
+          values: StarterPlanExperience.values,
+          labelFor: (value) => value.label,
+          onChanged: onExperienceChanged,
+        ),
+      ],
+    ),
+  );
+}
+
+class _PlanFilterRow<T> extends StatelessWidget {
+  const _PlanFilterRow({
+    required this.semanticLabel,
+    required this.selected,
+    required this.allLabel,
+    required this.values,
+    required this.labelFor,
+    required this.onChanged,
+  });
+
+  final String semanticLabel;
+  final T? selected;
+  final String allLabel;
+  final List<T> values;
+  final String Function(T value) labelFor;
+  final ValueChanged<T?> onChanged;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    container: true,
+    label: semanticLabel,
+    child: Wrap(
+      spacing: B05Layout.space8,
+      runSpacing: B05Layout.space4,
+      children: [
+        ChoiceChip(
+          label: Text(allLabel),
+          selected: selected == null,
+          showCheckmark: false,
+          onSelected: (_) => onChanged(null),
+        ),
+        for (final value in values)
+          ChoiceChip(
+            label: Text(labelFor(value)),
+            selected: selected == value,
+            showCheckmark: false,
+            onSelected: (_) => onChanged(value),
+          ),
+      ],
+    ),
   );
 }
 
@@ -1341,12 +1550,20 @@ class _NoMatchingPlans extends StatelessWidget {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('No plans match “$query”', style: B05Typography.title(context)),
+        Text(
+          query.trim().isEmpty
+              ? 'No plans match these filters'
+              : 'No plans match “$query”',
+          style: B05Typography.title(context),
+        ),
         const SizedBox(height: B05Layout.space4),
-        Text('Try another name or focus.', style: B05Typography.body(context)),
+        Text(
+          'Try another search or show all plans.',
+          style: B05Typography.body(context),
+        ),
         const SizedBox(height: B05Layout.space8),
         B05ActionButton(
-          label: 'Clear search',
+          label: 'Show all plans',
           icon: Icons.clear_rounded,
           emphasis: B05ActionEmphasis.secondary,
           onPressed: onClear,
@@ -1415,6 +1632,12 @@ bool _matchesQuery(PlanLibraryEntry entry, String rawQuery) {
     entry.program.name,
     if (entry.program.goal != null) entry.program.goal!,
     if (entry.program.notes != null) entry.program.notes!,
+    if (entry.starterPlan case final starter?) ...[
+      starter.environment.label,
+      starter.experience.label,
+      starter.equipment,
+      starter.purpose,
+    ],
     ...entry.metadata.blockNames,
     for (final template in entry.detail.sessionTemplates) template.name,
   ].join(' ').toLowerCase();

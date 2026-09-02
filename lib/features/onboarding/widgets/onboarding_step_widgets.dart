@@ -7,12 +7,14 @@ class OnboardingPageContainer extends StatelessWidget {
   final String title;
   final String subtitle;
   final Widget child;
+  final ScrollController? scrollController;
 
   const OnboardingPageContainer({
     super.key,
     required this.title,
     required this.subtitle,
     required this.child,
+    this.scrollController,
   });
 
   @override
@@ -25,6 +27,7 @@ class OnboardingPageContainer extends StatelessWidget {
         B05Layout.space24,
       ),
       child: SingleChildScrollView(
+        controller: scrollController,
         keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -133,22 +136,26 @@ class OnboardingSelectionCard extends StatelessWidget {
 
 class OnboardingNumberInputField extends StatelessWidget {
   final TextEditingController controller;
+  final FocusNode? focusNode;
   final String label;
   final String suffix;
   final IconData icon;
   final String? errorText;
   final ValueChanged<String>? onChanged;
   final VoidCallback? onEditingComplete;
+  final TextInputAction textInputAction;
 
   const OnboardingNumberInputField({
     super.key,
     required this.controller,
+    this.focusNode,
     required this.label,
     required this.suffix,
     required this.icon,
     this.errorText,
     this.onChanged,
     this.onEditingComplete,
+    this.textInputAction = TextInputAction.done,
   });
 
   @override
@@ -188,12 +195,13 @@ class OnboardingNumberInputField extends StatelessWidget {
               Expanded(
                 child: TextField(
                   controller: controller,
+                  focusNode: focusNode,
                   onChanged: onChanged,
                   onEditingComplete: onEditingComplete,
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
-                  textInputAction: TextInputAction.done,
+                  textInputAction: textInputAction,
                   style: Theme.of(
                     context,
                   ).textTheme.titleLarge?.copyWith(color: colors.textPrimary),
