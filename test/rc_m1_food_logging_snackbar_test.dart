@@ -3,8 +3,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/core/widgets/indi_fit_feedback.dart';
 
+import 'support/indifit_test_harness.dart';
+
 void main() {
-  TestWidgetsFlutterBinding.ensureInitialized();
+  initializeIndiFitTestHarness();
 
   testWidgets('Undo feedback appears and auto-dismisses after its window', (
     tester,

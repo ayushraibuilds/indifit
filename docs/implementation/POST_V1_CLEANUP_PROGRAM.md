@@ -2,7 +2,7 @@
 
 - Status: Active; V1 frozen, C0A, C0B, and C1A complete, C1B next
 - Effective date: 2026-08-30
-- Structural recount: `aaa8032`
+- Structural recount: `ce599dd` (integrated V1 RC)
 - Portfolio plan: [`POST_V1_IMPLEMENTATION_PLAN.md`](POST_V1_IMPLEMENTATION_PLAN.md)
 - Product roadmap: [`post-v1-roadmap.md`](../roadmap/post-v1-roadmap.md)
 
@@ -35,6 +35,11 @@ successful cleanup.
 
 No production cleanup begins until the current release candidate is closed.
 
+The V1 Release Candidate was finalized with four real-device correctness fixes
+(onboarding keyboard flow, offline starter plan library, food search ranking,
+and transient feedback auto-dismissal) merged into the Post-V1 baseline at
+`ce599dd`. Gate 0 is fully closed and verified.
+
 Required entry sequence:
 
 1. Run the final accepted automated suite on the post-review release HEAD.
@@ -50,13 +55,13 @@ behavior.
 
 ## 3. Audit snapshot and refresh rule
 
-Structural values below were re-counted at `aaa8032`. Runtime/test outcomes are
+Structural values below were re-counted at `ce599dd`. Runtime/test outcomes are
 from the supplied cleanup audit and must be rerun at the release tag. The
 unreachable-surface inventory is a candidate set, not deletion authority.
 
 | Area | Current evidence | C0 refresh requirement |
 |---|---|---|
-| Production Dart | 352 non-generated files, 182,423 lines | Recount with the same exclusions at the release tag |
+| Production Dart | 353 non-generated files, 185,347 lines | Recount with the same exclusions at the release tag |
 | Generated Dart | 2 generated files, 91,844 lines, primarily Drift | Record generator/tool versions; never hand-edit generated output |
 | Flutter tests | 264 files, 102,781 lines | Recount and freeze lane definitions |
 | Static analysis | Cleanup audit reports zero issues | Rerun `flutter analyze` on release and cleanup baselines |

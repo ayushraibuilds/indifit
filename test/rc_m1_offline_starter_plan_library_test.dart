@@ -15,25 +15,26 @@ import 'package:indifit/data/repositories/program_activation_coordinator.dart';
 import 'package:indifit/data/repositories/program_repository.dart';
 import 'package:indifit/data/repositories/workout_execution_compatibility_adapter.dart';
 import 'package:indifit/features/training/plan_library_screen.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+
+import 'support/indifit_test_harness.dart';
 
 final _now = DateTime.utc(2026, 9, 1, 8);
 
 void main() {
-  TestWidgetsFlutterBinding.ensureInitialized();
+  initializeIndiFitTestHarness();
 
+  late TestDatabaseScope scope;
   late AppDatabase db;
   late ProgramRepository programs;
   late LocalScheduleDateService dates;
 
   setUp(() {
-    SharedPreferences.setMockInitialValues({'onboarding_skipped': true});
-    db = AppDatabase.memory();
+    setIndiFitTestPreferences({'onboarding_skipped': true});
+    scope = registerTestDatabaseScope();
+    db = scope.create();
     programs = ProgramRepository(db);
     dates = LocalScheduleDateService(nowUtc: () => _now);
   });
-
-  tearDown(() => db.close());
 
   test(
     'fresh install exposes eight reviewed plans without network access',

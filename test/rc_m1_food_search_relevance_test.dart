@@ -7,14 +7,15 @@ import 'package:indifit/data/repositories/food_api_service.dart';
 import 'package:indifit/data/repositories/food_repository.dart';
 import 'package:indifit/data/services/nutrition_food_search_ranking.dart';
 
+import 'support/indifit_test_harness.dart';
+
 void main() {
-  TestWidgetsFlutterBinding.ensureInitialized();
+  initializeIndiFitTestHarness();
 
   test(
     'reviewed B03 presentation authority is read-only and explicit',
     () async {
-      final db = AppDatabase.memory();
-      addTearDown(db.close);
+      final db = registerTestDatabaseScope().create();
       final repository = FoodRepository(db);
       await repository.logFoodEntry(
         name: 'Historical Roti',

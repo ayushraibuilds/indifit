@@ -5,10 +5,11 @@ import 'package:indifit/core/di/providers.dart';
 import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/features/onboarding/onboarding_screen.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+
+import 'support/indifit_test_harness.dart';
 
 void main() {
-  TestWidgetsFlutterBinding.ensureInitialized();
+  initializeIndiFitTestHarness();
 
   testWidgets(
     'onboarding fields use form actions and keep the page CTA out of the keyboard area',
@@ -205,17 +206,16 @@ void main() {
   testWidgets('onboarding remains free of compact large-text overflow', (
     tester,
   ) async {
-    final database = AppDatabase.memory();
+    final database = registerTestDatabaseScope().create();
     addTearDown(() async {
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump();
-      await database.close();
       tester.view.reset();
     });
 
     for (final theme in [AppTheme.lightTheme, AppTheme.darkTheme]) {
       for (final scale in [1.0, 2.0]) {
-        SharedPreferences.setMockInitialValues({});
+        setIndiFitTestPreferences({});
         tester.view.physicalSize = const Size(320, 568);
         tester.view.devicePixelRatio = 1;
         await tester.pumpWidget(
@@ -260,11 +260,11 @@ Future<AppDatabase> _pumpOnboarding(
   Size size = const Size(390, 844),
   double textScale = 1,
 }) async {
-  SharedPreferences.setMockInitialValues({});
+  setIndiFitTestPreferences({});
   addTearDown(tester.view.reset);
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
-  final database = AppDatabase.memory();
+  final database = registerTestDatabaseScope().create();
   final app = MaterialApp(
     theme: AppTheme.lightTheme,
     home: const OnboardingScreen(),

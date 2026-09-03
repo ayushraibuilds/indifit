@@ -81,10 +81,10 @@ passes 36/36 tests; no historical decoder or payload was changed.
 
 ## Fragile-flow slice
 
-[`C0B_FRAGILE_FLOW_MATRIX.md`](C0B_FRAGILE_FLOW_MATRIX.md) maps the six weak
-areas identified by the audit to outcome-based protection. The selected Saved
-Meal, Recipe, plan authoring, Data Management, Today/dashboard, and notification
-tests pass 73/73.
+[`C0B_FRAGILE_FLOW_MATRIX.md`](C0B_FRAGILE_FLOW_MATRIX.md) maps the ten weak
+and release-candidate areas to outcome-based protection. The core flows pass
+73/73, and the four V1 Release Candidate flows (onboarding keyboard, offline starter
+plans, food search relevance, transient feedback) pass 25/25, totaling 98/98 passed.
 
 ## Detailed navigation slice
 
@@ -111,11 +111,11 @@ are explicitly not approved baselines.
 
 ## Exit evidence
 
-- Consolidated contract, backup, and fragile-flow suite — 120/120 passed.
+- Consolidated contract, backup, and fragile-flow suite — 145/145 passed (including 25/25 RC tests).
 - Focused W06 visual/accessibility certification — 37/37 passed, including
   light/dark, compact width, large text, semantics, focus, and reduced motion.
 - `flutter analyze` — no issues found.
 - `git diff --check` — clean.
 
-C0B is complete. C1A may now classify retired-surface candidates; this record
+C0B is complete and re-baselined with all V1 Release Candidate behaviors. C1A may now classify retired-surface candidates; this record
 does not itself authorize deletion.

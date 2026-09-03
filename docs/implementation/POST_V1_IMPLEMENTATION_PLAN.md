@@ -118,6 +118,7 @@ changes. The local record must remain correct in every case.
 ### Gate 0 — V1 release and observation window
 
 - **Priority:** P0
+- **Status:** Complete. Finalized with 4 real-device correctness fixes (onboarding keyboard flow, offline starter plan library, food search ranking, transient feedback auto-dismissal) merged at `ce599dd`.
 - **Outcome:** the frozen V1 release is signed off and post-release issues have a
   single triage path.
 
@@ -133,7 +134,7 @@ Work:
 Exit criteria:
 
 - Human release sign-off is recorded.
-- The accepted test/build baseline is reproducible.
+- The accepted test/build baseline is reproducible (integrated at `ce599dd`).
 - Any open P0 defect has an owner or explicitly blocks post-V1 work.
 
 ### Wave 1 — Deterministic engineering foundation

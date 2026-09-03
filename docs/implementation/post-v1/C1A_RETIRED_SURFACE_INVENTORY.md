@@ -1,20 +1,24 @@
 # C1A Retired-Surface Reachability and Ownership Inventory
 
 - Status: Complete
-- Date: 2026-09-01
-- Baseline commit: `13022f7`
+- Date: 2026-09-01 (re-baselined 2026-09-03 after V1 RC integration)
+- Baseline commit: `ce599dd`
 - Parent program: [`../POST_V1_CLEANUP_PROGRAM.md`](../POST_V1_CLEANUP_PROGRAM.md)
 - C0B contract gate: [`C0B_CONTRACT_BASELINE.md`](C0B_CONTRACT_BASELINE.md)
 
 ## Result
 
-The current tree contains 352 non-generated production Dart files. Resolving
-static `import`, `export`, and `part` edges from `lib/main.dart` reaches 314;
+The current tree contains 353 non-generated production Dart files. Resolving
+static `import`, `export`, and `part` edges from `lib/main.dart` reaches 315;
 38 files containing 14,642 lines are outside that graph.
 
-The earlier audit reported 37 files/about 14.5k lines. The current count adds
-the two-line `onboarding_wizard_screen.dart` compatibility re-export. This is
-baseline drift, not evidence of a newly reachable product surface.
+The earlier audit reported 37 files/about 14.5k lines. The intermediate count
+added the two-line `onboarding_wizard_screen.dart` compatibility re-export. The
+integrated V1 RC merge (`ce599dd`) additionally introduced the reachable
+`lib/data/repositories/offline_starter_plan_catalog.dart` (472 lines), bringing
+total non-generated production Dart files from 352 to 353 and reachable files
+from 314 to 315. The 38 evidence-confirmed retired files and their line counts
+remain completely unchanged and outside the production graph.
 
 | Classification | Files | Lines | C1B disposition |
 |---|---:|---:|---|
