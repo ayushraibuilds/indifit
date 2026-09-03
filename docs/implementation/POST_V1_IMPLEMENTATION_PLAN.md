@@ -304,13 +304,14 @@ disabled, unavailable, slow, or failing.
 #### PV1-CLOUD-01 — Automatic encrypted cloud backup
 
 **Priority:** P1; first connected product release
+**Status:** CLOUD-01A Complete (Threat Model, Envelope Encryption, Retention Pruning, API Contract, and Tests frozen in `docs/implementation/post-v1/CLOUD01A_THREAT_MODEL_AND_CONTRACT.md` and `test/pv1_cloud01a_threat_contract_test.dart`); CLOUD-01B next.
 
 Split into decision and implementation packages:
 
 1. **CLOUD-01A threat/product contract:** provider/account model, encryption
    scope, key custody/recovery, loss behavior, retention count, Wi-Fi/mobile
    policy, background constraints, privacy/export/deletion, restore UX, costs,
-   and regional/legal review.
+   and regional/legal review. (Complete)
 2. **CLOUD-01B immutable upload:** produce the existing verified export through
    the platform-safe file/secret boundary, encrypt/authenticate, upload with a
    stable snapshot ID, and record local last-success/remote metadata.
@@ -687,6 +688,7 @@ dependencies are satisfied may run in parallel; the order breaks priority ties.
 | 5 | PV1-NET-01A | Freeze the offline-core matrix and connected capability/outbox contracts | P0/P1 | PV1-ENG-01B |
 | *Status:* | | **Complete** — Contracts & test matrix frozen at `codex/post-v1-net-01-capability-boundary` | | |
 | 6 | PV1-CLOUD-01A | Decide cloud-backup provider/account, encryption/key recovery, retention, deletion, and restore contracts | P1 | PV1-NET-01A |
+| *Status:* | | **Complete** — Threat model, envelope encryption, & API contracts frozen | | |
 | 7 | PV1-CLOUD-01B | Implement immutable encrypted upload and verified restore vertical slice | P1 | PV1-CLOUD-01A, PV1-ENG-01C |
 | 8 | PV1-SYNC-01A | Specify per-domain identity, tombstone, conflict, version, and convergence rules | P1 | PV1-CLOUD-01A |
 | 9 | PV1-CATALOG-01A | Evaluate food providers and specify normalized remote-food/provenance/cache contract | P1 | PV1-NET-01A |
