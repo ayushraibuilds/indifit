@@ -284,6 +284,7 @@ account, network, provenance, cache, download, and background-job foundations.
 #### PV1-NET-01 — Offline/connected capability boundary
 
 **Priority:** P0 foundation for connected work
+**Status:** Complete (Contracts, Outbox, Registry, and Tests frozen in `docs/implementation/post-v1/NET01_OFFLINE_CAPABILITY_MATRIX.md` and `test/pv1_net01_offline_capability_test.dart`)
 
 Deliverables:
 
@@ -684,6 +685,7 @@ dependencies are satisfied may run in parallel; the order breaks priority ties.
 | 3 | PV1-ENG-01C | Migrate fragile suites and establish repeat/shuffle/serial CI evidence | P0 | PV1-ENG-01B |
 | 4 | PV1-ENG-02 | Add missing characterization for release-critical flows | P1 | PV1-ENG-01B |
 | 5 | PV1-NET-01A | Freeze the offline-core matrix and connected capability/outbox contracts | P0/P1 | PV1-ENG-01B |
+| *Status:* | | **Complete** — Contracts & test matrix frozen at `codex/post-v1-net-01-capability-boundary` | | |
 | 6 | PV1-CLOUD-01A | Decide cloud-backup provider/account, encryption/key recovery, retention, deletion, and restore contracts | P1 | PV1-NET-01A |
 | 7 | PV1-CLOUD-01B | Implement immutable encrypted upload and verified restore vertical slice | P1 | PV1-CLOUD-01A, PV1-ENG-01C |
 | 8 | PV1-SYNC-01A | Specify per-domain identity, tombstone, conflict, version, and convergence rules | P1 | PV1-CLOUD-01A |
