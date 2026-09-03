@@ -366,7 +366,7 @@ logout/device revocation do not delete local data without an explicit choice.
 
 - **Priority:** P1; third/fourth connected product capabilities
 - **Dependency:** PV1-NET-01 and canonical food normalization/provenance
-- **Status:** CATALOG-01A Complete (Specification frozen at `docs/implementation/post-v1/CATALOG01A_FOOD_CATALOG_SPECIFICATION.md`, domain models, 4-4-9 macro validation, and capability contract frozen at `test/pv1_catalog01a_contract_test.dart`).
+- **Status:** CATALOG-01A (Specification & models) & CATALOG-01B (FoodCatalogService, RemoteFoodReviewSheet, Atwater 4-4-9 warning banner, Indian serving selector, and local search integration frozen at `test/pv1_catalog01b_ui_review_test.dart`) Complete.
 
 Delivery order:
 
@@ -701,6 +701,8 @@ dependencies are satisfied may run in parallel; the order breaks priority ties.
 | *Status:* | | **Complete** — SyncService, FastAPI relay, outbox integration, & tests frozen at `test/pv1_sync01b_vertical_slice_test.dart` | | |
 | 9 | PV1-CATALOG-01A | Evaluate food providers and specify normalized remote-food/provenance/cache contract | P1 | PV1-NET-01A |
 | *Status:* | | **Complete** — Specification, models, 4-4-9 macro check, & capability contract frozen at `test/pv1_catalog01a_contract_test.dart` | | |
+| 9.1 | PV1-CATALOG-01B | Implement local-first search UI, online provider fallback, and RemoteFoodReviewSheet | P1 | PV1-CATALOG-01A |
+| *Status:* | | **Complete** — FoodCatalogService, RemoteFoodReviewSheet, & tests frozen at `test/pv1_catalog01b_ui_review_test.dart` | | |
 | 10 | PV1-ENG-03 | Produce reachability/ownership inventory for dormant and legacy code | P1 | PV1-ENG-01C |
 | 11 | PV1-ENG-04A | Remove or relocate the first evidence-confirmed retired area | P1 | PV1-ENG-03 |
 | 12 | PV1-ENG-05A | Mechanically split Progress behind characterization tests | P1 | PV1-ENG-02 |

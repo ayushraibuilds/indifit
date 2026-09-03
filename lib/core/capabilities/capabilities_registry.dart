@@ -13,6 +13,7 @@ import 'connected_status.dart';
 import 'content_download_capability.dart';
 import 'diagnostics_capability.dart';
 import 'entitlement_capability.dart';
+import 'food_catalog_capability.dart';
 import 'integration_capability.dart';
 import 'network_capability.dart';
 import 'remote_catalogue_capability.dart';
@@ -25,6 +26,7 @@ export 'connected_status.dart';
 export 'content_download_capability.dart';
 export 'diagnostics_capability.dart';
 export 'entitlement_capability.dart';
+export 'food_catalog_capability.dart';
 export 'integration_capability.dart';
 export 'network_capability.dart';
 export 'remote_catalogue_capability.dart';
@@ -54,6 +56,11 @@ final cloudBackupStatusProvider = FutureProvider<ConnectedStatusState>((ref) asy
 /// Multi-device sync capability provider.
 final syncCapabilityProvider = Provider<SyncCapability>((ref) {
   return const DisabledSyncCapability();
+});
+
+/// Remote food catalog capability provider.
+final foodCatalogCapabilityProvider = Provider<FoodCatalogCapability>((ref) {
+  return const DisabledFoodCatalogCapability();
 });
 
 /// Remote food catalog capability provider.

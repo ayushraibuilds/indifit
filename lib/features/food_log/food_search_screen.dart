@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
+import '../../core/catalog/food_catalog_models.dart';
 import '../../core/di/providers.dart';
 import '../../core/nutrients.dart';
 import '../../core/nutrition_household_measures.dart';
@@ -37,6 +38,7 @@ import 'food_log_surface.dart';
 import 'meal_presentation_registry.dart';
 import 'saved_meals_screen.dart';
 import 'saved_recipe_log_screen.dart';
+import 'widgets/remote_food_review_sheet.dart';
 
 class FoodSearchScreen extends ConsumerStatefulWidget {
   final String? mealType; // "breakfast", "lunch", "dinner", "snack"
@@ -739,21 +741,86 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         _showUnavailableProviderFoodMessage();
         return;
       }
-      final catalog = await ref.read(
-        nutritionFoodCatalogRepositoryProvider.future,
-      );
-      final option = await catalog.ensureProviderFood(
-        displayName: _consumerFoodName(result.name),
-        sourceReference: reference,
-        servingSize: result.servingSize,
-        servingUnit: result.servingUnit,
-        energyKcal: result.calories,
-        proteinG: result.protein,
-        carbohydrateG: result.carbs,
-        fatG: result.fat,
+
+      final servingUnit = result.servingUnit.isNotEmpty ? result.servingUnit : 'g';
+      final servingSize = result.servingSize > 0 ? result.servingSize : 100.0;
+      final lowerName = result.name.toLowerCase();
+
+      final servingOptions = <ServingOption>[
+        ServingOption(
+          unitName: servingUnit,
+          gramWeight: servingUnit.toLowerCase() == 'ml' ? servingSize * 1.03 : servingSize,
+          isDefault: true,
+        ),
+        if (servingSize != 100.0)
+          const ServingOption(unitName: '100g', gramWeight: 100.0),
+        if (lowerName.contains('dal') || lowerName.contains('curry') || lowerName.contains('sabzi') || lowerName.contains('sambar'))
+          const ServingOption(unitName: 'katori', gramWeight: 150.0),
+        if (lowerName.contains('roti') || lowerName.contains('chapati') || lowerName.contains('paratha'))
+          const ServingOption(unitName: 'piece', gramWeight: 35.0),
+        if (lowerName.contains('milk') || lowerName.contains('chaas') || lowerName.contains('lassi'))
+          const ServingOption(unitName: 'glass', gramWeight: 206.0),
+      ];
+
+      final candidate = RemoteFoodCandidate(
+        id: 'off_${result.barcode ?? result.providerId ?? result.name}',
+        provider: FoodCatalogProvider.openFoodFacts,
+        providerId: result.barcode ?? result.providerId,
+        name: _consumerFoodName(result.name),
         brand: _consumerMetadata(result.brand),
+        barcode: result.barcode,
+        category: 'general',
+        caloriesPer100g: result.calories ?? 0.0,
+        proteinPer100g: result.protein ?? 0.0,
+        carbsPer100g: result.carbs ?? 0.0,
+        fatPer100g: result.fat ?? 0.0,
+        servingOptions: servingOptions,
+        provenance: FoodProvenance(
+          provider: FoodCatalogProvider.openFoodFacts,
+          attributionText: 'Source: Open Food Facts (ODbL)',
+          license: 'ODbL',
+          sourceUrl: result.barcode != null ? 'https://world.openfoodfacts.org/product/${result.barcode}' : null,
+          fetchedAtUtc: DateTime.now().toUtc(),
+        ),
       );
-      await _showLogDialog(option);
+
+      await RemoteFoodReviewSheet.show(
+        context: context,
+        candidate: candidate,
+        mealType: widget.mealType ?? 'snack',
+        selectedDate: widget.selectedDate ?? DateTime.now(),
+        onConfirm: ({
+          required RemoteFoodCandidate candidate,
+          required double quantity,
+          required ServingOption servingOption,
+          required bool logImmediately,
+        }) async {
+          final catalog = await ref.read(
+            nutritionFoodCatalogRepositoryProvider.future,
+          );
+          final option = await catalog.ensureProviderFood(
+            displayName: candidate.name,
+            sourceReference: reference,
+            servingSize: servingOption.gramWeight,
+            servingUnit: servingOption.unitName,
+            energyKcal: candidate.caloriesPer100g,
+            proteinG: candidate.proteinPer100g,
+            carbohydrateG: candidate.carbsPer100g,
+            fatG: candidate.fatPer100g,
+            brand: candidate.brand,
+          );
+
+          if (logImmediately) {
+            await _showLogDialog(option);
+          } else {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('${candidate.name} saved to My Foods')),
+              );
+            }
+          }
+        },
+      );
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
