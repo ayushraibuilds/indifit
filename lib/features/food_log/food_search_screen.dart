@@ -2789,7 +2789,9 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         MaterialPageRoute(builder: (_) => const BarcodeScannerScreen()),
       );
       if (!mounted) return;
-      if (result is FoodApiResult) {
+      if (result is RemoteFoodCandidate) {
+        unawaited(_openCandidateReview(result));
+      } else if (result is FoodApiResult) {
         unawaited(_openProviderLogDialog(result));
       } else if (result == true) {
         await _retryRecentFoods();
@@ -2802,6 +2804,58 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         }
       }
     });
+  }
+
+  Future<void> _openCandidateReview(RemoteFoodCandidate candidate) async {
+    try {
+      final reference = candidate.barcode != null && candidate.barcode!.isNotEmpty
+          ? 'open-food-facts:barcode:${candidate.barcode}'
+          : 'open-food-facts:product:${candidate.providerId}';
+
+      await RemoteFoodReviewSheet.show(
+        context: context,
+        candidate: candidate,
+        mealType: widget.mealType ?? 'snack',
+        selectedDate: widget.selectedDate ?? DateTime.now(),
+        onConfirm: ({
+          required RemoteFoodCandidate candidate,
+          required double quantity,
+          required ServingOption servingOption,
+          required bool logImmediately,
+        }) async {
+          final catalog = await ref.read(
+            nutritionFoodCatalogRepositoryProvider.future,
+          );
+          final option = await catalog.ensureProviderFood(
+            displayName: candidate.name,
+            sourceReference: reference,
+            servingSize: servingOption.gramWeight,
+            servingUnit: servingOption.unitName,
+            energyKcal: candidate.caloriesPer100g,
+            proteinG: candidate.proteinPer100g,
+            carbohydrateG: candidate.carbsPer100g,
+            fatG: candidate.fatPer100g,
+            brand: candidate.brand,
+          );
+
+          if (logImmediately) {
+            await _showLogDialog(option);
+          } else {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('${candidate.name} saved to My Foods')),
+              );
+            }
+          }
+        },
+      );
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('This food is unavailable. Try again.')),
+        );
+      }
+    }
   }
 
   Future<void> _showCanonicalActionMenu(

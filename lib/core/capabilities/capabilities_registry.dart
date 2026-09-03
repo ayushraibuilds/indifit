@@ -29,7 +29,7 @@ export 'entitlement_capability.dart';
 export 'food_catalog_capability.dart';
 export 'integration_capability.dart';
 export 'network_capability.dart';
-export 'remote_catalogue_capability.dart';
+export 'remote_catalogue_capability.dart' hide RemoteFoodCandidate;
 export 'sync_capability.dart';
 
 /// Account capability provider.

@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/capabilities/food_catalog_capability.dart';
-import 'package:indifit/core/catalog/food_catalog_models.dart';
 
 void main() {
   group('PV1-CATALOG-01A: Remote Food Catalog & Provenance Contracts', () {

@@ -3,7 +3,6 @@ import 'dart:async';
 import '../../data/repositories/food_api_service.dart';
 import '../capabilities/food_catalog_capability.dart';
 import '../privacy/privacy_policy.dart';
-import 'food_catalog_models.dart';
 
 /// Implementation of [FoodCatalogCapability] that bridges external food APIs
 /// with the normalized IndiFit Indian culinary catalog schema and 2-tier caching.

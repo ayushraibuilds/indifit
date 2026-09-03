@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
+import '../../core/capabilities/capabilities_registry.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../data/repositories/food_api_service.dart';
 import 'custom_food_editor_screen.dart';
@@ -43,26 +44,52 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
   }
 
   Future<void> _onBarcodeScanned(String code) async {
-    if (_loading) return;
+    final cleanCode = code.trim();
+    if (cleanCode.isEmpty || _loading) return;
 
     setState(() => _loading = true);
     await _scannerController.stop(); // Stop camera scan while processing
 
-    final apiService = ref.read(foodApiServiceProvider);
-    FoodApiResult? result;
+    final catalogCapability = ref.read(foodCatalogCapabilityProvider);
+    RemoteFoodCandidate? candidate;
+    FoodApiResult? legacyResult;
     Object? lookupError;
+
+    // 1. Check local / Tier-1 cache first
     try {
-      result = await apiService.fetchByBarcode(code);
-    } catch (e) {
-      lookupError = e;
+      candidate = await catalogCapability.getCachedCandidate(cleanCode);
+    } catch (_) {}
+
+    // 2. Query remote catalog via capability if not in cache
+    if (candidate == null) {
+      try {
+        candidate = await catalogCapability.lookupByBarcode(cleanCode);
+      } catch (e) {
+        lookupError = e;
+      }
+    }
+
+    // 3. Fallback to FoodApiService only if capability is disabled and no prior hard error
+    if (candidate == null &&
+        catalogCapability is DisabledFoodCatalogCapability &&
+        lookupError == null) {
+      try {
+        final apiService = ref.read(foodApiServiceProvider);
+        legacyResult = await apiService.fetchByBarcode(cleanCode);
+      } catch (e) {
+        lookupError = e;
+      }
     }
 
     if (mounted) {
       setState(() => _loading = false);
 
-      if (result != null) {
-        // Return found result back to search screen
-        Navigator.pop(context, result);
+      if (candidate != null) {
+        // Return strongly typed RemoteFoodCandidate
+        Navigator.pop(context, candidate);
+      } else if (legacyResult != null) {
+        // Return legacy FoodApiResult
+        Navigator.pop(context, legacyResult);
       } else if (lookupError != null) {
         await showDialog(
           context: context,

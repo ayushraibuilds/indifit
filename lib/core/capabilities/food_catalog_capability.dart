@@ -1,5 +1,7 @@
 import '../catalog/food_catalog_models.dart';
 
+export '../catalog/food_catalog_models.dart';
+
 /// Contract defining remote food catalog search, barcode lookup, and caching.
 ///
 /// Implementations must enforce the "No Silent Promotion Invariant":
