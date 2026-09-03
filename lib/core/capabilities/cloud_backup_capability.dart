@@ -43,6 +43,18 @@ abstract class CloudBackupCapability {
 
   /// Deletes a specific remote snapshot by ID.
   Future<void> deleteRemoteSnapshot(String snapshotId);
+
+  /// Creates and uploads a snapshot or enqueues it for background delivery.
+  Future<bool> createAndUploadSnapshot({
+    bool isManual = false,
+    bool isWeeklyMilestone = false,
+  });
+
+  /// Restores a cloud backup snapshot into the local database.
+  Future<void> restoreCloudSnapshot(String snapshotId);
+
+  /// Deletes all cloud backup snapshots for the user.
+  Future<void> deleteAllRemoteSnapshots();
 }
 
 /// Default disabled implementation when cloud backup is not enabled.
@@ -70,4 +82,17 @@ class DisabledCloudBackupCapability implements CloudBackupCapability {
 
   @override
   Future<void> deleteRemoteSnapshot(String snapshotId) async {}
+
+  @override
+  Future<bool> createAndUploadSnapshot({
+    bool isManual = false,
+    bool isWeeklyMilestone = false,
+  }) async =>
+      false;
+
+  @override
+  Future<void> restoreCloudSnapshot(String snapshotId) async {}
+
+  @override
+  Future<void> deleteAllRemoteSnapshots() async {}
 }

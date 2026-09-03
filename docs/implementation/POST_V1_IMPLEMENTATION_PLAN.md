@@ -304,7 +304,7 @@ disabled, unavailable, slow, or failing.
 #### PV1-CLOUD-01 — Automatic encrypted cloud backup
 
 **Priority:** P1; first connected product release
-**Status:** CLOUD-01A & CLOUD-01B Complete (Threat Model, Envelope Encryption, CloudBackupService, API Client, FastAPI Endpoints, Fingerprint Skip, and Tests frozen in `test/pv1_cloud01b_immutable_upload_test.dart`); CLOUD-01C next.
+**Status:** Complete (CLOUD-01A threat model & envelope encryption, CLOUD-01B immutable upload slice & FastAPI endpoints, and CLOUD-01C transactional restore & Settings Data Management UI integration frozen and verified across automated test suites).
 
 Split into decision and implementation packages:
 
@@ -317,7 +317,7 @@ Split into decision and implementation packages:
    stable snapshot ID, and record local last-success/remote metadata. (Complete)
 3. **CLOUD-01C restore and operations:** list eligible snapshots, verify before
    mutation, restore transactionally, preserve manual local export/restore,
-   support back-up-now, schedule/retry, retention pruning, and remote deletion.
+   support back-up-now, schedule/retry, retention pruning, and remote deletion. (Complete)
 
 Acceptance:
 
@@ -691,6 +691,8 @@ dependencies are satisfied may run in parallel; the order breaks priority ties.
 | *Status:* | | **Complete** — Threat model, envelope encryption, & API contracts frozen | | |
 | 7 | PV1-CLOUD-01B | Implement immutable encrypted upload and verified restore vertical slice | P1 | PV1-CLOUD-01A, PV1-ENG-01C |
 | *Status:* | | **Complete** — CloudBackupService, FastAPI /v1/backup endpoints, fingerprint deduplication, and outbox integration frozen | | |
+| 7.1 | PV1-CLOUD-01C | Restore operations, pre-restore verification, and Settings Data Management UI integration | P1 | PV1-CLOUD-01B |
+| *Status:* | | **Complete** — Transactional restore, CloudBackupCard UI, deletion, and tests frozen at `test/pv1_cloud01c_restore_and_ui_test.dart` | | |
 | 8 | PV1-SYNC-01A | Specify per-domain identity, tombstone, conflict, version, and convergence rules | P1 | PV1-CLOUD-01A |
 | 9 | PV1-CATALOG-01A | Evaluate food providers and specify normalized remote-food/provenance/cache contract | P1 | PV1-NET-01A |
 | 10 | PV1-ENG-03 | Produce reachability/ownership inventory for dormant and legacy code | P1 | PV1-ENG-01C |

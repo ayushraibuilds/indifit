@@ -102,6 +102,7 @@ class CloudBackupService implements CloudBackupCapability {
   /// Exports current local database to V10 format, encrypts the payload,
   /// and either uploads immediately (if [isManual] and connected) or queues
   /// into the durable outbox for background delivery.
+  @override
   Future<bool> createAndUploadSnapshot({
     bool isManual = false,
     bool isWeeklyMilestone = false,
@@ -267,6 +268,49 @@ class CloudBackupService implements CloudBackupCapability {
   @override
   Future<void> deleteRemoteSnapshot(String snapshotId) async {
     await _apiClient.deleteSnapshot(snapshotId);
+  }
+
+  /// Downloads and decrypts an encrypted snapshot from cloud storage.
+  /// Throws [FormatException] if the snapshot is not found, checksum fails, or decryption fails.
+  Future<Map<String, dynamic>> downloadAndDecryptSnapshot(String snapshotId) async {
+    final envelope = await _apiClient.downloadSnapshot(snapshotId);
+    if (envelope == null) {
+      throw FormatException('Cloud backup snapshot "$snapshotId" was not found on the server.');
+    }
+
+    final plaintextJson = _envelopeManager.decryptSnapshot(
+      envelope: envelope,
+      kmsKeyWrappingSecret: _kmsSecret,
+    );
+
+    final decoded = jsonDecode(plaintextJson);
+    if (decoded is! Map<String, dynamic>) {
+      throw const FormatException('Decrypted cloud backup payload is not a valid JSON object.');
+    }
+    return decoded;
+  }
+
+  /// Atomically restores a cloud backup snapshot into the local SQLite database.
+  /// Pre-validates decryption and schema before any database mutation.
+  @override
+  Future<void> restoreCloudSnapshot(String snapshotId) async {
+    final payload = await downloadAndDecryptSnapshot(snapshotId);
+
+    // Perform atomic transaction restore into local SQLite
+    await BackupV10Data.fromJson(payload).restoreToDatabase(_db, _prefs);
+
+    // Record restore timestamp and updated content fingerprint
+    final now = DateTime.now().toUtc();
+    final fingerprint = computeContentFingerprint(payload);
+    await _recordSuccessfulUpload(now, fingerprint);
+  }
+
+  /// Deletes all cloud backup snapshots for the user (GDPR right to erasure).
+  @override
+  Future<void> deleteAllRemoteSnapshots() async {
+    await _apiClient.deleteAllSnapshots();
+    await _prefs.remove(lastSuccessKey);
+    await _prefs.remove(lastFingerprintKey);
   }
 
   /// Computes a deterministic SHA-256 fingerprint of the backup data payload,

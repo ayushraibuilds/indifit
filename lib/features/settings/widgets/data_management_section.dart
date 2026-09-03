@@ -12,6 +12,7 @@ import '../../../core/widgets/b05_accessibility_primitives.dart';
 import '../../onboarding/onboarding_screen.dart';
 import '../settings_controller.dart';
 import 'backup_restore_card.dart';
+import 'cloud_backup_card.dart';
 import 'privacy_disclosure_card.dart';
 import 'settings_reminder_toggle.dart';
 
@@ -453,6 +454,12 @@ class DataManagementSection extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              const CloudBackupCard(),
+              const SizedBox(height: B05Layout.space16),
+              Divider(color: context.b05Colors.border),
+              const SizedBox(height: B05Layout.space16),
+              Text('Manual backup files', style: B05Typography.title(context)),
+              const SizedBox(height: B05Layout.space4),
               Text(
                 'Backups include supported IndiFit records and settings. Photos and other device files are not included.',
                 style: B05Typography.body(context),

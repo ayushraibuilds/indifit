@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'account_capability.dart';
 import 'ai_assistance_capability.dart';
 import 'cloud_backup_capability.dart';
+import 'connected_status.dart';
 import 'content_download_capability.dart';
 import 'diagnostics_capability.dart';
 import 'entitlement_capability.dart';
@@ -42,6 +43,12 @@ final networkCapabilityProvider = Provider<NetworkCapability>((ref) {
 /// Cloud backup capability provider.
 final cloudBackupCapabilityProvider = Provider<CloudBackupCapability>((ref) {
   return const DisabledCloudBackupCapability();
+});
+
+/// Future provider exposing current Cloud Backup status.
+final cloudBackupStatusProvider = FutureProvider<ConnectedStatusState>((ref) async {
+  final capability = ref.watch(cloudBackupCapabilityProvider);
+  return capability.getStatus();
 });
 
 /// Multi-device sync capability provider.
