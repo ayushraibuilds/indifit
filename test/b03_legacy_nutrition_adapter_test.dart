@@ -275,7 +275,11 @@ void main() {
               mappingStatus: 'ambiguous',
               evidence: 'two reviewed candidates',
             ),
+            mode: InsertMode.insertOrReplace,
           );
+      await (db.delete(db.nutritionLegacyFoodMappings)
+            ..where((t) => t.legacyFoodItemId.equals(103)))
+          .go();
       await _insertLog(db, id: 1, foodItemId: 101, amount: 1, unit: 'g');
       await _insertLog(db, id: 2, foodItemId: 102, amount: 1, unit: 'g');
       await _insertLog(db, id: 3, foodItemId: 103, amount: 1, unit: 'g');
@@ -502,6 +506,7 @@ Future<void> _seedMappedFood(AppDatabase db) async {
           sourceType: 'user',
           lifecycle: 'active',
         ),
+        mode: InsertMode.insertOrReplace,
       );
   await db
       .into(db.nutritionLegacyFoodMappings)
@@ -512,6 +517,7 @@ Future<void> _seedMappedFood(AppDatabase db) async {
           mappingStatus: 'reviewed',
           evidence: 'test-reviewed-mapping',
         ),
+        mode: InsertMode.insertOrReplace,
       );
 }
 
