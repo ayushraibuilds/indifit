@@ -334,7 +334,7 @@ Acceptance:
 
 - **Priority:** P1; second connected product program
 - **Dependency:** CLOUD-01 security/account lessons and stable canonical IDs
-- **Status:** SYNC-01A Complete (Specification frozen at `docs/implementation/post-v1/SYNC01A_MULTI_DEVICE_SYNC_SPECIFICATION.md`, HLC engine, mutation models, tombstone retention, and conflict resolver frozen at `test/pv1_sync01a_contract_test.dart`).
+- **Status:** SYNC-01A (Specification & HLC engine) and SYNC-01B (Vertical Slice: SyncService, SyncApiClient, FastAPI /v1/sync endpoints, and multi-device convergence tests) Complete.
 
 SYNC-01A must specify before coding:
 
@@ -696,6 +696,8 @@ dependencies are satisfied may run in parallel; the order breaks priority ties.
 | *Status:* | | **Complete** — Transactional restore, CloudBackupCard UI, deletion, and tests frozen at `test/pv1_cloud01c_restore_and_ui_test.dart` | | |
 | 8 | PV1-SYNC-01A | Specify per-domain identity, tombstone, conflict, version, and convergence rules | P1 | PV1-CLOUD-01A |
 | *Status:* | | **Complete** — Specification, HLC total ordering, and conflict engine frozen at `test/pv1_sync01a_contract_test.dart` | | |
+| 8.1 | PV1-SYNC-01B | Implement multi-device sync vertical slice (SyncService, outbox queueing, FastAPI endpoints, convergence tests) | P1 | PV1-SYNC-01A |
+| *Status:* | | **Complete** — SyncService, FastAPI relay, outbox integration, & tests frozen at `test/pv1_sync01b_vertical_slice_test.dart` | | |
 | 9 | PV1-CATALOG-01A | Evaluate food providers and specify normalized remote-food/provenance/cache contract | P1 | PV1-NET-01A |
 | 10 | PV1-ENG-03 | Produce reachability/ownership inventory for dormant and legacy code | P1 | PV1-ENG-01C |
 | 11 | PV1-ENG-04A | Remove or relocate the first evidence-confirmed retired area | P1 | PV1-ENG-03 |
