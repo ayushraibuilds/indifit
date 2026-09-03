@@ -1,3 +1,5 @@
+import '../sync/hlc_timestamp.dart';
+import '../sync/sync_mutation.dart';
 import 'connected_status.dart';
 
 /// Supported sync domains.
@@ -41,6 +43,15 @@ abstract class SyncCapability {
 
   /// Manually requests an immediate sync pass across all or specified domains.
   Future<List<SyncDomainResult>> triggerSync({List<SyncDomain>? domains});
+
+  /// Pulls remote delta mutations committed since [sinceHlc].
+  Future<List<SyncMutation>> pullDeltas({
+    required HlcTimestamp sinceHlc,
+    int limit = 100,
+  });
+
+  /// Pushes a batch of local mutations to the remote sync relay.
+  Future<bool> pushMutations(List<SyncMutation> mutations);
 }
 
 /// Default standalone driver when multi-device sync is not active.
@@ -59,4 +70,14 @@ class DisabledSyncCapability implements SyncCapability {
   @override
   Future<List<SyncDomainResult>> triggerSync({List<SyncDomain>? domains}) async =>
       const [];
+
+  @override
+  Future<List<SyncMutation>> pullDeltas({
+    required HlcTimestamp sinceHlc,
+    int limit = 100,
+  }) async =>
+      const [];
+
+  @override
+  Future<bool> pushMutations(List<SyncMutation> mutations) async => false;
 }
