@@ -652,3 +652,135 @@ async def generate_weekly_report(req: WeeklyReportRequest):
 
 
 app.include_router(ai_router)
+
+# ---------------------------------------------------------------------------
+# Cloud Backup Route Family (/v1/backup)
+# ---------------------------------------------------------------------------
+
+USER_BACKUPS: Dict[str, List[Dict[str, Any]]] = {}
+BACKUP_BLOBS: Dict[tuple, Dict[str, Any]] = {}
+
+class BackupSnapshotUploadRequest(BaseModel):
+    snapshotId: str
+    ciphertextBase64: str
+    wrappedKeyBase64: str
+    sha256Checksum: str
+    byteSize: int
+    schemaVersion: int
+    backupFormatVersion: int
+    deviceName: str
+    isWeeklyMilestone: bool = False
+
+def _get_backup_user_id(
+    authorization: Optional[str] = Header(None),
+    x_indifit_key: Optional[str] = Header(None),
+) -> str:
+    if authorization and authorization.startswith("Bearer "):
+        token = authorization.split("Bearer ", 1)[1].strip()
+        if token:
+            return hashlib.sha256(token.encode("utf-8")).hexdigest()[:16]
+    if x_indifit_key and INDIFIT_API_KEY and secrets.compare_digest(x_indifit_key, INDIFIT_API_KEY):
+        return "default_api_user"
+    return "guest_user"
+
+backup_router = APIRouter(prefix="/v1/backup", tags=["Cloud Backup"])
+
+def _prune_user_snapshots(user_id: str):
+    snapshots = USER_BACKUPS.get(user_id, [])
+    dailies = [s for s in snapshots if not s.get("isWeeklyMilestone")]
+    weeklies = [s for s in snapshots if s.get("isWeeklyMilestone")]
+    to_prune = set()
+
+    if len(dailies) > 5:
+        to_prune.update(s["snapshotId"] for s in dailies[5:])
+    if len(weeklies) > 3:
+        to_prune.update(s["snapshotId"] for s in weeklies[3:])
+
+    if to_prune:
+        USER_BACKUPS[user_id] = [s for s in snapshots if s["snapshotId"] not in to_prune]
+        for snap_id in to_prune:
+            BACKUP_BLOBS.pop((user_id, snap_id), None)
+
+@backup_router.post("/snapshots", status_code=status.HTTP_201_CREATED)
+async def upload_backup_snapshot(
+    req: BackupSnapshotUploadRequest,
+    user_id: str = Depends(_get_backup_user_id),
+):
+    # Verify SHA-256 integrity
+    ciphertext_bytes = base64.b64decode(req.ciphertextBase64)
+    computed_hash = hashlib.sha256(ciphertext_bytes).hexdigest()
+    if req.sha256Checksum and computed_hash != req.sha256Checksum:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Payload checksum mismatch. The uploaded blob is corrupted.",
+        )
+
+    now_iso = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    summary = {
+        "snapshotId": req.snapshotId,
+        "createdAtUtc": now_iso,
+        "byteSize": req.byteSize,
+        "schemaVersion": req.schemaVersion,
+        "backupFormatVersion": req.backupFormatVersion,
+        "deviceName": req.deviceName,
+        "isWeeklyMilestone": req.isWeeklyMilestone,
+    }
+
+    if user_id not in USER_BACKUPS:
+        USER_BACKUPS[user_id] = []
+
+    # Insert newest at front
+    USER_BACKUPS[user_id].insert(0, summary)
+    BACKUP_BLOBS[(user_id, req.snapshotId)] = {
+        "ciphertextBase64": req.ciphertextBase64,
+        "wrappedKeyBase64": req.wrappedKeyBase64,
+        "sha256Checksum": req.sha256Checksum,
+    }
+
+    # Apply 5+3 retention pruning
+    _prune_user_snapshots(user_id)
+
+    return summary
+
+@backup_router.get("/snapshots")
+async def list_backup_snapshots(user_id: str = Depends(_get_backup_user_id)):
+    snapshots = USER_BACKUPS.get(user_id, [])
+    total_bytes = sum(s.get("byteSize", 0) for s in snapshots)
+    return {
+        "snapshots": snapshots,
+        "totalCount": len(snapshots),
+        "totalStorageBytes": total_bytes,
+    }
+
+@backup_router.get("/snapshots/{snapshot_id}")
+async def download_backup_snapshot(
+    snapshot_id: str,
+    user_id: str = Depends(_get_backup_user_id),
+):
+    blob = BACKUP_BLOBS.get((user_id, snapshot_id))
+    if not blob:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Backup snapshot '{snapshot_id}' not found.",
+        )
+    return blob
+
+@backup_router.delete("/snapshots/{snapshot_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_backup_snapshot(
+    snapshot_id: str,
+    user_id: str = Depends(_get_backup_user_id),
+):
+    USER_BACKUPS[user_id] = [
+        s for s in USER_BACKUPS.get(user_id, []) if s["snapshotId"] != snapshot_id
+    ]
+    BACKUP_BLOBS.pop((user_id, snapshot_id), None)
+    return None
+
+@backup_router.delete("/snapshots", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_all_backup_snapshots(user_id: str = Depends(_get_backup_user_id)):
+    snapshots = USER_BACKUPS.pop(user_id, [])
+    for s in snapshots:
+        BACKUP_BLOBS.pop((user_id, s["snapshotId"]), None)
+    return None
+
+app.include_router(backup_router)
