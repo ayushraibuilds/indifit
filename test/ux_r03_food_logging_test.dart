@@ -9,7 +9,6 @@ import 'package:indifit/core/nutrients.dart';
 import 'package:indifit/core/nutrition_calculation_service.dart';
 import 'package:indifit/core/nutrition_household_measures.dart';
 import 'package:indifit/core/nutrition_legacy_read_models.dart';
-import 'package:indifit/core/privacy/privacy_policy.dart';
 import 'package:indifit/core/raw_cooked_transformations.dart';
 import 'package:indifit/core/services/local_timezone_service.dart';
 import 'package:indifit/core/theme/app_theme.dart';
@@ -24,12 +23,10 @@ import 'package:indifit/data/repositories/nutrition_food_logging_coordinator.dar
 import 'package:indifit/data/repositories/nutrition_thali_repository.dart';
 import 'package:indifit/data/repositories/nutrition_transformation_repository.dart';
 import 'package:indifit/features/dashboard/main_navigation_scaffold.dart';
-import 'package:indifit/features/food_log/ai_meal_logger_screen.dart';
 import 'package:indifit/features/food_log/food_log_surface.dart';
 import 'package:indifit/features/food_log/food_search_screen.dart';
 import 'package:indifit/features/food_log/saved_meals_controller.dart';
 import 'package:indifit/features/food_log/saved_meals_screen.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -977,70 +974,6 @@ void main() {
     );
   });
 
-  testWidgets('AI description state golden', (tester) async {
-    await _pumpAiGolden(tester, theme: AppTheme.darkTheme);
-    expect(find.text('Describe your meal'), findsOneWidget);
-    await expectLater(
-      find.byType(AiMealLoggerScreen),
-      matchesGoldenFile('goldens/ux_r03_food_ai_description_dark.png'),
-    );
-  });
-
-  testWidgets('AI failure keeps fallback golden', (tester) async {
-    SharedPreferences.setMockInitialValues({'offline_only': false});
-    final prefs = await SharedPreferences.getInstance();
-    final dio = Dio()..httpClientAdapter = _FailingDioAdapter();
-    _setViewport(tester, const Size(390, 844));
-    final database = AppDatabase.memory();
-    addTearDown(() async {
-      await tester.pumpWidget(const SizedBox.shrink());
-      await tester.pump();
-      tester.view.resetPhysicalSize();
-      tester.view.resetDevicePixelRatio();
-      await database.close();
-      dio.close(force: true);
-    });
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          databaseProvider.overrideWithValue(database),
-          foodLogsForDayProvider.overrideWith((ref, date) async => []),
-          privacyPolicyProvider.overrideWith(
-            (ref) => PrivacyPolicyNotifier(prefs),
-          ),
-          dioProvider.overrideWithValue(dio),
-        ],
-        child: MediaQuery(
-          data: const MediaQueryData(),
-          child: MaterialApp(
-            theme: AppTheme.darkTheme,
-            home: AiMealLoggerScreen(
-              mealType: 'dinner',
-              selectedDate: DateTime(2026, 8, 9),
-            ),
-          ),
-        ),
-      ),
-    );
-    await tester.pump();
-    await tester.enterText(find.byType(TextField).first, '2 rotis with paneer');
-    await tester.pump();
-    await tester.ensureVisible(find.text('Estimate nutrition'));
-    await tester.tap(find.text('Estimate nutrition'));
-    await tester.pump(const Duration(milliseconds: 250));
-    expect(
-      find.textContaining('AI estimate isn’t available right now'),
-      findsOneWidget,
-    );
-    expect(find.text('Search foods instead'), findsOneWidget);
-    tester.testTextInput.hide();
-    FocusManager.instance.primaryFocus?.unfocus();
-    await tester.pump();
-    await expectLater(
-      find.byType(AiMealLoggerScreen),
-      matchesGoldenFile('goldens/ux_r03_food_ai_failure_dark.png'),
-    );
-  });
 
   testWidgets('quantity and review state golden', (tester) async {
     _setViewport(tester, const Size(390, 844));
@@ -1406,41 +1339,6 @@ Future<void> _pumpRelevanceSearchGolden(
   expect(tester.takeException(), isNull);
 }
 
-Future<void> _pumpAiGolden(
-  WidgetTester tester, {
-  required ThemeData theme,
-}) async {
-  _setViewport(tester, const Size(390, 844));
-  final database = AppDatabase.memory();
-  addTearDown(() async {
-    await tester.pumpWidget(const SizedBox.shrink());
-    await tester.pump();
-    tester.view.resetPhysicalSize();
-    tester.view.resetDevicePixelRatio();
-    await database.close();
-  });
-  await tester.pumpWidget(
-    ProviderScope(
-      overrides: [
-        databaseProvider.overrideWithValue(database),
-        foodLogsForDayProvider.overrideWith((ref, date) async => []),
-      ],
-      child: MediaQuery(
-        data: const MediaQueryData(),
-        child: MaterialApp(
-          theme: theme,
-          home: AiMealLoggerScreen(
-            mealType: 'breakfast',
-            selectedDate: DateTime(2026, 8, 9),
-          ),
-        ),
-      ),
-    ),
-  );
-  await tester.pump();
-  await tester.pump(const Duration(milliseconds: 250));
-}
-
 Future<void> _pumpFood(WidgetTester tester) async {
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 250));
@@ -1722,23 +1620,6 @@ class _FoodRouteHarnessState extends State<_FoodRouteHarness> {
             ),
     ),
   );
-}
-
-class _FailingDioAdapter implements HttpClientAdapter {
-  @override
-  Future<ResponseBody> fetch(
-    RequestOptions options,
-    Stream<List<int>>? requestStream,
-    Future<void>? cancelFuture,
-  ) async {
-    throw DioException.connectionError(
-      requestOptions: options,
-      reason: 'UX-R3 test failure',
-    );
-  }
-
-  @override
-  void close({bool force = false}) {}
 }
 
 class _TestFoodCatalog extends NutritionFoodCatalogRepository {

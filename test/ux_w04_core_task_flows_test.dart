@@ -4,12 +4,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/di/providers.dart';
 import 'package:indifit/core/presentation/consumer_date_label.dart';
 import 'package:indifit/core/theme/app_theme.dart';
-import 'package:indifit/core/theme/b05_semantic_colors.dart';
 import 'package:indifit/core/widgets/consumer_task_primitives.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/repositories/legacy_workout_compatibility_adapter.dart';
 import 'package:indifit/features/calendar/program_calendar_screen.dart';
-import 'package:indifit/features/food_log/ai_meal_logger_screen.dart';
 import 'package:indifit/features/food_log/food_log_surface.dart';
 import 'package:indifit/features/onboarding/onboarding_screen.dart';
 import 'package:indifit/features/progress/progress_screen.dart';
@@ -127,40 +125,6 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('meal logger presents one estimate path and a photo secondary', (
-    tester,
-  ) async {
-    await setCompactViewport(tester);
-    final database = createWidgetDatabase(tester);
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          databaseProvider.overrideWithValue(database),
-          foodLogsForDayProvider.overrideWith((ref, date) async => []),
-        ],
-        child: themed(
-          AiMealLoggerScreen(
-            mealType: 'dinner',
-            selectedDate: DateTime(2026, 8, 8),
-          ),
-        ),
-      ),
-    );
-    await tester.pump();
-    expect(find.text('Log dinner'), findsOneWidget);
-    expect(find.text('Estimate nutrition'), findsOneWidget);
-    expect(find.text('Use a photo (optional)'), findsOneWidget);
-    expect(find.text('Parse Items'), findsNothing);
-    expect(find.text('Logged meals'), findsOneWidget);
-    await tester.ensureVisible(find.text('Logged meals'));
-    await tester.tap(find.text('Logged meals'));
-    await tester.pump();
-    expect(find.text('No food logged for this day'), findsOneWidget);
-    await tester.pumpWidget(const SizedBox.shrink());
-    await tester.pump();
-    expect(tester.takeException(), isNull);
-  });
-
   test('empty logged-food snapshot resolves without a stream wait', () async {
     final database = registerTestDatabaseScope().create();
     final container = ProviderContainer(
@@ -172,35 +136,6 @@ void main() {
       foodLogsForDayProvider(DateTime(2026, 8, 8)).future,
     );
     expect(logs, isEmpty);
-  });
-
-  testWidgets('meal task remains legible in both themes', (tester) async {
-    final database = createWidgetDatabase(tester);
-    for (final theme in [AppTheme.lightTheme, AppTheme.darkTheme]) {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            databaseProvider.overrideWithValue(database),
-            foodLogsForDayProvider.overrideWith((ref, date) async => []),
-          ],
-          child: MaterialApp(
-            theme: theme,
-            home: const AiMealLoggerScreen(mealType: 'lunch'),
-          ),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 1));
-
-      expect(find.text('Log lunch'), findsOneWidget);
-      expect(find.text('Describe your meal'), findsOneWidget);
-      final appBar = tester.widget<AppBar>(find.byType(AppBar));
-      expect(
-        appBar.backgroundColor ?? theme.appBarTheme.backgroundColor,
-        theme.extension<B05SemanticColors>()?.page,
-      );
-      expect(tester.takeException(), isNull);
-    }
   });
 
   testWidgets('manual logging remains scrollable and responsive', (

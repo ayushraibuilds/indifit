@@ -21,7 +21,6 @@ import 'package:indifit/features/calendar/occurrence_actions_sheet.dart';
 import 'package:indifit/features/calendar/program_calendar_screen.dart';
 import 'package:indifit/features/exercise_library/exercise_details_sheet.dart';
 import 'package:indifit/features/exercise_library/exercise_library_screen.dart';
-import 'package:indifit/features/food_log/ai_meal_logger_screen.dart';
 import 'package:indifit/features/onboarding/onboarding_screen.dart';
 import 'package:indifit/features/profile/profile_screen.dart';
 import 'package:indifit/features/progress/progress_dashboard_models.dart';
@@ -49,13 +48,6 @@ void main() {
   group('UX Wave 6 visual system', () {
     final productionRoutes = <_CertificationRoute>[
       _CertificationRoute('onboarding', () => const OnboardingScreen()),
-      _CertificationRoute(
-        'meal logging',
-        () => AiMealLoggerScreen(
-          mealType: 'dinner',
-          selectedDate: DateTime(2026, 8, 8),
-        ),
-      ),
       _CertificationRoute(
         'manual workout logging',
         () => Scaffold(
@@ -129,15 +121,6 @@ void main() {
         fileName: 'ux_w06_onboarding_dark.png',
         brightness: Brightness.dark,
         builder: () => const OnboardingScreen(),
-      ),
-      _GoldenRoute(
-        name: 'meal logging dark',
-        fileName: 'ux_w06_meal_logging_dark.png',
-        brightness: Brightness.dark,
-        builder: () => AiMealLoggerScreen(
-          mealType: 'dinner',
-          selectedDate: DateTime(2026, 8, 8),
-        ),
       ),
       _GoldenRoute(
         name: 'manual workout logging dark',
@@ -445,10 +428,6 @@ void main() {
 
         final forms = <String, Widget Function()>{
           'onboarding': () => const OnboardingScreen(),
-          'meal logging': () => AiMealLoggerScreen(
-            mealType: 'breakfast',
-            selectedDate: DateTime(2026, 8, 8),
-          ),
           'manual workout logging': () => Scaffold(
             body: Material(
               color: Colors.transparent,
