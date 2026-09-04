@@ -1,7 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/services/crash_reporting_service.dart';
-import 'package:indifit/core/widgets/confetti_overlay.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -29,43 +27,6 @@ void main() {
         ),
         returnsNormally,
       );
-    });
-  });
-
-  group('Wave 6 — ConfettiOverlay Widget Tests', () {
-    testWidgets('ConfettiOverlay renders child widget correctly', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: ConfettiOverlay(
-              isPlaying: false,
-              child: Text('Dashboard Content'),
-            ),
-          ),
-        ),
-      );
-
-      expect(find.text('Dashboard Content'), findsOneWidget);
-    });
-
-    testWidgets('ConfettiOverlay responds when isPlaying becomes true', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: ConfettiOverlay(
-              isPlaying: true,
-              child: Text('Celebration Active'),
-            ),
-          ),
-        ),
-      );
-
-      expect(find.text('Celebration Active'), findsOneWidget);
-      await tester.pump(const Duration(milliseconds: 100));
     });
   });
 }

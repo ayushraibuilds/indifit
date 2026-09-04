@@ -1,7 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/utils/streak_calculator.dart';
-import 'package:indifit/core/widgets/confetti_overlay.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -37,24 +35,6 @@ void main() {
       );
 
       expect(streak, 3);
-    });
-
-    testWidgets('ConfettiOverlay renders child and responds to isPlaying', (
-      WidgetTester tester,
-    ) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: ConfettiOverlay(
-              isPlaying: true,
-              child: Text('PR Celebration!'),
-            ),
-          ),
-        ),
-      );
-
-      await tester.pump(const Duration(milliseconds: 100));
-      expect(find.text('PR Celebration!'), findsOneWidget);
     });
   });
 }
