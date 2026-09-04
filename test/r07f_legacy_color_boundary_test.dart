@@ -34,7 +34,6 @@ void main() {
     'lib/features/food_log/thali_builder_screen.dart',
     'lib/features/food_log/widgets/edit_food_log_sheet.dart',
     'lib/features/food_log/widgets/saved_meal_edit_before_log_sheet.dart',
-    'lib/features/onboarding/routine_wizard_screen.dart',
     'lib/features/program_authoring/program_author_screen.dart',
     'lib/features/program_authoring/program_review_screen.dart',
     'lib/features/progress/achievements_screen.dart',

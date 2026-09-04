@@ -4,7 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/di/providers.dart';
 import 'package:indifit/core/privacy/privacy_policy.dart';
 import 'package:indifit/core/services/crash_reporting_service.dart';
-import 'package:indifit/data/repositories/ai_routine_service.dart';
 import 'package:indifit/data/repositories/food_api_service.dart';
 import 'package:indifit/data/repositories/weekly_report_service.dart';
 import 'package:indifit/features/settings/settings_controller.dart';
@@ -93,33 +92,6 @@ void main() {
 
         expect(result.isFallback, isTrue);
         expect(result.fallbackReason, contains('Offline'));
-        expect(
-          mockAdapter.requestCount,
-          equals(0),
-        ); // Zero outbound HTTP requests
-      },
-    );
-
-    test(
-      'Backend AI requests (AiRoutineService) are blocked in offline mode',
-      () async {
-        const offlinePolicy = PrivacyPolicy(
-          isOfflineOnly: true,
-          isTelemetryEnabled: true,
-        );
-
-        final service = AiRoutineService(dio, offlinePolicy);
-
-        final result = await service.generateRoutine(
-          goal: 'hypertrophy',
-          equipment: 'dumbbells',
-          daysPerWeek: 3,
-          experience: 'intermediate',
-          injuries: 'none',
-        );
-
-        expect(result.name, contains('Smart DUMBBELLS'));
-        expect(result.days.isNotEmpty, isTrue);
         expect(
           mockAdapter.requestCount,
           equals(0),
