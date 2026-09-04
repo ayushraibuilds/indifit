@@ -37,7 +37,6 @@ void main() {
     'lib/features/program_authoring/program_author_screen.dart',
     'lib/features/program_authoring/program_review_screen.dart',
     'lib/features/progress/achievements_screen.dart',
-    'lib/features/reports/weekly_report_screen.dart',
     'lib/features/settings/data_management_sub_screen.dart',
     'lib/features/settings/health_sync_hub_screen.dart',
     'lib/features/settings/notification_settings_screen.dart',

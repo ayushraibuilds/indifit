@@ -5,7 +5,6 @@ import 'package:indifit/core/di/providers.dart';
 import 'package:indifit/core/privacy/privacy_policy.dart';
 import 'package:indifit/core/services/crash_reporting_service.dart';
 import 'package:indifit/data/repositories/food_api_service.dart';
-import 'package:indifit/data/repositories/weekly_report_service.dart';
 import 'package:indifit/features/settings/settings_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -68,34 +67,6 @@ void main() {
           isNull,
         );
         expect(CrashReportingService.isEnabled, isFalse);
-      },
-    );
-
-    test(
-      'Backend AI requests (Weekly Report) are blocked in offline mode and use local generator',
-      () async {
-        const offlinePolicy = PrivacyPolicy(
-          isOfflineOnly: true,
-          isTelemetryEnabled: true,
-        );
-
-        final service = WeeklyReportService(dio, offlinePolicy);
-
-        final result = await service.generateReport(
-          totalCaloriesLogged: 14000,
-          calorieGoal: 2000,
-          workoutSessionsCount: 4,
-          totalVolumeKg: 5000,
-          prsCount: 2,
-          adherenceScore: 90.0,
-        );
-
-        expect(result.isFallback, isTrue);
-        expect(result.fallbackReason, contains('Offline'));
-        expect(
-          mockAdapter.requestCount,
-          equals(0),
-        ); // Zero outbound HTTP requests
       },
     );
 
