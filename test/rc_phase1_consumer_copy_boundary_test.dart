@@ -23,7 +23,6 @@ void main() {
         'lib/features/education/b05_education_content.dart',
         'lib/features/settings/nutrition_targets_hub_screen.dart',
         'lib/features/settings/widgets/data_management_section.dart',
-        'lib/features/food_log/thali_builder_screen.dart',
         'lib/features/equipment/equipment_profiles_screen.dart',
         'lib/features/exercise_library/exercise_history_screen.dart',
         'lib/features/onboarding/onboarding_screen.dart',

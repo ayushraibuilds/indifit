@@ -17,9 +17,9 @@ import 'package:indifit/data/repositories/nutrition_food_catalog_repository.dart
 import 'package:indifit/data/repositories/nutrition_food_logging_coordinator.dart';
 import 'package:indifit/data/repositories/nutrition_read_model_repository.dart';
 import 'package:indifit/data/repositories/nutrition_transformation_repository.dart';
-import 'package:indifit/features/dashboard/widgets/dashboard_meal_section.dart';
 import 'package:indifit/features/food_log/food_log_surface.dart';
 import 'package:indifit/features/food_log/food_search_screen.dart';
+import 'package:indifit/features/food_log/meal_presentation_registry.dart';
 
 Future<void> _settle(WidgetTester tester) async {
   await tester.pump();
@@ -708,49 +708,23 @@ void main() {
   });
 
   group('R08D.5: Meal Section Visual Identity & Accessibility', () {
-    testWidgets(
-      'DashboardMealSection renders distinctive icons and labels without color-only semantics',
-      (tester) async {
-        addTearDown(() async {
-          await tester.pumpWidget(const SizedBox.shrink());
-          await tester.pump();
-        });
-
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              foodLogsForDayProvider.overrideWith((ref, date) async => []),
-              canonicalFoodRecordsForDayProvider.overrideWith(
-                (ref, date) async => [],
-              ),
-            ],
-            child: MaterialApp(
-              theme: AppTheme.lightTheme,
-              home: const Scaffold(
-                body: SingleChildScrollView(
-                  child: DashboardMealSection(logs: [], selectedDate: null),
-                ),
-              ),
-            ),
-          ),
-        );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 100));
-
+    test(
+      'MealPresentationRegistry provides distinctive icons and labels without color-only semantics',
+      () {
         // Meal titles present
-        expect(find.text('Breakfast'), findsOneWidget);
-        expect(find.text('Lunch'), findsOneWidget);
-        expect(find.text('Dinner'), findsOneWidget);
-        expect(find.text('Snacks'), findsOneWidget);
+        expect(MealPresentationRegistry.breakfast.label, 'Breakfast');
+        expect(MealPresentationRegistry.lunch.label, 'Lunch');
+        expect(MealPresentationRegistry.dinner.label, 'Dinner');
+        expect(MealPresentationRegistry.snack.label, 'Snacks');
 
         // Distinct icons present
         expect(
-          find.byIcon(Icons.wb_sunny_outlined),
-          findsOneWidget,
+          MealPresentationRegistry.breakfast.icon,
+          Icons.wb_sunny_outlined,
         ); // Breakfast
-        expect(find.byIcon(Icons.wb_twilight_rounded), findsOneWidget); // Lunch
-        expect(find.byIcon(Icons.nightlight_round), findsOneWidget); // Dinner
-        expect(find.byIcon(Icons.cookie_outlined), findsOneWidget); // Snacks
+        expect(MealPresentationRegistry.lunch.icon, Icons.wb_twilight_rounded); // Lunch
+        expect(MealPresentationRegistry.dinner.icon, Icons.nightlight_round); // Dinner
+        expect(MealPresentationRegistry.snack.icon, Icons.cookie_outlined); // Snacks
       },
     );
 

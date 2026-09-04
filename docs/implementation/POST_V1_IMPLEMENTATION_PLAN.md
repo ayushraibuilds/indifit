@@ -1,6 +1,6 @@
 # IndiFit Post-V1 Prioritized Implementation Plan
 
-- Status: Active; Gate 0, PV1-ENG-01/02/03/04A/04B complete; PV1-ENG-04C next
+- Status: Active; Gate 0, PV1-ENG-01/02/03/04A/04B/04C complete; PV1-ENG-04D next
 - Effective date: 2026-08-30
 - Product roadmap: [`post-v1-roadmap.md`](../roadmap/post-v1-roadmap.md)
 - Cleanup execution program: [`POST_V1_CLEANUP_PROGRAM.md`](POST_V1_CLEANUP_PROGRAM.md)
@@ -712,6 +712,8 @@ dependencies are satisfied may run in parallel; the order breaks priority ties.
 | 11.1 | PV1-ENG-04B | Relocate RepDB tool (C1B-02) and remove zero-consumer leaves (C1B-03) | P1 | PV1-ENG-04A |
 | *Status:* | | **Complete** — Relocated RepDB pipeline to `tool/src/` (267 lines, C1B-02); removed 5 zero-consumer leaves/wrappers (586 lines, C1B-03); verified 18 launch journeys and 0 analyzer issues | | |
 | 11.2 | PV1-ENG-04C | Remove legacy generic presentation (C1B-04) and legacy dashboard-food subtree (C1B-05) | P1 | PV1-ENG-04B |
+| *Status:* | | **Complete** — Removed confetti and failure widgets (269 lines, C1B-04); removed legacy dashboard-food subtree (9 files, 2,869 lines, C1B-05); transferred meal presentation assertions to `MealPresentationRegistry`; verified R09-D gate and 0 analyzer issues | | |
+| 11.3 | PV1-ENG-04D | Remove retired Food AI (C1B-06) and retired routine AI (C1B-07) | P1 | PV1-ENG-04C |
 | 12 | PV1-ENG-05A | Mechanically split Progress behind characterization tests | P1 | PV1-ENG-02 |
 | 13 | PV1-ENG-05B | Mechanically split Today action surface | P1 | PV1-ENG-02 |
 | 14 | PV1-ENG-05C | Mechanically split workout player presentation | P1 | PV1-ENG-02 |
