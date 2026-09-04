@@ -8,7 +8,6 @@ import 'package:indifit/features/settings/household_measures_screen.dart';
 import 'package:indifit/features/settings/notification_settings_screen.dart';
 import 'package:indifit/features/settings/regional_food_packs_screen.dart';
 import 'package:indifit/features/settings/settings_screen.dart';
-import 'package:indifit/features/settings/water_settings_sub_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _TestProfileNotifier extends UserProfileNotifier {
@@ -134,17 +133,6 @@ void main() {
         await tester.pumpWidget(
           _wrapWithScope(
             const NotificationSettingsScreen(),
-            size: const Size(320, 640),
-            textScale: 2.0,
-          ),
-        );
-        await tester.pumpAndSettle();
-        expect(tester.takeException(), isNull);
-
-        // Water Settings
-        await tester.pumpWidget(
-          _wrapWithScope(
-            const WaterSettingsSubScreen(),
             size: const Size(320, 640),
             textScale: 2.0,
           ),

@@ -40,13 +40,10 @@ void main() {
     'lib/features/settings/data_management_sub_screen.dart',
     'lib/features/settings/health_sync_hub_screen.dart',
     'lib/features/settings/notification_settings_screen.dart',
-    'lib/features/settings/nutrition_goals_sub_screen.dart',
     'lib/features/settings/regional_food_packs_screen.dart',
-    'lib/features/settings/water_settings_sub_screen.dart',
     'lib/features/settings/widgets/backup_restore_card.dart',
     'lib/features/settings/widgets/notification_settings_section.dart',
     'lib/features/settings/widgets/settings_reminder_toggle.dart',
-    'lib/features/settings/widgets/water_settings_section.dart',
     'lib/features/workout_player/routine_editor_screen.dart',
   };
 
