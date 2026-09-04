@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:indifit/features/media/r08_repdb_asset_pipeline.dart';
+import 'src/r08_repdb_asset_pipeline.dart';
 
 Future<void> main(List<String> arguments) async {
   final options = _options(arguments);

@@ -4,8 +4,7 @@ import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
-
-import '../../core/fixtures/b05_third_party_asset_manifest.dart';
+import 'package:indifit/core/fixtures/b05_third_party_asset_manifest.dart';
 
 const String kR08RepDbRepositoryUrl =
     'https://github.com/RepDB/exercise-dataset';
