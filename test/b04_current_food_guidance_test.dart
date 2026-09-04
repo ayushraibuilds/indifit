@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:indifit/core/fixtures/b04_current_food_fixture_matrix.dart';
 import 'package:indifit/core/nutrients.dart';
 import 'package:indifit/core/typed_quantities.dart';
 import 'package:indifit/data/models/b04_adaptive_target_models.dart';
@@ -10,6 +9,8 @@ import 'package:indifit/data/models/b04_recommendation_context_models.dart';
 import 'package:indifit/data/services/b04_current_food_guidance_service.dart';
 import 'package:indifit/data/services/b04_meal_opportunity_service.dart';
 import 'package:indifit/features/nutrition/current_food_controller.dart';
+
+import 'fixtures/b04_current_food_fixture_matrix.dart';
 
 const _userId = 'current-food-user';
 const _timezoneId = 'Asia/Kolkata';

@@ -4,7 +4,7 @@
 // gate state and safety semantics without activating ENABLED-1 or creating a
 // runtime policy, target engine, UI, schema or persistence authority.
 
-import 'b04_adaptive_coaching_fixture_matrix.dart';
+import 'package:indifit/core/fixtures/b04_adaptive_coaching_fixture_matrix.dart';
 
 const int kB04PolicyGateFixtureVersion = 1;
 const String kB04PendingSolReviewStatus =

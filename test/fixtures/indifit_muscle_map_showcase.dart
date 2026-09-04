@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:indifit/core/theme/b05_semantic_colors.dart';
 import 'package:indifit/core/widgets/b05_accessibility_primitives.dart';
 
-import 'indifit_muscle_map.dart';
+import 'package:indifit/features/media/indifit_muscle_map.dart';
 
 /// Isolated development/test showcase for the local renderer foundation.
 ///

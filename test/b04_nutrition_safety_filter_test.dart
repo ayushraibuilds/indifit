@@ -1,10 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:indifit/core/fixtures/b04_policy_gate_fixture.dart';
 import 'package:indifit/core/nutrients.dart';
 import 'package:indifit/core/nutrition_constraints.dart';
 import 'package:indifit/core/typed_quantities.dart';
 import 'package:indifit/data/models/b04_nutrition_safety_models.dart';
 import 'package:indifit/data/services/b04_nutrition_safety_filter.dart';
+
+import 'fixtures/b04_policy_gate_fixture.dart';
 
 void main() {
   const filter = B04NutritionSafetyFilter();

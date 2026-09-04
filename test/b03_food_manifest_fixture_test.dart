@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:indifit/core/fixtures/b03_nutrition_fixture_matrix.dart';
 import 'package:indifit/core/fixtures/food_identity_manifest.dart';
+
+import 'fixtures/b03_nutrition_fixture_matrix.dart';
 
 void main() {
   group('B03-01 food manifest audit fixtures', () {
