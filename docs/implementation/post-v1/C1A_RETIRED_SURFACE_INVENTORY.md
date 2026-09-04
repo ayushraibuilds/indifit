@@ -1,8 +1,9 @@
 # C1A Retired-Surface Reachability and Ownership Inventory
 
-- Status: Complete
-- Date: 2026-09-01 (re-baselined 2026-09-03 after V1 RC integration)
+- Status: Complete (refreshed after C1B-01…C1B-10 and the connected track; see Refresh below)
+- Date: 2026-09-01 (re-baselined 2026-09-03 after V1 RC integration; refreshed 2026-09-04 at `4b41237`)
 - Baseline commit: `ce599dd`
+- Refresh baseline commit: `4b41237`
 - Parent program: [`../POST_V1_CLEANUP_PROGRAM.md`](../POST_V1_CLEANUP_PROGRAM.md)
 - C0B contract gate: [`C0B_CONTRACT_BASELINE.md`](C0B_CONTRACT_BASELINE.md)
 
@@ -177,3 +178,102 @@ expanding deletion scope.
 - Full deterministic serial Flutter suite — 2,127/2,127 passed.
 - `flutter analyze` — no issues found.
 - `git diff --check` — clean.
+
+## Refresh at `4b41237` (post C1B-01…C1B-10 + connected track)
+
+Re-ran the §Evidence method steps 1–7 against the current tree (BFS over
+static `import`/`export`/`part` edges from `lib/main.dart`, generated files
+excluded, consumers enumerated under `lib/` and `test/` — there is no
+`integration_test/` directory — plus router, notification, platform-config,
+and database/backup/fixture role checks).
+
+### Refresh result
+
+The current tree contains **352** non-generated production Dart files.
+Reachability from `lib/main.dart` covers **335**; **17** files are outside
+that graph.
+
+Disposition of the prior 38 ledger entries at this baseline:
+
+| Prior classification | Files | Outcome |
+|---|---:|---|
+| Test fixture/support to relocate (4) | 4 | Relocated to `test/fixtures/` in C1B-01 (`1cb7caf`); imports rewired |
+| Developer tool to relocate (1) | 1 | Relocated to `tool/src/` in C1B-02 (`8a7f28c`); tool + tests intact |
+| Evidence-confirmed retired (31) | 31 | All removed across C1B-03…C1B-10 (`cd507fb`…`4b41237`); 7 retired-only test files deleted, 3 trimmed in place, 3 goldens removed |
+| Compatibility-required/dormant (2) | 2 | Retained as ordered (see carried rows below) |
+| **Remaining from prior ledger** | **2** | No further action authorized by this refresh |
+
+(The 09-04 cleanup summary's "23 production files deleted" is an arithmetic
+slip: its own per-package rows sum to 5+2+9+4+3+2+4+2 = **31**, which matches
+`git diff --name-status` output. Likewise its C1B-04 "2 retired test files
+removed" row actually describes surgical trims that preserved live coverage.)
+
+### Currently unreachable (17 files)
+
+| Classification | Files | Lines | Disposition |
+|---|---:|---:|---|
+| Intentionally dormant connected-track implementation | 15 | 3,113 | **Do not delete.** Gated behind `Disabled*` capability defaults and unmet product gates (per-mutation envelopes, v22 identity); covered by PV1 contract tests. Re-review only when a product gate clears |
+| Compatibility-required/dormant (carried) | 2 | 888 | Retained until a dedicated compatibility decision (unchanged) |
+| Evidence-confirmed retired | 0 | 0 | Nothing left from the prior ledger |
+| **Total** | **17** | **4,001** | No deletion is authorized by this refresh |
+
+### Intentionally dormant connected-track ledger
+
+“Test-only” below means imported by PV1 contract tests but by nothing in the
+reachable production graph. The services are constructed exclusively in tests;
+production resolves the `Disabled*` drivers, which is the correct fail-closed
+staging until each track's security/product gate passes — wiring them up
+earlier (notably the plaintext sync relay) would be a privacy regression, not
+progress.
+
+| File | Lines | Direct evidence | Classification and action |
+|---|---:|---|---|
+| `lib/core/outbox/outbox_operation.dart` | 203 | PV1-NET-01/CLOUD/SYNC tests; no `lib/` consumer outside this ledger | Dormant domain contract. Do not delete; it is the outbox lifecycle authority exercised by `DriftOutboxRepository` and all dispatch paths. |
+| `lib/core/outbox/outbox_repository.dart` | 209 | PV1-NET-01 tests; implemented by `DriftOutboxRepository` in-ledger | Dormant repository contract. Do not delete. |
+| `lib/core/outbox/outbox_retry_policy.dart` | 113 | PV1-NET-01 tests | Dormant retry/backoff policy. Do not delete. |
+| `lib/core/outbox/outbox.dart` | 26 | PV1 tests via barrel; provider default is the Drift implementation | Dormant composition root (`outboxRepositoryProvider`). Do not delete; future prod call sites consume this provider. |
+| `lib/core/outbox/drift_outbox_repository.dart` | 253 | `test/pv1_v21_persistence_test.dart`; referenced only by `outbox.dart` in-ledger | Dormant durable spool (schema v21 `outbox_entries`). Do not delete. |
+| `lib/core/sync/sync_mutation.dart` | — (reachable via `sync_capability`) | — | Not in this ledger; listed only to record that `HlcTimestamp`/`SyncMutation`/`SyncDomain` are shared kernel types, so capability→`core/sync` imports are core→core, not a layering inversion. |
+| `lib/core/sync/sync_api_client.dart` | 179 | PV1-SYNC tests | Dormant relay client (in-memory fake for tests). Do not delete. |
+| `lib/core/sync/sync_conflict_resolver.dart` | 139 | PV1-SYNC-01A tests; used by `SyncService` in-ledger | Dormant LWW/tombstone engine. Do not delete. |
+| `lib/core/sync/sync_service.dart` | 515 | PV1-SYNC-01B tests only | Dormant sync engine behind `DisabledSyncCapability`. Do not delete or wire into production until the encryption decision and v22 identity land. |
+| `lib/core/sync/sync_tombstone_store.dart` | 103 | `test/pv1_v21_persistence_test.dart`; used by `SyncService` in-ledger | Dormant tombstone journal (schema v21 `tombstone_entries`). Do not delete. |
+| `lib/core/backup/cloud_backup_api_contract.dart` | 163 | PV1-CLOUD tests; used by service/client in-ledger | Dormant API contract. Do not delete. |
+| `lib/core/backup/cloud_backup_api_client.dart` | 151 | PV1-CLOUD tests | Dormant relay client (in-memory fake for tests). Do not delete. |
+| `lib/core/backup/cloud_backup_envelope_manager.dart` | 193 | PV1-CLOUD-01A tests | Dormant HKDF/AES-GCM envelope authority. Do not delete. |
+| `lib/core/backup/cloud_backup_service.dart` | 389 | PV1-CLOUD-01B/01C tests only | Dormant backup engine behind `DisabledCloudBackupCapability`. Do not delete or wire into production until the KMS/account product gate passes. |
+| `lib/core/catalog/food_catalog_service.dart` | 369 | PV1-CATALOG/V21 tests only | Dormant catalog engine behind `DisabledFoodCatalogCapability`. Do not delete. |
+| `lib/core/catalog/remote_food_cache_store.dart` | 108 | `test/pv1_v21_persistence_test.dart`; used by `FoodCatalogService` in-ledger | Dormant Tier-1 cache journal (schema v21 `cached_remote_foods`, 14-day TTL). Do not delete. |
+
+New retirement candidate found by this refresh (not in the prior ledger):
+
+| File | Lines | Direct evidence | Classification and action |
+|---|---:|---|---|
+| `lib/core/capabilities/remote_catalogue_capability.dart` | ~80 | Zero live callers; superseded by `FoodCatalogCapability`; already marked `@Deprecated` with pointer | Propose for the next C1B batch: delete the file and the deprecated `remoteCatalogueCapabilityProvider` after confirming the single NET-01A contract test migrates to the canonical capability. |
+
+Reachable-by-design notes (not ledger entries, recorded to prevent
+re-auditing): `lib/data/database/tables/sync_tables.dart` is reachable via
+`AppDatabase`; the v21 tables are device-local and excluded from backup
+specs by allowlist. `lib/core/capabilities/analytics_capability.dart` is
+reachable via the capabilities registry.
+
+### Refresh verification
+
+- Ledger validation — 17 unique existing files; per-file line counts above
+  match the tree; prior-ledger outcomes (31 removed, 5 relocated, 2 retained)
+  confirmed by `git diff --name-status`.
+- Static reachability — BFS from `lib/main.dart` over import/export/part
+  edges; zero reachable-`lib/` importers for any ledger file.
+- Router/notification destinations — ledger files expose no routes,
+  deep links, or notification payloads; the compatibility redirect table is
+  untouched.
+- Platform/configuration search — no `outbox_entries`/`tombstone_entries`/
+  `cached_remote_foods` references outside Dart; no `integration_test/`
+  directory exists.
+- Full deterministic serial Flutter suite — 2,179 passed, 3 failed, all 3
+  pre-existing on the clean base (`ux_r08g6_data_privacy_test` ×2,
+  `r08g7_settings_danger_zone_deep_screen_test` ×1; the latter exercises the
+  Data Management screen now hosting `CloudBackupCard`, so confirm its failure
+  mode is unchanged when settings/backup is next touched).
+- `flutter analyze` — no issues found.
+- `git diff --check` — clean (docs-only change).
