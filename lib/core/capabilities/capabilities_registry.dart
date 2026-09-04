@@ -17,7 +17,6 @@ import 'entitlement_capability.dart';
 import 'food_catalog_capability.dart';
 import 'integration_capability.dart';
 import 'network_capability.dart';
-import 'remote_catalogue_capability.dart';
 import 'sync_capability.dart';
 
 export 'account_capability.dart';
@@ -31,10 +30,6 @@ export 'entitlement_capability.dart';
 export 'food_catalog_capability.dart';
 export 'integration_capability.dart';
 export 'network_capability.dart';
-// The legacy NET-01A catalogue contract defines its own (deprecated)
-// RemoteFoodCandidate; hide it so the canonical CATALOG-track model above is
-// the single visible name. See remote_catalogue_capability.dart.
-export 'remote_catalogue_capability.dart' hide RemoteFoodCandidate;
 export 'sync_capability.dart';
 
 /// Account capability provider.
@@ -66,16 +61,6 @@ final syncCapabilityProvider = Provider<SyncCapability>((ref) {
 /// Remote food catalog capability provider.
 final foodCatalogCapabilityProvider = Provider<FoodCatalogCapability>((ref) {
   return const DisabledFoodCatalogCapability();
-});
-
-/// Legacy remote food catalog capability provider.
-///
-/// Superseded by [foodCatalogCapabilityProvider]. Retained (disabled default)
-/// without deletion per the retired-code inventory process.
-@Deprecated('Superseded; see doc comment above.')
-final remoteCatalogueCapabilityProvider =
-    Provider<RemoteCatalogueCapability>((ref) {
-  return const DisabledRemoteCatalogueCapability();
 });
 
 /// Content and media download capability provider.

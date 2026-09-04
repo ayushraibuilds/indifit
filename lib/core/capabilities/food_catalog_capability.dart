@@ -1,9 +1,6 @@
 // Note on layering: food_catalog_models.dart lives in lib/core/catalog/ as a
 // shared kernel model (not a feature package), so this capability contract
-// importing (and re-exporting) it keeps the dependency core->core. The
-// re-export is the single canonical RemoteFoodCandidate name; the legacy
-// NET-01A contract's same-named class is deprecated (see
-// remote_catalogue_capability.dart and the registry's hide clause).
+// importing (and re-exporting) it keeps the dependency core->core.
 import '../catalog/food_catalog_models.dart';
 
 export '../catalog/food_catalog_models.dart';

@@ -249,7 +249,7 @@ New retirement candidate found by this refresh (not in the prior ledger):
 
 | File | Lines | Direct evidence | Classification and action |
 |---|---:|---|---|
-| `lib/core/capabilities/remote_catalogue_capability.dart` | ~80 | Zero live callers; superseded by `FoodCatalogCapability`; already marked `@Deprecated` with pointer | Propose for the next C1B batch: delete the file and the deprecated `remoteCatalogueCapabilityProvider` after confirming the single NET-01A contract test migrates to the canonical capability. |
+| `lib/core/capabilities/remote_catalogue_capability.dart` | 80 | Zero live callers; superseded by `FoodCatalogCapability` | **Removed** (`a3b050e`+); deleted file and deprecated `remoteCatalogueCapabilityProvider`; migrated `test/pv1_net01_offline_capability_test.dart` to canonical `DisabledFoodCatalogCapability`. |
 
 Reachable-by-design notes (not ledger entries, recorded to prevent
 re-auditing): `lib/data/database/tables/sync_tables.dart` is reachable via

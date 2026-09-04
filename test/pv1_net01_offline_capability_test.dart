@@ -68,10 +68,10 @@ void main() {
       final syncStatus = await sync.getStatus();
       expect(syncStatus.status, ConnectedStatus.neverConfigured);
 
-      const catalogue = DisabledRemoteCatalogueCapability();
-      expect(catalogue.isAvailable, isFalse);
-      expect(await catalogue.searchFoods('apple'), isEmpty);
-      expect(await catalogue.lookupBarcode('123456789'), isNull);
+      const catalogue = DisabledFoodCatalogCapability();
+      final page = await catalogue.searchRemoteFoods('apple');
+      expect(page.items, isEmpty);
+      expect(await catalogue.lookupByBarcode('123456789'), isNull);
 
       const download = DisabledContentDownloadCapability();
       expect(download.isConfigured, isFalse);

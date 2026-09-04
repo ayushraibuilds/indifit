@@ -43,7 +43,7 @@ All connected features communicate across typed abstract boundaries defined in [
 | **Network** | `NetworkCapability` | `OfflineNetworkCapability` | Local writes never query network state; network gates background tasks only. |
 | **Cloud Backup** | `CloudBackupCapability` | `DisabledCloudBackupCapability` | Uploads immutable snapshots. Manual export/restore remains fully independent. |
 | **Sync** | `SyncCapability` | `DisabledSyncCapability` | Local writes commit to Drift first. Bidirectional sync reconciles in background. |
-| **Remote Catalogue**| `RemoteCatalogueCapability`| `DisabledRemoteCatalogueCapability` | Remote search results are visually distinct until saved/logged locally. |
+| **Food Catalog** | `FoodCatalogCapability` | `DisabledFoodCatalogCapability` | Remote search results are visually distinct until saved/logged locally. |
 | **Content Download**| `ContentDownloadCapability`| `DisabledContentDownloadCapability` | Missing/failed downloads never remove bundled SVGs, stills, or text. |
 | **AI Assistance** | `AiAssistanceCapability` | `DisabledAiAssistanceCapability` | Never originates canonical targets, history, or PRs. Fails closed. |
 | **Integrations** | `IntegrationCapability` | `DisabledIntegrationCapability` | External health sync failures never block local workout completion. |
