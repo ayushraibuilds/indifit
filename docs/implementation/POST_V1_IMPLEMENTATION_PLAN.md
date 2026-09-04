@@ -1,6 +1,6 @@
 # IndiFit Post-V1 Prioritized Implementation Plan
 
-- Status: Active; Gate 0, PV1-ENG-01/02/03/04A/04B/04C/04D/04E/04F/04G complete; PV1-ENG-04H (C1B-11) next
+- Status: Active; Gate 0, PV1-ENG-01/02/03/04A-H complete; PV1-ENG-05A (Progress split) next
 - Effective date: 2026-08-30
 - Product roadmap: [`post-v1-roadmap.md`](../roadmap/post-v1-roadmap.md)
 - Cleanup execution program: [`POST_V1_CLEANUP_PROGRAM.md`](POST_V1_CLEANUP_PROGRAM.md)
@@ -721,6 +721,8 @@ dependencies are satisfied may run in parallel; the order breaks priority ties.
 | *Status:* | | **Complete** — Removed 4 retired presentation files (1,236 lines: `household_measures.dart`, `protein_distribution_screen.dart`, `b02_progress_controller.dart`, `b02_progress_widgets.dart`) and 3 retired-only test files (585 lines); preserved canonical nutrition household-measure and progress domain read models; verified 0 analyzer issues, focused test suites, and R09-D release gate | | |
 | 11.6 | PV1-ENG-04G | Remove hydration presentation (C1B-10) | P1 | PV1-ENG-04F |
 | *Status:* | | **Complete** — Removed retired water settings screen and section (2 files, 220 lines: `water_settings_sub_screen.dart`, `water_settings_section.dart`); pruned retired-only visual test; preserved underlying schema `DailyHydrations` table and hidden-authority product decision; verified 0 analyzer issues, focused test suites, and R09-D release gate | | |
+| 11.7 | PV1-ENG-04H | Direct dependency proof and pruning (C1B-11) | P1 | PV1-ENG-04G |
+| *Status:* | | **Complete** — Evaluated and pruned 3 unused direct dependencies (`cupertino_icons`, `just_audio`, `encrypt`) from `pubspec.yaml`, shedding 8 total packages; verified iOS CocoaPods integration, analyzer clean, and R09-D release gate | | |
 | 12 | PV1-ENG-05A | Mechanically split Progress behind characterization tests | P1 | PV1-ENG-02 |
 | 13 | PV1-ENG-05B | Mechanically split Today action surface | P1 | PV1-ENG-02 |
 | 14 | PV1-ENG-05C | Mechanically split workout player presentation | P1 | PV1-ENG-02 |
