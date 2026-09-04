@@ -56,7 +56,7 @@ void main() {
       'lib/features/coaching/b04_production_surface_controller.dart',
       'lib/features/dashboard/b04_daily_briefing_controller.dart',
       'lib/features/progress/b04_weekly_review_controller.dart',
-      'lib/features/settings/nutrition_goals_sub_screen.dart',
+      'lib/features/settings/nutrition_targets_hub_screen.dart',
     ];
     const legacyAuthorities = [
       'FoodRepository',

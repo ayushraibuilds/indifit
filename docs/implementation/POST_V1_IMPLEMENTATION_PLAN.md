@@ -1,6 +1,6 @@
 # IndiFit Post-V1 Prioritized Implementation Plan
 
-- Status: Active; Gate 0, PV1-ENG-01/02/03, and PV1-ENG-04A complete; PV1-ENG-04B next
+- Status: Active; Gate 0, PV1-ENG-01/02/03/04A/04B complete; PV1-ENG-04C next
 - Effective date: 2026-08-30
 - Product roadmap: [`post-v1-roadmap.md`](../roadmap/post-v1-roadmap.md)
 - Cleanup execution program: [`POST_V1_CLEANUP_PROGRAM.md`](POST_V1_CLEANUP_PROGRAM.md)
@@ -710,6 +710,8 @@ dependencies are satisfied may run in parallel; the order breaks priority ties.
 | 11 | PV1-ENG-04A | Relocate test-support files from lib/ to test/fixtures/ (C1B-01) | P1 | PV1-ENG-03 |
 | *Status:* | | **Complete** — Relocated 4 test fixture/showcase files (3,629 lines) to `test/fixtures/`, updated all test imports, analyzer clean, 99 fixture tests + 87 PV1 tests pass | | |
 | 11.1 | PV1-ENG-04B | Relocate RepDB tool (C1B-02) and remove zero-consumer leaves (C1B-03) | P1 | PV1-ENG-04A |
+| *Status:* | | **Complete** — Relocated RepDB pipeline to `tool/src/` (267 lines, C1B-02); removed 5 zero-consumer leaves/wrappers (586 lines, C1B-03); verified 18 launch journeys and 0 analyzer issues | | |
+| 11.2 | PV1-ENG-04C | Remove legacy generic presentation (C1B-04) and legacy dashboard-food subtree (C1B-05) | P1 | PV1-ENG-04B |
 | 12 | PV1-ENG-05A | Mechanically split Progress behind characterization tests | P1 | PV1-ENG-02 |
 | 13 | PV1-ENG-05B | Mechanically split Today action surface | P1 | PV1-ENG-02 |
 | 14 | PV1-ENG-05C | Mechanically split workout player presentation | P1 | PV1-ENG-02 |
