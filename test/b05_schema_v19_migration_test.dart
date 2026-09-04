@@ -12,7 +12,7 @@ void main() {
     final db = AppDatabase.memory();
     addTearDown(db.close);
 
-    expect(db.schemaVersion, 20);
+    expect(db.schemaVersion, 21);
     final tableRows = await db
         .customSelect(
           "SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name",
@@ -68,7 +68,7 @@ void main() {
       final migrated = AppDatabase.executor(NativeDatabase(file));
       try {
         await migrated.customSelect('PRAGMA user_version').get();
-        expect(migrated.schemaVersion, 20);
+        expect(migrated.schemaVersion, 21);
         expect(
           (await migrated.select(migrated.nutritionCoachingPreferences).get())
               .single
@@ -122,7 +122,7 @@ void main() {
       try {
         await retry.customSelect('PRAGMA user_version').get();
         expect(await retry.select(retry.mediaPackPreferences).get(), isEmpty);
-        expect(retry.schemaVersion, 20);
+        expect(retry.schemaVersion, 21);
       } finally {
         await retry.close();
         await directory.delete(recursive: true);

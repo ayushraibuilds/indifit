@@ -1,4 +1,11 @@
-/// Remote food item descriptor returned by an external food catalogue provider.
+/// Superseded by [FoodCatalogCapability] (`food_catalog_capability.dart`).
+///
+/// This NET-01A-era abstraction and its serving-size-based [RemoteFoodCandidate]
+/// have no live callers (verified: only the registry default driver and one
+/// NET-01A contract test reference the disabled driver). Do not build new
+/// features on this contract; it is retained without deletion per the
+/// retired-code inventory process (PV1-ENG-03/C1B) and will be removed there.
+@Deprecated('Superseded; see doc comment above.')
 class RemoteFoodCandidate {
   const RemoteFoodCandidate({
     required this.providerId,
@@ -29,9 +36,13 @@ class RemoteFoodCandidate {
 
 /// Abstract contract for online food and barcode catalogue lookups.
 ///
+/// Superseded by [FoodCatalogCapability]. Retained without deletion per the
+/// retired-code inventory process (PV1-ENG-03/C1B).
+///
 /// Invariant: Remote results remain clearly visually distinct from local
 /// canonical foods until explicitly logged, reviewed, or saved. Once logged,
 /// results are cached locally and work offline.
+@Deprecated('Superseded; see doc comment above.')
 abstract class RemoteCatalogueCapability {
   /// Whether the remote food search service is available.
   bool get isAvailable;
@@ -47,6 +58,9 @@ abstract class RemoteCatalogueCapability {
 }
 
 /// Default disabled implementation for offline-only operation.
+///
+/// Superseded by [DisabledFoodCatalogCapability] in `food_catalog_capability.dart`.
+@Deprecated('Superseded; see doc comment above.')
 class DisabledRemoteCatalogueCapability implements RemoteCatalogueCapability {
   const DisabledRemoteCatalogueCapability();
 

@@ -1,3 +1,7 @@
+// Note on layering: HlcTimestamp/SyncMutation live in lib/core/sync/ as
+// shared kernel types (not a feature package), so this capability contract
+// importing them keeps the dependency core->core. Feature screens depend on
+// this contract, never on lib/core/sync/ directly.
 import '../sync/hlc_timestamp.dart';
 import '../sync/sync_mutation.dart';
 import 'connected_status.dart';

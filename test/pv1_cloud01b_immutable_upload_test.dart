@@ -90,7 +90,7 @@ void main() {
       final remoteList = await apiClient.listSnapshots();
       expect(remoteList.totalCount, 1);
       expect(remoteList.snapshots.first.deviceName, 'iPhone-15-Pro-Max');
-      expect(remoteList.snapshots.first.schemaVersion, 20);
+      expect(remoteList.snapshots.first.schemaVersion, 21);
       expect(remoteList.snapshots.first.backupFormatVersion, 10);
 
       // 4. Verify local SharedPreferences metadata was updated
@@ -119,6 +119,7 @@ void main() {
         network: network,
         outbox: outbox,
         apiClient: apiClient,
+        kmsSecret: 'kms-wrapping-key-sub-12345',
       );
 
       // First upload
@@ -149,6 +150,7 @@ void main() {
         network: network,
         outbox: outbox,
         apiClient: apiClient,
+        kmsSecret: 'kms-wrapping-key-sub-12345',
       );
 
       // Trigger background backup (isManual: false)
@@ -202,6 +204,7 @@ void main() {
         network: network,
         outbox: outbox,
         apiClient: apiClient,
+        kmsSecret: 'kms-wrapping-key-sub-12345',
       );
 
       await service.createAndUploadSnapshot(isManual: false);
@@ -228,6 +231,7 @@ void main() {
         network: network,
         outbox: outbox,
         apiClient: apiClient,
+        kmsSecret: 'kms-wrapping-key-sub-12345',
       );
 
       final status = await service.getStatus();
@@ -237,6 +241,65 @@ void main() {
       final success = await service.createAndUploadSnapshot(isManual: true);
       expect(success, isFalse);
       expect(await outbox.getPendingOperations(), isEmpty);
+    });
+
+    test('Dispatch respects sign-out and wifi policy without losing queued work', () async {
+      final scope = registerTestDatabaseScope();
+      final db = scope.create();
+
+      final apiClient = InMemoryCloudBackupApiClient();
+      final network = TestableNetworkCapability(initialConnected: true);
+      final outbox = InMemoryOutboxRepository();
+      addTearDown(outbox.dispose);
+
+      Future<CloudBackupService> buildService({
+        required AccountCapability account,
+        required NetworkCapability networkCapability,
+      }) async =>
+          CloudBackupService(
+            db: db,
+            prefs: prefs,
+            account: account,
+            network: networkCapability,
+            outbox: outbox,
+            apiClient: apiClient,
+            kmsSecret: 'kms-wrapping-key-sub-12345',
+          );
+
+      // Queue one snapshot while authenticated and online.
+      final online = await buildService(
+        account: _FakeAuthenticatedAccount(),
+        networkCapability: network,
+      );
+      expect(await online.createAndUploadSnapshot(isManual: false), isTrue);
+      var pending = await outbox.getPendingOperations();
+      expect(pending, hasLength(1));
+
+      // Sign-out after enqueue: dispatch refuses but keeps the op queued
+      // (retryable on next sign-in), instead of permanent-failing it.
+      final guest = await buildService(
+        account: const NoOpAccountCapability(),
+        networkCapability: network,
+      );
+      expect(await guest.processOutboxBackup(pending.first), isFalse);
+      pending = await outbox.getPendingOperations();
+      expect(pending, hasLength(1));
+      expect(pending.first.state, OutboxState.pending);
+      expect((await apiClient.listSnapshots()).totalCount, 0);
+
+      // Wifi-only policy on cellular: same leave-queued behavior.
+      await prefs.setBool(CloudBackupService.wifiOnlyPrefKey, true);
+      network.setConnected(true, NetworkTransportType.cellular);
+      expect(await online.processOutboxBackup(pending.first), isFalse);
+      expect(await outbox.getPendingOperations(), hasLength(1));
+
+      // Back on wifi: dispatch succeeds and records the content fingerprint.
+      network.setConnected(true, NetworkTransportType.wifi);
+      expect(await online.processOutboxBackup(pending.first), isTrue);
+      expect(await outbox.getPendingOperations(), isEmpty);
+      expect((await apiClient.listSnapshots()).totalCount, 1);
+      expect(online.lastFingerprint, isNotNull);
+      await prefs.remove(CloudBackupService.wifiOnlyPrefKey);
     });
   });
 }

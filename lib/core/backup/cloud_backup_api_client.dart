@@ -76,6 +76,14 @@ class InMemoryCloudBackupApiClient implements CloudBackupApiClient {
       createdAtUtc: DateTime.now().toUtc(),
     );
 
+    // Idempotent upsert: retrying the same snapshotId must not duplicate rows.
+    final existingIndex =
+        _summaries.indexWhere((s) => s.snapshotId == request.snapshotId);
+    if (existingIndex != -1) {
+      _storedEnvelopes[request.snapshotId] = envelope;
+      return _summaries[existingIndex];
+    }
+
     _storedEnvelopes[request.snapshotId] = envelope;
 
     final summary = CloudBackupSnapshotSummary(

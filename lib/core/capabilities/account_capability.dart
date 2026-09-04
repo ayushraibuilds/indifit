@@ -45,9 +45,10 @@ abstract class AccountCapability {
 
 /// Default offline-first guest implementation.
 class NoOpAccountCapability implements AccountCapability {
-  const NoOpAccountCapability({String defaultDeviceId = 'local-device'});
+  const NoOpAccountCapability({String defaultDeviceId = 'local-device'})
+      : _deviceId = defaultDeviceId;
 
-  final String _deviceId = 'local-device';
+  final String _deviceId;
 
   @override
   Future<bool> get isAuthenticated async => false;

@@ -706,6 +706,7 @@ dependencies are satisfied may run in parallel; the order breaks priority ties.
 | 9.2 | PV1-CATALOG-01C | Implement barcode camera/input flow, local cache precedence, and review integration | P1 | PV1-CATALOG-01B |
 | *Status:* | | **Complete** — BarcodeScannerScreen, FoodCatalogCapability wiring, & tests frozen at `test/pv1_catalog01c_barcode_scan_test.dart` | | |
 | 10 | PV1-ENG-03 | Produce reachability/ownership inventory for dormant and legacy code | P1 | PV1-ENG-01C |
+| *Status:* | | **Complete** — Reachability/ownership inventory frozen in `docs/implementation/post-v1/C1A_RETIRED_SURFACE_INVENTORY.md` | | |
 | 11 | PV1-ENG-04A | Remove or relocate the first evidence-confirmed retired area | P1 | PV1-ENG-03 |
 | 12 | PV1-ENG-05A | Mechanically split Progress behind characterization tests | P1 | PV1-ENG-02 |
 | 13 | PV1-ENG-05B | Mechanically split Today action surface | P1 | PV1-ENG-02 |

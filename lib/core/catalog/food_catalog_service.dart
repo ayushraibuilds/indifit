@@ -3,18 +3,27 @@ import 'dart:async';
 import '../../data/repositories/food_api_service.dart';
 import '../capabilities/food_catalog_capability.dart';
 import '../privacy/privacy_policy.dart';
+import 'remote_food_cache_store.dart';
 
 /// Implementation of [FoodCatalogCapability] that bridges external food APIs
 /// with the normalized IndiFit Indian culinary catalog schema and 2-tier caching.
+///
+/// Tier-1 is the in-memory map below; when [persistentCache] is provided
+/// (SQLite `cached_remote_foods`, 14-day TTL), reads fall through to it and
+/// writes go through to it, so confirmed candidates survive process death and
+/// work offline. Memory-only operation (tests) is unchanged when it is null.
 class FoodCatalogService implements FoodCatalogCapability {
   FoodCatalogService({
     required FoodApiService foodApiService,
     PrivacyPolicy? privacyPolicy,
+    DriftRemoteFoodCacheStore? persistentCache,
   })  : _apiService = foodApiService,
-        _privacyPolicy = privacyPolicy;
+        _privacyPolicy = privacyPolicy,
+        _persistentCache = persistentCache;
 
   final FoodApiService _apiService;
   final PrivacyPolicy? _privacyPolicy;
+  final DriftRemoteFoodCacheStore? _persistentCache;
 
   /// Tier-1 in-memory cache of previously resolved remote candidates keyed by ID.
   final Map<String, RemoteFoodCandidate> _memoryCache = {};
@@ -72,7 +81,11 @@ class FoodCatalogService implements FoodCatalogCapability {
         query: query,
       );
     } catch (_) {
-      // Fail closed and return empty page on network errors or timeouts
+      // Fail closed and return empty page on network errors, timeouts, or
+      // HTTP 429 rate limits (spec §7.3). No retry/backoff here: search is
+      // user-initiated and re-issued per keystroke; the provider User-Agent
+      // header (food_api_service) + empty-state copy are the rate-limit
+      // contract. Never cache the empty failure page as a Tier-1 result.
       return FoodSearchPage(
         items: const [],
         totalCount: 0,
@@ -92,6 +105,15 @@ class FoodCatalogService implements FoodCatalogCapability {
         _memoryCache.values.where((c) => c.barcode == cleanBarcode).firstOrNull;
     if (cached != null) return cached;
 
+    // Persistent Tier-1 before any network (offline reuse across restarts).
+    if (_persistentCache != null) {
+      final stored = await _persistentCache.getByBarcode(cleanBarcode);
+      if (stored != null) {
+        _memoryCache[stored.id] = stored;
+        return stored;
+      }
+    }
+
     if (_privacyPolicy != null && !_privacyPolicy.isOpenFoodFactsAllowed) {
       return null;
     }
@@ -103,6 +125,7 @@ class FoodCatalogService implements FoodCatalogCapability {
       final candidate = _adaptRawToCandidate(raw);
       if (candidate != null) {
         _memoryCache[candidate.id] = candidate;
+        await _persistentCache?.putCandidate(candidate);
       }
       return candidate;
     } catch (_) {
@@ -116,34 +139,60 @@ class FoodCatalogService implements FoodCatalogCapability {
     if (candidate.barcode != null && candidate.barcode!.isNotEmpty) {
       _memoryCache[candidate.barcode!] = candidate;
     }
+    await _persistentCache?.putCandidate(candidate);
   }
 
   @override
   Future<RemoteFoodCandidate?> getCachedCandidate(String candidateId) async {
-    return _memoryCache[candidateId];
+    final memory = _memoryCache[candidateId];
+    if (memory != null) return memory;
+    final stored = await _persistentCache?.getCandidate(candidateId);
+    if (stored != null) _memoryCache[stored.id] = stored;
+    return stored;
   }
 
   @override
   Future<List<RemoteFoodCandidate>> getRecentCachedCandidates({
     int limit = 50,
   }) async {
-    return _memoryCache.values.take(limit).toList();
+    final seen = <String>{};
+    final deduped = <RemoteFoodCandidate>[];
+    for (final candidate in _memoryCache.values) {
+      if (!seen.add(candidate.id)) continue;
+      deduped.add(candidate);
+      if (deduped.length >= limit) break;
+    }
+    // Union with persistent Tier-1 (fresh only; store enforces TTL).
+    if (deduped.length < limit && _persistentCache != null) {
+      for (final stored
+          in await _persistentCache.recentCandidates(limit: limit)) {
+        if (!seen.add(stored.id)) continue;
+        _memoryCache[stored.id] = stored;
+        deduped.add(stored);
+        if (deduped.length >= limit) break;
+      }
+    }
+    return deduped;
   }
 
   /// Adapts a raw third-party [FoodApiResult] into a strongly typed [RemoteFoodCandidate]
   /// with Indian culinary serving options and Atwater validation.
+  ///
+  /// Returns null when energy/macros are incomplete: absent nutrients stay
+  /// missing and must go through explicit custom entry, never silent 0.0.
   RemoteFoodCandidate? _adaptRawToCandidate(FoodApiResult raw) {
     final stableId = raw.barcode ?? raw.providerId;
     if (stableId == null || stableId.trim().isEmpty) return null;
 
     final name = raw.name.trim();
     if (name.isEmpty) return null;
+    if (!raw.hasCompleteMacros) return null;
 
-    // Standard per 100g basis
-    final calories = raw.calories ?? 0.0;
-    final protein = raw.protein ?? 0.0;
-    final carbs = raw.carbs ?? 0.0;
-    final fat = raw.fat ?? 0.0;
+    // Standard per 100g basis (all non-null after the completeness gate).
+    final calories = raw.calories!;
+    final protein = raw.protein!;
+    final carbs = raw.carbs!;
+    final fat = raw.fat!;
 
     final servingOptions = _synthesizeIndianServingOptions(
       name: name,
@@ -173,7 +222,7 @@ class FoodCatalogService implements FoodCatalogCapability {
       proteinPer100g: protein,
       carbsPer100g: carbs,
       fatPer100g: fat,
-      fiberPer100g: null,
+      fiberPer100g: raw.fiber,
       servingOptions: servingOptions,
       provenance: provenance,
       verificationLevel: FoodVerificationLevel.communityReported,
@@ -204,8 +253,13 @@ class FoodCatalogService implements FoodCatalogCapability {
     return 'general';
   }
 
-  /// Synthesizes appropriate Indian portion options (`katori`, `piece`, `glass`)
-  /// based on food name and package metadata.
+  /// Synthesizes appropriate Indian portion options per
+  /// `CATALOG01A_FOOD_CATALOG_SPECIFICATION.md` §5 (exact unit names/weights).
+  ///
+  /// Density note: `glass` is 200 ml per spec; gram conversion uses 1.03 g/ml
+  /// (milk-like density) only when the provider serving unit is `ml`. This is
+  /// wrong for juice/oil, so the sheet always shows the original unit label
+  /// and users confirm the portion before logging.
   List<ServingOption> _synthesizeIndianServingOptions({
     required String name,
     required double servingSize,
@@ -236,32 +290,77 @@ class FoodCatalogService implements FoodCatalogCapability {
       );
     }
 
-    // 3. Indian Culinary household measures
-    if (lower.contains('dal') || lower.contains('curry') || lower.contains('sabzi') || lower.contains('sambar') || lower.contains('khichdi')) {
+    // 3. Indian culinary household measures (spec §5 exact names/weights)
+    final isStuffedParatha = isStuffedParathaName(name);
+    if (lower.contains('dal') ||
+        lower.contains('curry') ||
+        lower.contains('sabzi') ||
+        lower.contains('sambar') ||
+        lower.contains('khichdi') ||
+        lower.contains('kadhi') ||
+        lower.contains('raita')) {
       options.add(
         const ServingOption(unitName: 'katori', gramWeight: 150.0),
       );
       options.add(
-        const ServingOption(unitName: 'bowl', gramWeight: 300.0),
+        const ServingOption(unitName: 'serving_bowl', gramWeight: 300.0),
       );
-    } else if (lower.contains('roti') || lower.contains('chapati') || lower.contains('phulka')) {
+    }
+    if (lower.contains('biryani') ||
+        lower.contains('pulao') ||
+        lower.contains('rice')) {
       options.add(
-        const ServingOption(unitName: 'piece', gramWeight: 35.0),
+        const ServingOption(unitName: 'medium_katori', gramWeight: 200.0),
       );
-    } else if (lower.contains('paratha')) {
       options.add(
-        const ServingOption(unitName: 'piece', gramWeight: 75.0),
+        const ServingOption(unitName: 'serving_bowl', gramWeight: 300.0),
       );
-    } else if (lower.contains('milk') || lower.contains('chaas') || lower.contains('lassi') || lower.contains('juice')) {
+    }
+    if (lower.contains('roti') ||
+        lower.contains('chapati') ||
+        lower.contains('phulka')) {
+      options.add(
+        const ServingOption(unitName: 'roti_piece', gramWeight: 35.0),
+      );
+    }
+    if (lower.contains('paratha')) {
+      options.add(
+        ServingOption(
+          unitName: isStuffedParatha ? 'stuffed_paratha' : 'paratha_piece',
+          gramWeight: isStuffedParatha ? 110.0 : 60.0,
+        ),
+      );
+    }
+    if (lower.contains('idli')) {
+      options.add(
+        const ServingOption(unitName: 'idli_piece', gramWeight: 40.0),
+      );
+    }
+    if (lower.contains('dosa')) {
+      options.add(
+        const ServingOption(unitName: 'dosa_piece', gramWeight: 90.0),
+      );
+    }
+    if (lower.contains('milk') ||
+        lower.contains('chaas') ||
+        lower.contains('lassi') ||
+        lower.contains('juice')) {
       options.add(
         const ServingOption(unitName: 'glass', gramWeight: 206.0),
       );
-    } else if (lower.contains('ghee') || lower.contains('oil') || lower.contains('butter')) {
+    }
+    if (lower.contains('ghee') ||
+        lower.contains('oil') ||
+        lower.contains('butter') ||
+        lower.contains('chutney') ||
+        lower.contains('sugar') ||
+        lower.contains('honey') ||
+        lower.contains('seeds')) {
       options.add(
-        const ServingOption(unitName: 'tbsp', gramWeight: 15.0),
+        const ServingOption(unitName: 'tablespoon', gramWeight: 15.0),
       );
       options.add(
-        const ServingOption(unitName: 'tsp', gramWeight: 5.0),
+        const ServingOption(unitName: 'teaspoon', gramWeight: 5.0),
       );
     }
 

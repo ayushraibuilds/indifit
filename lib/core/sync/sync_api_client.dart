@@ -126,9 +126,13 @@ class InMemorySyncApiClient implements SyncApiClient {
         );
       }
 
-      // Deduplicate on (entityId, hlc)
+      // Deduplicate on (domain, entityId, hlc): same numeric id in two
+      // domains must not collide.
       final exists = _storedMutations.any(
-        (m) => m.entityId == mutation.entityId && m.hlc == mutation.hlc,
+        (m) =>
+            m.domain == mutation.domain &&
+            m.entityId == mutation.entityId &&
+            m.hlc == mutation.hlc,
       );
       if (!exists) {
         _storedMutations.add(mutation);

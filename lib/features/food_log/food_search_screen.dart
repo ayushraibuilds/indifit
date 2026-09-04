@@ -741,11 +741,19 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         _showUnavailableProviderFoodMessage();
         return;
       }
+      // Never fabricate 0.0 for missing provider nutrients: incomplete results
+      // go to custom entry instead of a review sheet with invented values.
+      if (!result.hasCompleteMacros) {
+        _showUnavailableProviderFoodMessage();
+        return;
+      }
 
       final servingUnit = result.servingUnit.isNotEmpty ? result.servingUnit : 'g';
       final servingSize = result.servingSize > 0 ? result.servingSize : 100.0;
       final lowerName = result.name.toLowerCase();
+      final isStuffed = isStuffedParathaName(result.name);
 
+      // Matches CATALOG01A §5 (same table as FoodCatalogService).
       final servingOptions = <ServingOption>[
         ServingOption(
           unitName: servingUnit,
@@ -754,11 +762,22 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         ),
         if (servingSize != 100.0)
           const ServingOption(unitName: '100g', gramWeight: 100.0),
-        if (lowerName.contains('dal') || lowerName.contains('curry') || lowerName.contains('sabzi') || lowerName.contains('sambar'))
+        if (lowerName.contains('dal') || lowerName.contains('curry') || lowerName.contains('sabzi') || lowerName.contains('sambar') || lowerName.contains('khichdi') || lowerName.contains('kadhi') || lowerName.contains('raita'))
           const ServingOption(unitName: 'katori', gramWeight: 150.0),
-        if (lowerName.contains('roti') || lowerName.contains('chapati') || lowerName.contains('paratha'))
-          const ServingOption(unitName: 'piece', gramWeight: 35.0),
-        if (lowerName.contains('milk') || lowerName.contains('chaas') || lowerName.contains('lassi'))
+        if (lowerName.contains('biryani') || lowerName.contains('pulao') || lowerName.contains('rice'))
+          const ServingOption(unitName: 'medium_katori', gramWeight: 200.0),
+        if (lowerName.contains('roti') || lowerName.contains('chapati') || lowerName.contains('phulka'))
+          const ServingOption(unitName: 'roti_piece', gramWeight: 35.0),
+        if (lowerName.contains('paratha'))
+          ServingOption(
+            unitName: isStuffed ? 'stuffed_paratha' : 'paratha_piece',
+            gramWeight: isStuffed ? 110.0 : 60.0,
+          ),
+        if (lowerName.contains('idli'))
+          const ServingOption(unitName: 'idli_piece', gramWeight: 40.0),
+        if (lowerName.contains('dosa'))
+          const ServingOption(unitName: 'dosa_piece', gramWeight: 90.0),
+        if (lowerName.contains('milk') || lowerName.contains('chaas') || lowerName.contains('lassi') || lowerName.contains('juice'))
           const ServingOption(unitName: 'glass', gramWeight: 206.0),
       ];
 
@@ -770,10 +789,11 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         brand: _consumerMetadata(result.brand),
         barcode: result.barcode,
         category: 'general',
-        caloriesPer100g: result.calories ?? 0.0,
-        proteinPer100g: result.protein ?? 0.0,
-        carbsPer100g: result.carbs ?? 0.0,
-        fatPer100g: result.fat ?? 0.0,
+        caloriesPer100g: result.calories!,
+        proteinPer100g: result.protein!,
+        carbsPer100g: result.carbs!,
+        fatPer100g: result.fat!,
+        fiberPer100g: result.fiber,
         servingOptions: servingOptions,
         provenance: FoodProvenance(
           provider: FoodCatalogProvider.openFoodFacts,
@@ -831,34 +851,10 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   }
 
   Future<void> _openProviderFastAdd(FoodApiResult result) async {
-    try {
-      final reference = _providerReference(result);
-      if (reference == null) {
-        _showUnavailableProviderFoodMessage();
-        return;
-      }
-      final catalog = await ref.read(
-        nutritionFoodCatalogRepositoryProvider.future,
-      );
-      final option = await catalog.ensureProviderFood(
-        displayName: _consumerFoodName(result.name),
-        sourceReference: reference,
-        servingSize: result.servingSize,
-        servingUnit: result.servingUnit,
-        energyKcal: result.calories,
-        proteinG: result.protein,
-        carbohydrateG: result.carbs,
-        fatG: result.fat,
-        brand: _consumerMetadata(result.brand),
-      );
-      await _addOptionFast(option);
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('This food is unavailable. Try again.')),
-        );
-      }
-    }
+    // Provider results must pass through explicit review: route the one-tap
+    // affordance to the review sheet instead of direct finalize so unverified
+    // macros are never silently promoted.
+    await _openProviderLogDialog(result);
   }
 
   Future<void> _addOptionFast(NutritionFoodOption option) async {
@@ -1833,60 +1829,6 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         nutritionFoodCatalogRepositoryProvider.future,
       );
       final option = await catalog.ensureLegacyFood(food);
-      if (!mounted) return;
-      setState(() {
-        _selectionLoading.remove(key);
-        _selectedKeys.add(option.id);
-        _selectedOptions[option.id] = option;
-        _selectedQuantities[option.id] = option.baseQuantity;
-      });
-    } catch (_) {
-      if (mounted) {
-        setState(() => _selectionLoading.remove(key));
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('This food cannot be selected right now.'),
-          ),
-        );
-      }
-    }
-  }
-
-  Future<void> _toggleOnlineSelection(FoodApiResult food) async {
-    final reference = _providerReference(food);
-    if (reference == null) {
-      _showUnavailableProviderFoodMessage();
-      return;
-    }
-    final key = 'provider-food:$reference';
-    if (_selectionLoading.contains(key)) return;
-    final selectedOption = _selectedOptions.entries
-        .where((entry) => entry.value.sourceReference == reference)
-        .firstOrNull;
-    if (selectedOption != null) {
-      setState(() {
-        _selectedKeys.remove(selectedOption.key);
-        _selectedOptions.remove(selectedOption.key);
-        _selectedQuantities.remove(selectedOption.key);
-      });
-      return;
-    }
-    setState(() => _selectionLoading.add(key));
-    try {
-      final catalog = await ref.read(
-        nutritionFoodCatalogRepositoryProvider.future,
-      );
-      final option = await catalog.ensureProviderFood(
-        displayName: food.name,
-        sourceReference: reference,
-        servingSize: food.servingSize,
-        servingUnit: food.servingUnit,
-        energyKcal: food.calories,
-        proteinG: food.protein,
-        carbohydrateG: food.carbs,
-        fatG: food.fat,
-        brand: food.brand,
-      );
       if (!mounted) return;
       setState(() {
         _selectionLoading.remove(key);
@@ -3127,11 +3069,10 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         : '$brand $displayName';
     final reference = _providerReference(food);
     final canLog = reference != null;
-    final isSelected =
-        canLog &&
-        _selectedOptions.values.any(
-          (option) => option.sourceReference == reference,
-        );
+    // Gate 1 (PV1-CATALOG-01B): provider results never join multi-select
+    // batch logging. Every provider row requires individual review via
+    // RemoteFoodReviewSheet — no provider response silently becomes trusted
+    // nutrition through finalizeBatch.
     return Card(
       margin: const EdgeInsets.only(bottom: 8.0),
       child: Semantics(
@@ -3142,21 +3083,22 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
             '$identityLabel, $nutrition${canLog ? '' : ', unavailable for logging'}',
         hint: canLog
             ? (_isMultiSelect
-                  ? (isSelected
-                        ? 'Tap to deselect from multi-food add.'
-                        : 'Tap to select for multi-food add.')
+                  ? 'Tap to review $displayName before logging. Provider results need individual review.'
                   : 'Tap Add to use a supported serving or open to adjust the amount.')
             : 'This result is unavailable for logging. Try another match.',
         child: ListTile(
           minVerticalPadding: 10,
           leading: _isMultiSelect
               ? Semantics(
-                  label: 'Select $displayName for a multi-food add',
-                  child: Checkbox(
-                    value: isSelected,
-                    onChanged: canLog
-                        ? (_) => unawaited(_toggleOnlineSelection(food))
-                        : null,
+                  label:
+                      '$displayName needs individual review before logging',
+                  child: Tooltip(
+                    message:
+                        'Provider results need individual review — tap the row',
+                    child: const Checkbox(
+                      value: false,
+                      onChanged: null,
+                    ),
                   ),
                 )
               : null,
@@ -3190,20 +3132,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
             overflow: TextOverflow.ellipsis,
           ),
           trailing: _isMultiSelect
-              ? (isSelected
-                    ? IconButton(
-                        icon: const Icon(Icons.tune_rounded, size: 20),
-                        tooltip: 'Adjust portion for $displayName',
-                        onPressed: () async {
-                          final selectedOption = _selectedOptions.values
-                              .where((opt) => opt.sourceReference == reference)
-                              .firstOrNull;
-                          if (selectedOption != null) {
-                            await _editSelectedQuantity(selectedOption);
-                          }
-                        },
-                      )
-                    : null)
+              ? null
               : _buildFastAddAction(
                   foodName: displayName,
                   onPressed: canLog
@@ -3214,9 +3143,9 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
           onTap: () {
             if (!canLog) {
               _showUnavailableProviderFoodMessage();
-            } else if (_isMultiSelect) {
-              unawaited(_toggleOnlineSelection(food));
             } else {
+              // Multi-select or not, provider rows always open individual
+              // review (see Gate 1 note above).
               unawaited(_openProviderLogDialog(food));
             }
           },

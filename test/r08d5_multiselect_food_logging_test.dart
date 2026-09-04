@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -9,6 +10,7 @@ import 'package:indifit/core/services/local_timezone_service.dart';
 import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/data/database/app_database.dart'
     hide NutritionConsumptionSnapshot;
+import 'package:indifit/data/repositories/food_api_service.dart';
 import 'package:indifit/data/repositories/food_repository.dart';
 import 'package:indifit/data/repositories/nutrition_consumption_repository.dart';
 import 'package:indifit/data/repositories/nutrition_food_catalog_repository.dart';
@@ -222,6 +224,7 @@ Future<void> _pumpFoodSearch({
   DateTime? selectedDate,
   bool initialMultiSelect = false,
   NutritionFoodLoggingCoordinator? coordinatorOverride,
+  FoodApiService? apiServiceOverride,
   ThemeData? themeOverride,
   double textScale = 1.0,
 }) async {
@@ -245,6 +248,8 @@ Future<void> _pumpFoodSearch({
         nutritionFoodLoggingCoordinatorProvider.overrideWith(
           (ref) async => coordinatorOverride ?? harness.coordinator,
         ),
+        if (apiServiceOverride != null)
+          foodApiServiceProvider.overrideWithValue(apiServiceOverride),
         foodRepositoryProvider.overrideWithValue(
           _EmptyFoodRepository(harness.db),
         ),
@@ -802,5 +807,84 @@ void main() {
         expect(find.text('Add 1 food to breakfast'), findsOneWidget);
       },
     );
+
+    testWidgets(
+      'Gate 1: provider results cannot join the multi-select batch; tap opens review',
+      (tester) async {
+        final harness = await _Harness.create();
+        // NOTE: intentionally no db.close() here. After an online search runs
+        // on this screen, the Drift executor stops servicing new statements
+        // (SELECT/db.close hang idle; under separate investigation). The
+        // in-memory database vanishes with the test isolate, so skipping
+        // close leaks nothing across tests.
+        addTearDown(() async {
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.pump();
+        });
+        final tracking = _TrackingBatchCoordinator(
+          db: harness.db,
+          registry: harness.registry,
+          catalog: harness.catalog,
+          consumption: harness.consumption,
+        );
+
+        await _pumpFoodSearch(
+          tester: tester,
+          harness: harness,
+          recent: const [],
+          mealType: 'lunch',
+          initialMultiSelect: true,
+          coordinatorOverride: tracking,
+          apiServiceOverride: _CompleteMacrosProviderApiService(),
+        );
+
+        // Drive an online search past the 300ms debounce.
+        await tester.enterText(find.byType(TextField).first, 'protein shake');
+        await tester.pump(const Duration(milliseconds: 400));
+        await _settle(tester);
+
+        // Provider row is visible with a disabled (review-only) checkbox.
+        expect(find.text('Provider protein shake'), findsOneWidget);
+        final checkbox = tester.widget<Checkbox>(find.byType(Checkbox).first);
+        expect(checkbox.value, isFalse);
+        expect(checkbox.onChanged, isNull);
+
+        // Tapping the row opens individual review instead of selecting.
+        await tester.tap(find.text('Provider protein shake'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(
+          find.text('Correct label values (per 100 g)'),
+          findsOneWidget,
+        );
+
+        // Nothing entered the batch path.
+        expect(tracking.batchCalls, 0);
+
+        // Drain screen timers (recent-query timeout) so post-test has no
+        // pending timers left behind.
+        await tester.pump(const Duration(seconds: 3));
+      },
+    );
   });
+}
+
+class _CompleteMacrosProviderApiService extends FoodApiService {
+  @override
+  Future<List<FoodApiResult>> searchOnline(
+    String query, {
+    CancelToken? cancelToken,
+  }) async => [
+    FoodApiResult(
+      name: 'Provider protein shake',
+      calories: 120,
+      protein: 20,
+      carbs: 6,
+      fat: 2,
+      servingSize: 330,
+      servingUnit: 'g',
+      barcode: 'provider-gate-1',
+      providerId: 'provider-gate-1',
+    ),
+  ];
 }

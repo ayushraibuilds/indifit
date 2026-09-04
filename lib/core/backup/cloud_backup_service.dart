@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../data/database/app_database.dart';
 import '../capabilities/account_capability.dart';
@@ -32,7 +33,7 @@ class CloudBackupService implements CloudBackupCapability {
   final NetworkCapability _network;
   final OutboxRepository _outbox;
   final CloudBackupApiClient _apiClient;
-  final String _kmsSecret;
+  final String? _kmsSecret;
 
   CloudBackupService({
     required AppDatabase db,
@@ -50,7 +51,17 @@ class CloudBackupService implements CloudBackupCapability {
         _network = network ?? const OfflineNetworkCapability(),
         _outbox = outbox ?? InMemoryOutboxRepository(),
         _apiClient = apiClient ?? InMemoryCloudBackupApiClient(),
-        _kmsSecret = kmsSecret ?? 'default-local-device-kms-secret';
+        _kmsSecret = kmsSecret;
+
+  String get _requireKmsSecret {
+    final secret = _kmsSecret;
+    if (secret == null || secret.isEmpty) {
+      throw StateError(
+        'Cloud backup KMS secret is not configured. Provide a per-user wrapping secret; refusing to encrypt with a shared default key.',
+      );
+    }
+    return secret;
+  }
 
   DateTime? get lastSuccessUtc {
     final raw = _prefs.getString(lastSuccessKey);
@@ -117,20 +128,29 @@ class CloudBackupService implements CloudBackupCapability {
     final dataMap = backupData.toJson();
     final plaintextJson = jsonEncode(dataMap);
 
-    // 2. Check content-stable fingerprint (excluding snapshot timestamp) to avoid redundant uploads
+    // 2. Check content-stable fingerprint (excluding snapshot timestamp) to avoid redundant uploads.
+    // Also coalesce offline retries: if an identical fingerprint is already
+    // queued, do not enqueue a second snapshot with a fresh snapshotId.
     final currentFingerprint = computeContentFingerprint(dataMap);
     if (currentFingerprint == lastFingerprint && lastSuccessUtc != null) {
       // Content unchanged, skip upload
       return true;
     }
+    final pendingBackupOps = await _outbox.getPendingOperations();
+    for (final op in pendingBackupOps) {
+      if (op.domain == OutboxDomain.backup &&
+          op.payload['contentFingerprint'] == currentFingerprint) {
+        return true;
+      }
+    }
 
     // 3. Encrypt snapshot locally using AES-256-GCM envelope
     final now = DateTime.now().toUtc();
-    final snapshotId = 'snap-${now.millisecondsSinceEpoch}';
+    final snapshotId = 'snap-${const Uuid().v4()}';
     final envelope = _envelopeManager.encryptSnapshot(
       snapshotId: snapshotId,
       plaintextJson: plaintextJson,
-      kmsKeyWrappingSecret: _kmsSecret,
+      kmsKeyWrappingSecret: _requireKmsSecret,
       schemaVersion: _db.schemaVersion,
       backupFormatVersion: BackupV10Data.currentVersion,
     );
@@ -162,14 +182,21 @@ class CloudBackupService implements CloudBackupCapability {
       }
     }
 
-    // 5. Enqueue in Outbox for guaranteed background delivery
+    // 5. Enqueue in Outbox for guaranteed background delivery.
+    // Persist the content-stable fingerprint alongside the ciphertext so the
+    // dispatch path records the same fingerprint used for dedup (the
+    // ciphertext sha256 is random per encryption and must not be used).
+    final requestPayload = {
+      ...uploadRequest.toJson(),
+      'contentFingerprint': currentFingerprint,
+    };
     final outboxOp = OutboxOperation(
       operationId: 'op-$snapshotId',
       idempotencyKey: 'backup:$snapshotId:upload',
       domain: OutboxDomain.backup,
       action: 'upload_snapshot',
       entityId: snapshotId,
-      payload: uploadRequest.toJson(),
+      payload: requestPayload,
       createdAtUtc: now,
       scheduledAtUtc: now,
     );
@@ -181,7 +208,34 @@ class CloudBackupService implements CloudBackupCapability {
   Future<bool> processOutboxBackup(OutboxOperation operation) async {
     if (operation.domain != OutboxDomain.backup) return false;
 
-    final request = CloudBackupSnapshotUploadRequest.fromJson(operation.payload);
+    // Respect auth + connectivity policy on dispatch, not just on enqueue:
+    // sign-out or wifi-only/airplane state after enqueue must not upload.
+    // Both leave the op queued (not permanent-failed): the user signing back
+    // in or regaining suitable connectivity retries normally. Permanent
+    // failure is reserved for malformed payloads.
+    final isAuth = await _account.isAuthenticated;
+    if (!isAuth) {
+      return false;
+    }
+    final wifiOnly = _prefs.getBool(wifiOnlyPrefKey) ?? false;
+    if (!_network.canExecuteOperation(requireWifi: wifiOnly)) {
+      // Leave queued; network watcher will retry when policy allows.
+      return false;
+    }
+
+    CloudBackupSnapshotUploadRequest request;
+    try {
+      final payload = Map<String, dynamic>.from(operation.payload)
+        ..remove('contentFingerprint');
+      request = CloudBackupSnapshotUploadRequest.fromJson(payload);
+    } on FormatException catch (e) {
+      await _outbox.markFailed(
+        operation.operationId,
+        error: e.toString(),
+        isRetryable: false,
+      );
+      return false;
+    }
     await _outbox.markInFlight(operation.operationId);
 
     try {
@@ -189,7 +243,8 @@ class CloudBackupService implements CloudBackupCapability {
       await _outbox.markSucceeded(operation.operationId);
 
       final now = DateTime.now().toUtc();
-      final fingerprint = request.sha256Checksum;
+      final fingerprint = operation.payload['contentFingerprint'] as String? ??
+          request.sha256Checksum;
       await _recordSuccessfulUpload(now, fingerprint);
       return true;
     } catch (e) {
@@ -257,6 +312,9 @@ class CloudBackupService implements CloudBackupCapability {
 
   @override
   Future<List<int>?> downloadSnapshot(String snapshotId) async {
+    // Contract returns ciphertext bytes only (e.g. for size/preview checks).
+    // Full-envelope access (wrapped key included) goes through
+    // downloadAndDecryptSnapshot, which is the sole restore path.
     try {
       final envelope = await _apiClient.downloadSnapshot(snapshotId);
       return envelope?.ciphertextBytes;
@@ -277,10 +335,18 @@ class CloudBackupService implements CloudBackupCapability {
     if (envelope == null) {
       throw FormatException('Cloud backup snapshot "$snapshotId" was not found on the server.');
     }
+    if (envelope.backupFormatVersion > BackupV10Data.currentVersion ||
+        envelope.schemaVersion > _db.schemaVersion) {
+      throw FormatException(
+        'Cloud backup snapshot "$snapshotId" requires a newer app version '
+        '(backup v${envelope.backupFormatVersion}, schema v${envelope.schemaVersion}). '
+        'Update IndiFit before restoring.',
+      );
+    }
 
     final plaintextJson = _envelopeManager.decryptSnapshot(
       envelope: envelope,
-      kmsKeyWrappingSecret: _kmsSecret,
+      kmsKeyWrappingSecret: _requireKmsSecret,
     );
 
     final decoded = jsonDecode(plaintextJson);

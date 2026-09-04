@@ -227,6 +227,7 @@ void main() {
         network: network,
         outbox: outbox,
         apiClient: apiClient,
+        kmsSecret: 'kms-wrapping-key-sub-12345',
       );
 
       await service.createAndUploadSnapshot(isManual: true);

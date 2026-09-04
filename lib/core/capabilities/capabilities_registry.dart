@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'account_capability.dart';
 import 'ai_assistance_capability.dart';
+import 'analytics_capability.dart';
 import 'cloud_backup_capability.dart';
 import 'connected_status.dart';
 import 'content_download_capability.dart';
@@ -21,6 +22,7 @@ import 'sync_capability.dart';
 
 export 'account_capability.dart';
 export 'ai_assistance_capability.dart';
+export 'analytics_capability.dart';
 export 'cloud_backup_capability.dart';
 export 'connected_status.dart';
 export 'content_download_capability.dart';
@@ -29,6 +31,9 @@ export 'entitlement_capability.dart';
 export 'food_catalog_capability.dart';
 export 'integration_capability.dart';
 export 'network_capability.dart';
+// The legacy NET-01A catalogue contract defines its own (deprecated)
+// RemoteFoodCandidate; hide it so the canonical CATALOG-track model above is
+// the single visible name. See remote_catalogue_capability.dart.
 export 'remote_catalogue_capability.dart' hide RemoteFoodCandidate;
 export 'sync_capability.dart';
 
@@ -63,7 +68,11 @@ final foodCatalogCapabilityProvider = Provider<FoodCatalogCapability>((ref) {
   return const DisabledFoodCatalogCapability();
 });
 
-/// Remote food catalog capability provider.
+/// Legacy remote food catalog capability provider.
+///
+/// Superseded by [foodCatalogCapabilityProvider]. Retained (disabled default)
+/// without deletion per the retired-code inventory process.
+@Deprecated('Superseded; see doc comment above.')
 final remoteCatalogueCapabilityProvider =
     Provider<RemoteCatalogueCapability>((ref) {
   return const DisabledRemoteCatalogueCapability();
@@ -88,6 +97,11 @@ final integrationCapabilityProvider = Provider<IntegrationCapability>((ref) {
 /// Diagnostics and telemetry capability provider.
 final diagnosticsCapabilityProvider = Provider<DiagnosticsCapability>((ref) {
   return const NoOpDiagnosticsCapability();
+});
+
+/// Product analytics capability provider (separate from crash diagnostics).
+final analyticsCapabilityProvider = Provider<AnalyticsCapability>((ref) {
+  return const NoOpAnalyticsCapability();
 });
 
 /// Entitlement and feature access capability provider.

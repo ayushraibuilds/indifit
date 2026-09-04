@@ -11,7 +11,7 @@ import 'support/indifit_test_harness.dart';
 void main() {
   initializeIndiFitTestHarness();
 
-  test('fresh schema v20 retains its complete SQLite contract', () async {
+  test('fresh schema v21 retains its complete SQLite contract', () async {
     final database = registerTestDatabaseScope().create();
     await database.customSelect('SELECT 1').get();
 
@@ -47,23 +47,23 @@ void main() {
     }
     final digest = sha256.convert(utf8.encode(jsonEncode(contract))).toString();
 
-    expect(version.read<int>('user_version'), 20);
+    expect(version.read<int>('user_version'), 21);
     expect(foreignKeys.read<int>('foreign_keys'), 1);
     expect(
       byType.map((key, value) => MapEntry(key, value.length)),
-      <String, int>{'index': 85, 'table': 88, 'trigger': 73},
+      <String, int>{'index': 85, 'table': 91, 'trigger': 73},
       reason: 'Names by type: ${jsonEncode(byType)}',
     );
     expect(
       digest,
-      '34193f1c6686140daef89e9722b6493fe5f32589b704b7437dc819ffca78b0c3',
+      'f805305d03de046ba3672340bd315c95aba7b67e5c83d3d29b0a02432b75457a',
       reason: 'Names by type: ${jsonEncode(byType)}',
     );
   });
 
-  test('real v19 file upgrades to v20 without changing existing state', () async {
+  test('real v19 file upgrades to v21 without changing existing state', () async {
     final directory = await Directory.systemTemp.createTemp(
-      'indifit-c0b-v19-to-v20-',
+      'indifit-c0b-v19-to-v21-',
     );
     final file = File('${directory.path}/v19.db');
     addTearDown(() async {
@@ -128,7 +128,7 @@ void main() {
         .select(migrated.trainingPlanSettings)
         .getSingle();
 
-    expect(version.read<int>('user_version'), 20);
+    expect(version.read<int>('user_version'), 21);
     expect(
       columns.map((row) => row.read<String>('name')).toSet(),
       containsAll(const <String>{

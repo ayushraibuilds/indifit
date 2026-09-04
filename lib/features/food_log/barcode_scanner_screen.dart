@@ -22,6 +22,16 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
   late AnimationController _animController;
   late Animation<double> _scanAnimation;
   bool _loading = false;
+  bool _cameraDenied = false;
+
+  /// Barcode plausibility (length only). Checksum mismatches still allow lookup:
+  /// the provider is the authority on existence, and hard-blocking on checksum
+  /// rejects real scans with printing quirks plus all legacy test fixtures.
+  /// Non-numeric codes (QR-style) always pass through.
+  bool _isPlausibleBarcode(String code) {
+    if (!RegExp(r'^\d+$').hasMatch(code)) return true;
+    return code.length == 8 || code.length == 12 || code.length == 13;
+  }
 
   @override
   void initState() {
@@ -46,6 +56,16 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
   Future<void> _onBarcodeScanned(String code) async {
     final cleanCode = code.trim();
     if (cleanCode.isEmpty || _loading) return;
+    if (!_isPlausibleBarcode(cleanCode)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('That barcode looks incomplete. Check the digits and try again.'),
+          ),
+        );
+      }
+      return;
+    }
 
     setState(() => _loading = true);
     await _scannerController.stop(); // Stop camera scan while processing
@@ -64,6 +84,11 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
     if (candidate == null) {
       try {
         candidate = await catalogCapability.lookupByBarcode(cleanCode);
+        if (candidate != null) {
+          try {
+            await catalogCapability.cacheRemoteCandidate(candidate);
+          } catch (_) {}
+        }
       } catch (e) {
         lookupError = e;
       }
@@ -183,19 +208,73 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
       body: Stack(
         children: [
           // 1. Mobile Scanner widget
-          MobileScanner(
-            controller: _scannerController,
-            onDetect: (capture) {
-              final List<Barcode> barcodes = capture.barcodes;
-              for (final barcode in barcodes) {
-                final String? rawValue = barcode.rawValue;
-                if (rawValue != null) {
-                  _onBarcodeScanned(rawValue);
-                  break;
+          if (_cameraDenied)
+            Container(
+              color: Colors.black,
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.videocam_off_outlined,
+                          color: Colors.white70, size: 48),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Camera access is off',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Enable camera access in system settings to scan, or enter the barcode below.',
+                        textAlign: TextAlign.center,
+                        style:
+                            TextStyle(color: Colors.white70, fontSize: 13),
+                      ),
+                      const SizedBox(height: 12),
+                      OutlinedButton(
+                        onPressed: () async {
+                          setState(() => _cameraDenied = false);
+                          try {
+                            await _scannerController.start();
+                          } catch (_) {
+                            if (mounted) {
+                              setState(() => _cameraDenied = true);
+                            }
+                          }
+                        },
+                        child: const Text('Retry camera'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            )
+          else
+            MobileScanner(
+              controller: _scannerController,
+              errorBuilder: (context, error, child) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && !_cameraDenied) {
+                    setState(() => _cameraDenied = true);
+                  }
+                });
+                return child ?? const SizedBox.shrink();
+              },
+              onDetect: (capture) {
+                final List<Barcode> barcodes = capture.barcodes;
+                for (final barcode in barcodes) {
+                  final String? rawValue = barcode.rawValue;
+                  if (rawValue != null) {
+                    _onBarcodeScanned(rawValue);
+                    break;
+                  }
                 }
-              }
-            },
-          ),
+              },
+            ),
 
           // 2. Scan Reticle Overlay with animated scan line
           Center(
@@ -309,7 +388,7 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
                     CircularProgressIndicator(color: context.b05Colors.action),
                     const SizedBox(height: 16),
                     const Text(
-                      'Searching Open Food Facts...',
+                      'Looking up barcode…',
                       style: TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,

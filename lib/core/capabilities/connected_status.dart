@@ -86,6 +86,10 @@ class ConnectedStatusState {
   final int pendingOperationsCount;
 
   /// Optional override message if domain needs explicit copy.
+  ///
+  /// Caller-owned: must already be consumer copy (no table names, exception
+  /// class names, UUIDs, or numeric IDs). The built-in messages are filtered;
+  /// custom messages bypass that filter by design, so keep them jargon-free.
   final String? customMessage;
 
   /// True if the user can continue executing workouts and logging data.
@@ -119,7 +123,7 @@ class ConnectedStatusState {
       case ConnectedStatus.neverConfigured:
         return 'Not configured';
       case ConnectedStatus.pending:
-        if (pendingOperationsCount == 1) {
+        if (pendingOperationsCount <= 1) {
           return '1 update waiting to sync';
         }
         return '$pendingOperationsCount updates waiting to sync';
@@ -146,13 +150,17 @@ class ConnectedStatusState {
     DateTime? lastSuccessUtc,
     int? pendingOperationsCount,
     String? customMessage,
+    bool clearCustomMessage = false,
+    bool clearLastSuccessUtc = false,
   }) {
     return ConnectedStatusState(
       status: status ?? this.status,
-      lastSuccessUtc: lastSuccessUtc ?? this.lastSuccessUtc,
+      lastSuccessUtc:
+          clearLastSuccessUtc ? null : (lastSuccessUtc ?? this.lastSuccessUtc),
       pendingOperationsCount:
           pendingOperationsCount ?? this.pendingOperationsCount,
-      customMessage: customMessage ?? this.customMessage,
+      customMessage:
+          clearCustomMessage ? null : (customMessage ?? this.customMessage),
     );
   }
 

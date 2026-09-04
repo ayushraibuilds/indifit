@@ -104,7 +104,12 @@ class SyncConflictResolver {
       }
     }
 
-    // Rule 2: Last-Write-Wins (LWW) ordered strictly by HLC
+    // Rule 2: Last-Write-Wins (LWW) ordered strictly by HLC.
+    // Commutativity: reconcile(A,B) must equal reconcile(B,A). HLC compareTo
+    // already tie-breaks on nodeId, so comparison==0 means identical HLC
+    // (same millis+counter+node). In that impossible-but-possible case, break
+    // the tie deterministically on payload content (order-independent max)
+    // instead of "local wins", which diverges per device.
     final comparison = incoming.hlc.compareTo(local.hlc);
 
     if (comparison > 0) {
@@ -114,11 +119,19 @@ class SyncConflictResolver {
         wasLocalOverwritten: true,
         isTombstoneDominant: false,
       );
-    } else {
-      // Local is newer or equal (in case of tie, local node was preserved)
+    } else if (comparison < 0) {
       return SyncConflictResult(
         winner: local,
         wasLocalOverwritten: false,
+        isTombstoneDominant: false,
+      );
+    } else {
+      final incomingKey = incoming.payload.toString();
+      final localKey = local.payload.toString();
+      final incomingWins = incomingKey.compareTo(localKey) >= 0;
+      return SyncConflictResult(
+        winner: incomingWins ? incoming : local,
+        wasLocalOverwritten: incomingWins,
         isTombstoneDominant: false,
       );
     }

@@ -66,12 +66,19 @@ class InMemoryOutboxRepository implements OutboxRepository {
 
   @override
   Future<void> enqueue(OutboxOperation operation) async {
-    // Check idempotency deduplication
+    // Idempotent on operationId: never silently overwrite an existing row.
+    if (_operations.containsKey(operation.operationId)) {
+      return;
+    }
+    // Deduplicate by idempotency key only while an operation is still active.
+    // Terminal (succeeded/cancelled/permanentFailure) entries must not block
+    // legitimate re-enqueue of the same logical key.
     final existing = _operations.values.any(
       (op) =>
           op.idempotencyKey == operation.idempotencyKey &&
-          op.state != OutboxState.cancelled &&
-          op.state != OutboxState.permanentFailure,
+          (op.state == OutboxState.pending ||
+              op.state == OutboxState.inFlight ||
+              op.state == OutboxState.transientFailure),
     );
     if (existing) {
       return; // Deduplicated
@@ -84,13 +91,15 @@ class InMemoryOutboxRepository implements OutboxRepository {
   @override
   Future<List<OutboxOperation>> getPendingOperations({int limit = 50}) async {
     final now = DateTime.now().toUtc();
-    return _operations.values
+    final eligible = _operations.values
         .where((op) =>
             (op.state == OutboxState.pending ||
                 op.state == OutboxState.transientFailure) &&
             !op.scheduledAtUtc.isAfter(now))
-        .take(limit)
-        .toList();
+        .toList()
+      ..sort((a, b) => a.scheduledAtUtc.compareTo(b.scheduledAtUtc));
+    if (eligible.length <= limit) return eligible;
+    return eligible.sublist(0, limit);
   }
 
   @override
@@ -112,7 +121,7 @@ class InMemoryOutboxRepository implements OutboxRepository {
     _operations[operationId] = op.copyWith(
       state: OutboxState.succeeded,
       lastAttemptUtc: DateTime.now().toUtc(),
-      lastError: null,
+      clearLastError: true,
     );
     _notifyCount();
   }
@@ -164,7 +173,11 @@ class InMemoryOutboxRepository implements OutboxRepository {
   }) async {
     final cutoff = DateTime.now().toUtc().subtract(olderThan);
     final toRemove = _operations.values
-        .where((op) => op.isTerminal && op.createdAtUtc.isBefore(cutoff))
+        .where((op) {
+          if (!op.isTerminal) return false;
+          final completedAt = op.lastAttemptUtc ?? op.createdAtUtc;
+          return completedAt.isBefore(cutoff);
+        })
         .map((op) => op.operationId)
         .toList();
 
@@ -176,9 +189,14 @@ class InMemoryOutboxRepository implements OutboxRepository {
   }
 
   @override
-  Stream<int> watchPendingCount() {
-    _notifyCount();
-    return _pendingCountController.stream;
+  Stream<int> watchPendingCount() async* {
+    yield _operations.values
+        .where((op) =>
+            op.state == OutboxState.pending ||
+            op.state == OutboxState.inFlight ||
+            op.state == OutboxState.transientFailure)
+        .length;
+    yield* _pendingCountController.stream;
   }
 
   @override

@@ -42,6 +42,7 @@ class FoodApiResult {
   final double? protein;
   final double? carbs;
   final double? fat;
+  final double? fiber;
   final double servingSize;
   final String servingUnit;
   final String? barcode;
@@ -55,6 +56,7 @@ class FoodApiResult {
     required this.protein,
     required this.carbs,
     required this.fat,
+    this.fiber,
     required this.servingSize,
     required this.servingUnit,
     this.barcode,
@@ -62,6 +64,11 @@ class FoodApiResult {
     this.brand,
     this.packageQuantity,
   });
+
+  /// True only when energy + all macros are present. Incomplete provider data
+  /// must go through explicit review/custom entry, never silent zero-fill.
+  bool get hasCompleteMacros =>
+      calories != null && protein != null && carbs != null && fat != null;
 }
 
 class FoodApiService {
@@ -108,6 +115,7 @@ class FoodApiService {
           final double? protein = _readNumber(nutriments['proteins_100g']);
           final double? carbs = _readNumber(nutriments['carbohydrates_100g']);
           final double? fat = _readNumber(nutriments['fat_100g']);
+          final double? fiber = _readNumber(nutriments['fiber_100g']);
 
           // Serving size info
           final servingQtyText = p['serving_quantity']?.toString() ?? '100';
@@ -120,6 +128,7 @@ class FoodApiService {
             protein: protein,
             carbs: carbs,
             fat: fat,
+            fiber: fiber,
             servingSize: servingSize,
             servingUnit: servingUnit,
             barcode: barcode,
@@ -205,6 +214,7 @@ class FoodApiService {
                 nutriments['carbohydrates_100g'],
               );
               final double? fat = _readNumber(nutriments['fat_100g']);
+              final double? fiber = _readNumber(nutriments['fiber_100g']);
 
               final servingQtyText = p['serving_quantity']?.toString() ?? '100';
               final servingSize = double.tryParse(servingQtyText) ?? 100.0;
@@ -216,6 +226,7 @@ class FoodApiService {
                 protein: protein,
                 carbs: carbs,
                 fat: fat,
+                fiber: fiber,
                 servingSize: servingSize,
                 servingUnit: servingUnit,
                 barcode: providerId,

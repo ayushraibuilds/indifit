@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/capabilities/capabilities_registry.dart';
@@ -271,6 +273,227 @@ void main() {
       current = await repo.getOperationById('op-max-retry');
       expect(current!.state, OutboxState.permanentFailure);
       expect(current.isTerminal, isTrue);
+    });
+
+    test('markSucceeded clears stale lastError', () async {
+      final repo = InMemoryOutboxRepository();
+      addTearDown(repo.dispose);
+
+      final now = DateTime.now().toUtc();
+      await repo.enqueue(OutboxOperation(
+        operationId: 'op-err-clear',
+        idempotencyKey: 'k-err-clear',
+        domain: OutboxDomain.food,
+        action: 'log',
+        entityId: 'e1',
+        payload: const {},
+        createdAtUtc: now,
+        scheduledAtUtc: now,
+      ));
+      await repo.markInFlight('op-err-clear');
+      await repo.markFailed('op-err-clear', error: 'boom', isRetryable: true);
+      var op = await repo.getOperationById('op-err-clear');
+      expect(op!.lastError, 'boom');
+
+      await repo.markSucceeded('op-err-clear');
+      op = await repo.getOperationById('op-err-clear');
+      expect(op!.state, OutboxState.succeeded);
+      expect(op.lastError, isNull);
+    });
+
+    test('Terminal entries do not block re-enqueue; operationId never overwritten', () async {
+      final repo = InMemoryOutboxRepository();
+      addTearDown(repo.dispose);
+
+      final now = DateTime.now().toUtc();
+      OutboxOperation build(String opId, String key) => OutboxOperation(
+            operationId: opId,
+            idempotencyKey: key,
+            domain: OutboxDomain.food,
+            action: 'log',
+            entityId: 'e1',
+            payload: const {},
+            createdAtUtc: now,
+            scheduledAtUtc: now,
+          );
+
+      await repo.enqueue(build('op-a', 'same-key'));
+      await repo.markSucceeded('op-a');
+
+      // Same logical key after terminal success is accepted again.
+      await repo.enqueue(build('op-b', 'same-key'));
+      expect(await repo.getOperationById('op-b'), isNotNull);
+
+      // Same operationId with different content never overwrites the row.
+      await repo.enqueue(build('op-a', 'different-key'));
+      final original = await repo.getOperationById('op-a');
+      expect(original!.idempotencyKey, 'same-key');
+      expect(original.state, OutboxState.succeeded);
+    });
+
+    test('cancel drops pending work; prune uses completion time', () async {
+      final repo = InMemoryOutboxRepository();
+      addTearDown(repo.dispose);
+
+      final now = DateTime.now().toUtc();
+      final eightDaysAgo = now.subtract(const Duration(days: 8));
+      OutboxOperation build(String opId, DateTime created) => OutboxOperation(
+            operationId: opId,
+            idempotencyKey: 'k-$opId',
+            domain: OutboxDomain.plan,
+            action: 'sync',
+            entityId: opId,
+            payload: const {},
+            createdAtUtc: created,
+            scheduledAtUtc: created,
+          );
+
+      // Cancelled op leaves the pending set.
+      await repo.enqueue(build('op-cancel', now));
+      await repo.cancel('op-cancel');
+      expect(
+        (await repo.getPendingOperations()).any((o) => o.operationId == 'op-cancel'),
+        isFalse,
+      );
+
+      // Old creation but recent completion is retained (7d retention).
+      await repo.enqueue(build('op-recent-done', eightDaysAgo));
+      await repo.markSucceeded('op-recent-done');
+
+      // Old creation AND old completion is pruned.
+      await repo.enqueue(OutboxOperation(
+        operationId: 'op-old-done',
+        idempotencyKey: 'k-op-old-done',
+        domain: OutboxDomain.plan,
+        action: 'sync',
+        entityId: 'op-old-done',
+        payload: const {},
+        createdAtUtc: eightDaysAgo,
+        scheduledAtUtc: eightDaysAgo,
+        state: OutboxState.succeeded,
+        lastAttemptUtc: eightDaysAgo,
+      ));
+
+      final pruned = await repo.pruneCompleted(olderThan: const Duration(days: 7));
+      expect(pruned, 1);
+      expect(await repo.getOperationById('op-old-done'), isNull);
+      expect(await repo.getOperationById('op-recent-done'), isNotNull);
+    });
+
+    test('watchPendingCount replays the current count to new subscribers', () async {
+      final repo = InMemoryOutboxRepository();
+      addTearDown(repo.dispose);
+
+      final now = DateTime.now().toUtc();
+      for (var i = 0; i < 2; i++) {
+        await repo.enqueue(OutboxOperation(
+          operationId: 'op-w-$i',
+          idempotencyKey: 'k-w-$i',
+          domain: OutboxDomain.weight,
+          action: 'sync',
+          entityId: '$i',
+          payload: const {},
+          createdAtUtc: now,
+          scheduledAtUtc: now,
+        ));
+      }
+
+      // New subscriber immediately sees the current count (no silent drop).
+      expect(await repo.watchPendingCount().first, 2);
+
+      await repo.markSucceeded('op-w-0');
+      expect(await repo.watchPendingCount().first, 1);
+    });
+
+    test('fromJson refuses to resurrect corrupt rows', () {
+      Map<String, dynamic> base() => {
+            'operationId': 'op-x',
+            'idempotencyKey': 'k-x',
+            'domain': 'food',
+            'action': 'log',
+            'entityId': 'e',
+            'payload': <String, dynamic>{},
+            'createdAtUtc': '2026-09-03T00:00:00.000Z',
+            'scheduledAtUtc': '2026-09-03T00:00:00.000Z',
+            'state': 'pending',
+            'attemptCount': 0,
+          };
+
+      final unknownDomain = base()..['domain'] = 'teleportation';
+      expect(() => OutboxOperation.fromJson(unknownDomain), throwsFormatException);
+
+      final unknownState = base()..['state'] = 'vibing';
+      expect(() => OutboxOperation.fromJson(unknownState), throwsFormatException);
+
+      final missingField = base()..remove('entityId');
+      expect(() => OutboxOperation.fromJson(missingField), throwsFormatException);
+
+      // Round-trip of a valid row still works.
+      expect(OutboxOperation.fromJson(base()).operationId, 'op-x');
+    });
+
+    test('Retry policy honors sub-second delays deterministically', () {
+      const policy = OutboxRetryPolicy(
+        initialDelay: Duration(milliseconds: 1500),
+        backoffMultiplier: 2.0,
+        jitterFraction: 0.0,
+      );
+      // 1500ms base honoured at ms precision (old code truncated to 1s via
+      // inSeconds). The 1s floor only applies to sub-second totals.
+      expect(
+        policy.computeDelay(1, random: math.Random(42)),
+        const Duration(milliseconds: 1500),
+      );
+      expect(
+        policy.computeDelay(2, random: math.Random(42)),
+        const Duration(milliseconds: 3000),
+      );
+      // Seeded RNG makes the delay reproducible.
+      expect(
+        const OutboxRetryPolicy().computeDelay(1, random: math.Random(7)),
+        const OutboxRetryPolicy().computeDelay(1, random: math.Random(7)),
+      );
+      // Typed transient failures retry; 500 stays permanent by design.
+      expect(policy.isRetryable(TimeoutException('t')), isTrue);
+      expect(policy.isRetryable('408 Request Timeout'), isTrue);
+      expect(policy.isRetryable('500 Internal Server Error'), isFalse);
+    });
+
+    test('TestableNetworkCapability gates wifi policy and offline fail-closed', () {
+      final network = TestableNetworkCapability(initialConnected: true);
+      expect(network.canExecuteOperation(), isTrue);
+      expect(network.canExecuteOperation(requireWifi: true), isTrue);
+
+      network.setConnected(true, NetworkTransportType.cellular);
+      expect(network.canExecuteOperation(), isTrue);
+      expect(network.canExecuteOperation(requireWifi: true), isFalse);
+
+      // Failing-adapter injection: offline blocks dispatch without gating reads.
+      network.setConnected(false);
+      expect(network.isConnected, isFalse);
+      expect(network.canExecuteOperation(), isFalse);
+      expect(network.canExecuteOperation(requireWifi: true), isFalse);
+    });
+
+    test('NoOpAccountCapability honors an injected device id', () async {
+      const account = NoOpAccountCapability(defaultDeviceId: 'device-xyz');
+      expect(await account.deviceId, 'device-xyz');
+      expect(await account.isAuthenticated, isFalse);
+    });
+
+    test('ConnectedStatusState copyWith clears optional fields; pending(0) is singular', () {
+      const state = ConnectedStatusState(
+        status: ConnectedStatus.pending,
+        pendingOperationsCount: 2,
+        customMessage: 'stale',
+        lastSuccessUtc: null,
+      );
+      final cleared = state.copyWith(clearCustomMessage: true);
+      expect(cleared.customMessage, isNull);
+      expect(cleared.pendingOperationsCount, 2);
+
+      const zero = ConnectedStatusState.pending(count: 0);
+      expect(zero.displayMessage, '1 update waiting to sync');
     });
   });
 }

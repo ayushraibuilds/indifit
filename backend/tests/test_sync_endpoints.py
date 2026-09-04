@@ -36,7 +36,7 @@ def test_push_and_pull_mutations():
     # 1. Push batch
     resp = client.post(
         "/v1/sync/mutations",
-        headers={"x-indifit-user-id": "test-user-1"},
+        headers={"Authorization": "Bearer test-user-1"},
         json={"mutations": [mutation_1, mutation_2]},
     )
     assert resp.status_code == 200
@@ -47,7 +47,7 @@ def test_push_and_pull_mutations():
     # 2. Pull deltas from beginning
     resp_pull = client.get(
         "/v1/sync/deltas",
-        headers={"x-indifit-user-id": "test-user-1"},
+        headers={"Authorization": "Bearer test-user-1"},
         params={"since_millis": 0, "since_counter": 0, "since_node_id": ""},
     )
     assert resp_pull.status_code == 200
@@ -71,7 +71,7 @@ def test_push_deduplication_is_idempotent():
     # Push 1
     resp1 = client.post(
         "/v1/sync/mutations",
-        headers={"x-indifit-user-id": "test-user-1"},
+        headers={"Authorization": "Bearer test-user-1"},
         json={"mutations": [mutation]},
     )
     assert resp1.status_code == 200
@@ -80,7 +80,7 @@ def test_push_deduplication_is_idempotent():
     # Push 2 (exact duplicate)
     resp2 = client.post(
         "/v1/sync/mutations",
-        headers={"x-indifit-user-id": "test-user-1"},
+        headers={"Authorization": "Bearer test-user-1"},
         json={"mutations": [mutation]},
     )
     assert resp2.status_code == 200
@@ -99,7 +99,7 @@ def test_clock_skew_rejection():
 
     resp = client.post(
         "/v1/sync/mutations",
-        headers={"x-indifit-user-id": "test-user-1"},
+        headers={"Authorization": "Bearer test-user-1"},
         json={"mutations": [future_mutation]},
     )
     assert resp.status_code == 400
@@ -121,14 +121,14 @@ def test_pull_deltas_pagination_and_domain_filtering():
 
     client.post(
         "/v1/sync/mutations",
-        headers={"x-indifit-user-id": "test-user-1"},
+        headers={"Authorization": "Bearer test-user-1"},
         json={"mutations": mutations},
     )
 
     # Pull with limit=2
     resp = client.get(
         "/v1/sync/deltas",
-        headers={"x-indifit-user-id": "test-user-1"},
+        headers={"Authorization": "Bearer test-user-1"},
         params={"limit": 2},
     )
     assert resp.status_code == 200
@@ -139,10 +139,47 @@ def test_pull_deltas_pagination_and_domain_filtering():
     # Pull with domain filter
     resp_domain = client.get(
         "/v1/sync/deltas",
-        headers={"x-indifit-user-id": "test-user-1"},
+        headers={"Authorization": "Bearer test-user-1"},
         params={"domain": "workouts"},
     )
     assert resp_domain.status_code == 200
     domain_data = resp_domain.json()
     assert all(m["domain"] == "workouts" for m in domain_data["mutations"])
     assert len(domain_data["mutations"]) == 3  # items 0, 2, 4
+
+def test_sync_requires_authentication():
+    resp = client.post("/v1/sync/mutations", json={"mutations": []})
+    assert resp.status_code == 401
+    resp2 = client.get("/v1/sync/deltas")
+    assert resp2.status_code == 401
+
+def test_push_is_atomic_on_clock_skew():
+    import time as _time
+    now_millis = int(_time.time() * 1000)
+    good = {
+        "entity_id": "good-item",
+        "domain": "weights",
+        "type": "insert",
+        "hlc": {"millis": now_millis - 1000, "counter": 0, "node_id": "device-A"},
+        "payload": {},
+    }
+    bad = {
+        "entity_id": "skewed-item",
+        "domain": "weights",
+        "type": "insert",
+        "hlc": {"millis": now_millis + 7200000, "counter": 0, "node_id": "device-A"},
+        "payload": {},
+    }
+    resp = client.post(
+        "/v1/sync/mutations",
+        headers={"Authorization": "Bearer test-user-atomic"},
+        json={"mutations": [good, bad]},
+    )
+    assert resp.status_code == 400
+    pulled = client.get(
+        "/v1/sync/deltas",
+        headers={"Authorization": "Bearer test-user-atomic"},
+        params={"since_millis": 0, "since_counter": 0, "since_node_id": ""},
+    )
+    assert pulled.status_code == 200
+    assert pulled.json()["mutations"] == []

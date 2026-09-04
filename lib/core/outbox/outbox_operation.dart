@@ -51,22 +51,47 @@ class OutboxOperation {
   });
 
   factory OutboxOperation.fromJson(Map<String, dynamic> json) {
+    final domainRaw = json['domain'];
+    final stateRaw = json['state'];
+    OutboxDomain? domain;
+    for (final d in OutboxDomain.values) {
+      if (d.name == domainRaw) domain = d;
+    }
+    if (domain == null) {
+      throw FormatException('Unknown OutboxDomain: $domainRaw. Refusing to resurrect corrupt row.');
+    }
+    OutboxState? state;
+    for (final s in OutboxState.values) {
+      if (s.name == stateRaw) state = s;
+    }
+    if (state == null) {
+      throw FormatException('Unknown OutboxState: $stateRaw. Refusing to resurrect corrupt row.');
+    }
+    final operationId = json['operationId'];
+    final idempotencyKey = json['idempotencyKey'];
+    final action = json['action'];
+    final entityId = json['entityId'];
+    final payloadRaw = json['payload'];
+    final createdRaw = json['createdAtUtc'];
+    final scheduledRaw = json['scheduledAtUtc'];
+    if (operationId is! String || operationId.isEmpty ||
+        idempotencyKey is! String || idempotencyKey.isEmpty ||
+        action is! String || action.isEmpty ||
+        entityId is! String || entityId.isEmpty ||
+        payloadRaw is! Map ||
+        createdRaw is! String || scheduledRaw is! String) {
+      throw const FormatException('Malformed OutboxOperation JSON: missing required fields.');
+    }
     return OutboxOperation(
-      operationId: json['operationId'] as String,
-      idempotencyKey: json['idempotencyKey'] as String,
-      domain: OutboxDomain.values.firstWhere(
-        (d) => d.name == json['domain'],
-        orElse: () => OutboxDomain.setting,
-      ),
-      action: json['action'] as String,
-      entityId: json['entityId'] as String,
-      payload: Map<String, dynamic>.from(json['payload'] as Map),
-      createdAtUtc: DateTime.parse(json['createdAtUtc'] as String),
-      scheduledAtUtc: DateTime.parse(json['scheduledAtUtc'] as String),
-      state: OutboxState.values.firstWhere(
-        (s) => s.name == json['state'],
-        orElse: () => OutboxState.pending,
-      ),
+      operationId: operationId,
+      idempotencyKey: idempotencyKey,
+      domain: domain,
+      action: action,
+      entityId: entityId,
+      payload: Map<String, dynamic>.from(payloadRaw),
+      createdAtUtc: DateTime.parse(createdRaw),
+      scheduledAtUtc: DateTime.parse(scheduledRaw),
+      state: state,
       attemptCount: json['attemptCount'] as int? ?? 0,
       lastAttemptUtc: json['lastAttemptUtc'] != null
           ? DateTime.parse(json['lastAttemptUtc'] as String)
@@ -120,7 +145,8 @@ class OutboxOperation {
     if (state != OutboxState.pending && state != OutboxState.transientFailure) {
       return false;
     }
-    return DateTime.now().toUtc().isAfter(scheduledAtUtc);
+    // Inclusive: due-exactly-now is dispatchable (matches repository filter).
+    return !DateTime.now().toUtc().isBefore(scheduledAtUtc);
   }
 
   OutboxOperation copyWith({
@@ -136,6 +162,8 @@ class OutboxOperation {
     int? attemptCount,
     DateTime? lastAttemptUtc,
     String? lastError,
+    bool clearLastError = false,
+    bool clearLastAttemptUtc = false,
   }) {
     return OutboxOperation(
       operationId: operationId ?? this.operationId,
@@ -148,8 +176,9 @@ class OutboxOperation {
       scheduledAtUtc: scheduledAtUtc ?? this.scheduledAtUtc,
       state: state ?? this.state,
       attemptCount: attemptCount ?? this.attemptCount,
-      lastAttemptUtc: lastAttemptUtc ?? this.lastAttemptUtc,
-      lastError: lastError ?? this.lastError,
+      lastAttemptUtc:
+          clearLastAttemptUtc ? null : (lastAttemptUtc ?? this.lastAttemptUtc),
+      lastError: clearLastError ? null : (lastError ?? this.lastError),
     );
   }
 

@@ -28,6 +28,7 @@ import 'tables/health_tables.dart';
 import 'tables/hydration_tables.dart';
 import 'tables/nutrition_tables.dart';
 import 'tables/settings_tables.dart';
+import 'tables/sync_tables.dart';
 import 'tables/training_program_tables.dart';
 import 'tables/user_tables.dart';
 import 'tables/workout_tables.dart';
@@ -175,6 +176,9 @@ typedef V19MigrationFailureStageInjector =
     EducationContentProgress,
     MediaPackPreferences,
     WorkoutPlaylistPreferences,
+    OutboxEntries,
+    TombstoneEntries,
+    CachedRemoteFoods,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -237,7 +241,7 @@ class AppDatabase extends _$AppDatabase {
   /// end marker used to keep Finish/Leave idempotent without creating a
   /// second active-plan authority.
   @override
-  int get schemaVersion => schemaVersionOverride ?? 20;
+  int get schemaVersion => schemaVersionOverride ?? 21;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -322,6 +326,14 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 20 && to >= 20) {
         await _migrateV19ToV20(m);
+      }
+      if (from < 21 && to >= 21) {
+        // V21: durable connected-work tables (PV1-NET-01/SYNC-01/CATALOG-01).
+        // All three are device-local (never synced); backup specs are
+        // explicit allowlists so no backup migration is required.
+        await m.createTable(outboxEntries);
+        await m.createTable(tombstoneEntries);
+        await m.createTable(cachedRemoteFoods);
       }
     },
 

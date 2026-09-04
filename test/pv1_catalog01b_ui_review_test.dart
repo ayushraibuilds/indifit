@@ -64,10 +64,10 @@ void main() {
       expect(dal.category, 'dal');
       expect(dal.provenance.license, 'ODbL');
 
-      // Synthesized Indian options: should include 'katori' and 'bowl'
+      // Synthesized Indian options per CATALOG01A §5 exact names.
       final servingUnits = dal.servingOptions.map((s) => s.unitName).toList();
       expect(servingUnits, contains('katori'));
-      expect(servingUnits, contains('bowl'));
+      expect(servingUnits, contains('serving_bowl'));
 
       final milk = page.items.last;
       expect(milk.category, 'dairy');
@@ -196,7 +196,10 @@ void main() {
       expect(find.text('Macro Discrepancy Flag'), findsOneWidget);
       expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
 
-      // Tap "Save to My Foods"
+      // Tap "Save to My Foods" (scroll into view: sheet now scrolls with
+      // correction fields).
+      await tester.ensureVisible(find.text('Save to My Foods'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Save to My Foods'));
       await tester.pump();
 
@@ -258,7 +261,9 @@ void main() {
       // Verify log button label
       expect(find.text('Log BREAKFAST'), findsOneWidget);
 
-      // Tap Log
+      // Tap Log (scroll into view: sheet now scrolls with correction fields).
+      await tester.ensureVisible(find.text('Log BREAKFAST'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Log BREAKFAST'));
       await tester.pump();
 

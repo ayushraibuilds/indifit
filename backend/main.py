@@ -14,6 +14,7 @@ from fastapi import (
     Header,
     HTTPException,
     Request,
+    Response,
     UploadFile,
     status,
 )
@@ -681,7 +682,10 @@ def _get_backup_user_id(
             return hashlib.sha256(token.encode("utf-8")).hexdigest()[:16]
     if x_indifit_key and INDIFIT_API_KEY and secrets.compare_digest(x_indifit_key, INDIFIT_API_KEY):
         return "default_api_user"
-    return "guest_user"
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Missing or invalid authentication: provide Authorization Bearer token or valid x-indifit-key.",
+    )
 
 backup_router = APIRouter(prefix="/v1/backup", tags=["Cloud Backup"])
 
@@ -704,10 +708,61 @@ def _prune_user_snapshots(user_id: str):
 @backup_router.post("/snapshots", status_code=status.HTTP_201_CREATED)
 async def upload_backup_snapshot(
     req: BackupSnapshotUploadRequest,
+    response: Response,
     user_id: str = Depends(_get_backup_user_id),
 ):
+    # --- Field validation (fail closed with 400/422, never 500) ---
+    snapshot_id = (req.snapshotId or "").strip()
+    if not snapshot_id or len(snapshot_id) > 128:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid snapshotId: must be 1-128 characters.",
+        )
+    if not req.deviceName or len(req.deviceName) > 128:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid deviceName: must be 1-128 characters.",
+        )
+    if req.schemaVersion < 1 or req.schemaVersion > 99:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid schemaVersion: must be 1-99.",
+        )
+    if req.backupFormatVersion < 1 or req.backupFormatVersion > 20:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid backupFormatVersion: must be 1-20.",
+        )
+    if req.byteSize <= 0 or req.byteSize > 5 * 1024 * 1024:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="Invalid byteSize: must be 1-5242880 bytes (5 MB max).",
+        )
+    try:
+        ciphertext_bytes = base64.b64decode(req.ciphertextBase64, validate=True)
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid ciphertextBase64: not valid base64.",
+        )
+    try:
+        base64.b64decode(req.wrappedKeyBase64, validate=True)
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid wrappedKeyBase64: not valid base64.",
+        )
+    if len(ciphertext_bytes) > 5 * 1024 * 1024:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="Backup blob exceeds maximum upload limit of 5 MB.",
+        )
+    if req.byteSize != len(ciphertext_bytes):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="byteSize does not match decoded ciphertext length.",
+        )
     # Verify SHA-256 integrity
-    ciphertext_bytes = base64.b64decode(req.ciphertextBase64)
     computed_hash = hashlib.sha256(ciphertext_bytes).hexdigest()
     if req.sha256Checksum and computed_hash != req.sha256Checksum:
         raise HTTPException(
@@ -715,9 +770,25 @@ async def upload_backup_snapshot(
             detail="Payload checksum mismatch. The uploaded blob is corrupted.",
         )
 
+    if user_id not in USER_BACKUPS:
+        USER_BACKUPS[user_id] = []
+
+    # Idempotent upsert by snapshotId: retrying the same snapshot must not
+    # create unbounded duplicates.
+    for existing in USER_BACKUPS[user_id]:
+        if existing["snapshotId"] == snapshot_id:
+            existing_blob = BACKUP_BLOBS.get((user_id, snapshot_id))
+            if existing_blob is not None and existing_blob.get("sha256Checksum") != req.sha256Checksum:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=f"Snapshot '{snapshot_id}' already exists with different content.",
+                )
+            response.status_code = status.HTTP_200_OK
+            return existing
+
     now_iso = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     summary = {
-        "snapshotId": req.snapshotId,
+        "snapshotId": snapshot_id,
         "createdAtUtc": now_iso,
         "byteSize": req.byteSize,
         "schemaVersion": req.schemaVersion,
@@ -726,12 +797,9 @@ async def upload_backup_snapshot(
         "isWeeklyMilestone": req.isWeeklyMilestone,
     }
 
-    if user_id not in USER_BACKUPS:
-        USER_BACKUPS[user_id] = []
-
     # Insert newest at front
     USER_BACKUPS[user_id].insert(0, summary)
-    BACKUP_BLOBS[(user_id, req.snapshotId)] = {
+    BACKUP_BLOBS[(user_id, snapshot_id)] = {
         "ciphertextBase64": req.ciphertextBase64,
         "wrappedKeyBase64": req.wrappedKeyBase64,
         "sha256Checksum": req.sha256Checksum,
@@ -840,10 +908,35 @@ async def push_mutations(
 
     user_stream = USER_MUTATIONS[user_id]
 
+    if len(req.mutations) > 500:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Too many mutations in one batch (max 500).",
+        )
+
+    # Validate everything BEFORE mutating server state so a skewed batch
+    # cannot partially append and leave the client in retry ambiguity.
     for m in req.mutations:
         m_dict = m.model_dump()
         hlc = m_dict["hlc"]
-
+        if not m_dict.get("entity_id") or len(m_dict["entity_id"]) > 128:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid entity_id: must be 1-128 characters.",
+            )
+        if m_dict.get("domain") not in {
+            "weights", "workouts", "nutritionLogs",
+            "nutritionRecipes", "programs", "preferences",
+        }:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid domain: {m_dict.get('domain')}.",
+            )
+        if m_dict.get("type") not in {"insert", "update", "delete"}:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid type: {m_dict.get('type')}.",
+            )
         # Clock skew validation: reject physical timestamps > 1 hour in the future
         if hlc["millis"] > now_millis + 3600000:
             raise HTTPException(
@@ -851,9 +944,15 @@ async def push_mutations(
                 detail=f"Clock skew exceeded: {hlc['millis']} vs server {now_millis}",
             )
 
-        # Deduplicate on (entity_id, hlc)
+    for m in req.mutations:
+        m_dict = m.model_dump()
+        hlc = m_dict["hlc"]
+
+        # Deduplicate on (domain, entity_id, hlc)
         exists = any(
-            x["entity_id"] == m_dict["entity_id"] and _compare_hlc(x["hlc"], hlc) == 0
+            x["entity_id"] == m_dict["entity_id"]
+            and x["domain"] == m_dict["domain"]
+            and _compare_hlc(x["hlc"], hlc) == 0
             for x in user_stream
         )
         if not exists:
@@ -880,6 +979,19 @@ async def pull_deltas(
     limit: int = 100,
     user_id: str = Depends(_get_backup_user_id),
 ):
+    if limit < 1 or limit > 500:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid limit: must be 1-500.",
+        )
+    if domain is not None and domain not in {
+        "weights", "workouts", "nutritionLogs",
+        "nutritionRecipes", "programs", "preferences",
+    }:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid domain filter: {domain}.",
+        )
     user_stream = USER_MUTATIONS.get(user_id, [])
     since_hlc = {"millis": since_millis, "counter": since_counter, "node_id": since_node_id}
 

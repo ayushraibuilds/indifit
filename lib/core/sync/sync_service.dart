@@ -14,6 +14,7 @@ import 'hlc_timestamp.dart';
 import 'sync_api_client.dart';
 import 'sync_conflict_resolver.dart';
 import 'sync_mutation.dart';
+import 'sync_tombstone_store.dart';
 
 /// Central synchronization engine implementing [SyncCapability].
 class SyncService implements SyncCapability {
@@ -25,6 +26,7 @@ class SyncService implements SyncCapability {
     required OutboxRepository outbox,
     required SyncApiClient apiClient,
     SyncConflictResolver conflictResolver = const SyncConflictResolver(),
+    DriftSyncTombstoneStore? tombstones,
     this.deviceId,
   })  : _db = db,
         _prefs = prefs,
@@ -32,7 +34,8 @@ class SyncService implements SyncCapability {
         _network = network,
         _outbox = outbox,
         _apiClient = apiClient,
-        _conflictResolver = conflictResolver;
+        _conflictResolver = conflictResolver,
+        _tombstones = tombstones ?? DriftSyncTombstoneStore(db);
 
   final AppDatabase _db;
   final SharedPreferences _prefs;
@@ -41,8 +44,8 @@ class SyncService implements SyncCapability {
   final OutboxRepository _outbox;
   final SyncApiClient _apiClient;
   final String? deviceId;
-  // ignore: unused_field
   final SyncConflictResolver _conflictResolver;
+  final DriftSyncTombstoneStore _tombstones;
 
   final _statusController = StreamController<ConnectedStatusState>.broadcast();
 
@@ -60,6 +63,7 @@ class SyncService implements SyncCapability {
     _clock = HlcClock(
       nodeId: devId,
       initialMillis: lastHlc?.millis,
+      initialCounter: lastHlc?.counter ?? 0,
     );
     return _clock!;
   }
@@ -134,6 +138,18 @@ class SyncService implements SyncCapability {
   /// Records a local mutation, enqueues it in the durable outbox, and attempts an immediate push if online.
   Future<void> recordLocalMutation(SyncMutation mutation) async {
     final now = DateTime.now().toUtc();
+    // Local deletes leave a tombstone first so replayed or late remote writes
+    // cannot resurrect the row after restart (anti-resurrection).
+    if (mutation.isDeleted) {
+      await _tombstones.recordTombstone(
+        SyncTombstone(
+          entityId: mutation.entityId,
+          domain: mutation.domain,
+          deletedAtHlc: mutation.hlc,
+          createdAtUtc: now,
+        ),
+      );
+    }
     final op = OutboxOperation(
       operationId: 'sync_${mutation.entityId}_${mutation.hlc}',
       idempotencyKey: 'idem_${mutation.entityId}_${mutation.hlc}',
@@ -198,22 +214,33 @@ class SyncService implements SyncCapability {
         pushedCount = pushResp.acceptedCount;
       }
 
-      // 2. Pull remote delta mutations (PULL)
-      final since = lastSyncedHlc ?? const HlcTimestamp(millis: 0, counter: 0, nodeId: 'initial');
-      final pullResp = await _apiClient.pullDeltas(sinceHlc: since);
-
+      // 2. Pull remote delta mutations (PULL, follow pagination)
+      var since = lastSyncedHlc ?? const HlcTimestamp(millis: 0, counter: 0, nodeId: 'initial');
       var pulledCount = 0;
-      for (final remoteMutation in pullResp.mutations) {
-        if (!activeDomains.contains(remoteMutation.domain)) continue;
-        await _applyRemoteMutation(remoteMutation);
-        pulledCount++;
+      HlcTimestamp? latestSeen;
+      while (true) {
+        final pullResp = await _apiClient.pullDeltas(sinceHlc: since, limit: 100);
+        for (final remoteMutation in pullResp.mutations) {
+          if (!activeDomains.contains(remoteMutation.domain)) continue;
+          await _applyRemoteMutation(remoteMutation);
+          pulledCount++;
+        }
+        if (pullResp.latestHlc != null) {
+          latestSeen = pullResp.latestHlc;
+          since = pullResp.latestHlc!;
+        }
+        // Maintain HLC causality even for skipped-domain pages.
+        if (pullResp.latestHlc != null) {
+          (await clock).receive(pullResp.latestHlc!);
+        }
+        if (!pullResp.hasMore || pullResp.mutations.isEmpty) break;
       }
 
       // 3. Update sync cursors
       final nowUtc = DateTime.now().toUtc();
       await _prefs.setString(lastSyncTimestampKey, nowUtc.toIso8601String());
-      if (pullResp.latestHlc != null) {
-        await _prefs.setString(lastSyncedHlcKey, pullResp.latestHlc!.toString());
+      if (latestSeen != null) {
+        await _prefs.setString(lastSyncedHlcKey, latestSeen.toString());
       }
 
       for (final d in activeDomains) {
@@ -245,7 +272,53 @@ class SyncService implements SyncCapability {
   }
 
   /// Reconciles and applies an incoming remote mutation into local SQLite.
+  ///
+  /// Pending local outbox ops for the same entity win reconciliation via
+  /// [SyncConflictResolver]; only the resolver winner is applied. HLC causality
+  /// is maintained on every remote observation.
   Future<void> _applyRemoteMutation(SyncMutation remote) async {
+    (await clock).receive(remote.hlc);
+
+    // Persistent anti-resurrection: a stored tombstone dominating this write
+    // extinguishes it even across restarts (relay replay, reinstall restore).
+    if (await _tombstones.isExtinguished(
+      remote.entityId,
+      remote.domain,
+      remote.hlc,
+    )) {
+      return;
+    }
+    // Incoming deletes are journaled before application for the same reason.
+    if (remote.isDeleted) {
+      await _tombstones.recordTombstone(
+        SyncTombstone(
+          entityId: remote.entityId,
+          domain: remote.domain,
+          deletedAtHlc: remote.hlc,
+          createdAtUtc: DateTime.now().toUtc(),
+        ),
+      );
+    }
+
+    // Reconcile against queued local mutations for the same entity so a
+    // concurrent local edit is not blindly overwritten.
+    final pendingOps = await _outbox.getPendingOperations(limit: 200);
+    for (final op in pendingOps) {
+      if (op.action != 'sync_mutation') continue;
+      SyncMutation? local;
+      try {
+        local = SyncMutation.fromJson(op.payload);
+      } catch (_) {
+        continue;
+      }
+      if (local.entityId != remote.entityId || local.domain != remote.domain) {
+        continue;
+      }
+      final result = _conflictResolver.reconcile(local: local, incoming: remote);
+      if (!result.wasLocalOverwritten) return; // Local wins; keep local.
+      break;
+    }
+
     switch (remote.domain) {
       case SyncDomain.weights:
         await _applyWeightMutation(remote);
@@ -253,9 +326,27 @@ class SyncService implements SyncCapability {
         await _applyWorkoutMutation(remote);
       case SyncDomain.nutritionLogs:
         await _applyNutritionLogMutation(remote);
-      default:
+      case SyncDomain.nutritionRecipes:
+      case SyncDomain.programs:
+      case SyncDomain.preferences:
+        // Deferred domains: no canonical writer yet. Cursor still advances
+        // (see triggerSync) so sync converges; writers land with their
+        // domain packages. Never silently fabricate rows for them.
         break;
     }
+  }
+
+  DateTime _eventTimeOrHlcFallback(Map<String, dynamic>? payload, List<String> keys, HlcTimestamp hlc) {
+    if (payload != null) {
+      for (final key in keys) {
+        final raw = payload[key];
+        if (raw is String && raw.isNotEmpty) {
+          final parsed = DateTime.tryParse(raw);
+          if (parsed != null) return parsed;
+        }
+      }
+    }
+    return DateTime.fromMillisecondsSinceEpoch(hlc.millis, isUtc: true);
   }
 
   Future<void> _applyWeightMutation(SyncMutation remote) async {
@@ -268,16 +359,18 @@ class SyncService implements SyncCapability {
 
     final payload = remote.payload;
     if (payload == null) return;
-
-    final weightKg = (payload['weight_kg'] as num?)?.toDouble() ?? 0.0;
+    final weightRaw = payload['weight_kg'];
+    if (weightRaw == null) return; // Never fabricate 0.0 for unknown weight.
+    final weightKg = (weightRaw as num).toDouble();
 
     await _db.into(_db.bodyMeasurements).insertOnConflictUpdate(
           BodyMeasurementsCompanion(
-            id: remote.entityId.length <= 9 && int.tryParse(remote.entityId) != null
-                ? Value(int.parse(remote.entityId))
-                : const Value.absent(),
             weight: Value(weightKg),
-            recordedAt: Value(DateTime.now()),
+            recordedAt: Value(_eventTimeOrHlcFallback(
+              payload,
+              const ['recorded_at', 'recordedAt'],
+              remote.hlc,
+            )),
             isSynced: const Value(true),
           ),
         );
@@ -285,9 +378,15 @@ class SyncService implements SyncCapability {
 
   Future<void> _applyWorkoutMutation(SyncMutation remote) async {
     if (remote.isDeleted) {
-      await (_db.delete(_db.workoutSessions)
-            ..where((tbl) => tbl.id.equals(int.tryParse(remote.entityId) ?? -1)))
+      // Delete by stable UUID when present; fall back to legacy int id.
+      final deletedByUuid = await (_db.delete(_db.workoutSessions)
+            ..where((tbl) => tbl.uuid.equals(remote.entityId)))
           .go();
+      if (deletedByUuid == 0) {
+        await (_db.delete(_db.workoutSessions)
+              ..where((tbl) => tbl.id.equals(int.tryParse(remote.entityId) ?? -1)))
+            .go();
+      }
       return;
     }
 
@@ -295,48 +394,102 @@ class SyncService implements SyncCapability {
     if (payload == null) return;
 
     final sessionName = payload['name'] as String? ?? 'Workout';
-    final completedAt = payload['completed_at'] != null
-        ? DateTime.parse(payload['completed_at'] as String)
-        : DateTime.now();
+    final completedAt = _eventTimeOrHlcFallback(
+      payload,
+      const ['completed_at', 'completedAt'],
+      remote.hlc,
+    );
+    final totalVolume = (payload['total_volume'] as num?)?.toDouble();
+    final durationSeconds = (payload['duration_seconds'] as num?)?.toInt();
+    final estimatedCalories = (payload['estimated_calories'] as num?)?.toInt();
 
-    await _db.into(_db.workoutSessions).insertOnConflictUpdate(
-          WorkoutSessionsCompanion(
-            id: remote.entityId.length <= 9 && int.tryParse(remote.entityId) != null
-                ? Value(int.parse(remote.entityId))
-                : const Value.absent(),
-            name: Value(sessionName),
+    // Preserve global UUID identity; never coerce UUIDs into autoincrement ids.
+    final existingByUuid = await (_db.select(_db.workoutSessions)
+          ..where((tbl) => tbl.uuid.equals(remote.entityId)))
+        .getSingleOrNull();
+    if (existingByUuid != null) {
+      await (_db.update(_db.workoutSessions)
+            ..where((tbl) => tbl.uuid.equals(remote.entityId)))
+          .write(WorkoutSessionsCompanion(
+        name: Value(sessionName),
+        completedAt: Value(completedAt),
+        totalVolume: totalVolume != null ? Value(totalVolume) : const Value.absent(),
+        durationSeconds: durationSeconds != null ? Value(durationSeconds) : const Value.absent(),
+        estimatedCalories: estimatedCalories != null ? Value(estimatedCalories) : const Value.absent(),
+        isSynced: const Value(true),
+      ));
+      return;
+    }
+
+    await _db.into(_db.workoutSessions).insert(
+          WorkoutSessionsCompanion.insert(
+            name: sessionName,
+            totalVolume: totalVolume ?? 0.0,
+            durationSeconds: durationSeconds ?? 0,
+            estimatedCalories: estimatedCalories ?? 0,
             completedAt: Value(completedAt),
-            totalVolume: const Value(0.0),
-            durationSeconds: const Value(0),
-            estimatedCalories: const Value(0),
+            isSynced: const Value(true),
+            uuid: Value(remote.entityId),
           ),
         );
   }
 
   Future<void> _applyNutritionLogMutation(SyncMutation remote) async {
     if (remote.isDeleted) {
-      await (_db.delete(_db.foodLogs)
-            ..where((tbl) => tbl.id.equals(int.tryParse(remote.entityId) ?? -1)))
+      final deletedByUuid = await (_db.delete(_db.foodLogs)
+            ..where((tbl) => tbl.uuid.equals(remote.entityId)))
           .go();
+      if (deletedByUuid == 0) {
+        await (_db.delete(_db.foodLogs)
+              ..where((tbl) => tbl.id.equals(int.tryParse(remote.entityId) ?? -1)))
+            .go();
+      }
       return;
     }
 
     final payload = remote.payload;
     if (payload == null) return;
+    final caloriesRaw = payload['calories'];
+    if (caloriesRaw == null) return; // Never fabricate 0 kcal.
 
     final foodName = payload['name'] as String? ?? 'Food';
-    final calories = (payload['calories'] as num?)?.toInt() ?? 0;
+    final calories = (caloriesRaw as num).toInt();
     final mealType = payload['meal_type'] as String? ?? 'snack';
+    final loggedAt = _eventTimeOrHlcFallback(
+      payload,
+      const ['logged_at', 'loggedAt'],
+      remote.hlc,
+    );
 
-    await _db.into(_db.foodLogs).insertOnConflictUpdate(
-          FoodLogsCompanion(
-            id: remote.entityId.length <= 9 && int.tryParse(remote.entityId) != null
-                ? Value(int.parse(remote.entityId))
-                : const Value.absent(),
-            name: Value(foodName),
-            calories: Value(calories),
-            mealType: Value(mealType),
-            loggedAt: Value(DateTime.now()),
+    final existingByUuid = await (_db.select(_db.foodLogs)
+          ..where((tbl) => tbl.uuid.equals(remote.entityId)))
+        .getSingleOrNull();
+    if (existingByUuid != null) {
+      await (_db.update(_db.foodLogs)
+            ..where((tbl) => tbl.uuid.equals(remote.entityId)))
+          .write(FoodLogsCompanion(
+        name: Value(foodName),
+        calories: Value(calories),
+        mealType: Value(mealType),
+        loggedAt: Value(loggedAt),
+        isSynced: const Value(true),
+      ));
+      return;
+    }
+
+    await _db.into(_db.foodLogs).insert(
+          FoodLogsCompanion.insert(
+            name: foodName,
+            calories: calories,
+            proteinG: ((payload['protein_g'] as num?)?.toDouble()) ?? 0.0,
+            carbsG: ((payload['carbs_g'] as num?)?.toDouble()) ?? 0.0,
+            fatG: ((payload['fat_g'] as num?)?.toDouble()) ?? 0.0,
+            servingLogged: ((payload['serving_logged'] as num?)?.toDouble()) ?? 1.0,
+            servingUnit: payload['serving_unit'] as String? ?? 'serving',
+            mealType: mealType,
+            loggedAt: Value(loggedAt),
+            isSynced: const Value(true),
+            uuid: Value(remote.entityId),
           ),
         );
   }

@@ -100,8 +100,9 @@ class HlcClock {
   HlcClock({
     required this.nodeId,
     int? initialMillis,
+    int initialCounter = 0,
   })  : _latestMillis = initialMillis ?? 0,
-        _counter = 0;
+        _counter = initialCounter;
 
   final String nodeId;
   int _latestMillis;

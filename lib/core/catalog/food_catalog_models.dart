@@ -89,11 +89,16 @@ class FoodProvenance {
       };
 
   factory FoodProvenance.fromJson(Map<String, dynamic> json) {
+    final providerRaw = json['provider'];
+    FoodCatalogProvider? provider;
+    for (final p in FoodCatalogProvider.values) {
+      if (p.name == providerRaw) provider = p;
+    }
+    if (provider == null) {
+      throw FormatException('Unknown FoodCatalogProvider: $providerRaw. Refusing corrupt cache row.');
+    }
     return FoodProvenance(
-      provider: FoodCatalogProvider.values.firstWhere(
-        (p) => p.name == json['provider'],
-        orElse: () => FoodCatalogProvider.openFoodFacts,
-      ),
+      provider: provider,
       attributionText: json['attributionText'] as String,
       license: json['license'] as String,
       sourceUrl: json['sourceUrl'] as String?,
@@ -138,6 +143,45 @@ class RemoteFoodCandidate {
     required this.provenance,
     this.verificationLevel = FoodVerificationLevel.communityReported,
   });
+
+  RemoteFoodCandidate copyWith({
+    String? id,
+    FoodCatalogProvider? provider,
+    String? Function()? providerId,
+    String? name,
+    String? Function()? nameHindi,
+    String? Function()? brand,
+    String? Function()? barcode,
+    String? category,
+    double? caloriesPer100g,
+    double? proteinPer100g,
+    double? carbsPer100g,
+    double? fatPer100g,
+    double? Function()? fiberPer100g,
+    List<ServingOption>? servingOptions,
+    FoodProvenance? provenance,
+    FoodVerificationLevel? verificationLevel,
+  }) {
+    return RemoteFoodCandidate(
+      id: id ?? this.id,
+      provider: provider ?? this.provider,
+      providerId: providerId != null ? providerId() : this.providerId,
+      name: name ?? this.name,
+      nameHindi: nameHindi != null ? nameHindi() : this.nameHindi,
+      brand: brand != null ? brand() : this.brand,
+      barcode: barcode != null ? barcode() : this.barcode,
+      category: category ?? this.category,
+      caloriesPer100g: caloriesPer100g ?? this.caloriesPer100g,
+      proteinPer100g: proteinPer100g ?? this.proteinPer100g,
+      carbsPer100g: carbsPer100g ?? this.carbsPer100g,
+      fatPer100g: fatPer100g ?? this.fatPer100g,
+      fiberPer100g:
+          fiberPer100g != null ? fiberPer100g() : this.fiberPer100g,
+      servingOptions: servingOptions ?? this.servingOptions,
+      provenance: provenance ?? this.provenance,
+      verificationLevel: verificationLevel ?? this.verificationLevel,
+    );
+  }
 
   final String id;
   final FoodCatalogProvider provider;
@@ -229,12 +273,25 @@ class RemoteFoodCandidate {
       };
 
   factory RemoteFoodCandidate.fromJson(Map<String, dynamic> json) {
+    final providerRaw = json['provider'];
+    FoodCatalogProvider? provider;
+    for (final p in FoodCatalogProvider.values) {
+      if (p.name == providerRaw) provider = p;
+    }
+    if (provider == null) {
+      throw FormatException('Unknown FoodCatalogProvider: $providerRaw. Refusing corrupt cache row.');
+    }
+    final verificationRaw = json['verificationLevel'];
+    FoodVerificationLevel? verification;
+    for (final v in FoodVerificationLevel.values) {
+      if (v.name == verificationRaw) verification = v;
+    }
+    if (verification == null) {
+      throw FormatException('Unknown FoodVerificationLevel: $verificationRaw. Refusing corrupt cache row.');
+    }
     return RemoteFoodCandidate(
       id: json['id'] as String,
-      provider: FoodCatalogProvider.values.firstWhere(
-        (p) => p.name == json['provider'],
-        orElse: () => FoodCatalogProvider.openFoodFacts,
-      ),
+      provider: provider,
       providerId: json['providerId'] as String?,
       name: json['name'] as String,
       nameHindi: json['nameHindi'] as String?,
@@ -252,10 +309,7 @@ class RemoteFoodCandidate {
       provenance: FoodProvenance.fromJson(
         json['provenance'] as Map<String, dynamic>,
       ),
-      verificationLevel: FoodVerificationLevel.values.firstWhere(
-        (v) => v.name == json['verificationLevel'],
-        orElse: () => FoodVerificationLevel.communityReported,
-      ),
+      verificationLevel: verification,
     );
   }
 }
@@ -296,4 +350,18 @@ class FoodSearchPage {
       query: json['query'] as String? ?? '',
     );
   }
+}
+
+/// Heuristic: is this [foodName] a stuffed paratha (aloo/paneer/gobi)?
+///
+/// Single shared implementation for serving synthesis (spec §5): previously
+/// duplicated with subtly different precedence in the catalog service and the
+/// food search screen. Serving suggestion only — never affects nutrition.
+bool isStuffedParathaName(String foodName) {
+  final lower = foodName.toLowerCase();
+  if (!lower.contains('paratha')) return false;
+  return lower.contains('aloo') ||
+      lower.contains('paneer') ||
+      lower.contains('gobi') ||
+      lower.contains('stuffed');
 }

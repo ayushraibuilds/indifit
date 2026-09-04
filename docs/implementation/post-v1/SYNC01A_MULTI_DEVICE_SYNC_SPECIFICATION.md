@@ -88,6 +88,47 @@ Different data types require distinct conflict resolution semantics:
 - **Invariant:** A tombstone with timestamp $T_d$ supersedes and extinguishes any write with timestamp $T_w \le T_d$.
 - If $T_w > T_d$, the entity was explicitly recreated or modified after deletion and the new write is accepted.
 - **Retention:** Tombstones are retained for a minimum of 30 days, allowing offline devices to catch up before tombstones are purged during compaction.
+- **Current status:** Tombstone dominance is implemented in `SyncConflictResolver` and exercised by contract tests, but tombstones are not yet persisted (relay-memory + hard deletes only). A `sync_tombstones` table with the 30-day compactor is required before any multi-device claim (schema track).
+
+### 4.4 LWW Tie Rule (Commutativity)
+- HLC comparison already tie-breaks on node id, so `comparison == 0` means an identical HLC (same millis+counter+node — should be impossible with a correct clock). In that case the winner is the payload-max (order-independent string comparison), so `reconcile(A,B) ≡ reconcile(B,A)` in all cases. Implemented in `SyncConflictResolver`.
+
+---
+
+## 4B. Identity, Schema & Lifecycle Decisions (added post-01B audit)
+
+### Identity mechanics
+- **Entity identity is the opaque `entityId` string** (UUID v4 for all new records). Local autoincrement integer ids are never derived from or overwritten by remote ids (that caused cross-device collisions).
+- **Operation identity:** outbox `operationId` (`sync_<entityId>_<hlc>`) is unique per enqueue and never overwritten; the idempotency key (`idem_<entityId>_<hlc>`) dedups only while an op is active (pending/in-flight/transient), never after terminal states.
+- **Dedup key everywhere** (client relay, server relay): `(domain, entity_id, hlc)` — domain is included so the same numeric id in two domains cannot collide.
+- **Device identity:** HLC `nodeId` = `AccountCapability.deviceId` (per-install). Guest devices must not share one static id.
+
+### Per-domain CRUD & ordering
+| Domain | Insert | Update | Delete | Ordering |
+|---|---|---|---|---|
+| workouts / weights | append (union, never overwrite distinct rows) | LWW by HLC on same `entityId` | tombstone, dominant per §4.3 | HLC total order |
+| nutritionLogs / nutritionRecipes / programs / preferences | LWW by HLC | LWW by HLC | tombstone, dominant per §4.3 | HLC total order |
+- **Immutable vs mutable:** workout/weight *rows* are append-only evidence; corrections arrive as new writes or tombstone+recreate, never in-place history rewrites. Mutable domains converge by LWW.
+- **Deferred writers:** `nutritionRecipes`, `programs`, `preferences` have no canonical applicator yet — the cursor still advances past them so sync converges, and they must never be fabricated. Writers land with their domain packages.
+
+### Schema-version compatibility
+- Mutations carry no schema version today. Until a versioned envelope lands, a receiver applies only domains/fields it understands and ignores unknown fields; unknown domains are skipped (cursor advances). A skew policy (reject vs apply-subset) must be specified before the first production relay.
+
+### Bootstrap, pagination, compaction
+- **Bootstrap:** first sync pulls from the zero HLC; no snapshot protocol yet (acceptable at current scale; specify one before >10k-mutation streams).
+- **Pagination:** pull pages `limit` (1–500, default 100) following `has_more`; the client loops until exhausted and only then advances the persisted cursor.
+- **Compaction:** no compactor exists yet. Required: tombstone purge after 30 days + per-user stream caps, as a separate job with its own tests.
+
+### Auth expiry, revocation, deletion, quotas
+- Push/pull require `Authorization: Bearer` (or valid `x-indifit-key` for service use); anything else is `401` — there is no guest bucket.
+- Sign-out keeps all local data and leaves queued ops queued (retry on next sign-in); nothing is failed permanently by an auth transition.
+- Account deletion, export, retention windows, per-user quotas, and device revocation lists are unspecified — required before production (SYNC-01A follow-up).
+
+### Encryption decision (status correction)
+- §5.1 describes an AES-256-GCM envelope per mutation. **Status: not implemented** — 01B transmits plaintext `payload` maps. The "blind relay" privacy claim does not hold until per-mutation envelopes (or a documented service-side-encryption decision with its search/conflict implications) land. Do not quote §5.1 as built.
+
+### Wire-format note (implementation truth)
+- Canonical HLC string on the wire is the implementation's hex-padded form (`millis_hex(12)_counter_hex(4)_nodeId`, e.g. `0193..._0001_device-A`), **not** the decimal example in §5.2. The decimal example is stale documentation; parsers must accept the hex form. A future revision may adopt a single canonical encoding — until then, code (round-trip tested) wins over the example.
 
 ---
 

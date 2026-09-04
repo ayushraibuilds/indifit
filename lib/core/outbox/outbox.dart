@@ -7,18 +7,20 @@ library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../di/providers.dart';
+import 'drift_outbox_repository.dart';
 import 'outbox_repository.dart';
 
+export 'drift_outbox_repository.dart';
 export 'outbox_operation.dart';
 export 'outbox_repository.dart';
 export 'outbox_retry_policy.dart';
 
 /// Provider for the durable outbox repository.
 ///
-/// Defaults to an in-memory repository for isolated execution and tests;
-/// replaced with a persistent SQLite table in subsequent cloud packages.
+/// Defaults to the SQLite-backed [DriftOutboxRepository] (schema v21), which
+/// survives process death. Tests construct [InMemoryOutboxRepository] directly
+/// for isolation.
 final outboxRepositoryProvider = Provider<OutboxRepository>((ref) {
-  final repo = InMemoryOutboxRepository();
-  ref.onDispose(repo.dispose);
-  return repo;
+  return DriftOutboxRepository(ref.watch(databaseProvider));
 });

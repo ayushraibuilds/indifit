@@ -306,7 +306,7 @@ void main() {
       );
 
       final backup = await BackupV10Data.createFromDatabase(db);
-      expect(backup.schemaVersion, 20);
+      expect(backup.schemaVersion, 21);
       final json = backup.toJson();
       final settingsJson = (json['training_plan_settings'] as List).single;
       expect(settingsJson['lastEndedOutcome'], 'finished');

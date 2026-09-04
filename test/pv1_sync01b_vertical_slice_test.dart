@@ -114,10 +114,11 @@ void main() {
       final resultsB = await serviceB.triggerSync();
       expect(resultsB.every((r) => r.success), isTrue);
 
-      // 3. Verify Device B applied the record into local SQLite
+      // 3. Verify Device B applied the record into local SQLite.
+      // Global entity identity is opaque (UUID); local autoincrement ids are
+      // never coerced from remote ids (that caused cross-device collisions).
       weightsB = await dbB.select(dbB.bodyMeasurements).get();
       expect(weightsB, hasLength(1));
-      expect(weightsB.first.id, 101);
       expect(weightsB.first.weight, 72.5);
     });
 

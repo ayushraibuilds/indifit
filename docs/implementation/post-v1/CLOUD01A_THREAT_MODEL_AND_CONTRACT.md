@@ -30,9 +30,17 @@ Hardware KMS / HSM (AWS KMS / GCP Cloud KMS / Cloudflare Key Vault)
 
 1. **Local Independence:** Local workout logging, food tracking, and weight entry never wait for cloud backup.
 2. **Frictionless Consumer Auth:** Users authenticate via 1-tap **Sign in with Apple** (iOS) or **Sign in with Google** (Android / iOS). No manual registration or memorized passwords required.
-3. **Identity-Bound Envelope Encryption:** Data is encrypted on-device via AES-256-GCM with a single-use Data Encryption Key (DEK). The DEK is wrapped by a hardware KMS/HSM keyed to the verified Apple/Google subject identifier (`sub`).
+3. **Identity-Bound Envelope Encryption:** Data is encrypted on-device via AES-256-GCM with a single-use Data Encryption Key (DEK). The DEK is wrapped by a hardware KMS/HSM keyed to the verified Apple/Google subject identifier (`sub`). The wrapping key itself is derived via HKDF-SHA256; the client refuses to encrypt when no per-user secret is configured (fail-closed, no shared default key).
 4. **Zero Plaintext Storage:** S3/R2 storage holds only encrypted ciphertext blobs. Even in a complete storage bucket breach, user fitness records, body weights, and food logs remain encrypted.
 5. **Manual Backup Coexistence:** Manual local export/restore (`.indifit-backup`) and device-local auto-backups (`indifit_auto_backup_1.json`) remain 100% operational.
+6. **Key Loss Means Data Loss:** There is no backdoor recovery. If the user loses access to their Apple/Google account (`sub` rotated or unrecoverable) the wrapped DEKs cannot be unwrapped and cloud snapshots become permanently unreadable. The restore UI states this explicitly before upload is enabled.
+
+### Key Custody, Rotation & Revocation
+
+- **Custody:** The KMS wrapping key is bound to the OIDC `sub` and never leaves the HSM boundary; the app holds only short-lived unwrap grants, never the raw key.
+- **Rotation:** KMS key rotation versions the wrapping key. Snapshots record the wrapping-key version; new uploads always use the latest version while older snapshots remain readable under their recorded version.
+- **Device revocation:** Signing out or revoking a device drops local unwrap grants immediately. Queued uploads stay queued (never uploaded while unauthenticated) and retry after the next successful sign-in; they are never failed permanently by an auth transition.
+- **Account deletion:** Purges the KMS grant, the device registry entry, and all snapshot blobs within 24 hours (see §6).
 
 ---
 
@@ -60,6 +68,8 @@ To prevent unbounded cloud storage costs while ensuring historical recoverabilit
 
 $$\text{Total Cloud Storage per User} \le 8 \times 5\text{MB} \approx 40\text{MB max (typical } < 15\text{MB)}$$
 
+At representative object-storage pricing this is fractions of a cent per user per month; cost scales with retained bytes only (no per-request charges of note at one upload/day). No regional pinning is promised in V1: buckets live in the provider's default region and this is disclosed in the privacy policy. A region-pinning/DPA review is required before any EU-specific rollout.
+
 ### Automatic Pruning Algorithm
 When a new daily snapshot is successfully uploaded:
 1. Fetch current user snapshot list.
@@ -72,8 +82,9 @@ When a new daily snapshot is successfully uploaded:
 ## 4. Network Transfer Policy
 
 - **Default:** Any active network connection (both cellular and Wi-Fi allowed, as compressed V10 backup blobs are small, typically 1–3 MB).
-- **User Preference:** Preference key `cloud_backup_wifi_only` (`bool`, default: `false`) in Settings allowing users on metered cellular data to restrict uploads to Wi-Fi.
+- **User Preference:** Preference key `cloud_backup_wifi_only` (`bool`, default: `false`) in Settings allowing users on metered cellular data to restrict uploads to Wi-Fi. The policy is enforced both at enqueue time and at outbox-dispatch time (sign-out or transport change after enqueue never uploads; the op stays queued).
 - **Outbox Integration:** Backup uploads are queued in `OutboxRepository` with exponential backoff and retry, ensuring reliable background upload across app restarts.
+- **Background constraints:** Uploads run as opportunistic foreground/outbox work only. No BGTask/WorkManager guarantee is claimed in V1: iOS may defer work to `BGProcessingTask` windows and Android to Doze maintenance windows. "Quiet hours" are not enforced; uploads are small and infrequent by construction (content-fingerprint dedup + offline coalescing).
 
 ---
 
@@ -132,7 +143,9 @@ Step 6: Atomically swap staging DB into active app SQLite database and sync pref
     "isWeeklyMilestone": false
   }
   ```
-- **Response:** `201 Created` with snapshot summary.
+- **Response:** `201 Created` with snapshot summary on first upload.
+- **Idempotent retry:** Re-uploading the same `snapshotId` with identical content returns `200 OK` with the existing summary (no duplicate row). Same `snapshotId` with different content returns `409 Conflict`.
+- **Validation:** `400` for malformed ids/versions/base64/checksum mismatch/byteSize mismatch; `401` without `Authorization: Bearer` or valid `x-indifit-key`; `413` over 5 MB.
 
 #### `GET /v1/backup/snapshots`
 - **Response:** `200 OK`

@@ -176,7 +176,18 @@ class CloudBackupEnvelopeManager {
   }
 
   Uint8List _deriveKmsKey(String secret) {
-    final digest = sha256.convert(utf8.encode(secret));
-    return Uint8List.fromList(digest.bytes);
+    if (secret.isEmpty) {
+      throw StateError(
+        'KMS wrapping secret is not configured. Provide a per-user secret; refusing to use a default key.',
+      );
+    }
+    // HKDF-SHA256 (RFC 5869, single-block expand is enough for 32 bytes):
+    // PRK = HMAC-SHA256(salt, secret), OKM = HMAC-SHA256(PRK, info || 0x01).
+    // Single-round SHA-256(secret) was brute-forceable for low-entropy secrets.
+    final salt = utf8.encode('INDIFIT-KMS-SALT-V1');
+    final prk = Hmac(sha256, salt).convert(utf8.encode(secret)).bytes;
+    final info = utf8.encode('INDIFIT-KMS-WRAP-V1');
+    final okm = Hmac(sha256, prk).convert([...info, 0x01]).bytes;
+    return Uint8List.fromList(okm);
   }
 }
