@@ -1,6 +1,6 @@
 # IndiFit Post-V1 Prioritized Implementation Plan
 
-- Status: Active; Gate 0, PV1-ENG-01/02/03/04A-H complete; PV1-ENG-05A (Progress split) next
+- Status: Active; Gate 0, PV1-ENG-01/02/03/04A-H and PV1-ENG-05A/B/C complete; PV1-ENG-05D (Food Search split) next
 - Effective date: 2026-08-30
 - Product roadmap: [`post-v1-roadmap.md`](../roadmap/post-v1-roadmap.md)
 - Cleanup execution program: [`POST_V1_CLEANUP_PROGRAM.md`](POST_V1_CLEANUP_PROGRAM.md)
@@ -731,8 +731,11 @@ readiness package.
 | 11.7 | PV1-ENG-04H | Direct dependency proof and pruning (C1B-11) | P1 | PV1-ENG-04G |
 | *Status:* | | **Complete** — Evaluated and pruned 3 unused direct dependencies (`cupertino_icons`, `just_audio`, `encrypt`) from `pubspec.yaml`, shedding 8 total packages; verified iOS CocoaPods integration, analyzer clean, and R09-D release gate | | |
 | 12 | PV1-ENG-05A | Mechanically split Progress behind characterization tests | P1 | PV1-ENG-02 |
+| *Status:* | | **Complete** — Split `progress_screen.dart` (2,880 → 448 lines) into 5 widget/view-model/formatter files with verbatim moves, mechanical renames, and additive `super.key` params only; screens keep composition and orchestration. Verified 0 analyzer issues, 129 characterization/golden tests, full serial suite 2181 pass with only the 3 pre-existing base-identical failures | | |
 | 13 | PV1-ENG-05B | Mechanically split Today action surface | P1 | PV1-ENG-02 |
+| *Status:* | | **Complete** — Split `today_daily_action_surface.dart` (2,156 → 402 lines) into module/nutrition/helper widget files with verbatim moves and mechanical renames; screen keeps composition and re-exports parts so existing importers are unaffected. Verified 0 analyzer issues, 67 Today characterization tests, full serial suite 2181 pass with only the 3 pre-existing base-identical failures | | |
 | 14 | PV1-ENG-05C | Mechanically split workout player presentation | P1 | PV1-ENG-02 |
+| *Status:* | | **Complete** — Split `b02_strength_player_screen.dart` (2,553 → 1,583 lines) and `b02_strength_summary_screen.dart` (1,005 → 172 lines) into player-cards/view-model/summary widget files; moved the history-detail provider with its sole consumers; screens re-export parts for the router and tests. Verified 0 analyzer issues, 122 player characterization tests, full serial suite 2181 pass with only the 3 pre-existing base-identical failures | | |
 | 15 | PV1-PROD-01A | Specify factual completion/share read model and privacy contract | P1 | Wave 1 |
 | 16 | PV1-PROD-01B | Implement recap and local share card with visual/device verification | P1 | PV1-PROD-01A |
 | 17 | PV1-CONTENT-01A | Specify signed content-pack envelope, compatibility, activation, and rollback | P1/P2 | PV1-NET-01A |
