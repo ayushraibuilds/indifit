@@ -22,9 +22,14 @@ class SyncMutation {
     required this.type,
     required this.hlc,
     this.payload,
+    this.encryptedEnvelope,
   })  : assert(
           type != SyncMutationType.delete || payload == null,
           'Delete mutations cannot carry a payload.',
+        ),
+        assert(
+          type != SyncMutationType.delete || encryptedEnvelope == null,
+          'Delete mutations cannot carry an encrypted envelope.',
         );
 
   /// Globally unique identifier of the entity (UUID v4).
@@ -39,8 +44,17 @@ class SyncMutation {
   /// Monotonic Hybrid Logical Clock timestamp of this mutation.
   final HlcTimestamp hlc;
 
-  /// Key-value payload attributes (null if deleted).
+  /// Key-value payload attributes (null if deleted, or if this mutation
+  /// travels as a client-side encrypted envelope — see [encryptedEnvelope]).
   final Map<String, dynamic>? payload;
+
+  /// Client-side encrypted envelope for the blind-relay path (SYNC-01A §5.1).
+  ///
+  /// When non-null, [payload] is null and the relay carries only this wire
+  /// map with keys `mutation_id`, `ciphertext_base64`, `wrapped_key_base64`,
+  /// and `sha256_checksum`. Identity (entity/domain/type/hlc) is unchanged
+  /// so relay dedup semantics are preserved.
+  final Map<String, dynamic>? encryptedEnvelope;
 
   /// Whether this mutation represents an explicit deletion (tombstone).
   bool get isDeleted => type == SyncMutationType.delete;
@@ -51,9 +65,23 @@ class SyncMutation {
         'type': type.name,
         'hlc': hlc.toJson(),
         if (payload != null) 'payload': payload,
+        if (encryptedEnvelope != null) 'encrypted_envelope': encryptedEnvelope,
       };
 
   factory SyncMutation.fromJson(Map<String, dynamic> json) {
+    final envelopeRaw = json['encrypted_envelope'];
+    late final Map<String, dynamic>? envelope;
+    if (envelopeRaw == null) {
+      envelope = null;
+    } else if (envelopeRaw is Map<String, dynamic>) {
+      envelope = envelopeRaw;
+    } else if (envelopeRaw is Map) {
+      envelope = Map<String, dynamic>.from(envelopeRaw);
+    } else {
+      throw FormatException(
+        'Invalid encrypted_envelope for mutation ${json['entity_id']}: must be a Map when present.',
+      );
+    }
     return SyncMutation(
       entityId: json['entity_id'] as String,
       domain: SyncDomain.values.firstWhere(
@@ -66,6 +94,7 @@ class SyncMutation {
       ),
       hlc: HlcTimestamp.fromJson(json['hlc'] as Map<String, dynamic>),
       payload: json['payload'] as Map<String, dynamic>?,
+      encryptedEnvelope: envelope,
     );
   }
 

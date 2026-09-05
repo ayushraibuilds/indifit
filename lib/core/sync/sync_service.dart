@@ -1,15 +1,18 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:drift/drift.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../data/database/app_database.dart';
+import '../backup/cloud_backup_envelope_manager.dart';
 import '../capabilities/account_capability.dart';
 import '../capabilities/connected_status.dart';
 import '../capabilities/network_capability.dart';
 import '../capabilities/sync_capability.dart';
 import '../outbox/outbox_operation.dart';
 import '../outbox/outbox_repository.dart';
+import '../utils/app_logger.dart';
 import 'hlc_timestamp.dart';
 import 'sync_api_client.dart';
 import 'sync_conflict_resolver.dart';
@@ -17,6 +20,15 @@ import 'sync_mutation.dart';
 import 'sync_tombstone_store.dart';
 
 /// Central synchronization engine implementing [SyncCapability].
+///
+/// Optional per-mutation envelope encryption (SYNC-01A §5.1 blind relay):
+/// pass both [envelopeManager] and [syncEncryptionSecret] to encrypt
+/// non-delete mutation payloads before they reach the relay and to decrypt
+/// incoming envelopes before applying them. When [syncEncryptionSecret] is
+/// null the service keeps today's exact plaintext behavior; that null-secret
+/// fallback exists for local dev/test only — production activation stays
+/// Disabled-gated per the post-V1 roadmap, so plaintext-by-default is staged,
+/// not shipped.
 class SyncService implements SyncCapability {
   SyncService({
     required AppDatabase db,
@@ -28,6 +40,8 @@ class SyncService implements SyncCapability {
     SyncConflictResolver conflictResolver = const SyncConflictResolver(),
     DriftSyncTombstoneStore? tombstones,
     this.deviceId,
+    CloudBackupEnvelopeManager? envelopeManager,
+    String? syncEncryptionSecret,
   })  : _db = db,
         _prefs = prefs,
         _account = account,
@@ -35,6 +49,8 @@ class SyncService implements SyncCapability {
         _outbox = outbox,
         _apiClient = apiClient,
         _conflictResolver = conflictResolver,
+        _envelopeManager = envelopeManager,
+        _syncSecret = syncEncryptionSecret,
         _tombstones = tombstones ?? DriftSyncTombstoneStore(db);
 
   final AppDatabase _db;
@@ -46,6 +62,8 @@ class SyncService implements SyncCapability {
   final String? deviceId;
   final SyncConflictResolver _conflictResolver;
   final DriftSyncTombstoneStore _tombstones;
+  final CloudBackupEnvelopeManager? _envelopeManager;
+  final String? _syncSecret;
 
   final _statusController = StreamController<ConnectedStatusState>.broadcast();
 
@@ -150,13 +168,41 @@ class SyncService implements SyncCapability {
         ),
       );
     }
+    // Blind-relay encryption: non-delete payloads are sealed into a
+    // per-mutation envelope when a sync secret is configured. Deletes stay
+    // payload-free per the SyncMutation assert. When no secret is configured
+    // the mutation is enqueued exactly as today (plaintext dev/test fallback).
+    var effectiveMutation = mutation;
+    if (mutation.type != SyncMutationType.delete &&
+        _syncSecret != null &&
+        mutation.payload != null) {
+      final mutationId = '${mutation.entityId}:${mutation.hlc}';
+      final envelope = (_envelopeManager ?? CloudBackupEnvelopeManager())
+          .encryptMutation(
+        mutationId: mutationId,
+        plaintextJson: jsonEncode(mutation.payload),
+        kmsKeyWrappingSecret: _syncSecret,
+      );
+      effectiveMutation = SyncMutation(
+        entityId: mutation.entityId,
+        domain: mutation.domain,
+        type: mutation.type,
+        hlc: mutation.hlc,
+        encryptedEnvelope: <String, dynamic>{
+          'mutation_id': envelope.snapshotId,
+          'ciphertext_base64': base64Encode(envelope.ciphertextBytes),
+          'wrapped_key_base64': base64Encode(envelope.wrappedKeyBytes),
+          'sha256_checksum': envelope.sha256Checksum,
+        },
+      );
+    }
     final op = OutboxOperation(
       operationId: 'sync_${mutation.entityId}_${mutation.hlc}',
       idempotencyKey: 'idem_${mutation.entityId}_${mutation.hlc}',
       domain: _toOutboxDomain(mutation.domain),
       action: 'sync_mutation',
       entityId: mutation.entityId,
-      payload: mutation.toJson(),
+      payload: effectiveMutation.toJson(),
       createdAtUtc: now,
       scheduledAtUtc: now,
     );
@@ -276,25 +322,82 @@ class SyncService implements SyncCapability {
   /// Pending local outbox ops for the same entity win reconciliation via
   /// [SyncConflictResolver]; only the resolver winner is applied. HLC causality
   /// is maintained on every remote observation.
+  ///
+  /// Encrypted mutations (non-null [SyncMutation.encryptedEnvelope]) are
+  /// decrypted with the configured sync secret before any of the steps below.
+  /// Without a secret, or when decryption/decoding fails, the mutation is
+  /// skipped (fail closed): never fabricated, never thrown out of apply.
   Future<void> _applyRemoteMutation(SyncMutation remote) async {
     (await clock).receive(remote.hlc);
+
+    var effective = remote;
+    if (remote.encryptedEnvelope != null) {
+      if (_syncSecret == null) {
+        AppLogger.warning(
+          'Skipping encrypted sync mutation ${remote.entityId}: no sync secret configured.',
+          'SyncService',
+        );
+        return;
+      }
+      try {
+        final wire = remote.encryptedEnvelope!;
+        final envelope = CloudBackupEncryptedEnvelope(
+          // snapshotId == mutationId on the sync path (see encryptMutation).
+          snapshotId: wire['mutation_id'] as String,
+          ciphertextBytes: base64Decode(wire['ciphertext_base64'] as String),
+          wrappedKeyBytes: base64Decode(wire['wrapped_key_base64'] as String),
+          sha256Checksum: wire['sha256_checksum'] as String,
+          byteSize: 0,
+          // Unused on the sync path (sync AAD carries no version component).
+          schemaVersion: 0,
+          backupFormatVersion: 0,
+          createdAtUtc: DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
+        );
+        final plaintextJson =
+            (_envelopeManager ?? CloudBackupEnvelopeManager()).decryptMutation(
+          envelope: envelope,
+          kmsKeyWrappingSecret: _syncSecret,
+        );
+        final decoded = jsonDecode(plaintextJson);
+        if (decoded is! Map<String, dynamic>) {
+          AppLogger.warning(
+            'Skipping encrypted sync mutation ${remote.entityId}: decrypted payload is not a JSON object.',
+            'SyncService',
+          );
+          return;
+        }
+        effective = SyncMutation(
+          entityId: remote.entityId,
+          domain: remote.domain,
+          type: remote.type,
+          hlc: remote.hlc,
+          payload: decoded,
+        );
+      } catch (e) {
+        AppLogger.warning(
+          'Skipping encrypted sync mutation ${remote.entityId}: decrypt/decode failed ($e).',
+          'SyncService',
+        );
+        return;
+      }
+    }
 
     // Persistent anti-resurrection: a stored tombstone dominating this write
     // extinguishes it even across restarts (relay replay, reinstall restore).
     if (await _tombstones.isExtinguished(
-      remote.entityId,
-      remote.domain,
-      remote.hlc,
+      effective.entityId,
+      effective.domain,
+      effective.hlc,
     )) {
       return;
     }
     // Incoming deletes are journaled before application for the same reason.
-    if (remote.isDeleted) {
+    if (effective.isDeleted) {
       await _tombstones.recordTombstone(
         SyncTombstone(
-          entityId: remote.entityId,
-          domain: remote.domain,
-          deletedAtHlc: remote.hlc,
+          entityId: effective.entityId,
+          domain: effective.domain,
+          deletedAtHlc: effective.hlc,
           createdAtUtc: DateTime.now().toUtc(),
         ),
       );
@@ -311,21 +414,21 @@ class SyncService implements SyncCapability {
       } catch (_) {
         continue;
       }
-      if (local.entityId != remote.entityId || local.domain != remote.domain) {
+      if (local.entityId != effective.entityId || local.domain != effective.domain) {
         continue;
       }
-      final result = _conflictResolver.reconcile(local: local, incoming: remote);
+      final result = _conflictResolver.reconcile(local: local, incoming: effective);
       if (!result.wasLocalOverwritten) return; // Local wins; keep local.
       break;
     }
 
-    switch (remote.domain) {
+    switch (effective.domain) {
       case SyncDomain.weights:
-        await _applyWeightMutation(remote);
+        await _applyWeightMutation(effective);
       case SyncDomain.workouts:
-        await _applyWorkoutMutation(remote);
+        await _applyWorkoutMutation(effective);
       case SyncDomain.nutritionLogs:
-        await _applyNutritionLogMutation(remote);
+        await _applyNutritionLogMutation(effective);
       case SyncDomain.nutritionRecipes:
       case SyncDomain.programs:
       case SyncDomain.preferences:
@@ -350,10 +453,25 @@ class SyncService implements SyncCapability {
   }
 
   Future<void> _applyWeightMutation(SyncMutation remote) async {
+    // UUID identity, mirroring the workout/food paths: the opaque entityId is
+    // the stable cross-device identity and is never coerced into the local
+    // autoincrement id.
+    //
+    // INTEGRATION NOTE (Agent A, v22 migration): this requires the nullable
+    // `uuid` TEXT column on BodyMeasurements (same pattern as the existing
+    // nullable uuid columns on WorkoutSessions/FoodLogs) plus drift codegen.
+    // Until `tbl.uuid` exists, these references do not compile; integration
+    // follows that codegen. Do not work around it (no synthetic ids).
     if (remote.isDeleted) {
-      await (_db.delete(_db.bodyMeasurements)
-            ..where((tbl) => tbl.id.equals(int.tryParse(remote.entityId) ?? -1)))
+      // Delete by stable UUID when present; fall back to legacy int id.
+      final deletedByUuid = await (_db.delete(_db.bodyMeasurements)
+            ..where((tbl) => tbl.uuid.equals(remote.entityId)))
           .go();
+      if (deletedByUuid == 0) {
+        await (_db.delete(_db.bodyMeasurements)
+              ..where((tbl) => tbl.id.equals(int.tryParse(remote.entityId) ?? -1)))
+            .go();
+      }
       return;
     }
 
@@ -362,16 +480,33 @@ class SyncService implements SyncCapability {
     final weightRaw = payload['weight_kg'];
     if (weightRaw == null) return; // Never fabricate 0.0 for unknown weight.
     final weightKg = (weightRaw as num).toDouble();
+    final recordedAt = _eventTimeOrHlcFallback(
+      payload,
+      const ['recorded_at', 'recordedAt'],
+      remote.hlc,
+    );
 
-    await _db.into(_db.bodyMeasurements).insertOnConflictUpdate(
-          BodyMeasurementsCompanion(
+    // Look up by uuid first so re-delivery updates instead of duplicating.
+    final existingByUuid = await (_db.select(_db.bodyMeasurements)
+          ..where((tbl) => tbl.uuid.equals(remote.entityId)))
+        .getSingleOrNull();
+    if (existingByUuid != null) {
+      await (_db.update(_db.bodyMeasurements)
+            ..where((tbl) => tbl.uuid.equals(remote.entityId)))
+          .write(BodyMeasurementsCompanion(
+        weight: Value(weightKg),
+        recordedAt: Value(recordedAt),
+        isSynced: const Value(true),
+      ));
+      return;
+    }
+
+    await _db.into(_db.bodyMeasurements).insert(
+          BodyMeasurementsCompanion.insert(
             weight: Value(weightKg),
-            recordedAt: Value(_eventTimeOrHlcFallback(
-              payload,
-              const ['recorded_at', 'recordedAt'],
-              remote.hlc,
-            )),
+            recordedAt: Value(recordedAt),
             isSynced: const Value(true),
+            uuid: Value(remote.entityId),
           ),
         );
   }

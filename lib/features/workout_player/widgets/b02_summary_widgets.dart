@@ -9,8 +9,13 @@ import '../../../data/repositories/b02_execution_compatibility_read_repository.d
 import '../../../data/repositories/b02_strength_execution_repository.dart';
 import '../../../data/repositories/calendar_repository.dart';
 import '../b02_strength_execution_controller.dart';
+import '../models/workout_completion_recap.dart';
 import '../workout_execution_context.dart';
 import 'r07c_workout_presentation.dart';
+import 'workout_share_card.dart';
+
+export '../models/workout_completion_recap.dart';
+export 'workout_share_card.dart';
 
 
 /// B02 summary widgets (PV1-ENG-05C first pass).
@@ -298,6 +303,17 @@ class CompletionEvidence extends StatelessWidget {
                           !groupById.containsKey(exercise.groupId),
                     ))
                       CompletionExerciseEvidence(exercise: exercise),
+                  ],
+                  if (history != null) ...[
+                    const SizedBox(height: 24),
+                    WorkoutShareCard(
+                      recap: WorkoutCompletionRecap.fromHistory(history!),
+                    ),
+                  ] else if (launch != null) ...[
+                    const SizedBox(height: 24),
+                    WorkoutShareCard(
+                      recap: WorkoutCompletionRecap.fromLaunch(launch!),
+                    ),
                   ],
                 ],
               ),
