@@ -145,15 +145,17 @@ class _WorkoutShareCardState extends State<WorkoutShareCard> {
           const SizedBox(height: B05Layout.space16),
           // Privacy Toggle
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Include weights in share',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: colors.textSecondary,
+              Expanded(
+                child: Text(
+                  'Include weights in share',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colors.textSecondary,
+                  ),
                 ),
               ),
-              Switch.adaptive(
+              const SizedBox(width: 8),
+              Switch(
                 value: _includeWeights,
                 onChanged: (val) => setState(() => _includeWeights = val),
               ),

@@ -59,10 +59,24 @@ class _B02StrengthSummaryScreenState
     final completed =
         ui.status == B02StrengthExecutionStatus.ready && ui.launch == null;
     if (completed) {
+      final completionLaunch = _completionLaunch ?? widget.launch;
       return Scaffold(
-        appBar: AppBar(title: const Text('Workout saved')),
+        appBar: AppBar(
+          title: const Text('Workout saved'),
+          actions: [
+            IconButton(
+              key: const Key('workout_share_appbar_button'),
+              icon: const Icon(Icons.share_rounded),
+              tooltip: 'Share workout recap',
+              onPressed: () => showWorkoutShareSheet(
+                context,
+                WorkoutCompletionRecap.fromLaunch(completionLaunch),
+              ),
+            ),
+          ],
+        ),
         body: B02WorkoutCompletionSuccess(
-          launch: _completionLaunch ?? widget.launch,
+          launch: completionLaunch,
           sessionId: ui.completedSessionId,
           completionKind: ui.completedCompletionKind ?? CompletionKind.full,
           onDone: () => goToTrainingTab(context),

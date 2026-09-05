@@ -78,6 +78,24 @@ class B02WorkoutCompletionSuccess extends ConsumerWidget {
   }
 }
 
+/// Open a bottom sheet displaying the factual workout completion recap card.
+Future<void> showWorkoutShareSheet(
+  BuildContext context,
+  WorkoutCompletionRecap recap,
+) {
+  return showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    showDragHandle: true,
+    builder: (context) => SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+        child: WorkoutShareCard(recap: recap),
+      ),
+    ),
+  );
+}
+
 /// Reopens the same factual result from persisted history. It has no route
 /// back to an active draft and cannot finalize or resume a workout.
 class B02StrengthHistoryDetailScreen extends ConsumerWidget {
@@ -88,8 +106,23 @@ class B02StrengthHistoryDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final detail = ref.watch(b02StrengthHistoryDetailProvider(sessionId));
+    final history = detail.valueOrNull;
     return Scaffold(
-      appBar: AppBar(title: const Text('Workout details')),
+      appBar: AppBar(
+        title: const Text('Workout details'),
+        actions: [
+          if (history != null)
+            IconButton(
+              key: const Key('workout_share_appbar_button'),
+              icon: const Icon(Icons.share_rounded),
+              tooltip: 'Share workout recap',
+              onPressed: () => showWorkoutShareSheet(
+                context,
+                WorkoutCompletionRecap.fromHistory(history),
+              ),
+            ),
+        ],
+      ),
       body: detail.when(
         loading: () => Center(
           child: Semantics(
@@ -160,6 +193,7 @@ class CompletionEvidence extends StatelessWidget {
     this.completionKind = CompletionKind.full,
     this.history,
     this.detailsUnavailable = false,
+    this.showShareCard = false,
   });
 
   final B02StrengthExecutionLaunch? launch;
@@ -167,6 +201,7 @@ class CompletionEvidence extends StatelessWidget {
   final VoidCallback onDone;
   final CompletionKind completionKind;
   final bool detailsUnavailable;
+  final bool showShareCard;
 
   @override
   Widget build(BuildContext context) {
@@ -304,16 +339,18 @@ class CompletionEvidence extends StatelessWidget {
                     ))
                       CompletionExerciseEvidence(exercise: exercise),
                   ],
-                  if (history != null) ...[
-                    const SizedBox(height: 24),
-                    WorkoutShareCard(
-                      recap: WorkoutCompletionRecap.fromHistory(history!),
-                    ),
-                  ] else if (launch != null) ...[
-                    const SizedBox(height: 24),
-                    WorkoutShareCard(
-                      recap: WorkoutCompletionRecap.fromLaunch(launch!),
-                    ),
+                  if (showShareCard) ...[
+                    if (history != null) ...[
+                      const SizedBox(height: 24),
+                      WorkoutShareCard(
+                        recap: WorkoutCompletionRecap.fromHistory(history!),
+                      ),
+                    ] else if (launch != null) ...[
+                      const SizedBox(height: 24),
+                      WorkoutShareCard(
+                        recap: WorkoutCompletionRecap.fromLaunch(launch!),
+                      ),
+                    ],
                   ],
                 ],
               ),

@@ -4,8 +4,7 @@ import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/data/models/b02_execution_models.dart';
 import 'package:indifit/data/repositories/b02_execution_compatibility_read_repository.dart';
 import 'package:indifit/data/repositories/b02_strength_execution_repository.dart';
-import 'package:indifit/features/workout_player/models/workout_completion_recap.dart';
-import 'package:indifit/features/workout_player/widgets/workout_share_card.dart';
+import 'package:indifit/features/workout_player/widgets/b02_summary_widgets.dart';
 
 B02PerformedExerciseHistory _createExercise({
   required String id,
@@ -404,6 +403,43 @@ void main() {
       final shareButton = find.byKey(const Key('workout_share_button'));
       expect(shareButton, findsOneWidget);
       expect(find.text('Share workout recap'), findsOneWidget);
+    });
+
+    testWidgets('showWorkoutShareSheet opens bottom sheet containing WorkoutShareCard', (tester) async {
+      final history = B02StrengthHistoryDetail(
+        sessionId: 102,
+        name: 'Pull Routine',
+        completedAt: DateTime.utc(2026, 9, 5, 11, 0),
+        durationSeconds: 1200,
+        completionKind: 'full',
+        totalVolumeKg: 500.0,
+        scheduledOccurrenceId: null,
+        groups: const [],
+        exercises: const [],
+      );
+
+      final recap = WorkoutCompletionRecap.fromHistory(history);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.lightTheme,
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => ElevatedButton(
+                onPressed: () => showWorkoutShareSheet(context, recap),
+                child: const Text('Open Share Sheet'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open Share Sheet'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(WorkoutShareCard), findsOneWidget);
+      expect(find.text('Pull Routine'), findsOneWidget);
+      expect(find.byKey(const Key('workout_share_button')), findsOneWidget);
     });
   });
 }
