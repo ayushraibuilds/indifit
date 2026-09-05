@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
+
 import '../../core/catalog/food_catalog_models.dart';
 import '../../core/di/providers.dart';
 import '../../core/nutrients.dart';
@@ -13,8 +14,6 @@ import '../../core/nutrition_household_measures.dart';
 import '../../core/nutrition_legacy_read_models.dart';
 import '../../core/presentation/consumer_copy.dart';
 import '../../core/presentation/consumer_date_label.dart';
-import '../../core/presentation/consumer_number_label.dart';
-import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/typed_quantities.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
@@ -26,19 +25,24 @@ import '../../data/repositories/food_api_service.dart';
 import '../../data/repositories/food_repository.dart';
 import '../../data/repositories/nutrition_food_catalog_repository.dart';
 import '../../data/repositories/nutrition_food_logging_coordinator.dart';
-import '../../data/repositories/nutrition_target_authority.dart';
 import '../../data/services/nutrition_food_search_ranking.dart';
-import '../dashboard/today_consumer_presentation.dart';
 import '../dashboard/today_surface_controller.dart';
-import '../dashboard/widgets/dashboard_date_bar.dart';
 import 'barcode_scanner_screen.dart';
 import 'canonical_food_delete.dart';
 import 'custom_food_editor_screen.dart';
+import 'food_diary_screen.dart';
 import 'food_log_surface.dart';
+import 'food_search_view_models.dart';
 import 'meal_presentation_registry.dart';
 import 'saved_meals_screen.dart';
 import 'saved_recipe_log_screen.dart';
+import 'widgets/food_search_widgets.dart';
 import 'widgets/remote_food_review_sheet.dart';
+
+export 'food_diary_screen.dart';
+export 'food_search_view_models.dart';
+export 'widgets/food_diary_widgets.dart';
+export 'widgets/food_search_widgets.dart';
 
 class FoodSearchScreen extends ConsumerStatefulWidget {
   final String? mealType; // "breakfast", "lunch", "dinner", "snack"
@@ -60,147 +64,6 @@ class FoodSearchScreen extends ConsumerStatefulWidget {
 
   @override
   ConsumerState<FoodSearchScreen> createState() => _FoodSearchScreenState();
-}
-
-class CanonicalRecentFood {
-  const CanonicalRecentFood({
-    required this.option,
-    required this.quantityLabel,
-    required this.loggedAtUtc,
-    this.frequencyCount = 1,
-    this.historicalQuantity,
-    this.historicalTransformationId,
-    this.lastLoggedMealCategory,
-  });
-
-  final NutritionFoodOption option;
-  final String quantityLabel;
-  final DateTime loggedAtUtc;
-  final int frequencyCount;
-  final Quantity? historicalQuantity;
-  final String? historicalTransformationId;
-  final String? lastLoggedMealCategory;
-}
-
-class _FoodAddUndoToken {
-  const _FoodAddUndoToken({
-    required this.snapshotId,
-    required this.localDate,
-    required this.mealCategory,
-  });
-
-  final String snapshotId;
-  final String localDate;
-  final String mealCategory;
-}
-
-final canonicalRecentFoodsProvider =
-    FutureProvider.autoDispose<List<CanonicalRecentFood>>((ref) async {
-      try {
-        // Avoid initializing the asset-backed canonical read stack when this
-        // user has no canonical consumption at all. This is only an existence
-        // gate; every displayed record still comes through the B03 read model.
-        final database = ref.read(databaseProvider);
-        final canonicalSnapshot =
-            await (database.select(database.nutritionConsumptionSnapshots)
-                  ..where(
-                    (row) => row.userId.equals(kLocalNutritionUserScopeId),
-                  )
-                  ..limit(1))
-                .getSingleOrNull();
-        if (canonicalSnapshot == null) return const [];
-        final history = await ref.read(
-          nutritionReadModelRepositoryProvider.future,
-        );
-        final catalog = await ref.read(
-          nutritionFoodCatalogRepositoryProvider.future,
-        );
-        final records = await history.listHistory(
-          userId: kLocalNutritionUserScopeId,
-        );
-        final ordered = records.where((record) => !record.isLegacy).toList()
-          ..sort((left, right) {
-            final dateComp = right.loggedAtUtc.compareTo(left.loggedAtUtc);
-            if (dateComp != 0) return dateComp;
-            return right.stableId.compareTo(left.stableId);
-          });
-        final frequencyByFoodId = <String, int>{};
-        for (final record in ordered) {
-          for (final item in record.items) {
-            final foodId = item.foodId;
-            if (item.originSourceType == 'direct_food' &&
-                foodId != null &&
-                foodId.isNotEmpty) {
-              frequencyByFoodId.update(
-                foodId,
-                (count) => count + 1,
-                ifAbsent: () => 1,
-              );
-            }
-          }
-        }
-        final seenFoodIds = <String>{};
-        final result = <CanonicalRecentFood>[];
-        for (final record in ordered) {
-          for (final item in record.items) {
-            final foodId = item.foodId;
-            if (item.originSourceType != 'direct_food' ||
-                foodId == null ||
-                foodId.isEmpty ||
-                !seenFoodIds.add(foodId)) {
-              continue;
-            }
-            final option = await catalog.getOption(foodId);
-            if (option == null) continue;
-            final historicalQuantity = item.quantity.isResolved
-                ? item.quantity.quantity
-                : null;
-            final quantityLabel = historicalQuantity != null
-                ? QuantityFormatter.format(historicalQuantity)
-                : (item.quantity.storedAmount != null &&
-                      item.quantity.storedUnit.isNotEmpty)
-                ? '${item.quantity.storedAmount} ${item.quantity.storedUnit}'
-                : '${option.baseQuantity.amount} ${option.baseQuantity.unit.name}';
-            result.add(
-              CanonicalRecentFood(
-                option: option,
-                quantityLabel: quantityLabel,
-                loggedAtUtc: record.loggedAtUtc,
-                frequencyCount: frequencyByFoodId[foodId] ?? 1,
-                historicalQuantity: historicalQuantity,
-                lastLoggedMealCategory: record.mealCategory,
-              ),
-            );
-            if (result.length == 20) return result;
-          }
-        }
-        return result;
-      } catch (_) {
-        // A canonical-history read must never make local/legacy Recent unusable.
-        return const [];
-      }
-    });
-
-class _FoodQuantityReviewCapture extends StatelessWidget {
-  const _FoodQuantityReviewCapture({
-    required this.padding,
-    required this.child,
-  });
-
-  final EdgeInsets padding;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) => RepaintBoundary(
-    key: const ValueKey('food_quantity_review_surface'),
-    child: Padding(
-      padding: padding,
-      child: SingleChildScrollView(
-        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-        child: child,
-      ),
-    ),
-  );
 }
 
 class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
@@ -901,7 +764,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       );
       if (!mounted) return;
       _invalidateNutritionReads();
-      final undo = _FoodAddUndoToken(
+      final undo = FoodAddUndoToken(
         snapshotId: snapshot.id,
         localDate: dateContext.localDate,
         mealCategory: selectedMealType,
@@ -982,7 +845,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       );
       if (!mounted) return;
       _invalidateNutritionReads();
-      final undo = _FoodAddUndoToken(
+      final undo = FoodAddUndoToken(
         snapshotId: snapshot.id,
         localDate: dateContext.localDate,
         mealCategory: selectedMealType,
@@ -1008,7 +871,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     }
   }
 
-  Future<void> _undoLastCanonicalAdd(_FoodAddUndoToken undo) async {
+  Future<void> _undoLastCanonicalAdd(FoodAddUndoToken undo) async {
     try {
       final repository = await ref.read(
         nutritionConsumptionRepositoryProvider.future,
@@ -1269,7 +1132,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
               constraints: BoxConstraints(
                 maxHeight: MediaQuery.sizeOf(context).height * .86,
               ),
-              child: _FoodQuantityReviewCapture(
+              child: FoodQuantityReviewCapture(
                 padding: EdgeInsets.only(
                   left: 20,
                   right: 20,
@@ -1913,7 +1776,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         _isMultiSelect = false;
       });
       _invalidateNutritionReads();
-      final undo = _FoodAddUndoToken(
+      final undo = FoodAddUndoToken(
         snapshotId: snapshot.id,
         localDate: dateContext.localDate,
         mealCategory: mealType,
@@ -2852,7 +2715,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     );
     final option = await catalog.getOption(item.foodId!);
     if (option == null || !mounted) return;
-    final action = await showModalBottomSheet<_CanonicalFoodAction>(
+    final action = await showModalBottomSheet<CanonicalFoodAction>(
       context: context,
       builder: (sheetContext) => SafeArea(
         child: Padding(
@@ -2863,21 +2726,21 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                 label: 'Edit amount',
                 icon: Icons.edit_outlined,
                 onPressed: () =>
-                    Navigator.of(sheetContext).pop(_CanonicalFoodAction.edit),
+                    Navigator.of(sheetContext).pop(CanonicalFoodAction.edit),
               ),
               B05ActionButton(
                 label: 'Copy food',
                 icon: Icons.copy_outlined,
                 emphasis: B05ActionEmphasis.secondary,
                 onPressed: () =>
-                    Navigator.of(sheetContext).pop(_CanonicalFoodAction.copy),
+                    Navigator.of(sheetContext).pop(CanonicalFoodAction.copy),
               ),
               B05ActionButton(
                 label: 'Delete food',
                 icon: Icons.delete_outline_rounded,
                 emphasis: B05ActionEmphasis.danger,
                 onPressed: () =>
-                    Navigator.of(sheetContext).pop(_CanonicalFoodAction.delete),
+                    Navigator.of(sheetContext).pop(CanonicalFoodAction.delete),
               ),
             ],
           ),
@@ -2886,7 +2749,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     );
     if (!mounted) return;
     switch (action) {
-      case _CanonicalFoodAction.edit:
+      case CanonicalFoodAction.edit:
         await _showLogDialog(
           option,
           mealType: record.mealCategory,
@@ -2894,9 +2757,9 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
           correctionRecord: record,
           correctionItem: item,
         );
-      case _CanonicalFoodAction.copy:
+      case CanonicalFoodAction.copy:
         await _showLogDialog(option, mealType: record.mealCategory);
-      case _CanonicalFoodAction.delete:
+      case CanonicalFoodAction.delete:
         await showCanonicalFoodItemDelete(
           context: context,
           ref: ref,
@@ -3403,744 +3266,3 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   }
 }
 
-enum _CanonicalFoodAction { edit, copy, delete }
-
-class FoodDiaryScreen extends ConsumerStatefulWidget {
-  const FoodDiaryScreen({super.key, required this.selectedDate, this.today});
-
-  final DateTime selectedDate;
-  final DateTime? today;
-
-  @override
-  ConsumerState<FoodDiaryScreen> createState() => _FoodDiaryScreenState();
-}
-
-class _FoodDiaryScreenState extends ConsumerState<FoodDiaryScreen> {
-  late DateTime _selectedDay;
-  late DateTime _today;
-
-  @override
-  void initState() {
-    super.initState();
-    _selectedDay = _civilDay(widget.selectedDate);
-    _today = _civilDay(widget.today ?? DateTime.now());
-  }
-
-  @override
-  void didUpdateWidget(covariant FoodDiaryScreen oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (!_isSameDay(oldWidget.selectedDate, widget.selectedDate)) {
-      _selectedDay = _civilDay(widget.selectedDate);
-    }
-    if (oldWidget.today != widget.today) {
-      _today = _civilDay(widget.today ?? DateTime.now());
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final diary = ref.watch(foodDiaryReadModelProvider(_selectedDay));
-    final daily = diary.valueOrNull?.daily;
-    final canonical = daily == null && diary.hasError
-        ? ref.watch(canonicalFoodRecordsForDayProvider(_selectedDay))
-        : const AsyncData<List<NutritionHistoricalReadRecord>>([]);
-    final nutritionRead = diary.hasError
-        ? const TodayDomainRead<NutritionDailyReadModel>.unavailable(
-            'Food diary unavailable',
-          )
-        : daily == null
-        ? null
-        : TodayDomainRead.available(daily);
-    final presentation = TodayNutritionPresentation.from(
-      nutritionRead,
-      loading: diary.isLoading,
-      targetRead: diary.valueOrNull?.targets,
-    );
-    final records = daily?.records ?? canonical.valueOrNull ?? [];
-    final meals = [
-      for (final presentation in MealPresentationRegistry.values)
-        (type: presentation.stableId, label: presentation.label),
-    ];
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Food diary', style: B05Typography.title(context)),
-      ),
-      body: SafeArea(
-        top: false,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-          children: [
-            DashboardDateBar(
-              selectedDate: _selectedDay,
-              today: _today,
-              onDateChanged: (date) {
-                final nextDay = _civilDay(date);
-                if (_isSameDay(nextDay, _selectedDay)) return;
-                setState(() => _selectedDay = nextDay);
-              },
-            ),
-            const SizedBox(height: 12),
-            _FoodDiaryPrimaryAddAction(
-              onPressed: () => _openMealPicker(context),
-            ),
-            const SizedBox(height: 16),
-            _FoodDiarySummary(
-              presentation: presentation,
-              targetRead: diary.valueOrNull?.targets,
-            ),
-            if (diary.hasError && daily == null) ...[
-              const SizedBox(height: 12),
-              ProductFailureCard(
-                failure: ProductFailurePresentation.fromCode(
-                  'food_log_unavailable',
-                  title: 'Daily food is unavailable',
-                ),
-                onRetry: () =>
-                    ref.invalidate(foodDiaryReadModelProvider(_selectedDay)),
-              ),
-            ],
-            const SizedBox(height: 16),
-            Text('Meals', style: B05Typography.title(context)),
-            const SizedBox(height: 2),
-            Text(
-              'See what you logged by meal.',
-              style: B05Typography.caption(context),
-            ),
-            const SizedBox(height: 8),
-            if (daily == null && (diary.isLoading || canonical.isLoading))
-              const B05StatusMessage(
-                status: B05SemanticStatus.info,
-                label: 'Loading meals',
-              ),
-            for (var index = 0; index < meals.length; index++) ...[
-              _FoodDiaryMealRow(
-                type: meals[index].type,
-                label: meals[index].label,
-                records: records
-                    .where(
-                      (record) =>
-                          _foodDiaryMealType(record.mealCategory) ==
-                          meals[index].type,
-                    )
-                    .toList(growable: false),
-                isLoading:
-                    daily == null && (diary.isLoading || canonical.isLoading),
-                onOpen: () => _openMealDetail(context, meals[index].type),
-                onAdd: () => _openMealAdd(context, meals[index].type),
-              ),
-              if (index < meals.length - 1)
-                Divider(height: 16, color: context.b05Colors.border),
-            ],
-            const SizedBox(height: 20),
-            Text('Food tools', style: B05Typography.title(context)),
-            const SizedBox(height: 2),
-            Text(
-              'Repeat from history or use a saved meal when helpful.',
-              style: B05Typography.caption(context),
-            ),
-            const SizedBox(height: 8),
-            _FoodDiaryShortcut(
-              icon: Icons.repeat_rounded,
-              title: 'Recent and frequent',
-              detail: 'Repeat foods using your real local history.',
-              onTap: () => _openMealPicker(context),
-            ),
-            _FoodDiaryShortcut(
-              icon: Icons.bookmark_outline_rounded,
-              title: 'Saved meals',
-              detail: 'Log a meal combination you saved.',
-              onTap: () => _openSavedMeals(context),
-            ),
-            _FoodDiaryShortcut(
-              icon: Icons.menu_book_rounded,
-              title: 'Saved recipes',
-              detail: 'Open a complete recipe without rebuilding it.',
-              onTap: () => _openSavedRecipes(context),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _openMealAdd(BuildContext context, String mealType) async {
-    await Navigator.of(context).push<bool>(
-      MaterialPageRoute(
-        builder: (_) => FoodSearchScreen(
-          mealType: mealType,
-          selectedDate: _selectedDay,
-          returnToParentOnSave: true,
-        ),
-      ),
-    );
-    if (mounted) _refreshDiaryReads();
-  }
-
-  Future<void> _openMealDetail(BuildContext context, String mealType) async {
-    await Navigator.of(context).push<void>(
-      MaterialPageRoute(
-        builder: (_) => FoodMealDetailScreen(
-          mealType: mealType,
-          selectedDate: _selectedDay,
-        ),
-      ),
-    );
-    if (mounted) _refreshDiaryReads();
-  }
-
-  Future<String?> _chooseMeal(
-    BuildContext context,
-  ) => showModalBottomSheet<String>(
-    context: context,
-    builder: (sheetContext) => SafeArea(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'Choose a meal',
-                style: B05Typography.title(sheetContext),
-              ),
-            ),
-          ),
-          for (final item in MealPresentationRegistry.values)
-            ListTile(
-              title: Text(item.label),
-              leading: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: sheetContext.b05Colors.meal(item.accent!).container,
-                  shape: BoxShape.circle,
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: Icon(
-                    item.icon,
-                    color: sheetContext.b05Colors.meal(item.accent!).indicator,
-                  ),
-                ),
-              ),
-              onTap: () => Navigator.of(sheetContext).pop(item.stableId),
-            ),
-          const SizedBox(height: 8),
-        ],
-      ),
-    ),
-  );
-
-  Future<void> _openMealPicker(BuildContext context) async {
-    final meal = await _chooseMeal(context);
-    if (meal == null || !context.mounted) return;
-    await _openMealAdd(context, meal);
-  }
-
-  Future<void> _openSavedMeals(BuildContext context) async {
-    final meal = await _chooseMeal(context);
-    if (meal == null || !context.mounted) return;
-    await Navigator.of(context).push<bool>(
-      MaterialPageRoute(
-        builder: (_) =>
-            SavedMealsScreen(mealType: meal, selectedDate: _selectedDay),
-      ),
-    );
-    if (mounted) _refreshDiaryReads();
-  }
-
-  Future<void> _openSavedRecipes(BuildContext context) async {
-    final meal = await _chooseMeal(context);
-    if (meal == null || !context.mounted) return;
-    await Navigator.of(context).push<bool>(
-      MaterialPageRoute(
-        builder: (_) =>
-            SavedRecipeLogScreen(mealType: meal, selectedDate: _selectedDay),
-      ),
-    );
-    if (mounted) _refreshDiaryReads();
-  }
-
-  void _refreshDiaryReads() {
-    ref.invalidate(foodDiaryReadModelProvider(_selectedDay));
-    ref.invalidate(canonicalRecentFoodsProvider);
-  }
-
-  DateTime _civilDay(DateTime value) =>
-      DateTime(value.year, value.month, value.day);
-
-  bool _isSameDay(DateTime first, DateTime second) =>
-      first.year == second.year &&
-      first.month == second.month &&
-      first.day == second.day;
-}
-
-class FoodMealDetailScreen extends ConsumerWidget {
-  const FoodMealDetailScreen({
-    super.key,
-    required this.mealType,
-    required this.selectedDate,
-  });
-
-  final String mealType;
-  final DateTime selectedDate;
-
-  DateTime get _day =>
-      DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final diary = ref.watch(foodDiaryReadModelProvider(_day));
-    final records = diary.valueOrNull?.daily.records;
-    final mealRecords = records
-        ?.where((record) => _foodDiaryMealType(record.mealCategory) == mealType)
-        .toList(growable: false);
-    final title = _foodDiaryMealTitle(mealType);
-    final total = mealRecords == null
-        ? 'Loading meal total'
-        : _foodDiaryEnergyLabel(mealRecords);
-    return Scaffold(
-      appBar: AppBar(title: Text(title)),
-      body: SafeArea(
-        top: false,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-          children: [
-            B05Surface(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(title, style: B05Typography.title(context)),
-                        const SizedBox(height: 4),
-                        Text(total, style: B05Typography.body(context)),
-                      ],
-                    ),
-                  ),
-                  FilledButton.icon(
-                    onPressed: () => Navigator.of(context).push<bool>(
-                      MaterialPageRoute(
-                        builder: (_) => FoodSearchScreen(
-                          mealType: mealType,
-                          selectedDate: selectedDate,
-                          returnToParentOnSave: true,
-                        ),
-                      ),
-                    ),
-                    icon: const Icon(Icons.add_rounded),
-                    label: const Text('Add food'),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            FoodLogEntriesPanel(
-              date: selectedDate,
-              mealType: mealType,
-              onCanonicalItemTap: (record, item) =>
-                  _openRecordActions(context, record, item),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _openRecordActions(
-    BuildContext context,
-    NutritionHistoricalReadRecord record,
-    NutritionHistoricalReadItem item,
-  ) async {
-    await Navigator.of(context).push<bool>(
-      MaterialPageRoute(
-        builder: (_) => FoodSearchScreen(
-          mealType: mealType,
-          selectedDate: selectedDate,
-          returnToParentOnSave: true,
-          initialRecord: record,
-          initialRecordItem: item,
-        ),
-      ),
-    );
-  }
-}
-
-class _FoodDiaryPrimaryAddAction extends StatelessWidget {
-  const _FoodDiaryPrimaryAddAction({required this.onPressed});
-
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) => Semantics(
-    container: true,
-    label: 'Add food',
-    hint: 'Choose a meal, then search or select food to log.',
-    child: SizedBox(
-      width: double.infinity,
-      child: FilledButton.icon(
-        key: const ValueKey('food_diary_primary_add'),
-        onPressed: onPressed,
-        icon: const Icon(Icons.add_rounded),
-        label: const Text('Add food'),
-      ),
-    ),
-  );
-}
-
-class _FoodDiarySummary extends StatelessWidget {
-  const _FoodDiarySummary({
-    required this.presentation,
-    required this.targetRead,
-  });
-
-  final TodayNutritionPresentation presentation;
-  final TodayDomainRead<NutritionTargetsForDate?>? targetRead;
-
-  @override
-  Widget build(BuildContext context) {
-    if (presentation.state == TodayPresentationState.unavailable) {
-      return const SizedBox.shrink();
-    }
-    final calories = presentation.calories;
-    final macros = presentation.macros
-        .where((metric) => metric.nutrientId != 'fibre')
-        .toList(growable: false);
-    final hasTarget = calories?.hasTarget == true;
-    final consumed = calories?.isAvailable == true
-        ? '${calories!.value} ${calories.unit}'
-        : '— kcal';
-    final remaining = _remainingLabel(calories);
-    final targetContext = _targetContextLabel(
-      presentation: presentation,
-      targetRead: targetRead,
-      hasTarget: hasTarget,
-    );
-    return Semantics(
-      container: true,
-      label: 'Food diary nutrition summary',
-      value: [
-        'Consumed $consumed',
-        if (remaining != null) 'Remaining $remaining',
-        targetContext,
-      ].join('. '),
-      child: B05Surface(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Daily nutrition', style: B05Typography.title(context)),
-            const SizedBox(height: 10),
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final itemWidth = (constraints.maxWidth - 12) / 2;
-                return Wrap(
-                  spacing: 12,
-                  runSpacing: 10,
-                  children: [
-                    SizedBox(
-                      width: itemWidth,
-                      child: _FoodDiarySummaryMetric(
-                        label: 'Consumed',
-                        value: consumed,
-                      ),
-                    ),
-                    SizedBox(
-                      width: itemWidth,
-                      child: _FoodDiarySummaryMetric(
-                        label: 'Remaining',
-                        value: remaining ?? (hasTarget ? '—' : 'Not available'),
-                        valueColor: remaining == null
-                            ? null
-                            : context.b05Colors.action,
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
-            const SizedBox(height: 10),
-            if (calories?.progress != null)
-              LinearProgressIndicator(
-                value: calories!.progress,
-                minHeight: 7,
-                borderRadius: BorderRadius.circular(8),
-                color: context.b05Colors.action,
-                backgroundColor: context.b05Colors.selected,
-              )
-            else if (presentation.state == TodayPresentationState.loading)
-              const B05StatusMessage(
-                status: B05SemanticStatus.info,
-                label: 'Loading daily target',
-              )
-            else
-              Text(targetContext, style: B05Typography.caption(context)),
-            if (calories?.progress != null) ...[
-              const SizedBox(height: 6),
-              Text(targetContext, style: B05Typography.caption(context)),
-            ],
-            const SizedBox(height: 14),
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final itemWidth = (constraints.maxWidth - 12) / 2;
-                return Wrap(
-                  spacing: 12,
-                  runSpacing: 8,
-                  children: [
-                    for (final metric in macros)
-                      SizedBox(
-                        width: itemWidth,
-                        child: _FoodDiaryMetric(metric: metric),
-                      ),
-                  ],
-                );
-              },
-            ),
-            if (presentation.hasIncompleteNutrition) ...[
-              const SizedBox(height: 8),
-              Text(
-                '${ConsumerCopy.nutritionDetailsIncomplete}; available values stay visible.',
-                style: B05Typography.caption(context),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  String? _remainingLabel(TodayNutritionMetricPresentation? calories) {
-    if (calories?.hasTarget != true ||
-        calories?.pointValue == null ||
-        calories!.isRange) {
-      return null;
-    }
-    final difference = calories.targetValue! - calories.pointValue!;
-    if (difference >= 0) {
-      return '${ConsumerNumberLabel.rounded(difference)} kcal';
-    }
-    return 'Over by ${ConsumerNumberLabel.rounded(-difference)} kcal';
-  }
-
-  String _targetContextLabel({
-    required TodayNutritionPresentation presentation,
-    required TodayDomainRead<NutritionTargetsForDate?>? targetRead,
-    required bool hasTarget,
-  }) {
-    if (presentation.state == TodayPresentationState.loading) {
-      return 'Daily target is loading.';
-    }
-    if (targetRead?.isAvailable == false) {
-      return 'Daily target unavailable for this date.';
-    }
-    if (!hasTarget) return 'No daily target for this date.';
-    return '${ConsumerNumberLabel.rounded(presentation.calories!.targetValue!)} kcal daily target.';
-  }
-}
-
-class _FoodDiarySummaryMetric extends StatelessWidget {
-  const _FoodDiarySummaryMetric({
-    required this.label,
-    required this.value,
-    this.valueColor,
-  });
-
-  final String label;
-  final String value;
-  final Color? valueColor;
-
-  @override
-  Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(label, style: B05Typography.caption(context)),
-      const SizedBox(height: 2),
-      Text(
-        value,
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-        style: B05Typography.title(context).copyWith(color: valueColor),
-      ),
-    ],
-  );
-}
-
-class _FoodDiaryMetric extends StatelessWidget {
-  const _FoodDiaryMetric({required this.metric});
-
-  final TodayNutritionMetricPresentation metric;
-
-  @override
-  Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(metric.label, style: B05Typography.caption(context)),
-      const SizedBox(height: 2),
-      Text(
-        '${metric.value} ${metric.unit}',
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: B05Typography.label(context),
-      ),
-    ],
-  );
-}
-
-class _FoodDiaryMealRow extends StatelessWidget {
-  const _FoodDiaryMealRow({
-    required this.type,
-    required this.label,
-    required this.records,
-    required this.onOpen,
-    required this.onAdd,
-    this.isLoading = false,
-  });
-
-  final String type;
-  final String label;
-  final List<NutritionHistoricalReadRecord> records;
-  final VoidCallback onOpen;
-  final VoidCallback onAdd;
-  final bool isLoading;
-
-  @override
-  Widget build(BuildContext context) {
-    final accent = context.b05Colors.meal(
-      foodMealPresentationFor(type).accent ?? B05MealAccent.snack,
-    );
-    final labels = records
-        .expand((record) => record.items)
-        .map((item) => item.displayLabel)
-        .whereType<String>()
-        .where((label) => label.trim().isNotEmpty)
-        .take(2)
-        .toList(growable: false);
-    final preview = isLoading
-        ? 'Loading logged food'
-        : records.isEmpty
-        ? 'Nothing logged yet'
-        : labels.isEmpty
-        ? '${records.length} logged'
-        : labels.join(' · ');
-    return Semantics(
-      container: true,
-      button: true,
-      label: '$label. ${_foodDiaryEnergyLabel(records)}. $preview',
-      hint: 'Open $label details or use the add button.',
-      child: InkWell(
-        onTap: onOpen,
-        borderRadius: B05Radii.smallRadius,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 6),
-          child: Row(
-            children: [
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  color: accent.container,
-                  shape: BoxShape.circle,
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: Icon(
-                    foodMealPresentationFor(type).icon,
-                    size: 18,
-                    color: accent.indicator,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(label, style: B05Typography.label(context)),
-                    const SizedBox(height: 2),
-                    Text(
-                      preview,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: B05Typography.caption(context),
-                    ),
-                  ],
-                ),
-              ),
-              Text(
-                _foodDiaryEnergyLabel(records),
-                style: B05Typography.caption(context).copyWith(
-                  color: accent.indicator,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(width: 4),
-              B05IconAction(
-                icon: Icons.add_circle_outline_rounded,
-                label: 'Add $label',
-                hint: 'Log food to $label.',
-                onPressed: onAdd,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _FoodDiaryShortcut extends StatelessWidget {
-  const _FoodDiaryShortcut({
-    required this.icon,
-    required this.title,
-    required this.detail,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String title;
-  final String detail;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) => Semantics(
-    button: true,
-    label: title,
-    hint: detail,
-    child: ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-      leading: Icon(icon, color: context.b05Colors.action),
-      title: Text(title, style: B05Typography.label(context)),
-      subtitle: Text(detail, style: B05Typography.caption(context)),
-      trailing: const Icon(Icons.chevron_right_rounded),
-      onTap: onTap,
-    ),
-  );
-}
-
-String _foodDiaryMealType(String value) {
-  final normalized = value.trim().toLowerCase();
-  return normalized == 'snacks' ? 'snack' : normalized;
-}
-
-String _foodDiaryMealTitle(String value) => switch (_foodDiaryMealType(value)) {
-  'breakfast' => 'Breakfast',
-  'lunch' => 'Lunch',
-  'dinner' => 'Dinner',
-  'snack' => 'Snacks',
-  _ => 'Meal',
-};
-
-String _foodDiaryEnergyLabel(Iterable<NutritionHistoricalReadRecord> records) {
-  final facts = [for (final record in records) record.totals.facts['energy']];
-  if (facts.isEmpty || facts.any((fact) => fact == null || !fact.isAvailable)) {
-    return '— kcal';
-  }
-  final available = facts.cast<NutrientFact>();
-  if (available.any((fact) => fact.point == null)) return '— kcal';
-  final total = available.fold<double>(
-    0,
-    (sum, fact) => sum + fact.point!.value.asDouble,
-  );
-  return '${total.round()} kcal';
-}
