@@ -11,6 +11,7 @@ import '../../data/repositories/program_repository.dart';
 import '../exercise_picker/exercise_picker.dart';
 import '../workout_player/widgets/b02_execution_semantics.dart';
 import 'program_authoring_controller.dart';
+import 'widgets/program_consumer_surface.dart';
 
 /// Screen for creating, editing, and copying draft training programs.
 class ProgramAuthorScreen extends ConsumerStatefulWidget {
@@ -1381,159 +1382,6 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
     await _addSessionTemplate(0, 0);
   }
 
-  Widget _buildConsumerPlanSurface(BuildContext context) {
-    final entries = _consumerDayEntries();
-    final canEdit = _isDraftVersion;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Days',
-          style: Theme.of(
-            context,
-          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          ConsumerCountLabel.format(entries.length, 'day'),
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
-        if (canEdit) ...[
-          const SizedBox(height: 8),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: TextButton.icon(
-              onPressed: _addConsumerDay,
-              icon: const Icon(Icons.add_rounded),
-              label: const Text('Add day'),
-            ),
-          ),
-        ],
-        if (entries.isEmpty)
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(
-                'Add a day to start building workouts and exercises.',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-            ),
-          )
-        else
-          for (var dayIndex = 0; dayIndex < entries.length; dayIndex++)
-            _buildConsumerDayCard(
-              context,
-              entries[dayIndex],
-              dayIndex,
-              canEdit,
-            ),
-      ],
-    );
-  }
-
-  Widget _buildConsumerDayCard(
-    BuildContext context,
-    ({
-      int blockIndex,
-      int weekIndex,
-      int templateIndex,
-      SessionTemplateInput template,
-    })
-    entry,
-    int dayIndex,
-    bool canEdit,
-  ) {
-    final workout = entry.template;
-    return Card(
-      margin: const EdgeInsets.only(top: 12),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(Icons.calendar_today_outlined),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Day ${dayIndex + 1}',
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w700),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '${_weekdayLabel(workout.plannedWeekday)} · ${workout.name}',
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const Divider(height: 24),
-            Text(
-              'Workout',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'Exercises',
-                    style: Theme.of(context).textTheme.labelLarge,
-                  ),
-                ),
-                Text(
-                  'Sets/reps',
-                  style: Theme.of(context).textTheme.labelLarge,
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            if (workout.prescriptions.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 8),
-                child: Text('No exercises added yet.'),
-              )
-            else
-              for (final prescription in workout.prescriptions)
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  dense: true,
-                  title: Text(prescription.exerciseNameSnapshot),
-                  subtitle: prescription.exerciseId == null
-                      ? const Text('Choose an exercise')
-                      : null,
-                  trailing: Text(
-                    '${prescription.plannedSets} × ${prescription.repsRange}',
-                    textAlign: TextAlign.end,
-                  ),
-                ),
-            if (canEdit)
-              Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton.icon(
-                  onPressed: () => _addPrescription(
-                    entry.blockIndex,
-                    entry.weekIndex,
-                    entry.templateIndex,
-                  ),
-                  icon: const Icon(Icons.add_rounded, size: 18),
-                  label: const Text('Add exercise'),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
 
   Future<bool> _saveDraft() async {
     if (_programNameController.text.trim().isEmpty) {
@@ -1633,17 +1481,6 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
       await context.push('/program-review/$_currentVersionId');
     }
   }
-
-  static String _weekdayLabel(int weekday) => switch (weekday) {
-    DateTime.monday => 'Mon',
-    DateTime.tuesday => 'Tue',
-    DateTime.wednesday => 'Wed',
-    DateTime.thursday => 'Thu',
-    DateTime.friday => 'Fri',
-    DateTime.saturday => 'Sat',
-    DateTime.sunday => 'Sun',
-    _ => 'Unknown day',
-  };
 
   static String _formatTime(int minute) {
     final hour = minute ~/ 60;
@@ -1778,7 +1615,12 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
                             ),
                           ],
                           const SizedBox(height: 24),
-                          _buildConsumerPlanSurface(context),
+                          ProgramConsumerPlanSurface(
+                            entries: _consumerDayEntries(),
+                            canEdit: _isDraftVersion,
+                            onAddDay: _addConsumerDay,
+                            onAddPrescription: _addPrescription,
+                          ),
                           const SizedBox(height: 16),
                           ExpansionTile(
                             tilePadding: EdgeInsets.zero,
@@ -1996,7 +1838,7 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
                                                                 children: [
                                                                   Expanded(
                                                                     child: Text(
-                                                                      '${st.name} • ${_weekdayLabel(st.plannedWeekday)}${st.plannedStartMinute == null ? '' : ' • ${_formatTime(st.plannedStartMinute!)}'}',
+                                                                      '${st.name} • ${programWeekdayLabel(st.plannedWeekday)}${st.plannedStartMinute == null ? '' : ' • ${_formatTime(st.plannedStartMinute!)}'}',
                                                                       style: const TextStyle(
                                                                         fontWeight:
                                                                             FontWeight.w600,
