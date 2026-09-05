@@ -13,6 +13,9 @@ class Achievement {
   final bool isUnlocked;
   final DateTime? unlockedAt;
 
+  /// Factual, human-readable basis for the current state (never inferred).
+  final String evidence;
+
   const Achievement({
     required this.id,
     required this.title,
@@ -22,6 +25,7 @@ class Achievement {
     required this.currentProgress,
     required this.maxProgress,
     required this.isUnlocked,
+    required this.evidence,
     this.unlockedAt,
   });
 
@@ -63,6 +67,7 @@ class AchievementService {
       required double currentProgress,
       required double maxProgress,
       required bool thresholdMet,
+      required String evidence,
     }) {
       final isUnlocked = thresholdMet || timestamps.containsKey(id);
       final unlockedAt =
@@ -77,9 +82,15 @@ class AchievementService {
         currentProgress: currentProgress,
         maxProgress: maxProgress,
         isUnlocked: isUnlocked,
+        evidence: evidence,
         unlockedAt: unlockedAt,
       );
     }
+
+    String countEvidence(int current, int max, String unit) =>
+        '$current of $max $unit logged';
+    String volumeEvidence(double current, double max) =>
+        '${_formatAmount(current)} kg / ${_formatAmount(max)} kg volume recorded';
 
     return [
       buildItem(
@@ -91,6 +102,7 @@ class AchievementService {
         currentProgress: completedWorkoutsCount.toDouble(),
         maxProgress: 1.0,
         thresholdMet: completedWorkoutsCount >= 1,
+        evidence: countEvidence(completedWorkoutsCount, 1, 'workout'),
       ),
       buildItem(
         id: 'streak_7',
@@ -101,6 +113,7 @@ class AchievementService {
         currentProgress: currentStreakDays.toDouble(),
         maxProgress: 7.0,
         thresholdMet: currentStreakDays >= 7,
+        evidence: countEvidence(currentStreakDays, 7, 'day streak'),
       ),
       buildItem(
         id: 'streak_30',
@@ -111,6 +124,7 @@ class AchievementService {
         currentProgress: currentStreakDays.toDouble(),
         maxProgress: 30.0,
         thresholdMet: currentStreakDays >= 30,
+        evidence: countEvidence(currentStreakDays, 30, 'day streak'),
       ),
       buildItem(
         id: 'volume_1000',
@@ -121,6 +135,7 @@ class AchievementService {
         currentProgress: totalVolumeKg,
         maxProgress: 1000.0,
         thresholdMet: totalVolumeKg >= 1000.0,
+        evidence: volumeEvidence(totalVolumeKg, 1000.0),
       ),
       buildItem(
         id: 'volume_5000',
@@ -131,6 +146,7 @@ class AchievementService {
         currentProgress: totalVolumeKg,
         maxProgress: 5000.0,
         thresholdMet: totalVolumeKg >= 5000.0,
+        evidence: volumeEvidence(totalVolumeKg, 5000.0),
       ),
       buildItem(
         id: 'volume_10000',
@@ -141,6 +157,7 @@ class AchievementService {
         currentProgress: totalVolumeKg,
         maxProgress: 10000.0,
         thresholdMet: totalVolumeKg >= 10000.0,
+        evidence: volumeEvidence(totalVolumeKg, 10000.0),
       ),
       buildItem(
         id: 'meals_10',
@@ -151,6 +168,7 @@ class AchievementService {
         currentProgress: totalLoggedMealsCount.toDouble(),
         maxProgress: 10.0,
         thresholdMet: totalLoggedMealsCount >= 10,
+        evidence: countEvidence(totalLoggedMealsCount, 10, 'meals'),
       ),
       buildItem(
         id: 'meals_50',
@@ -161,6 +179,7 @@ class AchievementService {
         currentProgress: totalLoggedMealsCount.toDouble(),
         maxProgress: 50.0,
         thresholdMet: totalLoggedMealsCount >= 50,
+        evidence: countEvidence(totalLoggedMealsCount, 50, 'meals'),
       ),
       buildItem(
         id: 'first_thali',
@@ -171,7 +190,57 @@ class AchievementService {
         currentProgress: loggedThali ? 1.0 : 0.0,
         maxProgress: 1.0,
         thresholdMet: loggedThali,
+        evidence: loggedThali ? 'Thali plate logged' : 'No thali plate logged yet',
       ),
     ];
+  }
+
+  /// Formats a measured amount for evidence strings: whole values get
+  /// thousands grouping (`10450` → `10,450`), fractional values keep one
+  /// decimal. Presentation only; thresholds always compare exact values.
+  static String _formatAmount(double value) {
+    final rounded1 = (value * 10).round() / 10;
+    final text = rounded1 == rounded1.roundToDouble()
+        ? rounded1.round().toString()
+        : rounded1.toStringAsFixed(1);
+    final parts = text.split('.');
+    final grouped = StringBuffer();
+    final digits = parts[0].split('').reversed.toList();
+    for (var i = 0; i < digits.length; i++) {
+      if (i > 0 && i % 3 == 0) grouped.write(',');
+      grouped.write(digits[i]);
+    }
+    final head = grouped.toString().split('').reversed.join();
+    return parts.length > 1 ? '$head.${parts[1]}' : head;
+  }
+
+  /// Evaluates thresholds against current lifetime stats and durably records
+  /// every newly met unlock, then returns achievements populated with the
+  /// STORED unlock timestamps (never freshly minted ones).
+  ///
+  /// Safe to call from workout finalization: recording is idempotent and
+  /// this method never throws for missing data (empty stats simply leave
+  /// everything locked). Partial and full completions are treated identically
+  /// — a persisted session is a completed session.
+  static Future<List<Achievement>> recordAndEvaluate({
+    required ProgressStatisticsRepository statsRepository,
+    required int currentStreakDays,
+  }) async {
+    final stats = await statsRepository.getLifetimeStats();
+    final evaluated = evaluateFromLifetimeStats(
+      stats: stats,
+      currentStreakDays: currentStreakDays,
+    );
+    for (final achievement in evaluated) {
+      if (achievement.isUnlocked &&
+          !stats.unlockedAchievementIds.containsKey(achievement.id)) {
+        await statsRepository.unlockAchievement(achievement.id);
+      }
+    }
+    final stored = await statsRepository.getLifetimeStats();
+    return evaluateFromLifetimeStats(
+      stats: stored,
+      currentStreakDays: currentStreakDays,
+    );
   }
 }

@@ -1,16 +1,19 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/di/providers.dart';
 import '../../core/presentation/consumer_copy.dart';
 import '../../core/presentation/product_failure_presentation.dart';
+import '../../core/services/achievement_service.dart';
 import '../../core/services/rest_presence_service.dart';
 import '../../core/services/workout_session_wake_lock_coordinator.dart';
 import '../../core/utils/app_logger.dart';
 import '../../data/models/b02_execution_models.dart';
 import '../../data/repositories/b02_strength_execution_repository.dart';
 import '../../data/repositories/calendar_repository.dart';
+import '../../data/repositories/progress_statistics_repository.dart';
 import '../../data/services/b02_execution_progression.dart';
 import '../../data/services/b02_rest_recommendation_service.dart';
 import '../../data/services/b02_strength_execution_draft_service.dart';
@@ -89,6 +92,8 @@ class B02StrengthExecutionController
   final DateTime Function() _nowUtc;
   final WorkoutSessionWakeLockCoordinator? _wakeLockCoordinator;
   final RestPresenceService? _restPresence;
+  final ProgressStatisticsRepository? _achievementStats;
+  final Future<int> Function()? _achievementStreakDays;
   Future<bool>? _finalizationInFlight;
   _B02CompletionRequestKey? _finalizationRequestKey;
   Future<void> _draftWriteTail = Future<void>.value();
@@ -106,11 +111,15 @@ class B02StrengthExecutionController
     DateTime Function()? nowUtc,
     WorkoutSessionWakeLockCoordinator? wakeLockCoordinator,
     RestPresenceService? restPresence,
+    ProgressStatisticsRepository? achievementStats,
+    Future<int> Function()? achievementStreakDays,
   }) : _draftService = draftService ?? const B02StrengthExecutionDraftService(),
        _restCoordinator = restCoordinator ?? const B02RestDraftCoordinator(),
        _nowUtc = nowUtc ?? _systemNowUtc,
        _wakeLockCoordinator = wakeLockCoordinator,
        _restPresence = restPresence,
+       _achievementStats = achievementStats,
+       _achievementStreakDays = achievementStreakDays,
        super(
          initialLaunch == null
              ? const B02StrengthExecutionUiState.initial()
@@ -148,6 +157,20 @@ class B02StrengthExecutionController
     // ownership, so a launch-less route must not issue a global OFF request.
     if (launch == null) return;
     await coordinator.reconcileForActiveSession(_wakeLockKey(launch));
+  }
+
+  /// Best-effort milestone recording after a durable completion. No-op
+  /// unless achievement dependencies were injected (production providers).
+  /// Never throws: failures are swallowed by the caller's catchError.
+  Future<void> _recordMilestoneAchievements() async {
+    final stats = _achievementStats;
+    if (stats == null) return;
+    final streakReader = _achievementStreakDays;
+    final streak = streakReader != null ? await streakReader() : 0;
+    await AchievementService.recordAndEvaluate(
+      statsRepository: stats,
+      currentStreakDays: streak,
+    );
   }
 
   void _releaseWakeLockForLaunch(B02StrengthExecutionLaunch launch) {
@@ -1134,6 +1157,12 @@ class B02StrengthExecutionController
         completedSessionId: sessionId,
         completedCompletionKind: completionKind,
       );
+      // Best-effort milestone recording: must never change the completion
+      // result. Partial and full completions both count — a persisted session
+      // is a completed session.
+      unawaited(_recordMilestoneAchievements().catchError((e) {
+        AppLogger.warning('Milestone achievement recording failed: $e');
+      }));
       return true;
     } on B02StrengthExecutionRecoveryException catch (error, stackTrace) {
       _logFinalizationFailure(
@@ -1497,6 +1526,13 @@ final b02StrengthExecutionControllerProvider =
         // so that exactly one lifecycle root owns notification IDs 998/999 across
         // player and screen controllers, preventing dual-notification collisions.
         restPresence: RestPresenceService.instance,
+        achievementStats: ProgressStatisticsRepository(
+          ref.watch(databaseProvider),
+        ),
+        achievementStreakDays: () async =>
+            (await SharedPreferences.getInstance())
+                .getInt('user_streak_count') ??
+            0,
       ),
     );
 
@@ -1517,6 +1553,13 @@ final b02StrengthExecutionScreenControllerProvider = StateNotifierProvider
         // so that exactly one lifecycle root owns notification IDs 998/999 across
         // player and screen controllers, preventing dual-notification collisions.
         restPresence: RestPresenceService.instance,
+        achievementStats: ProgressStatisticsRepository(
+          ref.watch(databaseProvider),
+        ),
+        achievementStreakDays: () async =>
+            (await SharedPreferences.getInstance())
+                .getInt('user_streak_count') ??
+            0,
       ),
     );
 

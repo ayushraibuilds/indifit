@@ -33,23 +33,17 @@ class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
 
     try {
       final statsRepo = ref.read(progressStatisticsRepositoryProvider);
-      final stats = await statsRepo.getLifetimeStats();
       final prefs = await SharedPreferences.getInstance();
       final streak =
           prefs.getInt('user_streak_count') ??
           ref.read(dashboardControllerProvider).streakCount;
 
-      final achievements = AchievementService.evaluateFromLifetimeStats(
-        stats: stats,
+      // Evaluate and durably record in one orchestrated step so displayed
+      // timestamps always come from SQLite, never minted in memory.
+      final achievements = await AchievementService.recordAndEvaluate(
+        statsRepository: statsRepo,
         currentStreakDays: streak,
       );
-
-      // Record any newly unlocked achievements in SQLite
-      for (final a in achievements) {
-        if (a.isUnlocked && !stats.unlockedAchievementIds.containsKey(a.id)) {
-          await statsRepo.unlockAchievement(a.id);
-        }
-      }
 
       if (mounted) {
         setState(() {

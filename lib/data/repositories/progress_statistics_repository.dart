@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+import 'package:drift/native.dart' show SqliteException;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/di/providers.dart';
 import '../database/app_database.dart';
@@ -327,25 +328,25 @@ class ProgressStatisticsRepository {
     );
   }
 
-  /// Record an achievement unlock atomically if not already unlocked.
+  /// Record an achievement unlock exactly once per [achievementId].
+  ///
+  /// Relies purely on the `achievementId` unique constraint: a single plain
+  /// insert whose UNIQUE violation maps to `false`. No pre-read, so
+  /// concurrent recorders cannot interleave a duplicate. Returns true only
+  /// when this call inserted the row.
   Future<bool> unlockAchievement(String achievementId) async {
-    final existing =
-        await (_db.select(_db.achievementUnlocks)
-              ..where((tbl) => tbl.achievementId.equals(achievementId)))
-            .getSingleOrNull();
-
-    if (existing != null) return false;
-
-    await _db
-        .into(_db.achievementUnlocks)
-        .insert(
-          AchievementUnlocksCompanion.insert(
-            achievementId: achievementId,
-            unlockedAt: Value(_getNow()),
-          ),
-          mode: InsertMode.insertOrIgnore,
-        );
-
-    return true;
+    try {
+      await _db.into(_db.achievementUnlocks).insert(
+            AchievementUnlocksCompanion.insert(
+              achievementId: achievementId,
+              unlockedAt: Value(_getNow()),
+            ),
+          );
+      return true;
+    } on SqliteException catch (e) {
+      // SQLITE_CONSTRAINT_UNIQUE (2067): already recorded.
+      if (e.extendedResultCode == 2067) return false;
+      rethrow;
+    }
   }
 }
