@@ -104,12 +104,19 @@ class DriftOutboxRepository implements OutboxRepository {
   @override
   Future<List<OutboxOperation>> getPendingOperations({int limit = 50}) async {
     final now = DateTime.now().toUtc();
+    final leaseCutoff =
+        now.subtract(OutboxRepository.stuckInFlightLease);
     final rows = await (_db.select(_db.outboxEntries)
           ..where(
             (t) =>
-                (t.state.equals(OutboxState.pending.name) |
-                    t.state.equals(OutboxState.transientFailure.name)) &
-                t.scheduledAtUtc.isSmallerOrEqualValue(now),
+                ((t.state.equals(OutboxState.pending.name) |
+                            t.state.equals(
+                                OutboxState.transientFailure.name)) &
+                        t.scheduledAtUtc.isSmallerOrEqualValue(now)) |
+                    // Stale-lease recovery (see contract): a pre-crash
+                    // dispatch left inFlight becomes redeliverable.
+                    (t.state.equals(OutboxState.inFlight.name) &
+                        t.lastAttemptUtc.isSmallerThanValue(leaseCutoff)),
           )
           ..orderBy([(t) => OrderingTerm.asc(t.scheduledAtUtc)])
           ..limit(limit))

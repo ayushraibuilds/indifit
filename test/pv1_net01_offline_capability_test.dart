@@ -405,6 +405,45 @@ void main() {
       expect(await repo.watchPendingCount().first, 1);
     });
 
+    test('Stale inFlight rows become redeliverable after the lease', () async {
+      final repo = InMemoryOutboxRepository();
+      addTearDown(repo.dispose);
+
+      final now = DateTime.now().toUtc();
+      OutboxOperation build(String id, OutboxState state, DateTime attempt) =>
+          OutboxOperation(
+            operationId: id,
+            idempotencyKey: 'k-$id',
+            domain: OutboxDomain.backup,
+            action: 'upload_snapshot',
+            entityId: id,
+            payload: const {},
+            createdAtUtc: attempt,
+            scheduledAtUtc: attempt,
+            state: state,
+            lastAttemptUtc: attempt,
+          );
+
+      // Simulates a crash between dispatch and acknowledgement: stuck 20 min.
+      await repo.enqueue(build(
+        'op-stuck',
+        OutboxState.inFlight,
+        now.subtract(const Duration(minutes: 20)),
+      ));
+      // Fresh dispatch still inside its lease stays out of the pending set.
+      await repo.enqueue(build('op-live', OutboxState.inFlight, now));
+
+      final pending = await repo.getPendingOperations();
+      expect(
+        pending.map((o) => o.operationId),
+        contains('op-stuck'),
+      );
+      expect(
+        pending.map((o) => o.operationId),
+        isNot(contains('op-live')),
+      );
+    });
+
     test('fromJson refuses to resurrect corrupt rows', () {
       Map<String, dynamic> base() => {
             'operationId': 'op-x',

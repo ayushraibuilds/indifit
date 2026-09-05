@@ -2,7 +2,8 @@
 
 - Status: Frozen baseline
 - Date: 2026-09-01
-- Characterization: `test/c0b_schema_v20_contract_test.dart`
+- Characterization: `test/c0b_schema_v21_contract_test.dart` (renamed post-v21;
+  v20 values below are the frozen record, live coverage now pins v21)
 - Schema version: 20
 - Normalized SQLite DDL SHA-256:
   `34193f1c6686140daef89e9722b6493fe5f32589b704b7437dc819ffca78b0c3`
@@ -109,7 +110,7 @@ same.
 | v16 → v17 | `test/b03_schema_v17_migration_test.dart` | nutrition identity/evidence graph, seed contracts, staged rollback/retry |
 | v17 → v18 | `test/b04_schema_v18_migration_test.dart` | goal/coaching/recovery graph, append-only ownership contracts |
 | v18 → v19 | `test/b05_schema_v19_migration_test.dart` | B05 tables/indexes, old-row preservation, rollback/retry |
-| v19 → v20 | `test/c0b_schema_v20_contract_test.dart` | real v19 file, preserved singleton settings row, exactly four nullable end-marker columns |
+| v19 → v20 | `test/c0b_schema_v21_contract_test.dart` (renamed; v20 assertions preserved in history) | real v19 file, preserved singleton settings row, exactly four nullable end-marker columns |
 
 The v19→v20 characterization rebuilds a genuine v19
 `training_plan_settings` shape on disk, labels it with `user_version = 19`,
@@ -130,5 +131,5 @@ migration results above.
 
 ## Verification
 
-- `flutter test test/c0b_schema_v20_contract_test.dart --reporter expanded` —
+- `flutter test test/c0b_schema_v21_contract_test.dart --reporter expanded` —
   2/2 passed.

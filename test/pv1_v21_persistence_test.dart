@@ -113,6 +113,33 @@ void main() {
       );
     });
 
+    test('Stale inFlight rows become redeliverable after the lease', () async {
+      final db = registerTestDatabaseScope().create();
+      final repo = DriftOutboxRepository(db);
+      final now = DateTime.now().toUtc();
+      OutboxOperation build(String id, DateTime attempt) => OutboxOperation(
+            operationId: id,
+            idempotencyKey: 'k-$id',
+            domain: OutboxDomain.backup,
+            action: 'upload_snapshot',
+            entityId: id,
+            payload: const {},
+            createdAtUtc: attempt,
+            scheduledAtUtc: attempt,
+            state: OutboxState.inFlight,
+            lastAttemptUtc: attempt,
+          );
+
+      // Pre-crash dispatch stuck 20 minutes ago.
+      await repo.enqueue(build('op-stuck', now.subtract(const Duration(minutes: 20))));
+      // Live dispatch inside its lease.
+      await repo.enqueue(build('op-live', now));
+
+      final pending = await repo.getPendingOperations();
+      expect(pending.map((o) => o.operationId), contains('op-stuck'));
+      expect(pending.map((o) => o.operationId), isNot(contains('op-live')));
+    });
+
     test('Dedup, cancel, and completion-time prune match the contract', () async {
       final db = registerTestDatabaseScope().create();
       final repo = DriftOutboxRepository(db);

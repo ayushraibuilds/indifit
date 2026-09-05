@@ -831,7 +831,19 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
           );
 
           if (logImmediately) {
-            await _showLogDialog(option);
+            // Preserve the reviewed portion: the option basis is per-100
+            // units, so scale it by the reviewed servings. Without this the
+            // dialog resets to a single serving and silently drops the
+            // reviewed amount the user just confirmed.
+            Quantity? reviewedQuantity;
+            final factor = quantity * servingOption.gramWeight / 100;
+            if (factor.isFinite && factor > 0) {
+              reviewedQuantity = option.baseQuantity * factor;
+            }
+            await _showLogDialog(
+              option,
+              initialQuantity: reviewedQuantity,
+            );
           } else {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -2781,7 +2793,17 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
           );
 
           if (logImmediately) {
-            await _showLogDialog(option);
+            // Preserve the reviewed portion (see search-flow onConfirm):
+            // without this the dialog resets to a single serving.
+            Quantity? reviewedQuantity;
+            final factor = quantity * servingOption.gramWeight / 100;
+            if (factor.isFinite && factor > 0) {
+              reviewedQuantity = option.baseQuantity * factor;
+            }
+            await _showLogDialog(
+              option,
+              initialQuantity: reviewedQuantity,
+            );
           } else {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(

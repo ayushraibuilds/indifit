@@ -6,6 +6,11 @@ import 'outbox_retry_policy.dart';
 /// Abstract storage contract for persisting, reading, and advancing the
 /// lifecycle of background outbox operations.
 abstract class OutboxRepository {
+  /// Lease after which an `inFlight` operation with no recorded completion
+  /// is considered stranded (process death between dispatch and
+  /// acknowledgement) and becomes eligible for redelivery.
+  static const Duration stuckInFlightLease = Duration(minutes: 15);
+
   /// Enqueues an operation for background dispatch.
   ///
   /// Invariant: Deduplicates by [operation.idempotencyKey]. If an active or
@@ -13,7 +18,10 @@ abstract class OutboxRepository {
   /// insert a duplicate.
   Future<void> enqueue(OutboxOperation operation);
 
-  /// Retrieves up to [limit] operations currently eligible for execution.
+  /// Retrieves up to [limit] operations currently eligible for execution:
+  /// due `pending`/`transientFailure` rows plus `inFlight` rows whose last
+  /// attempt predates [stuckInFlightLease] (stale-lease recovery, so a crash
+  /// between dispatch and acknowledgement cannot strand work forever).
   Future<List<OutboxOperation>> getPendingOperations({int limit = 50});
 
   /// Transitions operation state to [OutboxState.inFlight].
@@ -91,11 +99,20 @@ class InMemoryOutboxRepository implements OutboxRepository {
   @override
   Future<List<OutboxOperation>> getPendingOperations({int limit = 50}) async {
     final now = DateTime.now().toUtc();
-    final eligible = _operations.values
-        .where((op) =>
-            (op.state == OutboxState.pending ||
+    final leaseCutoff =
+        now.subtract(OutboxRepository.stuckInFlightLease);
+    bool isDue(OutboxOperation op) =>
+        (op.state == OutboxState.pending ||
                 op.state == OutboxState.transientFailure) &&
-            !op.scheduledAtUtc.isAfter(now))
+            !op.scheduledAtUtc.isAfter(now);
+    // Stale-lease recovery: an inFlight row untouched for longer than the
+    // lease can only be a pre-crash dispatch; requeue it redeliverable.
+    // (Idempotency keys make the redelivery safe.)
+    bool isStuck(OutboxOperation op) =>
+        op.state == OutboxState.inFlight &&
+        (op.lastAttemptUtc ?? op.createdAtUtc).isBefore(leaseCutoff);
+    final eligible = _operations.values
+        .where((op) => isDue(op) || isStuck(op))
         .toList()
       ..sort((a, b) => a.scheduledAtUtc.compareTo(b.scheduledAtUtc));
     if (eligible.length <= limit) return eligible;

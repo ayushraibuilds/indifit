@@ -681,6 +681,13 @@ These tracks are intentionally not folded into feature packages.
 Create implementation issues in this order after Gate 0. Items whose
 dependencies are satisfied may run in parallel; the order breaks priority ties.
 
+Status vocabulary for connected-track rows: "**Foundation complete**" means
+contracts, vertical slices, and tests are frozen with production resolving
+`Disabled*` drivers (fail-closed staging). It does **not** mean shippable or
+production-enabled — activation requires each track's security/product gate
+(encryption decision, account identity, v22 stable IDs) under a separate
+readiness package.
+
 | Order | ID | Issue outcome | Priority | Depends on |
 |---:|---|---|---|---|
 | 1 | PV1-ENG-01A | Inventory current test construction, global state, warnings, and order-sensitive groups | P0 | Gate 0 |
@@ -688,23 +695,23 @@ dependencies are satisfied may run in parallel; the order breaks priority ties.
 | 3 | PV1-ENG-01C | Migrate fragile suites and establish repeat/shuffle/serial CI evidence | P0 | PV1-ENG-01B |
 | 4 | PV1-ENG-02 | Add missing characterization for release-critical flows | P1 | PV1-ENG-01B |
 | 5 | PV1-NET-01A | Freeze the offline-core matrix and connected capability/outbox contracts | P0/P1 | PV1-ENG-01B |
-| *Status:* | | **Complete** — Contracts & test matrix frozen at `codex/post-v1-net-01-capability-boundary` | | |
+| *Status:* | | **Foundation complete** — Contracts & test matrix frozen at `codex/post-v1-net-01-capability-boundary` | | |
 | 6 | PV1-CLOUD-01A | Decide cloud-backup provider/account, encryption/key recovery, retention, deletion, and restore contracts | P1 | PV1-NET-01A |
-| *Status:* | | **Complete** — Threat model, envelope encryption, & API contracts frozen | | |
+| *Status:* | | **Foundation complete** — Threat model, envelope encryption, & API contracts frozen | | |
 | 7 | PV1-CLOUD-01B | Implement immutable encrypted upload and verified restore vertical slice | P1 | PV1-CLOUD-01A, PV1-ENG-01C |
-| *Status:* | | **Complete** — CloudBackupService, FastAPI /v1/backup endpoints, fingerprint deduplication, and outbox integration frozen | | |
+| *Status:* | | **Foundation complete** — CloudBackupService, FastAPI /v1/backup endpoints, fingerprint deduplication, and outbox integration frozen | | |
 | 7.1 | PV1-CLOUD-01C | Restore operations, pre-restore verification, and Settings Data Management UI integration | P1 | PV1-CLOUD-01B |
-| *Status:* | | **Complete** — Transactional restore, CloudBackupCard UI, deletion, and tests frozen at `test/pv1_cloud01c_restore_and_ui_test.dart` | | |
+| *Status:* | | **Foundation complete** — Transactional restore, CloudBackupCard UI, deletion, and tests frozen at `test/pv1_cloud01c_restore_and_ui_test.dart` | | |
 | 8 | PV1-SYNC-01A | Specify per-domain identity, tombstone, conflict, version, and convergence rules | P1 | PV1-CLOUD-01A |
-| *Status:* | | **Complete** — Specification, HLC total ordering, and conflict engine frozen at `test/pv1_sync01a_contract_test.dart` | | |
+| *Status:* | | **Foundation complete** — Specification, HLC total ordering, and conflict engine frozen at `test/pv1_sync01a_contract_test.dart` | | |
 | 8.1 | PV1-SYNC-01B | Implement multi-device sync vertical slice (SyncService, outbox queueing, FastAPI endpoints, convergence tests) | P1 | PV1-SYNC-01A |
-| *Status:* | | **Complete** — SyncService, FastAPI relay, outbox integration, & tests frozen at `test/pv1_sync01b_vertical_slice_test.dart` | | |
+| *Status:* | | **Foundation complete** — SyncService, FastAPI relay, outbox integration, & tests frozen at `test/pv1_sync01b_vertical_slice_test.dart` | | |
 | 9 | PV1-CATALOG-01A | Evaluate food providers and specify normalized remote-food/provenance/cache contract | P1 | PV1-NET-01A |
-| *Status:* | | **Complete** — Specification, models, 4-4-9 macro check, & capability contract frozen at `test/pv1_catalog01a_contract_test.dart` | | |
+| *Status:* | | **Foundation complete** — Specification, models, 4-4-9 macro check, & capability contract frozen at `test/pv1_catalog01a_contract_test.dart` | | |
 | 9.1 | PV1-CATALOG-01B | Implement local-first search UI, online provider fallback, and RemoteFoodReviewSheet | P1 | PV1-CATALOG-01A |
-| *Status:* | | **Complete** — FoodCatalogService, RemoteFoodReviewSheet, & tests frozen at `test/pv1_catalog01b_ui_review_test.dart` | | |
+| *Status:* | | **Foundation complete** — FoodCatalogService, RemoteFoodReviewSheet, & tests frozen at `test/pv1_catalog01b_ui_review_test.dart` | | |
 | 9.2 | PV1-CATALOG-01C | Implement barcode camera/input flow, local cache precedence, and review integration | P1 | PV1-CATALOG-01B |
-| *Status:* | | **Complete** — BarcodeScannerScreen, FoodCatalogCapability wiring, & tests frozen at `test/pv1_catalog01c_barcode_scan_test.dart` | | |
+| *Status:* | | **Foundation complete** — BarcodeScannerScreen, FoodCatalogCapability wiring, & tests frozen at `test/pv1_catalog01c_barcode_scan_test.dart` | | |
 | 10 | PV1-ENG-03 | Produce reachability/ownership inventory for dormant and legacy code | P1 | PV1-ENG-01C |
 | *Status:* | | **Complete** — Reachability/ownership inventory frozen in `docs/implementation/post-v1/C1A_RETIRED_SURFACE_INVENTORY.md` | | |
 | 11 | PV1-ENG-04A | Relocate test-support files from lib/ to test/fixtures/ (C1B-01) | P1 | PV1-ENG-03 |

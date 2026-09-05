@@ -1,6 +1,6 @@
 # IndiFit Post-V1 Incremental Cleanup Program
 
-- Status: Active; V1 frozen, C0A, C0B, and C1A complete, C1B next
+- Status: Active; V1 frozen, C0A, C0B, and C1A complete, C1B-01…C1B-11 complete (ENG-04A…04H); ENG-05 splits next
 - Effective date: 2026-08-30
 - Structural recount: `ce599dd` (integrated V1 RC)
 - Portfolio plan: [`POST_V1_IMPLEMENTATION_PLAN.md`](POST_V1_IMPLEMENTATION_PLAN.md)
@@ -248,6 +248,13 @@ report/routine services, and fixture matrices. Revalidate rather than assuming
 the group is dead.
 
 ### C1B — Small thematic removals and relocations
+
+**Outcome (2026-09-04/05):** C1B-01…C1B-11 executed as separate commits —
+31 retired production files removed, 5 fixtures/tools relocated, 3
+dependencies pruned, candidate #39 (`remote_catalogue_capability`) retired;
+2 compatibility files retained as ordered. Reachability re-pass recorded in
+the C1A refresh section of
+[`post-v1/C1A_RETIRED_SURFACE_INVENTORY.md`](post-v1/C1A_RETIRED_SURFACE_INVENTORY.md).
 
 - Remove one coherent retired area per change set.
 - Move fixtures/tools separately from deletion commits.
