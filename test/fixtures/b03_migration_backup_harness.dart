@@ -1125,6 +1125,15 @@ class B03LogicalSnapshot {
           entry.key.startsWith('last_ended_')) {
         continue;
       }
+      // v22 assigns a fresh sync UUID to every body_measurements row at
+      // upgrade time. The value is inherently unknowable to the v16 fixture
+      // (whose table has no uuid column at all), so it is outside this
+      // boundary comparison by the same rule. UUID stability itself is
+      // covered by pv1_v22_uuid_migration_test (uniqueness, persistence,
+      // no-op reopen).
+      if (table == 'body_measurements' && entry.key == 'uuid') {
+        continue;
+      }
       if (entry.key == 'id' && _localIntegerIdTables.contains(table)) {
         continue;
       }

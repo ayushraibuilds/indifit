@@ -21,7 +21,7 @@ void main() {
 
   group('Data Quality Gap 1 & Schema v19 Tests', () {
     test('AppDatabase initializes with schema version 19', () {
-      expect(db.schemaVersion, equals(21));
+      expect(db.schemaVersion, equals(22));
     });
 
     test(

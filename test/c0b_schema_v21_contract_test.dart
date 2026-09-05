@@ -47,7 +47,7 @@ void main() {
     }
     final digest = sha256.convert(utf8.encode(jsonEncode(contract))).toString();
 
-    expect(version.read<int>('user_version'), 21);
+    expect(version.read<int>('user_version'), 22);
     expect(foreignKeys.read<int>('foreign_keys'), 1);
     expect(
       byType.map((key, value) => MapEntry(key, value.length)),
@@ -56,7 +56,7 @@ void main() {
     );
     expect(
       digest,
-      'f805305d03de046ba3672340bd315c95aba7b67e5c83d3d29b0a02432b75457a',
+      'bafc6f7bc1cc5611bb4dc145dd1f4cef572bdb09fe338d28baf41474f2428f67',
       reason: 'Names by type: ${jsonEncode(byType)}',
     );
   });
@@ -128,7 +128,7 @@ void main() {
         .select(migrated.trainingPlanSettings)
         .getSingle();
 
-    expect(version.read<int>('user_version'), 21);
+    expect(version.read<int>('user_version'), 22);
     expect(
       columns.map((row) => row.read<String>('name')).toSet(),
       containsAll(const <String>{

@@ -8,6 +8,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../core/fixtures/b02_muscle_catalog.dart';
 import '../../core/fixtures/equipment_fixtures.dart';
@@ -241,7 +242,7 @@ class AppDatabase extends _$AppDatabase {
   /// end marker used to keep Finish/Leave idempotent without creating a
   /// second active-plan authority.
   @override
-  int get schemaVersion => schemaVersionOverride ?? 21;
+  int get schemaVersion => schemaVersionOverride ?? 22;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -334,6 +335,9 @@ class AppDatabase extends _$AppDatabase {
         await m.createTable(outboxEntries);
         await m.createTable(tombstoneEntries);
         await m.createTable(cachedRemoteFoods);
+      }
+      if (from < 22 && to >= 22) {
+        await _migrateV21ToV22(m);
       }
     },
 
@@ -2197,6 +2201,42 @@ class AppDatabase extends _$AppDatabase {
         );
       }
     });
+  }
+
+  /// V22 sync identity (PV1-SYNC-01 prerequisite): nullable opaque UUID on
+  /// body_measurements, mirroring the uuid columns on WorkoutSessions and
+  /// FoodLogs. Entity identity for sync is this UUID string; the local
+  /// autoincrement id is never derived from or overwritten by it. Existing
+  /// ids, weights, and timestamps are intentionally untouched.
+  Future<void> _migrateV21ToV22(Migrator m) async {
+    await transaction(() async {
+      // schemaVersionOverride fixtures are created with the current table
+      // declarations and then labelled as an older user_version. Treat an
+      // already-present column as a valid fixture boundary while still
+      // adding the column to a real v21 file.
+      if (!await _tableHasColumn('body_measurements', 'uuid')) {
+        await m.addColumn(bodyMeasurements, bodyMeasurements.uuid);
+      }
+      await _backfillBodyMeasurementUuids();
+    });
+  }
+
+  /// Assigns a fresh UUID v4 to every body_measurements row whose uuid is
+  /// null. Rows that already carry a uuid keep it; every backfilled row
+  /// receives its own value (never one shared UUID). Uses the same
+  /// package:uuid generator pattern as [B01LegacyImportSupport].
+  Future<void> _backfillBodyMeasurementUuids() async {
+    const generator = Uuid();
+    final missing = await (select(
+      bodyMeasurements,
+    )..where((table) => table.uuid.isNull())).get();
+    for (final row in missing) {
+      await (update(
+        bodyMeasurements,
+      )..where((table) => table.id.equals(row.id))).write(
+        BodyMeasurementsCompanion(uuid: Value(generator.v4())),
+      );
+    }
   }
 
   Future<void> _createStableExerciseIdIndex() async {

@@ -3412,9 +3412,14 @@ class $BodyMeasurementsTable extends BodyMeasurements
       defaultConstraints:
           GeneratedColumn.constraintIsAlways('CHECK ("is_synced" IN (0, 1))'),
       defaultValue: const Constant(false));
+  static const VerificationMeta _uuidMeta = const VerificationMeta('uuid');
+  @override
+  late final GeneratedColumn<String> uuid = GeneratedColumn<String>(
+      'uuid', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns =>
-      [id, weight, waist, chest, arms, recordedAt, isSynced];
+      [id, weight, waist, chest, arms, recordedAt, isSynced, uuid];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -3454,6 +3459,10 @@ class $BodyMeasurementsTable extends BodyMeasurements
       context.handle(_isSyncedMeta,
           isSynced.isAcceptableOrUnknown(data['is_synced']!, _isSyncedMeta));
     }
+    if (data.containsKey('uuid')) {
+      context.handle(
+          _uuidMeta, uuid.isAcceptableOrUnknown(data['uuid']!, _uuidMeta));
+    }
     return context;
   }
 
@@ -3477,6 +3486,8 @@ class $BodyMeasurementsTable extends BodyMeasurements
           .read(DriftSqlType.dateTime, data['${effectivePrefix}recorded_at'])!,
       isSynced: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}is_synced'])!,
+      uuid: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}uuid']),
     );
   }
 
@@ -3494,6 +3505,11 @@ class BodyMeasurement extends DataClass implements Insertable<BodyMeasurement> {
   final double? arms;
   final DateTime recordedAt;
   final bool isSynced;
+
+  /// v22 sync identity: nullable opaque UUID (mirrors the uuid columns on
+  /// WorkoutSessions/FoodLogs). Entity identity for sync is this UUID string;
+  /// never coerce it into the local autoincrement id.
+  final String? uuid;
   const BodyMeasurement(
       {required this.id,
       this.weight,
@@ -3501,7 +3517,8 @@ class BodyMeasurement extends DataClass implements Insertable<BodyMeasurement> {
       this.chest,
       this.arms,
       required this.recordedAt,
-      required this.isSynced});
+      required this.isSynced,
+      this.uuid});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -3520,6 +3537,9 @@ class BodyMeasurement extends DataClass implements Insertable<BodyMeasurement> {
     }
     map['recorded_at'] = Variable<DateTime>(recordedAt);
     map['is_synced'] = Variable<bool>(isSynced);
+    if (!nullToAbsent || uuid != null) {
+      map['uuid'] = Variable<String>(uuid);
+    }
     return map;
   }
 
@@ -3535,6 +3555,7 @@ class BodyMeasurement extends DataClass implements Insertable<BodyMeasurement> {
       arms: arms == null && nullToAbsent ? const Value.absent() : Value(arms),
       recordedAt: Value(recordedAt),
       isSynced: Value(isSynced),
+      uuid: uuid == null && nullToAbsent ? const Value.absent() : Value(uuid),
     );
   }
 
@@ -3549,6 +3570,7 @@ class BodyMeasurement extends DataClass implements Insertable<BodyMeasurement> {
       arms: serializer.fromJson<double?>(json['arms']),
       recordedAt: serializer.fromJson<DateTime>(json['recordedAt']),
       isSynced: serializer.fromJson<bool>(json['isSynced']),
+      uuid: serializer.fromJson<String?>(json['uuid']),
     );
   }
   @override
@@ -3562,6 +3584,7 @@ class BodyMeasurement extends DataClass implements Insertable<BodyMeasurement> {
       'arms': serializer.toJson<double?>(arms),
       'recordedAt': serializer.toJson<DateTime>(recordedAt),
       'isSynced': serializer.toJson<bool>(isSynced),
+      'uuid': serializer.toJson<String?>(uuid),
     };
   }
 
@@ -3572,7 +3595,8 @@ class BodyMeasurement extends DataClass implements Insertable<BodyMeasurement> {
           Value<double?> chest = const Value.absent(),
           Value<double?> arms = const Value.absent(),
           DateTime? recordedAt,
-          bool? isSynced}) =>
+          bool? isSynced,
+          Value<String?> uuid = const Value.absent()}) =>
       BodyMeasurement(
         id: id ?? this.id,
         weight: weight.present ? weight.value : this.weight,
@@ -3581,6 +3605,7 @@ class BodyMeasurement extends DataClass implements Insertable<BodyMeasurement> {
         arms: arms.present ? arms.value : this.arms,
         recordedAt: recordedAt ?? this.recordedAt,
         isSynced: isSynced ?? this.isSynced,
+        uuid: uuid.present ? uuid.value : this.uuid,
       );
   BodyMeasurement copyWithCompanion(BodyMeasurementsCompanion data) {
     return BodyMeasurement(
@@ -3592,6 +3617,7 @@ class BodyMeasurement extends DataClass implements Insertable<BodyMeasurement> {
       recordedAt:
           data.recordedAt.present ? data.recordedAt.value : this.recordedAt,
       isSynced: data.isSynced.present ? data.isSynced.value : this.isSynced,
+      uuid: data.uuid.present ? data.uuid.value : this.uuid,
     );
   }
 
@@ -3604,14 +3630,15 @@ class BodyMeasurement extends DataClass implements Insertable<BodyMeasurement> {
           ..write('chest: $chest, ')
           ..write('arms: $arms, ')
           ..write('recordedAt: $recordedAt, ')
-          ..write('isSynced: $isSynced')
+          ..write('isSynced: $isSynced, ')
+          ..write('uuid: $uuid')
           ..write(')'))
         .toString();
   }
 
   @override
   int get hashCode =>
-      Object.hash(id, weight, waist, chest, arms, recordedAt, isSynced);
+      Object.hash(id, weight, waist, chest, arms, recordedAt, isSynced, uuid);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -3622,7 +3649,8 @@ class BodyMeasurement extends DataClass implements Insertable<BodyMeasurement> {
           other.chest == this.chest &&
           other.arms == this.arms &&
           other.recordedAt == this.recordedAt &&
-          other.isSynced == this.isSynced);
+          other.isSynced == this.isSynced &&
+          other.uuid == this.uuid);
 }
 
 class BodyMeasurementsCompanion extends UpdateCompanion<BodyMeasurement> {
@@ -3633,6 +3661,7 @@ class BodyMeasurementsCompanion extends UpdateCompanion<BodyMeasurement> {
   final Value<double?> arms;
   final Value<DateTime> recordedAt;
   final Value<bool> isSynced;
+  final Value<String?> uuid;
   const BodyMeasurementsCompanion({
     this.id = const Value.absent(),
     this.weight = const Value.absent(),
@@ -3641,6 +3670,7 @@ class BodyMeasurementsCompanion extends UpdateCompanion<BodyMeasurement> {
     this.arms = const Value.absent(),
     this.recordedAt = const Value.absent(),
     this.isSynced = const Value.absent(),
+    this.uuid = const Value.absent(),
   });
   BodyMeasurementsCompanion.insert({
     this.id = const Value.absent(),
@@ -3650,6 +3680,7 @@ class BodyMeasurementsCompanion extends UpdateCompanion<BodyMeasurement> {
     this.arms = const Value.absent(),
     this.recordedAt = const Value.absent(),
     this.isSynced = const Value.absent(),
+    this.uuid = const Value.absent(),
   });
   static Insertable<BodyMeasurement> custom({
     Expression<int>? id,
@@ -3659,6 +3690,7 @@ class BodyMeasurementsCompanion extends UpdateCompanion<BodyMeasurement> {
     Expression<double>? arms,
     Expression<DateTime>? recordedAt,
     Expression<bool>? isSynced,
+    Expression<String>? uuid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -3668,6 +3700,7 @@ class BodyMeasurementsCompanion extends UpdateCompanion<BodyMeasurement> {
       if (arms != null) 'arms': arms,
       if (recordedAt != null) 'recorded_at': recordedAt,
       if (isSynced != null) 'is_synced': isSynced,
+      if (uuid != null) 'uuid': uuid,
     });
   }
 
@@ -3678,7 +3711,8 @@ class BodyMeasurementsCompanion extends UpdateCompanion<BodyMeasurement> {
       Value<double?>? chest,
       Value<double?>? arms,
       Value<DateTime>? recordedAt,
-      Value<bool>? isSynced}) {
+      Value<bool>? isSynced,
+      Value<String?>? uuid}) {
     return BodyMeasurementsCompanion(
       id: id ?? this.id,
       weight: weight ?? this.weight,
@@ -3687,6 +3721,7 @@ class BodyMeasurementsCompanion extends UpdateCompanion<BodyMeasurement> {
       arms: arms ?? this.arms,
       recordedAt: recordedAt ?? this.recordedAt,
       isSynced: isSynced ?? this.isSynced,
+      uuid: uuid ?? this.uuid,
     );
   }
 
@@ -3714,6 +3749,9 @@ class BodyMeasurementsCompanion extends UpdateCompanion<BodyMeasurement> {
     if (isSynced.present) {
       map['is_synced'] = Variable<bool>(isSynced.value);
     }
+    if (uuid.present) {
+      map['uuid'] = Variable<String>(uuid.value);
+    }
     return map;
   }
 
@@ -3726,7 +3764,8 @@ class BodyMeasurementsCompanion extends UpdateCompanion<BodyMeasurement> {
           ..write('chest: $chest, ')
           ..write('arms: $arms, ')
           ..write('recordedAt: $recordedAt, ')
-          ..write('isSynced: $isSynced')
+          ..write('isSynced: $isSynced, ')
+          ..write('uuid: $uuid')
           ..write(')'))
         .toString();
   }
@@ -52928,6 +52967,7 @@ typedef $$BodyMeasurementsTableCreateCompanionBuilder
   Value<double?> arms,
   Value<DateTime> recordedAt,
   Value<bool> isSynced,
+  Value<String?> uuid,
 });
 typedef $$BodyMeasurementsTableUpdateCompanionBuilder
     = BodyMeasurementsCompanion Function({
@@ -52938,6 +52978,7 @@ typedef $$BodyMeasurementsTableUpdateCompanionBuilder
   Value<double?> arms,
   Value<DateTime> recordedAt,
   Value<bool> isSynced,
+  Value<String?> uuid,
 });
 
 class $$BodyMeasurementsTableTableManager extends RootTableManager<
@@ -52965,6 +53006,7 @@ class $$BodyMeasurementsTableTableManager extends RootTableManager<
             Value<double?> arms = const Value.absent(),
             Value<DateTime> recordedAt = const Value.absent(),
             Value<bool> isSynced = const Value.absent(),
+            Value<String?> uuid = const Value.absent(),
           }) =>
               BodyMeasurementsCompanion(
             id: id,
@@ -52974,6 +53016,7 @@ class $$BodyMeasurementsTableTableManager extends RootTableManager<
             arms: arms,
             recordedAt: recordedAt,
             isSynced: isSynced,
+            uuid: uuid,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -52983,6 +53026,7 @@ class $$BodyMeasurementsTableTableManager extends RootTableManager<
             Value<double?> arms = const Value.absent(),
             Value<DateTime> recordedAt = const Value.absent(),
             Value<bool> isSynced = const Value.absent(),
+            Value<String?> uuid = const Value.absent(),
           }) =>
               BodyMeasurementsCompanion.insert(
             id: id,
@@ -52992,6 +53036,7 @@ class $$BodyMeasurementsTableTableManager extends RootTableManager<
             arms: arms,
             recordedAt: recordedAt,
             isSynced: isSynced,
+            uuid: uuid,
           ),
         ));
 }
@@ -53033,6 +53078,11 @@ class $$BodyMeasurementsTableFilterComposer
       column: $state.table.isSynced,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get uuid => $state.composableBuilder(
+      column: $state.table.uuid,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
 }
 
 class $$BodyMeasurementsTableOrderingComposer
@@ -53070,6 +53120,11 @@ class $$BodyMeasurementsTableOrderingComposer
 
   ColumnOrderings<bool> get isSynced => $state.composableBuilder(
       column: $state.table.isSynced,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get uuid => $state.composableBuilder(
+      column: $state.table.uuid,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 }

@@ -90,6 +90,11 @@ class BodyMeasurements extends Table {
   RealColumn get arms => real().nullable()(); // in cm
   DateTimeColumn get recordedAt => dateTime().withDefault(currentDateAndTime)();
   BoolColumn get isSynced => boolean().withDefault(const Constant(false))();
+
+  /// v22 sync identity: nullable opaque UUID (mirrors the uuid columns on
+  /// WorkoutSessions/FoodLogs). Entity identity for sync is this UUID string;
+  /// never coerce it into the local autoincrement id.
+  TextColumn get uuid => text().nullable()();
 }
 
 // Phase 2: AI Routine Cache Schema

@@ -139,6 +139,8 @@ The sync backend acts as an authenticated, blind change-feed relay. It does not 
 - Each mutation payload is encrypted using the client-side AES-256-GCM envelope established in PV1-CLOUD-01.
 - The server indexes metadata only: `(user_id, domain, hlc, entity_id, operation)`.
 
+> Status note (2026-09-05, Stream B relay acceptance): per-mutation `encrypted_envelope`s are now implemented on the client (AES-256-GCM, SYNC AAD domain, HKDF-wrapped DEK) behind an explicitly configured wrapping secret with a plaintext dev fallback; the relay remains blind by construction (stores opaque dicts, indexes metadata only, never decrypts). Wire format: each mutation carries an optional `encrypted_envelope` dict (`mutation_id`, `ciphertext_base64`, `wrapped_key_base64`, `sha256_checksum`); pushes validate structure/base64 plus a 256 KB decoded-ciphertext cap (400 malformed / 413 oversize) and pulls return stored dicts byte-identical. Still pending before any production claim: account deletion, device revocation, per-user quotas/retention, and snapshot/compaction policy (see §4B).
+
 ### 5.2 Delta Synchronization Endpoints
 
 #### Pull Changes:

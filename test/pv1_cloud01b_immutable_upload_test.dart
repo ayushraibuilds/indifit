@@ -90,7 +90,7 @@ void main() {
       final remoteList = await apiClient.listSnapshots();
       expect(remoteList.totalCount, 1);
       expect(remoteList.snapshots.first.deviceName, 'iPhone-15-Pro-Max');
-      expect(remoteList.snapshots.first.schemaVersion, 21);
+      expect(remoteList.snapshots.first.schemaVersion, 22);
       expect(remoteList.snapshots.first.backupFormatVersion, 10);
 
       // 4. Verify local SharedPreferences metadata was updated

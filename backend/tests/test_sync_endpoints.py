@@ -183,3 +183,171 @@ def test_push_is_atomic_on_clock_skew():
     )
     assert pulled.status_code == 200
     assert pulled.json()["mutations"] == []
+
+
+def test_push_oversize_encrypted_envelope_returns_413():
+    import base64 as _b64
+    import time as _time
+    now_millis = int(_time.time() * 1000)
+    oversize_raw = b"\x00" * (262144 + 1)
+    mutation = {
+        "entity_id": "enc-oversize-1",
+        "domain": "weights",
+        "type": "insert",
+        "hlc": {"millis": now_millis - 1000, "counter": 0, "node_id": "device-A"},
+        "payload": {"weight_kg": 75.5},
+        "encrypted_envelope": {
+            "mutation_id": "enc-oversize-1",
+            "ciphertext_base64": _b64.b64encode(oversize_raw).decode("utf-8"),
+            "wrapped_key_base64": _b64.b64encode(b"k" * 32).decode("utf-8"),
+            "sha256_checksum": "deadbeef",
+        },
+    }
+    resp = client.post(
+        "/v1/sync/mutations",
+        headers={"Authorization": "Bearer test-user-enc-oversize"},
+        json={"mutations": [mutation]},
+    )
+    assert resp.status_code == 413
+
+
+def test_push_malformed_encrypted_envelope_returns_400():
+    import time as _time
+    now_millis = int(_time.time() * 1000)
+
+    def _base_mutation(envelope):
+        return {
+            "entity_id": "enc-malformed-1",
+            "domain": "weights",
+            "type": "insert",
+            "hlc": {"millis": now_millis - 1000, "counter": 0, "node_id": "device-A"},
+            "payload": {},
+            "encrypted_envelope": envelope,
+        }
+
+    # Missing keys (no wrapped_key_base64 / sha256_checksum).
+    resp_missing = client.post(
+        "/v1/sync/mutations",
+        headers={"Authorization": "Bearer test-user-enc-malformed"},
+        json={"mutations": [_base_mutation({"ciphertext_base64": "aGVsbG8="})]},
+    )
+    assert resp_missing.status_code == 400
+
+    # Bad base64 in both crypto fields.
+    resp_bad_b64 = client.post(
+        "/v1/sync/mutations",
+        headers={"Authorization": "Bearer test-user-enc-malformed"},
+        json={
+            "mutations": [
+                _base_mutation(
+                    {
+                        "mutation_id": "enc-malformed-1",
+                        "ciphertext_base64": "!!!not-base64!!!",
+                        "wrapped_key_base64": "%%%also-bad%%%",
+                        "sha256_checksum": "deadbeef",
+                    }
+                )
+            ]
+        },
+    )
+    assert resp_bad_b64.status_code == 400
+
+
+def test_encrypted_envelope_round_trip_is_byte_identical():
+    import base64 as _b64
+    import time as _time
+    now_millis = int(_time.time() * 1000)
+    envelope = {
+        "mutation_id": "enc-roundtrip-1",
+        "ciphertext_base64": _b64.b64encode(b"ciphertext-bytes-123").decode("utf-8"),
+        "wrapped_key_base64": _b64.b64encode(b"wrapped-key-456").decode("utf-8"),
+        "sha256_checksum": "abc123",
+    }
+    mutation = {
+        "entity_id": "enc-roundtrip-1",
+        "domain": "weights",
+        "type": "insert",
+        "hlc": {"millis": now_millis - 1000, "counter": 0, "node_id": "device-A"},
+        "payload": {"weight_kg": 80.0},
+        "encrypted_envelope": envelope,
+    }
+    resp = client.post(
+        "/v1/sync/mutations",
+        headers={"Authorization": "Bearer test-user-enc-roundtrip"},
+        json={"mutations": [mutation]},
+    )
+    assert resp.status_code == 200
+    assert resp.json()["accepted_count"] == 1
+
+    pulled = client.get(
+        "/v1/sync/deltas",
+        headers={"Authorization": "Bearer test-user-enc-roundtrip"},
+        params={"since_millis": 0, "since_counter": 0, "since_node_id": ""},
+    )
+    assert pulled.status_code == 200
+    mutations = pulled.json()["mutations"]
+    assert len(mutations) == 1
+    assert mutations[0]["encrypted_envelope"] == envelope
+
+
+def test_mixed_plaintext_and_encrypted_batch_accepted():
+    import base64 as _b64
+    import time as _time
+    now_millis = int(_time.time() * 1000)
+    plaintext = {
+        "entity_id": "mixed-plain-1",
+        "domain": "weights",
+        "type": "insert",
+        "hlc": {"millis": now_millis - 1000, "counter": 0, "node_id": "device-A"},
+        "payload": {"weight_kg": 70.0},
+    }
+    encrypted = {
+        "entity_id": "mixed-enc-1",
+        "domain": "workouts",
+        "type": "insert",
+        "hlc": {"millis": now_millis - 500, "counter": 0, "node_id": "device-A"},
+        "payload": {"exercise": "Squat"},
+        "encrypted_envelope": {
+            "mutation_id": "mixed-enc-1",
+            "ciphertext_base64": _b64.b64encode(b"ct").decode("utf-8"),
+            "wrapped_key_base64": _b64.b64encode(b"wk").decode("utf-8"),
+            "sha256_checksum": "checksum-1",
+        },
+    }
+    resp = client.post(
+        "/v1/sync/mutations",
+        headers={"Authorization": "Bearer test-user-enc-mixed"},
+        json={"mutations": [plaintext, encrypted]},
+    )
+    assert resp.status_code == 200
+    assert resp.json()["accepted_count"] == 2
+
+
+def test_duplicate_encrypted_push_dedups():
+    import base64 as _b64
+    import time as _time
+    now_millis = int(_time.time() * 1000)
+    mutation = {
+        "entity_id": "enc-dedup-1",
+        "domain": "weights",
+        "type": "insert",
+        "hlc": {"millis": now_millis - 1000, "counter": 0, "node_id": "device-A"},
+        "payload": {"weight_kg": 72.0},
+        "encrypted_envelope": {
+            "mutation_id": "enc-dedup-1",
+            "ciphertext_base64": _b64.b64encode(b"ct-dedup").decode("utf-8"),
+            "wrapped_key_base64": _b64.b64encode(b"wk-dedup").decode("utf-8"),
+            "sha256_checksum": "checksum-dedup",
+        },
+    }
+    headers = {"Authorization": "Bearer test-user-enc-dedup"}
+    first = client.post(
+        "/v1/sync/mutations", headers=headers, json={"mutations": [mutation]}
+    )
+    assert first.status_code == 200
+    assert first.json()["accepted_count"] == 1
+    replay = client.post(
+        "/v1/sync/mutations", headers=headers, json={"mutations": [mutation]}
+    )
+    assert replay.status_code == 200
+    assert replay.json()["accepted_count"] == 0

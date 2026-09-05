@@ -175,3 +175,7 @@ Step 6: Atomically swap staging DB into active app SQLite database and sync pref
 
 #### `DELETE /v1/backup/snapshots`
 - **Response:** `204 No Content` (purges all user snapshots).
+
+## 8. Sync wrapping-secret custody (sync track)
+
+Sync per-mutation envelopes follow the same per-user KMS binding decision pending at the account gate (§1 invariant 3): until that gate lands, sync wrapping secrets are explicitly configured per deployment/test and never defaulted or shared.

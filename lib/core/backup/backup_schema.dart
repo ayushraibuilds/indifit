@@ -1128,6 +1128,7 @@ class BackupData {
                 ? parseLegacyBackupTimestamp(m['recorded_at'] as String)
                 : DateTime.now().toUtc(),
             isSynced: m['is_synced'] as bool? ?? false,
+            uuid: m['uuid'] as String?,
           ),
         );
       }
@@ -3657,6 +3658,7 @@ class BackupData {
                   arms: Value(m.arms),
                   recordedAt: Value(m.recordedAt),
                   isSynced: Value(m.isSynced),
+                  uuid: Value(m.uuid),
                 ),
               );
         }

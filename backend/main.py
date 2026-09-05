@@ -868,6 +868,7 @@ class SyncMutationModel(BaseModel):
     type: str  # insert, update, delete
     hlc: HlcModel
     payload: Optional[Dict[str, Any]] = None
+    encrypted_envelope: Optional[Dict[str, Any]] = None
 
 class SyncPushRequestModel(BaseModel):
     mutations: List[SyncMutationModel]
@@ -943,6 +944,45 @@ async def push_mutations(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Clock skew exceeded: {hlc['millis']} vs server {now_millis}",
             )
+        # Encrypted-envelope validation (blind relay by construction: the relay
+        # stores opaque dicts and indexes metadata only — it never decrypts and
+        # never inspects envelope contents beyond these structural checks).
+        # Fail closed with 400/413, never 500.
+        envelope = m_dict.get("encrypted_envelope")
+        if envelope is not None:
+            if not isinstance(envelope, dict):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid encrypted_envelope: must be an object.",
+                )
+            for _key in ("ciphertext_base64", "wrapped_key_base64", "sha256_checksum"):
+                _val = envelope.get(_key)
+                if not isinstance(_val, str) or not _val:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"Invalid encrypted_envelope: '{_key}' must be a non-empty string.",
+                    )
+            try:
+                _ciphertext_bytes = base64.b64decode(
+                    envelope["ciphertext_base64"], validate=True
+                )
+            except Exception:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid encrypted_envelope: ciphertext_base64 is not valid base64.",
+                )
+            try:
+                base64.b64decode(envelope["wrapped_key_base64"], validate=True)
+            except Exception:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid encrypted_envelope: wrapped_key_base64 is not valid base64.",
+                )
+            if len(_ciphertext_bytes) > 262144:
+                raise HTTPException(
+                    status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                    detail="Encrypted envelope ciphertext exceeds 256 KB per-mutation limit.",
+                )
 
     for m in req.mutations:
         m_dict = m.model_dump()

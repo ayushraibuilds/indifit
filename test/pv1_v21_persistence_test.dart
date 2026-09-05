@@ -336,7 +336,7 @@ void main() {
           final version = await migrated
               .customSelect('PRAGMA user_version')
               .getSingle();
-          expect(version.read<int>('user_version'), 21);
+          expect(version.read<int>('user_version'), 22);
           for (final table in [
             'outbox_entries',
             'tombstone_entries',
