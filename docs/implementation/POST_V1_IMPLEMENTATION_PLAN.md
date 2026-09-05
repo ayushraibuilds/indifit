@@ -737,11 +737,14 @@ readiness package.
 | 14 | PV1-ENG-05C | Mechanically split workout player presentation | P1 | PV1-ENG-02 |
 | *Status:* | | **Complete** — Split `b02_strength_player_screen.dart` (2,553 → 1,583 lines) and `b02_strength_summary_screen.dart` (1,005 → 172 lines) into player-cards/view-model/summary widget files; moved the history-detail provider with its sole consumers; screens re-export parts for the router and tests. Verified 0 analyzer issues, 122 player characterization tests, full serial suite 2181 pass with only the 3 pre-existing base-identical failures | | |
 | 15 | PV1-PROD-01A | Specify factual completion/share read model and privacy contract | P1 | Wave 1 |
+| *Status:* | | **Complete** — Defined immutable `WorkoutCompletionRecap` and `WorkoutCompletionExerciseRecap` read models adhering to strict factual bounds (no e1RM, no fake calorie burns, no synthetic readiness scores). Enforced privacy toggle (`includeWeights`) to redact actual loads and total volume in shared output. | | |
 | 16 | PV1-PROD-01B | Implement recap and local share card with visual/device verification | P1 | PV1-PROD-01A |
+| *Status:* | | **Complete** — Built `WorkoutShareCard` widget and `showWorkoutShareSheet` modal sheet. Integrated into `B02StrengthSummaryScreen` and `B02StrengthHistoryDetailScreen` via AppBar share action (`workout_share_appbar_button`), preserving single-action golden layout in `CompletionEvidence`. 6/6 tests passing in `test/pv1_prod01_workout_recap_test.dart` and 164/164 R09 release tests passing. | | |
 | 17 | PV1-CONTENT-01A | Specify signed content-pack envelope, compatibility, activation, and rollback | P1/P2 | PV1-NET-01A |
 | 18 | PV1-PROD-02A | Close approved-media acquisition/distribution/performance gate | P1 | licensing approval |
 | 19 | PV1-PROD-03A | Specify a small achievement catalog and event identity | P1 | Wave 1 |
 | 20 | PV1-PROD-04A | Specify cross-platform rest presence lifecycle; implement Android first | P1/P2 | stable rest lifecycle |
+| *Status:* | | **Complete** — Implemented `RestPresenceService` with 4-state lifecycle machine (`idle`, `active`, `expired`, `cancelled`), ongoing notification (channel `indifit_rest_timer`, ID 998), expired alert notification (ID 999), and haptic pulse via `IndiFitHaptics`. Wired into `B02StrengthExecutionController` (`startRestAfterRecord`, `skipRest`, `completeRest`, `dispose`). 11/11 tests passing in `test/pv1_prod04_rest_presence_test.dart`. | | |
 
 Do not pre-create detailed implementation issues for Waves 4–6 until the prior
 wave evidence can inform their scope. Track those as epics/discovery records.
