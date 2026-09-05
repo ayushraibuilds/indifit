@@ -1493,6 +1493,9 @@ final b02StrengthExecutionControllerProvider =
         wakeLockCoordinator: ref.watch(
           workoutSessionWakeLockCoordinatorProvider,
         ),
+        // Production uses the process-wide RestPresenceService.instance singleton
+        // so that exactly one lifecycle root owns notification IDs 998/999 across
+        // player and screen controllers, preventing dual-notification collisions.
         restPresence: RestPresenceService.instance,
       ),
     );
@@ -1510,6 +1513,9 @@ final b02StrengthExecutionScreenControllerProvider = StateNotifierProvider
         wakeLockCoordinator: ref.watch(
           workoutSessionWakeLockCoordinatorProvider,
         ),
+        // Production uses the process-wide RestPresenceService.instance singleton
+        // so that exactly one lifecycle root owns notification IDs 998/999 across
+        // player and screen controllers, preventing dual-notification collisions.
         restPresence: RestPresenceService.instance,
       ),
     );

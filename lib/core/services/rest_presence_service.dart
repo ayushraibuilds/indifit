@@ -16,6 +16,10 @@ abstract interface class RestPresenceDriver {
     required int totalSeconds,
     required String channelId,
     required String channelName,
+
+    /// Absolute expiry instant driving the native chronometer countdown.
+    /// Null preserves the legacy text-only countdown.
+    DateTime? expiryUtc,
   });
 
   Future<void> showRestExpiredNotification({
@@ -45,6 +49,7 @@ class LocalNotificationRestPresenceDriver implements RestPresenceDriver {
     required int totalSeconds,
     required String channelId,
     required String channelName,
+    DateTime? expiryUtc,
   }) async {
     final minutes = remainingSeconds ~/ 60;
     final seconds = remainingSeconds % 60;
@@ -66,6 +71,11 @@ class LocalNotificationRestPresenceDriver implements RestPresenceDriver {
       showProgress: true,
       maxProgress: totalSeconds,
       progress: progress,
+      // Native countdown toward expiry keeps ticking between re-posts and
+      // survives ticker throttling; the 1s ticker remains for exact expiry.
+      usesChronometer: expiryUtc != null,
+      chronometerCountDown: expiryUtc != null,
+      when: expiryUtc?.millisecondsSinceEpoch,
     );
 
     const iosDetails = DarwinNotificationDetails(
@@ -153,6 +163,10 @@ class RestPresenceService {
   static const int expiredNotificationId = 999;
 
   static RestPresenceService? _instance;
+
+  /// Process-wide default used by the production Riverpod providers.
+  /// Tests inject fakes through the constructor instead; exactly one root
+  /// should own the notification IDs in production.
   static RestPresenceService get instance =>
       _instance ??= RestPresenceService();
 
@@ -220,9 +234,13 @@ class RestPresenceService {
       totalSeconds: _targetDurationSeconds!,
       channelId: channelId,
       channelName: channelName,
+      expiryUtc:
+          _startedAtUtc?.add(Duration(seconds: _targetDurationSeconds!)),
     );
 
-    // Periodic tick to update progress & catch expiry
+    // Periodic tick to check expiry every 1s, but throttle notification re-posts to
+    // every 5s. Native chronometer counts down continuously on Android; throttling
+    // eliminates notification IPC churn and preserves battery during long rests.
     _ticker = Timer.periodic(const Duration(seconds: 1), (timer) async {
       if (_state != RestPresenceState.active || _currentPeriodId != periodId) {
         timer.cancel();
@@ -233,7 +251,7 @@ class RestPresenceService {
         timer.cancel();
         _ticker = null;
         await onRestElapsed(periodId: periodId);
-      } else {
+      } else if (rem % 5 == 0) {
         await _driver.showOngoingRestNotification(
           id: ongoingNotificationId,
           exerciseName: _currentExerciseName ?? '',
@@ -241,6 +259,8 @@ class RestPresenceService {
           totalSeconds: _targetDurationSeconds!,
           channelId: channelId,
           channelName: channelName,
+          expiryUtc:
+              _startedAtUtc?.add(Duration(seconds: _targetDurationSeconds!)),
         );
       }
     });

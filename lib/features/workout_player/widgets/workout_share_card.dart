@@ -132,10 +132,10 @@ class _WorkoutShareCardState extends State<WorkoutShareCard> {
                 ],
               ),
             ),
-          ] else if (recap.isFirstSession) ...[
-            const SizedBox(height: B05Layout.space12),
+          ] else ...[
+            const SizedBox(height: B05Layout.space8),
             Text(
-              'First time logging this routine',
+              'No previous workout compared',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: colors.textSecondary,
                 fontStyle: FontStyle.italic,

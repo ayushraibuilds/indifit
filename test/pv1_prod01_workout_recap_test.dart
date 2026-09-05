@@ -106,7 +106,9 @@ void main() {
       expect(recap.completedSetsCount, 4); // 3 + 1
       expect(recap.completedExercisesCount, 2);
       expect(recap.totalRepsCount, 34); // 10 + 8 + 6 + 10
-      expect(recap.isFirstSession, true);
+      // No previous compared: must NOT claim a verified first session.
+      expect(recap.previousComparison, isNull);
+      expect(recap.hasPreviousComparison, isFalse);
 
       expect(recap.exercises.length, 2);
       final bench = recap.exercises[0];
@@ -212,8 +214,8 @@ void main() {
         previousHistory: prevHistory,
       );
 
-      expect(recap.isFirstSession, false);
       expect(recap.previousComparison, isNotNull);
+      expect(recap.hasPreviousComparison, isTrue);
       expect(recap.previousComparison!.volumeDeltaKg, 300.0);
       expect(recap.previousComparison!.setsDelta, 1);
     });
@@ -269,7 +271,8 @@ void main() {
       expect(recap.completedSetsCount, 2);
       expect(recap.totalRepsCount, 20);
       expect(recap.totalVolumeKg, 80.0); // 10.0 * 8
-      expect(recap.isFirstSession, true);
+      expect(recap.previousComparison, isNull);
+      expect(recap.hasPreviousComparison, isFalse);
     });
 
     test('generateShareText produces factual output with privacy redactions', () {
@@ -310,7 +313,8 @@ void main() {
       expect(textWithWeights, contains('Duration: 30m 0s'));
       expect(textWithWeights, contains('Total Volume: 3200.0 kg'));
       expect(textWithWeights, contains('Back Squat: 1 sets × 5 reps (top: 100.0 kg)'));
-      expect(textWithWeights, contains('Milestone: First time logging this routine!'));
+      // No unverified "first time" milestone may be claimed.
+      expect(textWithWeights, isNot(contains('First time logging')));
 
       // Invariants check: NEVER contains speculative metrics
       expect(textWithWeights, isNot(contains('e1RM')));
@@ -384,8 +388,9 @@ void main() {
       expect(find.text('Volume'), findsOneWidget);
       expect(find.text('1850.5 kg'), findsOneWidget);
 
-      // Verify milestone first session notice
-      expect(find.text('First time logging this routine'), findsOneWidget);
+      // Honest sparse state when no comparison was fetched: neutral notice, no fake milestone.
+      expect(find.text('No previous workout compared'), findsOneWidget);
+      expect(find.text('First time logging this routine'), findsNothing);
 
       // Verify privacy switch toggle
       expect(find.text('Include weights in share'), findsOneWidget);

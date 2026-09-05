@@ -11,6 +11,7 @@ import 'core/router/app_router.dart';
 import 'core/services/auto_backup_service.dart';
 import 'core/services/crash_reporting_service.dart';
 import 'core/services/notification_service.dart';
+import 'core/services/rest_presence_service.dart';
 import 'core/theme/app_theme.dart';
 import 'core/utils/app_logger.dart';
 import 'data/database/app_database.dart';
@@ -121,6 +122,14 @@ class _IndiFitAppState extends ConsumerState<IndiFitApp>
     final db = ref.read(databaseProvider);
     _startReminderDataWatchers(db);
     unawaited(_reconcileReminders());
+    // Clear any rest-timer notifications orphaned by a pre-restart crash.
+    // No rest state is reconstructed: presence is foreground-driven and the
+    // ticker does not survive process death by design.
+    unawaited(
+      RestPresenceService.cleanupStaleNotifications().catchError((e) {
+        AppLogger.warning('Rest presence startup cleanup failed: $e');
+      }),
+    );
     unawaited(
       AutoBackupService.performBackup(db).catchError((e) {
         AppLogger.warning('Auto-backup startup check failed: $e');
