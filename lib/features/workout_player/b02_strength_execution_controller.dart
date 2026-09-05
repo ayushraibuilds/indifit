@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/di/providers.dart';
 import '../../core/presentation/consumer_copy.dart';
 import '../../core/presentation/product_failure_presentation.dart';
+import '../../core/services/rest_presence_service.dart';
 import '../../core/services/workout_session_wake_lock_coordinator.dart';
 import '../../core/utils/app_logger.dart';
 import '../../data/models/b02_execution_models.dart';
@@ -87,6 +88,7 @@ class B02StrengthExecutionController
   final B02RestDraftCoordinator _restCoordinator;
   final DateTime Function() _nowUtc;
   final WorkoutSessionWakeLockCoordinator? _wakeLockCoordinator;
+  final RestPresenceService? _restPresence;
   Future<bool>? _finalizationInFlight;
   _B02CompletionRequestKey? _finalizationRequestKey;
   Future<void> _draftWriteTail = Future<void>.value();
@@ -103,10 +105,12 @@ class B02StrengthExecutionController
     B02RestDraftCoordinator? restCoordinator,
     DateTime Function()? nowUtc,
     WorkoutSessionWakeLockCoordinator? wakeLockCoordinator,
+    RestPresenceService? restPresence,
   }) : _draftService = draftService ?? const B02StrengthExecutionDraftService(),
        _restCoordinator = restCoordinator ?? const B02RestDraftCoordinator(),
        _nowUtc = nowUtc ?? _systemNowUtc,
        _wakeLockCoordinator = wakeLockCoordinator,
+       _restPresence = restPresence,
        super(
          initialLaunch == null
              ? const B02StrengthExecutionUiState.initial()
@@ -147,9 +151,22 @@ class B02StrengthExecutionController
   }
 
   void _releaseWakeLockForLaunch(B02StrengthExecutionLaunch launch) {
+    final presence = _restPresence;
+    if (presence != null) {
+      unawaited(presence.cleanup());
+    }
     final coordinator = _wakeLockCoordinator;
     if (coordinator == null) return;
     unawaited(coordinator.clearActiveSession(_wakeLockKey(launch)));
+  }
+
+  @override
+  void dispose() {
+    final presence = _restPresence;
+    if (presence != null) {
+      unawaited(presence.cleanup());
+    }
+    super.dispose();
   }
 
   Future<void> startScheduled({
@@ -763,6 +780,15 @@ class B02StrengthExecutionController
           _restCoordinator.begin(current.state, period),
         );
         if (!saved) return;
+        await _restPresence?.startRest(
+          periodId: period.id,
+          exerciseName: slot.exerciseNameSnapshot.isNotEmpty
+              ? slot.exerciseNameSnapshot
+              : (slot.expectedExerciseNameSnapshot ?? ''),
+          targetSeconds:
+              period.selectedSeconds ?? period.recommendedSeconds ?? 90,
+          startedAtUtc: period.startedAtUtc,
+        );
       });
     } catch (error) {
       final current = state.launch;
@@ -851,9 +877,23 @@ class B02StrengthExecutionController
         if (current == null || period == null || period.endedAtUtc != null) {
           return;
         }
-        await saveDraft(
+        final saved = await saveDraft(
           _restCoordinator.extend(current.state, periodId, seconds: seconds),
         );
+        if (saved) {
+          final newSelected =
+              (period.selectedSeconds ?? period.recommendedSeconds ?? 0) +
+              seconds;
+          final presence = _restPresence;
+          if (presence != null) {
+            await presence.startRest(
+              periodId: periodId,
+              exerciseName: presence.currentExerciseName ?? '',
+              targetSeconds: newSelected,
+              startedAtUtc: period.startedAtUtc,
+            );
+          }
+        }
       });
     } catch (error) {
       final current = state.launch;
@@ -883,8 +923,9 @@ class B02StrengthExecutionController
             .inSeconds
             .clamp(0, 86400)
             .toInt();
-        await saveDraft(
-          adjusted <= elapsed
+        final willElapse = adjusted <= elapsed;
+        final saved = await saveDraft(
+          willElapse
               ? _restCoordinator.finish(
                   current.state,
                   periodId,
@@ -893,6 +934,21 @@ class B02StrengthExecutionController
                 )
               : _restCoordinator.select(current.state, periodId, adjusted),
         );
+        if (saved) {
+          final presence = _restPresence;
+          if (presence != null) {
+            if (willElapse) {
+              await presence.onRestElapsed(periodId: periodId);
+            } else {
+              await presence.startRest(
+                periodId: periodId,
+                exerciseName: presence.currentExerciseName ?? '',
+                targetSeconds: adjusted,
+                startedAtUtc: period.startedAtUtc,
+              );
+            }
+          }
+        }
       });
     } catch (error) {
       final current = state.launch;
@@ -910,13 +966,16 @@ class B02StrengthExecutionController
         if (current == null || period == null || period.endedAtUtc != null) {
           return;
         }
-        await saveDraft(
+        final saved = await saveDraft(
           _restCoordinator.skip(
             current.state,
             periodId,
             endedAtUtc: _nowUtc().toUtc(),
           ),
         );
+        if (saved) {
+          await _restPresence?.cancelRest(periodId: periodId);
+        }
       });
     } catch (error) {
       final current = state.launch;
@@ -944,6 +1003,9 @@ class B02StrengthExecutionController
             endReason: B02RestEndReason.elapsed,
           ),
         );
+        if (saved) {
+          await _restPresence?.onRestElapsed(periodId: periodId);
+        }
         return saved &&
             mounted &&
             state.launch?.state.restPeriods.any(
@@ -1348,6 +1410,10 @@ class B02StrengthExecutionController
   }) {
     final open = _openRestPeriod(draft);
     if (open == null) return draft;
+    final presence = _restPresence;
+    if (presence != null) {
+      unawaited(presence.cancelRest(periodId: open.id));
+    }
     return _restCoordinator.finish(
       draft,
       open.id,
@@ -1427,6 +1493,7 @@ final b02StrengthExecutionControllerProvider =
         wakeLockCoordinator: ref.watch(
           workoutSessionWakeLockCoordinatorProvider,
         ),
+        restPresence: RestPresenceService.instance,
       ),
     );
 
@@ -1443,6 +1510,7 @@ final b02StrengthExecutionScreenControllerProvider = StateNotifierProvider
         wakeLockCoordinator: ref.watch(
           workoutSessionWakeLockCoordinatorProvider,
         ),
+        restPresence: RestPresenceService.instance,
       ),
     );
 
