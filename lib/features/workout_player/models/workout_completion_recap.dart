@@ -34,7 +34,10 @@ class WorkoutCompletionRecap {
     this.previousComparison,
   });
 
-  bool get isFirstSession => previousComparison == null;
+  /// Null [previousComparison] means no previous session was compared — it
+  /// is NOT a verified first session. Surfaces must never present it as a
+  /// "first time" milestone.
+  bool get hasPreviousComparison => previousComparison != null;
 
   String get formattedDuration {
     final hours = durationSeconds ~/ 3600;
@@ -197,8 +200,6 @@ class WorkoutCompletionRecap {
           'Comparison: $sign${prev.volumeDeltaKg.toStringAsFixed(1)} kg vs previous session',
         );
       }
-    } else {
-      buffer.writeln('Milestone: First time logging this routine!');
     }
     buffer.writeln();
     for (final ex in exercises) {

@@ -20,6 +20,7 @@ class TestRestPresenceDriver implements RestPresenceDriver {
     required int totalSeconds,
     required String channelId,
     required String channelName,
+    DateTime? expiryUtc,
   }) async {
     ongoingCalls.add({
       'id': id,
@@ -27,6 +28,7 @@ class TestRestPresenceDriver implements RestPresenceDriver {
       'remainingSeconds': remainingSeconds,
       'totalSeconds': totalSeconds,
       'channelId': channelId,
+      'expiryUtc': expiryUtc?.toIso8601String(),
     });
   }
 
@@ -162,6 +164,11 @@ void main() {
       expect(call['remainingSeconds'], 90);
       expect(call['totalSeconds'], 90);
       expect(call['channelId'], RestPresenceService.channelId);
+      // Chronometer expiry rides along for the native countdown.
+      expect(
+        call['expiryUtc'],
+        currentTime.add(const Duration(seconds: 90)).toIso8601String(),
+      );
     });
 
     test('remainingSeconds accurately reflects wall-clock elapsed time', () async {
