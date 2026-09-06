@@ -84,10 +84,15 @@ class _EmptyFoodRepository extends FoodRepository {
 class _TestCatalogRepository extends NutritionFoodCatalogRepository {
   _TestCatalogRepository({required super.db, required super.registry});
 
-  // FoodSearchScreen launches unawaited custom food queries on search input.
-  // In FakeAsync widget tests, unmocked Drift queries on an in-memory database
-  // suspend on the isolate ReceivePort, wedging the Drift executor on teardown.
-  // Overriding searchCustomFoods avoids the FakeAsync isolate hang.
+  // FoodSearchScreen launches unawaited custom-food queries on search input.
+  // Proven empirically: with the real searchCustomFoods in this widget-test
+  // file, teardown db.close() never completes (0% CPU idle hang), while the
+  // same flow is green with this stub plus runAsync close. The precise stuck
+  // statement was never isolated (a stated isolate-ReceivePort mechanism was
+  // checked against drift 2.19.1 source and does NOT hold for
+  // NativeDatabase.memory(), which is same-isolate FFI), so no mechanism is
+  // claimed here. Canonical-results coverage lives in the plain unit test
+  // below, which runs in real async and is immune to the whole class.
   @override
   Future<List<NutritionFoodOption>> searchCustomFoods({
     required Iterable<String> queries,
@@ -738,6 +743,58 @@ void main() {
         expect(MealPresentationRegistry.lunch.icon, Icons.wb_twilight_rounded); // Lunch
         expect(MealPresentationRegistry.dinner.icon, Icons.nightlight_round); // Dinner
         expect(MealPresentationRegistry.snack.icon, Icons.cookie_outlined); // Snacks
+      },
+    );
+
+    test(
+      'searchCustomFoods matches custom foods by name in real async',
+      () async {
+        // Plain unit test (no FakeAsync): covers the canonical-results path
+        // that the widget tests stub out via _TestCatalogRepository above.
+        final db = AppDatabase.memory();
+        addTearDown(db.close);
+        final registry = NutrientRegistry.fromAssetFileSync(
+          'assets/data/nutrient_registry.json',
+        );
+        final catalog = NutritionFoodCatalogRepository(
+          db: db,
+          registry: registry,
+        );
+        await catalog.createUserFood(
+          displayName: 'Masoor Dal Tadka',
+          servingSize: 150,
+          servingUnit: 'g',
+          energyKcal: 160,
+          proteinG: 9,
+          carbohydrateG: 22,
+          fatG: 3,
+        );
+        await catalog.createUserFood(
+          displayName: 'Curd Rice',
+          servingSize: 200,
+          servingUnit: 'g',
+          energyKcal: 180,
+          proteinG: 6,
+          carbohydrateG: 30,
+          fatG: 4,
+        );
+
+        final dal = await catalog.searchCustomFoods(queries: ['dal']);
+        expect(
+          dal.map((option) => option.displayName),
+          contains('Masoor Dal Tadka'),
+        );
+        expect(
+          dal.map((option) => option.displayName),
+          isNot(contains('Curd Rice')),
+        );
+
+        expect(
+          await catalog.searchCustomFoods(queries: ['xyz-no-match']),
+          isEmpty,
+        );
+        expect(await catalog.searchCustomFoods(queries: const []), isEmpty);
+        expect(await catalog.searchCustomFoods(queries: ['  ']), isEmpty);
       },
     );
 
