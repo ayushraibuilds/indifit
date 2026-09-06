@@ -81,6 +81,19 @@ class _EmptyFoodRepository extends FoodRepository {
   Future<List<FoodItem>> searchFoodLocal(String query) async => const [];
 }
 
+class _TestCatalogRepository extends NutritionFoodCatalogRepository {
+  _TestCatalogRepository({required super.db, required super.registry});
+
+  // FoodSearchScreen launches unawaited custom food queries on search input.
+  // In FakeAsync widget tests, unmocked Drift queries on an in-memory database
+  // suspend on the isolate ReceivePort, wedging the Drift executor on teardown.
+  // Overriding searchCustomFoods avoids the FakeAsync isolate hang.
+  @override
+  Future<List<NutritionFoodOption>> searchCustomFoods({
+    required Iterable<String> queries,
+  }) async => const [];
+}
+
 class _Harness {
   _Harness._(
     this.db,
@@ -103,7 +116,7 @@ class _Harness {
     final registry = NutrientRegistry.fromAssetFileSync(
       'assets/data/nutrient_registry.json',
     );
-    final catalog = NutritionFoodCatalogRepository(db: db, registry: registry);
+    final catalog = _TestCatalogRepository(db: db, registry: registry);
     final consumption = NutritionConsumptionRepository(
       db: db,
       registry: registry,
@@ -786,14 +799,10 @@ void main() {
       'Gate 1: provider results cannot join the multi-select batch; tap opens review',
       (tester) async {
         final harness = await _Harness.create();
-        // NOTE: intentionally no db.close() here. After an online search runs
-        // on this screen, the Drift executor stops servicing new statements
-        // (SELECT/db.close hang idle; under separate investigation). The
-        // in-memory database vanishes with the test isolate, so skipping
-        // close leaks nothing across tests.
         addTearDown(() async {
           await tester.pumpWidget(const SizedBox.shrink());
           await tester.pump();
+          await tester.runAsync(harness.close);
         });
         final tracking = _TrackingBatchCoordinator(
           db: harness.db,
