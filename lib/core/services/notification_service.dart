@@ -199,38 +199,21 @@ class NotificationService {
     return NotificationPermissionStatus.unavailable;
   }
 
-  /// Show a local push notification when workout rest timer expires
-  static Future<void> showRestTimerFinishedNotification() async {
-    const androidDetails = AndroidNotificationDetails(
-      _workoutChannelId,
-      'Workout Reminders',
-      channelDescription: 'Workout rest timer & session alerts',
-      importance: Importance.high,
-      priority: Priority.high,
-    );
-    const iosDetails = DarwinNotificationDetails();
-    const details = NotificationDetails(
-      android: androidDetails,
-      iOS: iosDetails,
-    );
-
-    await _plugin.show(
-      999,
-      'Rest Time Completed! 💪',
-      'Time to hit your next set. You got this!',
-      details,
-      payload: 'workout',
-    );
-  }
-
   // ────────────────────────────────────────
   // Schedule orchestrator
   // ────────────────────────────────────────
 
   /// Re-schedules all enabled reminders. Call after any preference change.
   static Future<void> scheduleAllReminders([AppDatabase? db]) async {
-    // Cancel everything first to prevent duplicates on re-schedule
-    await _plugin.cancelAll();
+    // Cancel only scheduled reminder notifications (101-107, 201, 202, 400, 500)
+    // to prevent wiping active workout rest timer notifications (IDs 998/999).
+    for (int day = DateTime.monday; day <= DateTime.sunday; day++) {
+      await _plugin.cancel(_idWorkout + day);
+    }
+    await _plugin.cancel(_idMealLunch);
+    await _plugin.cancel(_idMealDinner);
+    await _plugin.cancel(_idEveningNudge);
+    await _plugin.cancel(_idWeeklyReport);
 
     final prefs = await SharedPreferences.getInstance();
 

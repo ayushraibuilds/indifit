@@ -1,8 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:vibration/vibration.dart';
 
-import '../../../core/services/notification_service.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
 import '../../../core/widgets/indi_fit_bottom_sheet.dart';
@@ -47,12 +45,6 @@ class _RestTimerBottomSheetState extends State<RestTimerBottomSheet> {
         if (mounted) setState(() => _nowUtc = now);
       } else {
         t.cancel();
-        NotificationService.showRestTimerFinishedNotification();
-        Vibration.hasVibrator().then((hasVib) {
-          if (hasVib == true) {
-            Vibration.vibrate(duration: 500);
-          }
-        });
         if (mounted) {
           Navigator.pop(context);
         }

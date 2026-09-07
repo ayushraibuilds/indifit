@@ -274,5 +274,38 @@ void main() {
         expect(scheduled.minute, 0);
       },
     );
+
+    test(
+      'scheduleAllReminders uses scoped cancellation and never calls cancelAll',
+      () async {
+        platformCalls.clear();
+        await NotificationService.scheduleAllReminders(database);
+
+        // Assert cancelAll was NEVER called (which would wipe active rest notifications 998/999)
+        expect(
+          platformCalls.any((call) => call.method == 'cancelAll'),
+          isFalse,
+          reason: 'cancelAll wipes active workout rest timer notifications',
+        );
+
+        // Assert scoped cancel was called for reminder IDs 101-107, 201, 202, 400, 500
+        final cancelledIds = platformCalls
+            .where((call) => call.method == 'cancel')
+            .map((call) => (call.arguments as Map)['id'] as int)
+            .toSet();
+
+        for (int day = DateTime.monday; day <= DateTime.sunday; day++) {
+          expect(cancelledIds, contains(100 + day));
+        }
+        expect(cancelledIds, contains(201));
+        expect(cancelledIds, contains(202));
+        expect(cancelledIds, contains(400));
+        expect(cancelledIds, contains(500));
+
+        // Rest timer IDs 998 and 999 must NEVER be cancelled by reminder rescheduling
+        expect(cancelledIds, isNot(contains(998)));
+        expect(cancelledIds, isNot(contains(999)));
+      },
+    );
   });
 }
