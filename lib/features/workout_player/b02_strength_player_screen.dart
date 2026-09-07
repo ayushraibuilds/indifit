@@ -51,6 +51,23 @@ class B02StrengthPlayerScreen extends ConsumerStatefulWidget {
     this.nowUtc,
   });
 
+  /// Resolves the prefill weight for the plate calculator following the precedence:
+  /// 1. Currently entered text load (> 0)
+  /// 2. Actual logged load (> 0)
+  /// 3. Prescribed / planned load (> 0)
+  /// 4. Standard Olympic barbell default (20.0 kg)
+  static double resolvePlateCalculatorPrefillWeight({
+    String? inputText,
+    double? actualLoadKg,
+    double? plannedLoadKg,
+  }) {
+    final entered = double.tryParse((inputText ?? '').trim());
+    if (entered != null && entered > 0) return entered;
+    if (actualLoadKg != null && actualLoadKg > 0) return actualLoadKg;
+    if (plannedLoadKg != null && plannedLoadKg > 0) return plannedLoadKg;
+    return 20.0;
+  }
+
   @override
   ConsumerState<B02StrengthPlayerScreen> createState() =>
       _B02StrengthPlayerScreenState();
@@ -440,10 +457,13 @@ class _B02StrengthPlayerScreenState
       onAddSet: !isPlannedMode || exerciseComplete
           ? () => _prepareExtraSet(selected)
           : null,
-      onOpenPlateCalculator: isBarbellPlateCalculatorSupported(
-        exerciseName: _actualExerciseName(launch.state, selected),
-        loadBasis: selected.targetLoadBasis,
-      ) ? () => _openPlateCalculator(selected) : null,
+      onOpenPlateCalculator:
+          isBarbellPlateCalculatorSupported(
+            exerciseName: _actualExerciseName(launch.state, selected),
+            loadBasis: selected.targetLoadBasis,
+          )
+          ? () => _openPlateCalculator(selected)
+          : null,
       showPendingEditor: showPendingEditor,
       moreContent: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1013,12 +1033,11 @@ class _B02StrengthPlayerScreenState
 
   Future<void> _openPlateCalculator(B02StrengthExecutionSlot slot) async {
     final controller = _loadControllerFor(slot);
-    final entered = double.tryParse(controller.text.trim());
-    final initialWeight = (entered != null && entered > 0)
-        ? entered
-        : ((slot.targetLoadKg != null && slot.targetLoadKg! > 0)
-            ? slot.targetLoadKg!
-            : 20.0);
+    final initialWeight =
+        B02StrengthPlayerScreen.resolvePlateCalculatorPrefillWeight(
+          inputText: controller.text,
+          plannedLoadKg: slot.targetLoadKg,
+        );
     final applied = await PlateCalculatorSheet.show(
       context: context,
       initialWeight: initialWeight,
@@ -1135,46 +1154,43 @@ class _B02StrengthPlayerScreenState
                                   ? 'Bodyweight'
                                   : null,
                               errorText: loadError,
-                              suffixIcon: isBarbellPlateCalculatorSupported(
-                                exerciseName: _actualExerciseName(
-                                  launchForProvider(provider)?.state ??
-                                      widget.launch.state,
-                                  slot,
-                                ),
-                                loadBasis: set.actualLoadBasis ??
-                                    slot.targetLoadBasis,
-                              ) ? IconButton(
-                                  tooltip: 'Plate calculator',
-                                  icon: const Icon(
-                                    IndiFitIcons.plateCalculator,
-                                  ),
-                                  onPressed: () async {
-                                    final entered = double.tryParse(
-                                      loadController.text.trim(),
-                                    );
-                                    final initialWeight = (entered != null &&
-                                            entered > 0)
-                                        ? entered
-                                        : (set.actualLoadKg != null &&
-                                                set.actualLoadKg! > 0
-                                            ? set.actualLoadKg!
-                                            : ((slot.targetLoadKg != null &&
-                                                    slot.targetLoadKg! > 0)
-                                                ? slot.targetLoadKg!
-                                                : 20.0));
-                                    final applied =
-                                        await PlateCalculatorSheet.show(
-                                      context: sheetContext,
-                                      initialWeight: initialWeight,
-                                    );
-                                    if (applied != null) {
-                                      setModalState(() {
-                                        loadController.text =
-                                            r07cFormatNumber(applied);
-                                      });
-                                    }
-                                  },
-                                ) : null,
+                              suffixIcon:
+                                  isBarbellPlateCalculatorSupported(
+                                    exerciseName: _actualExerciseName(
+                                      launchForProvider(provider)?.state ??
+                                          widget.launch.state,
+                                      slot,
+                                    ),
+                                    loadBasis:
+                                        set.actualLoadBasis ??
+                                        slot.targetLoadBasis,
+                                  )
+                                  ? IconButton(
+                                      tooltip: 'Plate calculator',
+                                      icon: const Icon(
+                                        IndiFitIcons.plateCalculator,
+                                      ),
+                                      onPressed: () async {
+                                        final initialWeight =
+                                            B02StrengthPlayerScreen.resolvePlateCalculatorPrefillWeight(
+                                              inputText: loadController.text,
+                                              actualLoadKg: set.actualLoadKg,
+                                              plannedLoadKg: slot.targetLoadKg,
+                                            );
+                                        final applied =
+                                            await PlateCalculatorSheet.show(
+                                              context: sheetContext,
+                                              initialWeight: initialWeight,
+                                            );
+                                        if (applied != null) {
+                                          setModalState(() {
+                                            loadController.text =
+                                                r07cFormatNumber(applied);
+                                          });
+                                        }
+                                      },
+                                    )
+                                  : null,
                             ),
                           ),
                           TextFormField(
@@ -1664,4 +1680,3 @@ class _B02StrengthPlayerScreenState
     }
   }
 }
-

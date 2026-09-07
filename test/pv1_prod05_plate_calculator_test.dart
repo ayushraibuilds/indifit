@@ -1,7 +1,24 @@
+import 'dart:async';
+import 'dart:convert';
+
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:indifit/core/di/providers.dart';
+import 'package:indifit/core/fixtures/exercise_display_muscles.dart';
 import 'package:indifit/core/theme/app_theme.dart';
+import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/models/b02_execution_models.dart';
+import 'package:indifit/data/models/b02_previous_performance_models.dart';
+import 'package:indifit/data/repositories/b02_previous_performance_repository.dart';
+import 'package:indifit/data/repositories/b02_strength_execution_repository.dart';
+import 'package:indifit/data/repositories/b07_exercise_context_repository.dart';
+import 'package:indifit/data/repositories/calendar_repository.dart';
+import 'package:indifit/data/services/b02_strength_execution_draft_service.dart';
+import 'package:indifit/features/media/b05_exercise_visual_registry.dart';
+import 'package:indifit/features/workout_player/b02_strength_execution_controller.dart';
+import 'package:indifit/features/workout_player/b02_strength_player_screen.dart';
 import 'package:indifit/features/workout_player/widgets/b02_compact_set_table.dart';
 import 'package:indifit/features/workout_player/widgets/plate_calculator_sheet.dart';
 
@@ -484,41 +501,48 @@ void main() {
   });
 
   group('PV1-PROD-05: Prefill Chain Pinning', () {
-    double resolveTargetWeight({
-      required String enteredText,
-      required double? plannedTargetLoadKg,
-    }) {
-      final entered = double.tryParse(enteredText.trim());
-      if (entered != null && entered > 0) return entered;
-      if (plannedTargetLoadKg != null && plannedTargetLoadKg > 0) {
-        return plannedTargetLoadKg;
-      }
-      return 20.0;
-    }
-
-    test('Entered load takes precedence over planned load', () {
-      final weight = resolveTargetWeight(
-        enteredText: '95',
-        plannedTargetLoadKg: 80.0,
+    test('Entered load takes precedence over planned and actual load', () {
+      final weight = B02StrengthPlayerScreen.resolvePlateCalculatorPrefillWeight(
+        inputText: '95',
+        actualLoadKg: 70.0,
+        plannedLoadKg: 80.0,
       );
       expect(weight, 95.0);
     });
 
-    test('Planned load takes precedence over default 20kg when input empty', () {
-      final weight = resolveTargetWeight(
-        enteredText: '',
-        plannedTargetLoadKg: 80.0,
+    test('Actual load takes precedence over planned load when input empty', () {
+      final weight = B02StrengthPlayerScreen.resolvePlateCalculatorPrefillWeight(
+        inputText: '',
+        actualLoadKg: 70.0,
+        plannedLoadKg: 80.0,
+      );
+      expect(weight, 70.0);
+    });
+
+    test('Planned load takes precedence over default 20kg when input and actual empty', () {
+      final weight = B02StrengthPlayerScreen.resolvePlateCalculatorPrefillWeight(
+        inputText: '',
+        actualLoadKg: null,
+        plannedLoadKg: 80.0,
       );
       expect(weight, 80.0);
     });
 
-    test('Default 20kg is used when both input and planned load are absent or 0', () {
+    test('Default 20kg is used when input, actual, and planned load are absent or 0', () {
       expect(
-        resolveTargetWeight(enteredText: '', plannedTargetLoadKg: null),
+        B02StrengthPlayerScreen.resolvePlateCalculatorPrefillWeight(
+          inputText: '',
+          actualLoadKg: null,
+          plannedLoadKg: null,
+        ),
         20.0,
       );
       expect(
-        resolveTargetWeight(enteredText: '0', plannedTargetLoadKg: 0),
+        B02StrengthPlayerScreen.resolvePlateCalculatorPrefillWeight(
+          inputText: '0',
+          actualLoadKg: 0,
+          plannedLoadKg: 0,
+        ),
         20.0,
       );
     });
@@ -551,5 +575,301 @@ void main() {
       expect(find.text('Plate Calculator'), findsOneWidget);
       expect(find.text('LOADING PER SIDE'), findsOneWidget);
     });
+
+    testWidgets('Barbell visual exposes accessible Semantics summary label', (tester) async {
+      setTestViewport(tester);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.darkTheme,
+          home: const Scaffold(
+            body: PlateCalculatorSheet(
+              targetWeight: 140,
+              isEditable: true,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final visualSemantics = find.byWidgetPredicate(
+        (widget) =>
+            widget is Semantics &&
+            (widget.properties.label?.startsWith('Barbell loading diagram:') ?? false),
+      );
+      expect(visualSemantics, findsOneWidget);
+    });
   });
+
+  group('PV1-PROD-05: Player Screen Tap-Through Integration', () {
+    Future<void> settlePlayer(WidgetTester tester) async {
+      for (var i = 0; i < 5; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+    }
+
+    testWidgets('Overflow menu ListTile opens plate calculator and applies load', (tester) async {
+      setTestViewport(tester);
+      final db = AppDatabase.memory();
+      addTearDown(() async {
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+        unawaited(db.close());
+      });
+      final executions = StrengthExecutionRepository(
+        db: db,
+        calendarRepo: CalendarRepository(db),
+        nowUtc: () => DateTime.utc(2026, 8, 13, 8),
+      );
+      final launch = (await tester.runAsync(() async {
+        await db.into(db.exercises).insert(
+          ExercisesCompanion.insert(
+            stableId: const Value('r07c-bench'),
+            name: 'Bench press',
+            muscleGroups: 'Chest,Triceps',
+            equipment: 'Barbell',
+            difficulty: 'Intermediate',
+            formCues: 'Brace your feet',
+            commonMistakes: 'Bouncing',
+          ),
+        );
+        return _launchPlannedPlayer(executions);
+      }))!;
+
+      await _pumpPlayerScreen(tester, launch, executions, db);
+
+      // Tap exercise actions icon
+      final actionBtn = find.byTooltip('Exercise actions');
+      expect(actionBtn, findsOneWidget);
+      await tester.tap(actionBtn);
+      await settlePlayer(tester);
+
+      // Overflow menu displays plate calculator ListTile
+      final plateTile = find.widgetWithText(ListTile, 'Plate calculator');
+      expect(plateTile, findsOneWidget);
+
+      await tester.tap(plateTile);
+      await settlePlayer(tester);
+
+      // Plate calculator sheet is open
+      expect(find.text('Plate Calculator'), findsOneWidget);
+      expect(find.text('LOADING PER SIDE'), findsOneWidget);
+
+      // Tap 'Apply to set'
+      final applyBtn = find.text('Apply to set');
+      expect(applyBtn, findsOneWidget);
+      await tester.tap(applyBtn);
+      await settlePlayer(tester);
+
+      // Plate calculator sheet is dismissed and weight is applied to load input
+      expect(find.text('Plate Calculator'), findsNothing);
+      final loadInputs = find.byType(EditableText);
+      expect(tester.widget<EditableText>(loadInputs.at(0)).controller.text, '60');
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('Edit set modal suffix icon opens plate calculator and applies load', (tester) async {
+      setTestViewport(tester);
+      final db = AppDatabase.memory();
+      addTearDown(() async {
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+        unawaited(db.close());
+      });
+      final executions = StrengthExecutionRepository(
+        db: db,
+        calendarRepo: CalendarRepository(db),
+        nowUtc: () => DateTime.utc(2026, 8, 13, 8),
+      );
+      final launch = (await tester.runAsync(() async {
+        await db.into(db.exercises).insert(
+          ExercisesCompanion.insert(
+            stableId: const Value('r07c-bench'),
+            name: 'Bench press',
+            muscleGroups: 'Chest,Triceps',
+            equipment: 'Barbell',
+            difficulty: 'Intermediate',
+            formCues: 'Brace your feet',
+            commonMistakes: 'Bouncing',
+          ),
+        );
+        return _launchPlannedPlayer(executions, workingSets: 1);
+      }))!;
+      await _pumpPlayerScreen(tester, launch, executions, db);
+
+      final editSetBtn = find.byTooltip('Edit set 1');
+      expect(editSetBtn, findsOneWidget);
+      await tester.tap(editSetBtn);
+      await settlePlayer(tester);
+
+      expect(find.text('Edit set 1'), findsOneWidget);
+
+      final calcSuffix = find.byTooltip('Plate calculator').last;
+      expect(calcSuffix, findsOneWidget);
+      await tester.tap(calcSuffix);
+      await settlePlayer(tester);
+
+      expect(find.text('Plate Calculator'), findsOneWidget);
+      expect(find.text('LOADING PER SIDE'), findsOneWidget);
+
+      final applyBtn = find.text('Apply to set');
+      expect(applyBtn, findsOneWidget);
+      await tester.tap(applyBtn);
+      await settlePlayer(tester);
+
+      expect(find.text('Plate Calculator'), findsNothing);
+      expect(find.text('Edit set 1'), findsOneWidget);
+
+      final saveBtn = find.text('Save changes');
+      expect(saveBtn, findsOneWidget);
+      await tester.tap(saveBtn);
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 500)),
+      );
+      await settlePlayer(tester);
+
+      expect(find.text('Edit set 1'), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+  });
+}
+
+class _NoHistoryPreviousPerformanceRepository
+    extends B02PreviousPerformanceRepository {
+  const _NoHistoryPreviousPerformanceRepository(super.database);
+
+  @override
+  Future<B02PreviousExercisePerformance> resolve(
+    B02PreviousPerformanceQuery query,
+  ) async => B02PreviousExercisePerformance.unavailable(
+    status: B02PreviousPerformanceStatus.noHistory,
+    canonicalExerciseId: query.canonicalExerciseId,
+    reasonCode: 'no_history',
+  );
+}
+
+class _TestB07ExerciseContextRepository extends B07ExerciseContextRepository {
+  _TestB07ExerciseContextRepository(super.database);
+
+  @override
+  Future<B07ExerciseContextResult> resolve(String canonicalExerciseId) async {
+    if (canonicalExerciseId != 'r07c-bench') {
+      return const B07ExerciseContextResult.unavailable();
+    }
+    return B07ExerciseContextResult.available(
+      B07ExerciseContext(
+        canonicalExerciseId: 'r07c-bench',
+        canonicalName: 'Bench press',
+        equipment: 'Barbell',
+        displayMuscles: ExerciseDisplayMuscles.fromMuscleGroups('Chest,Triceps'),
+        formCues: const ['Brace your feet', 'Keep the bar path controlled'],
+        commonMistakes: const ['Bouncing the bar'],
+      ),
+    );
+  }
+}
+
+Future<B02StrengthExecutionLaunch> _launchPlannedPlayer(
+  StrengthExecutionRepository executions, {
+  int workingSets = 0,
+}) async {
+  final snapshot = jsonEncode({
+    'version': 1,
+    'routineName': 'Planned push',
+    'groups': [
+      {
+        'id': 'r07c-group',
+        'groupType': 'superset',
+        'ordinal': 0,
+        'roundCount': 1,
+        'members': [
+          {'exercisePrescriptionId': 'r07c-prescription', 'ordinal': 0},
+        ],
+      },
+    ],
+    'prescriptions': [
+      {
+        'id': 'r07c-prescription',
+        'exerciseId': 'r07c-bench',
+        'exerciseNameSnapshot': 'Bench press',
+        'plannedSets': 3,
+        'repsRange': '8-10',
+        'targetLoadKg': 60.0,
+        'loadBasis': 'totalExternal',
+      },
+    ],
+  });
+  final launch = await executions.startUnscheduledDraft(
+    routineName: 'Planned push',
+    executionSnapshotJson: snapshot,
+    snapshotId: 'test-planned-player',
+  );
+  final prepared = await executions.prepareExecution(launch);
+  var state = prepared.state;
+  if (workingSets > 0) {
+    final slot = (await executions.readExecutionSlots(launch)).single;
+    for (var i = 0; i < workingSets; i++) {
+      state = const B02StrengthExecutionDraftService().recordSet(
+        state: state,
+        slot: slot,
+        reps: 8,
+        loadKg: 60.0,
+      );
+    }
+  }
+  return B02StrengthExecutionLaunch(
+    draftId: launch.draftId,
+    occurrenceId: 'test-planned-occurrence',
+    executionSnapshotJson: launch.executionSnapshotJson,
+    state: state,
+  );
+}
+
+Future<B02StrengthExecutionController> _pumpPlayerScreen(
+  WidgetTester tester,
+  B02StrengthExecutionLaunch launch,
+  StrengthExecutionRepository executions,
+  AppDatabase db,
+) async {
+  final controller = B02StrengthExecutionController(
+    StrengthExecutionCompatibilityAdapter(executions),
+    initialLaunch: launch,
+  );
+  await tester.runAsync(controller.loadSlots);
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        databaseProvider.overrideWithValue(db),
+        b02StrengthExecutionScreenControllerProvider.overrideWith(
+          (ref, _) => controller,
+        ),
+        b02PreviousPerformanceRepositoryProvider.overrideWithValue(
+          _NoHistoryPreviousPerformanceRepository(db),
+        ),
+        b07ExerciseContextRepositoryProvider.overrideWithValue(
+          _TestB07ExerciseContextRepository(db),
+        ),
+        b05ExerciseVisualRegistryProvider.overrideWith(
+          (ref) async => const B05ExerciseVisualRegistry.empty(),
+        ),
+      ],
+      child: MaterialApp(
+        theme: AppTheme.lightTheme,
+        home: MediaQuery(
+          data: MediaQueryData.fromView(tester.view).copyWith(
+            disableAnimations: true,
+          ),
+          child: B02StrengthPlayerScreen(
+            launch: launch,
+            nowUtc: () => DateTime.utc(2026, 8, 13, 8),
+          ),
+        ),
+      ),
+    ),
+  );
+  for (var pump = 0; pump < 8; pump++) {
+    await tester.pump(const Duration(milliseconds: 20));
+  }
+  await tester.pump(const Duration(milliseconds: 100));
+  return controller;
 }

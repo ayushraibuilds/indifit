@@ -220,7 +220,8 @@ class _PlateCalculatorViewState extends State<PlateCalculatorView> {
                 IconButton(
                   tooltip: 'Close plate calculator',
                   icon: const Icon(Icons.close),
-                  onPressed: widget.onClose ?? () => Navigator.of(context).maybePop(),
+                  onPressed:
+                      widget.onClose ?? () => Navigator.of(context).maybePop(),
                 ),
               ],
             ),
@@ -239,7 +240,9 @@ class _PlateCalculatorViewState extends State<PlateCalculatorView> {
                   if (widget.isEditable)
                     TextField(
                       controller: _targetWeightController,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
                       onChanged: _onTargetWeightChanged,
                       decoration: InputDecoration(
                         isDense: true,
@@ -248,7 +251,10 @@ class _PlateCalculatorViewState extends State<PlateCalculatorView> {
                           vertical: 10,
                         ),
                         suffixText: 'kg',
-                        suffixStyle: TextStyle(color: colors.action, fontWeight: FontWeight.bold),
+                        suffixStyle: TextStyle(
+                          color: colors.action,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     )
                   else
@@ -338,48 +344,56 @@ class _PlateCalculatorViewState extends State<PlateCalculatorView> {
                 padding: const EdgeInsets.all(B05Layout.space16),
                 child: Column(
                   children: [
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(width: 20, height: 6, color: Colors.grey),
-                          ..._calculatedPlates.entries.map((entry) {
-                            final double weight = entry.key;
-                            final int count = entry.value;
-                            return Row(
-                              children: List.generate(
-                                count,
-                                (_) => Container(
-                                  margin: const EdgeInsets.symmetric(
-                                    horizontal: 2,
-                                  ),
-                                  width: weight >= 20 ? 12 : 8,
-                                  height: weight >= 20 ? 50 : 36,
-                                  decoration: BoxDecoration(
-                                    color: _getPlateColor(weight),
-                                    borderRadius: BorderRadius.circular(4),
-                                    border: Border.all(color: colors.border),
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: Text(
-                                    weight % 1 == 0
-                                        ? '${weight.toInt()}'
-                                        : '$weight',
-                                    style: TextStyle(
-                                      fontSize: 8,
-                                      fontWeight: FontWeight.bold,
-                                      color: weight == 5.0
-                                          ? colors.textPrimary
-                                          : Colors.white,
+                    Semantics(
+                      label:
+                          'Barbell loading diagram: ${_calculatedPlates.entries.map((e) => '${e.value}x ${e.key}kg').join(', ')} per side',
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(width: 20, height: 6, color: Colors.grey),
+                            ..._calculatedPlates.entries.map((entry) {
+                              final double weight = entry.key;
+                              final int count = entry.value;
+                              return Row(
+                                children: List.generate(
+                                  count,
+                                  (_) => Container(
+                                    margin: const EdgeInsets.symmetric(
+                                      horizontal: 2,
+                                    ),
+                                    width: weight >= 20 ? 12 : 8,
+                                    height: weight >= 20 ? 50 : 36,
+                                    decoration: BoxDecoration(
+                                      color: _getPlateColor(weight),
+                                      borderRadius: BorderRadius.circular(4),
+                                      border: Border.all(color: colors.border),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: Text(
+                                      weight % 1 == 0
+                                          ? '${weight.toInt()}'
+                                          : '$weight',
+                                      style: TextStyle(
+                                        fontSize: 8,
+                                        fontWeight: FontWeight.bold,
+                                        color: weight == 5.0
+                                            ? colors.textPrimary
+                                            : Colors.white,
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
-                            );
-                          }),
-                          Container(width: 10, height: 10, color: Colors.grey),
-                        ],
+                              );
+                            }),
+                            Container(
+                              width: 10,
+                              height: 10,
+                              color: Colors.grey,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -458,7 +472,6 @@ class PlateCalculatorSheet extends StatelessWidget {
       builder: (sheetContext) => PlateCalculatorSheet(
         targetWeight: initialWeight,
         onApplyWeight: (weight) {
-          Navigator.of(sheetContext).pop(weight);
           onApplyWeight?.call(weight);
         },
       ),
