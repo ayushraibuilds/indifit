@@ -1,3 +1,5 @@
+import 'package:flutter/services.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/services/rest_presence_service.dart';
 import 'package:indifit/data/database/app_database.dart';
@@ -5,12 +7,34 @@ import 'package:indifit/data/models/b02_execution_models.dart';
 import 'package:indifit/data/repositories/b02_strength_execution_repository.dart';
 import 'package:indifit/data/repositories/calendar_repository.dart';
 import 'package:indifit/features/workout_player/b02_strength_execution_controller.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class TestRestPresenceDriver implements RestPresenceDriver {
   final List<Map<String, dynamic>> ongoingCalls = [];
   final List<Map<String, dynamic>> expiredCalls = [];
   final List<int> cancelledIds = [];
+  final List<Map<String, dynamic>> scheduledExactCalls = [];
+  bool canScheduleExactResult = false;
   int hapticCalls = 0;
+
+  @override
+  Future<bool> scheduleExactExpiryAlarm({
+    required int id,
+    required DateTime expiryUtc,
+    required String exerciseName,
+    required String channelId,
+    required String channelName,
+  }) async {
+    if (!canScheduleExactResult) return false;
+    scheduledExactCalls.add({
+      'id': id,
+      'expiryUtc': expiryUtc,
+      'exerciseName': exerciseName,
+      'channelId': channelId,
+      'channelName': channelName,
+    });
+    return true;
+  }
 
   @override
   Future<void> showOngoingRestNotification({
@@ -123,6 +147,7 @@ void main() {
     late RestPresenceService service;
 
     setUp(() {
+      SharedPreferences.setMockInitialValues({});
       driver = TestRestPresenceDriver();
       currentTime = DateTime.utc(2026, 9, 5, 10, 0, 0);
       service = RestPresenceService(
@@ -264,6 +289,7 @@ void main() {
     late RestPresenceService presenceService;
 
     setUp(() {
+      SharedPreferences.setMockInitialValues({});
       database = AppDatabase.memory();
       repo = StrengthExecutionRepository(
         db: database,
@@ -384,6 +410,308 @@ void main() {
 
       expect(presenceService.state, RestPresenceState.idle);
       expect(driver.cancelledIds, contains(RestPresenceService.ongoingNotificationId));
+    });
+  });
+
+  group('PV1-PROD-04 Stage 1b: Exact alarm anchor, single-writer rule & headless persistence', () {
+    late TestRestPresenceDriver driver;
+    late DateTime currentTime;
+    late RestPresenceService service;
+
+    setUp(() {
+      SharedPreferences.setMockInitialValues({});
+      driver = TestRestPresenceDriver();
+      currentTime = DateTime.utc(2026, 9, 5, 10, 0, 0);
+      service = RestPresenceService(
+        driver: driver,
+        nowUtc: () => currentTime,
+      );
+    });
+
+    tearDown(() async {
+      await service.cleanup();
+    });
+
+    test('RestAnchorRecord roundtrips to and from json', () {
+      final record = RestAnchorRecord(
+        periodId: 'p-1',
+        exerciseName: 'Bench Press',
+        startedAtUtc: currentTime,
+        baseTargetSeconds: 90,
+        accumulatedExtraSeconds: 30,
+        hasExactAlarmAnchor: true,
+      );
+
+      final json = record.toJson();
+      final restored = RestAnchorRecord.fromJson(json);
+
+      expect(restored.periodId, 'p-1');
+      expect(restored.exerciseName, 'Bench Press');
+      expect(restored.startedAtUtc, currentTime);
+      expect(restored.baseTargetSeconds, 90);
+      expect(restored.accumulatedExtraSeconds, 30);
+      expect(restored.totalTargetSeconds, 120);
+      expect(restored.expiryUtc, currentTime.add(const Duration(seconds: 120)));
+      expect(restored.hasExactAlarmAnchor, true);
+    });
+
+    test('startRest schedules exact alarm when capability is granted and persists anchor', () async {
+      driver.canScheduleExactResult = true;
+
+      await service.startRest(
+        periodId: 'p-exact',
+        exerciseName: 'Deadlift',
+        targetSeconds: 120,
+        startedAtUtc: currentTime,
+      );
+
+      expect(service.hasExactAlarmAnchor, true);
+      expect(driver.scheduledExactCalls, hasLength(1));
+      final call = driver.scheduledExactCalls.first;
+      expect(call['id'], RestPresenceService.expiredNotificationId);
+      expect(call['exerciseName'], 'Deadlift');
+      expect(call['channelId'], RestPresenceService.channelId);
+      expect(call['expiryUtc'], currentTime.add(const Duration(seconds: 120)));
+
+      // Verify anchor record persisted in prefs
+      final anchor = await RestPresenceService.loadAnchorRecord();
+      expect(anchor, isNotNull);
+      expect(anchor!.periodId, 'p-exact');
+      expect(anchor.hasExactAlarmAnchor, true);
+    });
+
+    test('single-writer rule: onRestElapsed suppresses Dart alert when exact alarm was scheduled', () async {
+      driver.canScheduleExactResult = true;
+
+      await service.startRest(
+        periodId: 'p-exact-2',
+        exerciseName: 'Squat',
+        targetSeconds: 90,
+        startedAtUtc: currentTime,
+      );
+
+      await service.onRestElapsed(periodId: 'p-exact-2');
+
+      expect(service.state, RestPresenceState.expired);
+      // Verify ongoing was cancelled
+      expect(driver.cancelledIds, contains(RestPresenceService.ongoingNotificationId));
+      // Single-writer: Dart alert suppressed because exact alarm owns the alert!
+      expect(driver.expiredCalls, isEmpty);
+      // Haptics still triggered
+      expect(driver.hapticCalls, 1);
+      // Anchor record cleared
+      expect(await RestPresenceService.loadAnchorRecord(), isNull);
+    });
+
+    test('single-writer rule: onRestElapsed posts fallback 999 when exact alarm was NOT scheduled', () async {
+      driver.canScheduleExactResult = false;
+
+      await service.startRest(
+        periodId: 'p-fallback',
+        exerciseName: 'Overhead Press',
+        targetSeconds: 60,
+        startedAtUtc: currentTime,
+      );
+
+      expect(service.hasExactAlarmAnchor, false);
+      expect(driver.scheduledExactCalls, isEmpty);
+
+      await service.onRestElapsed(periodId: 'p-fallback');
+
+      expect(service.state, RestPresenceState.expired);
+      // Fallback: Dart posts notification 999
+      expect(driver.expiredCalls, hasLength(1));
+      expect(driver.expiredCalls.first['id'], RestPresenceService.expiredNotificationId);
+      expect(driver.hapticCalls, 1);
+    });
+
+    test('anchor invariant: (re)scheduled on start/adjust and cancelled on cancel/cleanup', () async {
+      driver.canScheduleExactResult = true;
+
+      await service.startRest(
+        periodId: 'p-inv',
+        exerciseName: 'Pull-up',
+        targetSeconds: 60,
+        startedAtUtc: currentTime,
+      );
+      expect(driver.scheduledExactCalls, hasLength(1));
+
+      // Re-schedule when target duration adjusted
+      await service.startRest(
+        periodId: 'p-inv',
+        exerciseName: 'Pull-up',
+        targetSeconds: 90,
+        startedAtUtc: currentTime,
+        accumulatedExtraSeconds: 30,
+      );
+      expect(driver.scheduledExactCalls, hasLength(2));
+      expect(driver.scheduledExactCalls.last['expiryUtc'], currentTime.add(const Duration(seconds: 90)));
+
+      // Cancel cancels both ongoing and exact alarm ID 999
+      await service.cancelRest(periodId: 'p-inv');
+      expect(driver.cancelledIds, contains(RestPresenceService.ongoingNotificationId));
+      expect(driver.cancelledIds, contains(RestPresenceService.expiredNotificationId));
+      expect(await RestPresenceService.loadAnchorRecord(), isNull);
+    });
+
+    test('handleAction rest_add_30s with registered callback invokes delegate', () async {
+      String? adjustedPeriod;
+      int? adjustedDelta;
+      service.registerActionDelegate(
+        onAdjust: (p, delta) {
+          adjustedPeriod = p;
+          adjustedDelta = delta;
+        },
+        onSkip: (_) {},
+      );
+
+      await service.startRest(
+        periodId: 'p-action',
+        exerciseName: 'Dip',
+        targetSeconds: 60,
+        startedAtUtc: currentTime,
+      );
+
+      await service.handleAction('rest_add_30s');
+
+      expect(adjustedPeriod, 'p-action');
+      expect(adjustedDelta, 30);
+    });
+
+    test('handleAction rest_skip with registered callback invokes delegate', () async {
+      String? skippedPeriod;
+      service.registerActionDelegate(
+        onAdjust: (p, s) {},
+        onSkip: (p) => skippedPeriod = p,
+      );
+
+      await service.startRest(
+        periodId: 'p-skip',
+        exerciseName: 'Dip',
+        targetSeconds: 60,
+        startedAtUtc: currentTime,
+      );
+
+      await service.handleAction('rest_skip');
+
+      expect(skippedPeriod, 'p-skip');
+    });
+
+    test('handleAction with no registered callback writes pending intent without touching mirror', () async {
+      // No callback registered
+      await service.startRest(
+        periodId: 'p-no-callback',
+        exerciseName: 'Row',
+        targetSeconds: 60,
+        startedAtUtc: currentTime,
+      );
+
+      await service.handleAction('rest_add_30s');
+
+      // Mirror targetDurationSeconds is unchanged in-memory (anti-slop rule)
+      expect(service.targetDurationSeconds, 60);
+
+      // Pending intent written to prefs
+      final intent = await RestPresenceService.loadAndClearPendingIntent();
+      expect(intent, isNotNull);
+      expect(intent!.action, 'adjust_30s');
+      expect(intent.periodId, 'p-no-callback');
+      expect(intent.accumulatedExtraSeconds, 30);
+    });
+
+    test('handleBackgroundAction rest_add_30s performs read-modify-write on accumulated delta', () async {
+      // Mock platform channel for flutter_local_notifications calls
+      final platformCalls = <MethodCall>[];
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+            const MethodChannel('dexterous.com/flutter/local_notifications'),
+            (call) async {
+              platformCalls.add(call);
+              return true;
+            },
+          );
+
+      // Save initial anchor record
+      final initialAnchor = RestAnchorRecord(
+        periodId: 'p-bg',
+        exerciseName: 'Squat',
+        startedAtUtc: DateTime.now().toUtc(),
+        baseTargetSeconds: 60,
+        accumulatedExtraSeconds: 0,
+        hasExactAlarmAnchor: true,
+      );
+      await RestPresenceService.saveAnchorRecord(initialAnchor);
+
+      // Simulate background action tap
+      const response = NotificationResponse(
+        notificationResponseType: NotificationResponseType.selectedNotificationAction,
+        actionId: 'rest_add_30s',
+      );
+
+      await RestPresenceService.handleBackgroundAction(response);
+
+      // Verify updated anchor has accumulatedExtraSeconds = 30
+      final updatedAnchor = await RestPresenceService.loadAnchorRecord();
+      expect(updatedAnchor, isNotNull);
+      expect(updatedAnchor!.accumulatedExtraSeconds, 30);
+      expect(updatedAnchor.totalTargetSeconds, 90);
+
+      // Verify pending intent was written
+      final intent = await RestPresenceService.loadAndClearPendingIntent();
+      expect(intent, isNotNull);
+      expect(intent!.action, 'adjust_30s');
+      expect(intent.accumulatedExtraSeconds, 30);
+
+      // Verify second background tap increments delta to 60 (read-modify-write)
+      await RestPresenceService.handleBackgroundAction(response);
+      final secondAnchor = await RestPresenceService.loadAnchorRecord();
+      expect(secondAnchor!.accumulatedExtraSeconds, 60);
+      expect(secondAnchor.totalTargetSeconds, 120);
+    });
+
+    test('handleBackgroundAction rest_skip clears anchor, cancels notifications, and writes intent', () async {
+      final platformCalls = <MethodCall>[];
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+            const MethodChannel('dexterous.com/flutter/local_notifications'),
+            (call) async {
+              platformCalls.add(call);
+              return true;
+            },
+          );
+
+      final initialAnchor = RestAnchorRecord(
+        periodId: 'p-skip-bg',
+        exerciseName: 'Bench',
+        startedAtUtc: DateTime.now().toUtc(),
+        baseTargetSeconds: 60,
+        accumulatedExtraSeconds: 0,
+      );
+      await RestPresenceService.saveAnchorRecord(initialAnchor);
+
+      const response = NotificationResponse(
+        notificationResponseType: NotificationResponseType.selectedNotificationAction,
+        actionId: 'rest_skip',
+      );
+
+      await RestPresenceService.handleBackgroundAction(response);
+
+      // Anchor cleared
+      expect(await RestPresenceService.loadAnchorRecord(), isNull);
+
+      // Pending intent written
+      final intent = await RestPresenceService.loadAndClearPendingIntent();
+      expect(intent, isNotNull);
+      expect(intent!.action, 'skip');
+      expect(intent.periodId, 'p-skip-bg');
+
+      // Verified 998 and 999 cancellation called
+      final cancelled = platformCalls
+          .where((c) => c.method == 'cancel')
+          .map((c) => (c.arguments as Map)['id'] as int)
+          .toSet();
+      expect(cancelled, contains(RestPresenceService.ongoingNotificationId));
+      expect(cancelled, contains(RestPresenceService.expiredNotificationId));
     });
   });
 }

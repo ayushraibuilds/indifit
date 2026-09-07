@@ -9,6 +9,7 @@ import 'package:timezone/timezone.dart' as tz;
 import '../../data/database/app_database.dart';
 import '../utils/app_logger.dart';
 import 'crash_reporting_service.dart';
+import 'rest_presence_service.dart';
 
 /// Non-annoying, engagement-optimized local notification service.
 ///
@@ -125,12 +126,19 @@ class NotificationService {
     await _plugin.initialize(
       initSettings,
       onDidReceiveNotificationResponse: _onNotificationTapped,
+      onDidReceiveBackgroundNotificationResponse:
+          RestPresenceService.handleBackgroundAction,
     );
 
     debugPrint('NotificationService initialized (just-in-time mode).');
   }
 
   static void _onNotificationTapped(NotificationResponse response) {
+    final actionId = response.actionId;
+    if (actionId != null) {
+      RestPresenceService.instance.handleAction(actionId);
+      return;
+    }
     final payload = response.payload;
     debugPrint('Notification tapped: $payload');
     if (payload != null && onNotificationNavigate != null) {

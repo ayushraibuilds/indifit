@@ -1,11 +1,103 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:timezone/timezone.dart' as tz;
 
 import 'indifit_haptics.dart';
 
 /// Lifecycle states for background rest-timer presence.
 enum RestPresenceState { idle, active, expired, cancelled }
+
+/// Canonical durable anchor record persisted in SharedPreferences to support
+/// lock-screen re-posting and state preservation across process death.
+class RestAnchorRecord {
+  final String periodId;
+  final String exerciseName;
+  final DateTime startedAtUtc;
+  final int baseTargetSeconds;
+  final int accumulatedExtraSeconds;
+  final bool hasExactAlarmAnchor;
+
+  const RestAnchorRecord({
+    required this.periodId,
+    required this.exerciseName,
+    required this.startedAtUtc,
+    required this.baseTargetSeconds,
+    this.accumulatedExtraSeconds = 0,
+    this.hasExactAlarmAnchor = false,
+  });
+
+  int get totalTargetSeconds => baseTargetSeconds + accumulatedExtraSeconds;
+  DateTime get expiryUtc =>
+      startedAtUtc.add(Duration(seconds: totalTargetSeconds));
+
+  Map<String, dynamic> toJson() => {
+        'periodId': periodId,
+        'exerciseName': exerciseName,
+        'startedAtUtc': startedAtUtc.toIso8601String(),
+        'baseTargetSeconds': baseTargetSeconds,
+        'accumulatedExtraSeconds': accumulatedExtraSeconds,
+        'hasExactAlarmAnchor': hasExactAlarmAnchor,
+      };
+
+  factory RestAnchorRecord.fromJson(Map<String, dynamic> json) =>
+      RestAnchorRecord(
+        periodId: json['periodId'] as String,
+        exerciseName: json['exerciseName'] as String? ?? '',
+        startedAtUtc: DateTime.parse(json['startedAtUtc'] as String),
+        baseTargetSeconds: json['baseTargetSeconds'] as int,
+        accumulatedExtraSeconds: json['accumulatedExtraSeconds'] as int? ?? 0,
+        hasExactAlarmAnchor: json['hasExactAlarmAnchor'] as bool? ?? false,
+      );
+
+  RestAnchorRecord copyWith({
+    int? accumulatedExtraSeconds,
+    bool? hasExactAlarmAnchor,
+  }) =>
+      RestAnchorRecord(
+        periodId: periodId,
+        exerciseName: exerciseName,
+        startedAtUtc: startedAtUtc,
+        baseTargetSeconds: baseTargetSeconds,
+        accumulatedExtraSeconds:
+            accumulatedExtraSeconds ?? this.accumulatedExtraSeconds,
+        hasExactAlarmAnchor: hasExactAlarmAnchor ?? this.hasExactAlarmAnchor,
+      );
+}
+
+/// Structured intent written to SharedPreferences when notification actions are
+/// tapped without an active foreground controller callback, reconciled on resume.
+class RestPresenceIntent {
+  final String action; // 'adjust_30s' or 'skip'
+  final String periodId;
+  final int? accumulatedExtraSeconds;
+  final DateTime timestampUtc;
+
+  const RestPresenceIntent({
+    required this.action,
+    required this.periodId,
+    this.accumulatedExtraSeconds,
+    required this.timestampUtc,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'action': action,
+        'periodId': periodId,
+        if (accumulatedExtraSeconds != null)
+          'accumulatedExtraSeconds': accumulatedExtraSeconds,
+        'timestampUtc': timestampUtc.toIso8601String(),
+      };
+
+  factory RestPresenceIntent.fromJson(Map<String, dynamic> json) =>
+      RestPresenceIntent(
+        action: json['action'] as String,
+        periodId: json['periodId'] as String,
+        accumulatedExtraSeconds: json['accumulatedExtraSeconds'] as int?,
+        timestampUtc: DateTime.parse(json['timestampUtc'] as String),
+      );
+}
 
 /// Narrow platform driver boundary for rest-timer notifications and haptics.
 abstract interface class RestPresenceDriver {
@@ -24,6 +116,16 @@ abstract interface class RestPresenceDriver {
 
   Future<void> showRestExpiredNotification({
     required int id,
+    required String exerciseName,
+    required String channelId,
+    required String channelName,
+  });
+
+  /// Schedules an exact alarm at expiryUtc if capability is available.
+  /// Returns true if scheduled as an exact alarm, or false if unavailable/denied.
+  Future<bool> scheduleExactExpiryAlarm({
+    required int id,
+    required DateTime expiryUtc,
     required String exerciseName,
     required String channelId,
     required String channelName,
@@ -76,6 +178,20 @@ class LocalNotificationRestPresenceDriver implements RestPresenceDriver {
       usesChronometer: expiryUtc != null,
       chronometerCountDown: expiryUtc != null,
       when: expiryUtc?.millisecondsSinceEpoch,
+      actions: const <AndroidNotificationAction>[
+        AndroidNotificationAction(
+          'rest_add_30s',
+          '+30s',
+          showsUserInterface: false,
+          cancelNotification: false,
+        ),
+        AndroidNotificationAction(
+          'rest_skip',
+          'Skip',
+          showsUserInterface: false,
+          cancelNotification: true,
+        ),
+      ],
     );
 
     const iosDetails = DarwinNotificationDetails(
@@ -140,6 +256,72 @@ class LocalNotificationRestPresenceDriver implements RestPresenceDriver {
   }
 
   @override
+  Future<bool> scheduleExactExpiryAlarm({
+    required int id,
+    required DateTime expiryUtc,
+    required String exerciseName,
+    required String channelId,
+    required String channelName,
+  }) async {
+    try {
+      final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+      // Query capability per schedule call on Android 12+/14+
+      final canExact =
+          await androidPlugin?.canScheduleExactNotifications() ?? false;
+      if (!canExact) {
+        return false;
+      }
+
+      final body = exerciseName.isNotEmpty
+          ? 'Time to hit your next set of $exerciseName!'
+          : 'Time to hit your next set. You got this!';
+
+      final androidDetails = AndroidNotificationDetails(
+        channelId,
+        channelName,
+        channelDescription: 'Workout rest timer alert',
+        importance: Importance.high,
+        priority: Priority.high,
+        ongoing: false,
+        autoCancel: true,
+      );
+      const iosDetails = DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: false,
+        presentSound: true,
+      );
+      final details = NotificationDetails(
+        android: androidDetails,
+        iOS: iosDetails,
+      );
+
+      tz.TZDateTime tzExpiry;
+      try {
+        tzExpiry = tz.TZDateTime.from(expiryUtc, tz.local);
+      } catch (_) {
+        tz.setLocalLocation(tz.UTC);
+        tzExpiry = tz.TZDateTime.from(expiryUtc, tz.UTC);
+      }
+
+      await _plugin.zonedSchedule(
+        id,
+        'Rest Time Completed! 💪',
+        body,
+        tzExpiry,
+        details,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        payload: 'workout',
+      );
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  @override
   Future<void> cancelNotification(int id) async {
     await _plugin.cancel(id);
   }
@@ -162,6 +344,9 @@ class RestPresenceService {
   static const int ongoingNotificationId = 998;
   static const int expiredNotificationId = 999;
 
+  static const String prefRestAnchorRecord = 'rest_presence_anchor_record';
+  static const String prefPendingRestIntent = 'rest_presence_pending_intent';
+
   static RestPresenceService? _instance;
 
   /// Process-wide default used by the production Riverpod providers.
@@ -178,7 +363,11 @@ class RestPresenceService {
   String? _currentExerciseName;
   DateTime? _startedAtUtc;
   int? _targetDurationSeconds;
+  bool _hasExactAlarmAnchor = false;
   Timer? _ticker;
+
+  void Function(String periodId, int deltaSeconds)? onAdjustRestRequested;
+  void Function(String periodId)? onSkipRestRequested;
 
   RestPresenceService({
     RestPresenceDriver? driver,
@@ -192,6 +381,8 @@ class RestPresenceService {
   String? get currentExerciseName => _currentExerciseName;
   DateTime? get startedAtUtc => _startedAtUtc;
   int? get targetDurationSeconds => _targetDurationSeconds;
+  bool get hasExactAlarmAnchor => _hasExactAlarmAnchor;
+  RestPresenceDriver get driver => _driver;
 
   int get remainingSeconds {
     if (_state != RestPresenceState.active ||
@@ -204,12 +395,26 @@ class RestPresenceService {
     return remaining > 0 ? remaining : 0;
   }
 
+  void registerActionDelegate({
+    required void Function(String periodId, int deltaSeconds) onAdjust,
+    required void Function(String periodId) onSkip,
+  }) {
+    onAdjustRestRequested = onAdjust;
+    onSkipRestRequested = onSkip;
+  }
+
+  void unregisterActionDelegate() {
+    onAdjustRestRequested = null;
+    onSkipRestRequested = null;
+  }
+
   /// Start background presence for a rest period.
   Future<void> startRest({
     required String periodId,
     required String exerciseName,
     required int targetSeconds,
     DateTime? startedAtUtc,
+    int accumulatedExtraSeconds = 0,
   }) async {
     // Cancel any previous rest timer or ticker
     _ticker?.cancel();
@@ -222,10 +427,35 @@ class RestPresenceService {
     _startedAtUtc = startedAtUtc ?? _nowUtc();
 
     final remaining = remainingSeconds;
+    final expiryUtc = _startedAtUtc!.add(Duration(seconds: targetSeconds));
+
     if (remaining <= 0) {
+      _hasExactAlarmAnchor = false;
       await onRestElapsed(periodId: periodId);
       return;
     }
+
+    // Invariant: (re)schedule exact alarm anchor whenever expiryUtc changes
+    final scheduledExact = await _driver.scheduleExactExpiryAlarm(
+      id: expiredNotificationId,
+      expiryUtc: expiryUtc,
+      exerciseName: exerciseName,
+      channelId: channelId,
+      channelName: channelName,
+    );
+    _hasExactAlarmAnchor = scheduledExact;
+
+    // Persist canonical anchor record with single-writer flag
+    await saveAnchorRecord(
+      RestAnchorRecord(
+        periodId: periodId,
+        exerciseName: exerciseName,
+        startedAtUtc: _startedAtUtc!,
+        baseTargetSeconds: targetSeconds - accumulatedExtraSeconds,
+        accumulatedExtraSeconds: accumulatedExtraSeconds,
+        hasExactAlarmAnchor: _hasExactAlarmAnchor,
+      ),
+    );
 
     await _driver.showOngoingRestNotification(
       id: ongoingNotificationId,
@@ -234,8 +464,7 @@ class RestPresenceService {
       totalSeconds: _targetDurationSeconds!,
       channelId: channelId,
       channelName: channelName,
-      expiryUtc:
-          _startedAtUtc?.add(Duration(seconds: _targetDurationSeconds!)),
+      expiryUtc: expiryUtc,
     );
 
     // Periodic tick to check expiry every 1s, but throttle notification re-posts to
@@ -259,15 +488,17 @@ class RestPresenceService {
           totalSeconds: _targetDurationSeconds!,
           channelId: channelId,
           channelName: channelName,
-          expiryUtc:
-              _startedAtUtc?.add(Duration(seconds: _targetDurationSeconds!)),
+          expiryUtc: expiryUtc,
         );
       }
     });
   }
 
   /// Called when the rest period reaches 0 or is completed due to timer elapsing.
-  Future<void> onRestElapsed({required String periodId}) async {
+  Future<void> onRestElapsed({
+    required String periodId,
+    bool? silentCompletion,
+  }) async {
     if (_state != RestPresenceState.active || _currentPeriodId != periodId) {
       // If already expired or not matching current, still ensure ongoing notification is removed
       await _driver.cancelNotification(ongoingNotificationId);
@@ -281,13 +512,22 @@ class RestPresenceService {
     // Dismiss ongoing progress notification
     await _driver.cancelNotification(ongoingNotificationId);
 
-    // Fire expiry notification and haptic confirmation
-    await _driver.showRestExpiredNotification(
-      id: expiredNotificationId,
-      exerciseName: _currentExerciseName ?? '',
-      channelId: channelId,
-      channelName: channelName,
-    );
+    // Single-writer rule:
+    // If exact alarm anchor was successfully scheduled, the platform alarm
+    // already fired (or is firing) the audible notification ID 999.
+    // In silentCompletion or when hasExactAlarmAnchor == true, suppress posting 999.
+    // If exact alarm capability was denied/unavailable, Dart posts fallback 999.
+    final isSilent = silentCompletion ?? _hasExactAlarmAnchor;
+    if (!isSilent) {
+      await _driver.showRestExpiredNotification(
+        id: expiredNotificationId,
+        exerciseName: _currentExerciseName ?? '',
+        channelId: channelId,
+        channelName: channelName,
+      );
+    }
+
+    await clearAnchorRecord();
     await _driver.triggerHapticFeedback();
   }
 
@@ -304,8 +544,11 @@ class RestPresenceService {
     _currentExerciseName = null;
     _startedAtUtc = null;
     _targetDurationSeconds = null;
+    _hasExactAlarmAnchor = false;
 
     await _driver.cancelNotification(ongoingNotificationId);
+    await _driver.cancelNotification(expiredNotificationId);
+    await clearAnchorRecord();
   }
 
   /// Clean up all rest notifications and state (e.g. on workout finish, cancel, or app launch).
@@ -317,14 +560,182 @@ class RestPresenceService {
     _currentExerciseName = null;
     _startedAtUtc = null;
     _targetDurationSeconds = null;
+    _hasExactAlarmAnchor = false;
 
     await _driver.cancelNotification(ongoingNotificationId);
     await _driver.cancelNotification(expiredNotificationId);
+    await clearAnchorRecord();
   }
 
   /// Clean up stale rest notifications at app startup or when entering foreground.
-  static Future<void> cleanupStaleNotifications([RestPresenceDriver? driver]) async {
+  static Future<void> cleanupStaleNotifications([
+    RestPresenceDriver? driver,
+  ]) async {
     final d = driver ?? LocalNotificationRestPresenceDriver();
     await d.cancelNotification(ongoingNotificationId);
+    await d.cancelNotification(expiredNotificationId);
+    await clearAnchorRecord();
+  }
+
+  /// Dispatch an interactive notification action.
+  Future<void> handleAction(String actionId) async {
+    final periodId = _currentPeriodId;
+    if (actionId == 'rest_add_30s') {
+      if (onAdjustRestRequested != null && periodId != null) {
+        onAdjustRestRequested!(periodId, 30);
+      } else {
+        // No callback registered -> write pending intent, leave mirror untouched
+        final anchor = await loadAnchorRecord();
+        if (anchor != null) {
+          final updated = anchor.copyWith(
+            accumulatedExtraSeconds: anchor.accumulatedExtraSeconds + 30,
+          );
+          await saveAnchorRecord(updated);
+          await savePendingIntent(
+            RestPresenceIntent(
+              action: 'adjust_30s',
+              periodId: anchor.periodId,
+              accumulatedExtraSeconds: updated.accumulatedExtraSeconds,
+              timestampUtc: _nowUtc(),
+            ),
+          );
+        }
+      }
+    } else if (actionId == 'rest_skip') {
+      if (onSkipRestRequested != null && periodId != null) {
+        onSkipRestRequested!(periodId);
+      } else {
+        // No callback registered -> write pending intent, leave mirror untouched
+        final anchor = await loadAnchorRecord();
+        if (anchor != null) {
+          await savePendingIntent(
+            RestPresenceIntent(
+              action: 'skip',
+              periodId: anchor.periodId,
+              timestampUtc: _nowUtc(),
+            ),
+          );
+          await cleanup();
+        }
+      }
+    }
+  }
+
+  /// Headless isolate action handler executed when the app is backgrounded or killed.
+  @pragma('vm:entry-point')
+  static Future<void> handleBackgroundAction(
+    NotificationResponse response,
+  ) async {
+    final actionId = response.actionId;
+    if (actionId == null) return;
+
+    final anchor = await loadAnchorRecord();
+    if (anchor == null) return;
+
+    final plugin = FlutterLocalNotificationsPlugin();
+    final driver = LocalNotificationRestPresenceDriver(plugin);
+    final now = DateTime.now().toUtc();
+
+    if (actionId == 'rest_add_30s') {
+      final updated = anchor.copyWith(
+        accumulatedExtraSeconds: anchor.accumulatedExtraSeconds + 30,
+      );
+      await saveAnchorRecord(updated);
+      await savePendingIntent(
+        RestPresenceIntent(
+          action: 'adjust_30s',
+          periodId: anchor.periodId,
+          accumulatedExtraSeconds: updated.accumulatedExtraSeconds,
+          timestampUtc: now,
+        ),
+      );
+
+      final newExpiryUtc = updated.expiryUtc;
+      final remaining = newExpiryUtc.difference(now).inSeconds;
+      final remainingSafe = remaining > 0 ? remaining : 0;
+
+      // Re-post ongoing notification with updated chronometer
+      await driver.showOngoingRestNotification(
+        id: ongoingNotificationId,
+        exerciseName: updated.exerciseName,
+        remainingSeconds: remainingSafe,
+        totalSeconds: updated.totalTargetSeconds,
+        channelId: channelId,
+        channelName: channelName,
+        expiryUtc: newExpiryUtc,
+      );
+
+      // Invariant: reschedule exact alarm anchor ID 999 at newExpiryUtc
+      await driver.scheduleExactExpiryAlarm(
+        id: expiredNotificationId,
+        expiryUtc: newExpiryUtc,
+        exerciseName: updated.exerciseName,
+        channelId: channelId,
+        channelName: channelName,
+      );
+    } else if (actionId == 'rest_skip') {
+      await savePendingIntent(
+        RestPresenceIntent(
+          action: 'skip',
+          periodId: anchor.periodId,
+          timestampUtc: now,
+        ),
+      );
+      await clearAnchorRecord();
+      await driver.cancelNotification(ongoingNotificationId);
+      await driver.cancelNotification(expiredNotificationId);
+    }
+  }
+
+  // ────────────────────────────────────────
+  // Anchor Record & Pending Intent Persistence
+  // ────────────────────────────────────────
+
+  static Future<void> saveAnchorRecord(RestAnchorRecord record) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(prefRestAnchorRecord, jsonEncode(record.toJson()));
+    } catch (_) {}
+  }
+
+  static Future<RestAnchorRecord?> loadAnchorRecord() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(prefRestAnchorRecord);
+      if (raw == null || raw.isEmpty) return null;
+      return RestAnchorRecord.fromJson(
+        jsonDecode(raw) as Map<String, dynamic>,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static Future<void> clearAnchorRecord() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(prefRestAnchorRecord);
+    } catch (_) {}
+  }
+
+  static Future<void> savePendingIntent(RestPresenceIntent intent) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(prefPendingRestIntent, jsonEncode(intent.toJson()));
+    } catch (_) {}
+  }
+
+  static Future<RestPresenceIntent?> loadAndClearPendingIntent() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(prefPendingRestIntent);
+      if (raw == null || raw.isEmpty) return null;
+      await prefs.remove(prefPendingRestIntent);
+      return RestPresenceIntent.fromJson(
+        jsonDecode(raw) as Map<String, dynamic>,
+      );
+    } catch (_) {
+      return null;
+    }
   }
 }
