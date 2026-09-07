@@ -131,6 +131,7 @@ class B02StrengthExecutionController
     if (initialLaunch != null) {
       _ensureWakeLockForLaunch(initialLaunch);
     }
+    _registerRestPresenceDelegate();
   }
 
   static DateTime _systemNowUtc() => DateTime.now().toUtc();
@@ -143,6 +144,17 @@ class B02StrengthExecutionController
     if (coordinator == null) return;
     coordinator.attachToAppLifecycle();
     unawaited(coordinator.setActiveSession(_wakeLockKey(launch)));
+  }
+
+  void _registerRestPresenceDelegate() {
+    _restPresence?.registerActionDelegate(
+      onAdjust: (periodId, delta) async {
+        await adjustRest(periodId, seconds: delta);
+      },
+      onSkip: (periodId) async {
+        await skipRest(periodId);
+      },
+    );
   }
 
   /// Reconciles the session-owned screen-awake intent for route rebinds and
@@ -176,6 +188,7 @@ class B02StrengthExecutionController
   void _releaseWakeLockForLaunch(B02StrengthExecutionLaunch launch) {
     final presence = _restPresence;
     if (presence != null) {
+      presence.unregisterActionDelegate();
       unawaited(presence.cleanup());
     }
     final coordinator = _wakeLockCoordinator;
@@ -187,6 +200,7 @@ class B02StrengthExecutionController
   void dispose() {
     final presence = _restPresence;
     if (presence != null) {
+      presence.unregisterActionDelegate();
       unawaited(presence.cleanup());
     }
     super.dispose();
@@ -1009,7 +1023,11 @@ class B02StrengthExecutionController
   /// Completes an elapsed countdown through the same durable B02 rest path as
   /// an explicit skip. The timer is presentation-only; it never mutates a
   /// rest period directly.
-  Future<bool> completeRest(String periodId, {DateTime? endedAtUtc}) async {
+  Future<bool> completeRest(
+    String periodId, {
+    DateTime? endedAtUtc,
+    bool? silentCompletion,
+  }) async {
     try {
       return await _enqueueRestAction<bool>(() async {
         final current = state.launch;
@@ -1027,7 +1045,10 @@ class B02StrengthExecutionController
           ),
         );
         if (saved) {
-          await _restPresence?.onRestElapsed(periodId: periodId);
+          await _restPresence?.onRestElapsed(
+            periodId: periodId,
+            silentCompletion: silentCompletion,
+          );
         }
         return saved &&
             mounted &&
@@ -1040,6 +1061,65 @@ class B02StrengthExecutionController
       final current = state.launch;
       if (current != null) _setFailure(error, current);
       return false;
+    }
+  }
+
+  /// Consumes and reconciles any pending background rest action intents
+  /// recorded while the process was backgrounded, headless, or alive without
+  /// an active controller callback, and silently completes any rest period
+  /// that elapsed while backgrounded with an exact alarm anchor.
+  Future<void> reconcilePendingRestIntent() async {
+    try {
+      final current = state.launch;
+      if (current == null) return;
+
+      final intent = await RestPresenceService.loadAndClearPendingIntent();
+      final anchor = await RestPresenceService.loadAnchorRecord();
+
+      final activePeriod = current.state.restPeriods
+          .where((p) => p.endedAtUtc == null)
+          .firstOrNull;
+
+      if (activePeriod != null) {
+        if (intent != null) {
+          if (intent.action == 'adjust_30s') {
+            final delta = (intent.accumulatedExtraSeconds != null &&
+                    intent.accumulatedExtraSeconds! > 0)
+                ? intent.accumulatedExtraSeconds!
+                : (anchor != null
+                    ? (anchor.totalTargetSeconds -
+                        (activePeriod.selectedSeconds ??
+                            activePeriod.recommendedSeconds ??
+                            0))
+                    : 30);
+            if (delta > 0) {
+              await adjustRest(activePeriod.id, seconds: delta);
+            }
+          } else if (intent.action == 'skip') {
+            await skipRest(activePeriod.id);
+            return;
+          }
+        }
+
+        // Re-read updated draft after awaiting adjustRest to avoid evaluating stale snapshots.
+        final currentAfter = state.launch;
+        final periodToCheck = currentAfter == null
+            ? activePeriod
+            : (_restPeriod(currentAfter.state, activePeriod.id) ?? activePeriod);
+
+        // Check if active rest elapsed while backgrounded
+        final now = _nowUtc().toUtc();
+        final totalSeconds = periodToCheck.selectedSeconds ??
+            periodToCheck.recommendedSeconds ??
+            0;
+        final elapsed = now.difference(periodToCheck.startedAtUtc).inSeconds;
+        if (elapsed >= totalSeconds) {
+          final wasExact = anchor?.hasExactAlarmAnchor ?? false;
+          await completeRest(periodToCheck.id, silentCompletion: wasExact);
+        }
+      }
+    } catch (error) {
+      AppLogger.warning('Failed to reconcile pending rest intent: $error');
     }
   }
 

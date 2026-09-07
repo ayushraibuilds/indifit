@@ -88,6 +88,7 @@ class _B02StrengthPlayerScreenState
           widget.launch,
         );
         unawaited(ref.read(provider.notifier).reconcileWakeLock());
+        unawaited(ref.read(provider.notifier).reconcilePendingRestIntent());
         if (ref.read(provider).slots.isEmpty) {
           ref.read(provider.notifier).loadSlots();
         }
@@ -116,6 +117,7 @@ class _B02StrengthPlayerScreenState
     if (state == AppLifecycleState.resumed) {
       unawaited(controller.resumeElapsed());
       unawaited(controller.reconcileWakeLock());
+      unawaited(controller.reconcilePendingRestIntent());
     } else if (state == AppLifecycleState.inactive ||
         state == AppLifecycleState.paused ||
         state == AppLifecycleState.detached) {

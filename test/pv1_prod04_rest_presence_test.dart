@@ -714,4 +714,202 @@ void main() {
       expect(cancelled, contains(RestPresenceService.expiredNotificationId));
     });
   });
+
+  group('PV1-PROD-04 Stage 2: Controller wiring, resume reconciliation & silent restart', () {
+    late AppDatabase database;
+    late StrengthExecutionRepository repo;
+    late _RecordingAdapter adapter;
+    late TestRestPresenceDriver driver;
+    late RestPresenceService presenceService;
+
+    setUp(() {
+      SharedPreferences.setMockInitialValues({});
+      database = AppDatabase.memory();
+      repo = StrengthExecutionRepository(
+        db: database,
+        calendarRepo: CalendarRepository(database),
+      );
+      adapter = _RecordingAdapter(repo);
+      driver = TestRestPresenceDriver();
+      presenceService = RestPresenceService(
+        driver: driver,
+        nowUtc: () => DateTime.utc(2026, 9, 5, 10, 0),
+      );
+    });
+
+    tearDown(() async {
+      await presenceService.cleanup();
+      await database.close();
+    });
+
+    test('action tap rest_add_30s routes to controller and adjusts draft in SQLite', () async {
+      final launch = _createLaunch();
+      final controller = B02StrengthExecutionController(
+        adapter,
+        initialLaunch: launch,
+        nowUtc: () => DateTime.utc(2026, 9, 5, 10, 0),
+        restPresence: presenceService,
+      );
+      addTearDown(controller.dispose);
+
+      final slot = _createSlot(exerciseName: 'Bench Press', prescribedRest: 90);
+      await controller.recordSet(
+        slot: slot,
+        reps: 8,
+        loadKg: 80,
+        startRestAfterRecord: true,
+      );
+      expect(presenceService.isActive, true);
+
+      // Simulate tapping +30s action
+      await presenceService.handleAction('rest_add_30s');
+
+      // Verify draft state in controller has updated duration
+      final period = controller.state.launch!.state.restPeriods.single;
+      expect(period.selectedSeconds, 120);
+    });
+
+    test('action tap rest_skip routes to controller and marks rest skipped in draft', () async {
+      final launch = _createLaunch();
+      final controller = B02StrengthExecutionController(
+        adapter,
+        initialLaunch: launch,
+        nowUtc: () => DateTime.utc(2026, 9, 5, 10, 0),
+        restPresence: presenceService,
+      );
+      addTearDown(controller.dispose);
+
+      final slot = _createSlot(exerciseName: 'Bench Press', prescribedRest: 90);
+      await controller.recordSet(
+        slot: slot,
+        reps: 8,
+        loadKg: 80,
+        startRestAfterRecord: true,
+      );
+      expect(presenceService.isActive, true);
+
+      // Simulate tapping Skip action
+      await presenceService.handleAction('rest_skip');
+
+      expect(presenceService.isActive, false);
+      final period = controller.state.launch!.state.restPeriods.single;
+      expect(period.endedAtUtc, isNotNull);
+      expect(period.endReason, B02RestEndReason.skipped);
+    });
+
+    test('controller dispose unregisters action delegate preventing stale callback invocation', () async {
+      final launch = _createLaunch();
+      final controller = B02StrengthExecutionController(
+        adapter,
+        initialLaunch: launch,
+        nowUtc: () => DateTime.utc(2026, 9, 5, 10, 0),
+        restPresence: presenceService,
+      );
+
+      final slot = _createSlot(exerciseName: 'Bench Press', prescribedRest: 90);
+      await controller.recordSet(
+        slot: slot,
+        reps: 8,
+        loadKg: 80,
+        startRestAfterRecord: true,
+      );
+
+      controller.dispose();
+
+      // Tap action after dispose
+      await presenceService.handleAction('rest_add_30s');
+
+      // Does not throw and does not invoke disposed controller
+      expect(presenceService.onAdjustRestRequested, isNull);
+      expect(presenceService.onSkipRestRequested, isNull);
+    });
+
+    test('reconcilePendingRestIntent applies pending adjust_30s intent to active draft', () async {
+      final launch = _createLaunch();
+      final controller = B02StrengthExecutionController(
+        adapter,
+        initialLaunch: launch,
+        nowUtc: () => DateTime.utc(2026, 9, 5, 10, 0),
+        restPresence: presenceService,
+      );
+      addTearDown(controller.dispose);
+
+      final slot = _createSlot(exerciseName: 'Bench Press', prescribedRest: 90);
+      await controller.recordSet(
+        slot: slot,
+        reps: 8,
+        loadKg: 80,
+        startRestAfterRecord: true,
+      );
+
+      final periodId = controller.state.launch!.state.restPeriods.single.id;
+
+      // Simulate a pending intent recorded while in background
+      await RestPresenceService.savePendingIntent(
+        RestPresenceIntent(
+          action: 'adjust_30s',
+          periodId: periodId,
+          accumulatedExtraSeconds: 30,
+          timestampUtc: DateTime.utc(2026, 9, 5, 10, 0, 10),
+        ),
+      );
+
+      await controller.reconcilePendingRestIntent();
+
+      // Draft updated to 90 + 30 = 120s
+      final period = controller.state.launch!.state.restPeriods.single;
+      expect(period.selectedSeconds, 120);
+
+      // Pending intent consumed
+      expect(await RestPresenceService.loadAndClearPendingIntent(), isNull);
+    });
+
+    test('restart-after-anchor suppresses Dart alert while completing draft state silently', () async {
+      var clockTime = DateTime.utc(2026, 9, 5, 10, 0);
+      final launch = _createLaunch();
+      final controller = B02StrengthExecutionController(
+        adapter,
+        initialLaunch: launch,
+        nowUtc: () => clockTime,
+        restPresence: presenceService,
+      );
+      addTearDown(controller.dispose);
+
+      final slot = _createSlot(exerciseName: 'Bench Press', prescribedRest: 60);
+      await controller.recordSet(
+        slot: slot,
+        reps: 8,
+        loadKg: 80,
+        startRestAfterRecord: true,
+      );
+
+      final periodId = controller.state.launch!.state.restPeriods.single.id;
+
+      // Simulate that anchor was scheduled and hasExactAlarmAnchor == true in prefs
+      await RestPresenceService.saveAnchorRecord(
+        RestAnchorRecord(
+          periodId: periodId,
+          exerciseName: 'Bench Press',
+          startedAtUtc: clockTime,
+          baseTargetSeconds: 60,
+          accumulatedExtraSeconds: 0,
+          hasExactAlarmAnchor: true,
+        ),
+      );
+
+      // Advance clock past duration (rest expired while process was backgrounded/sleeping)
+      clockTime = clockTime.add(const Duration(seconds: 70));
+
+      // Reconcile on resume
+      await controller.reconcilePendingRestIntent();
+
+      // Draft completed as elapsed
+      final period = controller.state.launch!.state.restPeriods.single;
+      expect(period.endedAtUtc, isNotNull);
+      expect(period.endReason, B02RestEndReason.elapsed);
+
+      // Single-writer check: Dart alert was SUPPRESSED because exact alarm anchor fired it!
+      expect(driver.expiredCalls, isEmpty);
+    });
+  });
 }

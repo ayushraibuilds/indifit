@@ -15,6 +15,7 @@ import 'core/services/rest_presence_service.dart';
 import 'core/theme/app_theme.dart';
 import 'core/utils/app_logger.dart';
 import 'data/database/app_database.dart';
+import 'features/workout_player/b02_strength_execution_controller.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -207,6 +208,11 @@ class _IndiFitAppState extends ConsumerState<IndiFitApp>
     if (state == AppLifecycleState.resumed) {
       ref.read(civilDateRevisionProvider.notifier).refresh();
       _queueReminderReconciliation(refreshTimezone: true);
+      unawaited(
+        ref
+            .read(b02StrengthExecutionControllerProvider.notifier)
+            .reconcilePendingRestIntent(),
+      );
     }
   }
 

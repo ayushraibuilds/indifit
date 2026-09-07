@@ -366,8 +366,9 @@ class RestPresenceService {
   bool _hasExactAlarmAnchor = false;
   Timer? _ticker;
 
-  void Function(String periodId, int deltaSeconds)? onAdjustRestRequested;
-  void Function(String periodId)? onSkipRestRequested;
+  FutureOr<void> Function(String periodId, int deltaSeconds)?
+      onAdjustRestRequested;
+  FutureOr<void> Function(String periodId)? onSkipRestRequested;
 
   RestPresenceService({
     RestPresenceDriver? driver,
@@ -396,8 +397,8 @@ class RestPresenceService {
   }
 
   void registerActionDelegate({
-    required void Function(String periodId, int deltaSeconds) onAdjust,
-    required void Function(String periodId) onSkip,
+    required FutureOr<void> Function(String periodId, int deltaSeconds) onAdjust,
+    required FutureOr<void> Function(String periodId) onSkip,
   }) {
     onAdjustRestRequested = onAdjust;
     onSkipRestRequested = onSkip;
@@ -582,7 +583,7 @@ class RestPresenceService {
     final periodId = _currentPeriodId;
     if (actionId == 'rest_add_30s') {
       if (onAdjustRestRequested != null && periodId != null) {
-        onAdjustRestRequested!(periodId, 30);
+        await onAdjustRestRequested!(periodId, 30);
       } else {
         // No callback registered -> write pending intent, leave mirror untouched
         final anchor = await loadAnchorRecord();
@@ -603,7 +604,7 @@ class RestPresenceService {
       }
     } else if (actionId == 'rest_skip') {
       if (onSkipRestRequested != null && periodId != null) {
-        onSkipRestRequested!(periodId);
+        await onSkipRestRequested!(periodId);
       } else {
         // No callback registered -> write pending intent, leave mirror untouched
         final anchor = await loadAnchorRecord();
