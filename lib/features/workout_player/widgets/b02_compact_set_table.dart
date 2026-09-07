@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/indifit_icons.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
 import '../../../core/widgets/responsive_form_primitives.dart';
 import '../../../data/models/b02_execution_models.dart';
@@ -153,6 +154,7 @@ class B02CompactSetTable extends StatelessWidget {
     this.showPendingEditor = true,
     this.onLoadChanged,
     this.onRepsChanged,
+    this.onOpenPlateCalculator,
   });
 
   final B02StrengthExecutionSlot slot;
@@ -174,6 +176,7 @@ class B02CompactSetTable extends StatelessWidget {
   final bool showPendingEditor;
   final ValueChanged<String>? onLoadChanged;
   final ValueChanged<String>? onRepsChanged;
+  final VoidCallback? onOpenPlateCalculator;
 
   @override
   Widget build(BuildContext context) {
@@ -228,6 +231,7 @@ class B02CompactSetTable extends StatelessWidget {
               onLoadChanged: onLoadChanged,
               onRepsChanged: onRepsChanged,
               moreContent: moreContent,
+              onOpenPlateCalculator: onOpenPlateCalculator,
             ),
           if (onAddSet != null) ...[
             const SizedBox(height: 8),
@@ -526,6 +530,7 @@ class _PendingSetEditor extends StatelessWidget {
     required this.onLoadChanged,
     required this.onRepsChanged,
     required this.moreContent,
+    this.onOpenPlateCalculator,
   });
 
   final B02StrengthExecutionSlot slot;
@@ -541,6 +546,7 @@ class _PendingSetEditor extends StatelessWidget {
   final ValueChanged<String>? onLoadChanged;
   final ValueChanged<String>? onRepsChanged;
   final Widget? moreContent;
+  final VoidCallback? onOpenPlateCalculator;
 
   @override
   Widget build(BuildContext context) {
@@ -581,7 +587,16 @@ class _PendingSetEditor extends StatelessWidget {
                   decimal: true,
                 ),
                 textInputAction: TextInputAction.next,
-                decoration: InputDecoration(labelText: loadLabel),
+                decoration: InputDecoration(
+                  labelText: loadLabel,
+                  suffixIcon: onOpenPlateCalculator == null
+                      ? null
+                      : IconButton(
+                          tooltip: 'Plate calculator',
+                          icon: const Icon(IndiFitIcons.plateCalculator),
+                          onPressed: isBusy ? null : onOpenPlateCalculator,
+                        ),
+                ),
                 onChanged: onLoadChanged,
               ),
               TextFormField(

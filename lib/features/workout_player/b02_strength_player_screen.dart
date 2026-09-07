@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/di/providers.dart';
 import '../../core/presentation/consumer_copy.dart';
 import '../../core/services/indifit_haptics.dart';
+import '../../core/theme/indifit_icons.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/indi_fit_bottom_sheet.dart';
 import '../../core/widgets/indi_fit_feedback.dart';
@@ -27,6 +28,7 @@ import 'widgets/b02_execution_semantics.dart';
 import 'widgets/b02_player_cards.dart';
 import 'widgets/b02_player_view_models.dart';
 import 'widgets/b07_exercise_context.dart';
+import 'widgets/plate_calculator_sheet.dart';
 import 'widgets/r07c_workout_presentation.dart';
 import 'workout_execution_context.dart';
 import 'workout_execution_route.dart';
@@ -438,6 +440,10 @@ class _B02StrengthPlayerScreenState
       onAddSet: !isPlannedMode || exerciseComplete
           ? () => _prepareExtraSet(selected)
           : null,
+      onOpenPlateCalculator: isBarbellPlateCalculatorSupported(
+        exerciseName: _actualExerciseName(launch.state, selected),
+        loadBasis: selected.targetLoadBasis,
+      ) ? () => _openPlateCalculator(selected) : null,
       showPendingEditor: showPendingEditor,
       moreContent: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1005,6 +1011,25 @@ class _B02StrengthPlayerScreenState
     );
   }
 
+  Future<void> _openPlateCalculator(B02StrengthExecutionSlot slot) async {
+    final controller = _loadControllerFor(slot);
+    final entered = double.tryParse(controller.text.trim());
+    final initialWeight = (entered != null && entered > 0)
+        ? entered
+        : ((slot.targetLoadKg != null && slot.targetLoadKg! > 0)
+            ? slot.targetLoadKg!
+            : 20.0);
+    final applied = await PlateCalculatorSheet.show(
+      context: context,
+      initialWeight: initialWeight,
+    );
+    if (applied != null && mounted) {
+      controller.text = r07cFormatNumber(applied);
+      _markInputEdited(slot.id, B02PreviousPerformanceInputField.load);
+      setState(() {});
+    }
+  }
+
   Future<void> _editLoggedSet(
     dynamic provider,
     B02StrengthExecutionSlot slot,
@@ -1110,6 +1135,46 @@ class _B02StrengthPlayerScreenState
                                   ? 'Bodyweight'
                                   : null,
                               errorText: loadError,
+                              suffixIcon: isBarbellPlateCalculatorSupported(
+                                exerciseName: _actualExerciseName(
+                                  launchForProvider(provider)?.state ??
+                                      widget.launch.state,
+                                  slot,
+                                ),
+                                loadBasis: set.actualLoadBasis ??
+                                    slot.targetLoadBasis,
+                              ) ? IconButton(
+                                  tooltip: 'Plate calculator',
+                                  icon: const Icon(
+                                    IndiFitIcons.plateCalculator,
+                                  ),
+                                  onPressed: () async {
+                                    final entered = double.tryParse(
+                                      loadController.text.trim(),
+                                    );
+                                    final initialWeight = (entered != null &&
+                                            entered > 0)
+                                        ? entered
+                                        : (set.actualLoadKg != null &&
+                                                set.actualLoadKg! > 0
+                                            ? set.actualLoadKg!
+                                            : ((slot.targetLoadKg != null &&
+                                                    slot.targetLoadKg! > 0)
+                                                ? slot.targetLoadKg!
+                                                : 20.0));
+                                    final applied =
+                                        await PlateCalculatorSheet.show(
+                                      context: sheetContext,
+                                      initialWeight: initialWeight,
+                                    );
+                                    if (applied != null) {
+                                      setModalState(() {
+                                        loadController.text =
+                                            r07cFormatNumber(applied);
+                                      });
+                                    }
+                                  },
+                                ) : null,
                             ),
                           ),
                           TextFormField(
@@ -1365,6 +1430,19 @@ class _B02StrengthPlayerScreenState
               ),
               onTap: () => Navigator.pop(sheetContext, 'replace'),
             ),
+            if (isBarbellPlateCalculatorSupported(
+              exerciseName: _actualExerciseName(
+                launchForProvider(provider)?.state ?? widget.launch.state,
+                slot,
+              ),
+              loadBasis: slot.targetLoadBasis,
+            ))
+              ListTile(
+                leading: const Icon(IndiFitIcons.plateCalculator),
+                title: const Text('Plate calculator'),
+                subtitle: const Text('Calculate barbell plate loading'),
+                onTap: () => Navigator.pop(sheetContext, 'plate_calculator'),
+              ),
             if (!isQuick && hasLoggedSets)
               const ListTile(
                 leading: Icon(Icons.lock_outline_rounded),
@@ -1378,6 +1456,10 @@ class _B02StrengthPlayerScreenState
       ),
     );
     if (!mounted || action == null) return;
+    if (action == 'plate_calculator') {
+      await _openPlateCalculator(slot);
+      return;
+    }
     if (action == 'add') {
       await _openExercisePicker(provider);
       return;

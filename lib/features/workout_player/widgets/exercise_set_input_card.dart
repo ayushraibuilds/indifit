@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/b05_semantic_colors.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
-import '../../../core/widgets/indi_fit_bottom_sheet.dart';
 import '../../../core/widgets/responsive_form_primitives.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/repositories/legacy_workout_compatibility_adapter.dart';
 import 'plate_calculator_sheet.dart';
+import 'r07c_workout_presentation.dart';
 
 class ExerciseSetInputCard extends StatelessWidget {
   final RoutineExercise currentExercise;
@@ -65,14 +65,16 @@ class ExerciseSetInputCard extends StatelessWidget {
               B05IconAction(
                 icon: Icons.calculate_outlined,
                 label: 'Open plate calculator',
-                onPressed: () {
+                onPressed: () async {
                   final double w =
                       double.tryParse(weightController.text) ?? 20.0;
-                  showIndiFitBottomSheet<void>(
+                  final applied = await PlateCalculatorSheet.show(
                     context: context,
-                    semanticLabel: 'Plate calculator',
-                    builder: (context) => PlateCalculatorSheet(targetWeight: w),
+                    initialWeight: w,
                   );
+                  if (applied != null) {
+                    weightController.text = r07cFormatNumber(applied);
+                  }
                 },
               ),
             ],

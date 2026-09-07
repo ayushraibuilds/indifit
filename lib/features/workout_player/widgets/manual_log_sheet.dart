@@ -6,6 +6,7 @@ import '../../../core/di/providers.dart';
 import '../../../core/presentation/consumer_date_label.dart';
 import '../../../core/presentation/product_failure_presentation.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
+import '../../../core/theme/indifit_icons.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
 import '../../../core/widgets/consumer_task_primitives.dart';
 import '../../../core/widgets/indi_fit_feedback.dart';
@@ -15,6 +16,8 @@ import '../../../data/models/b02_execution_models.dart';
 import '../../../data/repositories/exercise_picker_repository.dart';
 import '../../../data/repositories/workout_repository.dart';
 import '../../exercise_picker/exercise_picker.dart';
+import 'plate_calculator_sheet.dart';
+import 'r07c_workout_presentation.dart';
 
 /// Retrospective strength entry for a workout that has already happened.
 ///
@@ -373,9 +376,37 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
                             keyboardType: const TextInputType.numberWithOptions(
                               decimal: true,
                             ),
-                            decoration: const InputDecoration(
+                            decoration: InputDecoration(
                               labelText: 'Load (kg, optional)',
                               isDense: true,
+                              suffixIcon: isBarbellPlateCalculatorSupported(
+                                exerciseName: exercise.exerciseName,
+                              ) ? IconButton(
+                                  tooltip: 'Plate calculator',
+                                  icon: const Icon(
+                                    IndiFitIcons.plateCalculator,
+                                  ),
+                                  onPressed: _saving ? null : () async {
+                                    final entered = double.tryParse(
+                                      setInput.loadController.text.trim(),
+                                    );
+                                    final initialWeight = (entered != null &&
+                                            entered > 0)
+                                        ? entered
+                                        : 20.0;
+                                    final applied =
+                                        await PlateCalculatorSheet.show(
+                                      context: context,
+                                      initialWeight: initialWeight,
+                                    );
+                                    if (applied != null && mounted) {
+                                      setState(() {
+                                        setInput.loadController.text =
+                                            r07cFormatNumber(applied);
+                                      });
+                                    }
+                                  },
+                                ) : null,
                             ),
                             onTapOutside: (_) =>
                                 FocusScope.of(context).unfocus(),
