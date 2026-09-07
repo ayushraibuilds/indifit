@@ -1102,5 +1102,158 @@ void main() {
       // Reconcile must not throw and fail closed
       await expectLater(controller.reconcilePendingRestIntent(), completes);
     });
+
+    test('adjustRest below elapsed cancels scheduled 999 anchor and alerts immediately via Dart', () async {
+      var clockTime = DateTime.utc(2026, 9, 5, 10, 0);
+      driver.canScheduleExactResult = true;
+
+      final launch = _createLaunch();
+      final controller = B02StrengthExecutionController(
+        adapter,
+        initialLaunch: launch,
+        nowUtc: () => clockTime,
+        restPresence: presenceService,
+      );
+      addTearDown(controller.dispose);
+
+      final slot = _createSlot(exerciseName: 'Bench Press', prescribedRest: 120);
+      await controller.recordSet(
+        slot: slot,
+        reps: 8,
+        loadKg: 80,
+        startRestAfterRecord: true,
+      );
+
+      final periodId = controller.state.launch!.state.restPeriods.single.id;
+      expect(presenceService.isActive, true);
+      expect(presenceService.hasExactAlarmAnchor, true);
+
+      // Advance clock 40 seconds
+      clockTime = clockTime.add(const Duration(seconds: 40));
+
+      // Decrement rest by 90 seconds (120 - 90 = 30s <= 40s elapsed -> willElapse == true)
+      await controller.adjustRest(periodId, seconds: -90);
+
+      // Verify the old 999 anchor scheduled for original +120s was cancelled
+      expect(driver.cancelledIds, contains(RestPresenceService.expiredNotificationId));
+
+      // Verify Dart alerted immediately (silentCompletion: false)
+      expect(driver.expiredCalls, hasLength(1));
+      expect(driver.expiredCalls.single['id'], RestPresenceService.expiredNotificationId);
+      expect(driver.hapticCalls, greaterThanOrEqualTo(1));
+    });
+
+    test('reconcilePendingRestIntent discards intent when periodId does not match active rest period', () async {
+      final launch = _createLaunch();
+      final controller = B02StrengthExecutionController(
+        adapter,
+        initialLaunch: launch,
+        nowUtc: () => DateTime.utc(2026, 9, 5, 10, 0),
+        restPresence: presenceService,
+      );
+      addTearDown(controller.dispose);
+
+      final slot = _createSlot(exerciseName: 'Squat', prescribedRest: 90);
+      await controller.recordSet(
+        slot: slot,
+        reps: 5,
+        loadKg: 100,
+        startRestAfterRecord: true,
+      );
+
+      final activePeriod = controller.state.launch!.state.restPeriods.single;
+
+      // Save orphaned intent from an unrelated past workout / different period
+      await RestPresenceService.savePendingIntent(
+        RestPresenceIntent(
+          action: 'skip',
+          periodId: 'stale-period-from-yesterday',
+          timestampUtc: DateTime.utc(2026, 9, 4, 10, 0),
+        ),
+      );
+
+      await controller.reconcilePendingRestIntent();
+
+      // Active period must be completely untouched (not skipped!)
+      final periodAfter = controller.state.launch!.state.restPeriods.single;
+      expect(periodAfter.id, activePeriod.id);
+      expect(periodAfter.endedAtUtc, isNull);
+      expect(periodAfter.selectedSeconds, 90);
+
+      // Orphaned intent consumed and cleared
+      expect(await RestPresenceService.loadAndClearPendingIntent(), isNull);
+    });
+
+    test('cancelRest and cleanup clear pending intent from SharedPreferences', () async {
+      await presenceService.startRest(
+        periodId: 'p-clear-test',
+        exerciseName: 'Dips',
+        targetSeconds: 60,
+      );
+
+      await RestPresenceService.savePendingIntent(
+        RestPresenceIntent(
+          action: 'adjust_30s',
+          periodId: 'p-clear-test',
+          accumulatedExtraSeconds: 30,
+          timestampUtc: DateTime.now().toUtc(),
+        ),
+      );
+
+      // cancelRest clears pending intent
+      await presenceService.cancelRest();
+      expect(await RestPresenceService.loadAndClearPendingIntent(), isNull);
+
+      // cleanup also clears pending intent
+      await RestPresenceService.savePendingIntent(
+        RestPresenceIntent(
+          action: 'adjust_30s',
+          periodId: 'p-clear-test-2',
+          accumulatedExtraSeconds: 30,
+          timestampUtc: DateTime.now().toUtc(),
+        ),
+      );
+      await presenceService.cleanup();
+      expect(await RestPresenceService.loadAndClearPendingIntent(), isNull);
+    });
+
+    test('handleBackgroundAction updates hasExactAlarmAnchor from reschedule capability return', () async {
+      final platformCalls = <MethodCall>[];
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+            const MethodChannel('dexterous.com/flutter/local_notifications'),
+            (call) async {
+              platformCalls.add(call);
+              // canScheduleExactNotifications returns false (e.g. revoked in system settings)
+              if (call.method == 'canScheduleExactNotifications') {
+                return false;
+              }
+              return true;
+            },
+          );
+
+      // Initial anchor had exact alarm
+      final initialAnchor = RestAnchorRecord(
+        periodId: 'p-revoked',
+        exerciseName: 'Bench',
+        startedAtUtc: DateTime.now().toUtc(),
+        baseTargetSeconds: 60,
+        accumulatedExtraSeconds: 0,
+        hasExactAlarmAnchor: true,
+      );
+      await RestPresenceService.saveAnchorRecord(initialAnchor);
+
+      const response = NotificationResponse(
+        notificationResponseType: NotificationResponseType.selectedNotificationAction,
+        actionId: 'rest_add_30s',
+      );
+
+      await RestPresenceService.handleBackgroundAction(response);
+
+      // Rescheduled anchor persisted hasExactAlarmAnchor = false
+      final updatedAnchor = await RestPresenceService.loadAnchorRecord();
+      expect(updatedAnchor, isNotNull);
+      expect(updatedAnchor!.hasExactAlarmAnchor, false);
+    });
   });
 }

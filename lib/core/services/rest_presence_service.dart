@@ -513,7 +513,9 @@ class RestPresenceService {
     // Dismiss ongoing progress notification
     await _driver.cancelNotification(ongoingNotificationId);
 
-    // Single-writer rule:
+    // Single-writer rule & Option-(a) foreground decision:
+    // Exact alarms fire platform-wide at expiryUtc; a single heads-up banner is accepted
+    // over race-prone cancel/re-anchor lifecycle dances around foreground transitions.
     // If exact alarm anchor was successfully scheduled, the platform alarm
     // already fired (or is firing) the audible notification ID 999.
     // In silentCompletion or when hasExactAlarmAnchor == true, suppress posting 999.
@@ -529,6 +531,7 @@ class RestPresenceService {
     }
 
     await clearAnchorRecord();
+    await clearPendingIntent();
     await _driver.triggerHapticFeedback();
   }
 
@@ -550,6 +553,7 @@ class RestPresenceService {
     await _driver.cancelNotification(ongoingNotificationId);
     await _driver.cancelNotification(expiredNotificationId);
     await clearAnchorRecord();
+    await clearPendingIntent();
   }
 
   /// Clean up all rest notifications and state (e.g. on workout finish, cancel, or app launch).
@@ -566,6 +570,7 @@ class RestPresenceService {
     await _driver.cancelNotification(ongoingNotificationId);
     await _driver.cancelNotification(expiredNotificationId);
     await clearAnchorRecord();
+    await clearPendingIntent();
   }
 
   /// Clean up stale rest notifications at app startup or when entering foreground.
@@ -576,6 +581,7 @@ class RestPresenceService {
     await d.cancelNotification(ongoingNotificationId);
     await d.cancelNotification(expiredNotificationId);
     await clearAnchorRecord();
+    await clearPendingIntent();
   }
 
   /// Dispatch an interactive notification action.
@@ -667,13 +673,18 @@ class RestPresenceService {
       );
 
       // Invariant: reschedule exact alarm anchor ID 999 at newExpiryUtc
-      await driver.scheduleExactExpiryAlarm(
+      final scheduledExact = await driver.scheduleExactExpiryAlarm(
         id: expiredNotificationId,
         expiryUtc: newExpiryUtc,
         exerciseName: updated.exerciseName,
         channelId: channelId,
         channelName: channelName,
       );
+      if (scheduledExact != updated.hasExactAlarmAnchor) {
+        await saveAnchorRecord(
+          updated.copyWith(hasExactAlarmAnchor: scheduledExact),
+        );
+      }
     } else if (actionId == 'rest_skip') {
       await savePendingIntent(
         RestPresenceIntent(
@@ -738,5 +749,12 @@ class RestPresenceService {
     } catch (_) {
       return null;
     }
+  }
+
+  static Future<void> clearPendingIntent() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(prefPendingRestIntent);
+    } catch (_) {}
   }
 }

@@ -46,6 +46,8 @@ class _RestTimerBottomSheetState extends State<RestTimerBottomSheet> {
       } else {
         t.cancel();
         if (mounted) {
+          // Legacy-path sunset status: /workout-player rest expiry intentionally silent.
+          // RestPresenceService background presence is exclusive to the authoritative B02 player.
           Navigator.pop(context);
         }
       }

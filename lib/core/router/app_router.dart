@@ -282,6 +282,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         redirect: (context, state) =>
             compatibilityRouteRedirect(state.matchedLocation),
       ),
+      // Legacy player route (/workout-player) is in sunset-bound maintenance mode.
+      // Authoritative strength player is B02StrengthPlayerScreen (/strength-player).
+      // Rest timer expiry here is intentionally silent following the deletion of the legacy notification route.
       GoRoute(
         path: '/workout-player',
         builder: (context, state) {

@@ -975,7 +975,15 @@ class B02StrengthExecutionController
           final presence = _restPresence;
           if (presence != null) {
             if (willElapse) {
-              await presence.onRestElapsed(periodId: periodId);
+              // Surgical fix for truncation path: cancel any existing exact alarm anchor
+              // so it does not fire minutes later as a phantom alert, and alert immediately via Dart.
+              await presence.driver.cancelNotification(
+                RestPresenceService.expiredNotificationId,
+              );
+              await presence.onRestElapsed(
+                periodId: periodId,
+                silentCompletion: false,
+              );
             } else {
               await presence.startRest(
                 periodId: periodId,
@@ -1081,7 +1089,8 @@ class B02StrengthExecutionController
           .firstOrNull;
 
       if (activePeriod != null) {
-        if (intent != null) {
+        // Enforce period-guard: discard orphaned intents belonging to an earlier or different period
+        if (intent != null && intent.periodId == activePeriod.id) {
           if (intent.action == 'adjust_30s') {
             final delta = (intent.accumulatedExtraSeconds != null &&
                     intent.accumulatedExtraSeconds! > 0)
