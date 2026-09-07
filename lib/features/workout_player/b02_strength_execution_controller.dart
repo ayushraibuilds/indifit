@@ -1160,9 +1160,11 @@ class B02StrengthExecutionController
       // Best-effort milestone recording: must never change the completion
       // result. Partial and full completions both count — a persisted session
       // is a completed session.
-      unawaited(_recordMilestoneAchievements().catchError((e) {
+      try {
+        await _recordMilestoneAchievements();
+      } catch (e) {
         AppLogger.warning('Milestone achievement recording failed: $e');
-      }));
+      }
       return true;
     } on B02StrengthExecutionRecoveryException catch (error, stackTrace) {
       _logFinalizationFailure(

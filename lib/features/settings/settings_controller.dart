@@ -14,6 +14,7 @@ import '../../core/backup/backup_v9.dart';
 import '../../core/di/providers.dart';
 import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/privacy/privacy_policy.dart';
+import '../../core/services/achievement_service.dart';
 import '../../core/services/crash_reporting_service.dart';
 import '../../core/services/notification_service.dart';
 import '../../core/utils/csv_exporter.dart';
@@ -481,6 +482,7 @@ class SettingsController extends StateNotifier<SettingsState> {
       // 2. Refresh providers post-commit on successful completion
       _ref.invalidate(userProfileProvider);
       await _ref.read(waterProvider.notifier).loadState();
+      await AchievementService.rebaseCelebratedOnRestore(db, prefs);
     } catch (e) {
       rethrow;
     } finally {

@@ -3,13 +3,17 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/navigation/app_navigation.dart';
+import '../../core/services/achievement_service.dart';
 import '../../core/services/indifit_haptics.dart';
 import '../../data/repositories/b02_strength_execution_repository.dart';
 import '../../data/repositories/calendar_repository.dart';
+import '../../data/repositories/progress_statistics_repository.dart';
 import 'b02_strength_execution_controller.dart';
+import 'widgets/achievement_celebration_sheet.dart';
 import 'widgets/b02_summary_widgets.dart';
 import 'workout_execution_context.dart';
 
@@ -36,6 +40,7 @@ class _B02StrengthSummaryScreenState
     extends ConsumerState<B02StrengthSummaryScreen> {
   late final String _completionCommandId;
   var _isFinalizing = false;
+  var _hasCelebratedMilestones = false;
   B02StrengthExecutionLaunch? _completionLaunch;
   CompletionKind? _pendingCompletionKind;
   String? _pendingCompletionReason;
@@ -59,6 +64,12 @@ class _B02StrengthSummaryScreenState
     final completed =
         ui.status == B02StrengthExecutionStatus.ready && ui.launch == null;
     if (completed) {
+      if (!_hasCelebratedMilestones) {
+        _hasCelebratedMilestones = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _checkAndShowAchievements();
+        });
+      }
       final completionLaunch = _completionLaunch ?? widget.launch;
       return Scaffold(
         appBar: AppBar(
@@ -166,6 +177,36 @@ class _B02StrengthSummaryScreenState
       }
     } finally {
       if (mounted) setState(() => _isFinalizing = false);
+    }
+  }
+
+  Future<void> _checkAndShowAchievements() async {
+    if (!mounted) return;
+    try {
+      final statsRepo = ref.read(progressStatisticsRepositoryProvider);
+      final prefs = await SharedPreferences.getInstance();
+      final uncelebrated =
+          await AchievementService.getUncelebratedWorkoutUnlocks(
+        statsRepository: statsRepo,
+        prefs: prefs,
+      );
+      if (uncelebrated.isEmpty || !mounted) return;
+
+      // Mark celebrated upon presentation so process kill before display
+      // leaves the unlock pending celebration, while displayed achievements
+      // are never re-announced.
+      await AchievementService.markCelebrated(
+        prefs,
+        uncelebrated.map((a) => a.id),
+      );
+
+      if (!mounted) return;
+      await showAchievementCelebrationSheet(
+        context,
+        achievements: uncelebrated,
+      );
+    } catch (e) {
+      // Non-blocking: failures in achievement presentation never break recap.
     }
   }
 }

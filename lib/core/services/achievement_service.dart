@@ -1,6 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../data/database/app_database.dart';
 import '../../data/repositories/progress_statistics_repository.dart';
 import '../theme/colors.dart';
+
+class AchievementEvaluationResult {
+  final List<Achievement> all;
+  final List<Achievement> sessionUnlocked;
+
+  const AchievementEvaluationResult({
+    required this.all,
+    required this.sessionUnlocked,
+  });
+}
 
 class Achievement {
   final String id;
@@ -90,7 +102,7 @@ class AchievementService {
     String countEvidence(int current, int max, String unit) =>
         '$current of $max $unit logged';
     String volumeEvidence(double current, double max) =>
-        '${_formatAmount(current)} kg / ${_formatAmount(max)} kg volume recorded';
+        '${formatAmount(current)} kg / ${formatAmount(max)} kg volume recorded';
 
     return [
       buildItem(
@@ -198,7 +210,7 @@ class AchievementService {
   /// Formats a measured amount for evidence strings: whole values get
   /// thousands grouping (`10450` → `10,450`), fractional values keep one
   /// decimal. Presentation only; thresholds always compare exact values.
-  static String _formatAmount(double value) {
+  static String formatAmount(double value) {
     final rounded1 = (value * 10).round() / 10;
     final text = rounded1 == rounded1.roundToDouble()
         ? rounded1.round().toString()
@@ -214,15 +226,28 @@ class AchievementService {
     return parts.length > 1 ? '$head.${parts[1]}' : head;
   }
 
-  /// Evaluates thresholds against current lifetime stats and durably records
-  /// every newly met unlock, then returns achievements populated with the
-  /// STORED unlock timestamps (never freshly minted ones).
-  ///
-  /// Safe to call from workout finalization: recording is idempotent and
-  /// this method never throws for missing data (empty stats simply leave
-  /// everything locked). Partial and full completions are treated identically
-  /// — a persisted session is a completed session.
-  static Future<List<Achievement>> recordAndEvaluate({
+  static const String prefCelebratedAchievementIds =
+      'celebrated_achievement_ids';
+
+  static const Set<String> workoutAchievementIds = {
+    'first_workout',
+    'streak_7',
+    'streak_30',
+    'volume_1000',
+    'volume_5000',
+    'volume_10000',
+  };
+
+  static const Set<String> nonWorkoutAchievementIds = {
+    'meals_10',
+    'meals_50',
+    'first_thali',
+  };
+
+  /// Evaluates thresholds against current lifetime stats, durably records
+  /// newly met unlocks, and returns both all achievements and the session-earned
+  /// newly unlocked delta.
+  static Future<AchievementEvaluationResult> recordAndEvaluateDelta({
     required ProgressStatisticsRepository statsRepository,
     required int currentStreakDays,
   }) async {
@@ -231,16 +256,172 @@ class AchievementService {
       stats: stats,
       currentStreakDays: currentStreakDays,
     );
+    final newlyUnlockedIds = <String>[];
     for (final achievement in evaluated) {
       if (achievement.isUnlocked &&
           !stats.unlockedAchievementIds.containsKey(achievement.id)) {
-        await statsRepository.unlockAchievement(achievement.id);
+        final inserted =
+            await statsRepository.unlockAchievement(achievement.id);
+        if (inserted) {
+          newlyUnlockedIds.add(achievement.id);
+        }
       }
     }
     final stored = await statsRepository.getLifetimeStats();
-    return evaluateFromLifetimeStats(
+    final all = evaluateFromLifetimeStats(
       stats: stored,
       currentStreakDays: currentStreakDays,
     );
+    final sessionUnlocked = all
+        .where((a) => newlyUnlockedIds.contains(a.id))
+        .toList();
+    return AchievementEvaluationResult(
+      all: all,
+      sessionUnlocked: sessionUnlocked,
+    );
+  }
+
+  /// Evaluates thresholds against current lifetime stats and durably records
+  /// every newly met unlock, then returns achievements populated with the
+  /// STORED unlock timestamps (never freshly minted ones).
+  ///
+  /// Backward-compatible delegator to [recordAndEvaluateDelta].
+  static Future<List<Achievement>> recordAndEvaluate({
+    required ProgressStatisticsRepository statsRepository,
+    required int currentStreakDays,
+  }) async {
+    final result = await recordAndEvaluateDelta(
+      statsRepository: statsRepository,
+      currentStreakDays: currentStreakDays,
+    );
+    return result.all;
+  }
+
+  /// Ensure the celebrated store is baselined on cold start.
+  /// Strict absence-only: if the key does not exist, seeds it with all currently
+  /// unlocked IDs in SQLite so historic achievements are never re-announced.
+  /// If the key exists (even as an empty list), does nothing.
+  static Future<void> ensureBaselined(
+    SharedPreferences prefs,
+    Iterable<String> currentUnlockedIds,
+  ) async {
+    if (!prefs.containsKey(prefCelebratedAchievementIds)) {
+      await prefs.setStringList(
+        prefCelebratedAchievementIds,
+        currentUnlockedIds.toList(),
+      );
+    }
+  }
+
+  /// Post-restore rebase hook: synchronizes celebrated state to all restored
+  /// SQLite achievement unlocks so restored accounts never re-announce historic badges.
+  static Future<void> rebaseCelebratedOnRestore(
+    AppDatabase db,
+    SharedPreferences prefs,
+  ) async {
+    final unlocks = await db.select(db.achievementUnlocks).get();
+    final unlockedIds = unlocks.map((u) => u.achievementId).toList();
+    await prefs.setStringList(prefCelebratedAchievementIds, unlockedIds);
+  }
+
+  /// Marks a set of achievement IDs as celebrated in preferences.
+  static Future<void> markCelebrated(
+    SharedPreferences prefs,
+    Iterable<String> achievementIds,
+  ) async {
+    final existing =
+        prefs.getStringList(prefCelebratedAchievementIds)?.toSet() ?? {};
+    existing.addAll(achievementIds);
+    await prefs.setStringList(prefCelebratedAchievementIds, existing.toList());
+  }
+
+  /// Returns uncelebrated non-workout achievements (e.g. meals/thali) that
+  /// qualify from stored SQLite facts and have not yet been displayed.
+  /// Newly qualifying unlocks are durably recorded to SQLite before returning.
+  static Future<List<Achievement>> getUncelebratedNonWorkoutUnlocks({
+    required ProgressStatisticsRepository statsRepository,
+    required SharedPreferences prefs,
+  }) async {
+    final stats = await statsRepository.getLifetimeStats();
+    await ensureBaselined(prefs, stats.unlockedAchievementIds.keys);
+
+    final all = evaluateFromLifetimeStats(
+      stats: stats,
+      currentStreakDays: 0,
+    );
+
+    for (final a in all) {
+      if (a.isUnlocked &&
+          nonWorkoutAchievementIds.contains(a.id) &&
+          !stats.unlockedAchievementIds.containsKey(a.id)) {
+        await statsRepository.unlockAchievement(a.id);
+      }
+    }
+
+    final reloadedStats = await statsRepository.getLifetimeStats();
+    final reloadedAll = evaluateFromLifetimeStats(
+      stats: reloadedStats,
+      currentStreakDays: 0,
+    );
+
+    final celebrated =
+        prefs.getStringList(prefCelebratedAchievementIds)?.toSet() ?? {};
+
+    return reloadedAll.where((a) {
+      return a.isUnlocked &&
+          nonWorkoutAchievementIds.contains(a.id) &&
+          !celebrated.contains(a.id);
+    }).toList();
+  }
+
+  /// Returns uncelebrated workout achievements (e.g. volume, first_workout, streaks) that
+  /// qualify from stored SQLite facts and have not yet been celebrated.
+  /// Newly qualifying unlocks are durably recorded to SQLite before returning.
+  static Future<List<Achievement>> getUncelebratedWorkoutUnlocks({
+    required ProgressStatisticsRepository statsRepository,
+    required SharedPreferences prefs,
+    int currentStreakDays = 0,
+  }) async {
+    final stats = await statsRepository.getLifetimeStats();
+    await ensureBaselined(prefs, stats.unlockedAchievementIds.keys);
+
+    final all = evaluateFromLifetimeStats(
+      stats: stats,
+      currentStreakDays: currentStreakDays,
+    );
+
+    for (final a in all) {
+      if (a.isUnlocked &&
+          workoutAchievementIds.contains(a.id) &&
+          !stats.unlockedAchievementIds.containsKey(a.id)) {
+        await statsRepository.unlockAchievement(a.id);
+      }
+    }
+
+    final reloadedStats = await statsRepository.getLifetimeStats();
+    final reloadedAll = evaluateFromLifetimeStats(
+      stats: reloadedStats,
+      currentStreakDays: currentStreakDays,
+    );
+
+    final celebrated =
+        prefs.getStringList(prefCelebratedAchievementIds)?.toSet() ?? {};
+
+    return reloadedAll.where((a) {
+      return a.isUnlocked &&
+          workoutAchievementIds.contains(a.id) &&
+          !celebrated.contains(a.id);
+    }).toList();
+  }
+
+  /// Read model: returns unlocked achievements sorted by unlockedAt desc.
+  static List<Achievement> getRecentlyUnlocked(List<Achievement> achievements) {
+    final unlocked = achievements.where((a) => a.isUnlocked).toList();
+    unlocked.sort((a, b) {
+      final aDate = a.unlockedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final bDate = b.unlockedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      return bDate.compareTo(aDate);
+    });
+    return unlocked;
   }
 }

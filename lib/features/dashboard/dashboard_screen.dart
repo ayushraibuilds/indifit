@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/di/providers.dart';
@@ -11,6 +12,7 @@ import '../../core/navigation/app_navigation.dart';
 import '../../core/presentation/consumer_copy.dart';
 import '../../core/presentation/consumer_date_label.dart';
 import '../../core/presentation/product_failure_presentation.dart';
+import '../../core/services/achievement_service.dart';
 import '../../core/services/crash_reporting_service.dart';
 import '../../core/services/workout_session_wake_lock_coordinator.dart';
 import '../../core/utils/app_logger.dart';
@@ -393,15 +395,19 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     ref.listen<DashboardState>(dashboardControllerProvider, (previous, next) {
-      final previousTitles =
-          previous?.newlyUnlockedAchievementTitles ?? const [];
-      final nextTitles = next.newlyUnlockedAchievementTitles;
-      if (nextTitles.isEmpty || _sameTitles(previousTitles, nextTitles)) {
+      final previousIds =
+          previous?.newlyUnlockedAchievementIds ?? const [];
+      final nextIds = next.newlyUnlockedAchievementIds;
+      if (nextIds.isEmpty || _sameTitles(previousIds, nextIds)) {
         return;
       }
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (!mounted) return;
+        final nextTitles = next.newlyUnlockedAchievementTitles;
         final plural = nextTitles.length == 1 ? 'Achievement' : 'Achievements';
+        final prefs = await SharedPreferences.getInstance();
+        await AchievementService.markCelebrated(prefs, nextIds);
+        if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             behavior: SnackBarBehavior.floating,

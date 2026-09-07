@@ -10,6 +10,7 @@ import '../../data/database/app_database.dart';
 import '../../data/repositories/food_repository.dart';
 import '../../data/repositories/health_service.dart';
 import '../../data/repositories/legacy_program_compatibility_adapter.dart';
+import '../../data/repositories/progress_statistics_repository.dart';
 import '../../data/repositories/workout_repository.dart';
 
 class DashboardState {
@@ -26,8 +27,22 @@ class DashboardState {
   final String? weeklyActionText;
   final int weeklyActionProgress;
   final int weeklyActionTarget;
-  final List<String> newlyUnlockedAchievementTitles;
+  final List<String> newlyUnlockedAchievementIds;
   final int? streakMilestone;
+
+  /// Derived titles for presentation and backward compatibility.
+  List<String> get newlyUnlockedAchievementTitles {
+    final catalog = AchievementService.evaluateAchievements(
+      completedWorkoutsCount: 0,
+      currentStreakDays: 0,
+      totalVolumeKg: 0,
+      totalLoggedMealsCount: 0,
+    );
+    final titleMap = {for (final a in catalog) a.id: a.title};
+    return newlyUnlockedAchievementIds
+        .map((id) => titleMap[id] ?? id)
+        .toList();
+  }
 
   DashboardState({
     DateTime? selectedDate,
@@ -43,9 +58,12 @@ class DashboardState {
     this.weeklyActionText,
     this.weeklyActionProgress = 0,
     this.weeklyActionTarget = 0,
-    this.newlyUnlockedAchievementTitles = const [],
+    List<String>? newlyUnlockedAchievementIds,
+    List<String>? newlyUnlockedAchievementTitles,
     this.streakMilestone,
-  }) : selectedDate = selectedDate ?? DateTime.now();
+  })  : selectedDate = selectedDate ?? DateTime.now(),
+        newlyUnlockedAchievementIds = newlyUnlockedAchievementIds ??
+            (newlyUnlockedAchievementTitles ?? const []);
 
   DashboardState copyWith({
     DateTime? selectedDate,
@@ -61,6 +79,7 @@ class DashboardState {
     String? weeklyActionText,
     int? weeklyActionProgress,
     int? weeklyActionTarget,
+    List<String>? newlyUnlockedAchievementIds,
     List<String>? newlyUnlockedAchievementTitles,
     int? streakMilestone,
   }) {
@@ -78,8 +97,8 @@ class DashboardState {
       weeklyActionText: weeklyActionText ?? this.weeklyActionText,
       weeklyActionProgress: weeklyActionProgress ?? this.weeklyActionProgress,
       weeklyActionTarget: weeklyActionTarget ?? this.weeklyActionTarget,
-      newlyUnlockedAchievementTitles:
-          newlyUnlockedAchievementTitles ?? this.newlyUnlockedAchievementTitles,
+      newlyUnlockedAchievementIds: newlyUnlockedAchievementIds ??
+          (newlyUnlockedAchievementTitles ?? this.newlyUnlockedAchievementIds),
       streakMilestone: streakMilestone,
     );
   }
@@ -141,57 +160,22 @@ class DashboardController extends StateNotifier<DashboardState> {
 
   Future<void> _evaluateAchievements() async {
     try {
-      final workoutRepo = _ref.read(workoutRepositoryProvider);
-      final foodRepo = _ref.read(foodRepositoryProvider);
+      final statsRepo = _ref.read(progressStatisticsRepositoryProvider);
       final prefs = await SharedPreferences.getInstance();
 
-      final sessions = await workoutRepo.watchSessions().first;
-      final totalVolume = sessions.fold<double>(
-        0.0,
-        (sum, s) => sum + s.totalVolume,
-      );
-      final mealCount = await foodRepo.getTotalLoggedMealsCount();
-
-      final achievements = AchievementService.evaluateAchievements(
-        completedWorkoutsCount: sessions.length,
-        currentStreakDays: state.streakCount,
-        totalVolumeKg: totalVolume,
-        totalLoggedMealsCount: mealCount,
+      // Reconciled to the single authoritative AchievementService.
+      // Workout achievements are celebrated exclusively on the workout summary screen;
+      // non-workout achievements (e.g. meals/thali) are surfaced here without duplicate announces.
+      // Legacy prefs key 'unlocked_achievement_ids' is left inert and no longer written to.
+      final uncelebrated =
+          await AchievementService.getUncelebratedNonWorkoutUnlocks(
+        statsRepository: statsRepo,
+        prefs: prefs,
       );
 
-      // Detect newly unlocked achievements
-      final storedIds = prefs.getStringList('unlocked_achievement_ids') ?? [];
-      final currentlyUnlocked = achievements
-          .where((a) => a.isUnlocked)
-          .toList();
-
-      // Establish a quiet baseline for accounts that already have qualifying
-      // history. Feedback is reserved for a later authoritative refresh,
-      // such as the one performed after a successful save.
-      if (!prefs.containsKey('unlocked_achievement_ids')) {
-        await prefs.setStringList(
-          'unlocked_achievement_ids',
-          currentlyUnlocked.map((a) => a.id).toList(),
-        );
-        return;
-      }
-
-      final newUnlocks = currentlyUnlocked
-          .where((a) => !storedIds.contains(a.id))
-          .toList();
-
-      if (newUnlocks.isNotEmpty) {
-        final updatedIds = {
-          ...storedIds,
-          ...currentlyUnlocked.map((a) => a.id),
-        }.toList();
-        await prefs.setStringList('unlocked_achievement_ids', updatedIds);
-        state = state.copyWith(
-          newlyUnlockedAchievementTitles: newUnlocks
-              .map((a) => a.title)
-              .toList(),
-        );
-      }
+      state = state.copyWith(
+        newlyUnlockedAchievementIds: uncelebrated.map((a) => a.id).toList(),
+      );
     } catch (e) {
       AppLogger.info('[AchievementEval] Error: $e');
     }

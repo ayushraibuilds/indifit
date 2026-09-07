@@ -58,32 +58,45 @@ void main() {
         await controller.loadStateData();
 
         var prefs = await SharedPreferences.getInstance();
-        expect(prefs.getStringList('unlocked_achievement_ids'), isEmpty);
+        expect(
+          prefs.getStringList(AchievementService.prefCelebratedAchievementIds),
+          isEmpty,
+        );
 
-        await db
-            .into(db.workoutSessions)
-            .insert(
-              WorkoutSessionsCompanion.insert(
-                name: 'First logged session',
-                totalVolume: 0,
-                durationSeconds: 1800,
-                estimatedCalories: 0,
-                completedAt: Value(DateTime.now()),
-              ),
-            );
+        await db.into(db.foodLogs).insert(
+          FoodLogsCompanion.insert(
+            name: 'Special Thali',
+            calories: 600,
+            proteinG: 20.0,
+            carbsG: 80.0,
+            fatG: 20.0,
+            servingLogged: 1.0,
+            servingUnit: 'plate',
+            mealType: 'lunch',
+            loggedAt: Value(DateTime.now()),
+          ),
+        );
 
         await controller.loadStateData();
         expect(
           container
               .read(dashboardControllerProvider)
               .newlyUnlockedAchievementTitles,
-          ['First Sweat'],
+          ['Thali Connoisseur'],
+        );
+        expect(
+          container
+              .read(dashboardControllerProvider)
+              .newlyUnlockedAchievementIds,
+          ['first_thali'],
         );
 
+        await AchievementService.markCelebrated(prefs, ['first_thali']);
         prefs = await SharedPreferences.getInstance();
-        expect(prefs.getStringList('unlocked_achievement_ids'), [
-          'first_workout',
-        ]);
+        expect(
+          prefs.getStringList(AchievementService.prefCelebratedAchievementIds),
+          ['first_thali'],
+        );
 
         // Re-reading unchanged history must not emit another unlock event or
         // duplicate the persisted identifier.
@@ -91,14 +104,14 @@ void main() {
         expect(
           container
               .read(dashboardControllerProvider)
-              .newlyUnlockedAchievementTitles,
-          ['First Sweat'],
+              .newlyUnlockedAchievementIds,
+          isEmpty,
         );
         expect(
           (await SharedPreferences.getInstance()).getStringList(
-            'unlocked_achievement_ids',
+            AchievementService.prefCelebratedAchievementIds,
           ),
-          ['first_workout'],
+          ['first_thali'],
         );
       },
     );
