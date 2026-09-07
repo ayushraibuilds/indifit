@@ -398,7 +398,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       final previousIds =
           previous?.newlyUnlockedAchievementIds ?? const [];
       final nextIds = next.newlyUnlockedAchievementIds;
-      if (nextIds.isEmpty || _sameTitles(previousIds, nextIds)) {
+      if (nextIds.isEmpty || _sameAchievementIds(previousIds, nextIds)) {
         return;
       }
       WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -458,7 +458,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 }
 
-bool _sameTitles(List<String> first, List<String> second) {
+bool _sameAchievementIds(List<String> first, List<String> second) {
   if (first.length != second.length) return false;
   for (var index = 0; index < first.length; index++) {
     if (first[index] != second[index]) return false;

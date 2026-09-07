@@ -9,6 +9,7 @@ import 'package:uuid/uuid.dart';
 import '../../core/navigation/app_navigation.dart';
 import '../../core/services/achievement_service.dart';
 import '../../core/services/indifit_haptics.dart';
+import '../../core/utils/app_logger.dart';
 import '../../data/repositories/b02_strength_execution_repository.dart';
 import '../../data/repositories/calendar_repository.dart';
 import '../../data/repositories/progress_statistics_repository.dart';
@@ -192,9 +193,10 @@ class _B02StrengthSummaryScreenState
       );
       if (uncelebrated.isEmpty || !mounted) return;
 
-      // Mark celebrated upon presentation so process kill before display
-      // leaves the unlock pending celebration, while displayed achievements
-      // are never re-announced.
+      // Mark celebrated right before presentation: fails closed toward silence
+      // (a process kill between mark and sheet mount swallows the celebration,
+      // preventing annoying duplicate fanfare), while kills before this point
+      // leave the unlock pending celebration.
       await AchievementService.markCelebrated(
         prefs,
         uncelebrated.map((a) => a.id),
@@ -207,6 +209,10 @@ class _B02StrengthSummaryScreenState
       );
     } catch (e) {
       // Non-blocking: failures in achievement presentation never break recap.
+      AppLogger.warning(
+        'Failed to evaluate or present milestone celebration: $e',
+        'B02StrengthSummaryScreen',
+      );
     }
   }
 }
