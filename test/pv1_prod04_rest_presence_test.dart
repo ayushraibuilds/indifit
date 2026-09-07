@@ -912,4 +912,195 @@ void main() {
       expect(driver.expiredCalls, isEmpty);
     });
   });
+
+  group('PV1-PROD-04 Stage 3: Full-system regression & edge-case acceptance', () {
+    late AppDatabase database;
+    late StrengthExecutionRepository repo;
+    late _RecordingAdapter adapter;
+    late TestRestPresenceDriver driver;
+    late RestPresenceService presenceService;
+
+    setUp(() {
+      SharedPreferences.setMockInitialValues({});
+      database = AppDatabase.memory();
+      repo = StrengthExecutionRepository(
+        db: database,
+        calendarRepo: CalendarRepository(database),
+      );
+      adapter = _RecordingAdapter(repo);
+      driver = TestRestPresenceDriver();
+      presenceService = RestPresenceService(
+        driver: driver,
+        nowUtc: () => DateTime.utc(2026, 9, 5, 10, 0),
+      );
+    });
+
+    tearDown(() async {
+      await presenceService.cleanup();
+      await database.close();
+    });
+
+    test('pending skip intent received in background reconciles on resume and marks draft rest skipped', () async {
+      final launch = _createLaunch();
+      final controller = B02StrengthExecutionController(
+        adapter,
+        initialLaunch: launch,
+        nowUtc: () => DateTime.utc(2026, 9, 5, 10, 0),
+        restPresence: presenceService,
+      );
+      addTearDown(controller.dispose);
+
+      final slot = _createSlot(exerciseName: 'Overhead Press', prescribedRest: 90);
+      await controller.recordSet(
+        slot: slot,
+        reps: 6,
+        loadKg: 50,
+        startRestAfterRecord: true,
+      );
+
+      final periodId = controller.state.launch!.state.restPeriods.single.id;
+
+      // Simulate headless isolate writing skip intent
+      await RestPresenceService.savePendingIntent(
+        RestPresenceIntent(
+          action: 'skip',
+          periodId: periodId,
+          timestampUtc: DateTime.utc(2026, 9, 5, 10, 0, 15),
+        ),
+      );
+
+      await controller.reconcilePendingRestIntent();
+
+      final period = controller.state.launch!.state.restPeriods.single;
+      expect(period.endedAtUtc, isNotNull);
+      expect(period.endReason, B02RestEndReason.skipped);
+      expect(await RestPresenceService.loadAndClearPendingIntent(), isNull);
+    });
+
+    test('multiple background +30s taps accumulate delta and reconcile cleanly into draft on resume', () async {
+      final launch = _createLaunch();
+      final controller = B02StrengthExecutionController(
+        adapter,
+        initialLaunch: launch,
+        nowUtc: () => DateTime.utc(2026, 9, 5, 10, 0),
+        restPresence: presenceService,
+      );
+      addTearDown(controller.dispose);
+
+      final slot = _createSlot(exerciseName: 'Deadlift', prescribedRest: 120);
+      await controller.recordSet(
+        slot: slot,
+        reps: 5,
+        loadKg: 140,
+        startRestAfterRecord: true,
+      );
+
+      final periodId = controller.state.launch!.state.restPeriods.single.id;
+
+      // Simulate 3 headless +30s taps (+90s total)
+      await RestPresenceService.savePendingIntent(
+        RestPresenceIntent(
+          action: 'adjust_30s',
+          periodId: periodId,
+          accumulatedExtraSeconds: 90,
+          timestampUtc: DateTime.utc(2026, 9, 5, 10, 0, 20),
+        ),
+      );
+
+      await controller.reconcilePendingRestIntent();
+
+      final period = controller.state.launch!.state.restPeriods.single;
+      expect(period.selectedSeconds, 210); // 120 + 90 = 210s
+      expect(await RestPresenceService.loadAndClearPendingIntent(), isNull);
+    });
+
+    test('fallback path: rest elapsing in background without exact alarm triggers fallback 999 upon resume reconciliation', () async {
+      var clockTime = DateTime.utc(2026, 9, 5, 10, 0);
+      final launch = _createLaunch();
+      final controller = B02StrengthExecutionController(
+        adapter,
+        initialLaunch: launch,
+        nowUtc: () => clockTime,
+        restPresence: presenceService,
+      );
+      addTearDown(controller.dispose);
+
+      final slot = _createSlot(exerciseName: 'Barbell Row', prescribedRest: 60);
+      await controller.recordSet(
+        slot: slot,
+        reps: 10,
+        loadKg: 70,
+        startRestAfterRecord: true,
+      );
+
+      final periodId = controller.state.launch!.state.restPeriods.single.id;
+
+      // Simulate fallback anchor where exact alarm could not be scheduled
+      await RestPresenceService.saveAnchorRecord(
+        RestAnchorRecord(
+          periodId: periodId,
+          exerciseName: 'Barbell Row',
+          startedAtUtc: clockTime,
+          baseTargetSeconds: 60,
+          accumulatedExtraSeconds: 0,
+          hasExactAlarmAnchor: false,
+        ),
+      );
+
+      // Advance clock past duration
+      clockTime = clockTime.add(const Duration(seconds: 65));
+
+      await controller.reconcilePendingRestIntent();
+
+      final period = controller.state.launch!.state.restPeriods.single;
+      expect(period.endedAtUtc, isNotNull);
+      expect(period.endReason, B02RestEndReason.elapsed);
+
+      // Single-writer fallback rule: because exact alarm anchor was false, Dart posts 999!
+      expect(driver.expiredCalls, hasLength(1));
+      expect(driver.expiredCalls.single['id'], RestPresenceService.expiredNotificationId);
+    });
+
+    test('reconcilePendingRestIntent is a safe no-op when no rest period is active', () async {
+      final launch = _createLaunch();
+      final controller = B02StrengthExecutionController(
+        adapter,
+        initialLaunch: launch,
+        nowUtc: () => DateTime.utc(2026, 9, 5, 10, 0),
+        restPresence: presenceService,
+      );
+      addTearDown(controller.dispose);
+
+      // No rest period started
+      await controller.reconcilePendingRestIntent();
+
+      expect(controller.state.launch!.state.restPeriods, isEmpty);
+    });
+
+    test('reconcilePendingRestIntent handles corrupted preferences gracefully without throwing', () async {
+      final launch = _createLaunch();
+      final controller = B02StrengthExecutionController(
+        adapter,
+        initialLaunch: launch,
+        nowUtc: () => DateTime.utc(2026, 9, 5, 10, 0),
+        restPresence: presenceService,
+      );
+      addTearDown(controller.dispose);
+
+      final slot = _createSlot(exerciseName: 'Bench Press', prescribedRest: 60);
+      await controller.recordSet(
+        slot: slot,
+        reps: 8,
+        loadKg: 80,
+        startRestAfterRecord: true,
+      );
+
+      // Corrupt the pending intent pref key with non-JSON content
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('pending_rest_intent', '{malformed_json_not_valid');
+
+      // Reconcile must not throw and fail closed
+      await expectLater(controller.reconcilePendingRestIntent(), completes);
+    });
+  });
 }

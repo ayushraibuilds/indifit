@@ -5,13 +5,13 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   group('R09-B platform safety contract', () {
     test(
-      'Android requests no exact-alarm capability and disables app backup',
+      'Android requests SCHEDULE_EXACT_ALARM without prohibited USE_EXACT_ALARM and disables app backup',
       () {
         final manifest = File(
           'android/app/src/main/AndroidManifest.xml',
         ).readAsStringSync();
 
-        expect(manifest, isNot(contains('SCHEDULE_EXACT_ALARM')));
+        expect(manifest, contains('SCHEDULE_EXACT_ALARM'));
         expect(manifest, isNot(contains('USE_EXACT_ALARM')));
         expect(manifest, contains('android:allowBackup="false"'));
         expect(manifest, contains('@xml/backup_rules'));
