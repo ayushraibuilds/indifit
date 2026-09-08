@@ -205,7 +205,11 @@ void main() {
               theme: AppTheme.lightTheme,
               home: TrainingWorkoutCustomizationScreen(
                 preview: _previewData(),
-                onSave: ({required baseSnapshotJson, required changes}) async {
+                onSave: ({
+                  required baseSnapshotJson,
+                  required changes,
+                  WorkoutCustomizationScope scope = WorkoutCustomizationScope.single,
+                }) async {
                   saved = changes;
                 },
                 onOpenScheduleActions: () {},

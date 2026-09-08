@@ -139,6 +139,12 @@ class _ExercisePickerState extends ConsumerState<ExercisePicker> {
   @override
   void initState() {
     super.initState();
+    final context = widget.selectionContext;
+    if (context is ExerciseLibraryPickerContext &&
+        context.initialEquipment != null &&
+        context.initialEquipment!.trim().isNotEmpty) {
+      _selectedEquipment = context.initialEquipment!.trim();
+    }
     _searchController.addListener(_onSearchChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) unawaited(_loadInitial());

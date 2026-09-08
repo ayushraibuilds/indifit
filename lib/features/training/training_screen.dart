@@ -16,6 +16,7 @@ import '../../core/widgets/consumer_task_primitives.dart';
 import '../../core/widgets/indi_fit_bottom_sheet.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/calendar_read_repository.dart';
+import '../../data/repositories/calendar_repository.dart';
 import '../../data/repositories/program_lifecycle_repository.dart';
 import '../../data/repositories/training_next_action_resolver.dart';
 import '../../data/repositories/workout_repository.dart';
@@ -556,17 +557,57 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
     CalendarOccurrenceReadItem item,
     TrainingWorkoutPreviewData preview,
   ) async {
+    final upcomingOccurrences = await ref
+        .read(calendarRepositoryProvider)
+        .getOccurrencesInLocalDateRange(
+          startLocalDate: item.occurrence.effectiveLocalDate,
+          endLocalDate: '9999-12-31',
+        );
+    final futureCount = upcomingOccurrences
+        .where((o) =>
+            o.programVersionId == item.occurrence.programVersionId &&
+            o.sessionTemplateId == item.occurrence.sessionTemplateId &&
+            (o.status == OccurrenceStatus.planned.dbValue ||
+                o.status == OccurrenceStatus.rescheduled.dbValue) &&
+            o.effectiveLocalDate.compareTo(item.occurrence.effectiveLocalDate) >= 0)
+        .length;
+
+    if (!context.mounted) return;
+
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => TrainingWorkoutCustomizationScreen(
           preview: preview,
-          onSave: ({required baseSnapshotJson, required changes}) async {
+          futureOccurrencesCount: futureCount,
+          onSave: ({
+            required baseSnapshotJson,
+            required changes,
+            required scope,
+          }) async {
+            if (scope == WorkoutCustomizationScope.allFuture) {
+              await ref
+                  .read(calendarControllerProvider.notifier)
+                  .customizeFutureOccurrences(
+                    item.occurrence.id,
+                    baseSnapshotJson: baseSnapshotJson,
+                    changes: changes,
+                  );
+            } else {
+              await ref
+                  .read(calendarControllerProvider.notifier)
+                  .customizeOccurrence(
+                    item.occurrence.id,
+                    baseSnapshotJson: baseSnapshotJson,
+                    changes: changes,
+                  );
+            }
+          },
+          onReset: ({required allFuture}) async {
             await ref
                 .read(calendarControllerProvider.notifier)
-                .customizeOccurrence(
+                .resetOccurrenceCustomization(
                   item.occurrence.id,
-                  baseSnapshotJson: baseSnapshotJson,
-                  changes: changes,
+                  allFuture: allFuture,
                 );
           },
           onOpenScheduleActions: () =>

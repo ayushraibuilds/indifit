@@ -15,12 +15,16 @@ import '../../data/models/b02_execution_models.dart';
 import '../../data/models/plan_analytics_models.dart';
 import '../../data/repositories/b02_execution_compatibility_read_repository.dart';
 import '../../data/repositories/calendar_read_repository.dart';
+import '../../data/repositories/calendar_repository.dart';
 import '../../data/repositories/offline_starter_plan_catalog.dart';
 import '../../data/repositories/plan_library_read_repository.dart';
 import '../../data/repositories/plan_overview_read_repository.dart';
 import '../../data/repositories/program_activation_coordinator.dart';
 import '../../data/repositories/workout_repository.dart';
+import '../calendar/calendar_controller.dart';
 import '../settings/unit_preference.dart';
+import 'training_workout_customization.dart';
+import 'training_workout_preview.dart';
 
 /// Consumer destination for choosing among the canonical saved training plans.
 /// Training Home owns the entry point; this screen owns the library itself.
@@ -688,7 +692,7 @@ class _PlanDetailsBody extends StatelessWidget {
                     _PlanScheduleAndHistory(overview: overview!),
                     const SizedBox(height: B05Layout.space24),
                   ],
-                  _PlanStructure(entry: entry),
+                  _PlanStructure(entry: entry, overview: overview),
                 ],
               ),
             ),
@@ -1261,9 +1265,10 @@ String _historyDetailRoute(B02ActivityHistoryItem item) =>
     : '/activity-history/${item.sessionId}';
 
 class _PlanStructure extends StatelessWidget {
-  const _PlanStructure({required this.entry});
+  const _PlanStructure({required this.entry, this.overview});
 
   final PlanLibraryEntry entry;
+  final PlanOverviewSnapshot? overview;
 
   @override
   Widget build(BuildContext context) {
@@ -1314,6 +1319,8 @@ class _PlanStructure extends StatelessWidget {
                     week: week,
                     templates: templatesByWeek[week.id] ?? const [],
                     prescriptionsByTemplate: prescriptionsByTemplate,
+                    entry: entry,
+                    overview: overview,
                   ),
                 ),
               ],
@@ -1330,11 +1337,15 @@ class _PlanWeekSummary extends StatelessWidget {
     required this.week,
     required this.templates,
     required this.prescriptionsByTemplate,
+    this.entry,
+    this.overview,
   });
 
   final ProgramWeek week;
   final List<SessionTemplate> templates;
   final Map<String, List<ExercisePrescription>> prescriptionsByTemplate;
+  final PlanLibraryEntry? entry;
+  final PlanOverviewSnapshot? overview;
 
   @override
   Widget build(BuildContext context) {
@@ -1367,6 +1378,8 @@ class _PlanWeekSummary extends StatelessWidget {
               child: _SessionSummary(
                 template: template,
                 prescriptions: prescriptionsByTemplate[template.id] ?? const [],
+                entry: entry,
+                overview: overview,
               ),
             ),
           ),
@@ -1376,14 +1389,32 @@ class _PlanWeekSummary extends StatelessWidget {
   }
 }
 
-class _SessionSummary extends StatelessWidget {
-  const _SessionSummary({required this.template, required this.prescriptions});
+class _SessionSummary extends ConsumerWidget {
+  const _SessionSummary({
+    required this.template,
+    required this.prescriptions,
+    this.entry,
+    this.overview,
+  });
 
   final SessionTemplate template;
   final List<ExercisePrescription> prescriptions;
+  final PlanLibraryEntry? entry;
+  final PlanOverviewSnapshot? overview;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final upcomingOccurrences = overview != null && entry?.isActive == true
+        ? (overview!.occurrences
+            .where((item) =>
+                item.occurrence.sessionTemplateId == template.id &&
+                (item.occurrence.status == OccurrenceStatus.planned.dbValue ||
+                    item.occurrence.status == OccurrenceStatus.rescheduled.dbValue))
+            .toList()
+          ..sort((a, b) =>
+              a.occurrence.effectiveLocalDate.compareTo(b.occurrence.effectiveLocalDate)))
+        : <CalendarOccurrenceReadItem>[];
+
     return Semantics(
       container: true,
       label: [
@@ -1411,9 +1442,117 @@ class _SessionSummary extends StatelessWidget {
                 ),
               ),
             ),
+          if (entry?.isActive == true && overview != null) ...[
+            if (upcomingOccurrences.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: B05Layout.space8),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    style: TextButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      padding: EdgeInsets.zero,
+                    ),
+                    icon: const Icon(Icons.tune_rounded, size: 16),
+                    label: Text(
+                      'Customize upcoming workouts (${upcomingOccurrences.length})',
+                    ),
+                    onPressed: () => _openCustomizationFromOverview(
+                      context,
+                      ref,
+                      entry!,
+                      upcomingOccurrences.first,
+                      upcomingOccurrences.length,
+                    ),
+                  ),
+                ),
+              )
+            else
+              Padding(
+                padding: const EdgeInsets.only(top: B05Layout.space8),
+                child: Text(
+                  'All workouts completed for this session',
+                  style: B05Typography.caption(context).copyWith(
+                    color: context.b05Colors.textSecondary,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
+          ],
         ],
       ),
     );
+  }
+
+  Future<void> _openCustomizationFromOverview(
+    BuildContext context,
+    WidgetRef ref,
+    PlanLibraryEntry entry,
+    CalendarOccurrenceReadItem readItem,
+    int futureCount,
+  ) async {
+    try {
+      final calendarRepo = ref.read(calendarRepositoryProvider);
+      final snapshot = await calendarRepo.readWorkoutPreviewSnapshot(
+        readItem.occurrence.id,
+      );
+      final preview = TrainingWorkoutPreviewData.fromOccurrence(
+        readItem,
+        snapshotJson: snapshot,
+      );
+
+      if (!context.mounted) return;
+
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => TrainingWorkoutCustomizationScreen(
+            preview: preview,
+            futureOccurrencesCount: futureCount,
+            initialScope: WorkoutCustomizationScope.allFuture,
+            onSave: ({
+              required baseSnapshotJson,
+              required changes,
+              required scope,
+            }) async {
+              if (scope == WorkoutCustomizationScope.allFuture) {
+                await ref
+                    .read(calendarControllerProvider.notifier)
+                    .customizeFutureOccurrences(
+                      readItem.occurrence.id,
+                      baseSnapshotJson: baseSnapshotJson,
+                      changes: changes,
+                    );
+              } else {
+                await ref
+                    .read(calendarControllerProvider.notifier)
+                    .customizeOccurrence(
+                      readItem.occurrence.id,
+                      baseSnapshotJson: baseSnapshotJson,
+                      changes: changes,
+                    );
+              }
+            },
+            onReset: ({required allFuture}) async {
+              await ref
+                  .read(calendarControllerProvider.notifier)
+                  .resetOccurrenceCustomization(
+                    readItem.occurrence.id,
+                    allFuture: allFuture,
+                  );
+            },
+          ),
+        ),
+      );
+      if (context.mounted) {
+        ref.invalidate(planOverviewSnapshotProvider(entry.version.id));
+      }
+    } catch (error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not open customization: $error')),
+        );
+      }
+    }
   }
 }
 

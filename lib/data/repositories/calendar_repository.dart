@@ -188,6 +188,45 @@ class CustomizeOccurrenceCommand extends OccurrenceCommand {
   });
 }
 
+/// Applies a chosen edit to an unstarted occurrence and cascades it across all
+/// upcoming unstarted occurrences of the same session template in the active plan.
+class CustomizeFutureOccurrencesCommand extends OccurrenceCommand {
+  final String baseSnapshotJson;
+  final List<OccurrenceExerciseCustomization> changes;
+
+  const CustomizeFutureOccurrencesCommand({
+    required super.occurrenceId,
+    required super.commandId,
+    required super.expectedStatus,
+    required this.baseSnapshotJson,
+    required this.changes,
+  });
+}
+
+/// Resets customization by clearing executionSnapshotJson back to null,
+/// restoring dynamic template resolution. Can apply to a single unstarted
+/// occurrence or cascade across all upcoming unstarted occurrences.
+class ResetOccurrenceCustomizationCommand extends OccurrenceCommand {
+  final bool allFuture;
+
+  const ResetOccurrenceCustomizationCommand({
+    required super.occurrenceId,
+    required super.commandId,
+    required super.expectedStatus,
+    this.allFuture = false,
+  });
+}
+
+class FutureCustomizationResult {
+  final int affectedCount;
+  final OccurrenceMutationResult sourceResult;
+
+  const FutureCustomizationResult({
+    required this.affectedCount,
+    required this.sourceResult,
+  });
+}
+
 class DiscardStartedOccurrenceCommand extends OccurrenceCommand {
   const DiscardStartedOccurrenceCommand({
     required super.occurrenceId,
@@ -382,6 +421,250 @@ class CalendarRepository {
         occurrence: (await getOccurrence(occurrence.id))!,
         event: event,
         wasIdempotent: false,
+      );
+    });
+  }
+
+  /// Saves an occurrence launch snapshot and cascades it across all upcoming
+  /// unstarted occurrences of the same template in the active plan.
+  ///
+  /// For each target occurrence, builds a pristine baseline from the template
+  /// and applies the changes, replacing any prior individual tweaks. All targets
+  /// are validated and updated inside one atomic transaction.
+  Future<FutureCustomizationResult> customizeFutureOccurrences(
+    CustomizeFutureOccurrencesCommand command,
+  ) async {
+    _validateCommand(command);
+    if (command.expectedStatus != OccurrenceStatus.planned &&
+        command.expectedStatus != OccurrenceStatus.rescheduled) {
+      throw const InvalidOccurrenceTransitionException(
+        'Only an unstarted workout can be customized.',
+      );
+    }
+    if (command.baseSnapshotJson.trim().isEmpty || command.changes.isEmpty) {
+      throw const InvalidOccurrenceTransitionException(
+        'Choose a workout change before saving.',
+      );
+    }
+    return _db.transaction(() async {
+      final existing = await _existingEvent(
+        command.occurrenceId,
+        command.commandId,
+      );
+      if (existing != null) {
+        return FutureCustomizationResult(
+          affectedCount: 1,
+          sourceResult: await _idempotentResult(
+            command.occurrenceId,
+            existing,
+            expectedEventType: 'customized',
+          ),
+        );
+      }
+      final occurrence = await _requireCommandSource(command);
+      await _requireActivePlan(occurrence);
+      _requireUnstarted(occurrence, 'customize');
+
+      final currentSnapshot = occurrence.executionSnapshotJson?.trim();
+      final baseSnapshot = currentSnapshot == null || currentSnapshot.isEmpty
+          ? await _buildExecutionSnapshot(occurrence)
+          : currentSnapshot;
+      if (baseSnapshot != command.baseSnapshotJson) _throwStale();
+      _decodeAndValidateOccurrenceSnapshot(baseSnapshot, occurrence);
+
+      final futureOccurrences = await (_db.select(_db.scheduledSessionOccurrences)
+            ..where((table) =>
+                table.programVersionId.equals(occurrence.programVersionId) &
+                table.sessionTemplateId.equals(occurrence.sessionTemplateId) &
+                table.status.isIn([
+                  OccurrenceStatus.planned.dbValue,
+                  OccurrenceStatus.rescheduled.dbValue,
+                ]) &
+                table.effectiveLocalDate.isBiggerOrEqualValue(occurrence.effectiveLocalDate))
+            ..orderBy([(table) => OrderingTerm(expression: table.effectiveLocalDate)]))
+          .get();
+
+      if (futureOccurrences.isEmpty ||
+          !futureOccurrences.any((item) => item.id == occurrence.id)) {
+        _throwStale();
+      }
+
+      final canonicalExercises = await (_db.select(_db.exercises)).get();
+      final canonicalById = <String, String>{
+        for (final exercise in canonicalExercises)
+          if (exercise.stableId?.trim().isNotEmpty == true &&
+              exercise.name.trim().isNotEmpty)
+            exercise.stableId!.trim(): exercise.name.trim(),
+      };
+
+      OccurrenceEvent? sourceEvent;
+
+      for (final target in futureOccurrences) {
+        final targetPristineSnapshot = await _buildExecutionSnapshot(target);
+        final customizedSnapshot = const B02OccurrenceSnapshotCustomizer().apply(
+          snapshotJson: targetPristineSnapshot,
+          occurrenceId: target.id,
+          changes: command.changes,
+          canonicalExercises: canonicalById,
+        );
+
+        final changed = await (_db.update(_db.scheduledSessionOccurrences)
+              ..where((table) =>
+                  table.id.equals(target.id) &
+                  table.status.isIn([
+                    OccurrenceStatus.planned.dbValue,
+                    OccurrenceStatus.rescheduled.dbValue,
+                  ])))
+            .write(
+              ScheduledSessionOccurrencesCompanion(
+                executionSnapshotJson: Value(customizedSnapshot),
+              ),
+            );
+        if (changed != 1) _throwStale();
+
+        final isSource = target.id == occurrence.id;
+        final targetCommandId = isSource
+            ? command.commandId
+            : '${command.commandId}::${target.id}';
+        final event = await _insertEvent(
+          occurrenceId: target.id,
+          commandId: targetCommandId,
+          eventType: 'customized',
+          fromStatus: target.status,
+          toStatus: target.status,
+          beforeLocalDate: target.effectiveLocalDate,
+          beforeTimezoneId: target.effectiveTimezoneId,
+          afterLocalDate: target.effectiveLocalDate,
+          afterTimezoneId: target.effectiveTimezoneId,
+          metadata: {
+            'snapshotVersion': 1,
+            'cascade': true,
+            'sourceOccurrenceId': occurrence.id,
+            'targetCount': futureOccurrences.length,
+            'prescriptionIds': [
+              for (final change in command.changes) change.prescriptionId,
+            ],
+          },
+          occurredAtUtc: _nowUtc().toUtc(),
+        );
+
+        if (isSource) {
+          sourceEvent = event;
+        }
+      }
+
+      return FutureCustomizationResult(
+        affectedCount: futureOccurrences.length,
+        sourceResult: OccurrenceMutationResult(
+          occurrence: (await getOccurrence(occurrence.id))!,
+          event: sourceEvent!,
+          wasIdempotent: false,
+        ),
+      );
+    });
+  }
+
+  /// Resets customization by clearing executionSnapshotJson back to null,
+  /// restoring dynamic template resolution. If [command.allFuture] is true,
+  /// resets all upcoming unstarted occurrences of the same template.
+  Future<FutureCustomizationResult> resetOccurrenceCustomization(
+    ResetOccurrenceCustomizationCommand command,
+  ) async {
+    _validateCommand(command);
+    if (command.expectedStatus != OccurrenceStatus.planned &&
+        command.expectedStatus != OccurrenceStatus.rescheduled) {
+      throw const InvalidOccurrenceTransitionException(
+        'Only an unstarted workout can be reset.',
+      );
+    }
+    return _db.transaction(() async {
+      final existing = await _existingEvent(
+        command.occurrenceId,
+        command.commandId,
+      );
+      if (existing != null) {
+        return FutureCustomizationResult(
+          affectedCount: 1,
+          sourceResult: await _idempotentResult(
+            command.occurrenceId,
+            existing,
+            expectedEventType: 'customizationReset',
+          ),
+        );
+      }
+      final occurrence = await _requireCommandSource(command);
+      await _requireActivePlan(occurrence);
+      _requireUnstarted(occurrence, 'reset');
+
+      final targets = command.allFuture
+          ? await (_db.select(_db.scheduledSessionOccurrences)
+                ..where((table) =>
+                    table.programVersionId.equals(occurrence.programVersionId) &
+                    table.sessionTemplateId.equals(occurrence.sessionTemplateId) &
+                    table.status.isIn([
+                      OccurrenceStatus.planned.dbValue,
+                      OccurrenceStatus.rescheduled.dbValue,
+                    ]) &
+                    table.effectiveLocalDate.isBiggerOrEqualValue(occurrence.effectiveLocalDate))
+                ..orderBy([(table) => OrderingTerm(expression: table.effectiveLocalDate)]))
+              .get()
+          : [occurrence];
+
+      if (targets.isEmpty || !targets.any((item) => item.id == occurrence.id)) {
+        _throwStale();
+      }
+
+      OccurrenceEvent? sourceEvent;
+
+      for (final target in targets) {
+        final changed = await (_db.update(_db.scheduledSessionOccurrences)
+              ..where((table) =>
+                  table.id.equals(target.id) &
+                  table.status.isIn([
+                    OccurrenceStatus.planned.dbValue,
+                    OccurrenceStatus.rescheduled.dbValue,
+                  ])))
+            .write(
+              const ScheduledSessionOccurrencesCompanion(
+                executionSnapshotJson: Value(null),
+              ),
+            );
+        if (changed != 1) _throwStale();
+
+        final isSource = target.id == occurrence.id;
+        final targetCommandId = isSource
+            ? command.commandId
+            : '${command.commandId}::${target.id}';
+        final event = await _insertEvent(
+          occurrenceId: target.id,
+          commandId: targetCommandId,
+          eventType: 'customizationReset',
+          fromStatus: target.status,
+          toStatus: target.status,
+          beforeLocalDate: target.effectiveLocalDate,
+          beforeTimezoneId: target.effectiveTimezoneId,
+          afterLocalDate: target.effectiveLocalDate,
+          afterTimezoneId: target.effectiveTimezoneId,
+          metadata: {
+            'resetAllFuture': command.allFuture,
+            'sourceOccurrenceId': occurrence.id,
+            'targetCount': targets.length,
+          },
+          occurredAtUtc: _nowUtc().toUtc(),
+        );
+
+        if (isSource) {
+          sourceEvent = event;
+        }
+      }
+
+      return FutureCustomizationResult(
+        affectedCount: targets.length,
+        sourceResult: OccurrenceMutationResult(
+          occurrence: (await getOccurrence(occurrence.id))!,
+          event: sourceEvent!,
+          wasIdempotent: false,
+        ),
       );
     });
   }
@@ -986,15 +1269,24 @@ class CalendarRepository {
               occurrence.originalTimezoneId == occurrence.effectiveTimezoneId
           ? OccurrenceStatus.planned
           : OccurrenceStatus.rescheduled;
-      final customizationEvents =
-          await (_db.select(_db.occurrenceEvents)..where(
-                (table) =>
-                    table.occurrenceId.equals(occurrence.id) &
-                    table.eventType.equals('customized'),
-              ))
-              .get();
+      final latestCustomizationEvent =
+          await (_db.select(_db.occurrenceEvents)
+                ..where(
+                  (table) =>
+                      table.occurrenceId.equals(occurrence.id) &
+                      table.eventType.isIn(['customized', 'customizationReset']),
+                )
+                ..orderBy([
+                  (table) => OrderingTerm(
+                    expression: table.occurredAtUtc,
+                    mode: OrderingMode.desc,
+                  ),
+                ])
+                ..limit(1))
+              .getSingleOrNull();
       String? preparedSnapshot;
-      if (customizationEvents.isNotEmpty) {
+      if (latestCustomizationEvent != null &&
+          latestCustomizationEvent.eventType == 'customized') {
         final frozen = occurrence.executionSnapshotJson;
         if (frozen == null || frozen.trim().isEmpty) {
           throw const InvalidOccurrenceTransitionException(
