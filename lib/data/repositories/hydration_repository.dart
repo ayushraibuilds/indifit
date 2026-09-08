@@ -209,7 +209,25 @@ class HydrationRepository {
     final prefs = await _getPrefs();
     final entriesMap = _loadEntriesMap(prefs);
     final dayList = entriesMap[localDate];
-    if (dayList == null) return;
+    if (dayList == null) {
+      if (entryId.startsWith('summary_') || entryId.startsWith('legacy_')) {
+        final goalMl = prefs.getInt(prefHydrationDailyGoalMl) ??
+            _goalMlFromLegacyGlasses(prefs);
+        if (_db != null) {
+          await _db.into(_db.dailyHydrations).insert(
+            DailyHydrationsCompanion.insert(
+              dateString: localDate,
+              totalMl: 0,
+              goalMl: goalMl,
+              updatedAt: Value(DateTime.now().toUtc()),
+            ),
+            mode: InsertMode.insertOrReplace,
+          );
+        }
+        await _syncLegacyMirror(prefs, localDate, 0, goalMl);
+      }
+      return;
+    }
 
     dayList.removeWhere((item) => item['id'] == entryId);
     if (dayList.isEmpty) {

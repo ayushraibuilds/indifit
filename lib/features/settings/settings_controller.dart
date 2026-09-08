@@ -18,6 +18,7 @@ import '../../core/services/achievement_service.dart';
 import '../../core/services/crash_reporting_service.dart';
 import '../../core/services/notification_service.dart';
 import '../../core/utils/csv_exporter.dart';
+import '../dashboard/today_surface_controller.dart';
 
 int _boundedPreference(
   int? value, {
@@ -47,6 +48,8 @@ class SettingsState {
   final int weeklyProgressDay;
   final int weeklyProgressHour;
   final int weeklyProgressMinute;
+  final int waterReminderHour;
+  final int waterReminderMinute;
   final bool offlineOnly;
   final bool crashReportingEnabled;
   final bool loading;
@@ -77,6 +80,8 @@ class SettingsState {
     this.weeklyProgressDay = NotificationService.defaultWeeklyProgressDay,
     this.weeklyProgressHour = NotificationService.defaultWeeklyProgressHour,
     this.weeklyProgressMinute = NotificationService.defaultWeeklyProgressMinute,
+    this.waterReminderHour = NotificationService.defaultWaterReminderHour,
+    this.waterReminderMinute = NotificationService.defaultWaterReminderMinute,
     this.offlineOnly = false,
     this.crashReportingEnabled = false,
     this.loading = true,
@@ -105,6 +110,8 @@ class SettingsState {
     int? weeklyProgressDay,
     int? weeklyProgressHour,
     int? weeklyProgressMinute,
+    int? waterReminderHour,
+    int? waterReminderMinute,
     bool? offlineOnly,
     bool? crashReportingEnabled,
     bool? loading,
@@ -135,6 +142,8 @@ class SettingsState {
       weeklyProgressDay: weeklyProgressDay ?? this.weeklyProgressDay,
       weeklyProgressHour: weeklyProgressHour ?? this.weeklyProgressHour,
       weeklyProgressMinute: weeklyProgressMinute ?? this.weeklyProgressMinute,
+      waterReminderHour: waterReminderHour ?? this.waterReminderHour,
+      waterReminderMinute: waterReminderMinute ?? this.waterReminderMinute,
       offlineOnly: offlineOnly ?? this.offlineOnly,
       crashReportingEnabled:
           crashReportingEnabled ?? this.crashReportingEnabled,
@@ -249,6 +258,18 @@ class SettingsController extends StateNotifier<SettingsState> {
         max: 59,
         fallback: NotificationService.defaultWeeklyProgressMinute,
       ),
+      waterReminderHour: _boundedPreference(
+        prefs.getInt(NotificationService.prefWaterReminderHour),
+        min: 0,
+        max: 23,
+        fallback: NotificationService.defaultWaterReminderHour,
+      ),
+      waterReminderMinute: _boundedPreference(
+        prefs.getInt(NotificationService.prefWaterReminderMinute),
+        min: 0,
+        max: 59,
+        fallback: NotificationService.defaultWaterReminderMinute,
+      ),
       offlineOnly: prefs.getBool('offline_only') ?? false,
       crashReportingEnabled:
           prefs.getBool(CrashReportingService.prefCrashReportingEnabled) ??
@@ -356,6 +377,17 @@ class SettingsController extends StateNotifier<SettingsState> {
     await _rescheduleAndReload();
   }
 
+  Future<void> updateWaterReminderSchedule({
+    required int hour,
+    required int minute,
+  }) async {
+    _validateTime(hour, minute);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(NotificationService.prefWaterReminderHour, hour);
+    await prefs.setInt(NotificationService.prefWaterReminderMinute, minute);
+    await _rescheduleAndReload();
+  }
+
   Future<void> _rescheduleAndReload() async {
     await NotificationService.scheduleAllReminders(_ref.read(databaseProvider));
     await loadPreferences();
@@ -394,6 +426,16 @@ class SettingsController extends StateNotifier<SettingsState> {
     await prefs.setInt('water_goal', goal);
     await _ref.read(waterProvider.notifier).updateGoal(goal);
     state = state.copyWith(waterGoal: goal);
+  }
+
+  Future<void> setHydrationDailyGoalMl(int goalMl) async {
+    final repo = _ref.read(hydrationRepositoryProvider);
+    await repo.setDailyGoal(goalMl: goalMl);
+    final prefs = await SharedPreferences.getInstance();
+    final updatedGlasses =
+        prefs.getInt('water_goal') ?? (goalMl / state.glassSize).round();
+    state = state.copyWith(waterGoal: updatedGlasses);
+    _ref.read(todayHydrationRevisionProvider.notifier).state++;
   }
 
   Future<void> updateGlassSize(int size) async {

@@ -18,6 +18,8 @@ class HydrationIntakeEntry {
     this.containerType,
   });
 
+  bool get isSummary => source == 'summary';
+
   Map<String, dynamic> toJson() => {
     'id': id,
     'localDate': localDate,

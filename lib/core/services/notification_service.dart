@@ -30,6 +30,7 @@ class NotificationService {
   // Notification channel IDs
   static const String _workoutChannelId = 'indifit_workout';
   static const String _mealChannelId = 'indifit_meals';
+  static const String _waterChannelId = 'indifit_water';
   static const String _nudgeChannelId = 'indifit_nudge';
   static const String _weeklyChannelId = 'indifit_weekly';
 
@@ -37,6 +38,7 @@ class NotificationService {
   static const int _idWorkout = 100;
   static const int _idMealLunch = 201;
   static const int _idMealDinner = 202;
+  static const int _idWater = 301;
   static const int _idEveningNudge = 400;
   static const int _idWeeklyReport = 500;
 
@@ -64,6 +66,8 @@ class NotificationService {
   static const String prefWeeklyProgressDay = 'pref_weekly_progress_day';
   static const String prefWeeklyProgressHour = 'pref_weekly_progress_hour';
   static const String prefWeeklyProgressMinute = 'pref_weekly_progress_minute';
+  static const String prefWaterReminderHour = 'pref_water_reminder_hour';
+  static const String prefWaterReminderMinute = 'pref_water_reminder_minute';
 
   static const List<int> defaultWorkoutReminderDays = [
     DateTime.monday,
@@ -85,6 +89,8 @@ class NotificationService {
   static const int defaultWeeklyProgressDay = DateTime.sunday;
   static const int defaultWeeklyProgressHour = 10;
   static const int defaultWeeklyProgressMinute = 0;
+  static const int defaultWaterReminderHour = 10;
+  static const int defaultWaterReminderMinute = 0;
 
   static Function(String payload)? onNotificationNavigate;
 
@@ -99,6 +105,7 @@ class NotificationService {
     }
     if (payload == 'evening_nudge') return '/';
     if (payload == 'weekly_report') return '/progress';
+    if (payload == 'water') return '/';
     return null;
   }
 
@@ -213,13 +220,14 @@ class NotificationService {
 
   /// Re-schedules all enabled reminders. Call after any preference change.
   static Future<void> scheduleAllReminders([AppDatabase? db]) async {
-    // Cancel only scheduled reminder notifications (101-107, 201, 202, 400, 500)
+    // Cancel only scheduled reminder notifications (101-107, 201, 202, 301, 400, 500)
     // to prevent wiping active workout rest timer notifications (IDs 998/999).
     for (int day = DateTime.monday; day <= DateTime.sunday; day++) {
       await _plugin.cancel(_idWorkout + day);
     }
     await _plugin.cancel(_idMealLunch);
     await _plugin.cancel(_idMealDinner);
+    await _plugin.cancel(_idWater);
     await _plugin.cancel(_idEveningNudge);
     await _plugin.cancel(_idWeeklyReport);
 
@@ -227,6 +235,7 @@ class NotificationService {
 
     final workoutEnabled = prefs.getBool(prefRemindWorkout) ?? false;
     final mealsEnabled = prefs.getBool(prefRemindMeals) ?? false;
+    final waterEnabled = prefs.getBool(prefRemindWater) ?? false;
     final eveningEnabled = prefs.getBool(prefRemindEvening) ?? false;
     final weeklyEnabled = prefs.getBool(prefRemindWeekly) ?? false;
 
@@ -254,6 +263,14 @@ class NotificationService {
     final dinnerMinute = _validMinuteOrDefault(
       prefs.getInt(prefDinnerReminderMinute),
       defaultDinnerReminderMinute,
+    );
+    final waterHour = _validHourOrDefault(
+      prefs.getInt(prefWaterReminderHour),
+      defaultWaterReminderHour,
+    );
+    final waterMinute = _validMinuteOrDefault(
+      prefs.getInt(prefWaterReminderMinute),
+      defaultWaterReminderMinute,
     );
     final dailyLoggingHour = _validHourOrDefault(
       prefs.getInt(prefDailyLoggingReminderHour),
@@ -327,6 +344,7 @@ class NotificationService {
 
         hasAnyFoodToday =
             foodLogs.isNotEmpty || canonicalMealCategories.isNotEmpty;
+
         hasLunchToday =
             foodLogs.any((l) => l.mealType.toLowerCase() == 'lunch') ||
             canonicalMealCategories.contains('lunch');
@@ -367,6 +385,15 @@ class NotificationService {
         quietHoursEnd,
       );
     }
+    if (waterEnabled) {
+      await _scheduleWaterReminder(
+        waterHour,
+        waterMinute,
+        quietHoursEnabled,
+        quietHoursStart,
+        quietHoursEnd,
+      );
+    }
     if (eveningEnabled) {
       await _scheduleEveningNudge(
         dailyLoggingHour,
@@ -394,6 +421,29 @@ class NotificationService {
   // ────────────────────────────────────────
   // Individual schedulers
   // ────────────────────────────────────────
+
+  /// 💧 Water reminder to stay hydrated throughout the day
+  static Future<void> _scheduleWaterReminder(
+    int hour,
+    int minute,
+    bool quietHoursEnabled,
+    int quietStart,
+    int quietEnd,
+  ) async {
+    await _scheduleDailyNotification(
+      id: _idWater,
+      channelId: _waterChannelId,
+      channelName: 'Water Reminders',
+      hour: hour,
+      minute: minute,
+      title: '💧 Stay Hydrated',
+      body: 'Log a glass of water to stay on track with your hydration goal.',
+      payload: 'water',
+      quietHoursEnabled: quietHoursEnabled,
+      quietHoursStart: quietStart,
+      quietHoursEnd: quietEnd,
+    );
+  }
 
   /// Workout reminders on the selected local weekdays and time.
   static Future<void> _scheduleWorkoutReminder(

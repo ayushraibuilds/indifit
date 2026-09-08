@@ -299,6 +299,7 @@ void main() {
         }
         expect(cancelledIds, contains(201));
         expect(cancelledIds, contains(202));
+        expect(cancelledIds, contains(301));
         expect(cancelledIds, contains(400));
         expect(cancelledIds, contains(500));
 

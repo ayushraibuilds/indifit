@@ -7,6 +7,7 @@ import '../../../core/widgets/b05_accessibility_primitives.dart';
 import '../../../data/models/hydration_models.dart';
 import '../../../data/repositories/hydration_repository.dart';
 import '../today_surface_controller.dart';
+import 'hydration_detail_sheet.dart';
 import 'today_helpers.dart';
 import 'today_module_widgets.dart';
 
@@ -87,7 +88,12 @@ class TodayHydrationCard extends ConsumerWidget {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: B05Radii.largeRadius,
-          onTap: onTapDetail,
+          onTap: onTapDetail ??
+              () => HydrationDetailSheet.show(
+                    context,
+                    selectedDate,
+                    initialData: model,
+                  ),
           child: B05Surface(
             tone: B05SurfaceTone.inset,
             padding: const EdgeInsets.all(B05Layout.space16),
@@ -130,12 +136,11 @@ class TodayHydrationCard extends ConsumerWidget {
                         ],
                       ),
                     ),
-                    if (onTapDetail != null)
-                      Icon(
-                        Icons.chevron_right_rounded,
-                        color: colors.textSecondary,
-                        size: 20,
-                      ),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      color: colors.textSecondary,
+                      size: 20,
+                    ),
                   ],
                 ),
                 const SizedBox(height: B05Layout.space12),

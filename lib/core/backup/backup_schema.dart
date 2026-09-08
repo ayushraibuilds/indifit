@@ -305,6 +305,7 @@ class BackupData {
         'prefRemindEvening',
         'prefRemindWeekly',
         'pref_remind_meals',
+        'pref_remind_water',
         'pref_remind_evening',
         'pref_remind_weekly',
         'prefQuietHoursEnabled',
@@ -319,6 +320,8 @@ class BackupData {
         'pref_lunch_reminder_minute',
         'pref_dinner_reminder_hour',
         'pref_dinner_reminder_minute',
+        'pref_water_reminder_hour',
+        'pref_water_reminder_minute',
         'pref_daily_logging_reminder_hour',
         'pref_daily_logging_reminder_minute',
         'pref_weekly_progress_day',
@@ -833,6 +836,11 @@ class BackupData {
           !userPreferences.containsKey('pref_remind_workout')) {
         userPreferences['pref_remind_workout'] =
             userPreferences['prefRemindWorkout'];
+      }
+      if (userPreferences.containsKey('prefRemindWater') &&
+          !userPreferences.containsKey('pref_remind_water')) {
+        userPreferences['pref_remind_water'] =
+            userPreferences['prefRemindWater'];
       }
     }
 

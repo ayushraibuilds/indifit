@@ -1,30 +1,49 @@
+import 'dart:convert';
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/di/providers.dart';
+import 'package:indifit/core/services/notification_service.dart';
 import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/core/widgets/b05_accessibility_primitives.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/models/hydration_models.dart';
 import 'package:indifit/data/repositories/hydration_repository.dart';
 import 'package:indifit/features/dashboard/today_surface_controller.dart';
+import 'package:indifit/features/dashboard/widgets/hydration_detail_sheet.dart';
 import 'package:indifit/features/dashboard/widgets/today_hydration_card.dart';
+import 'package:indifit/features/settings/settings_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:timezone/data/latest_all.dart' as tz_data;
+import 'package:timezone/timezone.dart' as tz;
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late AppDatabase db;
   late HydrationRepository repo;
+  late List<MethodCall> platformCalls;
 
   setUpAll(() {
     driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
+    tz_data.initializeTimeZones();
+    tz.setLocalLocation(tz.getLocation('Asia/Kolkata'));
   });
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
+    platformCalls = [];
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          const MethodChannel('dexterous.com/flutter/local_notifications'),
+          (call) async {
+            platformCalls.add(call);
+            return true;
+          },
+        );
     db = AppDatabase.memory();
     repo = HydrationRepository(db, prefs: prefs);
   });
@@ -244,6 +263,29 @@ void main() {
       expect(prefs.getInt(HydrationRepository.prefWaterLogged), isNull);
       expect(prefs.getInt(HydrationRepository.prefWaterGoal), isNull);
     });
+
+    test('deleting summary entry resets SQLite row totalMl to 0 and clears legacy mirrors', () async {
+      await db.into(db.dailyHydrations).insert(
+        DailyHydrationsCompanion.insert(
+          dateString: '2026-09-08',
+          totalMl: 1500,
+          goalMl: 2500,
+          updatedAt: Value(DateTime.utc(2026, 9, 8, 8)),
+        ),
+      );
+      final read = await repo.getDailyHydration('2026-09-08');
+      expect(read.entries.length, equals(1));
+      expect(read.entries.first.isSummary, isTrue);
+
+      await repo.deleteIntake(localDate: '2026-09-08', entryId: read.entries.first.id);
+
+      final afterDelete = await repo.getDailyHydration('2026-09-08');
+      expect(afterDelete.totalMl, equals(0));
+      expect(afterDelete.entries.isEmpty, isTrue);
+
+      final row = await (db.select(db.dailyHydrations)..where((tbl) => tbl.dateString.equals('2026-09-08'))).getSingle();
+      expect(row.totalMl, equals(0));
+    });
   });
 
   group('PV1-HYD-01 Single Writer & WaterNotifier Unification', () {
@@ -412,6 +454,415 @@ void main() {
 
       expect(tester.takeException(), isNull);
       expect(find.text('Goal met! (120%)'), findsOneWidget);
+    });
+
+    testWidgets('tapping TodayHydrationCard opens HydrationDetailSheet when onTapDetail is null', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            databaseProvider.overrideWithValue(db),
+            hydrationRepositoryProvider.overrideWithValue(repo),
+            hydrationDailyProvider.overrideWith((ref, localDate) async {
+              return const HydrationDailyReadModel(
+                localDate: '2026-09-08',
+                totalMl: 1000,
+                goalMl: 2500,
+              );
+            }),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.lightTheme,
+            home: Scaffold(
+              body: TodayHydrationCard(
+                hydrationRead: const TodayDomainRead.available(
+                  HydrationDailyReadModel(
+                    localDate: '2026-09-08',
+                    totalMl: 1000,
+                    goalMl: 2500,
+                  ),
+                ),
+                selectedDate: DateTime(2026, 9, 8),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Tap the card surface
+      await tester.tap(find.byType(TodayHydrationCard));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.byType(HydrationDetailSheet), findsOneWidget);
+      expect(find.text('QUICK ADD'), findsOneWidget);
+      expect(find.text('DAILY GOAL'), findsOneWidget);
+    });
+  });
+
+  group('PV1-HYD-01 Notification & Settings Integration', () {
+    test('destinationForPayload("water") routes to dashboard root', () {
+      expect(NotificationService.destinationForPayload('water'), '/');
+    });
+
+    test('scheduleAllReminders explicitly cancels water reminder ID 301 without cancelAll', () async {
+      platformCalls.clear();
+      await NotificationService.scheduleAllReminders(db);
+
+      expect(platformCalls.any((call) => call.method == 'cancelAll'), isFalse);
+
+      final cancelledIds = platformCalls
+          .where((call) => call.method == 'cancel')
+          .map((call) => (call.arguments as Map)['id'] as int)
+          .toSet();
+
+      expect(cancelledIds, contains(301));
+      expect(cancelledIds, isNot(contains(998)));
+      expect(cancelledIds, isNot(contains(999)));
+    });
+
+    test('water reminder scheduled during quiet hours defers to quiet hours end', () async {
+      platformCalls.clear();
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(NotificationService.prefRemindWater, true);
+      await prefs.setInt(NotificationService.prefWaterReminderHour, 23);
+      await prefs.setInt(NotificationService.prefWaterReminderMinute, 0);
+      await prefs.setBool(NotificationService.prefQuietHoursEnabled, true);
+      await prefs.setInt(NotificationService.prefQuietHoursStart, 22);
+      await prefs.setInt(NotificationService.prefQuietHoursEnd, 7);
+
+      await NotificationService.scheduleAllReminders(db);
+
+      final call = platformCalls.singleWhere(
+        (candidate) =>
+            candidate.method == 'zonedSchedule' &&
+            (candidate.arguments as Map)['id'] == 301,
+      );
+      final arguments = Map<String, Object?>.from(call.arguments as Map);
+      final scheduled = DateTime.parse(
+        arguments['scheduledDateTime']! as String,
+      );
+      expect(scheduled.hour, 7);
+      expect(scheduled.minute, 0);
+    });
+
+    test('SettingsController loads water reminder schedule and setHydrationDailyGoalMl synchronizes state and repository', () async {
+      final container = ProviderContainer(
+        overrides: [
+          databaseProvider.overrideWithValue(db),
+          hydrationRepositoryProvider.overrideWithValue(repo),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final controller = container.read(settingsControllerProvider.notifier);
+      await controller.loadPreferences();
+
+      var state = container.read(settingsControllerProvider);
+      expect(state.waterReminderHour, NotificationService.defaultWaterReminderHour);
+      expect(state.waterReminderMinute, NotificationService.defaultWaterReminderMinute);
+
+      await controller.updateWaterReminderSchedule(hour: 11, minute: 30);
+      state = container.read(settingsControllerProvider);
+      expect(state.waterReminderHour, 11);
+      expect(state.waterReminderMinute, 30);
+
+      await controller.setHydrationDailyGoalMl(3000);
+      state = container.read(settingsControllerProvider);
+      expect(state.waterGoal, 12); // 3000 / 250 = 12 glasses
+
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getInt(HydrationRepository.prefHydrationDailyGoalMl), 3000);
+      expect(prefs.getInt(HydrationRepository.prefWaterGoal), 12);
+    });
+  });
+
+  group('PV1-HYD-01 HydrationDetailSheet Widget', () {
+    Override hydrationDailyOverride() {
+      return hydrationDailyProvider.overrideWith((ref, localDate) async {
+        ref.watch(todayHydrationRevisionProvider);
+        final prefs = await SharedPreferences.getInstance();
+        final raw = prefs.getString(HydrationRepository.prefHydrationEntriesJson);
+        final goal = prefs.getInt(HydrationRepository.prefHydrationDailyGoalMl) ??
+            HydrationRepository.defaultDailyGoalMl;
+        if (raw != null) {
+          final decoded = jsonDecode(raw) as Map<String, dynamic>;
+          final list = decoded[localDate] as List?;
+          if (list != null && list.isNotEmpty) {
+            final entries = list
+                .map((e) => HydrationIntakeEntry.fromJson(e as Map<String, dynamic>))
+                .toList()
+              ..sort((a, b) => a.loggedAtUtc.compareTo(b.loggedAtUtc));
+            final total = entries.fold<int>(0, (sum, e) => sum + e.amountMl);
+            return HydrationDailyReadModel(
+              localDate: localDate,
+              totalMl: total,
+              goalMl: goal,
+              entries: entries,
+            );
+          }
+        }
+        return HydrationDailyReadModel(
+          localDate: localDate,
+          totalMl: 0,
+          goalMl: goal,
+        );
+      });
+    }
+
+    testWidgets('renders header, progress, quick add buttons, custom intake, and reminder toggle', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            databaseProvider.overrideWithValue(db),
+            hydrationRepositoryProvider.overrideWithValue(repo),
+            hydrationDailyOverride(),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.lightTheme,
+            home: Scaffold(
+              body: HydrationDetailSheet(
+                selectedDate: DateTime(2026, 9, 8),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('HYDRATION'), findsOneWidget);
+      expect(find.text('QUICK ADD'), findsOneWidget);
+      expect(find.text('CUSTOM INTAKE'), findsOneWidget);
+      expect(find.text('DAILY GOAL'), findsOneWidget);
+      expect(find.text('REMINDERS'), findsOneWidget);
+      expect(find.text('Water reminder'), findsOneWidget);
+    });
+
+    testWidgets('quick add button logs intake and updates sheet', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            databaseProvider.overrideWithValue(db),
+            hydrationRepositoryProvider.overrideWithValue(repo),
+            hydrationDailyOverride(),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.lightTheme,
+            home: Scaffold(
+              body: HydrationDetailSheet(
+                selectedDate: DateTime(2026, 9, 8),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final add500Btn = tester.widget<B05ActionButton>(
+        find.widgetWithText(B05ActionButton, '+500 ml'),
+      );
+
+      await tester.runAsync(() async {
+        add500Btn.onPressed!();
+        for (var attempt = 0; attempt < 100; attempt++) {
+          final daily = await repo.getDailyHydration('2026-09-08');
+          if (daily.totalMl > 0) break;
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+        }
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+      });
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final daily = (await tester.runAsync(() => repo.getDailyHydration('2026-09-08')))!;
+      expect(daily.totalMl, equals(500));
+      expect(daily.entries.length, equals(1));
+      expect(daily.entries.first.amountMl, equals(500));
+
+      await tester.pump(const Duration(seconds: 3));
+    });
+
+    testWidgets('custom intake logs entry with selected container and updates sheet', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            databaseProvider.overrideWithValue(db),
+            hydrationRepositoryProvider.overrideWithValue(repo),
+            hydrationDailyOverride(),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.lightTheme,
+            home: Scaffold(
+              body: HydrationDetailSheet(
+                selectedDate: DateTime(2026, 9, 8),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Enter 450 ml
+      await tester.enterText(find.byType(TextField), '450');
+      await tester.pumpAndSettle();
+
+      // Tap Custom chip
+      await tester.tap(find.widgetWithText(ChoiceChip, 'Custom'));
+      await tester.pumpAndSettle();
+
+      final logBtn = tester.widget<B05ActionButton>(
+        find.widgetWithText(B05ActionButton, 'Log Water'),
+      );
+
+      await tester.runAsync(() async {
+        logBtn.onPressed!();
+        for (var attempt = 0; attempt < 100; attempt++) {
+          final daily = await repo.getDailyHydration('2026-09-08');
+          if (daily.totalMl > 0) break;
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+        }
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+      });
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final daily = (await tester.runAsync(() => repo.getDailyHydration('2026-09-08')))!;
+      expect(daily.totalMl, equals(450));
+      expect(daily.entries.length, equals(1));
+      expect(daily.entries.first.containerType, equals('custom'));
+
+      await tester.pump(const Duration(seconds: 3));
+    });
+
+    testWidgets('deleting an intake entry removes it and updates total', (tester) async {
+      late HydrationDailyReadModel initialData;
+      await tester.runAsync(() async {
+        await repo.logIntake(
+          localDate: '2026-09-08',
+          amountMl: 300,
+          source: 'manual',
+          containerType: 'glass',
+        );
+        initialData = await repo.getDailyHydration('2026-09-08');
+      });
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            databaseProvider.overrideWithValue(db),
+            hydrationRepositoryProvider.overrideWithValue(repo),
+            hydrationDailyOverride(),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.lightTheme,
+            home: Scaffold(
+              body: HydrationDetailSheet(
+                selectedDate: DateTime(2026, 9, 8),
+                initialData: initialData,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('300 ml'), findsOneWidget);
+
+      final deleteBtn = tester.widget<IconButton>(
+        find.widgetWithIcon(IconButton, Icons.delete_outline_rounded),
+      );
+
+      await tester.runAsync(() async {
+        deleteBtn.onPressed!();
+        for (var attempt = 0; attempt < 100; attempt++) {
+          final daily = await repo.getDailyHydration('2026-09-08');
+          if (daily.totalMl == 0) break;
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+        }
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+      });
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final daily = (await tester.runAsync(() => repo.getDailyHydration('2026-09-08')))!;
+      expect(daily.totalMl, equals(0));
+      expect(daily.entries.isEmpty, isTrue);
+
+      await tester.pump(const Duration(seconds: 3));
+    });
+
+    testWidgets('goal adjustment steppers call setHydrationDailyGoalMl', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            databaseProvider.overrideWithValue(db),
+            hydrationRepositoryProvider.overrideWithValue(repo),
+            hydrationDailyOverride(),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.lightTheme,
+            home: Scaffold(
+              body: HydrationDetailSheet(
+                selectedDate: DateTime(2026, 9, 8),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final incBtn = tester.widget<IconButton>(
+        find.widgetWithIcon(IconButton, Icons.add_circle_outline),
+      );
+
+      await tester.runAsync(() async {
+        incBtn.onPressed!();
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+      });
+      await tester.pumpAndSettle();
+
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getInt(HydrationRepository.prefHydrationDailyGoalMl), equals(2750));
+    });
+
+    testWidgets('renders without overflow at 320pt and 2.0x scale', (tester) async {
+      tester.view.physicalSize = const Size(320 * 3, 600 * 3);
+      tester.view.devicePixelRatio = 3.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            databaseProvider.overrideWithValue(db),
+            hydrationRepositoryProvider.overrideWithValue(repo),
+            hydrationDailyOverride(),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.lightTheme,
+            home: MediaQuery(
+              data: const MediaQueryData(
+                size: Size(320, 600),
+                textScaler: TextScaler.linear(2.0),
+              ),
+              child: Scaffold(
+                body: HydrationDetailSheet(
+                  selectedDate: DateTime(2026, 9, 8),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('HYDRATION'), findsOneWidget);
     });
   });
 }
