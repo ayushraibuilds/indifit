@@ -356,12 +356,12 @@ void main() {
     // -------------------------------------------------------------------------
     group('Hidden and Deferred Guards', () {
       test(
-        'Hydration remains strictly absent from standard dashboard module registry',
+        'Hydration is canonical in module registry while unbacked aliases remain absent',
         () {
           final moduleIds = standardDashboardModuleRegistry.descriptors.map(
             (d) => d.id,
           );
-          expect(moduleIds, isNot(contains('today.hydration')));
+          expect(moduleIds, contains('today.hydration'));
           expect(moduleIds, isNot(contains('today.water')));
         },
       );

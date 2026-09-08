@@ -8,8 +8,10 @@ import '../../core/utils/app_logger.dart';
 import '../../data/database/app_database.dart';
 import '../../data/models/b02_progress_read_models.dart';
 import '../../data/models/b04_goal_models.dart';
+import '../../data/models/hydration_models.dart';
 import '../../data/repositories/b02_progress_read_repository.dart';
 import '../../data/repositories/calendar_read_repository.dart';
+import '../../data/repositories/hydration_repository.dart';
 import '../../data/repositories/nutrition_read_model_repository.dart';
 import '../../data/repositories/nutrition_target_authority.dart';
 import '../../data/repositories/training_next_action_resolver.dart';
@@ -49,6 +51,7 @@ class TodaySurfaceSnapshot {
   final TodayDomainRead<CalendarReadSnapshot> calendar;
   final TodayDomainRead<B02ProgressReadModel> progress;
   final TodayDomainRead<NutritionDailyReadModel> nutrition;
+  final TodayDomainRead<HydrationDailyReadModel> hydration;
 
   /// The sole B02 active draft read. A null available value means there is no
   /// active draft; an unavailable value remains distinguishable from that
@@ -73,6 +76,9 @@ class TodaySurfaceSnapshot {
     required this.calendar,
     required this.progress,
     required this.nutrition,
+    this.hydration = const TodayDomainRead<HydrationDailyReadModel>.unavailable(
+      'Hydration unavailable',
+    ),
     this.activeDraft = const TodayDomainRead<WorkoutDraft?>.available(null),
     this.targets,
     this.goal = const TodayDomainRead<NutritionGoalVersionReadModel?>.available(
@@ -99,6 +105,7 @@ class TodaySurfaceReadRepository {
   final CalendarReadRepository _calendar;
   final B02ProgressReadRepository _progress;
   final Future<NutritionReadModelRepository> Function() _nutrition;
+  final HydrationRepository? _hydration;
   final NutritionTargetAuthority _targets;
   final LocalScheduleDateService _dates;
   final WorkoutRepository? _workouts;
@@ -107,12 +114,14 @@ class TodaySurfaceReadRepository {
     required CalendarReadRepository calendar,
     required B02ProgressReadRepository progress,
     required Future<NutritionReadModelRepository> Function() nutrition,
+    HydrationRepository? hydration,
     required NutritionTargetAuthority targets,
     required LocalScheduleDateService dates,
     WorkoutRepository? workouts,
   }) : _calendar = calendar,
        _progress = progress,
        _nutrition = nutrition,
+       _hydration = hydration,
        _targets = targets,
        _dates = dates,
        _workouts = workouts;
@@ -159,6 +168,17 @@ class TodaySurfaceReadRepository {
       _safeRead<WorkoutDraft?>(
         () => _workouts?.getActiveDraft() ?? Future<WorkoutDraft?>.value(null),
       ),
+      _safeRead<HydrationDailyReadModel>(
+        () => _hydration != null
+            ? _hydration.getDailyHydration(localDate)
+            : Future.value(
+                HydrationDailyReadModel(
+                  localDate: localDate,
+                  totalMl: 0,
+                  goalMl: HydrationRepository.defaultDailyGoalMl,
+                ),
+              ),
+      ),
     ]);
 
     final targetRead = reads[3] as TodayDomainRead<NutritionTargetsForDate?>;
@@ -177,6 +197,7 @@ class TodaySurfaceReadRepository {
       progress: reads[1] as TodayDomainRead<B02ProgressReadModel>,
       nutrition: reads[2] as TodayDomainRead<NutritionDailyReadModel>,
       activeDraft: reads[4] as TodayDomainRead<WorkoutDraft?>,
+      hydration: reads[5] as TodayDomainRead<HydrationDailyReadModel>,
       targets: targetRead,
       // Keep the older projection coherent for existing read fixtures. Both
       // values are derived from the same authority result above.
@@ -213,6 +234,7 @@ final todaySurfaceReadRepositoryProvider = Provider<TodaySurfaceReadRepository>(
         civilDates: ref.watch(localScheduleDateServiceProvider),
       ),
       nutrition: () => ref.read(nutritionReadModelRepositoryProvider.future),
+      hydration: ref.watch(hydrationRepositoryProvider),
       targets: ref.watch(nutritionTargetAuthorityProvider),
       dates: ref.watch(localScheduleDateServiceProvider),
       workouts: ref.watch(workoutRepositoryProvider),
@@ -224,6 +246,9 @@ final todaySurfaceReadRepositoryProvider = Provider<TodaySurfaceReadRepository>(
 /// The underlying record remains B03-owned; this counter carries no data.
 final todayNutritionRevisionProvider = StateProvider<int>((ref) => 0);
 
+/// Presentation invalidation owned by successful hydration logging commands.
+final todayHydrationRevisionProvider = StateProvider<int>((ref) => 0);
+
 /// The single production read boundary consumed by the Today composition.
 ///
 /// Basic B01-B03 reads intentionally use the device timezone and the existing
@@ -234,6 +259,7 @@ final todaySurfaceSnapshotProvider = FutureProvider.autoDispose
     .family<TodaySurfaceSnapshot, DateTime>((ref, selectedDate) async {
       ref.watch(civilDateRevisionProvider);
       ref.watch(todayNutritionRevisionProvider);
+      ref.watch(todayHydrationRevisionProvider);
       final timezoneId = await ref
           .watch(localTimezoneServiceProvider)
           .currentTimezoneId();

@@ -44,16 +44,16 @@ void main() {
 
   group('R08E.7 — Hydration Authority Gate', () {
     test(
-      'standard module registry does not register an unsupported hydration module',
+      'standard module registry registers canonical today.hydration module and rejects unbacked aliases',
       () {
         final moduleIds = standardDashboardModuleRegistry.descriptors.map(
           (d) => d.id,
         );
-        expect(moduleIds, isNot(contains('today.hydration')));
+        expect(moduleIds, contains('today.hydration'));
         expect(moduleIds, isNot(contains('today.water')));
         expect(
           standardDashboardModuleRegistry.contains('today.hydration'),
-          isFalse,
+          isTrue,
         );
         expect(
           standardDashboardModuleRegistry.contains('today.water'),
@@ -63,7 +63,7 @@ void main() {
     );
 
     testWidgets(
-      'Today dashboard renders only supported modules and no fake hydration tracker or placeholder',
+      'Today dashboard renders only supported modules and honest unavailable state for hydration',
       (tester) async {
         await tester.pumpWidget(
           ProviderScope(
@@ -112,17 +112,11 @@ void main() {
         expect(find.text('Next up unavailable'), findsOneWidget);
         expect(find.text('Nutrition unavailable'), findsOneWidget);
         expect(find.text('Meals unavailable'), findsOneWidget);
+        expect(find.text('Hydration unavailable'), findsOneWidget);
 
-        // Confirm zero hydration surfaces, water trackers, or fake progress
-        expect(find.textContaining('Hydration'), findsNothing);
-        expect(find.textContaining('HYDRATION'), findsNothing);
-        expect(find.textContaining('Water'), findsNothing);
-        expect(find.textContaining('water'), findsNothing);
-        expect(find.textContaining('glasses'), findsNothing);
+        // Confirm zero fake water trackers, glasses placeholders, or "coming soon" hacks
         expect(find.textContaining('Coming soon'), findsNothing);
-        expect(find.byIcon(Icons.water_drop), findsNothing);
-        expect(find.byIcon(Icons.water_drop_rounded), findsNothing);
-        expect(find.byIcon(Icons.water_drop_outlined), findsNothing);
+        expect(find.textContaining('glasses'), findsNothing);
         expect(tester.takeException(), isNull);
       },
     );

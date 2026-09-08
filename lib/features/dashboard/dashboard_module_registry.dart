@@ -196,8 +196,19 @@ final DashboardModuleRegistry standardDashboardModuleRegistry =
         eligibility: DashboardModuleEligibility.nutrition,
       ),
       const DashboardModuleDescriptor(
-        id: 'today.workout',
+        id: 'today.hydration',
         defaultOrdinal: 3,
+        label: 'Hydration',
+        customizationLabel: 'Hydration',
+        customizationDescription:
+            'Track your daily water intake and progress toward your goal.',
+        showInCustomizeToday: true,
+        eligibility: DashboardModuleEligibility.nutrition,
+        defaultVisible: true,
+      ),
+      const DashboardModuleDescriptor(
+        id: 'today.workout',
+        defaultOrdinal: 4,
         label: 'Workout',
         customizationLabel: 'Workout',
         customizationDescription: "Keep today's workout within reach.",
@@ -207,7 +218,7 @@ final DashboardModuleRegistry standardDashboardModuleRegistry =
       ),
       const DashboardModuleDescriptor(
         id: 'today.activity',
-        defaultOrdinal: 4,
+        defaultOrdinal: 5,
         label: 'Activity',
         customizationLabel: 'Activity',
         customizationDescription: 'See your activity and recovery details.',
@@ -217,7 +228,7 @@ final DashboardModuleRegistry standardDashboardModuleRegistry =
       ),
       const DashboardModuleDescriptor(
         id: 'today.progress',
-        defaultOrdinal: 5,
+        defaultOrdinal: 6,
         label: 'Progress',
         customizationLabel: 'Progress',
         customizationDescription: 'Check your progress for the day.',

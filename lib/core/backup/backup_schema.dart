@@ -274,6 +274,8 @@ class BackupData {
         'water_goal',
         'water_glass_size',
         'water_last_logged_date',
+        'pref_hydration_daily_goal_ml',
+        'pref_hydration_entries_json',
         'streak_freezes_count',
         'pref_streak_freeze_count',
         'user_streak_count',

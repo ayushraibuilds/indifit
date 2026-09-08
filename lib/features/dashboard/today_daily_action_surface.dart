@@ -8,6 +8,7 @@ import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../data/database/app_database.dart';
 import '../../data/models/b02_progress_read_models.dart';
+import '../../data/models/hydration_models.dart';
 import '../../data/repositories/calendar_read_repository.dart';
 import 'dashboard_module_registry.dart';
 import 'dashboard_personalization_controller.dart';
@@ -16,11 +17,13 @@ import 'today_presentation_types.dart';
 import 'today_surface_controller.dart';
 import 'widgets/dashboard_date_bar.dart';
 import 'widgets/today_helpers.dart';
+import 'widgets/today_hydration_card.dart';
 import 'widgets/today_module_widgets.dart';
 import 'widgets/today_nutrition_widgets.dart';
 
 export 'today_presentation_types.dart';
 export 'widgets/today_helpers.dart';
+export 'widgets/today_hydration_card.dart';
 export 'widgets/today_module_widgets.dart';
 export 'widgets/today_nutrition_widgets.dart';
 
@@ -219,6 +222,14 @@ class TodayDailyActionSurface extends ConsumerWidget {
                         item: item,
                         relation: relation,
                         nutrition: nutrition,
+                        hydration: snapshot?.hydration ??
+                            (unavailable
+                                ? const TodayDomainRead<HydrationDailyReadModel>.unavailable(
+                                    'Hydration unavailable',
+                                  )
+                                : const TodayDomainRead<HydrationDailyReadModel>.unavailable(
+                                    'Hydration loading',
+                                  )),
                         nextUp: nextUp,
                         workout: workout,
                         activity: activity,
@@ -285,6 +296,7 @@ class TodayDailyActionSurface extends ConsumerWidget {
       // activity and progress descriptors are hidden by default and remain
       // available through Customize Today when a person wants them.
       'today.meal_rows' => true,
+      'today.hydration' => true,
       'today.activity' || 'today.progress' => true,
       'today.next_action' || 'today.meals' => true,
       _ => false,
@@ -324,6 +336,7 @@ class TodayDailyActionSurface extends ConsumerWidget {
     required DashboardModuleLayoutItem item,
     required TodayDateRelation relation,
     required TodayNutritionPresentation nutrition,
+    required TodayDomainRead<HydrationDailyReadModel> hydration,
     required TodayFocusPresentation nextUp,
     required TodayWorkoutPresentation workout,
     required TodayActivityPresentation activity,
@@ -351,6 +364,11 @@ class TodayDailyActionSurface extends ConsumerWidget {
         dateRelation: relation,
         selectedDate: selectedDate,
         onOpenTargetSetup: onOpenNutritionTargets ?? onOpenSettings,
+        onRetry: onRetry,
+      ),
+      'today.hydration' => TodayHydrationCard(
+        hydrationRead: hydration,
+        selectedDate: selectedDate,
         onRetry: onRetry,
       ),
       'today.next_action' => TodayNextUpModule(
