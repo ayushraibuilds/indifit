@@ -7,6 +7,7 @@ import 'package:indifit/core/di/providers.dart';
 import 'package:indifit/core/services/local_schedule_date_service.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/models/b02_execution_models.dart';
+import 'package:indifit/data/models/plan_analytics_models.dart';
 import 'package:indifit/data/repositories/b02_execution_compatibility_read_repository.dart';
 import 'package:indifit/data/repositories/calendar_read_repository.dart';
 import 'package:indifit/data/repositories/plan_library_read_repository.dart';
@@ -217,6 +218,21 @@ void main() {
         entry: entry,
         occurrences: [occurrence],
         history: [history],
+        concurrentIndependentHistory: const [],
+        totalIndependentCount: 0,
+        analytics: PlanAnalyticsCalculator.calculateSummary(
+          occurrences: [occurrence],
+          history: [history],
+          concurrentIndependentCount: 0,
+          todayLocalDate: '2026-08-24',
+          dates: dates,
+        ),
+        weekAnalytics: PlanAnalyticsCalculator.calculateWeeks(
+          occurrences: [occurrence],
+          history: [history],
+          todayLocalDate: '2026-08-24',
+          dates: dates,
+        ),
       );
       final router = GoRouter(
         initialLocation: '/plan-overview/$versionId',
@@ -384,6 +400,394 @@ void main() {
       expect(find.textContaining('Partially completed'), findsOneWidget);
       expect(find.textContaining('Calories'), findsNothing);
       expect(tester.takeException(), isNull);
+    },
+  );
+
+  test(
+    'regression: owner with 500+ lifetime sessions still sums all plan workouts exactly',
+    () async {
+      final sourceVersionId = await _createPublishedPlan(
+        programs,
+        db,
+        name: 'High session count plan',
+      );
+      final versionId = await programs.copyToNewDraftVersion(sourceVersionId);
+      final activation = ProgramActivationCoordinator(
+        db,
+        dates: dates,
+        nowUtc: () => _now,
+      );
+      await activation.activate(
+        ActivateProgramVersionCommand(
+          programVersionId: versionId,
+          commandId: 'c9-activate-regression',
+          activationLocalDate: '2026-08-24',
+          timezoneId: 'Asia/Kolkata',
+        ),
+      );
+
+      final calendar = CalendarReadRepository(db, dates: dates);
+      final occurrences = await calendar.readOccurrencesForVersion(
+        programVersionId: versionId,
+        timezoneId: 'Asia/Kolkata',
+      );
+      expect(occurrences, isNotEmpty);
+      final occ = occurrences.first;
+
+      // Mark occurrence completed
+      await (db.update(
+        db.scheduledSessionOccurrences,
+      )..where((row) => row.id.equals(occ.occurrence.id))).write(
+        const ScheduledSessionOccurrencesCompanion(
+          status: Value('completed'),
+          progressionDisposition: Value('satisfied'),
+        ),
+      );
+
+      // Insert plan workout session with 4000 kg volume and 1800 sec duration
+      await db.into(db.workoutSessions).insert(
+        WorkoutSessionsCompanion.insert(
+          name: 'High session count plan · Monday',
+          totalVolume: 4000.0,
+          durationSeconds: 1800,
+          estimatedCalories: 0,
+          completedAt: Value(_now.subtract(const Duration(days: 10))),
+          scheduledOccurrenceId: Value(occ.occurrence.id),
+          completionKind: const Value('full'),
+          activityType: const Value('strength'),
+        ),
+      );
+
+      // Insert 505 subsequent independent sessions (more than the old 500 global limit)
+      for (var i = 0; i < 505; i++) {
+        await db.into(db.workoutSessions).insert(
+          WorkoutSessionsCompanion.insert(
+            name: 'Independent session $i',
+            totalVolume: 100.0,
+            durationSeconds: 600,
+            estimatedCalories: 0,
+            completedAt: Value(_now.subtract(Duration(minutes: 505 - i))),
+            completionKind: const Value('full'),
+            activityType: const Value('strength'),
+          ),
+        );
+      }
+
+      final snapshot = await PlanOverviewReadRepository(
+        plans: PlanLibraryReadRepository(db),
+        calendar: calendar,
+        history: B02ExecutionCompatibilityReadRepository(db),
+        dates: dates,
+      ).read(versionId: versionId, timezoneId: 'Asia/Kolkata');
+
+      expect(snapshot, isNotNull);
+      // The plan session MUST NOT be missed by the 500 cap
+      expect(snapshot!.history, hasLength(1));
+      expect(snapshot.history.single.totalVolumeKg, 4000.0);
+      expect(snapshot.analytics.completedCount, 1);
+      expect(snapshot.analytics.totalVolumeKg, 4000.0);
+      expect(snapshot.analytics.totalDurationSeconds, 1800);
+      expect(snapshot.analytics.strictAdherenceRate, 1.0);
+    },
+  );
+
+  testWidgets(
+    'overview displays adherence disclosure, volume, status chips, and week-over-week deltas',
+    (tester) async {
+      late String versionId;
+      late PlanLibraryEntry entry;
+      await tester.runAsync(() async {
+        versionId = await _createPublishedPlan(
+          programs,
+          db,
+          name: 'Analytics plan',
+        );
+        await _setActive(db, versionId);
+        entry = (await PlanLibraryReadRepository(db).readVersion(versionId))!;
+      });
+      final occ1 = _testOccurrence(entry);
+      final h1 = _historyItem(
+        id: 11,
+        name: 'Analytics plan · Day 1',
+        scheduledOccurrenceId: occ1.occurrence.id,
+        completionKind: 'partial',
+        totalVolumeKg: 3500.0,
+      );
+
+      final summary = PlanAnalyticsSummary(
+        totalScheduled: 3,
+        completedCount: 1,
+        partiallyCompletedCount: 1,
+        skippedCount: 1,
+        skippedAdvanceCount: 1,
+        skippedKeepPendingCount: 0,
+        rescheduledCount: 1,
+        cancelledCount: 0,
+        inProgressCount: 0,
+        pendingUpcomingCount: 0,
+        overdueCount: 0,
+        concurrentIndependentCount: 2,
+        totalVolumeKg: 3500.0,
+        totalDurationSeconds: 2700,
+        hasStrengthSessions: true,
+        elapsedCount: 3,
+        elapsedEligibleCount: 3,
+        strictAdherenceRate: 0.3333333333333333,
+        compositeAdherenceRate: 0.5,
+      );
+
+      final week = PlanWeekAnalytics(
+        blockOrdinal: 0,
+        weekOrdinal: 0,
+        displayWeekNumber: 1,
+        weekName: 'Week 1',
+        isDeload: false,
+        plannedSessions: 3,
+        completedSessions: 1,
+        partiallyCompletedSessions: 1,
+        skippedSessions: 1,
+        rescheduledSessions: 1,
+        cancelledSessions: 0,
+        inProgressSessions: 0,
+        pendingSessions: 0,
+        hasStrengthSessions: true,
+        strengthSessionCount: 1,
+        cardioOrMobilitySessionCount: 0,
+        totalVolumeKg: 3500.0,
+        totalDurationSeconds: 2700,
+        startDate: '2026-08-24',
+        endDate: '2026-08-28',
+        isElapsed: true,
+        isCurrent: true,
+      );
+
+      final independentItem = _historyItem(
+        id: 99,
+        name: 'Concurrent quick run',
+        activityType: B02ActivityType.running,
+      );
+
+      final snapshot = PlanOverviewSnapshot(
+        entry: entry,
+        occurrences: [occ1],
+        history: [h1],
+        concurrentIndependentHistory: [independentItem],
+        totalIndependentCount: 1,
+        analytics: summary,
+        weekAnalytics: [week],
+      );
+
+      final router = GoRouter(
+        initialLocation: '/plan-overview/$versionId',
+        routes: [
+          GoRoute(
+            path: '/plan-overview/:versionId',
+            builder: (context, state) => PlanOverviewScreen(
+              versionId: state.pathParameters['versionId'],
+            ),
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          key: UniqueKey(),
+          overrides: [
+            planOverviewSnapshotProvider(
+              versionId,
+            ).overrideWith((ref) async => snapshot),
+          ],
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
+      await _pumpFuture(tester);
+
+      expect(find.text('Plan progress'), findsOneWidget);
+      // Metric cards
+      expect(find.text('Adherence'), findsOneWidget);
+      expect(find.text('33%'), findsOneWidget);
+      // Disclose partial weighting
+      expect(find.textContaining('partials count half'), findsOneWidget);
+      expect(find.text('Volume'), findsOneWidget);
+      expect(find.textContaining('3500 kg'), findsWidgets);
+      expect(find.text('Time'), findsOneWidget);
+
+      // Status chips
+      expect(find.textContaining('1 partially completed'), findsWidgets);
+      expect(find.textContaining('1 skipped'), findsWidgets);
+      expect(find.textContaining('1 rescheduled'), findsWidgets);
+
+      // Phase & week progress
+      expect(find.text('Phase & week progress'), findsOneWidget);
+      expect(find.text('Week 1'), findsWidgets);
+
+      // Independent activity
+      expect(find.text('Independent workouts during this plan'), findsOneWidget);
+      expect(find.textContaining('logged outside this plan'), findsOneWidget);
+      expect(find.text('Concurrent quick run'), findsOneWidget);
+
+      // Zero calories & zero PR invariants
+      expect(find.textContaining('Calories'), findsNothing);
+      expect(find.textContaining('PR'), findsNothing);
+      expect(tester.takeException(), isNull);
+      await tester.pump(const Duration(seconds: 1));
+    },
+  );
+
+  testWidgets(
+    'future strength week renders zero volume without false cardio caption and does not render comparison caption',
+    (tester) async {
+      late String versionId;
+      late PlanLibraryEntry entry;
+      await tester.runAsync(() async {
+        versionId = await _createPublishedPlan(
+          programs,
+          db,
+          name: 'Multi-week plan',
+        );
+        await _setActive(db, versionId);
+        entry = (await PlanLibraryReadRepository(db).readVersion(versionId))!;
+      });
+
+      final occ1 = _testOccurrence(entry);
+      final h1 = _historyItem(
+        id: 101,
+        name: 'Multi-week plan · Day 1',
+        scheduledOccurrenceId: occ1.occurrence.id,
+        completionKind: 'full',
+        totalVolumeKg: 4000.0,
+      );
+
+      final week1 = PlanWeekAnalytics(
+        blockOrdinal: 0,
+        weekOrdinal: 0,
+        displayWeekNumber: 1,
+        weekName: 'Week 1',
+        isDeload: false,
+        plannedSessions: 3,
+        completedSessions: 3,
+        partiallyCompletedSessions: 0,
+        skippedSessions: 0,
+        rescheduledSessions: 0,
+        cancelledSessions: 0,
+        inProgressSessions: 0,
+        pendingSessions: 0,
+        overdueSessions: 0,
+        upcomingSessions: 0,
+        hasStrengthSessions: true,
+        strengthSessionCount: 3,
+        cardioOrMobilitySessionCount: 0,
+        totalVolumeKg: 4000.0,
+        totalDurationSeconds: 3600,
+        startDate: '2026-08-17',
+        endDate: '2026-08-21',
+        isElapsed: true,
+        isCurrent: false,
+      );
+
+      // Week 2: Future strength week (0 completed, isElapsed: false)
+      final week2 = PlanWeekAnalytics(
+        blockOrdinal: 0,
+        weekOrdinal: 1,
+        displayWeekNumber: 2,
+        weekName: 'Week 2',
+        isDeload: false,
+        plannedSessions: 3,
+        completedSessions: 0,
+        partiallyCompletedSessions: 0,
+        skippedSessions: 0,
+        rescheduledSessions: 0,
+        cancelledSessions: 0,
+        inProgressSessions: 0,
+        pendingSessions: 3,
+        overdueSessions: 0,
+        upcomingSessions: 3,
+        hasStrengthSessions: true,
+        strengthSessionCount: 0,
+        cardioOrMobilitySessionCount: 0,
+        totalVolumeKg: 0.0,
+        totalDurationSeconds: 0,
+        startDate: '2026-08-31',
+        endDate: '2026-09-04',
+        isElapsed: false,
+        isCurrent: false,
+        comparisonWithPrevious: null,
+      );
+
+      final summary = PlanAnalyticsSummary(
+        totalScheduled: 6,
+        completedCount: 3,
+        partiallyCompletedCount: 0,
+        skippedCount: 0,
+        skippedAdvanceCount: 0,
+        skippedKeepPendingCount: 0,
+        rescheduledCount: 0,
+        cancelledCount: 0,
+        inProgressCount: 0,
+        pendingUpcomingCount: 3,
+        overdueCount: 0,
+        concurrentIndependentCount: 0,
+        totalVolumeKg: 4000.0,
+        totalDurationSeconds: 3600,
+        hasStrengthSessions: true,
+        elapsedCount: 3,
+        elapsedEligibleCount: 3,
+        strictAdherenceRate: 1.0,
+        compositeAdherenceRate: 1.0,
+      );
+
+      final snapshot = PlanOverviewSnapshot(
+        entry: entry,
+        occurrences: [occ1],
+        history: [h1],
+        concurrentIndependentHistory: const [],
+        totalIndependentCount: 0,
+        analytics: summary,
+        weekAnalytics: [week1, week2],
+      );
+
+      final router = GoRouter(
+        initialLocation: '/plan-overview/$versionId',
+        routes: [
+          GoRoute(
+            path: '/plan-overview/:versionId',
+            builder: (context, state) => PlanOverviewScreen(
+              versionId: state.pathParameters['versionId'],
+            ),
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          key: UniqueKey(),
+          overrides: [
+            planOverviewSnapshotProvider(
+              versionId,
+            ).overrideWith((ref) async => snapshot),
+          ],
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
+      await _pumpFuture(tester);
+
+      expect(find.text('Week 1'), findsWidgets);
+      expect(find.text('Week 2'), findsWidgets);
+
+      // Week 2 status and volume check
+      expect(find.text('0 of 3 completed'), findsOneWidget);
+      expect(find.text('0 kg · 0 min'), findsOneWidget);
+
+      // Invariant: future strength weeks must NOT say "Cardio/mobility" anywhere
+      expect(find.textContaining('Cardio/mobility'), findsNothing);
+
+      // Invariant: future strength weeks must NOT render comparison captions
+      expect(find.textContaining('vs previous week'), findsNothing);
+
+      expect(tester.takeException(), isNull);
+      await tester.pump(const Duration(seconds: 1));
     },
   );
 }
@@ -565,6 +969,7 @@ B02ActivityHistoryItem _historyItem({
   B02ActivityType activityType = B02ActivityType.strength,
   String? scheduledOccurrenceId,
   String completionKind = 'full',
+  double totalVolumeKg = 0.0,
 }) => B02ActivityHistoryItem(
   sessionId: id,
   name: name,
@@ -580,4 +985,5 @@ B02ActivityHistoryItem _historyItem({
   cardioIntervalCount: 0,
   hasCardioDetail: false,
   hasMobilityDetail: false,
+  totalVolumeKg: totalVolumeKg,
 );

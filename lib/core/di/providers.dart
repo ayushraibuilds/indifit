@@ -872,6 +872,7 @@ final planOverviewReadRepositoryProvider = Provider<PlanOverviewReadRepository>(
       history: B02ExecutionCompatibilityReadRepository(
         ref.watch(databaseProvider),
       ),
+      dates: ref.watch(localScheduleDateServiceProvider),
     );
   },
 );

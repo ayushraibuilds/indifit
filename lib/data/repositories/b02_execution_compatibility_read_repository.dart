@@ -117,6 +117,7 @@ class B02ActivityHistoryItem {
   final int cardioIntervalCount;
   final bool hasCardioDetail;
   final bool hasMobilityDetail;
+  final double totalVolumeKg;
 
   const B02ActivityHistoryItem({
     required this.sessionId,
@@ -133,6 +134,7 @@ class B02ActivityHistoryItem {
     required this.cardioIntervalCount,
     required this.hasCardioDetail,
     required this.hasMobilityDetail,
+    this.totalVolumeKg = 0.0,
   });
 
   bool get isLegacy => recordKind == B02HistoryRecordKind.legacyProjection;
@@ -182,6 +184,61 @@ class B02ExecutionCompatibilityReadRepository {
     }
     final sessions = await query.get();
     return [for (final session in sessions) await _readSession(session)];
+  }
+
+  /// Reads exact history items matching a specific set of occurrence IDs.
+  ///
+  /// Bounded and exact: never subject to a global recent-limit truncation.
+  Future<List<B02ActivityHistoryItem>> readHistoryForOccurrences(
+    Iterable<String> occurrenceIds,
+  ) async {
+    final ids = occurrenceIds.toSet().toList();
+    if (ids.isEmpty) return const [];
+    final query = _db.select(_db.workoutSessions)
+      ..where((table) => table.scheduledOccurrenceId.isIn(ids))
+      ..orderBy([
+        (table) => OrderingTerm(
+          expression: table.completedAt,
+          mode: OrderingMode.desc,
+        ),
+      ]);
+    final sessions = await query.get();
+    return [for (final session in sessions) await _readSession(session)];
+  }
+
+  /// Reads independent (unscheduled) workout sessions within a date window.
+  ///
+  /// Returns up to [limit] hydrated items (latest first) and the exact total count.
+  Future<({List<B02ActivityHistoryItem> items, int totalCount})>
+  readIndependentHistory({
+    required DateTime completedAtStartUtc,
+    required DateTime completedAtEndExclusiveUtc,
+    int limit = 100,
+  }) async {
+    final query = _db.select(_db.workoutSessions)
+      ..where((table) => table.scheduledOccurrenceId.isNull())
+      ..where(
+        (table) =>
+            table.completedAt.isBiggerOrEqualValue(completedAtStartUtc.toUtc()),
+      )
+      ..where(
+        (table) => table.completedAt.isSmallerThanValue(
+          completedAtEndExclusiveUtc.toUtc(),
+        ),
+      )
+      ..orderBy([
+        (table) => OrderingTerm(
+          expression: table.completedAt,
+          mode: OrderingMode.desc,
+        ),
+      ]);
+    final sessions = await query.get();
+    final totalCount = sessions.length;
+    final cappedSessions = sessions.take(limit);
+    final items = [
+      for (final session in cappedSessions) await _readSession(session),
+    ];
+    return (items: items, totalCount: totalCount);
   }
 
   Future<B02ActivityHistoryItem?> readSession(int sessionId) async {
@@ -423,6 +480,7 @@ class B02ExecutionCompatibilityReadRepository {
         cardioIntervalCount: 0,
         hasCardioDetail: false,
         hasMobilityDetail: false,
+        totalVolumeKg: session.totalVolume,
       );
     }
 
@@ -461,6 +519,7 @@ class B02ExecutionCompatibilityReadRepository {
       cardioIntervalCount: cardioIntervalCount,
       hasCardioDetail: cardioDetail != null,
       hasMobilityDetail: mobilityDetail != null,
+      totalVolumeKg: session.totalVolume,
     );
   }
 }

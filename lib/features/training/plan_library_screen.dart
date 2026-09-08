@@ -12,6 +12,7 @@ import '../../core/widgets/consumer_task_primitives.dart';
 import '../../core/widgets/skeleton_loader.dart';
 import '../../data/database/app_database.dart';
 import '../../data/models/b02_execution_models.dart';
+import '../../data/models/plan_analytics_models.dart';
 import '../../data/repositories/b02_execution_compatibility_read_repository.dart';
 import '../../data/repositories/calendar_read_repository.dart';
 import '../../data/repositories/offline_starter_plan_catalog.dart';
@@ -19,6 +20,7 @@ import '../../data/repositories/plan_library_read_repository.dart';
 import '../../data/repositories/plan_overview_read_repository.dart';
 import '../../data/repositories/program_activation_coordinator.dart';
 import '../../data/repositories/workout_repository.dart';
+import '../settings/unit_preference.dart';
 
 /// Consumer destination for choosing among the canonical saved training plans.
 /// Training Home owns the entry point; this screen owns the library itself.
@@ -697,13 +699,14 @@ class _PlanDetailsBody extends StatelessWidget {
   }
 }
 
-class _PlanScheduleAndHistory extends StatelessWidget {
+class _PlanScheduleAndHistory extends ConsumerWidget {
   const _PlanScheduleAndHistory({required this.overview});
 
   final PlanOverviewSnapshot overview;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final units = ref.watch(unitPreferenceProvider);
     final occurrences = overview.occurrences;
     CalendarOccurrenceReadItem? nextOccurrence;
     if (overview.isCurrent) {
@@ -745,6 +748,18 @@ class _PlanScheduleAndHistory extends StatelessWidget {
           ),
         ),
         if (occurrences.isNotEmpty) ...[
+          const SizedBox(height: B05Layout.space16),
+          _PlanAnalyticsSummaryCards(
+            analytics: overview.analytics,
+            units: units,
+          ),
+          if (overview.weekAnalytics.isNotEmpty) ...[
+            const SizedBox(height: B05Layout.space20),
+            _PlanWeekProgressList(
+              weeks: overview.weekAnalytics,
+              units: units,
+            ),
+          ],
           const SizedBox(height: B05Layout.space20),
           Text('Schedule', style: B05Typography.title(context)),
           const SizedBox(height: B05Layout.space8),
@@ -786,8 +801,293 @@ class _PlanScheduleAndHistory extends StatelessWidget {
             ),
           ),
         ],
+        if (overview.concurrentIndependentHistory.isNotEmpty) ...[
+          const SizedBox(height: B05Layout.space20),
+          Text(
+            'Independent workouts during this plan',
+            style: B05Typography.title(context),
+          ),
+          const SizedBox(height: B05Layout.space8),
+          B05Surface(
+            tone: B05SurfaceTone.inset,
+            child: Text(
+              'These ${overview.totalIndependentCount > 100 ? 'latest 100 of ${overview.totalIndependentCount}' : '${overview.totalIndependentCount}'} workouts were logged outside this plan. They are preserved for durable history and are never counted toward plan adherence.',
+              style: B05Typography.caption(context),
+            ),
+          ),
+          const SizedBox(height: B05Layout.space8),
+          for (final item in overview.concurrentIndependentHistory.take(6)) ...[
+            _PlanHistoryRow(item: item),
+            const SizedBox(height: B05Layout.space8),
+          ],
+        ],
       ],
     );
+  }
+}
+
+class _PlanAnalyticsSummaryCards extends StatelessWidget {
+  const _PlanAnalyticsSummaryCards({
+    required this.analytics,
+    required this.units,
+  });
+
+  final PlanAnalyticsSummary analytics;
+  final String units;
+
+  @override
+  Widget build(BuildContext context) {
+    final adherenceLabel = analytics.strictAdherenceRate != null
+        ? '${(analytics.strictAdherenceRate! * 100).round()}%'
+        : '—';
+    final compositeLabel = analytics.partiallyCompletedCount > 0 &&
+            analytics.compositeAdherenceRate != null
+        ? '${(analytics.compositeAdherenceRate! * 100).round()}% composite (partials count half)'
+        : (analytics.elapsedEligibleCount > 0
+            ? '${analytics.completedCount} of ${analytics.elapsedEligibleCount} elapsed'
+            : 'No elapsed sessions');
+
+    final weightSymbol = UnitPreferencePresentation.weightSymbol(units);
+    final volumeLabel = analytics.hasStrengthSessions
+        ? '${UnitPreferencePresentation.weightForDisplay(analytics.totalVolumeKg, units).round()} $weightSymbol'
+        : '—';
+    final volumeSubtitle = analytics.hasStrengthSessions
+        ? 'Total weight lifted'
+        : 'Cardio / mobility (no load)';
+
+    final durationLabel = _formatDuration(analytics.totalDurationSeconds);
+    final durationSubtitle =
+        '${analytics.completedCount + analytics.partiallyCompletedCount} completed';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: _MetricCard(
+                title: 'Adherence',
+                value: adherenceLabel,
+                subtitle: compositeLabel,
+              ),
+            ),
+            const SizedBox(width: B05Layout.space8),
+            Expanded(
+              child: _MetricCard(
+                title: 'Volume',
+                value: volumeLabel,
+                subtitle: volumeSubtitle,
+              ),
+            ),
+            const SizedBox(width: B05Layout.space8),
+            Expanded(
+              child: _MetricCard(
+                title: 'Time',
+                value: durationLabel,
+                subtitle: durationSubtitle,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: B05Layout.space12),
+        Wrap(
+          spacing: B05Layout.space8,
+          runSpacing: B05Layout.space4,
+          children: [
+            _PlanStatusChip(label: '${analytics.completedCount} completed'),
+            if (analytics.partiallyCompletedCount > 0)
+              _PlanStatusChip(
+                label:
+                    '${analytics.partiallyCompletedCount} partially completed',
+              ),
+            if (analytics.skippedCount > 0)
+              _PlanStatusChip(
+                label:
+                    '${analytics.skippedCount} skipped (${analytics.skippedAdvanceCount} advance, ${analytics.skippedKeepPendingCount} keep pending)',
+              ),
+            if (analytics.rescheduledCount > 0)
+              _PlanStatusChip(
+                label: '${analytics.rescheduledCount} rescheduled',
+              ),
+            if (analytics.cancelledCount > 0)
+              _PlanStatusChip(
+                label:
+                    '${analytics.cancelledCount} cancelled (excluded from adherence)',
+              ),
+            if (analytics.inProgressCount > 0)
+              _PlanStatusChip(
+                label: '${analytics.inProgressCount} in progress',
+              ),
+            if (analytics.overdueCount > 0)
+              _PlanStatusChip(
+                label: '${analytics.overdueCount} overdue',
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _MetricCard extends StatelessWidget {
+  const _MetricCard({
+    required this.title,
+    required this.value,
+    required this.subtitle,
+  });
+
+  final String title;
+  final String value;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return B05Surface(
+      tone: B05SurfaceTone.inset,
+      padding: const EdgeInsets.all(B05Layout.space12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: B05Typography.caption(context)),
+          const SizedBox(height: B05Layout.space4),
+          Text(
+            value,
+            style: B05Typography.title(context),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: B05Layout.space4),
+          Text(
+            subtitle,
+            style: B05Typography.caption(context),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PlanWeekProgressList extends StatelessWidget {
+  const _PlanWeekProgressList({
+    required this.weeks,
+    required this.units,
+  });
+
+  final List<PlanWeekAnalytics> weeks;
+  final String units;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Phase & week progress', style: B05Typography.title(context)),
+        const SizedBox(height: B05Layout.space8),
+        for (final week in weeks) ...[
+          _PlanWeekCard(week: week, units: units),
+          const SizedBox(height: B05Layout.space8),
+        ],
+      ],
+    );
+  }
+}
+
+class _PlanWeekCard extends StatelessWidget {
+  const _PlanWeekCard({
+    required this.week,
+    required this.units,
+  });
+
+  final PlanWeekAnalytics week;
+  final String units;
+
+  @override
+  Widget build(BuildContext context) {
+    final title = week.weekName?.trim().isNotEmpty == true
+        ? week.weekName!.trim()
+        : 'Week ${week.displayWeekNumber}';
+    final weightSymbol = UnitPreferencePresentation.weightSymbol(units);
+    final volumeText = week.hasStrengthSessions
+        ? '${UnitPreferencePresentation.weightForDisplay(week.totalVolumeKg, units).round()} $weightSymbol'
+        : '— (Cardio/mobility)';
+    final durationText = _formatDuration(week.totalDurationSeconds);
+
+    final statusSummary = [
+      '${week.completedSessions} of ${week.plannedSessions} completed',
+      if (week.partiallyCompletedSessions > 0)
+        '${week.partiallyCompletedSessions} partial',
+      if (week.skippedSessions > 0) '${week.skippedSessions} skipped',
+      if (week.cancelledSessions > 0) '${week.cancelledSessions} cancelled',
+      if (week.overdueSessions > 0) '${week.overdueSessions} overdue',
+    ].join(' · ');
+
+    final comp = week.comparisonWithPrevious;
+
+    return B05Surface(
+      tone: B05SurfaceTone.interactive,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(title, style: B05Typography.label(context)),
+              ),
+              if (week.isDeload) ...[
+                const SizedBox(width: B05Layout.space8),
+                const _PlanStatusChip(label: 'Deload'),
+              ],
+            ],
+          ),
+          const SizedBox(height: B05Layout.space4),
+          Text(statusSummary, style: B05Typography.caption(context)),
+          const SizedBox(height: B05Layout.space4),
+          Text(
+            '$volumeText · $durationText',
+            style: B05Typography.body(context),
+          ),
+          if (comp != null && week.isElapsed) ...[
+            const SizedBox(height: B05Layout.space4),
+            Text(
+              _comparisonText(comp, weightSymbol),
+              style: B05Typography.caption(context),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  String _comparisonText(PlanWeekComparison comp, String weightSymbol) {
+    final parts = <String>[];
+    if (comp.isCardioOrMobilityComparison) {
+      parts.add('Cardio/mobility week');
+    } else if (comp.volumeDeltaKg != null) {
+      final sign = comp.volumeDeltaKg! >= 0 ? '+' : '';
+      final dispVol = UnitPreferencePresentation.weightForDisplay(
+        comp.volumeDeltaKg!,
+        units,
+      ).round();
+      final pct = comp.volumeDeltaPercentage != null
+          ? ' ($sign${comp.volumeDeltaPercentage!.toStringAsFixed(1)}%)'
+          : '';
+      parts.add('$sign$dispVol $weightSymbol$pct volume');
+    }
+
+    final durDelta = _formatDeltaDuration(comp.durationDeltaSeconds);
+    final durSign = comp.durationDeltaSeconds >= 0 ? '+' : '';
+    final durPct = comp.durationDeltaPercentage != null
+        ? ' ($durSign${comp.durationDeltaPercentage!.toStringAsFixed(1)}%)'
+        : '';
+    parts.add('$durDelta$durPct time');
+
+    if (comp.isDeloadComparison) {
+      parts.add('Deload context');
+    }
+
+    return 'vs previous week: ${parts.join(' · ')}';
   }
 }
 
@@ -802,6 +1102,22 @@ class _PlanOccurrenceRow extends StatelessWidget {
     final occurrence = item.occurrence;
     final status = _occurrenceStatusLabel(occurrence.status);
     final date = ConsumerDateLabel.day(occurrence.effectiveLocalDate);
+    final isRescheduled =
+        occurrence.effectiveLocalDate != occurrence.originalLocalDate ||
+        occurrence.status == 'rescheduled';
+
+    final detailsParts = <String>[
+      date,
+      item.week.name?.trim().isNotEmpty == true
+          ? item.week.name!.trim()
+          : 'Week ${item.week.programWeekOrdinal + 1}',
+      status,
+      if (isRescheduled)
+        'Rescheduled from ${ConsumerDateLabel.day(occurrence.originalLocalDate)}',
+      if (occurrence.status == 'skipped' && occurrence.skipMode != null)
+        occurrence.skipMode == 'advance' ? 'Advance' : 'Keep pending',
+    ];
+
     return B05Surface(
       tone: B05SurfaceTone.interactive,
       child: Column(
@@ -817,7 +1133,7 @@ class _PlanOccurrenceRow extends StatelessWidget {
           ),
           const SizedBox(height: B05Layout.space4),
           Text(
-            '$date · ${item.week.name?.trim().isNotEmpty == true ? item.week.name!.trim() : 'Week ${item.week.programWeekOrdinal + 1}'} · $status',
+            detailsParts.join(' · '),
             style: B05Typography.caption(context),
           ),
           if (history != null) ...[
@@ -853,6 +1169,24 @@ class _PlanOccurrenceRow extends StatelessWidget {
       ),
     );
   }
+}
+
+String _formatDuration(int seconds) {
+  if (seconds <= 0) return '0 min';
+  final minutes = seconds ~/ 60;
+  final hours = minutes ~/ 60;
+  final remainingMinutes = minutes % 60;
+  if (hours > 0) {
+    return remainingMinutes > 0 ? '${hours}h ${remainingMinutes}m' : '${hours}h';
+  }
+  return '$minutes min';
+}
+
+String _formatDeltaDuration(int seconds) {
+  final sign = seconds >= 0 ? '+' : '-';
+  final absSec = seconds.abs();
+  final minutes = absSec ~/ 60;
+  return '$sign$minutes min';
 }
 
 class _PlanHistoryRow extends StatelessWidget {
