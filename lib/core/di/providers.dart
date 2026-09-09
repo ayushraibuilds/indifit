@@ -68,6 +68,7 @@ import '../../features/nutrition/protein_distribution_controller.dart';
 import '../../features/progress/b04_weekly_review_controller.dart';
 import '../../features/settings/nutrition_constraint_review_controller.dart';
 import '../../features/settings/nutrition_constraints_controller.dart';
+import '../capabilities/capabilities_registry.dart';
 import '../config/app_config.dart';
 import '../nutrients.dart';
 import '../nutrition_calculation_service.dart';
@@ -75,16 +76,27 @@ import '../nutrition_household_measures.dart';
 import '../privacy/nutrition_estimate_privacy.dart';
 import '../privacy/privacy_policy.dart';
 import '../services/civil_date_revision_notifier.dart';
+import '../services/data_erasure_service.dart';
 import '../services/local_schedule_date_service.dart';
 import '../services/local_timezone_service.dart';
 import '../services/workout_session_wake_lock_coordinator.dart';
 
+export '../services/data_erasure_service.dart';
 export 'user_profile_provider.dart';
 
 final databaseProvider = Provider<AppDatabase>((ref) {
   final db = AppDatabase();
   ref.onDispose(() => db.close());
   return db;
+});
+
+final dataErasureServiceProvider = Provider<DataErasureService>((ref) {
+  return DataErasureService(
+    db: ref.watch(databaseProvider),
+    cloudBackup: ref.watch(cloudBackupCapabilityProvider),
+    account: ref.watch(accountCapabilityProvider),
+    healthService: ref.watch(healthServiceProvider),
+  );
 });
 
 /// One app-scoped owner for the active workout's screen-awake intent. It is

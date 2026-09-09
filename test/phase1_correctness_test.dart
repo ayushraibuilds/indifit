@@ -158,4 +158,7 @@ class _FakeAutoBackupSecretStore implements AutoBackupSecretStore {
 
   @override
   Future<String> readOrCreate() async => value;
+
+  @override
+  Future<void> clear() async {}
 }

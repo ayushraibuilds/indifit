@@ -7,6 +7,8 @@ abstract interface class AutoBackupSecretStore {
   Future<String?> read();
 
   Future<String> readOrCreate();
+
+  Future<void> clear();
 }
 
 /// Keeps the automatic-backup encryption secret in Android Keystore-backed
@@ -40,5 +42,11 @@ class SecureAutoBackupSecretStore implements AutoBackupSecretStore {
     final created = base64UrlEncode(bytes);
     await _storage.write(key: storageKey, value: created);
     return created;
+  }
+
+  @override
+  Future<void> clear() async {
+    await _storage.delete(key: storageKey);
+    await _storage.deleteAll();
   }
 }

@@ -218,6 +218,16 @@ class NotificationService {
   // Schedule orchestrator
   // ────────────────────────────────────────
 
+  /// Cancels ALL notifications across every channel and ID (including active rest
+  /// timers 998/999 and all scheduled reminders).
+  ///
+  /// CRITICAL: This is strictly scoped to COMPLETE DATA ERASURE.
+  /// Standard reminder reconciliation or preference updates MUST NEVER call this,
+  /// as doing so wipes active in-workout rest timers.
+  static Future<void> cancelAllNotificationsForErasure() async {
+    await _plugin.cancelAll();
+  }
+
   /// Re-schedules all enabled reminders. Call after any preference change.
   static Future<void> scheduleAllReminders([AppDatabase? db]) async {
     // Cancel only scheduled reminder notifications (101-107, 201, 202, 301, 400, 500)
