@@ -444,6 +444,15 @@ void resetIndiFitContainerUserState(ProviderContainer container) {
   _invalidateUserProviders(container.invalidate);
 }
 
+/// MAINTENANCE OBLIGATION:
+/// This list must be updated whenever new user-scoped Riverpod providers,
+/// controllers, or cached view models are introduced to IndiFit.
+///
+/// If a provider is omitted here, the failure mode is stale in-memory state
+/// until the controller rebuilds from wiped persistent storage (not data
+/// corruption). However, to prevent ghost state from appearing immediately
+/// upon navigating back to onboarding or starting a fresh profile, ensure all
+/// user-data-dependent providers are registered here.
 void _invalidateUserProviders(void Function(ProviderOrFamily) invalidate) {
   invalidate(userProfileProvider);
   invalidate(settingsControllerProvider);
