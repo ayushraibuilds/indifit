@@ -6,6 +6,8 @@ import 'package:health/health.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/services/crash_reporting_service.dart';
+import '../../core/services/local_schedule_date_service.dart';
+import '../../core/services/local_timezone_service.dart';
 import '../../core/utils/app_logger.dart';
 import '../database/app_database.dart';
 import '../models/b02_execution_models.dart';
@@ -72,6 +74,128 @@ class HealthCategoryDescriptor {
   });
 }
 
+class HealthSourceSanitizer {
+  HealthSourceSanitizer._();
+
+  static const Map<String, String> _knownSources = {
+    'com.google.android.apps.fitness': 'Google Fit',
+    'com.google.android.apps.healthdata': 'Health Connect',
+    'com.sec.android.app.shealth': 'Samsung Health',
+    'com.garmin.android.apps.connectmobile': 'Garmin Connect',
+    'com.fitbit.FitbitMobile': 'Fitbit',
+    'com.ouraring.oura': 'Oura',
+    'com.whoop': 'WHOOP',
+    'com.whoop.android': 'WHOOP',
+    'com.strava': 'Strava',
+    'com.apple.Health': 'Apple Health',
+    'com.apple.health': 'Apple Health',
+    'com.apple.Fitness': 'Apple Fitness',
+    'com.apple.fitness': 'Apple Fitness',
+    'com.nike.plusgps': 'Nike Run Club',
+    'com.myfitnesspal.android': 'MyFitnessPal',
+    'com.withings.wiscale2': 'Withings',
+    'com.polar.polarflow': 'Polar Flow',
+    'com.huawei.health': 'Huawei Health',
+    'com.xiaomi.wearable': 'Xiaomi Wearable',
+    'com.coros.android': 'COROS',
+  };
+
+  static String? sanitize(String? rawSource) {
+    if (rawSource == null) return null;
+    final trimmed = rawSource.trim();
+    if (trimmed.isEmpty) return null;
+
+    final lower = trimmed.toLowerCase();
+    for (final entry in _knownSources.entries) {
+      if (entry.key.toLowerCase() == lower) {
+        return entry.value;
+      }
+    }
+
+    if (lower.contains('shealth') || lower.contains('samsung health')) {
+      return 'Samsung Health';
+    }
+    if (lower.contains('garmin')) return 'Garmin Connect';
+    if (lower.contains('fitbit')) return 'Fitbit';
+    if (lower.contains('whoop')) return 'WHOOP';
+    if (lower.contains('oura')) return 'Oura';
+    if (lower.contains('strava')) return 'Strava';
+    if (lower.contains('polar')) return 'Polar Flow';
+    if (lower.contains('withings')) return 'Withings';
+    if (lower.contains('google.android.apps.fitness') || lower == 'google fit') {
+      return 'Google Fit';
+    }
+    if (lower.contains('healthdata') || lower == 'health connect') {
+      return 'Health Connect';
+    }
+    if (lower.contains('apple.fitness') || lower == 'apple fitness') {
+      return 'Apple Fitness';
+    }
+    if (lower.contains('apple.health') ||
+        lower == 'apple health' ||
+        lower == 'health') {
+      return 'Apple Health';
+    }
+
+    if (trimmed.contains('.') && !trimmed.contains(' ')) {
+      final segments = trimmed.split('.').where((s) => s.isNotEmpty).toList();
+      if (segments.isNotEmpty) {
+        final last = segments.last;
+        final words = last
+            .split(RegExp(r'[_ -]+'))
+            .where((w) => w.isNotEmpty)
+            .map((w) => w.isEmpty
+                ? w
+                : w[0].toUpperCase() + (w.length > 1 ? w.substring(1) : ''))
+            .join(' ');
+        if (words.isNotEmpty) return words;
+      }
+    }
+
+    return trimmed;
+  }
+}
+
+class HealthMetricContext<T> {
+  final T value;
+  final String unit;
+  final String sourceName;
+  final String? sourcePlatform;
+  final DateTime? recordedAtUtc;
+  final bool isDeduplicated;
+
+  const HealthMetricContext({
+    required this.value,
+    required this.unit,
+    required this.sourceName,
+    this.sourcePlatform,
+    this.recordedAtUtc,
+    this.isDeduplicated = false,
+  });
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is HealthMetricContext<T> &&
+          runtimeType == other.runtimeType &&
+          value == other.value &&
+          unit == other.unit &&
+          sourceName == other.sourceName &&
+          sourcePlatform == other.sourcePlatform &&
+          recordedAtUtc == other.recordedAtUtc &&
+          isDeduplicated == other.isDeduplicated;
+
+  @override
+  int get hashCode => Object.hash(
+        value,
+        unit,
+        sourceName,
+        sourcePlatform,
+        recordedAtUtc,
+        isDeduplicated,
+      );
+}
+
 class HealthDataSummary {
   final int steps;
   final double activeCalories;
@@ -87,6 +211,11 @@ class HealthDataSummary {
   final Set<HealthCategory> categoriesWithData;
   final bool integrationEnabled;
   final String? platformName;
+  final HealthMetricContext<int>? stepsContext;
+  final HealthMetricContext<double>? activeEnergyContext;
+  final HealthMetricContext<double>? sleepContext;
+  final DateTime? syncTimestampUtc;
+  final String? primarySource;
 
   const HealthDataSummary({
     this.steps = 0,
@@ -103,6 +232,11 @@ class HealthDataSummary {
     this.categoriesWithData = const {},
     this.integrationEnabled = false,
     this.platformName,
+    this.stepsContext,
+    this.activeEnergyContext,
+    this.sleepContext,
+    this.syncTimestampUtc,
+    this.primarySource,
   });
 
   HealthDataSummary copyWith({
@@ -120,6 +254,11 @@ class HealthDataSummary {
     Set<HealthCategory>? categoriesWithData,
     bool? integrationEnabled,
     String? platformName,
+    HealthMetricContext<int>? stepsContext,
+    HealthMetricContext<double>? activeEnergyContext,
+    HealthMetricContext<double>? sleepContext,
+    DateTime? syncTimestampUtc,
+    String? primarySource,
   }) {
     return HealthDataSummary(
       steps: steps ?? this.steps,
@@ -137,8 +276,18 @@ class HealthDataSummary {
       categoriesWithData: categoriesWithData ?? this.categoriesWithData,
       integrationEnabled: integrationEnabled ?? this.integrationEnabled,
       platformName: platformName ?? this.platformName,
+      stepsContext: stepsContext ?? this.stepsContext,
+      activeEnergyContext: activeEnergyContext ?? this.activeEnergyContext,
+      sleepContext: sleepContext ?? this.sleepContext,
+      syncTimestampUtc: syncTimestampUtc ?? this.syncTimestampUtc,
+      primarySource: primarySource ?? this.primarySource,
     );
   }
+
+  int get authoritativeSteps => stepsContext?.value ?? steps;
+  double get authoritativeActiveEnergyKcal =>
+      activeEnergyContext?.value ?? activeCalories;
+  double get authoritativeSleepHours => sleepContext?.value ?? sleepHours;
 
   /// Compatibility for older fixtures that only supplied [isConnected].
   HealthConnectionStatus get resolvedConnectionStatus =>
@@ -175,9 +324,10 @@ class HealthDataSummary {
     // Compatibility for older fixtures and callers created before explicit
     // presence tracking was added.
     return switch (category) {
-      HealthCategory.steps => steps != 0,
-      HealthCategory.activeEnergy => activeCalories != 0,
-      HealthCategory.sleep => sleepHours != 0,
+      HealthCategory.steps => stepsContext != null || steps != 0,
+      HealthCategory.activeEnergy =>
+        activeEnergyContext != null || activeCalories != 0,
+      HealthCategory.sleep => sleepContext != null || sleepHours != 0,
       _ => false,
     };
   }
@@ -229,10 +379,22 @@ class HealthRecoveryMetricRead {
 
 class HealthService {
   final Health _health;
+  final LocalScheduleDateService _dateService;
+  final LocalTimezoneService _timezoneService;
   HealthConnectionStatus _lastPermissionRequestStatus =
       HealthConnectionStatus.unknown;
 
-  HealthService([Health? health]) : _health = health ?? Health();
+  final HealthPlatformAvailability? _platformAvailabilityOverride;
+
+  HealthService({
+    Health? health,
+    LocalScheduleDateService? dateService,
+    LocalTimezoneService? timezoneService,
+    HealthPlatformAvailability? platformAvailabilityOverride,
+  })  : _health = health ?? Health(),
+        _dateService = dateService ?? LocalScheduleDateService(),
+        _timezoneService = timezoneService ?? LocalTimezoneService(),
+        _platformAvailabilityOverride = platformAvailabilityOverride;
 
   static const String integrationEnabledPrefKey = 'health_integration_enabled';
   static const String permissionRequestedPrefix =
@@ -316,6 +478,11 @@ class HealthService {
   String get platformDisplayName {
     if (io.Platform.isIOS) return 'Apple Health';
     if (io.Platform.isAndroid) return 'Health Connect';
+    if (_platformAvailabilityOverride == HealthPlatformAvailability.supported) {
+      return _health.platformType == HealthPlatformType.googleHealthConnect
+          ? 'Health Connect'
+          : 'Apple Health';
+    }
     return 'Health data';
   }
 
@@ -331,6 +498,9 @@ class HealthService {
 
   /// Checks support without configuring Health or requesting a permission.
   Future<HealthPlatformAvailability> getPlatformAvailability() async {
+    if (_platformAvailabilityOverride != null) {
+      return _platformAvailabilityOverride;
+    }
     if (!io.Platform.isIOS && !io.Platform.isAndroid) {
       return HealthPlatformAvailability.unsupported;
     }
@@ -655,6 +825,64 @@ class HealthService {
   /// Fetch today's metrics without opening a permission prompt. The explicit
   /// connection gate prevents a Settings render or dashboard refresh from
   /// silently starting Health integration.
+  static bool isWearableSource(String sourceName, [String? sourceId]) {
+    final combined =
+        '${sourceName.toLowerCase()} ${sourceId?.toLowerCase() ?? ''}';
+    return combined.contains('watch') ||
+        combined.contains('garmin') ||
+        combined.contains('fitbit') ||
+        combined.contains('polar') ||
+        combined.contains('whoop') ||
+        combined.contains('oura') ||
+        combined.contains('coros') ||
+        combined.contains('suunto');
+  }
+
+  static List<({DateTime start, DateTime end})> clipAndMergeIntervals({
+    required List<({DateTime start, DateTime end})> intervals,
+    required DateTime windowStart,
+    required DateTime windowEnd,
+  }) {
+    if (!windowEnd.isAfter(windowStart)) return const [];
+
+    final clipped = <({DateTime start, DateTime end})>[];
+    for (final interval in intervals) {
+      final s = interval.start.isBefore(windowStart)
+          ? windowStart
+          : interval.start;
+      final e = interval.end.isAfter(windowEnd) ? windowEnd : interval.end;
+      if (e.isAfter(s)) {
+        clipped.add((start: s, end: e));
+      }
+    }
+
+    if (clipped.isEmpty) return const [];
+
+    clipped.sort((a, b) {
+      final cmp = a.start.compareTo(b.start);
+      if (cmp != 0) return cmp;
+      return a.end.compareTo(b.end);
+    });
+
+    final merged = <({DateTime start, DateTime end})>[clipped.first];
+    for (var i = 1; i < clipped.length; i++) {
+      final current = clipped[i];
+      final last = merged.last;
+      if (!current.start.isAfter(last.end)) {
+        if (current.end.isAfter(last.end)) {
+          merged[merged.length - 1] = (start: last.start, end: current.end);
+        }
+      } else {
+        merged.add(current);
+      }
+    }
+
+    return merged;
+  }
+
+  /// Fetch today's metrics without opening a permission prompt. The explicit
+  /// connection gate prevents a Settings render or dashboard refresh from
+  /// silently starting Health integration.
   Future<HealthDataSummary> fetchTodayHealthData() async {
     final categoryStates = await getAllCategoryStates();
     final availability = await getPlatformAvailability();
@@ -707,58 +935,259 @@ class HealthService {
         integrationEnabled,
         permissions,
       );
-      final now = DateTime.now();
-      final midnight = DateTime(now.year, now.month, now.day);
+
+      String timezoneId;
+      try {
+        timezoneId = await _timezoneService.currentTimezoneId();
+      } catch (_) {
+        timezoneId = 'UTC';
+      }
+
+      final todayLocalDate = _dateService.todayIn(timezoneId);
+      final yesterdayLocalDate =
+          _dateService.addCalendarDays(todayLocalDate, timezoneId, -1);
+      final nowUtc = _dateService.nowUtc();
+      final dayStartUtc =
+          _dateService.instantForLocalDate(todayLocalDate, timezoneId, hour: 0);
+
+      // Overnight sleep window: 18:00 yesterday to 14:00 today (civil timezone)
+      final sleepWindowStartUtc = _dateService.instantForLocalDate(
+        yesterdayLocalDate,
+        timezoneId,
+        hour: 18,
+      );
+      final sleepWindowEndUtc = _dateService.instantForLocalDate(
+        todayLocalDate,
+        timezoneId,
+        hour: 14,
+      );
 
       int steps = 0;
       double activeCals = 0.0;
       double sleepMinutes = 0.0;
       final categoriesWithData = <HealthCategory>{};
+      HealthMetricContext<int>? stepsContext;
+      HealthMetricContext<double>? activeEnergyContext;
+      HealthMetricContext<double>? sleepContext;
+      String? primarySource;
 
+      final platformKey = switch (platformDisplayName) {
+        'Apple Health' => 'apple_health',
+        'Health Connect' => 'health_connect',
+        _ => 'health',
+      };
+
+      // 1. Steps: delegate to platform sensor fusion with honest provenance
       if (_canRead(
         permissions[HealthCategory.steps] ?? HealthPermissionStatus.unavailable,
       )) {
-        final total = await _health.getTotalStepsInInterval(midnight, now);
-        if (total != null) {
-          steps = total;
-          categoriesWithData.add(HealthCategory.steps);
+        try {
+          final total =
+              await _health.getTotalStepsInInterval(dayStartUtc, nowUtc);
+          if (total != null) {
+            steps = total;
+            final stepsSource = switch (platformDisplayName) {
+              'Apple Health' => 'Apple Health (system total)',
+              'Health Connect' => 'Health Connect (system total)',
+              _ => 'Health (system total)',
+            };
+            stepsContext = HealthMetricContext<int>(
+              value: total,
+              unit: 'count',
+              sourceName: stepsSource,
+              sourcePlatform: platformKey,
+              recordedAtUtc: nowUtc,
+              isDeduplicated: true,
+            );
+            categoriesWithData.add(HealthCategory.steps);
+            primarySource ??= stepsSource;
+          }
+        } catch (e) {
+          AppLogger.warning('getTotalStepsInInterval failed: $e');
         }
       }
+
+      // 2. Active Energy: IndiFit origin exclusion, exact dedup floor, progressive wearable priority
       if (_canRead(
         permissions[HealthCategory.activeEnergy] ??
             HealthPermissionStatus.unavailable,
       )) {
-        final data = await _health.getHealthDataFromTypes(
-          startTime: midnight,
-          endTime: now,
-          types: [HealthDataType.ACTIVE_ENERGY_BURNED],
-        );
-        for (final point in data) {
-          final value = point.value;
-          if (value is NumericHealthValue) {
-            activeCals += value.numericValue.toDouble();
-            categoriesWithData.add(HealthCategory.activeEnergy);
+        try {
+          final rawData = await _health.getHealthDataFromTypes(
+            startTime: dayStartUtc,
+            endTime: nowUtc,
+            types: [HealthDataType.ACTIVE_ENERGY_BURNED],
+          );
+
+          // a. Exclude IndiFit origin
+          final eligiblePoints = <HealthDataPoint>[];
+          for (final point in rawData) {
+            if (_isIndiFitOrigin(point.sourceName, point.sourceId)) continue;
+            eligiblePoints.add(point);
           }
-        }
-      }
-      if (_canRead(
-        permissions[HealthCategory.sleep] ?? HealthPermissionStatus.unavailable,
-      )) {
-        final data = await _health.getHealthDataFromTypes(
-          startTime: midnight,
-          endTime: now,
-          types: [HealthDataType.SLEEP_SESSION],
-        );
-        for (final point in data) {
-          sleepMinutes += point.dateTo
-              .difference(point.dateFrom)
-              .inMinutes
-              .toDouble();
-          categoriesWithData.add(HealthCategory.sleep);
+
+          // b. Guaranteed exact dedup floor
+          final dedupedPoints = <HealthDataPoint>[];
+          final seenUuids = <String>{};
+          final seenTuples = <String>{};
+          for (final point in eligiblePoints) {
+            if (point.uuid.trim().isNotEmpty) {
+              if (seenUuids.contains(point.uuid)) continue;
+              seenUuids.add(point.uuid);
+            }
+            final tupleKey =
+                '${point.dateFrom.millisecondsSinceEpoch}|${point.dateTo.millisecondsSinceEpoch}|${point.sourceId}|${point.sourceName}';
+            if (seenTuples.contains(tupleKey)) continue;
+            seenTuples.add(tupleKey);
+            dedupedPoints.add(point);
+          }
+
+          // c. Progressive wearable-over-phone priority
+          final wearablePoints = <HealthDataPoint>[];
+          final phonePoints = <HealthDataPoint>[];
+          for (final point in dedupedPoints) {
+            if (isWearableSource(point.sourceName, point.sourceId)) {
+              wearablePoints.add(point);
+            } else {
+              phonePoints.add(point);
+            }
+          }
+
+          final List<HealthDataPoint> finalPoints;
+          if (wearablePoints.isEmpty) {
+            finalPoints = phonePoints;
+          } else {
+            final wearableIntervals = wearablePoints
+                .map((p) => (start: p.dateFrom, end: p.dateTo))
+                .toList();
+            final mergedWearableIntervals = clipAndMergeIntervals(
+              intervals: wearableIntervals,
+              windowStart: dayStartUtc,
+              windowEnd: nowUtc,
+            );
+
+            final survivingPhonePoints = phonePoints.where((phonePoint) {
+              final pStart = phonePoint.dateFrom;
+              final pEnd = phonePoint.dateTo;
+              for (final wSpan in mergedWearableIntervals) {
+                if (pStart.isBefore(wSpan.end) && pEnd.isAfter(wSpan.start)) {
+                  return false; // overlaps wearable -> drop phone point
+                }
+              }
+              return true;
+            }).toList();
+
+            finalPoints = [...wearablePoints, ...survivingPhonePoints];
+          }
+
+          if (finalPoints.isNotEmpty) {
+            for (final point in finalPoints) {
+              final value = point.value;
+              if (value is NumericHealthValue) {
+                activeCals += value.numericValue.toDouble();
+              }
+            }
+
+            final energySource = HealthSourceSanitizer.sanitize(
+              wearablePoints.isNotEmpty
+                  ? wearablePoints.first.sourceName
+                  : finalPoints.first.sourceName,
+            ) ?? 'Health';
+
+            DateTime? latestEnergyPoint;
+            for (final p in finalPoints) {
+              if (latestEnergyPoint == null ||
+                  p.dateTo.isAfter(latestEnergyPoint)) {
+                latestEnergyPoint = p.dateTo;
+              }
+            }
+
+            activeEnergyContext = HealthMetricContext<double>(
+              value: activeCals,
+              unit: 'kcal',
+              sourceName: energySource,
+              sourcePlatform: platformKey,
+              recordedAtUtc: latestEnergyPoint?.toUtc(),
+              isDeduplicated: true,
+            );
+            categoriesWithData.add(HealthCategory.activeEnergy);
+            if (primarySource == null ||
+                (isWearableSource(energySource) &&
+                    !isWearableSource(primarySource))) {
+              primarySource = energySource;
+            }
+          }
+        } catch (e) {
+          AppLogger.warning('Active energy fetch failed: $e');
         }
       }
 
-      if (permissions.values.any(_canRead)) await setLastSyncTime(now);
+      // 3. Sleep: 18:00->14:00 civil window with clip-then-merge interval deduplication
+      if (_canRead(
+        permissions[HealthCategory.sleep] ?? HealthPermissionStatus.unavailable,
+      )) {
+        try {
+          final rawSleepData = await _health.getHealthDataFromTypes(
+            startTime: sleepWindowStartUtc,
+            endTime: sleepWindowEndUtc,
+            types: [HealthDataType.SLEEP_SESSION],
+          );
+
+          final eligibleSleep = rawSleepData
+              .where((p) => !_isIndiFitOrigin(p.sourceName, p.sourceId))
+              .toList();
+
+          if (eligibleSleep.isNotEmpty) {
+            final rawIntervals = eligibleSleep
+                .map((p) => (start: p.dateFrom, end: p.dateTo))
+                .toList();
+
+            final mergedSpans = clipAndMergeIntervals(
+              intervals: rawIntervals,
+              windowStart: sleepWindowStartUtc,
+              windowEnd: sleepWindowEndUtc,
+            );
+
+            for (final span in mergedSpans) {
+              sleepMinutes +=
+                  span.end.difference(span.start).inMinutes.toDouble();
+            }
+
+            if (mergedSpans.isNotEmpty) {
+              DateTime? latestSleepDate;
+              for (final p in eligibleSleep) {
+                if (latestSleepDate == null ||
+                    p.dateTo.isAfter(latestSleepDate)) {
+                  latestSleepDate = p.dateTo;
+                }
+              }
+
+              final sleepSource = HealthSourceSanitizer.sanitize(
+                eligibleSleep.first.sourceName,
+              ) ?? 'Health';
+
+              sleepContext = HealthMetricContext<double>(
+                value: sleepMinutes / 60.0,
+                unit: 'hours',
+                sourceName: sleepSource,
+                sourcePlatform: platformKey,
+                recordedAtUtc: latestSleepDate?.toUtc(),
+                isDeduplicated: true,
+              );
+              categoriesWithData.add(HealthCategory.sleep);
+              if (primarySource == null ||
+                  (isWearableSource(sleepSource) &&
+                      !isWearableSource(primarySource))) {
+                primarySource = sleepSource;
+              }
+            }
+          }
+        } catch (e) {
+          AppLogger.warning('Sleep fetch failed: $e');
+        }
+      }
+
+      if (permissions.values.any(_canRead)) await setLastSyncTime(nowUtc);
       return HealthDataSummary(
         steps: steps,
         activeCalories: activeCals,
@@ -775,6 +1204,11 @@ class HealthService {
           connectionStatus,
           platformName: platformDisplayName,
         ),
+        stepsContext: stepsContext,
+        activeEnergyContext: activeEnergyContext,
+        sleepContext: sleepContext,
+        syncTimestampUtc: nowUtc,
+        primarySource: primarySource,
       );
     } catch (error, stackTrace) {
       AppLogger.warning('Health data read failed: $error');
@@ -1039,7 +1473,7 @@ class HealthService {
       for (final p in data) {
         // Never import a workout this app wrote to Health. This is provenance
         // filtering, not modality inference.
-        if (_isIndiFitOrigin(p.sourceName)) continue;
+        if (_isIndiFitOrigin(p.sourceName, p.sourceId)) continue;
 
         final input = B02HealthActivityInput.fromHealthDataPoint(p);
         final translation = HealthActivityImportRepository.translateInput(
@@ -1112,8 +1546,14 @@ class HealthService {
     }
   }
 
-  static bool _isIndiFitOrigin(String sourceName) =>
-      sourceName.trim().toLowerCase().contains('indifit');
+  static bool _isIndiFitOrigin(String sourceName, [String? sourceId]) {
+    final name = sourceName.trim().toLowerCase();
+    if (name.contains('indifit')) return true;
+    if (sourceId != null && sourceId.trim().toLowerCase().contains('indifit')) {
+      return true;
+    }
+    return false;
+  }
 
   /// Persists an external activity and its provenance atomically. Returns the
   /// new local session ID, or null when the native activity was already seen.

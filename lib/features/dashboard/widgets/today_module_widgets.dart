@@ -685,6 +685,24 @@ class TodayActivityModule extends StatelessWidget {
                       style: B05Typography.caption(context),
                     ),
                   ],
+                  if (presentation.dailyMovementSummary != null &&
+                      presentation.sessionCount != null) ...[
+                    const SizedBox(height: B05Layout.space8),
+                    Text(
+                      presentation.dailyMovementSummary!,
+                      style: B05Typography.caption(context),
+                    ),
+                  ],
+                  if (presentation.primarySource != null) ...[
+                    const SizedBox(height: B05Layout.space4),
+                    Text(
+                      'Source: ${presentation.primarySource}',
+                      style: B05Typography.caption(context).copyWith(
+                        color: context.b05Colors.textSecondary,
+                        fontSize: 10,
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),

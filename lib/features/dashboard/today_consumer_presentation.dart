@@ -7,6 +7,7 @@ import '../../data/database/app_database.dart';
 import '../../data/models/b02_progress_read_models.dart';
 import '../../data/models/b04_goal_models.dart';
 import '../../data/repositories/calendar_read_repository.dart';
+import '../../data/repositories/health_service.dart';
 import '../../data/repositories/nutrition_target_authority.dart';
 import '../../data/repositories/training_next_action_resolver.dart';
 import '../progress/b02_progress_presentation.dart';
@@ -524,6 +525,8 @@ class TodayActivityPresentation {
   final String detail;
   final String? latestActivity;
   final int? sessionCount;
+  final String? dailyMovementSummary;
+  final String? primarySource;
 
   const TodayActivityPresentation({
     required this.state,
@@ -531,6 +534,8 @@ class TodayActivityPresentation {
     required this.detail,
     this.latestActivity,
     this.sessionCount,
+    this.dailyMovementSummary,
+    this.primarySource,
   });
 
   /// Activity is optional evidence. Loading is renderable so an explicitly
@@ -543,17 +548,55 @@ class TodayActivityPresentation {
   factory TodayActivityPresentation.from(
     TodayDomainRead<B02ProgressReadModel>? read, {
     required bool loading,
+    HealthDataSummary? healthSummary,
   }) {
-    if (loading || read == null) {
+    if (loading) {
       return const TodayActivityPresentation(
         state: TodayPresentationState.loading,
         headline: 'Activity',
         detail: 'Checking your recent movement.',
       );
     }
-    if (!read.isAvailable ||
+
+    String? movementSummary;
+    String? healthSource;
+    if (healthSummary != null && healthSummary.hasDailyMetricData) {
+      final facts = <String>[];
+      if (healthSummary.hasDataFor(HealthCategory.steps)) {
+        facts.add('${_formatSteps(healthSummary.authoritativeSteps)} steps');
+      }
+      if (healthSummary.hasDataFor(HealthCategory.activeEnergy)) {
+        facts.add(
+          '${healthSummary.authoritativeActiveEnergyKcal.toInt()} kcal',
+        );
+      }
+      if (healthSummary.hasDataFor(HealthCategory.sleep)) {
+        facts.add(
+          '${healthSummary.authoritativeSleepHours.toStringAsFixed(1)}h sleep',
+        );
+      }
+      if (facts.isNotEmpty) {
+        movementSummary = facts.join(' · ');
+        healthSource = healthSummary.primarySource ??
+            healthSummary.activeEnergyContext?.sourceName ??
+            healthSummary.sleepContext?.sourceName ??
+            healthSummary.stepsContext?.sourceName;
+      }
+    }
+
+    if (read == null ||
+        !read.isAvailable ||
         read.value == null ||
         read.value!.activityHistory == null) {
+      if (movementSummary != null) {
+        return TodayActivityPresentation(
+          state: TodayPresentationState.ready,
+          headline: 'Daily activity',
+          detail: movementSummary,
+          dailyMovementSummary: movementSummary,
+          primarySource: healthSource,
+        );
+      }
       return const TodayActivityPresentation(
         state: TodayPresentationState.unavailable,
         headline: 'Activity unavailable',
@@ -564,6 +607,15 @@ class TodayActivityPresentation {
         .where(_isMeaningfulActivityRecord)
         .toList(growable: false);
     if (history.isEmpty) {
+      if (movementSummary != null) {
+        return TodayActivityPresentation(
+          state: TodayPresentationState.ready,
+          headline: 'Daily activity',
+          detail: movementSummary,
+          dailyMovementSummary: movementSummary,
+          primarySource: healthSource,
+        );
+      }
       return const TodayActivityPresentation(
         state: TodayPresentationState.empty,
         headline: 'No activity yet',
@@ -577,7 +629,24 @@ class TodayActivityPresentation {
       detail: '${ConsumerCountLabel.format(history.length, 'session')} logged',
       latestActivity: ConsumerCopy.label(latest.name, fallback: 'Workout'),
       sessionCount: history.length,
+      dailyMovementSummary: movementSummary,
+      primarySource: healthSource,
     );
+  }
+
+  static String _formatSteps(int count) {
+    if (count < 1000) return '$count';
+    final str = count.toString();
+    final buffer = StringBuffer();
+    final offset = str.length % 3;
+    if (offset > 0) {
+      buffer.write(str.substring(0, offset));
+    }
+    for (var i = offset; i < str.length; i += 3) {
+      if (buffer.isNotEmpty) buffer.write(',');
+      buffer.write(str.substring(i, i + 3));
+    }
+    return buffer.toString();
   }
 }
 

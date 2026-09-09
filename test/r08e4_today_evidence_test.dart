@@ -237,11 +237,13 @@ void main() {
 List<DashboardModuleLayoutItem> _evidenceLayout() {
   final defaults = standardDashboardModuleRegistry.normalize(const []);
   return [
-    defaults[0].copyWith(ordinal: 0, isVisible: true),
-    defaults[1].copyWith(ordinal: 1, isVisible: false),
-    defaults[2].copyWith(ordinal: 2, isVisible: false),
-    defaults[4].copyWith(ordinal: 3, isVisible: true),
-    defaults[5].copyWith(ordinal: 4, isVisible: true),
+    for (final item in defaults)
+      if (item.moduleId == 'today.next_action' ||
+          item.moduleId == 'today.activity' ||
+          item.moduleId == 'today.progress')
+        item.copyWith(isVisible: true)
+      else
+        item.copyWith(isVisible: false),
   ];
 }
 

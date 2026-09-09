@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/di/health_provider.dart';
 import '../../core/nutrition_legacy_read_models.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
@@ -77,6 +78,7 @@ class TodayDailyActionSurface extends ConsumerWidget {
     final snapshotAsync = ref.watch(todaySurfaceSnapshotProvider(selectedDate));
     final referenceNow = now ?? DateTime.now();
     final relation = todayDateRelation(selectedDate, referenceNow);
+
     final configuredLayout = personalization.layout.isEmpty
         ? standardDashboardModuleRegistry.normalize(const [])
         : personalization.layout;
@@ -105,6 +107,9 @@ class TodayDailyActionSurface extends ConsumerWidget {
       resolution: snapshot?.nextActionResolution,
       localDate: snapshot?.localDate ?? todaySurfaceDateKey(selectedDate),
     );
+    final healthState = relation == TodayDateRelation.today
+        ? ref.watch(healthStateProvider)
+        : null;
     final activity = TodayActivityPresentation.from(
       snapshot?.progress ??
           (unavailable
@@ -113,6 +118,7 @@ class TodayDailyActionSurface extends ConsumerWidget {
                 )
               : null),
       loading: loading,
+      healthSummary: healthState?.summary,
     );
     final progress = TodayProgressPresentation.from(
       snapshot?.progress ??
