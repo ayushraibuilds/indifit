@@ -11,6 +11,7 @@ import '../../data/database/app_database.dart';
 import '../../data/models/b02_progress_read_models.dart';
 import '../../data/models/hydration_models.dart';
 import '../../data/repositories/calendar_read_repository.dart';
+import '../food_log/diary_structure_controller.dart';
 import 'dashboard_module_registry.dart';
 import 'dashboard_personalization_controller.dart';
 import 'today_consumer_presentation.dart';
@@ -85,6 +86,7 @@ class TodayDailyActionSurface extends ConsumerWidget {
     final snapshot = snapshotAsync.valueOrNull;
     final loading = snapshotAsync.isLoading && !snapshotAsync.hasError;
     final unavailable = snapshotAsync.hasError;
+    final configuredSlots = ref.watch(diaryMealSlotsProvider);
     final nutrition = TodayNutritionPresentation.from(
       snapshot?.nutrition ??
           (unavailable
@@ -95,6 +97,9 @@ class TodayDailyActionSurface extends ConsumerWidget {
       loading: loading,
       targetRead: snapshot?.targets,
       goal: snapshot?.goal,
+      configuredMeals: [
+        for (final slot in configuredSlots) (slot.stableId, slot.label),
+      ],
     );
     final workout = TodayWorkoutPresentation.from(
       snapshot?.calendar ??

@@ -10,6 +10,7 @@ import '../../data/repositories/calendar_read_repository.dart';
 import '../../data/repositories/health_service.dart';
 import '../../data/repositories/nutrition_target_authority.dart';
 import '../../data/repositories/training_next_action_resolver.dart';
+import '../food_log/meal_presentation_registry.dart';
 import '../progress/b02_progress_presentation.dart';
 import 'today_presentation_types.dart';
 import 'today_surface_controller.dart';
@@ -300,6 +301,7 @@ class TodayNutritionPresentation {
     required bool loading,
     TodayDomainRead<NutritionTargetsForDate?>? targetRead,
     TodayDomainRead<NutritionGoalVersionReadModel?>? goal,
+    List<(String, String)>? configuredMeals,
   }) {
     if (loading || read == null) {
       return const TodayNutritionPresentation(
@@ -398,7 +400,7 @@ class TodayNutritionPresentation {
           : 'Your day at a glance.',
       calories: calories,
       macros: macros,
-      meals: _mealRows(daily.records),
+      meals: _mealRows(daily.records, configuredMeals: configuredMeals),
       hasAcceptedCalorieTarget: calorieTarget != null && calorieTarget > 0,
       targetUnavailable: targetUnavailable,
       hasIncompleteNutrition: incomplete,
@@ -407,19 +409,30 @@ class TodayNutritionPresentation {
   }
 
   static List<TodayMealPresentation> _mealRows(
-    List<NutritionHistoricalReadRecord> records,
-  ) {
-    const categories = <(String, String)>[
-      ('breakfast', 'Breakfast'),
-      ('lunch', 'Lunch'),
-      ('dinner', 'Dinner'),
-      ('snack', 'Snacks'),
-    ];
+    List<NutritionHistoricalReadRecord> records, {
+    List<(String, String)>? configuredMeals,
+  }) {
+    final categories = List<(String, String)>.from(
+      configuredMeals ??
+          const [
+            ('breakfast', 'Breakfast'),
+            ('lunch', 'Lunch'),
+            ('dinner', 'Dinner'),
+            ('snack', 'Snacks'),
+          ],
+    );
     final byCategory = <String, List<NutritionHistoricalReadRecord>>{};
     for (final record in records) {
       final category = _mealCategory(record.mealCategory);
       if (category != null) {
         (byCategory[category] ??= []).add(record);
+      }
+    }
+    final configuredIds = categories.map((c) => c.$1).toSet();
+    for (final categoryId in byCategory.keys) {
+      if (!configuredIds.contains(categoryId)) {
+        final presentation = MealPresentationRegistry.forStableId(categoryId);
+        categories.add((categoryId, presentation.label));
       }
     }
     return [
@@ -929,14 +942,8 @@ TodayFocusPresentation todayFocusPresentation({
 }
 
 String? _mealCategory(String value) {
-  final key = value.trim().toLowerCase().replaceAll('-', '_');
-  return switch (key) {
-    'breakfast' => 'breakfast',
-    'lunch' => 'lunch',
-    'dinner' => 'dinner',
-    'snack' || 'snacks' => 'snack',
-    _ => null,
-  };
+  final presentation = MealPresentationRegistry.forStableId(value);
+  return presentation.isKnown ? presentation.stableId : null;
 }
 
 String? _factValue(NutrientFact fact) {

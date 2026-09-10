@@ -11,6 +11,7 @@ import '../../../core/widgets/b05_accessibility_primitives.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/repositories/calendar_read_repository.dart';
 import '../../food_log/food_search_screen.dart';
+import '../../food_log/meal_presentation_registry.dart';
 import '../today_consumer_presentation.dart';
 import '../today_presentation_types.dart';
 import 'today_helpers.dart';
@@ -435,13 +436,20 @@ class TodayMealRow extends StatelessWidget {
       'breakfast' => context.b05Colors.breakfast,
       'lunch' => context.b05Colors.lunch,
       'dinner' => context.b05Colors.dinner,
-      _ => context.b05Colors.snack,
+      'snack' => context.b05Colors.snack,
+      _ => () {
+        final presentation = MealPresentationRegistry.forStableId(meal.mealType);
+        return presentation.accent != null
+            ? context.b05Colors.meal(presentation.accent!)
+            : context.b05Colors.snack;
+      }(),
     };
     final icon = switch (meal.mealType) {
       'breakfast' => Icons.wb_sunny_outlined,
       'lunch' => Icons.wb_sunny_rounded,
       'dinner' => Icons.nightlight_round,
-      _ => Icons.cookie_outlined,
+      'snack' => Icons.cookie_outlined,
+      _ => MealPresentationRegistry.forStableId(meal.mealType).icon,
     };
     final compact = MediaQuery.textScalerOf(context).scale(1) > 1.35;
     void showDetails() {

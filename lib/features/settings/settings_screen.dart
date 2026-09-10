@@ -19,6 +19,7 @@ import '../media/b05_playlist_launcher.dart';
 import '../profile/profile_screen.dart';
 import 'about_credits_screen.dart';
 import 'data_management_sub_screen.dart';
+import 'diary_structure_screen.dart';
 import 'health_sync_hub_screen.dart';
 import 'household_measures_screen.dart';
 import 'notification_settings_screen.dart';
@@ -99,6 +100,13 @@ class SettingsScreen extends ConsumerWidget {
                       summary: 'Optional foods to include in search',
                       onTap: () =>
                           _push(context, const RegionalFoodPacksScreen()),
+                    ),
+                    _SettingsRow(
+                      icon: Icons.view_agenda_outlined,
+                      title: 'Diary structure',
+                      summary: 'Customize meal and snack slots',
+                      onTap: () =>
+                          _push(context, const DiaryStructureScreen()),
                     ),
                   ],
                 ),

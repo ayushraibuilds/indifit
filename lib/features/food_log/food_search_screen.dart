@@ -30,6 +30,7 @@ import '../dashboard/today_surface_controller.dart';
 import 'barcode_scanner_screen.dart';
 import 'canonical_food_delete.dart';
 import 'custom_food_editor_screen.dart';
+import 'diary_structure_controller.dart';
 import 'food_diary_screen.dart';
 import 'food_log_surface.dart';
 import 'food_search_view_models.dart';
@@ -156,7 +157,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                 style: B05Typography.body(sheetContext),
               ),
               const SizedBox(height: 8),
-              for (final meal in MealPresentationRegistry.values)
+              for (final meal in ref.read(diaryMealSlotsProvider))
                 ListTile(
                   leading: DecoratedBox(
                     decoration: BoxDecoration(
@@ -1170,36 +1171,33 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                     ),
                     const SizedBox(height: 16),
                     if (isCorrection) ...[
-                      DropdownButtonFormField<String>(
-                        initialValue: selectedMealType,
-                        decoration: const InputDecoration(
-                          labelText: 'Meal',
-                          helperText:
-                              'Choose a new meal only if you mean to move it.',
-                        ),
-                        items: const [
-                          DropdownMenuItem(
-                            value: 'breakfast',
-                            child: Text('Breakfast'),
+                      () {
+                        final configured = ref.read(diaryMealSlotsProvider);
+                        final available = [
+                          ...configured,
+                          if (configured.every((m) => m.stableId != selectedMealType))
+                            MealPresentationRegistry.forStableId(selectedMealType),
+                        ];
+                        return DropdownButtonFormField<String>(
+                          initialValue: selectedMealType,
+                          decoration: const InputDecoration(
+                            labelText: 'Meal',
+                            helperText:
+                                'Choose a new meal only if you mean to move it.',
                           ),
-                          DropdownMenuItem(
-                            value: 'lunch',
-                            child: Text('Lunch'),
-                          ),
-                          DropdownMenuItem(
-                            value: 'dinner',
-                            child: Text('Dinner'),
-                          ),
-                          DropdownMenuItem(
-                            value: 'snack',
-                            child: Text('Snack'),
-                          ),
-                        ],
-                        onChanged: (value) {
-                          if (value == null) return;
-                          setModalState(() => selectedMealType = value);
-                        },
-                      ),
+                          items: [
+                            for (final meal in available)
+                              DropdownMenuItem(
+                                value: meal.stableId,
+                                child: Text(meal.label),
+                              ),
+                          ],
+                          onChanged: (value) {
+                            if (value == null) return;
+                            setModalState(() => selectedMealType = value);
+                          },
+                        );
+                      }(),
                       const SizedBox(height: 12),
                     ],
 
@@ -2287,7 +2285,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
           spacing: 8,
           runSpacing: 8,
           children: [
-            for (final meal in MealPresentationRegistry.values)
+            for (final meal in ref.watch(diaryMealSlotsProvider))
               OutlinedButton(
                 onPressed: () => _openMealLogger(meal.stableId),
                 child: Text(meal.label),
@@ -2772,22 +2770,16 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   }
 
   String _mealLabel(String? value) {
-    return switch (value?.trim().toLowerCase()) {
-      'breakfast' => 'breakfast',
-      'lunch' => 'lunch',
-      'dinner' => 'dinner',
-      'snack' || 'snacks' => 'snack',
-      _ => 'meal',
-    };
+    if (value == null || value.trim().isEmpty) return 'meal';
+    final presentation = MealPresentationRegistry.forStableId(value);
+    return presentation.isKnown ? presentation.label.toLowerCase() : 'meal';
   }
 
-  String _mealTitle(String? value) => switch (_mealLabel(value)) {
-    'breakfast' => 'Breakfast',
-    'lunch' => 'Lunch',
-    'dinner' => 'Dinner',
-    'snack' => 'Snack',
-    _ => 'Meal',
-  };
+  String _mealTitle(String? value) {
+    if (value == null || value.trim().isEmpty) return 'Meal';
+    final presentation = MealPresentationRegistry.forStableId(value);
+    return presentation.isKnown ? presentation.label : 'Meal';
+  }
 
   String _quantityUnitLabel(Quantity quantity, {NutritionFoodOption? option}) =>
       quantity.unit == QuantityUnit.householdReference

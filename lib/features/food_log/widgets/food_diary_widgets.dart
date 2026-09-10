@@ -467,13 +467,20 @@ String foodDiaryMealType(String value) {
   return normalized == 'snacks' ? 'snack' : normalized;
 }
 
-String foodDiaryMealTitle(String value) => switch (foodDiaryMealType(value)) {
-  'breakfast' => 'Breakfast',
-  'lunch' => 'Lunch',
-  'dinner' => 'Dinner',
-  'snack' => 'Snacks',
-  _ => 'Meal',
-};
+String foodDiaryMealTitle(String value) {
+  final normalized = foodDiaryMealType(value);
+  final presentation = MealPresentationRegistry.forStableId(normalized);
+  if (presentation.isKnown) {
+    return presentation.label;
+  }
+  return switch (normalized) {
+    'breakfast' => 'Breakfast',
+    'lunch' => 'Lunch',
+    'dinner' => 'Dinner',
+    'snack' => 'Snacks',
+    _ => 'Meal',
+  };
+}
 
 String foodDiaryEnergyLabel(Iterable<NutritionHistoricalReadRecord> records) {
   final facts = [for (final record in records) record.totals.facts['energy']];

@@ -10,6 +10,7 @@ import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../dashboard/today_consumer_presentation.dart';
 import '../dashboard/today_surface_controller.dart';
 import '../dashboard/widgets/dashboard_date_bar.dart';
+import 'diary_structure_controller.dart';
 import 'food_log_surface.dart';
 import 'food_search_screen.dart';
 import 'meal_presentation_registry.dart';
@@ -66,15 +67,32 @@ class _FoodDiaryScreenState extends ConsumerState<FoodDiaryScreen> {
         : daily == null
         ? null
         : TodayDomainRead.available(daily);
+    final configuredSlots = ref.watch(diaryMealSlotsProvider);
     final presentation = TodayNutritionPresentation.from(
       nutritionRead,
       loading: diary.isLoading,
       targetRead: diary.valueOrNull?.targets,
+      configuredMeals: [
+        for (final slot in configuredSlots) (slot.stableId, slot.label),
+      ],
     );
     final records = daily?.records ?? canonical.valueOrNull ?? [];
+
+    // Per-day data-driven surfacing of logged slots is not "expanding defaults" —
+    // it is truthful rendering of historical evidence. Defaults govern empty-day structure.
+    final visibleSlots = List<FoodMealPresentation>.from(configuredSlots);
+    final seenSlotIds = visibleSlots.map((s) => s.stableId).toSet();
+    for (final record in records) {
+      final normType = foodDiaryMealType(record.mealCategory);
+      final slotPresentation = MealPresentationRegistry.forStableId(normType);
+      if (slotPresentation.isKnown && seenSlotIds.add(slotPresentation.stableId)) {
+        visibleSlots.add(slotPresentation);
+      }
+    }
+
     final meals = [
-      for (final presentation in MealPresentationRegistry.values)
-        (type: presentation.stableId, label: presentation.label),
+      for (final p in visibleSlots)
+        (type: p.stableId, label: p.label),
     ];
 
     return Scaffold(
@@ -207,45 +225,54 @@ class _FoodDiaryScreenState extends ConsumerState<FoodDiaryScreen> {
 
   Future<String?> _chooseMeal(
     BuildContext context,
-  ) => showModalBottomSheet<String>(
-    context: context,
-    builder: (sheetContext) => SafeArea(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'Choose a meal',
-                style: B05Typography.title(sheetContext),
+  ) {
+    final activeSlots = ref.read(diaryMealSlotsProvider);
+    final items =
+        activeSlots.isNotEmpty ? activeSlots : MealPresentationRegistry.values;
+    return showModalBottomSheet<String>(
+      context: context,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Choose a meal',
+                  style: B05Typography.title(sheetContext),
+                ),
               ),
             ),
-          ),
-          for (final item in MealPresentationRegistry.values)
-            ListTile(
-              title: Text(item.label),
-              leading: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: sheetContext.b05Colors.meal(item.accent!).container,
-                  shape: BoxShape.circle,
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: Icon(
-                    item.icon,
-                    color: sheetContext.b05Colors.meal(item.accent!).indicator,
+            for (final item in items)
+              ListTile(
+                title: Text(item.label),
+                leading: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: sheetContext.b05Colors
+                        .meal(item.accent ?? B05MealAccent.snack)
+                        .container,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: Icon(
+                      item.icon,
+                      color: sheetContext.b05Colors
+                          .meal(item.accent ?? B05MealAccent.snack)
+                          .indicator,
+                    ),
                   ),
                 ),
+                onTap: () => Navigator.of(sheetContext).pop(item.stableId),
               ),
-              onTap: () => Navigator.of(sheetContext).pop(item.stableId),
-            ),
-          const SizedBox(height: 8),
-        ],
+            const SizedBox(height: 8),
+          ],
+        ),
       ),
-    ),
-  );
+    );
+  }
 
   Future<void> _openMealPicker(BuildContext context) async {
     final meal = await _chooseMeal(context);

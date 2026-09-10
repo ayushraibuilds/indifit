@@ -14,6 +14,7 @@ import '../../features/equipment/equipment_profile_editor_screen.dart';
 import '../../features/equipment/equipment_profiles_screen.dart';
 import '../../features/equipment/exercise_preference_editor_screen.dart';
 import '../../features/exercise_library/exercise_library_screen.dart';
+import '../../features/food_log/meal_presentation_registry.dart';
 import '../../features/food_log/nutrition_estimate_review_screen.dart';
 import '../../features/food_log/nutrition_recipe_editor_screen.dart';
 import '../../features/onboarding/onboarding_screen.dart';
@@ -113,15 +114,9 @@ B02ActivityType? parseManualActivityRouteType(String? raw) {
 }
 
 String? parseFoodRouteMealType(String? raw) {
-  final value = raw?.trim().toLowerCase();
-  return switch (value) {
-    'breakfast' ||
-    'lunch' ||
-    'dinner' ||
-    'snack' ||
-    'snacks' => value == 'snacks' ? 'snack' : value,
-    _ => null,
-  };
+  if (raw == null) return null;
+  final presentation = MealPresentationRegistry.forStableId(raw);
+  return presentation.isKnown ? presentation.stableId : null;
 }
 
 /// Parses a SQLite row identifier carried in a route path or query string.

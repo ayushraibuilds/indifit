@@ -342,6 +342,7 @@ class BackupData {
         'installed_food_packs',
         'unlocked_achievement_ids',
         'pref_workout_reminder_days',
+        'pref_diary_meal_slots',
       ];
       for (final key in stringListKeys) {
         final listVal = prefs.getStringList(key);
