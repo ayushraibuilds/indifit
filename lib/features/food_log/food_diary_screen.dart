@@ -16,6 +16,7 @@ import 'food_search_screen.dart';
 import 'meal_presentation_registry.dart';
 import 'saved_meals_screen.dart';
 import 'saved_recipe_log_screen.dart';
+import 'thali/thali_builder_screen.dart';
 
 /// Food diary screen (PV1-ENG-05D first pass).
 ///
@@ -181,7 +182,13 @@ class _FoodDiaryScreenState extends ConsumerState<FoodDiaryScreen> {
               onTap: () => _openMealPicker(context),
             ),
             FoodDiaryShortcut(
-              icon: Icons.bookmark_outline_rounded,
+              icon: Icons.rice_bowl_rounded,
+              title: 'Thali builder',
+              detail: 'Compose and log a complete Indian meal.',
+              onTap: () => _openThaliBuilder(context),
+            ),
+            FoodDiaryShortcut(
+              icon: Icons.saved_search_rounded,
               title: 'Saved meals',
               detail: 'Log a meal combination you saved.',
               onTap: () => _openSavedMeals(context),
@@ -278,6 +285,17 @@ class _FoodDiaryScreenState extends ConsumerState<FoodDiaryScreen> {
     final meal = await _chooseMeal(context);
     if (meal == null || !context.mounted) return;
     await _openMealAdd(context, meal);
+  }
+
+  Future<void> _openThaliBuilder(BuildContext context) async {
+    final meal = await _chooseMeal(context);
+    if (meal == null || !context.mounted) return;
+    await Navigator.of(context).push<dynamic>(
+      MaterialPageRoute(
+        builder: (_) => ThaliBuilderScreen(mealCategory: meal),
+      ),
+    );
+    if (mounted) _refreshDiaryReads();
   }
 
   Future<void> _openSavedMeals(BuildContext context) async {

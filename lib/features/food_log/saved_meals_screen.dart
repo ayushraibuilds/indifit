@@ -14,8 +14,8 @@ import '../../core/widgets/skeleton_loader.dart';
 import '../dashboard/today_surface_controller.dart';
 import 'meal_templates_screen.dart';
 import 'saved_meal_detail_screen.dart';
-import 'saved_meal_editor_screen.dart';
 import 'saved_meals_controller.dart';
+import 'thali/thali_builder_screen.dart';
 import 'widgets/saved_meal_edit_before_log_sheet.dart';
 
 class SavedMealsScreen extends ConsumerStatefulWidget {
@@ -194,9 +194,9 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
     final saved = await Navigator.push<bool>(
       context,
       MaterialPageRoute(
-        builder: (_) => SavedMealEditorScreen(
-          thaliDraft: item?.draft,
-          defaultMealType: widget.mealType,
+        builder: (_) => ThaliBuilderScreen(
+          mealCategory: widget.mealType.toLowerCase(),
+          initialThaliId: item?.draft.id,
         ),
       ),
     );

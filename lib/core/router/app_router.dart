@@ -17,6 +17,7 @@ import '../../features/exercise_library/exercise_library_screen.dart';
 import '../../features/food_log/meal_presentation_registry.dart';
 import '../../features/food_log/nutrition_estimate_review_screen.dart';
 import '../../features/food_log/nutrition_recipe_editor_screen.dart';
+import '../../features/food_log/thali/thali_builder_screen.dart';
 import '../../features/onboarding/onboarding_screen.dart';
 import '../../features/profile/profile_screen.dart';
 import '../../features/program_authoring/program_author_screen.dart';
@@ -221,6 +222,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => NutritionRecipeEditorScreen(
           recipeId: state.uri.queryParameters['recipeId'],
           draftVersionId: state.uri.queryParameters['draftVersionId'],
+        ),
+      ),
+      GoRoute(
+        path: '/food/thali',
+        builder: (context, state) => ThaliBuilderScreen(
+          mealCategory: state.uri.queryParameters['meal'] ?? 'lunch',
+          initialThaliId: state.uri.queryParameters['thaliId'],
         ),
       ),
       GoRoute(

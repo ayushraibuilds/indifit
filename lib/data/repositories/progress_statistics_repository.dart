@@ -1,7 +1,10 @@
+import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart' show SqliteException;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/di/providers.dart';
+import '../../core/nutrition_consumption_snapshots.dart'
+    show NutritionConsumptionLineage;
 import '../database/app_database.dart';
 import 'legacy_program_compatibility_adapter.dart';
 
@@ -114,6 +117,22 @@ class LifetimeAchievementStats {
 }
 
 class ProgressStatisticsRepository {
+  /// Canonical consumption snapshot source types that represent genuine,
+  /// user-consumed meals for achievement statistics.
+  ///
+  /// - `direct_food`: Individual or batch foods logged directly by the user.
+  /// - `thali`: Composed Indian multi-item meals logged via Thali Builder.
+  /// - `recipe`: Scaled or logged recipe portions.
+  ///
+  /// Non-consumption records (e.g. `estimate` AI suggestions, recommendation
+  /// events, goal updates) are strictly excluded so they do not artificially
+  /// advance meal-count achievement milestones.
+  static const Set<String> _kMealWorthySourceTypes = {
+    'direct_food',
+    'thali',
+    'recipe',
+  };
+
   final AppDatabase _db;
   final DateTime Function() _getNow;
 
@@ -299,19 +318,89 @@ class ProgressStatisticsRepository {
     }
 
     final foodLogs = await _db.select(_db.foodLogs).get();
-    final totalMealsLogged = foodLogs.length;
+    final snapshots = await _db.select(_db.nutritionConsumptionSnapshots).get();
+
+    // Identify all superseded snapshot IDs (predecessors of corrections or retractions).
+    final supersededSnapshotIds = <String>{};
+    for (final s in snapshots) {
+      final raw = s.lineage;
+      if (raw == null || raw.trim().isEmpty) continue;
+      try {
+        final decoded = jsonDecode(raw);
+        if (decoded is Map) {
+          final supersedes = decoded['supersedes_snapshot_id'];
+          if (supersedes is String && supersedes.trim().isNotEmpty) {
+            supersededSnapshotIds.add(supersedes.trim());
+          }
+        }
+      } catch (_) {}
+    }
+
+    // Filter active snapshots representing actual user meals:
+    // 1. Meal-worthy Source Type: Must be a genuine user consumption event
+    //    (`direct_food`, `thali`, `recipe`). Prospective estimates (`estimate`)
+    //    and recommendation events are strictly excluded to prevent milestone inflation.
+    // 2. Not Superseded: The snapshot must not be replaced by a subsequent edit or retraction.
+    // 3. Not a Retraction: The snapshot must not be an append-only retraction marker itself.
+    final activeMealSnapshots = <NutritionConsumptionSnapshot>[];
+    for (final s in snapshots) {
+      final normalizedSource = s.sourceType.trim().toLowerCase();
+      if (!_kMealWorthySourceTypes.contains(normalizedSource)) {
+        continue;
+      }
+      if (supersededSnapshotIds.contains(s.id)) {
+        continue;
+      }
+
+      var isRetraction = false;
+      final raw = s.lineage;
+      if (raw != null && raw.trim().isNotEmpty) {
+        try {
+          final lineage = NutritionConsumptionLineage.fromJson(jsonDecode(raw));
+          isRetraction = lineage.isRetraction;
+        } catch (_) {
+          try {
+            final decoded = jsonDecode(raw);
+            if (decoded is Map) {
+              final evidence = decoded['evidence'];
+              final marker = (evidence is Map && evidence['request_evidence'] is Map)
+                  ? evidence['request_evidence']['retraction']
+                  : (evidence is Map ? evidence['retraction'] : null);
+              if (marker != null) isRetraction = true;
+            }
+          } catch (_) {}
+        }
+      }
+      if (isRetraction) {
+        continue;
+      }
+
+      activeMealSnapshots.add(s);
+    }
+
+    final totalMealsLogged = foodLogs.length + activeMealSnapshots.length;
 
     final sets = await _db.select(_db.workoutSets).get();
     final totalPrs = sets.where((s) => s.isPr).length;
 
-    // Count thali meals (explicit thali marker or grouped meals with 3+ items)
-    final thaliLoggedCount = foodLogs
+    // Count thali meals (explicit thali marker or grouped meals with 3+ items):
+    // - Legacy food logs with 'thali' in name or non-empty mealGroupId
+    // - Active canonical meal snapshots with sourceType 'thali' or non-empty mealGroupId
+    final legacyThaliCount = foodLogs
         .where(
           (f) =>
               f.name.toLowerCase().contains('thali') ||
               (f.mealGroupId != null && f.mealGroupId!.isNotEmpty),
         )
         .length;
+    final canonicalThaliCount = activeMealSnapshots
+        .where(
+          (s) =>
+              s.sourceType.toLowerCase().contains('thali') ||
+              (s.mealGroupId != null && s.mealGroupId!.isNotEmpty),
+        )
+        .length;
+    final thaliLoggedCount = legacyThaliCount + canonicalThaliCount;
 
     final unlocks = await _db.select(_db.achievementUnlocks).get();
     final unlockedMap = <String, DateTime>{
