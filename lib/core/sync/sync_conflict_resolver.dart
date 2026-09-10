@@ -26,19 +26,29 @@ class SyncConflictResult {
 class SyncConflictResolver {
   const SyncConflictResolver();
 
-  /// Synced tables inventory. Any table not in this set is strictly local-only or cache.
+  /// Synced tables inventory (audited 20 tables in AppDatabase).
+  /// Any table not in this set is strictly local-only or cache.
   static const Set<String> syncedTables = {
     'workout_sessions',
     'workout_sets',
     'exercises',
     'food_logs',
-    'foods',
-    'recipes',
-    'recipe_ingredients',
-    'body_weights',
-    'routine_plans',
+    'food_items',
+    'body_measurements',
+    'workout_routines',
     'routine_days',
     'routine_exercises',
+    'meal_templates',
+    'meal_template_items',
+    'nutrition_recipes',
+    'nutrition_recipe_versions',
+    'nutrition_recipe_ingredients',
+    'nutrition_goal_versions',
+    'equipment_profiles',
+    'equipment_profile_items',
+    'user_profiles',
+    'user_settings',
+    'achievement_unlocks',
   };
 
   /// Strictly excluded local-only and cache tables.
@@ -47,10 +57,78 @@ class SyncConflictResolver {
     'notification_schedules',
     'remote_catalog_cache',
     'barcode_cache',
+    'training_plan_settings',
   };
+
+  /// Explicit syncable preferences allowlist (cross-device user preferences & goals).
+  static const Set<String> syncableSettingsAllowlist = {
+    'display_units',
+    'user_theme_mode',
+    'water_goal',
+    'water_glass_size',
+    'pref_hydration_daily_goal_ml',
+    'streak_freezes_count',
+    'pref_streak_freeze_count',
+  };
+
+  /// Strictly excluded device-local settings and state keys.
+  static const Set<String> deviceLocalSettingsDenylist = {
+    'pref_crash_reporting_enabled',
+    'pref_offline_only',
+    'offline_only',
+    'onboarding_completed',
+    'onboarding_skipped',
+    'water_logged',
+    'water_last_logged_date',
+    'auto_sync_health_on_open',
+    'health_last_sync_time',
+    'user_streak_count',
+    'last_streak_date',
+    'last_freeze_claimed_at',
+    'weekly_action_type',
+    'weekly_action_text',
+    'weekly_action_target',
+    'weekly_action_target_date',
+    'indifit_auto_backup_device_secret_v1',
+  };
+
+  /// Prefixes that denote device-local notification schedules, cursors, or transient sessions.
+  static const List<String> deviceLocalSettingsPrefixes = [
+    'pref_remind_',
+    'prefRemind',
+    'pref_quiet_hours_',
+    'prefQuietHours',
+    'pref_workout_reminder_',
+    'pref_lunch_reminder_',
+    'pref_dinner_reminder_',
+    'pref_water_reminder_',
+    'pref_daily_logging_reminder_',
+    'pref_weekly_progress_',
+    'workout_reminder_',
+    'sync_last_synced_hlc_',
+    'sync_last_sync_timestamp_',
+    'draft_',
+    'session_',
+    'handoff_',
+    'rest_presence_',
+    'celebration_',
+  ];
 
   /// Returns whether a given table name is registered for multi-device synchronization.
   static bool isTableSynced(String tableName) => syncedTables.contains(tableName);
+
+  /// Returns whether a setting key is permitted to synchronize cross-device.
+  static bool isSettingKeySyncable(String key) {
+    if (!syncableSettingsAllowlist.contains(key)) return false;
+    if (deviceLocalSettingsDenylist.contains(key)) return false;
+    for (final prefix in deviceLocalSettingsPrefixes) {
+      if (key.startsWith(prefix)) return false;
+    }
+    return true;
+  }
+
+  /// Identifies bundled offline starter plans by deterministic ID prefix.
+  static bool isCatalogProgramId(String id) => id.startsWith('offline-starter::');
 
   /// Returns whether the domain represents immutable append-only evidence (workouts, weights).
   static bool isAppendOnlyEvidence(SyncDomain domain) {

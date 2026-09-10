@@ -4,7 +4,11 @@ import 'package:indifit/core/sync/hlc_timestamp.dart';
 import 'package:indifit/core/sync/sync_conflict_resolver.dart';
 import 'package:indifit/core/sync/sync_mutation.dart';
 
+import 'support/indifit_test_harness.dart';
+
 void main() {
+  initializeIndiFitTestHarness();
+
   group('PV1-SYNC-01A: Multi-Device Sync Specification & Contracts', () {
     group('Hybrid Logical Clocks (HLC)', () {
       test('HlcTimestamp implements strict total ordering', () {
@@ -159,19 +163,56 @@ void main() {
     });
 
     group('Entity Inventory & Boundary Enforcement', () {
-      test('Identifies core fitness records as synchronized tables', () {
-        expect(SyncConflictResolver.isTableSynced('workout_sessions'), isTrue);
-        expect(SyncConflictResolver.isTableSynced('workout_sets'), isTrue);
-        expect(SyncConflictResolver.isTableSynced('food_logs'), isTrue);
-        expect(SyncConflictResolver.isTableSynced('body_weights'), isTrue);
-        expect(SyncConflictResolver.isTableSynced('recipes'), isTrue);
+      test('100% of syncedTables map to actual generated Drift tables in AppDatabase', () {
+        final scope = registerTestDatabaseScope();
+        final db = scope.create();
+        final allDbTableNames = db.allTables.map((t) => t.actualTableName).toSet();
+
+        expect(SyncConflictResolver.syncedTables.length, equals(20));
+        for (final table in SyncConflictResolver.syncedTables) {
+          expect(
+            allDbTableNames.contains(table),
+            isTrue,
+            reason: 'Synced table "$table" must exist in AppDatabase.allTables',
+          );
+        }
       });
 
-      test('Identifies internal queues, alarms, and caches as strictly local-only', () {
+      test('Identifies all 20 audited tables as synchronized', () {
+        final expectedTables = [
+          'workout_sessions',
+          'workout_sets',
+          'exercises',
+          'food_logs',
+          'food_items',
+          'body_measurements',
+          'workout_routines',
+          'routine_days',
+          'routine_exercises',
+          'meal_templates',
+          'meal_template_items',
+          'nutrition_recipes',
+          'nutrition_recipe_versions',
+          'nutrition_recipe_ingredients',
+          'nutrition_goal_versions',
+          'equipment_profiles',
+          'equipment_profile_items',
+          'user_profiles',
+          'user_settings',
+          'achievement_unlocks',
+        ];
+
+        for (final table in expectedTables) {
+          expect(SyncConflictResolver.isTableSynced(table), isTrue, reason: table);
+        }
+      });
+
+      test('Identifies internal queues, alarms, and local-only singleton tables as unsynced', () {
         expect(SyncConflictResolver.isTableSynced('outbox_operations'), isFalse);
         expect(SyncConflictResolver.isTableSynced('notification_schedules'), isFalse);
         expect(SyncConflictResolver.isTableSynced('remote_catalog_cache'), isFalse);
         expect(SyncConflictResolver.isTableSynced('barcode_cache'), isFalse);
+        expect(SyncConflictResolver.isTableSynced('training_plan_settings'), isFalse);
       });
 
       test('Correctly classifies append-only historical evidence domains', () {
@@ -179,6 +220,51 @@ void main() {
         expect(SyncConflictResolver.isAppendOnlyEvidence(SyncDomain.weights), isTrue);
         expect(SyncConflictResolver.isAppendOnlyEvidence(SyncDomain.nutritionLogs), isFalse);
         expect(SyncConflictResolver.isAppendOnlyEvidence(SyncDomain.preferences), isFalse);
+      });
+
+      test('Enforces exact 7-key settings allowlist and rejects device-local keys', () {
+        // 7 allowlisted keys
+        expect(SyncConflictResolver.isSettingKeySyncable('display_units'), isTrue);
+        expect(SyncConflictResolver.isSettingKeySyncable('user_theme_mode'), isTrue);
+        expect(SyncConflictResolver.isSettingKeySyncable('water_goal'), isTrue);
+        expect(SyncConflictResolver.isSettingKeySyncable('water_glass_size'), isTrue);
+        expect(SyncConflictResolver.isSettingKeySyncable('pref_hydration_daily_goal_ml'), isTrue);
+        expect(SyncConflictResolver.isSettingKeySyncable('streak_freezes_count'), isTrue);
+        expect(SyncConflictResolver.isSettingKeySyncable('pref_streak_freeze_count'), isTrue);
+
+        // Fictional keys dropped
+        expect(SyncConflictResolver.isSettingKeySyncable('weight_unit'), isFalse);
+        expect(SyncConflictResolver.isSettingKeySyncable('distance_unit'), isFalse);
+        expect(SyncConflictResolver.isSettingKeySyncable('height_unit'), isFalse);
+        expect(SyncConflictResolver.isSettingKeySyncable('theme_mode'), isFalse);
+        expect(SyncConflictResolver.isSettingKeySyncable('default_equipment_profile_id'), isFalse);
+
+        // Reminders & quiet hours
+        expect(SyncConflictResolver.isSettingKeySyncable('prefRemindWorkout'), isFalse);
+        expect(SyncConflictResolver.isSettingKeySyncable('pref_remind_meals'), isFalse);
+        expect(SyncConflictResolver.isSettingKeySyncable('prefQuietHoursStart'), isFalse);
+        expect(SyncConflictResolver.isSettingKeySyncable('pref_daily_logging_reminder_hour'), isFalse);
+        expect(SyncConflictResolver.isSettingKeySyncable('workout_reminder_days'), isFalse);
+
+        // Ephemeral today-surface state
+        expect(SyncConflictResolver.isSettingKeySyncable('water_logged'), isFalse);
+        expect(SyncConflictResolver.isSettingKeySyncable('water_last_logged_date'), isFalse);
+        expect(SyncConflictResolver.isSettingKeySyncable('weekly_action_type'), isFalse);
+        expect(SyncConflictResolver.isSettingKeySyncable('auto_sync_health_on_open'), isFalse);
+
+        // System & secrets
+        expect(SyncConflictResolver.isSettingKeySyncable('offline_only'), isFalse);
+        expect(SyncConflictResolver.isSettingKeySyncable('pref_crash_reporting_enabled'), isFalse);
+        expect(SyncConflictResolver.isSettingKeySyncable('onboarding_completed'), isFalse);
+        expect(SyncConflictResolver.isSettingKeySyncable('indifit_auto_backup_device_secret_v1'), isFalse);
+        expect(SyncConflictResolver.isSettingKeySyncable('sync_last_synced_hlc_workouts'), isFalse);
+      });
+
+      test('Catalog program identifier discriminates bundled starter plans from user programs', () {
+        expect(SyncConflictResolver.isCatalogProgramId('offline-starter::beginner-full-body-3-day'), isTrue);
+        expect(SyncConflictResolver.isCatalogProgramId('offline-starter::strength-foundation-3-day'), isTrue);
+        expect(SyncConflictResolver.isCatalogProgramId('user-program-uuid-12345'), isFalse);
+        expect(SyncConflictResolver.isCatalogProgramId('legacy-program:42'), isFalse);
       });
 
       test('SyncTombstone enforces 30-day retention before expiration', () {
