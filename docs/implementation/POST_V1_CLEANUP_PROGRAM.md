@@ -317,6 +317,14 @@ Do not combine these subphases.
 
 ### C3B — Feature-owned providers
 
+**Status:** Complete. Decomposed `lib/core/di/providers.dart` (1,110 → 14 lines)
+into 6 domain modules (`core_providers.dart`, `nutrition_providers.dart`,
+`training_providers.dart`, `workout_player_providers.dart`,
+`coaching_providers.dart`, `hydration_providers.dart`) while preserving
+provider identities, lifetimes, and re-exporting through `providers.dart`.
+Import-direction rule strictly enforced (zero domain imports of `providers.dart`).
+Verified with 0 analyzer issues and all test suites passing.
+
 - Inventory all 79 central providers with type, identity, lifetime, overrides,
   dependencies, invalidation, and consumers.
 - Move the same provider objects into feature-owned modules; do not recreate
@@ -426,6 +434,13 @@ and onboarding redirects are synchronous; characterize them and preserve the
 accepted behavior.
 
 ## 12. C6 — Backend modularization
+
+**Status:** Complete. Decomposed `backend/main.py` (1,057 → 76 lines) into modular
+packages (`backend/core/`, `backend/schemas/`, `backend/services/`, and
+`backend/routers/`) with an application factory (`create_app()`), CORS
+middleware, and full test backward-compatibility re-exports.
+Rebinding tripwire enforced (state dicts mutated in-place only).
+Verified with all 30 backend pytest tests passing in 0.88s.
 
 Refactor `backend/main.py` while preserving every endpoint, request/response
 field, status code, error, fallback, auth, privacy, and rate-limit contract.
