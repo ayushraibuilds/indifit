@@ -125,36 +125,39 @@ void main() {
   });
 
   group('Startup first-frame classification', () {
-    final mainSource = File('lib/main.dart').readAsStringSync();
-    final preRunAppSource = mainSource.substring(
-      0,
-      mainSource.indexOf('class IndiFitApp'),
-    );
+    final bootstrapFile = File('lib/app/bootstrap.dart');
+    final appFile = File('lib/app/indifit_app.dart');
+    final bootstrapSource = bootstrapFile.existsSync()
+        ? bootstrapFile.readAsStringSync()
+        : File('lib/main.dart').readAsStringSync();
+    final appSource = appFile.existsSync()
+        ? appFile.readAsStringSync()
+        : File('lib/main.dart').readAsStringSync();
 
     test('reminder scheduling and auto-backup do not block runApp', () {
       // They must be invoked from the post-frame bootstrap, not awaited in
-      // main() before runApp.
+      // main() / bootstrap() before runApp.
       expect(
-        preRunAppSource.contains(
+        bootstrapSource.contains(
           'await NotificationService.scheduleAllReminders',
         ),
         isFalse,
       );
       expect(
-        mainSource.contains('AutoBackupService.performBackup'),
+        appSource.contains('AutoBackupService.performBackup'),
         isTrue,
         reason: 'post-frame bootstrap should run the auto-backup check',
       );
       expect(
-        mainSource.contains('addPostFrameCallback'),
+        appSource.contains('addPostFrameCallback'),
         isTrue,
         reason: 'a post-frame bootstrap must exist',
       );
     });
 
     test('Sentry keeps wrapping runApp (documented correct integration)', () {
-      final runAppIndex = mainSource.indexOf('runApp(');
-      final sentryIndex = mainSource.indexOf(
+      final runAppIndex = bootstrapSource.indexOf('runApp(');
+      final sentryIndex = bootstrapSource.indexOf(
         'CrashReportingService.initialize',
       );
       expect(sentryIndex, greaterThanOrEqualTo(0));
