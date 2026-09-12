@@ -10,40 +10,39 @@ import 'support/indifit_test_harness.dart';
 void main() {
   initializeIndiFitTestHarness();
 
+  // Canonical declared routes in modular concatenation order (coreRoutes,
+  // nutritionRoutes, trainingRoutes, workoutPlayerRoutes).
+  // Order sensitivity only constrains ambiguous sibling pairs (e.g. static
+  // paths before parameter segments like /workout-history before
+  // /workout-history/:sessionId, and /plan-library before
+  // /plan-library/:programId), which are preserved within each feature family.
   const declaredPaths = <String>[
+    // Core routes (8)
     '/',
     '/onboarding',
-    '/routine-wizard',
-    '/workout',
-    '/training',
-    '/progress',
-    '/workouts',
-    '/exercises',
-    '/food',
-    '/food/ai',
-    '/food/estimate-review',
-    '/food/recipes/edit',
     '/settings',
     '/profile',
     '/settings/profile',
     '/learn',
     '/health-hub',
+    '/progress',
+    // Nutrition routes (9)
+    '/food',
+    '/food/ai',
+    '/food/estimate-review',
+    '/food/recipes/edit',
+    '/food/thali',
     '/settings/household-measures',
     '/settings/dietary-constraints',
     '/settings/dietary-constraints/review',
     '/meal-planner',
-    '/achievements',
-    '/routine-editor',
-    '/weekly-report',
-    '/workout-player',
-    '/workout-summary',
-    '/b02-strength-player',
-    '/b02-strength-summary',
+    // Training routes (16)
+    '/training',
+    '/workouts',
+    '/exercises',
     '/workout-history',
     '/workout-history/:sessionId',
     '/activity-history/:sessionId',
-    '/quick-workout',
-    '/activity-create',
     '/program-author',
     '/program-review/:versionId',
     '/calendar',
@@ -54,9 +53,21 @@ void main() {
     '/equipment-profile-editor',
     '/exercise-preference-editor',
     '/travel-mode',
+    // Workout player routes (11)
+    '/routine-wizard',
+    '/workout',
+    '/routine-editor',
+    '/weekly-report',
+    '/workout-player',
+    '/workout-summary',
+    '/b02-strength-player',
+    '/b02-strength-summary',
+    '/quick-workout',
+    '/activity-create',
+    '/achievements',
   ];
 
-  test('root router exposes the frozen 43-path contract in order', () {
+  test('root router exposes the canonical 44-path contract in order', () {
     final container = ProviderContainer(
       overrides: [onboardingCompletedProvider.overrideWith((ref) => true)],
     );
