@@ -748,7 +748,6 @@ void main() {
       'empty state renders clean landing message when no history exists',
       (tester) async {
         final harness = await _D3TestHarness.create();
-        await tester.runAsync(harness.close);
         addTearDown(() async {
           await tester.pumpWidget(const SizedBox.shrink());
           await tester.pump();

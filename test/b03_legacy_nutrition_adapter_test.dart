@@ -19,6 +19,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late AppDatabase db;
+  AppDatabase? restored;
   late NutrientRegistry registry;
   late NutritionLegacyAdapter adapter;
   late TestDatabaseScope databases;
@@ -26,10 +27,20 @@ void main() {
   setUp(() {
     databases = registerTestDatabaseScope();
     db = databases.create();
+    restored = null;
     registry = NutrientRegistry.fromAssetFileSync(
       'assets/data/nutrient_registry.json',
     );
     adapter = NutritionLegacyAdapter(db: db, registry: registry);
+  });
+
+  tearDown(() async {
+    if (restored != null) {
+      await restored!.close();
+      restored = null;
+    }
+    await db.close();
+    await databases.close();
   });
 
   test(
@@ -484,13 +495,18 @@ void main() {
               ).readAsStringSync(),
             )
             as Map<String, dynamic>;
-    final restored = databases.create();
-    await BackupV8Data.fromJson(fixture).restoreToDatabase(restored);
-    final restoredAdapter = NutritionLegacyAdapter(
-      db: restored,
-      registry: registry,
-    );
-    expect(await restoredAdapter.readFoodLogs(), hasLength(3));
+    restored = databases.create();
+    try {
+      await BackupV8Data.fromJson(fixture).restoreToDatabase(restored!);
+      final restoredAdapter = NutritionLegacyAdapter(
+        db: restored!,
+        registry: registry,
+      );
+      expect(await restoredAdapter.readFoodLogs(), hasLength(3));
+    } finally {
+      await restored!.close();
+      restored = null;
+    }
   });
 }
 

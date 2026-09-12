@@ -36,6 +36,7 @@ void main() {
       'Dietary needs & preferences',
       'Household measures',
       'Regional foods',
+      'Diary structure',
     ]);
     await _expectSettingsSection(tester, 'Training preferences', [
       'Training preferences',
