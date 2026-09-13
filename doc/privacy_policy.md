@@ -13,7 +13,7 @@ IndiFit ("we", "our", or "us") is an offline-first workout and nutrition applica
 - **No IndiFit account or cloud sync:** V1 does not provide an IndiFit account, remote user database, or cloud-sync service.
 - **Automatic recovery copies:** IndiFit creates rolling JSON recovery copies in its application Documents area. Depending on your operating-system and device-backup settings, application files may be included in a device backup.
 
-IndiFit V1 does not upload your food logs, workout history, body measurements, meal photos, or health records to a generative-AI service.
+IndiFit does not upload your workout history, body measurements, or health records to a cloud service. Connected nutrition tools (nutrition label scanning and natural-language meal parsing) process queries and label images ephemerally over encrypted connections when you choose to use them; label images are deleted immediately after OCR extraction and are never retained on remote servers.
 
 ---
 
@@ -22,6 +22,7 @@ IndiFit V1 does not upload your food logs, workout history, body measurements, m
 Core logging and review features work offline. When Offline Mode is off, these optional features may connect to external services:
 
 - **Open Food Facts:** If you deliberately use online food search or scan a packaged-food barcode, IndiFit sends the search text or barcode needed to request product information from Open Food Facts. IndiFit does not attach an IndiFit backend credential or your local logs to that request.
+- **Nutrition-Label OCR & Natural-Language Meal Logging:** When you choose to scan a nutrition facts label or describe a meal in natural text, IndiFit securely sends the label image or text query to extract structured nutrition facts. Label images are processed ephemerally and deleted immediately. All suggestions require explicit user review and confirmation before logging.
 - **Crash diagnostics:** If you affirmatively enable crash diagnostics, technical error information may be sent to our diagnostics provider. See section 4.
 
 Turning on Offline Mode blocks app-initiated online food lookups and crash diagnostics.

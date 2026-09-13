@@ -18,6 +18,8 @@ import '../../features/food_log/meal_presentation_registry.dart';
 import '../../features/food_log/nutrition_estimate_review_screen.dart';
 import '../../features/food_log/nutrition_recipe_editor_screen.dart';
 import '../../features/food_log/thali/thali_builder_screen.dart';
+import '../../features/nutrition_ai/natural_language_meal_screen.dart';
+import '../../features/nutrition_ai/nutrition_label_ocr_screen.dart';
 import '../../features/onboarding/onboarding_screen.dart';
 import '../../features/profile/profile_screen.dart';
 import '../../features/program_authoring/program_author_screen.dart';

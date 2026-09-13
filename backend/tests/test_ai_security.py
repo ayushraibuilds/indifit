@@ -72,6 +72,14 @@ class AiRouteSecurityTests(unittest.TestCase):
                     "adherence_score": 85,
                 },
             },
+            "/api/ai/nutrition-label-ocr": {
+                "files": {
+                    "image": ("label.jpg", b"test-label-image", "image/jpeg"),
+                },
+            },
+            "/api/ai/meal-decompose": {
+                "json": {"text": "2 rotis and 1 katori dal tadka"},
+            },
         }
 
     def test_health_and_root_are_public(self):
@@ -285,6 +293,68 @@ class AiRouteSecurityTests(unittest.TestCase):
         self.assertIn("coaching_tip", data)
         self.assertTrue(data.get("is_fallback"))
         self.assertIn("2026-07-22 to 2026-07-28", data["summary"])
+
+    def test_nutrition_label_ocr_features(self):
+        invalid_type = self.client.post(
+            "/api/ai/nutrition-label-ocr",
+            headers=self.valid_headers,
+            files={"image": ("label.pdf", b"pdf-content", "application/pdf")},
+        )
+        self.assertEqual(invalid_type.status_code, 415)
+
+        oversized = self.client.post(
+            "/api/ai/nutrition-label-ocr",
+            headers=self.valid_headers,
+            files={"image": ("label.jpg", b"x" * (5 * 1024 * 1024 + 1), "image/jpeg")},
+        )
+        self.assertEqual(oversized.status_code, 413)
+
+        success = self.client.post(
+            "/api/ai/nutrition-label-ocr",
+            headers=self.valid_headers,
+            files={"image": ("label.png", b"png-bytes", "image/png")},
+        )
+        self.assertEqual(success.status_code, 200)
+        data = success.json()
+        self.assertTrue(data.get("is_fallback"))
+        self.assertIn("nutrients", data)
+        self.assertIn("calories", data["nutrients"])
+        self.assertIn("protein", data["nutrients"])
+        self.assertIn("basis", data)
+        self.assertIn(data["basis"], {"per_serving", "per_100g"})
+
+    def test_meal_decompose_features(self):
+        empty = self.client.post(
+            "/api/ai/meal-decompose",
+            headers=self.valid_headers,
+            json={"text": "   "},
+        )
+        self.assertEqual(empty.status_code, 422)
+
+        oversized = self.client.post(
+            "/api/ai/meal-decompose",
+            headers=self.valid_headers,
+            json={"text": "a" * 501},
+        )
+        self.assertEqual(oversized.status_code, 422)
+
+        success = self.client.post(
+            "/api/ai/meal-decompose",
+            headers=self.valid_headers,
+            json={"text": "2 rotis and 1 katori dal tadka"},
+        )
+        self.assertEqual(success.status_code, 200)
+        data = success.json()
+        self.assertTrue(data.get("is_fallback"))
+        self.assertIn("items", data)
+        self.assertTrue(len(data["items"]) >= 1)
+        self.assertTrue(data["total_calories"] > 0)
+        first_item = data["items"][0]
+        self.assertIn("food_name", first_item)
+        self.assertIn("quantity_amount", first_item)
+        self.assertIn("quantity_unit", first_item)
+        self.assertIn("estimated_calories", first_item)
+        self.assertIn("confidence", first_item)
 
 
 if __name__ == "__main__":

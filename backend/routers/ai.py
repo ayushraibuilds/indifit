@@ -12,15 +12,19 @@ import httpx
 from backend.core.config import AI_MODEL, get_gemini_api_key
 from backend.core.security import enforce_rate_limit, verify_api_key
 from backend.schemas.ai import (
+    MealDecompositionResponse,
     MealPlanRequest,
+    NutritionLabelOcrResponse,
     RoutineRequest,
     TextMealRequest,
     WeeklyReportRequest,
 )
 from backend.services import gemini_client
 from backend.services.ai_fallbacks import (
+    _mock_meal_decomposition,
     _mock_meal_estimate,
     _mock_meal_plan,
+    _mock_nutrition_label_ocr,
     _mock_routine,
     _mock_weekly_report,
 )
@@ -251,3 +255,95 @@ async def generate_weekly_report(req: WeeklyReportRequest):
         raise
     except Exception as e:
         return _mock_weekly_report(req, str(e))
+
+
+@ai_router.post("/nutrition-label-ocr", response_model=NutritionLabelOcrResponse)
+async def ocr_nutrition_label(image: UploadFile = File(...)):
+    prompt = """
+    Act as an expert computer vision system and clinical dietitian specializing in nutrition facts labels (including Indian FSSAI mandatory per 100g / per serving formats and FDA / international labels).
+    Extract the following information from this nutrition facts label image:
+    - "product_name": name of the food product if visible on package, else null
+    - "brand_name": brand if visible, else null
+    - "serving_size_amount": numeric amount for a serving if stated (e.g. 30.0), else null
+    - "serving_size_unit": unit for serving size (e.g. "g", "ml", "biscuit", "pieces"), else null
+    - "serving_description": full serving description if stated (e.g. "2 biscuits (30g)"), else null
+    - "servings_per_container": numeric count of servings in package if stated, else null
+    - "basis": "per_serving" if values in the primary nutrient column are per serving, or "per_100g" if values are per 100g/100ml. Defaults to "per_100g" for Indian labels when 100g column is present.
+    - "nutrients": a dictionary of nutrient objects where each key is one of: "calories", "protein", "carbs", "fat", "fiber", "sugar", "sodium", "cholesterol", "saturated_fat", "trans_fat".
+      Each nutrient object MUST have:
+      - "value": numeric float (or null if not stated/unreadable)
+      - "unit": string ("kcal" for calories, "mg" for sodium/cholesterol, "g" for macros)
+      - "confidence": "high" if clearly legible, "medium" if partially obscured/inferred, "low" if uncertain
+      - "notes": string or null
+    - "raw_text": all extracted label text
+
+    Return STRICTLY a JSON object matching this schema. Do not include markdown code fences or conversational text.
+    """
+
+    try:
+        mime_type = image.content_type or "image/jpeg"
+        if mime_type not in {"image/jpeg", "image/jpg", "image/png", "image/webp"}:
+            raise HTTPException(
+                status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+                detail="Invalid image MIME type. Allowed: JPEG, PNG, WebP.",
+            )
+
+        image_bytes = await image.read()
+        if len(image_bytes) > 5 * 1024 * 1024:
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail="File size exceeds maximum upload limit of 5 MB.",
+            )
+
+        if not get_gemini_api_key():
+            return _mock_nutrition_label_ocr(reason="Missing GEMINI_API_KEY env variable")
+
+        query_vision = _get_query_gemini_vision()
+        result = await query_vision(prompt, image_bytes, mime_type)
+        data = json.loads(result)
+        data["is_fallback"] = False
+        return data
+    except HTTPException:
+        raise
+    except Exception as e:
+        return _mock_nutrition_label_ocr(reason=str(e))
+
+
+@ai_router.post("/meal-decompose", response_model=MealDecompositionResponse)
+async def decompose_meal(req: TextMealRequest):
+    prompt = f"""
+    Act as an expert Indian nutritionist and food analyzer. Decompose the following user meal description into discrete individual food items:
+    "{req.text}"
+
+    For each individual food item identified:
+    1. "raw_segment": the exact fragment from the user text (e.g. "2 rotis", "1 katori dal tadka")
+    2. "food_name": canonical search term suitable for looking up in an Indian food composition database (e.g. "Roti", "Dal Tadka", "Paneer Bhurji", "Curd", "Boiled Egg")
+    3. "quantity_amount": numeric amount (e.g. 2.0, 1.0, 100.0)
+    4. "quantity_unit": canonical measure ("roti", "katori", "bowl", "cup", "plate", "g", "ml", "piece", "serving")
+    5. "estimated_calories": integer kcal
+    6. "estimated_protein": float grams
+    7. "estimated_carbs": float grams
+    8. "estimated_fat": float grams
+    9. "confidence": "high", "medium", or "low" based on specificity of quantity and preparation
+
+    Return a JSON object with:
+    - "query": "{req.text}"
+    - "items": list of food items
+    - "total_calories": sum of estimated calories across all items
+
+    Return STRICTLY a JSON object matching this schema. Do not include markdown code fences or conversational text.
+    """
+
+    try:
+        if not get_gemini_api_key():
+            return _mock_meal_decomposition(req.text, reason="Missing GEMINI_API_KEY env variable")
+
+        query_text = _get_query_gemini_text()
+        result = await query_text(prompt, json_mode=True)
+        data = json.loads(result)
+        data["is_fallback"] = False
+        return data
+    except HTTPException:
+        raise
+    except Exception as e:
+        return _mock_meal_decomposition(req.text, reason=str(e))

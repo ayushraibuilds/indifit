@@ -2,12 +2,10 @@ import 'package:flutter/foundation.dart';
 
 /// Centralized app configuration for environment-specific variables.
 class AppConfig {
-  /// R09-A product contract: V1 ships without connected AI features.
-  ///
-  /// The legacy client and backend remain in the repository for deliberate
-  /// post-V1 redesign work, but production V1 surfaces must not authorize or
-  /// depend on them.
-  static const bool connectedAiEnabled = false;
+  /// Post-V1 connected capability contract: IndiFit supports reviewable
+  /// connected intelligence (nutrition-label OCR, meal parsing) while
+  /// keeping the local database core fully functional offline.
+  static const bool connectedAiEnabled = true;
 
   /// The base URL for the backend API (FastAPI AI router).
   /// Can be overridden during compilation using:

@@ -45,7 +45,7 @@ void main() {
         const MaterialApp(home: Scaffold(body: PrivacyDisclosureCard())),
       );
       expect(
-        find.textContaining('does not send your logs or photos'),
+        find.textContaining('process photos ephemerally and never retain them'),
         findsOneWidget,
       );
       expect(find.textContaining('send text or photo queries'), findsNothing);

@@ -28,6 +28,20 @@ final nutritionRoutes = <RouteBase>[
     },
   ),
   GoRoute(
+    path: '/food/label-ocr',
+    builder: (context, state) => NutritionLabelOcrScreen(
+      mealType: state.uri.queryParameters['mealType'],
+      date: state.uri.queryParameters['date'],
+    ),
+  ),
+  GoRoute(
+    path: '/food/describe',
+    builder: (context, state) => NaturalLanguageMealScreen(
+      mealType: state.uri.queryParameters['mealType'],
+      date: state.uri.queryParameters['date'],
+    ),
+  ),
+  GoRoute(
     path: '/food/recipes/edit',
     builder: (context, state) => NutritionRecipeEditorScreen(
       recipeId: state.uri.queryParameters['recipeId'],

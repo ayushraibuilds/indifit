@@ -27,7 +27,9 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>IndiFit uses the camera only when you choose to scan a food barcode.</string>
+	<string>IndiFit uses the camera to scan food barcodes and nutrition labels.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>IndiFit allows choosing an image of a nutrition label to extract nutrition facts.</string>
 	<key>NSHealthShareUsageDescription</key>
 	<string>IndiFit reads only the Health categories you allow: steps, active energy, sleep sessions, resting heart rate, and activity sessions.</string>
 	<key>NSHealthUpdateUsageDescription</key>

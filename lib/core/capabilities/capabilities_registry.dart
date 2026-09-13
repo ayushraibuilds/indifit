@@ -6,6 +6,8 @@ library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../config/app_config.dart';
+import '../privacy/privacy_policy.dart';
 import 'account_capability.dart';
 import 'ai_assistance_capability.dart';
 import 'analytics_capability.dart';
@@ -71,6 +73,11 @@ final contentDownloadCapabilityProvider =
 
 /// AI assistance capability provider.
 final aiAssistanceCapabilityProvider = Provider<AiAssistanceCapability>((ref) {
+  if (AppConfig.connectedAiEnabled) {
+    return ConnectedAiAssistanceCapability(
+      isAllowed: () => ref.watch(privacyPolicyProvider).isAiAllowed,
+    );
+  }
   return const DisabledAiAssistanceCapability();
 });
 

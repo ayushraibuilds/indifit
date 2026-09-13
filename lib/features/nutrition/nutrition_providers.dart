@@ -10,6 +10,7 @@ import '../../core/nutrients.dart';
 import '../../core/nutrition_calculation_service.dart';
 import '../../core/nutrition_household_measures.dart';
 import '../../core/privacy/nutrition_estimate_privacy.dart';
+import '../../core/privacy/privacy_policy.dart';
 import '../../data/models/b04_goal_models.dart';
 import '../../data/repositories/nutrition_constraint_repository.dart';
 import '../../data/repositories/nutrition_consumption_repository.dart';
@@ -28,6 +29,9 @@ import '../../data/repositories/nutrition_transformation_repository.dart';
 import '../food_log/nutrition_estimate_review_controller.dart';
 import '../food_log/nutrition_thali_controller.dart';
 import '../food_log/saved_recipe_log_controller.dart';
+import '../nutrition_ai/natural_language_meal_service.dart';
+import '../nutrition_ai/nutrition_ai_controllers.dart';
+import '../nutrition_ai/nutrition_label_ocr_service.dart';
 import '../settings/nutrition_constraint_review_controller.dart';
 import '../settings/nutrition_constraints_controller.dart';
 import 'protein_distribution_controller.dart';
@@ -330,3 +334,45 @@ final savedRecipeLogControllerProvider =
       unawaited(controller.loadRecipes());
       return controller;
     });
+
+final nutritionLabelOcrServiceProvider = Provider<NutritionLabelOcrService>((ref) {
+  return NutritionLabelOcrService(
+    dio: ref.watch(dioProvider),
+    privacyService: ref.watch(nutritionEstimatePrivacyServiceProvider),
+    policy: () => ref.watch(privacyPolicyProvider),
+  );
+});
+
+final naturalLanguageMealServiceProvider = FutureProvider<NaturalLanguageMealService>((ref) async {
+  return NaturalLanguageMealService(
+    dio: ref.watch(dioProvider),
+    catalog: await ref.watch(nutritionFoodCatalogRepositoryProvider.future),
+    policy: () => ref.watch(privacyPolicyProvider),
+  );
+});
+
+final nutritionLabelOcrControllerProvider = StateNotifierProvider.autoDispose<
+  NutritionLabelOcrController,
+  NutritionLabelOcrState
+>((ref) {
+  return NutritionLabelOcrController(
+    ocrService: ref.watch(nutritionLabelOcrServiceProvider),
+    catalogRepository: () => ref.read(nutritionFoodCatalogRepositoryProvider.future),
+    loggingCoordinator: () => ref.read(nutritionFoodLoggingCoordinatorProvider.future),
+    userId: kLocalNutritionUserScopeId,
+    timezoneId: () => ref.read(localTimezoneServiceProvider).currentTimezoneId(),
+  );
+});
+
+final naturalLanguageMealControllerProvider = StateNotifierProvider.autoDispose<
+  NaturalLanguageMealController,
+  NaturalLanguageMealState
+>((ref) {
+  return NaturalLanguageMealController(
+    mealService: () => ref.read(naturalLanguageMealServiceProvider.future),
+    catalogRepository: () => ref.read(nutritionFoodCatalogRepositoryProvider.future),
+    loggingCoordinator: () => ref.read(nutritionFoodLoggingCoordinatorProvider.future),
+    userId: kLocalNutritionUserScopeId,
+    timezoneId: () => ref.read(localTimezoneServiceProvider).currentTimezoneId(),
+  );
+});

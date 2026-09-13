@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
@@ -2147,6 +2148,34 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
           title: 'Scan barcode',
           detail: 'Find a packaged food by its barcode.',
           onTap: () => _openBarcode(context),
+        ),
+        _buildNavigationCard(
+          icon: Icons.document_scanner_rounded,
+          title: 'Scan nutrition label',
+          detail: 'Extract dual-basis facts directly from packaging.',
+          onTap: () {
+            final mealParam = widget.mealType != null ? '?mealType=${widget.mealType}' : '';
+            final dateParam = widget.selectedDate != null
+                ? (mealParam.isEmpty
+                    ? '?date=${widget.selectedDate!.toIso8601String().split('T').first}'
+                    : '&date=${widget.selectedDate!.toIso8601String().split('T').first}')
+                : '';
+            context.push('/food/label-ocr$mealParam$dateParam');
+          },
+        ),
+        _buildNavigationCard(
+          icon: Icons.auto_awesome_rounded,
+          title: 'Describe meal',
+          detail: 'Log multi-item meals with standard Indian portions.',
+          onTap: () {
+            final mealParam = widget.mealType != null ? '?mealType=${widget.mealType}' : '';
+            final dateParam = widget.selectedDate != null
+                ? (mealParam.isEmpty
+                    ? '?date=${widget.selectedDate!.toIso8601String().split('T').first}'
+                    : '&date=${widget.selectedDate!.toIso8601String().split('T').first}')
+                : '';
+            context.push('/food/describe$mealParam$dateParam');
+          },
         ),
         const SizedBox(height: 16),
         FoodLogEntriesPanel(

@@ -236,3 +236,135 @@ def _mock_weekly_report(req: WeeklyReportRequest, reason: str = ""):
         "is_fallback": True,
         "fallback_reason": reason,
     }
+
+
+def _mock_nutrition_label_ocr(reason: str = ""):
+    return {
+        "product_name": "Rolled Oats",
+        "brand_name": "True Elements",
+        "serving_size_amount": 40.0,
+        "serving_size_unit": "g",
+        "serving_description": "1/2 cup (40g)",
+        "servings_per_container": 12.5,
+        "basis": "per_100g",
+        "nutrients": {
+            "calories": {
+                "value": 389.0,
+                "unit": "kcal",
+                "confidence": "high",
+                "notes": "Energy",
+            },
+            "protein": {
+                "value": 13.5,
+                "unit": "g",
+                "confidence": "high",
+                "notes": "Protein",
+            },
+            "carbs": {
+                "value": 66.3,
+                "unit": "g",
+                "confidence": "high",
+                "notes": "Carbohydrates",
+            },
+            "fat": {
+                "value": 6.9,
+                "unit": "g",
+                "confidence": "high",
+                "notes": "Total Fat",
+            },
+            "fiber": {
+                "value": 10.0,
+                "unit": "g",
+                "confidence": "medium",
+                "notes": "Dietary Fiber",
+            },
+            "sodium": {
+                "value": 4.0,
+                "unit": "mg",
+                "confidence": "medium",
+                "notes": "Sodium",
+            },
+        },
+        "raw_text": "Nutrition Facts Per 100g: Energy 389 kcal, Protein 13.5g, Carbs 66.3g, Fat 6.9g",
+        "is_fallback": True,
+        "fallback_reason": reason,
+    }
+
+
+def _mock_meal_decomposition(text: str, reason: str = ""):
+    text_lower = text.lower()
+    items = []
+
+    if "roti" in text_lower or "chapati" in text_lower:
+        items.append({
+            "raw_segment": "2 rotis" if "2" in text_lower else "1 roti",
+            "food_name": "Whole Wheat Roti",
+            "quantity_amount": 2.0 if "2" in text_lower else 1.0,
+            "quantity_unit": "roti",
+            "estimated_calories": 160 if "2" in text_lower else 80,
+            "estimated_protein": 5.0 if "2" in text_lower else 2.5,
+            "estimated_carbs": 30.0 if "2" in text_lower else 15.0,
+            "estimated_fat": 1.6 if "2" in text_lower else 0.8,
+            "confidence": "high",
+        })
+
+    if "dal" in text_lower or "tadka" in text_lower:
+        items.append({
+            "raw_segment": "1 katori dal tadka",
+            "food_name": "Yellow Dal Tadka",
+            "quantity_amount": 1.0,
+            "quantity_unit": "katori",
+            "estimated_calories": 150,
+            "estimated_protein": 7.5,
+            "estimated_carbs": 21.0,
+            "estimated_fat": 4.2,
+            "confidence": "high",
+        })
+
+    if "paneer" in text_lower:
+        items.append({
+            "raw_segment": "100g paneer bhurji",
+            "food_name": "Paneer Bhurji",
+            "quantity_amount": 100.0,
+            "quantity_unit": "g",
+            "estimated_calories": 215,
+            "estimated_protein": 13.8,
+            "estimated_carbs": 4.5,
+            "estimated_fat": 16.2,
+            "confidence": "high",
+        })
+
+    if "curd" in text_lower or "dahi" in text_lower:
+        items.append({
+            "raw_segment": "1 small bowl curd",
+            "food_name": "Plain Curd (Dahi)",
+            "quantity_amount": 1.0,
+            "quantity_unit": "bowl",
+            "estimated_calories": 90,
+            "estimated_protein": 4.2,
+            "estimated_carbs": 5.8,
+            "estimated_fat": 5.0,
+            "confidence": "high",
+        })
+
+    if not items:
+        items.append({
+            "raw_segment": text.strip(),
+            "food_name": text.strip().title(),
+            "quantity_amount": 1.0,
+            "quantity_unit": "serving",
+            "estimated_calories": 320,
+            "estimated_protein": 8.0,
+            "estimated_carbs": 42.0,
+            "estimated_fat": 9.0,
+            "confidence": "medium",
+        })
+
+    total_cals = sum(item["estimated_calories"] for item in items)
+    return {
+        "query": text,
+        "items": items,
+        "total_calories": total_cals,
+        "is_fallback": True,
+        "fallback_reason": reason,
+    }

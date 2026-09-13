@@ -26,10 +26,12 @@ void main() {
     '/learn',
     '/health-hub',
     '/progress',
-    // Nutrition routes (9)
+    // Nutrition routes (11)
     '/food',
     '/food/ai',
     '/food/estimate-review',
+    '/food/label-ocr',
+    '/food/describe',
     '/food/recipes/edit',
     '/food/thali',
     '/settings/household-measures',
@@ -67,7 +69,7 @@ void main() {
     '/achievements',
   ];
 
-  test('root router exposes the canonical 44-path contract in order', () {
+  test('root router exposes the canonical 46-path contract in order', () {
     final container = ProviderContainer(
       overrides: [onboardingCompletedProvider.overrideWith((ref) => true)],
     );

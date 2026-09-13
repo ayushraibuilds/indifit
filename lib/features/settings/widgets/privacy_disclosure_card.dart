@@ -56,7 +56,7 @@ class PrivacyDisclosureCard extends StatelessWidget {
           ),
           const SizedBox(height: B05Layout.space12),
           Text(
-            'IndiFit V1 does not send your logs or photos to an AI service. Online food search sends only the search or barcode request needed for that feature. Crash diagnostics are optional and off by default.',
+            'IndiFit stores your logs on this device. Connected features like nutrition label scanning process photos ephemerally and never retain them. Online food search sends only the search or barcode request needed for that feature. Crash diagnostics are optional and off by default.',
             style: B05Typography.body(context),
           ),
           const SizedBox(height: B05Layout.space12),

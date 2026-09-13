@@ -15,11 +15,12 @@ class PrivacyPolicy {
     this.connectedAiEnabled = AppConfig.connectedAiEnabled,
   });
 
-  /// Connected AI is outside the V1 product contract, independent of the
-  /// user's online-food and diagnostics preferences.
+  /// Connected AI assistance is permitted when enabled in configuration and
+  /// offline-only mode is not active.
   bool get isAiAllowed => connectedAiEnabled && !isOfflineOnly;
 
-  /// V1 never uploads meal photos.
+  /// Ephemeral image processing (e.g. nutrition label OCR) is permitted when
+  /// connected AI is allowed. Images are processed ephemerally and never retained.
   bool get isImageUploadAllowed => isAiAllowed;
 
   /// Third-party Open Food Facts lookups are permitted only when offline-only mode is disabled.

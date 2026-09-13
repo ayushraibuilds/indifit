@@ -10,9 +10,9 @@ IndiFit is an offline-first workout and nutrition tracker tailored for Indian fo
 - **Progress & Health Connections**: Review recorded workout/nutrition trends and optionally connect supported Health Connect or HealthKit categories.
 - **Portable Data**: Create and restore JSON backups, optionally protect manual backup files with a password, and copy a food/workout CSV summary.
 
-## V1 Product Contract
+## Post-V1 Capability Contract
 
-V1 has no user-facing generative-AI features and does not require an IndiFit backend credential to start or use the app. Historical AI client/backend code remains in the repository for post-V1 redesign work but is not part of the V1 product surface.
+IndiFit is local-first, not offline-only. Core logging, workout player, and local database remain 100% offline functional, while connected features (nutrition-label OCR and natural-language meal logging) act as optional, reviewable accelerators.
 
 ---
 

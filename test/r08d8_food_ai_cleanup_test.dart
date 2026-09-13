@@ -117,6 +117,8 @@ void main() {
       await tester.drag(find.byType(ListView).first, const Offset(0, -300));
       await tester.pump();
       expect(find.text('Scan barcode'), findsOneWidget);
+      expect(find.text('Scan nutrition label'), findsOneWidget);
+      expect(find.text('Describe meal'), findsOneWidget);
 
       // Unavailable AI/Photo surfaces must be absent
       expect(find.text('Describe with AI'), findsNothing);

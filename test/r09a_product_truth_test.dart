@@ -12,7 +12,7 @@ void main() {
       final mainSource = File('lib/main.dart').readAsStringSync();
       final workflow = File('.github/workflows/ci.yml').readAsStringSync();
 
-      expect(AppConfig.connectedAiEnabled, isFalse);
+      expect(AppConfig.connectedAiEnabled, isTrue);
       expect(mainSource, isNot(contains('validateBootstrapConfig')));
       expect(mainSource, isNot(contains('INDIFIT_API_KEY')));
       expect(
@@ -53,12 +53,13 @@ void main() {
       }
     });
 
-    test('iOS usage descriptions expose only the V1 camera purpose', () {
+    test('iOS usage descriptions expose barcode and nutrition label purposes', () {
       final plist = File('ios/Runner/Info.plist').readAsStringSync();
 
-      expect(plist, contains('scan a food barcode'));
+      expect(plist, contains('scan food barcodes and nutrition labels'));
+      expect(plist, contains('NSPhotoLibraryUsageDescription'));
+      expect(plist, contains('nutrition label to extract nutrition facts'));
       expect(plist, isNot(contains('NSMicrophoneUsageDescription')));
-      expect(plist, isNot(contains('NSPhotoLibraryUsageDescription')));
       expect(plist, isNot(contains('AI macro estimation')));
     });
 
