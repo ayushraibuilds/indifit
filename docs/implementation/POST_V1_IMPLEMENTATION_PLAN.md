@@ -749,6 +749,10 @@ readiness package.
 | 19 | PV1-PROD-03A | Specify a small achievement catalog and event identity | P1 | Wave 1 |
 | 20 | PV1-PROD-04A | Specify cross-platform rest presence lifecycle; implement Android first | P1/P2 | stable rest lifecycle |
 | *Status:* | | **Complete** — Implemented `RestPresenceService` with 4-state lifecycle machine (`idle`, `active`, `expired`, `cancelled`), ongoing notification (channel `indifit_rest_timer`, ID 998), expired alert notification (ID 999), and haptic pulse via `IndiFitHaptics`. Wired into `B02StrengthExecutionController` (`startRestAfterRecord`, `skipRest`, `completeRest`, `dispose`). 11/11 tests passing in `test/pv1_prod04_rest_presence_test.dart`. | | |
+| 21 | PV1-PROG-01A | Specify bounded queries, completeness rules, and non-synthetic period comparison contract | P2 | Wave 3 |
+| *Status:* | | **Complete** — Formal contract defined in `docs/implementation/post-v1/PROG01A_HISTORICAL_DRILLDOWNS_AND_PERIOD_COMPARISON.md`. Governs bounded queries (`idx_workout_sessions_activity_completed`), 7-day and 28-day comparison windows, factual completeness state machine, logged-day nutrition denominators, and zero-synthetic invariants. | | |
+| 22 | PV1-PROG-01B | Implement evidence-backed historical drill-downs and period comparison | P2 | PV1-PROG-01A |
+| *Status:* | | **Complete** — Implemented `progress_period_comparison_models.dart`, bounded `progress_period_comparison_repository.dart`, Riverpod controller & providers in `progress_period_comparison_controller.dart`, B05 period comparison cards & drill-down bottom sheet (`widgets/`), integrated into `ProgressScreen`. 7/7 tests passing in `test/progress_period_comparison_test.dart`, 25/25 in `ux_r05_progress_test.dart`, 17/17 in `ux_r07e_progress_insights_test.dart`. | | |
 
 Do not pre-create detailed implementation issues for Waves 4–6 until the prior
 wave evidence can inform their scope. Track those as epics/discovery records.
@@ -762,7 +766,7 @@ healthy.
 | ID | Candidate | Priority | Entry gate |
 |---|---|---|---|
 | PV1-NUT-01 | Optional snack slots/configurable diary structure | P2 | V1 diary behavior and migration/backup semantics are stable |
-| PV1-PROG-01 | Richer evidence-backed historical drill-downs and period comparison | P2 | Bounded queries and completeness rules are specified |
+| PV1-PROG-01 | Richer evidence-backed historical drill-downs and period comparison | P2 | **Promoted to Section 7 (PV1-PROG-01A/B)**; specification complete |
 | PV1-GAME-01 | Expanded streak concepts or streak protection | P3 discovery | Product rules prove the mechanic will not reward unsafe training behavior |
 | PV1-UX-01 | Quick light/dark/system theme control | P3 | Settings authority is stable and higher-value core work is complete |
 | PV1-MEDIA-02 | Exercise motion demonstrations | P3 | Still-media gate has passed plus motion licensing, size, performance, reduced-motion, and accessibility approval |

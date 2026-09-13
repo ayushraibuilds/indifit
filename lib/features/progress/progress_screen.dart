@@ -19,6 +19,7 @@ import '../settings/nutrition_targets_hub_screen.dart';
 import '../settings/unit_preference.dart';
 import '../training/workout_history_screen.dart';
 import 'achievements_screen.dart';
+import 'period_comparison/widgets/period_comparison_section.dart';
 import 'progress_dashboard_controller.dart';
 import 'progress_dashboard_models.dart';
 import 'widgets/progress_formatters.dart';
@@ -161,6 +162,10 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                     snapshot: snapshot,
                     onViewHistory: _openTrainingHistory,
                   ),
+                ],
+                if (widget.preview == null) ...[
+                  const SizedBox(height: B05Layout.space24),
+                  PeriodComparisonSection(units: units),
                 ],
                 if ((snapshot.strengthSets?.isNotEmpty ?? false)) ...[
                   const SizedBox(height: B05Layout.space24),
