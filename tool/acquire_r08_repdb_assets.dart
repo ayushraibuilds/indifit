@@ -111,10 +111,11 @@ Future<List<int>> _downloadFromPinnedSource(
         '${item.asset.sourceRelativePath}.',
       );
     }
-    return response.fold<List<int>>(<int>[], (bytes, chunk) {
+    final bytes = await response.fold<List<int>>(<int>[], (bytes, chunk) {
       bytes.addAll(chunk);
       return bytes;
     });
+    return bytes;
   } finally {
     client.close(force: true);
   }

@@ -439,6 +439,9 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
               child: ExerciseVisual(
                 canonicalExerciseUuid: ex.stableId ?? '',
                 registry: registry,
+                cacheWidth: (44.0 * MediaQuery.devicePixelRatioOf(context))
+                    .round()
+                    .clamp(88, 264),
                 displayMuscles: ExerciseVisualMuscleFacts(
                   primaryMuscle: displayMuscles.primary,
                   secondaryMuscles: displayMuscles.secondary,
