@@ -1,6 +1,7 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:indifit/core/services/ios_live_activity_service.dart';
 import 'package:indifit/core/services/rest_presence_service.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/models/b02_execution_models.dart';
@@ -78,6 +79,61 @@ class TestRestPresenceDriver implements RestPresenceDriver {
   @override
   Future<void> triggerHapticFeedback() async {
     hapticCalls++;
+  }
+}
+
+class TestLiveActivityDriver implements IosLiveActivityDriver {
+  final List<Map<String, dynamic>> startCalls = [];
+  final List<Map<String, dynamic>> updateCalls = [];
+  final List<Map<String, dynamic>> endCalls = [];
+
+  @override
+  Future<bool> areActivitiesEnabled() async => true;
+
+  @override
+  Future<bool> startLiveActivity({
+    required String periodId,
+    required String exerciseName,
+    required int targetSeconds,
+    required int expiryEpochMs,
+  }) async {
+    startCalls.add({
+      'periodId': periodId,
+      'exerciseName': exerciseName,
+      'targetSeconds': targetSeconds,
+      'expiryEpochMs': expiryEpochMs,
+    });
+    return true;
+  }
+
+  @override
+  Future<bool> updateLiveActivity({
+    required String periodId,
+    required String exerciseName,
+    required int targetSeconds,
+    required int expiryEpochMs,
+    required bool isCompleted,
+  }) async {
+    updateCalls.add({
+      'periodId': periodId,
+      'exerciseName': exerciseName,
+      'targetSeconds': targetSeconds,
+      'expiryEpochMs': expiryEpochMs,
+      'isCompleted': isCompleted,
+    });
+    return true;
+  }
+
+  @override
+  Future<bool> endLiveActivity({
+    String? periodId,
+    required bool immediate,
+  }) async {
+    endCalls.add({
+      'periodId': periodId,
+      'immediate': immediate,
+    });
+    return true;
   }
 }
 
@@ -1254,6 +1310,170 @@ void main() {
       final updatedAnchor = await RestPresenceService.loadAnchorRecord();
       expect(updatedAnchor, isNotNull);
       expect(updatedAnchor!.hasExactAlarmAnchor, false);
+    });
+  });
+
+  group('PV1-PROD-04 Stage 4: iOS Live Activity lifecycle & delegation', () {
+    late TestRestPresenceDriver driver;
+    late TestLiveActivityDriver liveActivityDriver;
+    late IosLiveActivityService liveActivityService;
+    late DateTime currentTime;
+    late RestPresenceService service;
+
+    setUp(() {
+      SharedPreferences.setMockInitialValues({});
+      driver = TestRestPresenceDriver();
+      liveActivityDriver = TestLiveActivityDriver();
+      liveActivityService = IosLiveActivityService(
+        driver: liveActivityDriver,
+        isIosChecker: () => true,
+      );
+      currentTime = DateTime.utc(2026, 9, 15, 10, 0, 0);
+      service = RestPresenceService(
+        driver: driver,
+        nowUtc: () => currentTime,
+        liveActivity: liveActivityService,
+      );
+    });
+
+    tearDown(() async {
+      await service.cleanup();
+    });
+
+    test('startRest starts Live Activity with matching periodId and expiry timestamp', () async {
+      await service.startRest(
+        periodId: 'live-p1',
+        exerciseName: 'Overhead Press',
+        targetSeconds: 90,
+        startedAtUtc: currentTime,
+      );
+
+      expect(liveActivityDriver.startCalls, hasLength(1));
+      final call = liveActivityDriver.startCalls.first;
+      expect(call['periodId'], 'live-p1');
+      expect(call['exerciseName'], 'Overhead Press');
+      expect(call['targetSeconds'], 90);
+      expect(
+        call['expiryEpochMs'],
+        currentTime.add(const Duration(seconds: 90)).millisecondsSinceEpoch,
+      );
+      expect(service.liveActivityPeriodId, 'live-p1');
+    });
+
+    test('startRest on same periodId branches to updateLiveActivity avoiding duplicate starts and flicker', () async {
+      await service.startRest(
+        periodId: 'live-branch-1',
+        exerciseName: 'Bench Press',
+        targetSeconds: 90,
+        startedAtUtc: currentTime,
+      );
+      expect(liveActivityDriver.startCalls, hasLength(1));
+      expect(liveActivityDriver.updateCalls, isEmpty);
+
+      // Simulate +30s adjustment on same periodId
+      await service.startRest(
+        periodId: 'live-branch-1',
+        exerciseName: 'Bench Press',
+        targetSeconds: 120,
+        startedAtUtc: currentTime,
+        accumulatedExtraSeconds: 30,
+      );
+
+      // Start calls count does NOT increment; update call is dispatched instead
+      expect(liveActivityDriver.startCalls, hasLength(1));
+      expect(liveActivityDriver.updateCalls, hasLength(1));
+      final update = liveActivityDriver.updateCalls.first;
+      expect(update['periodId'], 'live-branch-1');
+      expect(update['exerciseName'], 'Bench Press');
+      expect(update['targetSeconds'], 120);
+      expect(
+        update['expiryEpochMs'],
+        currentTime.add(const Duration(seconds: 120)).millisecondsSinceEpoch,
+      );
+    });
+
+    test('startRest on different periodId ends previous activity immediately before starting new one', () async {
+      await service.startRest(
+        periodId: 'live-p1',
+        exerciseName: 'Squat',
+        targetSeconds: 120,
+        startedAtUtc: currentTime,
+      );
+      expect(liveActivityDriver.startCalls, hasLength(1));
+      expect(liveActivityDriver.endCalls, isEmpty);
+
+      // Start new rest period
+      await service.startRest(
+        periodId: 'live-p2',
+        exerciseName: 'Romanian Deadlift',
+        targetSeconds: 90,
+        startedAtUtc: currentTime,
+      );
+
+      // Old activity was ended immediately
+      expect(liveActivityDriver.endCalls, hasLength(1));
+      expect(liveActivityDriver.endCalls.first['periodId'], 'live-p1');
+      expect(liveActivityDriver.endCalls.first['immediate'], true);
+
+      // New activity was started
+      expect(liveActivityDriver.startCalls, hasLength(2));
+      expect(liveActivityDriver.startCalls.last['periodId'], 'live-p2');
+      expect(service.liveActivityPeriodId, 'live-p2');
+    });
+
+    test('onRestElapsed ends Live Activity with graceful completion flag (immediate: false)', () async {
+      await service.startRest(
+        periodId: 'live-elapsed',
+        exerciseName: 'Barbell Row',
+        targetSeconds: 60,
+        startedAtUtc: currentTime,
+      );
+
+      await service.onRestElapsed(periodId: 'live-elapsed');
+
+      expect(liveActivityDriver.endCalls, hasLength(1));
+      final endCall = liveActivityDriver.endCalls.first;
+      expect(endCall['periodId'], 'live-elapsed');
+      expect(endCall['immediate'], false); // Graceful completion per Apple HIG
+      expect(service.liveActivityPeriodId, isNull);
+    });
+
+    test('cancelRest ends Live Activity immediately', () async {
+      await service.startRest(
+        periodId: 'live-cancel',
+        exerciseName: 'Incline Dumbbell Press',
+        targetSeconds: 90,
+        startedAtUtc: currentTime,
+      );
+
+      await service.cancelRest(periodId: 'live-cancel');
+
+      expect(liveActivityDriver.endCalls, hasLength(1));
+      final endCall = liveActivityDriver.endCalls.first;
+      expect(endCall['periodId'], 'live-cancel');
+      expect(endCall['immediate'], true);
+      expect(service.liveActivityPeriodId, isNull);
+    });
+
+    test('cleanup ends Live Activity immediately and resets tracker', () async {
+      await service.startRest(
+        periodId: 'live-cleanup',
+        exerciseName: 'Pull-up',
+        targetSeconds: 60,
+        startedAtUtc: currentTime,
+      );
+
+      await service.cleanup();
+
+      expect(liveActivityDriver.endCalls, hasLength(1));
+      expect(liveActivityDriver.endCalls.first['immediate'], true);
+      expect(service.liveActivityPeriodId, isNull);
+    });
+
+    test('cleanupStaleNotifications delegates to liveActivity.endRestLiveActivity', () async {
+      await RestPresenceService.cleanupStaleNotifications(driver, liveActivityService);
+      expect(liveActivityDriver.endCalls, hasLength(1));
+      expect(liveActivityDriver.endCalls.first['immediate'], true);
     });
   });
 }

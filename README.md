@@ -55,7 +55,7 @@ Since you do not have a paid Apple Developer account ($99/year), you can use the
 4. *Note: Before opening the app for the first time, you may need to go to iPhone **Settings** > **General** > **VPN & Device Management**, tap your Apple ID email under "Developer App", and click **Trust**.*
 
 > [!NOTE]
-> **Free Account Limits**: Apple allows personal developer accounts to sideload up to 3 apps per device. The app certificate will expire after **7 days**, after which you just need to re-plug your iPhone and click Play in Xcode again to renew it.
+> **Free Account Limits**: Apple allows personal developer accounts to sideload up to 3 active apps per device. The app certificate expires after **7 days**, after which you re-run from Xcode to renew it. Because WidgetKit extensions (like `RestTimerWidgetExtension`) use an embedded bundle identifier (`com.indifit.indifit.RestTimerWidget`), ensure both the **Runner** and **RestTimerWidgetExtension** targets are signed with your Personal Team. Each extension target consumes one App ID slot against Apple's free 10 App ID limit.
 
 ---
 

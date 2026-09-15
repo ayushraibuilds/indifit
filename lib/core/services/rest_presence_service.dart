@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/timezone.dart' as tz;
 
 import 'indifit_haptics.dart';
+import 'ios_live_activity_service.dart';
 
 /// Lifecycle states for background rest-timer presence.
 enum RestPresenceState { idle, active, expired, cancelled }
@@ -357,6 +358,7 @@ class RestPresenceService {
 
   final RestPresenceDriver _driver;
   final DateTime Function() _nowUtc;
+  final IosLiveActivityService? _liveActivity;
 
   RestPresenceState _state = RestPresenceState.idle;
   String? _currentPeriodId;
@@ -365,6 +367,7 @@ class RestPresenceService {
   int? _targetDurationSeconds;
   bool _hasExactAlarmAnchor = false;
   Timer? _ticker;
+  String? _liveActivityPeriodId;
 
   FutureOr<void> Function(String periodId, int deltaSeconds)?
       onAdjustRestRequested;
@@ -373,8 +376,10 @@ class RestPresenceService {
   RestPresenceService({
     RestPresenceDriver? driver,
     DateTime Function()? nowUtc,
+    IosLiveActivityService? liveActivity,
   })  : _driver = driver ?? LocalNotificationRestPresenceDriver(),
-        _nowUtc = nowUtc ?? (() => DateTime.now().toUtc());
+        _nowUtc = nowUtc ?? (() => DateTime.now().toUtc()),
+        _liveActivity = liveActivity ?? IosLiveActivityService.instance;
 
   RestPresenceState get state => _state;
   bool get isActive => _state == RestPresenceState.active;
@@ -384,6 +389,8 @@ class RestPresenceService {
   int? get targetDurationSeconds => _targetDurationSeconds;
   bool get hasExactAlarmAnchor => _hasExactAlarmAnchor;
   RestPresenceDriver get driver => _driver;
+  IosLiveActivityService? get liveActivity => _liveActivity;
+  String? get liveActivityPeriodId => _liveActivityPeriodId;
 
   int get remainingSeconds {
     if (_state != RestPresenceState.active ||
@@ -468,6 +475,30 @@ class RestPresenceService {
       expiryUtc: expiryUtc,
     );
 
+    // iOS Live Activity lifecycle: same periodId branches to update (avoids ActivityKit rate limiting and flicker)
+    if (_liveActivityPeriodId == periodId) {
+      await _liveActivity?.updateRestLiveActivity(
+        periodId: periodId,
+        exerciseName: _currentExerciseName ?? '',
+        targetSeconds: _targetDurationSeconds!,
+        expiryUtc: expiryUtc,
+      );
+    } else {
+      if (_liveActivityPeriodId != null) {
+        await _liveActivity?.endRestLiveActivity(
+          periodId: _liveActivityPeriodId,
+          immediate: true,
+        );
+      }
+      _liveActivityPeriodId = periodId;
+      await _liveActivity?.startRestLiveActivity(
+        periodId: periodId,
+        exerciseName: _currentExerciseName ?? '',
+        targetSeconds: _targetDurationSeconds!,
+        expiryUtc: expiryUtc,
+      );
+    }
+
     // Periodic tick to check expiry every 1s, but throttle notification re-posts to
     // every 5s. Native chronometer counts down continuously on Android; throttling
     // eliminates notification IPC churn and preserves battery during long rests.
@@ -510,8 +541,19 @@ class RestPresenceService {
     _ticker = null;
     _state = RestPresenceState.expired;
 
-    // Dismiss ongoing progress notification
-    await _driver.cancelNotification(ongoingNotificationId);
+    // Dismiss ongoing progress notification immediately
+    final cancelOngoing = _driver.cancelNotification(ongoingNotificationId);
+
+    // Transition Live Activity to completed state ("Rest Complete") with HIG dismissal delay
+    if (_liveActivityPeriodId == periodId) {
+      await _liveActivity?.endRestLiveActivity(
+        periodId: periodId,
+        immediate: false,
+      );
+      _liveActivityPeriodId = null;
+    }
+
+    await cancelOngoing;
 
     // Single-writer rule & Option-(a) foreground decision:
     // Exact alarms fire platform-wide at expiryUtc; a single heads-up banner is accepted
@@ -550,10 +592,24 @@ class RestPresenceService {
     _targetDurationSeconds = null;
     _hasExactAlarmAnchor = false;
 
-    await _driver.cancelNotification(ongoingNotificationId);
-    await _driver.cancelNotification(expiredNotificationId);
-    await clearAnchorRecord();
-    await clearPendingIntent();
+    final cancelOngoing = _driver.cancelNotification(ongoingNotificationId);
+    final cancelExpired = _driver.cancelNotification(expiredNotificationId);
+    final clearAnchor = clearAnchorRecord();
+    final clearIntent = clearPendingIntent();
+
+    if (_liveActivityPeriodId != null &&
+        (periodId == null || _liveActivityPeriodId == periodId)) {
+      await _liveActivity?.endRestLiveActivity(
+        periodId: _liveActivityPeriodId,
+        immediate: true,
+      );
+      _liveActivityPeriodId = null;
+    }
+
+    await cancelOngoing;
+    await cancelExpired;
+    await clearAnchor;
+    await clearIntent;
   }
 
   /// Clean up all rest notifications and state (e.g. on workout finish, cancel, or app launch).
@@ -567,21 +623,39 @@ class RestPresenceService {
     _targetDurationSeconds = null;
     _hasExactAlarmAnchor = false;
 
-    await _driver.cancelNotification(ongoingNotificationId);
-    await _driver.cancelNotification(expiredNotificationId);
-    await clearAnchorRecord();
-    await clearPendingIntent();
+    final cancelOngoing = _driver.cancelNotification(ongoingNotificationId);
+    final cancelExpired = _driver.cancelNotification(expiredNotificationId);
+    final clearAnchor = clearAnchorRecord();
+    final clearIntent = clearPendingIntent();
+
+    if (_liveActivityPeriodId != null) {
+      await _liveActivity?.endRestLiveActivity(
+        periodId: _liveActivityPeriodId,
+        immediate: true,
+      );
+      _liveActivityPeriodId = null;
+    } else {
+      await _liveActivity?.endRestLiveActivity(immediate: true);
+    }
+
+    await cancelOngoing;
+    await cancelExpired;
+    await clearAnchor;
+    await clearIntent;
   }
 
   /// Clean up stale rest notifications at app startup or when entering foreground.
   static Future<void> cleanupStaleNotifications([
     RestPresenceDriver? driver,
+    IosLiveActivityService? liveActivity,
   ]) async {
     final d = driver ?? LocalNotificationRestPresenceDriver();
+    final la = liveActivity ?? IosLiveActivityService.instance;
     await d.cancelNotification(ongoingNotificationId);
     await d.cancelNotification(expiredNotificationId);
     await clearAnchorRecord();
     await clearPendingIntent();
+    await la.endRestLiveActivity(immediate: true);
   }
 
   /// Dispatch an interactive notification action.
