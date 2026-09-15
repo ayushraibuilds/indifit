@@ -35,6 +35,7 @@ import '../nutrition_ai/nutrition_label_ocr_service.dart';
 import '../settings/nutrition_constraint_review_controller.dart';
 import '../settings/nutrition_constraints_controller.dart';
 import 'protein_distribution_controller.dart';
+export 'adaptive_tdee_providers.dart';
 
 final nutritionRecipeRepositoryProvider = Provider<NutritionRecipeRepository>(
   (ref) => NutritionRecipeRepository(db: ref.watch(databaseProvider)),

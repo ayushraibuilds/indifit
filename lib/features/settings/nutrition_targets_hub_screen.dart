@@ -7,6 +7,7 @@ import '../../core/presentation/secondary_presentation.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/consumer_task_primitives.dart';
+import '../../data/models/adaptive_tdee_models.dart';
 import '../../data/models/b04_goal_models.dart';
 import '../../data/repositories/nutrition_target_authority.dart';
 import '../coaching/b04_production_surface_controller.dart';
@@ -315,6 +316,73 @@ class _NutritionTargetsHubScreenState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          ref.watch(adaptiveTdeeEstimateProvider).maybeWhen(
+            data: (estimate) {
+              final kcal = estimate.currentTdeeKcal.round();
+              final (confText, confRole) = switch (estimate.confidence) {
+                AdaptiveTdeeConfidence.high => (
+                  'High confidence',
+                  context.b05Colors.success,
+                ),
+                AdaptiveTdeeConfidence.moderate => (
+                  'Moderate confidence',
+                  context.b05Colors.info,
+                ),
+                AdaptiveTdeeConfidence.calibrating => (
+                  'Calibrating',
+                  context.b05Colors.warning,
+                ),
+              };
+              return Padding(
+                padding: const EdgeInsets.only(bottom: B05Layout.space12),
+                child: B05Surface(
+                  padding: const EdgeInsets.all(B05Layout.space16),
+                  tone: B05SurfaceTone.inset,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Estimated daily burn',
+                            style: B05Typography.caption(context),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            '$kcal kcal/day',
+                            style: B05Typography.title(context),
+                          ),
+                        ],
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: B05Layout.space8,
+                          vertical: B05Layout.space4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: confRole.container,
+                          borderRadius: b05Radius(B05SurfaceRadius.small),
+                          border: Border.all(
+                            color: confRole.indicator,
+                          ),
+                        ),
+                        child: Text(
+                          confText,
+                          style: B05Typography.caption(context).copyWith(
+                            color: confRole.foreground,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+            orElse: () => const SizedBox.shrink(),
+          ),
           B04ReadStatusCard(
             title: 'Coaching availability',
             message: statusMessage,

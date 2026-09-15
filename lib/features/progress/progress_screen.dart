@@ -15,6 +15,7 @@ import '../../core/widgets/indi_fit_bottom_sheet.dart';
 import '../../data/repositories/workout_repository.dart';
 import '../dashboard/widgets/log_weight_bottom_sheet.dart';
 import '../exercise_library/exercise_history_screen.dart';
+import '../nutrition/adaptive_tdee_providers.dart';
 import '../settings/nutrition_targets_hub_screen.dart';
 import '../settings/unit_preference.dart';
 import '../training/workout_history_screen.dart';
@@ -22,6 +23,7 @@ import 'achievements_screen.dart';
 import 'period_comparison/widgets/period_comparison_section.dart';
 import 'progress_dashboard_controller.dart';
 import 'progress_dashboard_models.dart';
+import 'widgets/adaptive_tdee_card.dart';
 import 'widgets/progress_formatters.dart';
 import 'widgets/progress_measurement_widgets.dart';
 import 'widgets/progress_sections.dart';
@@ -211,6 +213,24 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                       ),
                     ),
                   ),
+                  if (widget.preview == null) ...[
+                    ref.watch(adaptiveTdeeEstimateProvider).maybeWhen(
+                      data: (estimate) => Column(
+                        children: [
+                          const SizedBox(height: B05Layout.space24),
+                          AdaptiveTdeeCard(
+                            estimate: estimate,
+                            onAdjustTargets: () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => const NutritionTargetsHubScreen(),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      orElse: () => const SizedBox.shrink(),
+                    ),
+                  ],
                 ],
                 if (hasMeaningfulVolume(snapshot)) ...[
                   const SizedBox(height: B05Layout.space24),
