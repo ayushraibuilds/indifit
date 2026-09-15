@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/di/providers.dart';
 import '../../../core/nutrition_thali.dart';
-import '../../../core/theme/colors.dart';
+import '../../../core/theme/b05_semantic_colors.dart';
 import '../../../core/widgets/indi_fit_feedback.dart';
 import '../../dashboard/today_surface_controller.dart';
 import '../meal_presentation_registry.dart';
@@ -102,6 +102,7 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.b05Colors;
     final state = ref.watch(
       nutritionThaliControllerProvider(widget.mealCategory),
     );
@@ -127,7 +128,7 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(notice),
-            backgroundColor: AppColors.surface,
+            backgroundColor: colors.surface,
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -142,7 +143,7 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(state.errorMessage!),
-            backgroundColor: AppColors.danger,
+            backgroundColor: colors.danger.foreground,
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -159,9 +160,9 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
         state.status == NutritionThaliStatus.saving;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: colors.page,
       appBar: AppBar(
-        backgroundColor: AppColors.surface,
+        backgroundColor: colors.surface,
         elevation: 0,
         title: Row(
           mainAxisSize: MainAxisSize.min,
@@ -169,13 +170,13 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
             Icon(
               mealPresentation.icon,
               size: 20,
-              color: AppColors.primary,
+              color: colors.action,
             ),
             const SizedBox(width: 8),
             Text(
               '${mealPresentation.label} Thali',
-              style: const TextStyle(
-                color: AppColors.textPrimary,
+              style: TextStyle(
+                color: colors.textPrimary,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
@@ -185,20 +186,20 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
         actions: [
           IconButton(
             key: const Key('thali_clear_button'),
-            icon: const Icon(Icons.refresh_rounded, color: AppColors.textSecondary),
+            icon: Icon(Icons.refresh_rounded, color: colors.textSecondary),
             tooltip: 'Reset Plate',
             onPressed: () {
               showDialog<bool>(
                 context: context,
                 builder: (ctx) => AlertDialog(
-                  backgroundColor: AppColors.surface,
-                  title: const Text(
+                  backgroundColor: colors.surface,
+                  title: Text(
                     'Reset Thali?',
-                    style: TextStyle(color: AppColors.textPrimary),
+                    style: TextStyle(color: colors.textPrimary),
                   ),
-                  content: const Text(
+                  content: Text(
                     'This will clear all items from your current plate.',
-                    style: TextStyle(color: AppColors.textSecondary),
+                    style: TextStyle(color: colors.textSecondary),
                   ),
                   actions: [
                     TextButton(
@@ -207,9 +208,9 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
                     ),
                     TextButton(
                       onPressed: () => Navigator.of(ctx).pop(true),
-                      child: const Text(
+                      child: Text(
                         'Reset',
-                        style: TextStyle(color: AppColors.danger),
+                        style: TextStyle(color: colors.danger.foreground),
                       ),
                     ),
                   ],
@@ -236,14 +237,14 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
                         child: TextField(
                           key: const Key('thali_name_input'),
                           controller: _nameController,
-                          style: const TextStyle(
-                            color: AppColors.textPrimary,
+                          style: TextStyle(
+                            color: colors.textPrimary,
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                           ),
-                          decoration: const InputDecoration(
+                          decoration: InputDecoration(
                             hintText: 'Thali Name (e.g. Sunday Lunch Thali)',
-                            hintStyle: TextStyle(color: AppColors.textMuted),
+                            hintStyle: TextStyle(color: colors.textDisabled),
                             border: InputBorder.none,
                             isDense: true,
                             contentPadding: EdgeInsets.zero,
@@ -252,17 +253,17 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.edit_outlined,
                           size: 18,
-                          color: AppColors.textMuted,
+                          color: colors.textDisabled,
                         ),
                         onPressed: () {},
                       ),
                     ],
                   ),
                 ),
-                const Divider(color: AppColors.cardBorder, height: 1),
+                Divider(color: colors.border, height: 1),
                 // Presets Bar
                 ThaliPresetsBar(
                   onSelectPreset: (preset) {
@@ -291,8 +292,8 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
                                   Expanded(
                                     child: Text(
                                       'PLATE COMPONENTS (${items.length})',
-                                      style: const TextStyle(
-                                        color: AppColors.textMuted,
+                                      style: TextStyle(
+                                        color: colors.textDisabled,
                                         fontSize: 11,
                                         fontWeight: FontWeight.w600,
                                         letterSpacing: 0.8,
@@ -309,7 +310,7 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
                                     icon: const Icon(Icons.add, size: 16),
                                     label: const Text('Add Dish'),
                                     style: TextButton.styleFrom(
-                                      foregroundColor: AppColors.primary,
+                                      foregroundColor: colors.action,
                                       visualDensity: VisualDensity.compact,
                                     ),
                                   ),
@@ -359,8 +360,8 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
           ? FloatingActionButton.extended(
               key: const Key('thali_add_item_fab'),
               onPressed: () => _openComponentPicker(controller, state),
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
+              backgroundColor: colors.action,
+              foregroundColor: colors.onAction,
               icon: const Icon(Icons.add),
               label: const Text('Add Dish'),
             )
@@ -372,6 +373,7 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
     NutritionThaliController controller,
     NutritionThaliState state,
   ) {
+    final colors = context.b05Colors;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -382,30 +384,30 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
               width: 80,
               height: 80,
               decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
+                color: colors.action.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.rice_bowl_rounded,
                 size: 40,
-                color: AppColors.primary,
+                color: colors.action,
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'Your Thali Plate is Empty',
               style: TextStyle(
-                color: AppColors.textPrimary,
+                color: colors.textPrimary,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'Select a preset archetype above or add individual dishes like roti, dal, sabzi, or rice.',
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: AppColors.textSecondary,
+                color: colors.textSecondary,
                 fontSize: 14,
               ),
             ),
@@ -416,8 +418,8 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
               icon: const Icon(Icons.add_rounded),
               label: const Text('Add First Dish'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
+                backgroundColor: colors.action,
+                foregroundColor: colors.onAction,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,
                   vertical: 12,

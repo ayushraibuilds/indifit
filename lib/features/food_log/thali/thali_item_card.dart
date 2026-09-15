@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/nutrition_thali.dart';
-import '../../../core/theme/colors.dart';
+import '../../../core/theme/b05_semantic_colors.dart';
 import '../../../core/typed_quantities.dart';
 
 class ThaliItemCard extends StatelessWidget {
@@ -40,6 +40,7 @@ class ThaliItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.b05Colors;
     final energyVal = preview?.calculation.facts['energy']?.point?.value.asDouble;
     final proteinVal = preview?.calculation.facts['protein']?.point?.value.asDouble;
     final carbsVal = preview?.calculation.facts['carbohydrate']?.point?.value.asDouble;
@@ -54,9 +55,9 @@ class ThaliItemCard extends StatelessWidget {
       key: Key('thali_item_${item.id}'),
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: colors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.cardBorder),
+        border: Border.all(color: colors.border),
       ),
       child: Padding(
         padding: const EdgeInsets.all(12),
@@ -64,11 +65,11 @@ class ThaliItemCard extends StatelessWidget {
           children: [
             ReorderableDragStartListener(
               index: index,
-              child: const Padding(
-                padding: EdgeInsets.only(right: 8),
+              child: Padding(
+                padding: const EdgeInsets.only(right: 8),
                 child: Icon(
                   Icons.drag_indicator_rounded,
-                  color: AppColors.textMuted,
+                  color: colors.textDisabled,
                   size: 22,
                 ),
               ),
@@ -80,8 +81,8 @@ class ThaliItemCard extends StatelessWidget {
                 children: [
                   Text(
                     item.displayLabel ?? 'Meal Item',
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
+                    style: TextStyle(
+                      color: colors.textPrimary,
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
                     ),
@@ -97,13 +98,13 @@ class ThaliItemCard extends StatelessWidget {
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.cardBackground,
+                          color: colors.inset,
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
                           _formatQuantity(item.quantity),
-                          style: const TextStyle(
-                            color: AppColors.primary,
+                          style: TextStyle(
+                            color: colors.action,
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
                           ),
@@ -113,8 +114,8 @@ class ThaliItemCard extends StatelessWidget {
                         const SizedBox(width: 8),
                         Text(
                           caloriesStr,
-                          style: const TextStyle(
-                            color: AppColors.textSecondary,
+                          style: TextStyle(
+                            color: colors.textSecondary,
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
                           ),
@@ -126,8 +127,8 @@ class ThaliItemCard extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       macrosStr,
-                      style: const TextStyle(
-                        color: AppColors.textMuted,
+                      style: TextStyle(
+                        color: colors.textDisabled,
                         fontSize: 11,
                       ),
                     ),
@@ -142,7 +143,7 @@ class ThaliItemCard extends StatelessWidget {
                 IconButton(
                   key: Key('thali_item_decrement_${item.id}'),
                   icon: const Icon(Icons.remove_circle_outline, size: 22),
-                  color: AppColors.textSecondary,
+                  color: colors.textSecondary,
                   constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
                   padding: EdgeInsets.zero,
                   onPressed: onDecrement,
@@ -151,7 +152,7 @@ class ThaliItemCard extends StatelessWidget {
                 IconButton(
                   key: Key('thali_item_increment_${item.id}'),
                   icon: const Icon(Icons.add_circle_outline, size: 22),
-                  color: AppColors.primary,
+                  color: colors.action,
                   constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
                   padding: EdgeInsets.zero,
                   onPressed: onIncrement,
@@ -160,7 +161,7 @@ class ThaliItemCard extends StatelessWidget {
                 IconButton(
                   key: Key('thali_item_delete_${item.id}'),
                   icon: const Icon(Icons.delete_outline_rounded, size: 20),
-                  color: AppColors.danger,
+                  color: colors.danger.foreground,
                   constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
                   padding: EdgeInsets.zero,
                   onPressed: onDelete,

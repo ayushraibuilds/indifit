@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/nutrition_thali.dart';
-import '../../../core/theme/colors.dart';
+import '../../../core/theme/b05_semantic_colors.dart';
 import '../../../core/typed_quantities.dart';
 import '../nutrition_thali_controller.dart';
 
@@ -23,7 +23,7 @@ class ThaliComponentPickerSheet extends StatefulWidget {
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppColors.surface,
+      backgroundColor: context.b05Colors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -60,7 +60,7 @@ class _ThaliComponentPickerSheetState extends State<ThaliComponentPickerSheet> {
 
   @override
   void dispose() {
-    _searchController.dispose;
+    _searchController.dispose();
     _amountController.dispose();
     super.dispose();
   }
@@ -135,6 +135,7 @@ class _ThaliComponentPickerSheetState extends State<ThaliComponentPickerSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.b05Colors;
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     final foodResults = widget.state.foodResults;
     final recipeResults = widget.state.recipeResults;
@@ -158,7 +159,7 @@ class _ThaliComponentPickerSheetState extends State<ThaliComponentPickerSheet> {
                 height: 4,
                 margin: const EdgeInsets.only(bottom: 12),
                 decoration: BoxDecoration(
-                  color: AppColors.border,
+                  color: colors.border,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -167,16 +168,16 @@ class _ThaliComponentPickerSheetState extends State<ThaliComponentPickerSheet> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'Add Dish to Thali',
                   style: TextStyle(
-                    color: AppColors.textPrimary,
+                    color: colors.textPrimary,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close, color: AppColors.textSecondary),
+                  icon: Icon(Icons.close, color: colors.textSecondary),
                   onPressed: () => Navigator.of(context).pop(),
                 ),
               ],
@@ -187,14 +188,14 @@ class _ThaliComponentPickerSheetState extends State<ThaliComponentPickerSheet> {
               key: const Key('thali_search_input'),
               controller: _searchController,
               onChanged: _onSearchChanged,
-              style: const TextStyle(color: AppColors.textPrimary),
+              style: TextStyle(color: colors.textPrimary),
               decoration: InputDecoration(
                 hintText: 'Search roti, dal, sabzi, paneer, rice...',
-                hintStyle: const TextStyle(color: AppColors.textMuted),
-                prefixIcon: const Icon(Icons.search, color: AppColors.textSecondary),
+                hintStyle: TextStyle(color: colors.textDisabled),
+                prefixIcon: Icon(Icons.search, color: colors.textSecondary),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
-                        icon: const Icon(Icons.clear, color: AppColors.textSecondary),
+                        icon: Icon(Icons.clear, color: colors.textSecondary),
                         onPressed: () {
                           _searchController.clear();
                           _onSearchChanged('');
@@ -202,26 +203,26 @@ class _ThaliComponentPickerSheetState extends State<ThaliComponentPickerSheet> {
                       )
                     : null,
                 filled: true,
-                fillColor: AppColors.cardBackground,
+                fillColor: colors.inset,
                 contentPadding: const EdgeInsets.symmetric(vertical: 10),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: AppColors.border),
+                  borderSide: BorderSide(color: colors.border),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: AppColors.border),
+                  borderSide: BorderSide(color: colors.border),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: AppColors.primary),
+                  borderSide: BorderSide(color: colors.action),
                 ),
               ),
             ),
             const SizedBox(height: 12),
             // Selected item portion config card
             if (_selectedFood != null || _selectedRecipe != null)
-              _buildPortionConfigCard()
+              _buildPortionConfigCard(colors)
             else ...[
               // Search Results List
               if (isSearching)
@@ -234,12 +235,12 @@ class _ThaliComponentPickerSheetState extends State<ThaliComponentPickerSheet> {
               else if (foodResults.isEmpty &&
                   recipeResults.isEmpty &&
                   _searchController.text.isNotEmpty)
-                const Center(
+                Center(
                   child: Padding(
-                    padding: EdgeInsets.all(24),
+                    padding: const EdgeInsets.all(24),
                     child: Text(
                       'No matching dishes found.',
-                      style: TextStyle(color: AppColors.textSecondary),
+                      style: TextStyle(color: colors.textSecondary),
                     ),
                   ),
                 )
@@ -249,12 +250,12 @@ class _ThaliComponentPickerSheetState extends State<ThaliComponentPickerSheet> {
                     shrinkWrap: true,
                     children: [
                       if (foodResults.isNotEmpty) ...[
-                        const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 4),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
                           child: Text(
                             'FOODS',
                             style: TextStyle(
-                              color: AppColors.textMuted,
+                              color: colors.textDisabled,
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
                             ),
@@ -268,43 +269,43 @@ class _ThaliComponentPickerSheetState extends State<ThaliComponentPickerSheet> {
                               horizontal: 8,
                               vertical: 2,
                             ),
-                            leading: const Icon(
+                            leading: Icon(
                               Icons.restaurant_outlined,
-                              color: AppColors.primary,
+                              color: colors.action,
                               size: 20,
                             ),
                             title: Text(
                               food.displayName,
-                              style: const TextStyle(
-                                color: AppColors.textPrimary,
+                              style: TextStyle(
+                                color: colors.textPrimary,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
                             subtitle: food.region != null
                                 ? Text(
                                     food.region!,
-                                    style: const TextStyle(
-                                      color: AppColors.textMuted,
+                                    style: TextStyle(
+                                      color: colors.textDisabled,
                                       fontSize: 11,
                                     ),
                                   )
                                 : null,
-                            trailing: const Icon(
+                            trailing: Icon(
                               Icons.arrow_forward_ios_rounded,
                               size: 14,
-                              color: AppColors.textMuted,
+                              color: colors.textDisabled,
                             ),
                             onTap: () => _selectFood(food),
                           ),
                         ),
                       ],
                       if (recipeResults.isNotEmpty) ...[
-                        const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 4),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
                           child: Text(
                             'SAVED RECIPES',
                             style: TextStyle(
-                              color: AppColors.textMuted,
+                              color: colors.textDisabled,
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
                             ),
@@ -318,22 +319,22 @@ class _ThaliComponentPickerSheetState extends State<ThaliComponentPickerSheet> {
                               horizontal: 8,
                               vertical: 2,
                             ),
-                            leading: const Icon(
+                            leading: Icon(
                               Icons.menu_book_rounded,
-                              color: AppColors.streakOrange,
+                              color: colors.warning.indicator,
                               size: 20,
                             ),
                             title: Text(
                               recipe.recipeName,
-                              style: const TextStyle(
-                                color: AppColors.textPrimary,
+                              style: TextStyle(
+                                color: colors.textPrimary,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
-                            trailing: const Icon(
+                            trailing: Icon(
                               Icons.arrow_forward_ios_rounded,
                               size: 14,
-                              color: AppColors.textMuted,
+                              color: colors.textDisabled,
                             ),
                             onTap: () => _selectRecipe(recipe),
                           ),
@@ -349,16 +350,16 @@ class _ThaliComponentPickerSheetState extends State<ThaliComponentPickerSheet> {
     );
   }
 
-  Widget _buildPortionConfigCard() {
+  Widget _buildPortionConfigCard(B05SemanticColors colors) {
     final title = _selectedFood?.displayName ?? _selectedRecipe?.recipeName ?? '';
     final standardMeasures = widget.state.standardMeasures;
 
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.cardBackground,
+        color: colors.inset,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.5)),
+        border: Border.all(color: colors.action.withValues(alpha: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -369,15 +370,15 @@ class _ThaliComponentPickerSheetState extends State<ThaliComponentPickerSheet> {
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
+                  style: TextStyle(
+                    color: colors.textPrimary,
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.close, size: 18, color: AppColors.textMuted),
+                icon: Icon(Icons.close, size: 18, color: colors.textDisabled),
                 onPressed: () {
                   setState(() {
                     _selectedFood = null;
@@ -388,10 +389,10 @@ class _ThaliComponentPickerSheetState extends State<ThaliComponentPickerSheet> {
             ],
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'PORTION & MEASURE',
             style: TextStyle(
-              color: AppColors.textMuted,
+              color: colors.textDisabled,
               fontSize: 10,
               fontWeight: FontWeight.w600,
             ),
@@ -405,16 +406,16 @@ class _ThaliComponentPickerSheetState extends State<ThaliComponentPickerSheet> {
                   key: const Key('thali_portion_amount_input'),
                   controller: _amountController,
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  style: const TextStyle(color: AppColors.textPrimary),
+                  style: TextStyle(color: colors.textPrimary),
                   decoration: InputDecoration(
                     labelText: 'Amount',
-                    labelStyle: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                    labelStyle: TextStyle(color: colors.textSecondary, fontSize: 12),
                     filled: true,
-                    fillColor: AppColors.surface,
+                    fillColor: colors.surface,
                     contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: AppColors.border),
+                      borderSide: BorderSide(color: colors.border),
                     ),
                   ),
                 ),
@@ -469,9 +470,9 @@ class _ThaliComponentPickerSheetState extends State<ThaliComponentPickerSheet> {
                           ],
                         ),
                       )
-                    : const Text(
+                    : Text(
                         '1 Serving',
-                        style: TextStyle(color: AppColors.textSecondary),
+                        style: TextStyle(color: colors.textSecondary),
                       ),
               ),
             ],
@@ -485,8 +486,8 @@ class _ThaliComponentPickerSheetState extends State<ThaliComponentPickerSheet> {
               icon: const Icon(Icons.add_rounded, size: 18),
               label: const Text('Add to Plate'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
+                backgroundColor: colors.action,
+                foregroundColor: colors.onAction,
                 padding: const EdgeInsets.symmetric(vertical: 10),
               ),
             ),

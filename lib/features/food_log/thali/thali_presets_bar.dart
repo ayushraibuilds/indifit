@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/theme/colors.dart';
+import '../../../core/theme/b05_semantic_colors.dart';
 import 'thali_presets.dart';
 
 class ThaliPresetsBar extends StatelessWidget {
@@ -10,16 +10,17 @@ class ThaliPresetsBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.b05Colors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Text(
             'QUICK MEAL ARCHETYPES',
             style: TextStyle(
-              color: AppColors.textMuted,
+              color: colors.textDisabled,
               fontSize: 11,
               fontWeight: FontWeight.w600,
               letterSpacing: 0.8,
@@ -37,21 +38,21 @@ class ThaliPresetsBar extends StatelessWidget {
               final preset = ThaliPresets.all[index];
               return ActionChip(
                 key: Key('thali_preset_${preset.id}'),
-                avatar: const Icon(
+                avatar: Icon(
                   Icons.auto_awesome,
                   size: 16,
-                  color: AppColors.primary,
+                  color: colors.action,
                 ),
                 label: Text(
                   preset.name,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
+                  style: TextStyle(
+                    color: colors.textPrimary,
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                backgroundColor: AppColors.surface,
-                side: const BorderSide(color: AppColors.cardBorder),
+                backgroundColor: colors.surface,
+                side: BorderSide(color: colors.border),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
                 ),
