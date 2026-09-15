@@ -8,6 +8,7 @@ import '../../../data/models/hydration_models.dart';
 import '../../../data/repositories/hydration_repository.dart';
 import '../today_surface_controller.dart';
 import 'hydration_detail_sheet.dart';
+import 'hydration_fluid_fill.dart';
 import 'today_helpers.dart';
 import 'today_module_widgets.dart';
 
@@ -144,16 +145,24 @@ class TodayHydrationCard extends ConsumerWidget {
                   ],
                 ),
                 const SizedBox(height: B05Layout.space12),
-                ClipRRect(
-                  borderRadius: B05Radii.smallRadius,
-                  child: LinearProgressIndicator(
-                    value: ratio,
-                    minHeight: 8,
-                    backgroundColor: colors.info.container.withAlpha(80),
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      model.isGoalMet
-                          ? colors.success.indicator
-                          : colors.info.indicator,
+                B05MotionContent(
+                  animatedChild: HydrationFluidFillIndicator(
+                    progress: model.rawProgressRatio,
+                    isGoalMet: model.isGoalMet,
+                    height: 32,
+                    borderRadius: B05Radii.smallRadius,
+                  ),
+                  reducedMotionChild: ClipRRect(
+                    borderRadius: B05Radii.smallRadius,
+                    child: LinearProgressIndicator(
+                      value: ratio,
+                      minHeight: 8,
+                      backgroundColor: colors.info.container.withValues(alpha: 0.3),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        model.isGoalMet
+                            ? colors.success.indicator
+                            : colors.info.indicator,
+                      ),
                     ),
                   ),
                 ),

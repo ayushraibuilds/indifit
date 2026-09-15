@@ -11,6 +11,7 @@ import '../../../data/models/hydration_models.dart';
 import '../../../data/repositories/hydration_repository.dart';
 import '../../settings/settings_controller.dart';
 import '../today_surface_controller.dart';
+import 'hydration_fluid_fill.dart';
 import 'today_helpers.dart';
 
 final hydrationDailyProvider = FutureProvider.autoDispose
@@ -258,17 +259,25 @@ class _HydrationDetailSheetState extends ConsumerState<HydrationDetailSheet> {
                           ),
                         ),
                         const SizedBox(height: B05Layout.space12),
-                        ClipRRect(
-                          borderRadius: B05Radii.smallRadius,
-                          child: LinearProgressIndicator(
-                            value: ratio,
-                            minHeight: 10,
-                            backgroundColor:
-                                colors.info.container.withAlpha(80),
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              daily.isGoalMet
-                                  ? colors.success.indicator
-                                  : colors.info.indicator,
+                        B05MotionContent(
+                          animatedChild: HydrationFluidFillIndicator(
+                            progress: daily.rawProgressRatio,
+                            isGoalMet: daily.isGoalMet,
+                            height: 36,
+                            borderRadius: B05Radii.smallRadius,
+                          ),
+                          reducedMotionChild: ClipRRect(
+                            borderRadius: B05Radii.smallRadius,
+                            child: LinearProgressIndicator(
+                              value: ratio,
+                              minHeight: 10,
+                              backgroundColor:
+                                  colors.info.container.withValues(alpha: 0.3),
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                daily.isGoalMet
+                                    ? colors.success.indicator
+                                    : colors.info.indicator,
+                              ),
                             ),
                           ),
                         ),

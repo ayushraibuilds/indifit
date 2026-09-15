@@ -13,6 +13,7 @@ import 'package:indifit/data/models/hydration_models.dart';
 import 'package:indifit/data/repositories/hydration_repository.dart';
 import 'package:indifit/features/dashboard/today_surface_controller.dart';
 import 'package:indifit/features/dashboard/widgets/hydration_detail_sheet.dart';
+import 'package:indifit/features/dashboard/widgets/hydration_fluid_fill.dart';
 import 'package:indifit/features/dashboard/widgets/today_hydration_card.dart';
 import 'package:indifit/features/settings/settings_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -351,11 +352,11 @@ void main() {
       expect(find.text('+250 ml'), findsOneWidget);
       expect(find.text('+500 ml'), findsOneWidget);
 
-      // Verify linear progress bar value
-      final progressIndicator = tester.widget<LinearProgressIndicator>(
-        find.byType(LinearProgressIndicator),
+      // Verify hydration fluid fill indicator value
+      final fluidIndicator = tester.widget<HydrationFluidFillIndicator>(
+        find.byType(HydrationFluidFillIndicator),
       );
-      expect(progressIndicator.value, closeTo(0.6, 0.01));
+      expect(fluidIndicator.progress, closeTo(0.6, 0.01));
     });
 
     testWidgets('quick add +250 ml button triggers intake logging and updates repository', (tester) async {
