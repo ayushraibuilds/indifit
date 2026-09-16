@@ -3,33 +3,40 @@ import 'package:flutter/material.dart';
 import '../../../core/nutrition_thali.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
 import '../../../core/typed_quantities.dart';
+import '../../../core/widgets/b05_accessibility_primitives.dart';
 import '../nutrition_thali_controller.dart';
 
 class ThaliComponentPickerSheet extends StatefulWidget {
   final NutritionThaliController controller;
   final NutritionThaliState state;
+  final String? replacingItemId;
 
   const ThaliComponentPickerSheet({
     super.key,
     required this.controller,
     required this.state,
+    this.replacingItemId,
   });
 
   static Future<void> show(
     BuildContext context, {
     required NutritionThaliController controller,
     required NutritionThaliState state,
+    String? replacingItemId,
   }) {
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: context.b05Colors.surface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(B05Radii.large),
+        ),
       ),
       builder: (context) => ThaliComponentPickerSheet(
         controller: controller,
         state: state,
+        replacingItemId: replacingItemId,
       ),
     );
   }
@@ -43,6 +50,9 @@ class _ThaliComponentPickerSheetState extends State<ThaliComponentPickerSheet> {
   final TextEditingController _searchController = TextEditingController();
   final TextEditingController _amountController = TextEditingController(text: '100');
 
+  late NutritionThaliState _currentState;
+  void Function()? _removeListener;
+
   NutritionThaliFoodOption? _selectedFood;
   NutritionThaliRecipeOption? _selectedRecipe;
 
@@ -52,14 +62,23 @@ class _ThaliComponentPickerSheetState extends State<ThaliComponentPickerSheet> {
   @override
   void initState() {
     super.initState();
+    _currentState = widget.state;
+    _removeListener = widget.controller.addListener((state) {
+      if (mounted) {
+        setState(() {
+          _currentState = state;
+        });
+      }
+    });
     // Pre-populate with initial search if already set
-    if (widget.state.query.isNotEmpty) {
-      _searchController.text = widget.state.query;
+    if (_currentState.query.isNotEmpty) {
+      _searchController.text = _currentState.query;
     }
   }
 
   @override
   void dispose() {
+    _removeListener?.call();
     _searchController.dispose();
     _amountController.dispose();
     super.dispose();
@@ -92,6 +111,10 @@ class _ThaliComponentPickerSheetState extends State<ThaliComponentPickerSheet> {
   void _confirmAdd() {
     final rawAmount = double.tryParse(_amountController.text.trim()) ?? 1.0;
     final amount = rawAmount <= 0 ? 1.0 : rawAmount;
+
+    if (widget.replacingItemId != null) {
+      widget.controller.removeItem(widget.replacingItemId!);
+    }
 
     if (_selectedFood != null) {
       Quantity quantity;
@@ -137,9 +160,9 @@ class _ThaliComponentPickerSheetState extends State<ThaliComponentPickerSheet> {
   Widget build(BuildContext context) {
     final colors = context.b05Colors;
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-    final foodResults = widget.state.foodResults;
-    final recipeResults = widget.state.recipeResults;
-    final isSearching = widget.state.status == NutritionThaliStatus.searching;
+    final foodResults = _currentState.foodResults;
+    final recipeResults = _currentState.recipeResults;
+    final isSearching = _currentState.status == NutritionThaliStatus.searching;
 
     return Padding(
       padding: EdgeInsets.only(bottom: bottomInset),
@@ -168,12 +191,16 @@ class _ThaliComponentPickerSheetState extends State<ThaliComponentPickerSheet> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Add Dish to Thali',
-                  style: TextStyle(
-                    color: colors.textPrimary,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                Expanded(
+                  child: Text(
+                    widget.replacingItemId != null
+                        ? 'Replace Dish in Thali'
+                        : 'Add Dish to Thali',
+                    style: TextStyle(
+                      color: colors.textPrimary,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 IconButton(
@@ -352,7 +379,7 @@ class _ThaliComponentPickerSheetState extends State<ThaliComponentPickerSheet> {
 
   Widget _buildPortionConfigCard(B05SemanticColors colors) {
     final title = _selectedFood?.displayName ?? _selectedRecipe?.recipeName ?? '';
-    final standardMeasures = widget.state.standardMeasures;
+    final standardMeasures = _currentState.standardMeasures;
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -483,8 +510,17 @@ class _ThaliComponentPickerSheetState extends State<ThaliComponentPickerSheet> {
             child: ElevatedButton.icon(
               key: const Key('thali_add_selected_item_button'),
               onPressed: _confirmAdd,
-              icon: const Icon(Icons.add_rounded, size: 18),
-              label: const Text('Add to Plate'),
+              icon: Icon(
+                widget.replacingItemId != null
+                    ? Icons.swap_horiz_rounded
+                    : Icons.add_rounded,
+                size: 18,
+              ),
+              label: Text(
+                widget.replacingItemId != null
+                    ? 'Replace on Plate'
+                    : 'Add to Plate',
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: colors.action,
                 foregroundColor: colors.onAction,

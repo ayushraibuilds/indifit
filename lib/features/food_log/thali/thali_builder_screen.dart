@@ -6,14 +6,26 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/di/providers.dart';
 import '../../../core/nutrition_thali.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
+import '../../../core/widgets/b05_accessibility_primitives.dart';
 import '../../../core/widgets/indi_fit_feedback.dart';
 import '../../dashboard/today_surface_controller.dart';
 import '../meal_presentation_registry.dart';
 import '../nutrition_thali_controller.dart';
+import 'circular_thali_plate.dart';
 import 'thali_component_picker_sheet.dart';
 import 'thali_item_card.dart';
 import 'thali_nutrition_summary_bar.dart';
 import 'thali_presets_bar.dart';
+import 'thali_quick_adjust_hud.dart';
+
+/// Presentation view mode for the Thali builder.
+enum ThaliViewMode {
+  /// Interactive circular platter with radial katoris and outer macro ring.
+  plate,
+
+  /// Linear reorderable item list.
+  list,
+}
 
 class ThaliBuilderScreen extends ConsumerStatefulWidget {
   final String mealCategory;
@@ -32,6 +44,8 @@ class ThaliBuilderScreen extends ConsumerStatefulWidget {
 class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
   final TextEditingController _nameController = TextEditingController();
   bool _initialized = false;
+  ThaliViewMode _viewMode = ThaliViewMode.plate;
+  String? _selectedItemId;
 
   @override
   void initState() {
@@ -91,13 +105,19 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
 
   void _openComponentPicker(
     NutritionThaliController controller,
-    NutritionThaliState state,
-  ) {
+    NutritionThaliState state, {
+    String? replacingItemId,
+  }) {
     ThaliComponentPickerSheet.show(
       context,
       controller: controller,
       state: state,
-    );
+      replacingItemId: replacingItemId,
+    ).then((_) {
+      if (replacingItemId != null && mounted) {
+        setState(() => _selectedItemId = null);
+      }
+    });
   }
 
   @override
@@ -218,6 +238,9 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
               ).then((confirmed) {
                 if (confirmed == true) {
                   controller.clearDraft();
+                  setState(() {
+                    _selectedItemId = null;
+                  });
                 }
               });
             },
@@ -267,6 +290,9 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
                 // Presets Bar
                 ThaliPresetsBar(
                   onSelectPreset: (preset) {
+                    setState(() {
+                      _selectedItemId = null;
+                    });
                     controller.loadPreset(
                       presetName: preset.name,
                       items: preset.items,
@@ -286,8 +312,6 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
                                 vertical: 6,
                               ),
                               child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   Expanded(
                                     child: Text(
@@ -299,6 +323,62 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
                                         letterSpacing: 0.8,
                                       ),
                                       overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  Container(
+                                    height: 32,
+                                    margin: const EdgeInsets.only(right: 8),
+                                    decoration: BoxDecoration(
+                                      color: colors.surfaceSubtle,
+                                      borderRadius: B05Radii.smallRadius,
+                                      border: Border.all(color: colors.border),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        B05TouchTarget(
+                                          minWidth: B05Layout.minTouchTarget,
+                                          minHeight: B05Layout.minTouchTarget,
+                                          child: IconButton(
+                                            key: const Key('thali_view_mode_plate'),
+                                            padding: EdgeInsets.zero,
+                                            icon: Icon(
+                                              Icons.pie_chart_outline_rounded,
+                                              size: 18,
+                                              color: _viewMode == ThaliViewMode.plate
+                                                  ? colors.action
+                                                  : colors.textDisabled,
+                                            ),
+                                            tooltip: 'Plate View',
+                                            onPressed: () {
+                                              if (_viewMode != ThaliViewMode.plate) {
+                                                setState(() => _viewMode = ThaliViewMode.plate);
+                                              }
+                                            },
+                                          ),
+                                        ),
+                                        B05TouchTarget(
+                                          minWidth: B05Layout.minTouchTarget,
+                                          minHeight: B05Layout.minTouchTarget,
+                                          child: IconButton(
+                                            key: const Key('thali_view_mode_list'),
+                                            padding: EdgeInsets.zero,
+                                            icon: Icon(
+                                              Icons.view_list_rounded,
+                                              size: 18,
+                                              color: _viewMode == ThaliViewMode.list
+                                                  ? colors.action
+                                                  : colors.textDisabled,
+                                            ),
+                                            tooltip: 'List View',
+                                            onPressed: () {
+                                              if (_viewMode != ThaliViewMode.list) {
+                                                setState(() => _viewMode = ThaliViewMode.list);
+                                              }
+                                            },
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
                                   TextButton.icon(
@@ -317,7 +397,53 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
                                 ],
                               ),
                             ),
+                            if (_viewMode == ThaliViewMode.plate) ...[
+                              Flexible(
+                                flex: _selectedItemId != null ? 3 : 5,
+                                child: CircularThaliPlate(
+                                  items: items,
+                                  previews: previewItems,
+                                  preview: state.preview,
+                                  selectedItemId: _selectedItemId,
+                                  onSelectItem: (id) => setState(() => _selectedItemId = id),
+                                  onAddDish: () => _openComponentPicker(controller, state),
+                                  onViewAllDishes: () => setState(() => _viewMode = ThaliViewMode.list),
+                                ),
+                              ),
+                              if (_selectedItemId != null) ...[
+                                () {
+                                  final selectedItem = items
+                                      .where((i) => i.id == _selectedItemId)
+                                      .firstOrNull;
+                                  if (selectedItem == null) return const SizedBox.shrink();
+                                  final selectedItemPreview = previewItems
+                                      .where((p) => p.item.id == selectedItem.id)
+                                      .firstOrNull;
+                                  return ThaliQuickAdjustHud(
+                                    item: selectedItem,
+                                    preview: selectedItemPreview,
+                                    onIncrement: () =>
+                                        controller.incrementQuantity(selectedItem.id),
+                                    onDecrement: () =>
+                                        controller.decrementQuantity(selectedItem.id),
+                                    onRemove: () {
+                                      controller.removeItem(selectedItem.id);
+                                      setState(() => _selectedItemId = null);
+                                    },
+                                    onReplace: () =>
+                                        _openComponentPicker(
+                                          controller,
+                                          state,
+                                          replacingItemId: selectedItem.id,
+                                        ),
+                                    onClose: () =>
+                                        setState(() => _selectedItemId = null),
+                                  );
+                                }(),
+                              ],
+                            ],
                             Expanded(
+                              flex: 4,
                               child: ReorderableListView.builder(
                                 key: const Key('thali_items_list'),
                                 padding: const EdgeInsets.only(bottom: 16),
@@ -337,8 +463,12 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
                                         controller.incrementQuantity(item.id),
                                     onDecrement: () =>
                                         controller.decrementQuantity(item.id),
-                                    onDelete: () =>
-                                        controller.removeItem(item.id),
+                                    onDelete: () {
+                                      if (_selectedItemId == item.id) {
+                                        _selectedItemId = null;
+                                      }
+                                      controller.removeItem(item.id);
+                                    },
                                   );
                                 },
                               ),

@@ -17,7 +17,6 @@ import '../../core/presentation/consumer_date_label.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/typed_quantities.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
-import '../../core/widgets/consumer_task_primitives.dart';
 import '../../core/widgets/indi_fit_feedback.dart';
 import '../../core/widgets/skeleton_loader.dart';
 import '../../data/database/app_database.dart';
@@ -37,12 +36,16 @@ import 'meal_presentation_registry.dart';
 import 'saved_meals_screen.dart';
 import 'saved_recipe_log_screen.dart';
 import 'widgets/food_portion_bottom_sheet.dart';
+import 'widgets/food_search_widgets.dart';
 import 'widgets/remote_food_review_sheet.dart';
 
 export 'food_diary_screen.dart';
 export 'food_search_view_models.dart';
 export 'widgets/food_diary_widgets.dart';
 export 'widgets/food_portion_bottom_sheet.dart';
+export 'widgets/food_search_bar.dart';
+export 'widgets/food_search_recent_list.dart';
+export 'widgets/food_search_results_list.dart';
 export 'widgets/food_search_widgets.dart';
 
 class FoodSearchScreen extends ConsumerStatefulWidget {
@@ -1262,24 +1265,12 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                   style: B05Typography.caption(context),
                 ),
                 const SizedBox(height: 14),
-                TextField(
+                FoodSearchBar(
                   controller: _searchController,
                   focusNode: _searchFocusNode,
                   autofocus: widget.mealType != null,
-                  textInputAction: TextInputAction.search,
+                  onClear: () => _searchController.clear(),
                   onTapOutside: (_) => FocusScope.of(context).unfocus(),
-                  decoration: InputDecoration(
-                    labelText: 'Search foods',
-                    hintText: 'Roti, paneer bhurji, dal, idli…',
-                    prefixIcon: const Icon(Icons.search_rounded),
-                    suffixIcon: _searchController.text.isNotEmpty
-                        ? IconButton(
-                            tooltip: 'Clear food search',
-                            icon: const Icon(Icons.clear_rounded),
-                            onPressed: () => _searchController.clear(),
-                          )
-                        : null,
-                  ),
                 ),
                 const SizedBox(height: 12),
                 Expanded(
@@ -1314,160 +1305,67 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     ],
   );
 
-  Widget _buildLandingState(DateTime logDate) {
-    return ListView(
-      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-      padding: const EdgeInsets.only(bottom: 24),
-      children: [
-        if (_activeMealType == null) ...[
-          _buildNeutralFoodEntry(),
-          const SizedBox(height: 16),
-        ],
-        _sectionHeader(
-          title: 'Recent',
-          subtitle: 'Foods you log often stay close at hand.',
-        ),
-        if (_loadingRecent)
-          const SkeletonList(count: 3)
-        else if (_recentFailureMessage != null)
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: ConsumerStatusRow(
-              label: 'Recent foods unavailable',
-              detail: _recentFailureMessage,
-              error: true,
-              onRetry: _retryRecentFoods,
-            ),
-          )
-        else if (_canonicalRecentResults.isEmpty && _recentResults.isEmpty)
-          _buildLandingEmpty(
-            title: 'No recent foods yet',
-            message: 'Foods you log will appear here.',
-          )
-        else
-          ..._canonicalRecentResults.map(_buildCanonicalRecentItemRow),
-        if (!_loadingRecent &&
-            _recentResults.isNotEmpty &&
-            _canonicalRecentResults.isNotEmpty)
-          const SizedBox(height: 8),
-        if (!_loadingRecent) ..._recentResults.take(6).map(_buildRecentItemRow),
-        if (_canonicalRecentResults.any((item) => item.frequencyCount > 1)) ...[
-          const SizedBox(height: 16),
-          _sectionHeader(
-            title: 'Frequent',
-            subtitle: 'Your repeat choices, ordered by real local history.',
-          ),
-          ...(_canonicalRecentResults
-                  .where((item) => item.frequencyCount > 1)
-                  .toList()
-                ..sort((left, right) {
-                  final count = right.frequencyCount.compareTo(
-                    left.frequencyCount,
-                  );
-                  if (count != 0) return count;
-                  final date = right.loggedAtUtc.compareTo(left.loggedAtUtc);
-                  if (date != 0) return date;
-                  return left.option.id.compareTo(right.option.id);
-                }))
-              .map(_buildCanonicalRecentItemRow),
-        ],
-        const SizedBox(height: 16),
-        _sectionHeader(
-          title: 'Saved & recipes',
-          subtitle: 'Saved meals and recipes you make often.',
-        ),
-        _buildNavigationCard(
-          icon: Icons.bookmark_outline_rounded,
-          title: 'Saved meals',
-          detail: 'Quickly log meal combinations you saved.',
-          onTap: _openSavedMeals,
-        ),
-        _buildNavigationCard(
-          icon: Icons.menu_book_rounded,
-          title: 'Saved recipes',
-          detail: 'Find, scale or create a published recipe.',
-          onTap: _openSavedRecipes,
-        ),
-        const SizedBox(height: 16),
-        _sectionHeader(
-          title: 'More ways',
-          subtitle: 'Optional shortcuts when they help.',
-        ),
-        _buildNavigationCard(
-          icon: Icons.qr_code_scanner_rounded,
-          title: 'Scan barcode',
-          detail: 'Find a packaged food by its barcode.',
-          onTap: () => _openBarcode(context),
-        ),
-        _buildNavigationCard(
-          icon: Icons.document_scanner_rounded,
-          title: 'Scan nutrition label',
-          detail: 'Extract dual-basis facts directly from packaging.',
-          onTap: () {
-            final mealParam = widget.mealType != null ? '?mealType=${widget.mealType}' : '';
-            final dateParam = widget.selectedDate != null
-                ? (mealParam.isEmpty
-                    ? '?date=${widget.selectedDate!.toIso8601String().split('T').first}'
-                    : '&date=${widget.selectedDate!.toIso8601String().split('T').first}')
-                : '';
-            context.push('/food/label-ocr$mealParam$dateParam');
-          },
-        ),
-        _buildNavigationCard(
-          icon: Icons.auto_awesome_rounded,
-          title: 'Describe meal',
-          detail: 'Log multi-item meals with standard Indian portions.',
-          onTap: () {
-            final mealParam = widget.mealType != null ? '?mealType=${widget.mealType}' : '';
-            final dateParam = widget.selectedDate != null
-                ? (mealParam.isEmpty
-                    ? '?date=${widget.selectedDate!.toIso8601String().split('T').first}'
-                    : '&date=${widget.selectedDate!.toIso8601String().split('T').first}')
-                : '';
-            context.push('/food/describe$mealParam$dateParam');
-          },
-        ),
-        const SizedBox(height: 16),
-        FoodLogEntriesPanel(
+  Widget _buildLandingState(DateTime logDate) => FoodSearchRecentList(
+        neutralFoodEntry:
+            _activeMealType == null ? _buildNeutralFoodEntry() : null,
+        loadingRecent: _loadingRecent,
+        recentFailureMessage: _recentFailureMessage,
+        onRetryRecent: _retryRecentFoods,
+        canonicalRecentResults: _canonicalRecentResults,
+        recentResults: _recentResults,
+        canonicalRecentItemBuilder: (context, recent) =>
+            _buildCanonicalRecentItemRow(recent),
+        recentItemBuilder: (context, food) => _buildRecentItemRow(food),
+        onOpenSavedMeals: _openSavedMeals,
+        onOpenSavedRecipes: _openSavedRecipes,
+        onOpenBarcode: () => _openBarcode(context),
+        onScanNutritionLabel: () {
+          final mealParam =
+              widget.mealType != null ? '?mealType=${widget.mealType}' : '';
+          final dateParam = widget.selectedDate != null
+              ? (mealParam.isEmpty
+                  ? '?date=${widget.selectedDate!.toIso8601String().split('T').first}'
+                  : '&date=${widget.selectedDate!.toIso8601String().split('T').first}')
+              : '';
+          context.push('/food/label-ocr$mealParam$dateParam');
+        },
+        onDescribeMeal: () {
+          final mealParam =
+              widget.mealType != null ? '?mealType=${widget.mealType}' : '';
+          final dateParam = widget.selectedDate != null
+              ? (mealParam.isEmpty
+                  ? '?date=${widget.selectedDate!.toIso8601String().split('T').first}'
+                  : '&date=${widget.selectedDate!.toIso8601String().split('T').first}')
+              : '';
+          context.push('/food/describe$mealParam$dateParam');
+        },
+        entriesPanel: FoodLogEntriesPanel(
           date: logDate,
           onCanonicalRecordTap: _showCanonicalActionMenu,
           onCanonicalItemTap: _showCanonicalActionMenu,
         ),
-      ],
-    );
-  }
+      );
 
-  Widget _buildSearchResults() => ListView(
-    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-    padding: const EdgeInsets.only(bottom: 24),
-    children: [
-      if (_isOnlineSearchOffline)
-        ConsumerStatusRow(
-          label: _rankedSearchResults.isNotEmpty
-              ? 'Showing matching foods'
-              : 'Online search unavailable',
-          detail: _rankedSearchResults.isNotEmpty
-              ? 'Online results are temporarily unavailable.'
-              : _onlineFailureMessage ?? 'Try again or choose from Recent.',
-          error: _rankedSearchResults.isEmpty,
-          onRetry: () => _performSearch(_searchController.text),
-        ),
-      if (_rankedSearchResults.isNotEmpty) ...[
-        _sectionHeader(title: 'Search results'),
-        ..._rankedSearchResults.map(_buildRankedSearchRow),
-      ],
-      if (_searchingOnline)
-        const ConsumerStatusRow(
-          label: 'Searching for more matches',
-          detail: 'Matching foods are ready to use.',
-          loading: true,
-        ),
-      if (!_searchingOnline &&
-          !_isOnlineSearchOffline &&
-          _rankedSearchResults.isEmpty)
-        _buildNoResultsState(),
-    ],
-  );
+  Widget _buildSearchResults() => FoodSearchResultsList(
+        isOnlineSearchOffline: _isOnlineSearchOffline,
+        searchingOnline: _searchingOnline,
+        onlineFailureMessage: _onlineFailureMessage,
+        onRetrySearch: () => _performSearch(_searchController.text),
+        searchResults: _rankedSearchResults,
+        searchResultItemBuilder: (context, result) =>
+            _buildRankedSearchRow(result),
+        onCreateCustomFood: () async {
+          final result = await Navigator.push<bool?>(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const CustomFoodEditorScreen(),
+            ),
+          );
+          if (result == true) {
+            await _performSearch(_searchController.text);
+          }
+        },
+      );
 
   Widget _buildRankedSearchRow(NutritionFoodSearchResult result) {
     final candidate = result.candidate;
@@ -1481,69 +1379,6 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       ),
     };
   }
-
-  Widget _sectionHeader({required String title, String? subtitle}) => Padding(
-    padding: const EdgeInsets.only(bottom: 8),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(title, style: B05Typography.title(context)),
-        if (subtitle != null)
-          Padding(
-            padding: const EdgeInsets.only(top: 2),
-            child: Text(subtitle, style: B05Typography.caption(context)),
-          ),
-      ],
-    ),
-  );
-
-  Widget _buildLandingEmpty({required String title, required String message}) =>
-      B05Surface(
-        subtle: true,
-        showBorder: false,
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(Icons.history_rounded, color: context.b05Colors.action),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: B05Typography.label(context)),
-                  const SizedBox(height: 2),
-                  Text(message, style: B05Typography.body(context)),
-                ],
-              ),
-            ),
-          ],
-        ),
-      );
-
-  Widget _buildNavigationCard({
-    required IconData icon,
-    required String title,
-    required String detail,
-    required VoidCallback onTap,
-  }) => B05Surface(
-    padding: EdgeInsets.zero,
-    child: Semantics(
-      container: true,
-      explicitChildNodes: true,
-      button: true,
-      label: title,
-      hint: detail,
-      child: ListTile(
-        minVerticalPadding: 12,
-        leading: Icon(icon, color: context.b05Colors.action),
-        title: Text(title, style: B05Typography.label(context)),
-        subtitle: Text(detail, style: B05Typography.caption(context)),
-        trailing: const Icon(Icons.chevron_right_rounded),
-        onTap: onTap,
-      ),
-    ),
-  );
 
   Widget _buildNeutralFoodEntry() => B05Surface(
     subtle: true,
@@ -2432,47 +2267,6 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   String _numberLabel(num value) => value.toDouble() == value.roundToDouble()
       ? value.toStringAsFixed(0)
       : value.toStringAsFixed(1);
-
-  Widget _buildNoResultsState() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 40.0),
-      child: Center(
-        child: Column(
-          children: [
-            Icon(
-              Icons.search_off_rounded,
-              size: 40,
-              color: context.b05Colors.textSecondary,
-            ),
-            const SizedBox(height: 12),
-            Text('No foods found', style: B05Typography.label(context)),
-            const SizedBox(height: 4),
-            Text(
-              'Try another name or create a custom food.',
-              style: B05Typography.body(context),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 20),
-            FilledButton.icon(
-              onPressed: () async {
-                final result = await Navigator.push<bool?>(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const CustomFoodEditorScreen(),
-                  ),
-                );
-                if (result == true) {
-                  await _performSearch(_searchController.text);
-                }
-              },
-              icon: const Icon(Icons.add),
-              label: const Text('Create a custom food'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   void _showBarcodePermissionRationale(
     BuildContext context,

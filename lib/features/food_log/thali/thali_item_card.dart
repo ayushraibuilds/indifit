@@ -90,7 +90,10 @@ class ThaliItemCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 2),
-                  Row(
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 2,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -110,8 +113,7 @@ class ThaliItemCard extends StatelessWidget {
                           ),
                         ),
                       ),
-                      if (caloriesStr != null) ...[
-                        const SizedBox(width: 8),
+                      if (caloriesStr != null)
                         Text(
                           caloriesStr,
                           style: TextStyle(
@@ -120,7 +122,6 @@ class ThaliItemCard extends StatelessWidget {
                             fontWeight: FontWeight.w500,
                           ),
                         ),
-                      ],
                     ],
                   ),
                   if (macrosStr != null) ...[
@@ -131,6 +132,8 @@ class ThaliItemCard extends StatelessWidget {
                         color: colors.textDisabled,
                         fontSize: 11,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ],
