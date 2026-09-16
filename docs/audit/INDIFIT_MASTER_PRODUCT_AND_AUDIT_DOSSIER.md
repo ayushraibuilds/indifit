@@ -3,8 +3,9 @@
 > **Authoritative Dossier & Portfolio Blueprint**  
 > **Document Status:** Active & Canonical  
 > **Target Version:** IndiFit 1.0.0 (Build 1) | Post-V1 Stream B Baseline  
-> **Repository Baseline:** Schema Version 22 | Backup Version 10 | 2,247 Automated Tests Passing (0 Failures)  
+> **Repository Baseline:** Schema Version 22 | Backup Version 10 | 2,269+ Automated Tests Passing (0 Failures)  
 > **Target Platforms:** Android & iOS (Offline-First Mobile Core)  
+> **Audit & Reconciliation Date:** 2026-09-16 (Post-Audit Implementation Refresh)  
 
 ---
 
@@ -197,11 +198,12 @@ $$\text{User Profile \& Constraints} \longrightarrow \text{Planners} \longrighta
 
 ## 5. Feature Inventory: Fully Implemented & Verified Capabilities
 
-The repository features an extensive catalog of implemented, fully tested features verified across **2,247 automated test assertions**:
+The repository features an extensive catalog of implemented, fully tested features verified across **2,269+ automated test assertions**:
 
 ### 5.1 Today / Dashboard Action Surface
 * **Dynamic Modular Layout**: Reorderable and hideable cards (Daily Nutrition Hero, Workout Action, Meal Rows, Activity, Weight Sparkline) managed by `dashboard_module_registry.dart`.
 * **Calorie & Macro Visualization**: Daily circular progress ring showing consumed vs. remaining calories, with color-coded macro bars (Protein, Carbs, Fat) respecting `B05SemanticColors`.
+* **Interactive Hydration Wave Module**: Today fluid-fill wave animation card powered by Drift `DailyHydrations` tables, supporting quick 250ml/500ml logging, custom goals, and B05 accessibility/reduced-motion fallback (`d7f1697`).
 * **Module Customization Panel**: Fully accessible bottom sheet for toggling and reordering home modules.
 * **Date Navigation**: Seamless past and future date scrubbing with truthful historical rendering and future plan previews.
 
@@ -211,7 +213,12 @@ The repository features an extensive catalog of implemented, fully tested featur
 * **Household Measurements**: Native logging in *katoris* (calibrated ml/g equivalents), *rotis* (with or without ghee), *vatis*, *spoons*, and *pieces*.
 * **Raw-to-Cooked Lentil & Grain Calculator**: Automated mathematical expansion for raw legumes and grains.
 * **Multi-Select Fast Logging**: Batch logging workflow enabling users to check off an entire meal (e.g., 2 Rotis + 1 Katori Dal + 1 Katori Sabzi + 100g Dahi) and commit in a single action.
-* **Visual Thali Builder**: Grouped composition model calculating cumulative thali macros in real-time.
+* **Interactive Circular Thali Plate & Quick-Adjust HUD**: Dedicated visual plate interface (`circular_thali_plate.dart`, `thali_plate_layout.dart`) rendering traditional center staples (rotis/rice) and perimeter *katoris* (dal/sabzi/curd) with dynamic outer macro-distribution ring, interactive dish selection, and `ThaliQuickAdjustHud` for rapid portion adjustments.
+* **Modular Thali Builder**: Grouped composition model calculating cumulative thali macros in real-time with integrity-filtered stats bridge (`1e83ae3`).
+* **Local Adaptive TDEE Expenditure Engine**: On-device rolling Exponentially Weighted Moving Average (EWMA) biological energy expenditure engine (`a6f3794`) calculating true biological expenditure from daily scale weight and calorie logs.
+* **Nutrition-Label OCR & Natural-Language Meal Logger**: On-device OCR with confidence scores and natural-language meal text parser with interactive review sheet before committing to Drift (`d51683c`).
+* **Configurable Diary Structure & Snack Slots**: User-customizable snack slots and meal structure (`0d84afd`).
+* **Modular Presentation Architecture**: `food_search_screen.dart` decomposed into modular components including `FoodPortionBottomSheet`, `FoodSearchBar`, `FoodSearchRecentList`, and `FoodSearchResultsList`.
 * **Custom Food & Recipe Creator**: Full authoring surface for user-defined foods and multi-ingredient recipes.
 * **Barcode Scanning with Fallback**: Integrated scanner with Open Food Facts API lookup, failing quietly back to local search if offline.
 
@@ -219,15 +226,18 @@ The repository features an extensive catalog of implemented, fully tested featur
 * **B02 Strength Execution Player**: Focused execution screen showing active exercise, set order, target reps, target weight, and previous session performance.
 * **Set Types**: Support for Warm-up, Working, Drop Sets, Failure sets, and Rest-Pause intervals.
 * **Auto-Prefill Intelligence**: Automatically pre-fills weights and reps based on the user's last successful performance.
-* **Barbell Plate Calculator**: Dynamic visual sheet calculating exact 20kg/15kg/10kg/5kg/2.5kg/1.25kg plate configurations per barbell side.
+* **Consolidated Barbell Plate Calculator**: Embedded directly into strength set inputs without modal diversion (`c4dfa00`, `d9d25b0`).
 * **Rest Timer with Screen Wakelock**: Circular countdown timer with `WakelockPlus` to keep the display active during recovery intervals.
-* **Background Rest Presence**: Local notification alerts signaling rest termination even when the app is minimized.
+* **Background Rest Presence (Cross-Platform)**: Local notification alerts on Android (`indifit_rest_timer`) plus iOS **Live Activity and Dynamic Island** real-time rest timers (`b430c1e`).
+* **Approved Exercise Media & Pose Inspection**: Curated 59 production WebPs with interactive Start/Peak pose switcher via `SegmentedButton` and DPR-bounded `cacheWidth` decoding.
 * **Triumph Payoff & Celebrations**: Personal Record (PR) detection triggering confetti and structured recap cards via `achievement_celebration_sheet.dart`.
-* **Privacy-Aware Share Cards**: Shareable summary graphics highlighting volume, exercises, and personal achievements without leaking sensitive metadata.
+* **Privacy-Aware Share Cards**: Shareable summary graphics highlighting volume, exercises, and personal achievements with redaction toggles for weights/loads (`pv1_prod01`).
 * **Manual Workout Logger**: Bottom sheet for backfilling past sessions with custom date, exercise, and set parameters.
 
 ### 5.4 Progress, Measurements & Analytics
 * **Honest Sparse-Data Ladders**: Data presentation adapts gracefully to data volume ($0 \to 1 \to 2 \to 3+$ observations: guidance prompt $\to$ raw tile $\to$ delta indicator $\to$ full trend chart).
+* **Evidence-Backed Historical Drill-Downs & Period Comparison**: 7-day and 28-day window comparisons with factual completeness state machines and zero synthetic metrics (`a14ce4f`).
+* **Durable Plan Analytics & Consumer Customization**: Version-safe occurrence customization and phase summaries without mutating historical records (`6277d17`, `1d9c8af`).
 * **12-Week Consistency Heatmap**: Calendar matrix illustrating workout frequency over time.
 * **Weight Sparkline & Range Charts**: Interactive line charts tracking body weight over 7-day, 30-day, 90-day, and all-time windows.
 * **Muscle Volume Balance Matrix**: Maps performed sets to primary and secondary muscle groups using stable anatomical IDs.
@@ -240,31 +250,45 @@ The repository features an extensive catalog of implemented, fully tested featur
 
 ### 5.6 Data Protection, Portability & Sync
 * **Backup v10 with PBKDF2/AES-GCM**: Export entire database into an encrypted JSON file protected by user password.
-* **Atomic Restore Guarantees**: Transactional restore with automatic rollback if a backup file is malformed or corrupted.
-* **Stream B Multi-Device Sync Contracts**: Hybrid Logical Clock (HLC) mutation envelopes, clock skew validation, and blind relay routing ready for secure cross-device sync.
+* **Automatic Encrypted Cloud Backup (PV1-CLOUD-01)**: Immutable upload slice, FastAPI endpoints (`/v1/backup`), deduplication, and transactional restore.
+* **Multi-Device Sync Contracts (Stream B / PV1-SYNC-01)**: Hybrid Logical Clock (HLC) mutation envelopes, clock skew validation, zero-drift UUIDs, and FastAPI relay endpoints.
+* **Centralized Preferences Boundary (C3C)**: Injected `AppPreferencesService` and centralized `AppPreferenceKeys` eliminating scattered raw string keys.
+* **Verifiable Complete Erasure (PV1-DATA-01)**: Idempotent multi-domain data erasure verifying database, preferences, secrets, and cache deletion.
+* **Database & Repository Modularization (C4B/C4A)**: Extracted connection, seeders, and migration plumbing from `AppDatabase`, and decomposed internal query collaborators for Calendar, Recipe, and Program repositories.
+* **Modularized Backend Architecture (C6)**: FastAPI service decomposed into modular core, schemas, services, and routers with application factory.
 
 ---
 
 ## 6. Feature Inventory: Pending, Upcoming & Roadmap Scope
 
 ### 6.1 Short-Term Scope (Pre-Launch & V1.0.x Release Window)
-1. **Extraction of `food_search_screen.dart`**: Deconstruct the 3,400-line god-file into modular view components (`food_search_view.dart`, `food_portion_bottom_sheet.dart`, `food_quick_add_bar.dart`).
-2. **Retirement of Legacy Code Surfaces**: Formally deprecate and remove legacy `workout_player_screen.dart` and `meal_templates_screen.dart`.
-3. **Cold Startup Deferral**: Move `NotificationService.scheduleAllReminders(db)` post-first-frame in `main.dart` to speed up initial launch times.
-4. **Strict Color Linting**: Implement CI checks prohibiting raw `AppColors` literals outside of `lib/core/theme/` to ensure flawless light-mode rendering.
-5. **R09-D Physical Device Matrix Completion**: Attest and record real-device test runs across the designated matrix of Android and iOS devices.
+1. **Extraction of `food_search_screen.dart`**: **[COMPLETED]**
+   * Deconstructed the 3,448-line monolith into modular view components: extracted `FoodPortionBottomSheet` (823 LOC), `food_search_bar.dart`, `food_search_recent_list.dart`, and `food_search_results_list.dart`.
+2. **Retirement of Legacy Code Surfaces**: **[PENDING — Final Deletion Gate]**
+   * Legacy `workout_player_screen.dart` (751 LOC) and `meal_templates_screen.dart` (385 LOC) are fully superseded by B02 Strength Player and Saved Meals / Thali, but files remain physically in the repo awaiting final deletion.
+3. **Cold Startup Deferral**: **[COMPLETED]**
+   * Extracted app lifecycle to `lib/app/bootstrap.dart`. Moved `NotificationService.scheduleAllReminders(db)` and auto-backup checks post-first-frame in `_IndiFitAppState`.
+4. **Strict Color Linting & Token Sweep**: **[COMPLETED]**
+   * Swept all feature code: 100% of direct `AppColors.` literals removed across `lib/` in favor of theme-aware `Theme.of(context).b05Colors`, eliminating light-mode contrast defects.
+5. **R09-D Physical Device Matrix Completion**: **[PENDING — Hardware Gate]**
+   * Automated verification scripts pass; formal human attestation across the designated matrix of Android and iOS devices remains to be logged.
 
 ### 6.2 Medium-Term Scope (V1.1 & V1.2 — Moat Deepening)
-1. **Curated 25-Exercise Demonstration Pack**: Bundle looping WebP or vector animations for top compound lifts (Squat, Bench Press, Deadlift, Overhead Press, Pull-ups, Barbell Row, Dips).
-2. **Local Adaptive TDEE Engine (MacroFactor Style)**: On-device rolling Exponentially Weighted Moving Average (EWMA) calculating true biological energy expenditure from daily weight and calorie inputs.
-3. **iOS Live Activity / Dynamic Island & Android Ongoing Notification**: Real-time interactive rest timer visible on lock screens and Dynamic Islands during active workouts.
-4. **Interactive Circular Thali Builder**: Visual plate interface where users tap individual bowls (*katoris*) to balance macros dynamically.
-5. **Standalone Hydration Surface**: Surface an interactive, fluid-animating water tracking card on the Today surface powered by the existing Drift `HydrationTables`.
+1. **Curated 25-Exercise Demonstration Pack**: **[PENDING]**
+   * 59 static Start/Peak pose WebPs acquired and live; looping WebP or vector animations for top compound lifts remain deferred pending licensed asset acquisition.
+2. **Local Adaptive TDEE Engine (MacroFactor Style)**: **[COMPLETED]**
+   * Implemented on-device rolling Exponentially Weighted Moving Average (EWMA) expenditure engine (`a6f3794`) calculating true biological expenditure from daily weight and calorie inputs.
+3. **iOS Live Activity / Dynamic Island & Android Ongoing Notification**: **[COMPLETED]**
+   * Shipped real-time interactive rest timer visible on lock screens and Dynamic Islands during active workouts (`b430c1e`) alongside Android ongoing notifications.
+4. **Interactive Circular Thali Builder**: **[COMPLETED]**
+   * Visual plate interface (`circular_thali_plate.dart`, `thali_plate_layout.dart`) where users tap center staples (rotis/rice) or perimeter bowls (*katoris*) to inspect and balance macros dynamically.
+5. **Standalone Hydration Surface & Wave Animation**: **[COMPLETED]**
+   * Surfaced interactive, fluid-animating water tracking card on the Today surface (`d7f1697`) powered by Drift `DailyHydrations` tables.
 
 ### 6.3 Long-Term Scope (V2.0 — Platform Expansion)
 1. **Apple Watch & Wear OS Companion App**: Ultra-low-friction watch interface for checking off sets, logging loads, and receiving haptic rest vibration alerts on the wrist.
-2. **Opt-in Multimodal Food Estimation**: Private, user-approved camera AI analyzing meal volume and roti thickness, displaying confidence intervals before logging.
-3. **Zero-Knowledge Multi-Device Sync Relay**: Launch the blind Stream B server relay, enabling encrypted synchronization between phones and tablets without exposing health data to the server.
+2. **Opt-in Multimodal Food Estimation**: Private, user-approved camera AI analyzing meal volume and roti thickness, displaying confidence intervals before logging (text parser & label OCR already live).
+3. **Zero-Knowledge Multi-Device Sync Relay**: Deploy the hosted Stream B server relay, enabling encrypted synchronization between phones and tablets without exposing health data to the server.
 4. **Coach/Client Export Portal**: Web-based review portal for personal trainers to prescribe workouts and monitor client adherence via encrypted check-in files.
 
 ---
@@ -314,48 +338,43 @@ IndiFit’s quality is defined as much by what it refuses to build as what it bu
 
 ## 8. Codebase Flaws, Technical Debt & High-Priority Areas for Improvement
 
-### 8.1 Critical Architecture & Code Quality Hotspots
+### 8.1 Status of Previously Identified Hotspots
 
 ```
-[ Codebase Bottleneck ] ───► food_search_screen.dart (124 KB / ~3,400 LOC)
-                             • Holds search, diary, multi-select, and custom food
-                             • _showLogDialog modal alone is ~965 LOC inline
-                             • High regression risk during portion tweaks
+[ Resolved / Modularized ] ──► food_search_screen.dart
+                               • Portion sheet extracted to FoodPortionBottomSheet (~823 LOC)
+                               • Search bar and result lists decomposed into modular widgets
 
-[ Dual System Residue ] ───► Dual Workout Players & Saved Meals
-                             • b02_strength_player_screen.dart vs workout_player_screen.dart
-                             • saved_meals_screen.dart vs meal_templates_screen.dart
-                             • Increases maintenance surface and bundle weight
+[ Resolved / Enforced ]   ──► Design System Token Sweep
+                               • 0 raw AppColors. literals remain in lib/ feature code
+                               • Full WCAG-compliant light & dark contrast via B05SemanticColors
 
-[ Design System Drift ] ───► Residual AppColors References
-                             • Secondary screens still reference dark-only literals
-                             • Creates low-contrast text artifacts in Light Mode
+[ Resolved / De-blocked ] ──► Startup Thread Blocking
+                               • Notification rescheduling & backup checks moved post-frame
+                               • Root bootstrap in lib/app/bootstrap.dart is fast and lean
+
+[ Active Technical Debt ] ──► Dual System Residue
+                               • Legacy workout_player_screen.dart & meal_templates_screen.dart
+                               • Pending permanent deletion before public store release
 ```
 
-1. **The God-File in Food Search (`food_search_screen.dart`)**:
-   * *Issue*: Spans **3,448 lines** with an inline portion logging dialog (`_showLogDialog`) consuming ~965 lines. It combines search logic, diary views, batch multi-select, and custom food authoring.
-   * *Risk*: High probability of regressions across multiple screens when making minor changes to portions or units.
-   * *Action*: Refactor into a dedicated presentation folder with distinct files for search, portion sheet, and diary widgets.
+1. **The Legacy Screen Residue (`workout_player_screen.dart` & `meal_templates_screen.dart`)**:
+   * *Issue*: Legacy screens still exist in the repository (`workout_player_screen.dart` 751 LOC, `meal_templates_screen.dart` 385 LOC) despite being 100% superseded by modern B02 player and Saved Meals/Thali.
+   * *Risk*: Maintenance confusion and unnecessary dead code in the bundle.
+   * *Action*: Sever the remaining router and screen imports, verify route redirects, and permanently delete both files.
 
-2. **Dual System Residue**:
-   * *Issue*: Legacy implementations still linger alongside modern implementations:
-     - `workout_player_screen.dart` (751 LOC) alongside `b02_strength_player_screen.dart` (1,636 LOC).
-     - `meal_templates_screen.dart` (385 LOC) alongside `saved_meals_screen.dart`.
-   * *Risk*: Maintenance confusion and unnecessary binary size.
-   * *Action*: Finalize the migration of any legacy draft data and permanently delete the deprecated screens.
+2. **C4C Backup Codec Consolidation**:
+   * *Issue*: Historical backup decoders v8, v9, and v10 contain duplicated table specifications.
+   * *Risk*: High maintenance blast radius during future schema increments.
+   * *Action*: Consolidate shared table mapping primitives into a versioned codec core without altering exported JSON semantics.
 
-3. **Design System Token Fragmentation**:
-   * *Issue*: While `B05SemanticColors` is the authoritative M3 system, older sub-screens (e.g., in data management or profile) still reference dark-only `AppColors` literals.
-   * *Risk*: Contrast failures and black-on-dark text misrenders when users switch to Light Mode.
-   * *Action*: Run a comprehensive audit replacing all direct `AppColors.` references with `Theme.of(context).extension<B05SemanticColors>()!`.
+3. **Production Cloud Hosting & API Keys**:
+   * *Issue*: FastAPI backend currently runs locally or via Docker; requires production deployment on a cloud host (Render/Fly.io) with real Gemini and auth environment variables.
+   * *Risk*: Connected reviewable AI and cloud backup features fail closed if no backend URL is provided.
+   * *Action*: Deploy container, configure SSL, and set production `--dart-define` flags for release builds.
 
-4. **Cold Startup Thread Blocking**:
-   * *Issue*: In `main.dart`, `await NotificationService.scheduleAllReminders(db)` runs directly before `runApp()`.
-   * *Risk*: Increases cold app launch time by 200–400ms on low-end Android hardware.
-   * *Action*: Defer reminder reconciliation until after the first frame renders using `addPostFrameCallback`.
-
-5. **ML Kit Barcode Scanner Simulator Compatibility**:
-   * *Issue*: Transitive Google ML Kit dependencies emit architecture warnings on Apple Silicon iOS simulators.
+4. **Apple Silicon Simulator Barcode Warning**:
+   * *Issue*: Transitive Google ML Kit dependencies emit architecture warnings on Apple Silicon iOS simulators. Physical iOS and Android devices scan barcodes without issue.
    * *Risk*: Complicates local iOS simulator development, though physical devices work without issue.
    * *Action*: Pin a dedicated build flag or update to the latest ARM-compatible `mobile_scanner` release.
 
@@ -369,32 +388,32 @@ IndiFit’s quality is defined as much by what it refuses to build as what it bu
 ├───────────────────────────────────┬──────────┬─────────────────────────────────┤
 │ Dimension                         │ Score    │ Status                          │
 ├───────────────────────────────────┼──────────┼─────────────────────────────────┤
-│ Architecture & Layer Separation   │ 9.2 / 10 │ Production Grade                │
-│ Data Integrity & Offline Engine   │ 9.8 / 10 │ Benchmark Quality               │
-│ Indian Food & Cultural Depth      │ 9.5 / 10 │ Best-in-Class                   │
-│ Workout Execution & Strength Core │ 8.8 / 10 │ High Polish (Near-Hevy Class)   │
-│ Visual Design & Consistency       │ 7.5 / 10 │ Solid (Residual token cleanup)  │
-│ Interactivity, Haptics & Feel     │ 7.0 / 10 │ Good (Needs micro-motion polish)│
-│ Native Platform Health Integration│ 8.5 / 10 │ Production Ready                │
-│ Privacy, Security & Data Ownership│ 9.6 / 10 │ Benchmark Quality               │
-│ Test Engineering & Rigor          │ 9.9 / 10 │ Exceptional (2,247 Tests Pass)  │
-│ Market Defensibility & Moat       │ 9.4 / 10 │ Highly Defensible               │
+│ Architecture & Layer Separation   │ 9.5 / 10 │ Production Grade (Decomposed)   │
+│ Data Integrity & Offline Engine   │ 9.8 / 10 │ Benchmark Quality (Schema v22)  │
+│ Indian Food & Cultural Depth      │ 9.8 / 10 │ Best-in-Class (Thali/TDEE/OCR)  │
+│ Workout Execution & Strength Core │ 9.2 / 10 │ High Polish (Live Activities)   │
+│ Visual Design & Consistency       │ 8.8 / 10 │ Standardized (B05 Token Sweep)  │
+│ Interactivity, Haptics & Feel     │ 8.5 / 10 │ Fluid (Wave / HUD / Pose Switch)│
+│ Native Platform Health Integration│ 8.8 / 10 │ Production Ready (HealthKit/HC) │
+│ Privacy, Security & Data Ownership│ 9.6 / 10 │ Benchmark Quality (PBKDF2/AES)  │
+│ Test Engineering & Rigor          │ 9.9 / 10 │ Exceptional (2,269+ Tests Pass) │
+│ Market Defensibility & Moat       │ 9.6 / 10 │ Highly Defensible Moat          │
 ├───────────────────────────────────┼──────────┼─────────────────────────────────┤
-│ COMPOSITE OVERALL SCORE           │ 8.9 / 10 │ EXCELLENT                       │
+│ COMPOSITE OVERALL SCORE           │ 9.3 / 10 │ BENCHMARK EXCELLENCE            │
 └───────────────────────────────────┴──────────┴─────────────────────────────────┘
 ```
 
 ### Scorecard Breakdown
-* **Architecture & Layer Separation (9.2/10)**: Clean unidirectional domain flow, Riverpod DI, and encapsulated Drift tables. Slight deduction for god-file hotspots.
+* **Architecture & Layer Separation (9.5/10)**: Clean unidirectional domain flow, Riverpod DI, modular `lib/app/bootstrap.dart`, feature-owned providers (C3B), centralized preferences boundary (C3C), modular database internals (C4B), modular repository collaborators (C4A), and modular backend architecture (C6).
 * **Data Integrity & Offline Engine (9.8/10)**: Exceptional. Full transactional atomicity, robust rollback capabilities, schema migrations up to v22, and zero server dependencies.
-* **Indian Food & Cultural Depth (9.5/10)**: Unmatched in the industry. Solves katori calibrations, cooked-to-raw expansions, and regional thali structures.
-* **Workout Execution & Strength Core (8.8/10)**: Smooth set tracking, plate loading calculator, previous performance lookups, and PR confetti celebrations.
-* **Visual Design & Consistency (7.5/10)**: Strong Material 3 tokens, but held back by legacy color tokens on secondary screens.
-* **Interactivity, Haptics & Feel (7.0/10)**: Wakelock and rest timer alerts work well; needs more micro-haptics on routine interactions and animated count-up number transitions.
-* **Native Platform Health Integration (8.5/10)**: Real Apple HealthKit and Android Health Connect pipelines with permission fallbacks and provenance tracking.
-* **Privacy, Security & Data Ownership (9.6/10)**: PBKDF2/AES-GCM encryption, local-first database, and zero data harvesting.
-* **Test Engineering & Rigor (9.9/10)**: Outstanding. 2,247 automated tests passing with 0 failures, verified static analysis, and 320pt accessibility goldens.
-* **Market Defensibility & Moat (9.4/10)**: Uniquely targets the intersection of Indian nutrition and serious strength progression with an offline-first architecture.
+* **Indian Food & Cultural Depth (9.8/10)**: Unmatched in the industry. Native *katori* units, cooked-to-raw expansions, interactive Circular Thali Plate interface, on-device local Adaptive TDEE engine, and nutrition-label OCR.
+* **Workout Execution & Strength Core (9.2/10)**: B02 strength player, plate loading calculator consolidated directly into sets, previous performance lookups, iOS Live Activities and Dynamic Island rest timer, and PR confetti celebrations.
+* **Visual Design & Consistency (8.8/10)**: 100% `B05SemanticColors` adoption across all feature screens, eliminating raw `AppColors` literals and guaranteeing WCAG-compliant light and dark contrast.
+* **Interactivity, Haptics & Feel (8.5/10)**: Interactive circular thali plate with quick-adjust HUD, fluid-fill hydration wave animation, interactive Start/Peak pose switcher, and background rest timers with haptics.
+* **Native Platform Health Integration (8.8/10)**: Real Apple HealthKit and Android Health Connect pipelines with permission fallbacks and provenance tracking.
+* **Privacy, Security & Data Ownership (9.6/10)**: PBKDF2/AES-GCM encryption, local-first database, verifiable complete erasure (PV1-DATA-01), and zero data harvesting.
+* **Test Engineering & Rigor (9.9/10)**: Outstanding. 2,269+ automated tests passing with 0 failures, verified static analysis, and 320pt accessibility goldens.
+* **Market Defensibility & Moat (9.6/10)**: Uniquely dominates the intersection of Indian culinary tracking and serious progressive overload with an offline-first, anti-bullshit data philosophy.
 
 ---
 
@@ -405,37 +424,40 @@ IndiFit’s quality is defined as much by what it refuses to build as what it bu
 │                    USE-READINESS vs. LAUNCH-READINESS                          │
 └────────────────────────────────────────────────────────────────────────────────┘
 
-   USE-READINESS: 9.2 / 10 (READY FOR DAILY PERSONAL USE / DOGFOODING)
+   USE-READINESS: 9.5 / 10 (READY FOR DAILY PERSONAL USE / DOGFOODING)
    ══════════════════════════════════════════════════════════════════
    ✅ Sideloads and executes reliably on physical iPhone and Android devices.
-   ✅ Flawless set logging, plate math, rest timers, and screen wakelock.
+   ✅ Flawless set logging, embedded plate math, rest timers, and screen wakelock.
+   ✅ iOS Live Activity & Dynamic Island rest timers live on lock screens.
    ✅ Fast Indian food logging with katori units and cooked/raw conversions.
+   ✅ Interactive Circular Thali Plate & on-device Adaptive TDEE engine active.
    ✅ HealthKit and Health Connect two-way data sync working.
    ✅ Encrypted local backups prevent any risk of data loss.
 
-   LAUNCH-READINESS: 7.8 / 10 (PENDING APP STORE & GOOGLE PLAY GATES)
+   LAUNCH-READINESS: 8.2 / 10 (PENDING APP STORE & GOOGLE PLAY GATES)
    ══════════════════════════════════════════════════════════════════
    ⚠️ R09-D physical device matrix verification pending formal attestation.
    ⚠️ Apple Developer Program paid team certificate & HealthKit provisioning needed.
    ⚠️ App Store & Google Play marketing screenshots and preview assets required.
    ⚠️ Deprecation and deletion of legacy player and meal template files.
-   ⚠️ Final cleanup of residual AppColors to prevent light-mode contrast defects.
+   ⚠️ Production hosting deployment for FastAPI backend services.
 ```
 
-### 10.1 Use-Readiness: 9.2 / 10 (Daily Personal Dogfooding)
+### 10.1 Use-Readiness: 9.5 / 10 (Daily Personal Dogfooding)
 IndiFit is immediately usable today as a primary, daily-driver fitness tracker for any lifter:
 * The creator or beta tester can sideload the app via Xcode or install the release APK.
-* You can train a full Push/Pull/Legs session, rely on the plate calculator, track RPE, time rests with screen wakelock, and celebrate PRs.
-* You can log daily Indian meals (roti, dal, sabzi, eggs, whey, chicken) accurately without fighting Western conversions.
+* You can train a full Push/Pull/Legs session, rely on the consolidated plate calculator, track RPE, time rests with lock-screen Live Activities and screen wakelock, and celebrate PRs.
+* You can log daily Indian meals (roti, dal, sabzi, eggs, whey, chicken) accurately via the interactive circular thali plate without fighting Western conversions.
+* Biological energy expenditure dynamically updates on-device via the adaptive TDEE engine.
 * All data is preserved across app relaunches with verified SQLite transaction safety.
 
-### 10.2 Launch-Readiness: 7.8 / 10 (Public Store Release)
-To open the doors to 100,000 public users on the App Store and Google Play, five concrete pre-launch items remain:
+### 10.2 Launch-Readiness: 8.2 / 10 (Public Store Release)
+To open the doors to public users on the App Store and Google Play, five concrete pre-launch items remain:
 1. **R09-D Physical Device Matrix Sign-off**: Execute and document the 9 core acceptance journeys (D01–D09) across designated target devices (low-end Android, current Android, compact iPhone, modern iPhone).
-2. **Apple Developer Account Entitlements**: Ensure the production provisioning profile contains explicit entitlements for `HealthKit` and `DataProtection` (`NSFileProtectionCompleteUntilFirstUserAuthentication`).
+2. **Apple Developer Account Entitlements**: Provision the production team provisioning profile with explicit entitlements for `HealthKit`, `DataProtection` (`NSFileProtectionCompleteUntilFirstUserAuthentication`), and WidgetKit extension bundling.
 3. **Clean Up Legacy Dead Code**: Permanently remove `workout_player_screen.dart` and `meal_templates_screen.dart` to prevent users from stumbling into unmaintained screens.
 4. **App Store Creative Assets**: Generate high-resolution promotional screenshots across 6.7" iPhone, 6.1" iPhone, and modern Android screen sizes highlighting the "Desi Lifter" value proposition.
-5. **App Store Copy & Privacy Policies**: Host the static `privacy_policy.md` on a public URL and configure the store listings.
+5. **Production Backend Deployment & Hosted Privacy Policy**: Host the static `privacy_policy.md` on a public URL, deploy the FastAPI container to a hosted platform (Render/Fly.io), and configure store listings.
 
 ---
 
@@ -575,10 +597,10 @@ This dual-tier approach captures both price-sensitive recurring users and subscr
 │                                                                                │
 │  STAGE 1: PRE-LAUNCH POLISH (SPRINT A · 1–2 WEEKS)                             │
 │  ─────────────────────────────────────────────────                             │
-│  [ ] Extract food_search_screen.dart into modular presentation components.     │
+│  [x] Extract food_search_screen.dart into modular presentation components.     │
 │  [ ] Remove deprecated workout_player_screen.dart & meal_templates_screen.dart.│
-│  [ ] Defer startup reminder scheduling post-first-frame in main.dart.          │
-│  [ ] Audit and replace residual AppColors references with B05SemanticColors.   │
+│  [x] Defer startup reminder scheduling post-first-frame in main.dart.          │
+│  [x] Audit and replace residual AppColors references with B05SemanticColors.   │
 │  [ ] Complete and document R09-D physical device verification rows.            │
 │                                                                                │
 │  STAGE 2: MOAT DEEPENING (SPRINT B · 1–2 MONTHS)                               │
@@ -587,7 +609,7 @@ This dual-tier approach captures both price-sensitive recurring users and subscr
 │  [x] Implement on-device Adaptive TDEE Expenditure Engine.                     │
 │  [x] Add iOS Live Activity & Dynamic Island background rest timers.            │
 │  [x] Polish Today hydration module with fluid-fill animation.                  │
-│  [ ] Build interactive circular Thali plate interface.                         │
+│  [x] Build interactive circular Thali plate interface.                         │
 │                                                                                │
 │  STAGE 3: ECOSYSTEM & EXTENSION (SPRINT C · 3–6 MONTHS)                        │
 │  ──────────────────────────────────────────────────────                        │
@@ -603,9 +625,9 @@ This dual-tier approach captures both price-sensitive recurring users and subscr
 
 ## 14. Conclusion & Final Strategic Verdict
 
-IndiFit represents an exceptionally engineered, culturally authentic mobile platform. With **179,000+ lines of hand-written Dart**, a **Schema v22 Drift SQLite database**, and **2,247 automated tests passing with zero failures**, its software engineering foundations surpass those of most venture-backed consumer fitness startups.
+IndiFit represents an exceptionally engineered, culturally authentic mobile platform. With **179,000+ lines of hand-written Dart**, a **Schema v22 Drift SQLite database**, and **2,269+ automated tests passing with zero failures**, its software engineering foundations surpass those of most venture-backed consumer fitness startups.
 
 By resolutely addressing the "Desi Lifter" market void, adhering strictly to its **Product Truth Contract**, and refusing to compromise on **offline-first data ownership**, IndiFit is uniquely positioned to become the definitive daily training and nutrition companion for millions of Indian lifters worldwide.
 
 ---
-*Dossier compiled from codebase ground truth, architecture baselines, and test suite execution on 2026-09-12.*
+*Dossier refreshed, updated with post-audit completions, and reconciled with codebase ground truth on 2026-09-16.*

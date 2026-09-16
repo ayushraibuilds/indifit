@@ -36,6 +36,9 @@ jobs:
       - name: Check Code Style & Analysis
         run: flutter analyze
 
+      - name: Verify Code Graph & Architecture Boundaries
+        run: python3 tool/generate_code_graph.py
+
       - name: Run Critical Journey Gate
         run: bash tool/verify_r09_release.sh --tests-only --skip-analysis
 

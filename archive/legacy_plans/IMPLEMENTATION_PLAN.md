@@ -1,13 +1,10 @@
-# IndiFit — Comprehensive Implementation Plan (ARCHIVED)
+# IndiFit — Comprehensive Implementation Plan
 
-> [!WARNING]
-> **STATUS: ARCHIVED & SUPERSEDED**  
-> This document is frozen and preserved for historical context under `archive/legacy_plans/IMPLEMENTATION_PLAN.md`.  
-> Active sprint plans and roadmaps are canonical in:  
-> **[`docs/audit/CROSS_AGENT_COMPREHENSIVE_AUDIT_REPORT.md`](docs/audit/CROSS_AGENT_COMPREHENSIVE_AUDIT_REPORT.md)** and **[`docs/implementation/NUTRITION_HYBRID_IMPLEMENTATION_PLAN.md`](docs/implementation/NUTRITION_HYBRID_IMPLEMENTATION_PLAN.md)**.
+> Generated: 2026-07-24  
+> Scope: All 18 user-reported issues + UI analysis findings  
+> Estimated Effort: 6–8 weeks (1 developer, full-time)
 
 ---
-
 
 ## 1. Issue Consolidation
 
