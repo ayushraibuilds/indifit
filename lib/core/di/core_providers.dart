@@ -1,16 +1,28 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../data/database/app_database.dart';
 import '../../data/repositories/health_service.dart';
 import '../capabilities/capabilities_registry.dart';
 import '../config/app_config.dart';
 import '../privacy/privacy_policy.dart';
+import '../services/app_preferences_service.dart';
 import '../services/civil_date_revision_notifier.dart';
 import '../services/data_erasure_service.dart';
 import '../services/local_schedule_date_service.dart';
 import '../services/local_timezone_service.dart';
+
+final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
+  throw StateError(
+    'sharedPreferencesProvider must be overridden at container creation.',
+  );
+});
+
+final appPreferencesServiceProvider = Provider<AppPreferencesService>((ref) {
+  return AppPreferencesService(ref.watch(sharedPreferencesProvider));
+});
 
 final databaseProvider = Provider<AppDatabase>((ref) {
   final db = AppDatabase();

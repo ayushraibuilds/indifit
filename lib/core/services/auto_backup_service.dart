@@ -8,28 +8,32 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/database/app_database.dart';
 import '../backup/backup_file_adapter.dart';
 import '../backup/backup_v10.dart';
+import '../config/app_preferences_keys.dart';
 import '../utils/app_logger.dart';
 import 'auto_backup_secret_store.dart';
 import 'platform_storage_protection.dart';
 
 class AutoBackupService {
   static const String _lastContentFingerprintKey =
-      'auto_backup_last_content_fingerprint_v2';
+      AppPreferenceKeys.autoBackupLastContentFingerprintV2;
 
   final AppDatabase _db;
   final AutoBackupSecretStore _secretStore;
   final Future<Directory> Function() _documentsDirectoryProvider;
+  final SharedPreferences? _prefs;
 
   AutoBackupService(
     this._db, {
+    SharedPreferences? prefs,
     AutoBackupSecretStore secretStore = const SecureAutoBackupSecretStore(),
     Future<Directory> Function() documentsDirectoryProvider =
         getApplicationDocumentsDirectory,
-  }) : _secretStore = secretStore,
+  }) : _prefs = prefs,
+       _secretStore = secretStore,
        _documentsDirectoryProvider = documentsDirectoryProvider;
 
-  static Future<void> performBackup(AppDatabase db) async {
-    await AutoBackupService(db).runAutoBackup();
+  static Future<void> performBackup(AppDatabase db, [SharedPreferences? prefs]) async {
+    await AutoBackupService(db, prefs: prefs).runAutoBackup();
   }
 
   Future<void> runAutoBackup() async {
@@ -41,7 +45,7 @@ class AutoBackupService {
       }
       await PlatformStorageProtection.protectSensitivePath(backupDir.path);
 
-      final prefs = await SharedPreferences.getInstance();
+      final prefs = _prefs ?? await SharedPreferences.getInstance();
       final backupData = await BackupV10Data.createFromDatabase(_db, prefs);
       final contentFingerprint = _contentFingerprint(backupData.toJson());
 

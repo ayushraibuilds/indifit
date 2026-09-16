@@ -405,7 +405,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         if (!mounted) return;
         final nextTitles = next.newlyUnlockedAchievementTitles;
         final plural = nextTitles.length == 1 ? 'Achievement' : 'Achievements';
-        final prefs = await SharedPreferences.getInstance();
+        SharedPreferences? prefs;
+        try {
+          prefs = ref.read(sharedPreferencesProvider);
+        } catch (_) {}
+        prefs ??= await SharedPreferences.getInstance();
         await AchievementService.markCelebrated(prefs, nextIds);
         if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(

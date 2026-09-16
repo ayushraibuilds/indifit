@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/config/app_preferences_keys.dart';
 import '../../core/fixtures/b05_foundation_registry.dart';
 import '../../core/nutrition_household_measures.dart';
 import '../../core/presentation/diet_preference_presentation.dart';
@@ -289,29 +290,39 @@ class B05ProfileOnboardingDraft {
 }
 
 class B05OnboardingDraftStore {
-  static const _profilePageKey = 'onboarding_draft_page';
-  static const _profileSexKey = 'onboarding_draft_sex';
-  static const _profileNameKey = 'onboarding_draft_name';
-  static const _profileAgeKey = 'onboarding_draft_age';
-  static const _profileHeightKey = 'onboarding_draft_height';
-  static const _profileWeightKey = 'onboarding_draft_weight';
-  static const _profileActivityKey = 'onboarding_draft_activity';
-  static const _profileGoalKey = 'onboarding_draft_goal';
-  static const _profileTargetWeightKey = 'onboarding_draft_target_weight';
-  static const _profileDietKey = 'onboarding_draft_diet';
-  static const _profileFlowVersionKey = 'onboarding_draft_flow_version';
+  static const _profilePageKey = AppPreferenceKeys.onboardingDraftPage;
+  static const _profileSexKey = AppPreferenceKeys.onboardingDraftSex;
+  static const _profileNameKey = AppPreferenceKeys.onboardingDraftName;
+  static const _profileAgeKey = AppPreferenceKeys.onboardingDraftAge;
+  static const _profileHeightKey = AppPreferenceKeys.onboardingDraftHeight;
+  static const _profileWeightKey = AppPreferenceKeys.onboardingDraftWeight;
+  static const _profileActivityKey = AppPreferenceKeys.onboardingDraftActivity;
+  static const _profileGoalKey = AppPreferenceKeys.onboardingDraftGoal;
+  static const _profileTargetWeightKey =
+      AppPreferenceKeys.onboardingDraftTargetWeight;
+  static const _profileDietKey = AppPreferenceKeys.onboardingDraftDiet;
+  static const _profileFlowVersionKey =
+      AppPreferenceKeys.onboardingDraftFlowVersion;
 
-  static const _routineStepKey = 'onboarding_draft_routine_step';
-  static const _routineGoalKey = 'onboarding_draft_routine_goal';
-  static const _routineEquipmentKey = 'onboarding_draft_routine_equipment';
-  static const _routineDaysKey = 'onboarding_draft_routine_days';
-  static const _routineExperienceKey = 'onboarding_draft_routine_experience';
-  static const _routineInjuriesKey = 'onboarding_draft_routine_injuries';
+  static const _routineStepKey = AppPreferenceKeys.onboardingDraftRoutineStep;
+  static const _routineGoalKey = AppPreferenceKeys.onboardingDraftRoutineGoal;
+  static const _routineEquipmentKey =
+      AppPreferenceKeys.onboardingDraftRoutineEquipment;
+  static const _routineDaysKey = AppPreferenceKeys.onboardingDraftRoutineDays;
+  static const _routineExperienceKey =
+      AppPreferenceKeys.onboardingDraftRoutineExperience;
+  static const _routineInjuriesKey =
+      AppPreferenceKeys.onboardingDraftRoutineInjuries;
 
-  const B05OnboardingDraftStore();
+  final SharedPreferences? _prefs;
+
+  const B05OnboardingDraftStore([this._prefs]);
+
+  Future<SharedPreferences> _getPrefs() async =>
+      _prefs ?? await SharedPreferences.getInstance();
 
   Future<B05ProfileOnboardingDraft?> readProfileDraft() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
     if (!prefs.containsKey(_profilePageKey)) return null;
     return B05ProfileOnboardingDraft(
       currentPage: _validProfilePage(prefs.getInt(_profilePageKey)),
@@ -341,7 +352,7 @@ class B05OnboardingDraftStore {
   }
 
   Future<void> saveProfileDraft(B05ProfileOnboardingDraft draft) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
     await prefs.setInt(_profilePageKey, _validProfilePage(draft.currentPage));
     if (draft.sex == null) {
       await prefs.remove(_profileSexKey);
@@ -378,7 +389,7 @@ class B05OnboardingDraftStore {
   }
 
   Future<void> clearProfileDraft() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
     for (final key in const [
       _profilePageKey,
       _profileSexKey,
@@ -399,15 +410,15 @@ class B05OnboardingDraftStore {
   /// Marks profile setup as intentionally deferred without creating a
   /// profile, target, eligibility, or adaptive recommendation from defaults.
   Future<void> markProfileOnboardingSkipped() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('onboarding_completed', true);
-    await prefs.setBool('onboarding_skipped', true);
-    await clearTodayOnboardingHandoff();
+    final prefs = await _getPrefs();
+    await prefs.setBool(AppPreferenceKeys.onboardingCompleted, true);
+    await prefs.setBool(AppPreferenceKeys.onboardingSkipped, true);
+    await clearTodayOnboardingHandoff(prefs);
     await clearProfileDraft();
   }
 
   Future<B05RoutineWizardDraft?> readRoutineDraft() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
     if (!prefs.containsKey(_routineStepKey) &&
         !prefs.containsKey(_routineGoalKey)) {
       return null;
@@ -427,7 +438,7 @@ class B05OnboardingDraftStore {
   }
 
   Future<void> saveRoutineDraft(B05RoutineWizardDraft draft) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
     await prefs.setInt(_routineStepKey, _validRoutineStep(draft.currentStep));
     await prefs.setString(
       _routineGoalKey,
@@ -449,7 +460,7 @@ class B05OnboardingDraftStore {
   }
 
   Future<void> clearRoutineDraft() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
     for (final key in const [
       _routineStepKey,
       _routineGoalKey,

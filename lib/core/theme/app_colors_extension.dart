@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'colors.dart';
-
 class AppColorsExtension extends ThemeExtension<AppColorsExtension> {
   final Color streakOrange;
   final Color infoBlue;
@@ -25,15 +23,15 @@ class AppColorsExtension extends ThemeExtension<AppColorsExtension> {
   });
 
   static const dark = AppColorsExtension(
-    streakOrange: AppColors.streakOrange,
-    infoBlue: AppColors.infoBlue,
-    fiberTeal: AppColors.fiberTeal,
-    achievementGold: AppColors.achievementGold,
-    achievementSilver: AppColors.achievementSilver,
-    achievementBronze: AppColors.achievementBronze,
-    cardBackground: AppColors.cardBackground,
-    border: AppColors.border,
-    textMuted: AppColors.textMuted,
+    streakOrange: Color(0xFFFF7A00),
+    infoBlue: Color(0xFF3B82F6),
+    fiberTeal: Color(0xFF14B8A6),
+    achievementGold: Color(0xFFFFD700),
+    achievementSilver: Color(0xFFC0C0C0),
+    achievementBronze: Color(0xFFCD7F32),
+    cardBackground: Color(0x1F111928),
+    border: Color(0x1FFFFFFF),
+    textMuted: Color(0xFF64748B),
   );
 
   static const light = AppColorsExtension(

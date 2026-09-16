@@ -2,9 +2,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/config/app_preferences_keys.dart';
+import '../../core/di/core_providers.dart';
 import 'meal_presentation_registry.dart';
 
-const String prefDiaryMealSlotsKey = 'pref_diary_meal_slots';
+const String prefDiaryMealSlotsKey = AppPreferenceKeys.prefDiaryMealSlots;
 
 enum DiaryStructurePreset {
   standard4,
@@ -215,7 +217,11 @@ class DiaryStructureController extends StateNotifier<DiaryStructureState> {
 
 final diaryStructureControllerProvider =
     StateNotifierProvider<DiaryStructureController, DiaryStructureState>((ref) {
-  return DiaryStructureController();
+  SharedPreferences? prefs;
+  try {
+    prefs = ref.watch(sharedPreferencesProvider);
+  } catch (_) {}
+  return DiaryStructureController(prefs);
 });
 
 final diaryMealSlotsProvider = Provider<List<FoodMealPresentation>>((ref) {

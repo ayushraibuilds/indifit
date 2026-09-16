@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../core/config/app_preferences_keys.dart';
 import '../../core/di/providers.dart';
 import '../../core/presentation/diet_preference_presentation.dart';
 import '../../core/presentation/secondary_presentation.dart';
@@ -461,18 +462,22 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     double dailyFat = macros.fatG;
 
     // Store targets in SharedPreferences
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('calorie_goal', dailyCalories.round());
+    SharedPreferences? prefs;
+    try {
+      prefs = ref.read(sharedPreferencesProvider);
+    } catch (_) {}
+    prefs ??= await SharedPreferences.getInstance();
+    await prefs.setInt(AppPreferenceKeys.calorieGoal, dailyCalories.round());
     await prefs.setDouble(
-      'protein_goal',
+      AppPreferenceKeys.proteinGoal,
       double.parse(dailyProtein.toStringAsFixed(1)),
     );
     await prefs.setDouble(
-      'carbs_goal',
+      AppPreferenceKeys.carbsGoal,
       double.parse(dailyCarbs.toStringAsFixed(1)),
     );
     await prefs.setDouble(
-      'fat_goal',
+      AppPreferenceKeys.fatGoal,
       double.parse(dailyFat.toStringAsFixed(1)),
     );
 
@@ -486,16 +491,16 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
     // Store user parameters
     if (_nameController.text.trim().isNotEmpty) {
-      await prefs.setString('user_name', _nameController.text.trim());
+      await prefs.setString(AppPreferenceKeys.userName, _nameController.text.trim());
     }
-    await prefs.setInt('user_age', _age);
-    await prefs.setDouble('user_height', _height);
-    await prefs.setDouble('current_weight', _weight);
-    await prefs.setDouble('user_target_weight', _targetWeight);
-    if (_sex != null) await prefs.setString('user_sex', _sex!);
-    await prefs.setString('user_activity_level', _activityLevel);
-    await prefs.setString('user_goal', _goal);
-    await prefs.setString('user_diet_preference', _dietPreference);
+    await prefs.setInt(AppPreferenceKeys.userAge, _age);
+    await prefs.setDouble(AppPreferenceKeys.userHeight, _height);
+    await prefs.setDouble(AppPreferenceKeys.currentWeight, _weight);
+    await prefs.setDouble(AppPreferenceKeys.userTargetWeight, _targetWeight);
+    if (_sex != null) await prefs.setString(AppPreferenceKeys.userSex, _sex!);
+    await prefs.setString(AppPreferenceKeys.userActivityLevel, _activityLevel);
+    await prefs.setString(AppPreferenceKeys.userGoal, _goal);
+    await prefs.setString(AppPreferenceKeys.userDietPreference, _dietPreference);
 
     // Load the existing profile/goal authority before applying this reviewed
     // setup. On a first run the compatibility bridge imports the preferences
@@ -532,9 +537,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         .logBodyMeasurement(weight: _weight);
 
     // Complete onboarding flag
-    await prefs.setBool('onboarding_completed', true);
-    await prefs.remove('onboarding_skipped');
-    await markTodayOnboardingHandoffPending();
+    await prefs.setBool(AppPreferenceKeys.onboardingCompleted, true);
+    await prefs.remove(AppPreferenceKeys.onboardingSkipped);
+    await markTodayOnboardingHandoffPending(prefs);
 
     // Notify router that onboarding is now complete
     ref.read(onboardingCompletedProvider.notifier).state = true;

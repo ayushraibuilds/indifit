@@ -5,6 +5,8 @@ import 'package:uuid/uuid.dart';
 
 import '../../core/typed_quantities.dart';
 import '../database/app_database.dart';
+import 'recipe/nutrition_recipe_graph_mapper.dart';
+import 'recipe/nutrition_recipe_validator.dart';
 
 const int kNutritionRecipeContractVersion = 1;
 
@@ -428,16 +430,22 @@ class NutritionRecipeRepository {
   final Uuid _uuid;
   final DateTime Function() _nowUtc;
   final NutritionRecipePublicationFailureInjector? _failureInjector;
+  final NutritionRecipeValidator _validator;
+  final NutritionRecipeGraphMapper _mapper;
 
   NutritionRecipeRepository({
     required AppDatabase db,
     Uuid? uuid,
     DateTime Function()? nowUtc,
     NutritionRecipePublicationFailureInjector? failureInjector,
+    NutritionRecipeValidator? validator,
+    NutritionRecipeGraphMapper? mapper,
   }) : _db = db,
        _uuid = uuid ?? const Uuid(),
        _nowUtc = nowUtc ?? (() => DateTime.now().toUtc()),
-       _failureInjector = failureInjector;
+       _failureInjector = failureInjector,
+       _validator = validator ?? NutritionRecipeValidator(db),
+       _mapper = mapper ?? NutritionRecipeGraphMapper(db, uuid ?? const Uuid());
 
   Future<NutritionRecipeDraftModel> createRecipe({
     required String userId,
@@ -1224,274 +1232,31 @@ class NutritionRecipeRepository {
   Future<List<NutritionRecipeIngredientInput>> _validateIngredientInputs({
     required String recipeVersionId,
     required List<NutritionRecipeIngredientInput> inputs,
-  }) async {
-    final positions = <int>{};
-    final ids = <String>{};
-    final result = <NutritionRecipeIngredientInput>[];
-    for (var index = 0; index < inputs.length; index++) {
-      final input = inputs[index];
-      if (input.id.trim().isEmpty || !ids.add(input.id)) {
-        throw const NutritionRecipeValidationError(
-          'duplicate_ingredient_id',
-          'Ingredient line IDs must be unique and non-empty.',
-        );
-      }
-      if (input.nestedRecipeVersionId != null) {
-        throw const NutritionRecipeNestedReferenceError(
-          'Nested recipe ingredients are deferred from B03-07.',
-        );
-      }
-      final position = input.position ?? index;
-      if (position < 0 || !positions.add(position)) {
-        throw const NutritionRecipeValidationError(
-          'invalid_ingredient_order',
-          'Ingredient positions must be unique non-negative values.',
-        );
-      }
-      NutritionQuantityService.validatePositiveRecipeIngredientQuantity(
-        input.quantity,
+  }) => _validator.validateIngredientInputs(
+        recipeVersionId: recipeVersionId,
+        inputs: inputs,
       );
-      _validatePersistableQuantity(input.quantity, input.measureId);
-      if (input.lower != null &&
-              input.lower!.compareTo(input.quantity.amount) > 0 ||
-          input.upper != null &&
-              input.upper!.compareTo(input.quantity.amount) < 0 ||
-          input.lower != null &&
-              input.upper != null &&
-              input.lower!.compareTo(input.upper!) > 0) {
-        throw const NutritionRecipeValidationError(
-          'invalid_ingredient_range',
-          'Ingredient quantity bounds must contain the quantity.',
-        );
-      }
-      final foodId = input.foodId;
-      if (foodId == null || foodId.trim().isEmpty) {
-        throw const NutritionRecipeValidationError(
-          'missing_food_identity',
-          'Every direct ingredient requires an explicit portable food identity.',
-        );
-      }
-      final food = await (_db.select(
-        _db.nutritionFoods,
-      )..where((row) => row.id.equals(foodId))).getSingleOrNull();
-      if (food == null) {
-        throw NutritionRecipeValidationError(
-          'missing_food_identity',
-          'Ingredient references unknown food identity $foodId.',
-        );
-      }
-      if (input.preparationId != null) {
-        final preparation =
-            await (_db.select(_db.nutritionFoodPreparations)
-                  ..where((row) => row.id.equals(input.preparationId!)))
-                .getSingleOrNull();
-        if (preparation == null || preparation.foodId != food.id) {
-          throw const NutritionRecipeValidationError(
-            'invalid_preparation_reference',
-            'Ingredient preparation must belong to its food identity.',
-          );
-        }
-      }
-      if (input.measureId != null) {
-        final measure = await (_db.select(
-          _db.nutritionHouseholdMeasures,
-        )..where((row) => row.id.equals(input.measureId!))).getSingleOrNull();
-        if (measure == null ||
-            input.quantity.dimension != QuantityDimension.householdReference) {
-          throw const NutritionRecipeValidationError(
-            'invalid_quantity_context',
-            'A measure reference is valid only for a known household quantity.',
-          );
-        }
-      }
-      if (input.quantity.dimension == QuantityDimension.householdReference &&
-          input.measureId == null) {
-        throw const NutritionRecipeValidationError(
-          'missing_quantity_context',
-          'Household recipe quantities require an explicit measure reference.',
-        );
-      }
-      if (input.substitutedFromFoodId != null) {
-        if (input.substitutedFromFoodId == food.id) {
-          throw const NutritionRecipeValidationError(
-            'invalid_substitution',
-            'A substitution must identify a different prior food.',
-          );
-        }
-        final prior =
-            await (_db.select(_db.nutritionFoods)
-                  ..where((row) => row.id.equals(input.substitutedFromFoodId!)))
-                .getSingleOrNull();
-        if (prior == null) {
-          throw NutritionRecipeValidationError(
-            'missing_substitution_identity',
-            'Substitution provenance references unknown food ${input.substitutedFromFoodId}.',
-          );
-        }
-      }
-      result.add(
-        NutritionRecipeIngredientInput.directFood(
-          id: input.id.trim(),
-          foodId: food.id,
-          quantity: input.quantity,
-          position: position,
-          preparationId: input.preparationId,
-          measureId: input.measureId,
-          lower: input.lower,
-          upper: input.upper,
-          notes: input.notes,
-          substitutedFromFoodId: input.substitutedFromFoodId,
-          provenanceSource: input.provenanceSource,
-        ),
-      );
-    }
-    final expected = List<int>.generate(
-      inputs.length,
-      (index) => index,
-    ).toSet();
-    if (!positions.containsAll(expected) ||
-        positions.length != expected.length) {
-      throw const NutritionRecipeValidationError(
-        'invalid_ingredient_order',
-        'Ingredient positions must form a contiguous ordered sequence.',
-      );
-    }
-    result.sort((a, b) => a.position!.compareTo(b.position!));
-    return result;
-  }
 
   Future<void> _validateStoredIngredients(
     String recipeVersionId,
     List<NutritionRecipeIngredient> rows,
-  ) async {
-    final positions = rows.map((row) => row.position).toSet();
-    final expected = List<int>.generate(rows.length, (index) => index).toSet();
-    if (positions.length != rows.length ||
-        !positions.containsAll(expected) ||
-        rows.any(
-          (row) =>
-              row.recipeVersionId != recipeVersionId ||
-              row.quantityValue <= 0 ||
-              row.foodId.trim().isEmpty,
-        )) {
-      throw const NutritionRecipeValidationError(
-        'invalid_ingredient_graph',
-        'Stored ingredient graph is malformed.',
-      );
-    }
-    for (final row in rows) {
-      final food = await (_db.select(
-        _db.nutritionFoods,
-      )..where((food) => food.id.equals(row.foodId))).getSingleOrNull();
-      if (food == null) {
-        throw const NutritionRecipeValidationError(
-          'missing_food_identity',
-          'Stored ingredient graph references a missing food.',
-        );
-      }
-    }
-  }
-
-  void _validatePersistableQuantity(Quantity quantity, String? measureId) {
-    if (quantity.unit == QuantityUnit.unknown ||
-        quantity.unit == QuantityUnit.legacy ||
-        quantity.dimension == QuantityDimension.unknown ||
-        quantity.dimension == QuantityDimension.legacy) {
-      throw const NutritionRecipeValidationError(
-        'unsupported_quantity',
-        'Legacy and unknown quantities cannot be recipe ingredients.',
-      );
-    }
-    if (quantity.dimension == QuantityDimension.serving &&
-        quantity.context.servingDefinition == null) {
-      throw const NutritionRecipeValidationError(
-        'missing_quantity_context',
-        'Serving recipe quantities require a serving definition.',
-      );
-    }
-    if (quantity.dimension == QuantityDimension.householdReference &&
-        quantity.context.householdMeasure == null &&
-        measureId == null) {
-      throw const NutritionRecipeValidationError(
-        'missing_quantity_context',
-        'Household recipe quantities require a typed measure context.',
-      );
-    }
-  }
+  ) => _validator.validateStoredIngredients(recipeVersionId, rows);
 
   void _validateVersionInputs({
     required Quantity? yieldQuantity,
     required NutritionRecipeServingDefinition? servingDefinition,
     required String calculationRuleVersion,
     required NutritionRecipeSource source,
-  }) {
-    if (yieldQuantity != null) {
-      NutritionQuantityService.validatePositiveUserEnteredPortion(
-        yieldQuantity,
+  }) => _validator.validateVersionInputs(
+        yieldQuantity: yieldQuantity,
+        servingDefinition: servingDefinition,
+        calculationRuleVersion: calculationRuleVersion,
+        source: source,
       );
-      if ({
-        QuantityDimension.serving,
-        QuantityDimension.householdReference,
-        QuantityDimension.unknown,
-        QuantityDimension.legacy,
-      }.contains(yieldQuantity.dimension)) {
-        throw const NutritionRecipeValidationError(
-          'invalid_yield_quantity',
-          'Recipe yield requires a canonical mass, volume, or count quantity.',
-        );
-      }
-    }
-    servingDefinition?.validate();
-    _requireText(calculationRuleVersion, 'calculationRuleVersion');
-    if (source.parentVersionId != null &&
-        source.parentVersionId!.trim().isEmpty) {
-      throw const NutritionRecipeValidationError(
-        'invalid_version_ancestry',
-        'A recipe version parent ID cannot be empty.',
-      );
-    }
-    if (source.copiedFromVersionId != null &&
-        source.copiedFromVersionId!.trim().isEmpty) {
-      throw const NutritionRecipeValidationError(
-        'invalid_copy_provenance',
-        'A copied-from recipe version ID cannot be empty.',
-      );
-    }
-  }
 
   Future<List<NutritionRecipeIngredientInput>> _ingredientsAsInputs(
     NutritionRecipeVersion sourceVersion,
-  ) async {
-    final rows =
-        await (_db.select(_db.nutritionRecipeIngredients)
-              ..where((row) => row.recipeVersionId.equals(sourceVersion.id))
-              ..orderBy([(row) => OrderingTerm(expression: row.position)]))
-            .get();
-    final corrections = await _substitutionCorrections(
-      rows.map((row) => row.id),
-    );
-    return [
-      for (final row in rows)
-        NutritionRecipeIngredientInput.directFood(
-          id: _uuid.v4(),
-          foodId: row.foodId,
-          quantity: _quantityFromStored(
-            row.quantityValue,
-            row.quantityUnit,
-            recipeVersionId: sourceVersion.id,
-            calculationRuleVersion: sourceVersion.calcRuleVersion,
-            measureId: row.measureId,
-          )!,
-          position: row.position,
-          preparationId: row.preparationId,
-          measureId: row.measureId,
-          lower: row.lower == null ? null : QuantityAmount.fromNum(row.lower!),
-          upper: row.upper == null ? null : QuantityAmount.fromNum(row.upper!),
-          notes: row.notes,
-          substitutedFromFoodId: corrections[row.id],
-        ),
-    ];
-  }
+  ) => _mapper.ingredientsAsInputs(sourceVersion);
 
   Quantity? _quantityFromStored(
     double? value,
@@ -1499,171 +1264,28 @@ class NutritionRecipeRepository {
     String? recipeVersionId,
     String? calculationRuleVersion,
     String? measureId,
-  }) {
-    if (value == null || stableUnit == null) return null;
-    final unit = _quantityUnitFromDatabase(stableUnit);
-    if (unit == QuantityUnit.serving) {
-      return Quantity.serving(
-        amount: value.toString(),
-        definition: ServingDefinitionReference(
-          id: recipeVersionId ?? 'recipe-serving',
-          revision: calculationRuleVersion ?? 'recipe-graph-v1',
-        ),
+  }) => _mapper.quantityFromStored(
+        value,
+        stableUnit,
+        recipeVersionId: recipeVersionId,
+        calculationRuleVersion: calculationRuleVersion,
+        measureId: measureId,
       );
-    }
-    if (unit == QuantityUnit.householdReference) {
-      return Quantity.householdReference(
-        count: value.toString(),
-        reference: HouseholdMeasureReference(
-          measureType: measureId ?? 'unresolved',
-          calibrationId: measureId,
-        ),
-      );
-    }
-    return Quantity.fromNum(amount: value, unit: unit);
-  }
 
-  String _databaseUnitId(QuantityUnit unit) => switch (unit) {
-    QuantityUnit.milligram => 'milligram',
-    QuantityUnit.gram => 'gram',
-    QuantityUnit.kilogram => 'kilogram',
-    QuantityUnit.millilitre => 'millilitre',
-    QuantityUnit.litre => 'litre',
-    QuantityUnit.piece => 'piece',
-    QuantityUnit.serving => 'serving',
-    QuantityUnit.householdReference => 'household_reference',
-    QuantityUnit.unknown ||
-    QuantityUnit.legacy => throw const NutritionRecipeValidationError(
-      'unsupported_quantity',
-      'Unknown and legacy units cannot be persisted in a recipe.',
-    ),
-  };
-
-  QuantityUnit _quantityUnitFromDatabase(String value) => switch (value) {
-    'milligram' || 'mass_milligram' => QuantityUnit.milligram,
-    'gram' || 'mass_gram' => QuantityUnit.gram,
-    'kilogram' || 'mass_kilogram' => QuantityUnit.kilogram,
-    'millilitre' || 'volume_millilitre' => QuantityUnit.millilitre,
-    'litre' || 'volume_litre' => QuantityUnit.litre,
-    'piece' || 'count_piece' => QuantityUnit.piece,
-    'serving' => QuantityUnit.serving,
-    'household_reference' => QuantityUnit.householdReference,
-    _ => throw NutritionRecipeValidationError(
-      'unsupported_quantity_unit',
-      'Unsupported persisted recipe quantity unit: $value.',
-    ),
-  };
+  String _databaseUnitId(QuantityUnit unit) => _mapper.databaseUnitId(unit);
 
   Future<NutritionRecipeVersionModel> _loadVersionGraph(
     NutritionRecipe recipe,
     NutritionRecipeVersion version,
-  ) async {
-    final allVersions =
-        await (_db.select(_db.nutritionRecipeVersions)
-              ..where((row) => row.recipeId.equals(recipe.id))
-              ..orderBy([(row) => OrderingTerm(expression: row.versionNumber)]))
-            .get();
-    _validateVersionAncestry(recipe, allVersions);
-    final rows =
-        await (_db.select(_db.nutritionRecipeIngredients)
-              ..where((row) => row.recipeVersionId.equals(version.id))
-              ..orderBy([(row) => OrderingTerm(expression: row.position)]))
-            .get();
-    await _validateStoredIngredients(version.id, rows);
-    final corrections = await _substitutionCorrections(
-      rows.map((row) => row.id),
-    );
-    final source = NutritionRecipeSource.decode(version.source);
-    final serving = version.servingQuantity == null
-        ? null
-        : NutritionRecipeServingDefinition(
-            id: source.servingDefinitionId ?? 'recipe-serving-${version.id}',
-            revision:
-                source.servingDefinitionRevision ?? version.calcRuleVersion,
-            count: QuantityAmount.fromNum(version.servingQuantity!),
-            source: source.servingDefinitionSource,
-          );
-    return NutritionRecipeVersionModel(
-      id: version.id,
-      recipeId: version.recipeId,
-      versionNumber: version.versionNumber,
-      status: _versionStatus(version.status),
-      yieldQuantity: _quantityFromStored(
-        version.yieldQuantity,
-        version.yieldUnit,
-      ),
-      servingDefinition: serving,
-      calculationRuleVersion: version.calcRuleVersion,
-      source: source,
-      parentVersionId: source.parentVersionId,
-      createdAt: version.createdAt,
-      updatedAt: version.updatedAt,
-      ingredients: [
-        for (final row in rows)
-          NutritionRecipeIngredientModel(
-            id: row.id,
-            recipeVersionId: row.recipeVersionId,
-            position: row.position,
-            foodId: row.foodId,
-            preparationId: row.preparationId,
-            quantity: _quantityFromStored(
-              row.quantityValue,
-              row.quantityUnit,
-              recipeVersionId: version.id,
-              calculationRuleVersion: version.calcRuleVersion,
-              measureId: row.measureId,
-            )!,
-            measureId: row.measureId,
-            lower: row.lower == null
-                ? null
-                : QuantityAmount.fromNum(row.lower!),
-            upper: row.upper == null
-                ? null
-                : QuantityAmount.fromNum(row.upper!),
-            notes: row.notes,
-            substitutedFromFoodId: corrections[row.id],
-          ),
-      ],
-    );
-  }
+  ) => _mapper.loadVersionGraph(recipe, version);
 
   Future<Map<String, String>> _substitutionCorrections(
     Iterable<String> ingredientIds,
-  ) async {
-    final ids = ingredientIds.toSet();
-    if (ids.isEmpty) return const {};
-    final rows =
-        await (_db.select(_db.nutritionUserCorrections)..where(
-              (row) =>
-                  row.targetType.equals('recipe_ingredient') &
-                  row.field.equals('substituted_from_food'),
-            ))
-            .get();
-    return {
-      for (final row in rows)
-        if (ids.contains(row.targetId) && row.oldValue != null)
-          row.targetId: row.oldValue!,
-    };
-  }
+  ) => _mapper.substitutionCorrections(ingredientIds);
 
   Future<void> _deleteIngredientCorrections(
     Iterable<String> ingredientIds,
-  ) async {
-    final ids = ingredientIds.toSet();
-    if (ids.isEmpty) return;
-    final rows =
-        await (_db.select(_db.nutritionUserCorrections)..where(
-              (row) =>
-                  row.targetType.equals('recipe_ingredient') &
-                  row.field.equals('substituted_from_food'),
-            ))
-            .get();
-    for (final row in rows.where((row) => ids.contains(row.targetId))) {
-      await (_db.delete(
-        _db.nutritionUserCorrections,
-      )..where((item) => item.id.equals(row.id))).go();
-    }
-  }
+  ) => _mapper.deleteIngredientCorrections(ingredientIds);
 
   Future<NutritionRecipe?> _recipeById(String recipeId) => (_db.select(
     _db.nutritionRecipes,
@@ -1701,132 +1323,20 @@ class NutritionRecipeRepository {
   }
 
   NutritionRecipeModel _recipeModel(NutritionRecipe row) =>
-      NutritionRecipeModel(
-        id: row.id,
-        userId: row.userId,
-        name: row.name,
-        description: row.description,
-        lifecycle: _lifecycle(row.lifecycle),
-        currentVersionId: row.currentVersionId,
-      );
+      _mapper.recipeModel(row);
 
   void _assertOwnedDraft(
     NutritionRecipe recipe,
     NutritionRecipeVersion version, {
     bool allowPublished = false,
-  }) {
-    if (version.recipeId != recipe.id) {
-      throw const NutritionRecipeValidationError(
-        'cross_recipe_version_reference',
-        'Recipe version belongs to another recipe.',
+  }) => _validator.assertOwnedDraft(
+        recipe,
+        version,
+        allowPublished: allowPublished,
       );
-    }
-    if (!allowPublished && version.status != 'draft') {
-      throw const NutritionRecipeImmutableError(
-        'Published recipe versions cannot be edited.',
-      );
-    }
-  }
 
-  Future<void> _validateRecipeGraph(NutritionRecipe recipe) async {
-    final versions = await (_db.select(
-      _db.nutritionRecipeVersions,
-    )..where((row) => row.recipeId.equals(recipe.id))).get();
-    _validateVersionAncestry(recipe, versions);
-    if (recipe.currentVersionId != null) {
-      final current = versions
-          .where((row) => row.id == recipe.currentVersionId)
-          .toList();
-      if (current.length != 1 || current.single.status != 'published') {
-        throw const NutritionRecipeValidationError(
-          'invalid_current_version',
-          'Recipe current head must reference one of its published versions.',
-        );
-      }
-    }
-    final drafts = versions.where((row) => row.status == 'draft');
-    if (drafts.length > 1) {
-      throw const NutritionRecipeValidationError(
-        'multiple_drafts',
-        'A recipe cannot have multiple editable drafts.',
-      );
-    }
-    for (final version in versions) {
-      final ingredients = await (_db.select(
-        _db.nutritionRecipeIngredients,
-      )..where((row) => row.recipeVersionId.equals(version.id))).get();
-      await _validateStoredIngredients(version.id, ingredients);
-      if (version.status != 'draft' && ingredients.isEmpty) {
-        throw const NutritionRecipeValidationError(
-          'empty_immutable_recipe',
-          'Published or archived versions must retain their ingredient graph.',
-        );
-      }
-    }
-  }
-
-  void _validateVersionAncestry(
-    NutritionRecipe recipe,
-    List<NutritionRecipeVersion> versions,
-  ) {
-    final byId = {for (final version in versions) version.id: version};
-    for (final version in versions) {
-      final source = NutritionRecipeSource.decode(version.source);
-      final parentId = source.parentVersionId;
-      if (parentId == null) continue;
-      final parent = byId[parentId];
-      if (parent == null ||
-          parent.recipeId != recipe.id ||
-          parent.versionNumber >= version.versionNumber) {
-        throw const NutritionRecipeValidationError(
-          'invalid_version_ancestry',
-          'Recipe version ancestry must point to an earlier version of the same recipe.',
-        );
-      }
-      final seen = <String>{version.id};
-      var cursor = parent;
-      while (true) {
-        if (!seen.add(cursor.id)) {
-          throw const NutritionRecipeValidationError(
-            'version_ancestry_cycle',
-            'Recipe version ancestry contains a cycle.',
-          );
-        }
-        final nextId = NutritionRecipeSource.decode(
-          cursor.source,
-        ).parentVersionId;
-        if (nextId == null) break;
-        final next = byId[nextId];
-        if (next == null || next.recipeId != recipe.id) {
-          throw const NutritionRecipeValidationError(
-            'invalid_version_ancestry',
-            'Recipe version ancestry references a missing parent.',
-          );
-        }
-        cursor = next;
-      }
-    }
-  }
-
-  NutritionRecipeLifecycle _lifecycle(String value) => switch (value) {
-    'active' => NutritionRecipeLifecycle.active,
-    'archived' => NutritionRecipeLifecycle.archived,
-    'deleted' => NutritionRecipeLifecycle.deleted,
-    _ => throw NutritionRecipeValidationError(
-      'invalid_recipe_lifecycle',
-      'Unsupported recipe lifecycle: $value.',
-    ),
-  };
-
-  NutritionRecipeVersionStatus _versionStatus(String value) => switch (value) {
-    'draft' => NutritionRecipeVersionStatus.draft,
-    'published' => NutritionRecipeVersionStatus.published,
-    'archived' => NutritionRecipeVersionStatus.archived,
-    _ => throw NutritionRecipeValidationError(
-      'invalid_recipe_version_status',
-      'Unsupported recipe version status: $value.',
-    ),
-  };
+  Future<void> _validateRecipeGraph(NutritionRecipe recipe) =>
+      _validator.validateRecipeGraph(recipe);
 
   String _portableId(String? candidate, String label) {
     final value = candidate?.trim();
@@ -1834,14 +1344,8 @@ class NutritionRecipeRepository {
     return _uuid.v4();
   }
 
-  void _requireText(String value, String label) {
-    if (value.trim().isEmpty) {
-      throw NutritionRecipeValidationError(
-        'invalid_$label',
-        '$label must not be empty.',
-      );
-    }
-  }
+  void _requireText(String value, String label) =>
+      _validator.requireText(value, label);
 
   String _sqlQuote(String value) => value.replaceAll("'", "''");
 }

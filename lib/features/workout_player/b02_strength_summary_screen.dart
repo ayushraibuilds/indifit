@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../core/di/core_providers.dart';
 import '../../core/navigation/app_navigation.dart';
 import '../../core/services/achievement_service.dart';
 import '../../core/services/indifit_haptics.dart';
@@ -185,7 +186,11 @@ class _B02StrengthSummaryScreenState
     if (!mounted) return;
     try {
       final statsRepo = ref.read(progressStatisticsRepositoryProvider);
-      final prefs = await SharedPreferences.getInstance();
+      SharedPreferences? prefs;
+      try {
+        prefs = ref.read(sharedPreferencesProvider);
+      } catch (_) {}
+      prefs ??= await SharedPreferences.getInstance();
       final uncelebrated =
           await AchievementService.getUncelebratedWorkoutUnlocks(
         statsRepository: statsRepo,

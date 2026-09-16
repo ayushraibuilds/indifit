@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../core/config/app_preferences_keys.dart';
+import '../../core/di/core_providers.dart';
 import '../../core/services/achievement_service.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
@@ -35,9 +37,13 @@ class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
 
     try {
       final statsRepo = ref.read(progressStatisticsRepositoryProvider);
-      final prefs = await SharedPreferences.getInstance();
+      SharedPreferences? prefs;
+      try {
+        prefs = ref.read(sharedPreferencesProvider);
+      } catch (_) {}
+      prefs ??= await SharedPreferences.getInstance();
       final streak =
-          prefs.getInt('user_streak_count') ??
+          prefs.getInt(AppPreferenceKeys.userStreakCount) ??
           ref.read(dashboardControllerProvider).streakCount;
 
       final achievements = await AchievementService.recordAndEvaluate(

@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:health/health.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/config/app_preferences_keys.dart';
+import '../../core/di/core_providers.dart';
 import '../../core/services/crash_reporting_service.dart';
 import '../../core/services/local_schedule_date_service.dart';
 import '../../core/services/local_timezone_service.dart';
@@ -14,7 +16,11 @@ import '../models/b02_execution_models.dart';
 import 'b02_health_activity_repository.dart';
 
 final healthServiceProvider = Provider<HealthService>((ref) {
-  return HealthService();
+  SharedPreferences? prefs;
+  try {
+    prefs = ref.watch(sharedPreferencesProvider);
+  } catch (_) {}
+  return HealthService(prefs: prefs);
 });
 
 enum HealthCategory {
@@ -381,6 +387,7 @@ class HealthService {
   final Health _health;
   final LocalScheduleDateService _dateService;
   final LocalTimezoneService _timezoneService;
+  final SharedPreferences? _prefs;
   HealthConnectionStatus _lastPermissionRequestStatus =
       HealthConnectionStatus.unknown;
 
@@ -391,23 +398,30 @@ class HealthService {
     LocalScheduleDateService? dateService,
     LocalTimezoneService? timezoneService,
     HealthPlatformAvailability? platformAvailabilityOverride,
+    SharedPreferences? prefs,
   })  : _health = health ?? Health(),
         _dateService = dateService ?? LocalScheduleDateService(),
         _timezoneService = timezoneService ?? LocalTimezoneService(),
-        _platformAvailabilityOverride = platformAvailabilityOverride;
+        _platformAvailabilityOverride = platformAvailabilityOverride,
+        _prefs = prefs;
 
-  static const String integrationEnabledPrefKey = 'health_integration_enabled';
+  Future<SharedPreferences> _getPrefs() async =>
+      _prefs ?? await SharedPreferences.getInstance();
+
+  static const String integrationEnabledPrefKey =
+      AppPreferenceKeys.healthIntegrationEnabled;
   static const String permissionRequestedPrefix =
-      'health_permission_requested_';
+      AppPreferenceKeys.healthPermissionRequestedPrefix;
 
   static const Map<HealthCategory, String> categoryPrefKeys = {
-    HealthCategory.steps: 'health_category_steps',
-    HealthCategory.activeEnergy: 'health_category_active_energy',
-    HealthCategory.sleep: 'health_category_sleep',
-    HealthCategory.restingHeartRate: 'health_category_resting_heart_rate',
-    HealthCategory.workoutImport: 'health_category_workout_import',
-    HealthCategory.workoutExport: 'health_category_workout_export',
-    HealthCategory.weightExport: 'health_category_weight_export',
+    HealthCategory.steps: AppPreferenceKeys.healthCategorySteps,
+    HealthCategory.activeEnergy: AppPreferenceKeys.healthCategoryActiveEnergy,
+    HealthCategory.sleep: AppPreferenceKeys.healthCategorySleep,
+    HealthCategory.restingHeartRate:
+        AppPreferenceKeys.healthCategoryRestingHeartRate,
+    HealthCategory.workoutImport: AppPreferenceKeys.healthCategoryWorkoutImport,
+    HealthCategory.workoutExport: AppPreferenceKeys.healthCategoryWorkoutExport,
+    HealthCategory.weightExport: AppPreferenceKeys.healthCategoryWeightExport,
   };
 
   static const List<HealthCategoryDescriptor> categoryDescriptors = [
@@ -487,12 +501,12 @@ class HealthService {
   }
 
   Future<bool> getIntegrationEnabled() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
     return prefs.getBool(integrationEnabledPrefKey) ?? false;
   }
 
   Future<void> setIntegrationEnabled(bool enabled) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
     await prefs.setBool(integrationEnabledPrefKey, enabled);
   }
 
@@ -539,30 +553,30 @@ class HealthService {
   }
 
   Future<String?> getLastSyncTime() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('health_last_sync_time');
+    final prefs = await _getPrefs();
+    return prefs.getString(AppPreferenceKeys.healthLastSyncTime);
   }
 
   Future<void> setLastSyncTime([DateTime? time]) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
     final t = time ?? DateTime.now();
-    await prefs.setString('health_last_sync_time', t.toIso8601String());
+    await prefs.setString(AppPreferenceKeys.healthLastSyncTime, t.toIso8601String());
   }
 
   Future<bool> getCategoryState(HealthCategory category) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
     final key = categoryPrefKeys[category]!;
     return prefs.getBool(key) ?? true;
   }
 
   Future<void> setCategoryState(HealthCategory category, bool enabled) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
     final key = categoryPrefKeys[category]!;
     await prefs.setBool(key, enabled);
   }
 
   Future<Map<HealthCategory, bool>> getAllCategoryStates() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
     final result = <HealthCategory, bool>{};
     for (final cat in HealthCategory.values) {
       final key = categoryPrefKeys[cat]!;
@@ -575,12 +589,12 @@ class HealthService {
       '$permissionRequestedPrefix${category.name}';
 
   Future<bool> _permissionWasRequested(HealthCategory category) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
     return prefs.getBool(_permissionAttemptedKey(category)) ?? false;
   }
 
   Future<void> _markPermissionRequested(HealthCategory category) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
     await prefs.setBool(_permissionAttemptedKey(category), true);
   }
 

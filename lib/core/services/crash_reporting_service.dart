@@ -3,11 +3,12 @@ import 'package:flutter/foundation.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../config/app_preferences_keys.dart';
 import '../utils/app_logger.dart';
 
 class CrashReportingService {
   static const String prefCrashReportingEnabled =
-      'pref_crash_reporting_enabled';
+      AppPreferenceKeys.crashReportingEnabled;
   static bool _isEnabled = false; // Default telemetry to OFF (opt-in)
 
   /// Default Sentry DSN (can be overridden via environment variable SENTRY_DSN)
@@ -17,11 +18,14 @@ class CrashReportingService {
   );
 
   /// Initializes Sentry crash reporting with zero-payload privacy guards.
-  static Future<void> initialize(FutureOr<void> Function() appRunner) async {
-    final prefs = await SharedPreferences.getInstance();
-    final isOffline = prefs.getBool('offline_only') ?? false;
+  static Future<void> initialize(
+    FutureOr<void> Function() appRunner, {
+    SharedPreferences? prefs,
+  }) async {
+    final p = prefs ?? await SharedPreferences.getInstance();
+    final isOffline = p.getBool(AppPreferenceKeys.offlineOnly) ?? false;
     final userTelemetryOptIn =
-        prefs.getBool(prefCrashReportingEnabled) ?? false;
+        p.getBool(prefCrashReportingEnabled) ?? false;
 
     // Telemetry is allowed ONLY if not offline-only AND user explicitly opted in
     _isEnabled = !isOffline && userTelemetryOptIn;
@@ -123,12 +127,15 @@ class CrashReportingService {
   }
 
   /// Enables or disables crash reporting preference
-  static Future<void> setEnabled(bool enabled) async {
-    final prefs = await SharedPreferences.getInstance();
-    final isOffline = prefs.getBool('offline_only') ?? false;
+  static Future<void> setEnabled(
+    bool enabled, [
+    SharedPreferences? prefs,
+  ]) async {
+    final p = prefs ?? await SharedPreferences.getInstance();
+    final isOffline = p.getBool(AppPreferenceKeys.offlineOnly) ?? false;
     final effectiveEnabled = enabled && !isOffline;
     _isEnabled = effectiveEnabled;
-    await prefs.setBool(prefCrashReportingEnabled, effectiveEnabled);
+    await p.setBool(prefCrashReportingEnabled, effectiveEnabled);
   }
 
   /// Returns current crash reporting enabled state

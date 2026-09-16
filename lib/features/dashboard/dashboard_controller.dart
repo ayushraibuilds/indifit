@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/config/app_preferences_keys.dart';
 import '../../core/di/providers.dart';
 import '../../core/services/achievement_service.dart';
 import '../../core/services/crash_reporting_service.dart';
@@ -106,17 +107,29 @@ class DashboardState {
 
 class DashboardController extends StateNotifier<DashboardState> {
   final Ref _ref;
+  final SharedPreferences? _prefs;
   late DateTime _automaticDate;
   var _followsAutomaticDate = true;
 
   DashboardController(
     this._ref, {
+    SharedPreferences? prefs,
     DashboardState? initialState,
     bool loadOnInit = true,
-  }) : super(initialState ?? DashboardState()) {
+  })  : _prefs = prefs,
+        super(initialState ?? DashboardState()) {
     _automaticDate = _day(state.selectedDate);
     _followsAutomaticDate = _sameDay(_automaticDate, _day(DateTime.now()));
     if (loadOnInit) loadStateData();
+  }
+
+  Future<SharedPreferences> _getPrefs() async {
+    if (_prefs != null) return _prefs;
+    try {
+      return _ref.read(sharedPreferencesProvider);
+    } catch (_) {
+      return await SharedPreferences.getInstance();
+    }
   }
 
   void setSelectedDate(DateTime date) {
@@ -138,10 +151,10 @@ class DashboardController extends StateNotifier<DashboardState> {
   }
 
   Future<void> loadStateData() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
     if (!mounted) return;
-    final weight = prefs.getDouble('current_weight') ?? 74.5;
-    final calGoal = prefs.getInt('calorie_goal') ?? 2000;
+    final weight = prefs.getDouble(AppPreferenceKeys.currentWeight) ?? 74.5;
+    final calGoal = prefs.getInt(AppPreferenceKeys.calorieGoal) ?? 2000;
 
     state = state.copyWith(currentWeight: weight, calorieGoal: calGoal);
 
@@ -161,7 +174,7 @@ class DashboardController extends StateNotifier<DashboardState> {
   Future<void> _evaluateAchievements() async {
     try {
       final statsRepo = _ref.read(progressStatisticsRepositoryProvider);
-      final prefs = await SharedPreferences.getInstance();
+      final prefs = await _getPrefs();
 
       // Reconciled to the single authoritative AchievementService.
       // Workout achievements are celebrated exclusively on the workout summary screen;
@@ -200,12 +213,12 @@ class DashboardController extends StateNotifier<DashboardState> {
   Future<void> computeStreak() async {
     final foodRepo = _ref.read(foodRepositoryProvider);
     final workoutRepo = _ref.read(workoutRepositoryProvider);
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
 
-    if (!prefs.containsKey('streak_freezes_count')) {
-      await prefs.setInt('streak_freezes_count', 1);
+    if (!prefs.containsKey(AppPreferenceKeys.streakFreezesCount)) {
+      await prefs.setInt(AppPreferenceKeys.streakFreezesCount, 1);
     }
-    final freezes = prefs.getInt('streak_freezes_count') ?? 1;
+    final freezes = prefs.getInt(AppPreferenceKeys.streakFreezesCount) ?? 1;
 
     final foodDates = await foodRepo.getAllLogDates();
     if (!mounted) return;
@@ -232,13 +245,13 @@ class DashboardController extends StateNotifier<DashboardState> {
   }
 
   Future<String> purchaseStreakFreeze() async {
-    final prefs = await SharedPreferences.getInstance();
-    final current = prefs.getInt('streak_freezes_count') ?? 1;
+    final prefs = await _getPrefs();
+    final current = prefs.getInt(AppPreferenceKeys.streakFreezesCount) ?? 1;
     if (current >= 2) {
       return 'Max freeze tokens (2/2) already active!';
     }
 
-    final lastClaimMs = prefs.getInt('last_freeze_claimed_at') ?? 0;
+    final lastClaimMs = prefs.getInt(AppPreferenceKeys.lastFreezeClaimedAt) ?? 0;
     final nowMs = DateTime.now().millisecondsSinceEpoch;
     final cooldownMs = 3 * 24 * 60 * 60 * 1000; // 3 days
 
@@ -249,8 +262,8 @@ class DashboardController extends StateNotifier<DashboardState> {
       return 'Cooldown active. Next freeze available in $remainingDays day${remainingDays > 1 ? 's' : ''}.';
     }
 
-    await prefs.setInt('streak_freezes_count', current + 1);
-    await prefs.setInt('last_freeze_claimed_at', nowMs);
+    await prefs.setInt(AppPreferenceKeys.streakFreezesCount, current + 1);
+    await prefs.setInt(AppPreferenceKeys.lastFreezeClaimedAt, nowMs);
     await computeStreak();
     return 'Claimed 1 Streak Freeze token! ❄️';
   }
@@ -385,10 +398,10 @@ class DashboardController extends StateNotifier<DashboardState> {
 
   Future<void> loadWeeklyActionProgress() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final type = prefs.getString('weekly_action_type');
-      final text = prefs.getString('weekly_action_text');
-      final target = prefs.getInt('weekly_action_target') ?? 5;
+      final prefs = await _getPrefs();
+      final type = prefs.getString(AppPreferenceKeys.weeklyActionType);
+      final text = prefs.getString(AppPreferenceKeys.weeklyActionText);
+      final target = prefs.getInt(AppPreferenceKeys.weeklyActionTarget) ?? 5;
 
       if (type == null || text == null) {
         state = state.copyWith(
@@ -484,9 +497,9 @@ class DashboardController extends StateNotifier<DashboardState> {
         .logWeightAndSyncProfile(weight: w);
 
     // 2. Only after database write succeeds, update SharedPreferences and in-memory profile state.
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setDouble('current_weight', w);
-    await prefs.setDouble('user_weight', w);
+    final prefs = await _getPrefs();
+    await prefs.setDouble(AppPreferenceKeys.currentWeight, w);
+    await prefs.setDouble(AppPreferenceKeys.userWeight, w);
     _ref.read(userProfileProvider.notifier).syncWeightFromPersistence(w);
 
     try {
@@ -536,7 +549,11 @@ bool _sameDay(DateTime first, DateTime second) =>
 
 final dashboardControllerProvider =
     StateNotifierProvider<DashboardController, DashboardState>((ref) {
-      final controller = DashboardController(ref);
+      SharedPreferences? prefs;
+      try {
+        prefs = ref.watch(sharedPreferencesProvider);
+      } catch (_) {}
+      final controller = DashboardController(ref, prefs: prefs);
       ref.listen<int>(civilDateRevisionProvider, (_, _) {
         controller.refreshForCivilDate(DateTime.now());
       });

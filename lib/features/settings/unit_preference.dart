@@ -1,21 +1,28 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/config/app_preferences_keys.dart';
+import '../../core/di/core_providers.dart';
+
 /// Display-only unit preference. Canonical nutrition/workout quantities remain
 /// stored in their existing typed units; this preference never rewrites them.
 class UnitPreferenceNotifier extends StateNotifier<String> {
-  static const key = 'display_units';
+  static const key = AppPreferenceKeys.displayUnits;
   static const metric = 'Metric';
   static const imperial = 'Imperial';
 
+  final SharedPreferences? _prefs;
   bool _changedLocally = false;
 
-  UnitPreferenceNotifier() : super(metric) {
+  UnitPreferenceNotifier([this._prefs]) : super(metric) {
     _load();
   }
 
+  Future<SharedPreferences> _getPrefs() async =>
+      _prefs ?? await SharedPreferences.getInstance();
+
   Future<void> _load() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
     if (!mounted || _changedLocally) return;
     final value = prefs.getString(key);
     if (value == imperial || value == metric) state = value!;
@@ -25,7 +32,7 @@ class UnitPreferenceNotifier extends StateNotifier<String> {
     if (value != metric && value != imperial) return;
     _changedLocally = true;
     state = value;
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
     await prefs.setString(key, value);
   }
 }
@@ -58,5 +65,11 @@ abstract final class UnitPreferencePresentation {
 
 final unitPreferenceProvider =
     StateNotifierProvider<UnitPreferenceNotifier, String>(
-      (ref) => UnitPreferenceNotifier(),
+      (ref) {
+        SharedPreferences? prefs;
+        try {
+          prefs = ref.watch(sharedPreferencesProvider);
+        } catch (_) {}
+        return UnitPreferenceNotifier(prefs);
+      },
     );

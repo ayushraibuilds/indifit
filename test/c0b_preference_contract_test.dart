@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:indifit/core/config/app_preferences_keys.dart';
 import 'package:indifit/core/di/theme_provider.dart';
 import 'package:indifit/core/di/user_profile_provider.dart';
 import 'package:indifit/core/presentation/today_onboarding_handoff.dart';
@@ -7,6 +8,7 @@ import 'package:indifit/core/privacy/privacy_policy.dart';
 import 'package:indifit/core/services/crash_reporting_service.dart';
 import 'package:indifit/core/services/notification_service.dart';
 import 'package:indifit/data/repositories/health_service.dart';
+import 'package:indifit/data/repositories/hydration_repository.dart';
 import 'package:indifit/features/onboarding/b05_adaptive_onboarding.dart';
 import 'package:indifit/features/settings/settings_controller.dart';
 import 'package:indifit/features/settings/unit_preference.dart';
@@ -58,6 +60,8 @@ void main() {
         NotificationService.prefWeeklyProgressDay,
         NotificationService.prefWeeklyProgressHour,
         NotificationService.prefWeeklyProgressMinute,
+        NotificationService.prefWaterReminderHour,
+        NotificationService.prefWaterReminderMinute,
         NotificationService.prefLastScheduledTimezoneId,
         NotificationService.prefLastUtcOffsetMinutes,
       ],
@@ -82,9 +86,28 @@ void main() {
         'pref_weekly_progress_day',
         'pref_weekly_progress_hour',
         'pref_weekly_progress_minute',
+        'pref_water_reminder_hour',
+        'pref_water_reminder_minute',
         'last_scheduled_timezone_id',
         'last_utc_offset_minutes',
       ],
+    );
+
+    // Contract-drift keys: Hydration persistence keys
+    expect(
+      HydrationRepository.prefHydrationDailyGoalMl,
+      'pref_hydration_daily_goal_ml',
+    );
+    expect(
+      HydrationRepository.prefHydrationEntriesJson,
+      'pref_hydration_entries_json',
+    );
+    expect(HydrationRepository.prefWaterLogged, 'water_logged');
+    expect(HydrationRepository.prefWaterGoal, 'water_goal');
+    expect(HydrationRepository.prefWaterGlassSize, 'water_glass_size');
+    expect(
+      HydrationRepository.prefWaterLastLoggedDate,
+      'water_last_logged_date',
     );
 
     expect(
@@ -232,5 +255,56 @@ void main() {
     expect(prefs.getBool(todayOnboardingHandoffPendingKey), isTrue);
     await clearTodayOnboardingHandoff();
     expect(prefs.containsKey(todayOnboardingHandoffPendingKey), isFalse);
+  });
+
+  test('AppPreferenceKeys reflects the exact disk key constants', () {
+    expect(AppPreferenceKeys.offlineOnly, 'offline_only');
+    expect(
+      AppPreferenceKeys.crashReportingEnabled,
+      'pref_crash_reporting_enabled',
+    );
+    expect(AppPreferenceKeys.userThemeMode, 'user_theme_mode');
+    expect(AppPreferenceKeys.displayUnits, 'display_units');
+    expect(AppPreferenceKeys.onboardingCompleted, 'onboarding_completed');
+    expect(AppPreferenceKeys.onboardingSkipped, 'onboarding_skipped');
+    expect(
+      AppPreferenceKeys.todayOnboardingHandoffPending,
+      'today_onboarding_handoff_pending',
+    );
+    expect(AppPreferenceKeys.waterLogged, 'water_logged');
+    expect(AppPreferenceKeys.waterGoal, 'water_goal');
+    expect(AppPreferenceKeys.waterGlassSize, 'water_glass_size');
+    expect(AppPreferenceKeys.waterLastLoggedDate, 'water_last_logged_date');
+    expect(
+      AppPreferenceKeys.prefHydrationDailyGoalMl,
+      'pref_hydration_daily_goal_ml',
+    );
+    expect(
+      AppPreferenceKeys.prefHydrationEntriesJson,
+      'pref_hydration_entries_json',
+    );
+    expect(AppPreferenceKeys.userStreakCount, 'user_streak_count');
+    expect(AppPreferenceKeys.streakFreezesCount, 'streak_freezes_count');
+    expect(AppPreferenceKeys.lastFreezeClaimedAt, 'last_freeze_claimed_at');
+    expect(AppPreferenceKeys.userName, 'user_name');
+    expect(AppPreferenceKeys.userAge, 'user_age');
+    expect(AppPreferenceKeys.userHeight, 'user_height');
+    expect(AppPreferenceKeys.userWeight, 'user_weight');
+    expect(AppPreferenceKeys.currentWeight, 'current_weight');
+    expect(AppPreferenceKeys.userTargetWeight, 'user_target_weight');
+    expect(AppPreferenceKeys.userSex, 'user_sex');
+    expect(AppPreferenceKeys.userActivityLevel, 'user_activity_level');
+    expect(AppPreferenceKeys.userGoal, 'user_goal');
+    expect(AppPreferenceKeys.userDietPreference, 'user_diet_preference');
+    expect(AppPreferenceKeys.userEquipment, 'user_equipment');
+    expect(AppPreferenceKeys.userInjuries, 'user_injuries');
+    expect(AppPreferenceKeys.calorieGoal, 'calorie_goal');
+    expect(AppPreferenceKeys.proteinGoal, 'protein_goal');
+    expect(AppPreferenceKeys.carbsGoal, 'carbs_goal');
+    expect(AppPreferenceKeys.fatGoal, 'fat_goal');
+    expect(
+      AppPreferenceKeys.autoBackupLastContentFingerprintV2,
+      'auto_backup_last_content_fingerprint_v2',
+    );
   });
 }

@@ -1,22 +1,28 @@
+import '../services/local_schedule_date_service.dart';
+
 class StreakCalculator {
   /// Calculates current active day streak supporting streak freeze protection tokens.
+  /// Uses civil calendar dates to avoid DST duration drift.
   static int calculateStreak(
     Set<String> activeDays, {
     int streakFreezeCount = 0,
+    String? referenceLocalDate,
+    LocalScheduleDateService? dates,
+    String timezoneId = 'UTC',
   }) {
     if (activeDays.isEmpty) return 0;
 
-    final now = DateTime.now();
+    final dateService = dates ?? LocalScheduleDateService();
+    final todayStr = referenceLocalDate ?? dateService.todayIn(timezoneId);
+
     int streak = 0;
     int freezesRemaining = streakFreezeCount;
 
-    DateTime checkDate = DateTime(now.year, now.month, now.day);
-    String dateStr = _formatDate(checkDate);
+    String dateStr = todayStr;
 
-    // If today is not active, step back to yesterday
+    // If reference day is not active, step back to yesterday
     if (!activeDays.contains(dateStr)) {
-      checkDate = checkDate.subtract(const Duration(days: 1));
-      dateStr = _formatDate(checkDate);
+      dateStr = dateService.addCalendarDays(dateStr, timezoneId, -1);
     }
 
     while (activeDays.contains(dateStr) || freezesRemaining > 0) {
@@ -27,14 +33,9 @@ class StreakCalculator {
         freezesRemaining--;
         streak++;
       }
-      checkDate = checkDate.subtract(const Duration(days: 1));
-      dateStr = _formatDate(checkDate);
+      dateStr = dateService.addCalendarDays(dateStr, timezoneId, -1);
     }
 
     return streak;
-  }
-
-  static String _formatDate(DateTime date) {
-    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   }
 }

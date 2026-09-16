@@ -11,6 +11,7 @@ import '../../features/dashboard/today_surface_controller.dart';
 import '../../features/settings/settings_controller.dart';
 import '../../features/workout_player/b02_strength_execution_controller.dart';
 import '../capabilities/capabilities_registry.dart';
+import '../config/app_preferences_keys.dart';
 import '../di/providers.dart';
 import '../presentation/today_onboarding_handoff.dart';
 import '../privacy/privacy_policy.dart';
@@ -74,11 +75,13 @@ class DataErasureService {
   final CloudBackupCapability _cloudBackup;
   final AccountCapability _account;
   final HealthService _healthService;
+  final SharedPreferences? _prefs;
   final Future<Directory> Function() _documentsDirectoryProvider;
   final Future<Directory> Function() _temporaryDirectoryProvider;
 
   DataErasureService({
     required AppDatabase db,
+    SharedPreferences? prefs,
     AutoBackupSecretStore secretStore = const SecureAutoBackupSecretStore(),
     CloudBackupCapability cloudBackup = const DisabledCloudBackupCapability(),
     AccountCapability account = const NoOpAccountCapability(),
@@ -88,6 +91,7 @@ class DataErasureService {
     Future<Directory> Function() temporaryDirectoryProvider =
         getTemporaryDirectory,
   })  : _db = db,
+        _prefs = prefs,
         _secretStore = secretStore,
         _cloudBackup = cloudBackup,
         _account = account,
@@ -295,10 +299,10 @@ class DataErasureService {
     // 7. Preferences Cleanup
     bool preferencesCleared = true;
     try {
-      final prefs = await SharedPreferences.getInstance();
+      final prefs = _prefs ?? await SharedPreferences.getInstance();
       await prefs.clear();
-      await prefs.setBool('onboarding_completed', false);
-      await clearTodayOnboardingHandoff();
+      await prefs.setBool(AppPreferenceKeys.onboardingCompleted, false);
+      await clearTodayOnboardingHandoff(prefs);
     } catch (e) {
       AppLogger.warning('SharedPreferences cleanup failed: $e');
       preferencesCleared = false;

@@ -3,18 +3,23 @@ import 'package:drift/drift.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../core/config/app_preferences_keys.dart';
+import '../../core/services/local_schedule_date_service.dart';
 import '../database/app_database.dart';
 import '../models/hydration_models.dart';
 
 class HydrationRepository {
-  static const String prefHydrationDailyGoalMl = 'pref_hydration_daily_goal_ml';
-  static const String prefHydrationEntriesJson = 'pref_hydration_entries_json';
+  static const String prefHydrationDailyGoalMl =
+      AppPreferenceKeys.prefHydrationDailyGoalMl;
+  static const String prefHydrationEntriesJson =
+      AppPreferenceKeys.prefHydrationEntriesJson;
 
   // Legacy preference keys kept synchronized for backward compatibility
-  static const String prefWaterLogged = 'water_logged';
-  static const String prefWaterGoal = 'water_goal';
-  static const String prefWaterGlassSize = 'water_glass_size';
-  static const String prefWaterLastLoggedDate = 'water_last_logged_date';
+  static const String prefWaterLogged = AppPreferenceKeys.waterLogged;
+  static const String prefWaterGoal = AppPreferenceKeys.waterGoal;
+  static const String prefWaterGlassSize = AppPreferenceKeys.waterGlassSize;
+  static const String prefWaterLastLoggedDate =
+      AppPreferenceKeys.waterLastLoggedDate;
 
   static const int defaultDailyGoalMl = 2500;
   static const int defaultGlassSizeMl = 250;
@@ -23,13 +28,16 @@ class HydrationRepository {
   final AppDatabase? _db;
   final SharedPreferences? _prefsInstance;
   final Uuid _uuid;
+  final LocalScheduleDateService _dateService;
 
   HydrationRepository(
     this._db, {
     SharedPreferences? prefs,
     Uuid? uuid,
+    LocalScheduleDateService? dateService,
   })  : _prefsInstance = prefs,
-        _uuid = uuid ?? const Uuid();
+        _uuid = uuid ?? const Uuid(),
+        _dateService = dateService ?? LocalScheduleDateService();
 
   Future<SharedPreferences> _getPrefs() async =>
       _prefsInstance ?? await SharedPreferences.getInstance();
@@ -40,8 +48,20 @@ class HydrationRepository {
       '${date.month.toString().padLeft(2, '0')}-'
       '${date.day.toString().padLeft(2, '0')}';
 
-  /// Returns current local date key
-  static String currentLocalDateKey() => formatLocalDate(DateTime.now());
+  /// Returns current local date key.
+  /// If [dates] is supplied, calls [LocalScheduleDateService.todayIn].
+  static String currentLocalDateKey([
+    LocalScheduleDateService? dates,
+    String timezoneId = 'UTC',
+  ]) {
+    if (dates != null) {
+      return dates.todayIn(timezoneId);
+    }
+    return formatLocalDate(DateTime.now());
+  }
+
+  String _currentDateKey([String timezoneId = 'UTC']) =>
+      currentLocalDateKey(_dateService, timezoneId);
 
   /// Returns the daily hydration read model for the specified [localDate].
   ///
@@ -113,7 +133,7 @@ class HydrationRepository {
           id: 'legacy_$localDate',
           localDate: localDate,
           amountMl: legacyMl,
-          loggedAtUtc: DateTime.now().toUtc(),
+          loggedAtUtc: _dateService.nowUtc(),
           source: 'summary',
         );
         return HydrationDailyReadModel(
@@ -157,7 +177,7 @@ class HydrationRepository {
       id: _uuid.v4(),
       localDate: localDate,
       amountMl: amountMl,
-      loggedAtUtc: loggedAtUtc?.toUtc() ?? DateTime.now().toUtc(),
+      loggedAtUtc: loggedAtUtc?.toUtc() ?? _dateService.nowUtc(),
       source: source,
       containerType: containerType,
     );
@@ -189,7 +209,7 @@ class HydrationRepository {
           dateString: localDate,
           totalMl: totalMl,
           goalMl: goalMl,
-          updatedAt: Value(DateTime.now().toUtc()),
+          updatedAt: Value(_dateService.nowUtc()),
         ),
         mode: InsertMode.insertOrReplace,
       );
@@ -219,7 +239,7 @@ class HydrationRepository {
               dateString: localDate,
               totalMl: 0,
               goalMl: goalMl,
-              updatedAt: Value(DateTime.now().toUtc()),
+              updatedAt: Value(_dateService.nowUtc()),
             ),
             mode: InsertMode.insertOrReplace,
           );
@@ -332,7 +352,7 @@ class HydrationRepository {
     await prefs.setInt(prefWaterGoal, glasses);
 
     if (_db != null) {
-      final targetDate = forDate ?? currentLocalDateKey();
+      final targetDate = forDate ?? _currentDateKey();
       final existing = await (_db.select(_db.dailyHydrations)
             ..where((tbl) => tbl.dateString.equals(targetDate)))
           .getSingleOrNull();
@@ -343,7 +363,7 @@ class HydrationRepository {
           dateString: targetDate,
           totalMl: totalMl,
           goalMl: goalMl,
-          updatedAt: Value(DateTime.now().toUtc()),
+          updatedAt: Value(_dateService.nowUtc()),
         ),
         mode: InsertMode.insertOrReplace,
       );
@@ -367,7 +387,7 @@ class HydrationRepository {
     final glasses = (goalMl / newGlassSize).round().clamp(1, 100);
     await prefs.setInt(prefWaterGoal, glasses);
 
-    final todayStr = currentLocalDateKey();
+    final todayStr = _currentDateKey();
     final todayHydration = await getDailyHydration(todayStr);
     final loggedGlasses = (todayHydration.totalMl / newGlassSize).round();
     await prefs.setInt(prefWaterLogged, loggedGlasses);
@@ -420,7 +440,7 @@ class HydrationRepository {
 
   void _pruneOldEntries(Map<String, List<dynamic>> entriesMap) {
     if (entriesMap.isEmpty) return;
-    final cutoff = DateTime.now().subtract(
+    final cutoff = _dateService.nowUtc().subtract(
       const Duration(days: retentionWindowDays),
     );
     final cutoffKey = formatLocalDate(cutoff);
@@ -434,7 +454,7 @@ class HydrationRepository {
     int totalMl,
     int goalMl,
   ) async {
-    final todayStr = currentLocalDateKey();
+    final todayStr = _currentDateKey();
     if (localDate == todayStr) {
       final glassSize = prefs.getInt(prefWaterGlassSize) ?? defaultGlassSizeMl;
       final validGlassSize = glassSize > 0 ? glassSize : defaultGlassSizeMl;

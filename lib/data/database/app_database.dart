@@ -10,6 +10,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../core/config/app_preferences_keys.dart';
 import '../../core/fixtures/b02_muscle_catalog.dart';
 import '../../core/fixtures/equipment_fixtures.dart';
 import '../../core/fixtures/exercise_identity_fixtures.dart';

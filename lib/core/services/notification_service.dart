@@ -7,6 +7,7 @@ import 'package:timezone/data/latest_all.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 
 import '../../data/database/app_database.dart';
+import '../config/app_preferences_keys.dart';
 import '../utils/app_logger.dart';
 import 'crash_reporting_service.dart';
 import 'rest_presence_service.dart';
@@ -43,31 +44,44 @@ class NotificationService {
   static const int _idWeeklyReport = 500;
 
   // SharedPreferences keys
-  static const String prefRemindWorkout = 'pref_remind_workout';
-  static const String prefRemindMeals = 'pref_remind_meals';
-  static const String prefRemindWater = 'pref_remind_water';
-  static const String prefRemindEvening = 'pref_remind_evening';
-  static const String prefRemindWeekly = 'pref_remind_weekly';
-  static const String prefQuietHoursEnabled = 'pref_quiet_hours_enabled';
-  static const String prefQuietHoursStart = 'pref_quiet_hours_start';
-  static const String prefQuietHoursEnd = 'pref_quiet_hours_end';
-  static const String prefWorkoutReminderDays = 'pref_workout_reminder_days';
-  static const String prefWorkoutReminderHour = 'pref_workout_reminder_hour';
+  static const String prefRemindWorkout = AppPreferenceKeys.prefRemindWorkout;
+  static const String prefRemindMeals = AppPreferenceKeys.prefRemindMeals;
+  static const String prefRemindWater = AppPreferenceKeys.prefRemindWater;
+  static const String prefRemindEvening = AppPreferenceKeys.prefRemindEvening;
+  static const String prefRemindWeekly = AppPreferenceKeys.prefRemindWeekly;
+  static const String prefQuietHoursEnabled =
+      AppPreferenceKeys.prefQuietHoursEnabled;
+  static const String prefQuietHoursStart =
+      AppPreferenceKeys.prefQuietHoursStart;
+  static const String prefQuietHoursEnd = AppPreferenceKeys.prefQuietHoursEnd;
+  static const String prefWorkoutReminderDays =
+      AppPreferenceKeys.prefWorkoutReminderDays;
+  static const String prefWorkoutReminderHour =
+      AppPreferenceKeys.prefWorkoutReminderHour;
   static const String prefWorkoutReminderMinute =
-      'pref_workout_reminder_minute';
-  static const String prefLunchReminderHour = 'pref_lunch_reminder_hour';
-  static const String prefLunchReminderMinute = 'pref_lunch_reminder_minute';
-  static const String prefDinnerReminderHour = 'pref_dinner_reminder_hour';
-  static const String prefDinnerReminderMinute = 'pref_dinner_reminder_minute';
+      AppPreferenceKeys.prefWorkoutReminderMinute;
+  static const String prefLunchReminderHour =
+      AppPreferenceKeys.prefLunchReminderHour;
+  static const String prefLunchReminderMinute =
+      AppPreferenceKeys.prefLunchReminderMinute;
+  static const String prefDinnerReminderHour =
+      AppPreferenceKeys.prefDinnerReminderHour;
+  static const String prefDinnerReminderMinute =
+      AppPreferenceKeys.prefDinnerReminderMinute;
   static const String prefDailyLoggingReminderHour =
-      'pref_daily_logging_reminder_hour';
+      AppPreferenceKeys.prefDailyLoggingReminderHour;
   static const String prefDailyLoggingReminderMinute =
-      'pref_daily_logging_reminder_minute';
-  static const String prefWeeklyProgressDay = 'pref_weekly_progress_day';
-  static const String prefWeeklyProgressHour = 'pref_weekly_progress_hour';
-  static const String prefWeeklyProgressMinute = 'pref_weekly_progress_minute';
-  static const String prefWaterReminderHour = 'pref_water_reminder_hour';
-  static const String prefWaterReminderMinute = 'pref_water_reminder_minute';
+      AppPreferenceKeys.prefDailyLoggingReminderMinute;
+  static const String prefWeeklyProgressDay =
+      AppPreferenceKeys.prefWeeklyProgressDay;
+  static const String prefWeeklyProgressHour =
+      AppPreferenceKeys.prefWeeklyProgressHour;
+  static const String prefWeeklyProgressMinute =
+      AppPreferenceKeys.prefWeeklyProgressMinute;
+  static const String prefWaterReminderHour =
+      AppPreferenceKeys.prefWaterReminderHour;
+  static const String prefWaterReminderMinute =
+      AppPreferenceKeys.prefWaterReminderMinute;
 
   static const List<int> defaultWorkoutReminderDays = [
     DateTime.monday,
@@ -229,7 +243,10 @@ class NotificationService {
   }
 
   /// Re-schedules all enabled reminders. Call after any preference change.
-  static Future<void> scheduleAllReminders([AppDatabase? db]) async {
+  static Future<void> scheduleAllReminders([
+    AppDatabase? db,
+    SharedPreferences? preferences,
+  ]) async {
     // Cancel only scheduled reminder notifications (101-107, 201, 202, 301, 400, 500)
     // to prevent wiping active workout rest timer notifications (IDs 998/999).
     for (int day = DateTime.monday; day <= DateTime.sunday; day++) {
@@ -241,7 +258,7 @@ class NotificationService {
     await _plugin.cancel(_idEveningNudge);
     await _plugin.cancel(_idWeeklyReport);
 
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = preferences ?? await SharedPreferences.getInstance();
 
     final workoutEnabled = prefs.getBool(prefRemindWorkout) ?? false;
     final mealsEnabled = prefs.getBool(prefRemindMeals) ?? false;
@@ -816,17 +833,19 @@ class NotificationService {
   }
 
   static const String prefLastScheduledTimezoneId =
-      'last_scheduled_timezone_id';
-  static const String prefLastUtcOffsetMinutes = 'last_utc_offset_minutes';
+      AppPreferenceKeys.lastScheduledTimezoneId;
+  static const String prefLastUtcOffsetMinutes =
+      AppPreferenceKeys.lastUtcOffsetMinutes;
 
   /// Detects if device timezone or UTC offset changed (e.g. travel or DST change),
   /// updates persisted timezone metadata, and reschedules notifications.
   static Future<bool> checkAndUpdateTimezoneAndReschedule([
     AppDatabase? db,
     Future<String> Function()? readTimezoneId,
+    SharedPreferences? preferences,
   ]) async {
     await _configureLocalTimeZone(readTimezoneId: readTimezoneId);
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = preferences ?? await SharedPreferences.getInstance();
 
     final currentTzId = tz.local.name;
     final currentOffsetMinutes = DateTime.now().timeZoneOffset.inMinutes;
@@ -841,7 +860,7 @@ class NotificationService {
       );
       await prefs.setString(prefLastScheduledTimezoneId, currentTzId);
       await prefs.setInt(prefLastUtcOffsetMinutes, currentOffsetMinutes);
-      await scheduleAllReminders(db);
+      await scheduleAllReminders(db, prefs);
       return true;
     }
     return false;

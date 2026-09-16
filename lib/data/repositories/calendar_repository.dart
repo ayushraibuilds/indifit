@@ -3,10 +3,14 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../core/fixtures/workout_draft_codec.dart';
 import '../../core/services/local_schedule_date_service.dart';
 import '../database/app_database.dart';
 import '../services/b02_occurrence_snapshot_customizer.dart';
+import 'calendar/handlers/occurrence_command_handler.dart';
+import 'calendar/handlers/occurrence_customization_handlers.dart';
+import 'calendar/handlers/occurrence_execution_handlers.dart';
+import 'calendar/handlers/occurrence_scheduling_handlers.dart';
+import 'calendar/occurrence_transition_validator.dart';
 
 enum OccurrenceStatus {
   planned,
@@ -287,15 +291,43 @@ class CalendarRepository {
   final LocalScheduleDateService _dates;
   final Uuid _uuid;
   final DateTime Function() _nowUtc;
+  final OccurrenceTransitionValidator validator;
+  late final OccurrenceCommandDispatcher _dispatcher;
+  late final CompleteOccurrenceHandler _completeOccurrenceHandler;
+
+  AppDatabase get db => _db;
+  LocalScheduleDateService get dates => _dates;
+  Uuid get uuid => _uuid;
+  DateTime Function() get nowUtc => _nowUtc;
 
   CalendarRepository(
     this._db, {
     LocalScheduleDateService? dates,
     Uuid? uuid,
     DateTime Function()? nowUtc,
+    OccurrenceTransitionValidator? validator,
   }) : _dates = dates ?? LocalScheduleDateService(nowUtc: nowUtc),
        _uuid = uuid ?? const Uuid(),
-       _nowUtc = nowUtc ?? (() => DateTime.now().toUtc());
+       _nowUtc = nowUtc ?? (() => DateTime.now().toUtc()),
+       validator = validator ?? const OccurrenceTransitionValidator() {
+    _dispatcher = OccurrenceCommandDispatcher();
+    _registerCommandHandlers();
+  }
+
+  void _registerCommandHandlers() {
+    _dispatcher.register(RescheduleOccurrenceHandler(this));
+    _dispatcher.register(SkipOccurrenceHandler(this));
+    _dispatcher.register(CancelOccurrenceHandler(this));
+    _dispatcher.register(RestoreOccurrenceHandler(this));
+    _dispatcher.register(RepeatOccurrenceHandler(this));
+    _dispatcher.register(StartOccurrenceHandler(this));
+    _dispatcher.register(DiscardStartedOccurrenceHandler(this));
+    _completeOccurrenceHandler = CompleteOccurrenceHandler(this);
+    _dispatcher.register(_completeOccurrenceHandler);
+    _dispatcher.register(CustomizeOccurrenceHandler(this));
+    _dispatcher.register(CustomizeFutureOccurrencesHandler(this));
+    _dispatcher.register(ResetOccurrenceCustomizationHandler(this));
+  }
 
   Future<ScheduledSessionOccurrence?> getOccurrence(String occurrenceId) {
     return (_db.select(
@@ -321,15 +353,15 @@ class CalendarRepository {
     }
     final existing = occurrence.executionSnapshotJson?.trim();
     if (existing != null && existing.isNotEmpty) {
-      _decodeAndValidateOccurrenceSnapshot(existing, occurrence);
+      validator.decodeAndValidateOccurrenceSnapshot(existing, occurrence);
       if (occurrence.status == OccurrenceStatus.planned.dbValue ||
           occurrence.status == OccurrenceStatus.rescheduled.dbValue) {
-        await _requireActivePlan(occurrence);
+        await requireActivePlan(occurrence);
       }
       return existing;
     }
-    await _requireActivePlan(occurrence);
-    return _buildExecutionSnapshot(occurrence);
+    await requireActivePlan(occurrence);
+    return buildExecutionSnapshot(occurrence);
   }
 
   /// Saves a per-occurrence launch snapshot without changing the published
@@ -338,336 +370,20 @@ class CalendarRepository {
   /// unavailable after start or for terminal history.
   Future<OccurrenceMutationResult> customize(
     CustomizeOccurrenceCommand command,
-  ) async {
-    _validateCommand(command);
-    if (command.expectedStatus != OccurrenceStatus.planned &&
-        command.expectedStatus != OccurrenceStatus.rescheduled) {
-      throw const InvalidOccurrenceTransitionException(
-        'Only an unstarted workout can be customized.',
-      );
-    }
-    if (command.baseSnapshotJson.trim().isEmpty || command.changes.isEmpty) {
-      throw const InvalidOccurrenceTransitionException(
-        'Choose a workout change before saving.',
-      );
-    }
-    return _db.transaction(() async {
-      final existing = await _existingEvent(
-        command.occurrenceId,
-        command.commandId,
-      );
-      if (existing != null) {
-        return _idempotentResult(
-          command.occurrenceId,
-          existing,
-          expectedEventType: 'customized',
-        );
-      }
-      final occurrence = await _requireCommandSource(command);
-      await _requireActivePlan(occurrence);
-      _requireUnstarted(occurrence, 'customize');
-
-      final currentSnapshot = occurrence.executionSnapshotJson?.trim();
-      final baseSnapshot = currentSnapshot == null || currentSnapshot.isEmpty
-          ? await _buildExecutionSnapshot(occurrence)
-          : currentSnapshot;
-      if (baseSnapshot != command.baseSnapshotJson) _throwStale();
-      _decodeAndValidateOccurrenceSnapshot(baseSnapshot, occurrence);
-
-      final canonicalExercises = await (_db.select(_db.exercises)).get();
-      final canonicalById = <String, String>{
-        for (final exercise in canonicalExercises)
-          if (exercise.stableId?.trim().isNotEmpty == true &&
-              exercise.name.trim().isNotEmpty)
-            exercise.stableId!.trim(): exercise.name.trim(),
-      };
-      final customizedSnapshot = const B02OccurrenceSnapshotCustomizer().apply(
-        snapshotJson: baseSnapshot,
-        occurrenceId: occurrence.id,
-        changes: command.changes,
-        canonicalExercises: canonicalById,
-      );
-      final changed =
-          await (_db.update(_db.scheduledSessionOccurrences)..where(
-                (table) =>
-                    table.id.equals(occurrence.id) &
-                    table.status.equals(command.expectedStatus.dbValue),
-              ))
-              .write(
-                ScheduledSessionOccurrencesCompanion(
-                  executionSnapshotJson: Value(customizedSnapshot),
-                ),
-              );
-      if (changed != 1) _throwStale();
-      final event = await _insertEvent(
-        occurrenceId: occurrence.id,
-        commandId: command.commandId,
-        eventType: 'customized',
-        fromStatus: occurrence.status,
-        toStatus: occurrence.status,
-        beforeLocalDate: occurrence.effectiveLocalDate,
-        beforeTimezoneId: occurrence.effectiveTimezoneId,
-        afterLocalDate: occurrence.effectiveLocalDate,
-        afterTimezoneId: occurrence.effectiveTimezoneId,
-        metadata: {
-          'snapshotVersion': 1,
-          'prescriptionIds': [
-            for (final change in command.changes) change.prescriptionId,
-          ],
-        },
-        occurredAtUtc: _nowUtc().toUtc(),
-      );
-      return OccurrenceMutationResult(
-        occurrence: (await getOccurrence(occurrence.id))!,
-        event: event,
-        wasIdempotent: false,
-      );
-    });
-  }
+  ) => _dispatcher.dispatch(command);
 
   /// Saves an occurrence launch snapshot and cascades it across all upcoming
   /// unstarted occurrences of the same template in the active plan.
-  ///
-  /// For each target occurrence, builds a pristine baseline from the template
-  /// and applies the changes, replacing any prior individual tweaks. All targets
-  /// are validated and updated inside one atomic transaction.
   Future<FutureCustomizationResult> customizeFutureOccurrences(
     CustomizeFutureOccurrencesCommand command,
-  ) async {
-    _validateCommand(command);
-    if (command.expectedStatus != OccurrenceStatus.planned &&
-        command.expectedStatus != OccurrenceStatus.rescheduled) {
-      throw const InvalidOccurrenceTransitionException(
-        'Only an unstarted workout can be customized.',
-      );
-    }
-    if (command.baseSnapshotJson.trim().isEmpty || command.changes.isEmpty) {
-      throw const InvalidOccurrenceTransitionException(
-        'Choose a workout change before saving.',
-      );
-    }
-    return _db.transaction(() async {
-      final existing = await _existingEvent(
-        command.occurrenceId,
-        command.commandId,
-      );
-      if (existing != null) {
-        return FutureCustomizationResult(
-          affectedCount: 1,
-          sourceResult: await _idempotentResult(
-            command.occurrenceId,
-            existing,
-            expectedEventType: 'customized',
-          ),
-        );
-      }
-      final occurrence = await _requireCommandSource(command);
-      await _requireActivePlan(occurrence);
-      _requireUnstarted(occurrence, 'customize');
-
-      final currentSnapshot = occurrence.executionSnapshotJson?.trim();
-      final baseSnapshot = currentSnapshot == null || currentSnapshot.isEmpty
-          ? await _buildExecutionSnapshot(occurrence)
-          : currentSnapshot;
-      if (baseSnapshot != command.baseSnapshotJson) _throwStale();
-      _decodeAndValidateOccurrenceSnapshot(baseSnapshot, occurrence);
-
-      final futureOccurrences = await (_db.select(_db.scheduledSessionOccurrences)
-            ..where((table) =>
-                table.programVersionId.equals(occurrence.programVersionId) &
-                table.sessionTemplateId.equals(occurrence.sessionTemplateId) &
-                table.status.isIn([
-                  OccurrenceStatus.planned.dbValue,
-                  OccurrenceStatus.rescheduled.dbValue,
-                ]) &
-                table.effectiveLocalDate.isBiggerOrEqualValue(occurrence.effectiveLocalDate))
-            ..orderBy([(table) => OrderingTerm(expression: table.effectiveLocalDate)]))
-          .get();
-
-      if (futureOccurrences.isEmpty ||
-          !futureOccurrences.any((item) => item.id == occurrence.id)) {
-        _throwStale();
-      }
-
-      final canonicalExercises = await (_db.select(_db.exercises)).get();
-      final canonicalById = <String, String>{
-        for (final exercise in canonicalExercises)
-          if (exercise.stableId?.trim().isNotEmpty == true &&
-              exercise.name.trim().isNotEmpty)
-            exercise.stableId!.trim(): exercise.name.trim(),
-      };
-
-      OccurrenceEvent? sourceEvent;
-
-      for (final target in futureOccurrences) {
-        final targetPristineSnapshot = await _buildExecutionSnapshot(target);
-        final customizedSnapshot = const B02OccurrenceSnapshotCustomizer().apply(
-          snapshotJson: targetPristineSnapshot,
-          occurrenceId: target.id,
-          changes: command.changes,
-          canonicalExercises: canonicalById,
-        );
-
-        final changed = await (_db.update(_db.scheduledSessionOccurrences)
-              ..where((table) =>
-                  table.id.equals(target.id) &
-                  table.status.isIn([
-                    OccurrenceStatus.planned.dbValue,
-                    OccurrenceStatus.rescheduled.dbValue,
-                  ])))
-            .write(
-              ScheduledSessionOccurrencesCompanion(
-                executionSnapshotJson: Value(customizedSnapshot),
-              ),
-            );
-        if (changed != 1) _throwStale();
-
-        final isSource = target.id == occurrence.id;
-        final targetCommandId = isSource
-            ? command.commandId
-            : '${command.commandId}::${target.id}';
-        final event = await _insertEvent(
-          occurrenceId: target.id,
-          commandId: targetCommandId,
-          eventType: 'customized',
-          fromStatus: target.status,
-          toStatus: target.status,
-          beforeLocalDate: target.effectiveLocalDate,
-          beforeTimezoneId: target.effectiveTimezoneId,
-          afterLocalDate: target.effectiveLocalDate,
-          afterTimezoneId: target.effectiveTimezoneId,
-          metadata: {
-            'snapshotVersion': 1,
-            'cascade': true,
-            'sourceOccurrenceId': occurrence.id,
-            'targetCount': futureOccurrences.length,
-            'prescriptionIds': [
-              for (final change in command.changes) change.prescriptionId,
-            ],
-          },
-          occurredAtUtc: _nowUtc().toUtc(),
-        );
-
-        if (isSource) {
-          sourceEvent = event;
-        }
-      }
-
-      return FutureCustomizationResult(
-        affectedCount: futureOccurrences.length,
-        sourceResult: OccurrenceMutationResult(
-          occurrence: (await getOccurrence(occurrence.id))!,
-          event: sourceEvent!,
-          wasIdempotent: false,
-        ),
-      );
-    });
-  }
+  ) => _dispatcher.dispatch(command);
 
   /// Resets customization by clearing executionSnapshotJson back to null,
   /// restoring dynamic template resolution. If [command.allFuture] is true,
   /// resets all upcoming unstarted occurrences of the same template.
   Future<FutureCustomizationResult> resetOccurrenceCustomization(
     ResetOccurrenceCustomizationCommand command,
-  ) async {
-    _validateCommand(command);
-    if (command.expectedStatus != OccurrenceStatus.planned &&
-        command.expectedStatus != OccurrenceStatus.rescheduled) {
-      throw const InvalidOccurrenceTransitionException(
-        'Only an unstarted workout can be reset.',
-      );
-    }
-    return _db.transaction(() async {
-      final existing = await _existingEvent(
-        command.occurrenceId,
-        command.commandId,
-      );
-      if (existing != null) {
-        return FutureCustomizationResult(
-          affectedCount: 1,
-          sourceResult: await _idempotentResult(
-            command.occurrenceId,
-            existing,
-            expectedEventType: 'customizationReset',
-          ),
-        );
-      }
-      final occurrence = await _requireCommandSource(command);
-      await _requireActivePlan(occurrence);
-      _requireUnstarted(occurrence, 'reset');
-
-      final targets = command.allFuture
-          ? await (_db.select(_db.scheduledSessionOccurrences)
-                ..where((table) =>
-                    table.programVersionId.equals(occurrence.programVersionId) &
-                    table.sessionTemplateId.equals(occurrence.sessionTemplateId) &
-                    table.status.isIn([
-                      OccurrenceStatus.planned.dbValue,
-                      OccurrenceStatus.rescheduled.dbValue,
-                    ]) &
-                    table.effectiveLocalDate.isBiggerOrEqualValue(occurrence.effectiveLocalDate))
-                ..orderBy([(table) => OrderingTerm(expression: table.effectiveLocalDate)]))
-              .get()
-          : [occurrence];
-
-      if (targets.isEmpty || !targets.any((item) => item.id == occurrence.id)) {
-        _throwStale();
-      }
-
-      OccurrenceEvent? sourceEvent;
-
-      for (final target in targets) {
-        final changed = await (_db.update(_db.scheduledSessionOccurrences)
-              ..where((table) =>
-                  table.id.equals(target.id) &
-                  table.status.isIn([
-                    OccurrenceStatus.planned.dbValue,
-                    OccurrenceStatus.rescheduled.dbValue,
-                  ])))
-            .write(
-              const ScheduledSessionOccurrencesCompanion(
-                executionSnapshotJson: Value(null),
-              ),
-            );
-        if (changed != 1) _throwStale();
-
-        final isSource = target.id == occurrence.id;
-        final targetCommandId = isSource
-            ? command.commandId
-            : '${command.commandId}::${target.id}';
-        final event = await _insertEvent(
-          occurrenceId: target.id,
-          commandId: targetCommandId,
-          eventType: 'customizationReset',
-          fromStatus: target.status,
-          toStatus: target.status,
-          beforeLocalDate: target.effectiveLocalDate,
-          beforeTimezoneId: target.effectiveTimezoneId,
-          afterLocalDate: target.effectiveLocalDate,
-          afterTimezoneId: target.effectiveTimezoneId,
-          metadata: {
-            'resetAllFuture': command.allFuture,
-            'sourceOccurrenceId': occurrence.id,
-            'targetCount': targets.length,
-          },
-          occurredAtUtc: _nowUtc().toUtc(),
-        );
-
-        if (isSource) {
-          sourceEvent = event;
-        }
-      }
-
-      return FutureCustomizationResult(
-        affectedCount: targets.length,
-        sourceResult: OccurrenceMutationResult(
-          occurrence: (await getOccurrence(occurrence.id))!,
-          event: sourceEvent!,
-          wasIdempotent: false,
-        ),
-      );
-    });
-  }
+  ) => _dispatcher.dispatch(command);
 
   Future<List<ScheduledSessionOccurrence>> getOccurrencesInLocalDateRange({
     required String startLocalDate,
@@ -771,584 +487,35 @@ class CalendarRepository {
 
   Future<OccurrenceMutationResult> reschedule(
     RescheduleOccurrenceCommand command,
-  ) async {
-    _validateCommand(command);
-    final newDate = _dates.normalizeLocalDate(command.effectiveLocalDate);
-    _dates.validateTimezone(command.effectiveTimezoneId);
-    if (!command.confirmed) {
-      throw const InvalidOccurrenceTransitionException(
-        'Rescheduling requires an explicit confirmation.',
-      );
-    }
-    return _db.transaction(() async {
-      final existing = await _existingEvent(
-        command.occurrenceId,
-        command.commandId,
-      );
-      if (existing != null) {
-        return _idempotentResult(
-          command.occurrenceId,
-          existing,
-          expectedEventType: 'rescheduled',
-        );
-      }
-      final occurrence = await _requireCommandSource(command);
-      await _requireActivePlan(occurrence);
-      _requireUnstarted(occurrence, 'reschedule');
-      final targetStatus =
-          occurrence.originalLocalDate == newDate &&
-              occurrence.originalTimezoneId == command.effectiveTimezoneId
-          ? OccurrenceStatus.planned
-          : OccurrenceStatus.rescheduled;
-      final changed =
-          await (_db.update(_db.scheduledSessionOccurrences)..where(
-                (table) =>
-                    table.id.equals(occurrence.id) &
-                    table.status.equals(command.expectedStatus.dbValue) &
-                    table.effectiveLocalDate.equals(
-                      occurrence.effectiveLocalDate,
-                    ) &
-                    table.effectiveTimezoneId.equals(
-                      occurrence.effectiveTimezoneId,
-                    ),
-              ))
-              .write(
-                ScheduledSessionOccurrencesCompanion(
-                  status: Value(targetStatus.dbValue),
-                  effectiveLocalDate: Value(newDate),
-                  effectiveTimezoneId: Value(command.effectiveTimezoneId),
-                ),
-              );
-      if (changed != 1) _throwStale();
-      final event = await _insertEvent(
-        occurrenceId: occurrence.id,
-        commandId: command.commandId,
-        eventType: 'rescheduled',
-        fromStatus: occurrence.status,
-        toStatus: targetStatus.dbValue,
-        beforeLocalDate: occurrence.effectiveLocalDate,
-        beforeTimezoneId: occurrence.effectiveTimezoneId,
-        afterLocalDate: newDate,
-        afterTimezoneId: command.effectiveTimezoneId,
-        reason: command.reason,
-      );
-      return OccurrenceMutationResult(
-        occurrence: (await getOccurrence(occurrence.id))!,
-        event: event,
-        wasIdempotent: false,
-      );
-    });
-  }
+  ) => _dispatcher.dispatch(command);
 
-  Future<OccurrenceMutationResult> skip(SkipOccurrenceCommand command) async {
-    _validateCommand(command);
-    return _db.transaction(() async {
-      final existing = await _existingEvent(
-        command.occurrenceId,
-        command.commandId,
-      );
-      if (existing != null) {
-        return _idempotentResult(
-          command.occurrenceId,
-          existing,
-          expectedEventType: 'skipped',
-        );
-      }
-      final occurrence = await _requireCommandSource(command);
-      await _requireActivePlan(occurrence);
-      _requireUnstarted(occurrence, 'skip');
-      final changed =
-          await (_db.update(_db.scheduledSessionOccurrences)..where(
-                (table) =>
-                    table.id.equals(occurrence.id) &
-                    table.status.equals(command.expectedStatus.dbValue),
-              ))
-              .write(
-                ScheduledSessionOccurrencesCompanion(
-                  status: const Value('skipped'),
-                  progressionDisposition: Value(
-                    command.disposition.progressionDisposition,
-                  ),
-                  skipMode: Value(command.disposition.skipMode),
-                  terminalAtUtc: Value(_nowUtc().toUtc()),
-                ),
-              );
-      if (changed != 1) _throwStale();
-      final event = await _insertEvent(
-        occurrenceId: occurrence.id,
-        commandId: command.commandId,
-        eventType: 'skipped',
-        fromStatus: occurrence.status,
-        toStatus: OccurrenceStatus.skipped.dbValue,
-        beforeLocalDate: occurrence.effectiveLocalDate,
-        beforeTimezoneId: occurrence.effectiveTimezoneId,
-        afterLocalDate: occurrence.effectiveLocalDate,
-        afterTimezoneId: occurrence.effectiveTimezoneId,
-        reason: command.reason,
-        metadata: {'skipMode': command.disposition.skipMode},
-      );
-      return OccurrenceMutationResult(
-        occurrence: (await getOccurrence(occurrence.id))!,
-        event: event,
-        wasIdempotent: false,
-      );
-    });
-  }
+  Future<OccurrenceMutationResult> skip(
+    SkipOccurrenceCommand command,
+  ) => _dispatcher.dispatch(command);
 
   Future<OccurrenceMutationResult> cancel(
     CancelOccurrenceCommand command,
-  ) async {
-    _validateCommand(command);
-    return _db.transaction(() async {
-      final existing = await _existingEvent(
-        command.occurrenceId,
-        command.commandId,
-      );
-      if (existing != null) {
-        return _idempotentResult(
-          command.occurrenceId,
-          existing,
-          expectedEventType: 'cancelled',
-        );
-      }
-      final occurrence = await _requireCommandSource(command);
-      await _requireActivePlan(occurrence);
-      _requireUnstarted(occurrence, 'cancel');
-      final changed =
-          await (_db.update(_db.scheduledSessionOccurrences)..where(
-                (table) =>
-                    table.id.equals(occurrence.id) &
-                    table.status.equals(command.expectedStatus.dbValue),
-              ))
-              .write(
-                ScheduledSessionOccurrencesCompanion(
-                  status: const Value('cancelled'),
-                  progressionDisposition: const Value('pending'),
-                  terminalAtUtc: Value(_nowUtc().toUtc()),
-                ),
-              );
-      if (changed != 1) _throwStale();
-      final event = await _insertEvent(
-        occurrenceId: occurrence.id,
-        commandId: command.commandId,
-        eventType: 'cancelled',
-        fromStatus: occurrence.status,
-        toStatus: OccurrenceStatus.cancelled.dbValue,
-        beforeLocalDate: occurrence.effectiveLocalDate,
-        beforeTimezoneId: occurrence.effectiveTimezoneId,
-        afterLocalDate: occurrence.effectiveLocalDate,
-        afterTimezoneId: occurrence.effectiveTimezoneId,
-        reason: command.reason,
-      );
-      return OccurrenceMutationResult(
-        occurrence: (await getOccurrence(occurrence.id))!,
-        event: event,
-        wasIdempotent: false,
-      );
-    });
-  }
+  ) => _dispatcher.dispatch(command);
 
   Future<OccurrenceMutationResult> restore(
     RestoreOccurrenceCommand command,
-  ) async {
-    _validateCommand(command);
-    if (command.expectedStatus != OccurrenceStatus.skipped &&
-        command.expectedStatus != OccurrenceStatus.cancelled) {
-      throw const InvalidOccurrenceTransitionException(
-        'Only skipped and cancelled occurrences can be restored.',
-      );
-    }
-    return _db.transaction(() async {
-      final existing = await _existingEvent(
-        command.occurrenceId,
-        command.commandId,
-      );
-      if (existing != null) {
-        return _idempotentResult(
-          command.occurrenceId,
-          existing,
-          expectedEventType: 'restored',
-        );
-      }
-      final occurrence = await _requireCommandSource(command);
-      await _requireActivePlan(occurrence);
-      await _rejectStartedDependents(occurrence);
-      final restoredStatus =
-          occurrence.originalLocalDate == occurrence.effectiveLocalDate &&
-              occurrence.originalTimezoneId == occurrence.effectiveTimezoneId
-          ? OccurrenceStatus.planned
-          : OccurrenceStatus.rescheduled;
-      final changed =
-          await (_db.update(_db.scheduledSessionOccurrences)..where(
-                (table) =>
-                    table.id.equals(occurrence.id) &
-                    table.status.equals(command.expectedStatus.dbValue),
-              ))
-              .write(
-                ScheduledSessionOccurrencesCompanion(
-                  status: Value(restoredStatus.dbValue),
-                  progressionDisposition: const Value('pending'),
-                  skipMode: const Value(null),
-                  terminalAtUtc: const Value(null),
-                ),
-              );
-      if (changed != 1) _throwStale();
-      final event = await _insertEvent(
-        occurrenceId: occurrence.id,
-        commandId: command.commandId,
-        eventType: 'restored',
-        fromStatus: occurrence.status,
-        toStatus: restoredStatus.dbValue,
-        beforeLocalDate: occurrence.effectiveLocalDate,
-        beforeTimezoneId: occurrence.effectiveTimezoneId,
-        afterLocalDate: occurrence.effectiveLocalDate,
-        afterTimezoneId: occurrence.effectiveTimezoneId,
-      );
-      return OccurrenceMutationResult(
-        occurrence: (await getOccurrence(occurrence.id))!,
-        event: event,
-        wasIdempotent: false,
-      );
-    });
-  }
+  ) => _dispatcher.dispatch(command);
 
-  Future<RepeatOccurrenceResult> repeat(RepeatOccurrenceCommand command) async {
-    _validateCommand(command);
-    final date = _dates.normalizeLocalDate(command.localDate);
-    _dates.validateTimezone(command.timezoneId);
-    return _db.transaction(() async {
-      final existing = await _existingEvent(
-        command.occurrenceId,
-        command.commandId,
-      );
-      if (existing != null) {
-        if (existing.eventType != 'repeatCreated' ||
-            existing.metadataJson == null) {
-          throw const InvalidOccurrenceTransitionException(
-            'This command ID belongs to a different occurrence action.',
-          );
-        }
-        final metadata =
-            jsonDecode(existing.metadataJson!) as Map<String, dynamic>;
-        final repeatedId = metadata['repeatedOccurrenceId'];
-        if (repeatedId is! String) {
-          throw const InvalidOccurrenceTransitionException(
-            'Repeat event metadata is invalid.',
-          );
-        }
-        final source = (await getOccurrence(command.occurrenceId))!;
-        final repeated = await getOccurrence(repeatedId);
-        if (repeated == null) {
-          throw const InvalidOccurrenceTransitionException(
-            'Repeated occurrence is missing.',
-          );
-        }
-        return RepeatOccurrenceResult(
-          source: source,
-          repeatedOccurrence: repeated,
-          event: existing,
-          wasIdempotent: true,
-        );
-      }
-      final source = await _requireCommandSource(command);
-      await _requireActivePlan(source);
-      if (!_isRepeatableTerminal(source.status)) {
-        throw const InvalidOccurrenceTransitionException(
-          'Only terminal occurrences can be repeated.',
-        );
-      }
-      _validateRepeatPurpose(source, command.purpose);
-      final related =
-          await (_db.select(_db.scheduledSessionOccurrences)..where(
-                (table) =>
-                    table.programVersionId.equals(source.programVersionId) &
-                    table.programWeekOrdinal.equals(source.programWeekOrdinal) &
-                    table.sessionTemplateId.equals(source.sessionTemplateId),
-              ))
-              .get();
-      final repeatOrdinal =
-          related.fold<int>(
-            0,
-            (max, row) => row.repeatOrdinal > max ? row.repeatOrdinal : max,
-          ) +
-          1;
-      final repeatedId = _uuid.v4();
-      final now = _nowUtc().toUtc();
-      await _db
-          .into(_db.scheduledSessionOccurrences)
-          .insert(
-            ScheduledSessionOccurrencesCompanion.insert(
-              id: repeatedId,
-              programVersionId: source.programVersionId,
-              sessionTemplateId: source.sessionTemplateId,
-              programBlockOrdinal: source.programBlockOrdinal,
-              programWeekOrdinal: source.programWeekOrdinal,
-              sessionOrdinal: source.sessionOrdinal,
-              repeatOrdinal: Value(repeatOrdinal),
-              originalLocalDate: date,
-              originalTimezoneId: command.timezoneId,
-              effectiveLocalDate: date,
-              effectiveTimezoneId: command.timezoneId,
-              repeatedFromOccurrenceId: Value(source.id),
-              repeatPurpose: Value(command.purpose.dbValue),
-              createdAtUtc: now,
-            ),
-          );
-      final sourceEvent = await _insertEvent(
-        occurrenceId: source.id,
-        commandId: command.commandId,
-        eventType: 'repeatCreated',
-        fromStatus: source.status,
-        toStatus: source.status,
-        beforeLocalDate: source.effectiveLocalDate,
-        beforeTimezoneId: source.effectiveTimezoneId,
-        afterLocalDate: source.effectiveLocalDate,
-        afterTimezoneId: source.effectiveTimezoneId,
-        metadata: {
-          'repeatedOccurrenceId': repeatedId,
-          'purpose': command.purpose.dbValue,
-        },
-        occurredAtUtc: now,
-      );
-      await _insertEvent(
-        occurrenceId: repeatedId,
-        commandId: command.commandId,
-        eventType: 'repeatPlanned',
-        toStatus: OccurrenceStatus.planned.dbValue,
-        afterLocalDate: date,
-        afterTimezoneId: command.timezoneId,
-        metadata: {'sourceOccurrenceId': source.id},
-        occurredAtUtc: now,
-      );
-      return RepeatOccurrenceResult(
-        source: source,
-        repeatedOccurrence: (await getOccurrence(repeatedId))!,
-        event: sourceEvent,
-        wasIdempotent: false,
-      );
-    });
-  }
+  Future<RepeatOccurrenceResult> repeat(
+    RepeatOccurrenceCommand command,
+  ) => _dispatcher.dispatch(command);
 
-  Future<OccurrenceMutationResult> start(StartOccurrenceCommand command) async {
-    _validateCommand(command);
-    return _db.transaction(() async {
-      final existing = await _existingEvent(
-        command.occurrenceId,
-        command.commandId,
-      );
-      if (existing != null) {
-        return _idempotentResult(
-          command.occurrenceId,
-          existing,
-          expectedEventType: 'started',
-        );
-      }
-      final occurrence = await _requireCommandSource(command);
-      await _requireActivePlan(occurrence);
-      _requireUnstarted(occurrence, 'start');
-      final today = _dates.todayIn(occurrence.effectiveTimezoneId);
-      if (today != occurrence.effectiveLocalDate &&
-          !command.confirmedOutsideEffectiveDate) {
-        throw const InvalidOccurrenceTransitionException(
-          'Starting a past or future occurrence requires explicit confirmation.',
-        );
-      }
-      final activeDrafts = await _db.select(_db.workoutDrafts).get();
-      if (activeDrafts.isNotEmpty) {
-        throw const InvalidOccurrenceTransitionException(
-          'Another active workout draft must be resumed or discarded first.',
-        );
-      }
-      final inProgress = await (_db.select(
-        _db.scheduledSessionOccurrences,
-      )..where((table) => table.status.equals('inProgress'))).get();
-      if (inProgress.isNotEmpty) {
-        throw const InvalidOccurrenceTransitionException(
-          'Another occurrence is already in progress and requires recovery.',
-        );
-      }
-      final snapshot = await _snapshotForStart(
-        occurrence,
-        executionContext: command.executionContext,
-      );
-      final now = _nowUtc().toUtc();
-      final changed =
-          await (_db.update(_db.scheduledSessionOccurrences)..where(
-                (table) =>
-                    table.id.equals(occurrence.id) &
-                    table.status.equals(command.expectedStatus.dbValue),
-              ))
-              .write(
-                ScheduledSessionOccurrencesCompanion(
-                  status: const Value('inProgress'),
-                  executionSnapshotJson: Value(snapshot),
-                  startedAtUtc: Value(now),
-                ),
-              );
-      if (changed != 1) _throwStale();
-      final decoded = jsonDecode(snapshot) as Map<String, dynamic>;
-      final routineName = decoded['routineName'] as String;
-      await _db
-          .into(_db.workoutDrafts)
-          .insert(
-            WorkoutDraftsCompanion.insert(
-              routineName: routineName,
-              currentExerciseIndex: 0,
-              currentSetIndex: 0,
-              elapsedSeconds: 0,
-              loggedSetsJson: WorkoutDraftCodec.encode(
-                routineName: routineName,
-                currentExerciseIndex: 0,
-                currentSetIndex: 0,
-                elapsedSeconds: 0,
-                loggedSets: const [],
-              ),
-              scheduledOccurrenceId: Value(occurrence.id),
-              executionSnapshotJson: Value(snapshot),
-            ),
-          );
-      final event = await _insertEvent(
-        occurrenceId: occurrence.id,
-        commandId: command.commandId,
-        eventType: 'started',
-        fromStatus: occurrence.status,
-        toStatus: OccurrenceStatus.inProgress.dbValue,
-        beforeLocalDate: occurrence.effectiveLocalDate,
-        beforeTimezoneId: occurrence.effectiveTimezoneId,
-        afterLocalDate: occurrence.effectiveLocalDate,
-        afterTimezoneId: occurrence.effectiveTimezoneId,
-        metadata: {
-          'snapshotVersion': 1,
-          'usedPreparedSnapshot':
-              occurrence.executionSnapshotJson?.trim().isNotEmpty == true,
-        },
-        occurredAtUtc: now,
-      );
-      return OccurrenceMutationResult(
-        occurrence: (await getOccurrence(occurrence.id))!,
-        event: event,
-        wasIdempotent: false,
-      );
-    });
-  }
+  Future<OccurrenceMutationResult> start(
+    StartOccurrenceCommand command,
+  ) => _dispatcher.dispatch(command);
 
   Future<OccurrenceMutationResult> discardStarted(
     DiscardStartedOccurrenceCommand command,
-  ) async {
-    _validateCommand(command);
-    if (command.expectedStatus != OccurrenceStatus.inProgress) {
-      throw const InvalidOccurrenceTransitionException(
-        'Only an in-progress occurrence can be discarded.',
-      );
-    }
-    return _db.transaction(() async {
-      final existing = await _existingEvent(
-        command.occurrenceId,
-        command.commandId,
-      );
-      if (existing != null) {
-        return _idempotentResult(
-          command.occurrenceId,
-          existing,
-          expectedEventType: 'startDiscarded',
-        );
-      }
-      final occurrence = await _requireCommandSource(command);
-      final session =
-          await (_db.select(_db.workoutSessions)..where(
-                (table) => table.scheduledOccurrenceId.equals(occurrence.id),
-              ))
-              .getSingleOrNull();
-      if (session != null) {
-        throw const InvalidOccurrenceTransitionException(
-          'A started occurrence with a saved session cannot be discarded.',
-        );
-      }
-      final restoredStatus =
-          occurrence.originalLocalDate == occurrence.effectiveLocalDate &&
-              occurrence.originalTimezoneId == occurrence.effectiveTimezoneId
-          ? OccurrenceStatus.planned
-          : OccurrenceStatus.rescheduled;
-      final latestCustomizationEvent =
-          await (_db.select(_db.occurrenceEvents)
-                ..where(
-                  (table) =>
-                      table.occurrenceId.equals(occurrence.id) &
-                      table.eventType.isIn(['customized', 'customizationReset']),
-                )
-                ..orderBy([
-                  (table) => OrderingTerm(
-                    expression: table.occurredAtUtc,
-                    mode: OrderingMode.desc,
-                  ),
-                ])
-                ..limit(1))
-              .getSingleOrNull();
-      String? preparedSnapshot;
-      if (latestCustomizationEvent != null &&
-          latestCustomizationEvent.eventType == 'customized') {
-        final frozen = occurrence.executionSnapshotJson;
-        if (frozen == null || frozen.trim().isEmpty) {
-          throw const InvalidOccurrenceTransitionException(
-            'This customized workout snapshot is unavailable right now.',
-          );
-        }
-        final prepared = _decodeAndValidateOccurrenceSnapshot(
-          frozen,
-          occurrence,
-        )..remove('personalExerciseContext');
-        preparedSnapshot = jsonEncode(prepared);
-      }
-      await (_db.delete(_db.workoutDrafts)..where(
-            (table) => table.scheduledOccurrenceId.equals(occurrence.id),
-          ))
-          .go();
-      final changed =
-          await (_db.update(_db.scheduledSessionOccurrences)..where(
-                (table) =>
-                    table.id.equals(occurrence.id) &
-                    table.status.equals(OccurrenceStatus.inProgress.dbValue),
-              ))
-              .write(
-                ScheduledSessionOccurrencesCompanion(
-                  status: Value(restoredStatus.dbValue),
-                  executionSnapshotJson: Value(preparedSnapshot),
-                  startedAtUtc: const Value(null),
-                ),
-              );
-      if (changed != 1) _throwStale();
-      final event = await _insertEvent(
-        occurrenceId: occurrence.id,
-        commandId: command.commandId,
-        eventType: 'startDiscarded',
-        fromStatus: occurrence.status,
-        toStatus: restoredStatus.dbValue,
-        beforeLocalDate: occurrence.effectiveLocalDate,
-        beforeTimezoneId: occurrence.effectiveTimezoneId,
-        afterLocalDate: occurrence.effectiveLocalDate,
-        afterTimezoneId: occurrence.effectiveTimezoneId,
-      );
-      return OccurrenceMutationResult(
-        occurrence: (await getOccurrence(occurrence.id))!,
-        event: event,
-        wasIdempotent: false,
-      );
-    });
-  }
+  ) => _dispatcher.dispatch(command);
 
   Future<OccurrenceMutationResult> completeWithPersistedSession(
     CompleteOccurrenceCommand command,
-  ) async {
-    _validateCommand(command);
-    if (command.expectedStatus != OccurrenceStatus.inProgress) {
-      throw const InvalidOccurrenceTransitionException(
-        'Only an in-progress occurrence can complete.',
-      );
-    }
-    return _db.transaction(
-      () => completeWithPersistedSessionInTransaction(command),
-    );
-  }
+  ) => _dispatcher.dispatch(command);
 
   /// Completes an occurrence inside a transaction owned by the execution
   /// bridge. B01-09 uses this after inserting the linked session and sets and
@@ -1356,101 +523,9 @@ class CalendarRepository {
   /// transaction; this method never persists a session or draft itself.
   Future<OccurrenceMutationResult> completeWithPersistedSessionInTransaction(
     CompleteOccurrenceCommand command,
-  ) async {
-    _validateCommand(command);
-    if (command.expectedStatus != OccurrenceStatus.inProgress) {
-      throw const InvalidOccurrenceTransitionException(
-        'Only an in-progress occurrence can complete.',
-      );
-    }
-    {
-      final existing = await _existingEvent(
-        command.occurrenceId,
-        command.commandId,
-      );
-      if (existing != null) {
-        return _idempotentResult(
-          command.occurrenceId,
-          existing,
-          expectedEventType: command.completionKind == CompletionKind.full
-              ? 'completed'
-              : 'partiallyCompleted',
-        );
-      }
-      final occurrence = await _requireCommandSource(command);
-      final session =
-          await (_db.select(_db.workoutSessions)..where(
-                (table) =>
-                    table.id.equals(command.workoutSessionId) &
-                    table.scheduledOccurrenceId.equals(occurrence.id),
-              ))
-              .getSingleOrNull();
-      if (session == null) {
-        throw const InvalidOccurrenceTransitionException(
-          'Completion requires a persisted session linked to this occurrence.',
-        );
-      }
-      final targetStatus = command.completionKind == CompletionKind.full
-          ? OccurrenceStatus.completed
-          : OccurrenceStatus.partiallyCompleted;
-      final targetProgression = command.completionKind == CompletionKind.full
-          ? 'satisfied'
-          : 'pending';
-      final now = _nowUtc().toUtc();
-      final changed =
-          await (_db.update(_db.scheduledSessionOccurrences)..where(
-                (table) =>
-                    table.id.equals(occurrence.id) &
-                    table.status.equals(OccurrenceStatus.inProgress.dbValue),
-              ))
-              .write(
-                ScheduledSessionOccurrencesCompanion(
-                  status: Value(targetStatus.dbValue),
-                  progressionDisposition: Value(targetProgression),
-                  terminalAtUtc: Value(now),
-                ),
-              );
-      if (changed != 1) _throwStale();
-      if (command.completionKind == CompletionKind.full &&
-          occurrence.repeatPurpose == RepeatPurpose.makeUp.dbValue &&
-          occurrence.repeatedFromOccurrenceId != null) {
-        await (_db.update(_db.scheduledSessionOccurrences)..where(
-              (table) => table.id.equals(occurrence.repeatedFromOccurrenceId!),
-            ))
-            .write(
-              const ScheduledSessionOccurrencesCompanion(
-                progressionDisposition: Value('satisfied'),
-              ),
-            );
-      }
-      final event = await _insertEvent(
-        occurrenceId: occurrence.id,
-        commandId: command.commandId,
-        eventType: command.completionKind == CompletionKind.full
-            ? 'completed'
-            : 'partiallyCompleted',
-        fromStatus: occurrence.status,
-        toStatus: targetStatus.dbValue,
-        beforeLocalDate: occurrence.effectiveLocalDate,
-        beforeTimezoneId: occurrence.effectiveTimezoneId,
-        afterLocalDate: occurrence.effectiveLocalDate,
-        afterTimezoneId: occurrence.effectiveTimezoneId,
-        reason: command.reason,
-        metadata: {
-          'workoutSessionId': command.workoutSessionId,
-          'completionKind': command.completionKind.dbValue,
-        },
-        occurredAtUtc: now,
-      );
-      return OccurrenceMutationResult(
-        occurrence: (await getOccurrence(occurrence.id))!,
-        event: event,
-        wasIdempotent: false,
-      );
-    }
-  }
+  ) => _completeOccurrenceHandler.handleInTransaction(command);
 
-  Future<OccurrenceMutationResult> _idempotentResult(
+  Future<OccurrenceMutationResult> idempotentResult(
     String occurrenceId,
     OccurrenceEvent event, {
     required String expectedEventType,
@@ -1473,7 +548,7 @@ class CalendarRepository {
     );
   }
 
-  Future<OccurrenceEvent?> _existingEvent(
+  Future<OccurrenceEvent?> existingEvent(
     String occurrenceId,
     String commandId,
   ) {
@@ -1485,7 +560,7 @@ class CalendarRepository {
         .getSingleOrNull();
   }
 
-  Future<ScheduledSessionOccurrence> _requireCommandSource(
+  Future<ScheduledSessionOccurrence> requireCommandSource(
     OccurrenceCommand command,
   ) async {
     final occurrence = await getOccurrence(command.occurrenceId);
@@ -1495,12 +570,12 @@ class CalendarRepository {
       );
     }
     if (occurrence.status != command.expectedStatus.dbValue) {
-      _throwStale();
+      validator.throwStale();
     }
     return occurrence;
   }
 
-  Future<void> _requireActivePlan(ScheduledSessionOccurrence occurrence) async {
+  Future<void> requireActivePlan(ScheduledSessionOccurrence occurrence) async {
     final settings = await (_db.select(
       _db.trainingPlanSettings,
     )..where((table) => table.id.equals(1))).getSingleOrNull();
@@ -1511,7 +586,7 @@ class CalendarRepository {
     }
   }
 
-  Future<void> _rejectStartedDependents(
+  Future<void> rejectStartedDependents(
     ScheduledSessionOccurrence occurrence,
   ) async {
     final repeated =
@@ -1557,7 +632,7 @@ class CalendarRepository {
     }
   }
 
-  Future<String> _snapshotForStart(
+  Future<String> snapshotForStart(
     ScheduledSessionOccurrence occurrence, {
     Map<String, dynamic>? executionContext,
   }) async {
@@ -1566,12 +641,13 @@ class CalendarRepository {
     // snapshot; it never rebuilds from the published template afterward.
     final stored = occurrence.executionSnapshotJson?.trim();
     if (stored == null || stored.isEmpty) {
-      return _buildExecutionSnapshot(
+      return buildExecutionSnapshot(
         occurrence,
         executionContext: executionContext,
       );
     }
-    final snapshot = _decodeAndValidateOccurrenceSnapshot(stored, occurrence);
+    final snapshot =
+        validator.decodeAndValidateOccurrenceSnapshot(stored, occurrence);
     if (executionContext != null) {
       snapshot['personalExerciseContext'] = executionContext;
       return jsonEncode(snapshot);
@@ -1579,52 +655,7 @@ class CalendarRepository {
     return stored;
   }
 
-  Map<String, dynamic> _decodeAndValidateOccurrenceSnapshot(
-    String snapshotJson,
-    ScheduledSessionOccurrence occurrence,
-  ) {
-    final dynamic decoded;
-    try {
-      decoded = jsonDecode(snapshotJson);
-    } on Object {
-      throw const InvalidOccurrenceTransitionException(
-        'This workout snapshot is unavailable right now.',
-      );
-    }
-    if (decoded is! Map) {
-      throw const InvalidOccurrenceTransitionException(
-        'This workout snapshot is unavailable right now.',
-      );
-    }
-    final snapshot = Map<String, dynamic>.from(decoded);
-    if (snapshot['occurrenceId'] != occurrence.id) {
-      throw const InvalidOccurrenceTransitionException(
-        'This workout snapshot belongs to another scheduled workout.',
-      );
-    }
-    final template = snapshot['template'];
-    if (template is! Map || template['id'] != occurrence.sessionTemplateId) {
-      throw const InvalidOccurrenceTransitionException(
-        'This workout snapshot no longer matches its scheduled workout.',
-      );
-    }
-    final version = snapshot['programVersion'];
-    if (version is! Map || version['id'] != occurrence.programVersionId) {
-      throw const InvalidOccurrenceTransitionException(
-        'This workout snapshot no longer matches its training plan.',
-      );
-    }
-    if (snapshot['routineName'] is! String ||
-        (snapshot['routineName'] as String).trim().isEmpty ||
-        snapshot['prescriptions'] is! List) {
-      throw const InvalidOccurrenceTransitionException(
-        'This workout snapshot is unavailable right now.',
-      );
-    }
-    return snapshot;
-  }
-
-  Future<String> _buildExecutionSnapshot(
+  Future<String> buildExecutionSnapshot(
     ScheduledSessionOccurrence occurrence, {
     Map<String, dynamic>? executionContext,
   }) async {
@@ -1836,7 +867,7 @@ class CalendarRepository {
     };
   }
 
-  Future<OccurrenceEvent> _insertEvent({
+  Future<OccurrenceEvent> insertEvent({
     required String occurrenceId,
     required String commandId,
     required String eventType,
@@ -1875,59 +906,11 @@ class CalendarRepository {
     )..where((table) => table.id.equals(id))).getSingle());
   }
 
-  static bool _isRepeatableTerminal(String status) {
-    return status == OccurrenceStatus.completed.dbValue ||
-        status == OccurrenceStatus.partiallyCompleted.dbValue ||
-        status == OccurrenceStatus.skipped.dbValue ||
-        status == OccurrenceStatus.cancelled.dbValue;
-  }
-
-  static void _validateRepeatPurpose(
-    ScheduledSessionOccurrence source,
-    RepeatPurpose purpose,
-  ) {
-    if (source.status == OccurrenceStatus.completed.dbValue &&
-        purpose != RepeatPurpose.extra) {
-      throw const InvalidOccurrenceTransitionException(
-        'Repeating completed work is always extra.',
-      );
-    }
-    if (source.status == OccurrenceStatus.skipped.dbValue &&
-        source.skipMode == 'advance' &&
-        purpose != RepeatPurpose.extra) {
-      throw const InvalidOccurrenceTransitionException(
-        'A skip-and-advance occurrence can repeat only as extra work.',
-      );
-    }
-  }
-
-  static void _requireUnstarted(
-    ScheduledSessionOccurrence occurrence,
-    String action,
-  ) {
-    if (occurrence.status != OccurrenceStatus.planned.dbValue &&
-        occurrence.status != OccurrenceStatus.rescheduled.dbValue) {
-      throw InvalidOccurrenceTransitionException(
-        'Cannot $action an occurrence in status ${occurrence.status}.',
-      );
-    }
-  }
-
-  static void _validateCommand(OccurrenceCommand command) {
-    if (command.occurrenceId.trim().isEmpty ||
-        command.commandId.trim().isEmpty) {
-      throw ArgumentError('Occurrence and command IDs must not be blank.');
-    }
-  }
+  bool isRepeatableTerminal(String status) =>
+      validator.isTerminalStatus(status);
 
   static String? _nullableTrim(String? value) {
     final trimmed = value?.trim();
     return trimmed == null || trimmed.isEmpty ? null : trimmed;
-  }
-
-  Never _throwStale() {
-    throw const InvalidOccurrenceTransitionException(
-      'The occurrence changed before this command could be applied.',
-    );
   }
 }

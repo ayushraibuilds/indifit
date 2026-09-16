@@ -1,5 +1,8 @@
 import 'package:drift/drift.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:indifit/core/di/core_providers.dart';
+import 'package:indifit/core/services/app_preferences_service.dart';
 import 'package:indifit/core/services/workout_session_wake_lock_coordinator.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -20,6 +23,27 @@ void setIndiFitTestPreferences([
 ]) {
   initializeIndiFitTestHarness();
   SharedPreferences.setMockInitialValues(Map<String, Object>.from(values));
+}
+
+/// Creates a [ProviderContainer] pre-wired with a mock [SharedPreferences] and
+/// [AppPreferencesService], plus any caller-specified [overrides].
+Future<ProviderContainer> createIndiFitTestPreferencesContainer({
+  Map<String, Object> initialValues = const <String, Object>{},
+  List<Override> overrides = const [],
+}) async {
+  setIndiFitTestPreferences(initialValues);
+  final prefs = await SharedPreferences.getInstance();
+  final container = ProviderContainer(
+    overrides: [
+      sharedPreferencesProvider.overrideWithValue(prefs),
+      appPreferencesServiceProvider.overrideWithValue(
+        AppPreferencesService(prefs),
+      ),
+      ...overrides,
+    ],
+  );
+  addTearDown(container.dispose);
+  return container;
 }
 
 /// A deterministic screen-awake driver for tests that exercise workout

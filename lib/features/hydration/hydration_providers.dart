@@ -39,25 +39,33 @@ class WaterState {
 class WaterNotifier extends StateNotifier<WaterState> {
   final AppDatabase? _db;
   final HydrationRepository _repo;
+  final SharedPreferences? _prefsInstance;
   Timer? _timer;
 
-  WaterNotifier([AppDatabase? db, HydrationRepository? repo])
-    : _db = db,
-      _repo = repo ?? HydrationRepository(db),
-      super(
-        WaterState(
-          waterLogged: 0,
-          waterGoal: 8,
-          lastLoggedDate: '',
-          glassSize: 250,
-        ),
-      ) {
+  WaterNotifier([
+    AppDatabase? db,
+    HydrationRepository? repo,
+    SharedPreferences? prefs,
+  ])  : _db = db,
+        _repo = repo ?? HydrationRepository(db, prefs: prefs),
+        _prefsInstance = prefs,
+        super(
+          WaterState(
+            waterLogged: 0,
+            waterGoal: 8,
+            lastLoggedDate: '',
+            glassSize: 250,
+          ),
+        ) {
     loadState();
     // Periodic check every 15 seconds to support midnight resets if app is left open
     _timer = Timer.periodic(const Duration(seconds: 15), (_) {
       checkMidnightReset();
     });
   }
+
+  Future<SharedPreferences> _getPrefs() async =>
+      _prefsInstance ?? await SharedPreferences.getInstance();
 
   @override
   void dispose() {
@@ -73,7 +81,7 @@ class WaterNotifier extends StateNotifier<WaterState> {
   }
 
   Future<void> loadState() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
     final todayStr = HydrationRepository.currentLocalDateKey();
     int size = prefs.getInt(HydrationRepository.prefWaterGlassSize) ?? 250;
     if (size <= 0) size = 250;
@@ -120,7 +128,7 @@ class WaterNotifier extends StateNotifier<WaterState> {
   }
 
   Future<void> logWater(int amount) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
     final todayStr = HydrationRepository.currentLocalDateKey();
     int currentLogged = state.waterLogged;
 
@@ -153,7 +161,7 @@ class WaterNotifier extends StateNotifier<WaterState> {
   }
 
   Future<void> updateGoal(int newGoal) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
     await prefs.setInt(HydrationRepository.prefWaterGoal, newGoal);
     final goalMl = newGoal * state.glassSize;
     await _repo.setDailyGoal(goalMl: goalMl);
@@ -167,12 +175,25 @@ class WaterNotifier extends StateNotifier<WaterState> {
 }
 
 final hydrationRepositoryProvider = Provider<HydrationRepository>((ref) {
-  return HydrationRepository(ref.watch(databaseProvider));
+  SharedPreferences? prefs;
+  try {
+    prefs = ref.watch(sharedPreferencesProvider);
+  } catch (_) {}
+  return HydrationRepository(
+    ref.watch(databaseProvider),
+    prefs: prefs,
+    dateService: ref.watch(localScheduleDateServiceProvider),
+  );
 });
 
 final waterProvider = StateNotifierProvider<WaterNotifier, WaterState>((ref) {
+  SharedPreferences? prefs;
+  try {
+    prefs = ref.watch(sharedPreferencesProvider);
+  } catch (_) {}
   return WaterNotifier(
     ref.watch(databaseProvider),
     ref.watch(hydrationRepositoryProvider),
+    prefs,
   );
 });

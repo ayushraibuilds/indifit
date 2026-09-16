@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../config/app_config.dart';
+import '../config/app_preferences_keys.dart';
+import '../di/core_providers.dart';
 
 /// Centralized Privacy & Network Policy model.
 class PrivacyPolicy {
@@ -32,8 +34,11 @@ class PrivacyPolicy {
 }
 
 class PrivacyPolicyNotifier extends StateNotifier<PrivacyPolicy> {
+  final SharedPreferences? _prefs;
+
   PrivacyPolicyNotifier([SharedPreferences? initialPrefs])
-    : super(
+    : _prefs = initialPrefs,
+      super(
         PrivacyPolicy(
           isOfflineOnly: initialPrefs?.getBool(prefOfflineOnly) ?? false,
           isTelemetryEnabled:
@@ -46,12 +51,12 @@ class PrivacyPolicyNotifier extends StateNotifier<PrivacyPolicy> {
     }
   }
 
-  static const String prefOfflineOnly = 'offline_only';
+  static const String prefOfflineOnly = AppPreferenceKeys.offlineOnly;
   static const String prefCrashReportingEnabled =
-      'pref_crash_reporting_enabled';
+      AppPreferenceKeys.crashReportingEnabled;
 
   Future<void> loadPolicy() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = _prefs ?? await SharedPreferences.getInstance();
     final offline = prefs.getBool(prefOfflineOnly) ?? false;
     final telemetry =
         !offline && (prefs.getBool(prefCrashReportingEnabled) ?? false);
@@ -63,7 +68,7 @@ class PrivacyPolicyNotifier extends StateNotifier<PrivacyPolicy> {
   }
 
   Future<void> setOfflineOnly(bool offline) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = _prefs ?? await SharedPreferences.getInstance();
     await prefs.setBool(prefOfflineOnly, offline);
     if (offline) {
       await prefs.setBool(prefCrashReportingEnabled, false);
@@ -81,7 +86,7 @@ class PrivacyPolicyNotifier extends StateNotifier<PrivacyPolicy> {
   }
 
   Future<void> setTelemetryEnabled(bool enabled) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = _prefs ?? await SharedPreferences.getInstance();
     final effectiveTelemetry = state.isOfflineOnly ? false : enabled;
     await prefs.setBool(prefCrashReportingEnabled, effectiveTelemetry);
     state = PrivacyPolicy(
@@ -93,5 +98,9 @@ class PrivacyPolicyNotifier extends StateNotifier<PrivacyPolicy> {
 
 final privacyPolicyProvider =
     StateNotifierProvider<PrivacyPolicyNotifier, PrivacyPolicy>((ref) {
-      return PrivacyPolicyNotifier();
+      SharedPreferences? prefs;
+      try {
+        prefs = ref.watch(sharedPreferencesProvider);
+      } catch (_) {}
+      return PrivacyPolicyNotifier(prefs);
     });

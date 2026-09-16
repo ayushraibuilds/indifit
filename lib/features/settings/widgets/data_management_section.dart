@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/backup/backup_file_adapter.dart';
+import '../../../core/config/app_preferences_keys.dart';
 import '../../../core/di/providers.dart';
 import '../../../core/presentation/product_failure_presentation.dart';
 import '../../../core/presentation/today_onboarding_handoff.dart';
@@ -22,10 +23,18 @@ import 'settings_reminder_toggle.dart';
 class DataManagementSection extends ConsumerWidget {
   const DataManagementSection({super.key});
 
+  Future<SharedPreferences> _getPrefs(WidgetRef ref) async {
+    try {
+      return ref.read(sharedPreferencesProvider);
+    } catch (_) {
+      return await SharedPreferences.getInstance();
+    }
+  }
+
   Future<void> _syncOnboardingGate(WidgetRef ref) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs(ref);
     ref.read(onboardingCompletedProvider.notifier).state =
-        prefs.getBool('onboarding_completed') ?? false;
+        prefs.getBool(AppPreferenceKeys.onboardingCompleted) ?? false;
   }
 
   Future<void> _showExportDialog(BuildContext context, WidgetRef ref) async {
@@ -414,9 +423,9 @@ class DataManagementSection extends ConsumerWidget {
 
     if (confirmed != true || !context.mounted) return;
     try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('onboarding_completed', false);
-      await clearTodayOnboardingHandoff();
+      final prefs = await _getPrefs(ref);
+      await prefs.setBool(AppPreferenceKeys.onboardingCompleted, false);
+      await clearTodayOnboardingHandoff(prefs);
       ref.read(onboardingCompletedProvider.notifier).state = false;
     } catch (_) {
       if (context.mounted) {

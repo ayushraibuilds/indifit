@@ -777,16 +777,21 @@ class RestPresenceService {
   // Anchor Record & Pending Intent Persistence
   // ────────────────────────────────────────
 
-  static Future<void> saveAnchorRecord(RestAnchorRecord record) async {
+  static Future<void> saveAnchorRecord(
+    RestAnchorRecord record, [
+    SharedPreferences? preferences,
+  ]) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
+      final prefs = preferences ?? await SharedPreferences.getInstance();
       await prefs.setString(prefRestAnchorRecord, jsonEncode(record.toJson()));
     } catch (_) {}
   }
 
-  static Future<RestAnchorRecord?> loadAnchorRecord() async {
+  static Future<RestAnchorRecord?> loadAnchorRecord([
+    SharedPreferences? preferences,
+  ]) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
+      final prefs = preferences ?? await SharedPreferences.getInstance();
       final raw = prefs.getString(prefRestAnchorRecord);
       if (raw == null || raw.isEmpty) return null;
       return RestAnchorRecord.fromJson(
@@ -797,23 +802,30 @@ class RestPresenceService {
     }
   }
 
-  static Future<void> clearAnchorRecord() async {
+  static Future<void> clearAnchorRecord([
+    SharedPreferences? preferences,
+  ]) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
+      final prefs = preferences ?? await SharedPreferences.getInstance();
       await prefs.remove(prefRestAnchorRecord);
     } catch (_) {}
   }
 
-  static Future<void> savePendingIntent(RestPresenceIntent intent) async {
+  static Future<void> savePendingIntent(
+    RestPresenceIntent intent, [
+    SharedPreferences? preferences,
+  ]) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
+      final prefs = preferences ?? await SharedPreferences.getInstance();
       await prefs.setString(prefPendingRestIntent, jsonEncode(intent.toJson()));
     } catch (_) {}
   }
 
-  static Future<RestPresenceIntent?> loadAndClearPendingIntent() async {
+  static Future<RestPresenceIntent?> loadAndClearPendingIntent([
+    SharedPreferences? preferences,
+  ]) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
+      final prefs = preferences ?? await SharedPreferences.getInstance();
       final raw = prefs.getString(prefPendingRestIntent);
       if (raw == null || raw.isEmpty) return null;
       await prefs.remove(prefPendingRestIntent);
@@ -825,9 +837,11 @@ class RestPresenceService {
     }
   }
 
-  static Future<void> clearPendingIntent() async {
+  static Future<void> clearPendingIntent([
+    SharedPreferences? preferences,
+  ]) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
+      final prefs = preferences ?? await SharedPreferences.getInstance();
       await prefs.remove(prefPendingRestIntent);
     } catch (_) {}
   }

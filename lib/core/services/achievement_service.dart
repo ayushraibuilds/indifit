@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/progress_statistics_repository.dart';
-import '../theme/colors.dart';
 
 class AchievementEvaluationResult {
   final List<Achievement> all;
@@ -49,6 +48,7 @@ class AchievementService {
   static List<Achievement> evaluateFromLifetimeStats({
     required LifetimeAchievementStats stats,
     required int currentStreakDays,
+    DateTime Function()? now,
   }) {
     return evaluateAchievements(
       completedWorkoutsCount: stats.totalWorkouts,
@@ -57,6 +57,7 @@ class AchievementService {
       totalLoggedMealsCount: stats.totalMealsLogged,
       loggedThali: stats.thaliLoggedCount > 0,
       unlockedTimestamps: stats.unlockedAchievementIds,
+      now: now,
     );
   }
 
@@ -67,8 +68,10 @@ class AchievementService {
     required int totalLoggedMealsCount,
     bool loggedThali = false,
     Map<String, DateTime>? unlockedTimestamps,
+    DateTime Function()? now,
   }) {
     final timestamps = unlockedTimestamps ?? {};
+    final clock = now ?? DateTime.now;
 
     Achievement buildItem({
       required String id,
@@ -83,7 +86,7 @@ class AchievementService {
     }) {
       final isUnlocked = thresholdMet || timestamps.containsKey(id);
       final unlockedAt =
-          timestamps[id] ?? (thresholdMet ? DateTime.now() : null);
+          timestamps[id] ?? (thresholdMet ? clock() : null);
 
       return Achievement(
         id: id,
@@ -104,13 +107,20 @@ class AchievementService {
     String volumeEvidence(double current, double max) =>
         '${formatAmount(current)} kg / ${formatAmount(max)} kg volume recorded';
 
+    const bronze = Color(0xFFCD7F32);
+    const streakOrange = Color(0xFFFF7A00);
+    const gold = Color(0xFFFFD700);
+    const silver = Color(0xFFC0C0C0);
+    const successGreen = Color(0xFF10B981);
+    const fiberTeal = Color(0xFF14B8A6);
+
     return [
       buildItem(
         id: 'first_workout',
         title: 'First Sweat',
         description: 'Complete your 1st workout session.',
         icon: Icons.fitness_center_rounded,
-        color: AppColors.achievementBronze,
+        color: bronze,
         currentProgress: completedWorkoutsCount.toDouble(),
         maxProgress: 1.0,
         thresholdMet: completedWorkoutsCount >= 1,
@@ -121,7 +131,7 @@ class AchievementService {
         title: 'Consistency Master',
         description: 'Maintain a 7-day streak.',
         icon: Icons.local_fire_department_rounded,
-        color: AppColors.streakOrange,
+        color: streakOrange,
         currentProgress: currentStreakDays.toDouble(),
         maxProgress: 7.0,
         thresholdMet: currentStreakDays >= 7,
@@ -132,7 +142,7 @@ class AchievementService {
         title: 'Iron Discipline',
         description: 'Maintain an impressive 30-day streak.',
         icon: Icons.workspace_premium_rounded,
-        color: AppColors.achievementGold,
+        color: gold,
         currentProgress: currentStreakDays.toDouble(),
         maxProgress: 30.0,
         thresholdMet: currentStreakDays >= 30,
@@ -143,7 +153,7 @@ class AchievementService {
         title: 'Iron Lifter',
         description: 'Lift a cumulative total of 1,000 kg volume.',
         icon: Icons.military_tech_rounded,
-        color: AppColors.achievementBronze,
+        color: bronze,
         currentProgress: totalVolumeKg,
         maxProgress: 1000.0,
         thresholdMet: totalVolumeKg >= 1000.0,
@@ -154,7 +164,7 @@ class AchievementService {
         title: 'Heavy Mover',
         description: 'Lift a cumulative total of 5,000 kg volume.',
         icon: Icons.shield_rounded,
-        color: AppColors.achievementSilver,
+        color: silver,
         currentProgress: totalVolumeKg,
         maxProgress: 5000.0,
         thresholdMet: totalVolumeKg >= 5000.0,
@@ -165,7 +175,7 @@ class AchievementService {
         title: 'Titan Legend',
         description: 'Lift an impressive 10,000 kg cumulative volume.',
         icon: Icons.stars_rounded,
-        color: AppColors.achievementGold,
+        color: gold,
         currentProgress: totalVolumeKg,
         maxProgress: 10000.0,
         thresholdMet: totalVolumeKg >= 10000.0,
@@ -176,7 +186,7 @@ class AchievementService {
         title: 'Nutrition Tracker',
         description: 'Log 10 meals in your food diary.',
         icon: Icons.restaurant_rounded,
-        color: AppColors.success,
+        color: successGreen,
         currentProgress: totalLoggedMealsCount.toDouble(),
         maxProgress: 10.0,
         thresholdMet: totalLoggedMealsCount >= 10,
@@ -187,7 +197,7 @@ class AchievementService {
         title: 'Macro Master',
         description: 'Log 50 meals in your food diary.',
         icon: Icons.lunch_dining_rounded,
-        color: AppColors.fiberTeal,
+        color: fiberTeal,
         currentProgress: totalLoggedMealsCount.toDouble(),
         maxProgress: 50.0,
         thresholdMet: totalLoggedMealsCount >= 50,
@@ -198,7 +208,7 @@ class AchievementService {
         title: 'Thali Connoisseur',
         description: 'Compose and log a custom Indian Thali plate.',
         icon: Icons.rice_bowl_rounded,
-        color: AppColors.streakOrange,
+        color: streakOrange,
         currentProgress: loggedThali ? 1.0 : 0.0,
         maxProgress: 1.0,
         thresholdMet: loggedThali,
@@ -250,11 +260,13 @@ class AchievementService {
   static Future<AchievementEvaluationResult> recordAndEvaluateDelta({
     required ProgressStatisticsRepository statsRepository,
     required int currentStreakDays,
+    DateTime Function()? now,
   }) async {
     final stats = await statsRepository.getLifetimeStats();
     final evaluated = evaluateFromLifetimeStats(
       stats: stats,
       currentStreakDays: currentStreakDays,
+      now: now,
     );
     final newlyUnlockedIds = <String>[];
     for (final achievement in evaluated) {
@@ -271,6 +283,7 @@ class AchievementService {
     final all = evaluateFromLifetimeStats(
       stats: stored,
       currentStreakDays: currentStreakDays,
+      now: now,
     );
     final sessionUnlocked = all
         .where((a) => newlyUnlockedIds.contains(a.id))
@@ -289,10 +302,12 @@ class AchievementService {
   static Future<List<Achievement>> recordAndEvaluate({
     required ProgressStatisticsRepository statsRepository,
     required int currentStreakDays,
+    DateTime Function()? now,
   }) async {
     final result = await recordAndEvaluateDelta(
       statsRepository: statsRepository,
       currentStreakDays: currentStreakDays,
+      now: now,
     );
     return result.all;
   }
@@ -341,6 +356,7 @@ class AchievementService {
   static Future<List<Achievement>> getUncelebratedNonWorkoutUnlocks({
     required ProgressStatisticsRepository statsRepository,
     required SharedPreferences prefs,
+    DateTime Function()? now,
   }) async {
     final stats = await statsRepository.getLifetimeStats();
     await ensureBaselined(prefs, stats.unlockedAchievementIds.keys);
@@ -348,6 +364,7 @@ class AchievementService {
     final all = evaluateFromLifetimeStats(
       stats: stats,
       currentStreakDays: 0,
+      now: now,
     );
 
     for (final a in all) {
@@ -362,6 +379,7 @@ class AchievementService {
     final reloadedAll = evaluateFromLifetimeStats(
       stats: reloadedStats,
       currentStreakDays: 0,
+      now: now,
     );
 
     final celebrated =
@@ -381,6 +399,7 @@ class AchievementService {
     required ProgressStatisticsRepository statsRepository,
     required SharedPreferences prefs,
     int currentStreakDays = 0,
+    DateTime Function()? now,
   }) async {
     final stats = await statsRepository.getLifetimeStats();
     await ensureBaselined(prefs, stats.unlockedAchievementIds.keys);
@@ -388,6 +407,7 @@ class AchievementService {
     final all = evaluateFromLifetimeStats(
       stats: stats,
       currentStreakDays: currentStreakDays,
+      now: now,
     );
 
     for (final a in all) {
@@ -402,6 +422,7 @@ class AchievementService {
     final reloadedAll = evaluateFromLifetimeStats(
       stats: reloadedStats,
       currentStreakDays: currentStreakDays,
+      now: now,
     );
 
     final celebrated =

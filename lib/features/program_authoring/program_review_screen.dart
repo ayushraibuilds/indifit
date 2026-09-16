@@ -6,7 +6,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../core/di/providers.dart';
 import '../../core/presentation/consumer_count_label.dart';
-import '../../core/theme/colors.dart';
+import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/utils/app_logger.dart';
 import '../../data/repositories/program_activation_coordinator.dart';
 import '../../data/repositories/program_repository.dart';
@@ -260,7 +260,7 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Card(
-                    color: AppColors.cardBackground,
+                    color: context.b05Colors.section,
                     child: Padding(
                       padding: const EdgeInsets.all(16),
                       child: Column(
@@ -294,7 +294,7 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
                   ),
                   const SizedBox(height: 12),
                   ListTile(
-                    tileColor: AppColors.cardBackground,
+                    tileColor: context.b05Colors.section,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -458,8 +458,8 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
                             : 'Try again',
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.black,
+                        backgroundColor: context.b05Colors.action,
+                        foregroundColor: context.b05Colors.onAction,
                         textStyle: TextStyle(
                           fontFamily: 'Outfit',
                           fontSize: 16,

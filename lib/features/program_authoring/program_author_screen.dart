@@ -5,7 +5,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../core/di/providers.dart';
 import '../../core/presentation/consumer_count_label.dart';
-import '../../core/theme/colors.dart';
+import '../../core/theme/b05_semantic_colors.dart';
 import '../../data/models/b02_execution_models.dart';
 import '../../data/repositories/program_repository.dart';
 import '../exercise_picker/exercise_picker.dart';
@@ -1734,7 +1734,8 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
                                                           style: TextStyle(
                                                             color: w.isDeload
                                                                 ? Colors.purple
-                                                                : AppColors
+                                                                : context
+                                                                      .b05Colors
                                                                       .textPrimary,
                                                             fontWeight:
                                                                 FontWeight.w600,
@@ -1822,8 +1823,9 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
                                                           ),
                                                       child: Card(
                                                         margin: EdgeInsets.zero,
-                                                        color: AppColors
-                                                            .cardBackground,
+                                                        color: context
+                                                            .b05Colors
+                                                            .section,
                                                         child: Padding(
                                                           padding:
                                                               const EdgeInsets.all(
@@ -2200,8 +2202,8 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
                                   icon: const Icon(Icons.rate_review_outlined),
                                   label: const Text('Review plan'),
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppColors.primary,
-                                    foregroundColor: Colors.black,
+                                    backgroundColor: context.b05Colors.action,
+                                    foregroundColor: context.b05Colors.onAction,
                                   ),
                                 ),
                               ),

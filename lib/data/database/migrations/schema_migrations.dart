@@ -1473,8 +1473,8 @@ extension DatabaseMigrations on AppDatabase {
   Future<void> _migrateLegacyHydrationPreferencesToDatabase() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final logged = prefs.getInt('water_logged');
-      final goal = prefs.getInt('water_goal') ?? 2000;
+      final logged = prefs.getInt(AppPreferenceKeys.waterLogged);
+      final goal = prefs.getInt(AppPreferenceKeys.waterGoal) ?? 2000;
       if (logged != null && logged > 0) {
         final now = DateTime.now();
         final dateStr =

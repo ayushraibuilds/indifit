@@ -4,10 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../core/config/app_preferences_keys.dart';
 import '../core/di/providers.dart';
 import '../core/di/theme_provider.dart';
 import '../core/privacy/privacy_policy.dart';
 import '../core/router/app_router.dart';
+import '../core/services/app_preferences_service.dart';
 import '../core/services/crash_reporting_service.dart';
 import '../core/services/notification_service.dart';
 import '../core/utils/app_logger.dart';
@@ -56,12 +58,16 @@ Future<void> bootstrap() async {
   final prefs = await SharedPreferences.getInstance();
   final container = ProviderContainer(
     overrides: [
+      sharedPreferencesProvider.overrideWithValue(prefs),
+      appPreferencesServiceProvider.overrideWithValue(
+        AppPreferencesService(prefs),
+      ),
       privacyPolicyProvider.overrideWith((ref) => PrivacyPolicyNotifier(prefs)),
       themeModeProvider.overrideWith((ref) => ThemeModeNotifier(prefs)),
       // Seed the synchronous router gate once; onboarding/restore/erase
       // flows keep it updated so navigation never re-awaits SharedPreferences.
       onboardingCompletedProvider.overrideWith(
-        (ref) => prefs.getBool('onboarding_completed') ?? false,
+        (ref) => prefs.getBool(AppPreferenceKeys.onboardingCompleted) ?? false,
       ),
     ],
   );
@@ -87,5 +93,5 @@ Future<void> bootstrap() async {
         child: const IndiFitApp(),
       ),
     );
-  });
+  }, prefs: prefs);
 }

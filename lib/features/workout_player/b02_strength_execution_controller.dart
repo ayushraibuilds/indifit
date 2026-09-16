@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/config/app_preferences_keys.dart';
 import '../../core/di/providers.dart';
 import '../../core/presentation/consumer_copy.dart';
 import '../../core/presentation/product_failure_presentation.dart';
@@ -1620,10 +1621,14 @@ final b02StrengthExecutionControllerProvider =
         achievementStats: ProgressStatisticsRepository(
           ref.watch(databaseProvider),
         ),
-        achievementStreakDays: () async =>
-            (await SharedPreferences.getInstance())
-                .getInt('user_streak_count') ??
-            0,
+        achievementStreakDays: () async {
+          SharedPreferences? prefs;
+          try {
+            prefs = ref.read(sharedPreferencesProvider);
+          } catch (_) {}
+          prefs ??= await SharedPreferences.getInstance();
+          return prefs.getInt(AppPreferenceKeys.userStreakCount) ?? 0;
+        },
       ),
     );
 
@@ -1647,10 +1652,14 @@ final b02StrengthExecutionScreenControllerProvider = StateNotifierProvider
         achievementStats: ProgressStatisticsRepository(
           ref.watch(databaseProvider),
         ),
-        achievementStreakDays: () async =>
-            (await SharedPreferences.getInstance())
-                .getInt('user_streak_count') ??
-            0,
+        achievementStreakDays: () async {
+          SharedPreferences? prefs;
+          try {
+            prefs = ref.read(sharedPreferencesProvider);
+          } catch (_) {}
+          prefs ??= await SharedPreferences.getInstance();
+          return prefs.getInt(AppPreferenceKeys.userStreakCount) ?? 0;
+        },
       ),
     );
 

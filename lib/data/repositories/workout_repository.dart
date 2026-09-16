@@ -4,6 +4,8 @@ import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import '../../core/di/providers.dart';
+import '../../core/services/local_schedule_date_service.dart';
+import '../../core/services/local_timezone_service.dart';
 import '../database/app_database.dart';
 import 'legacy_program_compatibility_adapter.dart';
 
@@ -20,7 +22,11 @@ bool isValidLoggedWeightKg(double value) =>
 
 final workoutRepositoryProvider = Provider<WorkoutRepository>((ref) {
   final db = ref.watch(databaseProvider);
-  return WorkoutRepository(db);
+  return WorkoutRepository(
+    db,
+    dateService: ref.watch(localScheduleDateServiceProvider),
+    timezoneService: ref.watch(localTimezoneServiceProvider),
+  );
 });
 
 class RoutineDayWithExercises {
@@ -67,8 +73,23 @@ class WeightLogStatus {
 
 class WorkoutRepository {
   final AppDatabase _db;
+  final LocalScheduleDateService _dateService;
+  final LocalTimezoneService _timezoneService;
 
-  WorkoutRepository(this._db);
+  WorkoutRepository(
+    this._db, {
+    LocalScheduleDateService? dateService,
+    LocalTimezoneService? timezoneService,
+  })  : _dateService = dateService ?? LocalScheduleDateService(),
+        _timezoneService = timezoneService ?? LocalTimezoneService();
+
+  Future<String> _resolveTimezone() async {
+    try {
+      return await _timezoneService.currentTimezoneId();
+    } catch (_) {
+      return 'UTC';
+    }
+  }
 
   // 1. Search exercises locally (Fuzzy search)
   Future<List<Exercise>> searchExercises(String query) async {
@@ -303,9 +324,8 @@ class WorkoutRepository {
 
   // 8. Log body measurements with 7-day rate-limiting
   Future<WeightLogStatus> getWeightLogStatus() async {
-    final now = DateTime.now();
-    final todayStart = DateTime(now.year, now.month, now.day);
-    final todayEnd = todayStart.add(const Duration(days: 1));
+    final tzId = await _resolveTimezone();
+    final todayStr = _dateService.todayIn(tzId);
 
     final allLogs =
         await (_db.select(_db.bodyMeasurements)..orderBy([
@@ -327,15 +347,9 @@ class WorkoutRepository {
     }
 
     final latest = allLogs.first;
-    final latestDate = DateTime(
-      latest.recordedAt.year,
-      latest.recordedAt.month,
-      latest.recordedAt.day,
-    );
+    final latestDateStr = _dateService.localDateFor(latest.recordedAt, tzId);
 
-    if ((latest.recordedAt.isAfter(todayStart) ||
-            latest.recordedAt.isAtSameMomentAs(todayStart)) &&
-        latest.recordedAt.isBefore(todayEnd)) {
+    if (latestDateStr == todayStr) {
       return WeightLogStatus(
         canLog: true,
         isEditingToday: true,
@@ -344,10 +358,16 @@ class WorkoutRepository {
       );
     }
 
-    final daysPassed = todayStart.difference(latestDate).inDays;
-    if (daysPassed < 7) {
-      final daysLeft = 7 - daysPassed;
-      final nextUnlock = latestDate.add(const Duration(days: 7));
+    final nextUnlockStr = _dateService.addCalendarDays(latestDateStr, tzId, 7);
+    if (todayStr.compareTo(nextUnlockStr) < 0) {
+      final todayUtc = DateTime.parse('${todayStr}T00:00:00Z');
+      final unlockUtc = DateTime.parse('${nextUnlockStr}T00:00:00Z');
+      final daysLeft = unlockUtc.difference(todayUtc).inDays;
+      final nextUnlock = _dateService.instantForLocalDate(
+        nextUnlockStr,
+        tzId,
+        hour: 0,
+      );
       return WeightLogStatus(
         canLog: false,
         isEditingToday: false,
@@ -384,9 +404,12 @@ class WorkoutRepository {
       );
     }
 
-    final now = DateTime.now();
-    final todayStart = DateTime(now.year, now.month, now.day);
-    final todayEnd = todayStart.add(const Duration(days: 1));
+    final tzId = await _resolveTimezone();
+    final todayStr = _dateService.todayIn(tzId);
+    final todayStart = _dateService.instantForLocalDate(todayStr, tzId, hour: 0);
+    final tomorrowStr = _dateService.addCalendarDays(todayStr, tzId, 1);
+    final todayEnd = _dateService.instantForLocalDate(tomorrowStr, tzId, hour: 0);
+    final now = _dateService.nowUtc();
 
     final existing =
         await (_db.select(_db.bodyMeasurements)
@@ -452,9 +475,12 @@ class WorkoutRepository {
       );
     }
 
-    final now = DateTime.now();
-    final todayStart = DateTime(now.year, now.month, now.day);
-    final todayEnd = todayStart.add(const Duration(days: 1));
+    final tzId = await _resolveTimezone();
+    final todayStr = _dateService.todayIn(tzId);
+    final todayStart = _dateService.instantForLocalDate(todayStr, tzId, hour: 0);
+    final tomorrowStr = _dateService.addCalendarDays(todayStr, tzId, 1);
+    final todayEnd = _dateService.instantForLocalDate(tomorrowStr, tzId, hour: 0);
+    final now = _dateService.nowUtc();
 
     return await _db.transaction(() async {
       final existing =
