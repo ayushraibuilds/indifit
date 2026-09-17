@@ -10,6 +10,8 @@ abstract final class AppPreferenceKeys {
   // --- Core System & Privacy ---
   static const offlineOnly = 'offline_only';
   static const crashReportingEnabled = 'pref_crash_reporting_enabled';
+  static const dpdpAiConsentAccepted = 'dpdp_ai_consent_accepted';
+  static const dpdpAiConsentAcceptedAt = 'dpdp_ai_consent_accepted_at';
   static const userThemeMode = 'user_theme_mode';
   static const displayUnits = 'display_units';
 

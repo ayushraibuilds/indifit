@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/di/core_providers.dart';
+import '../../core/privacy/dpdp_consent_service.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../nutrition/nutrition_providers.dart';
@@ -42,6 +45,26 @@ class _NutritionLabelOcrScreenState
       c.dispose();
     }
     super.dispose();
+  }
+
+  Future<void> _pickWithConsent(
+    NutritionLabelOcrController controller,
+    ImageSource source,
+  ) async {
+    SharedPreferences? prefs;
+    try {
+      prefs = ref.read(sharedPreferencesProvider);
+    } catch (_) {}
+    prefs ??= await SharedPreferences.getInstance();
+    if (!mounted) return;
+
+    final consented = await DpdpConsentService.ensureConsent(
+      context: context,
+      prefs: prefs,
+    );
+    if (!consented || !mounted) return;
+
+    await controller.pickAndScan(source);
   }
 
   void _syncControllers(NutritionLabelOcrState state) {
@@ -144,7 +167,7 @@ class _NutritionLabelOcrScreenState
                     child: B05ActionButton(
                       label: 'Take Photo',
                       icon: Icons.camera_alt_rounded,
-                      onPressed: () => controller.pickAndScan(ImageSource.camera),
+                      onPressed: () => _pickWithConsent(controller, ImageSource.camera),
                     ),
                   ),
                   const SizedBox(width: B05Layout.space12),
@@ -153,7 +176,7 @@ class _NutritionLabelOcrScreenState
                       label: 'Choose Image',
                       icon: Icons.photo_library_rounded,
                       emphasis: B05ActionEmphasis.secondary,
-                      onPressed: () => controller.pickAndScan(ImageSource.gallery),
+                      onPressed: () => _pickWithConsent(controller, ImageSource.gallery),
                     ),
                   ),
                 ],
@@ -216,14 +239,14 @@ class _NutritionLabelOcrScreenState
         B05ActionButton(
           label: 'Try Again',
           icon: Icons.refresh_rounded,
-          onPressed: () => controller.pickAndScan(ImageSource.camera),
+          onPressed: () => _pickWithConsent(controller, ImageSource.camera),
         ),
         const SizedBox(height: B05Layout.space8),
         B05ActionButton(
           label: 'Pick From Gallery',
           icon: Icons.photo_library_rounded,
           emphasis: B05ActionEmphasis.secondary,
-          onPressed: () => controller.pickAndScan(ImageSource.gallery),
+          onPressed: () => _pickWithConsent(controller, ImageSource.gallery),
         ),
       ],
     );
@@ -446,7 +469,7 @@ class _NutritionLabelOcrScreenState
           label: 'Retake Photo',
           icon: Icons.camera_alt_outlined,
           emphasis: B05ActionEmphasis.secondary,
-          onPressed: () => controller.pickAndScan(ImageSource.camera),
+          onPressed: () => _pickWithConsent(controller, ImageSource.camera),
         ),
       ],
     );

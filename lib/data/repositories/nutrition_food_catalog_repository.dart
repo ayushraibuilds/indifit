@@ -112,6 +112,10 @@ class NutritionFoodCatalogRepository {
     required double? proteinG,
     required double? carbohydrateG,
     required double? fatG,
+    double? fiberG,
+    double? sodiumMg,
+    double? addedSugarG,
+    double? saturatedFatG,
     String? brand,
   }) async {
     if (!servingSize.isFinite || servingSize <= 0) {
@@ -141,6 +145,10 @@ class NutritionFoodCatalogRepository {
             'protein' => proteinG,
             'carbohydrate' => carbohydrateG,
             'fat' => fatG,
+            'fibre' || 'dietary_fiber' => fiberG,
+            'sodium' => sodiumMg,
+            'added_sugar' || 'added_sugars' => addedSugarG,
+            'saturated_fat' => saturatedFatG,
             _ => null,
           },
           sourceReference: normalizedReference,

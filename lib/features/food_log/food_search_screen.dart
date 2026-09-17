@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/catalog/food_catalog_models.dart';
+import '../../core/catalog/food_category_taxonomy.dart';
 import '../../core/di/providers.dart';
 import '../../core/nutrients.dart';
 import '../../core/nutrition_household_measures.dart';
@@ -615,38 +616,16 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         return;
       }
 
-      final servingUnit = result.servingUnit.isNotEmpty ? result.servingUnit : 'g';
-      final servingSize = result.servingSize > 0 ? result.servingSize : 100.0;
-      final lowerName = result.name.toLowerCase();
+      final resolvedCategory = FoodCategoryTaxonomy.resolveCategoryId(
+        name: result.name,
+      );
       final isStuffed = isStuffedParathaName(result.name);
-
-      // Matches CATALOG01A §5 (same table as FoodCatalogService).
-      final servingOptions = <ServingOption>[
-        ServingOption(
-          unitName: servingUnit,
-          gramWeight: servingUnit.toLowerCase() == 'ml' ? servingSize * 1.03 : servingSize,
-          isDefault: true,
-        ),
-        if (servingSize != 100.0)
-          const ServingOption(unitName: '100g', gramWeight: 100.0),
-        if (lowerName.contains('dal') || lowerName.contains('curry') || lowerName.contains('sabzi') || lowerName.contains('sambar') || lowerName.contains('khichdi') || lowerName.contains('kadhi') || lowerName.contains('raita'))
-          const ServingOption(unitName: 'katori', gramWeight: 150.0),
-        if (lowerName.contains('biryani') || lowerName.contains('pulao') || lowerName.contains('rice'))
-          const ServingOption(unitName: 'medium_katori', gramWeight: 200.0),
-        if (lowerName.contains('roti') || lowerName.contains('chapati') || lowerName.contains('phulka'))
-          const ServingOption(unitName: 'roti_piece', gramWeight: 35.0),
-        if (lowerName.contains('paratha'))
-          ServingOption(
-            unitName: isStuffed ? 'stuffed_paratha' : 'paratha_piece',
-            gramWeight: isStuffed ? 110.0 : 60.0,
-          ),
-        if (lowerName.contains('idli'))
-          const ServingOption(unitName: 'idli_piece', gramWeight: 40.0),
-        if (lowerName.contains('dosa'))
-          const ServingOption(unitName: 'dosa_piece', gramWeight: 90.0),
-        if (lowerName.contains('milk') || lowerName.contains('chaas') || lowerName.contains('lassi') || lowerName.contains('juice'))
-          const ServingOption(unitName: 'glass', gramWeight: 206.0),
-      ];
+      final servingOptions = FoodCategoryTaxonomy.servingOptionsForCategory(
+        categoryId: resolvedCategory,
+        servingSize: result.servingSize > 0 ? result.servingSize : 100.0,
+        servingUnit: result.servingUnit.isNotEmpty ? result.servingUnit : 'g',
+        isStuffedParatha: isStuffed,
+      );
 
       final candidate = RemoteFoodCandidate(
         id: 'off_${result.barcode ?? result.providerId ?? result.name}',
@@ -655,12 +634,15 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         name: _consumerFoodName(result.name),
         brand: _consumerMetadata(result.brand),
         barcode: result.barcode,
-        category: 'general',
+        category: resolvedCategory,
         caloriesPer100g: result.calories!,
         proteinPer100g: result.protein!,
         carbsPer100g: result.carbs!,
         fatPer100g: result.fat!,
         fiberPer100g: result.fiber,
+        sodiumMgPer100g: result.sodium,
+        addedSugarPer100g: result.addedSugar,
+        saturatedFatPer100g: result.saturatedFat,
         servingOptions: servingOptions,
         provenance: FoodProvenance(
           provider: FoodCatalogProvider.openFoodFacts,
@@ -694,6 +676,10 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
             proteinG: candidate.proteinPer100g,
             carbohydrateG: candidate.carbsPer100g,
             fatG: candidate.fatPer100g,
+            fiberG: candidate.fiberPer100g,
+            sodiumMg: candidate.sodiumMgPer100g,
+            addedSugarG: candidate.addedSugarPer100g,
+            saturatedFatG: candidate.saturatedFatPer100g,
             brand: candidate.brand,
           );
 
@@ -922,6 +908,16 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     NutritionHistoricalReadItem? correctionItem,
     Future<void> Function(Quantity quantity)? onQuantityPicked,
   }) async {
+    final categoryId = FoodCategoryTaxonomy.resolveCategoryId(
+      name: option.displayName,
+    );
+    final categoryServingOptions = FoodCategoryTaxonomy.servingOptionsForCategory(
+      categoryId: categoryId,
+      servingSize: option.baseQuantity.amount.asDouble,
+      servingUnit: option.servingUnitLabel ?? option.baseQuantity.unit.toString().split('.').last,
+      isStuffedParatha: isStuffedParathaName(option.displayName),
+    );
+
     await FoodPortionBottomSheet.show(
       context,
       ref: ref,
@@ -935,6 +931,8 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       ensureMealContext: _ensureMealContext,
       returnToParentOnSave: widget.returnToParentOnSave,
       onRetryRecentFoods: _retryRecentFoods,
+      categoryId: categoryId,
+      categoryServingOptions: categoryServingOptions,
     );
   }
 
@@ -1737,13 +1735,26 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
 
   Future<void> _openCandidateReview(RemoteFoodCandidate candidate) async {
     try {
-      final reference = candidate.barcode != null && candidate.barcode!.isNotEmpty
-          ? 'open-food-facts:barcode:${candidate.barcode}'
-          : 'open-food-facts:product:${candidate.providerId}';
+      final resolvedCategory = candidate.category.isNotEmpty && candidate.category != 'general'
+          ? candidate.category
+          : FoodCategoryTaxonomy.resolveCategoryId(name: candidate.name);
+      final effectiveCandidate = candidate.servingOptions.isNotEmpty
+          ? (candidate.category != resolvedCategory ? candidate.copyWith(category: resolvedCategory) : candidate)
+          : candidate.copyWith(
+              category: resolvedCategory,
+              servingOptions: FoodCategoryTaxonomy.servingOptionsForCategory(
+                categoryId: resolvedCategory,
+                isStuffedParatha: isStuffedParathaName(candidate.name),
+              ),
+            );
+
+      final reference = effectiveCandidate.barcode != null && effectiveCandidate.barcode!.isNotEmpty
+          ? 'open-food-facts:barcode:${effectiveCandidate.barcode}'
+          : 'open-food-facts:product:${effectiveCandidate.providerId}';
 
       await RemoteFoodReviewSheet.show(
         context: context,
-        candidate: candidate,
+        candidate: effectiveCandidate,
         mealType: widget.mealType ?? 'snack',
         selectedDate: widget.selectedDate ?? DateTime.now(),
         onConfirm: ({
@@ -1764,6 +1775,10 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
             proteinG: candidate.proteinPer100g,
             carbohydrateG: candidate.carbsPer100g,
             fatG: candidate.fatPer100g,
+            fiberG: candidate.fiberPer100g,
+            sodiumMg: candidate.sodiumMgPer100g,
+            addedSugarG: candidate.addedSugarPer100g,
+            saturatedFatG: candidate.saturatedFatPer100g,
             brand: candidate.brand,
           );
 

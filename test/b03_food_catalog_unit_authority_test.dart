@@ -237,4 +237,41 @@ void main() {
       );
     },
   );
+
+  test(
+    'ensureProviderFood persists and retrieves fiber and sodium with fresh sourceReference',
+    () async {
+      final option = await catalog.ensureProviderFood(
+        displayName: 'Fortified Oats',
+        sourceReference: 'open-food-facts:fixture:sprint-b-micros-test',
+        servingSize: 40,
+        servingUnit: 'g',
+        energyKcal: 380,
+        proteinG: 13.5,
+        carbohydrateG: 67.0,
+        fatG: 6.5,
+        fiberG: 10.0,
+        sodiumMg: 150.0,
+        addedSugarG: 1.2,
+        saturatedFatG: 1.1,
+      );
+
+      expect(option.baseQuantity.unit, QuantityUnit.gram);
+      expect(option.facts['fibre'], isNotNull);
+      expect(option.facts['fibre']!.hasNumericValue, isTrue);
+      expect(option.facts['fibre']!.point!.value.asDouble, 10.0);
+
+      expect(option.facts['sodium'], isNotNull);
+      expect(option.facts['sodium']!.hasNumericValue, isTrue);
+      expect(option.facts['sodium']!.point!.value.asDouble, 150.0);
+
+      expect(option.facts['added_sugar'], isNotNull);
+      expect(option.facts['added_sugar']!.hasNumericValue, isTrue);
+      expect(option.facts['added_sugar']!.point!.value.asDouble, 1.2);
+
+      expect(option.facts['saturated_fat'], isNotNull);
+      expect(option.facts['saturated_fat']!.hasNumericValue, isTrue);
+      expect(option.facts['saturated_fat']!.point!.value.asDouble, 1.1);
+    },
+  );
 }

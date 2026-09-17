@@ -139,6 +139,9 @@ class RemoteFoodCandidate {
     required this.carbsPer100g,
     required this.fatPer100g,
     this.fiberPer100g,
+    this.sodiumMgPer100g,
+    this.addedSugarPer100g,
+    this.saturatedFatPer100g,
     required this.servingOptions,
     required this.provenance,
     this.verificationLevel = FoodVerificationLevel.communityReported,
@@ -158,6 +161,9 @@ class RemoteFoodCandidate {
     double? carbsPer100g,
     double? fatPer100g,
     double? Function()? fiberPer100g,
+    double? Function()? sodiumMgPer100g,
+    double? Function()? addedSugarPer100g,
+    double? Function()? saturatedFatPer100g,
     List<ServingOption>? servingOptions,
     FoodProvenance? provenance,
     FoodVerificationLevel? verificationLevel,
@@ -177,6 +183,12 @@ class RemoteFoodCandidate {
       fatPer100g: fatPer100g ?? this.fatPer100g,
       fiberPer100g:
           fiberPer100g != null ? fiberPer100g() : this.fiberPer100g,
+      sodiumMgPer100g:
+          sodiumMgPer100g != null ? sodiumMgPer100g() : this.sodiumMgPer100g,
+      addedSugarPer100g:
+          addedSugarPer100g != null ? addedSugarPer100g() : this.addedSugarPer100g,
+      saturatedFatPer100g:
+          saturatedFatPer100g != null ? saturatedFatPer100g() : this.saturatedFatPer100g,
       servingOptions: servingOptions ?? this.servingOptions,
       provenance: provenance ?? this.provenance,
       verificationLevel: verificationLevel ?? this.verificationLevel,
@@ -196,6 +208,9 @@ class RemoteFoodCandidate {
   final double carbsPer100g;
   final double fatPer100g;
   final double? fiberPer100g;
+  final double? sodiumMgPer100g;
+  final double? addedSugarPer100g;
+  final double? saturatedFatPer100g;
   final List<ServingOption> servingOptions;
   final FoodProvenance provenance;
   final FoodVerificationLevel verificationLevel;
@@ -250,6 +265,9 @@ class RemoteFoodCandidate {
       'carbs': carbsPer100g * factor,
       'fat': fatPer100g * factor,
       if (fiberPer100g != null) 'fiber': fiberPer100g! * factor,
+      if (sodiumMgPer100g != null) 'sodium': sodiumMgPer100g! * factor,
+      if (addedSugarPer100g != null) 'added_sugar': addedSugarPer100g! * factor,
+      if (saturatedFatPer100g != null) 'saturated_fat': saturatedFatPer100g! * factor,
     };
   }
 
@@ -267,6 +285,9 @@ class RemoteFoodCandidate {
         'carbsPer100g': carbsPer100g,
         'fatPer100g': fatPer100g,
         if (fiberPer100g != null) 'fiberPer100g': fiberPer100g,
+        if (sodiumMgPer100g != null) 'sodiumMgPer100g': sodiumMgPer100g,
+        if (addedSugarPer100g != null) 'addedSugarPer100g': addedSugarPer100g,
+        if (saturatedFatPer100g != null) 'saturatedFatPer100g': saturatedFatPer100g,
         'servingOptions': servingOptions.map((s) => s.toJson()).toList(),
         'provenance': provenance.toJson(),
         'verificationLevel': verificationLevel.name,
@@ -303,6 +324,9 @@ class RemoteFoodCandidate {
       carbsPer100g: (json['carbsPer100g'] as num).toDouble(),
       fatPer100g: (json['fatPer100g'] as num).toDouble(),
       fiberPer100g: (json['fiberPer100g'] as num?)?.toDouble(),
+      sodiumMgPer100g: (json['sodiumMgPer100g'] as num?)?.toDouble(),
+      addedSugarPer100g: (json['addedSugarPer100g'] as num?)?.toDouble(),
+      saturatedFatPer100g: (json['saturatedFatPer100g'] as num?)?.toDouble(),
       servingOptions: (json['servingOptions'] as List? ?? [])
           .map((s) => ServingOption.fromJson(s as Map<String, dynamic>))
           .toList(),

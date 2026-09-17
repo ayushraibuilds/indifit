@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../../core/catalog/food_catalog_models.dart';
 import '../../../core/di/providers.dart';
 import '../../../core/nutrition_household_measures.dart';
 import '../../../core/nutrition_legacy_read_models.dart';
@@ -38,6 +39,8 @@ class FoodPortionBottomSheet extends ConsumerStatefulWidget {
   final NutritionFoodLoggingCoordinator coordinator;
   final List<dynamic> transformations;
   final NutritionFoodLogPreview? initialPreview;
+  final String? categoryId;
+  final List<ServingOption>? categoryServingOptions;
 
   const FoodPortionBottomSheet({
     super.key,
@@ -51,6 +54,8 @@ class FoodPortionBottomSheet extends ConsumerStatefulWidget {
     required this.coordinator,
     required this.transformations,
     this.initialPreview,
+    this.categoryId,
+    this.categoryServingOptions,
   });
 
   /// Static launcher that prepares coordinator resources, presents the bottom
@@ -70,6 +75,8 @@ class FoodPortionBottomSheet extends ConsumerStatefulWidget {
     bool returnToParentOnSave = false,
     Future<void> Function()? onRetryRecentFoods,
     void Function(String selectedMealType, bool isCorrection)? onCommitted,
+    String? categoryId,
+    List<ServingOption>? categoryServingOptions,
   }) async {
     final isCorrection = correctionRecord != null && correctionItem != null;
     final resolvedMealType =
@@ -116,6 +123,8 @@ class FoodPortionBottomSheet extends ConsumerStatefulWidget {
           coordinator: coordinator,
           transformations: transformations,
           initialPreview: initialPreview,
+          categoryId: categoryId,
+          categoryServingOptions: categoryServingOptions,
         );
       },
     );
@@ -249,6 +258,58 @@ class _FoodPortionBottomSheetState
       _amountError = null;
       _updatePreview();
     });
+  }
+
+  void _applyServingOption(ServingOption opt) {
+    if (_selectedQuantity.dimension == QuantityDimension.mass) {
+      final gramVal = opt.gramWeight;
+      _setQuantity(
+        Quantity.fromDecimal(
+          amount: gramVal % 1 == 0 ? gramVal.toInt().toString() : gramVal.toString(),
+          unit: QuantityUnit.gram,
+          context: _selectedQuantity.context,
+        ),
+      );
+    } else if (_selectedQuantity.dimension == QuantityDimension.volume) {
+      final mlVal = opt.gramWeight / 1.03;
+      _setQuantity(
+        Quantity.fromDecimal(
+          amount: mlVal.round().toString(),
+          unit: QuantityUnit.millilitre,
+          context: _selectedQuantity.context,
+        ),
+      );
+    } else {
+      final baseGram = widget.option.baseQuantity.amount.asDouble;
+      final factor = baseGram > 0 ? opt.gramWeight / baseGram : 1.0;
+      _setQuantity(
+        Quantity.fromDecimal(
+          amount: factor % 1 == 0 ? factor.toInt().toString() : factor.toStringAsFixed(1),
+          unit: _selectedQuantity.unit,
+          context: _selectedQuantity.context,
+        ),
+      );
+    }
+  }
+
+  String _formatServingOptionChipLabel(ServingOption option) {
+    return switch (option.unitName) {
+      'katori' => '1 Katori (150g)',
+      'medium_katori' => 'Med Katori (200g)',
+      'small_katori' => 'Small Katori (80g)',
+      'serving_bowl' => 'Bowl (300g)',
+      'roti_piece' => '1 Roti (35g)',
+      'paratha_piece' => '1 Paratha (60g)',
+      'stuffed_paratha' => 'Stuffed (110g)',
+      'idli_piece' => '1 Idli (40g)',
+      'dosa_piece' => '1 Dosa (90g)',
+      'glass' => '1 Glass (206ml)',
+      'tablespoon' => '1 Tbsp (15g)',
+      'teaspoon' => '1 Tsp (5g)',
+      'plate' => '1 Plate (150g)',
+      '100g' => '100g',
+      _ => '${option.unitName} (${option.gramWeight.round()}g)',
+    };
   }
 
   void _updateAmount(String raw) {
@@ -612,6 +673,42 @@ class _FoodPortionBottomSheetState
                 );
               }(),
               const SizedBox(height: 12),
+            ],
+
+            if (widget.categoryServingOptions != null &&
+                widget.categoryServingOptions!.isNotEmpty) ...[
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: widget.categoryServingOptions!.map((opt) {
+                    final isSelected = (_selectedQuantity.unit == QuantityUnit.gram &&
+                        (_selectedQuantity.amount.asDouble - opt.gramWeight).abs() < 0.1);
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8.0, bottom: 8.0),
+                      child: ActionChip(
+                        label: Text(_formatServingOptionChipLabel(opt)),
+                        backgroundColor: isSelected
+                            ? context.b05Colors.action.withValues(alpha: 0.15)
+                            : context.b05Colors.surfaceSubtle,
+                        labelStyle: TextStyle(
+                          fontSize: 12,
+                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                          color: isSelected
+                              ? context.b05Colors.action
+                              : context.b05Colors.textPrimary,
+                        ),
+                        side: BorderSide(
+                          color: isSelected
+                              ? context.b05Colors.action
+                              : context.b05Colors.border,
+                        ),
+                        onPressed: () => _applyServingOption(opt),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+              const SizedBox(height: 8),
             ],
 
             LayoutBuilder(

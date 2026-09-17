@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 import '../../../core/services/achievement_service.dart';
+import '../../../core/services/modal_queue_coordinator.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
+import '../../../core/widgets/confetti_overlay.dart';
 import '../../progress/achievements_screen.dart';
 
 /// Non-blocking bottom sheet presented after workout completion when one or
@@ -60,9 +62,10 @@ class _AchievementCelebrationSheetState
     final isMulti = widget.achievements.length > 1;
     final disableAnimations = MediaQuery.disableAnimationsOf(context);
 
-    return SafeArea(
-      key: const Key('achievement_celebration_sheet'),
-      child: Padding(
+    return ConfettiOverlay(
+      child: SafeArea(
+        key: const Key('achievement_celebration_sheet'),
+        child: Padding(
         padding: const EdgeInsets.fromLTRB(
           B05Layout.space20,
           B05Layout.space16,
@@ -182,8 +185,9 @@ class _AchievementCelebrationSheetState
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildAchievementCard(BuildContext context, Achievement achievement) {
     final colors = context.b05Colors;
@@ -294,18 +298,21 @@ Future<void> showAchievementCelebrationSheet(
   VoidCallback? onDismiss,
 }) {
   if (achievements.isEmpty) return Future.value();
-  return showModalBottomSheet<void>(
+  return ModalQueueCoordinator.instance.enqueueModal<void>(
     context: context,
-    isScrollControlled: true,
-    backgroundColor: context.b05Colors.surface,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(
-        top: Radius.circular(B05Radii.large),
+    showModal: () => showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: context.b05Colors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(B05Radii.large),
+        ),
       ),
-    ),
-    builder: (ctx) => AchievementCelebrationSheet(
-      achievements: achievements,
-      onDismiss: onDismiss,
+      builder: (ctx) => AchievementCelebrationSheet(
+        achievements: achievements,
+        onDismiss: onDismiss,
+      ),
     ),
   );
 }

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -80,6 +81,7 @@ class TodayNutritionHero extends StatelessWidget {
                   hasTarget: presentation.hasAcceptedCalorieTarget,
                   incomplete: presentation.hasIncompleteNutrition,
                   noConsumption: presentation.isNoConsumptionKnown,
+                  macros: presentation.macros,
                 );
                 final macros = MacroComparison(metrics: presentation.macros);
                 return compact
@@ -332,17 +334,90 @@ class NutritionNotice extends StatelessWidget {
 }
 
 class CalorieRing extends StatelessWidget {
-  const CalorieRing({super.key, 
+  const CalorieRing({
+    super.key,
     required this.calories,
     required this.hasTarget,
     required this.incomplete,
     required this.noConsumption,
+    this.macros = const [],
   });
 
   final TodayNutritionMetricPresentation? calories;
   final bool hasTarget;
   final bool incomplete;
   final bool noConsumption;
+  final List<TodayNutritionMetricPresentation> macros;
+
+  Widget _buildDonutChart(BuildContext context, double diameter) {
+    final colors = context.b05Colors;
+
+    double proteinG = 0;
+    double carbsG = 0;
+    double fatG = 0;
+
+    for (final m in macros) {
+      final grams = m.pointValue ?? 0;
+      if (m.nutrientId == 'protein') proteinG = grams > 0 ? grams : 0;
+      if (m.nutrientId == 'carbohydrate') carbsG = grams > 0 ? grams : 0;
+      if (m.nutrientId == 'fat') fatG = grams > 0 ? grams : 0;
+    }
+
+    final sections = <PieChartSectionData>[];
+    if (proteinG > 0) {
+      sections.add(
+        PieChartSectionData(
+          color: colors.success.indicator,
+          value: proteinG,
+          title: '',
+          radius: 10,
+          showTitle: false,
+        ),
+      );
+    }
+    if (carbsG > 0) {
+      sections.add(
+        PieChartSectionData(
+          color: colors.warning.indicator,
+          value: carbsG,
+          title: '',
+          radius: 10,
+          showTitle: false,
+        ),
+      );
+    }
+    if (fatG > 0) {
+      sections.add(
+        PieChartSectionData(
+          color: colors.danger.indicator,
+          value: fatG,
+          title: '',
+          radius: 10,
+          showTitle: false,
+        ),
+      );
+    }
+    if (sections.isEmpty) {
+      sections.add(
+        PieChartSectionData(
+          color: colors.inset,
+          value: 1,
+          title: '',
+          radius: 10,
+          showTitle: false,
+        ),
+      );
+    }
+
+    return PieChart(
+      PieChartData(
+        sections: sections,
+        sectionsSpace: sections.length > 1 ? 2 : 0,
+        centerSpaceRadius: (diameter / 2) - 10,
+        startDegreeOffset: -90,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -411,15 +486,17 @@ class CalorieRing extends StatelessWidget {
                 alignment: Alignment.center,
                 children: [
                   Positioned.fill(
-                    child: CustomPaint(
-                      painter: CalorieRingPainter(
-                        progressLow: lowValue,
-                        progressHigh: value,
-                        color: color,
-                        trackColor: colors.inset,
-                        range: metric.isRange,
-                      ),
-                    ),
+                    child: macros.isNotEmpty
+                        ? _buildDonutChart(context, diameter)
+                        : CustomPaint(
+                            painter: CalorieRingPainter(
+                              progressLow: lowValue,
+                              progressHigh: value,
+                              color: color,
+                              trackColor: colors.inset,
+                              range: metric.isRange,
+                            ),
+                          ),
                   ),
                   Padding(
                     padding: EdgeInsets.all(inset),
@@ -737,5 +814,46 @@ class RangeBarPainter extends CustomPainter {
       oldDelegate.color != color ||
       oldDelegate.track != track ||
       oldDelegate.isRange != isRange;
+}
+
+/// Composite card wrapping TodayNutritionHero with standard defaults.
+class CalorieRingCard extends StatelessWidget {
+  const CalorieRingCard({
+    super.key,
+    required this.presentation,
+    required this.onLogFood,
+    this.onOpenFoodGuidance,
+    this.dateRelation = TodayDateRelation.today,
+    this.selectedDate,
+    this.onOpenTargetSetup,
+    this.onRetry,
+    this.onScanBarcode,
+    this.onAiNutrition,
+    this.onViewDiary,
+  });
+
+  final TodayNutritionPresentation presentation;
+  final VoidCallback onLogFood;
+  final VoidCallback? onOpenFoodGuidance;
+  final TodayDateRelation dateRelation;
+  final DateTime? selectedDate;
+  final VoidCallback? onOpenTargetSetup;
+  final VoidCallback? onRetry;
+  final VoidCallback? onScanBarcode;
+  final VoidCallback? onAiNutrition;
+  final VoidCallback? onViewDiary;
+
+  @override
+  Widget build(BuildContext context) {
+    return TodayNutritionHero(
+      presentation: presentation,
+      onLogFood: onLogFood,
+      onOpenFoodGuidance: onOpenFoodGuidance,
+      dateRelation: dateRelation,
+      selectedDate: selectedDate ?? DateTime.now(),
+      onOpenTargetSetup: onOpenTargetSetup ?? () {},
+      onRetry: onRetry ?? () {},
+    );
+  }
 }
 

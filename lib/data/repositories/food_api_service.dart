@@ -43,6 +43,9 @@ class FoodApiResult {
   final double? carbs;
   final double? fat;
   final double? fiber;
+  final double? sodium;
+  final double? addedSugar;
+  final double? saturatedFat;
   final double servingSize;
   final String servingUnit;
   final String? barcode;
@@ -57,6 +60,9 @@ class FoodApiResult {
     required this.carbs,
     required this.fat,
     this.fiber,
+    this.sodium,
+    this.addedSugar,
+    this.saturatedFat,
     required this.servingSize,
     required this.servingUnit,
     this.barcode,
@@ -116,6 +122,16 @@ class FoodApiService {
           final double? carbs = _readNumber(nutriments['carbohydrates_100g']);
           final double? fat = _readNumber(nutriments['fat_100g']);
           final double? fiber = _readNumber(nutriments['fiber_100g']);
+          final double? sodiumG = _readNumber(nutriments['sodium_100g']);
+          final double? sodiumMg = sodiumG != null
+              ? sodiumG * 1000.0
+              : _readNumber(nutriments['sodium_mg_100g']);
+          final double? addedSugar = _readNumber(
+            nutriments['sugars_100g'] ?? nutriments['added-sugars_100g'],
+          );
+          final double? saturatedFat = _readNumber(
+            nutriments['saturated-fat_100g'],
+          );
 
           // Serving size info
           final servingQtyText = p['serving_quantity']?.toString() ?? '100';
@@ -129,6 +145,9 @@ class FoodApiService {
             carbs: carbs,
             fat: fat,
             fiber: fiber,
+            sodium: sodiumMg,
+            addedSugar: addedSugar,
+            saturatedFat: saturatedFat,
             servingSize: servingSize,
             servingUnit: servingUnit,
             barcode: barcode,
@@ -215,6 +234,16 @@ class FoodApiService {
               );
               final double? fat = _readNumber(nutriments['fat_100g']);
               final double? fiber = _readNumber(nutriments['fiber_100g']);
+              final double? sodiumG = _readNumber(nutriments['sodium_100g']);
+              final double? sodiumMg = sodiumG != null
+                  ? sodiumG * 1000.0
+                  : _readNumber(nutriments['sodium_mg_100g']);
+              final double? addedSugar = _readNumber(
+                nutriments['sugars_100g'] ?? nutriments['added-sugars_100g'],
+              );
+              final double? saturatedFat = _readNumber(
+                nutriments['saturated-fat_100g'],
+              );
 
               final servingQtyText = p['serving_quantity']?.toString() ?? '100';
               final servingSize = double.tryParse(servingQtyText) ?? 100.0;
@@ -227,6 +256,9 @@ class FoodApiService {
                 carbs: carbs,
                 fat: fat,
                 fiber: fiber,
+                sodium: sodiumMg,
+                addedSugar: addedSugar,
+                saturatedFat: saturatedFat,
                 servingSize: servingSize,
                 servingUnit: servingUnit,
                 barcode: providerId,

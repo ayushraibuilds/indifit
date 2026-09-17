@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 
+import '../../../core/services/modal_queue_coordinator.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
 import '../../../core/widgets/indi_fit_bottom_sheet.dart';
@@ -12,12 +13,17 @@ class RestTimerBottomSheet extends StatefulWidget {
 
   static Future<void> show(BuildContext context, int restSeconds) async {
     if (context.mounted) {
-      await showIndiFitBottomSheet<void>(
-        context: context,
-        semanticLabel: 'Rest timer',
-        builder: (context) =>
-            RestTimerBottomSheet(recommendedRestSeconds: restSeconds),
-      );
+      ModalQueueCoordinator.instance.markModalActive();
+      try {
+        await showIndiFitBottomSheet<void>(
+          context: context,
+          semanticLabel: 'Rest timer',
+          builder: (context) =>
+              RestTimerBottomSheet(recommendedRestSeconds: restSeconds),
+        );
+      } finally {
+        ModalQueueCoordinator.instance.markModalDismissed();
+      }
     }
   }
 
