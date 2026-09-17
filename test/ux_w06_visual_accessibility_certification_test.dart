@@ -30,7 +30,6 @@ import 'package:indifit/features/settings/nutrition_constraints_screen.dart';
 import 'package:indifit/features/workout_player/routine_display_screen.dart';
 import 'package:indifit/features/workout_player/widgets/manual_log_sheet.dart';
 import 'package:indifit/features/workout_player/widgets/plate_calculator_sheet.dart';
-import 'package:indifit/features/workout_player/workout_player_screen.dart';
 import 'package:indifit/features/workout_player/workout_summary_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -58,13 +57,6 @@ void main() {
         ),
       ),
       _CertificationRoute('workouts tab', () => const RoutineDisplayScreen()),
-      _CertificationRoute(
-        'workout player',
-        () => WorkoutPlayerScreen(
-          routineName: 'Upper body strength',
-          exercises: const [_certificationRoutineExercise],
-        ),
-      ),
       _CertificationRoute(
         'workout summary',
         () => const WorkoutSummaryScreen(
@@ -138,26 +130,6 @@ void main() {
         fileName: 'ux_w06_workouts_tab_empty_light.png',
         brightness: Brightness.light,
         builder: () => const RoutineDisplayScreen(),
-      ),
-      _GoldenRoute(
-        name: 'workout player dark',
-        fileName: 'ux_w06_workout_player_dark.png',
-        brightness: Brightness.dark,
-        builder: () => WorkoutPlayerScreen(
-          routineName: 'Upper body strength',
-          exercises: const [_certificationRoutineExercise],
-        ),
-      ),
-      _GoldenRoute(
-        name: 'workout player dark at 2x text',
-        fileName: 'ux_w06_workout_player_dark_2x.png',
-        brightness: Brightness.dark,
-        size: Size(320, 568),
-        textScale: 2,
-        builder: () => WorkoutPlayerScreen(
-          routineName: 'Upper body strength',
-          exercises: const [_certificationRoutineExercise],
-        ),
       ),
       _GoldenRoute(
         name: 'workout summary dark',
@@ -561,15 +533,6 @@ const _certificationExercise = Exercise(
   isCustom: false,
 );
 
-const _certificationRoutineExercise = RoutineExercise(
-  id: 1,
-  dayId: 1,
-  exerciseName: 'Flat Barbell Bench Press',
-  sets: 3,
-  repsRange: '8-10',
-  orderIndex: 0,
-);
-
 CalendarOccurrenceReadItem _certificationOccurrenceItem() {
   final createdAt = DateTime.utc(2026, 8, 1);
   return CalendarOccurrenceReadItem(
@@ -655,8 +618,6 @@ class _GoldenRoute {
     required this.builder,
     this.target,
     this.pinCalendarLoading = false,
-    this.size = const Size(390, 844),
-    this.textScale = 1,
   });
 
   final String name;
@@ -665,8 +626,8 @@ class _GoldenRoute {
   final Widget Function() builder;
   final Finder Function()? target;
   final bool pinCalendarLoading;
-  final Size size;
-  final double textScale;
+  Size get size => const Size(390, 844);
+  double get textScale => 1;
 }
 
 Future<void> _assertProductionRouteRenders(

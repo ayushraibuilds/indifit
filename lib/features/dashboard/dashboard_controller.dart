@@ -552,7 +552,13 @@ final dashboardControllerProvider =
       SharedPreferences? prefs;
       try {
         prefs = ref.watch(sharedPreferencesProvider);
-      } catch (_) {}
+      } on Object catch (error, stackTrace) {
+        AppLogger.error(
+          'Unable to read sharedPreferencesProvider in dashboardControllerProvider; falling back to null prefs',
+          error,
+          stackTrace,
+        );
+      }
       final controller = DashboardController(ref, prefs: prefs);
       ref.listen<int>(civilDateRevisionProvider, (_, _) {
         controller.refreshForCivilDate(DateTime.now());

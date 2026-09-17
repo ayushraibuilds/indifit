@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../data/database/app_database.dart';
 import '../../data/models/b02_execution_models.dart';
-import '../../data/repositories/workout_execution_compatibility_adapter.dart';
 import '../../features/activity/b02_activity_creation_screen.dart';
 import '../../features/activity/b02_activity_history_detail_screen.dart';
 import '../../features/calendar/program_calendar_screen.dart';
@@ -37,7 +36,6 @@ import '../../features/workout_player/b02_strength_summary_screen.dart';
 import '../../features/workout_player/quick_workout_screen.dart';
 import '../../features/workout_player/routine_editor_screen.dart';
 import '../../features/workout_player/workout_execution_route.dart';
-import '../../features/workout_player/workout_player_screen.dart';
 import '../../features/workout_player/workout_summary_screen.dart';
 
 part 'routes/core_routes.dart';
@@ -62,6 +60,7 @@ const compatibilityRouteRedirects = <String, String>{
   '/meal-planner': '/food',
   '/weekly-report': '/progress',
   '/travel-mode': '/training',
+  '/workout-player': '/training',
 };
 
 String? compatibilityRouteRedirect(String location) =>

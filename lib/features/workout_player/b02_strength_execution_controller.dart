@@ -1625,7 +1625,13 @@ final b02StrengthExecutionControllerProvider =
           SharedPreferences? prefs;
           try {
             prefs = ref.read(sharedPreferencesProvider);
-          } catch (_) {}
+          } on Object catch (error, stackTrace) {
+            AppLogger.error(
+              'Unable to read sharedPreferencesProvider for streak calculation; reading SharedPreferences directly',
+              error,
+              stackTrace,
+            );
+          }
           prefs ??= await SharedPreferences.getInstance();
           return prefs.getInt(AppPreferenceKeys.userStreakCount) ?? 0;
         },
@@ -1656,7 +1662,13 @@ final b02StrengthExecutionScreenControllerProvider = StateNotifierProvider
           SharedPreferences? prefs;
           try {
             prefs = ref.read(sharedPreferencesProvider);
-          } catch (_) {}
+          } on Object catch (error, stackTrace) {
+            AppLogger.error(
+              'Unable to read sharedPreferencesProvider for streak calculation; reading SharedPreferences directly',
+              error,
+              stackTrace,
+            );
+          }
           prefs ??= await SharedPreferences.getInstance();
           return prefs.getInt(AppPreferenceKeys.userStreakCount) ?? 0;
         },

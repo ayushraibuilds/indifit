@@ -24,30 +24,11 @@ final workoutPlayerRoutes = <RouteBase>[
     redirect: (context, state) =>
         compatibilityRouteRedirect(state.matchedLocation),
   ),
-  // Legacy player route (/workout-player) is in sunset-bound maintenance mode.
-  // Authoritative strength player is B02StrengthPlayerScreen (/strength-player).
-  // Rest timer expiry here is intentionally silent following the deletion of the legacy notification route.
+  // Legacy player route (/workout-player) is retired and redirects to /training.
   GoRoute(
     path: '/workout-player',
-    builder: (context, state) {
-      final extra = state.extra as Map<String, dynamic>? ?? {};
-      final scheduled = extra['scheduledLaunch'];
-      if (scheduled is WorkoutPlayerLaunchData) {
-        return WorkoutPlayerScreen(
-          routineName: scheduled.routineName,
-          exercises: scheduled.exercises,
-          scheduledOccurrenceId: scheduled.occurrenceId,
-          executionSnapshotJson: scheduled.executionSnapshotJson,
-          personalExerciseContextByName:
-              scheduled.personalExerciseContextByName,
-        );
-      }
-      return WorkoutPlayerScreen(
-        routineName: extra['routineName'] ?? 'Workout',
-        exercises:
-            (extra['exercises'] as List?)?.cast<RoutineExercise>() ?? [],
-      );
-    },
+    redirect: (context, state) =>
+        compatibilityRouteRedirect(state.matchedLocation),
   ),
   GoRoute(
     path: '/workout-summary',

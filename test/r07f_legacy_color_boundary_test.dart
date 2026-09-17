@@ -26,7 +26,6 @@ void main() {
     'lib/features/equipment/equipment_profile_editor_screen.dart',
     'lib/features/equipment/equipment_profiles_screen.dart',
     'lib/features/equipment/exercise_preference_editor_screen.dart',
-    'lib/features/food_log/meal_templates_screen.dart',
     'lib/features/food_log/nutrition_recipe_editor_screen.dart',
     'lib/features/food_log/save_logged_meal_as_reusable_meal_helper.dart',
     'lib/features/food_log/saved_meal_editor_screen.dart',

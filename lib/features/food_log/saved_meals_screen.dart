@@ -12,7 +12,6 @@ import '../../core/widgets/consumer_task_primitives.dart';
 import '../../core/widgets/indi_fit_feedback.dart';
 import '../../core/widgets/skeleton_loader.dart';
 import '../dashboard/today_surface_controller.dart';
-import 'meal_templates_screen.dart';
 import 'saved_meal_detail_screen.dart';
 import 'saved_meals_controller.dart';
 import 'thali/thali_builder_screen.dart';
@@ -233,22 +232,6 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
     }
   }
 
-  Future<void> _showOlderMealTemplates() async {
-    final result = await Navigator.push<bool>(
-      context,
-      MaterialPageRoute(
-        builder: (_) => MealTemplatesScreen(
-          mealType: widget.mealType,
-          targetDate: widget.selectedDate,
-          legacyReadOnly: true,
-        ),
-      ),
-    );
-    if (result == true && mounted) {
-      _refreshTodaySurfaces();
-      Navigator.pop(context, true);
-    }
-  }
 
   void _refreshTodaySurfaces() {
     ref.read(todayNutritionRevisionProvider.notifier).state++;
@@ -347,20 +330,6 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
                       return _buildMealCard(context, meal, targetMealLabel);
                     },
                   ),
-          ),
-          SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton.icon(
-                  onPressed: _showOlderMealTemplates,
-                  icon: const Icon(Icons.history_rounded, size: 18),
-                  label: const Text('View older saved meals'),
-                ),
-              ),
-            ),
           ),
         ],
       ),

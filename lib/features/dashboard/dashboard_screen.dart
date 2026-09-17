@@ -7,7 +7,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/di/providers.dart';
-import '../../core/fixtures/workout_draft_codec.dart';
 import '../../core/navigation/app_navigation.dart';
 import '../../core/presentation/consumer_copy.dart';
 import '../../core/presentation/consumer_date_label.dart';
@@ -29,7 +28,6 @@ import '../progress/achievements_screen.dart';
 import '../settings/nutrition_targets_hub_screen.dart';
 import '../workout_player/b02_strength_execution_controller.dart';
 import '../workout_player/b02_strength_player_screen.dart';
-import '../workout_player/workout_player_screen.dart';
 import 'dashboard_controller.dart';
 import 'today_daily_action_surface.dart';
 import 'today_surface_controller.dart';
@@ -158,38 +156,40 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   }
                   return;
                 }
-                final loggedCompanions = WorkoutDraftCodec.decodeLoggedSets(
-                  draft.loggedSetsJson,
+                if (draft.scheduledOccurrenceId case final occurrenceId?) {
+                  await ref
+                      .read(workoutExecutionCompatibilityAdapterProvider)
+                      .discardScheduledOccurrenceDraft(
+                        occurrenceId: occurrenceId,
+                        commandId: const Uuid().v4(),
+                      );
+                } else {
+                  await repo.deleteActiveDraft();
+                }
+                final wakeLock = ref.read(
+                  workoutSessionWakeLockCoordinatorProvider,
                 );
-                final scheduledLaunch = draft.scheduledOccurrenceId == null
-                    ? null
-                    : await ref
-                          .read(workoutExecutionCompatibilityAdapterProvider)
-                          .resumeScheduledDraft(draft);
-                final exercises =
-                    scheduledLaunch?.exercises ??
-                    await repo.getExercisesForRoutineName(draft.routineName);
+                unawaited(
+                  wakeLock.clearActiveSession(
+                    b02WorkoutSessionWakeLockKey(draft.id),
+                  ),
+                );
+                unawaited(
+                  wakeLock.clearActiveSession(
+                    legacyWorkoutSessionWakeLockKey(
+                      draft.scheduledOccurrenceId,
+                    ),
+                  ),
+                );
                 if (mounted) {
-                  await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => WorkoutPlayerScreen(
-                        routineName: draft.routineName,
-                        exercises: exercises,
-                        initialExerciseIndex: draft.currentExerciseIndex,
-                        initialSetIndex: draft.currentSetIndex,
-                        initialElapsedSeconds: draft.elapsedSeconds,
-                        initialLoggedSets: loggedCompanions,
-                        scheduledOccurrenceId: scheduledLaunch?.occurrenceId,
-                        executionSnapshotJson:
-                            scheduledLaunch?.executionSnapshotJson,
-                        personalExerciseContextByName:
-                            scheduledLaunch?.personalExerciseContextByName ??
-                            const {},
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'Legacy workout draft format is deprecated and has been cleared. Please start a fresh workout.',
                       ),
                     ),
                   );
-                  await _refreshToday();
+                  goToTrainingTab(context);
                 }
               },
               child: const Text('Resume activity'),

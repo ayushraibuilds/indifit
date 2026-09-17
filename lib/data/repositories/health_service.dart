@@ -19,7 +19,13 @@ final healthServiceProvider = Provider<HealthService>((ref) {
   SharedPreferences? prefs;
   try {
     prefs = ref.watch(sharedPreferencesProvider);
-  } catch (_) {}
+  } on Object catch (error, stackTrace) {
+    AppLogger.error(
+      'Unable to read sharedPreferencesProvider in healthServiceProvider; falling back to null prefs',
+      error,
+      stackTrace,
+    );
+  }
   return HealthService(prefs: prefs);
 });
 

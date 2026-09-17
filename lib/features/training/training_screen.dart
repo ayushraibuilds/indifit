@@ -3,13 +3,14 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../core/di/providers.dart';
-import '../../core/fixtures/workout_draft_codec.dart';
 import '../../core/presentation/consumer_copy.dart';
 import '../../core/presentation/consumer_date_label.dart';
 import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/services/indifit_haptics.dart';
+import '../../core/services/workout_session_wake_lock_coordinator.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/consumer_task_primitives.dart';
@@ -26,7 +27,6 @@ import '../calendar/workout_contextual_launcher.dart';
 import '../workout_player/b02_strength_execution_controller.dart';
 import '../workout_player/b02_strength_player_screen.dart';
 import '../workout_player/widgets/manual_log_sheet.dart';
-import '../workout_player/workout_player_screen.dart';
 import 'training_plan_lifecycle_controller.dart';
 import 'training_workout_customization.dart';
 import 'training_workout_preview.dart';
@@ -343,36 +343,36 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
     setState(() => _isLaunching = true);
     try {
       if (draft.executionStateJson == null) {
-        final repo = ref.read(workoutRepositoryProvider);
-        final loggedCompanions = WorkoutDraftCodec.decodeLoggedSets(
-          draft.loggedSetsJson,
+        if (draft.scheduledOccurrenceId case final occurrenceId?) {
+          await ref
+              .read(workoutExecutionCompatibilityAdapterProvider)
+              .discardScheduledOccurrenceDraft(
+                occurrenceId: occurrenceId,
+                commandId: const Uuid().v4(),
+              );
+        } else {
+          final repo = ref.read(workoutRepositoryProvider);
+          await repo.deleteActiveDraft();
+        }
+        final wakeLock = ref.read(
+          workoutSessionWakeLockCoordinatorProvider,
         );
-        final scheduledLaunch = draft.scheduledOccurrenceId == null
-            ? null
-            : await ref
-                  .read(workoutExecutionCompatibilityAdapterProvider)
-                  .resumeScheduledDraft(draft);
-        final exercises =
-            scheduledLaunch?.exercises ??
-            await repo.getExercisesForRoutineName(draft.routineName);
-        if (!context.mounted) return;
-        await Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => WorkoutPlayerScreen(
-              routineName: draft.routineName,
-              exercises: exercises,
-              initialExerciseIndex: draft.currentExerciseIndex,
-              initialSetIndex: draft.currentSetIndex,
-              initialElapsedSeconds: draft.elapsedSeconds,
-              initialLoggedSets: loggedCompanions,
-              scheduledOccurrenceId: scheduledLaunch?.occurrenceId,
-              executionSnapshotJson: scheduledLaunch?.executionSnapshotJson,
-              personalExerciseContextByName:
-                  scheduledLaunch?.personalExerciseContextByName ?? const {},
+        unawaited(
+          wakeLock.clearActiveSession(
+            legacyWorkoutSessionWakeLockKey(
+              draft.scheduledOccurrenceId,
             ),
           ),
         );
-        if (context.mounted) ref.invalidate(trainingLandingSnapshotProvider);
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Legacy workout draft format is deprecated and has been cleared. Please start a fresh workout.',
+            ),
+          ),
+        );
+        ref.invalidate(trainingLandingSnapshotProvider);
         return;
       }
       final controller = ref.read(
