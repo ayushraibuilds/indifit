@@ -17,6 +17,17 @@ class CrashReportingService {
     defaultValue: 'https://placeholder_key@o0.ingest.sentry.io/0',
   );
 
+  /// Test hook to simulate non-placeholder DSNs in unit tests
+  @visibleForTesting
+  static String? debugDsnOverride;
+
+  /// Test hook to intercept SentryFlutter.init in unit tests
+  @visibleForTesting
+  static Future<void> Function(
+    FutureOr<void> Function(SentryFlutterOptions), {
+    FutureOr<void> Function()? appRunner,
+  }) sentryInitRunner = SentryFlutter.init;
+
   /// Initializes Sentry crash reporting with zero-payload privacy guards.
   static Future<void> initialize(
     FutureOr<void> Function() appRunner, {
@@ -30,8 +41,15 @@ class CrashReportingService {
     // Telemetry is allowed ONLY if not offline-only AND user explicitly opted in
     _isEnabled = !isOffline && userTelemetryOptIn;
 
-    await SentryFlutter.init((options) {
-      options.dsn = _defaultDsn;
+    final effectiveDsn = debugDsnOverride ?? _defaultDsn;
+    if (!_isEnabled || effectiveDsn.contains('placeholder_key')) {
+      AppLogger.info('Sentry crash reporting disabled (opt-out or placeholder DSN).');
+      await appRunner();
+      return;
+    }
+
+    await sentryInitRunner((options) {
+      options.dsn = effectiveDsn;
       options.tracesSampleRate = 0.2;
       options.sendDefaultPii =
           false; // Never send personally identifiable information

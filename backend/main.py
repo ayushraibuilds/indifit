@@ -38,7 +38,17 @@ from backend.core.security import (  # noqa: E402
 from backend.routers.ai import ai_router  # noqa: E402
 from backend.routers.backup import backup_router, USER_BACKUPS, BACKUP_BLOBS  # noqa: E402
 from backend.routers.sync import sync_router, USER_MUTATIONS  # noqa: E402
-from backend.services.gemini_client import query_gemini_text, query_gemini_vision  # noqa: E402
+from backend.services.gemini_client import (  # noqa: E402
+    query_gemini_text,
+    query_gemini_vision,
+    GEMINI_CACHE,
+    GeminiQuotaExceededError,
+    clear_cache,
+    set_daily_budget,
+    reset_daily_stats,
+    get_daily_budget,
+    get_daily_request_count,
+)
 
 
 def create_app() -> FastAPI:

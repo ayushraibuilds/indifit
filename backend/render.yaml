@@ -4,8 +4,13 @@ services:
     env: python
     region: oregon
     buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    startCommand: uvicorn main:app --workers 1 --host 0.0.0.0 --port $PORT
     envVars:
+      # Audit §4.3: Single-worker container enforcement prevents multi-worker in-memory cache and rate-limit bypass
+      - key: WEB_CONCURRENCY
+        value: "1"
+      - key: PYTHONUNBUFFERED
+        value: "1"
       - key: GEMINI_API_KEY
         sync: false
       - key: INDIFIT_API_KEY

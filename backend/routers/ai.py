@@ -8,8 +8,7 @@ from fastapi import (
     UploadFile,
     status,
 )
-import httpx
-from backend.core.config import AI_MODEL, get_gemini_api_key
+from backend.core.config import get_gemini_api_key
 from backend.core.security import enforce_rate_limit, verify_api_key
 from backend.schemas.ai import (
     MealDecompositionResponse,
@@ -234,23 +233,11 @@ async def generate_weekly_report(req: WeeklyReportRequest):
     """
 
     try:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{AI_MODEL}:generateContent?key={gemini_key}"
-        payload = {
-            "contents": [{"parts": [{"text": prompt}]}],
-            "generationConfig": {"response_mime_type": "application/json"}
-        }
-
-        async with httpx.AsyncClient(timeout=15.0) as client:
-            response = await client.post(url, json=payload)
-
-        if response.status_code != 200:
-            return _mock_weekly_report(req, f"API HTTP {response.status_code}")
-
-        data = response.json()
-        raw_json = data['candidates'][0]['content']['parts'][0]['text']
-        parsed = json.loads(raw_json)
-        parsed['is_fallback'] = False
-        return parsed
+        query_text = _get_query_gemini_text()
+        result = await query_text(prompt, json_mode=True)
+        data = json.loads(result)
+        data["is_fallback"] = False
+        return data
     except HTTPException:
         raise
     except Exception as e:
