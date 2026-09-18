@@ -1,12 +1,12 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "summary": {
-    "generated_at": "2026-09-17T11:46:48.636105+00:00",
-    "git_commit": "e784143",
-    "total_dart_files": 449,
-    "total_loc": 276778,
-    "total_internal_edges": 2197,
-    "external_package_count": 24,
+    "generated_at": "2026-09-18T05:14:34.028903+00:00",
+    "git_commit": "5b16218",
+    "total_dart_files": 450,
+    "total_loc": 276884,
+    "total_internal_edges": 2199,
+    "external_package_count": 23,
     "catch_metrics": {
       "total_catches_all": 489,
       "total_catch_underscore": 176,
@@ -167,7 +167,7 @@
     },
     {
       "file": "lib/data/repositories/hydration_repository.dart",
-      "line": 401,
+      "line": 405,
       "var": "_",
       "is_underscore": true,
       "is_empty": true,
@@ -177,7 +177,7 @@
     },
     {
       "file": "lib/data/repositories/hydration_repository.dart",
-      "line": 437,
+      "line": 441,
       "var": "_",
       "is_underscore": true,
       "is_empty": true,
@@ -217,7 +217,7 @@
     },
     {
       "file": "lib/features/dashboard/dashboard_screen.dart",
-      "line": 411,
+      "line": 412,
       "var": "_",
       "is_underscore": true,
       "is_empty": true,
@@ -422,8 +422,8 @@
       "part_of": null,
       "providers_defined": [],
       "providers_used": [
-        "appRouterProvider",
         "databaseProvider",
+        "appRouterProvider",
         "themeModeProvider"
       ],
       "routes_defined": [],
@@ -1273,18 +1273,18 @@
       "parts": [],
       "part_of": null,
       "providers_defined": [
-        "syncCapabilityProvider",
-        "aiAssistanceCapabilityProvider",
-        "networkCapabilityProvider",
-        "cloudBackupCapabilityProvider",
-        "accountCapabilityProvider",
-        "contentDownloadCapabilityProvider",
-        "integrationCapabilityProvider",
-        "analyticsCapabilityProvider",
-        "diagnosticsCapabilityProvider",
-        "cloudBackupStatusProvider",
         "foodCatalogCapabilityProvider",
-        "entitlementCapabilityProvider"
+        "cloudBackupStatusProvider",
+        "accountCapabilityProvider",
+        "networkCapabilityProvider",
+        "analyticsCapabilityProvider",
+        "contentDownloadCapabilityProvider",
+        "diagnosticsCapabilityProvider",
+        "cloudBackupCapabilityProvider",
+        "entitlementCapabilityProvider",
+        "integrationCapabilityProvider",
+        "aiAssistanceCapabilityProvider",
+        "syncCapabilityProvider"
       ],
       "providers_used": [
         "cloudBackupCapabilityProvider",
@@ -1798,24 +1798,24 @@
       "parts": [],
       "part_of": null,
       "providers_defined": [
-        "databaseProvider",
-        "localTimezoneServiceProvider",
-        "civilDateRevisionProvider",
-        "dataErasureServiceProvider",
-        "appPreferencesServiceProvider",
-        "dioProvider",
+        "localScheduleDateServiceProvider",
         "sharedPreferencesProvider",
-        "localScheduleDateServiceProvider"
+        "localTimezoneServiceProvider",
+        "dioProvider",
+        "appPreferencesServiceProvider",
+        "civilDateRevisionProvider",
+        "databaseProvider",
+        "dataErasureServiceProvider"
       ],
       "providers_used": [
         "healthServiceProvider",
-        "databaseProvider",
-        "localTimezoneServiceProvider",
-        "privacyPolicyProvider",
-        "cloudBackupCapabilityProvider",
         "accountCapabilityProvider",
         "sharedPreferencesProvider",
-        "localScheduleDateServiceProvider"
+        "localScheduleDateServiceProvider",
+        "localTimezoneServiceProvider",
+        "cloudBackupCapabilityProvider",
+        "privacyPolicyProvider",
+        "databaseProvider"
       ],
       "routes_defined": [],
       "catches": [],
@@ -2048,9 +2048,9 @@
         "userProfileProvider"
       ],
       "providers_used": [
-        "sharedPreferencesProvider",
         "databaseProvider",
-        "localTimezoneServiceProvider"
+        "localTimezoneServiceProvider",
+        "sharedPreferencesProvider"
       ],
       "routes_defined": [],
       "catches": [
@@ -3750,14 +3750,14 @@
       "providers_defined": [],
       "providers_used": [],
       "routes_defined": [
-        "/settings",
-        "/progress",
-        "/learn",
-        "/profile",
-        "/",
-        "/health-hub",
         "/onboarding",
-        "/settings/profile"
+        "/progress",
+        "/health-hub",
+        "/",
+        "/settings",
+        "/settings/profile",
+        "/learn",
+        "/profile"
       ],
       "catches": [],
       "empty_catch_count": 0,
@@ -3777,17 +3777,17 @@
       "providers_defined": [],
       "providers_used": [],
       "routes_defined": [
+        "/food/describe",
+        "/food",
+        "/food/ai",
         "/settings/dietary-constraints",
-        "/settings/household-measures",
-        "/settings/dietary-constraints/review",
+        "/food/thali",
         "/meal-planner",
         "/food/estimate-review",
+        "/settings/household-measures",
         "/food/recipes/edit",
-        "/food/thali",
-        "/food",
-        "/food/label-ocr",
-        "/food/describe",
-        "/food/ai"
+        "/settings/dietary-constraints/review",
+        "/food/label-ocr"
       ],
       "catches": [],
       "empty_catch_count": 0,
@@ -3807,22 +3807,22 @@
       "providers_defined": [],
       "providers_used": [],
       "routes_defined": [
-        "/exercise-preference-editor",
-        "/exercises",
-        "/equipment-profile-editor",
-        "/workout-history",
-        "/workouts",
         "/activity-history/:sessionId",
-        "/training",
-        "/program-review/:versionId",
-        "/plan-library",
-        "/equipment-profiles",
-        "/program-author",
         "/plan-library/:programId",
-        "/workout-history/:sessionId",
-        "/calendar",
+        "/plan-library",
         "/travel-mode",
-        "/plan-overview/:versionId"
+        "/exercises",
+        "/training",
+        "/plan-overview/:versionId",
+        "/equipment-profiles",
+        "/equipment-profile-editor",
+        "/calendar",
+        "/workout-history/:sessionId",
+        "/exercise-preference-editor",
+        "/workout-history",
+        "/program-review/:versionId",
+        "/program-author",
+        "/workouts"
       ],
       "catches": [],
       "empty_catch_count": 0,
@@ -3842,17 +3842,17 @@
       "providers_defined": [],
       "providers_used": [],
       "routes_defined": [
+        "/b02-strength-summary",
+        "/workout-summary",
         "/achievements",
+        "/b02-strength-player",
+        "/routine-editor",
+        "/workout",
+        "/weekly-report",
         "/workout-player",
         "/quick-workout",
-        "/workout-summary",
-        "/workout",
-        "/b02-strength-player",
-        "/routine-wizard",
-        "/routine-editor",
-        "/weekly-report",
-        "/b02-strength-summary",
-        "/activity-create"
+        "/activity-create",
+        "/routine-wizard"
       ],
       "catches": [],
       "empty_catch_count": 0,
@@ -4671,6 +4671,24 @@
         "lib/features/workout_player/workout_player_controller.dart",
         "lib/features/workout_player/workout_player_providers.dart",
         "lib/features/workout_player/workout_summary_screen.dart"
+      ],
+      "parts": [],
+      "part_of": null,
+      "providers_defined": [],
+      "providers_used": [],
+      "routes_defined": [],
+      "catches": [],
+      "empty_catch_count": 0,
+      "total_catch_count": 0
+    },
+    "lib/core/stubs/mobile_scanner_stub.dart": {
+      "path": "lib/core/stubs/mobile_scanner_stub.dart",
+      "layer": "core",
+      "sublayer": "core",
+      "loc": 73,
+      "imports": [],
+      "imported_by": [
+        "lib/features/food_log/barcode_scanner_screen.dart"
       ],
       "parts": [],
       "part_of": null,
@@ -5516,7 +5534,7 @@
       "path": "lib/core/widgets/indi_fit_feedback.dart",
       "layer": "core",
       "sublayer": "core",
-      "loc": 104,
+      "loc": 113,
       "imports": [
         "lib/core/theme/b05_semantic_colors.dart",
         "lib/core/widgets/b05_accessibility_primitives.dart"
@@ -5524,6 +5542,7 @@
       "imported_by": [
         "lib/features/calendar/workout_contextual_actions.dart",
         "lib/features/calendar/workout_contextual_launcher.dart",
+        "lib/features/dashboard/dashboard_screen.dart",
         "lib/features/food_log/food_search_screen.dart",
         "lib/features/food_log/nutrition_recipe_editor_screen.dart",
         "lib/features/food_log/saved_meal_editor_screen.dart",
@@ -7495,8 +7514,8 @@
         "openFoodFactsDioProvider"
       ],
       "providers_used": [
-        "openFoodFactsDioProvider",
-        "privacyPolicyProvider"
+        "privacyPolicyProvider",
+        "openFoodFactsDioProvider"
       ],
       "routes_defined": [],
       "catches": [
@@ -7640,7 +7659,7 @@
       "path": "lib/data/repositories/hydration_repository.dart",
       "layer": "data",
       "sublayer": "data",
-      "loc": 469,
+      "loc": 473,
       "imports": [
         "lib/core/config/app_preferences_keys.dart",
         "lib/core/services/local_schedule_date_service.dart",
@@ -7661,7 +7680,7 @@
       "catches": [
         {
           "file": "lib/data/repositories/hydration_repository.dart",
-          "line": 85,
+          "line": 89,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -7671,7 +7690,7 @@
         },
         {
           "file": "lib/data/repositories/hydration_repository.dart",
-          "line": 401,
+          "line": 405,
           "var": "_",
           "is_underscore": true,
           "is_empty": true,
@@ -7681,7 +7700,7 @@
         },
         {
           "file": "lib/data/repositories/hydration_repository.dart",
-          "line": 437,
+          "line": 441,
           "var": "_",
           "is_underscore": true,
           "is_empty": true,
@@ -9338,9 +9357,9 @@
         "workoutRepositoryProvider"
       ],
       "providers_used": [
-        "localScheduleDateServiceProvider",
         "databaseProvider",
-        "localTimezoneServiceProvider"
+        "localTimezoneServiceProvider",
+        "localScheduleDateServiceProvider"
       ],
       "routes_defined": [],
       "catches": [
@@ -9985,8 +10004,8 @@
       "parts": [],
       "part_of": null,
       "providers_defined": [
-        "b02ActivitySessionRepositoryProvider",
-        "b02ActivityControllerProvider"
+        "b02ActivityControllerProvider",
+        "b02ActivitySessionRepositoryProvider"
       ],
       "providers_used": [
         "databaseProvider",
@@ -10337,8 +10356,8 @@
         "workoutOccurrenceActionGatewayProvider"
       ],
       "providers_used": [
-        "workoutOccurrenceActionGatewayProvider",
-        "calendarRepositoryProvider"
+        "calendarRepositoryProvider",
+        "workoutOccurrenceActionGatewayProvider"
       ],
       "routes_defined": [],
       "catches": [
@@ -10434,8 +10453,8 @@
       "part_of": null,
       "providers_defined": [],
       "providers_used": [
-        "workoutExecutionCompatibilityAdapterProvider",
-        "b02StrengthExecutionControllerProvider"
+        "b02StrengthExecutionControllerProvider",
+        "workoutExecutionCompatibilityAdapterProvider"
       ],
       "routes_defined": [],
       "catches": [],
@@ -10550,11 +10569,11 @@
       "part_of": null,
       "providers_defined": [],
       "providers_used": [
-        "b04CurrentFoodControllerProvider",
         "b04WeeklyReviewControllerProvider",
         "b04DailyBriefingControllerProvider",
-        "b04ProductionUserContextProvider",
-        "b04ProductionRecommendationContextProvider"
+        "b04CurrentFoodControllerProvider",
+        "b04ProductionRecommendationContextProvider",
+        "b04ProductionUserContextProvider"
       ],
       "routes_defined": [],
       "catches": [],
@@ -10599,41 +10618,41 @@
       "parts": [],
       "part_of": null,
       "providers_defined": [
-        "b04CurrentFoodControllerProvider",
-        "b04ProductionRecommendationOrchestratorProvider",
-        "coachingPreferenceRepositoryProvider",
-        "b04GoalSettingsControllerProvider",
-        "b04WeeklyReviewControllerProvider",
-        "b04RecommendationHistoryRepositoryProvider",
-        "b04DailyBriefingControllerProvider",
-        "b04RecoveryObservationRepositoryProvider",
-        "b04CurrentFoodGuidanceServiceProvider",
         "b04OptionalAiAssistanceProvider",
-        "b04ProductionUserContextProvider",
-        "b04DailyBriefingReadRepositoryProvider",
+        "coachingPreferenceRepositoryProvider",
+        "b04DailyBriefingControllerProvider",
+        "b04WeeklyReviewControllerProvider",
+        "b04RecoveryProductionAdapterProvider",
+        "b04RecommendationHistoryRepositoryProvider",
+        "b04ProductionRecommendationOrchestratorProvider",
+        "b04CurrentFoodGuidanceServiceProvider",
+        "b04CurrentFoodControllerProvider",
+        "b04RecoveryObservationRepositoryProvider",
         "b04ProductionRecommendationContextProvider",
+        "b04ProductionUserContextProvider",
         "b04ReadinessSnapshotRepositoryProvider",
         "b04WeeklyReviewReadRepositoryProvider",
-        "b04RecoveryProductionAdapterProvider"
+        "b04DailyBriefingReadRepositoryProvider",
+        "b04GoalSettingsControllerProvider"
       ],
       "providers_used": [
-        "nutritionConstraintRepositoryProvider",
         "healthServiceProvider",
-        "databaseProvider",
-        "localTimezoneServiceProvider",
         "coachingPreferenceRepositoryProvider",
-        "privacyPolicyProvider",
+        "localScheduleDateServiceProvider",
         "nutritionGoalRepositoryProvider",
+        "b04RecoveryProductionAdapterProvider",
+        "localTimezoneServiceProvider",
         "b04RecommendationHistoryRepositoryProvider",
-        "nutritionRecipeRepositoryProvider",
-        "b04RecoveryObservationRepositoryProvider",
         "b04CurrentFoodGuidanceServiceProvider",
         "dioProvider",
+        "nutritionConstraintRepositoryProvider",
+        "b04RecoveryObservationRepositoryProvider",
         "b04ReadinessSnapshotRepositoryProvider",
-        "b04DailyBriefingReadRepositoryProvider",
-        "localScheduleDateServiceProvider",
+        "privacyPolicyProvider",
+        "nutritionRecipeRepositoryProvider",
+        "databaseProvider",
         "b04WeeklyReviewReadRepositoryProvider",
-        "b04RecoveryProductionAdapterProvider"
+        "b04DailyBriefingReadRepositoryProvider"
       ],
       "routes_defined": [],
       "catches": [],
@@ -10732,10 +10751,10 @@
       ],
       "providers_used": [
         "healthServiceProvider",
-        "workoutRepositoryProvider",
         "progressStatisticsRepositoryProvider",
-        "foodRepositoryProvider",
-        "sharedPreferencesProvider"
+        "workoutRepositoryProvider",
+        "sharedPreferencesProvider",
+        "foodRepositoryProvider"
       ],
       "routes_defined": [],
       "catches": [
@@ -10815,14 +10834,14 @@
       "parts": [],
       "part_of": null,
       "providers_defined": [
+        "dashboardPersonalizationControllerProvider",
         "dashboardPersonalizationRepositoryProvider",
-        "dashboardModuleRegistryProvider",
-        "dashboardPersonalizationControllerProvider"
+        "dashboardModuleRegistryProvider"
       ],
       "providers_used": [
+        "databaseProvider",
         "dashboardPersonalizationRepositoryProvider",
-        "dashboardModuleRegistryProvider",
-        "databaseProvider"
+        "dashboardModuleRegistryProvider"
       ],
       "routes_defined": [],
       "catches": [
@@ -10854,7 +10873,7 @@
       "path": "lib/features/dashboard/dashboard_screen.dart",
       "layer": "features",
       "sublayer": "features/dashboard",
-      "loc": 471,
+      "loc": 472,
       "imports": [
         "lib/core/di/providers.dart",
         "lib/core/navigation/app_navigation.dart",
@@ -10867,6 +10886,7 @@
         "lib/core/utils/app_logger.dart",
         "lib/core/widgets/b05_accessibility_primitives.dart",
         "lib/core/widgets/indi_fit_bottom_sheet.dart",
+        "lib/core/widgets/indi_fit_feedback.dart",
         "lib/data/database/app_database.dart",
         "lib/data/repositories/calendar_read_repository.dart",
         "lib/data/repositories/training_next_action_resolver.dart",
@@ -10891,16 +10911,16 @@
       "providers_defined": [],
       "providers_used": [
         "workoutRepositoryProvider",
+        "sharedPreferencesProvider",
         "dashboardControllerProvider",
         "userProfileProvider",
-        "sharedPreferencesProvider",
         "b02StrengthExecutionControllerProvider"
       ],
       "routes_defined": [],
       "catches": [
         {
           "file": "lib/features/dashboard/dashboard_screen.dart",
-          "line": 237,
+          "line": 238,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -10910,7 +10930,7 @@
         },
         {
           "file": "lib/features/dashboard/dashboard_screen.dart",
-          "line": 337,
+          "line": 338,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -10920,7 +10940,7 @@
         },
         {
           "file": "lib/features/dashboard/dashboard_screen.dart",
-          "line": 411,
+          "line": 412,
           "var": "_",
           "is_underscore": true,
           "is_empty": true,
@@ -10936,7 +10956,7 @@
       "path": "lib/features/dashboard/main_navigation_scaffold.dart",
       "layer": "features",
       "sublayer": "features/dashboard",
-      "loc": 170,
+      "loc": 171,
       "imports": [
         "lib/core/widgets/b05_accessibility_primitives.dart",
         "lib/features/food_log/food_search_screen.dart",
@@ -11111,22 +11131,22 @@
       "parts": [],
       "part_of": null,
       "providers_defined": [
-        "todayHydrationRevisionProvider",
         "todaySurfaceReadRepositoryProvider",
+        "todayHydrationRevisionProvider",
         "todaySurfaceSnapshotProvider",
         "todayNutritionRevisionProvider"
       ],
       "providers_used": [
-        "todayHydrationRevisionProvider",
         "workoutRepositoryProvider",
-        "databaseProvider",
-        "nutritionTargetAuthorityProvider",
-        "civilDateRevisionProvider",
-        "hydrationRepositoryProvider",
-        "nutritionTargetAuthorityChangesProvider",
         "localScheduleDateServiceProvider",
+        "nutritionTargetAuthorityChangesProvider",
+        "civilDateRevisionProvider",
+        "nutritionTargetAuthorityProvider",
+        "calendarReadRepositoryProvider",
         "todayNutritionRevisionProvider",
-        "calendarReadRepositoryProvider"
+        "databaseProvider",
+        "hydrationRepositoryProvider",
+        "todayHydrationRevisionProvider"
       ],
       "routes_defined": [],
       "catches": [],
@@ -11174,8 +11194,8 @@
       "part_of": null,
       "providers_defined": [],
       "providers_used": [
-        "dashboardModuleRegistryProvider",
-        "dashboardPersonalizationControllerProvider"
+        "dashboardPersonalizationControllerProvider",
+        "dashboardModuleRegistryProvider"
       ],
       "routes_defined": [],
       "catches": [],
@@ -11209,8 +11229,8 @@
         "hydrationDailyProvider"
       ],
       "providers_used": [
-        "todayHydrationRevisionProvider",
         "hydrationRepositoryProvider",
+        "todayHydrationRevisionProvider",
         "settingsControllerProvider"
       ],
       "routes_defined": [],
@@ -11387,7 +11407,7 @@
       "path": "lib/features/dashboard/widgets/today_nutrition_widgets.dart",
       "layer": "features",
       "sublayer": "features/dashboard",
-      "loc": 859,
+      "loc": 860,
       "imports": [
         "lib/core/di/providers.dart",
         "lib/core/presentation/consumer_copy.dart",
@@ -11406,8 +11426,8 @@
       "part_of": null,
       "providers_defined": [],
       "providers_used": [
-        "b04CurrentFoodControllerProvider",
-        "b04ProductionRecommendationContextProvider"
+        "b04ProductionRecommendationContextProvider",
+        "b04CurrentFoodControllerProvider"
       ],
       "routes_defined": [],
       "catches": [],
@@ -11444,19 +11464,19 @@
       "parts": [],
       "part_of": null,
       "providers_defined": [
-        "b05EducationLessonsProvider",
         "b05ExerciseEducationProvider",
+        "b05EducationLessonsControllerProvider",
         "b05EducationRegistryProvider",
         "b05EducationProgressRepositoryProvider",
-        "b05ExerciseMuscleMappingProvider",
-        "b05EducationLessonsControllerProvider"
+        "b05EducationLessonsProvider",
+        "b05ExerciseMuscleMappingProvider"
       ],
       "providers_used": [
-        "databaseProvider",
+        "b05EducationLessonsControllerProvider",
         "b05EducationRegistryProvider",
         "b05EducationProgressRepositoryProvider",
-        "b05MuscleVisualRegistryProvider",
-        "b05EducationLessonsControllerProvider"
+        "databaseProvider",
+        "b05MuscleVisualRegistryProvider"
       ],
       "routes_defined": [],
       "catches": [
@@ -11933,6 +11953,7 @@
       "loc": 405,
       "imports": [
         "lib/core/capabilities/capabilities_registry.dart",
+        "lib/core/stubs/mobile_scanner_stub.dart",
         "lib/core/theme/b05_semantic_colors.dart",
         "lib/data/repositories/food_api_service.dart",
         "lib/features/food_log/custom_food_editor_screen.dart"
@@ -11944,8 +11965,8 @@
       "part_of": null,
       "providers_defined": [],
       "providers_used": [
-        "foodApiServiceProvider",
-        "foodCatalogCapabilityProvider"
+        "foodCatalogCapabilityProvider",
+        "foodApiServiceProvider"
       ],
       "routes_defined": [],
       "catches": [
@@ -12265,8 +12286,8 @@
       "parts": [],
       "part_of": null,
       "providers_defined": [
-        "canonicalFoodRecordsForDayProvider",
         "foodLogsForDayProvider",
+        "canonicalFoodRecordsForDayProvider",
         "foodDiaryReadModelProvider"
       ],
       "providers_used": [
@@ -12347,8 +12368,8 @@
       "part_of": null,
       "providers_defined": [],
       "providers_used": [
-        "localScheduleDateServiceProvider",
         "foodRepositoryProvider",
+        "localScheduleDateServiceProvider",
         "diaryMealSlotsProvider"
       ],
       "routes_defined": [],
@@ -13232,8 +13253,8 @@
         "_savedRecipeIngredientNameProvider"
       ],
       "providers_used": [
-        "savedRecipeLogControllerProvider",
-        "localScheduleDateServiceProvider"
+        "localScheduleDateServiceProvider",
+        "savedRecipeLogControllerProvider"
       ],
       "routes_defined": [],
       "catches": [],
@@ -13535,9 +13556,9 @@
       "part_of": null,
       "providers_defined": [],
       "providers_used": [
+        "localTimezoneServiceProvider",
         "localScheduleDateServiceProvider",
-        "diaryMealSlotsProvider",
-        "localTimezoneServiceProvider"
+        "diaryMealSlotsProvider"
       ],
       "routes_defined": [],
       "catches": [
@@ -13749,13 +13770,13 @@
       "parts": [],
       "part_of": null,
       "providers_defined": [
-        "waterProvider",
-        "hydrationRepositoryProvider"
+        "hydrationRepositoryProvider",
+        "waterProvider"
       ],
       "providers_used": [
         "databaseProvider",
-        "localScheduleDateServiceProvider",
         "hydrationRepositoryProvider",
+        "localScheduleDateServiceProvider",
         "sharedPreferencesProvider"
       ],
       "routes_defined": [],
@@ -13852,16 +13873,16 @@
       "parts": [],
       "part_of": null,
       "providers_defined": [
-        "b05MediaAssetProbeProvider",
-        "b05MediaManifestSourceProvider",
+        "b05MediaPackPreferenceRepositoryProvider",
         "b05MediaBundleControllerProvider",
-        "b05MediaPackPreferenceRepositoryProvider"
+        "b05MediaAssetProbeProvider",
+        "b05MediaManifestSourceProvider"
       ],
       "providers_used": [
-        "b05MediaAssetProbeProvider",
-        "b05MediaManifestSourceProvider",
+        "databaseProvider",
         "b05MediaBundleControllerProvider",
-        "databaseProvider"
+        "b05MediaAssetProbeProvider",
+        "b05MediaManifestSourceProvider"
       ],
       "routes_defined": [],
       "catches": [
@@ -13937,17 +13958,17 @@
       "parts": [],
       "part_of": null,
       "providers_defined": [
-        "b05PlaylistPreferenceRepositoryProvider",
-        "savedProvider",
         "b05PlaylistProviderRegistryProvider",
-        "b05PlaylistControllerProvider"
+        "savedProvider",
+        "b05PlaylistControllerProvider",
+        "b05PlaylistPreferenceRepositoryProvider"
       ],
       "providers_used": [
-        "databaseProvider",
+        "b05PlaylistProviderRegistryProvider",
         "privacyPolicyProvider",
-        "b05PlaylistPreferenceRepositoryProvider",
         "b05PlaylistControllerProvider",
-        "b05PlaylistProviderRegistryProvider"
+        "databaseProvider",
+        "b05PlaylistPreferenceRepositoryProvider"
       ],
       "routes_defined": [],
       "catches": [
@@ -14077,19 +14098,19 @@
       "part_of": null,
       "providers_defined": [
         "adaptiveTdeeRepositoryProvider",
+        "adaptiveTdeeEstimateProvider",
         "adaptiveTdeeMeasurementsSignalProvider",
-        "adaptiveTdeeFoodLogsSignalProvider",
-        "adaptiveTdeeEstimateProvider"
+        "adaptiveTdeeFoodLogsSignalProvider"
       ],
       "providers_used": [
-        "adaptiveTdeeFoodLogsSignalProvider",
-        "databaseProvider",
-        "localTimezoneServiceProvider",
-        "userProfileProvider",
-        "adaptiveTdeeMeasurementsSignalProvider",
         "adaptiveTdeeRepositoryProvider",
         "localScheduleDateServiceProvider",
-        "nutritionReadModelRepositoryProvider"
+        "adaptiveTdeeFoodLogsSignalProvider",
+        "userProfileProvider",
+        "localTimezoneServiceProvider",
+        "nutritionReadModelRepositoryProvider",
+        "databaseProvider",
+        "adaptiveTdeeMeasurementsSignalProvider"
       ],
       "routes_defined": [],
       "catches": [],
@@ -14192,54 +14213,54 @@
       "parts": [],
       "part_of": null,
       "providers_defined": [
-        "nutritionEstimatePrivacyServiceProvider",
-        "nutritionHouseholdMeasureRepositoryProvider",
-        "nutritionConsumptionRepositoryProvider",
-        "savedRecipeLogControllerProvider",
-        "nutritionEstimateReviewControllerProvider",
-        "nutritionGoalRepositoryProvider",
-        "nutritionLabelOcrServiceProvider",
-        "nutritionThaliControllerProvider",
-        "nutritionConstraintManagementControllerProvider",
-        "nutritionFoodCatalogRepositoryProvider",
-        "nutritionFoodLoggingCoordinatorProvider",
-        "nutritionCalculationServiceProvider",
-        "nutritionConstraintRepositoryProvider",
-        "nutritionRecipeLogCoordinatorProvider",
-        "nutritionTargetsForDateProvider",
-        "naturalLanguageMealServiceProvider",
-        "nutritionLabelOcrControllerProvider",
-        "nutritionRecipeRepositoryProvider",
-        "nutritionGoalHistoryProvider",
-        "nutritionThaliRepositoryProvider",
-        "nutritionProteinDistributionControllerProvider",
-        "nutritionReadModelRepositoryProvider",
-        "naturalLanguageMealControllerProvider",
-        "nutritionEstimateRepositoryProvider",
-        "nutritionProteinDistributionRepositoryProvider",
-        "nutritionTargetAuthorityProvider",
         "nutritionConstraintEvaluationReviewControllerProvider",
-        "nutritionRegistryProvider",
-        "nutritionTransformationRepositoryProvider",
+        "nutritionProteinDistributionControllerProvider",
+        "nutritionTargetAuthorityChangesProvider",
+        "naturalLanguageMealServiceProvider",
+        "naturalLanguageMealControllerProvider",
         "nutritionEstimateFinalizationServiceProvider",
-        "nutritionTargetAuthorityChangesProvider"
+        "nutritionEstimatePrivacyServiceProvider",
+        "nutritionConstraintManagementControllerProvider",
+        "nutritionReadModelRepositoryProvider",
+        "savedRecipeLogControllerProvider",
+        "nutritionConstraintRepositoryProvider",
+        "nutritionEstimateReviewControllerProvider",
+        "nutritionFoodLoggingCoordinatorProvider",
+        "nutritionRegistryProvider",
+        "nutritionFoodCatalogRepositoryProvider",
+        "nutritionTargetsForDateProvider",
+        "nutritionTransformationRepositoryProvider",
+        "nutritionGoalHistoryProvider",
+        "nutritionLabelOcrControllerProvider",
+        "nutritionHouseholdMeasureRepositoryProvider",
+        "nutritionTargetAuthorityProvider",
+        "nutritionRecipeRepositoryProvider",
+        "nutritionEstimateRepositoryProvider",
+        "nutritionConsumptionRepositoryProvider",
+        "nutritionCalculationServiceProvider",
+        "nutritionGoalRepositoryProvider",
+        "nutritionThaliRepositoryProvider",
+        "nutritionThaliControllerProvider",
+        "nutritionRecipeLogCoordinatorProvider",
+        "nutritionLabelOcrServiceProvider",
+        "nutritionProteinDistributionRepositoryProvider"
       ],
       "providers_used": [
+        "nutritionCalculationServiceProvider",
+        "localScheduleDateServiceProvider",
+        "nutritionGoalRepositoryProvider",
+        "localTimezoneServiceProvider",
+        "dioProvider",
+        "nutritionTransformationRepositoryProvider",
         "nutritionConstraintRepositoryProvider",
-        "nutritionEstimatePrivacyServiceProvider",
-        "databaseProvider",
+        "nutritionTargetAuthorityChangesProvider",
+        "nutritionLabelOcrServiceProvider",
+        "nutritionHouseholdMeasureRepositoryProvider",
         "nutritionTargetAuthorityProvider",
         "privacyPolicyProvider",
-        "localTimezoneServiceProvider",
-        "nutritionGoalRepositoryProvider",
-        "nutritionLabelOcrServiceProvider",
         "nutritionRecipeRepositoryProvider",
-        "nutritionHouseholdMeasureRepositoryProvider",
-        "dioProvider",
-        "nutritionTargetAuthorityChangesProvider",
-        "nutritionTransformationRepositoryProvider",
-        "localScheduleDateServiceProvider",
-        "nutritionCalculationServiceProvider"
+        "databaseProvider",
+        "nutritionEstimatePrivacyServiceProvider"
       ],
       "routes_defined": [],
       "catches": [],
@@ -14449,8 +14470,8 @@
       "part_of": null,
       "providers_defined": [],
       "providers_used": [
-        "sharedPreferencesProvider",
-        "nutritionLabelOcrControllerProvider"
+        "nutritionLabelOcrControllerProvider",
+        "sharedPreferencesProvider"
       ],
       "routes_defined": [],
       "catches": [
@@ -14581,7 +14602,7 @@
       "path": "lib/features/onboarding/onboarding_screen.dart",
       "layer": "features",
       "sublayer": "features/onboarding",
-      "loc": 1188,
+      "loc": 1195,
       "imports": [
         "lib/core/config/app_preferences_keys.dart",
         "lib/core/di/providers.dart",
@@ -14606,8 +14627,8 @@
       "part_of": null,
       "providers_defined": [],
       "providers_used": [
-        "userProfileProvider",
-        "sharedPreferencesProvider"
+        "sharedPreferencesProvider",
+        "userProfileProvider"
       ],
       "routes_defined": [],
       "catches": [
@@ -14701,8 +14722,8 @@
       "part_of": null,
       "providers_defined": [],
       "providers_used": [
-        "userProfileProvider",
-        "unitPreferenceProvider"
+        "unitPreferenceProvider",
+        "userProfileProvider"
       ],
       "routes_defined": [],
       "catches": [],
@@ -14825,8 +14846,8 @@
       "part_of": null,
       "providers_defined": [],
       "providers_used": [
-        "programAuthoringControllerProvider",
-        "programRepositoryProvider"
+        "programRepositoryProvider",
+        "programAuthoringControllerProvider"
       ],
       "routes_defined": [],
       "catches": [
@@ -14919,10 +14940,10 @@
       "part_of": null,
       "providers_defined": [],
       "providers_used": [
+        "programRepositoryProvider",
         "localScheduleDateServiceProvider",
         "workoutRepositoryProvider",
-        "programActivationCoordinatorProvider",
-        "programRepositoryProvider"
+        "programActivationCoordinatorProvider"
       ],
       "routes_defined": [],
       "catches": [
@@ -15161,15 +15182,15 @@
       "parts": [],
       "part_of": null,
       "providers_defined": [
-        "progressPeriodComparisonSnapshotProvider",
-        "periodComparisonRangeProvider"
+        "periodComparisonRangeProvider",
+        "progressPeriodComparisonSnapshotProvider"
       ],
       "providers_used": [
-        "databaseProvider",
+        "localScheduleDateServiceProvider",
         "localTimezoneServiceProvider",
-        "nutritionTargetAuthorityProvider",
         "periodComparisonRangeProvider",
-        "localScheduleDateServiceProvider"
+        "nutritionTargetAuthorityProvider",
+        "databaseProvider"
       ],
       "routes_defined": [],
       "catches": [],
@@ -15244,8 +15265,8 @@
       "part_of": null,
       "providers_defined": [],
       "providers_used": [
-        "progressPeriodComparisonSnapshotProvider",
-        "periodComparisonRangeProvider"
+        "periodComparisonRangeProvider",
+        "progressPeriodComparisonSnapshotProvider"
       ],
       "routes_defined": [],
       "catches": [],
@@ -15337,8 +15358,8 @@
       "parts": [],
       "part_of": null,
       "providers_defined": [
-        "progressDashboardReadRepositoryProvider",
-        "progressDashboardSnapshotProvider"
+        "progressDashboardSnapshotProvider",
+        "progressDashboardReadRepositoryProvider"
       ],
       "providers_used": [
         "databaseProvider",
@@ -15430,8 +15451,8 @@
       "providers_used": [
         "progressDashboardSnapshotProvider",
         "adaptiveTdeeEstimateProvider",
-        "userProfileProvider",
-        "unitPreferenceProvider"
+        "unitPreferenceProvider",
+        "userProfileProvider"
       ],
       "routes_defined": [],
       "catches": [
@@ -16131,12 +16152,12 @@
       "part_of": null,
       "providers_defined": [],
       "providers_used": [
-        "b04GoalSettingsControllerProvider",
-        "adaptiveTdeeEstimateProvider",
+        "localScheduleDateServiceProvider",
         "nutritionGoalRepositoryProvider",
         "userProfileProvider",
+        "adaptiveTdeeEstimateProvider",
         "b04ProductionUserContextProvider",
-        "localScheduleDateServiceProvider"
+        "b04GoalSettingsControllerProvider"
       ],
       "routes_defined": [],
       "catches": [
@@ -16336,11 +16357,11 @@
       "part_of": null,
       "providers_defined": [],
       "providers_used": [
-        "userProfileProvider",
-        "settingsControllerProvider",
-        "themeModeProvider",
         "healthStateProvider",
-        "unitPreferenceProvider"
+        "userProfileProvider",
+        "unitPreferenceProvider",
+        "themeModeProvider",
+        "settingsControllerProvider"
       ],
       "routes_defined": [],
       "catches": [],
@@ -16505,8 +16526,8 @@
       "providers_defined": [],
       "providers_used": [
         "dataErasureServiceProvider",
-        "settingsControllerProvider",
-        "sharedPreferencesProvider"
+        "sharedPreferencesProvider",
+        "settingsControllerProvider"
       ],
       "routes_defined": [],
       "catches": [
@@ -16722,11 +16743,11 @@
       "part_of": null,
       "providers_defined": [],
       "providers_used": [
-        "userProfileProvider",
         "localScheduleDateServiceProvider",
         "planLibrarySnapshotProvider",
-        "unitPreferenceProvider",
-        "calendarRepositoryProvider"
+        "calendarRepositoryProvider",
+        "userProfileProvider",
+        "unitPreferenceProvider"
       ],
       "routes_defined": [],
       "catches": [
@@ -16806,36 +16827,36 @@
       "parts": [],
       "part_of": null,
       "providers_defined": [
+        "planLibraryRevisionProvider",
         "exercisePreferenceRepositoryProvider",
-        "programListProvider",
+        "planOverviewSnapshotProvider",
+        "calendarReadRepositoryProvider",
+        "planOverviewRevisionProvider",
+        "planLibraryReadRepositoryProvider",
+        "legacyProgramCompatibilityAdapterProvider",
+        "exercisePreferenceAggregateProvider",
+        "equipmentProfileListProvider",
+        "programRepositoryProvider",
+        "defaultEquipmentProfileIdProvider",
+        "calendarRepositoryProvider",
+        "equipmentRepositoryProvider",
+        "programActivationCoordinatorProvider",
+        "programLifecycleRepositoryProvider",
         "planOverviewReadRepositoryProvider",
         "planLibrarySnapshotProvider",
-        "planOverviewSnapshotProvider",
-        "equipmentRepositoryProvider",
-        "planLibraryRevisionProvider",
-        "programVersionDetailProvider",
-        "calendarRepositoryProvider",
+        "programListProvider",
         "equipmentProfileRepositoryProvider",
-        "legacyProgramCompatibilityAdapterProvider",
-        "programLifecycleRepositoryProvider",
-        "programActivationCoordinatorProvider",
-        "planOverviewRevisionProvider",
-        "programRepositoryProvider",
-        "equipmentProfileListProvider",
-        "exercisePreferenceAggregateProvider",
-        "planLibraryReadRepositoryProvider",
-        "calendarReadRepositoryProvider",
-        "defaultEquipmentProfileIdProvider"
+        "programVersionDetailProvider"
       ],
       "providers_used": [
-        "databaseProvider",
-        "planOverviewRevisionProvider",
         "planLibraryReadRepositoryProvider",
         "planLibraryRevisionProvider",
-        "equipmentProfileRepositoryProvider",
+        "programRepositoryProvider",
         "localScheduleDateServiceProvider",
+        "equipmentProfileRepositoryProvider",
         "calendarReadRepositoryProvider",
-        "programRepositoryProvider"
+        "databaseProvider",
+        "planOverviewRevisionProvider"
       ],
       "routes_defined": [],
       "catches": [],
@@ -16846,7 +16867,7 @@
       "path": "lib/features/training/training_screen.dart",
       "layer": "features",
       "sublayer": "features/training",
-      "loc": 1612,
+      "loc": 1616,
       "imports": [
         "lib/core/di/providers.dart",
         "lib/core/presentation/consumer_copy.dart",
@@ -16884,12 +16905,12 @@
       ],
       "providers_used": [
         "workoutRepositoryProvider",
-        "civilDateRevisionProvider",
-        "b02StrengthExecutionControllerProvider",
-        "trainingPlanLifecycleControllerProvider",
-        "trainingLandingSnapshotProvider",
         "localScheduleDateServiceProvider",
-        "calendarReadRepositoryProvider"
+        "b02StrengthExecutionControllerProvider",
+        "civilDateRevisionProvider",
+        "calendarReadRepositoryProvider",
+        "trainingPlanLifecycleControllerProvider",
+        "trainingLandingSnapshotProvider"
       ],
       "routes_defined": [],
       "catches": [
@@ -17074,8 +17095,8 @@
         "workoutHistoryItemsProvider"
       ],
       "providers_used": [
-        "workoutHistoryItemsProvider",
-        "databaseProvider"
+        "databaseProvider",
+        "workoutHistoryItemsProvider"
       ],
       "routes_defined": [],
       "catches": [],
@@ -17156,9 +17177,9 @@
         "b02StrengthExecutionControllerProvider"
       ],
       "providers_used": [
+        "databaseProvider",
         "strengthExecutionCompatibilityAdapterProvider",
-        "sharedPreferencesProvider",
-        "databaseProvider"
+        "sharedPreferencesProvider"
       ],
       "routes_defined": [],
       "catches": [
@@ -17649,10 +17670,10 @@
       ],
       "providers_used": [
         "workoutRepositoryProvider",
-        "quickWorkoutActiveDraftProvider",
-        "workoutSessionWakeLockCoordinatorProvider",
+        "b02StrengthExecutionControllerProvider",
         "strengthExecutionCompatibilityAdapterProvider",
-        "b02StrengthExecutionControllerProvider"
+        "quickWorkoutActiveDraftProvider",
+        "workoutSessionWakeLockCoordinatorProvider"
       ],
       "routes_defined": [],
       "catches": [],
@@ -17748,8 +17769,8 @@
       "part_of": null,
       "providers_defined": [],
       "providers_used": [
-        "localScheduleDateServiceProvider",
-        "workoutRepositoryProvider"
+        "workoutRepositoryProvider",
+        "localScheduleDateServiceProvider"
       ],
       "routes_defined": [],
       "catches": [
@@ -18171,7 +18192,7 @@
       "path": "lib/features/workout_player/widgets/rest_timer_bottom_sheet.dart",
       "layer": "features",
       "sublayer": "features/workout_player",
-      "loc": 185,
+      "loc": 191,
       "imports": [
         "lib/core/services/modal_queue_coordinator.dart",
         "lib/core/theme/b05_semantic_colors.dart",
@@ -18348,26 +18369,26 @@
       "parts": [],
       "part_of": null,
       "providers_defined": [
-        "b02ExercisePerformanceReadRepositoryProvider",
-        "workoutSessionWakeLockCoordinatorProvider",
         "b02PreviousPerformanceRepositoryProvider",
-        "b07ExerciseContextRepositoryProvider",
-        "workoutExecutionCompatibilityAdapterProvider",
-        "strengthExecutionCompatibilityAdapterProvider",
         "b05ExerciseVisualRegistryProvider",
-        "b07ExerciseContextProvider",
+        "workoutSessionWakeLockCoordinatorProvider",
+        "strengthExecutionCompatibilityAdapterProvider",
         "strengthExecutionRepositoryProvider",
-        "travelRepositoryProvider"
+        "b07ExerciseContextRepositoryProvider",
+        "b02ExercisePerformanceReadRepositoryProvider",
+        "workoutExecutionCompatibilityAdapterProvider",
+        "travelRepositoryProvider",
+        "b07ExerciseContextProvider"
       ],
       "providers_used": [
         "workoutRepositoryProvider",
-        "databaseProvider",
-        "b07ExerciseContextRepositoryProvider",
-        "exercisePreferenceRepositoryProvider",
+        "calendarRepositoryProvider",
         "equipmentProfileRepositoryProvider",
         "strengthExecutionRepositoryProvider",
-        "travelRepositoryProvider",
-        "calendarRepositoryProvider"
+        "b07ExerciseContextRepositoryProvider",
+        "exercisePreferenceRepositoryProvider",
+        "databaseProvider",
+        "travelRepositoryProvider"
       ],
       "routes_defined": [],
       "catches": [

@@ -727,21 +727,28 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               context,
             ).copyWith(color: colors.textSecondary),
           ),
-          const SizedBox(height: 12),
-          OnboardingSelectionCard(
-            title: 'Male',
-            icon: Icons.male,
-            selected: _sex == 'male',
-            onTap: () => _selectOnboardingChoice(() => _sex = 'male'),
+          Row(
+            children: [
+              Expanded(
+                child: OnboardingSelectionCard(
+                  title: 'Male',
+                  icon: Icons.male,
+                  selected: _sex == 'male',
+                  onTap: () => _selectOnboardingChoice(() => _sex = 'male'),
+                ),
+              ),
+              const SizedBox(width: B05Layout.space12),
+              Expanded(
+                child: OnboardingSelectionCard(
+                  title: 'Female',
+                  icon: Icons.female,
+                  selected: _sex == 'female',
+                  onTap: () => _selectOnboardingChoice(() => _sex = 'female'),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
-          OnboardingSelectionCard(
-            title: 'Female',
-            icon: Icons.female,
-            selected: _sex == 'female',
-            onTap: () => _selectOnboardingChoice(() => _sex = 'female'),
-          ),
-          const SizedBox(height: B05Layout.space24),
+          const SizedBox(height: B05Layout.space20),
           FocusTraversalGroup(
             policy: OrderedTraversalPolicy(),
             child: Column(

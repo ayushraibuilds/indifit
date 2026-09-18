@@ -24,7 +24,7 @@ class OnboardingPageContainer extends StatelessWidget {
         B05Layout.space20,
         B05Layout.space16,
         B05Layout.space20,
-        B05Layout.space24,
+        B05Layout.space32,
       ),
       child: SingleChildScrollView(
         controller: scrollController,

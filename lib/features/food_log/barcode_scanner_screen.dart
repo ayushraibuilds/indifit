@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../core/capabilities/capabilities_registry.dart';
+import '../../core/stubs/mobile_scanner_stub.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../data/repositories/food_api_service.dart';
 import 'custom_food_editor_screen.dart';

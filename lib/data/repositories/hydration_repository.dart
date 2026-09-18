@@ -49,18 +49,22 @@ class HydrationRepository {
       '${date.day.toString().padLeft(2, '0')}';
 
   /// Returns current local date key.
-  /// If [dates] is supplied, calls [LocalScheduleDateService.todayIn].
+  /// If [dates] is supplied, calls [LocalScheduleDateService.todayIn] if [timezoneId] is provided,
+  /// or formats [LocalScheduleDateService.nowUtc] converted to local civil date.
   static String currentLocalDateKey([
     LocalScheduleDateService? dates,
-    String timezoneId = 'UTC',
+    String? timezoneId,
   ]) {
-    if (dates != null) {
+    if (dates != null && timezoneId != null) {
       return dates.todayIn(timezoneId);
+    }
+    if (dates != null) {
+      return formatLocalDate(dates.nowUtc().toLocal());
     }
     return formatLocalDate(DateTime.now());
   }
 
-  String _currentDateKey([String timezoneId = 'UTC']) =>
+  String _currentDateKey([String? timezoneId]) =>
       currentLocalDateKey(_dateService, timezoneId);
 
   /// Returns the daily hydration read model for the specified [localDate].

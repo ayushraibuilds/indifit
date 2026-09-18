@@ -17,6 +17,7 @@ import '../../core/services/workout_session_wake_lock_coordinator.dart';
 import '../../core/utils/app_logger.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/indi_fit_bottom_sheet.dart';
+import '../../core/widgets/indi_fit_feedback.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/calendar_read_repository.dart';
 import '../../data/repositories/training_next_action_resolver.dart';
@@ -412,18 +413,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         prefs ??= await SharedPreferences.getInstance();
         await AchievementService.markCelebrated(prefs, nextIds);
         if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            behavior: SnackBarBehavior.floating,
-            content: Text('$plural unlocked: ${nextTitles.join(', ')}'),
-            action: SnackBarAction(
-              label: 'View',
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const AchievementsScreen()),
-                );
-              },
-            ),
+        showIndiFitSuccessFeedback(
+          context,
+          '$plural unlocked: ${nextTitles.join(', ')}',
+          duration: const Duration(seconds: 3),
+          action: SnackBarAction(
+            label: 'View',
+            textColor: Theme.of(context).colorScheme.primary,
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const AchievementsScreen()),
+              );
+            },
           ),
         );
       });

@@ -102,77 +102,83 @@ class _RestTimerBottomSheetState extends State<RestTimerBottomSheet> {
           Navigator.pop(context);
         }
       },
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(
-          B05Layout.space24,
-          B05Layout.space12,
-          B05Layout.space24,
-          B05Layout.space24,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'REST PERIOD',
-              style: B05Typography.caption(
-                context,
-              ).copyWith(fontWeight: FontWeight.bold, letterSpacing: 1.0),
+      child: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              B05Layout.space24,
+              B05Layout.space12,
+              B05Layout.space24,
+              B05Layout.space24,
             ),
-            const SizedBox(height: 16),
-            Stack(
-              alignment: Alignment.center,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                SizedBox(
-                  width: 120,
-                  height: 120,
-                  child: CircularProgressIndicator(
-                    value: progress,
-                    strokeWidth: 8,
-                    backgroundColor: colors.border,
-                    valueColor: AlwaysStoppedAnimation<Color>(colors.action),
-                  ),
+                Text(
+                  'REST PERIOD',
+                  style: B05Typography.caption(
+                    context,
+                  ).copyWith(fontWeight: FontWeight.bold, letterSpacing: 1.0),
                 ),
-                Semantics(
-                  label: 'Rest remaining $secondsRemaining seconds',
-                  liveRegion: false,
-                  child: ExcludeSemantics(
-                    child: Text(
-                      '${secondsRemaining}s',
-                      style: B05Typography.metric(
-                        context,
-                      ).copyWith(fontSize: 32),
+                const SizedBox(height: 16),
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    SizedBox(
+                      width: 120,
+                      height: 120,
+                      child: CircularProgressIndicator(
+                        value: progress,
+                        strokeWidth: 8,
+                        backgroundColor: colors.border,
+                        valueColor: AlwaysStoppedAnimation<Color>(colors.action),
+                      ),
                     ),
-                  ),
+                    Semantics(
+                      label: 'Rest remaining $secondsRemaining seconds',
+                      liveRegion: false,
+                      child: ExcludeSemantics(
+                        child: Text(
+                          '${secondsRemaining}s',
+                          style: B05Typography.metric(
+                            context,
+                          ).copyWith(fontSize: 32),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: B05ActionButton(
+                        onPressed: () => setState(() {
+                          _deadlineUtc = _deadlineUtc.add(
+                            const Duration(seconds: 30),
+                          );
+                          _nowUtc = DateTime.now().toUtc();
+                        }),
+                        icon: Icons.add_rounded,
+                        label: 'Add 30 sec',
+                        emphasis: B05ActionEmphasis.secondary,
+                      ),
+                    ),
+                    const SizedBox(width: B05Layout.space12),
+                    Expanded(
+                      child: B05ActionButton(
+                        onPressed: () => Navigator.pop(context),
+                        label: 'Skip rest',
+                        emphasis: B05ActionEmphasis.tertiary,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-            const SizedBox(height: 24),
-            Row(
-              children: [
-                Expanded(
-                  child: B05ActionButton(
-                    onPressed: () => setState(() {
-                      _deadlineUtc = _deadlineUtc.add(
-                        const Duration(seconds: 30),
-                      );
-                      _nowUtc = DateTime.now().toUtc();
-                    }),
-                    icon: Icons.add_rounded,
-                    label: 'Add 30 sec',
-                    emphasis: B05ActionEmphasis.secondary,
-                  ),
-                ),
-                const SizedBox(width: B05Layout.space12),
-                Expanded(
-                  child: B05ActionButton(
-                    onPressed: () => Navigator.pop(context),
-                    label: 'Skip rest',
-                    emphasis: B05ActionEmphasis.tertiary,
-                  ),
-                ),
-              ],
-            ),
-          ],
+          ),
         ),
       ),
     );

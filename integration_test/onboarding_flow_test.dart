@@ -36,8 +36,8 @@ void main() {
   testWidgets(
     'E2E Onboarding flow: user completes multi-step profile and transitions to home',
     (tester) async {
-      SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
       final database = AppDatabase.memory();
 
       final router = GoRouter(
@@ -87,19 +87,42 @@ void main() {
 
       expect(find.byType(OnboardingScreen), findsOneWidget);
 
-      // Step 1: Basics
-      final textFields = find.byType(TextField);
-      expect(textFields, findsNWidgets(4));
-      await tester.enterText(textFields.at(0), 'Aarav');
-      await tester.enterText(textFields.at(1), '28');
-      await tester.enterText(textFields.at(2), '175');
-      await tester.enterText(textFields.at(3), '70');
-      await tester.pumpAndSettle();
-
-      // Step 2: Biological sex
+      // Step 1: Basics (Sex, Name, Age, Height, Weight)
       final maleButton = find.text('Male');
       await tester.ensureVisible(maleButton);
       await tester.tap(maleButton);
+      await tester.pumpAndSettle();
+
+      final nameField = find.byWidgetPredicate(
+        (w) => w is TextField && w.decoration?.labelText == 'Name (optional)',
+      );
+      await tester.ensureVisible(nameField);
+      await tester.tap(nameField);
+      await tester.enterText(nameField, 'Aarav');
+      await tester.pumpAndSettle();
+
+      final ageField = find.byWidgetPredicate(
+        (w) => w is TextField && w.decoration?.labelText == 'Age',
+      );
+      await tester.ensureVisible(ageField);
+      await tester.tap(ageField);
+      await tester.enterText(ageField, '28');
+      await tester.pumpAndSettle();
+
+      final heightField = find.byWidgetPredicate(
+        (w) => w is TextField && w.decoration?.labelText == 'Height',
+      );
+      await tester.ensureVisible(heightField);
+      await tester.tap(heightField);
+      await tester.enterText(heightField, '175');
+      await tester.pumpAndSettle();
+
+      final weightField = find.byWidgetPredicate(
+        (w) => w is TextField && w.decoration?.labelText == 'Current weight',
+      );
+      await tester.ensureVisible(weightField);
+      await tester.tap(weightField);
+      await tester.enterText(weightField, '70');
       await tester.pumpAndSettle();
 
       final next1 = find.text('Next Step');

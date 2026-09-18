@@ -34,7 +34,7 @@ dependencies:
   flutter_riverpod: ^2.5.1
   drift: ^2.16.0
   sqlite3_flutter_libs: ^0.5.20
-  mobile_scanner: ^5.1.0
+  # mobile_scanner: ^5.1.0 # Stubbed for Apple Silicon iOS Simulator compatibility (GoogleMLKit lacks simulator arm64 slice)
   dio: ^5.4.0
   fl_chart: ^0.67.0
   percent_indicator: ^4.2.3

@@ -50,7 +50,8 @@ class TodayNutritionHero extends StatelessWidget {
         onRetry: onRetry,
       );
     }
-    if (!presentation.hasAcceptedCalorieTarget) {
+    if (!presentation.hasAcceptedCalorieTarget &&
+        presentation.isNoConsumptionKnown) {
       return TodaySparseNutritionModule(
         presentation: presentation,
         onLogFood: onLogFood,

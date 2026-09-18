@@ -1102,6 +1102,7 @@ class _DominantTrainingLandingBody extends StatelessWidget {
           onOpenHistory: onOpenHistory,
           onOpenCalendar: onOpenCalendar,
           onOpenPlan: onOpenPlan,
+          showHistory: data.recentSessions.isEmpty,
         ),
       ],
     );
@@ -1331,12 +1332,14 @@ class _TrainingSecondaryNavigation extends StatelessWidget {
     required this.onOpenHistory,
     required this.onOpenCalendar,
     required this.onOpenPlan,
+    this.showHistory = true,
   });
 
   final VoidCallback onOpenExercises;
   final VoidCallback onOpenHistory;
   final VoidCallback onOpenCalendar;
   final VoidCallback onOpenPlan;
+  final bool showHistory;
 
   @override
   Widget build(BuildContext context) => B05Surface(
@@ -1353,12 +1356,13 @@ class _TrainingSecondaryNavigation extends StatelessWidget {
           emphasis: B05ActionEmphasis.tertiary,
           onPressed: onOpenExercises,
         ),
-        B05ActionButton(
-          label: 'History',
-          icon: Icons.history_rounded,
-          emphasis: B05ActionEmphasis.tertiary,
-          onPressed: onOpenHistory,
-        ),
+        if (showHistory)
+          B05ActionButton(
+            label: 'History',
+            icon: Icons.history_rounded,
+            emphasis: B05ActionEmphasis.tertiary,
+            onPressed: onOpenHistory,
+          ),
         B05ActionButton(
           label: 'Calendar',
           icon: Icons.calendar_month_outlined,

@@ -41,12 +41,11 @@ void main() {
   testWidgets(
     'E2E Log Meal & Workout session persistence flow',
     (tester) async {
-      SharedPreferences.setMockInitialValues({
-        'onboarding_completed': true,
-        'user_streak_count': 1,
-        'user_name': 'Aarav',
-      });
       final prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+      await prefs.setBool('onboarding_completed', true);
+      await prefs.setInt('user_streak_count', 1);
+      await prefs.setString('user_name', 'Aarav');
       final database = AppDatabase.memory();
       final foodRepo = FoodRepository(database);
       final workoutRepo = WorkoutRepository(database);

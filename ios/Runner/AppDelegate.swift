@@ -56,7 +56,7 @@ import UIKit
       binaryMessenger: engineBridge.applicationRegistrar.messenger()
     )
     liveActivityChannel.setMethodCallHandler { call, result in
-      if #available(iOS 16.1, *) {
+      if #available(iOS 16.2, *) {
         switch call.method {
         case "areActivitiesEnabled":
           result(RestTimerLiveActivityManager.shared.areActivitiesEnabled)
