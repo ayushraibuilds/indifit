@@ -27,7 +27,8 @@ class ThaliNutritionSummaryBar extends StatelessWidget {
     final protein = facts?['protein']?.point?.value.asDouble;
     final carbs = facts?['carbohydrate']?.point?.value.asDouble;
     final fat = facts?['fat']?.point?.value.asDouble;
-    final fiber = facts?['fiber']?.point?.value.asDouble;
+    final fiber =
+        (facts?['fibre'] ?? facts?['fiber'])?.point?.value.asDouble;
 
     final isPartial = preview?.isPartial ?? false;
 

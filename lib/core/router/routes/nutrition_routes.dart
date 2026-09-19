@@ -50,10 +50,18 @@ final nutritionRoutes = <RouteBase>[
   ),
   GoRoute(
     path: '/food/thali',
-    builder: (context, state) => ThaliBuilderScreen(
-      mealCategory: state.uri.queryParameters['meal'] ?? 'lunch',
-      initialThaliId: state.uri.queryParameters['thaliId'],
-    ),
+    builder: (context, state) {
+      final extraMap = state.extra is Map ? state.extra as Map : const {};
+      final extraDate = extraMap['selectedDate'] is DateTime
+          ? extraMap['selectedDate'] as DateTime
+          : null;
+      final queryDate = parseFoodRouteDate(state.uri.queryParameters['date']);
+      return ThaliBuilderScreen(
+        mealCategory: state.uri.queryParameters['meal'] ?? 'lunch',
+        initialThaliId: state.uri.queryParameters['thaliId'],
+        selectedDate: extraDate ?? queryDate,
+      );
+    },
   ),
   GoRoute(
     path: '/settings/household-measures',

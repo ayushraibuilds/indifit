@@ -1,22 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/b05_semantic_colors.dart';
+import '../../data/models/meal_category_definitions.dart';
 
-/// Stable meal-category IDs used by B03 food logs. Presentation is selected
-/// from this registry; display names are never parsed to guess a category.
-enum FoodMealCategory {
-  breakfast,
-  morningSnack,
-  lunch,
-  afternoonSnack,
-  eveningSnack,
-  dinner,
-  preWorkout,
-  postWorkout,
-  snack,
-  lateSnack,
-  unknown,
-}
+export '../../data/models/meal_category_definitions.dart';
 
 class FoodMealPresentation {
   const FoodMealPresentation({

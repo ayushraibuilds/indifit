@@ -682,7 +682,10 @@ void main() {
       );
       final quantityScroll = find.descendant(
         of: quantitySurface,
-        matching: find.byType(SingleChildScrollView),
+        matching: find.byWidgetPredicate(
+          (w) =>
+              w is SingleChildScrollView && w.scrollDirection == Axis.vertical,
+        ),
       );
       expect(quantityScroll, findsOneWidget);
       await tester.drag(quantityScroll, const Offset(0, -700));

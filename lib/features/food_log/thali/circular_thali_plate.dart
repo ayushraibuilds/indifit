@@ -293,6 +293,48 @@ class _CenterStaplePlatter extends StatelessWidget {
       );
     }
 
+    if (centerStaples.length >= 2) {
+      return Container(
+        width: centerDiameter,
+        height: centerDiameter,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: colors.surface,
+          border: Border.all(
+            color: colors.border.withValues(alpha: 0.6),
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.15),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          children: [
+            Expanded(
+              child: _buildHalfStaple(
+                context,
+                centerStaples[0],
+                isTop: true,
+              ),
+            ),
+            Container(height: 1.0, color: colors.border.withValues(alpha: 0.5)),
+            Expanded(
+              child: _buildHalfStaple(
+                context,
+                centerStaples[1],
+                isTop: false,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     // Primary staple (e.g. roti or rice)
     final stapleSlot = centerStaples.first;
     final item = stapleSlot.item;
@@ -390,19 +432,91 @@ class _CenterStaplePlatter extends StatelessWidget {
                           style: TextStyle(
                             color: colors.action,
                             fontSize: 8.5,
-                          fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
-                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHalfStaple(
+    BuildContext context,
+    ThaliItemSlot stapleSlot, {
+    required bool isTop,
+  }) {
+    final colors = context.b05Colors;
+    final item = stapleSlot.item;
+    final isSelected = selectedItemId == item.id;
+    final energy = stapleSlot.preview?.calculation.facts['energy']?.point?.value.asDouble;
+    final energyStr = energy != null ? '${energy.round()} kcal' : null;
+    final quantityStr = '${item.quantity.amount} ${item.quantity.unit.name == 'piece' ? 'pc' : item.quantity.unit.name}';
+
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label: '${item.displayLabel ?? stapleSlot.placement.categoryLabel}, ${stapleSlot.placement.categoryLabel}, $quantityStr${energyStr != null ? ", $energyStr" : ""}',
+      child: GestureDetector(
+        key: Key('thali_plate_staple_${item.id}'),
+        onTap: () => onSelectItem(isSelected ? null : item.id),
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          color: isSelected
+              ? colors.action.withValues(alpha: 0.18)
+              : Colors.transparent,
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          child: Center(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    stapleSlot.placement.icon,
+                    size: 16,
+                    color: isSelected ? colors.action : stapleSlot.placement.tint,
+                  ),
+                  const SizedBox(width: 4),
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.displayLabel ?? stapleSlot.placement.categoryLabel,
+                        style: TextStyle(
+                          color: colors.textPrimary,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        '$quantityStr${energyStr != null ? " · $energyStr" : ""}',
+                        style: TextStyle(
+                          color: colors.textSecondary,
+                          fontSize: 8.5,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
           ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 }
 
 /// Positioned wrapper for a perimeter katori slot.

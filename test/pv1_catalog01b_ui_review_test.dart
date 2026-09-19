@@ -259,12 +259,12 @@ void main() {
       expect(find.byIcon(Icons.check_circle_outline), findsOneWidget);
 
       // Verify log button label
-      expect(find.text('Log BREAKFAST'), findsOneWidget);
+      expect(find.text('Log Breakfast'), findsOneWidget);
 
       // Tap Log (scroll into view: sheet now scrolls with correction fields).
-      await tester.ensureVisible(find.text('Log BREAKFAST'));
+      await tester.ensureVisible(find.text('Log Breakfast'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Log BREAKFAST'));
+      await tester.tap(find.text('Log Breakfast'));
       await tester.pump();
 
       expect(loggedImmediately, isTrue);

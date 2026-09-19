@@ -1720,6 +1720,9 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         unawaited(_openCandidateReview(result));
       } else if (result is FoodApiResult) {
         unawaited(_openProviderLogDialog(result));
+      } else if (result is NutritionFoodOption) {
+        // Rescan hit on a user-created food carrying this barcode.
+        unawaited(_showLogDialog(result));
       } else if (result == true) {
         await _retryRecentFoods();
         if (mounted) {

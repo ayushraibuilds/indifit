@@ -20,7 +20,15 @@ enum FoodVerificationLevel {
   unverified,
   communityReported,
   expertVerified,
-  governmentStandard,
+  governmentStandard;
+
+  /// Consumer-facing label. Never leak raw enum identifiers into UI copy.
+  String get displayLabel => switch (this) {
+    FoodVerificationLevel.unverified => 'Unverified',
+    FoodVerificationLevel.communityReported => 'Community reported',
+    FoodVerificationLevel.expertVerified => 'Expert verified',
+    FoodVerificationLevel.governmentStandard => 'Government standard',
+  };
 }
 
 /// A standard portion or culinary serving option with equivalent gram weight.

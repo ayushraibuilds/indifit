@@ -1,9 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/capabilities/capabilities_registry.dart';
+import '../../core/di/providers.dart';
 import '../../core/stubs/mobile_scanner_stub.dart';
 import '../../core/theme/b05_semantic_colors.dart';
+import '../../core/utils/app_logger.dart';
 import '../../data/repositories/food_api_service.dart';
 import 'custom_food_editor_screen.dart';
 
@@ -79,6 +83,33 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
     try {
       candidate = await catalogCapability.getCachedCandidate(cleanCode);
     } catch (_) {}
+
+    // 1b. Check user-created foods carrying this barcode (offline, exact).
+    // Runs before the network lookup so a rescan resolves even offline.
+    // Skipped on cache hits; time-bounded so catalog init can never stall
+    // the scan flow.
+    if (candidate == null) {
+      try {
+        final catalog = await ref
+            .read(nutritionFoodCatalogRepositoryProvider.future)
+            .timeout(const Duration(seconds: 4));
+        final userMatch = await catalog
+            .findUserFoodByBarcode(cleanCode)
+            .timeout(const Duration(seconds: 4));
+        if (userMatch != null && mounted) {
+          setState(() => _loading = false);
+          Navigator.pop(context, userMatch);
+          return;
+        }
+      } catch (_) {
+        // Fail open into the remote lookup: a user-food miss (or an
+        // unavailable catalog) must never block the OFF / cached paths.
+        AppLogger.info(
+          'User-food barcode lookup unavailable; falling through to remote.',
+          'BarcodeScanner',
+        );
+      }
+    }
 
     // 2. Query remote catalog via capability if not in cache
     if (candidate == null) {

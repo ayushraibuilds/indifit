@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../../../core/di/providers.dart';
 import '../../../core/nutrition_thali.dart';
@@ -30,11 +31,13 @@ enum ThaliViewMode {
 class ThaliBuilderScreen extends ConsumerStatefulWidget {
   final String mealCategory;
   final String? initialThaliId;
+  final DateTime? selectedDate;
 
   const ThaliBuilderScreen({
     super.key,
     this.mealCategory = 'lunch',
     this.initialThaliId,
+    this.selectedDate,
   });
 
   @override
@@ -69,15 +72,21 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
     final controller = ref.read(
       nutritionThaliControllerProvider(widget.mealCategory).notifier,
     );
-    final now = DateTime.now().toUtc();
     final timezoneId = await ref
         .read(localTimezoneServiceProvider)
         .currentTimezoneId();
     final dates = ref.read(localScheduleDateServiceProvider);
-    final localDate = dates.localDateFor(now, timezoneId);
+    final selectedLocalDate = widget.selectedDate == null
+        ? null
+        : DateFormat('yyyy-MM-dd').format(widget.selectedDate!);
+    final loggedAt = selectedLocalDate == null
+        ? DateTime.now().toUtc()
+        : dates.instantForLocalDate(selectedLocalDate, timezoneId);
+    final localDate =
+        selectedLocalDate ?? dates.localDateFor(loggedAt, timezoneId);
 
     final snapshot = await controller.logThali(
-      loggedAt: now,
+      loggedAt: loggedAt,
       localDate: localDate,
       timezoneId: timezoneId,
       saveAsTemplate: saveAsTemplate,

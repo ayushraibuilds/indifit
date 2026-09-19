@@ -2,8 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/capabilities/capabilities_registry.dart';
+import 'package:indifit/core/nutrients.dart';
+import 'package:indifit/data/database/app_database.dart';
+import 'package:indifit/data/repositories/nutrition_food_catalog_repository.dart';
 import 'package:indifit/features/food_log/barcode_scanner_screen.dart';
 import 'package:indifit/features/food_log/widgets/remote_food_review_sheet.dart';
+import 'package:indifit/features/nutrition/nutrition_providers.dart';
 
 class _MockCatalogCapability implements FoodCatalogCapability {
   _MockCatalogCapability({
@@ -84,6 +88,10 @@ void main() {
         ProviderScope(
           overrides: [
             foodCatalogCapabilityProvider.overrideWithValue(mockCapability),
+            // Fail fast: these paths never reach the user-food lookup.
+            nutritionFoodCatalogRepositoryProvider.overrideWith(
+              (ref) => throw StateError('catalog unavailable in test'),
+            ),
           ],
           child: MaterialApp(
             home: Builder(
@@ -135,6 +143,10 @@ void main() {
         ProviderScope(
           overrides: [
             foodCatalogCapabilityProvider.overrideWithValue(mockCapability),
+            // Fail fast: these paths never reach the user-food lookup.
+            nutritionFoodCatalogRepositoryProvider.overrideWith(
+              (ref) => throw StateError('catalog unavailable in test'),
+            ),
           ],
           child: MaterialApp(
             home: Builder(
@@ -180,6 +192,10 @@ void main() {
         ProviderScope(
           overrides: [
             foodCatalogCapabilityProvider.overrideWithValue(mockCapability),
+            // Fail fast: these paths never reach the user-food lookup.
+            nutritionFoodCatalogRepositoryProvider.overrideWith(
+              (ref) => throw StateError('catalog unavailable in test'),
+            ),
           ],
           child: const MaterialApp(
             home: BarcodeScannerScreen(),
@@ -210,6 +226,10 @@ void main() {
         ProviderScope(
           overrides: [
             foodCatalogCapabilityProvider.overrideWithValue(mockCapability),
+            // Fail fast: these paths never reach the user-food lookup.
+            nutritionFoodCatalogRepositoryProvider.overrideWith(
+              (ref) => throw StateError('catalog unavailable in test'),
+            ),
           ],
           child: const MaterialApp(
             home: BarcodeScannerScreen(),
@@ -264,7 +284,97 @@ void main() {
       expect(find.text('Balanced macros (4-4-9 verified)'), findsOneWidget);
       expect(find.text('glass (200ml)'), findsOneWidget);
       expect(find.text('Save to My Foods'), findsOneWidget);
-      expect(find.text('Log LUNCH'), findsOneWidget);
+      expect(find.text('Log Lunch'), findsOneWidget);
+    });
+
+    testWidgets('Rescan of a barcode-tagged custom food pops the saved option', (
+      tester,
+    ) async {
+      final mockCapability = _MockCatalogCapability(
+        cachedCandidate: null,
+        remoteCandidate: null,
+      );
+
+      Object? returnedResult;
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            foodCatalogCapabilityProvider.overrideWithValue(mockCapability),
+            nutritionFoodCatalogRepositoryProvider.overrideWith((ref) async {
+              final db = AppDatabase.memory();
+              ref.onDispose(db.close);
+              final repo = NutritionFoodCatalogRepository(
+                db: db,
+                registry: NutrientRegistry.fromAssetFileSync(
+                  'assets/data/nutrient_registry.json',
+                ),
+              );
+              await repo.createUserFood(
+                displayName: 'Rescan Protein Bar',
+                servingSize: 1,
+                servingUnit: 'bar',
+                energyKcal: 250,
+                proteinG: 20,
+                carbohydrateG: 22,
+                fatG: 8,
+                barcode: '8901030383704',
+              );
+              return repo;
+            }),
+          ],
+          child: MaterialApp(
+            home: Builder(
+              builder: (context) => ElevatedButton(
+                onPressed: () async {
+                  returnedResult = await Navigator.push<Object?>(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const BarcodeScannerScreen(),
+                    ),
+                  );
+                },
+                child: const Text('Open Scanner'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open Scanner'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // Warm the overridden catalog on the real async zone so the
+      // barcode fixture is committed before the scan reads it.
+      await tester.runAsync(() async {
+        final container = ProviderScope.containerOf(
+          tester.element(find.text('Scan Food Barcode')),
+        );
+        final repo = await container.read(
+          nutritionFoodCatalogRepositoryProvider.future,
+        );
+        final seeded = await repo.findUserFoodByBarcode('8901030383704');
+        expect(seeded?.displayName, 'Rescan Protein Bar');
+      });
+
+      // The user-food lookup touches real sqlite: run it on the real
+      // async zone so FakeAsync never gates catalog init, and settle
+      // there so the pop delivering the option completes first.
+      await tester.runAsync(() async {
+        await tester.enterText(find.byType(TextField), '8901030383704');
+        await tester.tap(find.text('Lookup'));
+        await tester.pumpAndSettle();
+      });
+
+      // Remote was never consulted: the user-food lookup resolved first.
+      expect(mockCapability.remoteLookupCalls, 0);
+      await tester.pump();
+      expect(returnedResult, isA<NutritionFoodOption>());
+      expect(
+        (returnedResult as NutritionFoodOption).displayName,
+        'Rescan Protein Bar',
+      );
     });
   });
 }

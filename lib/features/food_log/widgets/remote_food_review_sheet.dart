@@ -4,6 +4,14 @@ import '../../../core/catalog/food_catalog_models.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
 
+/// Title-cases a meal-type id for button copy (e.g. `lunch` → `Lunch`).
+/// Falls back to `Meal` for blank input instead of rendering an empty label.
+String _titleCaseMeal(String value) {
+  final trimmed = value.trim();
+  if (trimmed.isEmpty) return 'Meal';
+  return '${trimmed[0].toUpperCase()}${trimmed.substring(1).toLowerCase()}';
+}
+
 /// Modal bottom sheet for reviewing, portioning, and verifying remote food candidates
 /// before saving them to local SQLite and logging.
 class RemoteFoodReviewSheet extends StatefulWidget {
@@ -230,7 +238,7 @@ class _RemoteFoodReviewSheetState extends State<RemoteFoodReviewSheet> {
                 Flexible(
                   child: Semantics(
                     label:
-                        'Source ${candidate.provenance.attributionText}. Verification ${candidate.verificationLevel.name}.',
+                        'Source ${candidate.provenance.attributionText}. Verification ${candidate.verificationLevel.displayLabel}.',
                     child: Text(
                       candidate.provenance.attributionText,
                       style: B05Typography.caption(context).copyWith(fontSize: 11),
@@ -256,7 +264,7 @@ class _RemoteFoodReviewSheetState extends State<RemoteFoodReviewSheet> {
           Padding(
             padding: const EdgeInsets.only(top: 4),
             child: Text(
-              'Verification: ${candidate.verificationLevel.name} • Fetched $fetchedLabel${_macrosEdited ? ' • Edited by you' : ''}',
+              'Verification: ${candidate.verificationLevel.displayLabel} • Fetched $fetchedLabel${_macrosEdited ? ' • Edited by you' : ''}',
               style: B05Typography.caption(context).copyWith(fontSize: 11),
             ),
           ),
@@ -527,7 +535,7 @@ class _RemoteFoodReviewSheetState extends State<RemoteFoodReviewSheet> {
                           width: 18,
                           child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                         )
-                      : Text('Log ${widget.mealType.toUpperCase()}'),
+                      : Text('Log ${_titleCaseMeal(widget.mealType)}'),
                 ),
               ),
             ],

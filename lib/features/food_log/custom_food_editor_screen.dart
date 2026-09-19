@@ -57,6 +57,7 @@ class _CustomFoodEditorScreenState
         carbohydrateG: _optionalDouble(_carbsController),
         fatG: _optionalDouble(_fatController),
         fibreG: _optionalDouble(_fibreController),
+        barcode: widget.initialBarcode,
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -107,6 +108,36 @@ class _CustomFoodEditorScreenState
                     'Save a food you make or buy often.',
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
+                  if (widget.initialBarcode != null &&
+                      widget.initialBarcode!.trim().isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: Theme.of(context).colorScheme.outlineVariant,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.qr_code_scanner, size: 16),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Barcode: ${widget.initialBarcode}',
+                            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 24),
                   _sectionTitle(context, 'Basic information'),
                   const SizedBox(height: 8),

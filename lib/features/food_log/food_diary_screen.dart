@@ -292,7 +292,10 @@ class _FoodDiaryScreenState extends ConsumerState<FoodDiaryScreen> {
     if (meal == null || !context.mounted) return;
     await Navigator.of(context).push<dynamic>(
       MaterialPageRoute(
-        builder: (_) => ThaliBuilderScreen(mealCategory: meal),
+        builder: (_) => ThaliBuilderScreen(
+          mealCategory: meal,
+          selectedDate: _selectedDay,
+        ),
       ),
     );
     if (mounted) _refreshDiaryReads();

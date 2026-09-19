@@ -143,8 +143,8 @@ class FoodPortionBottomSheet extends ConsumerStatefulWidget {
       showIndiFitSuccessFeedback(
         context,
         isCorrection
-            ? '✓ Food entry updated in ${_formatMealLabel(committedMealType)}'
-            : '✓ Food added to ${_formatMealLabel(committedMealType)}',
+            ? '✓ Food entry updated in ${_formatMealLabel(finalMealType)}'
+            : '✓ Food added to ${_formatMealLabel(finalMealType)}',
       );
       if (returnToParentOnSave) {
         if (context.mounted) Navigator.of(context).pop(true);
