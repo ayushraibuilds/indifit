@@ -483,11 +483,16 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
     // Store user parameters. Target weight is derived only when the user did
     // not provide one in the legacy draft; it is not a required setup step.
-    _targetWeight = switch (_goal) {
-      'lose' => (_weight * 0.9).roundToDouble(),
-      'gain' => (_weight * 1.05).roundToDouble(),
-      _ => _weight,
-    };
+    final explicitTarget = double.tryParse(_targetWeightController.text.trim());
+    if (explicitTarget != null && explicitTarget > 0) {
+      _targetWeight = explicitTarget;
+    } else {
+      _targetWeight = switch (_goal) {
+        'lose' => (_weight * 0.9).roundToDouble(),
+        'gain' => (_weight * 1.05).roundToDouble(),
+        _ => _weight,
+      };
+    }
 
     // Store user parameters
     if (_nameController.text.trim().isNotEmpty) {

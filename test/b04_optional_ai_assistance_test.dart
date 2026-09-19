@@ -280,6 +280,7 @@ void main() {
         privacyPolicy: const PrivacyPolicy(
           isOfflineOnly: false,
           isTelemetryEnabled: false,
+          connectedAiEnabled: false,
         ),
       );
       final disabledResult = await disabled.assist(

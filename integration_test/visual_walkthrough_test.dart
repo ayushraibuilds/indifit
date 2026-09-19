@@ -230,11 +230,18 @@ void main() {
         await tester.tap(addFoodBtn.first);
         await tester.pumpAndSettle();
 
-        // Tap "Lunch" to open FoodSearchScreen
-        final lunchOption = find.text('Lunch');
-        if (lunchOption.evaluate().isNotEmpty) {
-          await tester.tap(lunchOption.first);
-          await tester.pumpAndSettle();
+          // Tap "Lunch" to open FoodSearchScreen (target the meal tile,
+          // not the bare text, so the tap lands on a hittable widget)
+          final lunchTiles = find.ancestor(
+            of: find.text('Lunch'),
+            matching: find.byType(ListTile),
+          );
+          final lunchOption = lunchTiles.evaluate().isNotEmpty
+              ? lunchTiles
+              : find.text('Lunch');
+          if (lunchOption.evaluate().isNotEmpty) {
+            await tester.tap(lunchOption.first, warnIfMissed: false);
+            await tester.pumpAndSettle();
           await binding.takeScreenshot('06_tab2_food_search');
 
           // Search for Indian food item to show live results & portion sheet

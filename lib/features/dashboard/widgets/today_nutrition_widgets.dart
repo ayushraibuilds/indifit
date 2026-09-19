@@ -501,41 +501,47 @@ class CalorieRing extends StatelessWidget {
                   ),
                   Padding(
                     padding: EdgeInsets.all(inset),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        FittedBox(
-                          child: Text(
-                            metric.value,
-                            style: B05Typography.metric(
-                              context,
-                            ).copyWith(fontSize: 31, letterSpacing: -1),
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text(
-                            targetText,
-                            maxLines: 1,
-                            textAlign: TextAlign.center,
-                            style: B05Typography.caption(context),
-                          ),
-                        ),
-                        const SizedBox(height: B05Layout.space4),
-                        FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text(
-                            status,
-                            maxLines: 1,
-                            textAlign: TextAlign.center,
-                            style: B05Typography.caption(context).copyWith(
-                              color: statusColor,
-                              fontWeight: FontWeight.w700,
+                    // Bound the center column to the ring's inner width so the
+                    // FittedBox labels below can scale down instead of
+                    // overflowing the donut on narrow text (e.g. long status).
+                    child: SizedBox(
+                      width: diameter - inset * 2 - 16,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          FittedBox(
+                            child: Text(
+                              metric.value,
+                              style: B05Typography.metric(
+                                context,
+                              ).copyWith(fontSize: 31, letterSpacing: -1),
                             ),
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 2),
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              targetText,
+                              maxLines: 1,
+                              textAlign: TextAlign.center,
+                              style: B05Typography.caption(context),
+                            ),
+                          ),
+                          const SizedBox(height: B05Layout.space4),
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              status,
+                              maxLines: 1,
+                              textAlign: TextAlign.center,
+                              style: B05Typography.caption(context).copyWith(
+                                color: statusColor,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -704,9 +710,6 @@ class MacroRow extends StatelessWidget {
             if (metric.hasTarget && metric.progress != null) ...[
               const SizedBox(height: B05Layout.space4),
               MacroProgress(metric: metric, color: role.indicator),
-            ] else if (!metric.isAvailable) ...[
-              const SizedBox(height: B05Layout.space4),
-              Text('Not available', style: B05Typography.caption(context)),
             ],
           ],
         ),

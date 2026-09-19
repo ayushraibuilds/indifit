@@ -282,6 +282,61 @@ class HydrationRepository {
     await _syncLegacyMirror(prefs, localDate, totalMl, goalMl);
   }
 
+  /// Removes the most recent intake entry for [localDate] (optionally matching [containerType] or [amountMl]).
+  /// If no itemized entries exist, decrements the durable SQLite row totalMl (clamped to 0).
+  Future<void> deleteLatestIntakeEntry(
+    String localDate, {
+    String? containerType,
+    int? amountMl,
+  }) async {
+    final prefs = await _getPrefs();
+    final entriesMap = _loadEntriesMap(prefs);
+    final dayList = entriesMap[localDate];
+
+    if (dayList != null && dayList.isNotEmpty) {
+      int targetIndex = -1;
+      for (int i = dayList.length - 1; i >= 0; i--) {
+        final item = dayList[i];
+        if (containerType != null && item['containerType'] != containerType) {
+          continue;
+        }
+        if (amountMl != null && item['amountMl'] != amountMl) {
+          continue;
+        }
+        targetIndex = i;
+        break;
+      }
+
+      if (targetIndex == -1) {
+        targetIndex = dayList.length - 1;
+      }
+
+      final entryId = dayList[targetIndex]['id'] as String;
+      await deleteIntake(localDate: localDate, entryId: entryId);
+      return;
+    }
+
+    if (_db != null) {
+      final record = await (_db.select(_db.dailyHydrations)
+            ..where((tbl) => tbl.dateString.equals(localDate)))
+          .getSingleOrNull();
+      if (record != null && record.totalMl > 0) {
+        final decrement = amountMl ?? defaultGlassSizeMl;
+        final newTotal = (record.totalMl - decrement).clamp(0, 1000000);
+        await _db.into(_db.dailyHydrations).insert(
+          DailyHydrationsCompanion.insert(
+            dateString: localDate,
+            totalMl: newTotal,
+            goalMl: record.goalMl,
+            updatedAt: Value(_dateService.nowUtc()),
+          ),
+          mode: InsertMode.insertOrReplace,
+        );
+        await _syncLegacyMirror(prefs, localDate, newTotal, record.goalMl);
+      }
+    }
+  }
+
   /// Edits an intake entry's amount.
   Future<void> editIntake({
     required String localDate,

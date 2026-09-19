@@ -238,9 +238,7 @@ class TodayDailyActionSurface extends ConsumerWidget {
                                 ? const TodayDomainRead<HydrationDailyReadModel>.unavailable(
                                     'Hydration unavailable',
                                   )
-                                : const TodayDomainRead<HydrationDailyReadModel>.unavailable(
-                                    'Hydration loading',
-                                  )),
+                                : const TodayDomainRead<HydrationDailyReadModel>.loading()),
                         nextUp: nextUp,
                         workout: workout,
                         activity: activity,

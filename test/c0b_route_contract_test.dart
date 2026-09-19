@@ -95,6 +95,7 @@ void main() {
       '/meal-planner': '/food',
       '/weekly-report': '/progress',
       '/travel-mode': '/training',
+      '/workout-player': '/training',
     };
     expect(compatibilityRouteRedirects, expectedRedirects);
 

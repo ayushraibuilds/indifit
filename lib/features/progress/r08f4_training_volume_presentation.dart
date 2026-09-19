@@ -4,6 +4,9 @@ import '../../core/services/local_schedule_date_service.dart';
 import '../../data/models/progress_dashboard_models.dart';
 import '../settings/unit_preference.dart';
 
+export '../../data/models/progress_dashboard_models.dart'
+    show R08F4ConsistencySummary;
+
 /// Presentation-only facts and formatting for R08F.4 Training Consistency
 /// and Volume.
 ///
@@ -13,30 +16,7 @@ abstract final class R08F4TrainingVolumePresentation {
   /// Analyzes a collection of workout records for session and day semantics.
   static R08F4ConsistencySummary summarizeConsistency(
     Iterable<ProgressWorkoutRecord> workouts,
-  ) {
-    final list = workouts.toList(growable: false);
-    final sessionCount = list.length;
-    final trainingDays = <String>{for (final w in list) w.localDate};
-    final workingSetsCount = list.fold<int>(
-      0,
-      (sum, w) => sum + w.workingSetsCount,
-    );
-    final partialSessionCount = list.where((w) => w.isPartial).length;
-    final activityTypeCounts = <String, int>{};
-    for (final w in list) {
-      activityTypeCounts[w.activityType] =
-          (activityTypeCounts[w.activityType] ?? 0) + 1;
-    }
-
-    return R08F4ConsistencySummary(
-      sessionCount: sessionCount,
-      trainingDayCount: trainingDays.length,
-      trainingDays: Set.unmodifiable(trainingDays),
-      workingSetsCount: workingSetsCount,
-      partialSessionCount: partialSessionCount,
-      activityTypeCounts: Map.unmodifiable(activityTypeCounts),
-    );
-  }
+  ) => R08F4ConsistencySummary.summarize(workouts);
 
   /// Summarizes strength volume across trustworthy recorded workouts.
   static R08F4VolumeSummary summarizeVolume({
@@ -228,27 +208,6 @@ abstract final class R08F4TrainingVolumePresentation {
     final direction = differenceKg > 0 ? 'more' : 'less';
     return '${formatVolume(difference)} ${summary.unitSymbol} $direction than the previous 4 weeks';
   }
-}
-
-class R08F4ConsistencySummary {
-  const R08F4ConsistencySummary({
-    required this.sessionCount,
-    required this.trainingDayCount,
-    required this.trainingDays,
-    required this.workingSetsCount,
-    required this.partialSessionCount,
-    required this.activityTypeCounts,
-  });
-
-  final int sessionCount;
-  final int trainingDayCount;
-  final Set<String> trainingDays;
-  final int workingSetsCount;
-  final int partialSessionCount;
-  final Map<String, int> activityTypeCounts;
-
-  bool get hasMultipleSessionsOnSameDay => sessionCount > trainingDayCount;
-  bool get hasAnyWorkouts => sessionCount > 0;
 }
 
 class R08F4VolumeSummary {

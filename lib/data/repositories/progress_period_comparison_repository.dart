@@ -4,7 +4,6 @@ import 'package:timezone/timezone.dart' as tz;
 import '../../core/nutrients.dart';
 import '../../core/nutrition_household_measures.dart';
 import '../../core/services/local_schedule_date_service.dart';
-import '../../features/progress/r08f4_training_volume_presentation.dart';
 import '../database/app_database.dart';
 import '../models/b02_execution_models.dart';
 import '../models/progress_dashboard_models.dart';
@@ -404,7 +403,7 @@ class ProgressPeriodComparisonRepository {
     PeriodDateWindow window,
     List<ProgressWorkoutRecord> workouts,
   ) {
-    final consistency = R08F4TrainingVolumePresentation.summarizeConsistency(workouts);
+    final consistency = R08F4ConsistencySummary.summarize(workouts);
     final trustworthyVolumeWorkouts = workouts.where(
       (w) => w.isCanonicalStrength && w.volumeIsTrustworthy && w.totalVolumeKg > 0,
     );

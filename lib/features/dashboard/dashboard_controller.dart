@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -141,12 +143,23 @@ class DashboardController extends StateNotifier<DashboardState> {
 
   /// Keeps the default Today selection aligned with a civil-date transition
   /// while preserving an explicitly browsed past/future date.
-  void refreshForCivilDate(DateTime today) {
+  ///
+  /// When the date actually rolls over, the legacy cached fields
+  /// ([DashboardState.todayWorkoutSession], adherence, streaks) are reloaded
+  /// via [loadStateData] so they never show yesterday's data. The
+  /// same-day early return above keeps repeated revision ticks from
+  /// triggering reload storms.
+  Future<void> refreshForCivilDate(DateTime today) async {
     if (!_followsAutomaticDate) return;
     final normalized = _day(today);
+    if (_sameDay(normalized, _automaticDate) &&
+        _sameDay(state.selectedDate, _automaticDate)) {
+      return;
+    }
     if (_sameDay(state.selectedDate, _automaticDate)) {
       _automaticDate = normalized;
       state = state.copyWith(selectedDate: normalized);
+      await loadStateData();
     }
   }
 
@@ -241,6 +254,10 @@ class DashboardController extends StateNotifier<DashboardState> {
       activeDays,
       streakFreezeCount: freezes,
     );
+    // Persist the computed streak so achievement surfaces (Achievements
+    // screen, B02 player) reading userStreakCount agree with the dashboard
+    // instead of showing a stale or default value.
+    await prefs.setInt(AppPreferenceKeys.userStreakCount, streak);
     state = state.copyWith(streakCount: streak, streakFreezesCount: freezes);
   }
 
@@ -552,16 +569,15 @@ final dashboardControllerProvider =
       SharedPreferences? prefs;
       try {
         prefs = ref.watch(sharedPreferencesProvider);
-      } on Object catch (error, stackTrace) {
-        AppLogger.error(
+      } on Object catch (_) {
+        AppLogger.info(
           'Unable to read sharedPreferencesProvider in dashboardControllerProvider; falling back to null prefs',
-          error,
-          stackTrace,
+          'DashboardController',
         );
       }
       final controller = DashboardController(ref, prefs: prefs);
       ref.listen<int>(civilDateRevisionProvider, (_, _) {
-        controller.refreshForCivilDate(DateTime.now());
+        unawaited(controller.refreshForCivilDate(DateTime.now()));
       });
       return controller;
     });

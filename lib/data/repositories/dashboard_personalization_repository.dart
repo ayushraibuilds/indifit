@@ -2,8 +2,8 @@ import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/fixtures/b05_foundation_registry.dart';
-import '../../features/dashboard/dashboard_module_registry.dart';
 import '../database/app_database.dart';
+import '../models/dashboard_module_registry.dart';
 
 /// Drift owner for B05 dashboard layout preferences. It stores only values
 /// permitted by the v19/B10 contract and always normalizes through the single

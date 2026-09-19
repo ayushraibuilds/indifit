@@ -24,12 +24,15 @@ class TodayDomainRead<T> {
   final T? value;
   final String? errorMessage;
   final bool _available;
+  final bool _loading;
 
   const TodayDomainRead._({
     this.value,
     this.errorMessage,
     required bool available,
-  }) : _available = available;
+    bool loading = false,
+  }) : _available = available,
+       _loading = loading;
 
   const TodayDomainRead.available(T value)
     : this._(value: value, available: true);
@@ -37,7 +40,11 @@ class TodayDomainRead<T> {
   const TodayDomainRead.unavailable(String errorMessage)
     : this._(errorMessage: errorMessage, available: false);
 
+  const TodayDomainRead.loading()
+    : this._(available: false, loading: true);
+
   bool get isAvailable => _available;
+  bool get isLoading => _loading;
 }
 
 /// Date-scoped, read-only inputs for the B05 daily action surface.

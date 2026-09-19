@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/di/providers.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
+import '../../../core/widgets/skeleton_loader.dart';
 import '../../../data/models/hydration_models.dart';
 import '../../../data/repositories/hydration_repository.dart';
 import '../today_surface_controller.dart';
@@ -32,28 +33,44 @@ class TodayHydrationCard extends ConsumerWidget {
     int amountMl,
     String containerType,
   ) async {
-    final localDate = HydrationRepository.formatLocalDate(selectedDate);
-    final repo = ref.read(hydrationRepositoryProvider);
-    await repo.logIntake(
-      localDate: localDate,
-      amountMl: amountMl,
-      source: 'quickAdd',
-      containerType: containerType,
-    );
-    ref.read(todayHydrationRevisionProvider.notifier).state++;
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Added $amountMl ml water'),
-          duration: const Duration(seconds: 2),
-        ),
+    try {
+      final localDate = HydrationRepository.formatLocalDate(selectedDate);
+      final repo = ref.read(hydrationRepositoryProvider);
+      await repo.logIntake(
+        localDate: localDate,
+        amountMl: amountMl,
+        source: 'quickAdd',
+        containerType: containerType,
       );
+      ref.read(todayHydrationRevisionProvider.notifier).state++;
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Added $amountMl ml water'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not log hydration right now.'),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
     }
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    if (hydrationRead.isLoading) {
+      return const SkeletonCard(height: 120.0);
+    }
+
     if (!hydrationRead.isAvailable) {
       return TodayUnavailableModule(
         title: 'Hydration unavailable',

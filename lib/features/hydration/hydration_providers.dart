@@ -128,24 +128,8 @@ class WaterNotifier extends StateNotifier<WaterState> {
   }
 
   Future<void> logWater(int amount) async {
-    final prefs = await _getPrefs();
+    if (amount == 0) return;
     final todayStr = HydrationRepository.currentLocalDateKey();
-    int currentLogged = state.waterLogged;
-
-    if (state.lastLoggedDate != todayStr) {
-      currentLogged = 0;
-      await prefs.setString(
-        HydrationRepository.prefWaterLastLoggedDate,
-        todayStr,
-      );
-    }
-
-    final newLogged = (currentLogged + amount).clamp(0, 100);
-    await prefs.setInt(HydrationRepository.prefWaterLogged, newLogged);
-    await prefs.setString(
-      HydrationRepository.prefWaterLastLoggedDate,
-      todayStr,
-    );
 
     if (amount > 0) {
       final amountMl = amount * state.glassSize;
@@ -155,9 +139,18 @@ class WaterNotifier extends StateNotifier<WaterState> {
         source: 'quickAdd',
         containerType: 'glass',
       );
+    } else {
+      final glassesToRemove = -amount;
+      for (int i = 0; i < glassesToRemove; i++) {
+        await _repo.deleteLatestIntakeEntry(
+          todayStr,
+          containerType: 'glass',
+          amountMl: state.glassSize,
+        );
+      }
     }
 
-    state = state.copyWith(waterLogged: newLogged, lastLoggedDate: todayStr);
+    await loadState();
   }
 
   Future<void> updateGoal(int newGoal) async {

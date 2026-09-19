@@ -71,22 +71,34 @@ class _HydrationDetailSheetState extends ConsumerState<HydrationDetailSheet> {
       HydrationRepository.formatLocalDate(widget.selectedDate);
 
   Future<void> _quickAdd(int amountMl, String containerType) async {
-    final repo = ref.read(hydrationRepositoryProvider);
-    await repo.logIntake(
-      localDate: _localDate,
-      amountMl: amountMl,
-      source: 'quickAdd',
-      containerType: containerType,
-    );
-    ref.read(todayHydrationRevisionProvider.notifier).state++;
-    if (mounted) {
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Added $amountMl ml water'),
-          duration: const Duration(seconds: 2),
-        ),
+    try {
+      final repo = ref.read(hydrationRepositoryProvider);
+      await repo.logIntake(
+        localDate: _localDate,
+        amountMl: amountMl,
+        source: 'quickAdd',
+        containerType: containerType,
       );
+      ref.read(todayHydrationRevisionProvider.notifier).state++;
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Added $amountMl ml water'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not log hydration. Please try again.'),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
     }
   }
 
@@ -95,49 +107,85 @@ class _HydrationDetailSheetState extends ConsumerState<HydrationDetailSheet> {
     final amount = int.tryParse(text);
     if (amount == null || amount <= 0) return;
 
-    final repo = ref.read(hydrationRepositoryProvider);
-    await repo.logIntake(
-      localDate: _localDate,
-      amountMl: amount,
-      source: 'manual',
-      containerType: _selectedContainer,
-    );
-    ref.read(todayHydrationRevisionProvider.notifier).state++;
-    _amountController.text = '250';
-    if (mounted) {
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Added $amount ml water'),
-          duration: const Duration(seconds: 2),
-        ),
+    try {
+      final repo = ref.read(hydrationRepositoryProvider);
+      await repo.logIntake(
+        localDate: _localDate,
+        amountMl: amount,
+        source: 'manual',
+        containerType: _selectedContainer,
       );
+      ref.read(todayHydrationRevisionProvider.notifier).state++;
+      _amountController.text = '250';
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Added $amount ml water'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not log hydration. Please try again.'),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
     }
   }
 
   Future<void> _deleteEntry(HydrationIntakeEntry entry) async {
-    final repo = ref.read(hydrationRepositoryProvider);
-    await repo.deleteIntake(
-      localDate: _localDate,
-      entryId: entry.id,
-    );
-    ref.read(todayHydrationRevisionProvider.notifier).state++;
-    if (mounted) {
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Removed ${entry.amountMl} ml entry'),
-          duration: const Duration(seconds: 2),
-        ),
+    try {
+      final repo = ref.read(hydrationRepositoryProvider);
+      await repo.deleteIntake(
+        localDate: _localDate,
+        entryId: entry.id,
       );
+      ref.read(todayHydrationRevisionProvider.notifier).state++;
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Removed ${entry.amountMl} ml entry'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not remove entry. Please try again.'),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
     }
   }
 
   Future<void> _adjustGoal(int currentGoal, int delta) async {
-    final newGoal = (currentGoal + delta).clamp(500, 10000);
-    await ref
-        .read(settingsControllerProvider.notifier)
-        .setHydrationDailyGoalMl(newGoal);
+    try {
+      final newGoal = (currentGoal + delta).clamp(500, 10000);
+      await ref
+          .read(settingsControllerProvider.notifier)
+          .setHydrationDailyGoalMl(newGoal);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not update hydration goal.'),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    }
   }
 
   @override

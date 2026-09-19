@@ -12,3 +12,4 @@ export '../../features/workout_player/workout_player_providers.dart';
 export '../services/data_erasure_service.dart';
 export 'core_providers.dart';
 export 'user_profile_provider.dart';
+export 'user_provider_invalidator.dart';

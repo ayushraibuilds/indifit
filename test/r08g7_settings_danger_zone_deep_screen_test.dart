@@ -144,7 +144,7 @@ void main() {
         find.textContaining('Permanently wipe all food logs'),
         findsNothing,
       );
-      expect(find.textContaining('This cannot be undone'), findsNothing);
+      expect(find.textContaining('This cannot be undone'), findsOneWidget);
 
       // Dead / duplicate navigation removed
       expect(

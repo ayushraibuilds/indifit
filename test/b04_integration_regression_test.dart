@@ -95,13 +95,23 @@ void main() {
       isNot(contains('TdeeCalculator')),
     );
 
-    final providers = File('lib/core/di/providers.dart').readAsStringSync();
-    expect(providers, contains('nutritionReadModelRepositoryProvider'));
-    expect(providers, contains('nutritionGoalRepositoryProvider'));
-    expect(providers, contains('coachingPreferenceRepositoryProvider'));
-    expect(providers, contains('b04RecommendationHistoryRepositoryProvider'));
-    expect(providers, contains('b04DailyBriefingReadRepositoryProvider'));
-    expect(providers, contains('b04WeeklyReviewReadRepositoryProvider'));
+    final diBarrel = File('lib/core/di/providers.dart').readAsStringSync();
+    expect(diBarrel, contains('nutrition_providers.dart'));
+    expect(diBarrel, contains('coaching_providers.dart'));
+
+    final nutritionProviders = File(
+      'lib/features/nutrition/nutrition_providers.dart',
+    ).readAsStringSync();
+    expect(nutritionProviders, contains('nutritionReadModelRepositoryProvider'));
+    expect(nutritionProviders, contains('nutritionGoalRepositoryProvider'));
+
+    final coachingProviders = File(
+      'lib/features/coaching/coaching_providers.dart',
+    ).readAsStringSync();
+    expect(coachingProviders, contains('coachingPreferenceRepositoryProvider'));
+    expect(coachingProviders, contains('b04RecommendationHistoryRepositoryProvider'));
+    expect(coachingProviders, contains('b04DailyBriefingReadRepositoryProvider'));
+    expect(coachingProviders, contains('b04WeeklyReviewReadRepositoryProvider'));
 
     final dailyController = File(
       'lib/features/dashboard/b04_daily_briefing_controller.dart',
