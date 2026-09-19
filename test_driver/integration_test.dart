@@ -11,7 +11,7 @@ Future<void> main() async {
     ]) async {
       print('📸 Processing screenshot "$name"...');
       final destination =
-          '/Users/dankmagician/.gemini/antigravity/brain/6f6ee671-02e2-4e68-8fd6-6b69b54132c9/screenshots/$name.png';
+          '/Users/dankmagician/.gemini/antigravity/brain/24f93410-3321-488c-9937-c3af223786db/screenshots/$name.png';
       final file = File(destination);
       await file.parent.create(recursive: true);
 

@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -10,11 +11,17 @@ import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/repositories/food_repository.dart';
 import 'package:indifit/data/repositories/workout_repository.dart';
+import 'package:indifit/features/dashboard/widgets/hydration_detail_sheet.dart';
+import 'package:indifit/features/dashboard/widgets/log_weight_bottom_sheet.dart';
+import 'package:indifit/features/food_log/custom_food_editor_screen.dart';
 import 'package:indifit/features/food_log/food_search_screen.dart';
 import 'package:indifit/features/onboarding/onboarding_screen.dart';
+import 'package:indifit/features/workout_player/quick_workout_screen.dart';
 import 'package:indifit/features/workout_player/widgets/rest_timer_bottom_sheet.dart';
+import 'package:indifit/features/workout_player/workout_execution_route.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uuid/uuid.dart';
 
 class _WalkthroughProfileNotifier extends UserProfileNotifier {
   _WalkthroughProfileNotifier() : super() {
@@ -168,6 +175,7 @@ void main() {
       await tester.pumpAndSettle();
       await binding.takeScreenshot('02_onboarding_or_home');
 
+
       // ==========================================
       // Mount Main Application
       // ==========================================
@@ -195,6 +203,32 @@ void main() {
       expect(find.byType(MaterialApp), findsOneWidget);
       await binding.takeScreenshot('03_tab0_dashboard');
 
+      // Hydration Detail Sheet
+      unawaited(HydrationDetailSheet.show(currentContext(), now));
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+      await binding.takeScreenshot('03b_hydration_detail_sheet');
+      if (find.byType(HydrationDetailSheet).evaluate().isNotEmpty) {
+        Navigator.of(
+          tester.element(find.byType(HydrationDetailSheet)),
+          rootNavigator: true,
+        ).pop();
+        await tester.pumpAndSettle();
+      }
+
+      // Log Weight Bottom Sheet
+      unawaited(LogWeightBottomSheet.show(currentContext(), 72.0, (w) async {}));
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+      await binding.takeScreenshot('03c_log_weight_sheet');
+      if (find.byType(LogWeightBottomSheet).evaluate().isNotEmpty) {
+        Navigator.of(
+          tester.element(find.byType(LogWeightBottomSheet)),
+          rootNavigator: true,
+        ).pop();
+        await tester.pumpAndSettle();
+      }
+
       // ==========================================
       // SURFACE 2: Tab 1 (Training)
       // ==========================================
@@ -214,6 +248,36 @@ void main() {
           tester.element(find.byType(RestTimerBottomSheet)),
           rootNavigator: true,
         ).pop();
+        await tester.pumpAndSettle();
+      }
+
+      // B02 Strength Player surface
+      final adapter = container.read(strengthExecutionCompatibilityAdapterProvider);
+      final initialDraft = await adapter.startUnscheduledDraft(
+        routineName: 'Chest & Triceps Hypertrophy',
+        executionSnapshotJson: quickWorkoutSnapshotJson('Chest & Triceps Hypertrophy'),
+        snapshotId: const Uuid().v4(),
+      );
+      final withBench = await adapter.addUnscheduledExercise(
+        launch: initialDraft,
+        exerciseId: 'ex_bench_press',
+        exerciseName: 'Flat Barbell Bench Press',
+        plannedSets: 3,
+        repsRange: '8-12',
+      );
+      final preparedDraft = await adapter.prepareExecution(withBench);
+      unawaited(GoRouter.of(currentContext()).push(
+        '/b02-strength-player',
+        extra: WorkoutExecutionRouteData.fromLaunch(
+          withBench.copyWith(state: preparedDraft.state),
+        ),
+      ));
+      await tester.pumpAndSettle();
+      await binding.takeScreenshot('05b_b02_strength_player');
+
+      // Pop back from B02 player safely
+      if (Navigator.of(tester.element(find.byType(Scaffold).last)).canPop()) {
+        Navigator.of(tester.element(find.byType(Scaffold).last)).pop();
         await tester.pumpAndSettle();
       }
 
@@ -290,6 +354,30 @@ void main() {
             await tester.pumpAndSettle();
           }
         }
+      }
+
+      // Thali Builder Screen (Circular plate, dual staples, nutrition summary)
+      unawaited(GoRouter.of(currentContext()).push('/food/thali?meal=lunch'));
+      await tester.pumpAndSettle();
+      await binding.takeScreenshot('08b_thali_builder_screen');
+      if (Navigator.of(tester.element(find.byType(Scaffold).last)).canPop()) {
+        Navigator.of(tester.element(find.byType(Scaffold).last)).pop();
+        await tester.pumpAndSettle();
+      }
+
+      // Custom Food Editor Screen with Barcode Chip
+      unawaited(Navigator.of(currentContext()).push(
+        MaterialPageRoute(
+          builder: (_) => const CustomFoodEditorScreen(
+            initialBarcode: '8901030927341',
+          ),
+        ),
+      ));
+      await tester.pumpAndSettle();
+      await binding.takeScreenshot('08c_custom_food_editor');
+      if (Navigator.of(tester.element(find.byType(Scaffold).last)).canPop()) {
+        Navigator.of(tester.element(find.byType(Scaffold).last)).pop();
+        await tester.pumpAndSettle();
       }
 
       // DPDP Consent Dialog
