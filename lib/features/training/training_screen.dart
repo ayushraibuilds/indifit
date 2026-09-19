@@ -25,8 +25,8 @@ import '../calendar/calendar_controller.dart';
 import '../calendar/occurrence_actions_sheet.dart';
 import '../calendar/workout_contextual_launcher.dart';
 import '../workout_player/b02_strength_execution_controller.dart';
-import '../workout_player/b02_strength_player_screen.dart';
 import '../workout_player/widgets/manual_log_sheet.dart';
+import '../workout_player/workout_execution_route.dart';
 import 'training_plan_lifecycle_controller.dart';
 import 'training_workout_customization.dart';
 import 'training_workout_preview.dart';
@@ -386,10 +386,9 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
           recovered.status == B02StrengthExecutionStatus.failure) {
         throw StateError('The saved workout could not be recovered.');
       }
-      await Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => B02StrengthPlayerScreen(launch: recovered.launch!),
-        ),
+      await context.push(
+        '/b02-strength-player',
+        extra: WorkoutExecutionRouteData.fromLaunch(recovered.launch!),
       );
       if (context.mounted) ref.invalidate(trainingLandingSnapshotProvider);
     } catch (error) {

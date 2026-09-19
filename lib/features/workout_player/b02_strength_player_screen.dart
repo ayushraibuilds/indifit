@@ -1523,7 +1523,15 @@ class _B02StrengthPlayerScreenState
       '/b02-strength-summary',
       extra: WorkoutExecutionRouteData(_executionFor(launch)),
     );
-    if (mounted) unawaited(controller.resumeElapsed());
+    if (!mounted) return;
+    final currentState = ref.read(provider);
+    if (currentState.completedSessionId != null || currentState.launch == null) {
+      if (context.canPop()) {
+        context.pop();
+      }
+      return;
+    }
+    unawaited(controller.resumeElapsed());
   }
 
   WorkoutExecutionContext _executionFor(B02StrengthExecutionLaunch launch) {

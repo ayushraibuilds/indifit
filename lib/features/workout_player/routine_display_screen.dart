@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:uuid/uuid.dart';
+
 import '../../core/di/providers.dart';
 import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/services/indifit_haptics.dart';
@@ -16,7 +18,9 @@ import '../../data/repositories/legacy_program_compatibility_adapter.dart';
 import '../../data/repositories/program_lifecycle_repository.dart';
 import '../../data/repositories/workout_repository.dart';
 import '../training/training_plan_lifecycle_controller.dart';
+import 'quick_workout_screen.dart';
 import 'widgets/manual_log_sheet.dart';
+import 'workout_execution_route.dart';
 
 class RoutineDisplayScreen extends ConsumerStatefulWidget {
   const RoutineDisplayScreen({super.key});
@@ -34,6 +38,7 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
   Set<int> _completedDayOfWeeks = {};
   String? _activeProgramVersionId;
   String? _activeProgramName;
+  bool _isStarting = false;
 
   @override
   void initState() {
@@ -429,22 +434,25 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 20.0),
                     child: FilledButton.icon(
-                      onPressed: () {
-                        context.push(
-                          '/workout-player',
-                          extra: {
-                            'routineName': day.name,
-                            'exercises': exercises,
-                          },
-                        );
-                      },
+                      onPressed: _isStarting
+                          ? null
+                          : () => _startWorkout(day, exercises),
                       style: FilledButton.styleFrom(
                         minimumSize: const Size.fromHeight(50),
                       ),
-                      icon: const Icon(Icons.play_arrow_rounded, size: 28),
-                      label: const Text(
-                        'Start Workout',
-                        style: TextStyle(
+                      icon: _isStarting
+                          ? SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Theme.of(context).colorScheme.onPrimary,
+                              ),
+                            )
+                          : const Icon(Icons.play_arrow_rounded, size: 28),
+                      label: Text(
+                        _isStarting ? 'Starting...' : 'Start Workout',
+                        style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
                         ),
@@ -457,6 +465,76 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
         ),
       ],
     );
+  }
+
+  Future<void> _startWorkout(
+    RoutineDay day,
+    List<RoutineExercise> exercises,
+  ) async {
+    if (_isStarting) return;
+    setState(() => _isStarting = true);
+    try {
+      final existing =
+          await ref.read(workoutRepositoryProvider).getActiveDraft();
+      if (existing != null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Finish or discard your active workout before starting another.',
+              ),
+            ),
+          );
+        }
+        return;
+      }
+
+      final allExercises =
+          await ref.read(workoutRepositoryProvider).searchExercises('');
+      final exerciseMap = {
+        for (final e in allExercises) e.name.toLowerCase(): e,
+      };
+      final adapter = ref.read(strengthExecutionCompatibilityAdapterProvider);
+      final initial = await adapter.startUnscheduledDraft(
+        routineName: day.name,
+        executionSnapshotJson: quickWorkoutSnapshotJson(day.name),
+        snapshotId: const Uuid().v4(),
+      );
+      var currentLaunch = initial;
+      for (final ex in exercises) {
+        final stableId = exerciseMap[ex.exerciseName.toLowerCase()]?.stableId ??
+            ex.exerciseName;
+        currentLaunch = await adapter.addUnscheduledExercise(
+          launch: currentLaunch,
+          exerciseId: stableId,
+          exerciseName: ex.exerciseName,
+          plannedSets: ex.sets < 1 ? 1 : ex.sets,
+          repsRange:
+              ex.repsRange.trim().isEmpty ? '1-20' : ex.repsRange.trim(),
+        );
+      }
+      final prepared = await adapter.prepareExecution(currentLaunch);
+      if (!mounted) return;
+      await context.push(
+        '/b02-strength-player',
+        extra: WorkoutExecutionRouteData.fromLaunch(
+          currentLaunch.copyWith(state: prepared.state),
+        ),
+      );
+    } catch (error) {
+      if (mounted) {
+        final message = ProductFailurePresentation.fromError(
+          error,
+          title: 'Workout unavailable',
+          code: 'workout_start_failed',
+        ).message;
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(message)));
+      }
+    } finally {
+      if (mounted) setState(() => _isStarting = false);
+    }
   }
 
   Widget _buildWeeklyCalendarHeader() {
