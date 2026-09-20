@@ -135,5 +135,15 @@ void main() {
       expect(a.hashCode, equals(b.hashCode));
       expect(a, isNot(equals(c)));
     });
+
+    test('10. Normalizes snake_case tokens into Title Case presentation labels and matches properly', () {
+      final muscles = ExerciseDisplayMuscles.fromMuscleGroups('front_delts, rear_delts');
+      expect(muscles.primary, equals('Front Delts'));
+      expect(muscles.secondary, equals(['Rear Delts']));
+      expect(muscles.matchesPrimary('front_delts'), isTrue);
+      expect(muscles.matchesPrimary('Front Delts'), isTrue);
+      expect(muscles.containsMuscle('rear_delts'), isTrue);
+      expect(muscles.containsMuscle('Rear Delts'), isTrue);
+    });
   });
 }

@@ -76,8 +76,8 @@ void main() {
     await _pumpForAsyncState(tester);
 
     expect(find.text('Today’s target'), findsOneWidget);
-    expect(find.text('2,100 kcal'), findsNothing);
-    expect(find.text('2100 kcal'), findsOneWidget);
+    expect(find.text('2,100 kcal'), findsOneWidget);
+    expect(find.text('2100 kcal'), findsNothing);
     expect(find.text('140 g'), findsOneWidget);
     expect(find.text('220 g'), findsOneWidget);
     expect(find.text('65 g'), findsOneWidget);
@@ -157,19 +157,21 @@ void main() {
         _app(database, dates, targetsByDate: targets, history: history),
       );
       await _pumpForAsyncState(tester);
-      expect(find.text('1800 kcal'), findsOneWidget);
+      expect(find.text('1,800 kcal'), findsOneWidget);
+      expect(find.text('1800 kcal'), findsNothing);
 
       await tester.tap(find.byTooltip('Previous day'));
       await _pumpForAsyncState(tester);
 
       expect(find.text('Target for Yesterday'), findsOneWidget);
-      expect(find.text('2100 kcal'), findsOneWidget);
+      expect(find.text('2,100 kcal'), findsOneWidget);
+      expect(find.text('2100 kcal'), findsNothing);
       expect(
         find.textContaining('Earlier targets are read-only'),
         findsOneWidget,
       );
       expect(find.text('Save today’s targets'), findsNothing);
-      expect(find.text('1800 kcal'), findsNothing);
+      expect(find.text('1,800 kcal'), findsNothing);
 
       await tester.tap(find.byTooltip('Next day'));
       await _pumpForAsyncState(tester);

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../../../../core/theme/b05_semantic_colors.dart';
 import '../../../../core/widgets/b05_accessibility_primitives.dart';
@@ -31,6 +32,12 @@ class PeriodComparisonDrilldownSheet extends StatelessWidget {
     );
   }
 
+  static String _formatLocalDate(String dateStr) {
+    final dt = DateTime.tryParse(dateStr);
+    if (dt == null) return dateStr;
+    return DateFormat('d MMM').format(dt);
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.b05Colors;
@@ -38,9 +45,13 @@ class PeriodComparisonDrilldownSheet extends StatelessWidget {
         ? 'Weekly Period Breakdown'
         : '4-Week Cycle Breakdown';
 
+    final startCurrent = _formatLocalDate(snapshot.currentWindow.startLocalDate);
+    final endCurrent = _formatLocalDate(snapshot.currentWindow.endLocalDate);
+    final startPrev = _formatLocalDate(snapshot.previousWindow.startLocalDate);
+    final endPrev = _formatLocalDate(snapshot.previousWindow.endLocalDate);
+
     final dateRangeLabel =
-        '${snapshot.currentWindow.startLocalDate} to ${snapshot.currentWindow.endLocalDate} '
-        'vs ${snapshot.previousWindow.startLocalDate} to ${snapshot.previousWindow.endLocalDate}';
+        '$startCurrent to $endCurrent vs $startPrev to $endPrev';
 
     return DraggableScrollableSheet(
       initialChildSize: 0.8,
@@ -50,21 +61,10 @@ class PeriodComparisonDrilldownSheet extends StatelessWidget {
       builder: (context, scrollController) {
         return SingleChildScrollView(
           controller: scrollController,
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Center(
-                child: Container(
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: colors.border,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: B05Layout.space16),
               Text(
                 rangeLabel,
                 style: B05Typography.title(context).copyWith(

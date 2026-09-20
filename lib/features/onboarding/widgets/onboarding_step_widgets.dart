@@ -216,21 +216,22 @@ class OnboardingNumberInputField extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
-              if (isValid)
+              Text(suffix, style: B05Typography.label(context)),
+              if (isValid) ...[
+                const SizedBox(width: 6),
                 Icon(
                   Icons.check_circle_rounded,
                   color: colors.success.indicator,
                   size: 18,
-                )
-              else if (hasError)
+                ),
+              ] else if (hasError) ...[
+                const SizedBox(width: 6),
                 Icon(
                   Icons.error_outline_rounded,
                   color: colors.danger.indicator,
                   size: 18,
-                )
-              else
-                Text(suffix, style: B05Typography.label(context)),
+                ),
+              ],
             ],
           ),
         ),

@@ -178,6 +178,12 @@ class _PlateCalculatorViewState extends State<PlateCalculatorView> {
     _unmatchedWeight = double.parse(remaining.toStringAsFixed(2));
   }
 
+  static String _formatPlateEntry(MapEntry<double, int> entry) {
+    final weightStr =
+        entry.key % 1 == 0 ? entry.key.toStringAsFixed(1) : '${entry.key}';
+    return '${entry.value} × $weightStr kg';
+  }
+
   Color _getPlateColor(double weight) {
     switch (weight) {
       case 25.0:
@@ -346,7 +352,7 @@ class _PlateCalculatorViewState extends State<PlateCalculatorView> {
                   children: [
                     Semantics(
                       label:
-                          'Barbell loading diagram: ${_calculatedPlates.entries.map((e) => '${e.value}x ${e.key}kg').join(', ')} per side',
+                          'Barbell loading diagram: ${_calculatedPlates.entries.map(_formatPlateEntry).join(', ')} per side',
                       child: SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
                         child: Row(
@@ -399,7 +405,7 @@ class _PlateCalculatorViewState extends State<PlateCalculatorView> {
                     const SizedBox(height: 12),
                     Text(
                       _calculatedPlates.entries
-                          .map((e) => '${e.value}x ${e.key}kg')
+                          .map(_formatPlateEntry)
                           .join('  +  '),
                       textAlign: TextAlign.center,
                       style: const TextStyle(

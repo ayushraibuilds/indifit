@@ -1818,7 +1818,7 @@ class _PlanLibraryFilters extends StatelessWidget {
         _PlanFilterRow<StarterPlanEnvironment>(
           semanticLabel: 'Training setting filter',
           selected: environment,
-          allLabel: 'All settings',
+          allLabel: 'All equipment',
           values: StarterPlanEnvironment.values,
           labelFor: (value) => value.label,
           onChanged: onEnvironmentChanged,

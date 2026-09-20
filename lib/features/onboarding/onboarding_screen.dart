@@ -591,34 +591,45 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               B05Layout.space16,
               B05Layout.space8,
             ),
-            child: Row(
-              children: [
-                B05IconAction(
-                  icon: Icons.arrow_back_rounded,
-                  label: 'Back',
-                  hint: 'Return to the previous setup step.',
-                  onPressed: _currentPage > 0 ? _prevPage : null,
-                ),
-                const SizedBox(width: B05Layout.space8),
-                Expanded(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: LinearProgressIndicator(
-                      value: (_currentPage + 1) / _totalPages,
-                      backgroundColor: colors.surfaceSubtle,
-                      valueColor: AlwaysStoppedAnimation<Color>(colors.action),
-                      minHeight: 6,
+            child:            Builder(
+              builder: (context) {
+                // Note: PageView has _totalPages = 4 pages (indices 0..3 for Demographics,
+                // Goal, Activity, Diet). When the user advances past the 4th page,
+                // _showingPayoff becomes true to display the 5th visual step (Summary & Payoff).
+                // Therefore, total visual onboarding steps = 5, and progress is displayStep / 5.
+                final displayStep = _showingPayoff ? 5 : _currentPage + 1;
+                return Row(
+                  children: [
+                    B05IconAction(
+                      icon: Icons.arrow_back_rounded,
+                      label: 'Back',
+                      hint: 'Return to the previous setup step.',
+                      onPressed:
+                          (_currentPage > 0 || _showingPayoff) ? _prevPage : null,
                     ),
-                  ),
-                ),
-                const SizedBox(width: B05Layout.space12),
-                Text(
-                  '${_currentPage + 1} of $_totalPages',
-                  style: B05Typography.label(
-                    context,
-                  ).copyWith(color: colors.textSecondary),
-                ),
-              ],
+                    const SizedBox(width: B05Layout.space8),
+                    Expanded(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: LinearProgressIndicator(
+                          value: displayStep / 5,
+                          backgroundColor: colors.surfaceSubtle,
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(colors.action),
+                          minHeight: 6,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: B05Layout.space12),
+                    Text(
+                      '$displayStep of 5',
+                      style: B05Typography.label(
+                        context,
+                      ).copyWith(color: colors.textSecondary),
+                    ),
+                  ],
+                );
+              },
             ),
           ),
           if (_completionError != null)

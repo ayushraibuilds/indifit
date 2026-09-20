@@ -414,7 +414,7 @@ class FoodDiaryMealRow extends StatelessWidget {
               Text(
                 foodDiaryEnergyLabel(records),
                 style: B05Typography.caption(context).copyWith(
-                  color: accent.indicator,
+                  color: context.b05Colors.textPrimary,
                   fontWeight: FontWeight.w700,
                 ),
               ),

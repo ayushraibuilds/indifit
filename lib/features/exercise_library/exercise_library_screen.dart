@@ -116,15 +116,13 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
       };
       for (final m in _muscleFilters) {
         if (m == 'All') continue;
-        counts[m] = buildExerciseFamilyPresentation(
-          searchMatches
-              .where(
-                (ex) => ExerciseDisplayMuscles.fromMuscleGroups(
-                  ex.muscleGroups,
-                ).matchesPrimary(m),
-              )
-              .toList(growable: false),
-        ).length;
+        counts[m] = searchMatches
+            .where(
+              (ex) => ExerciseDisplayMuscles.fromMuscleGroups(
+                ex.muscleGroups,
+              ).matchesPrimary(m),
+            )
+            .length;
       }
 
       // Filter by PRIMARY muscle category and equipment
@@ -345,7 +343,27 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
                 },
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
+
+            // Disambiguating summary subtitle
+            if (!_loading && _failure == null && _exercises.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8.0, left: 4.0),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    _selectedMuscle == 'All' &&
+                            _selectedEquipment == 'All' &&
+                            _searchController.text.trim().isEmpty
+                        ? '${_exercises.length} movements · ${_catalogue.length} variations'
+                        : '${_exercises.length} ${_exercises.length == 1 ? 'movement' : 'movements'}',
+                    style: B05Typography.caption(context).copyWith(
+                      color: context.b05Colors.textSecondary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
 
             // Error Card
             if (_failure != null) ...[

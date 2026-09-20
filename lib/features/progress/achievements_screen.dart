@@ -67,6 +67,16 @@ class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
     }
   }
 
+  static String _formatCompactEvidence(Achievement item, String? dateStr) {
+    var ev = item.evidence
+        .replaceAll(' volume recorded', '')
+        .replaceAll(' logged', '');
+    if (item.isUnlocked && dateStr != null && dateStr.isNotEmpty) {
+      return '$ev · $dateStr';
+    }
+    return ev;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -303,12 +313,14 @@ class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
         const SizedBox(height: B05Layout.space12),
 
         LayoutBuilder(
-          builder: (context, _) {
+          builder: (context, constraints) {
             final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
-            final useSingleColumn = textScale >= 1.5;
+            final isNarrow = constraints.maxWidth < 350;
+            final useSingleColumn =
+                textScale >= 1.35 || (isNarrow && textScale > 1.15);
             final childAspectRatio = useSingleColumn
                 ? (1.5 / textScale).clamp(0.65, 1.15)
-                : 0.68;
+                : 0.60;
             return GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -343,7 +355,10 @@ class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
                           ? B05SurfaceTone.selected
                           : B05SurfaceTone.inset,
                       radius: B05SurfaceRadius.large,
-                      padding: const EdgeInsets.all(B05Layout.space12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: B05Layout.space12,
+                        vertical: B05Layout.space12,
+                      ),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -404,9 +419,9 @@ class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
                             overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 4),
-                          // Factual Evidence proof
+                          // Factual Evidence proof & unlock date
                           Text(
-                            item.evidence,
+                            _formatCompactEvidence(item, dateStr),
                             style: B05Typography.caption(context).copyWith(
                               fontSize: 10,
                               fontWeight: FontWeight.w600,
@@ -415,20 +430,9 @@ class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
                                   : colors.textDisabled,
                             ),
                             textAlign: TextAlign.center,
-                            maxLines: 1,
+                            maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          if (dateStr != null && item.isUnlocked) ...[
-                            const SizedBox(height: 2),
-                            Text(
-                              dateStr,
-                              style: B05Typography.caption(context).copyWith(
-                                fontSize: 9,
-                                color: colors.textDisabled,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
                           const SizedBox(height: B05Layout.space8),
                           TweenAnimationBuilder<double>(
                             tween: Tween<double>(

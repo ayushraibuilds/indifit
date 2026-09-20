@@ -139,7 +139,7 @@ void main() {
     expect(find.text('Minimal Equipment — 3 Day'), findsOneWidget);
     expect(find.text('Bodyweight Basics'), findsNothing);
 
-    await tester.tap(find.widgetWithText(ChoiceChip, 'All settings'));
+    await tester.tap(find.widgetWithText(ChoiceChip, 'All equipment'));
     await tester.tap(find.widgetWithText(ChoiceChip, '4 days'));
     await tester.pump();
     expect(find.text('4-Day Upper / Lower'), findsOneWidget);

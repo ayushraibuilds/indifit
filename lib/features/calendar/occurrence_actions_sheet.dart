@@ -10,6 +10,7 @@ import '../../core/widgets/indi_fit_bottom_sheet.dart';
 import '../../data/repositories/calendar_read_repository.dart';
 import '../../data/repositories/calendar_repository.dart';
 import 'calendar_controller.dart';
+import 'workout_contextual_launcher.dart';
 
 /// Consumer label for an occurrence history event. Public for focused tests.
 /// Splits both snake_case and camelCase event types into readable words.
@@ -40,6 +41,61 @@ class OccurrenceActionsSheet extends ConsumerStatefulWidget {
 class _OccurrenceActionsSheetState
     extends ConsumerState<OccurrenceActionsSheet> {
   bool _isLoading = false;
+
+  Future<void> _startWorkout() async {
+    final item = widget.occurrenceItem;
+    setState(() => _isLoading = true);
+    try {
+      final needsConfirmation =
+          WorkoutContextualLauncher.requiresDateConfirmation(ref, item);
+      if (needsConfirmation) {
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('Start outside scheduled date?'),
+            content: Text(
+              'This workout is scheduled for ${ConsumerDateLabel.day(item.occurrence.effectiveLocalDate)}. Starting it will not change your plan.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(dialogContext, true),
+                child: Text(
+                  item.occurrence.status == 'inProgress'
+                      ? 'Resume workout'
+                      : 'Start workout',
+                ),
+              ),
+            ],
+          ),
+        );
+        if (confirmed != true || !mounted) return;
+      }
+
+      final target = await WorkoutContextualLauncher.prepare(
+        ref: ref,
+        item: item,
+        confirmedOutsideEffectiveDate: needsConfirmation,
+      );
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      await WorkoutContextualLauncher.push(context, target);
+    } catch (error) {
+      if (!mounted) return;
+      final message = ProductFailurePresentation.fromError(
+        error,
+        title: 'Workout unavailable',
+      ).message;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   Future<void> _rescheduleOccurrence() async {
     final now = DateTime.now();
@@ -448,6 +504,24 @@ class _OccurrenceActionsSheetState
             )
           else ...[
             if (isStartable) ...[
+              if (!widget.scheduleAdjustmentsOnly)
+                ListTile(
+                  leading: Icon(
+                    Icons.play_arrow_rounded,
+                    color: colors.action,
+                  ),
+                  title: Text(
+                    occ.status == 'inProgress'
+                        ? 'Resume Workout'
+                        : 'Start Workout',
+                    style: B05Typography.body(context).copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: colors.action,
+                    ),
+                  ),
+                  subtitle: const Text('Begin this training session now'),
+                  onTap: _startWorkout,
+                ),
               ListTile(
                 leading: const Icon(Icons.edit_calendar_rounded),
                 title: const Text('Reschedule'),
@@ -456,6 +530,9 @@ class _OccurrenceActionsSheetState
               ListTile(
                 leading: const Icon(Icons.skip_next_rounded),
                 title: const Text('Skip Workout'),
+                subtitle: const Text(
+                  'Choose: make it up later or skip and advance',
+                ),
                 onTap: _showSkipDialog,
               ),
               if (!widget.scheduleAdjustmentsOnly)
@@ -469,6 +546,9 @@ class _OccurrenceActionsSheetState
                     style: B05Typography.body(
                       context,
                     ).copyWith(color: colors.danger.indicator),
+                  ),
+                  subtitle: const Text(
+                    'Mark as cancelled without advancing plan',
                   ),
                   onTap: _cancelOccurrence,
                 ),

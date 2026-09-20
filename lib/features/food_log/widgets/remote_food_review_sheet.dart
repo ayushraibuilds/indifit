@@ -484,14 +484,23 @@ class _RemoteFoodReviewSheetState extends State<RemoteFoodReviewSheet> {
                         value: _selectedServing,
                         isExpanded: true,
                         items: candidate.servingOptions.map((s) {
-                          final unit = s.unitName.toLowerCase();
-                          final suffix = unit == 'glass' || unit == 'ml'
-                              ? 'ml'
-                              : 'g';
-                          final label = '${s.unitName} (${s.gramWeight.toStringAsFixed(0)}$suffix)';
+                          final unit = s.unitName.toLowerCase().trim();
+                          final hasWeight =
+                              RegExp(r'\d+\s*(g|ml)$', caseSensitive: false)
+                                  .hasMatch(unit);
+                          final suffix =
+                              unit.contains('ml') || unit.contains('glass')
+                                  ? 'ml'
+                                  : 'g';
+                          final label = hasWeight
+                              ? s.unitName
+                              : '${s.unitName} (${s.gramWeight.toStringAsFixed(0)} $suffix)';
                           return DropdownMenuItem(
                             value: s,
-                            child: Text(label, style: B05Typography.body(context)),
+                            child: Text(
+                              label,
+                              style: B05Typography.body(context),
+                            ),
                           );
                         }).toList(),
                         onChanged: (val) {

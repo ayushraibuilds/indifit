@@ -297,5 +297,41 @@ void main() {
       expect(find.textContaining('Incredible dedication!'), findsOneWidget);
       expect(find.text('No Badges Unlocked Yet'), findsNothing);
     });
+
+    testWidgets('7. Compact evidence formatting preserves dates and trims redundant suffixes', (tester) async {
+      testRepo.seed(
+        totalWorkouts: 1,
+        totalVolumeKg: 1200,
+        totalMealsLogged: 10,
+        unlockedMap: {
+          'first_workout': DateTime.utc(2026, 8, 14, 10, 0),
+          'volume_1000': DateTime.utc(2026, 8, 14, 10, 0),
+          'meals_10': DateTime.utc(2026, 8, 14, 10, 0),
+        },
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            databaseProvider.overrideWithValue(db),
+            progressStatisticsRepositoryProvider.overrideWithValue(testRepo),
+          ],
+          child: wrapWithTheme(const AchievementsScreen()),
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(const Duration(milliseconds: 700));
+
+      // Workout evidence: '1 of 1 workout logged' -> '1 of 1 workout · 14 Aug 2026'
+      expect(find.text('1 of 1 workout · 14 Aug 2026'), findsWidgets);
+
+      // Volume evidence: '1,200 kg / 1,000 kg volume recorded' -> '1,200 kg / 1,000 kg · 14 Aug 2026'
+      expect(find.text('1,200 kg / 1,000 kg · 14 Aug 2026'), findsWidgets);
+
+      // Meal evidence: '10 of 10 meals logged' -> '10 of 10 meals · 14 Aug 2026'
+      expect(find.text('10 of 10 meals · 14 Aug 2026'), findsWidgets);
+    });
   });
 }

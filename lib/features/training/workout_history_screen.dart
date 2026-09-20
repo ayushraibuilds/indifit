@@ -91,6 +91,9 @@ class _WorkoutHistoryRow extends StatelessWidget {
     final source = _historyContextLabel(item);
     final status = item.isPartial ? 'Partially completed' : 'Completed';
     final date = ConsumerDateLabel.dateTime(item.completedAt);
+    final subtitleText = item.isLegacy
+        ? '$date · $source'
+        : '$date · ${_activityLabel(item.activityType)} · $source';
     final row = B05Surface(
       tone: B05SurfaceTone.interactive,
       child: Row(
@@ -105,7 +108,7 @@ class _WorkoutHistoryRow extends StatelessWidget {
                 Text(item.name, style: B05Typography.label(context)),
                 const SizedBox(height: B05Layout.space4),
                 Text(
-                  '$date · ${_activityLabel(item.activityType)} · $source',
+                  subtitleText,
                   style: B05Typography.caption(context),
                 ),
                 const SizedBox(height: B05Layout.space4),
@@ -138,7 +141,7 @@ class _WorkoutHistoryRow extends StatelessWidget {
 }
 
 String _historyContextLabel(B02ActivityHistoryItem item) {
-  if (item.isLegacy) return 'Earlier workout';
+  if (item.isLegacy) return 'Recorded session';
   if (item.scheduledOccurrenceId != null) return 'Planned workout';
   if (item.activityType == B02ActivityType.strength) {
     // The canonical session schema does not distinguish Quick from manual

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../../core/di/providers.dart';
 import '../../core/presentation/consumer_date_label.dart';
@@ -637,7 +638,7 @@ class _NutritionTargetsHubScreenState
                         style: B05Typography.title(context),
                       ),
                       Text(
-                        date,
+                        _formatDate(date),
                         textAlign: TextAlign.center,
                         style: B05Typography.caption(context),
                       ),
@@ -1298,7 +1299,14 @@ class _NutritionTargetsHubScreenState
     return DateTime(year, month, day);
   }
 
-  static String _formatInt(int value) => value.toString();
+  static String _formatDate(String dateStr) {
+    final dt = DateTime.tryParse(dateStr);
+    if (dt == null) return dateStr;
+    return DateFormat('d MMM yyyy').format(dt);
+  }
+
+  static String _formatInt(int value) =>
+      NumberFormat.decimalPattern().format(value);
 
   static String _formatGrams(double value) {
     if (value == value.roundToDouble()) return value.toStringAsFixed(0);

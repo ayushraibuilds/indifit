@@ -1270,6 +1270,10 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                   onClear: () => _searchController.clear(),
                   onTapOutside: (_) => FocusScope.of(context).unfocus(),
                 ),
+                if (_searchController.text.isEmpty) ...[
+                  const SizedBox(height: 10),
+                  _buildStapleChips(),
+                ],
                 const SizedBox(height: 12),
                 Expanded(
                   child: _searching
@@ -1283,6 +1287,38 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  static const _stapleSuggestions = ['Roti', 'Dal', 'Rice', 'Paneer', 'Chai', 'Whey'];
+
+  Widget _buildStapleChips() {
+    return SizedBox(
+      height: 36,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: _stapleSuggestions.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          final staple = _stapleSuggestions[index];
+          return ActionChip(
+            label: Text(staple),
+            onPressed: () {
+              _searchController.text = staple;
+              _performSearch(staple);
+            },
+            backgroundColor: context.b05Colors.inset,
+            side: BorderSide(color: context.b05Colors.border),
+            labelStyle: B05Typography.caption(context).copyWith(
+              color: context.b05Colors.textPrimary,
+              fontWeight: FontWeight.w600,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+          );
+        },
       ),
     );
   }

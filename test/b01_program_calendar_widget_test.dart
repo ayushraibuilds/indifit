@@ -322,7 +322,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('Template 1'), findsOneWidget);
-        expect(find.text('Start Workout'), findsNothing);
+        expect(find.text('Start Workout'), findsOneWidget);
         expect(find.text('Reschedule'), findsOneWidget);
         expect(find.text('Skip Workout'), findsOneWidget);
         expect(find.text('Cancel Workout'), findsOneWidget);
