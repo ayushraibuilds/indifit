@@ -4,10 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/di/providers.dart';
 import 'package:indifit/core/privacy/privacy_policy.dart';
 import 'package:indifit/core/services/crash_reporting_service.dart';
-import 'package:indifit/data/repositories/ai_routine_service.dart';
 import 'package:indifit/data/repositories/food_api_service.dart';
-import 'package:indifit/data/repositories/meal_plan_service.dart';
-import 'package:indifit/data/repositories/weekly_report_service.dart';
 import 'package:indifit/features/settings/settings_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -70,85 +67,6 @@ void main() {
           isNull,
         );
         expect(CrashReportingService.isEnabled, isFalse);
-      },
-    );
-
-    test(
-      'Backend AI requests (Weekly Report) are blocked in offline mode and use local generator',
-      () async {
-        const offlinePolicy = PrivacyPolicy(
-          isOfflineOnly: true,
-          isTelemetryEnabled: true,
-        );
-
-        final service = WeeklyReportService(dio, offlinePolicy);
-
-        final result = await service.generateReport(
-          totalCaloriesLogged: 14000,
-          calorieGoal: 2000,
-          workoutSessionsCount: 4,
-          totalVolumeKg: 5000,
-          prsCount: 2,
-          adherenceScore: 90.0,
-        );
-
-        expect(result.isFallback, isTrue);
-        expect(result.fallbackReason, contains('Offline'));
-        expect(
-          mockAdapter.requestCount,
-          equals(0),
-        ); // Zero outbound HTTP requests
-      },
-    );
-
-    test(
-      'Backend AI requests (AiRoutineService) are blocked in offline mode',
-      () async {
-        const offlinePolicy = PrivacyPolicy(
-          isOfflineOnly: true,
-          isTelemetryEnabled: true,
-        );
-
-        final service = AiRoutineService(dio, offlinePolicy);
-
-        final result = await service.generateRoutine(
-          goal: 'hypertrophy',
-          equipment: 'dumbbells',
-          daysPerWeek: 3,
-          experience: 'intermediate',
-          injuries: 'none',
-        );
-
-        expect(result.name, contains('Smart DUMBBELLS'));
-        expect(result.days.isNotEmpty, isTrue);
-        expect(
-          mockAdapter.requestCount,
-          equals(0),
-        ); // Zero outbound HTTP requests
-      },
-    );
-
-    test(
-      'Backend AI requests (MealPlanService) are blocked in offline mode',
-      () async {
-        const offlinePolicy = PrivacyPolicy(
-          isOfflineOnly: true,
-          isTelemetryEnabled: true,
-        );
-
-        final service = MealPlanService(dio, offlinePolicy);
-
-        final result = await service.generateMealPlan(
-          calorieGoal: 2200,
-          dietPreference: 'vegetarian',
-        );
-
-        expect(result.isFallback, isTrue);
-        expect(result.fallbackReason, contains('Local offline plan'));
-        expect(
-          mockAdapter.requestCount,
-          equals(0),
-        ); // Zero outbound HTTP requests
       },
     );
 
@@ -287,9 +205,24 @@ void main() {
 
         await controller.toggleOfflineOnly(false);
         expect(container.read(privacyPolicyProvider).isOfflineOnly, isFalse);
-        expect(container.read(privacyPolicyProvider).isAiAllowed, isTrue);
+        expect(container.read(privacyPolicyProvider).isAiAllowed, isFalse);
+        expect(
+          container.read(privacyPolicyProvider).isOpenFoodFactsAllowed,
+          isTrue,
+        );
       },
     );
+
+    test('V1 blocks connected AI even when Offline Mode is off', () {
+      const policy = PrivacyPolicy(
+        isOfflineOnly: false,
+        isTelemetryEnabled: false,
+      );
+
+      expect(policy.isAiAllowed, isFalse);
+      expect(policy.isImageUploadAllowed, isFalse);
+      expect(policy.isOpenFoodFactsAllowed, isTrue);
+    });
 
     test(
       'PrivacyPolicyNotifier loads persisted offline state synchronously on startup',

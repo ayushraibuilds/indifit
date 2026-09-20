@@ -14,12 +14,10 @@ import 'package:indifit/data/models/b02_execution_models.dart';
 import 'package:indifit/data/models/progress_dashboard_models.dart';
 import 'package:indifit/data/repositories/b02_strength_execution_repository.dart';
 import 'package:indifit/data/repositories/nutrition_thali_repository.dart';
-import 'package:indifit/features/dashboard/widgets/calorie_ring_card.dart';
 import 'package:indifit/features/food_log/saved_meals_controller.dart';
 import 'package:indifit/features/food_log/saved_meals_screen.dart';
 import 'package:indifit/features/progress/progress_screen.dart';
 import 'package:indifit/features/workout_player/b02_strength_summary_screen.dart';
-import 'package:percent_indicator/circular_percent_indicator.dart';
 
 void main() {
   group('R07F-2 — IndiFitHaptics & Motion Policy', () {
@@ -122,123 +120,7 @@ void main() {
     });
   });
 
-  group('R07F-2 — Today Calorie Ring & Macro Bars State Continuity', () {
-    testWidgets(
-      'CalorieRingCard renders and settles smoothly under standard motion',
-      (tester) async {
-        await tester.pumpWidget(
-          const ProviderScope(
-            child: MaterialApp(
-              home: Scaffold(
-                body: CalorieRingCard(
-                  eatenCalories: 1450,
-                  eatenProtein: 120.0,
-                  eatenCarbs: 160.0,
-                  eatenFat: 45.0,
-                  eatenFiber: 25.0,
-                ),
-              ),
-            ),
-          ),
-        );
 
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        expect(find.text('1450'), findsOneWidget);
-        expect(find.text('Protein'), findsOneWidget);
-        expect(find.text('Carbs'), findsOneWidget);
-        expect(find.text('Fat'), findsOneWidget);
-        expect(find.text('Fiber'), findsOneWidget);
-      },
-    );
-
-    testWidgets(
-      'CalorieRingCard renders instantly without animation under reduced motion',
-      (tester) async {
-        await tester.pumpWidget(
-          const ProviderScope(
-            child: MaterialApp(
-              home: MediaQuery(
-                data: MediaQueryData(disableAnimations: true),
-                child: Scaffold(
-                  body: CalorieRingCard(
-                    eatenCalories: 2000,
-                    eatenProtein: 150.0,
-                    eatenCarbs: 220.0,
-                    eatenFat: 60.0,
-                    eatenFiber: 30.0,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
-
-        await tester.pump();
-        expect(find.text('2000'), findsOneWidget);
-        expect(find.text('Protein'), findsOneWidget);
-      },
-    );
-
-    testWidgets(
-      'CalorieRingCard starts settled, then interpolates only semantic changes',
-      (tester) async {
-        final semantics = tester.ensureSemantics();
-
-        Widget buildCard(int calories) => ProviderScope(
-          child: MaterialApp(
-            home: Scaffold(
-              body: CalorieRingCard(
-                key: const ValueKey('review-calorie-ring'),
-                eatenCalories: calories,
-                eatenProtein: 120,
-                eatenCarbs: 160,
-                eatenFat: 45,
-                eatenFiber: 25,
-              ),
-            ),
-          ),
-        );
-
-        double ringValue() => tester
-            .widget<CircularPercentIndicator>(
-              find.byType(CircularPercentIndicator),
-            )
-            .percent;
-
-        await tester.pumpWidget(buildCard(1200));
-        await tester.pump();
-        expect(ringValue(), closeTo(0.6, 0.001));
-        expect(
-          find.bySemanticsLabel('1200 of 2000 calories logged'),
-          findsOneWidget,
-        );
-        expect(
-          find.bySemanticsLabel('Protein: 120 of 120 grams'),
-          findsOneWidget,
-        );
-
-        await tester.pumpWidget(buildCard(1600));
-        await tester.pump();
-        expect(ringValue(), closeTo(0.6, 0.001));
-
-        await tester.pump(const Duration(milliseconds: 120));
-        expect(ringValue(), greaterThan(0.6));
-        expect(ringValue(), lessThan(0.8));
-
-        await tester.pumpAndSettle();
-        expect(ringValue(), closeTo(0.8, 0.001));
-
-        await tester.pumpWidget(const SizedBox.shrink());
-        await tester.pump();
-        await tester.pumpWidget(buildCard(1600));
-        await tester.pump();
-        expect(ringValue(), closeTo(0.8, 0.001));
-        semantics.dispose();
-      },
-    );
-  });
 
   group('R07F-2 — Feedback timing and duplicate protection', () {
     final emittedEvents = <IndiFitHapticType>[];

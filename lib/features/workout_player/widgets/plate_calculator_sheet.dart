@@ -1,7 +1,76 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
+import '../../../core/widgets/indi_fit_bottom_sheet.dart';
 import '../../../core/widgets/responsive_form_primitives.dart';
+import '../../../data/models/b02_execution_models.dart';
+
+/// Pure presentation predicate to determine whether an exercise is relevant for
+/// barbell plate calculation per docs/reference/ui/REFERENCE_GUIDE.md:363
+/// ("plate calculator should be attached to relevant barbell exercises").
+///
+/// Order of operations:
+/// 1. Hard-false on typed bodyweight load basis.
+/// 2. Blocklist evaluated first (excludes non-barbell equipment and bodyweight/pulley families).
+/// 3. Allowlist evaluated second (matches explicit barbell or canonical barbell lifts).
+/// 4. Default-show for unrecognized exercise names (avoids hiding utility on unknown lifts).
+bool isBarbellPlateCalculatorSupported({
+  required String exerciseName,
+  B02LoadBasis? loadBasis,
+}) {
+  if (loadBasis == B02LoadBasis.bodyweight) return false;
+  final name = exerciseName.trim().toLowerCase();
+  if (name.isEmpty) return true;
+
+  // Blocklist evaluated first:
+  const blocklist = [
+    'dumbbell',
+    'cable',
+    'machine',
+    'band',
+    'kettlebell',
+    'bodyweight',
+    'pull-up',
+    'pullup',
+    'chin-up',
+    'chinup',
+    'pulldown',
+    'lat pulldown',
+    'dip',
+    'push-up',
+    'pushup',
+    'crunch',
+    'plank',
+    'hyperextension',
+  ];
+  for (final term in blocklist) {
+    if (name.contains(term)) return false;
+  }
+
+  // Allowlist evaluated second:
+  if (name.contains('barbell')) return true;
+  const allowlist = [
+    'deadlift',
+    'squat',
+    'bench press',
+    'overhead press',
+    'clean and jerk',
+    'snatch',
+    'power clean',
+    'front squat',
+    'zercher',
+    'good morning',
+    'hip thrust',
+    'pendlay row',
+    'barbell row',
+  ];
+  for (final term in allowlist) {
+    if (name.contains(term)) return true;
+  }
+
+  // Explicit documented default:
+  return true;
+}
 
 /// Reusable plate loading calculator view used across the workout player,
 /// exercise details sheet, and exercise history.
@@ -11,6 +80,7 @@ class PlateCalculatorView extends StatefulWidget {
   final bool showHeader;
   final VoidCallback? onClose;
   final EdgeInsetsGeometry padding;
+  final ValueChanged<double>? onApplyWeight;
 
   const PlateCalculatorView({
     super.key,
@@ -19,6 +89,7 @@ class PlateCalculatorView extends StatefulWidget {
     this.showHeader = false,
     this.onClose,
     this.padding = const EdgeInsets.all(B05Layout.space20),
+    this.onApplyWeight,
   });
 
   @override
@@ -107,6 +178,12 @@ class _PlateCalculatorViewState extends State<PlateCalculatorView> {
     _unmatchedWeight = double.parse(remaining.toStringAsFixed(2));
   }
 
+  static String _formatPlateEntry(MapEntry<double, int> entry) {
+    final weightStr =
+        entry.key % 1 == 0 ? entry.key.toStringAsFixed(1) : '${entry.key}';
+    return '${entry.value} × $weightStr kg';
+  }
+
   Color _getPlateColor(double weight) {
     switch (weight) {
       case 25.0:
@@ -149,7 +226,8 @@ class _PlateCalculatorViewState extends State<PlateCalculatorView> {
                 IconButton(
                   tooltip: 'Close plate calculator',
                   icon: const Icon(Icons.close),
-                  onPressed: widget.onClose ?? () => Navigator.of(context).maybePop(),
+                  onPressed:
+                      widget.onClose ?? () => Navigator.of(context).maybePop(),
                 ),
               ],
             ),
@@ -168,7 +246,9 @@ class _PlateCalculatorViewState extends State<PlateCalculatorView> {
                   if (widget.isEditable)
                     TextField(
                       controller: _targetWeightController,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
                       onChanged: _onTargetWeightChanged,
                       decoration: InputDecoration(
                         isDense: true,
@@ -177,7 +257,10 @@ class _PlateCalculatorViewState extends State<PlateCalculatorView> {
                           vertical: 10,
                         ),
                         suffixText: 'kg',
-                        suffixStyle: TextStyle(color: colors.action, fontWeight: FontWeight.bold),
+                        suffixStyle: TextStyle(
+                          color: colors.action,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     )
                   else
@@ -267,54 +350,62 @@ class _PlateCalculatorViewState extends State<PlateCalculatorView> {
                 padding: const EdgeInsets.all(B05Layout.space16),
                 child: Column(
                   children: [
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(width: 20, height: 6, color: Colors.grey),
-                          ..._calculatedPlates.entries.map((entry) {
-                            final double weight = entry.key;
-                            final int count = entry.value;
-                            return Row(
-                              children: List.generate(
-                                count,
-                                (_) => Container(
-                                  margin: const EdgeInsets.symmetric(
-                                    horizontal: 2,
-                                  ),
-                                  width: weight >= 20 ? 12 : 8,
-                                  height: weight >= 20 ? 50 : 36,
-                                  decoration: BoxDecoration(
-                                    color: _getPlateColor(weight),
-                                    borderRadius: BorderRadius.circular(4),
-                                    border: Border.all(color: colors.border),
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: Text(
-                                    weight % 1 == 0
-                                        ? '${weight.toInt()}'
-                                        : '$weight',
-                                    style: TextStyle(
-                                      fontSize: 8,
-                                      fontWeight: FontWeight.bold,
-                                      color: weight == 5.0
-                                          ? colors.textPrimary
-                                          : Colors.white,
+                    Semantics(
+                      label:
+                          'Barbell loading diagram: ${_calculatedPlates.entries.map(_formatPlateEntry).join(', ')} per side',
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(width: 20, height: 6, color: Colors.grey),
+                            ..._calculatedPlates.entries.map((entry) {
+                              final double weight = entry.key;
+                              final int count = entry.value;
+                              return Row(
+                                children: List.generate(
+                                  count,
+                                  (_) => Container(
+                                    margin: const EdgeInsets.symmetric(
+                                      horizontal: 2,
+                                    ),
+                                    width: weight >= 20 ? 12 : 8,
+                                    height: weight >= 20 ? 50 : 36,
+                                    decoration: BoxDecoration(
+                                      color: _getPlateColor(weight),
+                                      borderRadius: BorderRadius.circular(4),
+                                      border: Border.all(color: colors.border),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: Text(
+                                      weight % 1 == 0
+                                          ? '${weight.toInt()}'
+                                          : '$weight',
+                                      style: TextStyle(
+                                        fontSize: 8,
+                                        fontWeight: FontWeight.bold,
+                                        color: weight == 5.0
+                                            ? colors.textPrimary
+                                            : Colors.white,
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
-                            );
-                          }),
-                          Container(width: 10, height: 10, color: Colors.grey),
-                        ],
+                              );
+                            }),
+                            Container(
+                              width: 10,
+                              height: 10,
+                              color: Colors.grey,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                     const SizedBox(height: 12),
                     Text(
                       _calculatedPlates.entries
-                          .map((e) => '${e.value}x ${e.key}kg')
+                          .map(_formatPlateEntry)
                           .join('  +  '),
                       textAlign: TextAlign.center,
                       style: const TextStyle(
@@ -337,6 +428,19 @@ class _PlateCalculatorViewState extends State<PlateCalculatorView> {
                 ),
               ),
             ),
+          if (widget.onApplyWeight != null) ...[
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: B05ActionButton(
+                label: 'Apply to set',
+                hint:
+                    'Apply ${_targetWeight % 1 == 0 ? _targetWeight.toInt() : _targetWeight.toStringAsFixed(1)} kg to set input',
+                icon: Icons.check_rounded,
+                onPressed: () => widget.onApplyWeight!(_targetWeight),
+              ),
+            ),
+          ],
           const SizedBox(height: 12),
         ],
       ),
@@ -348,12 +452,37 @@ class _PlateCalculatorViewState extends State<PlateCalculatorView> {
 class PlateCalculatorSheet extends StatelessWidget {
   final double targetWeight;
   final bool isEditable;
+  final ValueChanged<double>? onApplyWeight;
+  final VoidCallback? onClose;
 
   const PlateCalculatorSheet({
     super.key,
     required this.targetWeight,
     this.isEditable = true,
+    this.onApplyWeight,
+    this.onClose,
   });
+
+  /// Opens the plate calculator as an IndiFit bottom sheet.
+  ///
+  /// To ensure single delivery and prevent double writes, callers should
+  /// either supply [onApplyWeight] or consume the returned [Future<double?>].
+  static Future<double?> show({
+    required BuildContext context,
+    required double initialWeight,
+    ValueChanged<double>? onApplyWeight,
+  }) {
+    return showIndiFitBottomSheet<double>(
+      context: context,
+      semanticLabel: 'Plate calculator',
+      builder: (sheetContext) => PlateCalculatorSheet(
+        targetWeight: initialWeight,
+        onApplyWeight: (weight) {
+          onApplyWeight?.call(weight);
+        },
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -361,6 +490,13 @@ class PlateCalculatorSheet extends StatelessWidget {
       initialTargetWeight: targetWeight,
       isEditable: isEditable,
       showHeader: true,
+      onApplyWeight: onApplyWeight == null
+          ? null
+          : (weight) {
+              Navigator.of(context).pop(weight);
+              onApplyWeight!(weight);
+            },
+      onClose: onClose,
     );
   }
 }

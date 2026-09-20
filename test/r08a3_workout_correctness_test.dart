@@ -13,6 +13,7 @@ import 'package:indifit/data/services/b02_workout_preparation_orchestrator.dart'
 import 'package:indifit/features/workout_player/b02_strength_execution_controller.dart';
 import 'package:indifit/features/workout_player/b02_strength_player_screen.dart';
 import 'package:indifit/features/workout_player/b02_workout_elapsed.dart';
+import 'support/indifit_test_harness.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -489,46 +490,41 @@ void main() {
     expect(find.text('1:02'), findsOneWidget);
   });
 
-  test(
-    'failed pause persistence is retried before allowing close',
-    () async {
-      now = DateTime.utc(2026, 8, 21, 10);
-      final launch = B02StrengthExecutionLaunch(
-        draftId: 2,
-        occurrenceId: null,
-        executionSnapshotJson:
-            '{"version":1,"routineName":"Pause retry"}',
-        state: B02ExecutionDraftState(
-          snapshotId: 'pause-retry-test',
-          snapshotVersion: 1,
-          activityType: B02ActivityType.strength,
-          routineName: 'Pause retry',
-          elapsedSeconds: 0,
-          activeSegmentStartedAtUtc: now,
-          currentExerciseOrdinal: 0,
-          currentSetOrdinal: 0,
-        ),
-      );
-      final adapter = _RouteTestAdapter(repository)
-        ..saveFailuresRemaining = 1;
-      final retryController = B02StrengthExecutionController(
-        adapter,
-        initialLaunch: launch,
-        nowUtc: () => now,
-      );
-      addTearDown(retryController.dispose);
+  test('failed pause persistence is retried before allowing close', () async {
+    now = DateTime.utc(2026, 8, 21, 10);
+    final launch = B02StrengthExecutionLaunch(
+      draftId: 2,
+      occurrenceId: null,
+      executionSnapshotJson: '{"version":1,"routineName":"Pause retry"}',
+      state: B02ExecutionDraftState(
+        snapshotId: 'pause-retry-test',
+        snapshotVersion: 1,
+        activityType: B02ActivityType.strength,
+        routineName: 'Pause retry',
+        elapsedSeconds: 0,
+        activeSegmentStartedAtUtc: now,
+        currentExerciseOrdinal: 0,
+        currentSetOrdinal: 0,
+      ),
+    );
+    final adapter = _RouteTestAdapter(repository)..saveFailuresRemaining = 1;
+    final retryController = B02StrengthExecutionController(
+      adapter,
+      initialLaunch: launch,
+      nowUtc: () => now,
+    );
+    addTearDown(retryController.dispose);
 
-      expect(await retryController.pauseElapsed(), isFalse);
-      expect(adapter.lastSavedState, isNull);
-      expect(
-        retryController.state.launch!.state.activeSegmentStartedAtUtc,
-        isNull,
-      );
+    expect(await retryController.pauseElapsed(), isFalse);
+    expect(adapter.lastSavedState, isNull);
+    expect(
+      retryController.state.launch!.state.activeSegmentStartedAtUtc,
+      isNull,
+    );
 
-      expect(await retryController.pauseElapsed(), isTrue);
-      expect(adapter.lastSavedState?.activeSegmentStartedAtUtc, isNull);
-    },
-  );
+    expect(await retryController.pauseElapsed(), isTrue);
+    expect(adapter.lastSavedState?.activeSegmentStartedAtUtc, isNull);
+  });
 
   testWidgets('close flow pauses the durable segment before route exit', (
     tester,
@@ -537,8 +533,7 @@ void main() {
     final launch = B02StrengthExecutionLaunch(
       draftId: 1,
       occurrenceId: null,
-      executionSnapshotJson:
-          '{"version":1,"routineName":"Back-safe workout"}',
+      executionSnapshotJson: '{"version":1,"routineName":"Back-safe workout"}',
       state: B02ExecutionDraftState(
         snapshotId: 'route-test',
         snapshotVersion: 1,
@@ -565,10 +560,8 @@ void main() {
         ),
         GoRoute(
           path: '/workout',
-          builder: (context, state) => B02StrengthPlayerScreen(
-            launch: launch,
-            nowUtc: () => now,
-          ),
+          builder: (context, state) =>
+              B02StrengthPlayerScreen(launch: launch, nowUtc: () => now),
         ),
       ],
     );
@@ -581,6 +574,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          workoutSessionWakeLockCoordinatorProvider.overrideWithValue(
+            createTestWorkoutWakeLockCoordinator(),
+          ),
           strengthExecutionCompatibilityAdapterProvider.overrideWithValue(
             adapter,
           ),

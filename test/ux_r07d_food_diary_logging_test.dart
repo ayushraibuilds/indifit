@@ -8,6 +8,7 @@ import 'package:indifit/core/nutrients.dart';
 import 'package:indifit/core/nutrition_calculation_service.dart';
 import 'package:indifit/core/nutrition_consumption_snapshots.dart';
 import 'package:indifit/core/nutrition_household_measures.dart';
+import 'package:indifit/core/raw_cooked_transformations.dart';
 import 'package:indifit/core/services/local_timezone_service.dart';
 import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/core/typed_quantities.dart';
@@ -307,7 +308,7 @@ void main() {
           historicalQuantity: options.baseQuantity,
         ),
       ];
-
+      await tester.runAsync(fixture.closeDatabase);
       await tester.pumpWidget(
         _r07dFoodApp(
           fixture: fixture,
@@ -326,8 +327,6 @@ void main() {
       expect(servingAdd, findsOneWidget);
       final servingAddPosition = tester.getCenter(servingAdd);
       await tester.tapAt(servingAddPosition);
-      await tester.pump();
-      expect(trackingLogger.directCalls, 1);
       await tester.tapAt(servingAddPosition);
       await tester.pump();
       expect(trackingLogger.directCalls, 1);
@@ -338,6 +337,8 @@ void main() {
       expect(trackingLogger.localDate, '2026-08-12');
       expect(trackingLogger.mealCategory, 'lunch');
       expect(trackingLogger.quantity?.unit, QuantityUnit.serving);
+      trackingLogger.complete();
+      await _settleR07D(tester);
     },
   );
 
@@ -354,7 +355,7 @@ void main() {
       tester.view.resetDevicePixelRatio();
       unawaited(fixture.close());
     });
-    await tester.runAsync(() async {
+    final diary = (await tester.runAsync(() async {
       final poha = await fixture.catalog.createUserFood(
         displayName: 'Diary poha',
         servingSize: 1,
@@ -407,7 +408,9 @@ void main() {
       await log(poha, 'breakfast', 'poha');
       await log(rice, 'lunch', 'rice');
       await log(dal, 'lunch', 'dal');
-    });
+      return _readDiaryFixture(fixture, DateTime(2026, 8, 12));
+    }))!;
+    await tester.runAsync(fixture.closeDatabase);
 
     await tester.pumpWidget(
       _r07dFoodApp(
@@ -416,6 +419,9 @@ void main() {
           selectedDate: DateTime(2026, 8, 12),
           today: DateTime(2026, 8, 13),
         ),
+        extraOverrides: [
+          foodDiaryReadModelProvider.overrideWith((ref, date) async => diary),
+        ],
       ),
     );
     await _settleR07D(tester);
@@ -441,6 +447,10 @@ void main() {
         tester.view.resetDevicePixelRatio();
         unawaited(fixture.close());
       });
+      final diary = (await tester.runAsync(
+        () => _readDiaryFixture(fixture, DateTime(2026, 8, 12)),
+      ))!;
+      await tester.runAsync(fixture.closeDatabase);
 
       await tester.pumpWidget(
         _r07dFoodApp(
@@ -449,6 +459,9 @@ void main() {
             selectedDate: DateTime(2026, 8, 12),
             today: DateTime(2026, 8, 13),
           ),
+          extraOverrides: [
+            foodDiaryReadModelProvider.overrideWith((ref, date) async => diary),
+          ],
         ),
       );
       await _settleR07D(tester);
@@ -490,6 +503,8 @@ void main() {
       tester.view.resetDevicePixelRatio();
       unawaited(fixture.close());
     });
+    final loadingDiary = Completer<FoodDiaryReadModel>();
+    await tester.runAsync(fixture.closeDatabase);
 
     await tester.pumpWidget(
       _r07dFoodApp(
@@ -499,6 +514,11 @@ void main() {
           selectedDate: DateTime(2026, 8, 12),
           today: DateTime(2026, 8, 13),
         ),
+        extraOverrides: [
+          foodDiaryReadModelProvider.overrideWith(
+            (ref, date) => loadingDiary.future,
+          ),
+        ],
       ),
     );
     await _settleR07D(tester);
@@ -542,10 +562,18 @@ void main() {
         ),
       ),
     );
+    final dialogCoordinator = _NoTransformationFoodLoggingCoordinator(
+      db: fixture.db,
+      registry: fixture.registry,
+      catalog: fixture.catalog,
+      consumption: fixture.consumption,
+    );
+    await tester.runAsync(fixture.closeDatabase);
 
     await tester.pumpWidget(
       _r07dFoodApp(
         fixture: fixture,
+        logger: dialogCoordinator,
         recent: [
           CanonicalRecentFood(
             option: mass!,
@@ -609,10 +637,18 @@ void main() {
           ),
         ),
       );
+      final dialogCoordinator = _NoTransformationFoodLoggingCoordinator(
+        db: fixture.db,
+        registry: fixture.registry,
+        catalog: fixture.catalog,
+        consumption: fixture.consumption,
+      );
+      await tester.runAsync(fixture.closeDatabase);
 
       await tester.pumpWidget(
         _r07dFoodApp(
           fixture: fixture,
+          logger: dialogCoordinator,
           textScale: 2,
           recent: [
             CanonicalRecentFood(
@@ -646,7 +682,10 @@ void main() {
       );
       final quantityScroll = find.descendant(
         of: quantitySurface,
-        matching: find.byType(SingleChildScrollView),
+        matching: find.byWidgetPredicate(
+          (w) =>
+              w is SingleChildScrollView && w.scrollDirection == Axis.vertical,
+        ),
       );
       expect(quantityScroll, findsOneWidget);
       await tester.drag(quantityScroll, const Offset(0, -700));
@@ -667,6 +706,7 @@ Widget _r07dFoodApp({
   List<CanonicalRecentFood> recent = const [],
   NutritionFoodLoggingCoordinator? logger,
   double textScale = 1,
+  List<Override> extraOverrides = const [],
 }) => ProviderScope(
   overrides: [
     databaseProvider.overrideWithValue(fixture.db),
@@ -686,8 +726,12 @@ Widget _r07dFoodApp({
     nutritionFoodLoggingCoordinatorProvider.overrideWith(
       (ref) async => logger ?? fixture.logger,
     ),
+    nutritionTargetAuthorityChangesProvider.overrideWith(
+      (ref) => const Stream<Object>.empty(),
+    ),
     foodRepositoryProvider.overrideWithValue(_EmptyFoodRepository(fixture.db)),
     canonicalRecentFoodsProvider.overrideWith((ref) async => recent),
+    ...extraOverrides,
   ],
   child: MaterialApp(
     theme: AppTheme.lightTheme,
@@ -709,6 +753,31 @@ Future<void> _settleR07D(WidgetTester tester) async {
   await tester.pump(const Duration(milliseconds: 400));
 }
 
+Future<FoodDiaryReadModel> _readDiaryFixture(
+  _R07DFixture fixture,
+  DateTime date,
+) async {
+  final container = ProviderContainer(
+    overrides: [
+      databaseProvider.overrideWithValue(fixture.db),
+      localTimezoneServiceProvider.overrideWithValue(
+        LocalTimezoneService(read: () async => 'Asia/Kolkata'),
+      ),
+      nutritionReadModelRepositoryProvider.overrideWith(
+        (ref) async => fixture.readModels,
+      ),
+      nutritionTargetAuthorityChangesProvider.overrideWith(
+        (ref) => const Stream<Object>.empty(),
+      ),
+    ],
+  );
+  try {
+    return await container.read(foodDiaryReadModelProvider(date).future);
+  } finally {
+    container.dispose();
+  }
+}
+
 class _R07DFixture {
   _R07DFixture._(
     this.db,
@@ -726,6 +795,7 @@ class _R07DFixture {
   final NutritionFoodLoggingCoordinator logger;
   final NutritionReadModelRepository readModels;
   final String userId = 'r07d-test-user';
+  bool _databaseClosed = false;
 
   static Future<_R07DFixture> create() async {
     final db = AppDatabase.memory();
@@ -761,7 +831,13 @@ class _R07DFixture {
     );
   }
 
-  Future<void> close() => db.close();
+  Future<void> close() => closeDatabase();
+
+  Future<void> closeDatabase() async {
+    if (_databaseClosed) return;
+    _databaseClosed = true;
+    await db.close();
+  }
 }
 
 class _CountingBatchCoordinator extends NutritionFoodLoggingCoordinator {
@@ -803,6 +879,24 @@ class _CountingBatchCoordinator extends NutritionFoodLoggingCoordinator {
   }
 }
 
+class _NoTransformationFoodLoggingCoordinator
+    extends NutritionFoodLoggingCoordinator {
+  _NoTransformationFoodLoggingCoordinator({
+    required super.db,
+    required super.registry,
+    required super.catalog,
+    required super.consumption,
+  }) : super(
+         calculator: const NutritionCalculationService(),
+         transformations: NutritionTransformationRepository(db: db),
+       );
+
+  @override
+  Future<List<NutritionTransformation>> transformationsFor(
+    NutritionFoodOption option,
+  ) async => const [];
+}
+
 class _TrackingFastAddCoordinator extends NutritionFoodLoggingCoordinator {
   _TrackingFastAddCoordinator({
     required super.db,
@@ -818,7 +912,24 @@ class _TrackingFastAddCoordinator extends NutritionFoodLoggingCoordinator {
   String? mealCategory;
   String? localDate;
   Quantity? quantity;
+  String? _userId;
+  DateTime? _loggedAt;
+  String? _timezoneId;
   final Completer<NutritionConsumptionSnapshot> _completion = Completer();
+
+  void complete() {
+    if (_completion.isCompleted) return;
+    _completion.complete(
+      _testConsumptionSnapshot(
+        id: 'test-fast-add-snapshot',
+        userId: _userId!,
+        loggedAt: _loggedAt!,
+        mealCategory: mealCategory!,
+        localDate: localDate!,
+        timezoneId: _timezoneId!,
+      ),
+    );
+  }
 
   @override
   Future<NutritionConsumptionSnapshot> finalize({
@@ -836,6 +947,9 @@ class _TrackingFastAddCoordinator extends NutritionFoodLoggingCoordinator {
     String? correctionReason,
   }) {
     directCalls++;
+    _userId = userId;
+    _loggedAt = loggedAt;
+    _timezoneId = timezoneId;
     this.mealCategory = mealCategory;
     this.localDate = localDate;
     quantity = preview.quantity;

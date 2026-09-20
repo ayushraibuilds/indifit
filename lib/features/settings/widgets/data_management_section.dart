@@ -1,8 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/backup/backup_file_adapter.dart';
+import '../../../core/config/app_preferences_keys.dart';
+import '../../../core/di/providers.dart';
 import '../../../core/presentation/product_failure_presentation.dart';
 import '../../../core/presentation/today_onboarding_handoff.dart';
 import '../../../core/router/app_router.dart';
@@ -12,16 +16,25 @@ import '../../../core/widgets/b05_accessibility_primitives.dart';
 import '../../onboarding/onboarding_screen.dart';
 import '../settings_controller.dart';
 import 'backup_restore_card.dart';
+import 'cloud_backup_card.dart';
 import 'privacy_disclosure_card.dart';
 import 'settings_reminder_toggle.dart';
 
 class DataManagementSection extends ConsumerWidget {
   const DataManagementSection({super.key});
 
+  Future<SharedPreferences> _getPrefs(WidgetRef ref) async {
+    try {
+      return ref.read(sharedPreferencesProvider);
+    } catch (_) {
+      return await SharedPreferences.getInstance();
+    }
+  }
+
   Future<void> _syncOnboardingGate(WidgetRef ref) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs(ref);
     ref.read(onboardingCompletedProvider.notifier).state =
-        prefs.getBool('onboarding_completed') ?? false;
+        prefs.getBool(AppPreferenceKeys.onboardingCompleted) ?? false;
   }
 
   Future<void> _showExportDialog(BuildContext context, WidgetRef ref) async {
@@ -410,9 +423,9 @@ class DataManagementSection extends ConsumerWidget {
 
     if (confirmed != true || !context.mounted) return;
     try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('onboarding_completed', false);
-      await clearTodayOnboardingHandoff();
+      final prefs = await _getPrefs(ref);
+      await prefs.setBool(AppPreferenceKeys.onboardingCompleted, false);
+      await clearTodayOnboardingHandoff(prefs);
       ref.read(onboardingCompletedProvider.notifier).state = false;
     } catch (_) {
       if (context.mounted) {
@@ -431,6 +444,150 @@ class DataManagementSection extends ConsumerWidget {
         (route) => false,
       );
     }
+  }
+
+  Future<void> _eraseAllData(BuildContext context, WidgetRef ref) async {
+    // Step 1: Warning modal detailing erasure scope and external health disclosure
+    final proceedToConfirm = await showDialog<bool>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(
+              Icons.warning_amber_rounded,
+              color: dialogCtx.b05Colors.danger.foreground,
+              size: B05Layout.iconLarge,
+            ),
+            const SizedBox(width: B05Layout.space8),
+            const Expanded(child: Text('Erase all personal data?')),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'This permanently deletes all your data from this device. It cannot be undone.',
+                style: TextStyle(
+                  color: dialogCtx.b05Colors.danger.foreground,
+                  fontWeight: FontWeight.w600,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: B05Layout.space12),
+              Text(
+                'What will be deleted:',
+                style: B05Typography.label(dialogCtx),
+              ),
+              const SizedBox(height: B05Layout.space4),
+              Text('• All logged workouts, sets, and custom routines',
+                  style: B05Typography.body(dialogCtx)),
+              Text('• All logged foods, custom foods, recipes, and water',
+                  style: B05Typography.body(dialogCtx)),
+              Text('• Body measurements, goals, and profile information',
+                  style: B05Typography.body(dialogCtx)),
+              Text('• Local automatic and manual recovery backups',
+                  style: B05Typography.body(dialogCtx)),
+              Text('• App settings, reminders, and secure backup secrets',
+                  style: B05Typography.body(dialogCtx)),
+              const SizedBox(height: B05Layout.space16),
+              Container(
+                padding: const EdgeInsets.all(B05Layout.space12),
+                decoration: BoxDecoration(
+                  color: dialogCtx.b05Colors.surfaceSubtle,
+                  borderRadius: B05Radii.mediumRadius,
+                  border: Border.all(color: dialogCtx.b05Colors.border),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'External Health Data Notice',
+                      style: B05Typography.label(dialogCtx),
+                    ),
+                    const SizedBox(height: B05Layout.space4),
+                    Text(
+                      'Health data previously synced to Apple Health or Android Health Connect remains stored in your operating system health app. IndiFit will disconnect and revoke sync permissions.',
+                      style: B05Typography.caption(dialogCtx),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: dialogCtx.b05Colors.danger.container,
+              foregroundColor: dialogCtx.b05Colors.danger.foreground,
+            ),
+            onPressed: () => Navigator.pop(dialogCtx, true),
+            child: const Text('Continue to confirm'),
+          ),
+        ],
+      ),
+    );
+
+    if (proceedToConfirm != true || !context.mounted) return;
+
+    // Step 2: Typed confirmation modal requiring 'DELETE'
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogCtx) => const _DeleteConfirmationDialog(),
+    );
+
+    if (confirmed != true || !context.mounted) return;
+
+    // Step 3: Execution and Verification
+    final erasureService = ref.read(dataErasureServiceProvider);
+
+    DataErasureReport report;
+    try {
+      report = await erasureService.eraseAllData();
+    } catch (e) {
+      if (context.mounted) {
+        _showSnack(context, 'Erasure failed: $e', error: true);
+      }
+      return;
+    }
+
+    if (!context.mounted) return;
+
+    if (!report.isSuccess) {
+      await showDialog<void>(
+        context: context,
+        builder: (errCtx) => AlertDialog(
+          title: const Text('Erasure verification failed'),
+          content: Text(
+            'Complete erasure could not be verified: ${report.failureReason ?? 'Unknown error'}. Some records or files may remain on this device.',
+            style: B05Typography.body(errCtx),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(errCtx),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    // Success: Invalidate all Riverpod in-memory state
+    resetIndiFitUserState(ref);
+
+    _showSnack(context, 'All personal data has been erased.');
+
+    await Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+      (route) => false,
+    );
   }
 
   @override
@@ -453,6 +610,12 @@ class DataManagementSection extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              const CloudBackupCard(),
+              const SizedBox(height: B05Layout.space16),
+              Divider(color: context.b05Colors.border),
+              const SizedBox(height: B05Layout.space16),
+              Text('Manual backup files', style: B05Typography.title(context)),
+              const SizedBox(height: B05Layout.space4),
               Text(
                 'Backups include supported IndiFit records and settings. Photos and other device files are not included.',
                 style: B05Typography.body(context),
@@ -527,7 +690,7 @@ class DataManagementSection extends ConsumerWidget {
           iconColor: context.b05Colors.info.indicator,
           title: 'Offline mode',
           subtitle:
-              'Block app-initiated online requests, photo uploads, online food search and crash reporting.',
+              'Block app-initiated online food search and crash reporting.',
           value: state.offlineOnly,
           requestNotificationPermission: false,
           onChanged: (value) => ref
@@ -607,6 +770,33 @@ class DataManagementSection extends ConsumerWidget {
                   onPressed: isBusy
                       ? null
                       : () => _resetOnboarding(context, ref),
+                ),
+              ),
+              const SizedBox(height: B05Layout.space16),
+              Divider(color: colors.border),
+              const SizedBox(height: B05Layout.space12),
+              Text(
+                'Erase all data and reset',
+                style: B05Typography.label(context).copyWith(
+                  color: colors.danger.foreground,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: B05Layout.space4),
+              Text(
+                'Permanently erase all workouts, nutrition logs, personal measurements, custom foods and exercises, settings, and local backups. This cannot be undone.',
+                style: B05Typography.caption(context),
+              ),
+              const SizedBox(height: B05Layout.space12),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: B05ActionButton(
+                  icon: Icons.delete_forever_rounded,
+                  label: 'Erase all data',
+                  hint:
+                      'Permanently delete all personal data and reset the app.',
+                  emphasis: B05ActionEmphasis.danger,
+                  onPressed: isBusy ? null : () => _eraseAllData(context, ref),
                 ),
               ),
             ],
@@ -705,6 +895,75 @@ class _SectionHeader extends StatelessWidget {
           letterSpacing: 0.8,
         ),
       ),
+    );
+  }
+}
+
+class _DeleteConfirmationDialog extends StatefulWidget {
+  const _DeleteConfirmationDialog();
+
+  @override
+  State<_DeleteConfirmationDialog> createState() =>
+      _DeleteConfirmationDialogState();
+}
+
+class _DeleteConfirmationDialogState extends State<_DeleteConfirmationDialog> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDeleteTyped = _controller.text.trim() == 'DELETE';
+    return AlertDialog(
+      title: const Text('Type DELETE to confirm'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'To prevent accidental loss, type DELETE in all capital letters below to permanently erase all data and reset the app.',
+              style: B05Typography.body(context),
+            ),
+            const SizedBox(height: B05Layout.space16),
+            TextField(
+              controller: _controller,
+              autofocus: true,
+              decoration: const InputDecoration(
+                hintText: 'Type DELETE',
+                border: OutlineInputBorder(),
+              ),
+              onChanged: (_) => setState(() {}),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          style: FilledButton.styleFrom(
+            backgroundColor: context.b05Colors.danger.container,
+            foregroundColor: context.b05Colors.danger.foreground,
+          ),
+          onPressed:
+              isDeleteTyped ? () => Navigator.pop(context, true) : null,
+          child: const Text('Erase all data'),
+        ),
+      ],
     );
   }
 }

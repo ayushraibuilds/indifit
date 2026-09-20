@@ -20,6 +20,8 @@ import 'package:indifit/features/dashboard/today_presentation_types.dart';
 import 'package:indifit/features/dashboard/today_surface_controller.dart';
 import 'package:indifit/features/training/training_screen.dart';
 
+import 'support/indifit_test_harness.dart';
+
 void main() {
   final now = DateTime.utc(2026, 3, 2, 10);
   late AppDatabase db;
@@ -28,7 +30,7 @@ void main() {
   late ProgramActivationCoordinator activation;
 
   setUp(() async {
-    db = AppDatabase.memory();
+    db = registerTestDatabaseScope().create();
     dates = LocalScheduleDateService(nowUtc: () => now);
     programs = ProgramRepository(db);
     activation = ProgramActivationCoordinator(
@@ -50,8 +52,6 @@ void main() {
           ),
         );
   });
-
-  tearDown(() => db.close());
 
   Future<String> createPlan(String name) async {
     final programId = await programs.createProgram(

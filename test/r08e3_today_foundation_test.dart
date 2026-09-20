@@ -40,6 +40,7 @@ void main() {
         'today.next_action',
         'today.meals',
         'today.meal_rows',
+        'today.hydration',
         'today.workout',
         'today.activity',
         'today.progress',
@@ -47,7 +48,8 @@ void main() {
       expect(layout[0].isVisible, isTrue);
       expect(layout[1].isVisible, isTrue);
       expect(layout[2].isVisible, isTrue);
-      expect(layout.skip(3).every((item) => !item.isVisible), isTrue);
+      expect(layout[3].isVisible, isTrue);
+      expect(layout.skip(4).every((item) => !item.isVisible), isTrue);
     },
   );
 

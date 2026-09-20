@@ -11,7 +11,6 @@ import 'package:indifit/core/errors/app_failure.dart';
 import 'package:indifit/core/services/achievement_service.dart';
 import 'package:indifit/core/services/notification_service.dart';
 import 'package:indifit/core/theme/app_theme.dart';
-import 'package:indifit/core/widgets/failure_state_widget.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/repositories/health_service.dart';
 import 'package:indifit/data/repositories/progress_statistics_repository.dart';
@@ -189,43 +188,7 @@ void main() {
       },
     );
 
-    testWidgets(
-      '5. FailureStateWidget renders safe copy and responds to retry action',
-      (WidgetTester tester) async {
-        bool retried = false;
-        final failure = AppFailure.network(
-          message: 'Unable to connect to IndiFit AI server.',
-          onRetry: () => retried = true,
-        );
 
-        await tester.pumpWidget(
-          MaterialApp(
-            theme: AppTheme.lightTheme,
-            home: Scaffold(
-              body: FailureStateWidget(
-                failure: failure,
-                onRetry: () => retried = true,
-              ),
-            ),
-          ),
-        );
-
-        expect(
-          find.text('Check your connection and try again.'),
-          findsOneWidget,
-        );
-        expect(
-          find.text('Unable to connect to IndiFit AI server.'),
-          findsNothing,
-        );
-        expect(find.text('Retry'), findsOneWidget);
-
-        await tester.tap(find.text('Retry'));
-        await tester.pump();
-
-        expect(retried, isTrue);
-      },
-    );
 
     testWidgets('6. HealthSyncHubScreen displays category permission toggles', (
       WidgetTester tester,
@@ -259,7 +222,7 @@ void main() {
     test(
       '7. Timezone resolver handles injected IANA locations and DST transitions cleanly',
       () async {
-        await NotificationService.initialize();
+        await NotificationService.initialize(() async => 'Asia/Kolkata');
         final prefs = await SharedPreferences.getInstance();
 
         await prefs.setString(
@@ -269,7 +232,10 @@ void main() {
         await prefs.setInt(NotificationService.prefLastUtcOffsetMinutes, 0);
 
         final rescheduled =
-            await NotificationService.checkAndUpdateTimezoneAndReschedule(db);
+            await NotificationService.checkAndUpdateTimezoneAndReschedule(
+              db,
+              () async => 'Asia/Kolkata',
+            );
         expect(rescheduled, isTrue);
       },
     );

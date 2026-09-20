@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart' hide TextDirection;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../core/config/app_preferences_keys.dart';
+import '../../core/di/core_providers.dart';
 import '../../core/services/achievement_service.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../data/repositories/progress_statistics_repository.dart';
 import '../dashboard/dashboard_controller.dart';
+import 'widgets/achievement_detail_sheet.dart';
 
 class AchievementsScreen extends ConsumerStatefulWidget {
   const AchievementsScreen({super.key});
@@ -33,23 +37,19 @@ class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
 
     try {
       final statsRepo = ref.read(progressStatisticsRepositoryProvider);
-      final stats = await statsRepo.getLifetimeStats();
-      final prefs = await SharedPreferences.getInstance();
+      SharedPreferences? prefs;
+      try {
+        prefs = ref.read(sharedPreferencesProvider);
+      } catch (_) {}
+      prefs ??= await SharedPreferences.getInstance();
       final streak =
-          prefs.getInt('user_streak_count') ??
+          prefs.getInt(AppPreferenceKeys.userStreakCount) ??
           ref.read(dashboardControllerProvider).streakCount;
 
-      final achievements = AchievementService.evaluateFromLifetimeStats(
-        stats: stats,
+      final achievements = await AchievementService.recordAndEvaluate(
+        statsRepository: statsRepo,
         currentStreakDays: streak,
       );
-
-      // Record any newly unlocked achievements in SQLite
-      for (final a in achievements) {
-        if (a.isUnlocked && !stats.unlockedAchievementIds.containsKey(a.id)) {
-          await statsRepo.unlockAchievement(a.id);
-        }
-      }
 
       if (mounted) {
         setState(() {
@@ -65,6 +65,16 @@ class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
         });
       }
     }
+  }
+
+  static String _formatCompactEvidence(Achievement item, String? dateStr) {
+    var ev = item.evidence
+        .replaceAll(' volume recorded', '')
+        .replaceAll(' logged', '');
+    if (item.isUnlocked && dateStr != null && dateStr.isNotEmpty) {
+      return '$ev · $dateStr';
+    }
+    return ev;
   }
 
   @override
@@ -131,6 +141,9 @@ class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
     }
 
     final unlockedCount = _achievements.where((a) => a.isUnlocked).length;
+    final allComplete =
+        _achievements.isNotEmpty && unlockedCount == _achievements.length;
+    final recentlyUnlocked = AchievementService.getRecentlyUnlocked(_achievements);
 
     return ListView(
       padding: const EdgeInsets.all(B05Layout.space16),
@@ -138,16 +151,19 @@ class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
         // Unlocked summary banner
         Semantics(
           container: true,
-          label:
-              '$unlockedCount of ${_achievements.length} achievements unlocked. Keep training and logging to earn badges.',
+          label: allComplete
+              ? 'All 9 achievements unlocked! Incredible dedication.'
+              : '$unlockedCount of ${_achievements.length} achievements unlocked. Keep training and logging to earn badges.',
           child: B05Surface(
-            tone: B05SurfaceTone.inset,
+            tone: allComplete
+                ? B05SurfaceTone.selected
+                : B05SurfaceTone.inset,
             padding: const EdgeInsets.all(B05Layout.space16),
             child: Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.emoji_events_rounded,
-                  color: Colors.amber,
+                  color: allComplete ? Colors.amber : colors.action,
                   size: 36,
                 ),
                 const SizedBox(width: B05Layout.space12),
@@ -156,12 +172,16 @@ class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '$unlockedCount / ${_achievements.length} Unlocked',
+                        allComplete
+                            ? 'All 9 Badges Unlocked!'
+                            : '$unlockedCount / ${_achievements.length} Unlocked',
                         style: B05Typography.title(context),
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'Keep training and logging to earn badges!',
+                        allComplete
+                            ? 'Incredible dedication! You have earned every milestone.'
+                            : 'Keep training and logging to earn badges!',
                         style: B05Typography.caption(context),
                       ),
                     ],
@@ -173,6 +193,7 @@ class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
         ),
         const SizedBox(height: B05Layout.space16),
 
+        // Empty state when 0 unlocked
         if (unlockedCount == 0) ...[
           B05Surface(
             tone: B05SurfaceTone.section,
@@ -208,6 +229,81 @@ class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
           const SizedBox(height: B05Layout.space16),
         ],
 
+        // Recently unlocked horizontal carousel
+        if (recentlyUnlocked.isNotEmpty) ...[
+          Text(
+            'RECENTLY UNLOCKED',
+            style: B05Typography.caption(
+              context,
+            ).copyWith(fontWeight: FontWeight.w700, letterSpacing: 0.5),
+          ),
+          const SizedBox(height: B05Layout.space12),
+          SizedBox(
+            height: 100,
+            child: ListView.separated(
+              key: const Key('recently_unlocked_carousel'),
+              scrollDirection: Axis.horizontal,
+              itemCount: recentlyUnlocked.length,
+              separatorBuilder: (_, _) => const SizedBox(width: B05Layout.space12),
+              itemBuilder: (context, index) {
+                final item = recentlyUnlocked[index];
+                final dateStr = item.unlockedAt != null
+                    ? DateFormat('d MMM yyyy').format(item.unlockedAt!.toLocal())
+                    : null;
+                return InkWell(
+                  borderRadius: BorderRadius.circular(B05Radii.large),
+                  onTap: () => showAchievementDetailSheet(
+                    context,
+                    achievement: item,
+                  ),
+                  child: B05Surface(
+                    tone: B05SurfaceTone.selected,
+                    radius: B05SurfaceRadius.large,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: B05Layout.space16,
+                      vertical: B05Layout.space12,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CircleAvatar(
+                          radius: 22,
+                          backgroundColor: item.color.withValues(alpha: 0.2),
+                          child: Icon(item.icon, color: item.color, size: 22),
+                        ),
+                        const SizedBox(width: B05Layout.space12),
+                        Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              item.title,
+                              style: B05Typography.label(context).copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: colors.textPrimary,
+                              ),
+                            ),
+                            if (dateStr != null) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                dateStr,
+                                style: B05Typography.caption(context).copyWith(
+                                  color: colors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: B05Layout.space16),
+        ],
+
         Text(
           'ALL BADGES',
           style: B05Typography.caption(
@@ -217,9 +313,14 @@ class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
         const SizedBox(height: B05Layout.space12),
 
         LayoutBuilder(
-          builder: (context, _) {
+          builder: (context, constraints) {
             final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
-            final useSingleColumn = textScale >= 1.5;
+            final isNarrow = constraints.maxWidth < 350;
+            final useSingleColumn =
+                textScale >= 1.35 || (isNarrow && textScale > 1.15);
+            final childAspectRatio = useSingleColumn
+                ? (1.5 / textScale).clamp(0.65, 1.15)
+                : 0.60;
             return GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -227,110 +328,139 @@ class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
                 crossAxisCount: useSingleColumn ? 1 : 2,
                 crossAxisSpacing: 12,
                 mainAxisSpacing: 12,
-                childAspectRatio: useSingleColumn ? 1.3 : 0.88,
+                childAspectRatio: childAspectRatio,
               ),
               itemCount: _achievements.length,
               itemBuilder: (context, index) {
                 final item = _achievements[index];
+                final dateStr = item.unlockedAt != null
+                    ? DateFormat('d MMM yyyy').format(item.unlockedAt!.toLocal())
+                    : null;
                 final semanticLabel =
                     '${item.title}: ${item.description}. '
-                    '${item.isUnlocked ? 'Unlocked.' : 'Locked. ${(item.progressPercentage * 100).toInt()}% progress.'}';
+                    '${item.isUnlocked ? 'Unlocked on ${dateStr ?? 'record'}.' : 'Locked. ${(item.progressPercentage * 100).toInt()}% progress.'}';
 
                 return Semantics(
                   container: true,
                   label: semanticLabel,
-                  child: B05Surface(
-                    tone: item.isUnlocked
-                        ? B05SurfaceTone.selected
-                        : B05SurfaceTone.inset,
-                    radius: B05SurfaceRadius.large,
-                    padding: const EdgeInsets.all(B05Layout.space12),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            CircleAvatar(
-                              radius: 26,
-                              backgroundColor: item.isUnlocked
-                                  ? item.color.withValues(alpha: 0.2)
-                                  : colors.border.withValues(alpha: 0.4),
-                              child: Icon(
-                                item.icon,
-                                color: item.isUnlocked
-                                    ? item.color
-                                    : colors.textDisabled,
-                                size: 26,
-                              ),
-                            ),
-                            if (item.isUnlocked)
-                              Positioned(
-                                right: 0,
-                                bottom: 0,
-                                child: Container(
-                                  padding: const EdgeInsets.all(2),
-                                  decoration: BoxDecoration(
-                                    color: colors.section,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Icon(
-                                    Icons.check_circle_rounded,
-                                    color: item.color,
-                                    size: 14,
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: B05Layout.space8),
-                        Text(
-                          item.title,
-                          style: B05Typography.label(context).copyWith(
-                            color: item.isUnlocked
-                                ? colors.textPrimary
-                                : colors.textSecondary,
-                            fontWeight: FontWeight.w700,
-                          ),
-                          textAlign: TextAlign.center,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          item.description,
-                          style: B05Typography.caption(context),
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: B05Layout.space8),
-                        TweenAnimationBuilder<double>(
-                          tween: Tween<double>(
-                            begin: 0.0,
-                            end: item.progressPercentage,
-                          ),
-                          duration: const Duration(milliseconds: 600),
-                          curve: Curves.easeOutCubic,
-                          builder: (context, animVal, _) {
-                            return ClipRRect(
-                              borderRadius: BorderRadius.circular(4),
-                              child: LinearProgressIndicator(
-                                value: animVal,
-                                backgroundColor: colors.border.withValues(
-                                  alpha: 0.5,
-                                ),
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  item.isUnlocked
+                  child: InkWell(
+                    key: Key('achievement_card_${item.id}'),
+                    borderRadius: BorderRadius.circular(B05Radii.large),
+                    onTap: () => showAchievementDetailSheet(
+                      context,
+                      achievement: item,
+                    ),
+                    child: B05Surface(
+                      tone: item.isUnlocked
+                          ? B05SurfaceTone.selected
+                          : B05SurfaceTone.inset,
+                      radius: B05SurfaceRadius.large,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: B05Layout.space12,
+                        vertical: B05Layout.space12,
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              CircleAvatar(
+                                radius: 24,
+                                backgroundColor: item.isUnlocked
+                                    ? item.color.withValues(alpha: 0.2)
+                                    : colors.border.withValues(alpha: 0.4),
+                                child: Icon(
+                                  item.icon,
+                                  color: item.isUnlocked
                                       ? item.color
                                       : colors.textDisabled,
+                                  size: 24,
                                 ),
-                                minHeight: 4,
                               ),
-                            );
-                          },
-                        ),
-                      ],
+                              if (item.isUnlocked)
+                                Positioned(
+                                  right: 0,
+                                  bottom: 0,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(2),
+                                    decoration: BoxDecoration(
+                                      color: colors.section,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(
+                                      Icons.check_circle_rounded,
+                                      color: item.color,
+                                      size: 14,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: B05Layout.space8),
+                          Text(
+                            item.title,
+                            style: B05Typography.label(context).copyWith(
+                              color: item.isUnlocked
+                                  ? colors.textPrimary
+                                  : colors.textSecondary,
+                              fontWeight: FontWeight.w700,
+                            ),
+                            textAlign: TextAlign.center,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            item.description,
+                            style: B05Typography.caption(context),
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          // Factual Evidence proof & unlock date
+                          Text(
+                            _formatCompactEvidence(item, dateStr),
+                            style: B05Typography.caption(context).copyWith(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: item.isUnlocked
+                                  ? colors.textSecondary
+                                  : colors.textDisabled,
+                            ),
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: B05Layout.space8),
+                          TweenAnimationBuilder<double>(
+                            tween: Tween<double>(
+                              begin: 0.0,
+                              end: item.progressPercentage,
+                            ),
+                            duration: const Duration(milliseconds: 600),
+                            curve: Curves.easeOutCubic,
+                            builder: (context, animVal, _) {
+                              return ClipRRect(
+                                borderRadius: BorderRadius.circular(4),
+                                child: LinearProgressIndicator(
+                                  value: animVal,
+                                  backgroundColor: colors.border.withValues(
+                                    alpha: 0.5,
+                                  ),
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    item.isUnlocked
+                                        ? item.color
+                                        : colors.textDisabled,
+                                  ),
+                                  minHeight: 4,
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 );

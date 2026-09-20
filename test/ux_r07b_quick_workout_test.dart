@@ -1,14 +1,15 @@
-import 'dart:async';
 import 'dart:convert';
 
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:indifit/core/di/providers.dart';
 import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/models/b02_execution_models.dart';
 import 'package:indifit/data/repositories/b02_strength_execution_repository.dart';
+import 'package:indifit/data/repositories/b07_exercise_context_repository.dart';
 import 'package:indifit/data/repositories/calendar_repository.dart';
 import 'package:indifit/data/repositories/program_repository.dart';
 import 'package:indifit/data/repositories/workout_repository.dart';
@@ -56,7 +57,7 @@ void main() {
     }
   });
 
-  tearDown(() => unawaited(db.close()));
+  tearDown(() => db.close());
 
   Future<B02StrengthExecutionLaunch> activeQuickLaunch() async {
     final launch = await executions.startUnscheduledDraft(
@@ -376,6 +377,9 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            b07ExerciseContextProvider.overrideWith(
+              (ref, id) async => const B07ExerciseContextResult.unavailable(),
+            ),
             b02StrengthExecutionScreenControllerProvider.overrideWith(
               (ref, _) => controller,
             ),
@@ -432,6 +436,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          b07ExerciseContextProvider.overrideWith(
+            (ref, id) async => const B07ExerciseContextResult.unavailable(),
+          ),
           b02StrengthExecutionScreenControllerProvider.overrideWith(
             (ref, _) => controller,
           ),
@@ -491,6 +498,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          b07ExerciseContextProvider.overrideWith(
+            (ref, id) async => const B07ExerciseContextResult.unavailable(),
+          ),
           b02StrengthExecutionScreenControllerProvider.overrideWith(
             (ref, _) => controller,
           ),

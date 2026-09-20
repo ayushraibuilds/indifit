@@ -30,7 +30,7 @@ class ProgressDashboardReadRepository {
     @Deprecated('Use nutritionTargets.')
     NutritionGoalRepository? nutritionGoals,
     LocalScheduleDateService? dates,
-  }) : _workouts = workouts ?? WorkoutRepository(_database),
+  }) : _workouts = workouts ?? WorkoutRepository(_database, dateService: dates),
        _muscleVolume = muscleVolume ?? B02MuscleVolumeRepository(_database),
        _nutrition = nutrition,
        _nutritionTargets =

@@ -14,6 +14,8 @@ import 'package:indifit/data/repositories/nutrition_target_authority.dart';
 import 'package:indifit/features/coaching/b04_production_surface_controller.dart';
 import 'package:indifit/features/settings/nutrition_targets_hub_screen.dart';
 
+import 'support/indifit_test_harness.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -21,6 +23,7 @@ void main() {
   late LocalScheduleDateService dates;
 
   setUp(() {
+    setIndiFitTestPreferences();
     database = AppDatabase.memory();
     dates = LocalScheduleDateService(
       nowUtc: () => DateTime.utc(2026, 8, 6, 12),
@@ -73,8 +76,8 @@ void main() {
     await _pumpForAsyncState(tester);
 
     expect(find.text('Today’s target'), findsOneWidget);
-    expect(find.text('2,100 kcal'), findsNothing);
-    expect(find.text('2100 kcal'), findsOneWidget);
+    expect(find.text('2,100 kcal'), findsOneWidget);
+    expect(find.text('2100 kcal'), findsNothing);
     expect(find.text('140 g'), findsOneWidget);
     expect(find.text('220 g'), findsOneWidget);
     expect(find.text('65 g'), findsOneWidget);
@@ -154,19 +157,21 @@ void main() {
         _app(database, dates, targetsByDate: targets, history: history),
       );
       await _pumpForAsyncState(tester);
-      expect(find.text('1800 kcal'), findsOneWidget);
+      expect(find.text('1,800 kcal'), findsOneWidget);
+      expect(find.text('1800 kcal'), findsNothing);
 
       await tester.tap(find.byTooltip('Previous day'));
       await _pumpForAsyncState(tester);
 
       expect(find.text('Target for Yesterday'), findsOneWidget);
-      expect(find.text('2100 kcal'), findsOneWidget);
+      expect(find.text('2,100 kcal'), findsOneWidget);
+      expect(find.text('2100 kcal'), findsNothing);
       expect(
         find.textContaining('Earlier targets are read-only'),
         findsOneWidget,
       );
       expect(find.text('Save today’s targets'), findsNothing);
-      expect(find.text('1800 kcal'), findsNothing);
+      expect(find.text('1,800 kcal'), findsNothing);
 
       await tester.tap(find.byTooltip('Next day'));
       await _pumpForAsyncState(tester);
@@ -398,6 +403,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          userProfileProvider.overrideWith((ref) => UserProfileNotifier()),
           b04ProductionUserContextProvider.overrideWith(
             (ref) async => throw StateError('profile unavailable'),
           ),
@@ -460,6 +466,7 @@ void main() {
           ProviderScope(
             overrides: [
               databaseProvider.overrideWithValue(database),
+              userProfileProvider.overrideWith((ref) => UserProfileNotifier()),
               localScheduleDateServiceProvider.overrideWithValue(dates),
               b04ProductionUserContextProvider.overrideWith(
                 (ref) async => const B04ProductionUserContext(
@@ -513,6 +520,7 @@ Widget _app(
 }) => ProviderScope(
   overrides: [
     databaseProvider.overrideWithValue(database),
+    userProfileProvider.overrideWith((ref) => UserProfileNotifier()),
     localScheduleDateServiceProvider.overrideWithValue(dates),
     b04ProductionUserContextProvider.overrideWith(
       (ref) async => const B04ProductionUserContext(

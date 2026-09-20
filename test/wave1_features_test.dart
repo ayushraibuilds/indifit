@@ -7,6 +7,7 @@ import 'package:indifit/data/repositories/workout_repository.dart';
 import 'package:indifit/features/dashboard/dashboard_controller.dart';
 import 'package:indifit/features/workout_player/workout_player_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'support/indifit_test_harness.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -94,6 +95,9 @@ void main() {
         overrides: [
           databaseProvider.overrideWithValue(db),
           workoutRepositoryProvider.overrideWithValue(WorkoutRepository(db)),
+          workoutSessionWakeLockCoordinatorProvider.overrideWithValue(
+            createTestWorkoutWakeLockCoordinator(),
+          ),
         ],
       );
       addTearDown(container.dispose);
@@ -140,6 +144,9 @@ void main() {
         overrides: [
           databaseProvider.overrideWithValue(db),
           workoutRepositoryProvider.overrideWithValue(WorkoutRepository(db)),
+          workoutSessionWakeLockCoordinatorProvider.overrideWithValue(
+            createTestWorkoutWakeLockCoordinator(),
+          ),
         ],
       );
       addTearDown(container.dispose);

@@ -10,21 +10,34 @@ import 'package:indifit/data/repositories/food_repository.dart';
 import 'package:indifit/data/repositories/nutrition_legacy_adapter.dart';
 import 'package:indifit/data/repositories/nutrition_read_model_repository.dart';
 
+import 'support/indifit_test_harness.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late AppDatabase db;
+  AppDatabase? restored;
+  late TestDatabaseScope databases;
   late NutrientRegistry registry;
 
   setUp(() async {
-    db = AppDatabase.memory();
+    databases = registerTestDatabaseScope();
+    db = databases.create();
+    restored = null;
     registry = NutrientRegistry.fromAssetFileSync(
       'assets/data/nutrient_registry.json',
     );
     await _insertLog(db);
   });
 
-  tearDown(() => db.close());
+  tearDown(() async {
+    if (restored != null) {
+      await restored!.close();
+      restored = null;
+    }
+    await db.close();
+    await databases.close();
+  });
 
   test(
     'legacy correction appends, reads effectively, and is idempotent',
@@ -119,25 +132,29 @@ void main() {
             )
             as Map<String, dynamic>,
       );
-      final restored = AppDatabase.memory();
-      addTearDown(restored.close);
-      await backup.restoreToDatabase(restored);
-      final restoredRows = await restored.select(restored.foodLogs).get();
-      expect(restoredRows.single.name, 'Original dal');
-      expect(
-        await restored.select(restored.nutritionUserCorrections).get(),
-        hasLength(1),
-      );
-      final restoredHistory = NutritionReadModelRepository(
-        db: restored,
-        registry: registry,
-      );
-      final restoredDaily = await restoredHistory.dailyTotals(
-        userId: NutritionLegacyAdapter.defaultLegacyUserId,
-        localDate: '2026-08-04',
-      );
-      expect(restoredDaily.records, hasLength(1));
-      expect(restoredDaily.records.single.displayLabel, 'Corrected dal');
+      restored = databases.create();
+      try {
+        await backup.restoreToDatabase(restored!);
+        final restoredRows = await restored!.select(restored!.foodLogs).get();
+        expect(restoredRows.single.name, 'Original dal');
+        expect(
+          await restored!.select(restored!.nutritionUserCorrections).get(),
+          hasLength(1),
+        );
+        final restoredHistory = NutritionReadModelRepository(
+          db: restored!,
+          registry: registry,
+        );
+        final restoredDaily = await restoredHistory.dailyTotals(
+          userId: NutritionLegacyAdapter.defaultLegacyUserId,
+          localDate: '2026-08-04',
+        );
+        expect(restoredDaily.records, hasLength(1));
+        expect(restoredDaily.records.single.displayLabel, 'Corrected dal');
+      } finally {
+        await restored!.close();
+        restored = null;
+      }
     },
   );
 }

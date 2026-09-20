@@ -3,7 +3,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/repositories/food_repository.dart';
 
+import 'support/indifit_test_harness.dart';
+
 void main() {
+  initializeIndiFitTestHarness();
+
   late AppDatabase db;
   late FoodRepository repo;
 
@@ -18,7 +22,7 @@ void main() {
 
   group('FoodRepository searchFoodLocal Tests', () {
     test('searches food by name when nameHindi is null', () async {
-      await repo.insertCustomFood(
+      final insertedId = await repo.insertCustomFood(
         FoodItemsCompanion.insert(
           name: 'Chicken Breast',
           nameHindi: const Value(null),
@@ -33,13 +37,13 @@ void main() {
       );
 
       final results = await repo.searchFoodLocal('chicken');
-      expect(results.length, 1);
-      expect(results.first.name, 'Chicken Breast');
-      expect(results.first.nameHindi, isNull);
+      final inserted = results.singleWhere((food) => food.id == insertedId);
+      expect(inserted.name, 'Chicken Breast');
+      expect(inserted.nameHindi, isNull);
     });
 
     test('searches food by hindi name when nameHindi is provided', () async {
-      await repo.insertCustomFood(
+      final insertedId = await repo.insertCustomFood(
         FoodItemsCompanion.insert(
           name: 'Palak Paneer',
           nameHindi: const Value('पालक पनीर'),
@@ -54,8 +58,8 @@ void main() {
       );
 
       final results = await repo.searchFoodLocal('पालक');
-      expect(results.length, 1);
-      expect(results.first.name, 'Palak Paneer');
+      final inserted = results.singleWhere((food) => food.id == insertedId);
+      expect(inserted.name, 'Palak Paneer');
     });
 
     test('returns empty list when query does not match', () async {

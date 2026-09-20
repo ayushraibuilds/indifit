@@ -13,15 +13,21 @@ import 'package:indifit/data/repositories/nutrition_consumption_repository.dart'
 import 'package:indifit/data/repositories/nutrition_legacy_adapter.dart';
 import 'package:indifit/data/repositories/nutrition_read_model_repository.dart';
 
+import 'support/indifit_test_harness.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late AppDatabase db;
+  AppDatabase? restored;
   late NutrientRegistry registry;
   late NutritionLegacyAdapter adapter;
+  late TestDatabaseScope databases;
 
   setUp(() {
-    db = AppDatabase.memory();
+    databases = registerTestDatabaseScope();
+    db = databases.create();
+    restored = null;
     registry = NutrientRegistry.fromAssetFileSync(
       'assets/data/nutrient_registry.json',
     );
@@ -29,7 +35,12 @@ void main() {
   });
 
   tearDown(() async {
+    if (restored != null) {
+      await restored!.close();
+      restored = null;
+    }
     await db.close();
+    await databases.close();
   });
 
   test(
@@ -275,7 +286,11 @@ void main() {
               mappingStatus: 'ambiguous',
               evidence: 'two reviewed candidates',
             ),
+            mode: InsertMode.insertOrReplace,
           );
+      await (db.delete(db.nutritionLegacyFoodMappings)
+            ..where((t) => t.legacyFoodItemId.equals(103)))
+          .go();
       await _insertLog(db, id: 1, foodItemId: 101, amount: 1, unit: 'g');
       await _insertLog(db, id: 2, foodItemId: 102, amount: 1, unit: 'g');
       await _insertLog(db, id: 3, foodItemId: 103, amount: 1, unit: 'g');
@@ -480,14 +495,18 @@ void main() {
               ).readAsStringSync(),
             )
             as Map<String, dynamic>;
-    final restored = AppDatabase.memory();
-    addTearDown(restored.close);
-    await BackupV8Data.fromJson(fixture).restoreToDatabase(restored);
-    final restoredAdapter = NutritionLegacyAdapter(
-      db: restored,
-      registry: registry,
-    );
-    expect(await restoredAdapter.readFoodLogs(), hasLength(3));
+    restored = databases.create();
+    try {
+      await BackupV8Data.fromJson(fixture).restoreToDatabase(restored!);
+      final restoredAdapter = NutritionLegacyAdapter(
+        db: restored!,
+        registry: registry,
+      );
+      expect(await restoredAdapter.readFoodLogs(), hasLength(3));
+    } finally {
+      await restored!.close();
+      restored = null;
+    }
   });
 }
 
@@ -503,6 +522,7 @@ Future<void> _seedMappedFood(AppDatabase db) async {
           sourceType: 'user',
           lifecycle: 'active',
         ),
+        mode: InsertMode.insertOrReplace,
       );
   await db
       .into(db.nutritionLegacyFoodMappings)
@@ -513,6 +533,7 @@ Future<void> _seedMappedFood(AppDatabase db) async {
           mappingStatus: 'reviewed',
           evidence: 'test-reviewed-mapping',
         ),
+        mode: InsertMode.insertOrReplace,
       );
 }
 

@@ -1,8 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mobile_scanner/mobile_scanner.dart';
 
+import '../../core/capabilities/capabilities_registry.dart';
+import '../../core/di/providers.dart';
+import '../../core/stubs/mobile_scanner_stub.dart';
 import '../../core/theme/b05_semantic_colors.dart';
+import '../../core/utils/app_logger.dart';
 import '../../data/repositories/food_api_service.dart';
 import 'custom_food_editor_screen.dart';
 
@@ -21,6 +26,16 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
   late AnimationController _animController;
   late Animation<double> _scanAnimation;
   bool _loading = false;
+  bool _cameraDenied = false;
+
+  /// Barcode plausibility (length only). Checksum mismatches still allow lookup:
+  /// the provider is the authority on existence, and hard-blocking on checksum
+  /// rejects real scans with printing quirks plus all legacy test fixtures.
+  /// Non-numeric codes (QR-style) always pass through.
+  bool _isPlausibleBarcode(String code) {
+    if (!RegExp(r'^\d+$').hasMatch(code)) return true;
+    return code.length == 8 || code.length == 12 || code.length == 13;
+  }
 
   @override
   void initState() {
@@ -43,26 +58,94 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
   }
 
   Future<void> _onBarcodeScanned(String code) async {
-    if (_loading) return;
+    final cleanCode = code.trim();
+    if (cleanCode.isEmpty || _loading) return;
+    if (!_isPlausibleBarcode(cleanCode)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('That barcode looks incomplete. Check the digits and try again.'),
+          ),
+        );
+      }
+      return;
+    }
 
     setState(() => _loading = true);
     await _scannerController.stop(); // Stop camera scan while processing
 
-    final apiService = ref.read(foodApiServiceProvider);
-    FoodApiResult? result;
+    final catalogCapability = ref.read(foodCatalogCapabilityProvider);
+    RemoteFoodCandidate? candidate;
+    FoodApiResult? legacyResult;
     Object? lookupError;
+
+    // 1. Check local / Tier-1 cache first
     try {
-      result = await apiService.fetchByBarcode(code);
-    } catch (e) {
-      lookupError = e;
+      candidate = await catalogCapability.getCachedCandidate(cleanCode);
+    } catch (_) {}
+
+    // 1b. Check user-created foods carrying this barcode (offline, exact).
+    // Runs before the network lookup so a rescan resolves even offline.
+    // Skipped on cache hits; time-bounded so catalog init can never stall
+    // the scan flow.
+    if (candidate == null) {
+      try {
+        final catalog = await ref
+            .read(nutritionFoodCatalogRepositoryProvider.future)
+            .timeout(const Duration(seconds: 4));
+        final userMatch = await catalog
+            .findUserFoodByBarcode(cleanCode)
+            .timeout(const Duration(seconds: 4));
+        if (userMatch != null && mounted) {
+          setState(() => _loading = false);
+          Navigator.pop(context, userMatch);
+          return;
+        }
+      } catch (_) {
+        // Fail open into the remote lookup: a user-food miss (or an
+        // unavailable catalog) must never block the OFF / cached paths.
+        AppLogger.info(
+          'User-food barcode lookup unavailable; falling through to remote.',
+          'BarcodeScanner',
+        );
+      }
+    }
+
+    // 2. Query remote catalog via capability if not in cache
+    if (candidate == null) {
+      try {
+        candidate = await catalogCapability.lookupByBarcode(cleanCode);
+        if (candidate != null) {
+          try {
+            await catalogCapability.cacheRemoteCandidate(candidate);
+          } catch (_) {}
+        }
+      } catch (e) {
+        lookupError = e;
+      }
+    }
+
+    // 3. Fallback to FoodApiService only if capability is disabled and no prior hard error
+    if (candidate == null &&
+        catalogCapability is DisabledFoodCatalogCapability &&
+        lookupError == null) {
+      try {
+        final apiService = ref.read(foodApiServiceProvider);
+        legacyResult = await apiService.fetchByBarcode(cleanCode);
+      } catch (e) {
+        lookupError = e;
+      }
     }
 
     if (mounted) {
       setState(() => _loading = false);
 
-      if (result != null) {
-        // Return found result back to search screen
-        Navigator.pop(context, result);
+      if (candidate != null) {
+        // Return strongly typed RemoteFoodCandidate
+        Navigator.pop(context, candidate);
+      } else if (legacyResult != null) {
+        // Return legacy FoodApiResult
+        Navigator.pop(context, legacyResult);
       } else if (lookupError != null) {
         await showDialog(
           context: context,
@@ -156,19 +239,73 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
       body: Stack(
         children: [
           // 1. Mobile Scanner widget
-          MobileScanner(
-            controller: _scannerController,
-            onDetect: (capture) {
-              final List<Barcode> barcodes = capture.barcodes;
-              for (final barcode in barcodes) {
-                final String? rawValue = barcode.rawValue;
-                if (rawValue != null) {
-                  _onBarcodeScanned(rawValue);
-                  break;
+          if (_cameraDenied)
+            Container(
+              color: Colors.black,
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.videocam_off_outlined,
+                          color: Colors.white70, size: 48),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Camera access is off',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Enable camera access in system settings to scan, or enter the barcode below.',
+                        textAlign: TextAlign.center,
+                        style:
+                            TextStyle(color: Colors.white70, fontSize: 13),
+                      ),
+                      const SizedBox(height: 12),
+                      OutlinedButton(
+                        onPressed: () async {
+                          setState(() => _cameraDenied = false);
+                          try {
+                            await _scannerController.start();
+                          } catch (_) {
+                            if (mounted) {
+                              setState(() => _cameraDenied = true);
+                            }
+                          }
+                        },
+                        child: const Text('Retry camera'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            )
+          else
+            MobileScanner(
+              controller: _scannerController,
+              errorBuilder: (context, error, child) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && !_cameraDenied) {
+                    setState(() => _cameraDenied = true);
+                  }
+                });
+                return child ?? const SizedBox.shrink();
+              },
+              onDetect: (capture) {
+                final List<Barcode> barcodes = capture.barcodes;
+                for (final barcode in barcodes) {
+                  final String? rawValue = barcode.rawValue;
+                  if (rawValue != null) {
+                    _onBarcodeScanned(rawValue);
+                    break;
+                  }
                 }
-              }
-            },
-          ),
+              },
+            ),
 
           // 2. Scan Reticle Overlay with animated scan line
           Center(
@@ -282,7 +419,7 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
                     CircularProgressIndicator(color: context.b05Colors.action),
                     const SizedBox(height: 16),
                     const Text(
-                      'Searching Open Food Facts...',
+                      'Looking up barcode…',
                       style: TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,

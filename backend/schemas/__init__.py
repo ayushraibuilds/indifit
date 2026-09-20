@@ -1,0 +1,1 @@
+"""IndiFit Schemas Package."""

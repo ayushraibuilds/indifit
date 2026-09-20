@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/database/app_database.dart';
 import '../../data/models/b04_goal_models.dart';
 import '../../data/repositories/nutrition_goal_repository.dart';
+import '../config/app_preferences_keys.dart';
 import '../services/crash_reporting_service.dart';
 import '../services/local_schedule_date_service.dart';
 import '../services/local_timezone_service.dart';
@@ -90,21 +91,29 @@ class UserProfileState {
 class UserProfileNotifier extends StateNotifier<UserProfileState> {
   final AppDatabase? _db;
   final LocalTimezoneService _timezones;
+  final SharedPreferences? _prefs;
   Future<void>? _profileLoad;
 
-  UserProfileNotifier([this._db, LocalTimezoneService? timezones])
-    : _timezones = timezones ?? LocalTimezoneService(),
-      super(
-        const UserProfileState(
-          calorieGoal: 2000,
-          proteinGoal: 120.0,
-          carbsGoal: 230.0,
-          fatGoal: 65.0,
-          currentWeight: 74.5,
-        ),
-      ) {
+  UserProfileNotifier([
+    this._db,
+    LocalTimezoneService? timezones,
+    SharedPreferences? prefs,
+  ])  : _timezones = timezones ?? LocalTimezoneService(),
+        _prefs = prefs,
+        super(
+          const UserProfileState(
+            calorieGoal: 2000,
+            proteinGoal: 120.0,
+            carbsGoal: 230.0,
+            fatGoal: 65.0,
+            currentWeight: 74.5,
+          ),
+        ) {
     loadProfile();
   }
+
+  Future<SharedPreferences> _getPrefs() async =>
+      _prefs ?? await SharedPreferences.getInstance();
 
   Future<void> loadProfile() {
     final inFlight = _profileLoad;
@@ -117,28 +126,31 @@ class UserProfileNotifier extends StateNotifier<UserProfileState> {
   }
 
   Future<void> _loadProfileOnce() async {
-    final prefs = await SharedPreferences.getInstance();
-    final onboardingSkipped = prefs.getBool('onboarding_skipped') ?? false;
+    final prefs = await _getPrefs();
+    final onboardingSkipped =
+        prefs.getBool(AppPreferenceKeys.onboardingSkipped) ?? false;
     var hasProfile =
         !onboardingSkipped &&
-        (prefs.containsKey('user_age') ||
-            prefs.containsKey('user_height') ||
-            prefs.containsKey('current_weight') ||
-            prefs.containsKey('user_sex'));
-    int cals = prefs.getInt('calorie_goal') ?? 2000;
-    double protein = prefs.getDouble('protein_goal') ?? 120.0;
-    double carbs = prefs.getDouble('carbs_goal') ?? 230.0;
-    double fat = prefs.getDouble('fat_goal') ?? 65.0;
-    double weight = prefs.getDouble('current_weight') ?? 74.5;
-    double? height = prefs.getDouble('user_height');
-    String? name = prefs.getString('user_name');
-    String sex = prefs.getString('user_sex') ?? 'male';
-    int age = prefs.getInt('user_age') ?? 25;
-    String activity = prefs.getString('user_activity_level') ?? 'moderate';
-    String goal = prefs.getString('user_goal') ?? 'maintain';
-    String diet = prefs.getString('user_diet_preference') ?? 'veg';
-    String equipment = prefs.getString('user_equipment') ?? 'full_gym';
-    String injuries = prefs.getString('user_injuries') ?? '';
+        (prefs.containsKey(AppPreferenceKeys.userAge) ||
+            prefs.containsKey(AppPreferenceKeys.userHeight) ||
+            prefs.containsKey(AppPreferenceKeys.currentWeight) ||
+            prefs.containsKey(AppPreferenceKeys.userSex));
+    int cals = prefs.getInt(AppPreferenceKeys.calorieGoal) ?? 2000;
+    double protein = prefs.getDouble(AppPreferenceKeys.proteinGoal) ?? 120.0;
+    double carbs = prefs.getDouble(AppPreferenceKeys.carbsGoal) ?? 230.0;
+    double fat = prefs.getDouble(AppPreferenceKeys.fatGoal) ?? 65.0;
+    double weight = prefs.getDouble(AppPreferenceKeys.currentWeight) ?? 74.5;
+    double? height = prefs.getDouble(AppPreferenceKeys.userHeight);
+    String? name = prefs.getString(AppPreferenceKeys.userName);
+    String sex = prefs.getString(AppPreferenceKeys.userSex) ?? 'male';
+    int age = prefs.getInt(AppPreferenceKeys.userAge) ?? 25;
+    String activity =
+        prefs.getString(AppPreferenceKeys.userActivityLevel) ?? 'moderate';
+    String goal = prefs.getString(AppPreferenceKeys.userGoal) ?? 'maintain';
+    String diet = prefs.getString(AppPreferenceKeys.userDietPreference) ?? 'veg';
+    String equipment =
+        prefs.getString(AppPreferenceKeys.userEquipment) ?? 'full_gym';
+    String injuries = prefs.getString(AppPreferenceKeys.userInjuries) ?? '';
     final db = _db;
     if (db != null) {
       try {
@@ -356,11 +368,19 @@ class UserProfileNotifier extends StateNotifier<UserProfileState> {
       return;
     }
 
-    final prefs = await SharedPreferences.getInstance();
-    if (calorieGoal != null) await prefs.setInt('calorie_goal', calorieGoal);
-    if (proteinGoal != null) await prefs.setDouble('protein_goal', proteinGoal);
-    if (carbsGoal != null) await prefs.setDouble('carbs_goal', carbsGoal);
-    if (fatGoal != null) await prefs.setDouble('fat_goal', fatGoal);
+    final prefs = await _getPrefs();
+    if (calorieGoal != null) {
+      await prefs.setInt(AppPreferenceKeys.calorieGoal, calorieGoal);
+    }
+    if (proteinGoal != null) {
+      await prefs.setDouble(AppPreferenceKeys.proteinGoal, proteinGoal);
+    }
+    if (carbsGoal != null) {
+      await prefs.setDouble(AppPreferenceKeys.carbsGoal, carbsGoal);
+    }
+    if (fatGoal != null) {
+      await prefs.setDouble(AppPreferenceKeys.fatGoal, fatGoal);
+    }
 
     state = state.copyWith(
       calorieGoal: calorieGoal,
@@ -394,9 +414,9 @@ class UserProfileNotifier extends StateNotifier<UserProfileState> {
       }
     }
 
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setDouble('current_weight', weight);
-    await prefs.setDouble('user_weight', weight);
+    final prefs = await _getPrefs();
+    await prefs.setDouble(AppPreferenceKeys.currentWeight, weight);
+    await prefs.setDouble(AppPreferenceKeys.userWeight, weight);
 
     state = state.copyWith(currentWeight: weight);
   }
@@ -408,8 +428,8 @@ class UserProfileNotifier extends StateNotifier<UserProfileState> {
   }
 
   Future<void> updateHeight(double height) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setDouble('user_height', height);
+    final prefs = await _getPrefs();
+    await prefs.setDouble(AppPreferenceKeys.userHeight, height);
 
     final db = _db;
     if (db != null) {
@@ -439,8 +459,8 @@ class UserProfileNotifier extends StateNotifier<UserProfileState> {
   }
 
   Future<void> updateName(String name) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('user_name', name);
+    final prefs = await _getPrefs();
+    await prefs.setString(AppPreferenceKeys.userName, name);
     state = state.copyWith(userName: name);
   }
 
@@ -464,8 +484,8 @@ class UserProfileNotifier extends StateNotifier<UserProfileState> {
       }
     }
 
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('user_diet_preference', dietPreference);
+    final prefs = await _getPrefs();
+    await prefs.setString(AppPreferenceKeys.userDietPreference, dietPreference);
     if (!mounted) return;
     state = state.copyWith(dietPreference: dietPreference);
   }
@@ -605,39 +625,46 @@ class UserProfileNotifier extends StateNotifier<UserProfileState> {
       }
     }
 
-    final prefs = await SharedPreferences.getInstance();
-    if (name != null) await prefs.setString('user_name', name);
-    if (age != null) await prefs.setInt('user_age', age);
-    if (height != null) await prefs.setDouble('user_height', height);
+    final prefs = await _getPrefs();
+    if (name != null) await prefs.setString(AppPreferenceKeys.userName, name);
+    if (age != null) await prefs.setInt(AppPreferenceKeys.userAge, age);
+    if (height != null) {
+      await prefs.setDouble(AppPreferenceKeys.userHeight, height);
+    }
     if (weight != null) {
-      await prefs.setDouble('user_weight', weight);
-      await prefs.setDouble('current_weight', weight);
+      await prefs.setDouble(AppPreferenceKeys.userWeight, weight);
+      await prefs.setDouble(AppPreferenceKeys.currentWeight, weight);
     }
-    if (sex != null) await prefs.setString('user_sex', sex);
+    if (sex != null) await prefs.setString(AppPreferenceKeys.userSex, sex);
     if (activityLevel != null) {
-      await prefs.setString('user_activity_level', activityLevel);
+      await prefs.setString(AppPreferenceKeys.userActivityLevel, activityLevel);
     }
-    if (db == null && goal != null) await prefs.setString('user_goal', goal);
+    if (db == null && goal != null) {
+      await prefs.setString(AppPreferenceKeys.userGoal, goal);
+    }
     if (dietPreference != null) {
-      await prefs.setString('user_diet_preference', dietPreference);
+      await prefs.setString(
+        AppPreferenceKeys.userDietPreference,
+        dietPreference,
+      );
     }
     if (db == null && calorieGoal != null) {
-      await prefs.setInt('calorie_goal', calorieGoal);
+      await prefs.setInt(AppPreferenceKeys.calorieGoal, calorieGoal);
     }
     if (db == null && proteinGoal != null) {
-      await prefs.setDouble('protein_goal', proteinGoal);
+      await prefs.setDouble(AppPreferenceKeys.proteinGoal, proteinGoal);
     }
     if (db == null && carbsGoal != null) {
-      await prefs.setDouble('carbs_goal', carbsGoal);
+      await prefs.setDouble(AppPreferenceKeys.carbsGoal, carbsGoal);
     }
     if (db == null && fatGoal != null) {
-      await prefs.setDouble('fat_goal', fatGoal);
+      await prefs.setDouble(AppPreferenceKeys.fatGoal, fatGoal);
     }
     if (equipmentAccess != null) {
-      await prefs.setString('user_equipment', equipmentAccess);
+      await prefs.setString(AppPreferenceKeys.userEquipment, equipmentAccess);
     }
     if (injuriesLimitations != null) {
-      await prefs.setString('user_injuries', injuriesLimitations);
+      await prefs.setString(AppPreferenceKeys.userInjuries, injuriesLimitations);
     }
 
     if (!mounted) return;
@@ -666,5 +693,9 @@ final userProfileProvider =
     StateNotifierProvider<UserProfileNotifier, UserProfileState>((ref) {
       final db = ref.watch(databaseProvider);
       final timezones = ref.watch(localTimezoneServiceProvider);
-      return UserProfileNotifier(db, timezones);
+      SharedPreferences? prefs;
+      try {
+        prefs = ref.watch(sharedPreferencesProvider);
+      } catch (_) {}
+      return UserProfileNotifier(db, timezones, prefs);
     });

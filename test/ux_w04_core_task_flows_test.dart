@@ -4,12 +4,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/di/providers.dart';
 import 'package:indifit/core/presentation/consumer_date_label.dart';
 import 'package:indifit/core/theme/app_theme.dart';
-import 'package:indifit/core/theme/b05_semantic_colors.dart';
 import 'package:indifit/core/widgets/consumer_task_primitives.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/repositories/legacy_workout_compatibility_adapter.dart';
 import 'package:indifit/features/calendar/program_calendar_screen.dart';
-import 'package:indifit/features/food_log/ai_meal_logger_screen.dart';
 import 'package:indifit/features/food_log/food_log_surface.dart';
 import 'package:indifit/features/onboarding/onboarding_screen.dart';
 import 'package:indifit/features/progress/progress_screen.dart';
@@ -17,7 +15,8 @@ import 'package:indifit/features/workout_player/player_setup_cues_panel.dart';
 import 'package:indifit/features/workout_player/player_setup_presentation.dart';
 import 'package:indifit/features/workout_player/widgets/exercise_set_input_card.dart';
 import 'package:indifit/features/workout_player/widgets/manual_log_sheet.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+
+import 'support/indifit_test_harness.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -41,6 +40,15 @@ void main() {
         child: child,
       ),
     );
+  }
+
+  AppDatabase createWidgetDatabase(WidgetTester tester) {
+    final databases = registerTestDatabaseScope();
+    addTearDown(() async {
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+    });
+    return databases.create();
   }
 
   testWidgets('task shell keeps the primary action above the keyboard', (
@@ -98,9 +106,8 @@ void main() {
     tester,
   ) async {
     await setCompactViewport(tester);
-    SharedPreferences.setMockInitialValues({});
-    final database = AppDatabase.memory();
-    addTearDown(database.close);
+    setIndiFitTestPreferences();
+    final database = createWidgetDatabase(tester);
     await tester.pumpWidget(
       ProviderScope(
         overrides: [databaseProvider.overrideWithValue(database)],
@@ -118,44 +125,8 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('meal logger presents one estimate path and a photo secondary', (
-    tester,
-  ) async {
-    await setCompactViewport(tester);
-    final database = AppDatabase.memory();
-    addTearDown(database.close);
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          databaseProvider.overrideWithValue(database),
-          foodLogsForDayProvider.overrideWith((ref, date) async => []),
-        ],
-        child: themed(
-          AiMealLoggerScreen(
-            mealType: 'dinner',
-            selectedDate: DateTime(2026, 8, 8),
-          ),
-        ),
-      ),
-    );
-    await tester.pump();
-    expect(find.text('Log dinner'), findsOneWidget);
-    expect(find.text('Estimate nutrition'), findsOneWidget);
-    expect(find.text('Use a photo (optional)'), findsOneWidget);
-    expect(find.text('Parse Items'), findsNothing);
-    expect(find.text('Logged meals'), findsOneWidget);
-    await tester.ensureVisible(find.text('Logged meals'));
-    await tester.tap(find.text('Logged meals'));
-    await tester.pump();
-    expect(find.text('No food logged for this day'), findsOneWidget);
-    await tester.pumpWidget(const SizedBox.shrink());
-    await tester.pump();
-    expect(tester.takeException(), isNull);
-  });
-
   test('empty logged-food snapshot resolves without a stream wait', () async {
-    final database = AppDatabase.memory();
-    addTearDown(database.close);
+    final database = registerTestDatabaseScope().create();
     final container = ProviderContainer(
       overrides: [databaseProvider.overrideWithValue(database)],
     );
@@ -167,42 +138,11 @@ void main() {
     expect(logs, isEmpty);
   });
 
-  testWidgets('meal task remains legible in both themes', (tester) async {
-    final database = AppDatabase.memory();
-    addTearDown(database.close);
-    for (final theme in [AppTheme.lightTheme, AppTheme.darkTheme]) {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            databaseProvider.overrideWithValue(database),
-            foodLogsForDayProvider.overrideWith((ref, date) async => []),
-          ],
-          child: MaterialApp(
-            theme: theme,
-            home: const AiMealLoggerScreen(mealType: 'lunch'),
-          ),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 1));
-
-      expect(find.text('Log lunch'), findsOneWidget);
-      expect(find.text('Describe your meal'), findsOneWidget);
-      final appBar = tester.widget<AppBar>(find.byType(AppBar));
-      expect(
-        appBar.backgroundColor ?? theme.appBarTheme.backgroundColor,
-        theme.extension<B05SemanticColors>()?.page,
-      );
-      expect(tester.takeException(), isNull);
-    }
-  });
-
   testWidgets('manual logging remains scrollable and responsive', (
     tester,
   ) async {
     await setCompactViewport(tester);
-    final database = AppDatabase.memory();
-    addTearDown(database.close);
+    final database = createWidgetDatabase(tester);
     await tester.pumpWidget(
       ProviderScope(
         overrides: [databaseProvider.overrideWithValue(database)],
@@ -239,8 +179,7 @@ void main() {
       distance.dispose();
       incline.dispose();
     });
-    final database = AppDatabase.memory();
-    addTearDown(database.close);
+    final database = createWidgetDatabase(tester);
     await tester.pumpWidget(
       ProviderScope(
         overrides: [databaseProvider.overrideWithValue(database)],
@@ -348,11 +287,14 @@ void main() {
   testWidgets('progress empty state resolves without a stream wait', (
     tester,
   ) async {
-    final database = AppDatabase.memory();
-    SharedPreferences.setMockInitialValues({});
+    final database = createWidgetDatabase(tester);
+    setIndiFitTestPreferences();
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [databaseProvider.overrideWithValue(database)],
+        overrides: [
+          databaseProvider.overrideWithValue(database),
+          userProfileProvider.overrideWith((ref) => UserProfileNotifier()),
+        ],
         child: MaterialApp(
           theme: AppTheme.lightTheme,
           home: const ProgressScreen(),

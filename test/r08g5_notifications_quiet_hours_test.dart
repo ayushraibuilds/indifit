@@ -1,14 +1,10 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:indifit/core/di/providers.dart';
 import 'package:indifit/core/services/notification_service.dart';
 import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/core/widgets/indi_fit_bottom_sheet.dart';
-import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/features/settings/widgets/notification_settings_section.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -27,16 +23,13 @@ void main() {
   testWidgets('renders supported reminders and separates OS access state', (
     tester,
   ) async {
-    final database = AppDatabase.memory();
     addTearDown(() async {
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump();
-      unawaited(database.close());
     });
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [databaseProvider.overrideWithValue(database)],
         child: MaterialApp(
           theme: AppTheme.lightTheme,
           home: const Scaffold(
@@ -78,16 +71,13 @@ void main() {
     tester,
   ) async {
     var requestCount = 0;
-    final database = AppDatabase.memory();
     addTearDown(() async {
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump();
-      unawaited(database.close());
     });
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [databaseProvider.overrideWithValue(database)],
         child: MaterialApp(
           theme: AppTheme.lightTheme,
           home: Scaffold(
@@ -124,16 +114,13 @@ void main() {
   });
 
   testWidgets('keeps a permission-request failure visible', (tester) async {
-    final database = AppDatabase.memory();
     addTearDown(() async {
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump();
-      unawaited(database.close());
     });
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [databaseProvider.overrideWithValue(database)],
         child: MaterialApp(
           theme: AppTheme.lightTheme,
           home: Scaffold(
@@ -295,16 +282,13 @@ Future<void> _pumpSection(
   addTearDown(tester.view.reset);
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
-  final database = AppDatabase.memory();
   addTearDown(() async {
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();
-    unawaited(database.close());
   });
 
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [databaseProvider.overrideWithValue(database)],
       child: MaterialApp(
         theme: AppTheme.darkTheme,
         home: MediaQuery(

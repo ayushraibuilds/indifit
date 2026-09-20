@@ -47,7 +47,7 @@ void main() {
     await tester.tap(goalAdjust);
     await tester.pumpAndSettle();
     expect(find.text('What is your main goal?'), findsOneWidget);
-    expect(find.text('2 of 4'), findsOneWidget);
+    expect(find.text('2 of 5'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

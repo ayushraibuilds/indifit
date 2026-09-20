@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../config/app_preferences_keys.dart';
 import '../utils/app_logger.dart';
+import 'core_providers.dart';
 
 class ThemeModeNotifier extends StateNotifier<ThemeMode> {
-  static const String prefKey = 'user_theme_mode';
+  static const String prefKey = AppPreferenceKeys.userThemeMode;
   final SharedPreferences? _prefs;
 
   ThemeModeNotifier([SharedPreferences? prefs])
@@ -40,5 +42,9 @@ class ThemeModeNotifier extends StateNotifier<ThemeMode> {
 final themeModeProvider = StateNotifierProvider<ThemeModeNotifier, ThemeMode>((
   ref,
 ) {
-  return ThemeModeNotifier();
+  SharedPreferences? prefs;
+  try {
+    prefs = ref.watch(sharedPreferencesProvider);
+  } catch (_) {}
+  return ThemeModeNotifier(prefs);
 });

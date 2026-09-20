@@ -6,21 +6,23 @@ import 'package:indifit/core/typed_quantities.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/repositories/nutrition_household_measure_repository.dart';
 
+import 'support/indifit_test_harness.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late AppDatabase db;
+  late TestDatabaseScope databases;
   late NutritionHouseholdMeasureRepository repository;
 
   setUp(() {
-    db = AppDatabase.memory();
+    databases = registerTestDatabaseScope();
+    db = databases.create();
     repository = NutritionHouseholdMeasureRepository(
       db: db,
       nowUtc: () => DateTime.utc(2026, 1, 1),
     );
   });
-
-  tearDown(() => db.close());
 
   Quantity volume(
     String value, [
@@ -339,8 +341,7 @@ void main() {
       await repository.archiveVessel(userId: 'user-a', vesselId: 'vessel-b');
 
       final backup = await BackupV8Data.createFromDatabase(db);
-      final target = AppDatabase.memory();
-      addTearDown(target.close);
+      final target = databases.create();
       await backup.restoreToDatabase(target);
 
       final vessels = await target

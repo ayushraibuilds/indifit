@@ -1,37 +1,19 @@
-import 'dart:math';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
-class ConfettiParticle {
-  double x;
-  double y;
-  double vx;
-  double vy;
-  double size;
-  Color color;
-  double rotation;
-  double vr;
-
-  ConfettiParticle({
-    required this.x,
-    required this.y,
-    required this.vx,
-    required this.vy,
-    required this.size,
-    required this.color,
-    required this.rotation,
-    required this.vr,
-  });
-}
-
+/// Lightweight, self-contained confetti animation overlay.
+/// Drops colorful confetti particles across the child with zero external dependencies.
 class ConfettiOverlay extends StatefulWidget {
-  final Widget child;
-  final bool isPlaying;
-
   const ConfettiOverlay({
     super.key,
     required this.child,
-    this.isPlaying = false,
+    this.particleCount = 40,
+    this.duration = const Duration(milliseconds: 2500),
   });
+
+  final Widget child;
+  final int particleCount;
+  final Duration duration;
 
   @override
   State<ConfettiOverlay> createState() => _ConfettiOverlayState();
@@ -39,72 +21,41 @@ class ConfettiOverlay extends StatefulWidget {
 
 class _ConfettiOverlayState extends State<ConfettiOverlay>
     with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  final List<ConfettiParticle> _particles = [];
-  final Random _random = Random();
+  late final AnimationController _controller;
+  late final List<_ConfettiParticle> _particles;
 
-  final List<Color> _colors = const [
-    Color(0xFFFF5252),
-    Color(0xFFFF4081),
-    Color(0xFFE040FB),
-    Color(0xFF7C4DFF),
-    Color(0xFF536DFE),
-    Color(0xFF448AFF),
-    Color(0xFF1DE9B6),
-    Color(0xFF64DD17),
-    Color(0xFFFFD600),
-    Color(0xFFFF6D00),
+  static const List<Color> _colors = [
+    Color(0xFFFF5252), // Red
+    Color(0xFFFFD740), // Amber
+    Color(0xFF69F0AE), // Mint
+    Color(0xFF40C4FF), // Blue
+    Color(0xFFE040FB), // Purple
+    Color(0xFFFFAB40), // Orange
   ];
 
   @override
   void initState() {
     super.initState();
-    _controller =
-        AnimationController(vsync: this, duration: const Duration(seconds: 3))
-          ..addListener(() {
-            _updateParticles();
-            setState(() {});
-          });
-
-    if (widget.isPlaying) {
-      _triggerBurst();
-    }
-  }
-
-  @override
-  void didUpdateWidget(ConfettiOverlay oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.isPlaying && !oldWidget.isPlaying) {
-      _triggerBurst();
-    }
-  }
-
-  void _triggerBurst() {
-    _particles.clear();
-    for (int i = 0; i < 60; i++) {
-      _particles.add(
-        ConfettiParticle(
-          x: 0.5,
-          y: 0.3,
-          vx: (_random.nextDouble() - 0.5) * 1.2,
-          vy: -_random.nextDouble() * 1.5 - 0.5,
-          size: _random.nextDouble() * 8 + 6,
-          color: _colors[_random.nextInt(_colors.length)],
-          rotation: _random.nextDouble() * 2 * pi,
-          vr: (_random.nextDouble() - 0.5) * 0.2,
-        ),
+    _controller = AnimationController(vsync: this, duration: widget.duration);
+    final random = math.Random();
+    _particles = List.generate(widget.particleCount, (index) {
+      return _ConfettiParticle(
+        x: random.nextDouble(),
+        speedY: 0.3 + random.nextDouble() * 0.7,
+        swaySpeed: 2.0 + random.nextDouble() * 3.0,
+        swayAmplitude: 15.0 + random.nextDouble() * 25.0,
+        rotationSpeed: (random.nextDouble() - 0.5) * 8.0,
+        size: 6.0 + random.nextDouble() * 6.0,
+        color: _colors[index % _colors.length],
+        delay: random.nextDouble() * 0.3,
       );
-    }
-    _controller.forward(from: 0.0);
-  }
+    });
 
-  void _updateParticles() {
-    for (var p in _particles) {
-      p.x += p.vx * 0.02;
-      p.y += p.vy * 0.02;
-      p.vy += 0.03; // gravity
-      p.rotation += p.vr;
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && !MediaQuery.disableAnimationsOf(context)) {
+        _controller.forward();
+      }
+    });
   }
 
   @override
@@ -115,42 +66,88 @@ class _ConfettiOverlayState extends State<ConfettiOverlay>
 
   @override
   Widget build(BuildContext context) {
+    if (MediaQuery.disableAnimationsOf(context)) {
+      return widget.child;
+    }
+
     return Stack(
+      fit: StackFit.passthrough,
       children: [
         widget.child,
-        if (_controller.isAnimating)
-          IgnorePointer(
-            child: CustomPaint(
-              size: Size.infinite,
-              painter: _ConfettiPainter(_particles),
+        Positioned.fill(
+          child: IgnorePointer(
+            child: AnimatedBuilder(
+              animation: _controller,
+              builder: (context, _) {
+                if (_controller.value == 0.0 || _controller.value == 1.0) {
+                  return const SizedBox.shrink();
+                }
+                return CustomPaint(
+                  painter: _ConfettiPainter(
+                    particles: _particles,
+                    progress: _controller.value,
+                  ),
+                );
+              },
             ),
           ),
+        ),
       ],
     );
   }
 }
 
-class _ConfettiPainter extends CustomPainter {
-  final List<ConfettiParticle> particles;
+class _ConfettiParticle {
+  _ConfettiParticle({
+    required this.x,
+    required this.speedY,
+    required this.swaySpeed,
+    required this.swayAmplitude,
+    required this.rotationSpeed,
+    required this.size,
+    required this.color,
+    required this.delay,
+  });
 
-  _ConfettiPainter(this.particles);
+  final double x;
+  final double speedY;
+  final double swaySpeed;
+  final double swayAmplitude;
+  final double rotationSpeed;
+  final double size;
+  final Color color;
+  final double delay;
+}
+
+class _ConfettiPainter extends CustomPainter {
+  _ConfettiPainter({
+    required this.particles,
+    required this.progress,
+  });
+
+  final List<_ConfettiParticle> particles;
+  final double progress;
 
   @override
   void paint(Canvas canvas, Size size) {
-    for (var p in particles) {
-      final paint = Paint()..color = p.color;
-      final px = p.x * size.width;
-      final py = p.y * size.height;
+    for (final p in particles) {
+      if (progress < p.delay) continue;
+      final effectiveProgress = (progress - p.delay) / (1.0 - p.delay);
+      final y = effectiveProgress * (size.height + 40) * p.speedY;
+      if (y > size.height + 20) continue;
+
+      final sway = math.sin(effectiveProgress * math.pi * p.swaySpeed) * p.swayAmplitude;
+      final x = (p.x * size.width) + sway;
+
+      final paint = Paint()
+        ..color = p.color.withValues(alpha: (1.0 - effectiveProgress * 0.5).clamp(0.0, 1.0))
+        ..style = PaintingStyle.fill;
 
       canvas.save();
-      canvas.translate(px, py);
-      canvas.rotate(p.rotation);
+      canvas.translate(x, y);
+      canvas.rotate(effectiveProgress * math.pi * p.rotationSpeed);
       canvas.drawRect(
-        Rect.fromCenter(
-          center: Offset.zero,
-          width: p.size,
-          height: p.size * 0.6,
-        ),
+        Rect.fromCenter(center: Offset.zero, width: p.size, height: p.size * 0.6),
         paint,
       );
       canvas.restore();
@@ -158,5 +155,6 @@ class _ConfettiPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _ConfettiPainter oldDelegate) => true;
+  bool shouldRepaint(covariant _ConfettiPainter oldDelegate) =>
+      oldDelegate.progress != progress;
 }

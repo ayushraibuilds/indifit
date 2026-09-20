@@ -3,19 +3,21 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/di/providers.dart';
-import '../../core/fixtures/workout_draft_codec.dart';
 import '../../core/navigation/app_navigation.dart';
 import '../../core/presentation/consumer_copy.dart';
 import '../../core/presentation/consumer_date_label.dart';
 import '../../core/presentation/product_failure_presentation.dart';
+import '../../core/services/achievement_service.dart';
 import '../../core/services/crash_reporting_service.dart';
 import '../../core/services/workout_session_wake_lock_coordinator.dart';
 import '../../core/utils/app_logger.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/indi_fit_bottom_sheet.dart';
+import '../../core/widgets/indi_fit_feedback.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/calendar_read_repository.dart';
 import '../../data/repositories/training_next_action_resolver.dart';
@@ -27,7 +29,6 @@ import '../progress/achievements_screen.dart';
 import '../settings/nutrition_targets_hub_screen.dart';
 import '../workout_player/b02_strength_execution_controller.dart';
 import '../workout_player/b02_strength_player_screen.dart';
-import '../workout_player/workout_player_screen.dart';
 import 'dashboard_controller.dart';
 import 'today_daily_action_surface.dart';
 import 'today_surface_controller.dart';
@@ -156,38 +157,40 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   }
                   return;
                 }
-                final loggedCompanions = WorkoutDraftCodec.decodeLoggedSets(
-                  draft.loggedSetsJson,
+                if (draft.scheduledOccurrenceId case final occurrenceId?) {
+                  await ref
+                      .read(workoutExecutionCompatibilityAdapterProvider)
+                      .discardScheduledOccurrenceDraft(
+                        occurrenceId: occurrenceId,
+                        commandId: const Uuid().v4(),
+                      );
+                } else {
+                  await repo.deleteActiveDraft();
+                }
+                final wakeLock = ref.read(
+                  workoutSessionWakeLockCoordinatorProvider,
                 );
-                final scheduledLaunch = draft.scheduledOccurrenceId == null
-                    ? null
-                    : await ref
-                          .read(workoutExecutionCompatibilityAdapterProvider)
-                          .resumeScheduledDraft(draft);
-                final exercises =
-                    scheduledLaunch?.exercises ??
-                    await repo.getExercisesForRoutineName(draft.routineName);
+                unawaited(
+                  wakeLock.clearActiveSession(
+                    b02WorkoutSessionWakeLockKey(draft.id),
+                  ),
+                );
+                unawaited(
+                  wakeLock.clearActiveSession(
+                    legacyWorkoutSessionWakeLockKey(
+                      draft.scheduledOccurrenceId,
+                    ),
+                  ),
+                );
                 if (mounted) {
-                  await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => WorkoutPlayerScreen(
-                        routineName: draft.routineName,
-                        exercises: exercises,
-                        initialExerciseIndex: draft.currentExerciseIndex,
-                        initialSetIndex: draft.currentSetIndex,
-                        initialElapsedSeconds: draft.elapsedSeconds,
-                        initialLoggedSets: loggedCompanions,
-                        scheduledOccurrenceId: scheduledLaunch?.occurrenceId,
-                        executionSnapshotJson:
-                            scheduledLaunch?.executionSnapshotJson,
-                        personalExerciseContextByName:
-                            scheduledLaunch?.personalExerciseContextByName ??
-                            const {},
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'Legacy workout draft format is deprecated and has been cleared. Please start a fresh workout.',
                       ),
                     ),
                   );
-                  await _refreshToday();
+                  goToTrainingTab(context);
                 }
               },
               child: const Text('Resume activity'),
@@ -393,27 +396,35 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     ref.listen<DashboardState>(dashboardControllerProvider, (previous, next) {
-      final previousTitles =
-          previous?.newlyUnlockedAchievementTitles ?? const [];
-      final nextTitles = next.newlyUnlockedAchievementTitles;
-      if (nextTitles.isEmpty || _sameTitles(previousTitles, nextTitles)) {
+      final previousIds =
+          previous?.newlyUnlockedAchievementIds ?? const [];
+      final nextIds = next.newlyUnlockedAchievementIds;
+      if (nextIds.isEmpty || _sameAchievementIds(previousIds, nextIds)) {
         return;
       }
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (!mounted) return;
+        final nextTitles = next.newlyUnlockedAchievementTitles;
         final plural = nextTitles.length == 1 ? 'Achievement' : 'Achievements';
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            behavior: SnackBarBehavior.floating,
-            content: Text('$plural unlocked: ${nextTitles.join(', ')}'),
-            action: SnackBarAction(
-              label: 'View',
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const AchievementsScreen()),
-                );
-              },
-            ),
+        SharedPreferences? prefs;
+        try {
+          prefs = ref.read(sharedPreferencesProvider);
+        } catch (_) {}
+        prefs ??= await SharedPreferences.getInstance();
+        await AchievementService.markCelebrated(prefs, nextIds);
+        if (!context.mounted) return;
+        showIndiFitSuccessFeedback(
+          context,
+          '$plural unlocked: ${nextTitles.join(', ')}',
+          duration: const Duration(seconds: 3),
+          action: SnackBarAction(
+            label: 'View',
+            textColor: Theme.of(context).colorScheme.primary,
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const AchievementsScreen()),
+              );
+            },
           ),
         );
       });
@@ -452,7 +463,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 }
 
-bool _sameTitles(List<String> first, List<String> second) {
+bool _sameAchievementIds(List<String> first, List<String> second) {
   if (first.length != second.length) return false;
   for (var index = 0; index < first.length; index++) {
     if (first[index] != second[index]) return false;

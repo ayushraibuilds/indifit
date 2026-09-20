@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/config/app_preferences_keys.dart';
 import '../../core/di/providers.dart';
 import '../../core/services/achievement_service.dart';
 import '../../core/services/crash_reporting_service.dart';
@@ -10,6 +13,7 @@ import '../../data/database/app_database.dart';
 import '../../data/repositories/food_repository.dart';
 import '../../data/repositories/health_service.dart';
 import '../../data/repositories/legacy_program_compatibility_adapter.dart';
+import '../../data/repositories/progress_statistics_repository.dart';
 import '../../data/repositories/workout_repository.dart';
 
 class DashboardState {
@@ -26,8 +30,22 @@ class DashboardState {
   final String? weeklyActionText;
   final int weeklyActionProgress;
   final int weeklyActionTarget;
-  final List<String> newlyUnlockedAchievementTitles;
+  final List<String> newlyUnlockedAchievementIds;
   final int? streakMilestone;
+
+  /// Derived titles for presentation and backward compatibility.
+  List<String> get newlyUnlockedAchievementTitles {
+    final catalog = AchievementService.evaluateAchievements(
+      completedWorkoutsCount: 0,
+      currentStreakDays: 0,
+      totalVolumeKg: 0,
+      totalLoggedMealsCount: 0,
+    );
+    final titleMap = {for (final a in catalog) a.id: a.title};
+    return newlyUnlockedAchievementIds
+        .map((id) => titleMap[id] ?? id)
+        .toList();
+  }
 
   DashboardState({
     DateTime? selectedDate,
@@ -43,9 +61,12 @@ class DashboardState {
     this.weeklyActionText,
     this.weeklyActionProgress = 0,
     this.weeklyActionTarget = 0,
-    this.newlyUnlockedAchievementTitles = const [],
+    List<String>? newlyUnlockedAchievementIds,
+    List<String>? newlyUnlockedAchievementTitles,
     this.streakMilestone,
-  }) : selectedDate = selectedDate ?? DateTime.now();
+  })  : selectedDate = selectedDate ?? DateTime.now(),
+        newlyUnlockedAchievementIds = newlyUnlockedAchievementIds ??
+            (newlyUnlockedAchievementTitles ?? const []);
 
   DashboardState copyWith({
     DateTime? selectedDate,
@@ -61,6 +82,7 @@ class DashboardState {
     String? weeklyActionText,
     int? weeklyActionProgress,
     int? weeklyActionTarget,
+    List<String>? newlyUnlockedAchievementIds,
     List<String>? newlyUnlockedAchievementTitles,
     int? streakMilestone,
   }) {
@@ -78,8 +100,8 @@ class DashboardState {
       weeklyActionText: weeklyActionText ?? this.weeklyActionText,
       weeklyActionProgress: weeklyActionProgress ?? this.weeklyActionProgress,
       weeklyActionTarget: weeklyActionTarget ?? this.weeklyActionTarget,
-      newlyUnlockedAchievementTitles:
-          newlyUnlockedAchievementTitles ?? this.newlyUnlockedAchievementTitles,
+      newlyUnlockedAchievementIds: newlyUnlockedAchievementIds ??
+          (newlyUnlockedAchievementTitles ?? this.newlyUnlockedAchievementIds),
       streakMilestone: streakMilestone,
     );
   }
@@ -87,17 +109,29 @@ class DashboardState {
 
 class DashboardController extends StateNotifier<DashboardState> {
   final Ref _ref;
+  final SharedPreferences? _prefs;
   late DateTime _automaticDate;
   var _followsAutomaticDate = true;
 
   DashboardController(
     this._ref, {
+    SharedPreferences? prefs,
     DashboardState? initialState,
     bool loadOnInit = true,
-  }) : super(initialState ?? DashboardState()) {
+  })  : _prefs = prefs,
+        super(initialState ?? DashboardState()) {
     _automaticDate = _day(state.selectedDate);
     _followsAutomaticDate = _sameDay(_automaticDate, _day(DateTime.now()));
     if (loadOnInit) loadStateData();
+  }
+
+  Future<SharedPreferences> _getPrefs() async {
+    if (_prefs != null) return _prefs;
+    try {
+      return _ref.read(sharedPreferencesProvider);
+    } catch (_) {
+      return await SharedPreferences.getInstance();
+    }
   }
 
   void setSelectedDate(DateTime date) {
@@ -109,20 +143,31 @@ class DashboardController extends StateNotifier<DashboardState> {
 
   /// Keeps the default Today selection aligned with a civil-date transition
   /// while preserving an explicitly browsed past/future date.
-  void refreshForCivilDate(DateTime today) {
+  ///
+  /// When the date actually rolls over, the legacy cached fields
+  /// ([DashboardState.todayWorkoutSession], adherence, streaks) are reloaded
+  /// via [loadStateData] so they never show yesterday's data. The
+  /// same-day early return above keeps repeated revision ticks from
+  /// triggering reload storms.
+  Future<void> refreshForCivilDate(DateTime today) async {
     if (!_followsAutomaticDate) return;
     final normalized = _day(today);
+    if (_sameDay(normalized, _automaticDate) &&
+        _sameDay(state.selectedDate, _automaticDate)) {
+      return;
+    }
     if (_sameDay(state.selectedDate, _automaticDate)) {
       _automaticDate = normalized;
       state = state.copyWith(selectedDate: normalized);
+      await loadStateData();
     }
   }
 
   Future<void> loadStateData() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
     if (!mounted) return;
-    final weight = prefs.getDouble('current_weight') ?? 74.5;
-    final calGoal = prefs.getInt('calorie_goal') ?? 2000;
+    final weight = prefs.getDouble(AppPreferenceKeys.currentWeight) ?? 74.5;
+    final calGoal = prefs.getInt(AppPreferenceKeys.calorieGoal) ?? 2000;
 
     state = state.copyWith(currentWeight: weight, calorieGoal: calGoal);
 
@@ -141,57 +186,22 @@ class DashboardController extends StateNotifier<DashboardState> {
 
   Future<void> _evaluateAchievements() async {
     try {
-      final workoutRepo = _ref.read(workoutRepositoryProvider);
-      final foodRepo = _ref.read(foodRepositoryProvider);
-      final prefs = await SharedPreferences.getInstance();
+      final statsRepo = _ref.read(progressStatisticsRepositoryProvider);
+      final prefs = await _getPrefs();
 
-      final sessions = await workoutRepo.watchSessions().first;
-      final totalVolume = sessions.fold<double>(
-        0.0,
-        (sum, s) => sum + s.totalVolume,
-      );
-      final mealCount = await foodRepo.getTotalLoggedMealsCount();
-
-      final achievements = AchievementService.evaluateAchievements(
-        completedWorkoutsCount: sessions.length,
-        currentStreakDays: state.streakCount,
-        totalVolumeKg: totalVolume,
-        totalLoggedMealsCount: mealCount,
+      // Reconciled to the single authoritative AchievementService.
+      // Workout achievements are celebrated exclusively on the workout summary screen;
+      // non-workout achievements (e.g. meals/thali) are surfaced here without duplicate announces.
+      // Legacy prefs key 'unlocked_achievement_ids' is left inert and no longer written to.
+      final uncelebrated =
+          await AchievementService.getUncelebratedNonWorkoutUnlocks(
+        statsRepository: statsRepo,
+        prefs: prefs,
       );
 
-      // Detect newly unlocked achievements
-      final storedIds = prefs.getStringList('unlocked_achievement_ids') ?? [];
-      final currentlyUnlocked = achievements
-          .where((a) => a.isUnlocked)
-          .toList();
-
-      // Establish a quiet baseline for accounts that already have qualifying
-      // history. Feedback is reserved for a later authoritative refresh,
-      // such as the one performed after a successful save.
-      if (!prefs.containsKey('unlocked_achievement_ids')) {
-        await prefs.setStringList(
-          'unlocked_achievement_ids',
-          currentlyUnlocked.map((a) => a.id).toList(),
-        );
-        return;
-      }
-
-      final newUnlocks = currentlyUnlocked
-          .where((a) => !storedIds.contains(a.id))
-          .toList();
-
-      if (newUnlocks.isNotEmpty) {
-        final updatedIds = {
-          ...storedIds,
-          ...currentlyUnlocked.map((a) => a.id),
-        }.toList();
-        await prefs.setStringList('unlocked_achievement_ids', updatedIds);
-        state = state.copyWith(
-          newlyUnlockedAchievementTitles: newUnlocks
-              .map((a) => a.title)
-              .toList(),
-        );
-      }
+      state = state.copyWith(
+        newlyUnlockedAchievementIds: uncelebrated.map((a) => a.id).toList(),
+      );
     } catch (e) {
       AppLogger.info('[AchievementEval] Error: $e');
     }
@@ -216,12 +226,12 @@ class DashboardController extends StateNotifier<DashboardState> {
   Future<void> computeStreak() async {
     final foodRepo = _ref.read(foodRepositoryProvider);
     final workoutRepo = _ref.read(workoutRepositoryProvider);
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
 
-    if (!prefs.containsKey('streak_freezes_count')) {
-      await prefs.setInt('streak_freezes_count', 1);
+    if (!prefs.containsKey(AppPreferenceKeys.streakFreezesCount)) {
+      await prefs.setInt(AppPreferenceKeys.streakFreezesCount, 1);
     }
-    final freezes = prefs.getInt('streak_freezes_count') ?? 1;
+    final freezes = prefs.getInt(AppPreferenceKeys.streakFreezesCount) ?? 1;
 
     final foodDates = await foodRepo.getAllLogDates();
     if (!mounted) return;
@@ -244,17 +254,21 @@ class DashboardController extends StateNotifier<DashboardState> {
       activeDays,
       streakFreezeCount: freezes,
     );
+    // Persist the computed streak so achievement surfaces (Achievements
+    // screen, B02 player) reading userStreakCount agree with the dashboard
+    // instead of showing a stale or default value.
+    await prefs.setInt(AppPreferenceKeys.userStreakCount, streak);
     state = state.copyWith(streakCount: streak, streakFreezesCount: freezes);
   }
 
   Future<String> purchaseStreakFreeze() async {
-    final prefs = await SharedPreferences.getInstance();
-    final current = prefs.getInt('streak_freezes_count') ?? 1;
+    final prefs = await _getPrefs();
+    final current = prefs.getInt(AppPreferenceKeys.streakFreezesCount) ?? 1;
     if (current >= 2) {
       return 'Max freeze tokens (2/2) already active!';
     }
 
-    final lastClaimMs = prefs.getInt('last_freeze_claimed_at') ?? 0;
+    final lastClaimMs = prefs.getInt(AppPreferenceKeys.lastFreezeClaimedAt) ?? 0;
     final nowMs = DateTime.now().millisecondsSinceEpoch;
     final cooldownMs = 3 * 24 * 60 * 60 * 1000; // 3 days
 
@@ -265,8 +279,8 @@ class DashboardController extends StateNotifier<DashboardState> {
       return 'Cooldown active. Next freeze available in $remainingDays day${remainingDays > 1 ? 's' : ''}.';
     }
 
-    await prefs.setInt('streak_freezes_count', current + 1);
-    await prefs.setInt('last_freeze_claimed_at', nowMs);
+    await prefs.setInt(AppPreferenceKeys.streakFreezesCount, current + 1);
+    await prefs.setInt(AppPreferenceKeys.lastFreezeClaimedAt, nowMs);
     await computeStreak();
     return 'Claimed 1 Streak Freeze token! ❄️';
   }
@@ -401,10 +415,10 @@ class DashboardController extends StateNotifier<DashboardState> {
 
   Future<void> loadWeeklyActionProgress() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final type = prefs.getString('weekly_action_type');
-      final text = prefs.getString('weekly_action_text');
-      final target = prefs.getInt('weekly_action_target') ?? 5;
+      final prefs = await _getPrefs();
+      final type = prefs.getString(AppPreferenceKeys.weeklyActionType);
+      final text = prefs.getString(AppPreferenceKeys.weeklyActionText);
+      final target = prefs.getInt(AppPreferenceKeys.weeklyActionTarget) ?? 5;
 
       if (type == null || text == null) {
         state = state.copyWith(
@@ -500,9 +514,9 @@ class DashboardController extends StateNotifier<DashboardState> {
         .logWeightAndSyncProfile(weight: w);
 
     // 2. Only after database write succeeds, update SharedPreferences and in-memory profile state.
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setDouble('current_weight', w);
-    await prefs.setDouble('user_weight', w);
+    final prefs = await _getPrefs();
+    await prefs.setDouble(AppPreferenceKeys.currentWeight, w);
+    await prefs.setDouble(AppPreferenceKeys.userWeight, w);
     _ref.read(userProfileProvider.notifier).syncWeightFromPersistence(w);
 
     try {
@@ -552,9 +566,18 @@ bool _sameDay(DateTime first, DateTime second) =>
 
 final dashboardControllerProvider =
     StateNotifierProvider<DashboardController, DashboardState>((ref) {
-      final controller = DashboardController(ref);
+      SharedPreferences? prefs;
+      try {
+        prefs = ref.watch(sharedPreferencesProvider);
+      } on Object catch (_) {
+        AppLogger.info(
+          'Unable to read sharedPreferencesProvider in dashboardControllerProvider; falling back to null prefs',
+          'DashboardController',
+        );
+      }
+      final controller = DashboardController(ref, prefs: prefs);
       ref.listen<int>(civilDateRevisionProvider, (_, _) {
-        controller.refreshForCivilDate(DateTime.now());
+        unawaited(controller.refreshForCivilDate(DateTime.now()));
       });
       return controller;
     });

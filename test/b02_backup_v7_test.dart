@@ -9,16 +9,17 @@ import 'package:indifit/data/models/b02_execution_models.dart';
 import 'package:indifit/data/models/b02_rich_set_helpers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'support/indifit_test_harness.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   test(
     'v7 round-trip preserves every B02 relation and typed modality',
     () async {
-      final source = AppDatabase.memory();
-      final target = AppDatabase.memory();
-      addTearDown(source.close);
-      addTearDown(target.close);
+      final databases = registerTestDatabaseScope();
+      final source = databases.create();
+      final target = databases.create();
 
       await _populateB02Graph(source);
       final backup = await BackupData.createFromDatabase(source);
@@ -128,10 +129,9 @@ void main() {
   test(
     'v7 invalid relationship fails before preferences or database mutation',
     () async {
-      final source = AppDatabase.memory();
-      final target = AppDatabase.memory();
-      addTearDown(source.close);
-      addTearDown(target.close);
+      final databases = registerTestDatabaseScope();
+      final source = databases.create();
+      final target = databases.create();
       await _populateB02Graph(source);
       final valid = await BackupData.createFromDatabase(source);
       final payload =
@@ -170,10 +170,9 @@ void main() {
   );
 
   test('v7 database failure rolls back B02 rows and preferences', () async {
-    final source = AppDatabase.memory();
-    final target = AppDatabase.memory();
-    addTearDown(source.close);
-    addTearDown(target.close);
+    final databases = registerTestDatabaseScope();
+    final source = databases.create();
+    final target = databases.create();
     await _populateB02Graph(source);
     final valid = await BackupData.createFromDatabase(source);
     await target
@@ -193,7 +192,7 @@ void main() {
         SELECT RAISE(ABORT, 'simulated B02 restore failure');
       END;
     ''');
-    SharedPreferences.setMockInitialValues({'water_logged': 3});
+    setIndiFitTestPreferences({'water_logged': 3});
     final prefs = await SharedPreferences.getInstance();
     valid.userPreferences['water_logged'] = 9;
 
@@ -212,10 +211,9 @@ void main() {
   });
 
   test('v6 payload imports without creating B02 execution rows', () async {
-    final source = AppDatabase.memory();
-    final target = AppDatabase.memory();
-    addTearDown(source.close);
-    addTearDown(target.close);
+    final databases = registerTestDatabaseScope();
+    final source = databases.create();
+    final target = databases.create();
     await _populateB02Graph(source);
     final current = await BackupData.createFromDatabase(source);
     final legacyPayload =

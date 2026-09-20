@@ -15,6 +15,23 @@ final foodRepositoryProvider = Provider<FoodRepository>((ref) {
   return FoodRepository(db);
 });
 
+/// Reviewed B03 presentation facts for one legacy/local catalogue row.
+///
+/// Search may use this to rank an explicit serving or preparation variant
+/// below its base concept. It does not change either identity or nutrient
+/// record and is absent when the B03 mapping is not reviewed.
+class FoodSearchPresentationAuthority {
+  const FoodSearchPresentationAuthority({
+    required this.canonicalFoodId,
+    required this.kind,
+    required this.variantOfFoodId,
+  });
+
+  final String canonicalFoodId;
+  final String kind;
+  final String? variantOfFoodId;
+}
+
 class FoodRepository {
   static const String defaultLegacyUserId = 'legacy-local-user';
 
@@ -48,6 +65,50 @@ class FoodRepository {
                   tbl.regionPack.lower().contains(cleanQuery)),
         ))
         .get());
+  }
+
+  /// Reads only explicit, reviewed B03 identity metadata for search rows.
+  /// Missing or unresolved mappings fail open and remain independent results.
+  Future<Map<int, FoodSearchPresentationAuthority>>
+  readSearchPresentationAuthority(Iterable<int> legacyFoodItemIds) async {
+    final ids = legacyFoodItemIds.toSet().toList(growable: false);
+    if (ids.isEmpty) return const {};
+
+    final mappings =
+        await (_db.select(_db.nutritionLegacyFoodMappings)..where(
+              (table) =>
+                  table.legacyFoodItemId.isIn(ids) &
+                  table.mappingStatus.equals('reviewed') &
+                  table.foodId.isNotNull(),
+            ))
+            .get();
+    final canonicalIds = mappings
+        .map((mapping) => mapping.foodId)
+        .whereType<String>()
+        .toSet()
+        .toList(growable: false);
+    if (canonicalIds.isEmpty) return const {};
+
+    final canonicalRows =
+        await (_db.select(_db.nutritionFoods)..where(
+              (table) =>
+                  table.id.isIn(canonicalIds) &
+                  table.lifecycle.equals('active'),
+            ))
+            .get();
+    final canonicalById = {for (final row in canonicalRows) row.id: row};
+    final result = <int, FoodSearchPresentationAuthority>{};
+    for (final mapping in mappings) {
+      final foodId = mapping.foodId;
+      final canonical = foodId == null ? null : canonicalById[foodId];
+      if (canonical == null) continue;
+      result[mapping.legacyFoodItemId] = FoodSearchPresentationAuthority(
+        canonicalFoodId: canonical.id,
+        kind: canonical.kind,
+        variantOfFoodId: canonical.variantOfFoodId,
+      );
+    }
+    return Map.unmodifiable(result);
   }
 
   // 2. Insert new custom food item

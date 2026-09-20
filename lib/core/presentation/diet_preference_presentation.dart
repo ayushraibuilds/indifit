@@ -11,6 +11,7 @@ class DietPreferenceOption {
     required this.uiValue,
     required this.preferredPersistedValue,
     required this.label,
+    required this.shortLabel,
     required this.description,
     required this.icon,
     required this.persistedAliases,
@@ -19,6 +20,7 @@ class DietPreferenceOption {
   final String uiValue;
   final String preferredPersistedValue;
   final String label;
+  final String shortLabel;
   final String description;
   final IconData icon;
   final Set<String> persistedAliases;
@@ -35,6 +37,7 @@ abstract final class DietPreferencePresentation {
       uiValue: 'veg',
       preferredPersistedValue: 'veg',
       label: 'Vegetarian (Paneer, Curd, Dals)',
+      shortLabel: 'Vegetarian',
       description: 'Pure veg, dairy products allowed',
       icon: Icons.eco,
       persistedAliases: {'veg'},
@@ -43,6 +46,7 @@ abstract final class DietPreferencePresentation {
       uiValue: 'non_veg',
       preferredPersistedValue: 'non-veg',
       label: 'Non-Vegetarian (Chicken, Eggs, Fish)',
+      shortLabel: 'Non-Vegetarian',
       description: 'Chicken, fish, eggs, meat included',
       icon: Icons.restaurant,
       persistedAliases: {'non-veg', 'non_veg'},
@@ -51,6 +55,7 @@ abstract final class DietPreferencePresentation {
       uiValue: 'vegan',
       preferredPersistedValue: 'vegan',
       label: 'Vegan (Plant-based, Tofu, Soya)',
+      shortLabel: 'Vegan',
       description: '100% plant-based, no animal products',
       icon: Icons.spa,
       persistedAliases: {'vegan'},
@@ -126,6 +131,18 @@ class DietPreferenceDropdown extends StatelessWidget {
       initialValue: safeSelected,
       isExpanded: true,
       decoration: decoration,
+      selectedItemBuilder: (context) {
+        return DietPreferencePresentation.options.map((option) {
+          return Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              option.shortLabel,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          );
+        }).toList();
+      },
       items: [
         for (final option in DietPreferencePresentation.options)
           DropdownMenuItem<String>(

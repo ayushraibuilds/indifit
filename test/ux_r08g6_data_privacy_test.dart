@@ -53,7 +53,7 @@ void main() {
     await _pumpDataPrivacy(tester);
 
     final offlineSwitch = find.byType(Switch).first;
-    await tester.drag(find.byType(Scrollable).first, const Offset(0, -700));
+    await tester.scrollUntilVisible(find.text('Offline mode'), 200);
     await tester.pumpAndSettle();
     await tester.tap(offlineSwitch);
     await tester.pumpAndSettle();
@@ -70,7 +70,12 @@ void main() {
   ) async {
     await _pumpDataPrivacy(tester);
 
-    await tester.tap(find.widgetWithText(OutlinedButton, 'Restore a backup'));
+    final restoreButton = find.widgetWithText(
+      OutlinedButton,
+      'Restore a backup',
+    );
+    await tester.scrollUntilVisible(restoreButton, 200);
+    await tester.tap(restoreButton);
     await tester.pumpAndSettle();
 
     final pasteField = find.byType(TextField).first;

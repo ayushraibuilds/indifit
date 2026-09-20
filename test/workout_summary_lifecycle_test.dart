@@ -11,6 +11,7 @@ import 'package:indifit/data/repositories/workout_repository.dart';
 import 'package:indifit/features/workout_player/workout_player_controller.dart';
 import 'package:indifit/features/workout_player/workout_summary_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'support/indifit_test_harness.dart';
 
 /// Test repository seam allowing controllable failure injection and call count tracking.
 class ControllableWorkoutRepository extends WorkoutRepository {
@@ -171,7 +172,12 @@ void main() {
       expect(draft, isNotNull);
 
       final container = ProviderContainer(
-        overrides: [databaseProvider.overrideWithValue(db)],
+        overrides: [
+          databaseProvider.overrideWithValue(db),
+          workoutSessionWakeLockCoordinatorProvider.overrideWithValue(
+            createTestWorkoutWakeLockCoordinator(),
+          ),
+        ],
       );
       addTearDown(container.dispose);
 
@@ -221,7 +227,12 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [workoutRepositoryProvider.overrideWithValue(repo)],
+          overrides: [
+            workoutRepositoryProvider.overrideWithValue(repo),
+            workoutSessionWakeLockCoordinatorProvider.overrideWithValue(
+              createTestWorkoutWakeLockCoordinator(),
+            ),
+          ],
           child: MaterialApp(
             initialRoute: '/summary',
             routes: {
@@ -281,7 +292,12 @@ void main() {
 
         await tester.pumpWidget(
           ProviderScope(
-            overrides: [workoutRepositoryProvider.overrideWithValue(repo)],
+            overrides: [
+              workoutRepositoryProvider.overrideWithValue(repo),
+              workoutSessionWakeLockCoordinatorProvider.overrideWithValue(
+                createTestWorkoutWakeLockCoordinator(),
+              ),
+            ],
             child: const MaterialApp(
               home: WorkoutSummaryScreen(
                 routineName: 'Chest & Arms',
@@ -371,7 +387,12 @@ void main() {
 
         await tester.pumpWidget(
           ProviderScope(
-            overrides: [workoutRepositoryProvider.overrideWithValue(repo)],
+            overrides: [
+              workoutRepositoryProvider.overrideWithValue(repo),
+              workoutSessionWakeLockCoordinatorProvider.overrideWithValue(
+                createTestWorkoutWakeLockCoordinator(),
+              ),
+            ],
             child: const MaterialApp(
               home: WorkoutSummaryScreen(
                 routineName: 'Failing Routine',
@@ -437,7 +458,12 @@ void main() {
 
         await tester.pumpWidget(
           ProviderScope(
-            overrides: [workoutRepositoryProvider.overrideWithValue(repo)],
+            overrides: [
+              workoutRepositoryProvider.overrideWithValue(repo),
+              workoutSessionWakeLockCoordinatorProvider.overrideWithValue(
+                createTestWorkoutWakeLockCoordinator(),
+              ),
+            ],
             child: const MaterialApp(
               home: WorkoutSummaryScreen(
                 routineName: 'Retry Test Routine',
@@ -500,7 +526,12 @@ void main() {
       (WidgetTester tester) async {
         await tester.pumpWidget(
           ProviderScope(
-            overrides: [workoutRepositoryProvider.overrideWithValue(repo)],
+            overrides: [
+              workoutRepositoryProvider.overrideWithValue(repo),
+              workoutSessionWakeLockCoordinatorProvider.overrideWithValue(
+                createTestWorkoutWakeLockCoordinator(),
+              ),
+            ],
             child: const MaterialApp(
               home: WorkoutSummaryScreen(
                 routineName: 'Multi-Tap Guard Test',

@@ -1,0 +1,399 @@
+import 'package:flutter/foundation.dart';
+
+/// External and local providers for food nutrition data.
+enum FoodCatalogProvider {
+  /// ICMR-NIN Indian Food Composition Tables 2017 scientific dataset.
+  ifct,
+
+  /// Open Food Facts crowdsourced global and Indian barcode database.
+  openFoodFacts,
+
+  /// IndiFit Cloud curated, lab-verified Indian recipes and fitness staples.
+  indifitCloud,
+
+  /// User-created custom food item.
+  localCustom,
+}
+
+/// Verification level representing data confidence.
+enum FoodVerificationLevel {
+  unverified,
+  communityReported,
+  expertVerified,
+  governmentStandard;
+
+  /// Consumer-facing label. Never leak raw enum identifiers into UI copy.
+  String get displayLabel => switch (this) {
+    FoodVerificationLevel.unverified => 'Unverified',
+    FoodVerificationLevel.communityReported => 'Community reported',
+    FoodVerificationLevel.expertVerified => 'Expert verified',
+    FoodVerificationLevel.governmentStandard => 'Government standard',
+  };
+}
+
+/// A standard portion or culinary serving option with equivalent gram weight.
+@immutable
+class ServingOption {
+  const ServingOption({
+    required this.unitName,
+    required this.gramWeight,
+    this.isDefault = false,
+  });
+
+  final String unitName;
+  final double gramWeight;
+  final bool isDefault;
+
+  Map<String, dynamic> toJson() => {
+        'unitName': unitName,
+        'gramWeight': gramWeight,
+        'isDefault': isDefault,
+      };
+
+  factory ServingOption.fromJson(Map<String, dynamic> json) {
+    return ServingOption(
+      unitName: json['unitName'] as String,
+      gramWeight: (json['gramWeight'] as num).toDouble(),
+      isDefault: json['isDefault'] as bool? ?? false,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ServingOption &&
+          runtimeType == other.runtimeType &&
+          unitName == other.unitName &&
+          gramWeight == other.gramWeight &&
+          isDefault == other.isDefault;
+
+  @override
+  int get hashCode => Object.hash(unitName, gramWeight, isDefault);
+}
+
+/// Provenance metadata tracking third-party source, licensing, and attribution.
+@immutable
+class FoodProvenance {
+  const FoodProvenance({
+    required this.provider,
+    required this.attributionText,
+    required this.license,
+    this.sourceUrl,
+    required this.fetchedAtUtc,
+  });
+
+  final FoodCatalogProvider provider;
+  final String attributionText;
+  final String license;
+  final String? sourceUrl;
+  final DateTime fetchedAtUtc;
+
+  Map<String, dynamic> toJson() => {
+        'provider': provider.name,
+        'attributionText': attributionText,
+        'license': license,
+        if (sourceUrl != null) 'sourceUrl': sourceUrl,
+        'fetchedAtUtc': fetchedAtUtc.toIso8601String(),
+      };
+
+  factory FoodProvenance.fromJson(Map<String, dynamic> json) {
+    final providerRaw = json['provider'];
+    FoodCatalogProvider? provider;
+    for (final p in FoodCatalogProvider.values) {
+      if (p.name == providerRaw) provider = p;
+    }
+    if (provider == null) {
+      throw FormatException('Unknown FoodCatalogProvider: $providerRaw. Refusing corrupt cache row.');
+    }
+    return FoodProvenance(
+      provider: provider,
+      attributionText: json['attributionText'] as String,
+      license: json['license'] as String,
+      sourceUrl: json['sourceUrl'] as String?,
+      fetchedAtUtc: DateTime.parse(json['fetchedAtUtc'] as String),
+    );
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is FoodProvenance &&
+          runtimeType == other.runtimeType &&
+          provider == other.provider &&
+          attributionText == other.attributionText &&
+          license == other.license &&
+          sourceUrl == other.sourceUrl &&
+          fetchedAtUtc == other.fetchedAtUtc;
+
+  @override
+  int get hashCode =>
+      Object.hash(provider, attributionText, license, sourceUrl, fetchedAtUtc);
+}
+
+/// Normalized remote food candidate model prior to local database persistence.
+@immutable
+class RemoteFoodCandidate {
+  const RemoteFoodCandidate({
+    required this.id,
+    required this.provider,
+    this.providerId,
+    required this.name,
+    this.nameHindi,
+    this.brand,
+    this.barcode,
+    required this.category,
+    required this.caloriesPer100g,
+    required this.proteinPer100g,
+    required this.carbsPer100g,
+    required this.fatPer100g,
+    this.fiberPer100g,
+    this.sodiumMgPer100g,
+    this.addedSugarPer100g,
+    this.saturatedFatPer100g,
+    required this.servingOptions,
+    required this.provenance,
+    this.verificationLevel = FoodVerificationLevel.communityReported,
+  });
+
+  RemoteFoodCandidate copyWith({
+    String? id,
+    FoodCatalogProvider? provider,
+    String? Function()? providerId,
+    String? name,
+    String? Function()? nameHindi,
+    String? Function()? brand,
+    String? Function()? barcode,
+    String? category,
+    double? caloriesPer100g,
+    double? proteinPer100g,
+    double? carbsPer100g,
+    double? fatPer100g,
+    double? Function()? fiberPer100g,
+    double? Function()? sodiumMgPer100g,
+    double? Function()? addedSugarPer100g,
+    double? Function()? saturatedFatPer100g,
+    List<ServingOption>? servingOptions,
+    FoodProvenance? provenance,
+    FoodVerificationLevel? verificationLevel,
+  }) {
+    return RemoteFoodCandidate(
+      id: id ?? this.id,
+      provider: provider ?? this.provider,
+      providerId: providerId != null ? providerId() : this.providerId,
+      name: name ?? this.name,
+      nameHindi: nameHindi != null ? nameHindi() : this.nameHindi,
+      brand: brand != null ? brand() : this.brand,
+      barcode: barcode != null ? barcode() : this.barcode,
+      category: category ?? this.category,
+      caloriesPer100g: caloriesPer100g ?? this.caloriesPer100g,
+      proteinPer100g: proteinPer100g ?? this.proteinPer100g,
+      carbsPer100g: carbsPer100g ?? this.carbsPer100g,
+      fatPer100g: fatPer100g ?? this.fatPer100g,
+      fiberPer100g:
+          fiberPer100g != null ? fiberPer100g() : this.fiberPer100g,
+      sodiumMgPer100g:
+          sodiumMgPer100g != null ? sodiumMgPer100g() : this.sodiumMgPer100g,
+      addedSugarPer100g:
+          addedSugarPer100g != null ? addedSugarPer100g() : this.addedSugarPer100g,
+      saturatedFatPer100g:
+          saturatedFatPer100g != null ? saturatedFatPer100g() : this.saturatedFatPer100g,
+      servingOptions: servingOptions ?? this.servingOptions,
+      provenance: provenance ?? this.provenance,
+      verificationLevel: verificationLevel ?? this.verificationLevel,
+    );
+  }
+
+  final String id;
+  final FoodCatalogProvider provider;
+  final String? providerId;
+  final String name;
+  final String? nameHindi;
+  final String? brand;
+  final String? barcode;
+  final String category;
+  final double caloriesPer100g;
+  final double proteinPer100g;
+  final double carbsPer100g;
+  final double fatPer100g;
+  final double? fiberPer100g;
+  final double? sodiumMgPer100g;
+  final double? addedSugarPer100g;
+  final double? saturatedFatPer100g;
+  final List<ServingOption> servingOptions;
+  final FoodProvenance provenance;
+  final FoodVerificationLevel verificationLevel;
+
+  /// Theoretical Atwater energy value per 100g: 4P + 4C + 9F.
+  double get expectedCaloriesPer100g =>
+      (4.0 * proteinPer100g) + (4.0 * carbsPer100g) + (9.0 * fatPer100g);
+
+  /// Validates reported calories against Atwater expected calories within 20% variance.
+  bool get isMacroBalanced {
+    final diff = (caloriesPer100g - expectedCaloriesPer100g).abs();
+    final allowedVariance =
+        caloriesPer100g * 0.20 > 15.0 ? caloriesPer100g * 0.20 : 15.0;
+    return diff <= allowedVariance;
+  }
+
+  /// Total macronutrient weight must not exceed physical bounds of 100g (+ 5g margin for analytical variance).
+  bool get isPhysicallyPossible {
+    final totalMacros =
+        proteinPer100g + carbsPer100g + fatPer100g + (fiberPer100g ?? 0.0);
+    return totalMacros <= 105.0;
+  }
+
+  /// Returns the default serving option or standard 100g basis.
+  ServingOption get defaultServing {
+    return servingOptions.firstWhere(
+      (s) => s.isDefault,
+      orElse: () => const ServingOption(
+        unitName: 'g',
+        gramWeight: 100.0,
+        isDefault: true,
+      ),
+    );
+  }
+
+  /// Calculates nutritional values for a specified serving quantity and unit.
+  Map<String, double> calculateNutrientsFor({
+    required double quantity,
+    required String unitName,
+  }) {
+    final serving = servingOptions.firstWhere(
+      (s) => s.unitName.toLowerCase() == unitName.toLowerCase(),
+      orElse: () => ServingOption(unitName: unitName, gramWeight: 100.0),
+    );
+
+    final totalGrams = serving.gramWeight * quantity;
+    final factor = totalGrams / 100.0;
+
+    return {
+      'calories': caloriesPer100g * factor,
+      'protein': proteinPer100g * factor,
+      'carbs': carbsPer100g * factor,
+      'fat': fatPer100g * factor,
+      if (fiberPer100g != null) 'fiber': fiberPer100g! * factor,
+      if (sodiumMgPer100g != null) 'sodium': sodiumMgPer100g! * factor,
+      if (addedSugarPer100g != null) 'added_sugar': addedSugarPer100g! * factor,
+      if (saturatedFatPer100g != null) 'saturated_fat': saturatedFatPer100g! * factor,
+    };
+  }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'provider': provider.name,
+        if (providerId != null) 'providerId': providerId,
+        'name': name,
+        if (nameHindi != null) 'nameHindi': nameHindi,
+        if (brand != null) 'brand': brand,
+        if (barcode != null) 'barcode': barcode,
+        'category': category,
+        'caloriesPer100g': caloriesPer100g,
+        'proteinPer100g': proteinPer100g,
+        'carbsPer100g': carbsPer100g,
+        'fatPer100g': fatPer100g,
+        if (fiberPer100g != null) 'fiberPer100g': fiberPer100g,
+        if (sodiumMgPer100g != null) 'sodiumMgPer100g': sodiumMgPer100g,
+        if (addedSugarPer100g != null) 'addedSugarPer100g': addedSugarPer100g,
+        if (saturatedFatPer100g != null) 'saturatedFatPer100g': saturatedFatPer100g,
+        'servingOptions': servingOptions.map((s) => s.toJson()).toList(),
+        'provenance': provenance.toJson(),
+        'verificationLevel': verificationLevel.name,
+      };
+
+  factory RemoteFoodCandidate.fromJson(Map<String, dynamic> json) {
+    final providerRaw = json['provider'];
+    FoodCatalogProvider? provider;
+    for (final p in FoodCatalogProvider.values) {
+      if (p.name == providerRaw) provider = p;
+    }
+    if (provider == null) {
+      throw FormatException('Unknown FoodCatalogProvider: $providerRaw. Refusing corrupt cache row.');
+    }
+    final verificationRaw = json['verificationLevel'];
+    FoodVerificationLevel? verification;
+    for (final v in FoodVerificationLevel.values) {
+      if (v.name == verificationRaw) verification = v;
+    }
+    if (verification == null) {
+      throw FormatException('Unknown FoodVerificationLevel: $verificationRaw. Refusing corrupt cache row.');
+    }
+    return RemoteFoodCandidate(
+      id: json['id'] as String,
+      provider: provider,
+      providerId: json['providerId'] as String?,
+      name: json['name'] as String,
+      nameHindi: json['nameHindi'] as String?,
+      brand: json['brand'] as String?,
+      barcode: json['barcode'] as String?,
+      category: json['category'] as String? ?? 'general',
+      caloriesPer100g: (json['caloriesPer100g'] as num).toDouble(),
+      proteinPer100g: (json['proteinPer100g'] as num).toDouble(),
+      carbsPer100g: (json['carbsPer100g'] as num).toDouble(),
+      fatPer100g: (json['fatPer100g'] as num).toDouble(),
+      fiberPer100g: (json['fiberPer100g'] as num?)?.toDouble(),
+      sodiumMgPer100g: (json['sodiumMgPer100g'] as num?)?.toDouble(),
+      addedSugarPer100g: (json['addedSugarPer100g'] as num?)?.toDouble(),
+      saturatedFatPer100g: (json['saturatedFatPer100g'] as num?)?.toDouble(),
+      servingOptions: (json['servingOptions'] as List? ?? [])
+          .map((s) => ServingOption.fromJson(s as Map<String, dynamic>))
+          .toList(),
+      provenance: FoodProvenance.fromJson(
+        json['provenance'] as Map<String, dynamic>,
+      ),
+      verificationLevel: verification,
+    );
+  }
+}
+
+/// Paginated food search result envelope.
+@immutable
+class FoodSearchPage {
+  const FoodSearchPage({
+    required this.items,
+    required this.totalCount,
+    required this.page,
+    required this.hasMore,
+    required this.query,
+  });
+
+  final List<RemoteFoodCandidate> items;
+  final int totalCount;
+  final int page;
+  final bool hasMore;
+  final String query;
+
+  Map<String, dynamic> toJson() => {
+        'items': items.map((i) => i.toJson()).toList(),
+        'totalCount': totalCount,
+        'page': page,
+        'hasMore': hasMore,
+        'query': query,
+      };
+
+  factory FoodSearchPage.fromJson(Map<String, dynamic> json) {
+    return FoodSearchPage(
+      items: (json['items'] as List)
+          .map((i) => RemoteFoodCandidate.fromJson(i as Map<String, dynamic>))
+          .toList(),
+      totalCount: json['totalCount'] as int? ?? 0,
+      page: json['page'] as int? ?? 1,
+      hasMore: json['hasMore'] as bool? ?? false,
+      query: json['query'] as String? ?? '',
+    );
+  }
+}
+
+/// Heuristic: is this [foodName] a stuffed paratha (aloo/paneer/gobi)?
+///
+/// Single shared implementation for serving synthesis (spec §5): previously
+/// duplicated with subtly different precedence in the catalog service and the
+/// food search screen. Serving suggestion only — never affects nutrition.
+bool isStuffedParathaName(String foodName) {
+  final lower = foodName.toLowerCase();
+  if (!lower.contains('paratha')) return false;
+  return lower.contains('aloo') ||
+      lower.contains('paneer') ||
+      lower.contains('gobi') ||
+      lower.contains('stuffed');
+}

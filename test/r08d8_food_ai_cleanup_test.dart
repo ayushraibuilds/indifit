@@ -13,8 +13,6 @@ import 'package:indifit/core/widgets/b05_accessibility_primitives.dart';
 import 'package:indifit/data/database/app_database.dart'
     hide NutritionConsumptionSnapshot;
 import 'package:indifit/data/repositories/food_repository.dart';
-import 'package:indifit/features/dashboard/widgets/dashboard_header.dart';
-import 'package:indifit/features/dashboard/widgets/dashboard_meal_section.dart';
 import 'package:indifit/features/food_log/food_contextual_actions.dart';
 import 'package:indifit/features/food_log/food_log_surface.dart';
 import 'package:indifit/features/food_log/food_search_screen.dart';
@@ -119,88 +117,15 @@ void main() {
       await tester.drag(find.byType(ListView).first, const Offset(0, -300));
       await tester.pump();
       expect(find.text('Scan barcode'), findsOneWidget);
+      expect(find.text('Scan nutrition label'), findsOneWidget);
+      expect(find.text('Describe meal'), findsOneWidget);
 
       // Unavailable AI/Photo surfaces must be absent
       expect(find.text('Describe with AI'), findsNothing);
       expect(find.text('Photo estimate'), findsNothing);
     });
 
-    testWidgets('DashboardMealSection action sheet does not contain AI Meal Estimator', (
-      tester,
-    ) async {
-      addTearDown(() async {
-        await tester.pumpWidget(const SizedBox.shrink());
-        await tester.pump();
-      });
 
-      final db = AppDatabase.memory();
-      addTearDown(db.close);
-
-      await tester.pumpWidget(
-        _wrap(
-          Scaffold(
-            body: DashboardMealSection(
-              logs: const [],
-              selectedDate: DateTime(2026, 8, 24),
-            ),
-          ),
-          overrides: [
-            databaseProvider.overrideWithValue(db),
-            foodRepositoryProvider.overrideWithValue(_TestFoodRepo(db)),
-          ],
-        ),
-      );
-      for (var i = 0; i < 5; i++) {
-        await tester.pump(const Duration(milliseconds: 100));
-      }
-
-      // Tap the add breakfast button to open meal action sheet
-      final addBtn = find.byIcon(Icons.add_circle_outline).first;
-      expect(addBtn, findsOneWidget);
-      await tester.tap(addBtn);
-      for (var i = 0; i < 5; i++) {
-        await tester.pump(const Duration(milliseconds: 100));
-      }
-
-      // Check available actions
-      expect(find.text('Search foods'), findsOneWidget);
-      expect(find.text('Saved meals'), findsOneWidget);
-      expect(find.text('Recipes'), findsOneWidget);
-      expect(find.text('Build a meal'), findsOneWidget);
-
-      // AI Meal Estimator must NOT be present
-      expect(find.text('AI Meal Estimator'), findsNothing);
-
-      Navigator.pop(tester.element(find.text('Search foods')));
-      await tester.pump();
-    });
-
-    testWidgets('DashboardHeader direct Settings button is present and AI Meal Planner popup is absent', (
-      tester,
-    ) async {
-      addTearDown(() async {
-        await tester.pumpWidget(const SizedBox.shrink());
-        await tester.pump();
-      });
-
-      await tester.pumpWidget(
-        _wrap(
-          const Scaffold(
-            body: DashboardHeader(
-              streakCount: 5,
-              userName: 'Tester',
-            ),
-          ),
-        ),
-      );
-      for (var i = 0; i < 5; i++) {
-        await tester.pump(const Duration(milliseconds: 100));
-      }
-
-      expect(find.byTooltip('Settings'), findsOneWidget);
-      expect(find.text('AI Meal Planner'), findsNothing);
-      expect(find.byType(PopupMenuButton<String>), findsNothing);
-    });
 
     test('Router configuration redirects dead routes /food/ai and /meal-planner to /food', () {
       final db = AppDatabase.memory();
@@ -308,72 +233,6 @@ void main() {
       expect(actionWidget.emphasis, B05ActionEmphasis.danger);
     });
 
-    testWidgets('DashboardMealSection row delete dialog uses clear consumer wording and danger button', (
-      tester,
-    ) async {
-      addTearDown(() async {
-        await tester.pumpWidget(const SizedBox.shrink());
-        await tester.pump();
-      });
 
-      final db = AppDatabase.memory();
-      addTearDown(db.close);
-
-      final testLog = FoodLog(
-        id: 1,
-        name: 'Paneer Bhurji',
-        calories: 300,
-        proteinG: 20,
-        carbsG: 6,
-        fatG: 22,
-        mealType: 'breakfast',
-        loggedAt: DateTime(2026, 8, 24, 8, 30),
-        servingLogged: 1.0,
-        servingUnit: 'serving',
-        isSynced: false,
-      );
-
-      await tester.pumpWidget(
-        _wrap(
-          Scaffold(
-            body: DashboardMealSection(
-              logs: [testLog],
-              selectedDate: DateTime(2026, 8, 24),
-            ),
-          ),
-          overrides: [
-            databaseProvider.overrideWithValue(db),
-            foodRepositoryProvider.overrideWithValue(_TestFoodRepo(db)),
-          ],
-        ),
-      );
-      await tester.pump();
-
-      // Expand Breakfast card
-      await tester.tap(find.text('Breakfast'));
-      for (var i = 0; i < 5; i++) {
-        await tester.pump(const Duration(milliseconds: 100));
-      }
-
-      // Tap the delete icon on the log entry
-      final deleteBtn = find.byTooltip('Delete entry');
-      expect(deleteBtn, findsOneWidget);
-      await tester.tap(deleteBtn);
-      for (var i = 0; i < 3; i++) {
-        await tester.pump(const Duration(milliseconds: 100));
-      }
-
-      // Verify clear consumer copy
-      expect(find.text('Delete food entry?'), findsOneWidget);
-      expect(find.text('Remove "Paneer Bhurji" from this logged meal?'), findsOneWidget);
-
-      // Verify filled delete button
-      final confirmDelete = find.widgetWithText(FilledButton, 'Delete');
-      expect(confirmDelete, findsOneWidget);
-
-      // Cancel
-      await tester.tap(find.text('Cancel'));
-      await tester.pump();
-    });
   });
 }

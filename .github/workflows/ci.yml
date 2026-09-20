@@ -36,6 +36,12 @@ jobs:
       - name: Check Code Style & Analysis
         run: flutter analyze
 
+      - name: Verify Code Graph & Architecture Boundaries
+        run: python3 tool/generate_code_graph.py
+
+      - name: Run Critical Journey Gate
+        run: bash tool/verify_r09_release.sh --tests-only --skip-analysis
+
       - name: Verify Generated Code
         run: dart run build_runner build --delete-conflicting-outputs && dart format lib/data/database/app_database.g.dart && git diff --exit-code
 
@@ -51,7 +57,29 @@ jobs:
           keytool -genkeypair -noprompt -storetype JKS -keystore android/app/ci-release.keystore -alias ci_release_alias -keyalg RSA -keysize 2048 -validity 10000 -storepass ci_release_password -keypass ci_release_password -dname "CN=IndiFit, OU=Dev, O=IndiFit, L=Local, S=Local, C=IN"
 
       - name: Build Release APK
-        run: flutter build apk --release --dart-define=INDIFIT_API_KEY=ci_build_test_key
+        run: flutter build apk --release
+
+      - name: Build Release App Bundle
+        run: flutter build appbundle --release
+
+      - name: Verify Android Release Artifacts
+        run: |
+          bash tool/verify_r09_artifacts.sh \
+            --android-apk build/app/outputs/flutter-apk/app-release.apk \
+            --android-aab build/app/outputs/bundle/release/app-release.aab \
+            --allow-ci-signing \
+            --evidence build/release-evidence/android-ci.txt
+
+      - name: Retain Android Release Evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: indifit-android-release-evidence
+          retention-days: 14
+          if-no-files-found: error
+          path: |
+            build/app/outputs/flutter-apk/app-release.apk
+            build/app/outputs/bundle/release/app-release.aab
+            build/release-evidence/android-ci.txt
 
   ios_release:
     name: iOS Release Build
@@ -71,7 +99,27 @@ jobs:
         run: flutter pub get
 
       - name: Build Unsigned Release App
-        run: flutter build ios --release --no-codesign --dart-define=INDIFIT_API_KEY=ci_build_test_key
+        run: flutter build ios --release --no-codesign
+
+      - name: Verify iOS Release Artifact
+        run: |
+          bash tool/verify_r09_artifacts.sh \
+            --ios-app build/ios/iphoneos/Runner.app \
+            --allow-unsigned-ios \
+            --evidence build/release-evidence/ios-unsigned.txt
+          ditto -c -k --sequesterRsrc --keepParent \
+            build/ios/iphoneos/Runner.app \
+            build/release-evidence/Runner-unsigned.app.zip
+
+      - name: Retain iOS Release Evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: indifit-ios-release-evidence
+          retention-days: 14
+          if-no-files-found: error
+          path: |
+            build/release-evidence/Runner-unsigned.app.zip
+            build/release-evidence/ios-unsigned.txt
 
   backend_ci:
     name: Backend CI Checks

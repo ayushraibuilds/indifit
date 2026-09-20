@@ -9,7 +9,6 @@ import 'package:indifit/core/nutrients.dart';
 import 'package:indifit/core/nutrition_calculation_service.dart';
 import 'package:indifit/core/nutrition_household_measures.dart';
 import 'package:indifit/core/nutrition_legacy_read_models.dart';
-import 'package:indifit/core/privacy/privacy_policy.dart';
 import 'package:indifit/core/raw_cooked_transformations.dart';
 import 'package:indifit/core/services/local_timezone_service.dart';
 import 'package:indifit/core/theme/app_theme.dart';
@@ -24,12 +23,10 @@ import 'package:indifit/data/repositories/nutrition_food_logging_coordinator.dar
 import 'package:indifit/data/repositories/nutrition_thali_repository.dart';
 import 'package:indifit/data/repositories/nutrition_transformation_repository.dart';
 import 'package:indifit/features/dashboard/main_navigation_scaffold.dart';
-import 'package:indifit/features/food_log/ai_meal_logger_screen.dart';
 import 'package:indifit/features/food_log/food_log_surface.dart';
 import 'package:indifit/features/food_log/food_search_screen.dart';
 import 'package:indifit/features/food_log/saved_meals_controller.dart';
 import 'package:indifit/features/food_log/saved_meals_screen.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -930,6 +927,29 @@ void main() {
     );
   });
 
+  testWidgets('roti relevance uses a narrow dark result screen', (
+    tester,
+  ) async {
+    await _pumpRelevanceSearchGolden(tester, query: 'roti');
+    expect(find.text('Whole Wheat Roti / Chapati'), findsOneWidget);
+    expect(find.text('Whole Wheat Roti / Chapati (Double)'), findsNothing);
+    await expectLater(
+      find.byType(FoodSearchScreen),
+      matchesGoldenFile('goldens/rc_m1_food_search_roti_dark.png'),
+    );
+  });
+
+  testWidgets('dal relevance uses a narrow dark result screen', (tester) async {
+    await _pumpRelevanceSearchGolden(tester, query: 'dal');
+    expect(find.text('Dal Fry (Chana & Toor)'), findsOneWidget);
+    expect(find.text('Dal Makhani'), findsOneWidget);
+    expect(find.text('Chana Masala (Black Chickpeas)'), findsNothing);
+    await expectLater(
+      find.byType(FoodSearchScreen),
+      matchesGoldenFile('goldens/rc_m1_food_search_dal_dark.png'),
+    );
+  });
+
   testWidgets('search results light golden', (tester) async {
     await _pumpSearchGolden(tester, theme: AppTheme.lightTheme);
     await expectLater(
@@ -954,70 +974,6 @@ void main() {
     );
   });
 
-  testWidgets('AI description state golden', (tester) async {
-    await _pumpAiGolden(tester, theme: AppTheme.darkTheme);
-    expect(find.text('Describe your meal'), findsOneWidget);
-    await expectLater(
-      find.byType(AiMealLoggerScreen),
-      matchesGoldenFile('goldens/ux_r03_food_ai_description_dark.png'),
-    );
-  });
-
-  testWidgets('AI failure keeps fallback golden', (tester) async {
-    SharedPreferences.setMockInitialValues({'offline_only': false});
-    final prefs = await SharedPreferences.getInstance();
-    final dio = Dio()..httpClientAdapter = _FailingDioAdapter();
-    _setViewport(tester, const Size(390, 844));
-    final database = AppDatabase.memory();
-    addTearDown(() async {
-      await tester.pumpWidget(const SizedBox.shrink());
-      await tester.pump();
-      tester.view.resetPhysicalSize();
-      tester.view.resetDevicePixelRatio();
-      await database.close();
-      dio.close(force: true);
-    });
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          databaseProvider.overrideWithValue(database),
-          foodLogsForDayProvider.overrideWith((ref, date) async => []),
-          privacyPolicyProvider.overrideWith(
-            (ref) => PrivacyPolicyNotifier(prefs),
-          ),
-          dioProvider.overrideWithValue(dio),
-        ],
-        child: MediaQuery(
-          data: const MediaQueryData(),
-          child: MaterialApp(
-            theme: AppTheme.darkTheme,
-            home: AiMealLoggerScreen(
-              mealType: 'dinner',
-              selectedDate: DateTime(2026, 8, 9),
-            ),
-          ),
-        ),
-      ),
-    );
-    await tester.pump();
-    await tester.enterText(find.byType(TextField).first, '2 rotis with paneer');
-    await tester.pump();
-    await tester.ensureVisible(find.text('Estimate nutrition'));
-    await tester.tap(find.text('Estimate nutrition'));
-    await tester.pump(const Duration(milliseconds: 250));
-    expect(
-      find.textContaining('AI estimate isn’t available right now'),
-      findsOneWidget,
-    );
-    expect(find.text('Search foods instead'), findsOneWidget);
-    tester.testTextInput.hide();
-    FocusManager.instance.primaryFocus?.unfocus();
-    await tester.pump();
-    await expectLater(
-      find.byType(AiMealLoggerScreen),
-      matchesGoldenFile('goldens/ux_r03_food_ai_failure_dark.png'),
-    );
-  });
 
   testWidgets('quantity and review state golden', (tester) async {
     _setViewport(tester, const Size(390, 844));
@@ -1329,39 +1285,58 @@ Future<void> _pumpSearchGolden(
   expect(tester.takeException(), isNull);
 }
 
-Future<void> _pumpAiGolden(
+Future<void> _pumpRelevanceSearchGolden(
   WidgetTester tester, {
-  required ThemeData theme,
+  required String query,
 }) async {
-  _setViewport(tester, const Size(390, 844));
+  _setViewport(tester, const Size(360, 780));
   final database = AppDatabase.memory();
+  final seeded = (await tester.runAsync(() async {
+    final foods = await database.select(database.foodItems).get();
+    final authority = await FoodRepository(
+      database,
+    ).readSearchPresentationAuthority(foods.map((food) => food.id));
+    return (foods: foods, authority: authority);
+  }))!;
+  final registry = NutrientRegistry.fromAssetFileSync(
+    'assets/data/nutrient_registry.json',
+  );
+  late ProviderContainer container;
   addTearDown(() async {
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();
+    container.dispose();
     tester.view.resetPhysicalSize();
     tester.view.resetDevicePixelRatio();
     await database.close();
   });
   await tester.pumpWidget(
-    ProviderScope(
-      overrides: [
-        databaseProvider.overrideWithValue(database),
-        foodLogsForDayProvider.overrideWith((ref, date) async => []),
-      ],
-      child: MediaQuery(
-        data: const MediaQueryData(),
-        child: MaterialApp(
-          theme: theme,
-          home: AiMealLoggerScreen(
-            mealType: 'breakfast',
-            selectedDate: DateTime(2026, 8, 9),
-          ),
-        ),
+    _foodApp(
+      database: database,
+      repository: _AcceptanceFoodRepository(
+        database,
+        foods: seeded.foods,
+        authority: seeded.authority,
       ),
+      catalog: _NoCustomSearchCatalogRepository(
+        database: database,
+        registry: registry,
+      ),
+      apiService: _TestFoodApiService(),
+      theme: AppTheme.darkTheme,
+      mealType: 'breakfast',
+      selectedDate: DateTime(2026, 9, 1),
+      mediaSize: const Size(360, 780),
     ),
   );
-  await tester.pump();
-  await tester.pump(const Duration(milliseconds: 250));
+  container = ProviderScope.containerOf(
+    tester.element(find.byType(FoodSearchScreen)),
+  );
+  await _pumpFood(tester);
+  await tester.enterText(find.byType(TextField), query);
+  await tester.pump(const Duration(milliseconds: 900));
+  expect(find.text('Search results'), findsOneWidget);
+  expect(tester.takeException(), isNull);
 }
 
 Future<void> _pumpFood(WidgetTester tester) async {
@@ -1385,6 +1360,38 @@ class _TestFoodRepository extends FoodRepository {
 
   @override
   Future<List<FoodItem>> searchFoodLocal(String query) async => searchResults;
+
+  @override
+  Future<Map<int, FoodSearchPresentationAuthority>>
+  readSearchPresentationAuthority(Iterable<int> legacyFoodItemIds) async =>
+      const {};
+}
+
+class _AcceptanceFoodRepository extends FoodRepository {
+  _AcceptanceFoodRepository(
+    super.database, {
+    required this.foods,
+    required this.authority,
+  });
+
+  final List<FoodItem> foods;
+  final Map<int, FoodSearchPresentationAuthority> authority;
+
+  @override
+  Future<List<FoodItem>> getRecentFoods(int limit) async => const [];
+
+  @override
+  Future<List<FoodItem>> searchFoodLocal(String query) async => foods;
+
+  @override
+  Future<Map<int, FoodSearchPresentationAuthority>>
+  readSearchPresentationAuthority(Iterable<int> legacyFoodItemIds) async {
+    final requested = legacyFoodItemIds.toSet();
+    return {
+      for (final entry in authority.entries)
+        if (requested.contains(entry.key)) entry.key: entry.value,
+    };
+  }
 }
 
 class _NoCustomSearchCatalogRepository extends NutritionFoodCatalogRepository {
@@ -1422,6 +1429,11 @@ class _QueryAwareFoodRepository extends FoodRepository {
 
   @override
   Future<List<FoodItem>> getRecentFoods(int limit) async => const [];
+
+  @override
+  Future<Map<int, FoodSearchPresentationAuthority>>
+  readSearchPresentationAuthority(Iterable<int> legacyFoodItemIds) async =>
+      const {};
 
   @override
   Future<List<FoodItem>> searchFoodLocal(String query) async => switch (query) {
@@ -1608,23 +1620,6 @@ class _FoodRouteHarnessState extends State<_FoodRouteHarness> {
             ),
     ),
   );
-}
-
-class _FailingDioAdapter implements HttpClientAdapter {
-  @override
-  Future<ResponseBody> fetch(
-    RequestOptions options,
-    Stream<List<int>>? requestStream,
-    Future<void>? cancelFuture,
-  ) async {
-    throw DioException.connectionError(
-      requestOptions: options,
-      reason: 'UX-R3 test failure',
-    );
-  }
-
-  @override
-  void close({bool force = false}) {}
 }
 
 class _TestFoodCatalog extends NutritionFoodCatalogRepository {

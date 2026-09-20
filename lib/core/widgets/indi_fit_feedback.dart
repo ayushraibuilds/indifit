@@ -8,6 +8,7 @@ SnackBar indiFitSuccessSnackBar(
   String message, {
   BuildContext? context,
   Duration duration = const Duration(seconds: 3),
+  SnackBarAction? action,
 }) {
   if (context != null) {
     final colors = context.b05Colors;
@@ -17,6 +18,7 @@ SnackBar indiFitSuccessSnackBar(
       shape: const RoundedRectangleBorder(borderRadius: B05Radii.mediumRadius),
       backgroundColor: colors.section,
       duration: duration,
+      action: action,
       content: Text(
         message,
         style: Theme.of(
@@ -28,6 +30,7 @@ SnackBar indiFitSuccessSnackBar(
   return SnackBar(
     behavior: SnackBarBehavior.floating,
     duration: duration,
+    action: action,
     content: Text(message),
   );
 }
@@ -41,12 +44,18 @@ showIndiFitSuccessFeedback(
   BuildContext context,
   String message, {
   Duration duration = const Duration(seconds: 3),
+  SnackBarAction? action,
 }) {
   final messenger = ScaffoldMessenger.maybeOf(context);
   if (messenger == null) return null;
   messenger.clearSnackBars();
   return messenger.showSnackBar(
-    indiFitSuccessSnackBar(message, context: context, duration: duration),
+    indiFitSuccessSnackBar(
+      message,
+      context: context,
+      duration: duration,
+      action: action,
+    ),
   );
 }
 
@@ -92,6 +101,9 @@ SnackBar indiFitUndoSnackBar(
       ).textTheme.bodyMedium?.copyWith(color: colors.textPrimary),
     ),
     duration: duration,
+    // SnackBarAction defaults to persistent in current Flutter. Undo is a
+    // bounded affordance here, so retain the action without pinning feedback.
+    persist: false,
     action: SnackBarAction(
       label: 'Undo',
       textColor: colors.action,

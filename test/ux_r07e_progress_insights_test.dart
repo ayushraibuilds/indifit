@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:indifit/core/di/providers.dart';
 import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/data/models/b02_execution_models.dart';
 import 'package:indifit/data/models/b02_muscle_volume_models.dart';
@@ -377,6 +378,9 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
+        overrides: [
+          userProfileProvider.overrideWith((ref) => UserProfileNotifier()),
+        ],
         child: MaterialApp.router(
           theme: AppTheme.darkTheme,
           routerConfig: router,
@@ -407,7 +411,10 @@ Future<void> _pump(
 }) async {
   await tester.pumpWidget(
     ProviderScope(
-      overrides: overrides,
+      overrides: [
+        userProfileProvider.overrideWith((ref) => UserProfileNotifier()),
+        ...overrides,
+      ],
       child: MaterialApp(
         theme: theme,
         home: MediaQuery(

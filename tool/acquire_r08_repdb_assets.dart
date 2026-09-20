@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:indifit/features/media/r08_repdb_asset_pipeline.dart';
+import 'src/r08_repdb_asset_pipeline.dart';
 
 Future<void> main(List<String> arguments) async {
   final options = _options(arguments);
@@ -111,10 +111,11 @@ Future<List<int>> _downloadFromPinnedSource(
         '${item.asset.sourceRelativePath}.',
       );
     }
-    return response.fold<List<int>>(<int>[], (bytes, chunk) {
+    final bytes = await response.fold<List<int>>(<int>[], (bytes, chunk) {
       bytes.addAll(chunk);
       return bytes;
     });
+    return bytes;
   } finally {
     client.close(force: true);
   }

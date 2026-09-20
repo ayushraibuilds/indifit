@@ -18,6 +18,25 @@ class NutritionFoodSearchVocabulary {
     'beaten rice': ['poha'],
   };
 
+  /// Reviewed search-only defaults for generic consumer concepts.
+  ///
+  /// These stable B03 IDs are ranking hints, not aliases in the identity
+  /// resolver. They never make `roti` or `chapati` identity-equal to the
+  /// canonical food; they only put the ordinary base option first in search.
+  static const Map<String, Set<String>> _primaryConceptCanonicalIds = {
+    'roti': {'food-seed-0564'},
+    'chapati': {'food-seed-0564'},
+    'dal': {
+      'food-seed-0532', // Toor Dal / Yellow Dal Tadka
+      'food-seed-0156', // Dal Fry (Chana & Toor)
+      'food-seed-0160', // Dal Makhani
+      'food-seed-0345', // Moong Dal Chilka (Cooked)
+      'food-seed-0310', // Masoor Dal / Red Lentil Soup
+      'food-seed-0543', // Urad Dal Plain
+      'food-seed-0570', // Yellow Dal Tadka
+    },
+  };
+
   static String normalize(String value) {
     // Preserve letters and digits, including non-Latin food names and
     // meaningful package numbers, while making punctuation a token boundary.
@@ -60,6 +79,28 @@ class NutritionFoodSearchVocabulary {
       }
     }
     return expanded.toList(growable: false);
+  }
+
+  static bool isPrimaryConcept({
+    required String query,
+    required String? canonicalFoodId,
+  }) {
+    if (canonicalFoodId == null) return false;
+    return _primaryConceptCanonicalIds[normalize(query)]?.contains(
+          canonicalFoodId,
+        ) ??
+        false;
+  }
+
+  static bool hasPrimaryConceptCategory({
+    required String query,
+    required String? category,
+  }) {
+    final normalizedCategory = normalize(category ?? '');
+    return switch (normalize(query)) {
+      'roti' || 'chapati' => normalizedCategory == 'grains breads',
+      _ => false,
+    };
   }
 }
 
@@ -107,6 +148,9 @@ class NutritionFoodSearchCandidate {
   const NutritionFoodSearchCandidate._({
     required this.source,
     required this.id,
+    required this.canonicalIdentityId,
+    required this.presentationKind,
+    required this.variantOfFoodId,
     required this.displayName,
     required this.brand,
     required this.category,
@@ -120,10 +164,18 @@ class NutritionFoodSearchCandidate {
     required this.remote,
   });
 
-  factory NutritionFoodSearchCandidate.legacy(FoodItem food) {
+  factory NutritionFoodSearchCandidate.legacy(
+    FoodItem food, {
+    String? canonicalIdentityId,
+    String? presentationKind,
+    String? variantOfFoodId,
+  }) {
     return NutritionFoodSearchCandidate._(
       source: NutritionFoodSearchSource.legacy,
       id: 'legacy-food-item::${food.id}',
+      canonicalIdentityId: canonicalIdentityId,
+      presentationKind: presentationKind,
+      variantOfFoodId: variantOfFoodId,
       displayName: food.name,
       brand: _clean(food.brand),
       category: _clean(food.category),
@@ -142,6 +194,9 @@ class NutritionFoodSearchCandidate {
     return NutritionFoodSearchCandidate._(
       source: NutritionFoodSearchSource.canonical,
       id: option.id,
+      canonicalIdentityId: option.id,
+      presentationKind: null,
+      variantOfFoodId: null,
       displayName: option.displayName,
       brand: _clean(option.brand),
       category: null,
@@ -162,6 +217,9 @@ class NutritionFoodSearchCandidate {
     return NutritionFoodSearchCandidate._(
       source: NutritionFoodSearchSource.remote,
       id: stableId ?? '',
+      canonicalIdentityId: null,
+      presentationKind: null,
+      variantOfFoodId: null,
       displayName: remote.name,
       brand: _clean(remote.brand),
       category: null,
@@ -182,6 +240,9 @@ class NutritionFoodSearchCandidate {
 
   final NutritionFoodSearchSource source;
   final String id;
+  final String? canonicalIdentityId;
+  final String? presentationKind;
+  final String? variantOfFoodId;
   final String displayName;
   final String? brand;
   final String? category;
@@ -200,8 +261,34 @@ class NutritionFoodSearchCandidate {
       final provider = providerId;
       return provider == null ? null : 'provider::$provider';
     }
-    return id.isEmpty ? null : 'canonical::$id';
+    final canonicalId = canonicalIdentityId ?? id;
+    return canonicalId.isEmpty ? null : 'canonical::$canonicalId';
   }
+
+  /// Bounded presentation-only marker. The record remains independently
+  /// selectable and keeps its canonical identity; this only prevents obvious
+  /// convenience variants from filling the first viewport.
+  bool get isExplicitPresentationVariant =>
+      presentationKind == 'servingPresentationVariant' ||
+      _minorVariantSuffixes.any(displayName.trim().toLowerCase().endsWith);
+
+  static const List<String> _minorVariantSuffixes = [
+    '(mini)',
+    '(double)',
+    '(premium ghee / extra oil)',
+    '(jumbo / large)',
+    '(half plate)',
+    '(double serving)',
+    '(extra butter / ghee)',
+    '(double paneer)',
+    '(low oil / diet version)',
+    '(mini size)',
+    '(with extra cheese / butter)',
+    '(small side bowl)',
+    '(double healthy bowl)',
+    '(low oil cooking)',
+    '(dhaba style (high oil))',
+  ];
 
   /// Brand and declared pack quantity can be searched as product metadata,
   /// without altering the candidate's B03 identity, facts, or provenance.
@@ -237,6 +324,9 @@ class NutritionFoodSearchCandidate {
       NutritionFoodSearchVocabulary.normalize(brand ?? ''),
       sourceKey,
       id,
+      canonicalIdentityId ?? '',
+      presentationKind ?? '',
+      variantOfFoodId ?? '',
       remote?.servingSize.toString() ?? '',
       remote?.servingUnit ?? '',
       remote?.calories?.toString() ?? '',
@@ -308,6 +398,8 @@ class NutritionFoodSearchRanking {
   static const int _prefix = 820;
   static const int _token = 680;
   static const int _substring = 220;
+  static const int _metadataToken = 120;
+  static const int _metadataSubstring = 70;
   static const int _remoteWeakToken = 175;
   static const int _fuzzy = 300;
   static const int _localityBoost = 80;
@@ -316,6 +408,9 @@ class NutritionFoodSearchRanking {
   static const int _factsAvailabilityBoost = 40;
   static const int _historyRecentBoost = 8;
   static const int _historyFrequencyStep = 2;
+  static const int _primaryConceptBoost = 220;
+  static const int _primaryConceptCategoryBoost = 80;
+  static const int _servingVariantPenalty = 180;
   // A generic provider exact match must not displace a reviewed/local food
   // whose name contains the requested common food (for example the bundled
   // "Whole Wheat Roti / Chapati" entry for a `roti` query). Explicit brand or
@@ -371,9 +466,13 @@ class NutritionFoodSearchRanking {
     String normalizedQuery,
     List<String> queryVariants,
   ) {
-    final name = candidate.searchableText;
-    if (name.isEmpty) return const _Evaluation.none();
-    final nameTokens = _tokens(name);
+    final displayName = NutritionFoodSearchVocabulary.normalize(
+      candidate.displayName,
+    );
+    final searchableText = candidate.searchableText;
+    if (searchableText.isEmpty) return const _Evaluation.none();
+    final displayTokens = _tokens(displayName);
+    final searchableTokens = _tokens(searchableText);
     final originalTokens = _tokens(normalizedQuery);
     var best = const _Evaluation.none();
     for (final variant in queryVariants) {
@@ -381,8 +480,11 @@ class NutritionFoodSearchRanking {
       final alias = variant != normalizedQuery;
       final evaluation = _evaluateVariant(
         candidate,
-        name,
-        nameTokens,
+        displayName,
+        displayTokens,
+        searchableText,
+        searchableTokens,
+        normalizedQuery,
         variant,
         variantTokens,
         originalTokens,
@@ -398,8 +500,11 @@ class NutritionFoodSearchRanking {
 
   static _Evaluation _evaluateVariant(
     NutritionFoodSearchCandidate candidate,
-    String name,
-    List<String> nameTokens,
+    String displayName,
+    List<String> displayTokens,
+    String searchableText,
+    List<String> searchableTokens,
+    String normalizedQuery,
     String variant,
     List<String> variantTokens,
     List<String> originalTokens,
@@ -408,9 +513,6 @@ class NutritionFoodSearchRanking {
     // Display name is the primary identity-bearing field. Search metadata is
     // useful for discovery, but must not turn an exact food-name query into a
     // weaker token match merely because a brand/category is also present.
-    final displayName = NutritionFoodSearchVocabulary.normalize(
-      candidate.displayName,
-    );
     if (displayName == variant) {
       return _Evaluation(
         match: alias
@@ -427,35 +529,18 @@ class NutritionFoodSearchRanking {
         lexicalScore: alias ? _aliasExact - 30 : _prefix,
       );
     }
-    if (name == variant) {
-      return _Evaluation(
-        match: alias
-            ? NutritionFoodSearchMatch.aliasExact
-            : NutritionFoodSearchMatch.exact,
-        lexicalScore: alias ? _aliasExact : _exact,
-      );
-    }
-    if (name.startsWith('$variant ')) {
-      return _Evaluation(
-        match: alias
-            ? NutritionFoodSearchMatch.aliasExact
-            : NutritionFoodSearchMatch.prefix,
-        lexicalScore: alias ? _aliasExact - 30 : _prefix,
-      );
-    }
-
-    final allTokensMatch =
+    final allDisplayTokensMatch =
         variantTokens.isNotEmpty &&
         variantTokens.every(
-          (queryToken) => nameTokens.any(
+          (queryToken) => displayTokens.any(
             (nameToken) =>
                 nameToken == queryToken ||
                 _safeSingular(nameToken) == _safeSingular(queryToken),
           ),
         );
-    if (allTokensMatch) {
+    if (allDisplayTokensMatch) {
       final firstTokenMatches = variantTokens.every(
-        (queryToken) => nameTokens.first == queryToken,
+        (queryToken) => displayTokens.first == queryToken,
       );
       // A short provider token hidden in a product name is often a brand or
       // marketing fragment (for example "Bon appe"), not a useful food hit.
@@ -481,13 +566,13 @@ class NutritionFoodSearchRanking {
     }
 
     if (variantTokens.length == 1 &&
-        nameTokens.any((token) => token.startsWith(variant))) {
+        displayTokens.any((token) => token.startsWith(variant))) {
       return _Evaluation(
         match: NutritionFoodSearchMatch.prefix,
         lexicalScore: alias ? _prefix - 30 : _prefix,
       );
     }
-    if (name.contains(variant)) {
+    if (displayName.contains(variant)) {
       return const _Evaluation(
         match: NutritionFoodSearchMatch.substring,
         lexicalScore: _substring,
@@ -495,13 +580,39 @@ class NutritionFoodSearchRanking {
     }
 
     if (variant.length >= 4 && originalTokens.length <= 3) {
-      final fuzzy = _fuzzyMatch(variantTokens, nameTokens);
+      final fuzzy = _fuzzyMatch(variantTokens, displayTokens);
       if (fuzzy >= _fuzzyThreshold(variant.length)) {
         return const _Evaluation(
           match: NutritionFoodSearchMatch.fuzzy,
           lexicalScore: _fuzzy,
         );
       }
+    }
+
+    final allSearchableTokensMatch =
+        variantTokens.isNotEmpty &&
+        variantTokens.every(
+          (queryToken) => searchableTokens.any(
+            (searchToken) =>
+                searchToken == queryToken ||
+                _safeSingular(searchToken) == _safeSingular(queryToken),
+          ),
+        );
+    if (allSearchableTokensMatch) {
+      final explicitProductIntent = _hasExplicitProductIntent(
+        candidate,
+        normalizedQuery,
+      );
+      return _Evaluation(
+        match: NutritionFoodSearchMatch.token,
+        lexicalScore: explicitProductIntent ? _token : _metadataToken,
+      );
+    }
+    if (searchableText.contains(variant)) {
+      return const _Evaluation(
+        match: NutritionFoodSearchMatch.substring,
+        lexicalScore: _metadataSubstring,
+      );
     }
     return const _Evaluation.none();
   }
@@ -530,6 +641,21 @@ class NutritionFoodSearchRanking {
     if (candidate.brand == null && !brandIntent) score += _genericBoost;
 
     if (candidate.hasNumericFacts) score += _factsAvailabilityBoost;
+    if (NutritionFoodSearchVocabulary.isPrimaryConcept(
+      query: normalizedQuery,
+      canonicalFoodId: candidate.canonicalIdentityId,
+    )) {
+      score += _primaryConceptBoost;
+    }
+    if (NutritionFoodSearchVocabulary.hasPrimaryConceptCategory(
+      query: normalizedQuery,
+      category: candidate.category,
+    )) {
+      score += _primaryConceptCategoryBoost;
+    }
+    if (candidate.isExplicitPresentationVariant) {
+      score -= _servingVariantPenalty;
+    }
     if (candidate.source != NutritionFoodSearchSource.remote &&
         evaluation.match.index >= NutritionFoodSearchMatch.token.index) {
       final frequency = history.frequencyFor(candidate).clamp(0, 5).toInt();
@@ -636,6 +762,9 @@ class NutritionFoodSearchRanking {
     for (final queryToken in queryTokens) {
       var best = 0.0;
       for (final nameToken in nameTokens) {
+        // A one-edit substitution at the first letter commonly crosses food
+        // concepts (`chole` -> `whole`) rather than correcting a typo.
+        if (queryToken.codeUnitAt(0) != nameToken.codeUnitAt(0)) continue;
         final maxLength = queryToken.length > nameToken.length
             ? queryToken.length
             : nameToken.length;

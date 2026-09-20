@@ -330,6 +330,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            userProfileProvider.overrideWith((ref) => UserProfileNotifier()),
             nutritionConstraintManagementControllerProvider.overrideWith(
               (ref) => controller,
             ),

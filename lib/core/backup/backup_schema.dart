@@ -274,6 +274,8 @@ class BackupData {
         'water_goal',
         'water_glass_size',
         'water_last_logged_date',
+        'pref_hydration_daily_goal_ml',
+        'pref_hydration_entries_json',
         'streak_freezes_count',
         'pref_streak_freeze_count',
         'user_streak_count',
@@ -303,6 +305,7 @@ class BackupData {
         'prefRemindEvening',
         'prefRemindWeekly',
         'pref_remind_meals',
+        'pref_remind_water',
         'pref_remind_evening',
         'pref_remind_weekly',
         'prefQuietHoursEnabled',
@@ -317,6 +320,8 @@ class BackupData {
         'pref_lunch_reminder_minute',
         'pref_dinner_reminder_hour',
         'pref_dinner_reminder_minute',
+        'pref_water_reminder_hour',
+        'pref_water_reminder_minute',
         'pref_daily_logging_reminder_hour',
         'pref_daily_logging_reminder_minute',
         'pref_weekly_progress_day',
@@ -337,6 +342,7 @@ class BackupData {
         'installed_food_packs',
         'unlocked_achievement_ids',
         'pref_workout_reminder_days',
+        'pref_diary_meal_slots',
       ];
       for (final key in stringListKeys) {
         final listVal = prefs.getStringList(key);
@@ -832,6 +838,11 @@ class BackupData {
         userPreferences['pref_remind_workout'] =
             userPreferences['prefRemindWorkout'];
       }
+      if (userPreferences.containsKey('prefRemindWater') &&
+          !userPreferences.containsKey('pref_remind_water')) {
+        userPreferences['pref_remind_water'] =
+            userPreferences['prefRemindWater'];
+      }
     }
 
     // Custom Food Items
@@ -1128,6 +1139,7 @@ class BackupData {
                 ? parseLegacyBackupTimestamp(m['recorded_at'] as String)
                 : DateTime.now().toUtc(),
             isSynced: m['is_synced'] as bool? ?? false,
+            uuid: m['uuid'] as String?,
           ),
         );
       }
@@ -3657,6 +3669,7 @@ class BackupData {
                   arms: Value(m.arms),
                   recordedAt: Value(m.recordedAt),
                   isSynced: Value(m.isSynced),
+                  uuid: Value(m.uuid),
                 ),
               );
         }

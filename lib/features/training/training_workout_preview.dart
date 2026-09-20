@@ -42,6 +42,12 @@ class TrainingWorkoutPreviewData {
   bool get hasPlannedTargets =>
       exercises.any((exercise) => exercise.targets.isNotEmpty);
 
+  /// True when this unstarted occurrence carries an explicit customized snapshot
+  /// rather than dynamically resolving from the published template.
+  bool get isCustomized =>
+      occurrenceItem.occurrence.executionSnapshotJson?.trim().isNotEmpty ==
+      true;
+
   factory TrainingWorkoutPreviewData.fromOccurrence(
     CalendarOccurrenceReadItem item, {
     String? snapshotJson,

@@ -163,6 +163,7 @@ class _FoodContextualActionsState extends ConsumerState<FoodContextualActions> {
         behavior: SnackBarBehavior.floating,
         content: const Text('Food entry deleted.'),
         duration: duration.isNegative ? const Duration(seconds: 1) : duration,
+        persist: false,
         action: SnackBarAction(
           label: 'Undo',
           onPressed: () => unawaited(_undo()),

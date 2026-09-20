@@ -6,64 +6,31 @@ import 'package:indifit/core/di/providers.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  group('Task T2: Backend Security & Release Credential Configuration Tests', () {
-    test(
-      'AppConfig.validateBootstrapConfig enforces release credential validation when key is omitted',
-      () {
-        final container = ProviderContainer();
-        addTearDown(container.dispose);
+  group('R09-A optional legacy backend configuration', () {
+    test('Dio client does not require or invent a backend credential', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
 
-        if (!AppConfig.hasValidApiKey) {
-          expect(
-            () => AppConfig.validateBootstrapConfig(forceReleaseCheck: true),
-            throwsA(
-              isA<StateError>().having(
-                (e) => e.message,
-                'message',
-                contains('Release bootstrap failure'),
-              ),
-            ),
-            reason:
-                'AppConfig.validateBootstrapConfig must throw StateError when key is missing in release mode',
-          );
-        } else {
-          final dio = container.read(dioProvider);
-          expect(
-            dio.options.headers['x-indifit-key'],
-            equals(AppConfig.apiKey),
-          );
-          expect(
-            dio.options.connectTimeout,
-            equals(const Duration(seconds: 15)),
-          );
-        }
-      },
-    );
+      final dio = container.read(dioProvider);
+      if (AppConfig.hasValidApiKey) {
+        expect(
+          dio.options.headers['x-indifit-key'],
+          AppConfig.rawApiKey.trim(),
+        );
+      } else {
+        expect(dio.options.headers, isNot(contains('x-indifit-key')));
+      }
+      expect(dio.options.connectTimeout, equals(const Duration(seconds: 15)));
+    });
+
+    test('connected AI is enabled in Post-V1 capability contract', () {
+      expect(AppConfig.connectedAiEnabled, isTrue);
+    });
 
     test(
-      'Configuration errors do not leak secrets or credentials in exception text',
+      'AppConfig.hasValidApiKey reflects an optional compile-time credential',
       () {
-        if (!AppConfig.hasValidApiKey) {
-          try {
-            AppConfig.validateBootstrapConfig(forceReleaseCheck: true);
-            fail('Should have thrown StateError');
-          } catch (e) {
-            final msg = e.toString();
-            expect(msg.contains('backend-secret'), isFalse);
-            expect(msg.contains('x-indifit-key='), isFalse);
-          }
-        }
-      },
-    );
-
-    test(
-      'AppConfig.hasValidApiKey reflects presence of compile-time INDIFIT_API_KEY',
-      () {
-        if (AppConfig.rawApiKey.trim().isEmpty) {
-          expect(AppConfig.hasValidApiKey, isFalse);
-        } else {
-          expect(AppConfig.hasValidApiKey, isTrue);
-        }
+        expect(AppConfig.hasValidApiKey, AppConfig.rawApiKey.trim().isNotEmpty);
       },
     );
   });

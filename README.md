@@ -1,12 +1,18 @@
 # IndiFit 🏋️
 
-IndiFit is an offline-first, AI-powered gym tracker and nutrition planner tailored for Indian food and training habits.
+IndiFit is an offline-first workout and nutrition tracker tailored for Indian food and training habits.
 
 ## Key Features
-- **Offline-First Storage**: Powered by Drift (SQLite) to log workouts, track body stats, search food, and manage rest timers 100% offline.
-- **Indian Food Database**: Auto-seeded on first install with 413 common Indian dishes and macros (Whole wheat roti, Dal tadka, Paneer butter masala, Rajma chawal, Chole, etc.).
-- **FastAPI AI Integration**: Proxied server-side calls utilizing Gemini (free/multimodal) and DeepSeek V4-Flash to build onboarding programs, estimate food via photo/text descriptions, and compile weekly report summaries.
+- **Offline Core**: Drift (SQLite) stores workouts, nutrition logs, body measurements, plans, preferences, and recovery copies on the device. Core logging and review flows work without a network connection.
+- **Indian Food Catalogue**: The app bundles 573 base food entries and 25 optional regional-pack entries with nutrition facts and provenance metadata.
+- **Optional Online Food Lookup**: When Offline Mode is off, users can deliberately search or scan packaged foods through Open Food Facts. Local results remain available if the provider cannot be reached.
 - **Interactive Workout Player**: Responsive set counters, haptic circular countdown rest timers, and personal record confetti celebrations.
+- **Progress & Health Connections**: Review recorded workout/nutrition trends and optionally connect supported Health Connect or HealthKit categories.
+- **Portable Data**: Create and restore JSON backups, optionally protect manual backup files with a password, and copy a food/workout CSV summary.
+
+## Post-V1 Capability Contract
+
+IndiFit is local-first, not offline-only. Core logging, workout player, and local database remain 100% offline functional, while connected features (nutrition-label OCR and natural-language meal logging) act as optional, reviewable accelerators.
 
 ---
 
@@ -34,7 +40,7 @@ Since you do not have a paid Apple Developer account ($99/year), you can use the
 3. Check the **Automatically manage signing** box.
 4. Under **Team**, select your Apple ID (Personal Team). 
    - *If your Apple ID is not listed, click "Add an Account..." and log in with your normal iCloud email/password (no developer fee required).*
-5. In **Bundle Identifier**, change the package suffix slightly if there's a conflict (e.g., change `com.indifit.IndiFit` to `com.indifit.IndiFitDev`).
+5. The public-release bundle identifier is `com.indifit.indifit` and must not change after store registration. For personal-device development only, use a clearly separate identifier such as `com.indifit.indifit.dev` if Apple's portal reports a conflict; never archive that development identity for distribution.
 
 ### Step 4: Enable Developer Mode on your iPhone
 1. On your iPhone, go to **Settings** > **Privacy & Security**.
@@ -49,7 +55,7 @@ Since you do not have a paid Apple Developer account ($99/year), you can use the
 4. *Note: Before opening the app for the first time, you may need to go to iPhone **Settings** > **General** > **VPN & Device Management**, tap your Apple ID email under "Developer App", and click **Trust**.*
 
 > [!NOTE]
-> **Free Account Limits**: Apple allows personal developer accounts to sideload up to 3 apps per device. The app certificate will expire after **7 days**, after which you just need to re-plug your iPhone and click Play in Xcode again to renew it.
+> **Free Account Limits**: Apple allows personal developer accounts to sideload up to 3 active apps per device. The app certificate expires after **7 days**, after which you re-run from Xcode to renew it. Because WidgetKit extensions (like `RestTimerWidgetExtension`) use an embedded bundle identifier (`com.indifit.indifit.RestTimerWidget`), ensure both the **Runner** and **RestTimerWidgetExtension** targets are signed with your Personal Team. Each extension target consumes one App ID slot against Apple's free 10 App ID limit.
 
 ---
 
@@ -68,5 +74,5 @@ Testing on Android is completely free and does not expire:
 - **State Management**: Riverpod (`flutter_riverpod`)
 - **Local Cache & Storage**: Drift SQLite Database (`drift` + `sqlite3_flutter_libs`)
 - **Backend Sync**: Local-only for v1 (Cloud sync planned for future versions)
-- **Networking**: Dio Client (`dio`)
+- **Optional Networking**: Open Food Facts lookup and opt-in crash diagnostics, both blocked by Offline Mode
 - **Visuals**: Lottie animations + Fl Chart

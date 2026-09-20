@@ -1,46 +1,62 @@
 # IndiFit — App Store & Google Play Store Listing Copy
 
-## 1. Store Titles
-- **App Title (30 char):** IndiFit — Indian Fitness App
-- **Subtitle (iOS, 30 char):** Offline Calorie & Workout Log
+## 1. Store titles
+
+- **App title:** IndiFit — Indian Fitness App
+- **iOS subtitle:** Offline Workout & Food Log
 
 ---
 
-## 2. Short Description (Android, 80 char)
-Track Indian foods, calories, macros, workouts, and PRs 100% offline & private.
+## 2. Android short description
+
+Track Indian foods, workouts and progress with private, offline-first logging.
 
 ---
 
-## 3. Full Description
+## 3. Full description
 
-**IndiFit is the privacy-first, offline-ready fitness & nutrition tracker built for Indian diets and gym routines.**
+**IndiFit is an offline-first workout and nutrition tracker built for Indian diets and training routines.**
 
-Whether you are logging home-cooked Indian meals (whole wheat chapati, dal, idli, paneer, biryani), tracking progressive overload in the gym, or calculating TDEE & macro splits, IndiFit keeps your data 100% private and stored on your device.
+Log home-cooked meals, follow structured training plans, record completed sets and review progress without creating an online account. Your core records stay in the app's storage on your device.
 
-### 🌟 KEY FEATURES
+### Indian nutrition logging
 
-#### 🍱 Offline Indian Food Database & AI Logger
-- 1,000+ curated Indian dishes with verified calories, protein, carbs, fat, and dietary fiber.
-- Bilingual search support (English & Hindi food names like *Roti*, *Dosa*, *Rajma*).
-- AI Photo & Text Meal Estimation powered by Google Gemini.
-- 15-minute automatic meal grouping for thalis and multi-dish meals.
+- 573 bundled base food entries plus 25 optional regional-pack entries.
+- Local food search, custom foods, recipes and saved meals.
+- Nutrition facts retain their source and completeness information.
+- Group multiple dishes into a meal while keeping each logged item reviewable.
+- Optional Open Food Facts search and barcode lookup when Offline Mode is off.
 
-#### 🏋️ Progressive Overload Workout Player
-- Guided workout player with rest timers, warm-up set toggles, and RPE (Rate of Perceived Exertion) logging.
-- Automatic 1RM (1-Rep Max) calculation and PR (Personal Record) badges.
-- Exercise substitution suggestions for customized gym training.
+### Workout planning and execution
 
-#### 📊 Privacy-First & Local Portability
-- 100% offline-first architecture — your data never leaves your device.
-- Export encrypted JSON database backups or CSV spreadsheets anytime.
-- Automatic rolling local database snapshots.
+- Choose or author a training plan.
+- Guided workout execution with working and warm-up sets, rest timers and RPE logging.
+- Record substitutions and unscheduled workouts without losing history.
+- Review workout history, training volume and comparable strength progress.
+
+### Progress and device health
+
+- Track body weight and measurements over time.
+- Review factual workout, activity and nutrition summaries.
+- Optionally connect supported Health Connect or HealthKit categories after granting permission.
+
+### Privacy and portability
+
+- Core logging and review work without a network connection or IndiFit account.
+- Offline Mode blocks app-initiated online food lookup and crash diagnostics.
+- Create and restore JSON backups; optional password protection is available for manual backup files.
+- Copy a food and workout CSV summary when you choose.
+- Automatic rolling recovery copies are kept in the app's local storage.
+
+IndiFit V1 does not include generative-AI meal estimation, meal planning, workout generation, or report features.
 
 ---
 
-## 4. Store Permission Justifications
+## 4. Store permission justifications
 
-| Permission | Purpose Description |
+| Permission | Purpose |
 |---|---|
-| **Camera** | Used solely to scan food product barcodes and capture meal photos for optional AI estimation. |
-| **Storage / Photos** | Used to pick food images for AI estimation and save exported CSV/JSON backups. |
-| **Activity / Health** | Used to sync step counts and workout calories with Health Connect (Android) or HealthKit (iOS). |
+| **Camera** | Used only when you choose to scan a packaged-food barcode. |
+| **Notifications** | Used for optional workout, meal-logging and progress reminders you enable. |
+| **Activity / Health** | Used only for the Health Connect or HealthKit categories you approve. |
+| **Internet** | Used for optional Open Food Facts lookup and opt-in crash diagnostics. Core logging remains available offline. |

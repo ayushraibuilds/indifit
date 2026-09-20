@@ -8,6 +8,7 @@ import 'package:indifit/data/database/app_database.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'fixtures/b03_migration_backup_harness.dart';
+import 'support/indifit_test_harness.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -34,11 +35,11 @@ void main() {
           B03FailureStage.restoreFinalTransaction,
         ];
         final fixture = B03BackupV7Fixture.load();
+        final databases = registerTestDatabaseScope();
 
         for (final stage in stages) {
-          final target = AppDatabase.memory();
-          addTearDown(target.close);
-          SharedPreferences.setMockInitialValues({
+          final target = databases.create();
+          setIndiFitTestPreferences({
             'water_logged': 99,
             'user_streak_count': 3,
             'pref_remind_workout': false,
@@ -122,8 +123,8 @@ void main() {
     test(
       'restores food logs, custom identity, B02 data, and preferences',
       () async {
-        final target = AppDatabase.memory();
-        addTearDown(target.close);
+        final databases = registerTestDatabaseScope();
+        final target = databases.create();
         final fixture = B03BackupV7Fixture.load();
 
         await fixture.restoreToDatabase(target);
@@ -181,8 +182,7 @@ void main() {
           tempDir,
           filename: 'v16-logical-golden.db',
         );
-        final source = B03V16Fixture.open(fixtureFile);
-        addTearDown(source.close);
+        final source = databases.open(() => B03V16Fixture.open(fixtureFile));
         final golden = await B03LogicalSnapshot.capture(source);
         final restored = await B03LogicalSnapshot.capture(target);
         golden.assertLogicallyEquals(restored);
@@ -209,8 +209,8 @@ void main() {
       expect(fixture.achievementUnlocks, isNotEmpty);
       expect(fixture.dailyHydrations, isNotEmpty);
 
-      final target = AppDatabase.memory();
-      addTearDown(target.close);
+      final databases = registerTestDatabaseScope();
+      final target = databases.create();
       await fixture.restoreToDatabase(target);
       expect(
         await target.customSelect('PRAGMA foreign_key_check').get(),
@@ -221,8 +221,7 @@ void main() {
         tempDir,
         filename: 'complete-v16-golden.db',
       );
-      final source = B03V16Fixture.open(sourceFile);
-      addTearDown(source.close);
+      final source = databases.open(() => B03V16Fixture.open(sourceFile));
       final golden = await B03LogicalSnapshot.capture(source);
       final restored = await B03LogicalSnapshot.capture(target);
       golden.assertLogicallyEquals(restored);
@@ -231,8 +230,7 @@ void main() {
     test(
       'unsupported newer versions fail before any target mutation',
       () async {
-        final target = AppDatabase.memory();
-        addTearDown(target.close);
+        final target = registerTestDatabaseScope().create();
         await target
             .into(target.userSettings)
             .insert(
@@ -258,9 +256,8 @@ void main() {
     test(
       'invalid relationship prevalidation mutates neither database nor preferences',
       () async {
-        final target = AppDatabase.memory();
-        addTearDown(target.close);
-        SharedPreferences.setMockInitialValues({'water_logged': 99});
+        final target = registerTestDatabaseScope().create();
+        setIndiFitTestPreferences({'water_logged': 99});
         final prefs = await SharedPreferences.getInstance();
         final payload =
             jsonDecode(jsonEncode(B03BackupV7Fixture.load().toJson()))
@@ -281,9 +278,8 @@ void main() {
     test(
       'injected restore failure rolls back database and preferences, then retries',
       () async {
-        final target = AppDatabase.memory();
-        addTearDown(target.close);
-        SharedPreferences.setMockInitialValues({'water_logged': 99});
+        final target = registerTestDatabaseScope().create();
+        setIndiFitTestPreferences({'water_logged': 99});
         final prefs = await SharedPreferences.getInstance();
         final fixture = B03BackupV7Fixture.load();
 

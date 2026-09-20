@@ -22,7 +22,7 @@ void main() {
   test('fresh v18 creation exposes B04 tables, indexes and empty state', () async {
     final db = AppDatabase.memory();
     try {
-      expect(db.schemaVersion, 20);
+      expect(db.schemaVersion, 22);
       final tables = await db
           .customSelect(
             "SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name",
@@ -44,13 +44,17 @@ void main() {
           'recommendation_feedback',
         ]),
       );
+      // V21 adds exactly one cache table: the CATALOG Tier-1 normalized
+      // candidate cache (device-local, 14-day TTL). No other caches exist.
       expect(
-        await db
-            .customSelect(
-              "SELECT name FROM sqlite_master WHERE type = 'table' AND name LIKE '%cache%'",
-            )
-            .get(),
-        isEmpty,
+        (await db
+                .customSelect(
+                  "SELECT name FROM sqlite_master WHERE type = 'table' AND name LIKE '%cache%'",
+                )
+                .get())
+            .map((row) => row.data['name'] as String)
+            .toSet(),
+        {'cached_remote_foods'},
       );
       final indexes = await db
           .customSelect("SELECT name FROM sqlite_master WHERE type = 'index'")
@@ -140,8 +144,8 @@ void main() {
       final migrated = AppDatabase.executor(NativeDatabase(file));
       try {
         await migrated.customSelect('SELECT 1').get();
-        expect(B03V16Fixture.readUserVersion(file), 20);
-        expect(migrated.schemaVersion, 20);
+        expect(B03V16Fixture.readUserVersion(file), 22);
+        expect(migrated.schemaVersion, 22);
         expect(
           await migrated.select(migrated.nutritionPersonalVessels).get(),
           hasLength(1),
@@ -162,7 +166,7 @@ void main() {
       final reopened = AppDatabase.executor(NativeDatabase(file));
       try {
         await reopened.customSelect('SELECT 1').get();
-        expect(B03V16Fixture.readUserVersion(file), 20);
+        expect(B03V16Fixture.readUserVersion(file), 22);
         expect(
           await reopened.select(reopened.nutritionGoalVersions).get(),
           isEmpty,
@@ -183,7 +187,7 @@ void main() {
       final db = AppDatabase.executor(NativeDatabase(file));
       try {
         await db.customSelect('SELECT 1').get();
-        expect(B03V16Fixture.readUserVersion(file), 20);
+        expect(B03V16Fixture.readUserVersion(file), 22);
         expect(await db.select(db.foodLogs).get(), hasLength(3));
         expect(await db.select(db.nutritionGoalVersions).get(), isEmpty);
         expect(await db.select(db.recommendations).get(), isEmpty);
@@ -230,7 +234,7 @@ void main() {
         final retry = AppDatabase.executor(NativeDatabase(file));
         try {
           await retry.customSelect('SELECT 1').get();
-          expect(B03V16Fixture.readUserVersion(file), 20);
+          expect(B03V16Fixture.readUserVersion(file), 22);
           expect(
             await retry.customSelect('PRAGMA foreign_key_check').get(),
             isEmpty,

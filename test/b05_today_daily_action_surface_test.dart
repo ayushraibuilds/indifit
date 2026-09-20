@@ -95,10 +95,18 @@ void main() {
         registry: standardDashboardModuleRegistry,
       ),
       layout: [
-        defaults[5].copyWith(ordinal: 0, isVisible: true),
-        defaults[2].copyWith(ordinal: 1, isCollapsed: true),
-        defaults[3].copyWith(ordinal: 2, isVisible: true),
-        defaults[0].copyWith(ordinal: 3, isVisible: false),
+        defaults
+            .firstWhere((d) => d.descriptor.id == 'today.progress')
+            .copyWith(ordinal: 0, isVisible: true),
+        defaults
+            .firstWhere((d) => d.descriptor.id == 'today.meal_rows')
+            .copyWith(ordinal: 1, isCollapsed: true),
+        defaults
+            .firstWhere((d) => d.descriptor.id == 'today.workout')
+            .copyWith(ordinal: 2, isVisible: true),
+        defaults
+            .firstWhere((d) => d.descriptor.id == 'today.next_action')
+            .copyWith(ordinal: 3, isVisible: false),
       ],
     );
     await seeded.load();

@@ -12,11 +12,14 @@ import 'package:indifit/data/models/b02_execution_models.dart';
 import 'package:indifit/data/models/b02_previous_performance_models.dart';
 import 'package:indifit/data/repositories/b02_previous_performance_repository.dart';
 import 'package:indifit/data/repositories/b02_strength_execution_repository.dart';
+import 'package:indifit/data/repositories/b07_exercise_context_repository.dart';
 import 'package:indifit/data/repositories/calendar_repository.dart';
 import 'package:indifit/features/exercise_picker/exercise_picker_models.dart';
 import 'package:indifit/features/workout_player/b02_previous_performance_integration.dart';
 import 'package:indifit/features/workout_player/b02_strength_execution_controller.dart';
 import 'package:indifit/features/workout_player/b02_strength_player_screen.dart';
+
+import 'support/indifit_test_harness.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -25,7 +28,7 @@ void main() {
   late StrengthExecutionRepository executions;
 
   setUp(() async {
-    database = AppDatabase.memory();
+    database = registerTestDatabaseScope().create();
     executions = StrengthExecutionRepository(
       db: database,
       calendarRepo: CalendarRepository(database),
@@ -35,8 +38,6 @@ void main() {
     await _insertExercise(database, 'exercise-b', 'Exercise B');
     await _insertExercise(database, 'exercise-c', 'Exercise C');
   });
-
-  tearDown(() => database.close());
 
   test(
     'B.3 coordinator uses exact context and presents factual evidence',
@@ -376,62 +377,75 @@ void main() {
     expect(controller.state.launch!.state.performedExercises, isEmpty);
   });
 
-  test('replacement rebinds previous-performance lookup to the new actual exercise', () async {
-    final launch = await _quickLaunch(executions, snapshotId: 'history-rebind');
-    final controller = B02StrengthExecutionController(
-      StrengthExecutionCompatibilityAdapter(executions),
-      initialLaunch: launch,
-    );
-    await controller.loadSlots();
-    final slot = controller.state.slots.single;
-    final queriedIds = <String?>[];
-    final lookup = B02PreviousPerformanceLookupCoordinator(
-      resolve: (query) async {
-        queriedIds.add(query.canonicalExerciseId);
-        return _availablePerformance(
-          exerciseId: query.canonicalExerciseId!,
-          loadKg: query.canonicalExerciseId == 'exercise-b' ? 55 : 80,
-          reps: query.canonicalExerciseId == 'exercise-b' ? 10 : 8,
-        );
-      },
-    );
+  test(
+    'replacement rebinds previous-performance lookup to the new actual exercise',
+    () async {
+      final launch = await _quickLaunch(
+        executions,
+        snapshotId: 'history-rebind',
+      );
+      final controller = B02StrengthExecutionController(
+        StrengthExecutionCompatibilityAdapter(executions),
+        initialLaunch: launch,
+      );
+      await controller.loadSlots();
+      final slot = controller.state.slots.single;
+      final queriedIds = <String?>[];
+      final lookup = B02PreviousPerformanceLookupCoordinator(
+        resolve: (query) async {
+          queriedIds.add(query.canonicalExerciseId);
+          return _availablePerformance(
+            exerciseId: query.canonicalExerciseId!,
+            loadKg: query.canonicalExerciseId == 'exercise-b' ? 55 : 80,
+            reps: query.canonicalExerciseId == 'exercise-b' ? 10 : 8,
+          );
+        },
+      );
 
-    await lookup.request(
-      key: _key('exercise-a'),
-      query: _query('exercise-a'),
-      onAccepted: (_) {},
-    );
-    final target = QuickExerciseReplacementTarget(
-      draftId: launch.draftId,
-      slotId: slot.id,
-      currentPerformedExerciseId: 'exercise-a',
-      currentExerciseNameSnapshot: 'Exercise A',
-    );
-    await controller.commit(
-      target: target,
-      selection: const ExercisePickerSelection(
-        exerciseId: 'exercise-b',
-        exerciseNameSnapshot: 'Exercise B',
-      ),
-    );
-    await lookup.request(
-      key: _key('exercise-b'),
-      query: _query('exercise-b'),
-      onAccepted: (_) {},
-    );
+      await lookup.request(
+        key: _key('exercise-a'),
+        query: _query('exercise-a'),
+        onAccepted: (_) {},
+      );
+      final target = QuickExerciseReplacementTarget(
+        draftId: launch.draftId,
+        slotId: slot.id,
+        currentPerformedExerciseId: 'exercise-a',
+        currentExerciseNameSnapshot: 'Exercise A',
+      );
+      await controller.commit(
+        target: target,
+        selection: const ExercisePickerSelection(
+          exerciseId: 'exercise-b',
+          exerciseNameSnapshot: 'Exercise B',
+        ),
+      );
+      await lookup.request(
+        key: _key('exercise-b'),
+        query: _query('exercise-b'),
+        onAccepted: (_) {},
+      );
 
-    expect(queriedIds, ['exercise-a', 'exercise-b']);
-    expect(lookup.activeResult!.canonicalExerciseId, 'exercise-b');
-    expect(controller.state.launch!.draftId, launch.draftId);
-    expect(
-      controller.state.launch!.state.performedExercises.single.actualExerciseId,
-      'exercise-b',
-    );
-  });
+      expect(queriedIds, ['exercise-a', 'exercise-b']);
+      expect(lookup.activeResult!.canonicalExerciseId, 'exercise-b');
+      expect(controller.state.launch!.draftId, launch.draftId);
+      expect(
+        controller
+            .state
+            .launch!
+            .state
+            .performedExercises
+            .single
+            .actualExerciseId,
+        'exercise-b',
+      );
+    },
+  );
 
   testWidgets(
     'player exposes factual Last time evidence and preserves typed input',
     (tester) async {
+      _unmountBeforeDatabaseClose(tester);
       final launch = (await tester.runAsync(
         () => _launchWithHistoryContext(executions),
       ))!;
@@ -454,6 +468,9 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            b07ExerciseContextProvider.overrideWith(
+              (ref, id) async => const B07ExerciseContextResult.unavailable(),
+            ),
             b02StrengthExecutionScreenControllerProvider.overrideWith(
               (ref, _) => controller,
             ),
@@ -496,6 +513,7 @@ void main() {
   testWidgets('late history prefill cannot overwrite a field the user typed', (
     tester,
   ) async {
+    _unmountBeforeDatabaseClose(tester);
     final launch = (await tester.runAsync(
       () => _launchWithHistoryContext(executions, snapshotId: 'race-case'),
     ))!;
@@ -521,6 +539,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          b07ExerciseContextProvider.overrideWith(
+            (ref, id) async => const B07ExerciseContextResult.unavailable(),
+          ),
           b02StrengthExecutionScreenControllerProvider.overrideWith(
             (ref, _) => controller,
           ),
@@ -540,6 +561,13 @@ void main() {
     await tester.pump(const Duration(milliseconds: 20));
 
     expect(tester.widget<TextFormField>(loadField).controller!.text, '90');
+  });
+}
+
+void _unmountBeforeDatabaseClose(WidgetTester tester) {
+  addTearDown(() async {
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
   });
 }
 

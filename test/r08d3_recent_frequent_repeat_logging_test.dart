@@ -6,7 +6,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/di/providers.dart';
 import 'package:indifit/core/nutrients.dart';
 import 'package:indifit/core/nutrition_calculation_service.dart';
+import 'package:indifit/core/nutrition_consumption_snapshots.dart';
 import 'package:indifit/core/nutrition_household_measures.dart';
+import 'package:indifit/core/raw_cooked_transformations.dart';
 import 'package:indifit/core/services/local_timezone_service.dart';
 import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/core/typed_quantities.dart';
@@ -27,6 +29,7 @@ class _D3TestHarness {
   final NutritionConsumptionRepository consumption;
   final NutritionReadModelRepository readModels;
   final NutritionFoodLoggingCoordinator coordinator;
+  bool _closed = false;
 
   _D3TestHarness._({
     required this.database,
@@ -74,7 +77,11 @@ class _D3TestHarness {
     );
   }
 
-  Future<void> close() => database.close();
+  Future<void> close() async {
+    if (_closed) return;
+    _closed = true;
+    await database.close();
+  }
 }
 
 class _EmptyFoodRepo extends FoodRepository {
@@ -82,6 +89,59 @@ class _EmptyFoodRepo extends FoodRepository {
 
   @override
   Future<List<FoodItem>> getRecentFoods(int limit) async => const [];
+}
+
+class _RecordingFoodLoggingCoordinator extends NutritionFoodLoggingCoordinator {
+  _RecordingFoodLoggingCoordinator({
+    required super.db,
+    required super.registry,
+    required super.catalog,
+    required super.consumption,
+  }) : super(
+         calculator: const NutritionCalculationService(),
+         transformations: NutritionTransformationRepository(db: db),
+       );
+
+  int finalizeCalls = 0;
+  NutritionFoodLogPreview? recordedPreview;
+  String? mealCategory;
+  String? localDate;
+  String? timezoneId;
+
+  @override
+  Future<List<NutritionTransformation>> transformationsFor(
+    NutritionFoodOption option,
+  ) async => const [];
+
+  @override
+  Future<NutritionConsumptionSnapshot> finalize({
+    required String userId,
+    required NutritionFoodLogPreview preview,
+    required String mealCategory,
+    required DateTime loggedAt,
+    required String localDate,
+    required String timezoneId,
+    String? mealGroupId,
+    String? consumptionId,
+    String? commandId,
+    String? supersedesSnapshotId,
+    String? correctionId,
+    String? correctionReason,
+  }) async {
+    finalizeCalls++;
+    recordedPreview = preview;
+    this.mealCategory = mealCategory;
+    this.localDate = localDate;
+    this.timezoneId = timezoneId;
+    return _d3Snapshot(
+      id: consumptionId ?? 'd3-recorded-consumption',
+      userId: userId,
+      loggedAt: loggedAt,
+      mealCategory: mealCategory,
+      localDate: localDate,
+      timezoneId: timezoneId,
+    );
+  }
 }
 
 Future<void> _settleD3(WidgetTester tester) async {
@@ -99,42 +159,57 @@ Widget _buildFoodSearch({
   NutritionFoodLoggingCoordinator? coordinator,
   Size mediaSize = const Size(390, 844),
   double textScale = 1.0,
+  ProviderContainer? container,
 }) {
-  return ProviderScope(
-    overrides: [
-      databaseProvider.overrideWithValue(harness.database),
-      localTimezoneServiceProvider.overrideWithValue(
-        LocalTimezoneService(read: () async => 'Asia/Kolkata'),
+  final app = MaterialApp(
+    theme: AppTheme.lightTheme,
+    home: MediaQuery(
+      data: MediaQueryData(
+        size: mediaSize,
+        textScaler: TextScaler.linear(textScale),
+        disableAnimations: true,
       ),
-      nutritionRegistryProvider.overrideWith((ref) async => harness.registry),
-      nutritionFoodCatalogRepositoryProvider.overrideWith(
-        (ref) async => harness.catalog,
-      ),
-      nutritionConsumptionRepositoryProvider.overrideWith(
-        (ref) async => harness.consumption,
-      ),
-      nutritionReadModelRepositoryProvider.overrideWith(
-        (ref) async => harness.readModels,
-      ),
-      nutritionFoodLoggingCoordinatorProvider.overrideWith(
-        (ref) async => coordinator ?? harness.coordinator,
-      ),
-      foodRepositoryProvider.overrideWithValue(_EmptyFoodRepo(harness.database)),
-      canonicalRecentFoodsProvider.overrideWith((ref) async => recent),
-    ],
-    child: MaterialApp(
-      theme: AppTheme.lightTheme,
-      home: MediaQuery(
-        data: MediaQueryData(
-          size: mediaSize,
-          textScaler: TextScaler.linear(textScale),
-          disableAnimations: true,
-        ),
-        child: home,
-      ),
+      child: home,
     ),
   );
+  if (container != null) {
+    return UncontrolledProviderScope(container: container, child: app);
+  }
+  return ProviderScope(
+    overrides: _d3Overrides(
+      harness: harness,
+      recent: recent,
+      coordinator: coordinator,
+    ),
+    child: app,
+  );
 }
+
+List<Override> _d3Overrides({
+  required _D3TestHarness harness,
+  required List<CanonicalRecentFood> recent,
+  NutritionFoodLoggingCoordinator? coordinator,
+}) => [
+  databaseProvider.overrideWithValue(harness.database),
+  localTimezoneServiceProvider.overrideWithValue(
+    LocalTimezoneService(read: () async => 'Asia/Kolkata'),
+  ),
+  nutritionRegistryProvider.overrideWith((ref) async => harness.registry),
+  nutritionFoodCatalogRepositoryProvider.overrideWith(
+    (ref) async => harness.catalog,
+  ),
+  nutritionConsumptionRepositoryProvider.overrideWith(
+    (ref) async => harness.consumption,
+  ),
+  nutritionReadModelRepositoryProvider.overrideWith(
+    (ref) async => harness.readModels,
+  ),
+  nutritionFoodLoggingCoordinatorProvider.overrideWith(
+    (ref) async => coordinator ?? harness.coordinator,
+  ),
+  foodRepositoryProvider.overrideWithValue(_EmptyFoodRepo(harness.database)),
+  canonicalRecentFoodsProvider.overrideWith((ref) async => recent),
+];
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -144,7 +219,7 @@ void main() {
       'recent deterministic ordering orders by loggedAtUtc descending and stableId tie-breaker',
       () async {
         final harness = await _D3TestHarness.create();
-        addTearDown(() => unawaited(harness.close()));
+        addTearDown(harness.close);
 
         final paneer = await harness.catalog.ensureProviderFood(
           displayName: 'Organic Paneer',
@@ -246,10 +321,11 @@ void main() {
         );
 
         // Most recent first: Paneer (20:00 IST), Dahi (13:00 IST), Oats (09:30 IST)
-        expect(
-          recents.map((r) => r.option.displayName).toList(),
-          ['Organic Paneer', 'Fresh Dahi', 'Rolled Oats'],
-        );
+        expect(recents.map((r) => r.option.displayName).toList(), [
+          'Organic Paneer',
+          'Fresh Dahi',
+          'Rolled Oats',
+        ]);
 
         // Verify exact historical quantity on Paneer
         expect(recents.first.historicalQuantity, isNotNull);
@@ -262,7 +338,7 @@ void main() {
       'frequency semantics deterministically orders by count descending then recency without recommendation wording',
       () async {
         final harness = await _D3TestHarness.create();
-        addTearDown(() => unawaited(harness.close()));
+        addTearDown(harness.close);
 
         final foodA = await harness.catalog.createUserFood(
           displayName: 'Food Alpha',
@@ -375,11 +451,6 @@ void main() {
       'UI displays Recent and Frequent sections with factual copy and no recommendation wording',
       (tester) async {
         final harness = await _D3TestHarness.create();
-        addTearDown(() async {
-          await tester.pumpWidget(const SizedBox.shrink());
-          await tester.pump();
-          unawaited(harness.close());
-        });
 
         final roti = await tester.runAsync(
           () => harness.catalog.createUserFood(
@@ -406,6 +477,16 @@ void main() {
             ),
           ),
         );
+        await tester.runAsync(harness.close);
+        final container = ProviderContainer(
+          overrides: _d3Overrides(harness: harness, recent: [recentItem]),
+        );
+        addTearDown(() async {
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.pump();
+          container.dispose();
+          await tester.pump(const Duration(milliseconds: 1));
+        });
 
         await tester.pumpWidget(
           _buildFoodSearch(
@@ -415,6 +496,7 @@ void main() {
               selectedDate: DateTime(2026, 8, 24),
             ),
             recent: [recentItem],
+            container: container,
           ),
         );
         await _settleD3(tester);
@@ -440,6 +522,12 @@ void main() {
       'historical quantity and unit reuse seeds the edit sheet and destination meal/date are preserved',
       (tester) async {
         final harness = await _D3TestHarness.create();
+        final recorder = _RecordingFoodLoggingCoordinator(
+          db: harness.database,
+          registry: harness.registry,
+          catalog: harness.catalog,
+          consumption: harness.consumption,
+        );
         addTearDown(() async {
           await tester.pumpWidget(const SizedBox.shrink());
           await tester.pump();
@@ -471,6 +559,7 @@ void main() {
         );
 
         final targetDate = DateTime(2026, 8, 24);
+        await tester.runAsync(harness.close);
         await tester.pumpWidget(
           _buildFoodSearch(
             harness: harness,
@@ -479,6 +568,7 @@ void main() {
               selectedDate: targetDate,
             ),
             recent: [recentItem],
+            coordinator: recorder,
           ),
         );
         await _settleD3(tester);
@@ -490,7 +580,10 @@ void main() {
         await _settleD3(tester);
 
         // Dialog should be open with seeded historical amount
-        expect(find.widgetWithText(ElevatedButton, 'Add to Breakfast'), findsOneWidget);
+        expect(
+          find.widgetWithText(ElevatedButton, 'Add to Breakfast'),
+          findsOneWidget,
+        );
 
         final amountInput = find.byType(TextField).last;
         final textField = tester.widget<TextField>(amountInput);
@@ -501,29 +594,22 @@ void main() {
         await tester.pump();
 
         // Submit log
-        final logButton = find.widgetWithText(ElevatedButton, 'Add to Breakfast');
+        final logButton = find.widgetWithText(
+          ElevatedButton,
+          'Add to Breakfast',
+        );
         expect(logButton, findsOneWidget);
         await tester.tap(logButton);
         await _settleD3(tester);
         await _settleD3(tester);
 
-        // Verify the persisted consumption in the database
-        final history = await tester.runAsync(
-          () => harness.readModels.listHistory(
-            userId: kLocalNutritionUserScopeId,
-          ),
-        );
-        final latestRecord = history?.firstWhere(
-          (r) => r.localDate == '2026-08-24',
-        );
-
-        // Verify destination date and meal were preserved
-        expect(latestRecord?.localDate, '2026-08-24');
-        expect(latestRecord?.mealCategory, 'breakfast');
-
-        final item = latestRecord?.items.first;
-        expect(item?.quantity.quantity?.amount.asDouble, 200.0);
-        expect(item?.quantity.quantity?.unit, QuantityUnit.gram);
+        // The widget owns command composition; repository persistence is
+        // covered independently by the canonical coordinator tests above.
+        expect(recorder.finalizeCalls, 1);
+        expect(recorder.localDate, '2026-08-24');
+        expect(recorder.mealCategory, 'breakfast');
+        expect(recorder.recordedPreview?.quantity.amount.asDouble, 200.0);
+        expect(recorder.recordedPreview?.quantity.unit, QuantityUnit.gram);
       },
     );
 
@@ -531,6 +617,12 @@ void main() {
       'fast repeat logging with safe historical quantity logs immediately to current meal and date',
       (tester) async {
         final harness = await _D3TestHarness.create();
+        final recorder = _RecordingFoodLoggingCoordinator(
+          db: harness.database,
+          registry: harness.registry,
+          catalog: harness.catalog,
+          consumption: harness.consumption,
+        );
         addTearDown(() async {
           await tester.pumpWidget(const SizedBox.shrink());
           await tester.pump();
@@ -562,14 +654,13 @@ void main() {
         );
 
         final targetDate = DateTime(2026, 8, 24);
+        await tester.runAsync(harness.close);
         await tester.pumpWidget(
           _buildFoodSearch(
             harness: harness,
-            home: FoodSearchScreen(
-              mealType: 'snack',
-              selectedDate: targetDate,
-            ),
+            home: FoodSearchScreen(mealType: 'snack', selectedDate: targetDate),
             recent: [recentItem],
+            coordinator: recorder,
           ),
         );
         await _settleD3(tester);
@@ -582,21 +673,18 @@ void main() {
         await _settleD3(tester);
 
         // Check feedback
-        expect(find.textContaining('Added Thick Dahi to snack'), findsOneWidget);
-
-        // Verify the persisted consumption
-        final history = await tester.runAsync(
-          () => harness.readModels.listHistory(
-            userId: kLocalNutritionUserScopeId,
-          ),
+        expect(
+          find.textContaining('Added Thick Dahi to snack'),
+          findsOneWidget,
         );
-        final latest = history?.firstWhere(
-          (r) => r.localDate == '2026-08-24' && r.mealCategory == 'snack',
-        );
+        await tester.pump(const Duration(seconds: 4));
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.textContaining('Added Thick Dahi to snack'), findsNothing);
 
-        expect(latest?.localDate, '2026-08-24');
-        expect(latest?.mealCategory, 'snack');
-        expect(latest?.items.first.quantity.quantity?.amount.asDouble, 120.0);
+        expect(recorder.finalizeCalls, 1);
+        expect(recorder.localDate, '2026-08-24');
+        expect(recorder.mealCategory, 'snack');
+        expect(recorder.recordedPreview?.quantity.amount.asDouble, 120.0);
       },
     );
 
@@ -604,7 +692,7 @@ void main() {
       'deleted or unavailable food in history fails closed and is omitted from recent list',
       () async {
         final harness = await _D3TestHarness.create();
-        addTearDown(() => unawaited(harness.close()));
+        addTearDown(harness.close);
 
         final food = await harness.catalog.createUserFood(
           displayName: 'Temporary Food',
@@ -711,6 +799,7 @@ void main() {
           loggedAtUtc: DateTime.utc(2026, 8, 24, 3, 0),
           historicalQuantity: food.baseQuantity,
         );
+        await tester.runAsync(harness.close);
 
         await tester.pumpWidget(
           _buildFoodSearch(
@@ -733,11 +822,50 @@ void main() {
   });
 }
 
+NutritionConsumptionSnapshot _d3Snapshot({
+  required String id,
+  required String userId,
+  required DateTime loggedAt,
+  required String mealCategory,
+  required String localDate,
+  required String timezoneId,
+}) {
+  final completeness = NutrientCompleteness(
+    state: NutrientCompletenessState.unknown,
+    requestedNutrientIds: const ['energy'],
+    availableNutrientIds: const [],
+    missingNutrientIds: const ['energy'],
+    estimatedNutrientIds: const [],
+    notApplicableNutrientIds: const [],
+    partiallyKnownNutrientIds: const [],
+  );
+  return NutritionConsumptionSnapshot(
+    id: id,
+    userId: userId,
+    loggedAtUtc: loggedAt,
+    mealCategory: mealCategory,
+    mealGroupId: null,
+    sourceType: 'direct_food',
+    recipeVersionId: null,
+    thaliId: null,
+    calculatorVersion: 'test',
+    completeness: completeness,
+    totals: NutrientAggregationResult(
+      facts: const {},
+      completeness: completeness,
+      sourceLineage: const {},
+      factVersionLineage: const {},
+    ),
+    localDate: localDate,
+    timezoneId: timezoneId,
+    createdAtUtc: loggedAt,
+    lineage: NutritionConsumptionLineage(contentFingerprint: 'test-$id'),
+    items: const [],
+  );
+}
+
 class _MockMissingCatalogRepository extends NutritionFoodCatalogRepository {
-  _MockMissingCatalogRepository({
-    required super.db,
-    required super.registry,
-  });
+  _MockMissingCatalogRepository({required super.db, required super.registry});
 
   @override
   Future<NutritionFoodOption?> getOption(String foodId) async => null;

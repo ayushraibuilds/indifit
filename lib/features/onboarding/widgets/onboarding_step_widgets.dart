@@ -7,12 +7,14 @@ class OnboardingPageContainer extends StatelessWidget {
   final String title;
   final String subtitle;
   final Widget child;
+  final ScrollController? scrollController;
 
   const OnboardingPageContainer({
     super.key,
     required this.title,
     required this.subtitle,
     required this.child,
+    this.scrollController,
   });
 
   @override
@@ -22,9 +24,10 @@ class OnboardingPageContainer extends StatelessWidget {
         B05Layout.space20,
         B05Layout.space16,
         B05Layout.space20,
-        B05Layout.space24,
+        B05Layout.space32,
       ),
       child: SingleChildScrollView(
+        controller: scrollController,
         keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -133,22 +136,26 @@ class OnboardingSelectionCard extends StatelessWidget {
 
 class OnboardingNumberInputField extends StatelessWidget {
   final TextEditingController controller;
+  final FocusNode? focusNode;
   final String label;
   final String suffix;
   final IconData icon;
   final String? errorText;
   final ValueChanged<String>? onChanged;
   final VoidCallback? onEditingComplete;
+  final TextInputAction textInputAction;
 
   const OnboardingNumberInputField({
     super.key,
     required this.controller,
+    this.focusNode,
     required this.label,
     required this.suffix,
     required this.icon,
     this.errorText,
     this.onChanged,
     this.onEditingComplete,
+    this.textInputAction = TextInputAction.done,
   });
 
   @override
@@ -188,12 +195,13 @@ class OnboardingNumberInputField extends StatelessWidget {
               Expanded(
                 child: TextField(
                   controller: controller,
+                  focusNode: focusNode,
                   onChanged: onChanged,
                   onEditingComplete: onEditingComplete,
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
-                  textInputAction: TextInputAction.done,
+                  textInputAction: textInputAction,
                   style: Theme.of(
                     context,
                   ).textTheme.titleLarge?.copyWith(color: colors.textPrimary),
@@ -208,21 +216,22 @@ class OnboardingNumberInputField extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
-              if (isValid)
+              Text(suffix, style: B05Typography.label(context)),
+              if (isValid) ...[
+                const SizedBox(width: 6),
                 Icon(
                   Icons.check_circle_rounded,
                   color: colors.success.indicator,
                   size: 18,
-                )
-              else if (hasError)
+                ),
+              ] else if (hasError) ...[
+                const SizedBox(width: 6),
                 Icon(
                   Icons.error_outline_rounded,
                   color: colors.danger.indicator,
                   size: 18,
-                )
-              else
-                Text(suffix, style: B05Typography.label(context)),
+                ),
+              ],
             ],
           ),
         ),

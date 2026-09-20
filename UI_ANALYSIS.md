@@ -1,3 +1,13 @@
+# IndiFit — UI Analysis (ARCHIVED)
+
+> [!WARNING]
+> **STATUS: ARCHIVED & SUPERSEDED**  
+> This document is frozen and preserved for historical context under `archive/legacy_plans/UI_ANALYSIS.md`.  
+> Active UI audits and roadmaps are canonical in:  
+> **[`docs/audit/CROSS_AGENT_COMPREHENSIVE_AUDIT_REPORT.md`](docs/audit/CROSS_AGENT_COMPREHENSIVE_AUDIT_REPORT.md)**.
+
+---
+
 > Analysis Date: 2026-07-23  
 > Screenshots Reviewed: 20  
 > App Version: 1.0.0+1  

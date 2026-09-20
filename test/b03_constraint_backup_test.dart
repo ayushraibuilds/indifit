@@ -7,14 +7,18 @@ import 'package:indifit/core/nutrition_constraints.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/repositories/nutrition_constraint_repository.dart';
 
+import 'support/indifit_test_harness.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late AppDatabase db;
   late NutritionConstraintRepository repository;
+  late TestDatabaseScope databases;
 
   setUp(() async {
-    db = AppDatabase.memory();
+    databases = registerTestDatabaseScope();
+    db = databases.create();
     repository = NutritionConstraintRepository(database: db);
     await db
         .into(db.nutritionFoods)
@@ -29,8 +33,6 @@ void main() {
           ),
         );
   });
-
-  tearDown(() => db.close());
 
   test(
     'Backup-v8 round trip preserves constraints and evidence without registry rows',
@@ -66,8 +68,7 @@ void main() {
       expect(tableNames, isNot(contains('nutrition_constraint_definitions')));
 
       final decoded = NutritionBackupGraph.fromJson(json);
-      final target = AppDatabase.memory();
-      addTearDown(target.close);
+      final target = databases.create();
       await decoded.validateAgainstTarget(target);
       await decoded.restoreInto(target);
       final restored = NutritionConstraintRepository(database: target);

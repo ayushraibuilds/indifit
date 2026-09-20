@@ -8,14 +8,18 @@ import 'package:indifit/core/typed_quantities.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/repositories/nutrition_consumption_repository.dart';
 
+import 'support/indifit_test_harness.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late AppDatabase db;
+  late TestDatabaseScope databases;
   late NutrientRegistry registry;
 
   setUp(() async {
-    db = AppDatabase.memory();
+    databases = registerTestDatabaseScope();
+    db = databases.create();
     registry = NutrientRegistry.fromAssetFileSync(
       'assets/data/nutrient_registry.json',
     );
@@ -32,8 +36,6 @@ void main() {
           ),
         );
   });
-
-  tearDown(() => db.close());
 
   test(
     'canonical finalization requires and validates typed time context',
@@ -121,8 +123,7 @@ void main() {
       expect(midnight.timezoneId, 'Asia/Kolkata');
 
       final graph = await NutritionBackupGraph.capture(db);
-      final restored = AppDatabase.memory();
-      addTearDown(restored.close);
+      final restored = databases.create();
       await NutritionBackupGraph.fromJson(
         jsonDecode(jsonEncode(graph.toJson())),
       ).restoreInto(restored);

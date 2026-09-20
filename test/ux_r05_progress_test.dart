@@ -277,6 +277,9 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
+        overrides: [
+          userProfileProvider.overrideWith((ref) => UserProfileNotifier()),
+        ],
         child: MaterialApp.router(
           theme: AppTheme.darkTheme,
           routerConfig: router,
@@ -550,6 +553,9 @@ Future<void> _pump(
 }) async {
   await tester.pumpWidget(
     ProviderScope(
+      overrides: [
+        userProfileProvider.overrideWith((ref) => UserProfileNotifier()),
+      ],
       child: MaterialApp(
         theme: theme,
         home: MediaQuery(

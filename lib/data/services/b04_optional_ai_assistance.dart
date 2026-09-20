@@ -246,6 +246,7 @@ enum B04OptionalAiAssistanceStatus {
   noDeterministicResult,
   consentRequired,
   consentUnavailable,
+  disabled,
   offline,
   providerUnavailable,
   malformedResponse,
@@ -320,11 +321,15 @@ class B04OptionalAiAssistanceService {
         reasonCode: 'ai_consent_required',
       );
     }
-    if (_privacyPolicy.isOfflineOnly) {
+    if (!_privacyPolicy.isAiAllowed) {
       return B04OptionalAiAssistanceResult(
         deterministicEvaluation: evaluation,
-        status: B04OptionalAiAssistanceStatus.offline,
-        reasonCode: 'ai_offline',
+        status: _privacyPolicy.isOfflineOnly
+            ? B04OptionalAiAssistanceStatus.offline
+            : B04OptionalAiAssistanceStatus.disabled,
+        reasonCode: _privacyPolicy.isOfflineOnly
+            ? 'ai_offline'
+            : 'ai_disabled_v1',
       );
     }
 

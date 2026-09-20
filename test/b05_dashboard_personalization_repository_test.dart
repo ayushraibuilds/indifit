@@ -8,23 +8,25 @@ import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/repositories/dashboard_personalization_repository.dart';
 import 'package:indifit/features/dashboard/dashboard_module_registry.dart';
 
+import 'support/indifit_test_harness.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late AppDatabase database;
+  late TestDatabaseScope databases;
   late DashboardModuleRegistry registry;
   late DashboardPersonalizationRepository repository;
 
   setUp(() {
-    database = AppDatabase.memory();
+    databases = registerTestDatabaseScope();
+    database = databases.create();
     registry = _registry();
     repository = DashboardPersonalizationRepository(
       database: database,
       registry: registry,
     );
   });
-
-  tearDown(() => database.close());
 
   test(
     'defaults are deterministic and passive reads do not persist them',
@@ -295,8 +297,7 @@ void main() {
         isVisible: false,
       );
       final backup = await BackupV10Data.createFromDatabase(database);
-      final target = AppDatabase.memory();
-      addTearDown(target.close);
+      final target = databases.create();
       await backup.restoreToDatabase(target);
 
       final restored = await DashboardPersonalizationRepository(

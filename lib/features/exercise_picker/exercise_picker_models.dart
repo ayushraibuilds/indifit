@@ -134,6 +134,7 @@ final class ExerciseLibraryPickerContext
     this.title = 'Choose exercise',
     this.semanticLabel = 'Choose an exercise',
     this.selectedExerciseId,
+    this.initialEquipment,
   }) : super._();
 
   @override
@@ -144,6 +145,8 @@ final class ExerciseLibraryPickerContext
 
   @override
   final String? selectedExerciseId;
+
+  final String? initialEquipment;
 }
 
 /// Occurrence-less exercise addition for Quick Workout. It is not a

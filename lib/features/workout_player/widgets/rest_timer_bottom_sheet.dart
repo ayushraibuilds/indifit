@@ -1,8 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:vibration/vibration.dart';
 
-import '../../../core/services/notification_service.dart';
+import '../../../core/services/modal_queue_coordinator.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
 import '../../../core/widgets/indi_fit_bottom_sheet.dart';
@@ -14,12 +13,17 @@ class RestTimerBottomSheet extends StatefulWidget {
 
   static Future<void> show(BuildContext context, int restSeconds) async {
     if (context.mounted) {
-      await showIndiFitBottomSheet<void>(
-        context: context,
-        semanticLabel: 'Rest timer',
-        builder: (context) =>
-            RestTimerBottomSheet(recommendedRestSeconds: restSeconds),
-      );
+      ModalQueueCoordinator.instance.markModalActive();
+      try {
+        await showIndiFitBottomSheet<void>(
+          context: context,
+          semanticLabel: 'Rest timer',
+          builder: (context) =>
+              RestTimerBottomSheet(recommendedRestSeconds: restSeconds),
+        );
+      } finally {
+        ModalQueueCoordinator.instance.markModalDismissed();
+      }
     }
   }
 
@@ -47,13 +51,9 @@ class _RestTimerBottomSheetState extends State<RestTimerBottomSheet> {
         if (mounted) setState(() => _nowUtc = now);
       } else {
         t.cancel();
-        NotificationService.showRestTimerFinishedNotification();
-        Vibration.hasVibrator().then((hasVib) {
-          if (hasVib == true) {
-            Vibration.vibrate(duration: 500);
-          }
-        });
         if (mounted) {
+          // Legacy-path sunset status: /workout-player rest expiry intentionally silent.
+          // RestPresenceService background presence is exclusive to the authoritative B02 player.
           Navigator.pop(context);
         }
       }
@@ -102,77 +102,83 @@ class _RestTimerBottomSheetState extends State<RestTimerBottomSheet> {
           Navigator.pop(context);
         }
       },
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(
-          B05Layout.space24,
-          B05Layout.space12,
-          B05Layout.space24,
-          B05Layout.space24,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'REST PERIOD',
-              style: B05Typography.caption(
-                context,
-              ).copyWith(fontWeight: FontWeight.bold, letterSpacing: 1.0),
+      child: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              B05Layout.space24,
+              B05Layout.space12,
+              B05Layout.space24,
+              B05Layout.space24,
             ),
-            const SizedBox(height: 16),
-            Stack(
-              alignment: Alignment.center,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                SizedBox(
-                  width: 120,
-                  height: 120,
-                  child: CircularProgressIndicator(
-                    value: progress,
-                    strokeWidth: 8,
-                    backgroundColor: colors.border,
-                    valueColor: AlwaysStoppedAnimation<Color>(colors.action),
-                  ),
+                Text(
+                  'REST PERIOD',
+                  style: B05Typography.caption(
+                    context,
+                  ).copyWith(fontWeight: FontWeight.bold, letterSpacing: 1.0),
                 ),
-                Semantics(
-                  label: 'Rest remaining $secondsRemaining seconds',
-                  liveRegion: false,
-                  child: ExcludeSemantics(
-                    child: Text(
-                      '${secondsRemaining}s',
-                      style: B05Typography.metric(
-                        context,
-                      ).copyWith(fontSize: 32),
+                const SizedBox(height: 16),
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    SizedBox(
+                      width: 120,
+                      height: 120,
+                      child: CircularProgressIndicator(
+                        value: progress,
+                        strokeWidth: 8,
+                        backgroundColor: colors.border,
+                        valueColor: AlwaysStoppedAnimation<Color>(colors.action),
+                      ),
                     ),
-                  ),
+                    Semantics(
+                      label: 'Rest remaining $secondsRemaining seconds',
+                      liveRegion: false,
+                      child: ExcludeSemantics(
+                        child: Text(
+                          '${secondsRemaining}s',
+                          style: B05Typography.metric(
+                            context,
+                          ).copyWith(fontSize: 32),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: B05ActionButton(
+                        onPressed: () => setState(() {
+                          _deadlineUtc = _deadlineUtc.add(
+                            const Duration(seconds: 30),
+                          );
+                          _nowUtc = DateTime.now().toUtc();
+                        }),
+                        icon: Icons.add_rounded,
+                        label: 'Add 30 sec',
+                        emphasis: B05ActionEmphasis.secondary,
+                      ),
+                    ),
+                    const SizedBox(width: B05Layout.space12),
+                    Expanded(
+                      child: B05ActionButton(
+                        onPressed: () => Navigator.pop(context),
+                        label: 'Skip rest',
+                        emphasis: B05ActionEmphasis.tertiary,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-            const SizedBox(height: 24),
-            Row(
-              children: [
-                Expanded(
-                  child: B05ActionButton(
-                    onPressed: () => setState(() {
-                      _deadlineUtc = _deadlineUtc.add(
-                        const Duration(seconds: 30),
-                      );
-                      _nowUtc = DateTime.now().toUtc();
-                    }),
-                    icon: Icons.add_rounded,
-                    label: 'Add 30 sec',
-                    emphasis: B05ActionEmphasis.secondary,
-                  ),
-                ),
-                const SizedBox(width: B05Layout.space12),
-                Expanded(
-                  child: B05ActionButton(
-                    onPressed: () => Navigator.pop(context),
-                    label: 'Skip rest',
-                    emphasis: B05ActionEmphasis.tertiary,
-                  ),
-                ),
-              ],
-            ),
-          ],
+          ),
         ),
       ),
     );

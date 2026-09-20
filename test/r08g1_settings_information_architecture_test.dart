@@ -32,10 +32,11 @@ void main() {
     await _pumpSettings(tester);
 
     await _expectSettingsSection(tester, 'Goals & targets', ['Goal & targets']);
-    await _expectSettingsSection(tester, 'FOOD & NUTRITION', [
+    await _expectSettingsSection(tester, 'Food & nutrition', [
       'Dietary needs & preferences',
       'Household measures',
       'Regional foods',
+      'Diary structure',
     ]);
     await _expectSettingsSection(tester, 'Training preferences', [
       'Training preferences',

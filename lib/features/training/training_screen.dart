@@ -3,19 +3,21 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../core/di/providers.dart';
-import '../../core/fixtures/workout_draft_codec.dart';
 import '../../core/presentation/consumer_copy.dart';
 import '../../core/presentation/consumer_date_label.dart';
 import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/services/indifit_haptics.dart';
+import '../../core/services/workout_session_wake_lock_coordinator.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/consumer_task_primitives.dart';
 import '../../core/widgets/indi_fit_bottom_sheet.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/calendar_read_repository.dart';
+import '../../data/repositories/calendar_repository.dart';
 import '../../data/repositories/program_lifecycle_repository.dart';
 import '../../data/repositories/training_next_action_resolver.dart';
 import '../../data/repositories/workout_repository.dart';
@@ -23,9 +25,8 @@ import '../calendar/calendar_controller.dart';
 import '../calendar/occurrence_actions_sheet.dart';
 import '../calendar/workout_contextual_launcher.dart';
 import '../workout_player/b02_strength_execution_controller.dart';
-import '../workout_player/b02_strength_player_screen.dart';
 import '../workout_player/widgets/manual_log_sheet.dart';
-import '../workout_player/workout_player_screen.dart';
+import '../workout_player/workout_execution_route.dart';
 import 'training_plan_lifecycle_controller.dart';
 import 'training_workout_customization.dart';
 import 'training_workout_preview.dart';
@@ -342,36 +343,36 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
     setState(() => _isLaunching = true);
     try {
       if (draft.executionStateJson == null) {
-        final repo = ref.read(workoutRepositoryProvider);
-        final loggedCompanions = WorkoutDraftCodec.decodeLoggedSets(
-          draft.loggedSetsJson,
+        if (draft.scheduledOccurrenceId case final occurrenceId?) {
+          await ref
+              .read(workoutExecutionCompatibilityAdapterProvider)
+              .discardScheduledOccurrenceDraft(
+                occurrenceId: occurrenceId,
+                commandId: const Uuid().v4(),
+              );
+        } else {
+          final repo = ref.read(workoutRepositoryProvider);
+          await repo.deleteActiveDraft();
+        }
+        final wakeLock = ref.read(
+          workoutSessionWakeLockCoordinatorProvider,
         );
-        final scheduledLaunch = draft.scheduledOccurrenceId == null
-            ? null
-            : await ref
-                  .read(workoutExecutionCompatibilityAdapterProvider)
-                  .resumeScheduledDraft(draft);
-        final exercises =
-            scheduledLaunch?.exercises ??
-            await repo.getExercisesForRoutineName(draft.routineName);
-        if (!context.mounted) return;
-        await Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => WorkoutPlayerScreen(
-              routineName: draft.routineName,
-              exercises: exercises,
-              initialExerciseIndex: draft.currentExerciseIndex,
-              initialSetIndex: draft.currentSetIndex,
-              initialElapsedSeconds: draft.elapsedSeconds,
-              initialLoggedSets: loggedCompanions,
-              scheduledOccurrenceId: scheduledLaunch?.occurrenceId,
-              executionSnapshotJson: scheduledLaunch?.executionSnapshotJson,
-              personalExerciseContextByName:
-                  scheduledLaunch?.personalExerciseContextByName ?? const {},
+        unawaited(
+          wakeLock.clearActiveSession(
+            legacyWorkoutSessionWakeLockKey(
+              draft.scheduledOccurrenceId,
             ),
           ),
         );
-        if (context.mounted) ref.invalidate(trainingLandingSnapshotProvider);
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Legacy workout draft format is deprecated and has been cleared. Please start a fresh workout.',
+            ),
+          ),
+        );
+        ref.invalidate(trainingLandingSnapshotProvider);
         return;
       }
       final controller = ref.read(
@@ -385,10 +386,9 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
           recovered.status == B02StrengthExecutionStatus.failure) {
         throw StateError('The saved workout could not be recovered.');
       }
-      await Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => B02StrengthPlayerScreen(launch: recovered.launch!),
-        ),
+      await context.push(
+        '/b02-strength-player',
+        extra: WorkoutExecutionRouteData.fromLaunch(recovered.launch!),
       );
       if (context.mounted) ref.invalidate(trainingLandingSnapshotProvider);
     } catch (error) {
@@ -556,17 +556,57 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
     CalendarOccurrenceReadItem item,
     TrainingWorkoutPreviewData preview,
   ) async {
+    final upcomingOccurrences = await ref
+        .read(calendarRepositoryProvider)
+        .getOccurrencesInLocalDateRange(
+          startLocalDate: item.occurrence.effectiveLocalDate,
+          endLocalDate: '9999-12-31',
+        );
+    final futureCount = upcomingOccurrences
+        .where((o) =>
+            o.programVersionId == item.occurrence.programVersionId &&
+            o.sessionTemplateId == item.occurrence.sessionTemplateId &&
+            (o.status == OccurrenceStatus.planned.dbValue ||
+                o.status == OccurrenceStatus.rescheduled.dbValue) &&
+            o.effectiveLocalDate.compareTo(item.occurrence.effectiveLocalDate) >= 0)
+        .length;
+
+    if (!context.mounted) return;
+
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => TrainingWorkoutCustomizationScreen(
           preview: preview,
-          onSave: ({required baseSnapshotJson, required changes}) async {
+          futureOccurrencesCount: futureCount,
+          onSave: ({
+            required baseSnapshotJson,
+            required changes,
+            required scope,
+          }) async {
+            if (scope == WorkoutCustomizationScope.allFuture) {
+              await ref
+                  .read(calendarControllerProvider.notifier)
+                  .customizeFutureOccurrences(
+                    item.occurrence.id,
+                    baseSnapshotJson: baseSnapshotJson,
+                    changes: changes,
+                  );
+            } else {
+              await ref
+                  .read(calendarControllerProvider.notifier)
+                  .customizeOccurrence(
+                    item.occurrence.id,
+                    baseSnapshotJson: baseSnapshotJson,
+                    changes: changes,
+                  );
+            }
+          },
+          onReset: ({required allFuture}) async {
             await ref
                 .read(calendarControllerProvider.notifier)
-                .customizeOccurrence(
+                .resetOccurrenceCustomization(
                   item.occurrence.id,
-                  baseSnapshotJson: baseSnapshotJson,
-                  changes: changes,
+                  allFuture: allFuture,
                 );
           },
           onOpenScheduleActions: () =>
@@ -1061,6 +1101,7 @@ class _DominantTrainingLandingBody extends StatelessWidget {
           onOpenHistory: onOpenHistory,
           onOpenCalendar: onOpenCalendar,
           onOpenPlan: onOpenPlan,
+          showHistory: data.recentSessions.isEmpty,
         ),
       ],
     );
@@ -1290,12 +1331,14 @@ class _TrainingSecondaryNavigation extends StatelessWidget {
     required this.onOpenHistory,
     required this.onOpenCalendar,
     required this.onOpenPlan,
+    this.showHistory = true,
   });
 
   final VoidCallback onOpenExercises;
   final VoidCallback onOpenHistory;
   final VoidCallback onOpenCalendar;
   final VoidCallback onOpenPlan;
+  final bool showHistory;
 
   @override
   Widget build(BuildContext context) => B05Surface(
@@ -1312,12 +1355,13 @@ class _TrainingSecondaryNavigation extends StatelessWidget {
           emphasis: B05ActionEmphasis.tertiary,
           onPressed: onOpenExercises,
         ),
-        B05ActionButton(
-          label: 'History',
-          icon: Icons.history_rounded,
-          emphasis: B05ActionEmphasis.tertiary,
-          onPressed: onOpenHistory,
-        ),
+        if (showHistory)
+          B05ActionButton(
+            label: 'History',
+            icon: Icons.history_rounded,
+            emphasis: B05ActionEmphasis.tertiary,
+            onPressed: onOpenHistory,
+          ),
         B05ActionButton(
           label: 'Calendar',
           icon: Icons.calendar_month_outlined,

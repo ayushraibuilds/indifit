@@ -43,6 +43,8 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen>
   String? _templateActivationCommandId;
   String? _templateActivationKey;
   int? _templateRoutineId;
+  bool _savingManual = false;
+  String? _manualActivationCommandId;
 
   @override
   void initState() {
@@ -256,6 +258,7 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen>
   }
 
   Future<void> _saveManualRoutine() async {
+    if (_savingManual) return;
     final name = _routineNameController.text.trim();
     if (name.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -271,35 +274,79 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen>
       return;
     }
 
-    final repo = ref.read(workoutRepositoryProvider);
-    final daysData = _builderDays
-        .map(
-          (d) => RoutineDayWithExercises(
-            dayName: d.name,
-            dayOfWeek: d.dayOfWeek,
-            isRestDay: d.isRestDay,
-            exercises: d.exercises,
-          ),
-        )
-        .toList();
+    setState(() => _savingManual = true);
+    int? scheduledCount;
+    try {
+      final repo = ref.read(workoutRepositoryProvider);
+      final daysData = _builderDays
+          .map(
+            (d) => RoutineDayWithExercises(
+              dayName: d.name,
+              dayOfWeek: d.dayOfWeek,
+              isRestDay: d.isRestDay,
+              exercises: d.exercises,
+            ),
+          )
+          .toList();
 
-    await repo.saveRoutine(
-      routineId: _activeRoutineId,
-      name: name,
-      goal: 'custom',
-      notes: 'Custom manual routine builder',
-      days: daysData,
-    );
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Custom split saved!'),
-          backgroundColor: context.b05Colors.success.indicator,
-        ),
+      final routineId = await repo.saveRoutine(
+        routineId: _activeRoutineId,
+        name: name,
+        goal: 'custom',
+        notes: 'Custom manual routine builder',
+        days: daysData,
       );
-      Navigator.pop(context, true);
+      _activeRoutineId = routineId;
+
+      final timezoneId = await ref
+          .read(localTimezoneServiceProvider)
+          .currentTimezoneId();
+      _manualActivationCommandId ??=
+          'manual-routine-activation::${const Uuid().v4()}';
+      final activation = await ref
+          .read(legacyProgramCompatibilityAdapterProvider)
+          .activateLegacyRoutineAsCanonical(
+            legacyRoutineId: routineId,
+            activationCoordinator: ref.read(
+              programActivationCoordinatorProvider,
+            ),
+            dates: ref.read(localScheduleDateServiceProvider),
+            timezoneId: timezoneId,
+            commandId: _manualActivationCommandId!,
+          );
+      if (activation.occurrences.isEmpty) {
+        throw StateError('Canonical activation created no workouts.');
+      }
+      scheduledCount = activation.occurrences.length;
+    } catch (error, stackTrace) {
+      AppLogger.error(
+        'Manual routine activation failed '
+            '[routineId=$_activeRoutineId, '
+            'commandId=$_manualActivationCommandId, errorType=${error.runtimeType}]',
+        error,
+        stackTrace,
+        'ManualRoutineActivation',
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            behavior: SnackBarBehavior.floating,
+            content: Text(_manualActivationFailureMessage(error)),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _savingManual = false);
     }
+
+    if (!mounted || scheduledCount == null) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      indiFitSuccessSnackBar(
+        '✓ Custom split saved and activated · '
+        '${ConsumerCountLabel.format(scheduledCount, 'workout')} scheduled',
+      ),
+    );
+    Navigator.pop(context, true);
   }
 
   void _addExerciseToDay(int dayIndex) async {
@@ -799,7 +846,7 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen>
           child: SizedBox(
             width: double.infinity,
             child: FilledButton.icon(
-              onPressed: _saveManualRoutine,
+              onPressed: _savingManual ? null : _saveManualRoutine,
               style: FilledButton.styleFrom(
                 backgroundColor: context.b05Colors.action,
                 foregroundColor: context.b05Colors.onAction,
@@ -808,10 +855,19 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen>
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              icon: const Icon(Icons.save_rounded, size: 18),
-              label: const Text(
-                'Save Split Routine',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              icon: _savingManual
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.save_rounded, size: 18),
+              label: Text(
+                _savingManual ? 'Saving Split...' : 'Save Split Routine',
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
               ),
             ),
           ),
@@ -819,6 +875,14 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen>
       ],
     );
   }
+}
+
+String _manualActivationFailureMessage(Object error) {
+  if (error is ActivationRejectedException &&
+      error.message.contains('existing workout draft')) {
+    return 'Finish or discard your current workout before activating this program.';
+  }
+  return 'Program could not be activated. Please try again.';
 }
 
 String _templateActivationFailureMessage(Object error) {

@@ -1,9 +1,13 @@
-# IndiFit — Prioritized Issues Tracker
+# IndiFit — Prioritized Issues Tracker (ARCHIVED)
 
-> Generated from codebase analysis on 2026-07-22.  
-> Each issue includes file references, severity, acceptance criteria, and suggested assignee scope.
+> [!WARNING]
+> **STATUS: ARCHIVED & SUPERSEDED**  
+> This document is frozen and preserved for historical context under `archive/legacy_plans/ISSUES.md`.  
+> The authoritative, cross-referenced active issue tracker and roadmap is now maintained in:  
+> **[`docs/audit/CROSS_AGENT_COMPREHENSIVE_AUDIT_REPORT.md`](docs/audit/CROSS_AGENT_COMPREHENSIVE_AUDIT_REPORT.md)**.
 
 ---
+
 
 ## 🔴 P0 — Critical (Ship Blockers)
 

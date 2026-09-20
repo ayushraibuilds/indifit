@@ -9,6 +9,7 @@ import '../../core/nutrition_consumption_snapshots.dart';
 import '../../core/raw_cooked_transformations.dart';
 import '../../core/typed_quantities.dart';
 import '../database/app_database.dart' hide NutritionConsumptionSnapshot;
+import '../models/meal_category_definitions.dart';
 import 'nutrition_consumption_repository.dart';
 import 'nutrition_food_catalog_repository.dart';
 import 'nutrition_transformation_repository.dart';
@@ -310,7 +311,7 @@ class NutritionFoodLoggingCoordinator {
     final normalizedTimezone = timezoneId.trim();
     final normalizedCommand = commandId.trim();
     final normalizedReason = correctionReason.trim();
-    const supportedMeals = {'breakfast', 'lunch', 'dinner', 'snack'};
+    final supportedMeals = FoodMealCategory.supportedStableIds;
     if (normalizedUserId.isEmpty ||
         normalizedSnapshotId.isEmpty ||
         normalizedItemId.isEmpty ||

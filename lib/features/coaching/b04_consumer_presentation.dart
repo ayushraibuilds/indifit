@@ -110,6 +110,8 @@ class B04CurrentFoodPresentation {
           : 'Nothing to recommend yet',
       explanation: guidance.isAvailable && guidance.cards.isNotEmpty
           ? 'These ideas fit the information you have logged today.'
+          : guidance.remainingTargets.consumedRecordIds.isNotEmpty
+          ? 'No specific recommendations right now — Keep logging meals to get tailored food suggestions'
           : 'Log a meal and I’ll suggest something that fits your day.',
       why: unavailable
           ? 'I don’t have enough nutrition information for today yet.'

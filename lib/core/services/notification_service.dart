@@ -7,8 +7,10 @@ import 'package:timezone/data/latest_all.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 
 import '../../data/database/app_database.dart';
+import '../config/app_preferences_keys.dart';
 import '../utils/app_logger.dart';
 import 'crash_reporting_service.dart';
+import 'rest_presence_service.dart';
 
 /// Non-annoying, engagement-optimized local notification service.
 ///
@@ -29,6 +31,7 @@ class NotificationService {
   // Notification channel IDs
   static const String _workoutChannelId = 'indifit_workout';
   static const String _mealChannelId = 'indifit_meals';
+  static const String _waterChannelId = 'indifit_water';
   static const String _nudgeChannelId = 'indifit_nudge';
   static const String _weeklyChannelId = 'indifit_weekly';
 
@@ -36,33 +39,49 @@ class NotificationService {
   static const int _idWorkout = 100;
   static const int _idMealLunch = 201;
   static const int _idMealDinner = 202;
+  static const int _idWater = 301;
   static const int _idEveningNudge = 400;
   static const int _idWeeklyReport = 500;
 
   // SharedPreferences keys
-  static const String prefRemindWorkout = 'pref_remind_workout';
-  static const String prefRemindMeals = 'pref_remind_meals';
-  static const String prefRemindWater = 'pref_remind_water';
-  static const String prefRemindEvening = 'pref_remind_evening';
-  static const String prefRemindWeekly = 'pref_remind_weekly';
-  static const String prefQuietHoursEnabled = 'pref_quiet_hours_enabled';
-  static const String prefQuietHoursStart = 'pref_quiet_hours_start';
-  static const String prefQuietHoursEnd = 'pref_quiet_hours_end';
-  static const String prefWorkoutReminderDays = 'pref_workout_reminder_days';
-  static const String prefWorkoutReminderHour = 'pref_workout_reminder_hour';
+  static const String prefRemindWorkout = AppPreferenceKeys.prefRemindWorkout;
+  static const String prefRemindMeals = AppPreferenceKeys.prefRemindMeals;
+  static const String prefRemindWater = AppPreferenceKeys.prefRemindWater;
+  static const String prefRemindEvening = AppPreferenceKeys.prefRemindEvening;
+  static const String prefRemindWeekly = AppPreferenceKeys.prefRemindWeekly;
+  static const String prefQuietHoursEnabled =
+      AppPreferenceKeys.prefQuietHoursEnabled;
+  static const String prefQuietHoursStart =
+      AppPreferenceKeys.prefQuietHoursStart;
+  static const String prefQuietHoursEnd = AppPreferenceKeys.prefQuietHoursEnd;
+  static const String prefWorkoutReminderDays =
+      AppPreferenceKeys.prefWorkoutReminderDays;
+  static const String prefWorkoutReminderHour =
+      AppPreferenceKeys.prefWorkoutReminderHour;
   static const String prefWorkoutReminderMinute =
-      'pref_workout_reminder_minute';
-  static const String prefLunchReminderHour = 'pref_lunch_reminder_hour';
-  static const String prefLunchReminderMinute = 'pref_lunch_reminder_minute';
-  static const String prefDinnerReminderHour = 'pref_dinner_reminder_hour';
-  static const String prefDinnerReminderMinute = 'pref_dinner_reminder_minute';
+      AppPreferenceKeys.prefWorkoutReminderMinute;
+  static const String prefLunchReminderHour =
+      AppPreferenceKeys.prefLunchReminderHour;
+  static const String prefLunchReminderMinute =
+      AppPreferenceKeys.prefLunchReminderMinute;
+  static const String prefDinnerReminderHour =
+      AppPreferenceKeys.prefDinnerReminderHour;
+  static const String prefDinnerReminderMinute =
+      AppPreferenceKeys.prefDinnerReminderMinute;
   static const String prefDailyLoggingReminderHour =
-      'pref_daily_logging_reminder_hour';
+      AppPreferenceKeys.prefDailyLoggingReminderHour;
   static const String prefDailyLoggingReminderMinute =
-      'pref_daily_logging_reminder_minute';
-  static const String prefWeeklyProgressDay = 'pref_weekly_progress_day';
-  static const String prefWeeklyProgressHour = 'pref_weekly_progress_hour';
-  static const String prefWeeklyProgressMinute = 'pref_weekly_progress_minute';
+      AppPreferenceKeys.prefDailyLoggingReminderMinute;
+  static const String prefWeeklyProgressDay =
+      AppPreferenceKeys.prefWeeklyProgressDay;
+  static const String prefWeeklyProgressHour =
+      AppPreferenceKeys.prefWeeklyProgressHour;
+  static const String prefWeeklyProgressMinute =
+      AppPreferenceKeys.prefWeeklyProgressMinute;
+  static const String prefWaterReminderHour =
+      AppPreferenceKeys.prefWaterReminderHour;
+  static const String prefWaterReminderMinute =
+      AppPreferenceKeys.prefWaterReminderMinute;
 
   static const List<int> defaultWorkoutReminderDays = [
     DateTime.monday,
@@ -84,6 +103,8 @@ class NotificationService {
   static const int defaultWeeklyProgressDay = DateTime.sunday;
   static const int defaultWeeklyProgressHour = 10;
   static const int defaultWeeklyProgressMinute = 0;
+  static const int defaultWaterReminderHour = 10;
+  static const int defaultWaterReminderMinute = 0;
 
   static Function(String payload)? onNotificationNavigate;
 
@@ -96,14 +117,18 @@ class NotificationService {
       final mealType = payload.replaceFirst('meal_', '');
       return mealType.isEmpty ? '/food' : '/food?mealType=$mealType';
     }
+    if (payload == 'evening_nudge') return '/';
     if (payload == 'weekly_report') return '/progress';
+    if (payload == 'water') return '/';
     return null;
   }
 
   /// Initialize the notification plugin, timezone data, and Android channels.
-  static Future<void> initialize() async {
+  static Future<void> initialize([
+    Future<String> Function()? readTimezoneId,
+  ]) async {
     tz_data.initializeTimeZones();
-    await _configureLocalTimeZone();
+    await _configureLocalTimeZone(readTimezoneId: readTimezoneId);
 
     const androidSettings = AndroidInitializationSettings(
       '@mipmap/ic_launcher',
@@ -122,12 +147,19 @@ class NotificationService {
     await _plugin.initialize(
       initSettings,
       onDidReceiveNotificationResponse: _onNotificationTapped,
+      onDidReceiveBackgroundNotificationResponse:
+          RestPresenceService.handleBackgroundAction,
     );
 
     debugPrint('NotificationService initialized (just-in-time mode).');
   }
 
   static void _onNotificationTapped(NotificationResponse response) {
+    final actionId = response.actionId;
+    if (actionId != null) {
+      RestPresenceService.instance.handleAction(actionId);
+      return;
+    }
     final payload = response.payload;
     debugPrint('Notification tapped: $payload');
     if (payload != null && onNotificationNavigate != null) {
@@ -196,43 +228,41 @@ class NotificationService {
     return NotificationPermissionStatus.unavailable;
   }
 
-  /// Show a local push notification when workout rest timer expires
-  static Future<void> showRestTimerFinishedNotification() async {
-    const androidDetails = AndroidNotificationDetails(
-      _workoutChannelId,
-      'Workout Reminders',
-      channelDescription: 'Workout rest timer & session alerts',
-      importance: Importance.high,
-      priority: Priority.high,
-    );
-    const iosDetails = DarwinNotificationDetails();
-    const details = NotificationDetails(
-      android: androidDetails,
-      iOS: iosDetails,
-    );
-
-    await _plugin.show(
-      999,
-      'Rest Time Completed! 💪',
-      'Time to hit your next set. You got this!',
-      details,
-      payload: 'workout',
-    );
-  }
-
   // ────────────────────────────────────────
   // Schedule orchestrator
   // ────────────────────────────────────────
 
-  /// Re-schedules all enabled reminders. Call after any preference change.
-  static Future<void> scheduleAllReminders([AppDatabase? db]) async {
-    // Cancel everything first to prevent duplicates on re-schedule
+  /// Cancels ALL notifications across every channel and ID (including active rest
+  /// timers 998/999 and all scheduled reminders).
+  ///
+  /// CRITICAL: This is strictly scoped to COMPLETE DATA ERASURE.
+  /// Standard reminder reconciliation or preference updates MUST NEVER call this,
+  /// as doing so wipes active in-workout rest timers.
+  static Future<void> cancelAllNotificationsForErasure() async {
     await _plugin.cancelAll();
+  }
 
-    final prefs = await SharedPreferences.getInstance();
+  /// Re-schedules all enabled reminders. Call after any preference change.
+  static Future<void> scheduleAllReminders([
+    AppDatabase? db,
+    SharedPreferences? preferences,
+  ]) async {
+    // Cancel only scheduled reminder notifications (101-107, 201, 202, 301, 400, 500)
+    // to prevent wiping active workout rest timer notifications (IDs 998/999).
+    for (int day = DateTime.monday; day <= DateTime.sunday; day++) {
+      await _plugin.cancel(_idWorkout + day);
+    }
+    await _plugin.cancel(_idMealLunch);
+    await _plugin.cancel(_idMealDinner);
+    await _plugin.cancel(_idWater);
+    await _plugin.cancel(_idEveningNudge);
+    await _plugin.cancel(_idWeeklyReport);
+
+    final prefs = preferences ?? await SharedPreferences.getInstance();
 
     final workoutEnabled = prefs.getBool(prefRemindWorkout) ?? false;
     final mealsEnabled = prefs.getBool(prefRemindMeals) ?? false;
+    final waterEnabled = prefs.getBool(prefRemindWater) ?? false;
     final eveningEnabled = prefs.getBool(prefRemindEvening) ?? false;
     final weeklyEnabled = prefs.getBool(prefRemindWeekly) ?? false;
 
@@ -260,6 +290,14 @@ class NotificationService {
     final dinnerMinute = _validMinuteOrDefault(
       prefs.getInt(prefDinnerReminderMinute),
       defaultDinnerReminderMinute,
+    );
+    final waterHour = _validHourOrDefault(
+      prefs.getInt(prefWaterReminderHour),
+      defaultWaterReminderHour,
+    );
+    final waterMinute = _validMinuteOrDefault(
+      prefs.getInt(prefWaterReminderMinute),
+      defaultWaterReminderMinute,
     );
     final dailyLoggingHour = _validHourOrDefault(
       prefs.getInt(prefDailyLoggingReminderHour),
@@ -294,30 +332,52 @@ class NotificationService {
     if (db != null) {
       try {
         final now = DateTime.now();
-        final startOfDay = DateTime(now.year, now.month, now.day);
-        final endOfDay = DateTime(now.year, now.month, now.day, 23, 59, 59);
+        final startOfDay = DateTime(now.year, now.month, now.day).toUtc();
+        final endOfDay = DateTime(now.year, now.month, now.day + 1).toUtc();
+        final localDate = _localDateKey(now);
 
         final sessions =
             await (db.select(db.workoutSessions)..where(
                   (tbl) =>
-                      tbl.completedAt.isBetweenValues(startOfDay, endOfDay),
+                      tbl.completedAt.isBiggerOrEqualValue(startOfDay) &
+                      tbl.completedAt.isSmallerThanValue(endOfDay),
                 ))
                 .get();
         hasWorkoutToday = sessions.isNotEmpty;
 
         final foodLogs =
             await (db.select(db.foodLogs)..where(
-                  (tbl) => tbl.loggedAt.isBetweenValues(startOfDay, endOfDay),
+                  (tbl) =>
+                      tbl.loggedAt.isBiggerOrEqualValue(startOfDay) &
+                      tbl.loggedAt.isSmallerThanValue(endOfDay),
                 ))
                 .get();
 
-        hasAnyFoodToday = foodLogs.isNotEmpty;
-        hasLunchToday = foodLogs.any(
-          (l) => l.mealType.toLowerCase() == 'lunch',
-        );
-        hasDinnerToday = foodLogs.any(
-          (l) => l.mealType.toLowerCase() == 'dinner',
-        );
+        final datedSnapshots = await (db.select(
+          db.nutritionConsumptionSnapshots,
+        )..where((tbl) => tbl.localDate.equals(localDate))).get();
+        final undatedSnapshots =
+            await (db.select(db.nutritionConsumptionSnapshots)..where(
+                  (tbl) =>
+                      tbl.localDate.isNull() &
+                      tbl.loggedAt.isBiggerOrEqualValue(startOfDay) &
+                      tbl.loggedAt.isSmallerThanValue(endOfDay),
+                ))
+                .get();
+        final canonicalMealCategories = <String>{
+          for (final snapshot in [...datedSnapshots, ...undatedSnapshots])
+            snapshot.mealCategory.toLowerCase(),
+        };
+
+        hasAnyFoodToday =
+            foodLogs.isNotEmpty || canonicalMealCategories.isNotEmpty;
+
+        hasLunchToday =
+            foodLogs.any((l) => l.mealType.toLowerCase() == 'lunch') ||
+            canonicalMealCategories.contains('lunch');
+        hasDinnerToday =
+            foodLogs.any((l) => l.mealType.toLowerCase() == 'dinner') ||
+            canonicalMealCategories.contains('dinner');
       } catch (e, st) {
         AppLogger.warning('syncDailyNotifications db check failed: $e');
         CrashReportingService.recordCrash(
@@ -328,7 +388,7 @@ class NotificationService {
       }
     }
 
-    if (workoutEnabled && !hasWorkoutToday) {
+    if (workoutEnabled) {
       await _scheduleWorkoutReminder(
         workoutDays,
         workoutHour,
@@ -336,6 +396,7 @@ class NotificationService {
         quietHoursEnabled,
         quietHoursStart,
         quietHoursEnd,
+        skipToday: hasWorkoutToday,
       );
     }
     if (mealsEnabled) {
@@ -351,13 +412,23 @@ class NotificationService {
         quietHoursEnd,
       );
     }
-    if (eveningEnabled && (!hasAnyFoodToday || !hasWorkoutToday)) {
+    if (waterEnabled) {
+      await _scheduleWaterReminder(
+        waterHour,
+        waterMinute,
+        quietHoursEnabled,
+        quietHoursStart,
+        quietHoursEnd,
+      );
+    }
+    if (eveningEnabled) {
       await _scheduleEveningNudge(
         dailyLoggingHour,
         dailyLoggingMinute,
         quietHoursEnabled,
         quietHoursStart,
         quietHoursEnd,
+        skipToday: hasAnyFoodToday && hasWorkoutToday,
       );
     }
     if (weeklyEnabled) {
@@ -378,6 +449,29 @@ class NotificationService {
   // Individual schedulers
   // ────────────────────────────────────────
 
+  /// 💧 Water reminder to stay hydrated throughout the day
+  static Future<void> _scheduleWaterReminder(
+    int hour,
+    int minute,
+    bool quietHoursEnabled,
+    int quietStart,
+    int quietEnd,
+  ) async {
+    await _scheduleDailyNotification(
+      id: _idWater,
+      channelId: _waterChannelId,
+      channelName: 'Water Reminders',
+      hour: hour,
+      minute: minute,
+      title: '💧 Stay Hydrated',
+      body: 'Log a glass of water to stay on track with your hydration goal.',
+      payload: 'water',
+      quietHoursEnabled: quietHoursEnabled,
+      quietHoursStart: quietStart,
+      quietHoursEnd: quietEnd,
+    );
+  }
+
   /// Workout reminders on the selected local weekdays and time.
   static Future<void> _scheduleWorkoutReminder(
     List<int> days,
@@ -385,8 +479,9 @@ class NotificationService {
     int minute,
     bool quietHoursEnabled,
     int quietStart,
-    int quietEnd,
-  ) async {
+    int quietEnd, {
+    bool skipToday = false,
+  }) async {
     for (final day in days) {
       await _scheduleWeeklyNotification(
         id: _idWorkout + day,
@@ -401,6 +496,7 @@ class NotificationService {
         quietHoursEnabled: quietHoursEnabled,
         quietHoursStart: quietStart,
         quietHoursEnd: quietEnd,
+        skipToday: skipToday,
       );
     }
   }
@@ -417,37 +513,35 @@ class NotificationService {
     int quietStart,
     int quietEnd,
   ) async {
-    if (!hasLunchToday) {
-      await _scheduleDailyNotification(
-        id: _idMealLunch,
-        channelId: _mealChannelId,
-        channelName: 'Meal Reminders',
-        hour: lunchHour,
-        minute: lunchMinute,
-        title: '🍱 Log your lunch',
-        body: 'Open IndiFit to search and log your lunch.',
-        payload: 'meal_lunch',
-        quietHoursEnabled: quietHoursEnabled,
-        quietHoursStart: quietStart,
-        quietHoursEnd: quietEnd,
-      );
-    }
+    await _scheduleDailyNotification(
+      id: _idMealLunch,
+      channelId: _mealChannelId,
+      channelName: 'Meal Reminders',
+      hour: lunchHour,
+      minute: lunchMinute,
+      title: '🍱 Log your lunch',
+      body: 'Open IndiFit to search and log your lunch.',
+      payload: 'meal_lunch',
+      quietHoursEnabled: quietHoursEnabled,
+      quietHoursStart: quietStart,
+      quietHoursEnd: quietEnd,
+      skipToday: hasLunchToday,
+    );
 
-    if (!hasDinnerToday) {
-      await _scheduleDailyNotification(
-        id: _idMealDinner,
-        channelId: _mealChannelId,
-        channelName: 'Meal Reminders',
-        hour: dinnerHour,
-        minute: dinnerMinute,
-        title: '🍽️ Log your dinner',
-        body: 'Open IndiFit to search and log your dinner.',
-        payload: 'meal_dinner',
-        quietHoursEnabled: quietHoursEnabled,
-        quietHoursStart: quietStart,
-        quietHoursEnd: quietEnd,
-      );
-    }
+    await _scheduleDailyNotification(
+      id: _idMealDinner,
+      channelId: _mealChannelId,
+      channelName: 'Meal Reminders',
+      hour: dinnerHour,
+      minute: dinnerMinute,
+      title: '🍽️ Log your dinner',
+      body: 'Open IndiFit to search and log your dinner.',
+      payload: 'meal_dinner',
+      quietHoursEnabled: quietHoursEnabled,
+      quietHoursStart: quietStart,
+      quietHoursEnd: quietEnd,
+      skipToday: hasDinnerToday,
+    );
   }
 
   /// Daily logging reminder when food or workout evidence is still missing.
@@ -456,8 +550,9 @@ class NotificationService {
     int minute,
     bool quietHoursEnabled,
     int quietStart,
-    int quietEnd,
-  ) async {
+    int quietEnd, {
+    bool skipToday = false,
+  }) async {
     await _scheduleDailyNotification(
       id: _idEveningNudge,
       channelId: _nudgeChannelId,
@@ -470,6 +565,7 @@ class NotificationService {
       quietHoursEnabled: quietHoursEnabled,
       quietHoursStart: quietStart,
       quietHoursEnd: quietEnd,
+      skipToday: skipToday,
     );
   }
 
@@ -515,6 +611,7 @@ class NotificationService {
     bool quietHoursEnabled = false,
     int quietHoursStart = 22,
     int quietHoursEnd = 7,
+    bool skipToday = false,
   }) async {
     final scheduledTime = _nextInstanceOfTime(
       hour,
@@ -522,6 +619,7 @@ class NotificationService {
       quietHoursEnabled: quietHoursEnabled,
       quietHoursStart: quietHoursStart,
       quietHoursEnd: quietHoursEnd,
+      skipToday: skipToday,
     );
 
     await _plugin.zonedSchedule(
@@ -560,6 +658,7 @@ class NotificationService {
     bool quietHoursEnabled = false,
     int quietHoursStart = 22,
     int quietHoursEnd = 7,
+    bool skipToday = false,
   }) async {
     final scheduledTime = _nextInstanceOfDayAndTime(
       dayOfWeek,
@@ -568,6 +667,7 @@ class NotificationService {
       quietHoursEnabled: quietHoursEnabled,
       quietHoursStart: quietHoursStart,
       quietHoursEnd: quietHoursEnd,
+      skipToday: skipToday,
     );
 
     await _plugin.zonedSchedule(
@@ -604,6 +704,7 @@ class NotificationService {
     bool quietHoursEnabled = false,
     int quietHoursStart = 22,
     int quietHoursEnd = 7,
+    bool skipToday = false,
   }) {
     final now = tz.TZDateTime.now(tz.local);
     var scheduled = tz.TZDateTime(
@@ -615,6 +716,9 @@ class NotificationService {
       minute,
     );
     if (scheduled.isBefore(now)) {
+      scheduled = scheduled.add(const Duration(days: 1));
+    }
+    if (skipToday && _isSameCivilDate(scheduled, now)) {
       scheduled = scheduled.add(const Duration(days: 1));
     }
 
@@ -668,6 +772,7 @@ class NotificationService {
     bool quietHoursEnabled = false,
     int quietHoursStart = 22,
     int quietHoursEnd = 7,
+    bool skipToday = false,
   }) {
     final now = tz.TZDateTime.now(tz.local);
     var scheduled = tz.TZDateTime(
@@ -684,6 +789,9 @@ class NotificationService {
     while (scheduled.weekday != dayOfWeek) {
       scheduled = scheduled.add(const Duration(days: 1));
     }
+    if (skipToday && _isSameCivilDate(scheduled, now)) {
+      scheduled = scheduled.add(const Duration(days: 7));
+    }
     return _deferUntilQuietHoursEnd(
       scheduled,
       enabled: quietHoursEnabled,
@@ -691,6 +799,14 @@ class NotificationService {
       endHour: quietHoursEnd,
     );
   }
+
+  static String _localDateKey(DateTime value) =>
+      '${value.year.toString().padLeft(4, '0')}-'
+      '${value.month.toString().padLeft(2, '0')}-'
+      '${value.day.toString().padLeft(2, '0')}';
+
+  static bool _isSameCivilDate(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
 
   static tz.TZDateTime _deferUntilQuietHoursEnd(
     tz.TZDateTime scheduled, {
@@ -717,16 +833,19 @@ class NotificationService {
   }
 
   static const String prefLastScheduledTimezoneId =
-      'last_scheduled_timezone_id';
-  static const String prefLastUtcOffsetMinutes = 'last_utc_offset_minutes';
+      AppPreferenceKeys.lastScheduledTimezoneId;
+  static const String prefLastUtcOffsetMinutes =
+      AppPreferenceKeys.lastUtcOffsetMinutes;
 
   /// Detects if device timezone or UTC offset changed (e.g. travel or DST change),
   /// updates persisted timezone metadata, and reschedules notifications.
   static Future<bool> checkAndUpdateTimezoneAndReschedule([
     AppDatabase? db,
+    Future<String> Function()? readTimezoneId,
+    SharedPreferences? preferences,
   ]) async {
-    await _configureLocalTimeZone();
-    final prefs = await SharedPreferences.getInstance();
+    await _configureLocalTimeZone(readTimezoneId: readTimezoneId);
+    final prefs = preferences ?? await SharedPreferences.getInstance();
 
     final currentTzId = tz.local.name;
     final currentOffsetMinutes = DateTime.now().timeZoneOffset.inMinutes;
@@ -741,19 +860,23 @@ class NotificationService {
       );
       await prefs.setString(prefLastScheduledTimezoneId, currentTzId);
       await prefs.setInt(prefLastUtcOffsetMinutes, currentOffsetMinutes);
-      await scheduleAllReminders(db);
+      await scheduleAllReminders(db, prefs);
       return true;
     }
     return false;
   }
 
-  static Future<void> _configureLocalTimeZone() async {
+  static Future<void> _configureLocalTimeZone({
+    Future<String> Function()? readTimezoneId,
+  }) async {
     // Platform APIs return an IANA identifier (for example Europe/London),
     // unlike DateTime.timeZoneName which is commonly an ambiguous abbreviation
     // such as IST or PST. This is essential for travel and DST correctness.
     try {
-      final nativeTimeZone = await FlutterTimezone.getLocalTimezone();
-      tz.setLocalLocation(tz.getLocation(nativeTimeZone.identifier));
+      final identifier = readTimezoneId != null
+          ? await readTimezoneId()
+          : (await FlutterTimezone.getLocalTimezone()).identifier;
+      tz.setLocalLocation(tz.getLocation(identifier));
       return;
     } catch (e) {
       AppLogger.warning('Native timezone lookup failed: $e');

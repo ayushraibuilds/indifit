@@ -1,15 +1,20 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/config/app_preferences_keys.dart';
 import '../../core/di/providers.dart';
 import '../../core/presentation/consumer_copy.dart';
 import '../../core/presentation/product_failure_presentation.dart';
+import '../../core/services/achievement_service.dart';
+import '../../core/services/rest_presence_service.dart';
 import '../../core/services/workout_session_wake_lock_coordinator.dart';
 import '../../core/utils/app_logger.dart';
 import '../../data/models/b02_execution_models.dart';
 import '../../data/repositories/b02_strength_execution_repository.dart';
 import '../../data/repositories/calendar_repository.dart';
+import '../../data/repositories/progress_statistics_repository.dart';
 import '../../data/services/b02_execution_progression.dart';
 import '../../data/services/b02_rest_recommendation_service.dart';
 import '../../data/services/b02_strength_execution_draft_service.dart';
@@ -87,6 +92,9 @@ class B02StrengthExecutionController
   final B02RestDraftCoordinator _restCoordinator;
   final DateTime Function() _nowUtc;
   final WorkoutSessionWakeLockCoordinator? _wakeLockCoordinator;
+  final RestPresenceService? _restPresence;
+  final ProgressStatisticsRepository? _achievementStats;
+  final Future<int> Function()? _achievementStreakDays;
   Future<bool>? _finalizationInFlight;
   _B02CompletionRequestKey? _finalizationRequestKey;
   Future<void> _draftWriteTail = Future<void>.value();
@@ -103,10 +111,16 @@ class B02StrengthExecutionController
     B02RestDraftCoordinator? restCoordinator,
     DateTime Function()? nowUtc,
     WorkoutSessionWakeLockCoordinator? wakeLockCoordinator,
+    RestPresenceService? restPresence,
+    ProgressStatisticsRepository? achievementStats,
+    Future<int> Function()? achievementStreakDays,
   }) : _draftService = draftService ?? const B02StrengthExecutionDraftService(),
        _restCoordinator = restCoordinator ?? const B02RestDraftCoordinator(),
        _nowUtc = nowUtc ?? _systemNowUtc,
        _wakeLockCoordinator = wakeLockCoordinator,
+       _restPresence = restPresence,
+       _achievementStats = achievementStats,
+       _achievementStreakDays = achievementStreakDays,
        super(
          initialLaunch == null
              ? const B02StrengthExecutionUiState.initial()
@@ -118,6 +132,7 @@ class B02StrengthExecutionController
     if (initialLaunch != null) {
       _ensureWakeLockForLaunch(initialLaunch);
     }
+    _registerRestPresenceDelegate();
   }
 
   static DateTime _systemNowUtc() => DateTime.now().toUtc();
@@ -130,6 +145,17 @@ class B02StrengthExecutionController
     if (coordinator == null) return;
     coordinator.attachToAppLifecycle();
     unawaited(coordinator.setActiveSession(_wakeLockKey(launch)));
+  }
+
+  void _registerRestPresenceDelegate() {
+    _restPresence?.registerActionDelegate(
+      onAdjust: (periodId, delta) async {
+        await adjustRest(periodId, seconds: delta);
+      },
+      onSkip: (periodId) async {
+        await skipRest(periodId);
+      },
+    );
   }
 
   /// Reconciles the session-owned screen-awake intent for route rebinds and
@@ -146,10 +172,39 @@ class B02StrengthExecutionController
     await coordinator.reconcileForActiveSession(_wakeLockKey(launch));
   }
 
+  /// Best-effort milestone recording after a durable completion. No-op
+  /// unless achievement dependencies were injected (production providers).
+  /// Never throws: failures are swallowed by the caller's catchError.
+  Future<void> _recordMilestoneAchievements() async {
+    final stats = _achievementStats;
+    if (stats == null) return;
+    final streakReader = _achievementStreakDays;
+    final streak = streakReader != null ? await streakReader() : 0;
+    await AchievementService.recordAndEvaluate(
+      statsRepository: stats,
+      currentStreakDays: streak,
+    );
+  }
+
   void _releaseWakeLockForLaunch(B02StrengthExecutionLaunch launch) {
+    final presence = _restPresence;
+    if (presence != null) {
+      presence.unregisterActionDelegate();
+      unawaited(presence.cleanup());
+    }
     final coordinator = _wakeLockCoordinator;
     if (coordinator == null) return;
     unawaited(coordinator.clearActiveSession(_wakeLockKey(launch)));
+  }
+
+  @override
+  void dispose() {
+    final presence = _restPresence;
+    if (presence != null) {
+      presence.unregisterActionDelegate();
+      unawaited(presence.cleanup());
+    }
+    super.dispose();
   }
 
   Future<void> startScheduled({
@@ -763,6 +818,15 @@ class B02StrengthExecutionController
           _restCoordinator.begin(current.state, period),
         );
         if (!saved) return;
+        await _restPresence?.startRest(
+          periodId: period.id,
+          exerciseName: slot.exerciseNameSnapshot.isNotEmpty
+              ? slot.exerciseNameSnapshot
+              : (slot.expectedExerciseNameSnapshot ?? ''),
+          targetSeconds:
+              period.selectedSeconds ?? period.recommendedSeconds ?? 90,
+          startedAtUtc: period.startedAtUtc,
+        );
       });
     } catch (error) {
       final current = state.launch;
@@ -851,9 +915,23 @@ class B02StrengthExecutionController
         if (current == null || period == null || period.endedAtUtc != null) {
           return;
         }
-        await saveDraft(
+        final saved = await saveDraft(
           _restCoordinator.extend(current.state, periodId, seconds: seconds),
         );
+        if (saved) {
+          final newSelected =
+              (period.selectedSeconds ?? period.recommendedSeconds ?? 0) +
+              seconds;
+          final presence = _restPresence;
+          if (presence != null) {
+            await presence.startRest(
+              periodId: periodId,
+              exerciseName: presence.currentExerciseName ?? '',
+              targetSeconds: newSelected,
+              startedAtUtc: period.startedAtUtc,
+            );
+          }
+        }
       });
     } catch (error) {
       final current = state.launch;
@@ -883,8 +961,9 @@ class B02StrengthExecutionController
             .inSeconds
             .clamp(0, 86400)
             .toInt();
-        await saveDraft(
-          adjusted <= elapsed
+        final willElapse = adjusted <= elapsed;
+        final saved = await saveDraft(
+          willElapse
               ? _restCoordinator.finish(
                   current.state,
                   periodId,
@@ -893,6 +972,29 @@ class B02StrengthExecutionController
                 )
               : _restCoordinator.select(current.state, periodId, adjusted),
         );
+        if (saved) {
+          final presence = _restPresence;
+          if (presence != null) {
+            if (willElapse) {
+              // Surgical fix for truncation path: cancel any existing exact alarm anchor
+              // so it does not fire minutes later as a phantom alert, and alert immediately via Dart.
+              await presence.driver.cancelNotification(
+                RestPresenceService.expiredNotificationId,
+              );
+              await presence.onRestElapsed(
+                periodId: periodId,
+                silentCompletion: false,
+              );
+            } else {
+              await presence.startRest(
+                periodId: periodId,
+                exerciseName: presence.currentExerciseName ?? '',
+                targetSeconds: adjusted,
+                startedAtUtc: period.startedAtUtc,
+              );
+            }
+          }
+        }
       });
     } catch (error) {
       final current = state.launch;
@@ -910,13 +1012,16 @@ class B02StrengthExecutionController
         if (current == null || period == null || period.endedAtUtc != null) {
           return;
         }
-        await saveDraft(
+        final saved = await saveDraft(
           _restCoordinator.skip(
             current.state,
             periodId,
             endedAtUtc: _nowUtc().toUtc(),
           ),
         );
+        if (saved) {
+          await _restPresence?.cancelRest(periodId: periodId);
+        }
       });
     } catch (error) {
       final current = state.launch;
@@ -927,7 +1032,11 @@ class B02StrengthExecutionController
   /// Completes an elapsed countdown through the same durable B02 rest path as
   /// an explicit skip. The timer is presentation-only; it never mutates a
   /// rest period directly.
-  Future<bool> completeRest(String periodId, {DateTime? endedAtUtc}) async {
+  Future<bool> completeRest(
+    String periodId, {
+    DateTime? endedAtUtc,
+    bool? silentCompletion,
+  }) async {
     try {
       return await _enqueueRestAction<bool>(() async {
         final current = state.launch;
@@ -944,6 +1053,12 @@ class B02StrengthExecutionController
             endReason: B02RestEndReason.elapsed,
           ),
         );
+        if (saved) {
+          await _restPresence?.onRestElapsed(
+            periodId: periodId,
+            silentCompletion: silentCompletion,
+          );
+        }
         return saved &&
             mounted &&
             state.launch?.state.restPeriods.any(
@@ -955,6 +1070,66 @@ class B02StrengthExecutionController
       final current = state.launch;
       if (current != null) _setFailure(error, current);
       return false;
+    }
+  }
+
+  /// Consumes and reconciles any pending background rest action intents
+  /// recorded while the process was backgrounded, headless, or alive without
+  /// an active controller callback, and silently completes any rest period
+  /// that elapsed while backgrounded with an exact alarm anchor.
+  Future<void> reconcilePendingRestIntent() async {
+    try {
+      final current = state.launch;
+      if (current == null) return;
+
+      final intent = await RestPresenceService.loadAndClearPendingIntent();
+      final anchor = await RestPresenceService.loadAnchorRecord();
+
+      final activePeriod = current.state.restPeriods
+          .where((p) => p.endedAtUtc == null)
+          .firstOrNull;
+
+      if (activePeriod != null) {
+        // Enforce period-guard: discard orphaned intents belonging to an earlier or different period
+        if (intent != null && intent.periodId == activePeriod.id) {
+          if (intent.action == 'adjust_30s') {
+            final delta = (intent.accumulatedExtraSeconds != null &&
+                    intent.accumulatedExtraSeconds! > 0)
+                ? intent.accumulatedExtraSeconds!
+                : (anchor != null
+                    ? (anchor.totalTargetSeconds -
+                        (activePeriod.selectedSeconds ??
+                            activePeriod.recommendedSeconds ??
+                            0))
+                    : 30);
+            if (delta > 0) {
+              await adjustRest(activePeriod.id, seconds: delta);
+            }
+          } else if (intent.action == 'skip') {
+            await skipRest(activePeriod.id);
+            return;
+          }
+        }
+
+        // Re-read updated draft after awaiting adjustRest to avoid evaluating stale snapshots.
+        final currentAfter = state.launch;
+        final periodToCheck = currentAfter == null
+            ? activePeriod
+            : (_restPeriod(currentAfter.state, activePeriod.id) ?? activePeriod);
+
+        // Check if active rest elapsed while backgrounded
+        final now = _nowUtc().toUtc();
+        final totalSeconds = periodToCheck.selectedSeconds ??
+            periodToCheck.recommendedSeconds ??
+            0;
+        final elapsed = now.difference(periodToCheck.startedAtUtc).inSeconds;
+        if (elapsed >= totalSeconds) {
+          final wasExact = anchor?.hasExactAlarmAnchor ?? false;
+          await completeRest(periodToCheck.id, silentCompletion: wasExact);
+        }
+      }
+    } catch (error) {
+      AppLogger.warning('Failed to reconcile pending rest intent: $error');
     }
   }
 
@@ -1072,6 +1247,14 @@ class B02StrengthExecutionController
         completedSessionId: sessionId,
         completedCompletionKind: completionKind,
       );
+      // Best-effort milestone recording: must never change the completion
+      // result. Partial and full completions both count — a persisted session
+      // is a completed session.
+      try {
+        await _recordMilestoneAchievements();
+      } catch (e) {
+        AppLogger.warning('Milestone achievement recording failed: $e');
+      }
       return true;
     } on B02StrengthExecutionRecoveryException catch (error, stackTrace) {
       _logFinalizationFailure(
@@ -1348,6 +1531,10 @@ class B02StrengthExecutionController
   }) {
     final open = _openRestPeriod(draft);
     if (open == null) return draft;
+    final presence = _restPresence;
+    if (presence != null) {
+      unawaited(presence.cancelRest(periodId: open.id));
+    }
     return _restCoordinator.finish(
       draft,
       open.id,
@@ -1427,6 +1614,27 @@ final b02StrengthExecutionControllerProvider =
         wakeLockCoordinator: ref.watch(
           workoutSessionWakeLockCoordinatorProvider,
         ),
+        // Production uses the process-wide RestPresenceService.instance singleton
+        // so that exactly one lifecycle root owns notification IDs 998/999 across
+        // player and screen controllers, preventing dual-notification collisions.
+        restPresence: RestPresenceService.instance,
+        achievementStats: ProgressStatisticsRepository(
+          ref.watch(databaseProvider),
+        ),
+        achievementStreakDays: () async {
+          SharedPreferences? prefs;
+          try {
+            prefs = ref.read(sharedPreferencesProvider);
+          } on Object catch (error, stackTrace) {
+            AppLogger.error(
+              'Unable to read sharedPreferencesProvider for streak calculation; reading SharedPreferences directly',
+              error,
+              stackTrace,
+            );
+          }
+          prefs ??= await SharedPreferences.getInstance();
+          return prefs.getInt(AppPreferenceKeys.userStreakCount) ?? 0;
+        },
       ),
     );
 
@@ -1443,6 +1651,27 @@ final b02StrengthExecutionScreenControllerProvider = StateNotifierProvider
         wakeLockCoordinator: ref.watch(
           workoutSessionWakeLockCoordinatorProvider,
         ),
+        // Production uses the process-wide RestPresenceService.instance singleton
+        // so that exactly one lifecycle root owns notification IDs 998/999 across
+        // player and screen controllers, preventing dual-notification collisions.
+        restPresence: RestPresenceService.instance,
+        achievementStats: ProgressStatisticsRepository(
+          ref.watch(databaseProvider),
+        ),
+        achievementStreakDays: () async {
+          SharedPreferences? prefs;
+          try {
+            prefs = ref.read(sharedPreferencesProvider);
+          } on Object catch (error, stackTrace) {
+            AppLogger.error(
+              'Unable to read sharedPreferencesProvider for streak calculation; reading SharedPreferences directly',
+              error,
+              stackTrace,
+            );
+          }
+          prefs ??= await SharedPreferences.getInstance();
+          return prefs.getInt(AppPreferenceKeys.userStreakCount) ?? 0;
+        },
       ),
     );
 

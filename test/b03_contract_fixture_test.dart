@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:indifit/core/fixtures/b03_nutrition_fixture_matrix.dart';
+import 'fixtures/b03_nutrition_fixture_matrix.dart';
 
 void main() {
   group('B03-01 nutrition contract fixture matrix', () {

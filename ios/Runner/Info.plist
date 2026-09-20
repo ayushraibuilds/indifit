@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Indifit</string>
+	<string>IndiFit</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -15,7 +15,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>indifit</string>
+	<string>IndiFit</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -26,12 +26,14 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
+	<key>NSSupportsLiveActivitiesFrequentUpdates</key>
+	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>IndiFit requires access to the camera to scan food barcodes and take pictures of meals for AI macro estimation.</string>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>IndiFit requires access to the microphone for video exercises.</string>
+	<string>IndiFit uses the camera to scan food barcodes and nutrition labels.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>IndiFit requires access to the photo library to upload food pictures for AI macro estimation.</string>
+	<string>IndiFit allows choosing an image of a nutrition label to extract nutrition facts.</string>
 	<key>NSHealthShareUsageDescription</key>
 	<string>IndiFit reads only the Health categories you allow: steps, active energy, sleep sessions, resting heart rate, and activity sessions.</string>
 	<key>NSHealthUpdateUsageDescription</key>

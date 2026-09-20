@@ -7,7 +7,6 @@ import 'package:indifit/core/services/achievement_service.dart';
 import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/repositories/progress_statistics_repository.dart';
-import 'package:indifit/data/repositories/weekly_report_service.dart';
 import 'package:indifit/features/dashboard/dashboard_controller.dart';
 import 'package:indifit/features/progress/achievements_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -18,13 +17,11 @@ void main() {
   group('Phase 2: Trustworthy Reports & Achievements Unit Tests', () {
     late AppDatabase db;
     late ProgressStatisticsRepository statsRepo;
-    late WeeklyReportService reportService;
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
       db = AppDatabase.memory();
       statsRepo = ProgressStatisticsRepository(db);
-      reportService = WeeklyReportService();
     });
 
     tearDown(() async {
@@ -61,32 +58,45 @@ void main() {
         await controller.loadStateData();
 
         var prefs = await SharedPreferences.getInstance();
-        expect(prefs.getStringList('unlocked_achievement_ids'), isEmpty);
+        expect(
+          prefs.getStringList(AchievementService.prefCelebratedAchievementIds),
+          isEmpty,
+        );
 
-        await db
-            .into(db.workoutSessions)
-            .insert(
-              WorkoutSessionsCompanion.insert(
-                name: 'First logged session',
-                totalVolume: 0,
-                durationSeconds: 1800,
-                estimatedCalories: 0,
-                completedAt: Value(DateTime.now()),
-              ),
-            );
+        await db.into(db.foodLogs).insert(
+          FoodLogsCompanion.insert(
+            name: 'Special Thali',
+            calories: 600,
+            proteinG: 20.0,
+            carbsG: 80.0,
+            fatG: 20.0,
+            servingLogged: 1.0,
+            servingUnit: 'plate',
+            mealType: 'lunch',
+            loggedAt: Value(DateTime.now()),
+          ),
+        );
 
         await controller.loadStateData();
         expect(
           container
               .read(dashboardControllerProvider)
               .newlyUnlockedAchievementTitles,
-          ['First Sweat'],
+          ['Thali Connoisseur'],
+        );
+        expect(
+          container
+              .read(dashboardControllerProvider)
+              .newlyUnlockedAchievementIds,
+          ['first_thali'],
         );
 
+        await AchievementService.markCelebrated(prefs, ['first_thali']);
         prefs = await SharedPreferences.getInstance();
-        expect(prefs.getStringList('unlocked_achievement_ids'), [
-          'first_workout',
-        ]);
+        expect(
+          prefs.getStringList(AchievementService.prefCelebratedAchievementIds),
+          ['first_thali'],
+        );
 
         // Re-reading unchanged history must not emit another unlock event or
         // duplicate the persisted identifier.
@@ -94,14 +104,14 @@ void main() {
         expect(
           container
               .read(dashboardControllerProvider)
-              .newlyUnlockedAchievementTitles,
-          ['First Sweat'],
+              .newlyUnlockedAchievementIds,
+          isEmpty,
         );
         expect(
           (await SharedPreferences.getInstance()).getStringList(
-            'unlocked_achievement_ids',
+            AchievementService.prefCelebratedAchievementIds,
           ),
-          ['first_workout'],
+          ['first_thali'],
         );
       },
     );
@@ -177,20 +187,12 @@ void main() {
     );
 
     test(
-      '3. Insufficient data (<2 logged days & 0 workouts) returns honest unlock state',
+      '3. Insufficient data (<2 logged days & 0 workouts) returns zero metrics',
       () async {
         final metrics = await statsRepo.getWeeklyMetrics();
         expect(metrics.nutritionDaysLogged, equals(0));
         expect(metrics.completedWorkoutsCount, equals(0));
-
-        final report = await reportService.generateReportFromMetrics(metrics);
-        expect(report.isInsufficientData, isTrue);
-        expect(report.isFallback, isTrue);
-        expect(
-          report.headline,
-          equals('Log a few more days to unlock your report'),
-        );
-        expect(report.adherenceScore, equals(0.0));
+        expect(metrics.overallAdherenceScore, equals(0.0));
       },
     );
 
@@ -223,15 +225,11 @@ void main() {
         expect(metrics.totalCaloriesLogged, equals(0));
         expect(metrics.completedWorkoutsCount, equals(0));
         expect(metrics.overallAdherenceScore, equals(0.0));
-
-        final report = await reportService.generateReportFromMetrics(metrics);
-        expect(report.isInsufficientData, isTrue);
-        expect(report.adherenceScore, equals(0.0));
       },
     );
 
     test(
-      '5. 7 days of real data produces structured metrics and offline report',
+      '5. 7 days of real data produces structured weekly metrics',
       () async {
         final mockNow = DateTime(2026, 7, 28, 12, 0);
         final clockedRepo = ProgressStatisticsRepository(
@@ -261,11 +259,6 @@ void main() {
         final metrics = await clockedRepo.getWeeklyMetrics();
         expect(metrics.nutritionDaysLogged, equals(3));
         expect(metrics.totalCaloriesLogged, equals(6000));
-
-        final report = await reportService.generateReportFromMetrics(metrics);
-        expect(report.isInsufficientData, isFalse);
-        expect(report.summary, contains('3 days'));
-        expect(report.summary, contains('6000 total kcal'));
       },
     );
 

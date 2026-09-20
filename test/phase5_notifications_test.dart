@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -52,6 +53,7 @@ void main() {
           NotificationService.destinationForPayload('weekly_report'),
           '/progress',
         );
+        expect(NotificationService.destinationForPayload('evening_nudge'), '/');
         expect(NotificationService.destinationForPayload('unknown'), isNull);
       },
     );
@@ -163,6 +165,79 @@ void main() {
     );
 
     test(
+      'today evidence skips only today while preserving every recurring series',
+      () async {
+        final now = DateTime.now();
+        final localDate =
+            '${now.year.toString().padLeft(4, '0')}-'
+            '${now.month.toString().padLeft(2, '0')}-'
+            '${now.day.toString().padLeft(2, '0')}';
+        SharedPreferences.setMockInitialValues({
+          NotificationService.prefRemindWorkout: true,
+          NotificationService.prefWorkoutReminderDays: [now.weekday.toString()],
+          NotificationService.prefWorkoutReminderHour: now.hour,
+          NotificationService.prefWorkoutReminderMinute: now.minute,
+          NotificationService.prefRemindMeals: true,
+          NotificationService.prefLunchReminderHour: now.hour,
+          NotificationService.prefLunchReminderMinute: now.minute,
+          NotificationService.prefDinnerReminderHour: now.hour,
+          NotificationService.prefDinnerReminderMinute: now.minute,
+          NotificationService.prefRemindEvening: true,
+          NotificationService.prefDailyLoggingReminderHour: now.hour,
+          NotificationService.prefDailyLoggingReminderMinute: now.minute,
+        });
+
+        await database
+            .into(database.workoutSessions)
+            .insert(
+              WorkoutSessionsCompanion.insert(
+                name: 'Completed workout',
+                totalVolume: 100,
+                durationSeconds: 1800,
+                estimatedCalories: 0,
+                completedAt: Value(now.toUtc()),
+              ),
+            );
+        for (final meal in const ['lunch', 'dinner']) {
+          await database
+              .into(database.nutritionConsumptionSnapshots)
+              .insert(
+                NutritionConsumptionSnapshotsCompanion.insert(
+                  id: 'today-$meal',
+                  userId: 'user',
+                  loggedAt: now.toUtc(),
+                  mealCategory: meal,
+                  sourceType: 'food',
+                  calculatorVersion: 'test',
+                  completeness: 'complete',
+                  estimateStatus: 'none',
+                  localDate: Value(localDate),
+                  timezoneId: const Value('Asia/Kolkata'),
+                ),
+              );
+        }
+
+        await NotificationService.scheduleAllReminders(database);
+
+        final scheduledCalls = platformCalls
+            .where((call) => call.method == 'zonedSchedule')
+            .toList();
+        expect(scheduledCalls, hasLength(4));
+        for (final call in scheduledCalls) {
+          final arguments = Map<String, Object?>.from(call.arguments as Map);
+          final scheduled = DateTime.parse(
+            arguments['scheduledDateTime']! as String,
+          );
+          expect((
+            scheduled.year,
+            scheduled.month,
+            scheduled.day,
+          ), isNot((now.year, now.month, now.day)));
+        }
+      },
+    );
+
+    test(
       'edited reminder times still use the established Quiet Hours rule',
       () {
         expect(NotificationService.isInQuietHours(23, 30, 22, 7), isTrue);
@@ -197,6 +272,40 @@ void main() {
         expect(scheduled.weekday, DateTime.monday);
         expect(scheduled.hour, 7);
         expect(scheduled.minute, 0);
+      },
+    );
+
+    test(
+      'scheduleAllReminders uses scoped cancellation and never calls cancelAll',
+      () async {
+        platformCalls.clear();
+        await NotificationService.scheduleAllReminders(database);
+
+        // Assert cancelAll was NEVER called (which would wipe active rest notifications 998/999)
+        expect(
+          platformCalls.any((call) => call.method == 'cancelAll'),
+          isFalse,
+          reason: 'cancelAll wipes active workout rest timer notifications',
+        );
+
+        // Assert scoped cancel was called for reminder IDs 101-107, 201, 202, 400, 500
+        final cancelledIds = platformCalls
+            .where((call) => call.method == 'cancel')
+            .map((call) => (call.arguments as Map)['id'] as int)
+            .toSet();
+
+        for (int day = DateTime.monday; day <= DateTime.sunday; day++) {
+          expect(cancelledIds, contains(100 + day));
+        }
+        expect(cancelledIds, contains(201));
+        expect(cancelledIds, contains(202));
+        expect(cancelledIds, contains(301));
+        expect(cancelledIds, contains(400));
+        expect(cancelledIds, contains(500));
+
+        // Rest timer IDs 998 and 999 must NEVER be cancelled by reminder rescheduling
+        expect(cancelledIds, isNot(contains(998)));
+        expect(cancelledIds, isNot(contains(999)));
       },
     );
   });

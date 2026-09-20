@@ -2,14 +2,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/features/dashboard/dashboard_controller.dart';
 import 'package:indifit/features/settings/settings_controller.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'support/indifit_test_harness.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('Refactored Controllers Unit Tests', () {
     setUp(() {
-      SharedPreferences.setMockInitialValues({
+      setIndiFitTestPreferences({
         'water_goal': 10,
         'water_glass_size': 300,
         'current_weight': 72.0,
@@ -42,7 +42,13 @@ void main() {
     test(
       'DashboardController loads state and updates date selection',
       () async {
-        final container = ProviderContainer();
+        final container = ProviderContainer(
+          overrides: [
+            dashboardControllerProvider.overrideWith(
+              (ref) => DashboardController(ref, loadOnInit: false),
+            ),
+          ],
+        );
         addTearDown(container.dispose);
 
         final controller = container.read(dashboardControllerProvider.notifier);
@@ -55,7 +61,13 @@ void main() {
     );
 
     test('DashboardController ignores a load started after disposal', () async {
-      final container = ProviderContainer();
+      final container = ProviderContainer(
+        overrides: [
+          dashboardControllerProvider.overrideWith(
+            (ref) => DashboardController(ref, loadOnInit: false),
+          ),
+        ],
+      );
       final controller = container.read(dashboardControllerProvider.notifier);
       container.dispose();
 

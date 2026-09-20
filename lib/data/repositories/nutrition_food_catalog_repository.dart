@@ -112,6 +112,10 @@ class NutritionFoodCatalogRepository {
     required double? proteinG,
     required double? carbohydrateG,
     required double? fatG,
+    double? fiberG,
+    double? sodiumMg,
+    double? addedSugarG,
+    double? saturatedFatG,
     String? brand,
   }) async {
     if (!servingSize.isFinite || servingSize <= 0) {
@@ -141,6 +145,10 @@ class NutritionFoodCatalogRepository {
             'protein' => proteinG,
             'carbohydrate' => carbohydrateG,
             'fat' => fatG,
+            'fibre' || 'dietary_fiber' => fiberG,
+            'sodium' => sodiumMg,
+            'added_sugar' || 'added_sugars' => addedSugarG,
+            'saturated_fat' => saturatedFatG,
             _ => null,
           },
           sourceReference: normalizedReference,
@@ -188,9 +196,16 @@ class NutritionFoodCatalogRepository {
     required double? carbohydrateG,
     required double? fatG,
     double? fibreG,
+    String? barcode,
   }) async {
     final name = displayName.trim();
     final unit = servingUnit.trim();
+    final normalizedBarcode = barcode?.trim() ?? '';
+    final storedBarcode = normalizedBarcode.isEmpty
+        ? null
+        : normalizedBarcode.length > 64
+            ? normalizedBarcode.substring(0, 64)
+            : normalizedBarcode;
     if (name.isEmpty) {
       throw const NutritionFoodCatalogError(
         'missing_food_name',
@@ -205,7 +220,7 @@ class NutritionFoodCatalogRepository {
     }
     final id = 'user-food::${const Uuid().v4()}';
     final sourceReference =
-        'user-custom-food::$id|serving=${_numberLabel(servingSize)} $unit';
+        'user-custom-food::$id|serving=${_numberLabel(servingSize)} $unit${storedBarcode == null ? '' : '|barcode=$storedBarcode'}';
     final servingDefinition = ServingDefinitionReference(
       id: 'food-serving::$id',
       revision: 'b03-food-entry-v1',
@@ -305,6 +320,38 @@ class NutritionFoodCatalogRepository {
       brand: row.brand,
       servingUnitLabel: await _servingUnitLabelFor(row.sourceRef),
     );
+  }
+
+  /// Finds a user-created food by its scanned barcode.
+  ///
+  /// Barcodes are embedded as a delimited `|barcode=<code>` token in the
+  /// food's `sourceRef` (see [createUserFood]). The SQL prefilter is
+  /// intentionally loose; exact matching is verified in Dart so a short
+  /// code never collides with a longer one sharing its prefix.
+  /// Returns null when no active user food carries exactly [barcode].
+  Future<NutritionFoodOption?> findUserFoodByBarcode(String barcode) async {
+    final code = barcode.trim();
+    if (code.isEmpty) return null;
+    final rows =
+        await (_db.select(_db.nutritionFoods)..where(
+              (table) =>
+                  table.lifecycle.equals('active') &
+                  table.sourceType.equals('user') &
+                  table.sourceRef.contains('|barcode='),
+            ))
+            .get();
+    for (final row in rows) {
+      final ref = row.sourceRef ?? '';
+      final exact = ref
+          .split('|')
+          .where((segment) => segment.startsWith('barcode='))
+          .map((segment) => segment.substring('barcode='.length).trim())
+          .any((value) => value == code);
+      if (!exact) continue;
+      final option = await getOption(row.id);
+      if (option != null) return option;
+    }
+    return null;
   }
 
   Future<List<NutritionFoodOption>> search({String query = ''}) async {

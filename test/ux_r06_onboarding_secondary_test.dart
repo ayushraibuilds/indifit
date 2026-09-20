@@ -56,7 +56,7 @@ void main() {
     );
     await tester.pump(const Duration(milliseconds: 200));
 
-    expect(find.text('1 of 4'), findsOneWidget);
+    expect(find.text('1 of 5'), findsOneWidget);
     expect(find.text('Welcome to IndiFit!'), findsOneWidget);
     expect(find.text('Skip for now'), findsOneWidget);
     expect(find.text('Understanding RPE'), findsNothing);
@@ -130,7 +130,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('What is your main goal?'), findsOneWidget);
-    expect(find.text('2 of 4'), findsOneWidget);
+    expect(find.text('2 of 5'), findsOneWidget);
     expect(find.text('What is your target weight?'), findsNothing);
     expect(find.text('Understanding RPE'), findsNothing);
     expect(tester.takeException(), isNull);

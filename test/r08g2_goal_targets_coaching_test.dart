@@ -54,7 +54,7 @@ void main() {
       expect(find.text('Maintenance'), findsWidgets);
       expect(find.text('Weight gain'), findsNothing);
       expect(find.text('Today’s target'), findsOneWidget);
-      expect(find.text('2100 kcal'), findsOneWidget);
+      expect(find.text('2,100 kcal'), findsOneWidget);
       expect(find.text('Save today’s targets'), findsOneWidget);
       expect(find.text('Adaptive coaching'), findsOneWidget);
       expect(find.textContaining('Off · IndiFit can suggest'), findsOneWidget);
@@ -90,7 +90,7 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('Coaching availability'), findsOneWidget);
-      expect(find.text('2100 kcal'), findsOneWidget);
+      expect(find.text('2,100 kcal'), findsOneWidget);
       expect(find.text('Save today’s targets'), findsOneWidget);
       await tester.ensureVisible(
         find.text(
@@ -118,13 +118,13 @@ void main() {
       );
       await _pumpForAsyncState(tester);
 
-      expect(find.text('2100 kcal'), findsOneWidget);
+      expect(find.text('2,100 kcal'), findsOneWidget);
       expect(find.text('Save today’s targets'), findsOneWidget);
 
       await _expandCoaching(tester);
 
       expect(find.text('Loading optional coaching'), findsOneWidget);
-      expect(find.text('2100 kcal'), findsOneWidget);
+      expect(find.text('2,100 kcal'), findsOneWidget);
       expect(find.text('Save today’s targets'), findsOneWidget);
     },
   );
@@ -143,7 +143,7 @@ void main() {
 
     expect(find.text('Optional coaching unavailable'), findsOneWidget);
     expect(find.text('Retry'), findsOneWidget);
-    expect(find.text('2100 kcal'), findsOneWidget);
+    expect(find.text('2,100 kcal'), findsOneWidget);
     expect(find.text('Save today’s targets'), findsOneWidget);
   });
 
@@ -176,7 +176,7 @@ void main() {
     );
     expect(find.textContaining('unavailable for this age'), findsNothing);
     expect(find.textContaining('ineligible'), findsNothing);
-    expect(find.text('2100 kcal'), findsOneWidget);
+    expect(find.text('2,100 kcal'), findsOneWidget);
     expect(find.text('Save today’s targets'), findsOneWidget);
   });
 
@@ -297,7 +297,7 @@ void main() {
       await _pumpForAsyncState(tester);
       expect(find.text('Coaching enabled'), findsOneWidget);
       expect(find.text('eligible'), findsNothing);
-      expect(find.text('2100 kcal'), findsOneWidget);
+      expect(find.text('2,100 kcal'), findsOneWidget);
     },
   );
 
@@ -461,7 +461,7 @@ void main() {
 
       expect(find.text('Goal & targets'), findsOneWidget);
       expect(find.text('Adaptive coaching'), findsOneWidget);
-      expect(find.text('2100 kcal'), findsOneWidget);
+      expect(find.text('2,100 kcal'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );

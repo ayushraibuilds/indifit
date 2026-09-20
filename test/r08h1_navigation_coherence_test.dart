@@ -52,7 +52,6 @@ void main() {
       );
       addTearDown(container.dispose);
       final router = container.read(appRouterProvider);
-      addTearDown(router.dispose);
 
       final routes = router.configuration.routes.whereType<GoRoute>();
       final workout = routes.singleWhere((route) => route.path == '/workout');

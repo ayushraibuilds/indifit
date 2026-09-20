@@ -56,7 +56,7 @@ class PrivacyDisclosureCard extends StatelessWidget {
           ),
           const SizedBox(height: B05Layout.space12),
           Text(
-            'AI meal tools can send text or photo queries when you use them. Online food search can send the search text needed for that feature. Photos and other device files are not included in backups. Crash diagnostics are optional and off by default.',
+            'IndiFit stores your logs on this device. Connected features like nutrition label scanning process photos ephemerally and never retain them. Online food search sends only the search or barcode request needed for that feature. Crash diagnostics are optional and off by default.',
             style: B05Typography.body(context),
           ),
           const SizedBox(height: B05Layout.space12),

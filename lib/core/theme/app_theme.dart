@@ -49,6 +49,7 @@ class AppTheme {
       outlinedButtonTheme: _outlinedButtonTheme(colors),
       textButtonTheme: _textButtonTheme(colors),
       chipTheme: _chipTheme(colors),
+      snackBarTheme: _snackBarTheme(colors),
 
       // Input Decoration
       inputDecorationTheme: InputDecorationTheme(
@@ -113,6 +114,7 @@ class AppTheme {
       outlinedButtonTheme: _outlinedButtonTheme(colors),
       textButtonTheme: _textButtonTheme(colors),
       chipTheme: _chipTheme(colors),
+      snackBarTheme: _snackBarTheme(colors),
       inputDecorationTheme: InputDecorationTheme(
         fillColor: colors.inset,
         filled: true,
@@ -284,4 +286,20 @@ class AppTheme {
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
   );
+
+  static SnackBarThemeData _snackBarTheme(B05SemanticColors colors) =>
+      SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        elevation: 6.0,
+        backgroundColor: colors.section,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12.0),
+          side: BorderSide(color: colors.border),
+        ),
+        contentTextStyle: TextStyle(
+          color: colors.textPrimary,
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+        ),
+      );
 }

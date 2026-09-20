@@ -13,8 +13,6 @@ import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/features/coaching/b04_production_surface_controller.dart';
 import 'package:indifit/features/dashboard/today_surface_controller.dart';
-import 'package:indifit/features/food_log/ai_meal_logger_screen.dart';
-import 'package:indifit/features/food_log/food_log_surface.dart';
 import 'package:indifit/features/food_log/food_search_screen.dart';
 import 'package:indifit/features/onboarding/b05_adaptive_onboarding.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -41,66 +39,7 @@ void main() {
     }
   });
 
-  testWidgets('AI failure keeps input and opens manual food search', (
-    tester,
-  ) async {
-    SharedPreferences.setMockInitialValues({'offline_only': true});
-    final prefs = await SharedPreferences.getInstance();
-    final database = AppDatabase.memory();
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          databaseProvider.overrideWithValue(database),
-          foodLogsForDayProvider.overrideWith((ref, date) async => []),
-          privacyPolicyProvider.overrideWith(
-            (ref) => PrivacyPolicyNotifier(prefs),
-          ),
-        ],
-        child: MaterialApp(
-          theme: AppTheme.lightTheme,
-          home: AiMealLoggerScreen(
-            mealType: 'dinner',
-            selectedDate: DateTime(2026, 8, 7),
-          ),
-        ),
-      ),
-    );
-    await tester.pump();
-
-    final description = find.byType(TextField).first;
-    await tester.enterText(description, '2 rotis with dal');
-    await tester.pump();
-    await tester.ensureVisible(find.text('Estimate nutrition'));
-    await tester.tap(find.byType(FilledButton));
-    await tester.pump(const Duration(milliseconds: 100));
-
-    expect(find.text('Estimate unavailable'), findsOneWidget);
-    expect(find.text('Search foods instead'), findsOneWidget);
-    expect(find.byType(SnackBar), findsNothing);
-
-    await tester.tap(find.text('Search foods instead'));
-    for (var i = 0; i < 5; i++) {
-      await tester.pump(const Duration(milliseconds: 100));
-    }
-    expect(find.byType(FoodSearchScreen), findsOneWidget);
-    final fallbackSearch = tester.widget<FoodSearchScreen>(
-      find.byType(FoodSearchScreen),
-    );
-    expect(fallbackSearch.mealType, 'dinner');
-    expect(fallbackSearch.selectedDate, DateTime(2026, 8, 7));
-
-    Navigator.of(tester.element(find.byType(FoodSearchScreen))).pop();
-    for (var i = 0; i < 5; i++) {
-      await tester.pump(const Duration(milliseconds: 100));
-    }
-    final restoredField = tester.widget<TextField>(
-      find.byType(TextField).first,
-    );
-    expect(restoredField.controller?.text, '2 rotis with dal');
-    await tester.pumpWidget(const SizedBox.shrink());
-    await tester.pump();
-  });
 
   test('skipped setup keeps the B04 production context fail-closed', () async {
     SharedPreferences.setMockInitialValues({});
@@ -307,6 +246,7 @@ void main() {
     },
   );
 }
+
 
 class _BreakfastReflectionHarness extends ConsumerWidget {
   const _BreakfastReflectionHarness({required this.selectedDate});

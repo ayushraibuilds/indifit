@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/utils/encryption_helper.dart';
 
@@ -9,6 +11,7 @@ void main() {
 
       final encrypted = EncryptionHelper.encrypt(originalText, password);
       expect(encrypted, isNot(equals(originalText)));
+      expect(EncryptionHelper.encryptionVersionOf(encrypted), 2);
 
       final decrypted = EncryptionHelper.decrypt(encrypted, password);
       expect(decrypted, equals(originalText));
@@ -43,6 +46,39 @@ void main() {
       expect(
         () => EncryptionHelper.decrypt(corruptBase64, 'somePassword'),
         throwsA(isA<FormatException>()),
+      );
+    });
+
+    test('restores historical V1 / 10k backup ciphertext', () {
+      const legacyCiphertext =
+          'SU5ESUZJVF9HQ01fdjE6AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaG6Ye2tO2EvkffsttUr6KQ6x80RkibjOcLDv6XvE5pNltYnrZyCo=';
+
+      expect(EncryptionHelper.encryptionVersionOf(legacyCiphertext), 1);
+      expect(
+        EncryptionHelper.decrypt(legacyCiphertext, 'legacyPassword'),
+        'legacy backup payload',
+      );
+    });
+
+    test('rejects tampered V2 KDF parameters before expensive derivation', () {
+      final encrypted = EncryptionHelper.encrypt('payload', 'password');
+      final bytes = base64.decode(encrypted);
+      const headerLength = 15;
+      bytes[headerLength] = 0;
+      bytes[headerLength + 1] = 0;
+      bytes[headerLength + 2] = 0;
+      bytes[headerLength + 3] = 1;
+      final tampered = base64.encode(bytes);
+
+      expect(
+        () => EncryptionHelper.decrypt(tampered, 'password'),
+        throwsA(
+          isA<FormatException>().having(
+            (error) => error.message,
+            'message',
+            contains('KDF parameters'),
+          ),
+        ),
       );
     });
   });

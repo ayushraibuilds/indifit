@@ -47,7 +47,7 @@ void main(List<String> arguments) {
         recursive: true,
         followLinks: false,
       )) {
-        if (entity is File) {
+        if (entity is File && !entity.path.endsWith('.gitkeep')) {
           productionFiles.add(entity.path.replaceAll('\\', '/'));
         }
       }

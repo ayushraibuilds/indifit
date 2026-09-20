@@ -6,14 +6,12 @@ import 'package:uuid/uuid.dart';
 
 import '../../core/di/providers.dart';
 import '../../core/presentation/consumer_count_label.dart';
-import '../../core/presentation/product_failure_presentation.dart';
-import '../../core/theme/colors.dart';
+import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/utils/app_logger.dart';
-import '../../data/models/b02_execution_models.dart';
 import '../../data/repositories/program_activation_coordinator.dart';
 import '../../data/repositories/program_repository.dart';
 import '../../data/repositories/workout_repository.dart';
-import '../workout_player/widgets/b02_execution_semantics.dart';
+import 'widgets/program_review_helpers.dart';
 
 /// Screen for reviewing program graph, selecting start local date and timezone, and publishing/activating.
 class ProgramReviewScreen extends ConsumerStatefulWidget {
@@ -117,7 +115,7 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
       );
       if (mounted) {
         setState(() {
-          _activationError = _activationFailureMessage(error);
+          _activationError = activationFailureMessage(error);
           _isLoading = false;
         });
       }
@@ -262,7 +260,7 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Card(
-                    color: AppColors.cardBackground,
+                    color: context.b05Colors.section,
                     child: Padding(
                       padding: const EdgeInsets.all(16),
                       child: Column(
@@ -296,7 +294,7 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
                   ),
                   const SizedBox(height: 12),
                   ListTile(
-                    tileColor: AppColors.cardBackground,
+                    tileColor: context.b05Colors.section,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -429,7 +427,7 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
                         ListTile(
                           dense: true,
                           title: Text(
-                            '${_groupTypeLabel(group.groupType)} · ${group.roundCount} rounds',
+                            '${groupTypeLabel(group.groupType)} · ${group.roundCount} rounds',
                           ),
                           subtitle: Text(
                             '${ConsumerCountLabel.format(detail.groupMembers.where((member) => member.exerciseGroupId == group.id).length, 'exercise')} in this group',
@@ -460,8 +458,8 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
                             : 'Try again',
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.black,
+                        backgroundColor: context.b05Colors.action,
+                        foregroundColor: context.b05Colors.onAction,
                         textStyle: TextStyle(
                           fontFamily: 'Outfit',
                           fontSize: 16,
@@ -488,18 +486,3 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
   };
 }
 
-String _activationFailureMessage(Object error) {
-  if (error is ActivationRejectedException &&
-      error.message.contains('existing workout draft')) {
-    return 'Finish or discard your current workout before using this plan.';
-  }
-  return ProductFailurePresentation.fromError(error).message;
-}
-
-String _groupTypeLabel(String raw) {
-  try {
-    return b02ExecutionGroupTypeLabel(B02GroupType.parse(raw));
-  } catch (_) {
-    return 'Grouped exercises';
-  }
-}

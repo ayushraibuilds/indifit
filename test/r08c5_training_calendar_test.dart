@@ -445,18 +445,16 @@ void main() {
     // 9. TRN-15: OccurrenceActionsSheet has no Start/Resume
     // -----------------------------------------------------------------------
     testWidgets(
-      '9. TRN-15: OccurrenceActionsSheet has no Start/Resume WorkoutListTile',
+      '9. TRN-15: OccurrenceActionsSheet displays Start Workout for startable session',
       (tester) async {
         await tester.pumpWidget(_buildActionsSheetApp(mondayPlanned));
         await tester.pumpAndSettle();
 
         expect(find.text('Day A: Lower'), findsOneWidget);
+        expect(find.widgetWithText(ListTile, 'Start Workout'), findsOneWidget);
         expect(find.text('Reschedule'), findsOneWidget);
         expect(find.text('Skip Workout'), findsOneWidget);
         expect(find.text('Cancel Workout'), findsOneWidget);
-        // TRN-15: no redundant Start/Resume in action sheet
-        expect(find.widgetWithText(ListTile, 'Start Workout'), findsNothing);
-        expect(find.widgetWithText(ListTile, 'Resume Workout'), findsNothing);
       },
     );
 

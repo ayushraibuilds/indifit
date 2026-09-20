@@ -5,7 +5,8 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/fixtures/b05_foundation_registry.dart';
 import 'package:indifit/core/fixtures/b05_third_party_asset_manifest.dart';
-import 'package:indifit/features/media/r08_repdb_asset_pipeline.dart';
+
+import '../tool/src/r08_repdb_asset_pipeline.dart';
 
 void main() {
   test(

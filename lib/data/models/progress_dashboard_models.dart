@@ -286,3 +286,52 @@ class ProgressDashboardSnapshot {
       (unavailableSections.contains(ProgressDataSection.measurements) ||
           unavailableSections.contains(ProgressDataSection.workouts));
 }
+
+class R08F4ConsistencySummary {
+  const R08F4ConsistencySummary({
+    required this.sessionCount,
+    required this.trainingDayCount,
+    required this.trainingDays,
+    required this.workingSetsCount,
+    required this.partialSessionCount,
+    required this.activityTypeCounts,
+  });
+
+  final int sessionCount;
+  final int trainingDayCount;
+  final Set<String> trainingDays;
+  final int workingSetsCount;
+  final int partialSessionCount;
+  final Map<String, int> activityTypeCounts;
+
+  bool get hasMultipleSessionsOnSameDay => sessionCount > trainingDayCount;
+  bool get hasAnyWorkouts => sessionCount > 0;
+
+  static R08F4ConsistencySummary summarize(
+    Iterable<ProgressWorkoutRecord> workouts,
+  ) {
+    final list = workouts.toList(growable: false);
+    final sessionCount = list.length;
+    final trainingDays = <String>{for (final w in list) w.localDate};
+    final workingSetsCount = list.fold<int>(
+      0,
+      (sum, w) => sum + w.workingSetsCount,
+    );
+    final partialSessionCount = list.where((w) => w.isPartial).length;
+    final activityTypeCounts = <String, int>{};
+    for (final w in list) {
+      activityTypeCounts[w.activityType] =
+          (activityTypeCounts[w.activityType] ?? 0) + 1;
+    }
+
+    return R08F4ConsistencySummary(
+      sessionCount: sessionCount,
+      trainingDayCount: trainingDays.length,
+      trainingDays: Set.unmodifiable(trainingDays),
+      workingSetsCount: workingSetsCount,
+      partialSessionCount: partialSessionCount,
+      activityTypeCounts: Map.unmodifiable(activityTypeCounts),
+    );
+  }
+}
+

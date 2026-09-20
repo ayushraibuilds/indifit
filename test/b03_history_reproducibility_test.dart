@@ -9,20 +9,22 @@ import 'package:indifit/data/repositories/nutrition_consumption_repository.dart'
 import 'package:indifit/data/repositories/nutrition_protein_distribution_repository.dart';
 import 'package:indifit/data/repositories/nutrition_read_model_repository.dart';
 
+import 'support/indifit_test_harness.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late AppDatabase db;
+  late TestDatabaseScope databases;
   late NutrientRegistry registry;
 
   setUp(() {
-    db = AppDatabase.memory();
+    databases = registerTestDatabaseScope();
+    db = databases.create();
     registry = NutrientRegistry.fromAssetFileSync(
       'assets/data/nutrient_registry.json',
     );
   });
-
-  tearDown(() => db.close());
 
   test(
     'repository reads immutable history, excludes superseded events, and keeps legacy source explicit',
@@ -399,8 +401,7 @@ void main() {
         localDate: '2026-08-04',
       );
       final graph = await NutritionBackupGraph.capture(db);
-      final restored = AppDatabase.memory();
-      addTearDown(restored.close);
+      final restored = databases.create();
       await NutritionBackupGraph.fromJson(graph.toJson()).restoreInto(restored);
 
       final restoredConsumption = NutritionConsumptionRepository(

@@ -6,6 +6,8 @@ import 'package:uuid/uuid.dart';
 import '../database/app_database.dart';
 import '../models/b02_execution_models.dart';
 import '../models/b02_group_plan_validator.dart';
+import 'program/program_authoring_validator.dart';
+import 'program/program_snapshot_cloner.dart';
 
 /// An explicitly preserved unresolved exercise reference. New authoring must
 /// select a stable exercise ID; this flag exists only for import/compatibility
@@ -114,6 +116,31 @@ class ProgramBlockInput {
   });
 }
 
+/// One reviewed, immutable source graph shipped with the offline app.
+///
+/// Bundled sources use deterministic identities so catalogue initialization is
+/// idempotent. Choosing one still creates a normal user-owned draft version;
+/// this input does not add another activation or execution authority.
+class BundledProgramSourceInput {
+  final String programId;
+  final String sourceVersionId;
+  final String name;
+  final String? goal;
+  final String? notes;
+  final DateTime publishedAtUtc;
+  final List<ProgramBlockInput> blocks;
+
+  const BundledProgramSourceInput({
+    required this.programId,
+    required this.sourceVersionId,
+    required this.name,
+    this.goal,
+    this.notes,
+    required this.publishedAtUtc,
+    required this.blocks,
+  });
+}
+
 /// Complete, ordered, immutable read model for a version graph.
 class ProgramDetailAggregate {
   final Program program;
@@ -143,8 +170,17 @@ class ProgramDetailAggregate {
 class ProgramRepository {
   final AppDatabase db;
   final Uuid _uuid;
+  final ProgramAuthoringValidator _validator;
+  final ProgramSnapshotCloner _cloner;
 
-  ProgramRepository(this.db, [Uuid? uuid]) : _uuid = uuid ?? const Uuid();
+  ProgramRepository(
+    this.db, [
+    Uuid? uuid,
+    ProgramAuthoringValidator? validator,
+    ProgramSnapshotCloner? cloner,
+  ]) : _uuid = uuid ?? const Uuid(),
+       _validator = validator ?? const ProgramAuthoringValidator(),
+       _cloner = cloner ?? const ProgramSnapshotCloner();
 
   Future<List<Program>> getAllPrograms({bool includeArchived = false}) {
     final query = db.select(db.programs)
@@ -178,7 +214,7 @@ class ProgramRepository {
     required String name,
     String? notes,
   }) async {
-    _requireText(name, 'Program name');
+    _validator.requireText(name, 'Program name');
     final changed =
         await (db.update(
           db.programs,
@@ -267,8 +303,8 @@ class ProgramRepository {
     String? notes,
     List<ProgramBlockInput> blocks = const [],
   }) async {
-    _requireText(name, 'Program name');
-    await _validateGraph(blocks);
+    _validator.requireText(name, 'Program name');
+    await _validator.validateGraph(db, blocks);
     final now = DateTime.now().toUtc();
     final programId = _uuid.v4();
     final versionId = _uuid.v4();
@@ -296,11 +332,116 @@ class ProgramRepository {
     });
   }
 
+  /// Installs reviewed offline starter sources through the canonical B01
+  /// graph validation and persistence boundary.
+  ///
+  /// Existing sources are never overwritten. Their published version remains
+  /// immutable, while selection uses [copyToNewDraftVersion] before ordinary
+  /// activation and occurrence materialisation.
+  Future<void> ensureBundledProgramSources(
+    List<BundledProgramSourceInput> sources,
+  ) async {
+    if (sources.isEmpty) return;
+
+    final programIds = <String>{};
+    final versionIds = <String>{};
+    for (final source in sources) {
+      _validator.requireText(source.programId, 'Bundled program ID');
+      _validator.requireText(source.sourceVersionId, 'Bundled source version ID');
+      _validator.requireText(source.name, 'Bundled program name');
+      if (!programIds.add(source.programId.trim())) {
+        throw ArgumentError(
+          'Bundled program IDs must be unique: ${source.programId}.',
+        );
+      }
+      if (!versionIds.add(source.sourceVersionId.trim())) {
+        throw ArgumentError(
+          'Bundled source version IDs must be unique: ${source.sourceVersionId}.',
+        );
+      }
+    }
+
+    final existingPrograms = await (db.select(
+      db.programs,
+    )..where((table) => table.id.isIn(programIds))).get();
+    final existingVersions = await (db.select(
+      db.programVersions,
+    )..where((table) => table.id.isIn(versionIds))).get();
+    if (existingPrograms.length == sources.length &&
+        existingVersions.length == sources.length) {
+      for (final source in sources) {
+        _validator.validateExistingBundledSource(
+          source,
+          existingPrograms,
+          existingVersions,
+        );
+      }
+      return;
+    }
+
+    for (final source in sources) {
+      await _validator.validateGraph(db, source.blocks);
+    }
+
+    await db.transaction(() async {
+      for (final source in sources) {
+        final existingProgram =
+            await (db.select(db.programs)
+                  ..where((table) => table.id.equals(source.programId)))
+                .getSingleOrNull();
+        final existingVersion =
+            await (db.select(db.programVersions)
+                  ..where((table) => table.id.equals(source.sourceVersionId)))
+                .getSingleOrNull();
+        if (existingProgram != null || existingVersion != null) {
+          if (existingProgram == null || existingVersion == null) {
+            throw StateError(
+              'Bundled program source ${source.programId} is incomplete.',
+            );
+          }
+          _validator.validateExistingBundledSource(
+            source,
+            [existingProgram],
+            [existingVersion],
+          );
+          continue;
+        }
+
+        final publishedAt = source.publishedAtUtc.toUtc();
+        await db
+            .into(db.programs)
+            .insert(
+              ProgramsCompanion.insert(
+                id: source.programId,
+                name: source.name.trim(),
+                goal: Value(_nullableTrim(source.goal)),
+                notes: Value(_nullableTrim(source.notes)),
+                createdAtUtc: publishedAt,
+              ),
+            );
+        await db
+            .into(db.programVersions)
+            .insert(
+              ProgramVersionsCompanion.insert(
+                id: source.sourceVersionId,
+                programId: source.programId,
+                versionNumber: 1,
+                status: 'published',
+                origin: const Value('user'),
+                createdAtUtc: publishedAt,
+                publishedAtUtc: Value(publishedAt),
+              ),
+            );
+        await _insertVersionGraph(source.sourceVersionId, source.blocks);
+      }
+    });
+  }
+
   Future<String> createDraftVersion(
     String programId, {
     List<ProgramBlockInput> blocks = const [],
   }) async {
-    await _validateGraph(blocks);
+    await _validator.validateGraph(db, blocks);
     final now = DateTime.now().toUtc();
     final versionId = _uuid.v4();
 
@@ -334,7 +475,7 @@ class ProgramRepository {
     String versionId, {
     required List<ProgramBlockInput> blocks,
   }) async {
-    await _validateGraph(blocks);
+    await _validator.validateGraph(db, blocks);
     await db.transaction(() async {
       await _requireDraft(versionId);
       await _deleteVersionGraph(versionId);
@@ -354,8 +495,8 @@ class ProgramRepository {
     String? notes,
     required List<ProgramBlockInput> blocks,
   }) async {
-    _requireText(name, 'Program name');
-    await _validateGraph(blocks);
+    _validator.requireText(name, 'Program name');
+    await _validator.validateGraph(db, blocks);
     await db.transaction(() async {
       final version = await _requireDraft(versionId);
       await (db.update(
@@ -501,7 +642,7 @@ class ProgramRepository {
         restAfterRoundSeconds: group.restAfterRoundSeconds,
         label: group.label,
         members: [
-          ...members.map(_memberRowAsDomain),
+          ...members.map(_validator.memberRowAsDomain),
           B02ExerciseGroupMember(
             id: memberId,
             exercisePrescriptionId: input.exercisePrescriptionId,
@@ -542,7 +683,7 @@ class ProgramRepository {
                     ordinal: input.ordinal,
                     transitionRestSeconds: input.transitionRestSeconds,
                   )
-                : _memberRowAsDomain(row),
+                : _validator.memberRowAsDomain(row),
           )
           .toList(growable: false);
       final candidate = B02ExerciseGroup(
@@ -630,7 +771,7 @@ class ProgramRepository {
       final groups = await (db.select(
         db.exerciseGroups,
       )..where((t) => t.sessionTemplateId.equals(sessionTemplateId))).get();
-      _requireExactOrder(
+      _validator.requireExactOrder(
         groups.map((group) => group.id).toSet(),
         orderedGroupIds,
         'group',
@@ -664,7 +805,7 @@ class ProgramRepository {
       final members = await (db.select(
         db.exerciseGroupMembers,
       )..where((t) => t.exerciseGroupId.equals(groupId))).get();
-      _requireExactOrder(
+      _validator.requireExactOrder(
         members.map((member) => member.id).toSet(),
         orderedMemberIds,
         'group member',
@@ -723,7 +864,12 @@ class ProgramRepository {
               createdAtUtc: now,
             ),
           );
-      await _copyGraph(source, newVersionId);
+      await _cloner.copyGraph(
+        db: db,
+        uuid: _uuid,
+        source: source,
+        newVersionId: newVersionId,
+      );
       return newVersionId;
     });
   }
@@ -1010,125 +1156,6 @@ class ProgramRepository {
     }
   }
 
-  Future<void> _copyGraph(
-    ProgramDetailAggregate source,
-    String newVersionId,
-  ) async {
-    for (final block in source.blocks) {
-      final newBlockId = _uuid.v4();
-      await db
-          .into(db.programBlocks)
-          .insert(
-            ProgramBlocksCompanion.insert(
-              id: newBlockId,
-              programVersionId: newVersionId,
-              ordinal: block.ordinal,
-              name: block.name,
-              description: Value(block.description),
-            ),
-          );
-      for (final week in source.weeks.where(
-        (row) => row.programBlockId == block.id,
-      )) {
-        final newWeekId = _uuid.v4();
-        await db
-            .into(db.programWeeks)
-            .insert(
-              ProgramWeeksCompanion.insert(
-                id: newWeekId,
-                programVersionId: newVersionId,
-                programBlockId: newBlockId,
-                ordinalInBlock: week.ordinalInBlock,
-                programWeekOrdinal: week.programWeekOrdinal,
-                name: Value(week.name),
-                isDeload: Value(week.isDeload),
-              ),
-            );
-        for (final template in source.sessionTemplates.where(
-          (row) => row.programWeekId == week.id,
-        )) {
-          final newTemplateId = _uuid.v4();
-          await db
-              .into(db.sessionTemplates)
-              .insert(
-                SessionTemplatesCompanion.insert(
-                  id: newTemplateId,
-                  programWeekId: newWeekId,
-                  ordinal: template.ordinal,
-                  name: template.name,
-                  plannedWeekday: template.plannedWeekday,
-                  plannedStartMinute: Value(template.plannedStartMinute),
-                  notes: Value(template.notes),
-                  activityType: Value(template.activityType),
-                  defaultRestSeconds: Value(template.defaultRestSeconds),
-                ),
-              );
-          final prescriptionIdsBySourceId = <String, String>{};
-          for (final prescription in source.exercisePrescriptions.where(
-            (row) => row.sessionTemplateId == template.id,
-          )) {
-            final newPrescriptionId = _uuid.v4();
-            prescriptionIdsBySourceId[prescription.id] = newPrescriptionId;
-            await db
-                .into(db.exercisePrescriptions)
-                .insert(
-                  ExercisePrescriptionsCompanion.insert(
-                    id: newPrescriptionId,
-                    sessionTemplateId: newTemplateId,
-                    ordinal: prescription.ordinal,
-                    exerciseId: Value(prescription.exerciseId),
-                    exerciseNameSnapshot: prescription.exerciseNameSnapshot,
-                    plannedSets: prescription.plannedSets,
-                    repsRange: prescription.repsRange,
-                  ),
-                );
-          }
-          for (final group in source.groups.where(
-            (row) => row.sessionTemplateId == template.id,
-          )) {
-            final newGroupId = _uuid.v4();
-            await db
-                .into(db.exerciseGroups)
-                .insert(
-                  ExerciseGroupsCompanion.insert(
-                    id: newGroupId,
-                    sessionTemplateId: newTemplateId,
-                    ordinal: group.ordinal,
-                    groupType: group.groupType,
-                    roundCount: group.roundCount,
-                    restAfterRoundSeconds: Value(group.restAfterRoundSeconds),
-                    label: Value(group.label),
-                  ),
-                );
-            for (final member in source.groupMembers.where(
-              (row) => row.exerciseGroupId == group.id,
-            )) {
-              final newPrescriptionId =
-                  prescriptionIdsBySourceId[member.exercisePrescriptionId];
-              if (newPrescriptionId == null) {
-                throw StateError(
-                  'Group member ${member.id} has no copied prescription.',
-                );
-              }
-              await db
-                  .into(db.exerciseGroupMembers)
-                  .insert(
-                    ExerciseGroupMembersCompanion.insert(
-                      id: _uuid.v4(),
-                      exerciseGroupId: newGroupId,
-                      exercisePrescriptionId: newPrescriptionId,
-                      ordinal: member.ordinal,
-                      transitionRestSeconds: Value(
-                        member.transitionRestSeconds,
-                      ),
-                    ),
-                  );
-            }
-          }
-        }
-      }
-    }
-  }
 
   Future<SessionTemplate> _requireDraftTemplate(String templateId) async {
     final template = await (db.select(
@@ -1298,34 +1325,11 @@ class ProgramRepository {
             label: group.label,
             members: members
                 .where((member) => member.exerciseGroupId == group.id)
-                .map(_memberRowAsDomain)
+                .map(_validator.memberRowAsDomain)
                 .toList(growable: false),
           ),
         )
         .toList(growable: false);
-  }
-
-  static B02ExerciseGroupMember _memberRowAsDomain(ExerciseGroupMember member) {
-    return B02ExerciseGroupMember(
-      id: member.id,
-      exercisePrescriptionId: member.exercisePrescriptionId,
-      ordinal: member.ordinal,
-      transitionRestSeconds: member.transitionRestSeconds,
-    );
-  }
-
-  static void _requireExactOrder(
-    Set<String> actualIds,
-    List<String> requestedIds,
-    String label,
-  ) {
-    if (requestedIds.length != actualIds.length ||
-        requestedIds.toSet().length != requestedIds.length ||
-        requestedIds.any((id) => !actualIds.contains(id))) {
-      throw ArgumentError(
-        'The requested $label order must contain every existing $label exactly once.',
-      );
-    }
   }
 
   Future<void> _deleteVersionGraph(String versionId) async {
@@ -1394,153 +1398,6 @@ class ProgramRepository {
         'The active program version must be replaced or cleared first.',
       );
     }
-  }
-
-  Future<void> _validateGraph(List<ProgramBlockInput> blocks) async {
-    _validateOrdinals('block', blocks.map((block) => block.ordinal));
-    var expectedProgramWeekOrdinal = 0;
-    final exerciseIds = <String>{};
-    final prescriptionRowIds = <String>{};
-    final groupRowIds = <String>{};
-    final groupMemberRowIds = <String>{};
-    for (final block in blocks) {
-      _requireText(block.name, 'Block name');
-      _validateOrdinals(
-        'week in block ${block.ordinal}',
-        block.weeks.map((week) => week.ordinalInBlock),
-      );
-      for (final week in block.weeks) {
-        if (week.programWeekOrdinal != expectedProgramWeekOrdinal++) {
-          throw ArgumentError(
-            'Program week ordinals must be contiguous from zero.',
-          );
-        }
-        _validateOrdinals(
-          'template in week ${week.programWeekOrdinal}',
-          week.templates.map((template) => template.ordinal),
-        );
-        for (final template in week.templates) {
-          _requireText(template.name, 'Session template name');
-          if (template.plannedWeekday < 1 || template.plannedWeekday > 7) {
-            throw ArgumentError('Planned weekday must be between 1 and 7.');
-          }
-          final minute = template.plannedStartMinute;
-          if (minute != null && (minute < 0 || minute > 1439)) {
-            throw ArgumentError(
-              'Planned start minute must be between 0 and 1439.',
-            );
-          }
-          _validateOrdinals(
-            'prescription in template ${template.ordinal}',
-            template.prescriptions.map((p) => p.ordinal),
-          );
-          final templatePrescriptionIds = <String>{};
-          for (final prescription in template.prescriptions) {
-            final prescriptionRowId = prescription.id;
-            if (prescriptionRowId != null) {
-              _requireText(prescriptionRowId, 'Exercise prescription ID');
-              if (!prescriptionRowIds.add(prescriptionRowId.trim()) ||
-                  !templatePrescriptionIds.add(prescriptionRowId.trim())) {
-                throw ArgumentError(
-                  'Exercise prescription IDs must be unique in a program graph.',
-                );
-              }
-            }
-            _requireText(
-              prescription.exerciseNameSnapshot,
-              'Exercise name snapshot',
-            );
-            _requireText(prescription.repsRange, 'Reps range');
-            if (prescription.plannedSets <= 0) {
-              throw ArgumentError('Planned sets must be greater than zero.');
-            }
-            final id = prescription.exerciseId;
-            if (id == null || id.trim().isEmpty) {
-              if (!prescription.allowUnresolvedExerciseFallback) {
-                throw ArgumentError(
-                  'New prescriptions require a stable exercise ID; unresolved fallback must be explicit.',
-                );
-              }
-            } else {
-              exerciseIds.add(id);
-            }
-          }
-          final groups = template.groups
-              .map(
-                (group) => B02ExerciseGroup(
-                  id: group.id?.trim().isNotEmpty == true
-                      ? group.id!.trim()
-                      : 'group-${block.ordinal}-${week.programWeekOrdinal}-${template.ordinal}-${group.ordinal}',
-                  sessionTemplateId:
-                      'template-${block.ordinal}-${week.programWeekOrdinal}-${template.ordinal}',
-                  ordinal: group.ordinal,
-                  groupType: group.groupType,
-                  roundCount: group.roundCount,
-                  restAfterRoundSeconds: group.restAfterRoundSeconds,
-                  label: group.label,
-                  members: group.members
-                      .map(
-                        (member) => B02ExerciseGroupMember(
-                          id: member.id?.trim().isNotEmpty == true
-                              ? member.id!.trim()
-                              : 'member-${block.ordinal}-${week.programWeekOrdinal}-${template.ordinal}-${group.ordinal}-${member.ordinal}',
-                          exercisePrescriptionId: member.exercisePrescriptionId,
-                          ordinal: member.ordinal,
-                          transitionRestSeconds: member.transitionRestSeconds,
-                        ),
-                      )
-                      .toList(growable: false),
-                ),
-              )
-              .toList(growable: false);
-          for (final group in groups) {
-            if (!groupRowIds.add(group.id)) {
-              throw ArgumentError(
-                'Exercise group IDs must be unique in a program graph.',
-              );
-            }
-            for (final member in group.members) {
-              if (!groupMemberRowIds.add(member.id)) {
-                throw ArgumentError(
-                  'Exercise group member IDs must be unique in a program graph.',
-                );
-              }
-            }
-          }
-          B02GroupPlanValidator.validate(
-            groups: groups,
-            prescriptionIds: templatePrescriptionIds,
-          );
-        }
-      }
-    }
-    if (exerciseIds.isEmpty) return;
-    final found = await (db.select(
-      db.exercises,
-    )..where((t) => t.stableId.isIn(exerciseIds.toList()))).get();
-    final foundIds = found
-        .map((exercise) => exercise.stableId)
-        .whereType<String>()
-        .toSet();
-    final missing = exerciseIds.difference(foundIds);
-    if (missing.isNotEmpty) {
-      throw ArgumentError(
-        'Unknown stable exercise IDs: ${missing.join(', ')}.',
-      );
-    }
-  }
-
-  static void _validateOrdinals(String label, Iterable<int> ordinals) {
-    final values = ordinals.toList()..sort();
-    for (var index = 0; index < values.length; index++) {
-      if (values[index] != index) {
-        throw ArgumentError('$label ordinals must be contiguous from zero.');
-      }
-    }
-  }
-
-  static void _requireText(String value, String label) {
-    if (value.trim().isEmpty) throw ArgumentError('$label must not be blank.');
   }
 
   static String? _nullableTrim(String? value) {

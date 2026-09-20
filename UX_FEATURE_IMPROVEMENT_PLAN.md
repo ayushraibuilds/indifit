@@ -1,10 +1,13 @@
-# IndiFit — 18-Point UX & Feature Improvement Plan
+# IndiFit — 18-Point UX & Feature Improvement Plan (ARCHIVED)
 
-> **Created**: 2026-07-24
-> **Status**: Planning — awaiting approval to begin execution
-> **Estimated effort**: ~3–4 focused days for the 15 NOW items
+> [!WARNING]
+> **STATUS: ARCHIVED & SUPERSEDED**  
+> This document is frozen and preserved for historical context under `archive/legacy_plans/UX_FEATURE_IMPROVEMENT_PLAN.md`.  
+> Active UX audits and engineering roadmaps are canonical in:  
+> **[`docs/audit/CROSS_AGENT_COMPREHENSIVE_AUDIT_REPORT.md`](docs/audit/CROSS_AGENT_COMPREHENSIVE_AUDIT_REPORT.md)**.
 
 ---
+
 
 ## Scope Decisions (Confirmed)
 

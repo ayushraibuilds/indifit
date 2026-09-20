@@ -260,6 +260,7 @@ void main() {
         privacyPolicy: const PrivacyPolicy(
           isOfflineOnly: true,
           isTelemetryEnabled: false,
+          connectedAiEnabled: true,
         ),
       );
 
@@ -269,6 +270,25 @@ void main() {
       expect(offlineResult.status, B04OptionalAiAssistanceStatus.offline);
       expect(offlineProvider.calls, 0);
       expect(evaluation.toRedactedMap(), equals(before));
+
+      final disabledProvider = _FakeProvider(
+        response: (envelope) => _validResponse(envelope),
+      );
+      final disabled = B04OptionalAiAssistanceService(
+        consent: _FakeConsentReader(enabled: true),
+        provider: disabledProvider,
+        privacyPolicy: const PrivacyPolicy(
+          isOfflineOnly: false,
+          isTelemetryEnabled: false,
+          connectedAiEnabled: false,
+        ),
+      );
+      final disabledResult = await disabled.assist(
+        deterministicEvaluation: evaluation,
+      );
+      expect(disabledResult.status, B04OptionalAiAssistanceStatus.disabled);
+      expect(disabledResult.reasonCode, 'ai_disabled_v1');
+      expect(disabledProvider.calls, 0);
 
       final failingProvider = _FakeProvider(failure: StateError('timeout'));
       final failed = await _service(
@@ -444,6 +464,7 @@ void main() {
 const _onlinePolicy = PrivacyPolicy(
   isOfflineOnly: false,
   isTelemetryEnabled: false,
+  connectedAiEnabled: true,
 );
 
 B04OptionalAiAssistanceService _service(_FakeProvider provider) =>

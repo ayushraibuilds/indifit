@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:indifit/core/di/providers.dart';
 import 'package:indifit/core/nutrients.dart';
 import 'package:indifit/core/nutrition_legacy_read_models.dart';
 import 'package:indifit/core/presentation/today_onboarding_handoff.dart';
@@ -85,7 +86,10 @@ void main() {
       expect(find.text('25 g'), findsOneWidget);
 
       // Semantics check
-      expect(find.bySemanticsLabel(RegExp(r'Protein: 120 / 150 g')), findsOneWidget);
+      expect(
+        find.bySemanticsLabel(RegExp(r'Protein: 120 / 150 g')),
+        findsOneWidget,
+      );
 
       // Action buttons
       expect(find.text('Log food'), findsOneWidget);
@@ -99,7 +103,7 @@ void main() {
   );
 
   testWidgets(
-    'current-date sparse nutrition without target shows consumed facts and no remaining target math',
+    'current-date full ring module without target shows logged facts and macro ring',
     (tester) async {
       final selectedDate = DateTime(2026, 8, 10);
       final daily = _createNutritionDaily(
@@ -128,24 +132,28 @@ void main() {
 
       expect(
         find.byKey(const ValueKey('today-sparse-nutrition')),
-        findsOneWidget,
+        findsNothing,
       );
-      expect(find.text('650 kcal logged'), findsOneWidget);
-      expect(find.text('No daily target for this date'), findsOneWidget);
+      // Full ring module: center metric, macro ring rows, no target math.
+      expect(find.text('650'), findsOneWidget);
+      expect(find.text('kcal logged'), findsOneWidget);
+      expect(find.text('Calories logged'), findsOneWidget);
+      expect(find.text('No daily target for this date'), findsNothing);
       expect(find.text('Remaining'), findsNothing);
 
-      // Known macro facts remain visible as one compact line without broken
-      // progress bars.
-      expect(
-        find.text('Protein 40 g · Carbs 80 g · Fat 20 g · Fiber 10 g'),
-        findsOneWidget,
-      );
+      // Macro ring rows remain visible with plain logged values.
+      expect(find.text('Protein'), findsOneWidget);
+      expect(find.text('40 g'), findsOneWidget);
+      expect(find.text('Carbs'), findsOneWidget);
+      expect(find.text('80 g'), findsOneWidget);
+      expect(find.text('Fat'), findsOneWidget);
+      expect(find.text('20 g'), findsOneWidget);
 
       // Action buttons
       expect(find.text('Log food'), findsOneWidget);
       expect(find.text('What can I eat?'), findsNothing);
-      expect(find.text('Set a target'), findsOneWidget);
-      expect(find.text('View targets'), findsNothing);
+      expect(find.text('Set a target'), findsNothing);
+      expect(find.text('View targets'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump();
@@ -376,7 +384,7 @@ void main() {
   );
 
   testWidgets(
-    'incomplete nutrition renders single concise notice and fail-safe macro facts',
+    'incomplete nutrition without target renders full module with single concise notice and honest unavailable macros',
     (tester) async {
       final selectedDate = DateTime(2026, 8, 10);
       final daily = _createIncompleteNutritionDaily(localDate: '2026-08-10');
@@ -400,7 +408,13 @@ void main() {
         find.text('Some nutrition details are incomplete'),
         findsOneWidget,
       );
-      expect(find.text('No daily target for this date'), findsOneWidget);
+      expect(find.text('No daily target for this date'), findsNothing);
+      // Ring center still reports the known calories with an honest status.
+      expect(find.text('300'), findsOneWidget);
+      expect(find.text('kcal logged'), findsOneWidget);
+      expect(find.text('Some nutrition incomplete'), findsOneWidget);
+      // Missing macros render one honest unavailable value each, no zeros.
+      expect(find.text('Not available'), findsNWidgets(4));
 
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump();
@@ -593,6 +607,11 @@ Widget _buildApp({
 }) {
   return ProviderScope(
     overrides: [
+      b04ProductionRecommendationContextProvider.overrideWith(
+        (ref) async => throw StateError(
+          'Recommendation context is unavailable in this presentation fixture.',
+        ),
+      ),
       dashboardPersonalizationControllerProvider.overrideWith(
         (ref) => DashboardPersonalizationController(
           repository: DashboardPersonalizationRepository(
@@ -603,17 +622,17 @@ Widget _buildApp({
         ),
       ),
       if (isLoading)
-        todaySurfaceSnapshotProvider(selectedDate).overrideWith(
-          (ref) => Completer<TodaySurfaceSnapshot>().future,
-        )
+        todaySurfaceSnapshotProvider(
+          selectedDate,
+        ).overrideWith((ref) => Completer<TodaySurfaceSnapshot>().future)
       else if (onReadSnapshot != null)
-        todaySurfaceSnapshotProvider(selectedDate).overrideWith(
-          (ref) async => onReadSnapshot(),
-        )
+        todaySurfaceSnapshotProvider(
+          selectedDate,
+        ).overrideWith((ref) async => onReadSnapshot())
       else if (snapshot != null)
-        todaySurfaceSnapshotProvider(selectedDate).overrideWith(
-          (ref) async => snapshot,
-        ),
+        todaySurfaceSnapshotProvider(
+          selectedDate,
+        ).overrideWith((ref) async => snapshot),
     ],
     child: MaterialApp(
       theme: AppTheme.lightTheme,
@@ -766,7 +785,9 @@ NutritionDailyReadModel _createNutritionDaily({
   );
 }
 
-NutritionDailyReadModel _createEmptyNutritionDaily({required String localDate}) {
+NutritionDailyReadModel _createEmptyNutritionDaily({
+  required String localDate,
+}) {
   return NutritionDailyReadModel(
     userId: 'local-nutrition-user',
     localDate: localDate,
@@ -834,8 +855,8 @@ NutrientAggregationResult _makeAggregation(
     completeness: NutrientCompleteness(
       state: missingNutrientIds.isEmpty
           ? (available.isEmpty
-              ? NutrientCompletenessState.complete
-              : NutrientCompletenessState.complete)
+                ? NutrientCompletenessState.complete
+                : NutrientCompletenessState.complete)
           : NutrientCompletenessState.partial,
       requestedNutrientIds: [...facts.keys, ...missingNutrientIds],
       availableNutrientIds: available,

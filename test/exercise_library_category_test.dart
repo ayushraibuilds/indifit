@@ -136,6 +136,8 @@ void main() {
 
       // "All · 8" chip
       expect(find.text('All · 8'), findsOneWidget);
+      // Disambiguating subtitle
+      expect(find.text('8 movements · 8 variations'), findsOneWidget);
       // All exercises present
       expect(find.text('Flat Barbell Bench Press'), findsOneWidget);
       expect(find.text('Tricep Pushdown'), findsOneWidget);

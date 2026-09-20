@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/fixtures/b04_adaptive_coaching_fixture_matrix.dart';
-import 'package:indifit/core/fixtures/b04_policy_gate_fixture.dart';
+import 'fixtures/b04_policy_gate_fixture.dart';
 
 void main() {
   group('B04-02 product and safety policy gate packet', () {

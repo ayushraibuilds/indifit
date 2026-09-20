@@ -17,6 +17,8 @@ import 'package:indifit/features/media/b05_media_bundle.dart';
 import 'package:indifit/features/media/b05_muscle_diagram.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'support/indifit_test_harness.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -149,10 +151,9 @@ void main() {
   test(
     'versioned progress round-trips through Backup v10 without content duplication',
     () async {
-      final source = AppDatabase.memory();
-      final target = AppDatabase.memory();
-      addTearDown(source.close);
-      addTearDown(target.close);
+      final databases = registerTestDatabaseScope();
+      final source = databases.create();
+      final target = databases.create();
       final repository = B05EducationProgressRepository(database: source);
       await repository.complete(
         userId: 'user-1',

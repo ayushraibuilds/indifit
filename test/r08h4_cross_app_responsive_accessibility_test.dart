@@ -7,9 +7,6 @@ import 'package:indifit/data/models/b02_execution_models.dart';
 import 'package:indifit/features/dashboard/dashboard_module_registry.dart';
 import 'package:indifit/features/dashboard/widgets/dashboard_date_bar.dart';
 import 'package:indifit/features/dashboard/widgets/log_weight_bottom_sheet.dart';
-import 'package:indifit/features/dashboard/widgets/quick_log_bottom_sheet.dart';
-import 'package:indifit/features/dashboard/widgets/today_workout_card.dart';
-import 'package:indifit/features/dashboard/widgets/weight_sparkline_card.dart';
 import 'package:indifit/features/food_log/saved_recipe_log_screen.dart';
 import 'package:indifit/features/settings/widgets/settings_reminder_toggle.dart';
 import 'package:indifit/features/workout_player/widgets/b02_compact_set_table.dart';
@@ -158,77 +155,7 @@ void main() {
         },
       );
 
-      testWidgets(
-        'WeightSparklineCard header is protected against overflow and has accessible chart semantics',
-        (tester) async {
-          await tester.pumpWidget(
-            _wrapResponsiveTest(
-              WeightSparklineCard(
-                currentWeight: 78.4,
-                weightHistory: const [79.0, 78.8, 78.4],
-                onWeightAdjusted: (_) async {},
-              ),
-              size: const Size(320, 640),
-              textScale: 2.0,
-              themeMode: ThemeMode.dark,
-            ),
-          );
-          await tester.pumpAndSettle();
 
-          expect(tester.takeException(), isNull);
-          // Check that Log button has at least 48px height touch target
-          final logButtonFinder = find.widgetWithText(OutlinedButton, 'Log');
-          expect(logButtonFinder, findsOneWidget);
-          final logSize = tester.getSize(logButtonFinder);
-          expect(logSize.height, greaterThanOrEqualTo(B05Layout.minTouchTarget));
-
-          // Check chart semantics
-          expect(
-            find.bySemanticsLabel(
-              RegExp(r'Weight progress chart showing 3 recorded weigh-ins'),
-            ),
-            findsOneWidget,
-          );
-        },
-      );
-
-      testWidgets(
-        'TodayWorkoutCard play button has tooltip "Start workout"',
-        (tester) async {
-          await tester.pumpWidget(
-            _wrapResponsiveTest(
-              TodayWorkoutCard(
-                todayWorkoutName: 'Upper Body A',
-                exerciseCount: 5,
-                isRestDay: false,
-                selectedDate: DateTime(2026, 8, 27),
-                onStartWorkout: () {},
-                onRepeatWorkout: (_) {},
-              ),
-            ),
-          );
-          await tester.pumpAndSettle();
-
-          expect(find.byTooltip('Start workout'), findsOneWidget);
-        },
-      );
-
-      testWidgets(
-        'QuickLogBottomSheet actions have tooltips for screen-readers',
-        (tester) async {
-          await tester.pumpWidget(
-            _wrapResponsiveTest(
-              const QuickLogBottomSheet(),
-            ),
-          );
-          await tester.pumpAndSettle();
-
-          expect(find.byTooltip('Breakfast'), findsOneWidget);
-          expect(find.byTooltip('Lunch'), findsOneWidget);
-          expect(find.byTooltip('Dinner'), findsOneWidget);
-          expect(find.byTooltip('Snacks'), findsOneWidget);
-        },
-      );
 
       testWidgets(
         'LogWeightBottomSheet close button has tooltip "Close"',
@@ -429,12 +356,12 @@ void main() {
     // -------------------------------------------------------------------------
     group('Hidden and Deferred Guards', () {
       test(
-        'Hydration remains strictly absent from standard dashboard module registry',
+        'Hydration is canonical in module registry while unbacked aliases remain absent',
         () {
           final moduleIds = standardDashboardModuleRegistry.descriptors.map(
             (d) => d.id,
           );
-          expect(moduleIds, isNot(contains('today.hydration')));
+          expect(moduleIds, contains('today.hydration'));
           expect(moduleIds, isNot(contains('today.water')));
         },
       );

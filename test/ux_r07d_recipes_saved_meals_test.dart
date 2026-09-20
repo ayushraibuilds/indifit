@@ -8,7 +8,6 @@ import 'package:indifit/core/di/providers.dart';
 import 'package:indifit/core/nutrients.dart';
 import 'package:indifit/core/nutrition_calculation_service.dart';
 import 'package:indifit/core/nutrition_household_measures.dart';
-import 'package:indifit/core/nutrition_legacy_read_models.dart';
 import 'package:indifit/core/nutrition_thali.dart' as thali;
 import 'package:indifit/core/typed_quantities.dart';
 import 'package:indifit/data/database/app_database.dart';
@@ -20,7 +19,6 @@ import 'package:indifit/data/repositories/nutrition_household_measure_repository
 import 'package:indifit/data/repositories/nutrition_recipe_log_coordinator.dart';
 import 'package:indifit/data/repositories/nutrition_recipe_repository.dart';
 import 'package:indifit/data/repositories/nutrition_thali_repository.dart';
-import 'package:indifit/features/food_log/save_logged_meal_as_reusable_meal_helper.dart';
 import 'package:indifit/features/food_log/saved_meals_controller.dart';
 import 'package:indifit/features/food_log/saved_meals_screen.dart';
 import 'package:indifit/features/food_log/widgets/saved_meal_edit_before_log_sheet.dart';
@@ -38,31 +36,7 @@ NutritionRecipeIngredientInput _ingredient(String id, String foodId) =>
       quantity: _grams('100'),
     );
 
-NutritionHistoricalReadItem _snapshotItem({
-  required String stableId,
-  required int position,
-  required String displayLabel,
-  required String? foodId,
-  required String? recipeVersionId,
-  required Quantity quantity,
-}) => NutritionHistoricalReadItem(
-  stableId: stableId,
-  position: position,
-  sourceType: NutritionHistoricalSourceType.canonicalSnapshot.stableId,
-  sourceReference: null,
-  displayLabel: displayLabel,
-  foodId: foodId,
-  recipeVersionId: recipeVersionId,
-  quantity: NutritionHistoricalQuantity(
-    storedAmount: quantity.amount.asDouble,
-    storedUnit: quantity.unit.name,
-    quantity: quantity,
-    state: NutritionHistoricalQuantityState.typed,
-    issues: const [],
-  ),
-  facts: const <String, NutrientFact>{},
-  issues: const [],
-);
+
 
 Future<void> _insertFood(
   AppDatabase db,
@@ -350,59 +324,7 @@ void main() {
   });
 
   group('R07D-3 Saved Meal Lifecycle, Fast Re-log, and Edit-Before-Log', () {
-    test(
-      'Saving a logged meal preserves typed food and recipe IDs, order, and duplicates',
-      () {
-        final recipeServing = Quantity.serving(
-          amount: '1',
-          definition: const ServingDefinitionReference(
-            id: 'recipe-serving-v1',
-            revision: 'v1',
-            source: 'recipe_version',
-          ),
-        );
-        final components =
-            SaveLoggedMealHelper.reusableComponentsFromSnapshotItems([
-              _snapshotItem(
-                stableId: 'snapshot-food-1',
-                position: 0,
-                displayLabel: 'Paneer',
-                foodId: 'food::paneer',
-                recipeVersionId: null,
-                quantity: _grams('100'),
-              ),
-              _snapshotItem(
-                stableId: 'snapshot-recipe-v1',
-                position: 1,
-                displayLabel: 'Paneer',
-                foodId: null,
-                recipeVersionId: 'recipe::paneer-v1',
-                quantity: recipeServing,
-              ),
-              _snapshotItem(
-                stableId: 'snapshot-food-2',
-                position: 2,
-                displayLabel: 'Paneer',
-                foodId: 'food::paneer',
-                recipeVersionId: null,
-                quantity: _grams('50'),
-              ),
-            ]);
 
-        expect(components, hasLength(3));
-        expect(components.map((item) => item.position), [0, 1, 2]);
-        expect(components[0].foodId, 'food::paneer');
-        expect(components[0].recipeVersionId, isNull);
-        expect(components[1].foodId, isNull);
-        expect(components[1].recipeVersionId, 'recipe::paneer-v1');
-        expect(
-          components[1].quantity.context.servingDefinition?.id,
-          'recipe-serving-v1',
-        );
-        expect(components[2].foodId, 'food::paneer');
-        expect(components[2].quantity.amount.asDouble, 50);
-      },
-    );
 
     test(
       'Saved meal remains pinned after a successor and becomes actionable-unavailable after archive',

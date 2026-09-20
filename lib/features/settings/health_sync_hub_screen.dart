@@ -467,8 +467,9 @@ class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
         _buildMetric(
           context,
           Icons.directions_walk_outlined,
-          '${data.steps}',
+          '${data.authoritativeSteps}',
           'Steps',
+          source: data.stepsContext?.sourceName,
         ),
       );
     }
@@ -477,8 +478,9 @@ class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
         _buildMetric(
           context,
           Icons.local_fire_department_outlined,
-          '${data.activeCalories.toInt()} kcal',
+          '${data.authoritativeActiveEnergyKcal.toInt()} kcal',
           'Active energy',
+          source: data.activeEnergyContext?.sourceName,
         ),
       );
     }
@@ -487,8 +489,9 @@ class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
         _buildMetric(
           context,
           Icons.bedtime_outlined,
-          '${data.sleepHours.toStringAsFixed(1)} h',
+          '${data.authoritativeSleepHours.toStringAsFixed(1)} h',
           'Sleep',
+          source: data.sleepContext?.sourceName,
         ),
       );
     }
@@ -531,10 +534,11 @@ class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
     BuildContext context,
     IconData icon,
     String value,
-    String label,
-  ) {
+    String label, {
+    String? source,
+  }) {
     return Semantics(
-      label: '$label: $value',
+      label: source != null ? '$label: $value from $source' : '$label: $value',
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -546,6 +550,19 @@ class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
           const SizedBox(height: B05Layout.space4),
           Text(value, style: B05Typography.metric(context)),
           Text(label, style: B05Typography.caption(context)),
+          if (source != null) ...[
+            const SizedBox(height: 2),
+            Text(
+              source,
+              style: B05Typography.caption(context).copyWith(
+                color: context.b05Colors.textSecondary,
+                fontSize: 10,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+            ),
+          ],
         ],
       ),
     );

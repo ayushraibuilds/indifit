@@ -38,10 +38,20 @@ class ExerciseDisplayMuscles {
   /// All distinct display muscles with primary first, followed by secondary.
   List<String> get all => [if (hasPrimary) primary!, ...secondary];
 
+  /// Formats raw or snake_case muscle tokens (e.g. 'front_delts') into
+  /// clean, title-cased presentation labels (e.g. 'Front Delts').
+  static String formatMuscle(String token) {
+    final words = token.trim().replaceAll('_', ' ').split(RegExp(r'\s+'));
+    return words
+        .where((w) => w.isNotEmpty)
+        .map((w) => '${w[0].toUpperCase()}${w.substring(1).toLowerCase()}')
+        .join(' ');
+  }
+
   /// Resolves display muscles from a comma-separated [muscleGroups] string.
   ///
   /// Safe against null, empty, whitespace-only, malformed strings, and duplicate tokens.
-  /// Preserves the original token casing of the first occurrence for display,
+  /// Normalizes snake_case tokens into clean Title Case presentation labels,
   /// while performing case-insensitive deduplication.
   factory ExerciseDisplayMuscles.fromMuscleGroups(String? raw) {
     if (raw == null || raw.trim().isEmpty) {
@@ -55,9 +65,9 @@ class ExerciseDisplayMuscles {
     for (final rawToken in rawTokens) {
       final trimmed = rawToken.trim();
       if (trimmed.isEmpty) continue;
-      final normalized = trimmed.toLowerCase();
+      final normalized = trimmed.replaceAll('_', ' ').toLowerCase();
       if (seen.add(normalized)) {
-        tokens.add(trimmed);
+        tokens.add(formatMuscle(trimmed));
       }
     }
 
@@ -82,10 +92,10 @@ class ExerciseDisplayMuscles {
   /// Passing 'All' (case-insensitive) matches any exercise.
   bool matchesPrimary(String? muscleCategory) {
     if (muscleCategory == null || muscleCategory.trim().isEmpty) return false;
-    final cleanCategory = muscleCategory.trim().toLowerCase();
+    final cleanCategory = muscleCategory.trim().replaceAll('_', ' ').toLowerCase();
     if (cleanCategory == 'all') return true;
     if (!hasPrimary) return false;
-    return primary!.trim().toLowerCase() == cleanCategory;
+    return primary!.trim().replaceAll('_', ' ').toLowerCase() == cleanCategory;
   }
 
   /// Checks whether this exercise includes [muscle] as either PRIMARY or SECONDARY.
@@ -93,9 +103,9 @@ class ExerciseDisplayMuscles {
   /// Matching is case-insensitive and exact token (not substring).
   bool containsMuscle(String? muscle) {
     if (muscle == null || muscle.trim().isEmpty) return false;
-    final cleanMuscle = muscle.trim().toLowerCase();
-    if (hasPrimary && primary!.trim().toLowerCase() == cleanMuscle) return true;
-    return secondary.any((sec) => sec.trim().toLowerCase() == cleanMuscle);
+    final cleanMuscle = muscle.trim().replaceAll('_', ' ').toLowerCase();
+    if (hasPrimary && primary!.trim().replaceAll('_', ' ').toLowerCase() == cleanMuscle) return true;
+    return secondary.any((sec) => sec.trim().replaceAll('_', ' ').toLowerCase() == cleanMuscle);
   }
 
   @override

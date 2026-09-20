@@ -15,11 +15,12 @@ import 'package:indifit/data/database/app_database.dart'
     hide NutritionConstraintDefinition, NutritionUserConstraint;
 import 'package:indifit/data/repositories/calendar_read_repository.dart';
 import 'package:indifit/data/repositories/nutrition_constraint_repository.dart';
+import 'package:indifit/features/calendar/calendar_controller.dart';
+import 'package:indifit/features/calendar/calendar_read_model.dart';
 import 'package:indifit/features/calendar/occurrence_actions_sheet.dart';
 import 'package:indifit/features/calendar/program_calendar_screen.dart';
 import 'package:indifit/features/exercise_library/exercise_details_sheet.dart';
 import 'package:indifit/features/exercise_library/exercise_library_screen.dart';
-import 'package:indifit/features/food_log/ai_meal_logger_screen.dart';
 import 'package:indifit/features/onboarding/onboarding_screen.dart';
 import 'package:indifit/features/profile/profile_screen.dart';
 import 'package:indifit/features/progress/progress_dashboard_models.dart';
@@ -29,9 +30,10 @@ import 'package:indifit/features/settings/nutrition_constraints_screen.dart';
 import 'package:indifit/features/workout_player/routine_display_screen.dart';
 import 'package:indifit/features/workout_player/widgets/manual_log_sheet.dart';
 import 'package:indifit/features/workout_player/widgets/plate_calculator_sheet.dart';
-import 'package:indifit/features/workout_player/workout_player_screen.dart';
 import 'package:indifit/features/workout_player/workout_summary_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'support/indifit_test_harness.dart';
 
 late AppDatabase _certificationDatabase;
 
@@ -46,13 +48,6 @@ void main() {
     final productionRoutes = <_CertificationRoute>[
       _CertificationRoute('onboarding', () => const OnboardingScreen()),
       _CertificationRoute(
-        'meal logging',
-        () => AiMealLoggerScreen(
-          mealType: 'dinner',
-          selectedDate: DateTime(2026, 8, 8),
-        ),
-      ),
-      _CertificationRoute(
         'manual workout logging',
         () => Scaffold(
           body: Material(
@@ -62,13 +57,6 @@ void main() {
         ),
       ),
       _CertificationRoute('workouts tab', () => const RoutineDisplayScreen()),
-      _CertificationRoute(
-        'workout player',
-        () => WorkoutPlayerScreen(
-          routineName: 'Upper body strength',
-          exercises: const [_certificationRoutineExercise],
-        ),
-      ),
       _CertificationRoute(
         'workout summary',
         () => const WorkoutSummaryScreen(
@@ -127,15 +115,6 @@ void main() {
         builder: () => const OnboardingScreen(),
       ),
       _GoldenRoute(
-        name: 'meal logging dark',
-        fileName: 'ux_w06_meal_logging_dark.png',
-        brightness: Brightness.dark,
-        builder: () => AiMealLoggerScreen(
-          mealType: 'dinner',
-          selectedDate: DateTime(2026, 8, 8),
-        ),
-      ),
-      _GoldenRoute(
         name: 'manual workout logging dark',
         fileName: 'ux_w06_manual_workout_logging_dark.png',
         brightness: Brightness.dark,
@@ -151,26 +130,6 @@ void main() {
         fileName: 'ux_w06_workouts_tab_empty_light.png',
         brightness: Brightness.light,
         builder: () => const RoutineDisplayScreen(),
-      ),
-      _GoldenRoute(
-        name: 'workout player dark',
-        fileName: 'ux_w06_workout_player_dark.png',
-        brightness: Brightness.dark,
-        builder: () => WorkoutPlayerScreen(
-          routineName: 'Upper body strength',
-          exercises: const [_certificationRoutineExercise],
-        ),
-      ),
-      _GoldenRoute(
-        name: 'workout player dark at 2x text',
-        fileName: 'ux_w06_workout_player_dark_2x.png',
-        brightness: Brightness.dark,
-        size: Size(320, 568),
-        textScale: 2,
-        builder: () => WorkoutPlayerScreen(
-          routineName: 'Upper body strength',
-          exercises: const [_certificationRoutineExercise],
-        ),
       ),
       _GoldenRoute(
         name: 'workout summary dark',
@@ -213,6 +172,7 @@ void main() {
         brightness: Brightness.dark,
         builder: () => const ProgramCalendarScreen(),
         target: () => find.byType(ConsumerStatusRow).last,
+        pinCalendarLoading: true,
       ),
       _GoldenRoute(
         name: 'calendar workout actions sheet dark',
@@ -440,10 +400,6 @@ void main() {
 
         final forms = <String, Widget Function()>{
           'onboarding': () => const OnboardingScreen(),
-          'meal logging': () => AiMealLoggerScreen(
-            mealType: 'breakfast',
-            selectedDate: DateTime(2026, 8, 8),
-          ),
           'manual workout logging': () => Scaffold(
             body: Material(
               color: Colors.transparent,
@@ -577,15 +533,6 @@ const _certificationExercise = Exercise(
   isCustom: false,
 );
 
-const _certificationRoutineExercise = RoutineExercise(
-  id: 1,
-  dayId: 1,
-  exerciseName: 'Flat Barbell Bench Press',
-  sets: 3,
-  repsRange: '8-10',
-  orderIndex: 0,
-);
-
 CalendarOccurrenceReadItem _certificationOccurrenceItem() {
   final createdAt = DateTime.utc(2026, 8, 1);
   return CalendarOccurrenceReadItem(
@@ -670,8 +617,7 @@ class _GoldenRoute {
     required this.brightness,
     required this.builder,
     this.target,
-    this.size = const Size(390, 844),
-    this.textScale = 1,
+    this.pinCalendarLoading = false,
   });
 
   final String name;
@@ -679,8 +625,9 @@ class _GoldenRoute {
   final Brightness brightness;
   final Widget Function() builder;
   final Finder Function()? target;
-  final Size size;
-  final double textScale;
+  final bool pinCalendarLoading;
+  Size get size => const Size(390, 844);
+  double get textScale => 1;
 }
 
 Future<void> _assertProductionRouteRenders(
@@ -745,6 +692,7 @@ Future<void> _expectProductionRouteGolden(
           disableAnimations: true,
           textScaler: TextScaler.linear(golden.textScale),
         ),
+        pinCalendarLoading: golden.pinCalendarLoading,
         child: golden.builder(),
       ),
     );
@@ -889,22 +837,49 @@ Widget _providerApp({
   required ThemeData theme,
   required MediaQueryData media,
   required Widget child,
+  bool pinCalendarLoading = false,
 }) {
   return ProviderScope(
     overrides: [
       databaseProvider.overrideWithValue(database),
+      workoutSessionWakeLockCoordinatorProvider.overrideWithValue(
+        createTestWorkoutWakeLockCoordinator(),
+      ),
       userProfileProvider.overrideWith(
         (ref) => _CertificationProfileNotifier(),
       ),
       nutritionConstraintManagementControllerProvider.overrideWith(
         (ref) => _CertificationConstraintController(database),
       ),
+      if (pinCalendarLoading)
+        calendarControllerProvider.overrideWith(
+          (ref) => _CertificationLoadingCalendarController(),
+        ),
     ],
     child: MediaQuery(
       data: media,
       child: MaterialApp(theme: theme, home: child),
     ),
   );
+}
+
+class _CertificationLoadingCalendarController
+    extends StateNotifier<CalendarUiState>
+    implements CalendarController {
+  _CertificationLoadingCalendarController()
+    : super(
+        const CalendarUiState(
+          selectedLocalDate: '2026-08-08',
+          timezoneId: 'Asia/Kolkata',
+          isLoading: true,
+        ),
+      );
+
+  @override
+  CalendarUiState get currentState => state;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => Future<void>.value();
 }
 
 class _CertificationProfileNotifier extends UserProfileNotifier {

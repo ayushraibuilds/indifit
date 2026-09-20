@@ -11,12 +11,15 @@ import '../../core/backup/backup_schema.dart';
 import '../../core/backup/backup_v10.dart';
 import '../../core/backup/backup_v8.dart';
 import '../../core/backup/backup_v9.dart';
+import '../../core/config/app_preferences_keys.dart';
 import '../../core/di/providers.dart';
 import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/privacy/privacy_policy.dart';
+import '../../core/services/achievement_service.dart';
 import '../../core/services/crash_reporting_service.dart';
 import '../../core/services/notification_service.dart';
 import '../../core/utils/csv_exporter.dart';
+import '../dashboard/today_surface_controller.dart';
 
 int _boundedPreference(
   int? value, {
@@ -46,6 +49,8 @@ class SettingsState {
   final int weeklyProgressDay;
   final int weeklyProgressHour;
   final int weeklyProgressMinute;
+  final int waterReminderHour;
+  final int waterReminderMinute;
   final bool offlineOnly;
   final bool crashReportingEnabled;
   final bool loading;
@@ -76,6 +81,8 @@ class SettingsState {
     this.weeklyProgressDay = NotificationService.defaultWeeklyProgressDay,
     this.weeklyProgressHour = NotificationService.defaultWeeklyProgressHour,
     this.weeklyProgressMinute = NotificationService.defaultWeeklyProgressMinute,
+    this.waterReminderHour = NotificationService.defaultWaterReminderHour,
+    this.waterReminderMinute = NotificationService.defaultWaterReminderMinute,
     this.offlineOnly = false,
     this.crashReportingEnabled = false,
     this.loading = true,
@@ -104,6 +111,8 @@ class SettingsState {
     int? weeklyProgressDay,
     int? weeklyProgressHour,
     int? weeklyProgressMinute,
+    int? waterReminderHour,
+    int? waterReminderMinute,
     bool? offlineOnly,
     bool? crashReportingEnabled,
     bool? loading,
@@ -134,6 +143,8 @@ class SettingsState {
       weeklyProgressDay: weeklyProgressDay ?? this.weeklyProgressDay,
       weeklyProgressHour: weeklyProgressHour ?? this.weeklyProgressHour,
       weeklyProgressMinute: weeklyProgressMinute ?? this.weeklyProgressMinute,
+      waterReminderHour: waterReminderHour ?? this.waterReminderHour,
+      waterReminderMinute: waterReminderMinute ?? this.waterReminderMinute,
       offlineOnly: offlineOnly ?? this.offlineOnly,
       crashReportingEnabled:
           crashReportingEnabled ?? this.crashReportingEnabled,
@@ -159,13 +170,23 @@ class SettingsExportResult {
 
 class SettingsController extends StateNotifier<SettingsState> {
   final Ref _ref;
+  final SharedPreferences? _prefs;
 
-  SettingsController(this._ref) : super(const SettingsState()) {
+  SettingsController(this._ref, [this._prefs]) : super(const SettingsState()) {
     loadPreferences();
   }
 
+  Future<SharedPreferences> _getPrefs() async {
+    if (_prefs != null) return _prefs;
+    try {
+      return _ref.read(sharedPreferencesProvider);
+    } catch (_) {
+      return await SharedPreferences.getInstance();
+    }
+  }
+
   Future<void> loadPreferences() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
     state = state.copyWith(
       remindWorkout:
           prefs.getBool(NotificationService.prefRemindWorkout) ?? false,
@@ -248,25 +269,37 @@ class SettingsController extends StateNotifier<SettingsState> {
         max: 59,
         fallback: NotificationService.defaultWeeklyProgressMinute,
       ),
-      offlineOnly: prefs.getBool('offline_only') ?? false,
+      waterReminderHour: _boundedPreference(
+        prefs.getInt(NotificationService.prefWaterReminderHour),
+        min: 0,
+        max: 23,
+        fallback: NotificationService.defaultWaterReminderHour,
+      ),
+      waterReminderMinute: _boundedPreference(
+        prefs.getInt(NotificationService.prefWaterReminderMinute),
+        min: 0,
+        max: 59,
+        fallback: NotificationService.defaultWaterReminderMinute,
+      ),
+      offlineOnly: prefs.getBool(AppPreferenceKeys.offlineOnly) ?? false,
       crashReportingEnabled:
           prefs.getBool(CrashReportingService.prefCrashReportingEnabled) ??
           false,
-      waterGoal: prefs.getInt('water_goal') ?? 8,
-      glassSize: prefs.getInt('water_glass_size') ?? 250,
+      waterGoal: prefs.getInt(AppPreferenceKeys.waterGoal) ?? 8,
+      glassSize: prefs.getInt(AppPreferenceKeys.waterGlassSize) ?? 250,
       loading: false,
     );
   }
 
   Future<void> toggleReminder(String key, bool value) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
     await prefs.setBool(key, value);
     await NotificationService.scheduleAllReminders(_ref.read(databaseProvider));
     await loadPreferences();
   }
 
   Future<void> updateQuietHours({bool? enabled, int? start, int? end}) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
     if (enabled != null) {
       await prefs.setBool(NotificationService.prefQuietHoursEnabled, enabled);
     }
@@ -293,7 +326,7 @@ class SettingsController extends StateNotifier<SettingsState> {
       throw ArgumentError.value(days, 'days', 'Select at least one valid day.');
     }
     _validateTime(hour, minute);
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
     await prefs.setStringList(
       NotificationService.prefWorkoutReminderDays,
       normalizedDays.map((day) => '$day').toList(),
@@ -311,7 +344,7 @@ class SettingsController extends StateNotifier<SettingsState> {
   }) async {
     _validateTime(lunchHour, lunchMinute);
     _validateTime(dinnerHour, dinnerMinute);
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
     await prefs.setInt(NotificationService.prefLunchReminderHour, lunchHour);
     await prefs.setInt(
       NotificationService.prefLunchReminderMinute,
@@ -330,7 +363,7 @@ class SettingsController extends StateNotifier<SettingsState> {
     required int minute,
   }) async {
     _validateTime(hour, minute);
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
     await prefs.setInt(NotificationService.prefDailyLoggingReminderHour, hour);
     await prefs.setInt(
       NotificationService.prefDailyLoggingReminderMinute,
@@ -348,10 +381,21 @@ class SettingsController extends StateNotifier<SettingsState> {
       throw ArgumentError.value(day, 'day', 'Use a valid weekday.');
     }
     _validateTime(hour, minute);
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
     await prefs.setInt(NotificationService.prefWeeklyProgressDay, day);
     await prefs.setInt(NotificationService.prefWeeklyProgressHour, hour);
     await prefs.setInt(NotificationService.prefWeeklyProgressMinute, minute);
+    await _rescheduleAndReload();
+  }
+
+  Future<void> updateWaterReminderSchedule({
+    required int hour,
+    required int minute,
+  }) async {
+    _validateTime(hour, minute);
+    final prefs = await _getPrefs();
+    await prefs.setInt(NotificationService.prefWaterReminderHour, hour);
+    await prefs.setInt(NotificationService.prefWaterReminderMinute, minute);
     await _rescheduleAndReload();
   }
 
@@ -389,15 +433,25 @@ class SettingsController extends StateNotifier<SettingsState> {
   }
 
   Future<void> updateWaterGoal(int goal) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('water_goal', goal);
+    final prefs = await _getPrefs();
+    await prefs.setInt(AppPreferenceKeys.waterGoal, goal);
     await _ref.read(waterProvider.notifier).updateGoal(goal);
     state = state.copyWith(waterGoal: goal);
   }
 
+  Future<void> setHydrationDailyGoalMl(int goalMl) async {
+    final repo = _ref.read(hydrationRepositoryProvider);
+    await repo.setDailyGoal(goalMl: goalMl);
+    final prefs = await _getPrefs();
+    final updatedGlasses =
+        prefs.getInt(AppPreferenceKeys.waterGoal) ?? (goalMl / state.glassSize).round();
+    state = state.copyWith(waterGoal: updatedGlasses);
+    _ref.read(todayHydrationRevisionProvider.notifier).state++;
+  }
+
   Future<void> updateGlassSize(int size) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('water_glass_size', size);
+    final prefs = await _getPrefs();
+    await prefs.setInt(AppPreferenceKeys.waterGlassSize, size);
     await _ref.read(waterProvider.notifier).updateGlassSize(size);
     state = state.copyWith(glassSize: size);
   }
@@ -407,10 +461,10 @@ class SettingsController extends StateNotifier<SettingsState> {
     File? tempFile;
     try {
       final db = _ref.read(databaseProvider);
-      final prefs = await SharedPreferences.getInstance();
+      final prefs = await _getPrefs();
       final backupData = await BackupV10Data.createFromDatabase(db, prefs);
 
-      final envelopeJson = BackupFileAdapter.exportV10ToEnvelopeJson(
+      final envelopeJson = await BackupFileAdapter.exportV10ToEnvelopeJsonAsync(
         data: backupData,
         password: password,
       );
@@ -467,7 +521,7 @@ class SettingsController extends StateNotifier<SettingsState> {
       // 1. Validate and parse payload before any database or preference mutations.
       final version = (data['version'] as num?)?.toInt() ?? 0;
       final db = _ref.read(databaseProvider);
-      final prefs = await SharedPreferences.getInstance();
+      final prefs = await _getPrefs();
       if (version >= BackupV10Data.currentVersion) {
         await BackupV10Data.fromJson(data).restoreToDatabase(db, prefs);
       } else if (version >= BackupV9Data.currentVersion) {
@@ -481,6 +535,7 @@ class SettingsController extends StateNotifier<SettingsState> {
       // 2. Refresh providers post-commit on successful completion
       _ref.invalidate(userProfileProvider);
       await _ref.read(waterProvider.notifier).loadState();
+      await AchievementService.rebaseCelebratedOnRestore(db, prefs);
     } catch (e) {
       rethrow;
     } finally {
@@ -511,5 +566,9 @@ class SettingsController extends StateNotifier<SettingsState> {
 
 final settingsControllerProvider =
     StateNotifierProvider<SettingsController, SettingsState>((ref) {
-      return SettingsController(ref);
+      SharedPreferences? prefs;
+      try {
+        prefs = ref.watch(sharedPreferencesProvider);
+      } catch (_) {}
+      return SettingsController(ref, prefs);
     });

@@ -206,8 +206,10 @@ void main() {
           databaseProvider.overrideWithValue(db),
           workoutRepositoryProvider.overrideWithValue(unlockedRepo),
           healthServiceProvider.overrideWithValue(mockHealth),
+          userProfileProvider.overrideWith((ref) => UserProfileNotifier()),
         ],
       );
+      addTearDown(container.dispose);
 
       final controller = container.read(dashboardControllerProvider.notifier);
       // Wait for the constructor's fire-and-forget loadStateData() to finish
@@ -234,8 +236,10 @@ void main() {
           databaseProvider.overrideWithValue(db),
           workoutRepositoryProvider.overrideWithValue(unlockedRepo),
           healthServiceProvider.overrideWithValue(mockHealth),
+          userProfileProvider.overrideWith((ref) => UserProfileNotifier()),
         ],
       );
+      addTearDown(container.dispose);
 
       final controller = container.read(dashboardControllerProvider.notifier);
       await controller.loadStateData();
@@ -264,8 +268,10 @@ void main() {
             databaseProvider.overrideWithValue(db),
             workoutRepositoryProvider.overrideWithValue(failingRepo),
             healthServiceProvider.overrideWithValue(mockHealth),
+            userProfileProvider.overrideWith((ref) => UserProfileNotifier()),
           ],
         );
+        addTearDown(container.dispose);
 
         final controller = container.read(dashboardControllerProvider.notifier);
         await controller.loadStateData();
@@ -611,8 +617,10 @@ void main() {
             databaseProvider.overrideWithValue(db),
             workoutRepositoryProvider.overrideWithValue(workoutRepo),
             healthServiceProvider.overrideWithValue(mockHealth),
+            userProfileProvider.overrideWith((ref) => UserProfileNotifier()),
           ],
         );
+        addTearDown(container.dispose);
 
         final controller = container.read(dashboardControllerProvider.notifier);
         // Let the constructor's loadStateData() complete before proceeding
@@ -639,8 +647,10 @@ void main() {
             databaseProvider.overrideWithValue(db),
             workoutRepositoryProvider.overrideWithValue(workoutRepo),
             healthServiceProvider.overrideWithValue(mockHealth),
+            userProfileProvider.overrideWith((ref) => UserProfileNotifier()),
           ],
         );
+        addTearDown(container.dispose);
 
         final waterNotifier = container.read(waterProvider.notifier);
         // WaterNotifier.loadState() is async from the constructor; await it
@@ -685,13 +695,16 @@ void main() {
           'water_glass_size': 250,
         });
 
-        final container = ProviderContainer();
-        final waterNotifier = container.read(waterProvider.notifier);
+        // This is the compatibility fallback contract. Exercise the notifier
+        // without a durable database so an empty canonical day cannot
+        // intentionally supersede the legacy preference mirror.
+        final waterNotifier = WaterNotifier();
+        addTearDown(waterNotifier.dispose);
         // WaterNotifier constructor calls loadState() fire-and-forget;
         // explicitly await it so the SharedPreferences values are loaded.
         await waterNotifier.loadState();
 
-        final waterState = container.read(waterProvider);
+        final waterState = waterNotifier.state;
         expect(
           waterState.waterLogged,
           equals(5),

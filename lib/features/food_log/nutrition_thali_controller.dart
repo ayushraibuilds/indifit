@@ -8,6 +8,8 @@ import '../../core/nutrition_thali.dart';
 import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/typed_quantities.dart';
 import '../../data/repositories/nutrition_thali_repository.dart';
+import 'meal_presentation_registry.dart';
+import 'thali/thali_presets.dart';
 
 enum NutritionThaliStatus {
   idle,
@@ -37,6 +39,7 @@ class NutritionThaliState {
   final NutritionConsumptionSnapshot? savedSnapshot;
   final String? errorCode;
   final String? errorMessage;
+  final String? userNotice;
 
   const NutritionThaliState({
     this.status = NutritionThaliStatus.idle,
@@ -53,6 +56,7 @@ class NutritionThaliState {
     this.savedSnapshot,
     this.errorCode,
     this.errorMessage,
+    this.userNotice,
   });
 
   NutritionThaliState copyWith({
@@ -70,6 +74,7 @@ class NutritionThaliState {
     Object? savedSnapshot = _nutritionThaliUnset,
     Object? errorCode = _nutritionThaliUnset,
     Object? errorMessage = _nutritionThaliUnset,
+    Object? userNotice = _nutritionThaliUnset,
   }) => NutritionThaliState(
     status: status ?? this.status,
     draft: draft == _nutritionThaliUnset
@@ -97,6 +102,9 @@ class NutritionThaliState {
     errorMessage: errorMessage == _nutritionThaliUnset
         ? this.errorMessage
         : errorMessage as String?,
+    userNotice: userNotice == _nutritionThaliUnset
+        ? this.userNotice
+        : userNotice as String?,
   );
 }
 
@@ -337,6 +345,55 @@ class NutritionThaliController extends StateNotifier<NutritionThaliState> {
     }
   }
 
+  void incrementQuantity(String itemId, {double step = 1.0}) {
+    final draft = state.draft;
+    if (draft == null) return;
+    NutritionThaliItem? item;
+    for (final i in draft.items) {
+      if (i.id == itemId) {
+        item = i;
+        break;
+      }
+    }
+    if (item == null) return;
+    final currentAmount = item.quantity.amount.asDouble;
+    final newAmount = currentAmount + step;
+    setQuantity(
+      itemId,
+      Quantity(
+        amount: QuantityAmount.fromNum(newAmount),
+        unit: item.quantity.unit,
+        context: item.quantity.context,
+      ),
+      measureId: item.measureId,
+    );
+  }
+
+  void decrementQuantity(String itemId, {double step = 1.0, double min = 0.5}) {
+    final draft = state.draft;
+    if (draft == null) return;
+    NutritionThaliItem? item;
+    for (final i in draft.items) {
+      if (i.id == itemId) {
+        item = i;
+        break;
+      }
+    }
+    if (item == null) return;
+    final currentAmount = item.quantity.amount.asDouble;
+    if (currentAmount <= min) return;
+    final newAmount = (currentAmount - step).clamp(min, double.infinity);
+    setQuantity(
+      itemId,
+      Quantity(
+        amount: QuantityAmount.fromNum(newAmount),
+        unit: item.quantity.unit,
+        context: item.quantity.context,
+      ),
+      measureId: item.measureId,
+    );
+  }
+
   void acknowledgePartial(bool acknowledged) {
     state = state.copyWith(partialAcknowledged: acknowledged);
   }
@@ -402,11 +459,12 @@ class NutritionThaliController extends StateNotifier<NutritionThaliState> {
     }
   }
 
-  Future<void> finalize({
+  Future<NutritionConsumptionSnapshot?> finalize({
     required DateTime loggedAt,
     String? mealGroupId,
     required String localDate,
     required String timezoneId,
+    bool allowPartial = true,
   }) async {
     final preview = state.preview;
     if (preview == null || state.dirty) {
@@ -417,8 +475,27 @@ class NutritionThaliController extends StateNotifier<NutritionThaliState> {
         ),
         action: _NutritionThaliRetryAction.preview,
       );
-      return;
+      return null;
     }
+
+    final categoryPresentation =
+        MealPresentationRegistry.forStableId(mealCategory);
+    if (!categoryPresentation.isKnown) {
+      _fail(
+        const NutritionThaliValidationError(
+          'invalid_meal_category',
+          'The specified meal category is invalid or unsupported.',
+        ),
+        action: _NutritionThaliRetryAction.finalize,
+      );
+      return null;
+    }
+
+    final effectiveMealGroupId =
+        (mealGroupId != null && mealGroupId.trim().isNotEmpty)
+            ? mealGroupId.trim()
+            : 'meal-group:${_uuid.v4()}';
+
     _commandId ??= 'thali-log:${_uuid.v4()}';
     _consumptionId ??= 'thali-consumption:${_uuid.v4()}';
     if (_acknowledgement == null &&
@@ -447,7 +524,7 @@ class NutritionThaliController extends StateNotifier<NutritionThaliState> {
     }
     _finalizeContext ??= _NutritionThaliFinalizeContext(
       loggedAt: loggedAt,
-      mealGroupId: mealGroupId,
+      mealGroupId: effectiveMealGroupId,
       localDate: localDate,
       timezoneId: timezoneId,
     );
@@ -461,14 +538,14 @@ class NutritionThaliController extends StateNotifier<NutritionThaliState> {
       final context = _finalizeContext!;
       final saved = await (await _repositoryFuture).finalize(
         preview: preview,
-        mealCategory: mealCategory,
+        mealCategory: categoryPresentation.stableId,
         loggedAt: context.loggedAt,
         commandId: _commandId!,
         consumptionId: _consumptionId,
         mealGroupId: context.mealGroupId,
         localDate: context.localDate,
         timezoneId: context.timezoneId,
-        allowPartial: state.partialAcknowledged,
+        allowPartial: allowPartial || state.partialAcknowledged,
         acknowledgement: _acknowledgement,
       );
       state = state.copyWith(
@@ -477,9 +554,128 @@ class NutritionThaliController extends StateNotifier<NutritionThaliState> {
         errorCode: null,
         errorMessage: null,
       );
+      return saved;
     } catch (error) {
       _fail(error, action: _NutritionThaliRetryAction.finalize);
+      return null;
     }
+  }
+
+  Future<NutritionConsumptionSnapshot?> logThali({
+    required DateTime loggedAt,
+    String? mealGroupId,
+    required String localDate,
+    required String timezoneId,
+    bool saveAsTemplate = false,
+    bool allowPartial = true,
+  }) async {
+    if (saveAsTemplate) {
+      await saveDraft();
+      if (state.status == NutritionThaliStatus.failure) {
+        return null;
+      }
+    }
+    if (state.preview == null || state.dirty) {
+      await preview();
+      if (state.status == NutritionThaliStatus.failure) {
+        return null;
+      }
+    }
+    return await finalize(
+      loggedAt: loggedAt,
+      mealGroupId: mealGroupId,
+      localDate: localDate,
+      timezoneId: timezoneId,
+      allowPartial: allowPartial,
+    );
+  }
+
+  Future<void> loadPreset({
+    required String presetName,
+    required List<ThaliPresetItemDefinition> items,
+  }) async {
+    state = state.copyWith(
+      status: NutritionThaliStatus.loading,
+      errorCode: null,
+      errorMessage: null,
+      userNotice: null,
+    );
+    try {
+      final repository = await _repositoryFuture;
+      final addedItems = <NutritionThaliItem>[];
+      final missingNames = <String>[];
+
+      for (var i = 0; i < items.length; i++) {
+        final def = items[i];
+        final searchResults = await repository.searchFoods(
+          query: def.searchQuery,
+        );
+        NutritionThaliFoodOption? match;
+        if (searchResults.isNotEmpty) {
+          final exact = searchResults.where(
+            (food) =>
+                food.displayName.toLowerCase() ==
+                def.searchQuery.toLowerCase(),
+          );
+          if (exact.isNotEmpty) {
+            match = exact.first;
+          } else {
+            match = searchResults.firstWhere(
+              (food) => food.displayName.toLowerCase().contains(
+                def.searchQuery.toLowerCase(),
+              ),
+              orElse: () => searchResults.first,
+            );
+          }
+        }
+        if (match != null) {
+          addedItems.add(
+            NutritionThaliItem(
+              id: 'thali-item-v1-${_uuid.v4()}',
+              position: addedItems.length,
+              source: NutritionThaliItemSource.food,
+              foodId: match.id,
+              recipeVersionId: null,
+              quantity: def.defaultQuantity,
+              measureId: def.measureId,
+              displayLabel: match.displayName,
+            ),
+          );
+        } else {
+          missingNames.add(def.displayName);
+        }
+      }
+
+      final currentDraft = state.draft ?? repository.newDraft(userId: userId);
+      final draft = currentDraft.copyWith(
+        name: presetName,
+        items: addedItems,
+      );
+
+      String? notice;
+      if (missingNames.isNotEmpty) {
+        if (addedItems.isEmpty) {
+          notice =
+              'Could not find preset items in the database. Please add items manually.';
+        } else {
+          notice =
+              'Added ${addedItems.length} items. Missing from food library: ${missingNames.join(", ")}.';
+        }
+      }
+
+      _setDraft(draft, dirty: true, clearPreview: true);
+      state = state.copyWith(userNotice: notice);
+
+      if (addedItems.isNotEmpty) {
+        await preview();
+      }
+    } catch (error) {
+      _fail(error, action: _NutritionThaliRetryAction.none);
+    }
+  }
+
+  void clearNotice() {
+    state = state.copyWith(userNotice: null);
   }
 
   Future<void> retry({

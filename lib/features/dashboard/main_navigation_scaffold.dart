@@ -80,6 +80,7 @@ class _MainNavigationScaffoldState extends State<MainNavigationScaffold> {
         selectedIndex: _currentIndex,
         onDestinationSelected: (index) {
           if (index != 2) FocusManager.instance.primaryFocus?.unfocus();
+          ScaffoldMessenger.maybeOf(context)?.clearSnackBars();
           setState(() {
             _currentIndex = index;
             _activateScreen(index);

@@ -7,16 +7,17 @@ import 'package:indifit/core/backup/backup_v8.dart';
 import 'package:indifit/core/backup/backup_v9.dart';
 import 'package:indifit/data/database/app_database.dart';
 
+import 'support/indifit_test_harness.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   test(
     'v9 graph round-trips durable B04 lineage and envelope inspection',
     () async {
-      final source = AppDatabase.memory();
-      final target = AppDatabase.memory();
-      addTearDown(source.close);
-      addTearDown(target.close);
+      final databases = registerTestDatabaseScope();
+      final source = databases.create();
+      final target = databases.create();
       await _populateB04Graph(source);
 
       final backup = await BackupV9Data.createFromDatabase(source);
@@ -118,10 +119,9 @@ void main() {
   test(
     'v5-v8 imports restore an empty B04 graph without fabrication',
     () async {
-      final source = AppDatabase.memory();
-      final target = AppDatabase.memory();
-      addTearDown(source.close);
-      addTearDown(target.close);
+      final databases = registerTestDatabaseScope();
+      final source = databases.create();
+      final target = databases.create();
       await _populateB04Graph(source);
       await _insertSentinelConsent(target, 'pre-existing');
 
@@ -144,8 +144,7 @@ void main() {
   test(
     'v9 rejects duplicate, cross-user, ordered and policy-invalid graphs',
     () async {
-      final source = AppDatabase.memory();
-      addTearDown(source.close);
+      final source = registerTestDatabaseScope().create();
       await _populateB04Graph(source);
       final valid =
           jsonDecode(
@@ -312,10 +311,9 @@ void main() {
   );
 
   test('offset-less v9 timestamps are interpreted as UTC', () async {
-    final source = AppDatabase.memory();
-    final target = AppDatabase.memory();
-    addTearDown(source.close);
-    addTearDown(target.close);
+    final databases = registerTestDatabaseScope();
+    final source = databases.create();
+    final target = databases.create();
     await _populateB04Graph(source);
 
     final payload =
@@ -338,10 +336,9 @@ void main() {
   });
 
   test('invalid v9 restore rolls back and a retry succeeds', () async {
-    final source = AppDatabase.memory();
-    final target = AppDatabase.memory();
-    addTearDown(source.close);
-    addTearDown(target.close);
+    final databases = registerTestDatabaseScope();
+    final source = databases.create();
+    final target = databases.create();
     await _populateB04Graph(source);
     await _insertSentinelConsent(target, 'restore-sentinel');
     final backup = await BackupV9Data.createFromDatabase(source);

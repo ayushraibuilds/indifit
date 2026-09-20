@@ -144,7 +144,7 @@ void main() {
         find.textContaining('Permanently wipe all food logs'),
         findsNothing,
       );
-      expect(find.textContaining('This cannot be undone'), findsNothing);
+      expect(find.textContaining('This cannot be undone'), findsOneWidget);
 
       // Dead / duplicate navigation removed
       expect(
@@ -230,14 +230,26 @@ void main() {
       await tester.pumpAndSettle();
 
       // Tap Create and share backup
-      await tester.tap(find.text('Create and share backup'));
+      final createBackupButton = find.widgetWithText(
+        FilledButton,
+        'Create and share backup',
+      );
+      await tester.scrollUntilVisible(createBackupButton, 200);
+      await tester.pumpAndSettle();
+      await tester.tap(createBackupButton);
       await tester.pumpAndSettle();
       expect(find.text('Create a backup'), findsOneWidget);
       await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
 
       // Tap Restore a backup
-      await tester.tap(find.text('Restore a backup'));
+      final restoreButton = find.widgetWithText(
+        OutlinedButton,
+        'Restore a backup',
+      );
+      await tester.scrollUntilVisible(restoreButton, 200);
+      await tester.pumpAndSettle();
+      await tester.tap(restoreButton);
       await tester.pumpAndSettle();
       expect(
         find.widgetWithText(AlertDialog, 'Restore a backup'),

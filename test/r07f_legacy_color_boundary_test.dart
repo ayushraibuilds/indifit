@@ -12,7 +12,6 @@ void main() {
   // Importers at the R07F-0 baseline (42 files, mostly legacy dashboard
   // widgets and not-yet-migrated secondary screens).
   final frozenBaseline = <String>{
-    'lib/core/services/achievement_service.dart',
     'lib/core/widgets/failure_state_widget.dart',
     'lib/features/dashboard/widgets/adherence_card.dart',
     'lib/features/dashboard/widgets/dashboard_header.dart',
@@ -27,29 +26,20 @@ void main() {
     'lib/features/equipment/equipment_profile_editor_screen.dart',
     'lib/features/equipment/equipment_profiles_screen.dart',
     'lib/features/equipment/exercise_preference_editor_screen.dart',
-    'lib/features/food_log/ai_meal_planner_screen.dart',
-    'lib/features/food_log/meal_templates_screen.dart',
     'lib/features/food_log/nutrition_recipe_editor_screen.dart',
     'lib/features/food_log/save_logged_meal_as_reusable_meal_helper.dart',
     'lib/features/food_log/saved_meal_editor_screen.dart',
     'lib/features/food_log/thali_builder_screen.dart',
     'lib/features/food_log/widgets/edit_food_log_sheet.dart',
     'lib/features/food_log/widgets/saved_meal_edit_before_log_sheet.dart',
-    'lib/features/onboarding/routine_wizard_screen.dart',
-    'lib/features/program_authoring/program_author_screen.dart',
-    'lib/features/program_authoring/program_review_screen.dart',
     'lib/features/progress/achievements_screen.dart',
-    'lib/features/reports/weekly_report_screen.dart',
     'lib/features/settings/data_management_sub_screen.dart',
     'lib/features/settings/health_sync_hub_screen.dart',
     'lib/features/settings/notification_settings_screen.dart',
-    'lib/features/settings/nutrition_goals_sub_screen.dart',
     'lib/features/settings/regional_food_packs_screen.dart',
-    'lib/features/settings/water_settings_sub_screen.dart',
     'lib/features/settings/widgets/backup_restore_card.dart',
     'lib/features/settings/widgets/notification_settings_section.dart',
     'lib/features/settings/widgets/settings_reminder_toggle.dart',
-    'lib/features/settings/widgets/water_settings_section.dart',
     'lib/features/workout_player/routine_editor_screen.dart',
   };
 
@@ -95,6 +85,25 @@ void main() {
       ),
       isFalse,
     );
+    expect(
+      importers.contains('lib/core/services/achievement_service.dart'),
+      isFalse,
+    );
+    expect(
+      importers.contains(
+        'lib/features/program_authoring/program_author_screen.dart',
+      ),
+      isFalse,
+    );
+    expect(
+      importers.contains(
+        'lib/features/program_authoring/program_review_screen.dart',
+      ),
+      isFalse,
+    );
+    // app_colors_extension.dart must not import colors.dart either
+    final extSource = File('lib/core/theme/app_colors_extension.dart').readAsStringSync();
+    expect(extSource.contains('colors.dart'), isFalse);
   });
 
   test('the frozen baseline only shrinks (reports removed importers)', () {

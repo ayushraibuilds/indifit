@@ -10,7 +10,9 @@ import 'package:indifit/core/fixtures/exercise_display_muscles.dart';
 import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/models/b02_execution_models.dart';
+import 'package:indifit/data/models/b02_previous_performance_models.dart';
 import 'package:indifit/data/repositories/b02_exercise_performance_read_repository.dart';
+import 'package:indifit/data/repositories/b02_previous_performance_repository.dart';
 import 'package:indifit/data/repositories/b02_strength_execution_repository.dart';
 import 'package:indifit/data/repositories/b07_exercise_context_repository.dart';
 import 'package:indifit/data/repositories/calendar_repository.dart';
@@ -346,6 +348,12 @@ Future<void> _pumpPlayer(
   ThemeData theme, {
   double textScale = 1,
 }) async {
+  addTearDown(() async {
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+    tester.view.resetPhysicalSize();
+    tester.view.resetDevicePixelRatio();
+  });
   final controller = B02StrengthExecutionController(
     StrengthExecutionCompatibilityAdapter(executions),
     initialLaunch: launch,
@@ -356,6 +364,9 @@ Future<void> _pumpPlayer(
       overrides: [
         b02StrengthExecutionScreenControllerProvider.overrideWith(
           (ref, _) => controller,
+        ),
+        b02PreviousPerformanceRepositoryProvider.overrideWithValue(
+          _NoHistoryPreviousPerformanceRepository(database),
         ),
         b07ExerciseContextRepositoryProvider.overrideWithValue(
           _GoldenB07ExerciseContextRepository(database),
@@ -379,6 +390,20 @@ Future<void> _pumpPlayer(
   for (var pump = 0; pump < 8; pump++) {
     await tester.pump(const Duration(milliseconds: 20));
   }
+}
+
+class _NoHistoryPreviousPerformanceRepository
+    extends B02PreviousPerformanceRepository {
+  const _NoHistoryPreviousPerformanceRepository(super.database);
+
+  @override
+  Future<B02PreviousExercisePerformance> resolve(
+    B02PreviousPerformanceQuery query,
+  ) async => B02PreviousExercisePerformance.unavailable(
+    status: B02PreviousPerformanceStatus.noHistory,
+    canonicalExerciseId: query.canonicalExerciseId,
+    reasonCode: 'no_history',
+  );
 }
 
 Future<B02StrengthExecutionLaunch> _launch(

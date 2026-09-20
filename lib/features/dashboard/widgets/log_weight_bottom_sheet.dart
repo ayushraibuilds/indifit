@@ -226,6 +226,33 @@ class _LogWeightBottomSheetState extends ConsumerState<LogWeightBottomSheet> {
                           color: colors.textSecondary,
                         ),
                       )
+                    else if (_statusError)
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Could not check status',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: colors.warning.indicator,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          InkWell(
+                            onTap: _checkStatus,
+                            child: Text(
+                              'Retry',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: colors.action,
+                                decoration: TextDecoration.underline,
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
                     else if (isLocked)
                       Text(
                         'Locked for ${_status!.daysUntilUnlock} days',

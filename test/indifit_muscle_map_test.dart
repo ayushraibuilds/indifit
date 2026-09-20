@@ -6,8 +6,9 @@ import 'package:indifit/core/fixtures/b02_muscle_catalog.dart';
 import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/features/media/indifit_muscle_map.dart';
 import 'package:indifit/features/media/indifit_muscle_map_geometry.g.dart';
-import 'package:indifit/features/media/indifit_muscle_map_showcase.dart';
 import 'package:indifit/features/media/indifit_muscle_map_taxonomy.dart';
+
+import 'fixtures/indifit_muscle_map_showcase.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

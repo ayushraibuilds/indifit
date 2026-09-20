@@ -29,6 +29,7 @@ class ExerciseDetailsSheet extends ConsumerStatefulWidget {
 
 class _ExerciseDetailsSheetState extends ConsumerState<ExerciseDetailsSheet> {
   late Exercise _exercise = widget.exercise;
+  ExerciseVisualPose _currentPose = ExerciseVisualPose.start;
 
   @override
   Widget build(BuildContext context) {
@@ -37,6 +38,12 @@ class _ExerciseDetailsSheetState extends ConsumerState<ExerciseDetailsSheet> {
     final registry =
         ref.watch(b05ExerciseVisualRegistryProvider).valueOrNull ??
         const B05ExerciseVisualRegistry.empty();
+    final set = registry.lookup(exercise.stableId ?? '');
+    final hasStartPeak = set != null &&
+        set.mediaByRole['start'] != null &&
+        set.mediaByRole['peak'] != null;
+    final dpr = MediaQuery.devicePixelRatioOf(context);
+    final detailCacheWidth = (110.0 * 1.5 * dpr).round().clamp(220, 720);
     final displayMuscles = ExerciseDisplayMuscles.fromMuscleGroups(
       exercise.muscleGroups,
     );
@@ -99,23 +106,74 @@ class _ExerciseDetailsSheetState extends ConsumerState<ExerciseDetailsSheet> {
           B05Surface(
             tone: B05SurfaceTone.inset,
             padding: const EdgeInsets.all(B05Layout.space8),
-            child: SizedBox(
-              height: 110,
-              width: double.infinity,
-              child: Center(
-                child: ExerciseVisual(
-                  canonicalExerciseUuid: exercise.stableId ?? '',
-                  registry: registry,
-                  displayMuscles: ExerciseVisualMuscleFacts(
-                    primaryMuscle: displayMuscles.primary,
-                    secondaryMuscles: displayMuscles.secondary,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  height: 110,
+                  width: double.infinity,
+                  child: Center(
+                    child: ExerciseVisual(
+                      canonicalExerciseUuid: exercise.stableId ?? '',
+                      registry: registry,
+                      pose: hasStartPeak ? _currentPose : ExerciseVisualPose.start,
+                      cacheWidth: detailCacheWidth,
+                      displayMuscles: ExerciseVisualMuscleFacts(
+                        primaryMuscle: displayMuscles.primary,
+                        secondaryMuscles: displayMuscles.secondary,
+                      ),
+                      equipment: exercise.equipment.trim().isNotEmpty
+                          ? exercise.equipment
+                          : null,
+                      semanticsContext: hasStartPeak
+                          ? '${exercise.name} ${_currentPose == ExerciseVisualPose.start ? 'start' : 'peak'} position illustration'
+                          : '${exercise.name} exercise visual',
+                    ),
                   ),
-                  equipment: exercise.equipment.trim().isNotEmpty
-                      ? exercise.equipment
-                      : null,
-                  semanticsContext: '${exercise.name} exercise visual',
                 ),
-              ),
+                if (hasStartPeak) ...[
+                  const SizedBox(height: B05Layout.space8),
+                  SegmentedButton<ExerciseVisualPose>(
+                    segments: const [
+                      ButtonSegment<ExerciseVisualPose>(
+                        value: ExerciseVisualPose.start,
+                        label: Text('Start'),
+                        icon: Icon(Icons.play_arrow_outlined, size: 16),
+                      ),
+                      ButtonSegment<ExerciseVisualPose>(
+                        value: ExerciseVisualPose.peak,
+                        label: Text('Peak'),
+                        icon: Icon(Icons.flag_outlined, size: 16),
+                      ),
+                    ],
+                    selected: {_currentPose},
+                    onSelectionChanged: (newSelection) {
+                      setState(() {
+                        _currentPose = newSelection.first;
+                      });
+                    },
+                    style: SegmentedButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      textStyle: B05Typography.caption(context).copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+                if (set != null) ...[
+                  const SizedBox(height: B05Layout.space8),
+                  Semantics(
+                    label: 'Technique disclosure',
+                    child: Text(
+                      set.techniqueDisclosure,
+                      style: B05Typography.caption(context).copyWith(
+                        color: colors.textSecondary,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
           const SizedBox(height: B05Layout.space8),

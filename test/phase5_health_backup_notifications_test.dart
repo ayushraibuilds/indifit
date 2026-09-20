@@ -172,7 +172,7 @@ void main() {
     test(
       '4. NotificationService detects timezone/offset change and triggers reschedule',
       () async {
-        await NotificationService.initialize();
+        await NotificationService.initialize(() async => 'Asia/Kolkata');
 
         final prefs = await SharedPreferences.getInstance();
         // Set previous timezone ID to a different string
@@ -182,7 +182,10 @@ void main() {
         );
 
         final rescheduled =
-            await NotificationService.checkAndUpdateTimezoneAndReschedule(db);
+            await NotificationService.checkAndUpdateTimezoneAndReschedule(
+              db,
+              () async => 'Asia/Kolkata',
+            );
         expect(rescheduled, isTrue);
 
         final updatedTzId = prefs.getString(
@@ -193,7 +196,10 @@ void main() {
 
         // Subsequent call without timezone change should return false
         final rescheduledAgain =
-            await NotificationService.checkAndUpdateTimezoneAndReschedule(db);
+            await NotificationService.checkAndUpdateTimezoneAndReschedule(
+              db,
+              () async => 'Asia/Kolkata',
+            );
         expect(rescheduledAgain, isFalse);
       },
     );

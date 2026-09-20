@@ -37,7 +37,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
-    expect(find.text('FOOD & NUTRITION'), findsOneWidget);
+    expect(find.text('Food & nutrition'), findsOneWidget);
     expect(find.text('Dietary needs & preferences'), findsOneWidget);
     expect(find.text('Household measures'), findsOneWidget);
     expect(find.text('Regional foods'), findsOneWidget);
