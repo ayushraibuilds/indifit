@@ -522,14 +522,18 @@ void main() {
             await binding.takeScreenshot('03_food_03_search_results');
 
             // Portion sheet (IF-2)
-            final searchResultsList = find.byType(ListView);
-            final paneerTile = find.descendant(
-              of: searchResultsList,
-              matching: find.textContaining('Paneer (Raw)'),
-            );
+            FocusManager.instance.primaryFocus?.unfocus();
+            await tester.pumpAndSettle();
+            final bhurjiFinder = find.text('Paneer Bhurji');
+            final paneerTile = bhurjiFinder.evaluate().isNotEmpty
+                ? bhurjiFinder
+                : find.descendant(
+                    of: find.byType(FoodSearchResultsList),
+                    matching: find.byType(ListTile),
+                  );
             if (paneerTile.evaluate().isNotEmpty) {
               await tester.tap(paneerTile.first);
-              for (var i = 0; i < 25; i++) {
+              for (var i = 0; i < 30; i++) {
                 await tester.pump(const Duration(milliseconds: 100));
                 if (find.byType(FoodPortionBottomSheet).evaluate().isNotEmpty) {
                   break;
