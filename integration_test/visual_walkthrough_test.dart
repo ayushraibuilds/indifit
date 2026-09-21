@@ -355,6 +355,8 @@ void main() {
         ],
       );
 
+      await container.read(b05ExerciseVisualRegistryProvider.future);
+
       final router = container.read(appRouterProvider);
 
       addTearDown(() async {
@@ -699,6 +701,8 @@ void main() {
 
       // Exercise Library
       unawaited(GoRouter.of(currentContext()).push('/exercises'));
+      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 600));
       await tester.pumpAndSettle();
       await binding.takeScreenshot('04_training_08_exercise_library');
 

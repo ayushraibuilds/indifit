@@ -116,13 +116,14 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
       };
       for (final m in _muscleFilters) {
         if (m == 'All') continue;
-        counts[m] = searchMatches
+        final muscleMatches = searchMatches
             .where(
               (ex) => ExerciseDisplayMuscles.fromMuscleGroups(
                 ex.muscleGroups,
               ).matchesPrimary(m),
             )
-            .length;
+            .toList(growable: false);
+        counts[m] = buildExerciseFamilyPresentation(muscleMatches).length;
       }
 
       // Filter by PRIMARY muscle category and equipment
