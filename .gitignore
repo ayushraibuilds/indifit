@@ -59,3 +59,4 @@ test_builds/
 # directory sentinel and provenance manifest source-controlled, but never raw
 # RepDB WebPs.
 assets/generated/repdb/**/*.webp
+graphify-out/cache/
