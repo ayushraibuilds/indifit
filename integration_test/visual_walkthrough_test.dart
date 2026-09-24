@@ -139,10 +139,25 @@ CalendarOccurrenceReadItem _buildMockOccurrence() {
 
 void main() {
   final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  FlutterError.onError = (details) {
+    print('🚨 FLUTTER ERROR CAUGHT: ${details.exceptionAsString()}');
+    print('🚨 CONTEXT: ${details.context}');
+    FlutterError.presentError(details);
+  };
 
   testWidgets(
     'Comprehensive App Coverage Pass across all surfaces, sheets, and dialogs',
     (tester) async {
+      await binding.convertFlutterSurfaceToImage();
+
+      void checkError(String section) {
+        final err = tester.takeException();
+        if (err != null) {
+          print('🚨🚨🚨 EXCEPTION CAUGHT AT $section: $err');
+          throw err;
+        }
+      }
+
       // -------------------------------------------------------------
       // SECTION 1: Onboarding 5 Steps
       // -------------------------------------------------------------
@@ -164,6 +179,27 @@ void main() {
       );
       await tester.pumpAndSettle();
       await binding.takeScreenshot('01_onboarding_01_demographics');
+
+      // Height converter ft/in test
+      final ftInToggle = find.text('ft/in');
+      if (ftInToggle.evaluate().isNotEmpty) {
+        await tester.tap(ftInToggle.first);
+        await tester.pumpAndSettle();
+        await binding.takeScreenshot('01_onboarding_01b_height_ft_in');
+        final cmToggle = find.text('cm');
+        if (cmToggle.evaluate().isNotEmpty) {
+          await tester.tap(cmToggle.first);
+          await tester.pumpAndSettle();
+        }
+      }
+
+      // Other gender selection
+      final otherPill = find.text('Other');
+      if (otherPill.evaluate().isNotEmpty) {
+        await tester.tap(otherPill.first);
+        await tester.pumpAndSettle();
+        await binding.takeScreenshot('01_onboarding_01c_gender_other');
+      }
 
       // Step 1 -> Step 2
       final malePill = find.text('Male');
@@ -197,12 +233,21 @@ void main() {
               await tester.tap(reviewBtn.first);
               await tester.pumpAndSettle();
               await binding.takeScreenshot('01_onboarding_05_payoff');
+
+              // Scroll to bottom of payoff review to show full daily targets card clear of sticky button
+              final payoffScroll = find.byType(SingleChildScrollView);
+              if (payoffScroll.evaluate().isNotEmpty) {
+                await tester.drag(payoffScroll.last, const Offset(0, -350));
+                await tester.pumpAndSettle();
+                await binding.takeScreenshot('01_onboarding_05b_payoff_scrolled');
+              }
             }
           }
         }
       }
 
       await onbDb.close();
+      checkError('SECTION 1 (Onboarding)');
 
       // -------------------------------------------------------------
       // SECTION 2: Production Seeding & Main App Mount
@@ -411,12 +456,12 @@ void main() {
       // -------------------------------------------------------------
       await binding.takeScreenshot('02_today_01_dashboard');
 
-      // Personalization sheet
-      final tuneIcon = find.byIcon(Icons.tune_rounded);
-      if (tuneIcon.evaluate().isNotEmpty) {
-        await tester.tap(tuneIcon.first);
+      // Appearance bottom sheet
+      final paletteIcon = find.byIcon(Icons.palette_outlined);
+      if (paletteIcon.evaluate().isNotEmpty) {
+        await tester.tap(paletteIcon.first);
         await tester.pumpAndSettle();
-        await binding.takeScreenshot('02_today_02_personalization_sheet');
+        await binding.takeScreenshot('02_today_02_appearance_sheet');
         if (find.byIcon(Icons.close_rounded).evaluate().isNotEmpty) {
           await tester.tap(find.byIcon(Icons.close_rounded).first);
           await tester.pumpAndSettle();
@@ -483,6 +528,7 @@ void main() {
       await popTop(rootNavigator: true);
       await tester.pumpAndSettle();
       expect(find.byType(LogWeightBottomSheet), findsNothing);
+      checkError('SECTION 2 (Today Dashboard)');
 
       // -------------------------------------------------------------
       // SECTION 3: Food Diary, Search, Thali, Barcode, Recipes
@@ -606,6 +652,13 @@ void main() {
       await tester.pumpAndSettle();
       await binding.takeScreenshot('03_food_06_thali_builder');
 
+      final thaliEditBtn = find.byIcon(Icons.edit_outlined);
+      if (thaliEditBtn.evaluate().isNotEmpty) {
+        await tester.tap(thaliEditBtn.first);
+        await tester.pumpAndSettle();
+        await binding.takeScreenshot('03_food_06b_thali_name_focus');
+      }
+
       // Thali Component Picker Sheet
       unawaited(
         ThaliComponentPickerSheet.show(
@@ -643,6 +696,7 @@ void main() {
       await tester.pumpAndSettle();
       await binding.takeScreenshot('03_food_09_recipe_editor');
       await popTop();
+      checkError('SECTION 3 (Food Diary & Recipes)');
 
       // -------------------------------------------------------------
       // SECTION 4: Training, Plans, Calendar & Exercises
@@ -749,6 +803,7 @@ void main() {
       await tester.pumpAndSettle();
       await binding.takeScreenshot('04_training_11_quick_workout');
       await popTop();
+      checkError('SECTION 4 (Training & Calendar)');
 
       // -------------------------------------------------------------
       // SECTION 5: B02 Strength Workout Player
@@ -876,6 +931,7 @@ void main() {
 
       // Pop B02 player back to Training
       await popTop();
+      checkError('SECTION 5 (Workout Player)');
 
       // -------------------------------------------------------------
       // SECTION 6: Progress, Volume & Insights
@@ -926,6 +982,7 @@ void main() {
       await binding.takeScreenshot('06_progress_04_achievement_detail_sheet');
       await popTop();
       await popTop();
+      checkError('SECTION 6 (Progress & Achievements)');
 
       // -------------------------------------------------------------
       // SECTION 7: Settings, Health Sync & Legal Compliance
@@ -1006,6 +1063,7 @@ void main() {
       while (find.byType(Scaffold).evaluate().length > 1) {
         await popTop();
       }
+      checkError('SECTION 7 (Settings & Legal)');
 
       // -------------------------------------------------------------
       // SECTION 8: Theme Mode Verification (Dark Theme)

@@ -105,7 +105,30 @@ class _HydrationDetailSheetState extends ConsumerState<HydrationDetailSheet> {
   Future<void> _logCustom() async {
     final text = _amountController.text.trim();
     final amount = int.tryParse(text);
-    if (amount == null || amount <= 0) return;
+    if (amount == null || amount <= 0) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please enter a valid amount in ml.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+      return;
+    }
+    if (amount > 5000) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Maximum single intake is 5,000 ml.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+      return;
+    }
 
     try {
       final repo = ref.read(hydrationRepositoryProvider);

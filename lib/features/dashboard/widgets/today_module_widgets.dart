@@ -14,6 +14,7 @@ import '../../food_log/food_search_screen.dart';
 import '../../food_log/meal_presentation_registry.dart';
 import '../today_consumer_presentation.dart';
 import '../today_presentation_types.dart';
+import 'appearance_bottom_sheet.dart';
 import 'today_helpers.dart';
 
 /// Today module widgets (PV1-ENG-05B first pass).
@@ -21,13 +22,15 @@ import 'today_helpers.dart';
 /// Extracted verbatim from `today_daily_action_surface.dart`; unchanged.
 
 class TodayHeader extends StatefulWidget {
-  const TodayHeader({super.key, 
+  const TodayHeader({
+    super.key, 
     required this.userName,
     required this.streakCount,
     required this.selectedDate,
     required this.referenceNow,
     required this.onOpenSettings,
-    required this.onCustomize,
+    this.onCustomize,
+    this.onOpenAppearance,
   });
 
   final String userName;
@@ -35,7 +38,8 @@ class TodayHeader extends StatefulWidget {
   final DateTime selectedDate;
   final DateTime? referenceNow;
   final VoidCallback onOpenSettings;
-  final VoidCallback onCustomize;
+  final VoidCallback? onCustomize;
+  final VoidCallback? onOpenAppearance;
 
   @override
   State<TodayHeader> createState() => TodayHeaderState();
@@ -110,10 +114,11 @@ class TodayHeaderState extends State<TodayHeader>
             ),
           ),
           B05IconAction(
-            icon: Icons.tune_rounded,
-            label: ConsumerCopy.customizeTodayAction,
-            hint: 'Reorder, show, hide, or collapse Today modules.',
-            onPressed: widget.onCustomize,
+            icon: Icons.palette_outlined,
+            label: 'Appearance',
+            hint: 'Change app theme between system, light, and dark mode.',
+            onPressed: widget.onOpenAppearance ??
+                () => AppearanceBottomSheet.show(context),
             focusOrder: 0,
           ),
           B05IconAction(

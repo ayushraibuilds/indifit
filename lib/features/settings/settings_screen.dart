@@ -12,6 +12,7 @@ import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/consumer_task_primitives.dart';
 import '../../core/widgets/indi_fit_bottom_sheet.dart';
 import '../../data/repositories/health_service.dart';
+import '../dashboard/widgets/appearance_bottom_sheet.dart';
 import '../dashboard/widgets/dashboard_module_customization_panel.dart';
 import '../education/learn_screen.dart';
 import '../equipment/equipment_profiles_screen.dart';
@@ -286,49 +287,7 @@ class SettingsScreen extends ConsumerWidget {
     WidgetRef ref,
     ThemeMode current,
   ) async {
-    await showIndiFitBottomSheet<void>(
-      context: context,
-      semanticLabel: 'Appearance',
-      builder: (sheetContext) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: B05Layout.space8),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: B05Layout.space16,
-                  vertical: B05Layout.space8,
-                ),
-                child: Text(
-                  'Appearance',
-                  style: B05Typography.title(sheetContext),
-                ),
-              ),
-              for (final mode in ThemeMode.values)
-                // ignore: deprecated_member_use
-                RadioListTile<ThemeMode>(
-                  title: Text(
-                    _themeLabel(mode),
-                    style: B05Typography.label(sheetContext),
-                  ),
-                  value: mode,
-                  // ignore: deprecated_member_use
-                  groupValue: current,
-                  activeColor: sheetContext.b05Colors.action,
-                  // ignore: deprecated_member_use
-                  onChanged: (value) {
-                    if (value == null) return;
-                    ref.read(themeModeProvider.notifier).setThemeMode(value);
-                    Navigator.pop(sheetContext);
-                  },
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
+    await AppearanceBottomSheet.show(context);
   }
 
   static Future<void> _showUnitPicker(

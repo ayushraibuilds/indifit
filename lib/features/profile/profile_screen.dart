@@ -76,7 +76,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       _sourceGoal = p.userGoal;
       _sourceActivity = p.userActivityLevel;
       _sourceEquipment = p.equipmentAccess;
-      _selectedSex = _knownOr(p.userSex, const {'male', 'female'}, 'male');
+      _selectedSex = _knownOr(
+        p.userSex,
+        const {'male', 'female', 'other'},
+        'male',
+      );
       _selectedGoal = _knownOr(p.userGoal, const {
         'lose',
         'maintain',
@@ -326,11 +330,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 padding: const EdgeInsets.all(B05Layout.space16),
                 child: Column(
                   children: [
-                    TextField(
-                      controller: _nameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Name (optional)',
-                        prefixIcon: Icon(Icons.person_outline_rounded),
+                    Semantics(
+                      hint: 'Optional',
+                      child: TextField(
+                        controller: _nameController,
+                        decoration: const InputDecoration(
+                          labelText: 'Name',
+                          prefixIcon: Icon(Icons.person_outline_rounded),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -357,6 +364,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             DropdownMenuItem(
                               value: 'female',
                               child: Text('Female'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'other',
+                              child: Text('Other / Non-binary'),
                             ),
                           ],
                           onChanged: (val) {

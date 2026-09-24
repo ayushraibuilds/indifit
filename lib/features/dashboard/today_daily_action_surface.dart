@@ -17,6 +17,7 @@ import 'dashboard_personalization_controller.dart';
 import 'today_consumer_presentation.dart';
 import 'today_presentation_types.dart';
 import 'today_surface_controller.dart';
+import 'widgets/appearance_bottom_sheet.dart';
 import 'widgets/dashboard_date_bar.dart';
 import 'widgets/today_helpers.dart';
 import 'widgets/today_hydration_card.dart';
@@ -24,6 +25,7 @@ import 'widgets/today_module_widgets.dart';
 import 'widgets/today_nutrition_widgets.dart';
 
 export 'today_presentation_types.dart';
+export 'widgets/appearance_bottom_sheet.dart';
 export 'widgets/today_helpers.dart';
 export 'widgets/today_hydration_card.dart';
 export 'widgets/today_module_widgets.dart';
@@ -84,7 +86,7 @@ class TodayDailyActionSurface extends ConsumerWidget {
         ? standardDashboardModuleRegistry.normalize(const [])
         : personalization.layout;
     final snapshot = snapshotAsync.valueOrNull;
-    final loading = snapshotAsync.isLoading && !snapshotAsync.hasError;
+    final loading = snapshotAsync.isLoading && !snapshotAsync.hasValue;
     final unavailable = snapshotAsync.hasError;
     final configuredSlots = ref.watch(diaryMealSlotsProvider);
     final nutrition = TodayNutritionPresentation.from(
@@ -191,6 +193,7 @@ class TodayDailyActionSurface extends ConsumerWidget {
                     referenceNow: now,
                     onOpenSettings: onOpenSettings,
                     onCustomize: onCustomize,
+                    onOpenAppearance: () => AppearanceBottomSheet.show(context),
                   ),
                   const SizedBox(height: B05Layout.space8),
                   DashboardDateBar(
