@@ -14,6 +14,7 @@ import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/utils/tdee_calculator.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/consumer_task_primitives.dart';
+import '../../data/repositories/hydration_repository.dart';
 import '../../data/repositories/workout_repository.dart';
 import 'b05_adaptive_onboarding.dart';
 import 'widgets/onboarding_step_widgets.dart';
@@ -208,7 +209,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     return 3;
   }
 
-  Gender get _selectedGender => _sex == 'female' ? Gender.female : Gender.male;
+  Gender get _selectedGender => switch (_sex) {
+    'female' => Gender.female,
+    'other' => Gender.other,
+    _ => Gender.male,
+  };
 
   ActivityLevel get _selectedActivityLevel => switch (_activityLevel) {
     'sedentary' => ActivityLevel.sedentary,
@@ -570,35 +575,39 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           Padding(
             padding: const EdgeInsets.fromLTRB(
               B05Layout.space16,
-              B05Layout.space4,
-              B05Layout.space16,
-              0,
-            ),
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(
-                onPressed: _draftLoaded && !_isCompleting && !_isSkipping
-                    ? _skipOnboarding
-                    : null,
-                child: const Text('Skip for now'),
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              B05Layout.space16,
-              B05Layout.space12,
+              B05Layout.space8,
               B05Layout.space16,
               B05Layout.space8,
             ),
-            child:            Builder(
+            child: Builder(
               builder: (context) {
                 // Note: PageView has _totalPages = 4 pages (indices 0..3 for Demographics,
                 // Goal, Activity, Diet). When the user advances past the 4th page,
                 // _showingPayoff becomes true to display the 5th visual step (Summary & Payoff).
                 // Therefore, total visual onboarding steps = 5, and progress is displayStep / 5.
                 final displayStep = _showingPayoff ? 5 : _currentPage + 1;
-                return Row(
+                final screenWidth = MediaQuery.sizeOf(context).width;
+                final textScale =
+                    MediaQuery.textScalerOf(context).scale(14) / 14;
+                final shouldStack =
+                    screenWidth < 360 || textScale > 1.3;
+
+                final skipButton = TextButton(
+                  onPressed: _draftLoaded && !_isCompleting && !_isSkipping
+                      ? _skipOnboarding
+                      : null,
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: B05Layout.space8,
+                      vertical: B05Layout.space4,
+                    ),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: const Text('Skip for now'),
+                );
+
+                final progressRow = Row(
                   children: [
                     B05IconAction(
                       icon: Icons.arrow_back_rounded,
@@ -620,13 +629,34 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(width: B05Layout.space12),
+                    const SizedBox(width: B05Layout.space8),
                     Text(
                       '$displayStep of 5',
                       style: B05Typography.label(
                         context,
                       ).copyWith(color: colors.textSecondary),
                     ),
+                  ],
+                );
+
+                if (shouldStack) {
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      progressRow,
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: skipButton,
+                      ),
+                    ],
+                  );
+                }
+
+                return Row(
+                  children: [
+                    Expanded(child: progressRow),
+                    const SizedBox(width: B05Layout.space8),
+                    skipButton,
                   ],
                 );
               },
@@ -732,34 +762,44 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final colors = context.b05Colors;
     return OnboardingPageContainer(
       title: 'Welcome to IndiFit!',
-      subtitle: 'A few details help us make your starting point useful.',
+      subtitle: 'A few details help us customize your daily targets.',
       scrollController: _aboutScrollController,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Select your biological sex:',
-            style: B05Typography.label(
+            'Used only to estimate daily targets',
+            style: B05Typography.caption(
               context,
             ).copyWith(color: colors.textSecondary),
           ),
+          const SizedBox(height: B05Layout.space12),
           Row(
             children: [
               Expanded(
-                child: OnboardingSelectionCard(
-                  title: 'Male',
+                child: OnboardingGenderOptionCard(
+                  label: 'Male',
                   icon: Icons.male,
                   selected: _sex == 'male',
                   onTap: () => _selectOnboardingChoice(() => _sex = 'male'),
                 ),
               ),
-              const SizedBox(width: B05Layout.space12),
+              const SizedBox(width: B05Layout.space8),
               Expanded(
-                child: OnboardingSelectionCard(
-                  title: 'Female',
+                child: OnboardingGenderOptionCard(
+                  label: 'Female',
                   icon: Icons.female,
                   selected: _sex == 'female',
                   onTap: () => _selectOnboardingChoice(() => _sex = 'female'),
+                ),
+              ),
+              const SizedBox(width: B05Layout.space8),
+              Expanded(
+                child: OnboardingGenderOptionCard(
+                  label: 'Other',
+                  icon: Icons.transgender,
+                  selected: _sex == 'other',
+                  onTap: () => _selectOnboardingChoice(() => _sex = 'other'),
                 ),
               ),
             ],
@@ -772,39 +812,45 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               children: [
                 FocusTraversalOrder(
                   order: const NumericFocusOrder(1),
-                  child: TextField(
-                    controller: _nameController,
-                    focusNode: _nameFocusNode,
-                    maxLength: 100,
-                    buildCounter:
-                        (
-                          _, {
-                          required currentLength,
-                          required isFocused,
-                          maxLength,
-                        }) => null,
-                    textInputAction: TextInputAction.next,
-                    onChanged: (_) =>
-                        unawaited(_saveDraft().catchError((_) {})),
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: colors.textPrimary,
-                    ),
-                    decoration: InputDecoration(
-                      labelText: 'Name (optional)',
-                      hintText: 'e.g. Rahul, Priya',
-                      prefixIcon: Icon(
-                        Icons.person_outline_rounded,
-                        color: colors.action,
-                      ),
-                      filled: true,
-                      fillColor: colors.inset,
-                      border: OutlineInputBorder(
-                        borderRadius: B05Radii.largeRadius,
-                        borderSide: BorderSide(color: colors.border),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: B05Radii.largeRadius,
-                        borderSide: BorderSide(color: colors.border),
+                  child: Semantics(
+                    hint: 'Optional',
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () => _nameFocusNode.requestFocus(),
+                      child: TextField(
+                        controller: _nameController,
+                        focusNode: _nameFocusNode,
+                        maxLength: 100,
+                        buildCounter:
+                            (
+                              _, {
+                              required currentLength,
+                              required isFocused,
+                              maxLength,
+                            }) => null,
+                        textInputAction: TextInputAction.next,
+                        onChanged: (_) =>
+                            unawaited(_saveDraft().catchError((_) {})),
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: colors.textPrimary,
+                        ),
+                        decoration: InputDecoration(
+                          labelText: 'Name',
+                          prefixIcon: Icon(
+                            Icons.person_outline_rounded,
+                            color: colors.action,
+                          ),
+                          filled: true,
+                          fillColor: colors.inset,
+                          border: OutlineInputBorder(
+                            borderRadius: B05Radii.largeRadius,
+                            borderSide: BorderSide(color: colors.border),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: B05Radii.largeRadius,
+                            borderSide: BorderSide(color: colors.border),
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -821,6 +867,22 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     suffix: 'years',
                     icon: Icons.calendar_today,
                     errorText: _ageError,
+                    onStepDown: () {
+                      final current = int.tryParse(_ageController.text) ?? 25;
+                      if (current > 10) {
+                        _ageController.text = '${current - 1}';
+                        _validateAge();
+                        unawaited(_saveDraft().catchError((_) {}));
+                      }
+                    },
+                    onStepUp: () {
+                      final current = int.tryParse(_ageController.text) ?? 25;
+                      if (current < 120) {
+                        _ageController.text = '${current + 1}';
+                        _validateAge();
+                        unawaited(_saveDraft().catchError((_) {}));
+                      }
+                    },
                     onChanged: (_) =>
                         unawaited(_saveDraft().catchError((_) {})),
                     textInputAction: TextInputAction.next,
@@ -829,12 +891,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 const SizedBox(height: B05Layout.space12),
                 FocusTraversalOrder(
                   order: const NumericFocusOrder(3),
-                  child: OnboardingNumberInputField(
+                  child: OnboardingHeightInputField(
                     controller: _heightController,
                     focusNode: _heightFocusNode,
-                    label: 'Height',
-                    suffix: 'cm',
-                    icon: Icons.height,
                     errorText: _heightError,
                     onChanged: (_) =>
                         unawaited(_saveDraft().catchError((_) {})),
@@ -851,6 +910,32 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     suffix: 'kg',
                     icon: Icons.scale,
                     errorText: _weightError,
+                    onStepDown: () {
+                      final current =
+                          double.tryParse(_weightController.text) ?? 70.0;
+                      if (current > 25.0) {
+                        final next = current - 0.5;
+                        _weightController.text =
+                            next.truncateToDouble() == next
+                                ? next.toInt().toString()
+                                : next.toStringAsFixed(1);
+                        _validateWeight();
+                        unawaited(_saveDraft().catchError((_) {}));
+                      }
+                    },
+                    onStepUp: () {
+                      final current =
+                          double.tryParse(_weightController.text) ?? 70.0;
+                      if (current < 350.0) {
+                        final next = current + 0.5;
+                        _weightController.text =
+                            next.truncateToDouble() == next
+                                ? next.toInt().toString()
+                                : next.toStringAsFixed(1);
+                        _validateWeight();
+                        unawaited(_saveDraft().catchError((_) {}));
+                      }
+                    },
                     onChanged: (_) =>
                         unawaited(_saveDraft().catchError((_) {})),
                     onEditingComplete: _dismissInputFocus,
@@ -933,7 +1018,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             child: Semantics(
               container: true,
               label:
-                  'Starting daily target: ${macros.calories} kilocalories, ${macros.proteinG} grams protein, ${macros.carbsG} grams carbohydrates, ${macros.fatG} grams fat.',
+                  'Starting daily target: ${macros.calories} kilocalories, ${macros.proteinG} grams protein, ${macros.carbsG} grams carbohydrates, ${macros.fatG} grams fat, ${HydrationRepository.defaultDailyGoalMl} milliliters water.',
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -966,6 +1051,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       _buildPayoffMetric(
                         label: 'Fat',
                         value: '${macros.fatG} g',
+                      ),
+                      _buildPayoffMetric(
+                        label: 'Water',
+                        value: '${HydrationRepository.defaultDailyGoalMl} ml',
                       ),
                     ],
                   ),
@@ -1164,7 +1253,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   Widget _buildDietPage() {
     return OnboardingPageContainer(
       title: 'How do you like to eat?',
-      subtitle: 'This helps recommendations fit your everyday meals.',
+      subtitle:
+          'Configures dietary badges and AI meal suggestions. Your calorie and macro targets are calculated from your body metrics.',
       child: Column(
         children: [
           OnboardingSelectionCard(

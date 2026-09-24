@@ -14,10 +14,75 @@ class LocalScheduleDateService {
     _ensureTimeZones();
   }
 
+  static const Map<String, String> _timezoneAliases = {
+    // Indian Standard Time aliases (frequently returned by Android Java/OEMs)
+    'Asia/Calcutta': 'Asia/Kolkata',
+    'IST': 'Asia/Kolkata',
+    'GMT+05:30': 'Asia/Kolkata',
+    'UTC+05:30': 'Asia/Kolkata',
+    'GMT+5:30': 'Asia/Kolkata',
+    'UTC+5:30': 'Asia/Kolkata',
+    '+05:30': 'Asia/Kolkata',
+    '+0530': 'Asia/Kolkata',
+    'Asia/Calcutta_Standard_Time': 'Asia/Kolkata',
+
+    // Regional neighboring aliases & legacy names
+    'Asia/Katmandu': 'Asia/Kathmandu',
+    'Asia/Dacca': 'Asia/Dhaka',
+    'Asia/Rangoon': 'Asia/Yangon',
+    'Asia/Saigon': 'Asia/Ho_Chi_Minh',
+    'Asia/Thimbu': 'Asia/Thimphu',
+    'Asia/Ulan_Bator': 'Asia/Ulaanbaatar',
+    'Europe/Kiev': 'Europe/Kyiv',
+
+    // US & Americas legacy aliases
+    'US/Eastern': 'America/New_York',
+    'US/Central': 'America/Chicago',
+    'US/Mountain': 'America/Denver',
+    'US/Pacific': 'America/Los_Angeles',
+    'US/Arizona': 'America/Phoenix',
+    'US/Alaska': 'America/Anchorage',
+    'US/Hawaii': 'Pacific/Honolulu',
+
+    // Standard UTC / GMT aliases
+    'UTC': 'UTC',
+    'GMT': 'UTC',
+    'Etc/UTC': 'UTC',
+    'Etc/GMT': 'UTC',
+    'Z': 'UTC',
+  };
+
+  /// Normalizes a platform or legacy timezone string into a canonical IANA
+  /// timezone identifier recognized by [locationFor].
+  static String normalizeTimezoneId(String raw) {
+    final trimmed = raw.trim();
+    if (trimmed.isEmpty) return trimmed;
+    final aliased = _timezoneAliases[trimmed];
+    if (aliased != null) return aliased;
+
+    _ensureTimeZones();
+    if (tz.timeZoneDatabase.locations.containsKey(trimmed)) {
+      return trimmed;
+    }
+    for (final key in tz.timeZoneDatabase.locations.keys) {
+      if (key.toLowerCase() == trimmed.toLowerCase()) {
+        return key;
+      }
+    }
+    return trimmed;
+  }
+
   tz.Location locationFor(String timezoneId) {
+    _ensureTimeZones();
+    final canonicalId = normalizeTimezoneId(timezoneId);
     try {
-      return tz.getLocation(timezoneId);
+      return tz.getLocation(canonicalId);
     } catch (_) {
+      for (final entry in tz.timeZoneDatabase.locations.entries) {
+        if (entry.key.toLowerCase() == canonicalId.toLowerCase()) {
+          return entry.value;
+        }
+      }
       throw ArgumentError.value(
         timezoneId,
         'timezoneId',

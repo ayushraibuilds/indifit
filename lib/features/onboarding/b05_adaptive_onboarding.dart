@@ -329,6 +329,7 @@ class B05OnboardingDraftStore {
       sex: _choiceOrNull(prefs.getString(_profileSexKey), const {
         'male',
         'female',
+        'other',
       }),
       name: _bounded(prefs.getString(_profileNameKey) ?? '', maxLength: 100),
       age: _bounded(prefs.getString(_profileAgeKey) ?? '25', maxLength: 16),
@@ -359,7 +360,7 @@ class B05OnboardingDraftStore {
     } else {
       await prefs.setString(
         _profileSexKey,
-        _choiceOrNull(draft.sex, const {'male', 'female'})!,
+        _choiceOrNull(draft.sex, const {'male', 'female', 'other'})!,
       );
     }
     await prefs.setString(

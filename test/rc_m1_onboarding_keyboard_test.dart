@@ -17,12 +17,12 @@ void main() {
       final database = await _pumpOnboarding(tester);
       addTearDown(database.close);
 
-      final name = _field('Name (optional)');
+      final name = _field('Name');
       final age = _field('Age');
       final height = _field('Height');
       final weight = _field('Current weight');
       expect(
-        tester.widget<TextField>(_field('Name (optional)')).textInputAction,
+        tester.widget<TextField>(_field('Name')).textInputAction,
         TextInputAction.next,
       );
       expect(
@@ -159,7 +159,7 @@ void main() {
       final database = await _pumpOnboarding(tester);
       addTearDown(database.close);
 
-      final name = _field('Name (optional)');
+      final name = _field('Name');
       final age = _field('Age');
       final height = _field('Height');
       final weight = _field('Current weight');
@@ -236,6 +236,52 @@ void main() {
         expect(tester.takeException(), isNull);
       }
     }
+  });
+
+  testWidgets('steppers and height converter adjust inputs accurately', (
+    tester,
+  ) async {
+    final database = await _pumpOnboarding(tester);
+    addTearDown(database.close);
+
+    final ageField = _field('Age');
+    final weightField = _field('Current weight');
+
+    // Default age is 25
+    expect(tester.widget<TextField>(ageField).controller!.text, '25');
+    // Tap increase age stepper
+    await tester.tap(find.bySemanticsLabel('Increase Age'));
+    await tester.pump();
+    expect(tester.widget<TextField>(ageField).controller!.text, '26');
+
+    // Tap decrease age stepper
+    await tester.tap(find.bySemanticsLabel('Decrease Age'));
+    await tester.pump();
+    expect(tester.widget<TextField>(ageField).controller!.text, '25');
+
+    // Default weight is 70
+    expect(tester.widget<TextField>(weightField).controller!.text, '70');
+    // Tap increase weight stepper
+    final increaseWeight = find.bySemanticsLabel('Increase Current weight');
+    await tester.ensureVisible(increaseWeight);
+    await tester.tap(increaseWeight);
+    await tester.pump();
+    expect(tester.widget<TextField>(weightField).controller!.text, '70.5');
+
+    // Toggle height to ft/in
+    expect(find.text('ft/in'), findsOneWidget);
+    await tester.tap(find.text('ft/in'));
+    await tester.pumpAndSettle();
+
+    // Now in ft/in mode, should show ft and in labels and cm toggle
+    expect(find.text('cm'), findsOneWidget);
+    expect(find.text('ft'), findsOneWidget);
+    expect(find.text('in'), findsOneWidget);
+
+    // Toggle back to cm
+    await tester.tap(find.text('cm'));
+    await tester.pumpAndSettle();
+    expect(find.text('ft/in'), findsOneWidget);
   });
 }
 

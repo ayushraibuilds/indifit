@@ -10,6 +10,7 @@ import '../../data/database/app_database.dart';
 import '../config/app_preferences_keys.dart';
 import '../utils/app_logger.dart';
 import 'crash_reporting_service.dart';
+import 'local_schedule_date_service.dart';
 import 'rest_presence_service.dart';
 
 /// Non-annoying, engagement-optimized local notification service.
@@ -876,7 +877,8 @@ class NotificationService {
       final identifier = readTimezoneId != null
           ? await readTimezoneId()
           : (await FlutterTimezone.getLocalTimezone()).identifier;
-      tz.setLocalLocation(tz.getLocation(identifier));
+      final canonical = LocalScheduleDateService.normalizeTimezoneId(identifier);
+      tz.setLocalLocation(tz.getLocation(canonical));
       return;
     } catch (e) {
       AppLogger.warning('Native timezone lookup failed: $e');

@@ -1,5 +1,6 @@
 import 'package:flutter_timezone/flutter_timezone.dart';
 
+import '../utils/app_logger.dart';
 import 'local_schedule_date_service.dart';
 
 typedef LocalTimezoneReader = Future<String> Function();
@@ -20,28 +21,61 @@ class LocalTimezoneService {
        _dates = dates ?? LocalScheduleDateService();
 
   Future<String> currentTimezoneId() async {
-    final value = (await _read()).trim();
-    if (value.isEmpty) {
-      throw const LocalTimezoneError(
-        'missing_timezone_id',
-        'The platform did not provide an IANA timezone identifier.',
+    final raw = (await _readSafely()).trim();
+    if (raw.isEmpty) {
+      final fallback = _resolveFallbackFromDeviceOffset();
+      AppLogger.warning(
+        'The platform provided an empty timezone identifier. Falling back to "$fallback".',
       );
+      return fallback;
     }
+
+    final normalized = LocalScheduleDateService.normalizeTimezoneId(raw);
     try {
-      _dates.validateTimezone(value);
+      _dates.validateTimezone(normalized);
+      return normalized;
     } on ArgumentError catch (error) {
-      throw LocalTimezoneError(
-        'invalid_timezone_id',
-        'The platform timezone is not a supported IANA identifier.',
-        cause: error,
+      final fallback = _resolveFallbackFromDeviceOffset();
+      AppLogger.warning(
+        'The platform timezone "$raw" is not recognized. Falling back to "$fallback": $error',
       );
+      return fallback;
     }
-    return value;
+  }
+
+  Future<String> _readSafely() async {
+    try {
+      return await _read();
+    } catch (e) {
+      AppLogger.warning('Failed to read platform timezone: $e');
+      return '';
+    }
+  }
+
+  static String _resolveFallbackFromDeviceOffset() {
+    final offset = DateTime.now().timeZoneOffset;
+    final hours = offset.inHours;
+    final minutes = offset.inMinutes.remainder(60).abs();
+
+    if (hours == 5 && minutes == 30) return 'Asia/Kolkata';
+    if (hours == 0 && minutes == 0) return 'UTC';
+    if (hours == -5 && minutes == 0) return 'America/New_York';
+    if (hours == -8 && minutes == 0) return 'America/Los_Angeles';
+    if (hours == 1 && minutes == 0) return 'Europe/London';
+    if (hours == 2 && minutes == 0) return 'Europe/Paris';
+    if (hours == 8 && minutes == 0) return 'Asia/Singapore';
+    if (hours == 9 && minutes == 0) return 'Asia/Tokyo';
+    return 'Asia/Kolkata';
   }
 
   static Future<String> _readPlatformTimezone() async {
-    final timezone = await FlutterTimezone.getLocalTimezone();
-    return timezone.identifier;
+    try {
+      final timezone = await FlutterTimezone.getLocalTimezone();
+      return timezone.identifier;
+    } catch (e) {
+      AppLogger.warning('FlutterTimezone.getLocalTimezone failed: $e');
+      return '';
+    }
   }
 }
 
