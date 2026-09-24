@@ -1219,10 +1219,18 @@ class B02StrengthExecutionController
         );
       }
       final terminalNow = _nowUtc().toUtc();
-      final finalState = _stampElapsed(
+      var finalState = _stampElapsed(
         _finishOpenRestForNextAction(current.state, endedAtUtc: terminalNow),
         nowUtc: terminalNow,
       ).copyWith(activeSegmentStartedAtUtc: null);
+      if (finalState.elapsedSeconds < 1 &&
+          finalState.performedExercises.any(
+            (exercise) => exercise.sets.any(
+              (set) => set.actualReps != null && set.actualReps! > 0,
+            ),
+          )) {
+        finalState = finalState.copyWith(elapsedSeconds: 1);
+      }
       try {
         await _saveDraft(finalState, allowDuringCompletion: true);
       } catch (_) {
@@ -1554,8 +1562,10 @@ class B02StrengthExecutionController
           ? B02StrengthExecutionStatus.recovery
           : B02StrengthExecutionStatus.failure,
       launch: launch,
-      errorMessage: ProductFailurePresentation.fromCode(
-        recovery ? 'workout_recovery_needed' : 'workout_save_failed',
+      slots: state.slots,
+      errorMessage: ProductFailurePresentation.fromError(
+        error,
+        code: recovery ? 'workout_recovery_needed' : null,
       ).message,
     );
   }

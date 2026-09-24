@@ -815,6 +815,13 @@ class B02SummaryBody extends StatelessWidget {
               const SizedBox(height: 16),
               if (onRetry != null)
                 FilledButton(onPressed: onRetry, child: const Text('Retry')),
+              if (onPartial != null) ...[
+                const SizedBox(height: 8),
+                OutlinedButton(
+                  onPressed: onPartial,
+                  child: const Text('Finish as partial workout'),
+                ),
+              ],
               TextButton(
                 onPressed: onBack,
                 child: const Text('Return to workout'),
@@ -829,6 +836,7 @@ class B02SummaryBody extends StatelessWidget {
         .expand((exercise) => exercise.sets)
         .where((set) => set.actualReps != null)
         .fold<int>(0, (sum, set) => sum + set.actualReps!);
+    final hasLoggedSetsWithReps = totalActual > 0;
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 30),
       children: [
@@ -874,6 +882,16 @@ class B02SummaryBody extends StatelessWidget {
               title: Text('No performed sets yet'),
               subtitle: Text('Log at least one set before finishing.'),
             ),
+          )
+        else if (!hasLoggedSetsWithReps)
+          const Card(
+            child: ListTile(
+              leading: Icon(Icons.info_outline),
+              title: Text('No completed reps yet'),
+              subtitle: Text(
+                'Log at least one set with completed reps before saving.',
+              ),
+            ),
           ),
         for (final exercise in performed)
           CompletionExerciseEvidence(
@@ -892,10 +910,13 @@ class B02SummaryBody extends StatelessWidget {
               : 'These completed sets and planned targets will be saved with this workout.',
         ),
         const SizedBox(height: 16),
-        FilledButton(onPressed: onFull, child: const Text('Complete workout')),
+        FilledButton(
+          onPressed: hasLoggedSetsWithReps ? onFull : null,
+          child: const Text('Complete workout'),
+        ),
         const SizedBox(height: 10),
         OutlinedButton(
-          onPressed: onPartial,
+          onPressed: hasLoggedSetsWithReps ? onPartial : null,
           child: const Text('Finish partially…'),
         ),
       ],

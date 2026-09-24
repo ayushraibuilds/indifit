@@ -28,12 +28,20 @@ class B02ActivityFormService {
     if (durationSeconds < 1) {
       throw const B02ValidationException('Duration must be positive.');
     }
+    if (distanceMetres != null && distanceMetres < 0) {
+      throw const B02ValidationException('Distance must be zero or positive.');
+    }
     if (_cardioTypes.contains(activityType)) {
       final intervals = <B02CardioInterval>[];
       if (isIntervalWorkout) {
         if (workSeconds == null || workSeconds < 1) {
           throw const B02ValidationException(
             'Work interval seconds must be positive.',
+          );
+        }
+        if (recoverySeconds != null && recoverySeconds < 0) {
+          throw const B02ValidationException(
+            'Recovery seconds must be zero or positive.',
           );
         }
         intervals.add(

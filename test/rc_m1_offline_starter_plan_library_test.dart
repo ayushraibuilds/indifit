@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -15,6 +16,7 @@ import 'package:indifit/data/repositories/program_activation_coordinator.dart';
 import 'package:indifit/data/repositories/program_repository.dart';
 import 'package:indifit/data/repositories/workout_execution_compatibility_adapter.dart';
 import 'package:indifit/features/training/plan_library_screen.dart';
+import 'package:path/path.dart' as p;
 
 import 'support/indifit_test_harness.dart';
 
@@ -69,6 +71,48 @@ void main() {
       expect(secondSnapshot.entries, hasLength(8));
       expect(await db.select(db.programs).get(), hasLength(8));
       expect(await db.select(db.programVersions).get(), hasLength(8));
+    },
+  );
+
+  test(
+    'empty exercises table self-heals on database open and enables starter plans',
+    () async {
+      final tempDir = await Directory.systemTemp.createTemp(
+        'indifit_upgrade_test',
+      );
+      addTearDown(() => tempDir.delete(recursive: true));
+      final file = File(p.join(tempDir.path, 'upgrade_test.db'));
+
+      final db1 = scope.open(() => AppDatabase.executor(NativeDatabase(file)));
+      final initialCount = await db1.select(db1.exercises).get();
+      expect(initialCount.length, greaterThan(0));
+
+      // Simulate Android bug where exercises were not seeded / empty
+      await db1.customStatement('PRAGMA foreign_keys = OFF;');
+      await db1.customStatement('DELETE FROM exercises;');
+      await db1.customStatement('PRAGMA foreign_keys = ON;');
+      final emptiedCount =
+          (await db1.customSelect(
+            'SELECT COUNT(*) as c FROM exercises;',
+          ).getSingle()).read<int>('c');
+      expect(emptiedCount, equals(0));
+      await db1.close();
+
+      // Reopen database (as happens on next app launch)
+      final db2 = scope.open(() => AppDatabase.executor(NativeDatabase(file)));
+
+      // Verify self-healing in beforeOpen restored the exercises
+      final restoredCount =
+          (await db2.customSelect(
+            'SELECT COUNT(*) as c FROM exercises;',
+          ).getSingle()).read<int>('c');
+      expect(restoredCount, equals(140));
+
+      // Verify that starter plans now succeed with 8 plans (not failing with Plans are unavailable)
+      final programs2 = ProgramRepository(db2);
+      final snapshot =
+          await PlanLibraryReadRepository(db2, programs: programs2).read();
+      expect(snapshot.entries, hasLength(8));
     },
   );
 

@@ -359,6 +359,37 @@ class _B02ActivityCreationScreenState
       );
       return;
     }
+    final distanceText = _distance.text.trim();
+    if (distanceText.isNotEmpty) {
+      final dist = int.tryParse(distanceText);
+      if (dist == null || dist < 0) {
+        setState(
+          () => _validationError =
+              'Enter a valid non-negative distance in metres.',
+        );
+        return;
+      }
+    }
+    if (_interval) {
+      final work = int.tryParse(_workSeconds.text.trim());
+      if (work == null || work < 1) {
+        setState(
+          () => _validationError = 'Work interval seconds must be positive.',
+        );
+        return;
+      }
+      final recText = _recoverySeconds.text.trim();
+      if (recText.isNotEmpty) {
+        final rec = int.tryParse(recText);
+        if (rec == null || rec < 0) {
+          setState(
+            () =>
+                _validationError = 'Recovery seconds must be zero or positive.',
+          );
+          return;
+        }
+      }
+    }
     try {
       final details = _formService.build(
         activityType: _type,

@@ -435,13 +435,12 @@ class _ExercisePickerState extends ConsumerState<ExercisePicker> {
     final replacementContext = pickerContext is ExerciseReplacementPickerContext
         ? pickerContext
         : null;
-    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
     return Padding(
-      padding: EdgeInsets.fromLTRB(
+      padding: const EdgeInsets.fromLTRB(
         B05Layout.space16,
         B05Layout.space12,
         B05Layout.space16,
-        B05Layout.space16 + bottomInset,
+        B05Layout.space16,
       ),
       child: ConstrainedBox(
         constraints: BoxConstraints(

@@ -3,13 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/di/providers.dart';
+import 'package:indifit/core/presentation/product_failure_presentation.dart';
 import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/models/b02_execution_models.dart';
 import 'package:indifit/data/repositories/b02_execution_compatibility_read_repository.dart';
 import 'package:indifit/data/repositories/b02_strength_execution_repository.dart';
 import 'package:indifit/data/repositories/calendar_repository.dart';
+import 'package:indifit/features/workout_player/b02_strength_execution_controller.dart';
 import 'package:indifit/features/workout_player/b02_strength_summary_screen.dart';
+import 'package:indifit/features/workout_player/workout_execution_context.dart';
 import 'support/indifit_test_harness.dart';
 
 void main() {
@@ -316,6 +319,214 @@ void main() {
         ).readStrengthSession(sessionId))!.sessionId,
         sessionId,
       );
+    },
+  );
+
+  test(
+    'ProductFailurePresentation maps incomplete slots and missing reps truthfully',
+    () {
+      final incomplete = ProductFailurePresentation.fromError(
+        const B02StrengthExecutionFinalizationException(
+          'Incomplete exercise slots require explicit partial completion.',
+        ),
+      );
+      expect(
+        incomplete.message,
+        'Incomplete exercises require finishing as a partial workout.',
+      );
+
+      final noReps = ProductFailurePresentation.fromError(
+        const B02StrengthExecutionFinalizationException(
+          'A strength session requires at least one performed set with reps.',
+        ),
+      );
+      expect(
+        noReps.message,
+        'Log at least one set with completed reps before saving.',
+      );
+
+      final noDuration = ProductFailurePresentation.fromError(
+        const B02StrengthExecutionFinalizationException(
+          'A strength session requires a positive duration.',
+        ),
+      );
+      expect(noDuration.message, 'Workout duration must be at least 1 second.');
+    },
+  );
+
+  testWidgets(
+    'failure screen offers finish as partial workout button',
+    (tester) async {
+      var partialTapped = false;
+      final launch = _launch(
+        routineName: 'Failed workout',
+        actualName: 'Exercise 1',
+        elapsedSeconds: 60,
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: B02SummaryBody(
+              launch: launch,
+              executionContext: WorkoutExecutionContext.fromLaunch(launch),
+              ui: const B02StrengthExecutionUiState(
+                status: B02StrengthExecutionStatus.failure,
+                errorMessage:
+                    'Incomplete exercises require finishing as a partial workout.',
+              ),
+              onRetry: () {},
+              onFull: () {},
+              onPartial: () => partialTapped = true,
+              onBack: () {},
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(
+        find.text(
+          'Incomplete exercises require finishing as a partial workout.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Retry'), findsOneWidget);
+      expect(find.text('Finish as partial workout'), findsOneWidget);
+
+      await tester.tap(find.text('Finish as partial workout'));
+      await tester.pump();
+      expect(partialTapped, isTrue);
+    },
+  );
+
+  testWidgets(
+    'workout with 0 reps disables completion actions',
+    (tester) async {
+      final emptyExercise = B02PerformedExerciseDraft(
+        id: 'empty-exercise',
+        ordinal: 0,
+        expectedExerciseId: 'quick-exercise',
+        expectedExerciseNameSnapshot: 'Quick press',
+        actualExerciseId: 'quick-exercise',
+        actualExerciseNameSnapshot: 'Quick press',
+        status: 'inProgress',
+        sets: const [],
+      );
+      final emptyLaunch = B02StrengthExecutionLaunch(
+        draftId: 92,
+        occurrenceId: null,
+        executionSnapshotJson: '{"version":1}',
+        state: B02ExecutionDraftState(
+          snapshotId: 'empty-snapshot',
+          snapshotVersion: 1,
+          activityType: B02ActivityType.strength,
+          routineName: 'Empty workout',
+          elapsedSeconds: 10,
+          currentExerciseOrdinal: 0,
+          currentSetOrdinal: 0,
+          performedExercises: [emptyExercise],
+        ),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            databaseProvider.overrideWithValue(db),
+            workoutSessionWakeLockCoordinatorProvider.overrideWithValue(
+              createTestWorkoutWakeLockCoordinator(),
+            ),
+          ],
+          child: MaterialApp(
+            home: B02StrengthSummaryScreen(launch: emptyLaunch),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('No completed reps yet'), findsOneWidget);
+      expect(
+        find.text('Log at least one set with completed reps before saving.'),
+        findsOneWidget,
+      );
+      final completeButton = tester.widget<FilledButton>(
+        find.widgetWithText(FilledButton, 'Complete workout'),
+      );
+      expect(completeButton.onPressed, isNull);
+      final partialButton = tester.widget<OutlinedButton>(
+        find.widgetWithText(OutlinedButton, 'Finish partially…'),
+      );
+      expect(partialButton.onPressed, isNull);
+    },
+  );
+
+  testWidgets(
+    'incomplete workout prompt allows partial completion on full complete tap',
+    (tester) async {
+      final partialExercise = B02PerformedExerciseDraft(
+        id: 'partial-exercise',
+        ordinal: 0,
+        expectedExerciseId: 'quick-exercise',
+        expectedExerciseNameSnapshot: 'Quick press',
+        actualExerciseId: 'quick-exercise',
+        actualExerciseNameSnapshot: 'Quick press',
+        status: 'partial',
+        sets: [
+          B02PerformedSet(
+            id: 'partial-set',
+            performedExerciseId: 'partial-exercise',
+            ordinal: 0,
+            role: B02SetRole.working,
+            actualReps: 5,
+            actualLoadKg: 50,
+            actualLoadBasis: B02LoadBasis.totalExternal,
+          ),
+        ],
+      );
+      final partialLaunch = B02StrengthExecutionLaunch(
+        draftId: 93,
+        occurrenceId: null,
+        executionSnapshotJson: '{"version":1}',
+        state: B02ExecutionDraftState(
+          snapshotId: 'partial-snapshot',
+          snapshotVersion: 1,
+          activityType: B02ActivityType.strength,
+          routineName: 'Partial workout',
+          elapsedSeconds: 45,
+          currentExerciseOrdinal: 0,
+          currentSetOrdinal: 0,
+          performedExercises: [partialExercise],
+        ),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            databaseProvider.overrideWithValue(db),
+            workoutSessionWakeLockCoordinatorProvider.overrideWithValue(
+              createTestWorkoutWakeLockCoordinator(),
+            ),
+          ],
+          child: MaterialApp(
+            home: B02StrengthSummaryScreen(launch: partialLaunch),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Complete workout'), findsOneWidget);
+      await tester.tap(find.text('Complete workout'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Incomplete workout'), findsOneWidget);
+      expect(
+        find.text(
+          'Some exercises or sets were not completed. Would you like to finish and save this as a partial workout?',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Keep training'), findsOneWidget);
+      expect(find.text('Save as partial'), findsOneWidget);
     },
   );
 }
