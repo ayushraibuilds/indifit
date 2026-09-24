@@ -7948,5 +7948,11 @@
     "seen": 1790236197.987707,
     "ast_hash": "0118b0e0ca3e80d5f157bc55ae825d4f",
     "semantic_hash": ""
+  },
+  "integration_test/latest_checkpoints_verification_test.dart": {
+    "mtime": 1790241995.7165575,
+    "seen": 1790242276.55119,
+    "ast_hash": "b421418011701f2695e35b4aae5ffe37",
+    "semantic_hash": ""
   }
 }

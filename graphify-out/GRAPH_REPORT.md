@@ -1,37 +1,37 @@
 # Graph Report - indifit  (2026-09-24)
 
 ## Corpus Check
-- 997 files · ~3,884,708 words
+- 998 files · ~3,885,583 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 55 file(s) not represented in the graph (top: .xml 17, (none) 8, .plist 5)
 
 ## Summary
-- 25229 nodes · 35192 edges · 719 communities (672 shown, 47 thin omitted)
+- 25236 nodes · 35217 edges · 706 communities (666 shown, 40 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 62 edges (avg confidence: 0.95)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `97348c21`
+- Built from commit: `f10f3db9`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
 - app_database.dart
-- ../../core/di/providers.dart
+- routine_display_screen.dart
 - r08c3_plan_library_test.dart
-- package:flutter/material.dart
+- ux_r02_today_home_test.dart
 - StatelessWidget
 - b02_execution_models.dart
 - b04_adaptive_coaching_fixture_matrix.dart
 - DataClass
 - nutrition_tables.dart
-- calendar_controller.dart
+- today_module_widgets.dart
 - package:indifit/data/database/app_database.dart
 - b04_adaptive_target_models.dart
 - circular_thali_plate.dart
 - ux_r06_secondary_goldens_test.dart
 - _
-- progress_screen.dart
+- profile_screen.dart
 - nutrition_constraints.dart
 - b04_policy_gate_fixture.dart
 - b02_execution_fixture_matrix.dart
@@ -44,7 +44,7 @@
 - _
 - _
 - _
-- package:flutter_riverpod/flutter_riverpod.dart
+- package:flutter/material.dart
 - IndiFit — Nutrition Tracker Deep Dive Forensic Report & Expansion Master Plan
 - health_service.dart
 - ux_r03_food_logging_test.dart
@@ -62,7 +62,7 @@
 - nutrition_constraints_screen.dart
 - b05_third_party_asset_manifest.dart
 - b05_adaptive_onboarding.dart
-- quick_add_macros_sheet.dart
+- ../../core/typed_quantities.dart
 - training_program_tables.dart
 - _
 - models/progress_dashboard_models.dart
@@ -77,12 +77,12 @@
 - today_consumer_presentation.dart
 - b05_accessibility_primitives.dart
 - nutrients.dart
-- food_search_recent_list.dart
+- List
 - b04_production_recommendation_orchestrator.dart
 - b02_strength_player_screen.dart
 - b04_goal_models.dart
 - b04_current_food_models.dart
-- b04_daily_briefing_controller.dart
+- nutrition_goal_repository.dart
 - progress_period_comparison_models.dart
 - b04_briefing_read_models.dart
 - onboarding_screen.dart
@@ -146,16 +146,16 @@
 - nutrition_recipe_editor_controller.dart
 - b04_production_surface_widgets.dart
 - _
-- r08b234_execution_integration_test.dart
+- r08b6_rest_wakelock_test.dart
 - b04_recommendation_history_repository.dart
-- package:flutter_test/flutter_test.dart
+- AppDatabase
 - _
 - cloud_backup_service.dart
-- class
-- r08b7_player_integration_test.dart
+- Map
+- return
 - b02_activity_session_repository.dart
-- List
-- main.py
+- String get
+- routers/backup.py
 - gemini_client.py
 - b04_adaptive_target_engine.dart
 - food_catalog_models.dart
@@ -181,7 +181,7 @@
 - exercise_identity_fixtures.dart
 - b05_semantic_colors.dart
 - nutrition_estimate_repository.dart
-- package:uuid/uuid.dart
+- nutrition_recipe_graph_mapper.dart
 - food_contextual_action_controller.dart
 - dashboard_controller.dart
 - health_sync_hub_screen.dart
@@ -209,7 +209,7 @@
 - models/dashboard_module_registry.dart
 - hydration_fluid_fill.dart
 - ../../core/widgets/b05_accessibility_primitives.dart
-- profile_screen.dart
+- settings_screen.dart
 - onboarding_step_widgets.dart
 - r08g4_health_integration_test.dart
 - indifit_muscle_map.dart
@@ -222,19 +222,19 @@
 - nutrition_label_ocr_service.dart
 - food_diary_widgets.dart
 - meal_presentation_registry.dart
-- nutrition_estimate_review_controller.dart
+- package:indifit/core/theme/app_theme.dart
 - user_profile_provider.dart
 - b02_technique_editor.dart
 - b02_warmup_recommendation_service.dart
-- plan_library_read_repository.dart
+- training_providers.dart
 - b04_current_food_guidance_test.dart
 - progress_view_models.dart
 - sync_mutation.dart
 - IndiFit — Master Product, Architecture & Strategic Audit Dossier
-- coaching_preference_repository.dart
-- nutrition_label_ocr_screen.dart
+- r08e1_personalized_onboarding_test.dart
+- main.py
 - b04_production_ui_test.dart
-- r08b7_exercise_context_test.dart
+- r08b7_player_integration_test.dart
 - thali_circular_plate_test.dart
 - nutrition_estimate_review_screen.dart
 - b03_raw_cooked_test.dart
@@ -250,14 +250,14 @@
 - achievement_service.dart
 - food_api_service.dart
 - food_log_surface.dart
-- package:shared_preferences/shared_preferences.dart
+- package:flutter_test/flutter_test.dart
 - capabilities_registry.dart
 - food_contextual_actions.dart
 - b05_ui_tables.dart
 - app_failure.dart
 - _
 - achievements_screen.dart
-- nutrition_recipe_editor_screen.dart
+- workout_summary_lifecycle_test.dart
 - convert_musclemap_geometry.py
 - food_tables.dart
 - nutrition_read_model_repository.dart
@@ -270,30 +270,30 @@
 - Phase 2: Core UX Fixes (Weeks 2–3)
 - remote_food_review_sheet.dart
 - b04_briefing_read_repositories.dart
-- log_weight_bottom_sheet.dart
-- natural_language_meal_screen.dart
+- r08f4_training_volume_presentation.dart
+- nutrition_label_ocr_screen.dart
 - local_timezone_service.dart
 - QuantityError
 - calendar_read_repository.dart
 - exercise_picker_repository.dart
 - exercise_preference_editor_screen.dart
 - b02_progress_read_repository.dart
-- dashboard_module_customization_panel.dart
-- package:indifit/data/models/b04_goal_models.dart
+- today_daily_action_surface.dart
+- b04_integration_regression_test.dart
 - b04_production_recommendation_orchestration_test.dart
-- b03_legacy_nutrition_adapter_test.dart
+- package:indifit/core/typed_quantities.dart
 - b03_protein_distribution_test.dart
 - b03_recipe_calculation_test.dart
 - IndiFit — Nutrition Segment Transformation: Online-First, Offline-Fallback Architectural Blueprint & Execution Spec
-- ux_r02_today_home_test.dart
+- package:uuid/uuid.dart
 - thali_plate_layout.dart
 - workout_completion_recap.dart
 - indifit_test_harness.dart
-- _
+- household_measures_screen.dart
 - r08_0_2_repdb_mapping_review_test.dart
-- pv1_prod03b_celebration_surface_test.dart
+- _
 - equipment_profile_editor_screen.dart
-- today_nutrition_widgets.dart
+- ../../core/di/providers.dart
 - workout_execution_compatibility_adapter.dart
 - nutrition_legacy_corrections.dart
 - ux_r07d_food_diary_logging_test.dart
@@ -302,10 +302,10 @@
 - auto_backup_service.dart
 - hlc_timestamp.dart
 - account_capability.dart
-- b03_final_production_integration_test.dart
+- r08b4_exercise_picker_test.dart
 - b04_optional_ai_assistance_test.dart
 - household_measures_controller.dart
-- static const int
+- DateTime?
 - package:indifit/core/nutrients.dart
 - r08c9_plan_overview_history_test.dart
 - nutrition_constraints_controller.dart
@@ -326,7 +326,7 @@
 - hydration_models.dart
 - r08d4_direct_food_edit_test.dart
 - program_lifecycle_repository.dart
-- pv1_content01a_pack_contract_test.dart
+- package:crypto/crypto.dart
 - cloud_backup_capability.dart
 - b02_activity_controller.dart
 - core_providers.dart
@@ -338,12 +338,12 @@
 - dashboard_personalization_repository.dart
 - r08d5_multiselect_food_logging_test.dart
 - outbox_repository.dart
-- custom_food_editor_screen.dart
+- class
 - _
-- Map
+- outbox_operation.dart
 - b02_target_recommendation_repository.dart
 - r08e5_meal_ideas_gate_test.dart
-- b02_execution_advanced_controls.dart
+- r08_0_3_repdb_asset_pipeline_test.dart
 - B04-D04-ENABLED-1 — First enabled calorie-adaptation numerical policy
 - IndiFit Canonical Product and Engineering Roadmap
 - barcode_scanner_screen.dart
@@ -363,7 +363,7 @@
 - v14_db_fixtures.dart
 - nutrition_constraint_review_controller.dart
 - equipment_fixtures.dart
-- entitlement_capability.dart
+- sync_conflict_resolver.dart
 - b01_legacy_import_support.dart
 - user_tables.dart
 - b02_occurrence_snapshot_customizer.dart
@@ -372,12 +372,12 @@
 - IndiFit Post-V1 Incremental Cleanup Program
 - content_pack_validator.dart
 - acquire_r08_repdb_assets.dart
-- AppDatabase
-- dashboard_personalization_controller.dart
+- _
+- cloud_backup_api_client.dart
 - summary
 - connected_status.dart
 - sync_capability.dart
-- static const Set
+- workout_draft_codec.dart
 - b04_recommendation_engine_test.dart
 - r08d7_recipes_consumer_test.dart
 - 4B. Identity, Schema & Lifecycle Decisions (added post-01B audit)
@@ -385,24 +385,24 @@
 - IndiFit — 18-Point UX & Feature Improvement Plan
 - edit_food_log_sheet.dart
 - privacy_policy.dart
-- pv1_catalog01c_barcode_scan_test.dart
+- b03_identity_test.dart
 - pv1_prod04_rest_presence_test.dart
 - nodes
-- program_authoring_controller.dart
+- _
 - app_preferences_service.dart
 - local_schedule_date_service.dart
 - B01 Decisions — Sol Architecture Gate
 - sync_api_client.dart
 - TestAiPhotoV2
-- plate_calculator_sheet.dart
+- health_provider.dart
 - 🔴 REMAINING (Not Started)
 - cloud_backup_card.dart
 - b04_weekly_review_controller.dart
 - code-graph.json
 - double get
-- program_activation_coordinator.dart
+- ../database/app_database.dart
 - B02 — Workout Execution and Modalities: Implementation Architecture
-- food_catalog_capability.dart
+- package:indifit/data/models/b04_goal_models.dart
 - content_pack_registry.dart
 - lib/app/bootstrap.dart
 - lib/app/indifit_app.dart
@@ -435,15 +435,15 @@
 - lib/core/config/app_config.dart
 - lib/core/config/app_preferences_keys.dart
 - b03_estimate_provenance_test.dart
-- NutrientRegistry
-- NutritionThaliItem
-- crash_reporting_service.dart
+- progress_period_comparison_test.dart
+- NutritionConstraintDefinitionsCompanion
+- static const String
 - app_logger.dart
-- StateNotifier
+- occurrence_transition_validator.dart
 - Connected Track C0–C6 — local-first services
 - 5. Ordered delivery program
-- saved_meal_detail_screen.dart
-- integration_capability.dart
+- programAuthoringControllerProvider
+- static const List
 - IndiFit R07F-1 — Training Lifecycle & Plan Cohesion Review
 - adaptive_tdee_repository_test.dart
 - _
@@ -452,7 +452,7 @@
 - tdee_calculator.dart
 - b02_strength_execution_draft_service.dart
 - ios_live_activity_service_test.dart
-- network_capability.dart
+- entitlement_capability.dart
 - .start
 - IndiFit — 18-Point UX & Feature Improvement Plan (ARCHIVED)
 - IndiFit — 18-Point UX & Feature Improvement Plan
@@ -460,7 +460,7 @@
 - ai_assistance_capability.dart
 - r07c_workout_presentation.dart
 - static const
-- static const String
+- legacy_workout_compatibility_adapter.dart
 - verify_r09_artifacts.sh
 - RestTimerAttributes
 - CloudBackupEndpointTests
@@ -468,9 +468,9 @@
 - rc_phase3b_exercise_family_metadata_test.dart
 - typed_quantities.dart
 - workout_share_card.dart
-- plan_overview_read_repository.dart
-- b03_nutrient_aggregation_test.dart
-- package:indifit/core/fixtures/b04_adaptive_coaching_fixture_matrix.dart
+- static const int
+- onboardingCompletedProvider
+- backup_v5_fixtures.dart
 - Proposed Changes
 - double?
 - 2. Technical Findings & Current Repository State
@@ -479,8 +479,8 @@
 - B04 — Implementation Task DAG
 - UX R07F-0 — Trust & Release Cleanup Review (Review-and-Resolve)
 - RestTimerLiveActivityView
-- DateTime?
-- b04_consumer_presentation.dart
+- NutritionRecipeException
+- generate_b03_complete_fixtures.dart
 - NutritionCalculationError
 - B02 Decisions — Workout Execution and Modalities
 - r09_release_identity_test.dart
@@ -518,7 +518,7 @@
 - ✨ Feature Additions
 - B02 Final Verification and Release Gate
 - B03 — Nutrition Foundation and Food Context: Implementation-Ready Plan
-- B05SemanticColors
+- NutritionEstimateValidationError
 - 🟡 P1 — High (Required for v1.0)
 - B04AdaptiveProposalState
 - B04AdaptiveTargetDirection
@@ -592,7 +592,7 @@
 - B03 — Nutrition Foundation and Food Context
 - B04 — Targeted Repository Audit
 - B04 — Verification Plan
-- progress_measurement_widgets.dart
+- StrengthExecutionCompatibilityAdapter
 - R08_MASTER_IMPLEMENTATION_ROADMAP.md
 - PART III — R08B: Workout Execution 2.0
 - R08B.4 — First-class exercise replacement and shared picker
@@ -615,7 +615,7 @@
 - R08B.3 — Evidence-backed previous performance and safe defaults
 - IndiFit R07E — Progress & Insights Implementation Plan
 - REFERENCE_GUIDE_UPDATED.md
-- ConsumerWidget
+- _B05ExerciseEducationPanelState
 - Phase 1 — Project Scaffolding & Data Layer (Week 1, Day 8-14)
 - Phase 0 — Truth Audit: Things the roadmap says are "done" but aren't
 - Phase 7 — Backend Hardening & Deployment [P0/P1]
@@ -658,9 +658,9 @@
 - Particularly useful patterns
 - Particularly useful patterns
 - NutritionProteinDistributionService
-- b03_saved_recipe_log_integration_test.dart
+- validate_r08_0_3_public_repo.dart
 - bool get
-- food_diary_screen.dart
+- WorkoutWakeLockDriver
 - 🔴 Critical Bugs
 - Phase 1 — Foundation & Core Scraper (Day 1-2)
 - Phase 5 — Notifications, Deep Links, Background (P1/P2)
@@ -679,9 +679,9 @@
 - Particularly valuable legacy patterns
 - R09-C release identity
 - progress_period_comparison_controller.dart
-- app_theme.dart
+- QuantityConversionResult
 - RepDB — Free Tier License (v1.0)
-- canonical_food_delete.dart
+- B05EducationLessonsController
 - Phase 2 — AI Routine Generator & Exercise Library (Week 2, Day 15-21)
 - Phase 3 — Workout Player (Week 3, Day 22-28)
 - Future Concept Recovery Map
@@ -701,7 +701,7 @@
 - Evidence inspected
 - 11. Screenshot interpretation workflow for AI agents
 - 2. R08 baseline
-- rc_m1_food_search_relevance_test.dart
+- NutritionRecipeLifecycle
 - rules/graphify.md
 - workflows/graphify.md
 - branding/README.md
@@ -711,28 +711,15 @@
 - UX_R7A_DEVICE_REMEDIATION_PLAN.md
 - LaunchImage.imageset/README.md
 - dart:io
-- _NutritionTargetsHubScreenState
-- bootstrap.dart
-- program_authoring_validator.dart
-- TodayDailyActionSurface
-- NutritionLeucineAvailability
-- return
-- _B02StrengthPlayerScreenState
+- b04GoalSettingsControllerProvider
+- NutritionRecipeSourceKind
+- NutritionRecipeVersionStatus
+- nutritionGoalRepositoryProvider
+- r08_0_third_party_asset_manifest_test.dart
 - FoodItem?
 - b02ActivityControllerProvider
-- b02_execution_models.dart
 - NutritionConstraintError
-- NutrientAggregationBehavior
-- NutrientBasisContract
-- NutrientCategory
 - RestPresenceDriver
-- NutrientConfidence
-- NutrientFactStatus
-- NutrientSourceType
-- NutrientSupportContract
-- NutrientUnit
-- NutritionConstraintOutcome
-- NutritionConstraintStrictness
 
 ## God Nodes (most connected - your core abstractions)
 1. `AppDatabase` - 173 edges
@@ -749,39 +736,40 @@
 ## Surprising Connections (you probably didn't know these)
 - `9.2 Photo Meal Estimator V2 (Backend Deliverable, Device Quota & Review Safety)` --references--> `enforce_rate_limit()`  [INFERRED]
   docs/implementation/NUTRITION_TRACKER_UPGRADE_EXPANSION_PLAN.md → backend/core/security.py
+- `10.4 API Contract: `POST /api/ai/meal-estimate-photo-v2`` --references--> `MealDecompositionResponse`  [INFERRED]
+  docs/implementation/NUTRITION_TRACKER_UPGRADE_EXPANSION_PLAN.md → backend/schemas/ai.py
+- `3. Forensic Codebase Audit & Line-Level "Offline Tax" Register` --references--> `MealDecompositionResponse`  [INFERRED]
+  docs/implementation/NUTRITION_TRACKER_UPGRADE_EXPANSION_PLAN.md → backend/schemas/ai.py
 - `Display-text identity locations` --references--> `FoodItem`  [INFERRED]
   docs/implementation/batches/B03-nutrition-foundation/AUDIT.md → backend/schemas/food.py
 - `Invariants:` --references--> `FoodItem`  [INFERRED]
   docs/implementation/post-v1/CATALOG01A_FOOD_CATALOG_SPECIFICATION.md → backend/schemas/food.py
-- `AI and photo-estimate audit` --references--> `_mock_meal_estimate()`  [INFERRED]
-  docs/implementation/batches/B03-nutrition-foundation/AUDIT.md → backend/services/ai_fallbacks.py
-- `12. C6 — Backend modularization` --references--> `create_app()`  [INFERRED]
-  docs/implementation/POST_V1_CLEANUP_PROGRAM.md → backend/main.py
 
 ## Import Cycles
 - None detected.
 
-## Communities (719 total, 47 thin omitted)
+## Communities (706 total, 40 thin omitted)
 
 ### Community 0 - "app_database.dart"
 Cohesion: 0.00
 Nodes (1134): b01_legacy_import_support.dart, class AchievementUnlock extends, class CachedRemoteFood extends, class CardioSessionDetail extends, class CoachingConsentEvent extends, class CoachingEligibilityEvaluation extends, class DashboardModulePreference extends, class EducationContentProgressRow extends (+1126 more)
 
-### Community 1 - "../../core/di/providers.dart"
-Cohesion: 0.03
-Nodes (77): ../../core/di/providers.dart, ../../data/repositories/program_lifecycle_repository.dart, ../errors/app_failure.dart, main, canRetry, fromAppFailure, fromCode, fromError (+69 more)
+### Community 1 - "routine_display_screen.dart"
+Cohesion: 0.04
+Nodes (64): main, build, _buildCalendarContent, build, build, _buildContent, PlanLibraryScreen, _PlanLibraryScreenState (+56 more)
 
 ### Community 2 - "r08c3_plan_library_test.dart"
 Cohesion: 0.01
-Nodes (225): AsyncValue, InvalidOccurrenceTransitionException, LegacyProgramCompatibilityAdapter, ActivationRejectedException, ProgramActivationCoordinator, ProgramLifecycleRepository, ProgramDetailAggregate, ProgramRepository (+217 more)
+Nodes (192): AsyncValue, CalendarOccurrenceReadItem, InvalidOccurrenceTransitionException, LegacyProgramCompatibilityAdapter, ActivationRejectedException, ProgramActivationCoordinator, ProgramLifecycleRepository, ProgramDetailAggregate (+184 more)
 
-### Community 3 - "package:flutter/material.dart"
-Cohesion: 0.02
-Nodes (125): HealthPlatformType, HealthPlatformType get, _LoadedProfileNotifier, loadProfile, main, goToTrainingTab, trainingTabRoute, DashboardPersonalizationController (+117 more)
+### Community 3 - "ux_r02_today_home_test.dart"
+Cohesion: 0.01
+Nodes (167): DateTime? now,
+  double, DashboardPersonalizationController, DashboardPersonalizationState, OutlinedButton, package:indifit/core/di/core_providers.dart, package:indifit/data/models/b02_progress_read_models.dart, package:indifit/data/repositories/dashboard_personalization_repository.dart, package:indifit/features/dashboard/dashboard_module_registry.dart (+159 more)
 
 ### Community 4 - "StatelessWidget"
 Cohesion: 0.02
-Nodes (162): ../../data/models/plan_analytics_models.dart, ../../data/repositories/offline_starter_plan_catalog.dart, B02MuscleVolumeReadModel, ProgressNutritionSummary, build, completeDays, days, fitnessGoalLabel (+154 more)
+Nodes (155): ../../data/models/plan_analytics_models.dart, ../../data/repositories/offline_starter_plan_catalog.dart, B02MuscleVolumeReadModel, ProgressNutritionSummary, build, completeDays, days, fitnessGoalLabel (+147 more)
 
 ### Community 5 - "b02_execution_models.dart"
 Cohesion: 0.01
@@ -793,39 +781,39 @@ Nodes (202): B04Rational? get, abs, absolute, accepted, actualList, adaptiveDelt
 
 ### Community 7 - "DataClass"
 Cohesion: 0.02
-Nodes (184): Insertable, NutritionConstraintDefinition, NutritionEstimate, UpdateCompanion, AchievementUnlock, AchievementUnlocksCompanion, BodyMeasurement, BodyMeasurementsCompanion (+176 more)
+Nodes (186): Insertable, NutritionEstimate, NutritionUserConstraint, NutritionVesselCalibration, UpdateCompanion, AchievementUnlock, AchievementUnlocksCompanion, BodyMeasurement (+178 more)
 
 ### Community 8 - "nutrition_tables.dart"
 Cohesion: 0.01
 Nodes (191): action, actorSource, adaptiveCoachingEnabled, ageInputSource, algorithmVersion, alias, alternatives, amount (+183 more)
 
-### Community 9 - "calendar_controller.dart"
-Cohesion: 0.06
-Nodes (32): calendar_read_model.dart, ../../data/services/b02_occurrence_snapshot_customizer.dart, _applySnapshot, _boundsForState, _calendarRepo, cancelOccurrence, currentState, customizeFutureOccurrences (+24 more)
+### Community 9 - "today_module_widgets.dart"
+Cohesion: 0.03
+Nodes (62): appearance_bottom_sheet.dart, ../../../core/presentation/daypart_greeting.dart, todayOnboardingHandoffPendingProvider, TodayActivityPresentation, TodayFocusPresentation, TodayMealPresentation, TodayProgressPresentation, TodayWorkoutPresentation (+54 more)
 
 ### Community 10 - "package:indifit/data/database/app_database.dart"
 Cohesion: 0.02
-Nodes (134): await, dart:convert, fixtures/backup_v5_fixtures.dart, FormatException, BackupV10ValidationException, BackupV9ValidationException, allowedSetTypes, currentVersion (+126 more)
+Nodes (133): AnimatedContainer, await, dart:convert, fixtures/backup_v5_fixtures.dart, FormatException, BackupV10ValidationException, BackupV8ValidationException, BackupV9ValidationException (+125 more)
 
 ### Community 11 - "b04_adaptive_target_models.dart"
 Cohesion: 0.01
 Nodes (162): b04_recovery_models.dart, B04ExactRational get, a, accepted, actionAtLower, actionAtUpper, activation, activeGoal (+154 more)
 
 ### Community 12 - "circular_thali_plate.dart"
-Cohesion: 0.04
-Nodes (55): ../../core/nutrition_thali.dart, NutritionThaliItemPreview, NutritionThaliPreview, build, _buildHalfStaple, _buildSlotContent, _CenterStaplePlatter, centerStaples (+47 more)
+Cohesion: 0.06
+Nodes (34): NutritionThaliPreview, build, _buildHalfStaple, _buildSlotContent, _CenterStaplePlatter, centerStaples, CircularThaliPlate, colors (+26 more)
 
 ### Community 13 - "ux_r06_secondary_goldens_test.dart"
 Cohesion: 0.02
-Nodes (107): DropdownButtonFormField, BackupV8ValidationException, NutritionConstraintRepository, NutritionHouseholdMeasureRepository, package:indifit/core/nutrition_constraints.dart, package:indifit/core/presentation/diet_preference_presentation.dart, package:indifit/core/presentation/secondary_presentation.dart, package:indifit/core/widgets/responsive_form_primitives.dart (+99 more)
+Nodes (99): DropdownButtonFormField, NutritionConstraintRepository, package:indifit/core/nutrition_constraints.dart, package:indifit/core/widgets/responsive_form_primitives.dart, package:indifit/data/models/b04_briefing_read_models.dart, package:indifit/data/repositories/nutrition_constraint_repository.dart, package:indifit/data/repositories/nutrition_household_measure_repository.dart, package:indifit/features/coaching/b04_consumer_presentation.dart (+91 more)
 
 ### Community 14 - "_"
 Cohesion: 0.01
 Nodes (145): _, alias, assertion, availability, B03BackupFixture, B03ConstraintFixture, B03ConstraintResult, B03ConstraintType (+137 more)
 
-### Community 15 - "progress_screen.dart"
-Cohesion: 0.06
-Nodes (36): achievements_screen.dart, ../dashboard/widgets/log_weight_bottom_sheet.dart, ../../data/repositories/nutrition_read_model_repository.dart, ../../data/repositories/progress_dashboard_read_repository.dart, ../exercise_library/exercise_history_screen.dart, ProgressDashboardSnapshot, adaptiveTdeeEstimateProvider, progressDashboardReadRepositoryProvider (+28 more)
+### Community 15 - "profile_screen.dart"
+Cohesion: 0.02
+Nodes (106): achievements_screen.dart, ../../core/presentation/diet_preference_presentation.dart, ../dashboard/widgets/log_weight_bottom_sheet.dart, ../exercise_library/exercise_history_screen.dart, userProfileProvider, _adjust, build, _buildStepChip (+98 more)
 
 ### Community 16 - "nutrition_constraints.dart"
 Cohesion: 0.02
@@ -841,11 +829,11 @@ Nodes (130): activities, activityType, actualExerciseStableId, assistanceKg, B02
 
 ### Community 19 - "food_search_screen.dart"
 Cohesion: 0.02
-Nodes (122): barcode_scanner_screen.dart, CancelToken?, canonical_food_delete.dart, ../../core/catalog/food_category_taxonomy.dart, food_diary_screen.dart, _saveCustomFood, build, _buildCanonicalFastAddAction (+114 more)
+Nodes (126): barcode_scanner_screen.dart, CancelToken?, canonical_food_delete.dart, ../../core/catalog/food_category_taxonomy.dart, food_diary_screen.dart, _saveCustomFood, _addOptionFast, _addRecentFast (+118 more)
 
 ### Community 20 - "program_calendar_screen.dart"
-Cohesion: 0.02
-Nodes (122): calendar_controller.dart, ../../data/repositories/calendar_read_repository.dart, localScheduleDateServiceProvider, CalendarOccurrenceReadItem, SkipDisposition, calendarControllerProvider, activeProgramName, activeProgramVersionId (+114 more)
+Cohesion: 0.01
+Nodes (155): calendar_controller.dart, calendar_read_model.dart, CalendarOccurrenceReadItem? get, ../../data/repositories/calendar_read_repository.dart, ../../data/repositories/calendar_repository.dart, ../../data/services/b02_occurrence_snapshot_customizer.dart, localScheduleDateServiceProvider, SkipDisposition (+147 more)
 
 ### Community 21 - "food_identity_manifest.dart"
 Cohesion: 0.02
@@ -853,18 +841,18 @@ Nodes (125): alias, aliases, _aliasesByNormalized, _aliasKindFromJson, allowedKi
 
 ### Community 22 - "_"
 Cohesion: 0.02
-Nodes (127): _, archiveRecipe, _assertOwnedDraft, calculationRuleVersion, code, copiedFromVersionId, copyWith, count (+119 more)
+Nodes (111): _, archiveRecipe, _assertOwnedDraft, calculationRuleVersion, code, copiedFromVersionId, copyWith, count (+103 more)
 
 ### Community 23 - "ux_r05_progress_test.dart"
 Cohesion: 0.02
 Nodes (102): B02MuscleVolumeReadModel? muscle,
   Set, int? id,
-  int, B02ExercisePerformanceReadRepository, ProgressDashboardReadRepository, LineChart, NavigatorObserver, NavigatorObserver? observer,
-  double, NavigatorState (+94 more)
+  int, ProgressDashboardSnapshot, B02ExercisePerformanceReadRepository, ProgressDashboardReadRepository, LineChart, NavigatorObserver, NavigatorObserver? observer,
+  double (+94 more)
 
 ### Community 24 - "food_api_service_test.dart"
 Cohesion: 0.06
-Nodes (41): Dio, DioException, HttpClientAdapter, backoffMultiplier, calculateNextSchedule, computeDelay, initialDelay, isRetryable (+33 more)
+Nodes (42): Completer, Dio, DioException, HttpClientAdapter, backoffMultiplier, calculateNextSchedule, computeDelay, initialDelay (+34 more)
 
 ### Community 25 - "_"
 Cohesion: 0.04
@@ -876,11 +864,11 @@ Nodes (120): _, absent, activeGoal, activeProgramVersionId, activityRecordIds, a
 
 ### Community 27 - "_"
 Cohesion: 0.02
-Nodes (120): _, _aliases, amount, approximate, asDouble, _assertCompatibleContext, baseDenominator, baseNumerator (+112 more)
+Nodes (117): _, _aliases, amount, approximate, asDouble, _assertCompatibleContext, baseDenominator, baseNumerator (+109 more)
 
-### Community 28 - "package:flutter_riverpod/flutter_riverpod.dart"
+### Community 28 - "package:flutter/material.dart"
 Cohesion: 0.02
-Nodes (133): GoRoute, loadProfile, logBodyMeasurement, main, _TestProfileNotifier, _TestWorkoutRepository, binding, blockId (+125 more)
+Nodes (118): app_colors_extension.dart, b05_semantic_colors.dart, ThemeModeNotifier, _appBarTheme, AppTheme, _bottomSheetTheme, _chipTheme, _dialogTheme (+110 more)
 
 ### Community 29 - "IndiFit — Nutrition Tracker Deep Dive Forensic Report & Expansion Master Plan"
 Cohesion: 0.04
@@ -892,12 +880,12 @@ Nodes (113): b02_health_activity_repository.dart, Health, HealthDataAccess, Heal
 
 ### Community 31 - "ux_r03_food_logging_test.dart"
 Cohesion: 0.04
-Nodes (55): FoodApiService? apiService,
-  List, FoodApiService, _FakeFoodApiService, _CountingFoodApiService, _CompleteMacrosProviderApiService, authority, build, canonicalRecent (+47 more)
+Nodes (62): FoodApiService? apiService,
+  List, FoodApiService, FoodRepository, _FakeFoodApiService, _CountingFoodApiService, _EmptyFoodRepo, _CompleteMacrosProviderApiService, _EmptyFoodRepository (+54 more)
 
 ### Community 32 - "IndiFit Nutrition Tracker — Master Analysis Report & Implementation Plan"
 Cohesion: 0.05
-Nodes (41): MealDecompositionResponse, 10.1 Drift Database Migration (Schema v22 $\to$ v23), 10.2 API Contract: `POST /api/food/search`, 10.3 API Contract: `GET /api/food/barcode/{code}`, 10.4 API Contract: `POST /api/ai/meal-estimate-photo-v2`, 10.5 Privacy Policy & Network Model Specification, 10.6 Security & Rate Limiting Contract (`backend/core/security.py`), 10. Cross-Cutting Architecture: Data Model, Drift v23 Migration & API Contracts (+33 more)
+Nodes (40): 10.1 Drift Database Migration (Schema v22 $\to$ v23), 10.2 API Contract: `POST /api/food/search`, 10.3 API Contract: `GET /api/food/barcode/{code}`, 10.4 API Contract: `POST /api/ai/meal-estimate-photo-v2`, 10.5 Privacy Policy & Network Model Specification, 10.6 Security & Rate Limiting Contract (`backend/core/security.py`), 10. Cross-Cutting Architecture: Data Model, Drift v23 Migration & API Contracts, 11. Step-by-Step Implementation Roadmap & Delivery Sequencing (+32 more)
 
 ### Community 33 - "training_screen.dart"
 Cohesion: 0.02
@@ -912,16 +900,16 @@ Nodes (108): AppPreferenceKeys, autoBackupLastContentFingerprintV2, autoSyncHeal
 
 ### Community 35 - "rc_phase3b_exercise_family_presentation_test.dart"
 Cohesion: 0.02
-Nodes (114): ActionChip, AppBar, Brightness, ChoiceChip, ElevatedButton, ExerciseReplacementCommitter? onCommit,
-  double, WeightLogStatus, WorkoutRepository (+106 more)
+Nodes (100): ActionChip, AppBar, Brightness, ChoiceChip, ElevatedButton, ExerciseReplacementCommitter? onCommit,
+  double, WeightLogStatus, WorkoutRepository (+92 more)
 
 ### Community 36 - "b05_foundation_registry.dart"
 Cohesion: 0.02
-Nodes (104): acceptedPathPattern, assetId, assets, assetSetId, attribution, attributionFormat, B05DashboardModuleDescriptor, B05DashboardModulePreferenceValue (+96 more)
+Nodes (105): acceptedPathPattern, assetId, assets, assetSetId, attribution, attributionFormat, B05DashboardModuleDescriptor, B05DashboardModulePreferenceValue (+97 more)
 
 ### Community 37 - "nutrition_estimates.dart"
 Cohesion: 0.02
-Nodes (102): _allowedKeys, _amount, ancestryRootId, available, _basis, calculationFingerprint, _canonicalize, cause (+94 more)
+Nodes (99): _allowedKeys, _amount, ancestryRootId, available, _basis, calculationFingerprint, _canonicalize, cause (+91 more)
 
 ### Community 38 - "b02_activity_tables.dart"
 Cohesion: 0.02
@@ -929,7 +917,7 @@ Nodes (104): actualExerciseId, actualExerciseNameSnapshot, actualIntensity, actu
 
 ### Community 39 - "b05_education_content.dart"
 Cohesion: 0.02
-Nodes (106): ../../data/repositories/b02_muscle_volume_repository.dart, ExercisePreferenceLookup get, B05EducationContentDescriptor, B02MuscleRole, b05BundledEducationRegistry, B05EducationLessonsController, b05EducationLessonsProvider, B05EducationLessonsState (+98 more)
+Nodes (102): ../../data/repositories/b02_muscle_volume_repository.dart, ExercisePreferenceLookup get, B02MuscleRole, b05BundledEducationRegistry, b05EducationLessonsProvider, B05EducationLessonsStatus, B05EducationProgress, b05EducationProgressRepositoryProvider (+94 more)
 
 ### Community 40 - "backup_schema.dart"
 Cohesion: 0.02
@@ -941,11 +929,11 @@ Nodes (103): _, _aggregate, calculate, calculationRuleVersion, canonicalJson, ca
 
 ### Community 42 - "exercise_library_screen.dart"
 Cohesion: 0.02
-Nodes (96): AssetBundle?, ../../../core/fixtures/exercise_display_muscles.dart, ../../core/services/workout_session_wake_lock_coordinator.dart, ../../../core/widgets/indi_fit_bottom_sheet.dart, ../../data/repositories/b02_exercise_performance_read_repository.dart, ../../data/repositories/b02_previous_performance_repository.dart, ../../data/repositories/b07_exercise_context_repository.dart, ../../data/repositories/travel_repository.dart (+88 more)
+Nodes (95): AssetBundle?, ../../../core/fixtures/exercise_display_muscles.dart, ../../../core/widgets/indi_fit_bottom_sheet.dart, ../../data/repositories/b02_exercise_performance_read_repository.dart, ../../data/repositories/b02_previous_performance_repository.dart, ../../data/repositories/b07_exercise_context_repository.dart, ../../data/repositories/travel_repository.dart, ../../data/repositories/workout_repository.dart (+87 more)
 
 ### Community 43 - "nutrition_constraints_screen.dart"
 Cohesion: 0.05
-Nodes (48): nutritionConstraintManagementControllerProvider, build, _buildBody, _buildTargetPicker, _chooseDynamicTarget, _clearTargetSelection, constraint, _ConstraintCard (+40 more)
+Nodes (46): nutritionConstraintManagementControllerProvider, build, _buildBody, _buildTargetPicker, _chooseDynamicTarget, _clearTargetSelection, constraint, _ConstraintTargetPicker (+38 more)
 
 ### Community 44 - "b05_third_party_asset_manifest.dart"
 Cohesion: 0.02
@@ -955,9 +943,9 @@ Nodes (98): b05_foundation_registry.dart, acquisitionDateUtc, allowEmpty, approv
 Cohesion: 0.02
 Nodes (98): B05EducationProgressRepository, activityLevel, age, B05AdaptiveLessonPath, _B05AdaptiveLessonTile, B05AdaptiveOnboardingController, b05AdaptiveOnboardingControllerProvider, B05AdaptiveOnboardingLesson (+90 more)
 
-### Community 46 - "quick_add_macros_sheet.dart"
-Cohesion: 0.06
-Nodes (29): ../../../core/nutrition_consumption_snapshots.dart, ../../core/typed_quantities.dart, ../food_log_surface.dart, amount, definition, savedMealItemDisplayName, savedMealItemKindLabel, savedMealItemSemanticsLabel (+21 more)
+### Community 46 - "../../core/typed_quantities.dart"
+Cohesion: 0.07
+Nodes (31): ../../core/nutrition_thali.dart, ../../core/typed_quantities.dart, NutritionThaliItemPreview, amount, definition, savedMealItemDisplayName, savedMealItemKindLabel, savedMealItemSemanticsLabel (+23 more)
 
 ### Community 47 - "training_program_tables.dart"
 Cohesion: 0.02
@@ -984,7 +972,7 @@ Nodes (92): calendar/handlers/occurrence_command_handler.dart, calendar/handlers
 
 ### Community 52 - "training_workout_preview.dart"
 Cohesion: 0.02
-Nodes (92): _actionInFlight, _activityLabel, activityType, actual, actualName, build, createState, _decodeObject (+84 more)
+Nodes (90): _actionInFlight, _activityLabel, activityType, actual, actualName, build, createState, _decodeObject (+82 more)
 
 ### Community 53 - "b04_recommendation_models.dart"
 Cohesion: 0.03
@@ -996,7 +984,7 @@ Nodes (88): _atMostOne, capture, code, columns, _copyRow, createFromDatabase, cu
 
 ### Community 55 - "dart:async"
 Cohesion: 0.02
-Nodes (99): dart:async, B05ActionButton, NutritionGoalCommand, NutritionGoalVersionReadModel, CoachingPreferenceRepository, NutritionTargetsForDate, B04ProductionSurfaceError, TodayDomainRead (+91 more)
+Nodes (99): dart:async, confirmation, IndiFitHaptics, IndiFitHapticType, selection, _trigger, warning, B05ActionButton (+91 more)
 
 ### Community 56 - "program_repository.dart"
 Cohesion: 0.02
@@ -1007,8 +995,8 @@ Cohesion: 0.02
 Nodes (87): _, _aliasExact, _aliasGroups, brand, _brandContainsQuery, _brandStartsWithQuery, candidate, canonical (+79 more)
 
 ### Community 58 - "today_consumer_presentation.dart"
-Cohesion: 0.01
-Nodes (148): appearance_bottom_sheet.dart, ../../../core/presentation/daypart_greeting.dart, todayOnboardingHandoffPendingProvider, action, actionLabel, activeDraft, activeVersionId, available (+140 more)
+Cohesion: 0.02
+Nodes (86): action, actionLabel, activeDraft, activeVersionId, available, calorieLabel, calories, canStart (+78 more)
 
 ### Community 59 - "b05_accessibility_primitives.dart"
 Cohesion: 0.02
@@ -1016,19 +1004,19 @@ Nodes (85): allowsAutoplay, animatedChild, B05ActionEmphasis, B05ActionGroup, B0
 
 ### Community 60 - "nutrients.dart"
 Cohesion: 0.02
-Nodes (84): add, aggregate, aggregation, availableNutrientIds, basis, _byId, _byMachineId, calculationPrecision (+76 more)
+Nodes (100): add, aggregate, aggregation, availableNutrientIds, basis, _byId, _byMachineId, calculationPrecision (+92 more)
 
-### Community 61 - "food_search_recent_list.dart"
+### Community 61 - "List"
 Cohesion: 0.03
-Nodes (58): ../../core/presentation/secondary_presentation.dart, ../../../core/widgets/consumer_task_primitives.dart, ../../../data/services/nutrition_food_search_ranking.dart, ../food_search_view_models.dart, food_search_widgets.dart, household_measures_controller.dart, householdMeasuresControllerProvider, build (+50 more)
+Nodes (60): ../../../core/widgets/consumer_task_primitives.dart, ../../data/database/app_database.dart, ../../../data/services/nutrition_food_search_ranking.dart, ../food_search_view_models.dart, food_search_widgets.dart, CsvExporter, _escapeCsv, exportBodyMeasurementsToCsv (+52 more)
 
 ### Community 62 - "b04_production_recommendation_orchestrator.dart"
 Cohesion: 0.02
-Nodes (84): b04_adaptive_target_engine.dart, b04_current_food_guidance_service.dart, b04_meal_opportunity_service.dart, b04_nutrition_safety_filter.dart, b04_recommendation_context_assembler.dart, b04_recovery_production_adapter.dart, _activation, activeGoal (+76 more)
+Nodes (83): b04_adaptive_target_engine.dart, b04_current_food_guidance_service.dart, b04_meal_opportunity_service.dart, b04_nutrition_safety_filter.dart, b04_recommendation_context_assembler.dart, b04_recovery_production_adapter.dart, _activation, activeGoal (+75 more)
 
 ### Community 63 - "b02_strength_player_screen.dart"
 Cohesion: 0.03
-Nodes (77): ../../data/services/b02_execution_progression.dart, build, _actualExerciseId, _actualExerciseName, _allowPop, _applySafePrefill, _applySuggestedTarget, build (+69 more)
+Nodes (83): ../../data/services/b02_execution_progression.dart, build, b02StrengthExecutionScreenControllerProvider, _actualExerciseId, _actualExerciseName, _allowPop, _applySafePrefill, _applySuggestedTarget (+75 more)
 
 ### Community 64 - "b04_goal_models.dart"
 Cohesion: 0.03
@@ -1036,11 +1024,11 @@ Nodes (83): action, activeGoalEffectiveFromLocalDate, activeGoalVersionId, actor
 
 ### Community 65 - "b04_current_food_models.dart"
 Cohesion: 0.02
-Nodes (83): B04CurrentFoodNutrientValue? get, B04CurrentFoodCandidateInput, B04CurrentFoodError, B04CurrentFoodExcludedCandidate, B04CurrentFoodGuidance, B04CurrentFoodGuidanceStatus, B04CurrentFoodGuidanceStatusId, B04CurrentFoodNutrientValue (+75 more)
+Nodes (82): B04CurrentFoodNutrientValue? get, B04CurrentFoodCandidateInput, B04CurrentFoodError, B04CurrentFoodExcludedCandidate, B04CurrentFoodGuidanceStatus, B04CurrentFoodGuidanceStatusId, B04CurrentFoodNutrientValue, B04CurrentFoodTargetFit (+74 more)
 
-### Community 66 - "b04_daily_briefing_controller.dart"
-Cohesion: 0.07
-Nodes (30): ../../data/models/b04_goal_models.dart, ../../data/repositories/b04_briefing_read_repositories.dart, ../../data/repositories/b04_recommendation_history_repository.dart, NutritionGoalRepository, acceptTarget, B04DailyBriefingController, B04DailyBriefingControllerStatus, B04DailyBriefingState (+22 more)
+### Community 66 - "nutrition_goal_repository.dart"
+Cohesion: 0.05
+Nodes (36): coaching_preference_repository.dart, CoachingPreferenceRepository, acceptAdaptiveProposal, activeGoal, activeGoalForPrimaryProfile, _assertSameAdaptiveProposal, _assertSameGoalCommand, _dates (+28 more)
 
 ### Community 67 - "progress_period_comparison_models.dart"
 Cohesion: 0.02
@@ -1052,7 +1040,7 @@ Nodes (80): b04_recommendation_history_models.dart, acceptedEvents, action, algo
 
 ### Community 69 - "onboarding_screen.dart"
 Cohesion: 0.03
-Nodes (79): ActivityLevel get, b05_adaptive_onboarding.dart, FitnessGoal get, Gender get, B05OnboardingDraftStore, _aboutScrollController, _activityLabel, _activityLevel (+71 more)
+Nodes (77): ActivityLevel get, b05_adaptive_onboarding.dart, FitnessGoal get, Gender get, B05OnboardingDraftStore, _aboutScrollController, _activityLabel, _activityLevel (+69 more)
 
 ### Community 70 - "notification_service.dart"
 Cohesion: 0.03
@@ -1064,15 +1052,15 @@ Nodes (77): b04_recommendation_models.dart, action, algorithmVersion, alternativ
 
 ### Community 72 - "nutrition_legacy_read_models.dart"
 Cohesion: 0.03
-Nodes (67): NutritionEstimateEvidence, canonicalFoodId, code, completeness, createdAtUtc, defaultMealType, displayLabel, estimateEvidence (+59 more)
+Nodes (77): NutritionEstimateEvidence, canonicalFoodId, code, completeness, createdAtUtc, defaultMealType, displayLabel, estimateEvidence (+69 more)
 
 ### Community 73 - "b02_strength_execution_controller.dart"
 Cohesion: 0.03
-Nodes (77): ../../data/services/b02_strength_execution_draft_service.dart, ../exercise_picker/exercise_picker_models.dart, Iterable, _achievementStats, _adapter, addUnscheduledExercise, adjustRest, _B02CompletionRequestKey (+69 more)
+Nodes (79): ../../data/services/b02_strength_execution_draft_service.dart, ../exercise_picker/exercise_picker_models.dart, CanonicalExerciseReplacementAuthority, _achievementStats, _adapter, addUnscheduledExercise, adjustRest, _B02CompletionRequestKey (+71 more)
 
 ### Community 74 - "nutrition_protein_distribution.dart"
 Cohesion: 0.03
-Nodes (75): _aggregate, _aggregateKnown, build, _buildMeal, _canonicalizeJson, _compareRecords, completeness, _contributions (+67 more)
+Nodes (77): _aggregate, _aggregateKnown, build, _buildMeal, _canonicalizeJson, _compareRecords, completeness, _contributions (+69 more)
 
 ### Community 75 - "nutrition_consumption_repository.dart"
 Cohesion: 0.03
@@ -1080,7 +1068,7 @@ Nodes (75): _asDouble, _asNullableDouble, calculationLineage, _canonicalSnapshot
 
 ### Community 76 - "ux_w06_visual_accessibility_certification_test.dart"
 Cohesion: 0.02
-Nodes (128): CalendarUiState get, Dismissible, package:indifit/core/presentation/consumer_copy.dart, package:indifit/core/widgets/consumer_task_primitives.dart, package:indifit/data/repositories/legacy_workout_compatibility_adapter.dart, package:indifit/features/calendar/calendar_read_model.dart, package:indifit/features/calendar/program_calendar_screen.dart, package:indifit/features/calendar/workout_contextual_action_controller.dart (+120 more)
+Nodes (132): CalendarUiState get, Dismissible, package:indifit/core/presentation/consumer_copy.dart, package:indifit/core/widgets/consumer_task_primitives.dart, package:indifit/data/repositories/legacy_workout_compatibility_adapter.dart, package:indifit/features/calendar/calendar_read_model.dart, package:indifit/features/calendar/program_calendar_screen.dart, package:indifit/features/calendar/workout_contextual_action_controller.dart (+124 more)
 
 ### Community 77 - "consumer_task_primitives.dart"
 Cohesion: 0.03
@@ -1091,16 +1079,16 @@ Cohesion: 0.04
 Nodes (47): calorieTargetKcal, carbsTargetG, _dates, fatTargetG, _goals, goalVersion, goalVersionId, hasAnyTarget (+39 more)
 
 ### Community 79 - "routine_editor_screen.dart"
-Cohesion: 0.02
-Nodes (89): ../../core/presentation/consumer_count_label.dart, ../../data/repositories/legacy_program_compatibility_adapter.dart, ../../data/repositories/plan_library_read_repository.dart, ../../data/repositories/plan_overview_read_repository.dart, ../../data/repositories/program_repository.dart, PlanLibrarySnapshot, workoutRepositoryProvider, _checkStatus (+81 more)
+Cohesion: 0.03
+Nodes (70): ../../core/presentation/consumer_count_label.dart, ../../data/repositories/program_repository.dart, workoutRepositoryProvider, _checkStatus, _loadExercises, _activateProgram, _activationCommandId, _activationError (+62 more)
 
 ### Community 80 - "progress_period_comparison_repository.dart"
-Cohesion: 0.05
-Nodes (43): ../../core/algorithms/adaptive_tdee_engine.dart, ../../core/utils/tdee_calculator.dart, _database, _dates, _engine, evaluate, _median, _nutrition (+35 more)
+Cohesion: 0.06
+Nodes (30): _buildNutritionComparison, _buildTrainingComparison, _buildWeightComparison, comparePeriods, _compareStrengthExercises, _database, _dates, _ExerciseWindowData (+22 more)
 
 ### Community 81 - "nutrition_consumption_snapshots.dart"
 Cohesion: 0.03
-Nodes (79): calculation, calculationFingerprint, calculatorVersion, canonicalContentJson, _canonicalizeJson, canonicalJson, cause, code (+71 more)
+Nodes (66): Iterable, calculation, calculationFingerprint, calculatorVersion, canonicalContentJson, _canonicalizeJson, canonicalJson, cause (+58 more)
 
 ### Community 82 - "_"
 Cohesion: 0.03
@@ -1111,8 +1099,8 @@ Cohesion: 0.03
 Nodes (68): b02_target_recommendation_repository.dart, addUnscheduledExercise, B02StrengthExecutionCoverage, _buildSlot, _calculateVolume, _calendarRepo, checkScheduledCoverage, _completionMarker (+60 more)
 
 ### Community 84 - "readiness_snapshot_repository.dart"
-Cohesion: 0.07
-Nodes (27): byId, _dates, _db, evaluateAndStoreForLocalDate, _findByFingerprint, _fromRow, _latestActive, latestForLocalDate (+19 more)
+Cohesion: 0.04
+Nodes (45): byId, _dates, _db, evaluateAndStoreForLocalDate, _findByFingerprint, _fromRow, _latestActive, latestForLocalDate (+37 more)
 
 ### Community 85 - "nutrition_thali.dart"
 Cohesion: 0.03
@@ -1136,7 +1124,7 @@ Nodes (64): ../../core/backup/backup_schema.dart, ../../core/backup/backup_v10.d
 
 ### Community 90 - "manual_log_sheet.dart"
 Cohesion: 0.03
-Nodes (69): ../../../core/theme/indifit_icons.dart, ../../../core/widgets/responsive_form_primitives.dart, ../../data/database/app_database.dart, ../../../data/repositories/exercise_picker_repository.dart, ../../data/repositories/legacy_workout_compatibility_adapter.dart, GlobalKey, CsvExporter, _escapeCsv (+61 more)
+Nodes (61): ../../../core/theme/indifit_icons.dart, ../../../core/widgets/responsive_form_primitives.dart, ../../../data/repositories/exercise_picker_repository.dart, ../../data/repositories/legacy_workout_compatibility_adapter.dart, GlobalKey, build, currentExercise, currentSetIndex (+53 more)
 
 ### Community 91 - "training_workout_customization.dart"
 Cohesion: 0.03
@@ -1148,7 +1136,7 @@ Nodes (47): B02MuscleVolumeValidationException, package:indifit/core/fixtures/b0
 
 ### Community 93 - "b02_player_cards.dart"
 Cohesion: 0.03
-Nodes (63): ../b02_previous_performance_integration.dart, ../b02_workout_elapsed.dart, ../../../data/services/b02_rest_recommendation_service.dart, B02WarmupRecommendation, build, _buildGroup, _canonicalCurrentSlot, canRetry (+55 more)
+Nodes (65): ../b02_previous_performance_integration.dart, ../b02_workout_elapsed.dart, ../../../data/services/b02_rest_recommendation_service.dart, B02WarmupRecommendation, build, _buildGroup, _canonicalCurrentSlot, canRetry (+57 more)
 
 ### Community 94 - "b05_media_bundle.dart"
 Cohesion: 0.03
@@ -1164,7 +1152,7 @@ Nodes (63): B02MappingStatus, actualReps, assistedWorkingSetCount, B02MuscleCata
 
 ### Community 97 - "b02_summary_widgets.dart"
 Cohesion: 0.03
-Nodes (79): ../../data/repositories/calendar_repository.dart, CompletionKind, actualId, actualName, AdvancedEvidenceDisclosure, _advancedFacts, assistanceLabel, b02StrengthHistoryDetailProvider (+71 more)
+Nodes (63): actualId, actualName, AdvancedEvidenceDisclosure, _advancedFacts, assistanceLabel, b02StrengthHistoryDetailProvider, B02StrengthHistoryDetailScreen, B02SummaryBody (+55 more)
 
 ### Community 98 - "backup_v10.dart"
 Cohesion: 0.03
@@ -1179,8 +1167,8 @@ Cohesion: 0.03
 Nodes (61): NutritionConstraintAcknowledgement, acknowledgeConstraints, acknowledgedConstraintIds, _acknowledgement, acknowledgePartial, addFood, addRecipe, clearDraft (+53 more)
 
 ### Community 101 - "raw_cooked_transformations.dart"
-Cohesion: 0.03
-Nodes (65): apply, code, confidence, copyWith, crossesDimensions, densityContextId, direction, evidence (+57 more)
+Cohesion: 0.04
+Nodes (61): apply, code, confidence, copyWith, crossesDimensions, densityContextId, direction, evidence (+53 more)
 
 ### Community 102 - "equipment_preference_repository.dart"
 Cohesion: 0.03
@@ -1195,16 +1183,16 @@ Cohesion: 0.03
 Nodes (60): b02_muscle_volume_models.dart, activityHistory, activityType, actualExerciseId, actualExerciseName, B02ProgressActivityRecord, B02ProgressGroupHistory, B02ProgressGroupMember (+52 more)
 
 ### Community 105 - "b04_nutrition_safety_models.dart"
-Cohesion: 0.04
-Nodes (59): extension, NutrientAmount, acknowledgementRequested, B04NutritionSafetyBoundaryDirection, B04NutritionSafetyBoundaryDirectionId, B04NutritionSafetyConstraintContext, B04NutritionSafetyDisposition, B04NutritionSafetyDispositionId (+51 more)
+Cohesion: 0.03
+Nodes (63): extension, NutrientAmount, NutritionConstraintOutcome, NutritionConstraintOutcomeContract, NutritionConstraintStrictness, NutritionConstraintStrictnessContract, acknowledgementRequested, B04NutritionSafetyBoundaryDirection (+55 more)
 
 ### Community 106 - "routers/food.py"
-Cohesion: 0.10
-Nodes (33): asyncio, lifespan(), _build_serving_options(), _calculate_score(), flush_missed_searches(), get_food_by_barcode(), load_curated_fmcg(), load_curated_foods() (+25 more)
+Cohesion: 0.11
+Nodes (31): asyncio, _build_serving_options(), _calculate_score(), get_food_by_barcode(), load_curated_fmcg(), load_curated_foods(), load_synonyms(), _log_missed_search() (+23 more)
 
 ### Community 107 - "b05_playlist_launcher.dart"
 Cohesion: 0.04
-Nodes (59): B05PlaylistProviderRegistry, privacyPolicyProvider, B05CanLaunchUri, B05LaunchUri, B05PlaylistController, b05PlaylistControllerProvider, B05PlaylistControllerState, B05PlaylistControllerStatus (+51 more)
+Nodes (60): B05PlaylistProviderRegistry, privacyPolicyProvider, B05CanLaunchUri, B05LaunchUri, B05PlaylistController, b05PlaylistControllerProvider, B05PlaylistControllerState, B05PlaylistControllerStatus (+52 more)
 
 ### Community 108 - "exercise_picker.dart"
 Cohesion: 0.03
@@ -1225,11 +1213,11 @@ Nodes (58): _, activityType, actualExerciseId, actualExerciseNameSnapshot, actua
 
 ### Community 112 - "b04_optional_ai_assistance.dart"
 Cohesion: 0.04
-Nodes (58): B04RecommendationEvaluation, approvedWordingByToken, assist, B04DioOptionalAiProvider, B04OptionalAiAssistanceResult, B04OptionalAiAssistanceService, B04OptionalAiAssistanceStatus, B04OptionalAiAssistanceStatusId (+50 more)
+Nodes (57): B04RecommendationEvaluation, approvedWordingByToken, assist, B04DioOptionalAiProvider, B04OptionalAiAssistanceResult, B04OptionalAiAssistanceStatus, B04OptionalAiAssistanceStatusId, B04OptionalAiConsentReader (+49 more)
 
 ### Community 113 - "b04_recommendation_engine.dart"
 Cohesion: 0.07
-Nodes (29): B04Recommendation, _appendEvidence, _appendEvidenceText, B04RecommendationEngine, _CandidateEvaluation, _canonicalize, _compareRecommendations, _completeness (+21 more)
+Nodes (28): B04Recommendation, _appendEvidence, _appendEvidenceText, _CandidateEvaluation, _canonicalize, _compareRecommendations, _completeness, _confidence (+20 more)
 
 ### Community 114 - "Set"
 Cohesion: 0.04
@@ -1240,12 +1228,12 @@ Cohesion: 0.03
 Nodes (58): ../../features/activity/b02_activity_creation_screen.dart, ../../features/activity/b02_activity_history_detail_screen.dart, ../../features/calendar/program_calendar_screen.dart, ../../features/dashboard/main_navigation_scaffold.dart, ../../features/education/learn_screen.dart, ../../features/equipment/equipment_profile_editor_screen.dart, ../../features/equipment/equipment_profiles_screen.dart, ../../features/equipment/exercise_preference_editor_screen.dart (+50 more)
 
 ### Community 116 - "data_management_section.dart"
-Cohesion: 0.07
-Nodes (34): backup_restore_card.dart, cloud_backup_card.dart, ../../../core/backup/backup_file_adapter.dart, ../../../core/presentation/today_onboarding_handoff.dart, dataErasureServiceProvider, resetIndiFitUserState, onboardingCompletedProvider, _completeOnboardingOnce (+26 more)
+Cohesion: 0.08
+Nodes (27): backup_restore_card.dart, cloud_backup_card.dart, ../../../core/backup/backup_file_adapter.dart, ../../../core/presentation/today_onboarding_handoff.dart, dataErasureServiceProvider, _backupCountRows, _controller, createState (+19 more)
 
 ### Community 117 - "../../core/presentation/product_failure_presentation.dart"
-Cohesion: 0.04
-Nodes (56): b02_activity_controller.dart, b02_execution_fixture_matrix.dart, ../../../core/presentation/consumer_date_label.dart, ../../core/presentation/product_failure_presentation.dart, ../../../data/models/b02_execution_models.dart, ../../../data/models/b02_muscle_volume_models.dart, ../../data/models/b02_progress_read_models.dart, ../../../data/repositories/b02_execution_compatibility_read_repository.dart (+48 more)
+Cohesion: 0.03
+Nodes (62): b02_activity_controller.dart, b02_execution_semantics.dart, ../../../core/presentation/consumer_date_label.dart, ../../core/presentation/product_failure_presentation.dart, ../../../data/models/b02_execution_models.dart, ../../data/models/b02_progress_read_models.dart, ../../data/repositories/b02_activity_session_repository.dart, ../../../data/repositories/b02_execution_compatibility_read_repository.dart (+54 more)
 
 ### Community 118 - "sync_service.dart"
 Cohesion: 0.04
@@ -1253,7 +1241,7 @@ Nodes (54): ../backup/cloud_backup_envelope_manager.dart, _account, _apiClient, 
 
 ### Community 119 - "b05_exercise_visual_registry.dart"
 Cohesion: 0.04
-Nodes (52): BoxFit, ../../core/fixtures/b05_third_party_asset_manifest.dart, indifit_muscle_map.dart, assetBundle, assetFor, _assetFuture, assetSetCount, assetSetId (+44 more)
+Nodes (54): BoxFit, ../../core/fixtures/b05_third_party_asset_manifest.dart, indifit_muscle_map.dart, assetBundle, assetFor, _assetFuture, assetSetCount, assetSetId (+46 more)
 
 ### Community 120 - "_"
 Cohesion: 0.04
@@ -1264,12 +1252,12 @@ Cohesion: 0.04
 Nodes (53): calories, canonicalFoodId, carbsG, copyMealGroup, createMealTemplate, db, defaultLegacyUserId, deleteLogEntry (+45 more)
 
 ### Community 122 - "saved_meals_screen.dart"
-Cohesion: 0.07
-Nodes (33): todayNutritionRevisionProvider, _invalidateNutritionReads, savedMealsControllerProvider, build, _buildEmptyState, _buildFailureState, _buildMealCard, color (+25 more)
+Cohesion: 0.04
+Nodes (60): todayNutritionRevisionProvider, _invalidateNutritionReads, build, _buildComposition, _buildNutritionSummary, colors, _CompositionRow, _confirmDelete (+52 more)
 
 ### Community 123 - "nutrition_thali_repository.dart"
 Cohesion: 0.04
-Nodes (52): archiveThali, _canonical, _constraintLines, _constraints, _consumption, _databaseUnitId, _db, _DecodedItemNotes (+44 more)
+Nodes (55): NutritionHouseholdMeasureRepository, archiveThali, _canonical, _constraintLines, _constraints, _consumption, _databaseUnitId, _db (+47 more)
 
 ### Community 124 - "b02_execution_compatibility_read_repository.dart"
 Cohesion: 0.04
@@ -1281,65 +1269,66 @@ Nodes (51): _activities, activityType, averageHeartRate, B02HealthActivityInput,
 
 ### Community 126 - "LocalScheduleDateService"
 Cohesion: 0.04
-Nodes (55): coaching_preference_repository.dart, ../../core/fixtures/b04_adaptive_coaching_fixture_matrix.dart, ../../../core/services/local_schedule_date_service.dart, LocalScheduleDateService, B04AdaptiveTargetPolicy, acceptAdaptiveProposal, activeGoal, activeGoalForPrimaryProfile (+47 more)
+Nodes (52): ../../core/fixtures/b04_adaptive_coaching_fixture_matrix.dart, ../../../core/nutrition_legacy_read_models.dart, ../../../core/services/local_schedule_date_service.dart, LocalScheduleDateService, B04AdaptiveTargetPolicy, adaptiveAvailability, _ageEvidenceFingerprint, _assertSameConsent (+44 more)
 
 ### Community 127 - "nutrition_recipe_editor_controller.dart"
-Cohesion: 0.04
-Nodes (50): ../../data/repositories/nutrition_transformation_repository.dart, NutritionRecipeDraftModel, addIngredient, copyWith, currentState, description, draft, draftVersionId (+42 more)
+Cohesion: 0.03
+Nodes (77): ../../data/repositories/nutrition_recipe_repository.dart, NutritionRecipeDraftModel, addIngredient, copyWith, currentState, description, draft, draftVersionId (+69 more)
 
 ### Community 128 - "b04_production_surface_widgets.dart"
 Cohesion: 0.03
-Nodes (90): b04_consumer_presentation.dart, b04_production_surface_controller.dart, ConsumerState, ConsumerStatefulWidget, ../../core/nutrition_constraints.dart, ../../../core/presentation/consumer_copy.dart, ../dashboard/b04_daily_briefing_controller.dart, Enum (+82 more)
+Nodes (96): b04_consumer_presentation.dart, ConsumerState, ConsumerStatefulWidget, ../../core/nutrition_constraints.dart, ../../../core/presentation/consumer_copy.dart, Enum, NutritionConstraintEvaluation, B04BriefingRecommendation (+88 more)
 
 ### Community 129 - "_"
 Cohesion: 0.04
 Nodes (51): B02RestPeriod, B02RestScope, B02RestSource, _, amrapAdjustmentSeconds, _automatic, automaticAdjustmentSeconds, B02RestDraftCoordinator (+43 more)
 
-### Community 130 - "r08b234_execution_integration_test.dart"
-Cohesion: 0.01
-Nodes (159): int? memberOrdinal,
-  String, _, B02DraftDecodeResult, B02ExecutionDraftCodec, currentVersion, decode, encode, isCanonical (+151 more)
+### Community 130 - "r08b6_rest_wakelock_test.dart"
+Cohesion: 0.06
+Nodes (36): int? memberOrdinal,
+  String, B02CompactSetTableForTest, _baseState, build, calls, _compactTable, createState, disable (+28 more)
 
 ### Community 131 - "b04_recommendation_history_repository.dart"
 Cohesion: 0.04
 Nodes (50): _assertFeedback, _assertReplay, B04BriefingHistorySource, B04RecommendationHistoryRepository, _canonicalize, _completeness, _confidence, _consent (+42 more)
 
-### Community 132 - "package:flutter_test/flutter_test.dart"
-Cohesion: 0.02
-Nodes (107): fixtures/b03_nutrition_fixture_matrix.dart, B02UnsupportedDraftVersionException, _requiredList, B02ValidationException, ActivitySessionRepository, package:flutter_test/flutter_test.dart, package:health/health.dart, package:indifit/core/capabilities/food_catalog_capability.dart (+99 more)
+### Community 132 - "AppDatabase"
+Cohesion: 0.01
+Nodes (219): _, @DriftDatabase, B02UnsupportedDraftVersionException, AppDatabase, B02ValidationException, ActivitySessionRepository, B02StrengthExecutionException, B02StrengthExecutionFinalizationException (+211 more)
 
 ### Community 133 - "_"
 Cohesion: 0.04
-Nodes (52): _, amount, archiveRecipe, _basisFromDatabase, _buildFinalizeRequest, calculation, calculationScale, _calculationServing (+44 more)
+Nodes (50): _, amount, archiveRecipe, _basisFromDatabase, _buildFinalizeRequest, calculation, calculationScale, _calculationServing (+42 more)
 
 ### Community 134 - "cloud_backup_service.dart"
-Cohesion: 0.04
-Nodes (47): backup_v10.dart, ../capabilities/account_capability.dart, ../capabilities/cloud_backup_capability.dart, ../capabilities/connected_status.dart, ../capabilities/network_capability.dart, cloud_backup_api_client.dart, cloud_backup_api_contract.dart, cloud_backup_envelope_manager.dart (+39 more)
+Cohesion: 0.06
+Nodes (32): backup_v10.dart, ../capabilities/account_capability.dart, ../capabilities/cloud_backup_capability.dart, ../capabilities/connected_status.dart, ../capabilities/network_capability.dart, cloud_backup_api_client.dart, _account, _apiClient (+24 more)
 
-### Community 135 - "class"
+### Community 135 - "Map"
 Cohesion: 0.07
-Nodes (38): calendar_repository.dart, class, class CustomizeFutureOccurrencesHandler, class CustomizeOccurrenceHandler, class ResetOccurrenceCustomizationHandler, ../../core/fixtures/workout_draft_codec.dart, OccurrenceCommandHandler, CustomizeFutureOccurrencesHandler (+30 more)
+Nodes (34): calendar_repository.dart, class CustomizeFutureOccurrencesHandler, class CustomizeOccurrenceHandler, class ResetOccurrenceCustomizationHandler, ../../core/fixtures/workout_draft_codec.dart, handle, _handler, _handlers (+26 more)
 
-### Community 136 - "r08b7_player_integration_test.dart"
-Cohesion: 0.02
-Nodes (122): EditableText, int? rpe,
-  B02EffortMode?, B02SetRole, B02PreviousPerformanceRepository, B07ExerciseContextRepository, package:indifit/core/fixtures/exercise_display_muscles.dart, package:indifit/data/models/b02_previous_performance_models.dart, package:indifit/data/repositories/b02_previous_performance_repository.dart (+114 more)
+### Community 136 - "return"
+Cohesion: 0.03
+Nodes (77): EditableText, int? rpe,
+  B02EffortMode?, B02SetRole, B02PreviousExercisePerformance, B02PreviousPerformanceRepository, package:indifit/data/models/b02_previous_performance_models.dart, package:indifit/data/repositories/b02_previous_performance_repository.dart, required String setId,
+  int (+69 more)
 
 ### Community 137 - "b02_activity_session_repository.dart"
 Cohesion: 0.04
 Nodes (48): B02ActivitySource, activityType, _B02ProvenanceInput, cardio, cardioDetail, cardioIntervals, CardioSessionRepository, _complete (+40 more)
 
-### Community 138 - "List"
-Cohesion: 0.02
-Nodes (87): DateTime get, NutritionCanonicalSnapshotReadModel, NutritionHistoricalReadRecord, NutritionLegacyFoodLogReadModel, breakpoint, build, children, IndiFitResponsiveFieldGroup (+79 more)
+### Community 138 - "String get"
+Cohesion: 0.04
+Nodes (53): DateTime get, stableId, supportedStableIds, unknown, NutritionFoodLoggingError, NutrientAggregationResult get, NutrientCompleteness get, package:indifit/features/food_log/diary_structure_controller.dart (+45 more)
 
-### Community 139 - "main.py"
-Cohesion: 0.07
-Nodes (49): #8 Add backend unit and integration tests, Acceptance Criteria, backend, get_indifit_api_key(), enforce_rate_limit(), _get_backup_user_id(), get_max_requests_per_window(), get_photo_v2_max_requests() (+41 more)
+### Community 139 - "routers/backup.py"
+Cohesion: 0.11
+Nodes (26): delete_all_backup_snapshots(), delete_backup_snapshot(), download_backup_snapshot(), list_backup_snapshots(), _prune_user_snapshots(), get, post, upload_backup_snapshot() (+18 more)
 
 ### Community 140 - "gemini_client.py"
-Cohesion: 0.07
-Nodes (29): query_gemini_text(), query_gemini_vision(), check_and_increment_budget(), clear_cache(), _ensure_today(), GeminiQuotaExceededError, get_cached(), get_daily_budget() (+21 more)
+Cohesion: 0.06
+Nodes (36): backend, query_gemini_text(), query_gemini_vision(), check_and_increment_budget(), clear_cache(), _ensure_today(), GeminiQuotaExceededError, get_cached() (+28 more)
 
 ### Community 141 - "b04_adaptive_target_engine.dart"
 Cohesion: 0.04
@@ -1351,7 +1340,7 @@ Nodes (46): addedSugarPer100g, attributionText, barcode, brand, calculateNutrien
 
 ### Community 143 - "program_author_screen.dart"
 Cohesion: 0.04
-Nodes (56): B02GroupType, ExerciseGroupInput, ExercisePrescriptionInput, _addBlock, _addConsumerDay, _addGroup, _addPrescription, _addSessionTemplate (+48 more)
+Nodes (46): B02GroupType, ExerciseGroupInput, ExercisePrescriptionInput, _addBlock, _addConsumerDay, _addGroup, _addPrescription, _addSessionTemplate (+38 more)
 
 ### Community 144 - "_"
 Cohesion: 0.04
@@ -1371,7 +1360,7 @@ Nodes (46): _activeContexts, _activeMembershipForOccurrence, affectedOccurrences
 
 ### Community 148 - "b04_recovery_production_adapter.dart"
 Cohesion: 0.04
-Nodes (46): B04CanonicalRecoveryEvidenceSource, B04RecoveryEvidenceSource, B04RecoveryInput, B04RecoveryProductionAdapter, _contentKey, convert, correctionOfObservationId, _dates (+38 more)
+Nodes (45): B04CanonicalRecoveryEvidenceSource, B04RecoveryEvidenceSource, B04RecoveryInput, _contentKey, convert, correctionOfObservationId, _dates, evidenceTimestampUtc (+37 more)
 
 ### Community 149 - "validate_r08_0_2_mapping_review.dart"
 Cohesion: 0.04
@@ -1386,8 +1375,8 @@ Cohesion: 0.05
 Nodes (42): NotificationPermissionStatus, allowMultipleDays, allowSingleDay, _buildPermissionCard, _buildQuietHours, createState, _days, description (+34 more)
 
 ### Community 152 - "r08c6_equipment_preferences_test.dart"
-Cohesion: 0.05
-Nodes (40): EquipmentProfileRepository, ExercisePreferenceRepository, package:indifit/core/presentation/equipment_presentation.dart, package:indifit/features/equipment/equipment_profile_editor_screen.dart, package:indifit/features/equipment/equipment_profiles_screen.dart, package:indifit/features/equipment/exercise_preference_editor_screen.dart, package:indifit/features/workout_player/player_setup_cues_panel.dart, createWidgetUnderTest (+32 more)
+Cohesion: 0.03
+Nodes (71): ArgumentError, EquipmentProfileRepository, ExercisePreferenceRepository, TravelPreviewStaleException, TravelRepository, ScheduledWorkoutFinalizationException, WorkoutExecutionCompatibilityAdapter, package:indifit/core/presentation/equipment_presentation.dart (+63 more)
 
 ### Community 153 - "nutrition_ai_controllers.dart"
 Cohesion: 0.04
@@ -1419,20 +1408,20 @@ Nodes (42): B04BodyMetricsEvidence? body,
   String, adaptiveConsentEnabled (+34 more)
 
 ### Community 159 - "food_portion_bottom_sheet.dart"
-Cohesion: 0.04
-Nodes (50): localTimezoneServiceProvider, _copyYesterdayMeal, _fastAddRecent, _addOptionFast, _addRecentFast, _commitSelection, _amountController, _amountError (+42 more)
+Cohesion: 0.03
+Nodes (77): ../../dashboard/today_consumer_presentation.dart, ../dashboard/widgets/dashboard_date_bar.dart, ../diary_structure_controller.dart, ../food_search_screen.dart, localTimezoneServiceProvider, diaryMealSlotsProvider, build, _chooseMeal (+69 more)
 
 ### Community 160 - "_"
 Cohesion: 0.07
-Nodes (27): ../../data/repositories/b02_progress_read_repository.dart, ../../data/repositories/nutrition_target_authority.dart, _, activeDraft, _available, calendar, _dateKey, _dates (+19 more)
+Nodes (28): ../../data/models/b04_goal_models.dart, ../../data/repositories/b02_progress_read_repository.dart, ../../data/repositories/nutrition_read_model_repository.dart, _, activeDraft, _available, calendar, _dateKey (+20 more)
 
 ### Community 161 - "b04_production_surface_controller.dart"
 Cohesion: 0.05
-Nodes (42): ../../core/services/local_timezone_service.dart, CoachingAvailabilityReadModel, activeGoal, availability, B04GoalSettingsController, B04GoalSettingsState, B04GoalSettingsStatus, B04ProductionRecommendationContextLoader (+34 more)
+Nodes (41): ../../core/services/local_timezone_service.dart, CoachingAvailabilityReadModel, activeGoal, availability, B04GoalSettingsController, B04GoalSettingsState, B04GoalSettingsStatus, B04ProductionRecommendationContextLoader (+33 more)
 
 ### Community 162 - "exercise_identity_fixtures.dart"
-Cohesion: 0.04
-Nodes (46): alias, _aliasTargets, allEntries, ambiguousLegacyNames, approvedAliases, ApprovedExerciseAlias, CanonicalExerciseEntry, canonicalName (+38 more)
+Cohesion: 0.05
+Nodes (41): alias, _aliasTargets, allEntries, ambiguousLegacyNames, approvedAliases, ApprovedExerciseAlias, CanonicalExerciseEntry, canonicalName (+33 more)
 
 ### Community 163 - "b05_semantic_colors.dart"
 Cohesion: 0.05
@@ -1442,9 +1431,9 @@ Nodes (41): action, B05MediaState, border, breakfast, container, copyWith, dange
 Cohesion: 0.05
 Nodes (41): acceptEstimate, _amountDouble, _amountFromDouble, _canonicalize, _consumption, correctEstimate, _correctionFingerprintFor, createEstimate (+33 more)
 
-### Community 165 - "package:uuid/uuid.dart"
-Cohesion: 0.03
-Nodes (59): ../../core/raw_cooked_transformations.dart, ../database/app_database.dart, archiveUserOverride, createUserOverride, _db, findExplicit, findForFood, findForSource (+51 more)
+### Community 165 - "nutrition_recipe_graph_mapper.dart"
+Cohesion: 0.08
+Nodes (25): databaseUnitId, _db, deleteIngredientCorrections, ingredientsAsInputs, lifecycle, loadVersionGraph, quantityFromStored, quantityUnitFromDatabase (+17 more)
 
 ### Community 166 - "food_contextual_action_controller.dart"
 Cohesion: 0.05
@@ -1459,8 +1448,8 @@ Cohesion: 0.06
 Nodes (40): healthStateProvider, B05SemanticStatus, healthServiceProvider, _activityLabel, build, _buildCategorySurface, _buildCategoryTile, _buildConnectionSurface (+32 more)
 
 ### Community 169 - "saved_meals_controller.dart"
-Cohesion: 0.05
-Nodes (40): commandId, consumptionId, copyWith, deleteSavedMeal, _deletingSavedMealIds, draft, errorCode, errorMessage (+32 more)
+Cohesion: 0.03
+Nodes (65): ../../../core/nutrition_consumption_snapshots.dart, ../food_log_surface.dart, commandId, consumptionId, copyWith, deleteSavedMeal, _deletingSavedMealIds, draft (+57 more)
 
 ### Community 170 - "workout_player_controller.dart"
 Cohesion: 0.05
@@ -1475,20 +1464,20 @@ Cohesion: 0.06
 Nodes (39): ../../data/repositories/nutrition_recipe_log_coordinator.dart, _amountChoice, _amountController, _amountFocus, _backToRecipeList, build, _buildDraftCard, _buildEmptyRecipes (+31 more)
 
 ### Community 173 - "b02_muscle_volume_repository.dart"
-Cohesion: 0.04
-Nodes (46): B02MuscleCatalogRepository, B02MuscleVolumeQuery, B02MuscleVolumeRepository, B02MuscleVolumeRepositoryException, _civilDates, _db, endLocalDate, _groupMapping (+38 more)
+Cohesion: 0.05
+Nodes (38): B02MuscleCatalogRepository, B02MuscleVolumeQuery, B02MuscleVolumeRepository, B02MuscleVolumeRepositoryException, _civilDates, _db, endLocalDate, _groupMapping (+30 more)
 
 ### Community 174 - "training_next_action_resolver.dart"
 Cohesion: 0.05
-Nodes (40): CalendarOccurrenceReadItem? get, actionable, activeDraft, activeDraftReadAvailable, activeOccurrences, activeProgramVersionId, activeVersionId, all (+32 more)
+Nodes (39): actionable, activeDraft, activeDraftReadAvailable, activeOccurrences, activeProgramVersionId, activeVersionId, all, _compareOccurrences (+31 more)
 
 ### Community 175 - "saved_meal_editor_screen.dart"
 Cohesion: 0.03
-Nodes (63): ../../data/repositories/nutrition_thali_repository.dart, NutritionThaliDraft, _addFoodOrRecipe, _adjustItemQuantity, build, catalogRepo, createState, _debounce (+55 more)
+Nodes (64): ../../data/repositories/nutrition_thali_repository.dart, NutritionThaliDraft, _addFoodOrRecipe, _adjustItemQuantity, build, catalogRepo, createState, _debounce (+56 more)
 
 ### Community 176 - "@immutable"
-Cohesion: 0.06
-Nodes (37): @immutable, dart:collection, FoodProvenance, FoodSearchPage, ExerciseFamilyMemberMetadata, _ReviewedFamilySeed, ComparativeMetric, NutritionPeriodSummary (+29 more)
+Cohesion: 0.05
+Nodes (39): @immutable, dart:collection, FoodProvenance, FoodSearchPage, ExerciseFamilyMemberMetadata, ExerciseFamilyRegistry, _ReviewedFamilySeed, ComparativeMetric (+31 more)
 
 ### Community 177 - "b02_previous_performance_integration.dart"
 Cohesion: 0.05
@@ -1520,23 +1509,23 @@ Nodes (37): B05ThirdPartyAssetContract, B05ThirdPartySourceContract, acquire, as
 
 ### Community 184 - "indifit_muscle_map_geometry.g.dart"
 Cohesion: 0.05
-Nodes (37): applyTo, bodyModel, _close, _cubic, forView, height, IndiFitMuscleMapGeometryRegion, IndiFitMuscleMapGeometryRegistry (+29 more)
+Nodes (36): applyTo, bodyModel, _close, _cubic, forView, height, IndiFitMuscleMapGeometryRegion, IndiFitMuscleMapGeometryRegistry (+28 more)
 
 ### Community 185 - "colors.dart"
 Cohesion: 0.09
 Nodes (22): achievementBronze, achievementGold, achievementSilver, AppColors, background, border, borderHover, cardBackground (+14 more)
 
 ### Community 186 - "routers/ai.py"
-Cohesion: 0.11
-Nodes (40): #19 Weekly report endpoint uses fixed default values instead of real data, Acceptance Criteria, Description, Description, get_gemini_api_key(), decompose_meal(), estimate_meal_photo(), estimate_meal_photo_v2() (+32 more)
+Cohesion: 0.10
+Nodes (43): #19 Weekly report endpoint uses fixed default values instead of real data, Acceptance Criteria, Description, Description, get_gemini_api_key(), decompose_meal(), estimate_meal_photo(), estimate_meal_photo_v2() (+35 more)
 
 ### Community 187 - "nutrition_food_logging_coordinator.dart"
 Cohesion: 0.05
-Nodes (45): ../../core/nutrition_calculation_service.dart, NutritionConsumptionCalculationSnapshot, Quantity, NutritionRecipeVersions, _calculate, calculation, calculationSnapshot, _calculator (+37 more)
+Nodes (39): ../../core/nutrition_calculation_service.dart, NutritionConsumptionCalculationSnapshot, NutritionTransformation, NutritionTransformationService, _calculate, calculation, calculationSnapshot, _calculator (+31 more)
 
 ### Community 188 - "dashboard_screen.dart"
-Cohesion: 0.03
-Nodes (83): ../activity/b02_activity_controller.dart, ../calendar/workout_contextual_launcher.dart, ../coaching/b04_production_surface_widgets.dart, ../../core/fixtures/b02_execution_draft_codec.dart, ../../../core/widgets/indi_fit_feedback.dart, dashboard_controller.dart, ../../data/repositories/training_next_action_resolver.dart, ../../data/repositories/workout_execution_compatibility_adapter.dart (+75 more)
+Cohesion: 0.02
+Nodes (101): ../activity/b02_activity_controller.dart, ../calendar/workout_contextual_launcher.dart, ../coaching/b04_production_surface_widgets.dart, ../../core/fixtures/b02_execution_draft_codec.dart, ../../core/services/workout_session_wake_lock_coordinator.dart, ../../../core/widgets/indi_fit_feedback.dart, dashboard_controller.dart, ../../data/repositories/program_lifecycle_repository.dart (+93 more)
 
 ### Community 189 - "secondary_presentation.dart"
 Cohesion: 0.05
@@ -1547,29 +1536,29 @@ Cohesion: 0.06
 Nodes (35): B05DashboardModuleDescriptor get, B05DashboardModuleRegistry, _byId, code, collapsible, contains, copyWith, customizationDescription (+27 more)
 
 ### Community 191 - "hydration_fluid_fill.dart"
-Cohesion: 0.06
-Nodes (35): BorderRadius, borderRadius, _bubbles, build, color, containerColor, createState, crestHighlightColor (+27 more)
+Cohesion: 0.05
+Nodes (37): BorderRadius, WorkoutSessionWakeLockCoordinator, borderRadius, _bubbles, build, color, containerColor, createState (+29 more)
 
 ### Community 192 - "../../core/widgets/b05_accessibility_primitives.dart"
-Cohesion: 0.01
-Nodes (144): ../../../core/services/achievement_service.dart, ../../../core/services/modal_queue_coordinator.dart, ../../../core/services/notification_service.dart, ../../core/theme/b05_semantic_colors.dart, ../../core/widgets/b05_accessibility_primitives.dart, ../../../core/widgets/confetti_overlay.dart, ../../../../data/models/progress_period_comparison_models.dart, ConsumerNumberLabel (+136 more)
-
-### Community 193 - "profile_screen.dart"
 Cohesion: 0.02
-Nodes (101): about_credits_screen.dart, ../../core/di/theme_provider.dart, ../../core/presentation/diet_preference_presentation.dart, ../dashboard/widgets/appearance_bottom_sheet.dart, ../dashboard/widgets/dashboard_module_customization_panel.dart, data_management_sub_screen.dart, diary_structure_screen.dart, ../equipment/equipment_profiles_screen.dart (+93 more)
+Nodes (139): ../../../core/services/achievement_service.dart, ../../../core/services/modal_queue_coordinator.dart, ../../../core/services/notification_service.dart, ../../core/theme/b05_semantic_colors.dart, ../../core/widgets/b05_accessibility_primitives.dart, ../../../core/widgets/confetti_overlay.dart, ../../../../data/models/progress_period_comparison_models.dart, ConsumerNumberLabel (+131 more)
+
+### Community 193 - "settings_screen.dart"
+Cohesion: 0.04
+Nodes (56): about_credits_screen.dart, ../../core/di/theme_provider.dart, ../dashboard/widgets/appearance_bottom_sheet.dart, ../dashboard/widgets/dashboard_module_customization_panel.dart, data_management_sub_screen.dart, diary_structure_screen.dart, ../equipment/equipment_profiles_screen.dart, health_sync_hub_screen.dart (+48 more)
 
 ### Community 194 - "onboarding_step_widgets.dart"
-Cohesion: 0.03
-Nodes (58): FocusNode?, autofocus, build, controller, dal, focusNode, FoodSearchBar, hintText (+50 more)
+Cohesion: 0.02
+Nodes (91): FocusNode?, build, onSelectPreset, ThaliPresetsBar, autofocus, build, controller, dal (+83 more)
 
 ### Community 195 - "r08g4_health_integration_test.dart"
-Cohesion: 0.01
-Nodes (167): ../../data/repositories/health_service.dart, _FakeHealthService, HealthConnectionStatus get, HealthDataSummary get, HealthStateNotifier? notifier,
-  bool, connectAndRefresh, copyWith, errorMessage (+159 more)
+Cohesion: 0.02
+Nodes (99): _FakeHealthService, HealthConnectionStatus get, HealthDataSummary get, HealthStateNotifier? notifier,
+  bool, HealthState, HealthStateNotifier, HealthConnectionStatus, HealthDataSummary (+91 more)
 
 ### Community 196 - "indifit_muscle_map.dart"
-Cohesion: 0.06
-Nodes (35): indifit_muscle_map_geometry.g.dart, indifit_muscle_map_taxonomy.dart, _adapter, bodyModel, build, colors, _description, _drawHeat (+27 more)
+Cohesion: 0.05
+Nodes (36): indifit_muscle_map_geometry.g.dart, indifit_muscle_map_taxonomy.dart, _adapter, bodyModel, build, colors, _description, _drawHeat (+28 more)
 
 ### Community 197 - "IndiFit — Implementation Plan"
 Cohesion: 0.05
@@ -1580,12 +1569,12 @@ Cohesion: 0.06
 Nodes (35): actualExerciseId, actualExerciseNameSnapshot, _compareOccurrences, _compareSessionsByRecency, _compareSetsByOrdinal, _database, exercise, exerciseOrdinal (+27 more)
 
 ### Community 199 - "nutrition_providers.dart"
-Cohesion: 0.05
-Nodes (39): adaptive_tdee_providers.dart, ../../core/privacy/nutrition_estimate_privacy.dart, ../../data/repositories/nutrition_consumption_repository.dart, ../../data/repositories/nutrition_food_logging_coordinator.dart, ../food_log/nutrition_estimate_review_controller.dart, ../food_log/nutrition_thali_controller.dart, ../food_log/saved_recipe_log_controller.dart, NaturalLanguageMealController (+31 more)
+Cohesion: 0.03
+Nodes (70): adaptive_tdee_providers.dart, ../../core/nutrition_estimates.dart, ../../data/repositories/nutrition_consumption_repository.dart, ../../data/repositories/nutrition_estimate_repository.dart, ../../data/repositories/nutrition_food_logging_coordinator.dart, ../../data/repositories/nutrition_transformation_repository.dart, ../food_log/nutrition_estimate_review_controller.dart, ../food_log/nutrition_thali_controller.dart (+62 more)
 
 ### Community 200 - "coaching_providers.dart"
-Cohesion: 0.05
-Nodes (39): ../../data/models/b04_recommendation_context_models.dart, ../../data/repositories/readiness_snapshot_repository.dart, ../../data/repositories/recovery_observation_repository.dart, ../../data/services/b04_adaptive_target_engine.dart, ../../data/services/b04_current_food_guidance_service.dart, ../../data/services/b04_meal_opportunity_service.dart, ../../data/services/b04_nutrition_safety_filter.dart, ../../data/services/b04_optional_ai_assistance.dart (+31 more)
+Cohesion: 0.04
+Nodes (47): b04_production_surface_controller.dart, ../dashboard/b04_daily_briefing_controller.dart, ../../data/models/b04_recommendation_context_models.dart, ../../data/repositories/readiness_snapshot_repository.dart, ../../data/repositories/recovery_observation_repository.dart, ../../data/services/b04_adaptive_target_engine.dart, ../../data/services/b04_current_food_guidance_service.dart, ../../data/services/b04_meal_opportunity_service.dart (+39 more)
 
 ### Community 201 - "nutrition_constraint_repository.dart"
 Cohesion: 0.06
@@ -1597,7 +1586,7 @@ Nodes (34): activeAction, CalendarWorkoutOccurrenceActionGateway, canRetry, expi
 
 ### Community 203 - "nutrition_label_ocr_service.dart"
 Cohesion: 0.05
-Nodes (37): _baseUrl, basis, brandName, carbsG, cholesterolMg, confidence, _dio, energyKcal (+29 more)
+Nodes (38): ../../core/privacy/nutrition_estimate_privacy.dart, _baseUrl, basis, brandName, carbsG, cholesterolMg, confidence, _dio (+30 more)
 
 ### Community 204 - "food_diary_widgets.dart"
 Cohesion: 0.05
@@ -1605,11 +1594,11 @@ Nodes (44): ../../../core/theme/colors.dart, TodayNutritionMetricPresentation, T
 
 ### Community 205 - "meal_presentation_registry.dart"
 Cohesion: 0.07
-Nodes (26): ../../data/models/meal_category_definitions.dart, B05MealAccent, accent, afternoonSnack, allSupported, breakfast, category, dinner (+18 more)
+Nodes (27): ../../data/models/meal_category_definitions.dart, B05MealAccent, FoodMealCategory, accent, afternoonSnack, allSupported, breakfast, category (+19 more)
 
-### Community 206 - "nutrition_estimate_review_controller.dart"
-Cohesion: 0.08
-Nodes (25): ../../core/nutrition_estimates.dart, ../../data/repositories/nutrition_estimate_repository.dart, NutritionEstimateRepository, accept, copyWith, correct, errorCode, errorMessage (+17 more)
+### Community 206 - "package:indifit/core/theme/app_theme.dart"
+Cohesion: 0.04
+Nodes (51): Border, BoxDecoration, DecoratedBox, FocusTraversalOrder, HealthPlatformType, HealthPlatformType get, _requiredList, package:indifit/core/di/theme_provider.dart (+43 more)
 
 ### Community 207 - "user_profile_provider.dart"
 Cohesion: 0.06
@@ -1623,9 +1612,9 @@ Nodes (33): B02AssistanceMode, B02EffortMode, B02PausedRepPosition, _addSegment,
 Cohesion: 0.06
 Nodes (33): B02WarmupLoadCandidate, B02WarmupPreference, _available, B02EquipmentIncrementInput, B02EquipmentIncrementResolution, B02EquipmentIncrementResolver, B02EquipmentIncrementSource, B02WarmupRequest (+25 more)
 
-### Community 210 - "plan_library_read_repository.dart"
-Cohesion: 0.06
-Nodes (33): OfflineStarterPlan, OfflineStarterPlanCatalogRepository, activeProgramVersionId, blockNames, db, detail, durationLabel, entries (+25 more)
+### Community 210 - "training_providers.dart"
+Cohesion: 0.03
+Nodes (78): b02_execution_compatibility_read_repository.dart, calendar_read_repository.dart, ../../data/repositories/legacy_program_compatibility_adapter.dart, ../../data/repositories/plan_library_read_repository.dart, ../../data/repositories/plan_overview_read_repository.dart, PlanAnalyticsSummary, B02ExecutionCompatibilityReadRepository, CalendarReadRepository (+70 more)
 
 ### Community 211 - "b04_current_food_guidance_test.dart"
 Cohesion: 0.06
@@ -1635,35 +1624,35 @@ Nodes (32): double? candidateEnergy,
 
 ### Community 212 - "progress_view_models.dart"
 Cohesion: 0.06
-Nodes (32): ProgressStrengthSetRecord, actionLabel, BodyMeasurementValue, changeText, comparisonText, date, detail, exerciseId (+24 more)
+Nodes (33): ProgressStrengthSetRecord, actionLabel, BodyMeasurementValue, changeText, comparisonText, date, detail, exerciseId (+25 more)
 
 ### Community 213 - "sync_mutation.dart"
-Cohesion: 0.04
-Nodes (45): ../capabilities/sync_capability.dart, hlc_timestamp.dart, deviceLocalSettingsDenylist, deviceLocalSettingsPrefixes, isAppendOnlyEvidence, isCatalogProgramId, isSettingKeySyncable, isTableSynced (+37 more)
+Cohesion: 0.11
+Nodes (18): createdAtUtc, defaultRetention, deletedAtHlc, domain, encryptedEnvelope, entityId, fromJson, hashCode (+10 more)
 
 ### Community 214 - "IndiFit — Master Product, Architecture & Strategic Audit Dossier"
 Cohesion: 0.05
 Nodes (42): 10. Comprehensive Evaluation Matrix & Scorecard, 11. Use-Readiness vs. Launch-Readiness Assessment, 12. Remaining Launch Blockers & Step-by-Step Action Plan, 13. Monetization Architecture & Dual Revenue Models, 14. Conclusion & Final Strategic Sign-Off, 1.1 The Core Problem, 1.2 The IndiFit Mission, 1. Executive Summary & Product Mission (+34 more)
 
-### Community 215 - "coaching_preference_repository.dart"
-Cohesion: 0.08
-Nodes (24): adaptiveAvailability, _ageEvidenceFingerprint, _assertSameConsent, _assertSameEligibility, _civilDate, currentEligibility, currentPreferences, _dates (+16 more)
+### Community 215 - "r08e1_personalized_onboarding_test.dart"
+Cohesion: 0.06
+Nodes (32): _WalkthroughProfileNotifier, UserProfileNotifier, UserProfileState, package:indifit/core/utils/tdee_calculator.dart, _NoProfileNotifier, activity, database, diet (+24 more)
 
-### Community 216 - "nutrition_label_ocr_screen.dart"
-Cohesion: 0.10
-Nodes (21): build, _buildFailureState, _buildIdleState, _buildLoadingState, _buildNutrientRow, _buildReviewState, createState, _customGramsController (+13 more)
+### Community 216 - "main.py"
+Cohesion: 0.11
+Nodes (28): #8 Add backend unit and integration tests, Acceptance Criteria, get_indifit_api_key(), enforce_rate_limit(), _get_backup_user_id(), get_max_requests_per_window(), get_photo_v2_max_requests(), get_photo_v2_window() (+20 more)
 
 ### Community 217 - "b04_production_ui_test.dart"
 Cohesion: 0.07
 Nodes (30): B04BriefingReadRepositoryError, package:indifit/data/models/b04_recommendation_history_models.dart, package:indifit/data/repositories/b04_briefing_read_repositories.dart, package:indifit/data/repositories/b04_recommendation_history_repository.dart, package:indifit/features/coaching/b04_production_surface_widgets.dart, package:indifit/features/dashboard/b04_daily_briefing_controller.dart, package:indifit/features/progress/b04_weekly_review_controller.dart, calls (+22 more)
 
-### Community 218 - "r08b7_exercise_context_test.dart"
+### Community 218 - "r08b7_player_integration_test.dart"
 Cohesion: 0.02
-Nodes (85): AnimatedContainer, CachingAssetBundle, dart:ui, fixtures/indifit_muscle_map_showcase.dart, B05MediaManifest, B05RegistryValidationException, package:indifit/core/fixtures/b05_foundation_registry.dart, package:indifit/features/education/b05_education_content.dart (+77 more)
+Nodes (83): CachingAssetBundle, dart:ui, fixtures/indifit_muscle_map_showcase.dart, B07ExerciseContextRepository, package:indifit/features/media/b05_exercise_visual_registry.dart, package:indifit/features/media/indifit_muscle_map.dart, package:indifit/features/media/indifit_muscle_map_geometry.g.dart, package:indifit/features/media/indifit_muscle_map_taxonomy.dart (+75 more)
 
 ### Community 219 - "thali_circular_plate_test.dart"
 Cohesion: 0.02
-Nodes (116): Completer, NutritionBackupGraph, NutritionCalculationService, NutritionHouseholdMeasureException, QuantityConversionContext, NutritionConsumptionRepository, NutritionThaliRepository, SavedMealsController (+108 more)
+Nodes (112): NutritionBackupGraph, NutritionCalculationService, QuantityConversionContext, NutritionConsumptionRepository, NutritionThaliRepository, SavedMealsController, SavedMealsState, package:indifit/core/nutrition_thali.dart (+104 more)
 
 ### Community 220 - "nutrition_estimate_review_screen.dart"
 Cohesion: 0.07
@@ -1686,16 +1675,16 @@ Cohesion: 0.06
 Nodes (30): clearAllData, _currentDateKey, currentLocalDateKey, _dateService, _db, defaultDailyGoalMl, defaultGlassSizeMl, deleteIntake (+22 more)
 
 ### Community 225 - "State"
-Cohesion: 0.09
-Nodes (34): B05FocusRing, _B05FocusRingState, B04CurrentFoodSummaryContent, _B04CurrentFoodSummaryContentState, TodayHeader, TodayHeaderState, _SavedMealComponentPicker, _SavedMealComponentPickerState (+26 more)
+Cohesion: 0.10
+Nodes (30): B05FocusRing, _B05FocusRingState, B04CurrentFoodSummaryContent, _B04CurrentFoodSummaryContentState, TodayHeader, TodayHeaderState, OnboardingHeightInputField, _OnboardingHeightInputFieldState (+22 more)
 
 ### Community 226 - "REFERENCE_GUIDE.md"
 Cohesion: 0.05
 Nodes (38): 10. Screenshot interpretation rules for AI agents, 11. Competitor responsibility map, 12. Desired outcome, 1. Reference priority, 2. Current IndiFit, 3. Legacy IndiFit, 4. Gymverse, 5. Healthify (+30 more)
 
 ### Community 227 - "natural_language_meal_service.dart"
-Cohesion: 0.06
-Nodes (30): ../../core/config/app_config.dart, _baseUrl, _catalog, confidence, copyWith, DecomposedFoodItem, decomposeMeal, decomposePhotoMeal (+22 more)
+Cohesion: 0.04
+Nodes (44): ../../core/config/app_config.dart, ../../data/repositories/nutrition_food_catalog_repository.dart, CanonicalFoodAction, CanonicalRecentFood, FoodAddUndoToken, frequencyCount, historicalQuantity, historicalTransformationId (+36 more)
 
 ### Community 228 - "pv1_cloud01c_restore_and_ui_test.dart"
 Cohesion: 0.04
@@ -1703,7 +1692,7 @@ Nodes (55): Future, AccountCapability, package:indifit/core/backup/cloud_backup_
 
 ### Community 229 - "_"
 Cohesion: 0.07
-Nodes (30): exercise_identity_fixtures.dart, _, approvalRecordId, baseExerciseId, empty, errors, ExerciseFamilyMemberRole, ExerciseFamilyRegistry (+22 more)
+Nodes (29): exercise_identity_fixtures.dart, _, approvalRecordId, baseExerciseId, empty, errors, ExerciseFamilyMemberRole, exerciseId (+21 more)
 
 ### Community 230 - "nutrition_household_measure_repository.dart"
 Cohesion: 0.07
@@ -1718,20 +1707,20 @@ Cohesion: 0.04
 Nodes (48): addedSugar, barcode, _baseUrl, brand, calories, carbs, categoryId, computeQueryHash (+40 more)
 
 ### Community 233 - "food_log_surface.dart"
-Cohesion: 0.06
-Nodes (36): food_contextual_actions.dart, NutritionDailyReadModel, NutritionHistoricalReadItem, build, _buildPanelContent, canonicalFoodRecordsForDayProvider, _CanonicalFoodRow, _CanonicalFoodRows (+28 more)
+Cohesion: 0.05
+Nodes (46): ../../core/nutrition_household_measures.dart, ../dashboard/today_surface_controller.dart, ../../data/repositories/nutrition_target_authority.dart, food_contextual_actions.dart, NutritionDailyReadModel, NutritionHistoricalReadItem, confirmed, context (+38 more)
 
-### Community 234 - "package:shared_preferences/shared_preferences.dart"
-Cohesion: 0.02
-Nodes (89): Border, BoxDecoration, DecoratedBox, FilledButton, FocusTraversalOrder, IconButton, confirmation, IndiFitHaptics (+81 more)
+### Community 234 - "package:flutter_test/flutter_test.dart"
+Cohesion: 0.01
+Nodes (200): FilledButton, GoRoute, IconButton, loadProfile, main, _TestMockProfileNotifier, _LoadedProfileNotifier, loadProfile (+192 more)
 
 ### Community 235 - "capabilities_registry.dart"
-Cohesion: 0.07
-Nodes (27): account_capability.dart, ai_assistance_capability.dart, analytics_capability.dart, cloud_backup_capability.dart, content_download_capability.dart, diagnostics_capability.dart, entitlement_capability.dart, food_catalog_capability.dart (+19 more)
+Cohesion: 0.06
+Nodes (34): account_capability.dart, ai_assistance_capability.dart, analytics_capability.dart, cloud_backup_capability.dart, content_download_capability.dart, diagnostics_capability.dart, entitlement_capability.dart, food_catalog_capability.dart (+26 more)
 
 ### Community 236 - "food_contextual_actions.dart"
 Cohesion: 0.08
-Nodes (28): Alignment, food_contextual_action_controller.dart, FoodContextualActionController get, FoodLog get, B05ColorRole, foodContextualActionControllerProvider, alignment, build (+20 more)
+Nodes (29): Alignment, food_contextual_action_controller.dart, FoodContextualActionController get, FoodLog get, B05ColorRole, foodContextualActionControllerProvider, alignment, build (+21 more)
 
 ### Community 237 - "b05_ui_tables.dart"
 Cohesion: 0.07
@@ -1742,20 +1731,20 @@ Cohesion: 0.08
 Nodes (28): AppFailure? get, actionLabel, AppFailure, AppFailureType, code, corruptedBackup, data, dataOrNull (+20 more)
 
 ### Community 239 - "_"
-Cohesion: 0.09
-Nodes (24): B02SetSegment, B02StrengthSetPrescription, B02TechniqueFields, _, B02PerformedSetCompanions, B02RichSetValidator, B02SetSegmentEditing, B02StrengthSetPrescriptionPersistence (+16 more)
+Cohesion: 0.07
+Nodes (29): b02_execution_models.dart, B02SetSegment, B02StrengthSetPrescription, B02TechniqueFields, _, B02GroupPlanValidator, _contiguous, validate (+21 more)
 
 ### Community 240 - "achievements_screen.dart"
-Cohesion: 0.11
-Nodes (20): ../../core/di/core_providers.dart, ../dashboard/dashboard_controller.dart, ../../data/repositories/progress_statistics_repository.dart, sharedPreferencesProvider, progressStatisticsRepositoryProvider, _pickWithConsent, _achievements, AchievementsScreen (+12 more)
+Cohesion: 0.15
+Nodes (12): ../../core/config/app_preferences_keys.dart, ../dashboard/dashboard_controller.dart, ../../data/repositories/progress_statistics_repository.dart, _achievements, build, _buildBody, createState, _errorMessage (+4 more)
 
-### Community 241 - "nutrition_recipe_editor_screen.dart"
-Cohesion: 0.07
-Nodes (28): ../../data/repositories/nutrition_recipe_repository.dart, NutritionRecipeEditorArgs, _addIngredient, _args, _buildEditor, _controller, createState, _descriptionController (+20 more)
+### Community 241 - "workout_summary_lifecycle_test.dart"
+Cohesion: 0.08
+Nodes (25): calories, completedAt, _DatabaseActionResult, db, deleteActiveDraft, deleteActiveDraftCallCount, durationSeconds, failSession (+17 more)
 
 ### Community 242 - "convert_musclemap_geometry.py"
-Cohesion: 0.11
-Nodes (26): argparse, dataclasses, _arc_to_cubics(), _close_balanced(), Command, _dart_command(), _dart_list(), _extract_array() (+18 more)
+Cohesion: 0.09
+Nodes (28): dataclasses, json, math, build_master_visualizer.py ========================== Generates a state-of-the-…, _arc_to_cubics(), _close_balanced(), Command, _dart_command() (+20 more)
 
 ### Community 243 - "food_tables.dart"
 Cohesion: 0.07
@@ -1763,15 +1752,15 @@ Nodes (28): brand, calories, carbsG, category, createdAt, defaultMealType, fatG,
 
 ### Community 244 - "nutrition_read_model_repository.dart"
 Cohesion: 0.08
-Nodes (24): NutritionLegacyAdapter, _activeRecordsForDates, _buildDailyReadModel, _canonical, code, dailyTotals, dailyTotalsForLocalDates, _dedupeIssues (+16 more)
+Nodes (23): _activeRecordsForDates, _buildDailyReadModel, _canonical, code, dailyTotals, dailyTotalsForLocalDates, _dedupeIssues, getLegacyTemplate (+15 more)
 
 ### Community 245 - "main_navigation_scaffold.dart"
 Cohesion: 0.08
 Nodes (27): dashboard_screen.dart, ../../food_log/food_search_screen.dart, _activateScreen, build, createState, _currentIndex, didUpdateWidget, foodMealType (+19 more)
 
 ### Community 246 - "thali_component_picker_sheet.dart"
-Cohesion: 0.07
-Nodes (28): NutritionThaliFoodOption, NutritionThaliRecipeOption, QuantityUnit, NutritionThaliController, NutritionThaliState, _amountController, build, _buildPortionConfigCard (+20 more)
+Cohesion: 0.08
+Nodes (27): NutritionThaliFoodOption, NutritionThaliRecipeOption, QuantityUnit, NutritionThaliController, NutritionThaliState, _amountController, build, _buildPortionConfigCard (+19 more)
 
 ### Community 247 - "data_erasure_service.dart"
 Cohesion: 0.07
@@ -1782,12 +1771,12 @@ Cohesion: 0.07
 Nodes (27): activeSlotIds, activeSlots, addSlot, applyPreset, athlete6, _changedLocally, copyWith, description (+19 more)
 
 ### Community 249 - "confetti_overlay.dart"
-Cohesion: 0.08
-Nodes (25): build, child, color, _colors, ConfettiOverlay, _ConfettiOverlayState, _ConfettiParticle, _controller (+17 more)
+Cohesion: 0.06
+Nodes (32): CustomPainter, build, child, color, _colors, ConfettiOverlay, _ConfettiOverlayState, _ConfettiPainter (+24 more)
 
 ### Community 250 - "food_catalog_service.dart"
-Cohesion: 0.12
-Nodes (15): ../capabilities/food_catalog_capability.dart, ../../data/repositories/food_api_service.dart, _adaptRawToCandidate, _apiService, cacheRemoteCandidate, getCachedCandidate, getRecentCachedCandidates, _inferCategory (+7 more)
+Cohesion: 0.08
+Nodes (25): ../capabilities/food_catalog_capability.dart, ../catalog/food_catalog_models.dart, ../../data/repositories/food_api_service.dart, cacheRemoteCandidate, DisabledFoodCatalogCapability, FoodCatalogCapability, getCachedCandidate, getRecentCachedCandidates (+17 more)
 
 ### Community 251 - "Phase 2: Core UX Fixes (Weeks 2–3)"
 Cohesion: 0.05
@@ -1795,19 +1784,19 @@ Nodes (36): 1.1 Fix Exercise Library Seeding, 1.2 Fix Onboarding Gate, 1.3 Fix F
 
 ### Community 252 - "remote_food_review_sheet.dart"
 Cohesion: 0.08
-Nodes (24): ../../../core/catalog/food_catalog_models.dart, ServingOption, build, _buildMacroCol, _buildMacroField, _caloriesController, candidate, _carbsController (+16 more)
+Nodes (26): ../../../core/catalog/food_catalog_models.dart, ServingOption, build, _buildMacroCol, _buildMacroField, _caloriesController, candidate, _carbsController (+18 more)
 
 ### Community 253 - "b04_briefing_read_repositories.dart"
 Cohesion: 0.07
-Nodes (27): b04_recommendation_history_repository.dart, _B04BriefingReadProjection, B04DailyBriefingReadRepository, B04WeeklyReviewReadRepository, code, _compareItems, dates, engine (+19 more)
+Nodes (27): b04_recommendation_history_repository.dart, _B04BriefingReadProjection, B04DailyBriefingReadRepository, code, _compareItems, dates, engine, evaluate (+19 more)
 
-### Community 254 - "log_weight_bottom_sheet.dart"
+### Community 254 - "r08f4_training_volume_presentation.dart"
+Cohesion: 0.07
+Nodes (25): ../../data/models/progress_dashboard_models.dart, contributingSessionCount, displayVolume, formatDaySemanticLabel, formatRecentHistorySummary, formatThisWeekHeading, formatThisWeekSemantics, formatThisWeekSubtitle (+17 more)
+
+### Community 255 - "nutrition_label_ocr_screen.dart"
 Cohesion: 0.04
-Nodes (46): ../../data/models/progress_dashboard_models.dart, _adjust, build, _buildStepChip, _controller, createState, currentWeight, dispose (+38 more)
-
-### Community 255 - "natural_language_meal_screen.dart"
-Cohesion: 0.06
-Nodes (37): ../../core/privacy/dpdp_consent_service.dart, _analyzeWithConsent, build, _buildItemCard, _buildTotalStat, createState, date, dispose (+29 more)
+Nodes (66): ../../core/privacy/dpdp_consent_service.dart, sharedPreferencesProvider, build, _handleSaveTemplate, _analyzeWithConsent, build, _buildItemCard, _buildTotalStat (+58 more)
 
 ### Community 256 - "local_timezone_service.dart"
 Cohesion: 0.07
@@ -1819,11 +1808,11 @@ Nodes (24): IncompatibleQuantityContextError, IncompatibleQuantityDimensionError
 
 ### Community 258 - "calendar_read_repository.dart"
 Cohesion: 0.07
-Nodes (28): activeProgramName, activeProgramVersionId, block, CalendarReadRepository, CalendarReadSnapshot, _dates, _db, _hydrate (+20 more)
+Nodes (26): activeProgramName, activeProgramVersionId, block, CalendarReadSnapshot, _dates, _db, _hydrate, isDeload (+18 more)
 
 ### Community 259 - "exercise_picker_repository.dart"
-Cohesion: 0.05
-Nodes (44): browseAll, _cleanFilter, _containsNormalized, copyWith, database, DriftExerciseCatalogSource, equipment, ExerciseCatalogSource (+36 more)
+Cohesion: 0.07
+Nodes (27): browseAll, _cleanFilter, _containsNormalized, copyWith, database, DriftExerciseCatalogSource, equipment, ExerciseCatalogSource (+19 more)
 
 ### Community 260 - "exercise_preference_editor_screen.dart"
 Cohesion: 0.09
@@ -1833,13 +1822,13 @@ Nodes (26): _addCue, _addSetupValue, build, _buildGeneralNoteSection, _buildNoti
 Cohesion: 0.08
 Nodes (25): b02_activity_session_repository.dart, b02_muscle_volume_repository.dart, _activitySessions, B02ProgressReadRepository, B02ProgressReadSource, _civilDates, _compatibility, _db (+17 more)
 
-### Community 262 - "dashboard_module_customization_panel.dart"
-Cohesion: 0.07
-Nodes (26): ../dashboard_personalization_controller.dart, DashboardModuleLayoutItem, canReset, collapsible, _CustomizationEntry, _CustomizationError, _CustomizationIntro, _CustomizationMoreMenu (+18 more)
+### Community 262 - "today_daily_action_surface.dart"
+Cohesion: 0.02
+Nodes (103): b05_education_content.dart, ConsumerWidget, ../../core/di/health_provider.dart, ../dashboard_module_registry.dart, ../dashboard_personalization_controller.dart, ../../data/repositories/dashboard_personalization_repository.dart, ../food_log/diary_structure_controller.dart, ../food_log/meal_presentation_registry.dart (+95 more)
 
-### Community 263 - "package:indifit/data/models/b04_goal_models.dart"
-Cohesion: 0.08
-Nodes (24): B04ActivationMetadata, package:indifit/data/models/b04_goal_models.dart, package:indifit/data/models/b04_recovery_models.dart, package:indifit/data/repositories/coaching_preference_repository.dart, package:indifit/data/repositories/readiness_snapshot_repository.dart, package:indifit/data/repositories/recovery_observation_repository.dart, package:indifit/data/services/b04_adaptive_target_engine.dart, package:indifit/data/services/b04_recovery_production_adapter.dart (+16 more)
+### Community 263 - "b04_integration_regression_test.dart"
+Cohesion: 0.12
+Nodes (14): B04ActivationMetadata, package:indifit/core/fixtures/b04_adaptive_coaching_fixture_matrix.dart, package:indifit/data/repositories/coaching_preference_repository.dart, package:indifit/data/services/b04_adaptive_target_engine.dart, main, activation, _crossUserEvaluationAt, date (+6 more)
 
 ### Community 264 - "b04_production_recommendation_orchestration_test.dart"
 Cohesion: 0.08
@@ -1847,14 +1836,14 @@ Nodes (25): ProviderContainer, required NutrientRegistry registry,
   String, String? nutritionUserId,
   bool, addAllergyWithoutFoodEvidence, _completeCalculation, container, dates, db (+17 more)
 
-### Community 265 - "b03_legacy_nutrition_adapter_test.dart"
+### Community 265 - "package:indifit/core/typed_quantities.dart"
 Cohesion: 0.03
-Nodes (70): DateTime? loggedAtUtc,
-  String, NutritionLegacyAdapterError, NutritionReadModelError, package:indifit/core/backup/backup_v8.dart, package:indifit/core/nutrition_consumption_snapshots.dart, package:indifit/core/nutrition_legacy_corrections.dart, package:indifit/data/repositories/nutrition_consumption_repository.dart, package:indifit/data/repositories/nutrition_legacy_adapter.dart (+62 more)
+Nodes (95): DateTime? loggedAtUtc,
+  String, NutrientRegistry, NutritionConsumptionConflictError, NutritionConsumptionError, NutritionConsumptionPersistenceError, NutritionConsumptionValidationError, NutritionHouseholdMeasureException, NutritionLegacyAdapter (+87 more)
 
 ### Community 266 - "b03_protein_distribution_test.dart"
-Cohesion: 0.06
-Nodes (33): NutrientAggregationResult, NutrientCompleteness, package:indifit/core/nutrition_protein_distribution.dart, package:indifit/data/repositories/nutrition_protein_distribution_repository.dart, package:indifit/features/nutrition/protein_distribution_controller.dart, calls, date, _distribution (+25 more)
+Cohesion: 0.05
+Nodes (35): NutrientAggregationResult, NutrientCompleteness, NutritionProteinDistributionRepository, package:indifit/core/nutrition_protein_distribution.dart, package:indifit/data/repositories/nutrition_protein_distribution_repository.dart, package:indifit/features/nutrition/protein_distribution_controller.dart, calls, date (+27 more)
 
 ### Community 267 - "b03_recipe_calculation_test.dart"
 Cohesion: 0.08
@@ -1866,11 +1855,9 @@ Nodes (25): NutritionCalculationResult, NutrientUnit? unit,
 Cohesion: 0.06
 Nodes (35): 1.1 The Operational Disconnect, 1.2 The Dual-Engine Operational Contract, 1. Complete Micronutrient Persistence, 1. Executive Summary & The Hybrid Contract, 1. Hardcoded Substring Katori Heuristics, 1. Voice-to-Thali Workflow, 1. Zero-Ops Caching Architecture (Dropping Redis for V1), 2. Discarding Micronutrients & Fiber (+27 more)
 
-### Community 269 - "ux_r02_today_home_test.dart"
-Cohesion: 0.04
-Nodes (55): DateTime? now,
-  double, required String file,
-  Size, _aggregation, _amount, available, calories, completeness, created (+47 more)
+### Community 269 - "package:uuid/uuid.dart"
+Cohesion: 0.08
+Nodes (23): ../../core/raw_cooked_transformations.dart, archiveUserOverride, createUserOverride, _db, findExplicit, findForFood, findForSource, _fromRow (+15 more)
 
 ### Community 270 - "thali_plate_layout.dart"
 Cohesion: 0.09
@@ -1884,25 +1871,25 @@ Nodes (25): completedAt, completedExercisesCount, completedSetsCount, durationSe
 Cohesion: 0.08
 Nodes (24): package:indifit/core/services/app_preferences_service.dart, package:indifit/core/services/workout_session_wake_lock_coordinator.dart, close, _closed, container, coordinator, create, createIndiFitTestPreferencesContainer (+16 more)
 
-### Community 273 - "_"
+### Community 273 - "household_measures_screen.dart"
 Cohesion: 0.09
-Nodes (23): ../../data/repositories/b02_strength_execution_repository.dart, B02StrengthExecutionLaunch, _, draftId, fromLaunch, launch, modeLabel, occurrenceId (+15 more)
+Nodes (23): ../../core/presentation/secondary_presentation.dart, household_measures_controller.dart, householdMeasuresControllerProvider, build, _confirmArchive, _content, createState, _ErrorState (+15 more)
 
 ### Community 274 - "r08_0_2_repdb_mapping_review_test.dart"
 Cohesion: 0.08
 Nodes (25): buffer, _csvRow, _expectedFamilyIds, _family, _gitTrackedPaths, header, inQuotes, _isForbiddenMediaPath (+17 more)
 
-### Community 275 - "pv1_prod03b_celebration_surface_test.dart"
-Cohesion: 0.04
-Nodes (47): ProgressStatisticsRepository, package:indifit/core/algorithms/adaptive_tdee_engine.dart, package:indifit/core/services/achievement_service.dart, package:indifit/core/services/modal_queue_coordinator.dart, package:indifit/core/theme/b05_semantic_colors.dart, package:indifit/core/widgets/confetti_overlay.dart, package:indifit/data/models/adaptive_tdee_models.dart, package:indifit/data/repositories/progress_statistics_repository.dart (+39 more)
+### Community 275 - "_"
+Cohesion: 0.10
+Nodes (20): _, available, B07ExerciseContext, B07ExerciseContextResult, B07ExerciseContextStatus, canonicalExerciseId, canonicalName, commonMistakes (+12 more)
 
 ### Community 276 - "equipment_profile_editor_screen.dart"
 Cohesion: 0.05
 Nodes (47): ../../core/fixtures/equipment_fixtures.dart, ../../core/presentation/equipment_presentation.dart, ../../data/repositories/equipment_preference_repository.dart, _applyPreset, _availability, build, _buildEquipmentListSection, _buildPresetsSection (+39 more)
 
-### Community 277 - "today_nutrition_widgets.dart"
+### Community 277 - "../../core/di/providers.dart"
 Cohesion: 0.02
-Nodes (133): ../../core/di/health_provider.dart, ../../../core/presentation/consumer_number_label.dart, ../../core/widgets/skeleton_loader.dart, CustomPainter, ../../../data/models/hydration_models.dart, hydration_detail_sheet.dart, hydration_fluid_fill.dart, _ConfettiPainter (+125 more)
+Nodes (108): ../../core/di/providers.dart, ../../../core/presentation/consumer_number_label.dart, ../../core/widgets/skeleton_loader.dart, ../../../data/models/hydration_models.dart, ../../data/repositories/progress_dashboard_read_repository.dart, hydration_detail_sheet.dart, hydration_fluid_fill.dart, HydrationDailyReadModel (+100 more)
 
 ### Community 278 - "workout_execution_compatibility_adapter.dart"
 Cohesion: 0.06
@@ -1913,16 +1900,16 @@ Cohesion: 0.08
 Nodes (24): calories, carbsG, contractVersion, copyWith, decode, encode, fatG, field (+16 more)
 
 ### Community 280 - "ux_r07d_food_diary_logging_test.dart"
-Cohesion: 0.05
-Nodes (42): NutritionFoodLoggingCoordinator, _RecordingFoodLoggingCoordinator, _FailingBatchCoordinator, _TrackingBatchCoordinator, _TestCoordinator, batchCalls, catalog, close (+34 more)
+Cohesion: 0.03
+Nodes (81): NutritionFoodLoggingCoordinator, package:indifit/core/nutrition_calculation_service.dart, package:indifit/core/raw_cooked_transformations.dart, package:indifit/data/repositories/nutrition_food_logging_coordinator.dart, package:indifit/data/repositories/nutrition_transformation_repository.dart, package:indifit/features/food_log/nutrition_recipe_editor_controller.dart, package:indifit/features/nutrition_ai/natural_language_meal_service.dart, package:indifit/features/nutrition_ai/nutrition_ai_controllers.dart (+73 more)
 
 ### Community 281 - "b02_execution_semantics.dart"
 Cohesion: 0.08
-Nodes (24): assistance, b02ExecutionAssistanceLabel, b02ExecutionEffortLabel, b02ExecutionGroupTypeLabel, b02ExecutionLoadBasisLabel, b02ExecutionPausedRepPositionLabel, b02ExecutionSetRoleLabel, B02GroupExecutionIntegrity (+16 more)
+Nodes (25): ../../../data/models/b02_rich_set_helpers.dart, assistance, b02ExecutionAssistanceLabel, b02ExecutionEffortLabel, b02ExecutionGroupTypeLabel, b02ExecutionLoadBasisLabel, b02ExecutionPausedRepPositionLabel, b02ExecutionSetRoleLabel (+17 more)
 
 ### Community 282 - "workout_execution_shell.dart"
-Cohesion: 0.08
-Nodes (24): build, _buildSlots, child, completionSlot, contentOverride, currentExerciseSlot, execution, exerciseProgressSlot (+16 more)
+Cohesion: 0.05
+Nodes (38): B02StrengthExecutionLaunch, _, draftId, fromLaunch, launch, modeLabel, occurrenceId, PlannedWorkoutExecutionContext (+30 more)
 
 ### Community 283 - "auto_backup_service.dart"
 Cohesion: 0.07
@@ -1936,9 +1923,9 @@ Nodes (23): Comparable, HlcTimestamp get, B04Rational, compareTo, counter, curre
 Cohesion: 0.13
 Nodes (14): AccountSession, async, currentUserId, deviceId, displayName, email, isAnonymous, isAuthenticated (+6 more)
 
-### Community 286 - "b03_final_production_integration_test.dart"
-Cohesion: 0.05
-Nodes (39): package:indifit/core/nutrition_calculation_service.dart, package:indifit/core/raw_cooked_transformations.dart, package:indifit/data/repositories/nutrition_food_logging_coordinator.dart, package:indifit/data/repositories/nutrition_transformation_repository.dart, package:indifit/features/food_log/nutrition_recipe_editor_controller.dart, package:indifit/features/nutrition_ai/natural_language_meal_service.dart, package:indifit/features/nutrition_ai/nutrition_ai_controllers.dart, package:indifit/features/nutrition_ai/nutrition_label_ocr_service.dart (+31 more)
+### Community 286 - "r08b4_exercise_picker_test.dart"
+Cohesion: 0.10
+Nodes (19): package:indifit/data/repositories/exercise_picker_repository.dart, _browseAll, _exercises, _host, _launcherHost, main, _picker, _plannedTarget (+11 more)
 
 ### Community 287 - "b04_optional_ai_assistance_test.dart"
 Cohesion: 0.11
@@ -1948,13 +1935,13 @@ Nodes (17): B04OptionalAiRedactedEnvelope, package:indifit/data/services/b04_opt
 Cohesion: 0.09
 Nodes (23): ../../data/repositories/nutrition_household_measure_repository.dart, archiveVessel, calibrateVessel, copyWith, createVessel, currentCalibrations, HouseholdMeasuresController, householdMeasuresControllerProvider (+15 more)
 
-### Community 289 - "static const int"
+### Community 289 - "DateTime?"
 Cohesion: 0.06
-Nodes (33): backupFormatVersion, byteSize, ciphertextBase64, CloudBackupListResponse, CloudBackupRetentionPolicy, CloudBackupSnapshotSummary, CloudBackupSnapshotUploadRequest, createdAtUtc (+25 more)
+Nodes (33): argparse, DateTime?, backupFormatVersion, byteSize, ciphertextBase64, CloudBackupListResponse, CloudBackupRetentionPolicy, CloudBackupSnapshotSummary (+25 more)
 
 ### Community 290 - "package:indifit/core/nutrients.dart"
-Cohesion: 0.05
-Nodes (40): NutritionFoodLoggingError, NutritionFoodLogPreview, package:indifit/core/nutrients.dart, package:indifit/core/typed_quantities.dart, package:indifit/data/repositories/nutrition_food_catalog_repository.dart, package:indifit/data/services/nutrition_food_search_ranking.dart, required Iterable, catalog (+32 more)
+Cohesion: 0.03
+Nodes (74): RemoteFoodCandidate, NutrientBasisMismatchError, NutrientError, NutrientRegistryVersionError, NutrientUnitMismatchError, NutrientValidationError, UnknownNutrientError, NutritionFoodOption (+66 more)
 
 ### Community 291 - "r08c9_plan_overview_history_test.dart"
 Cohesion: 0.04
@@ -1968,8 +1955,8 @@ Cohesion: 0.09
 Nodes (23): addConstraint, archiveConstraint, constraints, copyWith, currentState, definitions, errorCode, _failure (+15 more)
 
 ### Community 293 - "app_colors_extension.dart"
-Cohesion: 0.10
-Nodes (19): AppColorsExtension get, BuildContext, Color, achievementBronze, achievementGold, achievementSilver, appColors, AppColorsExtensionContext (+11 more)
+Cohesion: 0.09
+Nodes (22): AppColorsExtension get, BuildContext, Color, achievementBronze, achievementGold, achievementSilver, appColors, AppColorsExtension (+14 more)
 
 ### Community 294 - "b04_recommendation_history_repository_test.dart"
 Cohesion: 0.11
@@ -1985,12 +1972,12 @@ Nodes (11): BuildContext? context,
   Duration, Duration, colors, dismissIndiFitFeedback, duration, indiFitSuccessSnackBar, indiFitUndoSnackBar, messenger (+3 more)
 
 ### Community 297 - "test_sync_endpoints.py"
-Cohesion: 0.06
-Nodes (20): _load_fmcg_manifest(), Every item in the curated FMCG seed must satisfy Atwater 4-4-9 rules: 1. Sum of…, test_fmcg_manifest_atwater_4_4_9_consistency(), test_fmcg_manifest_metadata_and_odbl_license(), fixture, reset_sync_state(), test_push_malformed_encrypted_envelope_returns_400(), fastapi_routing (+12 more)
+Cohesion: 0.13
+Nodes (3): fixture, reset_sync_state(), test_push_malformed_encrypted_envelope_returns_400()
 
 ### Community 298 - "regional_food_packs_screen.dart"
-Cohesion: 0.09
-Nodes (23): ../../core/services/crash_reporting_service.dart, ../../data/repositories/food_repository.dart, foodRepositoryProvider, _loadLocalSearchResults, build, _checking, _checkLoadedPacks, _content (+15 more)
+Cohesion: 0.07
+Nodes (31): ../../core/privacy/privacy_policy.dart, ../core/services/app_preferences_service.dart, ../../core/services/crash_reporting_service.dart, ../../core/utils/app_logger.dart, ../../data/repositories/food_repository.dart, indifit_app.dart, bootstrap, container (+23 more)
 
 ### Community 299 - "b04_recommendation_context_test.dart"
 Cohesion: 0.12
@@ -2009,26 +1996,26 @@ Cohesion: 0.12
 Nodes (16): ../../core/fixtures/exercise_family_metadata.dart, ExerciseFamilyMetadata, buildExerciseFamilyPresentation, byId, ExerciseFamilyPresentationItem, exercisesForFamily, family, familyRegistry (+8 more)
 
 ### Community 303 - "b04_nutrition_safety_filter_test.dart"
-Cohesion: 0.10
-Nodes (20): package:indifit/data/services/b04_nutrition_safety_filter.dart, required NutritionConstraintTarget target,
+Cohesion: 0.08
+Nodes (22): fixtures/b04_policy_gate_fixture.dart, package:indifit/data/services/b04_nutrition_safety_filter.dart, required NutritionConstraintTarget target,
   bool, required String id,
-  String, _amount, _constraint, crossContact, definition, _estimatedEnergy (+12 more)
+  String, _amount, _constraint, crossContact, definition (+14 more)
 
 ### Community 304 - "consumer_copy.dart"
 Cohesion: 0.09
 Nodes (22): action, addFoodsToMeal, ConsumerCopy, _containsImplementationTerm, customizeTodayAction, earlierEntry, explanation, groupDetailsUnavailable (+14 more)
 
 ### Community 305 - "workout_session_wake_lock_coordinator.dart"
-Cohesion: 0.08
-Nodes (25): _activeSessionKey, _appliedEnabled, attachToAppLifecycle, b02WorkoutSessionWakeLockKey, clearActiveSession, _desiredEnabled, didChangeAppLifecycleState, disable (+17 more)
+Cohesion: 0.09
+Nodes (22): _activeSessionKey, _appliedEnabled, attachToAppLifecycle, b02WorkoutSessionWakeLockKey, clearActiveSession, _desiredEnabled, didChangeAppLifecycleState, disable (+14 more)
 
 ### Community 306 - "encryption_helper.dart"
 Cohesion: 0.09
 Nodes (22): decrypt, _decryptPayload, _decryptV1, _decryptV2, _deriveKey, deviceRecoveryIterations, encrypt, encryptDeviceRecovery (+14 more)
 
 ### Community 307 - "hydration_models.dart"
-Cohesion: 0.08
-Nodes (23): amountMl, containerType, entries, fromJson, glassesCount, goalFlOz, goalMl, hashCode (+15 more)
+Cohesion: 0.09
+Nodes (22): amountMl, containerType, entries, fromJson, glassesCount, goalFlOz, goalMl, hashCode (+14 more)
 
 ### Community 308 - "r08d4_direct_food_edit_test.dart"
 Cohesion: 0.06
@@ -2038,9 +2025,9 @@ Nodes (35): batch, catalog, close, completeness, constrainedSingle, consumption,
 Cohesion: 0.10
 Nodes (22): cancelledOccurrenceIds, code, commandId, _db, endActivePlan, EndActivePlanCommand, EndActivePlanResult, _eventType (+14 more)
 
-### Community 310 - "pv1_content01a_pack_contract_test.dart"
-Cohesion: 0.11
-Nodes (18): package:indifit/core/content/content_pack_models.dart, package:indifit/core/content/content_pack_registry.dart, package:indifit/core/content/content_pack_validator.dart, _appVersion, bytes, file, _food, items (+10 more)
+### Community 310 - "package:crypto/crypto.dart"
+Cohesion: 0.09
+Nodes (21): package:crypto/crypto.dart, package:indifit/core/content/content_pack_models.dart, package:indifit/core/content/content_pack_registry.dart, package:indifit/core/content/content_pack_validator.dart, main, _normalizeSql, _appVersion, bytes (+13 more)
 
 ### Community 311 - "cloud_backup_capability.dart"
 Cohesion: 0.10
@@ -2048,11 +2035,11 @@ Nodes (21): connected_status.dart, CloudBackupService, backupFormatVersion, byte
 
 ### Community 312 - "b02_activity_controller.dart"
 Cohesion: 0.10
-Nodes (21): ../../data/repositories/b02_activity_session_repository.dart, B02ActivityDraftRecord, B02ActivityController, B02ActivityControllerState, B02ActivityControllerStatus, b02ActivitySessionRepositoryProvider, completeDraft, completedSessionId (+13 more)
+Nodes (20): B02ActivityDraftRecord, B02ActivityController, B02ActivityControllerState, B02ActivityControllerStatus, b02ActivitySessionRepositoryProvider, completeDraft, completedSessionId, copyWith (+12 more)
 
 ### Community 313 - "core_providers.dart"
-Cohesion: 0.06
-Nodes (37): ../capabilities/capabilities_registry.dart, ../config/app_config.dart, ../../features/coaching/coaching_providers.dart, ../../features/dashboard/today_surface_controller.dart, ../../features/hydration/hydration_providers.dart, ../../features/nutrition/nutrition_providers.dart, ../../features/settings/settings_controller.dart, ../../features/training/training_providers.dart (+29 more)
+Cohesion: 0.05
+Nodes (38): ../capabilities/capabilities_registry.dart, ../config/app_config.dart, core_providers.dart, ../../features/coaching/coaching_providers.dart, ../../features/dashboard/today_surface_controller.dart, ../../features/hydration/hydration_providers.dart, ../../features/nutrition/nutrition_providers.dart, ../../features/settings/settings_controller.dart (+30 more)
 
 ### Community 314 - "content_pack_models.dart"
 Cohesion: 0.09
@@ -2063,8 +2050,8 @@ Cohesion: 0.06
 Nodes (35): ../../core/nutrients.dart, NutritionConstraintEvaluator, cleanupTemporaryImage, _delete, _deleteFile, errorCode, lifecycle, NutritionEstimateFileDelete (+27 more)
 
 ### Community 316 - "b02_exercise_performance_read_repository.dart"
-Cohesion: 0.09
-Nodes (21): actualExerciseId, B02ExercisePerformanceRecord, completedAt, completionKind, _database, exerciseOrdinal, exerciseStatus, expectedExerciseId (+13 more)
+Cohesion: 0.06
+Nodes (29): actualExerciseId, B02ExercisePerformanceRecord, completedAt, completionKind, _database, exerciseOrdinal, exerciseStatus, expectedExerciseId (+21 more)
 
 ### Community 317 - "indifit_app.dart"
 Cohesion: 0.11
@@ -2087,17 +2074,17 @@ Nodes (34): Checkbox, DateTime? selectedDate,
 Cohesion: 0.06
 Nodes (39): ../di/providers.dart, drift_outbox_repository.dart, cancel, _db, DriftOutboxRepository, enqueue, getOperationById, getPendingOperations (+31 more)
 
-### Community 322 - "custom_food_editor_screen.dart"
-Cohesion: 0.10
-Nodes (20): FormState, build, _caloriesController, _carbsController, createState, CustomFoodEditorScreen, _CustomFoodEditorScreenState, dispose (+12 more)
+### Community 322 - "class"
+Cohesion: 0.06
+Nodes (33): class, FormState, build, _caloriesController, _carbsController, createState, CustomFoodEditorScreen, _CustomFoodEditorScreenState (+25 more)
 
 ### Community 323 - "_"
 Cohesion: 0.10
 Nodes (21): _, adapt, dimension, error, _explicitLegacyUnit, isResolved, kLegacyQuantityAdapterContractVersion, LegacyQuantityAdaptation (+13 more)
 
-### Community 324 - "Map"
-Cohesion: 0.07
-Nodes (26): action, attemptCount, copyWith, createdAtUtc, domain, entityId, fromJson, idempotencyKey (+18 more)
+### Community 324 - "outbox_operation.dart"
+Cohesion: 0.10
+Nodes (20): action, attemptCount, copyWith, createdAtUtc, domain, entityId, fromJson, idempotencyKey (+12 more)
 
 ### Community 325 - "b02_target_recommendation_repository.dart"
 Cohesion: 0.10
@@ -2107,9 +2094,9 @@ Nodes (20): B02LoadBasis, B02TargetDraftCoordinator, B02TargetEvidenceQuery, B02
 Cohesion: 0.13
 Nodes (15): B04CurrentFoodController, B04CurrentFoodState, package:indifit/data/models/b04_current_food_models.dart, package:indifit/data/models/b04_recommendation_context_models.dart, package:indifit/data/services/b04_current_food_guidance_service.dart, package:indifit/features/nutrition/current_food_controller.dart, _card, _emptySnapshot (+7 more)
 
-### Community 327 - "b02_execution_advanced_controls.dart"
-Cohesion: 0.13
-Nodes (15): b02_execution_semantics.dart, ../../../data/models/b02_rich_set_helpers.dart, B02ExecutionAdvancedControls, _B02ExecutionAdvancedControlsState, build, createState, didUpdateWidget, headerReps (+7 more)
+### Community 327 - "r08_0_3_repdb_asset_pipeline_test.dart"
+Cohesion: 0.11
+Nodes (16): package:indifit/core/fixtures/b05_third_party_asset_manifest.dart, json, main, _manifestJson, _productionManifest, _repdbSource, _syntheticJson, _syntheticManifest (+8 more)
 
 ### Community 328 - "B04-D04-ENABLED-1 — First enabled calorie-adaptation numerical policy"
 Cohesion: 0.06
@@ -2128,8 +2115,8 @@ Cohesion: 0.06
 Nodes (30): B03-01 — Contract, fixture, and seed-manifest audit matrix — SOL-GATE REQUIRED, B03-02 — Real v16 migration and v7 backup harness — SOL-GATE REQUIRED, B03-03 — Reviewed food identity manifest, aliases, variants, and legacy mappings — SOL-GATE REQUIRED, B03-04 — Typed quantities and deterministic conversions — SOL-GATE REQUIRED, B03-05 — Nutrient registry, facts, and completeness — SOL-GATE REQUIRED, B03-06A — Schema v17 tables, indexes, and v16→v17 migration — SOL-GATE REQUIRED, B03-06B — Backup v8 graph, codecs, restore, and old-version compatibility — SOL-GATE REQUIRED, B03-07 — Direct-food recipe graph and immutable versions — SOL-GATE REQUIRED (+22 more)
 
 ### Community 333 - "b05_muscle_diagram.dart"
-Cohesion: 0.09
-Nodes (22): ../../core/fixtures/b02_muscle_catalog.dart, ../education/b05_education_content.dart, B05MuscleVisualRegistry, B05ExerciseEducationPanel, _B05ExerciseEducationPanelState, b05ExerciseEducationProvider, B05MuscleLabelSet, build (+14 more)
+Cohesion: 0.11
+Nodes (19): ../../core/fixtures/b02_muscle_catalog.dart, ../education/b05_education_content.dart, B05MuscleVisualRegistry, B05MuscleLabelSet, B05InteractiveMuscleDiagram, _B05InteractiveMuscleDiagramState, B05MuscleDiagramValidator, build (+11 more)
 
 ### Community 334 - "IndiFit R08-0 Final Pre-Implementation Decision Review"
 Cohesion: 0.06
@@ -2162,20 +2149,20 @@ Cohesion: 0.11
 Nodes (19): areActivitiesEnabled, _channel, _defaultIsIos, _driver, endLiveActivity, endRestLiveActivity, IosLiveActivityDriver, IosLiveActivityService (+11 more)
 
 ### Community 341 - "_"
-Cohesion: 0.04
-Nodes (45): AppConfig, backendUrl, connectedAiEnabled, hasValidApiKey, rawApiKey, _, all, containsMuscle (+37 more)
+Cohesion: 0.08
+Nodes (25): AppConfig, backendUrl, connectedAiEnabled, hasValidApiKey, rawApiKey, _, all, containsMuscle (+17 more)
 
 ### Community 342 - "thali_builder_screen.dart"
-Cohesion: 0.07
-Nodes (29): circular_thali_plate.dart, build, _buildEmptyPlateState, createState, dispose, _handleLogThali, _handleSaveTemplate, _initialized (+21 more)
+Cohesion: 0.08
+Nodes (24): circular_thali_plate.dart, _buildEmptyPlateState, createState, dispose, _handleLogThali, _initialized, initialThaliId, initState (+16 more)
 
 ### Community 343 - "b02_workout_elapsed.dart"
 Cohesion: 0.08
 Nodes (26): @visibleForTesting, _instance, resetForTest, accumulatedSeconds, activeSegmentStartedAtUtc, additional, b02ElapsedSecondsAt, b02ElapsedSecondsFromValues (+18 more)
 
 ### Community 344 - "v14_db_fixtures.dart"
-Cohesion: 0.07
-Nodes (28): static const List, B04CurrentFoodFixture, B04CurrentFoodFixtureKind, B04CurrentFoodFixtureMatrix, cases, expectedOutcome, id, kind (+20 more)
+Cohesion: 0.10
+Nodes (19): _createdAtMillis, createSourceDatabase, _createV14Schema, _insertCanonicalIdentity, _insertCustomAndUnresolved, _insertDuplicateCanonicalIdentity, _insertEquipmentProfile, _insertMalformedRelationship (+11 more)
 
 ### Community 345 - "nutrition_constraint_review_controller.dart"
 Cohesion: 0.11
@@ -2185,9 +2172,9 @@ Nodes (18): ../../data/repositories/nutrition_constraint_repository.dart, Nutrit
 Cohesion: 0.11
 Nodes (18): aliasMap, CanonicalEquipmentItem, canonicalItems, displayName, EquipmentLookupResult, EquipmentLookupStatus, EquipmentNormalizer, fromId (+10 more)
 
-### Community 347 - "entitlement_capability.dart"
-Cohesion: 0.17
-Nodes (12): EntitlementState get, currentEntitlement, EntitlementCapability, EntitlementState, EntitlementTier, expiresAtUtc, FullLocalEntitlementCapability, gracePeriodActive (+4 more)
+### Community 347 - "sync_conflict_resolver.dart"
+Cohesion: 0.12
+Nodes (16): deviceLocalSettingsDenylist, deviceLocalSettingsPrefixes, isAppendOnlyEvidence, isCatalogProgramId, isSettingKeySyncable, isTableSynced, isTombstoneDominant, localOnlyTables (+8 more)
 
 ### Community 348 - "b01_legacy_import_support.dart"
 Cohesion: 0.10
@@ -2221,13 +2208,13 @@ Nodes (14): _asDouble, _canonicalize, _checkFileSchema, _checkJsonList, _checkRe
 Cohesion: 0.15
 Nodes (12): src/r08_repdb_asset_pipeline.dart, client, commit, _downloadFromPinnedSource, main, managed, options, requested (+4 more)
 
-### Community 356 - "AppDatabase"
-Cohesion: 0.04
-Nodes (46): _, @DriftDatabase, AppDatabase get, ArgumentError, ../database/b01_legacy_import_support.dart, _db, deleteCandidate, DriftRemoteFoodCacheStore (+38 more)
+### Community 356 - "_"
+Cohesion: 0.11
+Nodes (18): AppDatabase get, ../database/b01_legacy_import_support.dart, _, activateLegacyRoutineAsCanonical, ActivePlanSelection, ActivePlanType, b01Program, _db (+10 more)
 
-### Community 357 - "dashboard_personalization_controller.dart"
-Cohesion: 0.10
-Nodes (20): ../dashboard_module_registry.dart, ../../data/repositories/dashboard_personalization_repository.dart, copyWith, dashboardPersonalizationRepositoryProvider, DashboardPersonalizationStatus, errorMessage, isSaving, layout (+12 more)
+### Community 357 - "cloud_backup_api_client.dart"
+Cohesion: 0.13
+Nodes (15): cloud_backup_api_contract.dart, cloud_backup_envelope_manager.dart, _checkSimulatedErrors, clear, CloudBackupApiClient, deleteAllSnapshots, deleteSnapshot, downloadSnapshot (+7 more)
 
 ### Community 358 - "summary"
 Cohesion: 0.11
@@ -2241,28 +2228,25 @@ Nodes (17): canPerformLocalActions, ConnectedStatus, ConnectedStatusState, copyW
 Cohesion: 0.12
 Nodes (17): DisabledSyncCapability, domain, errorMessage, getStatus, onStatusChanged, pullDeltas, pushMutations, recordsReceived (+9 more)
 
-### Community 361 - "static const Set"
-Cohesion: 0.29
-Nodes (6): FoodMealCategory, stableId, supportedStableIds, unknown, preWorkout,
-  postWorkout,
-  snack,
-  lateSnack,, static const Set
+### Community 361 - "workout_draft_codec.dart"
+Cohesion: 0.11
+Nodes (17): allowedSetTypes, currentVersion, decodeLoggedSets, encode, _parseOptionalBool, _parseOptionalDouble, _parseOptionalInt, _parseOptionalString (+9 more)
 
 ### Community 362 - "b04_recommendation_engine_test.dart"
 Cohesion: 0.13
 Nodes (14): package:indifit/data/models/b04_nutrition_safety_models.dart, package:indifit/data/models/b04_recommendation_models.dart, package:indifit/data/services/b04_recommendation_engine.dart, _candidate, _context, engine, _evaluatedAt, _goal (+6 more)
 
 ### Community 363 - "r08d7_recipes_consumer_test.dart"
-Cohesion: 0.07
-Nodes (29): _Harness, NutritionFoodCatalogRepository, _MockMissingCatalogRepository, _TestCatalogRepository, catalogRepo, close, consumption, coordinator (+21 more)
+Cohesion: 0.04
+Nodes (57): _Harness, Quantity, NutritionRecipeVersions, NutritionFoodCatalogRepository, NutritionRecipeLogCoordinator, NutritionRecipeLogError, NutritionRecipeRepository, NutritionRecipeVersionModel (+49 more)
 
 ### Community 364 - "4B. Identity, Schema & Lifecycle Decisions (added post-01B audit)"
 Cohesion: 0.07
 Nodes (28): 1. Executive Summary & Core Invariant, 2.1 Synchronized Domains, 2.2 Strictly Excluded (Device-Local / Cache Only), 2. Entity Inventory & Boundary Classification, 3.1 Total Ordering Relation, 3.2 Monotonic Clock Progression, 3. Clock Ordering: Hybrid Logical Clocks (HLC), 4.1 Append-Only Historical Evidence (Workouts & Weights) (+20 more)
 
 ### Community 365 - "test_food_search.py"
-Cohesion: 0.11
-Nodes (27): create_app(), health_check(), clear_missed_searches(), get_missed_searches(), _auth_headers(), client(), fixture, test_barcode_lookup_in_memory_ttl_cache() (+19 more)
+Cohesion: 0.10
+Nodes (28): clear_missed_searches(), get_missed_searches(), _auth_headers(), client(), fixture, test_barcode_lookup_in_memory_ttl_cache(), test_barcode_lookup_matches_curated_fmcg_item(), test_barcode_lookup_not_found_logs_missed_search_and_404() (+20 more)
 
 ### Community 366 - "IndiFit — 18-Point UX & Feature Improvement Plan"
 Cohesion: 0.07
@@ -2273,12 +2257,12 @@ Cohesion: 0.10
 Nodes (20): build, _caloriesController, _caloriesError, _carbsController, _carbsError, createState, dispose, EditFoodLogSheet (+12 more)
 
 ### Community 368 - "privacy_policy.dart"
-Cohesion: 0.06
-Nodes (36): ../config/app_preferences_keys.dart, ../di/core_providers.dart, dpdp_consent_dialog.dart, acknowledgeTodayOnboardingHandoff, clearTodayOnboardingHandoff, getBool, markTodayOnboardingHandoffPending, p (+28 more)
+Cohesion: 0.07
+Nodes (30): ../di/core_providers.dart, acknowledgeTodayOnboardingHandoff, clearTodayOnboardingHandoff, getBool, markTodayOnboardingHandoffPending, p, prefs, remove (+22 more)
 
-### Community 369 - "pv1_catalog01c_barcode_scan_test.dart"
-Cohesion: 0.12
-Nodes (16): RemoteFoodCandidate, NutritionFoodOption, package:indifit/features/food_log/barcode_scanner_screen.dart, package:indifit/features/nutrition/nutrition_providers.dart, cachedCandidate, cachedLookupCalls, cacheRemoteCandidate, getCachedCandidate (+8 more)
+### Community 369 - "b03_identity_test.dart"
+Cohesion: 0.13
+Nodes (12): File, fixtures/b03_nutrition_fixture_matrix.dart, FoodIdentityManifest, FoodIdentityResolver, package:indifit/core/fixtures/food_identity_manifest.dart, main, main, entryNamed (+4 more)
 
 ### Community 370 - "pv1_prod04_rest_presence_test.dart"
 Cohesion: 0.07
@@ -2288,9 +2272,9 @@ Nodes (29): package:flutter_local_notifications/flutter_local_notifications.dart
 Cohesion: 0.12
 Nodes (17): catches, empty_catch_count, imported_by, imports, layer, loc, part_of, parts (+9 more)
 
-### Community 372 - "program_authoring_controller.dart"
-Cohesion: 0.17
-Nodes (12): beginLoading, copyWith, errorMessage, isBusy, markEdited, markFailure, markReady, ProgramAuthoringController (+4 more)
+### Community 372 - "_"
+Cohesion: 0.13
+Nodes (15): _, B02DraftDecodeResult, B02ExecutionDraftCodec, currentVersion, decode, encode, isCanonical, isLegacy (+7 more)
 
 ### Community 373 - "app_preferences_service.dart"
 Cohesion: 0.11
@@ -2305,12 +2289,12 @@ Cohesion: 0.07
 Nodes (27): B01-D01 — Stable exercise identity before program tables, B01-D02 — Schema v15 and legacy routine migration, B01-D03 — Program-version lifecycle and active owner, B01-D04 — Activation and replacement versions, B01-D05 — Scheduled-occurrence state machine, B01-D06 — Progression disposition and repeat purpose, B01-D07 — Default skip interaction, B01-D08 — Date, timezone, and DST semantics (+19 more)
 
 ### Community 376 - "sync_api_client.dart"
-Cohesion: 0.11
-Nodes (19): acceptedCount, clear, clockSkewThresholdMillis, fromJson, hasMore, InMemorySyncApiClient, latestHlc, mutations (+11 more)
-
-### Community 378 - "plate_calculator_sheet.dart"
 Cohesion: 0.07
-Nodes (28): allowlist, _availablePlates, _barbellWeight, blocklist, build, _calculatedPlates, _calculatePlates, createState (+20 more)
+Nodes (30): ../capabilities/sync_capability.dart, hlc_timestamp.dart, acceptedCount, clear, clockSkewThresholdMillis, fromJson, hasMore, InMemorySyncApiClient (+22 more)
+
+### Community 378 - "health_provider.dart"
+Cohesion: 0.14
+Nodes (13): ../../data/repositories/health_service.dart, connectAndRefresh, copyWith, errorMessage, _healthService, HealthStatus, _isLoading, loadHealthData (+5 more)
 
 ### Community 379 - "🔴 REMAINING (Not Started)"
 Cohesion: 0.07
@@ -2321,8 +2305,8 @@ Cohesion: 0.17
 Nodes (15): ../../../core/capabilities/capabilities_registry.dart, cloudBackupCapabilityProvider, cloudBackupStatusProvider, build, _buildStatusContent, CloudBackupCard, _CloudBackupCardState, _confirmAndDeleteAll (+7 more)
 
 ### Community 381 - "b04_weekly_review_controller.dart"
-Cohesion: 0.07
-Nodes (27): ../../data/repositories/coaching_preference_repository.dart, ../../data/repositories/nutrition_goal_repository.dart, acceptTarget, B04WeeklyReviewController, B04WeeklyReviewControllerStatus, B04WeeklyReviewState, copyWith, _dates (+19 more)
+Cohesion: 0.03
+Nodes (76): ../../data/models/b04_briefing_read_models.dart, ../../data/models/b04_current_food_models.dart, ../../data/models/b04_recommendation_history_models.dart, ../../data/models/b04_recommendation_models.dart, ../../data/repositories/b04_briefing_read_repositories.dart, ../../data/repositories/b04_recommendation_history_repository.dart, ../../data/repositories/coaching_preference_repository.dart, ../../data/repositories/nutrition_goal_repository.dart (+68 more)
 
 ### Community 382 - "code-graph.json"
 Cohesion: 0.12
@@ -2332,17 +2316,17 @@ Nodes (15): empty_catches_catalog, layer_violations, legacy_migration, lib/featu
 Cohesion: 0.13
 Nodes (15): double get, AssetDownloadProgress, AssetDownloadState, assetId, bytesReceived, ContentDownloadCapability, DisabledContentDownloadCapability, downloadAsset (+7 more)
 
-### Community 384 - "program_activation_coordinator.dart"
-Cohesion: 0.07
-Nodes (27): activate, ActivateProgramVersionCommand, activationLocalDate, ActivationResult, block, cancelPriorOccurrenceIds, _cancelSelectedPriorOccurrences, commandId (+19 more)
+### Community 384 - "../database/app_database.dart"
+Cohesion: 0.05
+Nodes (39): ../database/app_database.dart, activate, ActivateProgramVersionCommand, activationLocalDate, ActivationResult, block, cancelPriorOccurrenceIds, _cancelSelectedPriorOccurrences (+31 more)
 
 ### Community 385 - "B02 — Workout Execution and Modalities: Implementation Architecture"
 Cohesion: 0.07
 Nodes (26): 10. Explainable load and repetition targets, 11. Proposed schema (v16) and validation, 12. Migration, draft, and backup strategy, 13. MVP UX journeys and states, 14. Test matrix, 15. B02 definition of done, 1. Architecture summary, 2. Domain model and lifecycle (+18 more)
 
-### Community 386 - "food_catalog_capability.dart"
-Cohesion: 0.20
-Nodes (10): ../catalog/food_catalog_models.dart, cacheRemoteCandidate, DisabledFoodCatalogCapability, FoodCatalogCapability, getCachedCandidate, getRecentCachedCandidates, lookupByBarcode, searchRemoteFoods (+2 more)
+### Community 386 - "package:indifit/data/models/b04_goal_models.dart"
+Cohesion: 0.17
+Nodes (11): package:indifit/data/models/b04_goal_models.dart, package:indifit/data/models/b04_recovery_models.dart, package:indifit/data/repositories/recovery_observation_repository.dart, package:indifit/data/services/b04_recovery_production_adapter.dart, dates, db, _input, inputs (+3 more)
 
 ### Community 387 - "content_pack_registry.dart"
 Cohesion: 0.13
@@ -2470,27 +2454,27 @@ Nodes (15): catches, empty_catch_count, imported_by, imports, layer, loc, part_o
 
 ### Community 418 - "b03_estimate_provenance_test.dart"
 Cohesion: 0.09
-Nodes (24): NutritionEstimatePrivacyError, NutritionEstimateValidationError, LocalTimezoneError, package:indifit/core/nutrition_estimates.dart, package:indifit/core/nutrition_legacy_read_models.dart, package:indifit/core/privacy/nutrition_estimate_privacy.dart, package:indifit/data/repositories/nutrition_estimate_repository.dart, package:indifit/features/food_log/nutrition_estimate_review_controller.dart (+16 more)
+Nodes (22): LocalTimezoneError, package:indifit/core/nutrition_estimates.dart, package:indifit/core/privacy/nutrition_estimate_privacy.dart, package:indifit/core/services/local_timezone_service.dart, package:indifit/data/repositories/nutrition_estimate_repository.dart, package:indifit/features/food_log/nutrition_estimate_review_controller.dart, package:indifit/features/food_log/nutrition_estimate_review_screen.dart, main (+14 more)
 
-### Community 419 - "NutrientRegistry"
-Cohesion: 0.08
-Nodes (24): NutrientRegistry, code, forLocalDate, _history, _isIsoDate, message, NutritionProteinDistributionError, NutritionProteinDistributionRepository (+16 more)
+### Community 419 - "progress_period_comparison_test.dart"
+Cohesion: 0.06
+Nodes (34): ../../core/algorithms/adaptive_tdee_engine.dart, ../../core/utils/tdee_calculator.dart, _database, _dates, _engine, evaluate, _median, _nutrition (+26 more)
 
-### Community 420 - "NutritionThaliItem"
-Cohesion: 0.14
-Nodes (8): NutritionPersonalVessel, NutritionThaliItem, NutritionUserConstraint, NutritionVesselCalibration, NutritionPersonalVesselsCompanion, NutritionThaliItemsCompanion, NutritionUserConstraintsCompanion, NutritionVesselCalibrationsCompanion
+### Community 420 - "NutritionConstraintDefinitionsCompanion"
+Cohesion: 0.33
+Nodes (4): NutritionConstraintDefinition, NutritionPersonalVessel, NutritionConstraintDefinitionsCompanion, NutritionPersonalVesselsCompanion
 
-### Community 421 - "crash_reporting_service.dart"
-Cohesion: 0.09
-Nodes (20): _beforeBreadcrumbPrivacyFilter, _beforeSendPrivacyFilter, captureException, CrashReportingService, debugDsnOverride, _defaultDsn, initialize, _isEnabled (+12 more)
+### Community 421 - "static const String"
+Cohesion: 0.06
+Nodes (31): ../config/app_preferences_keys.dart, dpdp_consent_dialog.dart, _loadInitialMode, prefKey, _prefs, setThemeMode, _, DpdpConsentService (+23 more)
 
 ### Community 422 - "app_logger.dart"
 Cohesion: 0.16
 Nodes (14): AppException, AppLogger, cause, code, DatabaseException, error, info, message (+6 more)
 
-### Community 423 - "StateNotifier"
-Cohesion: 0.38
-Nodes (10): CalendarController, CalendarUiState, CanonicalExerciseReplacementAuthority, B02StrengthExecutionController, B02StrengthExecutionUiState, StateNotifier, _FakeB02StrengthController, _StubCalendarController (+2 more)
+### Community 423 - "occurrence_transition_validator.dart"
+Cohesion: 0.20
+Nodes (9): decodeAndValidateOccurrenceSnapshot, isTerminalStatus, OccurrenceTransitionValidator, requireUnstarted, throwStale, validateCommand, validateRepeatPurpose, validateRescheduleConfirmation (+1 more)
 
 ### Community 424 - "Connected Track C0–C6 — local-first services"
 Cohesion: 0.20
@@ -2500,13 +2484,13 @@ Nodes (10): Connected Track C0–C6 — local-first services, PV1-CATALOG-01 —
 Cohesion: 0.07
 Nodes (27): 5. Ordered delivery program, Gate 0 — V1 release and observation window, PV1-AI-01 — Food description/photo assistance, PV1-AI-02 — Deterministic “What can I eat?”, PV1-COACH-01 — Contextual coaching increments, PV1-DATA-01 — Verifiable complete erasure, PV1-ENG-01 — Deterministic Flutter test harness, PV1-ENG-02 — Fragile-flow characterization (+19 more)
 
-### Community 426 - "saved_meal_detail_screen.dart"
-Cohesion: 0.08
-Nodes (26): build, _buildComposition, _buildNutritionSummary, colors, _CompositionRow, _confirmDelete, createState, _factLabel (+18 more)
+### Community 426 - "programAuthoringControllerProvider"
+Cohesion: 0.24
+Nodes (10): build, _copyToNewDraft, _loadOrCreateDraft, ProgramAuthorScreen, _ProgramAuthorScreenState, _replaceBlocks, _saveDraft, programAuthoringControllerProvider (+2 more)
 
-### Community 427 - "integration_capability.dart"
-Cohesion: 0.29
-Nodes (7): DisabledIntegrationCapability, IntegrationCapability, IntegrationPlatform, isAuthorized, requestAuthorization, writeCompletedWorkout, writeWeight
+### Community 427 - "static const List"
+Cohesion: 0.20
+Nodes (9): static const List, B04CurrentFoodFixture, B04CurrentFoodFixtureKind, B04CurrentFoodFixtureMatrix, cases, expectedOutcome, id, kind (+1 more)
 
 ### Community 428 - "IndiFit R07F-1 — Training Lifecycle & Plan Cohesion Review"
 Cohesion: 0.07
@@ -2517,8 +2501,8 @@ Cohesion: 0.25
 Nodes (7): AdaptiveTdeeRepository, package:indifit/data/models/b04_adaptive_target_models.dart, package:indifit/data/repositories/adaptive_tdee_repository.dart, database, dates, main, repository
 
 ### Community 430 - "_"
-Cohesion: 0.12
-Nodes (17): @Deprecated, food_catalog_models.dart, _, dairyLiquid, dalLentil, drySabzi, FoodCategoryTaxonomy, general (+9 more)
+Cohesion: 0.07
+Nodes (28): @Deprecated, food_catalog_models.dart, _, dairyLiquid, dalLentil, drySabzi, FoodCategoryTaxonomy, general (+20 more)
 
 ### Community 431 - "mobile_scanner_stub.dart"
 Cohesion: 0.14
@@ -2540,9 +2524,9 @@ Nodes (13): applyTargetOverride, B02StrengthExecutionDraftService, chooseWarmup,
 Cohesion: 0.14
 Nodes (13): package:indifit/core/services/ios_live_activity_service.dart, areActivitiesEnabled, areActivitiesEnabledResult, endCalls, endLiveActivity, main, _maybeThrow, startCalls (+5 more)
 
-### Community 436 - "network_capability.dart"
-Cohesion: 0.16
-Nodes (13): canExecuteOperation, _connected, isConnected, NetworkCapability, NetworkTransportType, OfflineNetworkCapability, onConnectivityChanged, setConnected (+5 more)
+### Community 436 - "entitlement_capability.dart"
+Cohesion: 0.08
+Nodes (25): EntitlementState get, currentEntitlement, EntitlementCapability, EntitlementState, EntitlementTier, expiresAtUtc, FullLocalEntitlementCapability, gracePeriodActive (+17 more)
 
 ### Community 437 - ".start"
 Cohesion: 0.32
@@ -2572,9 +2556,9 @@ Nodes (25): build, doubleValue, _formatRepRange, isBusy, label, load, main, max 
 Cohesion: 0.17
 Nodes (11): B02CardioSessionDetail, B02MobilitySessionDetail, B02ActivityFormDetails, B02ActivityFormService, build, cardioDetail, _cardioTypes, _clean (+3 more)
 
-### Community 444 - "static const String"
-Cohesion: 0.07
-Nodes (24): core_providers.dart, _loadInitialMode, prefKey, _prefs, setThemeMode, _cardioTokens, formCue, _formCueFor (+16 more)
+### Community 444 - "legacy_workout_compatibility_adapter.dart"
+Cohesion: 0.17
+Nodes (11): _cardioTokens, formCue, _formCueFor, _heavyTokens, isCardio, _isolationTokens, LegacyExerciseExecutionMetadata, LegacyWorkoutCompatibilityAdapter (+3 more)
 
 ### Community 445 - "verify_r09_artifacts.sh"
 Cohesion: 0.33
@@ -2589,8 +2573,8 @@ Cohesion: 0.12
 Nodes (13): Flutter, FlutterAppDelegate, FlutterImplicitEngineDelegate, FlutterSceneDelegate, AppDelegate, Any, Bool, SceneDelegate (+5 more)
 
 ### Community 449 - "rc_phase3b_exercise_family_metadata_test.dart"
-Cohesion: 0.18
-Nodes (10): ExerciseFamilyValidationException, package:indifit/core/fixtures/exercise_family_metadata.dart, package:indifit/features/exercise_library/exercise_family_presentation.dart, _deadliftBaseId, _deadliftPauseId, _deadliftSlowId, _deadliftStandardId, _exercise (+2 more)
+Cohesion: 0.10
+Nodes (17): ExerciseFamilyValidationException, package:indifit/core/fixtures/exercise_family_metadata.dart, package:indifit/features/exercise_library/exercise_family_presentation.dart, _deadliftBaseId, _deadliftPauseId, _deadliftSlowId, _deadliftStandardId, _exercise (+9 more)
 
 ### Community 450 - "typed_quantities.dart"
 Cohesion: 0.29
@@ -2600,25 +2584,25 @@ Nodes (6): adapt, adaptMacros, legacyFactVersion, LegacyNutrientAdapter, nutrien
 Cohesion: 0.20
 Nodes (10): WorkoutCompletionRecap, build, _buildMetricChip, createState, _includeWeights, recap, WorkoutShareCard, _WorkoutShareCardState (+2 more)
 
-### Community 452 - "plan_overview_read_repository.dart"
-Cohesion: 0.08
-Nodes (24): b02_execution_compatibility_read_repository.dart, calendar_read_repository.dart, PlanAnalyticsSummary, B02ExecutionCompatibilityReadRepository, PlanLibraryEntry, PlanLibraryReadRepository, analytics, calendar (+16 more)
+### Community 452 - "static const int"
+Cohesion: 0.22
+Nodes (8): b02_execution_fixture_matrix.dart, ../../../data/models/b02_muscle_volume_models.dart, B02CanonicalMuscleCatalog, catalogVersion, muscles, reviewedMappings, _role, static const int
 
-### Community 453 - "b03_nutrient_aggregation_test.dart"
-Cohesion: 0.10
-Nodes (20): NutrientBasisMismatchError, NutrientError, NutrientRegistryVersionError, NutrientUnitMismatchError, NutrientValidationError, UnknownNutrientError, package:indifit/core/legacy_nutrient_adapter.dart, aggregateBasis (+12 more)
+### Community 453 - "onboardingCompletedProvider"
+Cohesion: 0.25
+Nodes (9): resetIndiFitUserState, onboardingCompletedProvider, _completeOnboardingOnce, OnboardingScreen, _OnboardingScreenState, _skipOnboarding, _resetOnboarding, _syncOnboardingGate (+1 more)
 
-### Community 454 - "package:indifit/core/fixtures/b04_adaptive_coaching_fixture_matrix.dart"
-Cohesion: 0.33
-Nodes (4): fixtures/b04_policy_gate_fixture.dart, package:indifit/core/fixtures/b04_adaptive_coaching_fixture_matrix.dart, main, main
+### Community 454 - "backup_v5_fixtures.dart"
+Cohesion: 0.25
+Nodes (7): BackupV5Fixtures, corruptSchemaBackupMap, orphanedSetsBackupV5Map, timestamp, unsupportedVersionBackupMap, validBackupV5Map, validBackupV5Object
 
 ### Community 455 - "Proposed Changes"
 Cohesion: 0.08
 Nodes (23): 1. Water Tracker Refinements, 2. Fast Daily Logging Shortcuts, 3. Per-Exercise History, 1RM Trend & Plate Calculator, 4. Health Sync Hub & Encrypted Backups, 5. AI Confidence Labels & Edit-Before-Save forms, 6. Readme Claims Correction, Automated Tests, Implementation Plan - Phase 6 Features & Hardening (Sprint 5) (+15 more)
 
 ### Community 456 - "double?"
-Cohesion: 0.08
-Nodes (22): double?, int get, _activeModalCount, _drainNext, instance, isModalActive, markModalActive, markModalDismissed (+14 more)
+Cohesion: 0.09
+Nodes (21): double?, int get, _activeModalCount, _drainNext, instance, isModalActive, markModalActive, markModalDismissed (+13 more)
 
 ### Community 457 - "2. Technical Findings & Current Repository State"
 Cohesion: 0.08
@@ -2640,13 +2624,13 @@ Nodes (23): Analyze / Format / Diff, Audit claims — verified classifications, 
 Cohesion: 0.13
 Nodes (13): ActivityKit, ActivityViewContext, Foundation, .body, RestTimerLiveActivityView, .body, RestTimerWidgetBundle, .body (+5 more)
 
-### Community 463 - "DateTime?"
-Cohesion: 0.10
-Nodes (21): ../../core/nutrition_household_measures.dart, ../../data/repositories/nutrition_food_catalog_repository.dart, DateTime?, CanonicalFoodAction, CanonicalRecentFood, FoodAddUndoToken, frequencyCount, historicalQuantity (+13 more)
+### Community 463 - "NutritionRecipeException"
+Cohesion: 0.33
+Nodes (6): NutritionRecipeConflictError, NutritionRecipeException, NutritionRecipeImmutableError, NutritionRecipeNestedReferenceError, NutritionRecipeNotFoundError, NutritionRecipeVersionNotFoundError
 
-### Community 464 - "b04_consumer_presentation.dart"
-Cohesion: 0.09
-Nodes (22): ../../data/models/b04_briefing_read_models.dart, ../../data/models/b04_current_food_models.dart, ../../data/models/b04_recommendation_history_models.dart, ../../data/models/b04_recommendation_models.dart, B03NutritionPresentation, B04CurrentFoodPresentation, B04DatePresentation, B04RecommendationPresentation (+14 more)
+### Community 464 - "generate_b03_complete_fixtures.dart"
+Cohesion: 0.33
+Nodes (5): ../test/fixtures/b03_migration_backup_harness.dart, backupFile, createGoldenFile, databaseFile, main
 
 ### Community 465 - "NutritionCalculationError"
 Cohesion: 0.50
@@ -2705,8 +2689,8 @@ Cohesion: 0.67
 Nodes (3): _, ConsumerCountLabel, format
 
 ### Community 481 - "adaptive_tdee_providers.dart"
-Cohesion: 0.09
-Nodes (20): ../../core/di/user_profile_provider.dart, ../../data/repositories/adaptive_tdee_repository.dart, AdaptiveTdeeEstimate, adaptiveTdeeFoodLogsSignalProvider, adaptiveTdeeMeasurementsSignalProvider, adaptiveTdeeRepositoryProvider, dates, db (+12 more)
+Cohesion: 0.13
+Nodes (14): ../../core/di/core_providers.dart, ../../core/di/user_profile_provider.dart, ../../data/repositories/adaptive_tdee_repository.dart, adaptiveTdeeFoodLogsSignalProvider, adaptiveTdeeMeasurementsSignalProvider, adaptiveTdeeRepositoryProvider, dates, db (+6 more)
 
 ### Community 482 - "IndiFit R08 Agent Contract"
 Cohesion: 0.10
@@ -2717,8 +2701,8 @@ Cohesion: 0.10
 Nodes (19): B04-D01 — Canonical scope and one recommendation engine, B04-D02 — Hybrid goals, targets and user control, B04-D03 — Goal versions and effective dates, B04-D05 — Deterministic authority and optional AI, B04-D06 — Readiness inputs and influence, B04-D07 — Unknown, partial and range propagation, B04-D08 — Constraint outcomes and hard-block behavior, B04-D09 — Local candidate policy for “what can I eat now?” (+11 more)
 
 ### Community 485 - "b02_strength_summary_screen.dart"
-Cohesion: 0.10
-Nodes (20): ../b02_strength_execution_controller.dart, ../../core/navigation/app_navigation.dart, B02StrengthSummaryScreen, _B02StrengthSummaryScreenState, _complete, _completionCommandId, _completionLaunch, _confirmPartial (+12 more)
+Cohesion: 0.06
+Nodes (32): ../b02_strength_execution_controller.dart, ../../core/navigation/app_navigation.dart, ../../data/repositories/b02_strength_execution_repository.dart, progressStatisticsRepositoryProvider, _loadData, B02StrengthSummaryScreen, _B02StrengthSummaryScreenState, _checkAndShowAchievements (+24 more)
 
 ### Community 493 - "C0A Deterministic Test Harness Baseline"
 Cohesion: 0.10
@@ -2737,8 +2721,8 @@ Cohesion: 0.11
 Nodes (18): B02-01 — Freeze Sol-gate contracts and fixtures, B02-02 — Add schema v16 and migration harness, B02-03 — Add DTOs, validators, draft codec v2, and compatibility reads, B02-04 — Implement group authoring and repository contract, B02-05 — Implement strength execution/finalization successor, B02-06 — Implement technique recording and editor primitives, B02-07 — Implement warm-up and rest recommendation services, B02-08 — Implement automatic target rule v1 (+10 more)
 
 ### Community 497 - "Mobile Client Component (`lib/`)"
-Cohesion: 0.10
-Nodes (21): Automated Backend Tests, Automated Flutter Tests, Backend Component (`backend/`), Manual / Integration Verification, Mobile Client Component (`lib/`), [MODIFY] [core/security.py](file:///Users/dankmagician/Documents/New%20project/indifit/backend/core/security.py) & [gemini_client.py](file:///Users/dankmagician/Documents/New%20project/indifit/backend/services/gemini_client.py), [MODIFY] [lib/core/privacy/privacy_policy.dart](file:///Users/dankmagician/Documents/New%20project/indifit/lib/core/privacy/privacy_policy.dart), [MODIFY] [lib/core/services/crash_reporting_service.dart](file:///Users/dankmagician/Documents/New%20project/indifit/lib/core/services/crash_reporting_service.dart) (+13 more)
+Cohesion: 0.11
+Nodes (19): Automated Flutter Tests, Backend Component (`backend/`), Manual / Integration Verification, Mobile Client Component (`lib/`), [MODIFY] [core/security.py](file:///Users/dankmagician/Documents/New%20project/indifit/backend/core/security.py) & [gemini_client.py](file:///Users/dankmagician/Documents/New%20project/indifit/backend/services/gemini_client.py), [MODIFY] [lib/core/privacy/privacy_policy.dart](file:///Users/dankmagician/Documents/New%20project/indifit/lib/core/privacy/privacy_policy.dart), [MODIFY] [lib/core/services/crash_reporting_service.dart](file:///Users/dankmagician/Documents/New%20project/indifit/lib/core/services/crash_reporting_service.dart), [MODIFY] [lib/data/database/app_database.dart](file:///Users/dankmagician/Documents/New%20project/indifit/lib/data/database/app_database.dart) (+11 more)
 
 ### Community 498 - "PV1-CLOUD-01A: Cloud Backup Threat Model, Architecture & Contracts"
 Cohesion: 0.11
@@ -2756,9 +2740,9 @@ Nodes (18): Android/iOS and manual release matrix, Automated validation evidence
 Cohesion: 0.11
 Nodes (17): Architecture summary, B03 definition of done, B03 — Nutrition Foundation and Food Context: Implementation-Ready Plan, Dietary constraint taxonomy, Domain model, Household measures, vessels, and thalis, Identity contract, Migration and backup (+9 more)
 
-### Community 502 - "B05SemanticColors"
-Cohesion: 0.67
-Nodes (3): AppColorsExtension, B05SemanticColors, ThemeExtension
+### Community 502 - "NutritionEstimateValidationError"
+Cohesion: 0.40
+Nodes (5): NutritionEstimateConflictError, NutritionEstimateError, NutritionEstimatePersistenceError, NutritionEstimatePrivacyError, NutritionEstimateValidationError
 
 ### Community 503 - "🟡 P1 — High (Required for v1.0)"
 Cohesion: 0.11
@@ -2781,8 +2765,8 @@ Cohesion: 0.12
 Nodes (16): #15 Dead code: `_buildQuickActionsRow` is never called, #16 `AppTheme` Google Fonts runtime fetching may fail offline, #17 Inconsistent use of `AppLogger` vs `debugPrint`, #18 HealthKit / Health Connect usage descriptions missing audit, #20 Sentry DSN should not be hardcoded in release builds, Acceptance Criteria, Acceptance Criteria, Acceptance Criteria (+8 more)
 
 ### Community 520 - "progress_weight_widgets.dart"
-Cohesion: 0.10
-Nodes (20): ../../../core/services/indifit_haptics.dart, ProgressTimeRange, build, createState, didUpdateWidget, measurements, onLogWeight, onRangeSelected (+12 more)
+Cohesion: 0.05
+Nodes (39): ../../../core/services/indifit_haptics.dart, _arms, build, _chest, controller, createState, dispose, initState (+31 more)
 
 ### Community 521 - "B05 — UI, Personalization and Education: Decisions"
 Cohesion: 0.12
@@ -3012,9 +2996,9 @@ Nodes (9): Available inputs, B04 — Targeted Repository Audit, Dependency evide
 Cohesion: 0.20
 Nodes (9): Automated verification matrix, `B04-D04-ENABLED-1` direct numerical edge tests, B04-D04 policy-gate verification, B04 — Verification Plan, Evidence package and release disposition, Lightweight task record, Manual end-to-end journeys, Recommended physical-device checks (+1 more)
 
-### Community 578 - "progress_measurement_widgets.dart"
-Cohesion: 0.11
-Nodes (19): _arms, build, _chest, controller, createState, dispose, initState, label (+11 more)
+### Community 578 - "StrengthExecutionCompatibilityAdapter"
+Cohesion: 0.40
+Nodes (5): StrengthExecutionCompatibilityAdapter, _RecordingAdapter, _RouteTestAdapter, _RecordingAdapter, _FailOnceFinalizationAdapter
 
 ### Community 579 - "R08_MASTER_IMPLEMENTATION_ROADMAP.md"
 Cohesion: 0.20
@@ -3104,9 +3088,9 @@ Nodes (8): 1. Executive Summary & Objective, 2.1 Authoritative Sources, 2.2 Reus
 Cohesion: 0.22
 Nodes (8): 10. Visual direction, 12. Reference responsibility map, 14. Desired outcome, 3. Current regressions, 7. Muscle Booster, 8. Fitness & Bodybuilding Pro / VGFIT, Important IndiFit difference, IndiFit UI Reference Guide
 
-### Community 601 - "ConsumerWidget"
-Cohesion: 0.10
-Nodes (25): b05_education_content.dart, ConsumerWidget, ../food_log/diary_structure_controller.dart, ../food_log/meal_presentation_registry.dart, B05EducationLessonProgress, b05EducationLessonsControllerProvider, B05MiniLessonsPanel, build (+17 more)
+### Community 601 - "_B05ExerciseEducationPanelState"
+Cohesion: 0.50
+Nodes (5): B05ExerciseEducationPanel, _B05ExerciseEducationPanelState, b05ExerciseEducationProvider, build, b05MuscleVisualRegistryProvider
 
 ### Community 602 - "Phase 1 — Project Scaffolding & Data Layer (Week 1, Day 8-14)"
 Cohesion: 0.25
@@ -3272,17 +3256,17 @@ Nodes (7): 5. Gymverse, Do not copy, Exercise guidance, Particularly useful patt
 Cohesion: 0.29
 Nodes (7): 6. Healthify, Do not copy, Food logging speed, Frequent foods, Hydration, Meal structure, Particularly useful patterns
 
-### Community 644 - "b03_saved_recipe_log_integration_test.dart"
-Cohesion: 0.11
-Nodes (17): NutritionRecipeLogError, package:indifit/features/food_log/saved_recipe_log_controller.dart, close, consumption, coordinator, create, db, draft (+9 more)
+### Community 644 - "validate_r08_0_3_public_repo.dart"
+Cohesion: 0.40
+Nodes (4): _generatedRoot, _gitFiles, main, result
 
 ### Community 645 - "bool get"
 Cohesion: 0.12
 Nodes (15): bool get, AnalyticsCapability, isEnabled, NoOpAnalyticsCapability, recordEvent, cues, fromContext, hasContent (+7 more)
 
-### Community 646 - "food_diary_screen.dart"
-Cohesion: 0.07
-Nodes (31): ../../dashboard/today_consumer_presentation.dart, ../dashboard/widgets/dashboard_date_bar.dart, ../diary_structure_controller.dart, ../food_search_screen.dart, diaryMealSlotsProvider, build, _chooseMeal, _civilDay (+23 more)
+### Community 646 - "WorkoutWakeLockDriver"
+Cohesion: 0.50
+Nodes (4): WakelockPlusWorkoutWakeLockDriver, WorkoutWakeLockDriver, _FakeWakeLockDriver, TestWorkoutWakeLockDriver
 
 ### Community 647 - "🔴 Critical Bugs"
 Cohesion: 0.29
@@ -3353,20 +3337,20 @@ Cohesion: 0.33
 Nodes (5): Asset behavior, Frozen public V1 identity, R09-C release identity, R09-D handoff, Signing ownership
 
 ### Community 664 - "progress_period_comparison_controller.dart"
-Cohesion: 0.13
-Nodes (16): ../../../data/repositories/progress_period_comparison_repository.dart, comparePeriods, dates, db, nowUtc, nutrition, nutritionTargets, periodComparisonRangeProvider (+8 more)
+Cohesion: 0.12
+Nodes (17): ../../../data/repositories/progress_period_comparison_repository.dart, ProgressPeriodComparisonSnapshot, comparePeriods, dates, db, nowUtc, nutrition, nutritionTargets (+9 more)
 
-### Community 665 - "app_theme.dart"
-Cohesion: 0.14
-Nodes (13): app_colors_extension.dart, b05_semantic_colors.dart, _appBarTheme, AppTheme, _bottomSheetTheme, _chipTheme, _dialogTheme, _filledButtonTheme (+5 more)
+### Community 665 - "QuantityConversionResult"
+Cohesion: 0.67
+Nodes (3): QuantityConversionAvailable, QuantityConversionResult, QuantityConversionUnavailable
 
 ### Community 666 - "RepDB — Free Tier License (v1.0)"
 Cohesion: 0.33
 Nodes (5): Licensor & contact, Origin of the data, RepDB — Free Tier License (v1.0), Terms, Tier scope
 
-### Community 667 - "canonical_food_delete.dart"
-Cohesion: 0.14
-Nodes (13): ../../../core/nutrition_legacy_read_models.dart, ../dashboard/today_surface_controller.dart, confirmed, context, item, label, localDate, meal (+5 more)
+### Community 667 - "B05EducationLessonsController"
+Cohesion: 0.67
+Nodes (3): B05EducationLessonsController, B05EducationLessonsState, _GoldenEducationController
 
 ### Community 668 - "Phase 2 — AI Routine Generator & Exercise Library (Week 2, Day 15-21)"
 Cohesion: 0.40
@@ -3444,45 +3428,21 @@ Nodes (3): 11. Screenshot interpretation workflow for AI agents, Baseline screen
 Cohesion: 0.67
 Nodes (3): 2. R08 baseline, Important rule, Purpose
 
-### Community 687 - "rc_m1_food_search_relevance_test.dart"
-Cohesion: 0.17
-Nodes (11): NutritionFoodSearchResult, _catalogueCandidates, entries, _food, _foodCandidate, foods, main, manifest (+3 more)
-
 ### Community 696 - "dart:io"
-Cohesion: 0.03
-Nodes (58): dart:io, Directory, File, fixtures/b03_migration_backup_harness.dart, fixtures/v14_db_fixtures.dart, fixtures/v15_db_fixtures.dart, FoodIdentityManifest, FoodIdentityResolver (+50 more)
-
-### Community 697 - "_NutritionTargetsHubScreenState"
-Cohesion: 0.22
-Nodes (10): b04GoalSettingsControllerProvider, nutritionGoalHistoryProvider, nutritionGoalRepositoryProvider, nutritionTargetsForDateProvider, _buildForUser, _buildOptionalCoaching, _buildOptionalCoachingBody, NutritionTargetsHubScreen (+2 more)
-
-### Community 698 - "bootstrap.dart"
-Cohesion: 0.20
-Nodes (9): ../../core/config/app_preferences_keys.dart, ../../core/privacy/privacy_policy.dart, ../core/services/app_preferences_service.dart, ../../core/utils/app_logger.dart, indifit_app.dart, bootstrap, container, initialize (+1 more)
-
-### Community 699 - "program_authoring_validator.dart"
-Cohesion: 0.20
-Nodes (9): memberRowAsDomain, ProgramAuthoringValidator, requireExactOrder, requireText, validateExistingBundledSource, validateGraph, validateOrdinals, ../models/b02_group_plan_validator.dart (+1 more)
-
-### Community 700 - "TodayDailyActionSurface"
-Cohesion: 0.28
-Nodes (9): dashboardModuleRegistryProvider, dashboardPersonalizationControllerProvider, build, TodayDailyActionSurface, todaySurfaceSnapshotProvider, build, DashboardModuleCustomizationPanel, _BreakfastReflectionHarness (+1 more)
-
-### Community 702 - "return"
 Cohesion: 0.05
-Nodes (42): package:indifit/core/fixtures/b05_third_party_asset_manifest.dart, package:indifit/core/fixtures/equipment_fixtures.dart, package:indifit/core/fixtures/exercise_identity_fixtures.dart, return, catalogManifest, main, db, main (+34 more)
+Nodes (40): dart:io, Directory, fixtures/b03_migration_backup_harness.dart, fixtures/v14_db_fixtures.dart, fixtures/v15_db_fixtures.dart, package:drift/native.dart, package:indifit/features/program_authoring/program_authoring_controller.dart, package:integration_test/integration_test_driver_extended.dart (+32 more)
 
-### Community 703 - "_B02StrengthPlayerScreenState"
-Cohesion: 0.25
-Nodes (8): WorkoutSessionWakeLockCoordinator, b02StrengthExecutionScreenControllerProvider, B02StrengthPlayerScreen, _B02StrengthPlayerScreenState, didChangeAppLifecycleState, initState, b02PreviousPerformanceRepositoryProvider, WidgetsBindingObserver
+### Community 697 - "b04GoalSettingsControllerProvider"
+Cohesion: 0.67
+Nodes (3): b04GoalSettingsControllerProvider, _buildOptionalCoaching, _buildOptionalCoachingBody
+
+### Community 702 - "r08_0_third_party_asset_manifest_test.dart"
+Cohesion: 0.07
+Nodes (26): ExerciseCatalogManifest, ExerciseIdentityLookup, package:indifit/core/fixtures/equipment_fixtures.dart, package:indifit/core/fixtures/exercise_identity_fixtures.dart, catalogManifest, main, lookup, main (+18 more)
 
 ### Community 705 - "b02ActivityControllerProvider"
 Cohesion: 0.33
 Nodes (6): b02ActivityControllerProvider, B02ActivityCreationScreen, _B02ActivityCreationScreenState, build, _draftActions, initState
-
-### Community 706 - "b02_execution_models.dart"
-Cohesion: 0.40
-Nodes (5): b02_execution_models.dart, _, B02GroupPlanValidator, _contiguous, validate
 
 ### Community 707 - "NutritionConstraintError"
 Cohesion: 0.50
@@ -3493,24 +3453,24 @@ Cohesion: 0.67
 Nodes (3): LocalNotificationRestPresenceDriver, RestPresenceDriver, TestRestPresenceDriver
 
 ## Knowledge Gaps
-- **19667 isolated node(s):** `$schema`, `generated_at`, `git_commit`, `total_dart_files`, `total_loc` (+19662 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 20672 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **47 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **19669 isolated node(s):** `$schema`, `generated_at`, `git_commit`, `total_dart_files`, `total_loc` (+19664 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 20675 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **40 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `AppDatabase` connect `AppDatabase` to `app_database.dart`, `r08c3_plan_library_test.dart`, `package:flutter/material.dart`, `package:indifit/data/database/app_database.dart`, `ux_r06_secondary_goldens_test.dart`, `_`, `ux_r05_progress_test.dart`, `package:flutter_riverpod/flutter_riverpod.dart`, `rc_phase3b_exercise_family_presentation_test.dart`, `b05_education_content.dart`, `calendar_repository.dart`, `dart:async`, `program_repository.dart`, `nutrition_consumption_repository.dart`, `ux_w06_visual_accessibility_certification_test.dart`, `progress_dashboard_read_repository.dart`, `progress_period_comparison_repository.dart`, `nutrition_consumption_snapshots.dart`, `b02_strength_execution_repository.dart`, `readiness_snapshot_repository.dart`, `ux_r07e_progress_insights_test.dart`, `b05_media_bundle.dart`, `equipment_preference_repository.dart`, `b05_playlist_launcher.dart`, `sync_service.dart`, `food_repository.dart`, `nutrition_thali_repository.dart`, `b02_execution_compatibility_read_repository.dart`, `b02_health_activity_repository.dart`, `LocalScheduleDateService`, `r08b234_execution_integration_test.dart`, `b04_recommendation_history_repository.dart`, `package:flutter_test/flutter_test.dart`, `_`, `cloud_backup_service.dart`, `b03_saved_recipe_log_integration_test.dart`, `r08b7_player_integration_test.dart`, `b02_activity_session_repository.dart`, `List`, `progress_statistics_repository.dart`, `travel_repository.dart`, `workout_repository.dart`, `r08c6_equipment_preferences_test.dart`, `nutrition_food_catalog_repository.dart`, `b04_production_surface_controller.dart`, `nutrition_estimate_repository.dart`, `package:uuid/uuid.dart`, `b02_muscle_volume_repository.dart`, `nutrition_legacy_adapter.dart`, `r08g4_health_integration_test.dart`, `b02_previous_performance_repository.dart`, `nutrition_constraint_repository.dart`, `user_profile_provider.dart`, `plan_library_read_repository.dart`, `sync_mutation.dart`, `coaching_preference_repository.dart`, `b04_production_ui_test.dart`, `r08b7_exercise_context_test.dart`, `thali_circular_plate_test.dart`, `hydration_repository.dart`, `nutrition_household_measure_repository.dart`, `food_api_service.dart`, `package:shared_preferences/shared_preferences.dart`, `data_erasure_service.dart`, `calendar_read_repository.dart`, `exercise_picker_repository.dart`, `b02_progress_read_repository.dart`, `package:indifit/data/models/b04_goal_models.dart`, `b04_production_recommendation_orchestration_test.dart`, `b03_legacy_nutrition_adapter_test.dart`, `ux_r02_today_home_test.dart`, `pv1_prod03b_celebration_surface_test.dart`, `workout_execution_compatibility_adapter.dart`, `ux_r07d_food_diary_logging_test.dart`, `auto_backup_service.dart`, `b03_final_production_integration_test.dart`, `b04_optional_ai_assistance_test.dart`, `package:indifit/core/nutrients.dart`, `r08c9_plan_overview_history_test.dart`, `b04_recommendation_history_repository_test.dart`, `r08d4_direct_food_edit_test.dart`, `program_lifecycle_repository.dart`, `core_providers.dart`, `b02_exercise_performance_read_repository.dart`, `dashboard_personalization_repository.dart`, `r08d5_multiselect_food_logging_test.dart`, `outbox_repository.dart`, `b02_target_recommendation_repository.dart`, `r08d3_recent_frequent_repeat_logging_test.dart`, `_`, `r08d7_recipes_consumer_test.dart`, `program_activation_coordinator.dart`, `b03_estimate_provenance_test.dart`, `NutrientRegistry`, `adaptive_tdee_repository_test.dart`, `hydration_providers.dart`?**
-  _High betweenness centrality (0.029) - this node is a cross-community bridge._
-- **Why does `create_app()` connect `test_food_search.py` to `routers/ai.py`, `main.py`, `routers/food.py`?**
-  _High betweenness centrality (0.029) - this node is a cross-community bridge._
-- **Why does `12. C6 — Backend modularization` connect `test_food_search.py` to `IndiFit Post-V1 Incremental Cleanup Program`?**
-  _High betweenness centrality (0.029) - this node is a cross-community bridge._
+- **Why does `AppDatabase` connect `AppDatabase` to `app_database.dart`, `r08c3_plan_library_test.dart`, `ux_r02_today_home_test.dart`, `package:indifit/data/database/app_database.dart`, `ux_r06_secondary_goldens_test.dart`, `_`, `ux_r05_progress_test.dart`, `rc_phase3b_exercise_family_presentation_test.dart`, `b05_education_content.dart`, `calendar_repository.dart`, `dart:async`, `program_repository.dart`, `nutrition_goal_repository.dart`, `nutrition_consumption_repository.dart`, `ux_w06_visual_accessibility_certification_test.dart`, `progress_dashboard_read_repository.dart`, `progress_period_comparison_repository.dart`, `b02_strength_execution_repository.dart`, `readiness_snapshot_repository.dart`, `ux_r07e_progress_insights_test.dart`, `b05_media_bundle.dart`, `equipment_preference_repository.dart`, `b05_playlist_launcher.dart`, `sync_service.dart`, `food_repository.dart`, `nutrition_thali_repository.dart`, `b02_execution_compatibility_read_repository.dart`, `b02_health_activity_repository.dart`, `LocalScheduleDateService`, `b04_recommendation_history_repository.dart`, `_`, `cloud_backup_service.dart`, `return`, `b02_activity_session_repository.dart`, `progress_statistics_repository.dart`, `travel_repository.dart`, `workout_repository.dart`, `r08c6_equipment_preferences_test.dart`, `nutrition_food_catalog_repository.dart`, `b04_production_surface_controller.dart`, `nutrition_estimate_repository.dart`, `nutrition_recipe_graph_mapper.dart`, `b02_muscle_volume_repository.dart`, `nutrition_legacy_adapter.dart`, `r08g4_health_integration_test.dart`, `b02_previous_performance_repository.dart`, `nutrition_constraint_repository.dart`, `user_profile_provider.dart`, `training_providers.dart`, `b04_production_ui_test.dart`, `r08b7_player_integration_test.dart`, `thali_circular_plate_test.dart`, `hydration_repository.dart`, `nutrition_household_measure_repository.dart`, `food_api_service.dart`, `package:flutter_test/flutter_test.dart`, `workout_summary_lifecycle_test.dart`, `data_erasure_service.dart`, `calendar_read_repository.dart`, `exercise_picker_repository.dart`, `b02_progress_read_repository.dart`, `b04_integration_regression_test.dart`, `b04_production_recommendation_orchestration_test.dart`, `package:indifit/core/typed_quantities.dart`, `package:uuid/uuid.dart`, `_`, `workout_execution_compatibility_adapter.dart`, `ux_r07d_food_diary_logging_test.dart`, `auto_backup_service.dart`, `b04_optional_ai_assistance_test.dart`, `package:indifit/core/nutrients.dart`, `r08c9_plan_overview_history_test.dart`, `b04_recommendation_history_repository_test.dart`, `r08d4_direct_food_edit_test.dart`, `program_lifecycle_repository.dart`, `core_providers.dart`, `b02_exercise_performance_read_repository.dart`, `dashboard_personalization_repository.dart`, `r08d5_multiselect_food_logging_test.dart`, `outbox_repository.dart`, `b02_target_recommendation_repository.dart`, `r08d3_recent_frequent_repeat_logging_test.dart`, `_`, `r08d7_recipes_consumer_test.dart`, `sync_api_client.dart`, `../database/app_database.dart`, `package:indifit/data/models/b04_goal_models.dart`, `b03_estimate_provenance_test.dart`, `progress_period_comparison_test.dart`, `adaptive_tdee_repository_test.dart`, `_`, `hydration_providers.dart`?**
+  _High betweenness centrality (0.032) - this node is a cross-community bridge._
+- **Why does `RestTimerActivityWidget` connect `consumer_task_primitives.dart` to `RestTimerLiveActivityView`?**
+  _High betweenness centrality (0.024) - this node is a cross-community bridge._
+- **Why does `create_app()` connect `main.py` to `routers/ai.py`, `test_food_search.py`?**
+  _High betweenness centrality (0.020) - this node is a cross-community bridge._
 - **What connects `$schema`, `generated_at`, `git_commit` to the rest of the system?**
-  _19667 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _19669 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `app_database.dart` be split into smaller, more focused modules?**
   _Cohesion score 0.001762114537444934 - nodes in this community are weakly interconnected._
-- **Should `../../core/di/providers.dart` be split into smaller, more focused modules?**
-  _Cohesion score 0.028164556962025317 - nodes in this community are weakly interconnected._
+- **Should `routine_display_screen.dart` be split into smaller, more focused modules?**
+  _Cohesion score 0.036057692307692304 - nodes in this community are weakly interconnected._
 - **Should `r08c3_plan_library_test.dart` be split into smaller, more focused modules?**
-  _Cohesion score 0.011241217798594848 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.012522864781201633 - nodes in this community are weakly interconnected._

@@ -156,9 +156,9 @@
     "semantic_hash": "d09ed1843c57a4a268b394caaaea2179"
   },
   "backend/routers/food.py": {
-    "mtime": 1790236102.75201,
-    "seen": 1790236197.970997,
-    "ast_hash": "8b4a3c344f7a7e63773eba9166666e10",
+    "mtime": 1790237189.5302906,
+    "seen": 1790238289.1343622,
+    "ast_hash": "9b78b8754e05785e82b6be79c354174d",
     "semantic_hash": ""
   },
   "backend/routers/sync.py": {
@@ -234,9 +234,9 @@
     "semantic_hash": "2b035386f62684d1d8b8a3a7eddfdb87"
   },
   "backend/tests/test_food_search.py": {
-    "mtime": 1790226438.1006193,
-    "seen": 1790234332.455585,
-    "ast_hash": "c2584ec80e269d69056bea012534825f",
+    "mtime": 1790237231.5372381,
+    "seen": 1790238289.1346428,
+    "ast_hash": "48375231f94dad0b84c56002294478ae",
     "semantic_hash": ""
   },
   "backend/tests/test_sprint_a1.py": {
@@ -4758,9 +4758,9 @@
     "semantic_hash": "a7f62acad8c545dbdd7c9a86e81d7639"
   },
   "test/ux_r03_food_logging_test.dart": {
-    "mtime": 1790234155.8244207,
-    "seen": 1790234332.470152,
-    "ast_hash": "b1bc8cc21ed5d454bf68a6c407fdece4",
+    "mtime": 1790237900.281151,
+    "seen": 1790238289.150042,
+    "ast_hash": "a2907379c40c6584d38e8d4182185b38",
     "semantic_hash": ""
   },
   "test/ux_r04_training_test.dart": {
@@ -7302,14 +7302,14 @@
     "semantic_hash": ""
   },
   "test/goldens/rc_m1_food_search_dal_dark.png": {
-    "mtime": 1790076674.9615035,
-    "seen": 1790079463.496502,
+    "mtime": 1790237936.7784264,
+    "seen": 1790238289.159188,
     "ast_hash": "5544334a64f82fc05d6669b387eaddc7",
     "semantic_hash": ""
   },
   "test/goldens/rc_m1_food_search_roti_dark.png": {
-    "mtime": 1790076674.9622655,
-    "seen": 1790079463.496503,
+    "mtime": 1790237936.5676603,
+    "seen": 1790238289.159189,
     "ast_hash": "9154ab8f51f6abde31dce80dbd889d05",
     "semantic_hash": ""
   },
@@ -7404,44 +7404,44 @@
     "semantic_hash": ""
   },
   "test/goldens/ux_r03_food_landing_320_2x.png": {
-    "mtime": 1790076674.9941351,
-    "seen": 1790079463.496515,
-    "ast_hash": "3ee6d3985a1b29edc92078b5e144248c",
+    "mtime": 1790237933.1914082,
+    "seen": 1790238289.15948,
+    "ast_hash": "2a830a3dbbbf20190aa7af9f2809fe42",
     "semantic_hash": ""
   },
   "test/goldens/ux_r03_food_landing_dark.png": {
-    "mtime": 1790076675.0015132,
-    "seen": 1790079463.496515,
-    "ast_hash": "1715e53f4ad4c73e395256706b553d84",
+    "mtime": 1790237937.3476303,
+    "seen": 1790238289.159481,
+    "ast_hash": "e4c03f23b4c75370e0a595e3db36cc22",
     "semantic_hash": ""
   },
   "test/goldens/ux_r03_food_landing_light.png": {
-    "mtime": 1790076675.009713,
-    "seen": 1790079463.496516,
-    "ast_hash": "276afce88d7e4a9892f59b922ef5e76e",
+    "mtime": 1790237937.3999963,
+    "seen": 1790238289.159482,
+    "ast_hash": "2502f5819f0cb9d40cc0b8fd8c38af52",
     "semantic_hash": ""
   },
   "test/goldens/ux_r03_food_quantity_review_dark.png": {
-    "mtime": 1790076675.013463,
-    "seen": 1790079463.4965172,
-    "ast_hash": "9b7f04d3852a398428b0a692fd00aaf6",
+    "mtime": 1790237937.2693372,
+    "seen": 1790238289.159482,
+    "ast_hash": "dadb2e711355690ce54e26ddc1120226",
     "semantic_hash": ""
   },
   "test/goldens/ux_r03_food_recent_saved_dark.png": {
-    "mtime": 1790076675.016332,
-    "seen": 1790079463.496518,
-    "ast_hash": "58b8549f2d278a310cb98f8277336d85",
+    "mtime": 1790237936.233824,
+    "seen": 1790238289.159483,
+    "ast_hash": "f382b9ef7ac70b22e88e8fdbc7c4195e",
     "semantic_hash": ""
   },
   "test/goldens/ux_r03_food_search_dark.png": {
-    "mtime": 1790076675.0193214,
-    "seen": 1790079463.496518,
+    "mtime": 1790237936.340377,
+    "seen": 1790238289.159484,
     "ast_hash": "e04ffe7ac65b592373ff8cffe0c528a6",
     "semantic_hash": ""
   },
   "test/goldens/ux_r03_food_search_light.png": {
-    "mtime": 1790076675.0270398,
-    "seen": 1790079463.4965189,
+    "mtime": 1790237936.8509336,
+    "seen": 1790238289.1594849,
     "ast_hash": "121d4dbd2509bd7d86a8f9f0c605d963",
     "semantic_hash": ""
   },
@@ -7656,32 +7656,32 @@
     "semantic_hash": ""
   },
   "test/goldens/ux_r07d_diary_430_1_5_light.png": {
-    "mtime": 1790151840.123976,
-    "seen": 1790152080.263795,
-    "ast_hash": "83e91eb06d8843a2ae204bd32f4e6ba5",
+    "mtime": 1790237936.042592,
+    "seen": 1790238289.16016,
+    "ast_hash": "7f34a51460e628a479be5213d40a85b0",
     "semantic_hash": ""
   },
   "test/goldens/ux_r07d_diary_populated_light.png": {
-    "mtime": 1790151838.8143733,
-    "seen": 1790152080.263798,
-    "ast_hash": "3d575ac32094ca6127df28111045b6e2",
+    "mtime": 1790237934.560593,
+    "seen": 1790238289.160161,
+    "ast_hash": "46a1a2b1e8156c3d77b138b4fef08a61",
     "semantic_hash": ""
   },
   "test/goldens/ux_r07d_food_search_merged_light.png": {
-    "mtime": 1790076675.0831263,
-    "seen": 1790079463.496547,
+    "mtime": 1790237936.945805,
+    "seen": 1790238289.160162,
     "ast_hash": "9032eff8c6bb217c302dd04ccc3ecade",
     "semantic_hash": ""
   },
   "test/goldens/ux_r07d_multiselect_light.png": {
-    "mtime": 1790151837.7624955,
-    "seen": 1790152080.2638211,
+    "mtime": 1790237933.4778564,
+    "seen": 1790238289.1601632,
     "ast_hash": "94c23e6d15495fbf0d3f4b40e9c1360c",
     "semantic_hash": ""
   },
   "test/goldens/ux_r07d_quantity_compact_2x_light.png": {
-    "mtime": 1790151841.1835446,
-    "seen": 1790152080.263822,
+    "mtime": 1790237937.095738,
+    "seen": 1790238289.160164,
     "ast_hash": "3bb10ebdbd22d69bd1e3bb6cfb353205",
     "semantic_hash": ""
   },
@@ -7871,622 +7871,10 @@
     "ast_hash": "34692c7ff3ab7b941e3054c71e4c1ac0",
     "semantic_hash": ""
   },
-  "test_artifacts/screenshots/01_onboarding_01_demographics.png": {
-    "mtime": 1790154684.5654345,
-    "seen": 1790162987.3973958,
-    "ast_hash": "bf79aab893a6b5f34e42ed2ec64627ea",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots/01_onboarding_01b_height_ft_in.png": {
-    "mtime": 1790154684.7379029,
-    "seen": 1790162987.397397,
-    "ast_hash": "8dd68e62177eaccce0a9db939f4b9285",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots/01_onboarding_01c_gender_other.png": {
-    "mtime": 1790154684.9024837,
-    "seen": 1790162987.397399,
-    "ast_hash": "ff4e8aa56742a9ef2e5f242cd89c5060",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots/01_onboarding_02_goal.png": {
-    "mtime": 1790154685.0869498,
-    "seen": 1790162987.3974001,
-    "ast_hash": "f5ccc2c4c9ed1084c5a78b3f503e9569",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots/01_onboarding_03_activity.png": {
-    "mtime": 1790154685.254433,
-    "seen": 1790162987.397401,
-    "ast_hash": "1673df323dd210b62d73e17e6fbe6239",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots/01_onboarding_04_diet.png": {
-    "mtime": 1790154685.4419017,
-    "seen": 1790162987.397402,
-    "ast_hash": "b9da59b3e6d00c90435fab46565e3867",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots/01_onboarding_05_payoff.png": {
-    "mtime": 1790154685.6117704,
-    "seen": 1790162987.3974028,
-    "ast_hash": "99b5e61ea3638bb66a92a50ff597c5ab",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots/02_today_01_dashboard.png": {
-    "mtime": 1790154685.9047325,
-    "seen": 1790162987.3974059,
-    "ast_hash": "ae037eb778f7791d0b208214fb3b80e2",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots/02_today_02_appearance_sheet.png": {
-    "mtime": 1790154686.0907445,
-    "seen": 1790162987.397408,
-    "ast_hash": "7fdf82442c438eeabc649006d11c6f44",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots/02_today_03_guidance_sheet.png": {
-    "mtime": 1790154686.2371476,
-    "seen": 1790162987.397409,
-    "ast_hash": "eb8805eca09fed9112a976cf9a1bde00",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots/02_today_04_hydration_detail_sheet.png": {
-    "mtime": 1790154686.380448,
-    "seen": 1790162987.397409,
-    "ast_hash": "5c18ca59287328fd214f96d83ce9fc2d",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots/02_today_05_log_weight_sheet.png": {
-    "mtime": 1790154686.5342743,
-    "seen": 1790162987.3974102,
-    "ast_hash": "b979bae083d0dc6a9a4d598e31c166eb",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots/03_food_01_diary.png": {
-    "mtime": 1790154686.680284,
-    "seen": 1790162987.397411,
-    "ast_hash": "b52e1c02f2ba36e49454473c532b5547",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots/03_food_02_search_landing.png": {
-    "mtime": 1790154686.8659353,
-    "seen": 1790162987.397412,
-    "ast_hash": "43ca76f99b64083e4ae68a8f234221c9",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots/03_food_03_search_results.png": {
-    "mtime": 1790154687.0256293,
-    "seen": 1790162987.397413,
-    "ast_hash": "e4b4806f69bcd204c6cb799487d8d77b",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots/03_food_04_portion_sheet.png": {
-    "mtime": 1790154687.1929727,
-    "seen": 1790162987.397413,
-    "ast_hash": "3b406688a4aa466b1ac73d7adf077c5e",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots/03_food_05_remote_review_sheet.png": {
-    "mtime": 1790154687.3629978,
-    "seen": 1790162987.397414,
-    "ast_hash": "cd212f4b1fb5fbc24d1cd2a63f01265e",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots/03_food_06_thali_builder.png": {
-    "mtime": 1790154687.5630562,
-    "seen": 1790162987.397415,
-    "ast_hash": "d68526a530731997b881def2b1a47087",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots/03_food_07_thali_component_picker.png": {
-    "mtime": 1790154687.8764107,
-    "seen": 1790162987.397417,
-    "ast_hash": "57252f59a02c0bd38cc91b43a12f4967",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots/03_food_08_custom_food_editor.png": {
-    "mtime": 1790154688.0383296,
-    "seen": 1790162987.397418,
-    "ast_hash": "ac8a88207fb81cd5b2958a5fefc77178",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots/03_food_09_recipe_editor.png": {
-    "mtime": 1790154688.1940575,
-    "seen": 1790162987.397418,
-    "ast_hash": "d6b25684fd2654fa884326df3a2d38d0",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots/04_training_01_landing.png": {
-    "mtime": 1790154688.3807952,
-    "seen": 1790162987.397419,
-    "ast_hash": "3276d6f1d96b66c3a1682bdd836cbecc",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots/04_training_02_plan_library.png": {
-    "mtime": 1790154688.5430336,
-    "seen": 1790162987.39742,
-    "ast_hash": "40dae6df582b46023658eb3245028c5d",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots/04_training_03_plan_overview.png": {
-    "mtime": 1790154688.6835854,
-    "seen": 1790162987.3974211,
-    "ast_hash": "e87c928666d85e5987bb9e7e7318e8b2",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots/04_training_04_routine_editor.png": {
-    "mtime": 1790154688.860713,
-    "seen": 1790162987.397422,
-    "ast_hash": "63931859f30316016c238c79a759ef38",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots/04_training_05_exercise_picker_sheet.png": {
-    "mtime": 1790154689.0129805,
-    "seen": 1790162987.397422,
-    "ast_hash": "fbddccc8cc9c0616f5656f5ac1092f59",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots/04_training_06_program_calendar.png": {
-    "mtime": 1790154689.2024057,
-    "seen": 1790162987.397423,
-    "ast_hash": "bc4a091485dc6c1d5c254b995539af68",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots/04_training_07_occurrence_actions_sheet.png": {
-    "mtime": 1790154689.375924,
-    "seen": 1790162987.3974242,
-    "ast_hash": "536a5409b42f42de2a054ae91a41a1b5",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots/04_training_08_exercise_library.png": {
-    "mtime": 1790154689.52555,
-    "seen": 1790162987.397425,
-    "ast_hash": "9bff75503e202146001949f728803347",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots/04_training_09_exercise_details_sheet.png": {
-    "mtime": 1790154689.6846764,
-    "seen": 1790162987.397426,
-    "ast_hash": "bb97090f82ce71ee0bccc0c2f60083e0",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots/04_training_10_workout_history.png": {
-    "mtime": 1790154689.8428624,
-    "seen": 1790162987.397426,
-    "ast_hash": "ab62da3d88d5a41b880cc246188785a0",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots/04_training_11_quick_workout.png": {
-    "mtime": 1790154689.9977193,
-    "seen": 1790162987.3974268,
-    "ast_hash": "4f6cb69f1ca79b6c884d118f8581658f",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots/05_player_01_active_execution.png": {
-    "mtime": 1790154690.1775131,
-    "seen": 1790162987.397428,
-    "ast_hash": "0a11a28b4cbd51df7bddde37c511d92d",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots/05_player_02_plate_calculator_sheet.png": {
-    "mtime": 1790154690.3317258,
-    "seen": 1790162987.397429,
-    "ast_hash": "f2aeac8c7b7e4503f34ad9070a2780b8",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots/05_player_03_rest_timer_sheet.png": {
-    "mtime": 1790154690.4922266,
-    "seen": 1790162987.397429,
-    "ast_hash": "e8514d9bfcd1f0c4a453323cfc0e41de",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots/05_player_04_discard_dialog.png": {
-    "mtime": 1790154690.6549864,
-    "seen": 1790162987.39743,
-    "ast_hash": "40765557eee406b217ad99156ebc49e8",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots/05_player_05_workout_summary.png": {
-    "mtime": 1790154690.8265119,
-    "seen": 1790162987.397432,
-    "ast_hash": "837cfcfc76981400e1bbef4eadacbf3d",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots/05_player_06_celebration_sheet.png": {
-    "mtime": 1790154691.0139854,
-    "seen": 1790162987.397432,
-    "ast_hash": "d44eb6fd1dccf3348d3c250aba27c061",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots/06_progress_01_overview.png": {
-    "mtime": 1790154691.1756759,
-    "seen": 1790162987.397433,
-    "ast_hash": "3a17d702f0b439fb37a1f5c35eca4da7",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots/06_progress_02_period_comparison_sheet.png": {
-    "mtime": 1790154691.3284037,
-    "seen": 1790162987.397434,
-    "ast_hash": "f39b8d4c2f59bb2fff53ff8dacf28aef",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots/06_progress_03_achievements_screen.png": {
-    "mtime": 1790154691.487068,
-    "seen": 1790162987.397435,
-    "ast_hash": "2ffde17f353965ab1e39337ffc9e6cc1",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots/06_progress_04_achievement_detail_sheet.png": {
-    "mtime": 1790154691.6689742,
-    "seen": 1790162987.397436,
-    "ast_hash": "9f3097ff45f2d52e2a7616774cf5797d",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots/07_settings_01_main_menu.png": {
-    "mtime": 1790154691.838601,
-    "seen": 1790162987.3974369,
-    "ast_hash": "a938eb0c51bd64a6993e709721400e5a",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots/07_settings_02_profile_screen.png": {
-    "mtime": 1790154691.9858851,
-    "seen": 1790162987.397438,
-    "ast_hash": "c77887bfd1ce37a4ceaffedafa4f755e",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots/07_settings_03_goals_and_targets.png": {
-    "mtime": 1790154692.1376698,
-    "seen": 1790162987.397438,
-    "ast_hash": "fcb4d957336283cd464da29a2cf65c64",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots/07_settings_04_health_sync_hub.png": {
-    "mtime": 1790154692.327333,
-    "seen": 1790162987.397439,
-    "ast_hash": "7ef6af9af0c96a11114acd85353c1c5d",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots/07_settings_05_dpdp_consent_dialog.png": {
-    "mtime": 1790154692.4909759,
-    "seen": 1790162987.39744,
-    "ast_hash": "7431117ddbf7b9e8278e70ade5b4a7a0",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots/07_settings_06_danger_zone_erasure.png": {
-    "mtime": 1790154692.643523,
-    "seen": 1790162987.397441,
-    "ast_hash": "a86a78d7c2cd4ca6236f3881fd4644bc",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots/08_theme_01_dark_mode_dashboard.png": {
-    "mtime": 1790154692.80393,
-    "seen": 1790162987.397442,
-    "ast_hash": "9b0b60d9377d055c7813ed51f1ffc3f4",
-    "semantic_hash": ""
-  },
   "test/onboarding_refinements_and_input_hardening_test.dart": {
     "mtime": 1790145479.5123827,
     "seen": 1790145535.697092,
     "ast_hash": "5a339d0e4ddc50623297bd91bc2ed534",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots/01_onboarding_05b_payoff_scrolled.png": {
-    "mtime": 1790154685.758014,
-    "seen": 1790162987.397405,
-    "ast_hash": "2c7f056310eca9e5844ed574acf5c7e5",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots/03_food_06b_thali_name_focus.png": {
-    "mtime": 1790154687.7146378,
-    "seen": 1790162987.3974159,
-    "ast_hash": "e80d8fb1649b00906d8ac1b57890388f",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots_android/01_onboarding_01_demographics.png": {
-    "mtime": 1790162948.7458363,
-    "seen": 1790162987.397443,
-    "ast_hash": "e524282879c771b86bb25fbe85cd5cdb",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots_android/01_onboarding_01b_height_ft_in.png": {
-    "mtime": 1790162949.0728965,
-    "seen": 1790162987.397444,
-    "ast_hash": "1ae0bc2f268c8a869c68fee61ce8af25",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots_android/01_onboarding_01c_gender_other.png": {
-    "mtime": 1790162949.3960273,
-    "seen": 1790162987.397453,
-    "ast_hash": "6a52ac725e2042ca27c38f19c68e59aa",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots_android/01_onboarding_02_goal.png": {
-    "mtime": 1790162949.5725462,
-    "seen": 1790162987.397454,
-    "ast_hash": "e2881556a1bacac134143077cbe6bf0a",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots_android/01_onboarding_03_activity.png": {
-    "mtime": 1790162949.7457488,
-    "seen": 1790162987.3974552,
-    "ast_hash": "fb4bb53024a8b25ef862e43d2e794aac",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots_android/01_onboarding_04_diet.png": {
-    "mtime": 1790162950.0173914,
-    "seen": 1790162987.3974552,
-    "ast_hash": "866e6edcdfed51e502fbd5bba3960eab",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots_android/01_onboarding_05_payoff.png": {
-    "mtime": 1790162950.3254251,
-    "seen": 1790162987.397456,
-    "ast_hash": "992bce2b34a71a6336c2ef56071a0c00",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots_android/01_onboarding_05b_payoff_scrolled.png": {
-    "mtime": 1790162950.4880607,
-    "seen": 1790162987.397457,
-    "ast_hash": "62c88dd5cbe60de4f7a1a28765ae20f0",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots_android/02_today_01_dashboard.png": {
-    "mtime": 1790162950.7144136,
-    "seen": 1790162987.3974578,
-    "ast_hash": "629fb5088a5e50d1a1cb3a8f35e7ce23",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots_android/02_today_02_appearance_sheet.png": {
-    "mtime": 1790162950.8833842,
-    "seen": 1790162987.3974578,
-    "ast_hash": "82f10a35a5e0fb7ea374a4dd5fa66c8a",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots_android/02_today_03_guidance_sheet.png": {
-    "mtime": 1790162951.0770273,
-    "seen": 1790162987.397459,
-    "ast_hash": "f8b476be2865caab0d4a1282587f8728",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots_android/02_today_04_hydration_detail_sheet.png": {
-    "mtime": 1790162951.2337995,
-    "seen": 1790162987.39746,
-    "ast_hash": "8c7aa1d6161447b3ac3e360921ee68f3",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots_android/02_today_05_log_weight_sheet.png": {
-    "mtime": 1790162951.4539819,
-    "seen": 1790162987.397461,
-    "ast_hash": "b85fbed1efff448437a1705810532e9f",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots_android/03_food_01_diary.png": {
-    "mtime": 1790162951.6453438,
-    "seen": 1790162987.397461,
-    "ast_hash": "6d778d15c4ce6b1d2b17729d4768d344",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots_android/03_food_02_search_landing.png": {
-    "mtime": 1790162951.9136314,
-    "seen": 1790162987.3974621,
-    "ast_hash": "ee051a5e65624a0bd1fb602e729732e4",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots_android/03_food_03_search_results.png": {
-    "mtime": 1790162952.1394777,
-    "seen": 1790162987.397463,
-    "ast_hash": "4ee2e8ca2b94d5389a59a2ef08d1f0bc",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots_android/03_food_04_portion_sheet.png": {
-    "mtime": 1790162952.3203921,
-    "seen": 1790162987.397464,
-    "ast_hash": "8a3d760647f1d4f4e8533cb21809ced2",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots_android/03_food_05_remote_review_sheet.png": {
-    "mtime": 1790162952.498784,
-    "seen": 1790162987.397464,
-    "ast_hash": "f987cc30f1088ec57a0d619954dbc864",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots_android/03_food_06_thali_builder.png": {
-    "mtime": 1790162952.6976101,
-    "seen": 1790162987.397465,
-    "ast_hash": "a8a439af22c73f10a7a4a13473206687",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots_android/03_food_06b_thali_name_focus.png": {
-    "mtime": 1790162952.8790078,
-    "seen": 1790162987.3974662,
-    "ast_hash": "0eb1b8970376ae3a12f52012a0268d85",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots_android/03_food_07_thali_component_picker.png": {
-    "mtime": 1790162953.0427785,
-    "seen": 1790162987.397467,
-    "ast_hash": "ddf3e6f22aef52052f680826742dc690",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots_android/03_food_08_custom_food_editor.png": {
-    "mtime": 1790162953.2136955,
-    "seen": 1790162987.397467,
-    "ast_hash": "86aa9d4dd6e92e4058fc99d36108aba3",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots_android/03_food_09_recipe_editor.png": {
-    "mtime": 1790162953.3809786,
-    "seen": 1790162987.3974679,
-    "ast_hash": "9cac4f711390c7e87069f21955be5c98",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots_android/04_training_01_landing.png": {
-    "mtime": 1790162953.582131,
-    "seen": 1790162987.397469,
-    "ast_hash": "c711795ef70e017d28ad345fe5522514",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots_android/04_training_02_plan_library.png": {
-    "mtime": 1790162953.7468452,
-    "seen": 1790162987.397469,
-    "ast_hash": "1936c0010db8a8abd8336d4a63172a90",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots_android/04_training_03_plan_overview.png": {
-    "mtime": 1790162953.9117262,
-    "seen": 1790162987.39747,
-    "ast_hash": "60c31f1833efaf691cd4cddd954ef7c5",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots_android/04_training_04_routine_editor.png": {
-    "mtime": 1790162954.0885146,
-    "seen": 1790162987.397471,
-    "ast_hash": "596eca615daebfd8f3bc597dd548795d",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots_android/04_training_05_exercise_picker_sheet.png": {
-    "mtime": 1790162954.2772908,
-    "seen": 1790162987.397472,
-    "ast_hash": "ce1426ca0eb0a614b77f85d36e266396",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots_android/04_training_06_program_calendar.png": {
-    "mtime": 1790162954.457588,
-    "seen": 1790162987.397472,
-    "ast_hash": "0d40b5dba1e4d78467888bc98e791a89",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots_android/04_training_07_occurrence_actions_sheet.png": {
-    "mtime": 1790162954.6479523,
-    "seen": 1790162987.397473,
-    "ast_hash": "9b4d716092d619bcb4d8fa7dae3a4ce1",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots_android/04_training_08_exercise_library.png": {
-    "mtime": 1790162954.9068089,
-    "seen": 1790162987.397474,
-    "ast_hash": "be77755d6a200a5edc00bfb0f89efdee",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots_android/04_training_09_exercise_details_sheet.png": {
-    "mtime": 1790162955.1209183,
-    "seen": 1790162987.397474,
-    "ast_hash": "a6dee70622909ddf26c5178d7ea32f77",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots_android/04_training_10_workout_history.png": {
-    "mtime": 1790162955.3452406,
-    "seen": 1790162987.397475,
-    "ast_hash": "d3577dfdc316be316156d8933016df2b",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots_android/04_training_11_quick_workout.png": {
-    "mtime": 1790162955.515744,
-    "seen": 1790162987.3974762,
-    "ast_hash": "6139db7362ac9f76186c026c752461a2",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots_android/05_player_01_active_execution.png": {
-    "mtime": 1790162955.6874793,
-    "seen": 1790162987.3974762,
-    "ast_hash": "75870928c89db4d1d98d2ea180469961",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots_android/05_player_02_plate_calculator_sheet.png": {
-    "mtime": 1790162955.862635,
-    "seen": 1790162987.3974771,
-    "ast_hash": "36801ecac6256d8889e558f5f89cf7f7",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots_android/05_player_03_rest_timer_sheet.png": {
-    "mtime": 1790162956.0667858,
-    "seen": 1790162987.3974779,
-    "ast_hash": "f9c4a4be44f8e7498a3497738940a1f3",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots_android/05_player_04_discard_dialog.png": {
-    "mtime": 1790162956.2421188,
-    "seen": 1790162987.3974788,
-    "ast_hash": "3435a3b88ee8250c8736e43d09fb044b",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots_android/05_player_05_workout_summary.png": {
-    "mtime": 1790162956.440394,
-    "seen": 1790162987.39748,
-    "ast_hash": "69c53fde2463878c613f18134ceca838",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots_android/05_player_06_celebration_sheet.png": {
-    "mtime": 1790162956.6239035,
-    "seen": 1790162987.39748,
-    "ast_hash": "5f1b19bdbf7aa5cc9e1935aea7568407",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots_android/06_progress_01_overview.png": {
-    "mtime": 1790162957.2885447,
-    "seen": 1790162987.397481,
-    "ast_hash": "cafdba9bf1c9f32c0b76d1310e222a87",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots_android/06_progress_02_period_comparison_sheet.png": {
-    "mtime": 1790162957.5158637,
-    "seen": 1790162987.397482,
-    "ast_hash": "66625918bef7ed5317a730ab6d39eb71",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots_android/06_progress_03_achievements_screen.png": {
-    "mtime": 1790162957.6916878,
-    "seen": 1790162987.397482,
-    "ast_hash": "a5c4aebfe8aecf418fe99956ff319ba5",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots_android/06_progress_04_achievement_detail_sheet.png": {
-    "mtime": 1790162957.8667924,
-    "seen": 1790162987.397483,
-    "ast_hash": "b5ab2cf111939552f356f0a6efe11e1c",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots_android/07_settings_01_main_menu.png": {
-    "mtime": 1790162958.167237,
-    "seen": 1790162987.397484,
-    "ast_hash": "dc4e3420c3165eb9e8b9591b1062cbce",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots_android/07_settings_02_profile_screen.png": {
-    "mtime": 1790162958.3448658,
-    "seen": 1790162987.397485,
-    "ast_hash": "4ed0e0c93923fb6caff6906298f4b627",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots_android/07_settings_03_goals_and_targets.png": {
-    "mtime": 1790162958.5245695,
-    "seen": 1790162987.397485,
-    "ast_hash": "c7e3e274f3ff4c164f3d4ab7be1ca796",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots_android/07_settings_04_health_sync_hub.png": {
-    "mtime": 1790162958.7053506,
-    "seen": 1790162987.397486,
-    "ast_hash": "d38d00c7c81efdb4f12d20fd0d8aa6b5",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots_android/07_settings_05_dpdp_consent_dialog.png": {
-    "mtime": 1790162958.9050848,
-    "seen": 1790162987.3974872,
-    "ast_hash": "dced1a80516faa822446dd9ed2ff1505",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots_android/07_settings_06_danger_zone_erasure.png": {
-    "mtime": 1790162959.0729215,
-    "seen": 1790162987.397488,
-    "ast_hash": "370c59651014db971991930129204dda",
-    "semantic_hash": ""
-  },
-  "test_artifacts/screenshots_android/08_theme_01_dark_mode_dashboard.png": {
-    "mtime": 1790162959.2582176,
-    "seen": 1790162987.3974888,
-    "ast_hash": "bfbc8e01f532573a4c39296b0c1d33da",
     "semantic_hash": ""
   },
   "test/timezone_normalization_test.dart": {
@@ -8514,9 +7902,9 @@
     "semantic_hash": ""
   },
   "backend/tests/test_barcode_proxy.py": {
-    "mtime": 1790226459.2827551,
-    "seen": 1790234332.4555829,
-    "ast_hash": "aa42ecb6cdd07a535151b336b69660a9",
+    "mtime": 1790237303.3800578,
+    "seen": 1790238289.1346219,
+    "ast_hash": "889e6cd2209b863f1236088167009041",
     "semantic_hash": ""
   },
   "backend/tests/test_curated_fmcg.py": {
