@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/di/core_providers.dart';
+import '../../core/nutrition_thali.dart';
+import '../../core/privacy/dpdp_consent_service.dart';
 import '../../core/theme/b05_semantic_colors.dart';
+import '../../core/typed_quantities.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
+import '../../data/repositories/nutrition_food_catalog_repository.dart';
 import '../nutrition/nutrition_providers.dart';
 import 'natural_language_meal_service.dart';
 import 'nutrition_ai_controllers.dart';
@@ -60,6 +66,27 @@ class _NaturalLanguageMealScreenState
     return widget.mealType ?? 'lunch';
   }
 
+  Future<void> _analyzeWithConsent(String text) async {
+    final clean = text.trim();
+    if (clean.isEmpty) return;
+
+    SharedPreferences? prefs;
+    try {
+      prefs = ref.read(sharedPreferencesProvider);
+    } catch (_) {}
+    prefs ??= await SharedPreferences.getInstance();
+    if (!mounted) return;
+
+    final consented = await DpdpConsentService.ensureConsent(
+      context: context,
+      prefs: prefs,
+    );
+    if (!consented || !mounted) return;
+
+    final controller = ref.read(naturalLanguageMealControllerProvider.notifier);
+    await controller.analyzeMeal(clean);
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(naturalLanguageMealControllerProvider);
@@ -108,7 +135,7 @@ class _NaturalLanguageMealScreenState
                         label: Text(chip, style: const TextStyle(fontSize: 12)),
                         onPressed: () {
                           _textController.text = chip;
-                          controller.analyzeMeal(chip);
+                          _analyzeWithConsent(chip);
                         },
                       );
                     }).toList(),
@@ -121,7 +148,7 @@ class _NaturalLanguageMealScreenState
                     icon: Icons.auto_awesome_rounded,
                     onPressed: state.isBusy
                         ? null
-                        : () => controller.analyzeMeal(_textController.text),
+                        : () => _analyzeWithConsent(_textController.text),
                   ),
                 ],
               ),
@@ -177,37 +204,213 @@ class _NaturalLanguageMealScreenState
 
               const SizedBox(height: B05Layout.space20),
 
-              // Finalize Action
-              B05ActionButton(
-                label: state.isLogged
-                    ? 'Logged to Diary'
-                    : (state.status == NaturalLanguageMealStatus.logging
-                        ? 'Logging Meal...'
-                        : 'Log Meal to Diary'),
-                icon: Icons.check_circle_outline_rounded,
-                onPressed: state.isLogged || state.isBusy
-                    ? null
-                    : () async {
-                        final messenger = ScaffoldMessenger.of(context);
-                        final router = GoRouter.of(context);
-                        final ok = await controller.logAllToDiary(
-                          mealType: _resolveMealType(),
-                          date: _resolveDate(),
-                        );
-                        if (ok && mounted) {
-                          messenger.showSnackBar(
-                            const SnackBar(
-                              content: Text('Meal logged to diary successfully!'),
-                            ),
-                          );
-                          router.pop(true);
-                        }
-                      },
+              // Actions
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      label: const Text('Open in Circular Thali'),
+                      icon: const Icon(Icons.pie_chart_outline_rounded),
+                      onPressed: state.isBusy || state.editableItems.isEmpty
+                          ? null
+                          : () => _openInCircularThali(
+                                _resolveMealType(),
+                                _resolveDate(),
+                                state.editableItems,
+                              ),
+                    ),
+                  ),
+                  const SizedBox(width: B05Layout.space12),
+                  Expanded(
+                    child: B05ActionButton(
+                      label: state.isLogged
+                          ? 'Logged to Diary'
+                          : (state.status == NaturalLanguageMealStatus.logging
+                              ? 'Logging Meal...'
+                              : 'Log Meal to Diary'),
+                      icon: Icons.check_circle_outline_rounded,
+                      onPressed: state.isLogged || state.isBusy
+                          ? null
+                          : () async {
+                              final messenger = ScaffoldMessenger.of(context);
+                              final router = GoRouter.of(context);
+                              final ok = await controller.logAllToDiary(
+                                mealType: _resolveMealType(),
+                                date: _resolveDate(),
+                              );
+                              if (ok && mounted) {
+                                messenger.showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Meal logged to diary successfully!'),
+                                  ),
+                                );
+                                router.pop(true);
+                              }
+                            },
+                    ),
+                  ),
+                ],
               ),
             ],
           ],
         ),
       ),
+    );
+  }
+
+  Future<void> _openInCircularThali(
+    String mealType,
+    DateTime date,
+    List<DecomposedFoodItem> items,
+  ) async {
+    final thaliController = ref.read(
+      nutritionThaliControllerProvider(mealType).notifier,
+    );
+    final catalog = await ref.read(nutritionFoodCatalogRepositoryProvider.future);
+
+    for (final item in items) {
+      NutritionFoodOption option;
+      Quantity qty;
+      if (item.matchedCatalogOption != null) {
+        option = item.matchedCatalogOption!;
+        qty = Quantity.fromNum(
+          amount: item.quantityAmount > 0 ? item.quantityAmount : 1.0,
+          unit: option.baseQuantity.unit,
+        );
+      } else {
+        option = await catalog.createUserFood(
+          displayName: item.foodName,
+          servingSize: item.quantityAmount > 0 ? item.quantityAmount : 1.0,
+          servingUnit: item.quantityUnit,
+          energyKcal: item.estimatedCalories.toDouble(),
+          proteinG: item.estimatedProtein,
+          carbohydrateG: item.estimatedCarbs,
+          fatG: item.estimatedFat,
+        );
+        qty = option.baseQuantity;
+      }
+
+      final thaliOption = NutritionThaliFoodOption(
+        id: option.id,
+        displayName: option.displayName,
+        kind: 'direct',
+        sourceType: option.sourceType,
+        region: null,
+      );
+      thaliController.addFood(thaliOption, quantity: qty);
+    }
+
+    if (mounted) {
+      await context.push('/food/thali?meal=$mealType');
+    }
+  }
+
+  Future<void> _openSwapModal(
+    BuildContext context,
+    int index,
+    DecomposedFoodItem item,
+    NaturalLanguageMealController controller,
+  ) async {
+    final catalog = await ref.read(nutritionFoodCatalogRepositoryProvider.future);
+    final initialMatches = await catalog.search(query: item.foodName);
+    if (!context.mounted) return;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (sheetCtx) {
+        List<NutritionFoodOption> matches = initialMatches;
+        return StatefulBuilder(
+          builder: (ctx, setSheetState) {
+            return DraggableScrollableSheet(
+              initialChildSize: 0.7,
+              minChildSize: 0.4,
+              maxChildSize: 0.95,
+              expand: false,
+              builder: (ctx, scrollController) {
+                return Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Swap Food Match', style: B05Typography.title(context)),
+                          IconButton(
+                            icon: const Icon(Icons.close),
+                            onPressed: () => Navigator.pop(sheetCtx),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        autofocus: false,
+                        decoration: InputDecoration(
+                          hintText: 'Search food in catalog...',
+                          prefixIcon: const Icon(Icons.search),
+                          suffixIcon: IconButton(
+                            icon: const Icon(Icons.clear),
+                            onPressed: () {
+                              setSheetState(() {
+                                matches = [];
+                              });
+                            },
+                          ),
+                        ),
+                        onChanged: (val) async {
+                          final results = await catalog.search(query: val);
+                          setSheetState(() => matches = results);
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      Expanded(
+                        child: matches.isEmpty
+                            ? Center(
+                                child: Text(
+                                  'No matching catalog foods found.',
+                                  style: B05Typography.caption(context),
+                                ),
+                              )
+                            : ListView.separated(
+                                controller: scrollController,
+                                itemCount: matches.length,
+                                separatorBuilder: (ctx, i) => const Divider(),
+                                itemBuilder: (ctx, i) {
+                                  final option = matches[i];
+                                  final isCurrent = item.matchedCatalogOption?.id == option.id;
+                                  final energy = option.facts['energy']?.point?.value.asDouble.toStringAsFixed(0) ?? '—';
+                                  final protein = option.facts['protein']?.point?.value.asDouble.toStringAsFixed(1) ?? '—';
+                                  return ListTile(
+                                    title: Text(option.displayName),
+                                    subtitle: Text(
+                                      '$energy kcal • $protein g P per ${option.baseQuantity}',
+                                    ),
+                                    trailing: isCurrent
+                                        ? const Icon(Icons.check, color: Colors.green)
+                                        : null,
+                                    onTap: () {
+                                      controller.updateItemFoodMatch(index, option);
+                                      Navigator.pop(sheetCtx);
+                                    },
+                                  );
+                                },
+                              ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            );
+          },
+        );
+      },
     );
   }
 
@@ -236,6 +439,12 @@ class _NaturalLanguageMealScreenState
     final isVerified = item.isCatalogVerified;
     final badgeColor = isVerified ? colors.success.indicator : colors.info.indicator;
     final badgeText = isVerified ? 'Catalog Verified' : 'AI Estimate';
+
+    final confidenceColor = switch (item.confidence.toLowerCase()) {
+      'high' => colors.success.indicator,
+      'low' => colors.danger.indicator,
+      _ => colors.warning.indicator,
+    };
 
     return Padding(
       padding: const EdgeInsets.only(bottom: B05Layout.space12),
@@ -267,6 +476,22 @@ class _NaturalLanguageMealScreenState
                   ),
                 ),
                 Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                  margin: const EdgeInsets.only(right: 6),
+                  decoration: BoxDecoration(
+                    color: confidenceColor.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    '${item.confidence[0].toUpperCase()}${item.confidence.substring(1)} Conf',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: confidenceColor,
+                    ),
+                  ),
+                ),
+                Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: badgeColor.withValues(alpha: 0.12),
@@ -291,9 +516,43 @@ class _NaturalLanguageMealScreenState
             const SizedBox(height: B05Layout.space12),
             Row(
               children: [
-                Text(
-                  'Quantity: ${item.quantityAmount.toStringAsFixed(0)} ${item.quantityUnit}',
-                  style: B05Typography.body(context),
+                // Inline Stepper
+                IconButton.outlined(
+                  icon: const Icon(Icons.remove, size: 16),
+                  visualDensity: VisualDensity.compact,
+                  onPressed: item.quantityAmount <= 0.25
+                      ? null
+                      : () {
+                          final step = item.quantityAmount <= 1.0 ? 0.25 : 1.0;
+                          final newAmount = (item.quantityAmount - step).clamp(0.25, 999.0);
+                          controller.updateItemQuantity(index, newAmount, item.quantityUnit);
+                        },
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                  child: Text(
+                    '${item.quantityAmount.toStringAsFixed(item.quantityAmount % 1 == 0 ? 0 : 2)} ${item.quantityUnit}',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
+                ),
+                IconButton.outlined(
+                  icon: const Icon(Icons.add, size: 16),
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () {
+                    final step = item.quantityAmount < 1.0 ? 0.25 : 1.0;
+                    final newAmount = item.quantityAmount + step;
+                    controller.updateItemQuantity(index, newAmount, item.quantityUnit);
+                  },
+                ),
+                const SizedBox(width: 8),
+                TextButton.icon(
+                  style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+                  icon: const Icon(Icons.swap_horiz, size: 16),
+                  label: Text(
+                    isVerified ? 'Swap' : 'Match',
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                  onPressed: () => _openSwapModal(context, index, item, controller),
                 ),
                 const Spacer(),
                 Text(

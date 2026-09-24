@@ -82,12 +82,19 @@ class MealDecompositionItem(BaseModel):
     estimated_carbs: float
     estimated_fat: float
     confidence: ConfidenceLevel = "medium"
+    category_id: Optional[str] = None
+    fiber_g: Optional[float] = None
+    sodium_mg: Optional[float] = None
 
 
 class MealDecompositionResponse(BaseModel):
     query: str
     items: List[MealDecompositionItem] = Field(default_factory=list)
     total_calories: int = 0
+    confidence: Optional[ConfidenceLevel] = "medium"
+    disclaimer: Optional[str] = (
+        "AI estimate carries ±30% variance. Review quantities before saving."
+    )
     is_fallback: bool = False
     fallback_reason: Optional[str] = None
 

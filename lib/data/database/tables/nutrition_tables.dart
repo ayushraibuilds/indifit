@@ -1243,3 +1243,17 @@ class RecommendationFeedback extends Table {
     'CHECK (related_feedback_id IS NULL OR related_feedback_id <> id)',
   ];
 }
+
+/// Device-local, 7-day TTL query cache for online hybrid search proxy results.
+/// Never synced, excluded from backups (BackupData / NutritionBackupGraph).
+class FoodSearchCache extends Table {
+  TextColumn get queryHash => text()(); // SHA-256(trim(lower(query)) + "_" + language)
+  TextColumn get queryText => text()();
+  TextColumn get responseJson => text()(); // Allowlisted keys only
+  DateTimeColumn get cachedAt => dateTime().withDefault(currentDateAndTime)();
+  IntColumn get ttlSeconds => integer().withDefault(const Constant(604800))(); // 7 days
+
+  @override
+  Set<Column> get primaryKey => {queryHash};
+}
+

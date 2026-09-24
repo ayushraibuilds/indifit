@@ -42,6 +42,13 @@ final nutritionRoutes = <RouteBase>[
     ),
   ),
   GoRoute(
+    path: '/food/photo',
+    builder: (context, state) => PhotoMealScreen(
+      mealType: state.uri.queryParameters['mealType'],
+      date: state.uri.queryParameters['date'],
+    ),
+  ),
+  GoRoute(
     path: '/food/recipes/edit',
     builder: (context, state) => NutritionRecipeEditorScreen(
       recipeId: state.uri.queryParameters['recipeId'],
@@ -70,6 +77,10 @@ final nutritionRoutes = <RouteBase>[
   GoRoute(
     path: '/settings/dietary-constraints',
     builder: (context, state) => const NutritionConstraintsScreen(),
+  ),
+  GoRoute(
+    path: '/settings/nutrition-targets',
+    builder: (context, state) => const NutritionTargetsHubScreen(),
   ),
   GoRoute(
     path: '/settings/dietary-constraints/review',

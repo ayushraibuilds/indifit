@@ -46,6 +46,7 @@ class ThaliBuilderScreen extends ConsumerStatefulWidget {
 
 class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
   final TextEditingController _nameController = TextEditingController();
+  final FocusNode _nameFocusNode = FocusNode();
   bool _initialized = false;
   ThaliViewMode _viewMode = ThaliViewMode.plate;
   String? _selectedItemId;
@@ -65,6 +66,7 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
   @override
   void dispose() {
     _nameController.dispose();
+    _nameFocusNode.dispose();
     super.dispose();
   }
 
@@ -269,6 +271,7 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
                         child: TextField(
                           key: const Key('thali_name_input'),
                           controller: _nameController,
+                          focusNode: _nameFocusNode,
                           style: TextStyle(
                             color: colors.textPrimary,
                             fontSize: 16,
@@ -290,7 +293,13 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
                           size: 18,
                           color: colors.textDisabled,
                         ),
-                        onPressed: () {},
+                        onPressed: () {
+                          _nameFocusNode.requestFocus();
+                          _nameController.selection = TextSelection(
+                            baseOffset: 0,
+                            extentOffset: _nameController.text.length,
+                          );
+                        },
                       ),
                     ],
                   ),
@@ -299,13 +308,45 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
                 // Presets Bar
                 ThaliPresetsBar(
                   onSelectPreset: (preset) {
-                    setState(() {
-                      _selectedItemId = null;
+                    if (items.isEmpty) {
+                      setState(() {
+                        _selectedItemId = null;
+                      });
+                      controller.loadPreset(
+                        presetName: preset.name,
+                        items: preset.items,
+                      );
+                      return;
+                    }
+                    showDialog<bool>(
+                      context: context,
+                      builder: (dialogContext) => AlertDialog(
+                        title: const Text('Replace plate items?'),
+                        content: Text(
+                          'Applying "${preset.name}" will replace your current thali items.',
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(dialogContext).pop(false),
+                            child: const Text('Cancel'),
+                          ),
+                          FilledButton(
+                            onPressed: () => Navigator.of(dialogContext).pop(true),
+                            child: const Text('Replace'),
+                          ),
+                        ],
+                      ),
+                    ).then((confirmed) {
+                      if (confirmed == true && mounted) {
+                        setState(() {
+                          _selectedItemId = null;
+                        });
+                        controller.loadPreset(
+                          presetName: preset.name,
+                          items: preset.items,
+                        );
+                      }
                     });
-                    controller.loadPreset(
-                      presetName: preset.name,
-                      items: preset.items,
-                    );
                   },
                 ),
                 const SizedBox(height: 8),
@@ -514,7 +555,7 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
   ) {
     final colors = context.b05Colors;
     return Center(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

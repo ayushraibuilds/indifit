@@ -377,3 +377,16 @@ final naturalLanguageMealControllerProvider = StateNotifierProvider.autoDispose<
     timezoneId: () => ref.read(localTimezoneServiceProvider).currentTimezoneId(),
   );
 });
+
+final photoMealControllerProvider = StateNotifierProvider.autoDispose<
+  PhotoMealController,
+  PhotoMealState
+>((ref) {
+  return PhotoMealController(
+    mealService: () => ref.read(naturalLanguageMealServiceProvider.future),
+    catalogRepository: () => ref.read(nutritionFoodCatalogRepositoryProvider.future),
+    loggingCoordinator: () => ref.read(nutritionFoodLoggingCoordinatorProvider.future),
+    userId: kLocalNutritionUserScopeId,
+    timezoneId: () => ref.read(localTimezoneServiceProvider).currentTimezoneId(),
+  );
+});

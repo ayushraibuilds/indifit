@@ -333,10 +333,12 @@ class NutritionConsumptionRepository {
         'The logged food to delete no longer exists.',
       );
     }
-    if (predecessor.sourceType != 'direct_food' || predecessor.isRetraction) {
+    if ((predecessor.sourceType != 'direct_food' &&
+            predecessor.sourceType != 'quick_add') ||
+        predecessor.isRetraction) {
       throw const NutritionConsumptionValidationError(
         'unsupported_retraction_source',
-        'Only an active direct-food snapshot can be deleted here.',
+        'Only an active direct-food or quick-add snapshot can be deleted here.',
       );
     }
     if (predecessor.localDate != normalizedDate ||

@@ -51151,6 +51151,325 @@ class CachedRemoteFoodsCompanion extends UpdateCompanion<CachedRemoteFood> {
   }
 }
 
+class $FoodSearchCacheTable extends FoodSearchCache
+    with TableInfo<$FoodSearchCacheTable, FoodSearchCacheData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $FoodSearchCacheTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _queryHashMeta =
+      const VerificationMeta('queryHash');
+  @override
+  late final GeneratedColumn<String> queryHash = GeneratedColumn<String>(
+      'query_hash', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _queryTextMeta =
+      const VerificationMeta('queryText');
+  @override
+  late final GeneratedColumn<String> queryText = GeneratedColumn<String>(
+      'query_text', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _responseJsonMeta =
+      const VerificationMeta('responseJson');
+  @override
+  late final GeneratedColumn<String> responseJson = GeneratedColumn<String>(
+      'response_json', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _cachedAtMeta =
+      const VerificationMeta('cachedAt');
+  @override
+  late final GeneratedColumn<DateTime> cachedAt = GeneratedColumn<DateTime>(
+      'cached_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  static const VerificationMeta _ttlSecondsMeta =
+      const VerificationMeta('ttlSeconds');
+  @override
+  late final GeneratedColumn<int> ttlSeconds = GeneratedColumn<int>(
+      'ttl_seconds', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(604800));
+  @override
+  List<GeneratedColumn> get $columns =>
+      [queryHash, queryText, responseJson, cachedAt, ttlSeconds];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'food_search_cache';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<FoodSearchCacheData> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('query_hash')) {
+      context.handle(_queryHashMeta,
+          queryHash.isAcceptableOrUnknown(data['query_hash']!, _queryHashMeta));
+    } else if (isInserting) {
+      context.missing(_queryHashMeta);
+    }
+    if (data.containsKey('query_text')) {
+      context.handle(_queryTextMeta,
+          queryText.isAcceptableOrUnknown(data['query_text']!, _queryTextMeta));
+    } else if (isInserting) {
+      context.missing(_queryTextMeta);
+    }
+    if (data.containsKey('response_json')) {
+      context.handle(
+          _responseJsonMeta,
+          responseJson.isAcceptableOrUnknown(
+              data['response_json']!, _responseJsonMeta));
+    } else if (isInserting) {
+      context.missing(_responseJsonMeta);
+    }
+    if (data.containsKey('cached_at')) {
+      context.handle(_cachedAtMeta,
+          cachedAt.isAcceptableOrUnknown(data['cached_at']!, _cachedAtMeta));
+    }
+    if (data.containsKey('ttl_seconds')) {
+      context.handle(
+          _ttlSecondsMeta,
+          ttlSeconds.isAcceptableOrUnknown(
+              data['ttl_seconds']!, _ttlSecondsMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {queryHash};
+  @override
+  FoodSearchCacheData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return FoodSearchCacheData(
+      queryHash: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}query_hash'])!,
+      queryText: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}query_text'])!,
+      responseJson: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}response_json'])!,
+      cachedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}cached_at'])!,
+      ttlSeconds: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}ttl_seconds'])!,
+    );
+  }
+
+  @override
+  $FoodSearchCacheTable createAlias(String alias) {
+    return $FoodSearchCacheTable(attachedDatabase, alias);
+  }
+}
+
+class FoodSearchCacheData extends DataClass
+    implements Insertable<FoodSearchCacheData> {
+  final String queryHash;
+  final String queryText;
+  final String responseJson;
+  final DateTime cachedAt;
+  final int ttlSeconds;
+  const FoodSearchCacheData(
+      {required this.queryHash,
+      required this.queryText,
+      required this.responseJson,
+      required this.cachedAt,
+      required this.ttlSeconds});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['query_hash'] = Variable<String>(queryHash);
+    map['query_text'] = Variable<String>(queryText);
+    map['response_json'] = Variable<String>(responseJson);
+    map['cached_at'] = Variable<DateTime>(cachedAt);
+    map['ttl_seconds'] = Variable<int>(ttlSeconds);
+    return map;
+  }
+
+  FoodSearchCacheCompanion toCompanion(bool nullToAbsent) {
+    return FoodSearchCacheCompanion(
+      queryHash: Value(queryHash),
+      queryText: Value(queryText),
+      responseJson: Value(responseJson),
+      cachedAt: Value(cachedAt),
+      ttlSeconds: Value(ttlSeconds),
+    );
+  }
+
+  factory FoodSearchCacheData.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return FoodSearchCacheData(
+      queryHash: serializer.fromJson<String>(json['queryHash']),
+      queryText: serializer.fromJson<String>(json['queryText']),
+      responseJson: serializer.fromJson<String>(json['responseJson']),
+      cachedAt: serializer.fromJson<DateTime>(json['cachedAt']),
+      ttlSeconds: serializer.fromJson<int>(json['ttlSeconds']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'queryHash': serializer.toJson<String>(queryHash),
+      'queryText': serializer.toJson<String>(queryText),
+      'responseJson': serializer.toJson<String>(responseJson),
+      'cachedAt': serializer.toJson<DateTime>(cachedAt),
+      'ttlSeconds': serializer.toJson<int>(ttlSeconds),
+    };
+  }
+
+  FoodSearchCacheData copyWith(
+          {String? queryHash,
+          String? queryText,
+          String? responseJson,
+          DateTime? cachedAt,
+          int? ttlSeconds}) =>
+      FoodSearchCacheData(
+        queryHash: queryHash ?? this.queryHash,
+        queryText: queryText ?? this.queryText,
+        responseJson: responseJson ?? this.responseJson,
+        cachedAt: cachedAt ?? this.cachedAt,
+        ttlSeconds: ttlSeconds ?? this.ttlSeconds,
+      );
+  FoodSearchCacheData copyWithCompanion(FoodSearchCacheCompanion data) {
+    return FoodSearchCacheData(
+      queryHash: data.queryHash.present ? data.queryHash.value : this.queryHash,
+      queryText: data.queryText.present ? data.queryText.value : this.queryText,
+      responseJson: data.responseJson.present
+          ? data.responseJson.value
+          : this.responseJson,
+      cachedAt: data.cachedAt.present ? data.cachedAt.value : this.cachedAt,
+      ttlSeconds:
+          data.ttlSeconds.present ? data.ttlSeconds.value : this.ttlSeconds,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('FoodSearchCacheData(')
+          ..write('queryHash: $queryHash, ')
+          ..write('queryText: $queryText, ')
+          ..write('responseJson: $responseJson, ')
+          ..write('cachedAt: $cachedAt, ')
+          ..write('ttlSeconds: $ttlSeconds')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(queryHash, queryText, responseJson, cachedAt, ttlSeconds);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is FoodSearchCacheData &&
+          other.queryHash == this.queryHash &&
+          other.queryText == this.queryText &&
+          other.responseJson == this.responseJson &&
+          other.cachedAt == this.cachedAt &&
+          other.ttlSeconds == this.ttlSeconds);
+}
+
+class FoodSearchCacheCompanion extends UpdateCompanion<FoodSearchCacheData> {
+  final Value<String> queryHash;
+  final Value<String> queryText;
+  final Value<String> responseJson;
+  final Value<DateTime> cachedAt;
+  final Value<int> ttlSeconds;
+  final Value<int> rowid;
+  const FoodSearchCacheCompanion({
+    this.queryHash = const Value.absent(),
+    this.queryText = const Value.absent(),
+    this.responseJson = const Value.absent(),
+    this.cachedAt = const Value.absent(),
+    this.ttlSeconds = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  FoodSearchCacheCompanion.insert({
+    required String queryHash,
+    required String queryText,
+    required String responseJson,
+    this.cachedAt = const Value.absent(),
+    this.ttlSeconds = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : queryHash = Value(queryHash),
+        queryText = Value(queryText),
+        responseJson = Value(responseJson);
+  static Insertable<FoodSearchCacheData> custom({
+    Expression<String>? queryHash,
+    Expression<String>? queryText,
+    Expression<String>? responseJson,
+    Expression<DateTime>? cachedAt,
+    Expression<int>? ttlSeconds,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (queryHash != null) 'query_hash': queryHash,
+      if (queryText != null) 'query_text': queryText,
+      if (responseJson != null) 'response_json': responseJson,
+      if (cachedAt != null) 'cached_at': cachedAt,
+      if (ttlSeconds != null) 'ttl_seconds': ttlSeconds,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  FoodSearchCacheCompanion copyWith(
+      {Value<String>? queryHash,
+      Value<String>? queryText,
+      Value<String>? responseJson,
+      Value<DateTime>? cachedAt,
+      Value<int>? ttlSeconds,
+      Value<int>? rowid}) {
+    return FoodSearchCacheCompanion(
+      queryHash: queryHash ?? this.queryHash,
+      queryText: queryText ?? this.queryText,
+      responseJson: responseJson ?? this.responseJson,
+      cachedAt: cachedAt ?? this.cachedAt,
+      ttlSeconds: ttlSeconds ?? this.ttlSeconds,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (queryHash.present) {
+      map['query_hash'] = Variable<String>(queryHash.value);
+    }
+    if (queryText.present) {
+      map['query_text'] = Variable<String>(queryText.value);
+    }
+    if (responseJson.present) {
+      map['response_json'] = Variable<String>(responseJson.value);
+    }
+    if (cachedAt.present) {
+      map['cached_at'] = Variable<DateTime>(cachedAt.value);
+    }
+    if (ttlSeconds.present) {
+      map['ttl_seconds'] = Variable<int>(ttlSeconds.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('FoodSearchCacheCompanion(')
+          ..write('queryHash: $queryHash, ')
+          ..write('queryText: $queryText, ')
+          ..write('responseJson: $responseJson, ')
+          ..write('cachedAt: $cachedAt, ')
+          ..write('ttlSeconds: $ttlSeconds, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -51323,6 +51642,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $TombstoneEntriesTable(this);
   late final $CachedRemoteFoodsTable cachedRemoteFoods =
       $CachedRemoteFoodsTable(this);
+  late final $FoodSearchCacheTable foodSearchCache =
+      $FoodSearchCacheTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -51418,7 +51739,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         workoutPlaylistPreferences,
         outboxEntries,
         tombstoneEntries,
-        cachedRemoteFoods
+        cachedRemoteFoods,
+        foodSearchCache
       ];
 }
 
@@ -74595,6 +74917,135 @@ class $$CachedRemoteFoodsTableOrderingComposer
           ColumnOrderings(column, joinBuilders: joinBuilders));
 }
 
+typedef $$FoodSearchCacheTableCreateCompanionBuilder = FoodSearchCacheCompanion
+    Function({
+  required String queryHash,
+  required String queryText,
+  required String responseJson,
+  Value<DateTime> cachedAt,
+  Value<int> ttlSeconds,
+  Value<int> rowid,
+});
+typedef $$FoodSearchCacheTableUpdateCompanionBuilder = FoodSearchCacheCompanion
+    Function({
+  Value<String> queryHash,
+  Value<String> queryText,
+  Value<String> responseJson,
+  Value<DateTime> cachedAt,
+  Value<int> ttlSeconds,
+  Value<int> rowid,
+});
+
+class $$FoodSearchCacheTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $FoodSearchCacheTable,
+    FoodSearchCacheData,
+    $$FoodSearchCacheTableFilterComposer,
+    $$FoodSearchCacheTableOrderingComposer,
+    $$FoodSearchCacheTableCreateCompanionBuilder,
+    $$FoodSearchCacheTableUpdateCompanionBuilder> {
+  $$FoodSearchCacheTableTableManager(
+      _$AppDatabase db, $FoodSearchCacheTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer:
+              $$FoodSearchCacheTableFilterComposer(ComposerState(db, table)),
+          orderingComposer:
+              $$FoodSearchCacheTableOrderingComposer(ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<String> queryHash = const Value.absent(),
+            Value<String> queryText = const Value.absent(),
+            Value<String> responseJson = const Value.absent(),
+            Value<DateTime> cachedAt = const Value.absent(),
+            Value<int> ttlSeconds = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              FoodSearchCacheCompanion(
+            queryHash: queryHash,
+            queryText: queryText,
+            responseJson: responseJson,
+            cachedAt: cachedAt,
+            ttlSeconds: ttlSeconds,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String queryHash,
+            required String queryText,
+            required String responseJson,
+            Value<DateTime> cachedAt = const Value.absent(),
+            Value<int> ttlSeconds = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              FoodSearchCacheCompanion.insert(
+            queryHash: queryHash,
+            queryText: queryText,
+            responseJson: responseJson,
+            cachedAt: cachedAt,
+            ttlSeconds: ttlSeconds,
+            rowid: rowid,
+          ),
+        ));
+}
+
+class $$FoodSearchCacheTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $FoodSearchCacheTable> {
+  $$FoodSearchCacheTableFilterComposer(super.$state);
+  ColumnFilters<String> get queryHash => $state.composableBuilder(
+      column: $state.table.queryHash,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get queryText => $state.composableBuilder(
+      column: $state.table.queryText,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get responseJson => $state.composableBuilder(
+      column: $state.table.responseJson,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get cachedAt => $state.composableBuilder(
+      column: $state.table.cachedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get ttlSeconds => $state.composableBuilder(
+      column: $state.table.ttlSeconds,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+}
+
+class $$FoodSearchCacheTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $FoodSearchCacheTable> {
+  $$FoodSearchCacheTableOrderingComposer(super.$state);
+  ColumnOrderings<String> get queryHash => $state.composableBuilder(
+      column: $state.table.queryHash,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get queryText => $state.composableBuilder(
+      column: $state.table.queryText,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get responseJson => $state.composableBuilder(
+      column: $state.table.responseJson,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get cachedAt => $state.composableBuilder(
+      column: $state.table.cachedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get ttlSeconds => $state.composableBuilder(
+      column: $state.table.ttlSeconds,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+}
+
 class $AppDatabaseManager {
   final _$AppDatabase _db;
   $AppDatabaseManager(this._db);
@@ -74838,4 +75289,6 @@ class $AppDatabaseManager {
       $$TombstoneEntriesTableTableManager(_db, _db.tombstoneEntries);
   $$CachedRemoteFoodsTableTableManager get cachedRemoteFoods =>
       $$CachedRemoteFoodsTableTableManager(_db, _db.cachedRemoteFoods);
+  $$FoodSearchCacheTableTableManager get foodSearchCache =>
+      $$FoodSearchCacheTableTableManager(_db, _db.foodSearchCache);
 }

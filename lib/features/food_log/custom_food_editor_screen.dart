@@ -44,7 +44,8 @@ class _CustomFoodEditorScreenState
     setState(() => _saving = true);
 
     try {
-      final servingSize = double.parse(_servingSizeController.text.trim());
+      final servingText = _servingSizeController.text.trim().replaceAll(',', '.');
+      final servingSize = double.tryParse(servingText) ?? 1.0;
       final catalog = await ref.read(
         nutritionFoodCatalogRepositoryProvider.future,
       );
@@ -85,8 +86,8 @@ class _CustomFoodEditorScreenState
   }
 
   double? _optionalDouble(TextEditingController controller) {
-    final value = controller.text.trim();
-    return value.isEmpty ? null : double.parse(value);
+    final value = controller.text.trim().replaceAll(',', '.');
+    return value.isEmpty ? null : double.tryParse(value);
   }
 
   @override
@@ -174,7 +175,9 @@ class _CustomFoodEditorScreenState
                           hintText: 'e.g. 1',
                         ),
                         validator: (value) {
-                          final parsed = double.tryParse(value ?? '');
+                          final cleaned =
+                              (value ?? '').trim().replaceAll(',', '.');
+                          final parsed = double.tryParse(cleaned);
                           return parsed == null ||
                                   !parsed.isFinite ||
                                   parsed <= 0
@@ -313,7 +316,8 @@ class _CustomFoodEditorScreenState
     decoration: InputDecoration(labelText: label),
     validator: (value) {
       if (value == null || value.trim().isEmpty) return null;
-      final parsed = double.tryParse(value);
+      final cleaned = value.trim().replaceAll(',', '.');
+      final parsed = double.tryParse(cleaned);
       return parsed == null || !parsed.isFinite || parsed < 0
           ? 'Enter a zero or positive number'
           : null;

@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:dio/dio.dart';
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -23,7 +24,13 @@ class _CountingFoodApiService extends FoodApiService {
   int remoteCalls = 0;
 
   @override
-  Future<List<FoodApiResult>> searchOnline(String query, {dynamic cancelToken}) async {
+  Future<List<FoodApiResult>> searchOnline(
+    String query, {
+    CancelToken? cancelToken,
+    String language = 'hinglish',
+    int page = 1,
+    int limit = 20,
+  }) async {
     remoteCalls++;
     return const [];
   }
@@ -336,7 +343,7 @@ void main() {
           final version = await migrated
               .customSelect('PRAGMA user_version')
               .getSingle();
-          expect(version.read<int>('user_version'), 22);
+          expect(version.read<int>('user_version'), migrated.schemaVersion);
           for (final table in [
             'outbox_entries',
             'tombstone_entries',

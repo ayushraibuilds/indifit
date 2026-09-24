@@ -10,6 +10,10 @@ IP_REQUEST_LOGS: Dict[str, List[float]] = {}
 RATE_LIMIT_WINDOW = 3600  # 1 hour
 MAX_REQUESTS_PER_WINDOW = 30
 
+DEVICE_PHOTO_LOGS: Dict[str, List[float]] = {}
+PHOTO_V2_WINDOW = 86400  # 24 hours
+PHOTO_V2_MAX_REQUESTS = 10  # 10 requests per 24 hours per device
+
 
 def get_rate_limit_window() -> int:
     main_mod = sys.modules.get("backend.main")
@@ -23,6 +27,20 @@ def get_max_requests_per_window() -> int:
     if main_mod is not None and hasattr(main_mod, "MAX_REQUESTS_PER_WINDOW"):
         return main_mod.MAX_REQUESTS_PER_WINDOW
     return MAX_REQUESTS_PER_WINDOW
+
+
+def get_photo_v2_window() -> int:
+    main_mod = sys.modules.get("backend.main")
+    if main_mod is not None and hasattr(main_mod, "PHOTO_V2_WINDOW"):
+        return main_mod.PHOTO_V2_WINDOW
+    return PHOTO_V2_WINDOW
+
+
+def get_photo_v2_max_requests() -> int:
+    main_mod = sys.modules.get("backend.main")
+    if main_mod is not None and hasattr(main_mod, "PHOTO_V2_MAX_REQUESTS"):
+        return main_mod.PHOTO_V2_MAX_REQUESTS
+    return PHOTO_V2_MAX_REQUESTS
 
 
 async def verify_api_key(x_indifit_key: Optional[str] = Header(None)):
@@ -46,6 +64,26 @@ async def verify_api_key(x_indifit_key: Optional[str] = Header(None)):
 async def enforce_rate_limit(request: Request):
     client_ip = request.client.host if request.client else "unknown"
     now = time.time()
+
+    # Per-device rate limiting for Photo Meal Estimator V2 (CGNAT protection)
+    if request.url.path.endswith("/meal-estimate-photo-v2"):
+        device_uuid = request.headers.get("x-device-uuid") or request.headers.get("X-Device-UUID")
+        key = f"device:{device_uuid.strip()}" if device_uuid and device_uuid.strip() else f"ip:{client_ip}"
+        window = get_photo_v2_window()
+        max_requests = get_photo_v2_max_requests()
+        timestamps = DEVICE_PHOTO_LOGS.get(key, [])
+        timestamps = [t for t in timestamps if now - t < window]
+
+        if len(timestamps) >= max_requests:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=f"Rate limit exceeded. Maximum {max_requests} photo meal scans per 24 hours allowed per device.",
+            )
+
+        timestamps.append(now)
+        DEVICE_PHOTO_LOGS[key] = timestamps
+        return
+
     timestamps = IP_REQUEST_LOGS.get(client_ip, [])
     window = get_rate_limit_window()
     max_requests = get_max_requests_per_window()

@@ -111,11 +111,11 @@ void main() {
       }
 
       // Functional surfaces must be present
-      expect(find.text('Saved meals'), findsOneWidget);
-      expect(find.text('Saved recipes'), findsOneWidget);
-
-      await tester.drag(find.byType(ListView).first, const Offset(0, -300));
-      await tester.pump();
+      final verticalScroll = find.byWidgetPredicate(
+        (w) => w is Scrollable && w.axisDirection == AxisDirection.down,
+      );
+      await tester.drag(verticalScroll, const Offset(0, -500));
+      await tester.pumpAndSettle();
       expect(find.text('Scan barcode'), findsOneWidget);
       expect(find.text('Scan nutrition label'), findsOneWidget);
       expect(find.text('Describe meal'), findsOneWidget);

@@ -104,6 +104,19 @@ class PrivacyNetworkInterceptor extends Interceptor {
       );
       return;
     }
+    final path = options.path.toLowerCase();
+    final isNutritionRoute = path.contains('/api/food') || path.contains('/api/ai');
+    if (isNutritionRoute && !policy.isNutritionOnlineAllowed) {
+      handler.reject(
+        DioException(
+          requestOptions: options,
+          error:
+              'Nutrition network call blocked by online nutrition privacy policy.',
+          type: DioExceptionType.cancel,
+        ),
+      );
+      return;
+    }
     handler.next(options);
   }
 }

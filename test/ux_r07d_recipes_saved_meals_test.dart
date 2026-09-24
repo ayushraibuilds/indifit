@@ -817,7 +817,7 @@ void main() {
         expect(find.text('Review portions'), findsOneWidget);
         expect(
           find.text(
-            'Nutrition details are partial; unknown values stay unknown.',
+            'Some nutrition details are unavailable.',
           ),
           findsOneWidget,
         );

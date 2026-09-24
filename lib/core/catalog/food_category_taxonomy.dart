@@ -17,6 +17,9 @@ class FoodCategoryTaxonomy {
   static const String general = 'general';
 
   /// Resolves canonical category ID from dish name and optional raw category text.
+  /// Deprecated in favor of server-provided category_id from the backend search proxy.
+  /// Retained strictly as an offline fallback when disconnected.
+  @Deprecated('Use server-provided category_id; retain strictly as offline fallback')
   static String resolveCategoryId({
     required String name,
     String? rawCategory,

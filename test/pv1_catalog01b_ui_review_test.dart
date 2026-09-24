@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/catalog/food_catalog_models.dart';
@@ -13,7 +14,13 @@ class _FakeFoodApiService extends FoodApiService {
   final FoodApiResult? barcodeProduct;
 
   @override
-  Future<List<FoodApiResult>> searchOnline(String query, {dynamic cancelToken}) async {
+  Future<List<FoodApiResult>> searchOnline(
+    String query, {
+    CancelToken? cancelToken,
+    String language = 'hinglish',
+    int page = 1,
+    int limit = 20,
+  }) async {
     return searchResults;
   }
 

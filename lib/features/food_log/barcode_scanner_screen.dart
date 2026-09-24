@@ -27,6 +27,7 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
   late Animation<double> _scanAnimation;
   bool _loading = false;
   bool _cameraDenied = false;
+  bool _continuousMode = false;
 
   /// Barcode plausibility (length only). Checksum mismatches still allow lookup:
   /// the provider is the authority on existence, and hard-blocking on checksum
@@ -98,6 +99,20 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
             .timeout(const Duration(seconds: 4));
         if (userMatch != null && mounted) {
           setState(() => _loading = false);
+          if (_continuousMode) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Found: ${userMatch.displayName}'),
+                action: SnackBarAction(
+                  label: 'Done',
+                  onPressed: () => Navigator.pop(context, userMatch),
+                ),
+                duration: const Duration(seconds: 4),
+              ),
+            );
+            await _scannerController.start();
+            return;
+          }
           Navigator.pop(context, userMatch);
           return;
         }
@@ -141,11 +156,37 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
       setState(() => _loading = false);
 
       if (candidate != null) {
-        // Return strongly typed RemoteFoodCandidate
-        Navigator.pop(context, candidate);
+        if (_continuousMode) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Found: ${candidate.name} (${candidate.brand ?? ''})'),
+              action: SnackBarAction(
+                label: 'Done',
+                onPressed: () => Navigator.pop(context, candidate),
+              ),
+              duration: const Duration(seconds: 4),
+            ),
+          );
+          await _scannerController.start();
+        } else {
+          Navigator.pop(context, candidate);
+        }
       } else if (legacyResult != null) {
-        // Return legacy FoodApiResult
-        Navigator.pop(context, legacyResult);
+        if (_continuousMode) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Found: ${legacyResult.name}'),
+              action: SnackBarAction(
+                label: 'Done',
+                onPressed: () => Navigator.pop(context, legacyResult),
+              ),
+              duration: const Duration(seconds: 4),
+            ),
+          );
+          await _scannerController.start();
+        } else {
+          Navigator.pop(context, legacyResult);
+        }
       } else if (lookupError != null) {
         await showDialog(
           context: context,
@@ -235,6 +276,71 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
         title: const Text('Scan Food Barcode'),
         backgroundColor: context.b05Colors.page,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: Icon(
+              _continuousMode
+                  ? Icons.all_inclusive_rounded
+                  : Icons.filter_1_rounded,
+              color: _continuousMode ? context.b05Colors.action : null,
+            ),
+            tooltip: _continuousMode
+                ? 'Continuous Mode: ON'
+                : 'Continuous Mode: OFF',
+            onPressed: () {
+              setState(() => _continuousMode = !_continuousMode);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    _continuousMode
+                        ? 'Continuous scanning enabled. Scanner remains active after items.'
+                        : 'Single-scan mode enabled.',
+                  ),
+                  duration: const Duration(seconds: 2),
+                ),
+              );
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.keyboard_alt_outlined),
+            tooltip: 'Enter barcode number manually',
+            onPressed: () {
+              _manualController.clear();
+              showDialog(
+                context: context,
+                builder: (dialogCtx) => AlertDialog(
+                  backgroundColor: context.b05Colors.surface,
+                  title: const Text('Enter Barcode'),
+                  content: TextField(
+                    controller: _manualController,
+                    keyboardType: TextInputType.number,
+                    autofocus: true,
+                    decoration: const InputDecoration(
+                      hintText: 'e.g. 8901262010053',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(dialogCtx),
+                      child: const Text('Cancel'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        final val = _manualController.text.trim();
+                        Navigator.pop(dialogCtx);
+                        if (val.isNotEmpty) {
+                          _onBarcodeScanned(val);
+                        }
+                      },
+                      child: const Text('Lookup'),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: Stack(
         children: [

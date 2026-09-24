@@ -70,6 +70,11 @@ class NutritionLabelOcrResult {
   double? get carbsG => nutrients['carbs']?.value;
   double? get fatG => nutrients['fat']?.value;
   double? get fiberG => nutrients['fiber']?.value;
+  double? get sodiumMg => nutrients['sodium']?.value;
+  double? get sugarG => nutrients['sugar']?.value;
+  double? get saturatedFatG => nutrients['saturated_fat']?.value;
+  double? get transFatG => nutrients['trans_fat']?.value;
+  double? get cholesterolMg => nutrients['cholesterol']?.value;
 
   factory NutritionLabelOcrResult.fromJson(Map<String, dynamic> json) {
     final rawNutrients = json['nutrients'] as Map<String, dynamic>? ?? {};

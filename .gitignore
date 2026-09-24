@@ -60,3 +60,4 @@ test_builds/
 # RepDB WebPs.
 assets/generated/repdb/**/*.webp
 graphify-out/cache/
+backend/data/missed_searches.jsonl

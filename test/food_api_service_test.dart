@@ -1,87 +1,200 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:indifit/core/privacy/privacy_policy.dart';
 import 'package:indifit/data/repositories/food_api_service.dart';
 
 void main() {
-  test(
-    'provider search is identified, field-limited, and parses results',
-    () async {
-      final adapter = _SuccessAdapter();
-      final dio = Dio(
-        BaseOptions(
-          headers: const {'User-Agent': kOpenFoodFactsUserAgent},
-          connectTimeout: kOpenFoodFactsConnectTimeout,
-          receiveTimeout: kOpenFoodFactsReceiveTimeout,
-        ),
-      )..httpClientAdapter = adapter;
+  group('FoodApiService Backend Proxy & Auth', () {
+    test(
+      'searchOnline posts to /api/food/search with payload and parses backend response',
+      () async {
+        final adapter = _BackendSuccessAdapter();
+        final dio = Dio(
+          BaseOptions(
+            headers: {'x-indifit-key': 'test-indifit-key'},
+          ),
+        )..httpClientAdapter = adapter;
 
-      final results = await FoodApiService(dio).searchOnline('protein shake');
+        final service = FoodApiService(
+          dio,
+          const PrivacyPolicy(
+            isOfflineOnly: false,
+            isTelemetryEnabled: false,
+            allowOnlineNutrition: true,
+          ),
+          null,
+          'https://api.indifit.app',
+        );
 
-      expect(results, hasLength(1));
-      expect(results.single.name, 'Fixture shake');
-      expect(results.single.protein, 20);
-      expect(results.single.providerId, '123');
-      expect(results.single.barcode, '123');
-      expect(results.single.brand, 'Fixture Brand');
-      expect(results.single.packageQuantity, '330 g');
-      expect(adapter.options!.uri.host, 'search.openfoodfacts.org');
-      expect(adapter.options!.uri.path, '/search');
-      expect(adapter.options!.method, 'POST');
-      expect(adapter.options!.headers['User-Agent'], kOpenFoodFactsUserAgent);
-      expect(adapter.options!.headers, isNot(contains('x-indifit-key')));
-      final body = adapter.options!.data as Map<String, dynamic>;
-      expect(body['q'], 'protein shake');
-      expect(body['fields'], [
-        'code',
-        'brands',
-        'product_name',
-        'quantity',
-        'nutriments',
-        'serving_quantity',
-        'serving_quantity_unit',
-      ]);
-      expect(adapter.options!.queryParameters, isEmpty);
-    },
-  );
+        final results = await service.searchOnline('paneer');
 
-  test('provider HTTP failure remains a typed bad-response failure', () async {
-    final dio = Dio()..httpClientAdapter = _BadResponseAdapter();
+        expect(results, hasLength(1));
+        final item = results.single;
+        expect(item.name, 'Paneer');
+        expect(item.nameHindi, 'पनीर');
+        expect(item.categoryId, 'dairy_liquid');
+        expect(item.calories, 265.0);
+        expect(item.protein, 18.3);
+        expect(item.carbs, 1.2);
+        expect(item.fat, 20.8);
+        expect(item.fiber, 0.0);
+        expect(item.sodium, 18.0);
+        expect(item.servingSize, 100.0);
+        expect(item.servingUnit, 'g');
+        expect(item.provenance, 'curated');
+        expect(item.confidence, 1.0);
+        expect(item.servingOptions, isNotEmpty);
+        expect(item.servingOptions!.first['unit'], '100g');
 
-    await expectLater(
-      FoodApiService(dio).searchOnline('protein shake'),
-      throwsA(
-        isA<DioException>()
-            .having((error) => error.type, 'type', DioExceptionType.badResponse)
-            .having((error) => error.response?.statusCode, 'status', 503),
-      ),
+        expect(adapter.options!.uri.host, 'api.indifit.app');
+        expect(adapter.options!.uri.path, '/api/food/search');
+        expect(adapter.options!.method, 'POST');
+        expect(adapter.options!.headers['x-indifit-key'], 'test-indifit-key');
+
+        final body = adapter.options!.data as Map<String, dynamic>;
+        expect(body['query'], 'paneer');
+        expect(body['language'], 'hinglish');
+        expect(body['page'], 1);
+        expect(body['limit'], 20);
+      },
     );
-  });
 
-  test('provider timeout remains a typed timeout failure', () async {
-    final dio = Dio()..httpClientAdapter = _TimeoutAdapter();
+    test('fail-closed when isNutritionOnlineAllowed is false (offline-only)', () async {
+      final adapter = _BackendSuccessAdapter();
+      final dio = Dio()..httpClientAdapter = adapter;
 
-    await expectLater(
-      FoodApiService(dio).searchOnline('protein shake'),
-      throwsA(
-        isA<DioException>().having(
-          (error) => error.type,
-          'type',
-          DioExceptionType.receiveTimeout,
+      final service = FoodApiService(
+        dio,
+        const PrivacyPolicy(
+          isOfflineOnly: true,
+          isTelemetryEnabled: false,
+          allowOnlineNutrition: true,
         ),
-      ),
-    );
-  });
+        null,
+        'https://api.indifit.app',
+      );
 
-  test(
-    'provider request is cancelled through the real Dio cancel token',
-    () async {
+      await expectLater(
+        () => service.searchOnline('paneer'),
+        throwsA(isA<StateError>()),
+      );
+      await expectLater(
+        () => service.fetchByBarcode('8901262010053'),
+        throwsA(isA<StateError>()),
+      );
+      expect(adapter.called, isFalse);
+    });
+
+    test('fail-closed when allowOnlineNutrition preference is false', () async {
+      final adapter = _BackendSuccessAdapter();
+      final dio = Dio()..httpClientAdapter = adapter;
+
+      final service = FoodApiService(
+        dio,
+        const PrivacyPolicy(
+          isOfflineOnly: false,
+          isTelemetryEnabled: false,
+          allowOnlineNutrition: false,
+        ),
+        null,
+        'https://api.indifit.app',
+      );
+
+      await expectLater(
+        () => service.searchOnline('paneer'),
+        throwsA(isA<StateError>()),
+      );
+      await expectLater(
+        () => service.fetchByBarcode('8901262010053'),
+        throwsA(isA<StateError>()),
+      );
+      expect(adapter.called, isFalse);
+    });
+
+    test('fetchByBarcode calls backend GET /api/food/barcode/{code} and parses candidate', () async {
+      final adapter = _BarcodeSuccessAdapter();
+      final dio = Dio()..httpClientAdapter = adapter;
+
+      final service = FoodApiService(
+        dio,
+        const PrivacyPolicy(
+          isOfflineOnly: false,
+          isTelemetryEnabled: false,
+          allowOnlineNutrition: true,
+        ),
+        null,
+        'https://api.indifit.app',
+      );
+
+      final result = await service.fetchByBarcode('8901262010053');
+      expect(result, isNotNull);
+      expect(result!.name, 'Amul Gold Milk');
+      expect(result.brand, 'Amul');
+      expect(result.barcode, '8901262010053');
+      expect(result.protein, 3.5);
+      expect(adapter.options!.uri.path, '/api/food/barcode/8901262010053');
+      expect(adapter.options!.method, 'GET');
+    });
+
+    test('fetchByBarcode returns null on 404 not found', () async {
+      final adapter = _Barcode404Adapter();
+      final dio = Dio()..httpClientAdapter = adapter;
+
+      final service = FoodApiService(
+        dio,
+        const PrivacyPolicy(
+          isOfflineOnly: false,
+          isTelemetryEnabled: false,
+          allowOnlineNutrition: true,
+        ),
+        null,
+        'https://api.indifit.app',
+      );
+
+      final result = await service.fetchByBarcode('0000000000000');
+      expect(result, isNull);
+    });
+
+    test('provider HTTP failure remains a typed bad-response failure', () async {
+      final dio = Dio()..httpClientAdapter = _BadResponseAdapter();
+
+      await expectLater(
+        FoodApiService(dio, null, null, 'https://api.indifit.app').searchOnline('protein shake'),
+        throwsA(
+          isA<DioException>()
+              .having((error) => error.type, 'type', DioExceptionType.badResponse)
+              .having((error) => error.response?.statusCode, 'status', 503),
+        ),
+      );
+    });
+
+    test('provider timeout remains a typed timeout failure', () async {
+      final dio = Dio()..httpClientAdapter = _TimeoutAdapter();
+
+      await expectLater(
+        FoodApiService(dio, null, null, 'https://api.indifit.app').searchOnline('protein shake'),
+        throwsA(
+          isA<DioException>().having(
+            (error) => error.type,
+            'type',
+            DioExceptionType.receiveTimeout,
+          ),
+        ),
+      );
+    });
+
+    test('provider request is cancelled through the real Dio cancel token', () async {
       final adapter = _CancellableAdapter();
       final dio = Dio()..httpClientAdapter = adapter;
       final token = CancelToken();
       final request = FoodApiService(
         dio,
+        null,
+        null,
+        'https://api.indifit.app',
       ).searchOnline('first query', cancelToken: token);
       await adapter.started.future;
 
@@ -93,11 +206,67 @@ void main() {
           isA<DioException>().having(CancelToken.isCancel, 'cancelled', isTrue),
         ),
       );
-    },
-  );
+    });
+  });
 }
 
-class _SuccessAdapter implements HttpClientAdapter {
+class _BackendSuccessAdapter implements HttpClientAdapter {
+  RequestOptions? options;
+  bool called = false;
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<List<int>>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
+    this.options = options;
+    called = true;
+    final json = jsonEncode({
+      'results': [
+        {
+          'id': 'curated_paneer',
+          'name': 'Paneer',
+          'name_hindi': 'पनीर',
+          'brand': null,
+          'category_id': 'dairy_liquid',
+          'calories': 265.0,
+          'protein_g': 18.3,
+          'carbs_g': 1.2,
+          'fat_g': 20.8,
+          'fiber_g': 0.0,
+          'sodium_mg': 18.0,
+          'serving_size': 100.0,
+          'serving_unit': 'g',
+          'serving_options': [
+            {'unit': '100g', 'gram_weight': 100.0, 'is_default': true}
+          ],
+          'score': 100.0,
+          'source': 'curated',
+          'provenance': 'curated',
+          'confidence': 'high',
+        }
+      ],
+      'count': 1,
+      'total_hits': 1,
+      'has_more': false,
+      'query': 'paneer',
+    });
+
+    return ResponseBody.fromString(
+      json,
+      200,
+      headers: {
+        Headers.contentTypeHeader: ['application/json'],
+      },
+    );
+  }
+
+  @override
+  void close({bool force = false}) {}
+}
+
+class _BarcodeSuccessAdapter implements HttpClientAdapter {
   RequestOptions? options;
 
   @override
@@ -107,9 +276,54 @@ class _SuccessAdapter implements HttpClientAdapter {
     Future<void>? cancelFuture,
   ) async {
     this.options = options;
+    final json = jsonEncode({
+      'barcode': '8901262010053',
+      'candidate': {
+        'id': '8901262010053',
+        'name': 'Amul Gold Milk',
+        'brand': 'Amul',
+        'category_id': 'dairy_liquid',
+        'calories': 88.0,
+        'protein_g': 3.5,
+        'carbs_g': 5.0,
+        'fat_g': 6.0,
+        'fiber_g': null,
+        'sodium_mg': 50.0,
+        'serving_size': 100.0,
+        'serving_unit': 'ml',
+        'serving_options': [
+          {'unit': 'glass (200ml)', 'gram_weight': 206.0, 'is_default': true}
+        ],
+        'score': 100.0,
+        'source': 'curated',
+        'provenance': 'verified_fmcg',
+        'confidence': 'high',
+      },
+    });
+
     return ResponseBody.fromString(
-      '''{"hits":[{"code":"123","brands":"Fixture Brand","product_name":"Fixture shake","quantity":"330 g","serving_quantity":330,"serving_quantity_unit":"g","nutriments":{"energy-kcal_100g":120,"proteins_100g":20,"carbohydrates_100g":6,"fat_100g":2}}]}''',
+      json,
       200,
+      headers: {
+        Headers.contentTypeHeader: ['application/json'],
+      },
+    );
+  }
+
+  @override
+  void close({bool force = false}) {}
+}
+
+class _Barcode404Adapter implements HttpClientAdapter {
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<List<int>>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
+    return ResponseBody.fromString(
+      '{"detail":"Barcode not found."}',
+      404,
       headers: {
         Headers.contentTypeHeader: ['application/json'],
       },

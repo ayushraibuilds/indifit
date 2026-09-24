@@ -284,6 +284,24 @@ def _mock_nutrition_label_ocr(reason: str = ""):
                 "confidence": "medium",
                 "notes": "Sodium",
             },
+            "sugar": {
+                "value": 0.5,
+                "unit": "g",
+                "confidence": "high",
+                "notes": "Added Sugar",
+            },
+            "saturated_fat": {
+                "value": 1.2,
+                "unit": "g",
+                "confidence": "high",
+                "notes": "Saturated Fat",
+            },
+            "trans_fat": {
+                "value": 0.0,
+                "unit": "g",
+                "confidence": "high",
+                "notes": "Trans Fat",
+            },
         },
         "raw_text": "Nutrition Facts Per 100g: Energy 389 kcal, Protein 13.5g, Carbs 66.3g, Fat 6.9g",
         "is_fallback": True,
@@ -365,6 +383,48 @@ def _mock_meal_decomposition(text: str, reason: str = ""):
         "query": text,
         "items": items,
         "total_calories": total_cals,
+        "is_fallback": True,
+        "fallback_reason": reason,
+    }
+
+
+def _mock_photo_decomposition_v2(reason: str = ""):
+    items = [
+        {
+            "raw_segment": "2 rotis",
+            "food_name": "Roti / Chapati",
+            "quantity_amount": 2.0,
+            "quantity_unit": "piece",
+            "estimated_calories": 160,
+            "estimated_protein": 5.2,
+            "estimated_carbs": 32.0,
+            "estimated_fat": 1.0,
+            "confidence": "high",
+            "category_id": "staple_bread",
+            "fiber_g": 4.0,
+            "sodium_mg": 10.0,
+        },
+        {
+            "raw_segment": "1 katori dal tadka",
+            "food_name": "Yellow Dal Tadka",
+            "quantity_amount": 1.0,
+            "quantity_unit": "katori (standard)",
+            "estimated_calories": 150,
+            "estimated_protein": 7.5,
+            "estimated_carbs": 22.0,
+            "estimated_fat": 3.8,
+            "confidence": "medium",
+            "category_id": "dal_lentil",
+            "fiber_g": 5.0,
+            "sodium_mg": 320.0,
+        },
+    ]
+    return {
+        "query": "Photo Decomposition V2",
+        "items": items,
+        "total_calories": 310,
+        "confidence": "medium",
+        "disclaimer": "AI estimate carries ±30% variance. Review quantities before saving.",
         "is_fallback": True,
         "fallback_reason": reason,
     }

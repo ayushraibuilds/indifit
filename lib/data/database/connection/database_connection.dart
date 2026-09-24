@@ -1,6 +1,7 @@
 part of '../app_database.dart';
 
 LazyDatabase _openConnection() {
+  final token = AppDatabase.rootIsolateToken ?? RootIsolateToken.instance;
   return LazyDatabase(() async {
     final dbFolder = await getApplicationDocumentsDirectory();
     await PlatformStorageProtection.protectSensitivePath(dbFolder.path);
@@ -11,6 +12,11 @@ LazyDatabase _openConnection() {
         await PlatformStorageProtection.protectSensitivePath(existingFile.path);
       }
     }
-    return NativeDatabase.createInBackground(file);
+    return NativeDatabase.createInBackground(
+      file,
+      isolateSetup: token != null
+          ? () => BackgroundIsolateBinaryMessenger.ensureInitialized(token)
+          : null,
+    );
   });
 }

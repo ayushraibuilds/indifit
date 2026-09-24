@@ -2,8 +2,10 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:crypto/crypto.dart';
+import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/backup/backup_schema.dart';
+import 'package:indifit/core/backup/backup_v8.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -315,6 +317,30 @@ void main() {
           ),
           isEmpty,
         );
+      },
+    );
+
+    test(
+      'food_search_cache table is strictly excluded from BackupData and NutritionBackupGraph',
+      () async {
+        final target = registerTestDatabaseScope().create();
+        await target.into(target.foodSearchCache).insert(
+          FoodSearchCacheCompanion.insert(
+            queryHash: 'test_hash_paneer_hinglish',
+            queryText: 'paneer',
+            responseJson: '{"results":[{"name":"Paneer"}]}',
+            ttlSeconds: const Value(604800),
+          ),
+        );
+
+        final v7Backup = await BackupData.createFromDatabase(target);
+        final v7Json = v7Backup.toJson();
+        expect(v7Json.containsKey('food_search_cache'), isFalse);
+        expect(jsonEncode(v7Json).contains('test_hash_paneer_hinglish'), isFalse);
+
+        final v8Backup = await BackupV8Data.createFromDatabase(target);
+        expect(v8Backup.nutrition.tables.containsKey('food_search_cache'), isFalse);
+        expect(jsonEncode(v8Backup.toJson()).contains('test_hash_paneer_hinglish'), isFalse);
       },
     );
   });

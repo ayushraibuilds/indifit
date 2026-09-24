@@ -38,6 +38,7 @@ import 'saved_meals_screen.dart';
 import 'saved_recipe_log_screen.dart';
 import 'widgets/food_portion_bottom_sheet.dart';
 import 'widgets/food_search_widgets.dart';
+import 'widgets/quick_add_macros_sheet.dart';
 import 'widgets/remote_food_review_sheet.dart';
 
 export 'food_diary_screen.dart';
@@ -616,20 +617,49 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         return;
       }
 
-      final resolvedCategory = FoodCategoryTaxonomy.resolveCategoryId(
-        name: result.name,
-      );
+      final resolvedCategory = result.categoryId ??
+          // ignore: deprecated_member_use_from_same_package
+          FoodCategoryTaxonomy.resolveCategoryId(
+            name: result.name,
+          );
       final isStuffed = isStuffedParathaName(result.name);
-      final servingOptions = FoodCategoryTaxonomy.servingOptionsForCategory(
-        categoryId: resolvedCategory,
-        servingSize: result.servingSize > 0 ? result.servingSize : 100.0,
-        servingUnit: result.servingUnit.isNotEmpty ? result.servingUnit : 'g',
-        isStuffedParatha: isStuffed,
-      );
+      final List<ServingOption> servingOptions;
+      if (result.servingOptions != null && result.servingOptions!.isNotEmpty) {
+        servingOptions = result.servingOptions!.map((opt) {
+          return ServingOption(
+            unitName: opt['unit']?.toString() ??
+                opt['unitName']?.toString() ??
+                'serving',
+            gramWeight: (opt['gram_weight'] ?? opt['gramWeight'] as num?)
+                    ?.toDouble() ??
+                100.0,
+            isDefault:
+                (opt['is_default'] ?? opt['isDefault'] as bool?) ?? false,
+          );
+        }).toList();
+      } else {
+        servingOptions = FoodCategoryTaxonomy.servingOptionsForCategory(
+          categoryId: resolvedCategory,
+          servingSize: result.servingSize > 0 ? result.servingSize : 100.0,
+          servingUnit: result.servingUnit.isNotEmpty ? result.servingUnit : 'g',
+          isStuffedParatha: isStuffed,
+        );
+      }
+
+      final isIndifitCurated = result.provenance == 'curated' ||
+          result.provenance == 'verified_fmcg';
+      final provider = isIndifitCurated
+          ? FoodCatalogProvider.indifitCloud
+          : FoodCatalogProvider.openFoodFacts;
+      final candidateId = result.barcode != null && result.barcode!.isNotEmpty
+          ? 'off_${result.barcode}'
+          : (result.providerId != null
+              ? 'indifit_${result.providerId}'
+              : 'custom_${result.name}');
 
       final candidate = RemoteFoodCandidate(
-        id: 'off_${result.barcode ?? result.providerId ?? result.name}',
-        provider: FoodCatalogProvider.openFoodFacts,
+        id: candidateId,
+        provider: provider,
         providerId: result.barcode ?? result.providerId,
         name: _consumerFoodName(result.name),
         brand: _consumerMetadata(result.brand),
@@ -645,10 +675,14 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         saturatedFatPer100g: result.saturatedFat,
         servingOptions: servingOptions,
         provenance: FoodProvenance(
-          provider: FoodCatalogProvider.openFoodFacts,
-          attributionText: 'Source: Open Food Facts (ODbL)',
+          provider: provider,
+          attributionText: isIndifitCurated
+              ? 'Source: IndiFit Curated Catalog (ODbL)'
+              : 'Source: Open Food Facts (ODbL)',
           license: 'ODbL',
-          sourceUrl: result.barcode != null ? 'https://world.openfoodfacts.org/product/${result.barcode}' : null,
+          sourceUrl: result.barcode != null
+              ? 'https://world.openfoodfacts.org/product/${result.barcode}'
+              : null,
           fetchedAtUtc: DateTime.now().toUtc(),
         ),
       );
@@ -1332,9 +1366,19 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
           MaterialPageRoute(builder: (_) => const CustomFoodEditorScreen()),
         );
         if (result == true) await _performSearch(_searchController.text);
+      } else if (value == 'quick_add') {
+        final added = await QuickAddMacrosSheet.show(
+          context,
+          initialMealType: _activeMealType ?? 'lunch',
+          targetDate: widget.selectedDate ?? DateTime.now(),
+        );
+        if (added != null && mounted) {
+          _invalidateNutritionReads();
+        }
       }
     },
     itemBuilder: (_) => const [
+      PopupMenuItem(value: 'quick_add', child: Text('Quick-add calories & macros')),
       PopupMenuItem(value: 'custom', child: Text('Create a custom food')),
     ],
   );
@@ -1372,6 +1416,16 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                   : '&date=${widget.selectedDate!.toIso8601String().split('T').first}')
               : '';
           context.push('/food/describe$mealParam$dateParam');
+        },
+        onQuickAddMacros: () async {
+          final added = await QuickAddMacrosSheet.show(
+            context,
+            initialMealType: _activeMealType ?? 'lunch',
+            targetDate: logDate,
+          );
+          if (added != null && mounted) {
+            _invalidateNutritionReads();
+          }
         },
         entriesPanel: FoodLogEntriesPanel(
           date: logDate,

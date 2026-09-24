@@ -140,9 +140,9 @@ void main() {
       );
       await _pumpFood(tester);
 
-      expect(find.text('Roti'), findsOneWidget);
+      expect(find.widgetWithText(ListTile, 'Roti'), findsOneWidget);
       expect(find.text('Recent'), findsOneWidget);
-      await tester.tap(find.text('Roti'));
+      await tester.tap(find.widgetWithText(ListTile, 'Roti'));
       await tester.runAsync(
         () => Future<void>.delayed(const Duration(milliseconds: 100)),
       );
@@ -912,7 +912,7 @@ void main() {
     );
     await _pumpFood(tester);
     expect(find.text('Saved recipes'), findsOneWidget);
-    expect(find.text('Roti'), findsOneWidget);
+    expect(find.widgetWithText(ListTile, 'Roti'), findsOneWidget);
     await expectLater(
       find.byType(FoodSearchScreen),
       matchesGoldenFile('goldens/ux_r03_food_recent_saved_dark.png'),
@@ -1030,7 +1030,7 @@ void main() {
       tester.element(find.byType(FoodSearchScreen)),
     );
     await _pumpFood(tester);
-    await tester.tap(find.text('Roti'));
+    await tester.tap(find.widgetWithText(ListTile, 'Roti'));
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(milliseconds: 100)),
     );
@@ -1476,6 +1476,9 @@ class _TestFoodApiService extends FoodApiService {
   Future<List<FoodApiResult>> searchOnline(
     String query, {
     CancelToken? cancelToken,
+    String language = 'hinglish',
+    int page = 1,
+    int limit = 20,
   }) async => const [];
 }
 
@@ -1484,6 +1487,9 @@ class _MergedFoodApiService extends FoodApiService {
   Future<List<FoodApiResult>> searchOnline(
     String query, {
     CancelToken? cancelToken,
+    String language = 'hinglish',
+    int page = 1,
+    int limit = 20,
   }) async => [
     FoodApiResult(
       name: 'Paneer protein bar',
@@ -1505,6 +1511,9 @@ class _MatchingCustomFoodApiService extends FoodApiService {
   Future<List<FoodApiResult>> searchOnline(
     String query, {
     CancelToken? cancelToken,
+    String language = 'hinglish',
+    int page = 1,
+    int limit = 20,
   }) async => [
     FoodApiResult(
       name: 'Family Paneer',
@@ -1527,6 +1536,9 @@ class _SuccessfulFoodApiService extends FoodApiService {
   Future<List<FoodApiResult>> searchOnline(
     String query, {
     CancelToken? cancelToken,
+    String language = 'hinglish',
+    int page = 1,
+    int limit = 20,
   }) async => [
     FoodApiResult(
       name: 'Provider protein shake',
@@ -1546,6 +1558,9 @@ class _HttpFailureFoodApiService extends FoodApiService {
   Future<List<FoodApiResult>> searchOnline(
     String query, {
     CancelToken? cancelToken,
+    String language = 'hinglish',
+    int page = 1,
+    int limit = 20,
   }) {
     final request = RequestOptions(path: kOpenFoodFactsSearchUrl);
     throw DioException(
@@ -1563,6 +1578,9 @@ class _DelayedFoodApiService extends FoodApiService {
   Future<List<FoodApiResult>> searchOnline(
     String query, {
     CancelToken? cancelToken,
+    String language = 'hinglish',
+    int page = 1,
+    int limit = 20,
   }) => completer.future;
 }
 
@@ -1574,6 +1592,9 @@ class _MultiQueryFoodApiService extends FoodApiService {
   Future<List<FoodApiResult>> searchOnline(
     String query, {
     CancelToken? cancelToken,
+    String language = 'hinglish',
+    int page = 1,
+    int limit = 20,
   }) {
     tokens[query] = cancelToken!;
     return (completers[query] ??= Completer<List<FoodApiResult>>()).future;

@@ -24,6 +24,7 @@ from backend.services.ai_fallbacks import (
     _mock_meal_estimate,
     _mock_meal_plan,
     _mock_nutrition_label_ocr,
+    _mock_photo_decomposition_v2,
     _mock_routine,
     _mock_weekly_report,
 )
@@ -170,6 +171,65 @@ async def estimate_meal_photo(image: UploadFile = File(...)):
         raise
     except Exception as e:
         return _mock_meal_estimate("Photo Estimate Fallback", reason=str(e))
+
+
+@ai_router.post("/meal-estimate-photo-v2", response_model=MealDecompositionResponse)
+async def estimate_meal_photo_v2(image: UploadFile = File(...)):
+    prompt = """
+    Act as an expert Indian clinical dietitian and computer vision food analyst.
+    Inspect this meal photo and decompose it into discrete individual food items with Indian portion awareness (e.g. rotis, katoris of dal/curry, bowls of rice, dry sabzis).
+
+    For each individual food item identified:
+    1. "raw_segment": description of the item in the image (e.g. "2 rotis", "1 katori dal tadka")
+    2. "food_name": canonical search name (e.g. "Roti / Chapati", "Yellow Dal Tadka", "Steamed Basmati Rice")
+    3. "quantity_amount": numeric portion (e.g. 2.0, 1.0)
+    4. "quantity_unit": Indian standard unit ("piece", "katori (standard)", "small_katori", "bowl", "cup", "plate", "g")
+    5. "estimated_calories": integer kcal
+    6. "estimated_protein": float grams
+    7. "estimated_carbs": float grams
+    8. "estimated_fat": float grams
+    9. "fiber_g": float grams or null
+    10. "sodium_mg": float mg or null
+    11. "confidence": "high", "medium", or "low" based on visual clarity and portion visibility
+    12. "category_id": optional taxonomy category ("staple_bread", "dal_lentil", "curry_veg", "rice_grain", "dairy_solid", etc.)
+
+    Return a JSON object with:
+    - "query": "Photo Decomposition V2"
+    - "items": list of food items matching the schema
+    - "total_calories": sum of estimated calories across all items
+    - "confidence": overall confidence ("high", "medium", or "low")
+    - "disclaimer": "AI estimate carries ±30% variance. Review quantities before saving."
+
+    Return STRICTLY valid JSON. Do not output markdown text or code fences.
+    """
+
+    try:
+        mime_type = image.content_type or "image/jpeg"
+        if mime_type not in {"image/jpeg", "image/jpg", "image/png", "image/webp"}:
+            raise HTTPException(
+                status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+                detail="Invalid image MIME type. Allowed: JPEG, PNG, WebP.",
+            )
+
+        image_bytes = await image.read()
+        if len(image_bytes) > 1 * 1024 * 1024:
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail="File size exceeds maximum upload limit of 1 MB.",
+            )
+
+        if not get_gemini_api_key():
+            return _mock_photo_decomposition_v2(reason="Missing GEMINI_API_KEY env variable")
+
+        query_vision = _get_query_gemini_vision()
+        result = await query_vision(prompt, image_bytes, mime_type)
+        data = json.loads(result)
+        data["is_fallback"] = False
+        return data
+    except HTTPException:
+        raise
+    except Exception as e:
+        return _mock_photo_decomposition_v2(reason=str(e))
 
 
 @ai_router.post("/meal-plan")

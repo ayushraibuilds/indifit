@@ -3,7 +3,11 @@ import 'dart:io';
 
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
-import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter/services.dart'
+    show
+        rootBundle,
+        RootIsolateToken,
+        BackgroundIsolateBinaryMessenger;
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
@@ -184,9 +188,12 @@ typedef V19MigrationFailureStageInjector =
     OutboxEntries,
     TombstoneEntries,
     CachedRemoteFoods,
+    FoodSearchCache,
   ],
 )
 class AppDatabase extends _$AppDatabase {
+  static RootIsolateToken? rootIsolateToken;
+
   AppDatabase()
     : v15MigrationFailureInjector = null,
       v16MigrationFailureInjector = null,
@@ -242,11 +249,10 @@ class AppDatabase extends _$AppDatabase {
   /// migration; production instances always use the current version.
   final int? schemaVersionOverride;
 
-  /// Schema v20 retains the complete B05 graph and adds the bounded B01 plan
-  /// end marker used to keep Finish/Leave idempotent without creating a
-  /// second active-plan authority.
+  /// Schema v23 retains the complete graph and adds the additive FoodSearchCache
+  /// table for online hybrid search results.
   @override
-  int get schemaVersion => schemaVersionOverride ?? 22;
+  int get schemaVersion => schemaVersionOverride ?? 23;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -343,6 +349,9 @@ class AppDatabase extends _$AppDatabase {
       if (from < 22 && to >= 22) {
         await _migrateV21ToV22(m);
       }
+      if (from < 23 && to >= 23) {
+        await m.createTable(foodSearchCache);
+      }
     },
 
     onCreate: (m) async {
@@ -388,6 +397,20 @@ class AppDatabase extends _$AppDatabase {
     },
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON;');
+      if (schemaVersionOverride == null) {
+        final exCountRow = await customSelect(
+          'SELECT COUNT(*) as c FROM exercises;',
+        ).getSingle();
+        if (exCountRow.read<int>('c') == 0) {
+          await upsertSeededExercisesFromAsset();
+        }
+        final foodCountRow = await customSelect(
+          'SELECT COUNT(*) as c FROM food_items;',
+        ).getSingle();
+        if (foodCountRow.read<int>('c') == 0) {
+          await upsertSeededFoodsFromAsset();
+        }
+      }
       if (schemaVersionOverride != 16) {
         await _ensurePreReleaseV17VesselGraph();
         if (await _tableExists('nutrition_foods')) {
@@ -402,6 +425,7 @@ class AppDatabase extends _$AppDatabase {
           }
         }
       }
+      await _checkAndInvalidateFoodSearchCacheOnManifestChange();
     },
   );
 }

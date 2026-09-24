@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 
 import '../../core/config/app_config.dart';
@@ -182,6 +184,80 @@ class NaturalLanguageMealService {
 
     return MealDecompositionResult(
       query: cleanText,
+      items: resolvedItems,
+      totalCalories: totalCalories,
+      isFallback: isFallback,
+      fallbackReason: fallbackReason,
+    );
+  }
+
+  Future<MealDecompositionResult> decomposePhotoMeal({
+    required String imagePath,
+    required String deviceUuid,
+  }) async {
+    final policy = _policy();
+    if (!policy.isAiAllowed || !policy.isImageUploadAllowed) {
+      throw StateError(
+        'Connected AI or photo assistance is disabled under your current privacy settings.',
+      );
+    }
+
+    final file = File(imagePath);
+    if (!await file.exists()) {
+      throw ArgumentError('The selected image file does not exist.');
+    }
+
+    final bytes = await file.readAsBytes();
+    final filename = imagePath.split(Platform.pathSeparator).last;
+    final formData = FormData.fromMap({
+      'image': MultipartFile.fromBytes(bytes, filename: filename),
+    });
+
+    final url = '$_baseUrl/api/ai/meal-estimate-photo-v2';
+    final response = await _dio.post(
+      url,
+      data: formData,
+      options: Options(
+        headers: {
+          'x-device-uuid': deviceUuid,
+        },
+      ),
+    );
+
+    if (response.statusCode != 200 || response.data is! Map<String, dynamic>) {
+      throw StateError('Failed to parse photo meal estimate from service.');
+    }
+
+    final data = response.data as Map<String, dynamic>;
+    final rawItems = (data['items'] as List<dynamic>?) ?? [];
+    final totalCalories = (data['total_calories'] as num?)?.toInt() ?? 0;
+    final isFallback = (data['is_fallback'] as bool?) ?? false;
+    final fallbackReason = data['fallback_reason'] as String?;
+
+    final resolvedItems = <DecomposedFoodItem>[];
+    for (final raw in rawItems) {
+      if (raw is Map<String, dynamic>) {
+        final foodName = (raw['food_name'] as String?) ?? '';
+        NutritionFoodOption? catalogMatch;
+        if (foodName.isNotEmpty) {
+          try {
+            final candidates = await _catalog.search(query: foodName);
+            if (candidates.isNotEmpty) {
+              catalogMatch = candidates.firstWhere(
+                (c) => c.displayName.toLowerCase() == foodName.toLowerCase(),
+                orElse: () => candidates.first,
+              );
+            }
+          } catch (_) {}
+        }
+        resolvedItems.add(
+          DecomposedFoodItem.fromJson(raw, catalogOption: catalogMatch),
+        );
+      }
+    }
+
+    return MealDecompositionResult(
+      query: 'Photo Upload',
       items: resolvedItems,
       totalCalories: totalCalories,
       isFallback: isFallback,

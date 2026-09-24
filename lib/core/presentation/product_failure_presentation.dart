@@ -99,6 +99,18 @@ class ProductFailurePresentation {
     // implementation details. The small set below is intentionally typed.
     if (error is ScheduledWorkoutFinalizationException ||
         error is B02StrengthExecutionFinalizationException) {
+      if (error is B02StrengthExecutionFinalizationException) {
+        if (error.message.contains('Incomplete exercise') ||
+            error.message.contains('Incomplete group')) {
+          return 'workout_incomplete_slots';
+        }
+        if (error.message.contains('at least one performed set')) {
+          return 'workout_no_performed_sets';
+        }
+        if (error.message.contains('positive duration')) {
+          return 'workout_no_duration';
+        }
+      }
       return 'workout_save_failed';
     }
     if (error is ScheduledWorkoutRecoveryException ||
@@ -153,6 +165,11 @@ class ProductFailurePresentation {
     'invalid_amount' => 'Enter a valid amount and try again.',
     'recipe_not_found' => 'This recipe is no longer available.',
     'workout_save_failed' => 'Your workout could not be saved. Try again.',
+    'workout_incomplete_slots' =>
+      'Incomplete exercises require finishing as a partial workout.',
+    'workout_no_performed_sets' =>
+      'Log at least one set with completed reps before saving.',
+    'workout_no_duration' => 'Workout duration must be at least 1 second.',
     'workout_recovery_needed' =>
       'This workout needs to be reopened before you can continue.',
     'workout_already_completed' => 'This workout has already been saved.',

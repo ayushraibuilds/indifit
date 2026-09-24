@@ -97,6 +97,8 @@ class AdaptiveTdeeRepository {
           scaleWeightKg: weight,
           caloriesConsumed: intake?.calories,
           intakeSource: intake?.source ?? AdaptiveTdeeIntakeSource.none,
+          isPartial: intake?.isPartial ?? false,
+          intakeWeight: intake?.intakeWeight ?? 1.0,
         ),
       );
 
@@ -199,13 +201,13 @@ class AdaptiveTdeeRepository {
     return dailyMedians;
   }
 
-  Future<Map<String, ({double calories, AdaptiveTdeeIntakeSource source})>>
+  Future<Map<String, ({double calories, AdaptiveTdeeIntakeSource source, bool isPartial, double intakeWeight})>>
       _readDailyIntakes(
     DateTime nowUtc,
     String timezoneId, {
     required String userId,
   }) async {
-    final intakes = <String, ({double calories, AdaptiveTdeeIntakeSource source})>{};
+    final intakes = <String, ({double calories, AdaptiveTdeeIntakeSource source, bool isPartial, double intakeWeight})>{};
 
     // 0. Use NutritionReadModelRepository if provided
     if (_nutrition != null) {
@@ -233,8 +235,18 @@ class AdaptiveTdeeRepository {
           if (totalKcal > 0) {
             intakes.update(
               localDate,
-              (existing) => (calories: existing.calories + totalKcal, source: AdaptiveTdeeIntakeSource.snapshot),
-              ifAbsent: () => (calories: totalKcal, source: AdaptiveTdeeIntakeSource.snapshot),
+              (existing) => (
+                calories: existing.calories + totalKcal,
+                source: AdaptiveTdeeIntakeSource.snapshot,
+                isPartial: false,
+                intakeWeight: 1.0,
+              ),
+              ifAbsent: () => (
+                calories: totalKcal,
+                source: AdaptiveTdeeIntakeSource.snapshot,
+                isPartial: false,
+                intakeWeight: 1.0,
+              ),
             );
           }
         }
@@ -287,18 +299,37 @@ class AdaptiveTdeeRepository {
         }
       }
 
+      final dailyTotalKcal = <String, double>{};
+      final dailyQuickAddKcal = <String, double>{};
+
       for (final s in activeSnapshots) {
         final localDate = s.localDate != null && s.localDate!.trim().isNotEmpty
             ? _dates.normalizeLocalDate(s.localDate!)
             : _dates.localDateFor(s.loggedAt.toUtc(), timezoneId);
         final kcal = energyBySnapshotId[s.id] ?? 0.0;
         if (kcal > 0) {
-          intakes.update(
-            localDate,
-            (existing) => (calories: existing.calories + kcal, source: AdaptiveTdeeIntakeSource.snapshot),
-            ifAbsent: () => (calories: kcal, source: AdaptiveTdeeIntakeSource.snapshot),
-          );
+          dailyTotalKcal[localDate] = (dailyTotalKcal[localDate] ?? 0.0) + kcal;
+          if (s.sourceType.trim().toLowerCase() == 'quick_add') {
+            dailyQuickAddKcal[localDate] =
+                (dailyQuickAddKcal[localDate] ?? 0.0) + kcal;
+          }
         }
+      }
+
+      for (final entry in dailyTotalKcal.entries) {
+        final localDate = entry.key;
+        final total = entry.value;
+        final quickAdd = dailyQuickAddKcal[localDate] ?? 0.0;
+        // Invariant: days where >40% of calories derive from unverified quick-adds
+        // are flagged as partial and down-weighted in EWMA smoothing to prevent pollution.
+        final isPartial = total > 0 && (quickAdd / total) > 0.40;
+        final intakeWeight = isPartial ? 0.5 : 1.0;
+        intakes[localDate] = (
+          calories: total,
+          source: AdaptiveTdeeIntakeSource.snapshot,
+          isPartial: isPartial,
+          intakeWeight: intakeWeight,
+        );
       }
     }
 
@@ -320,6 +351,8 @@ class AdaptiveTdeeRepository {
         intakes[entry.key] = (
           calories: entry.value,
           source: AdaptiveTdeeIntakeSource.foodLog,
+          isPartial: false,
+          intakeWeight: 1.0,
         );
       }
     }

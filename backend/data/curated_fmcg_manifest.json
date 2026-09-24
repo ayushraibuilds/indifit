@@ -1,0 +1,970 @@
+{
+  "_metadata": {
+    "license": "ODbL 1.0 (Open Database License)",
+    "attribution": "Curated with reference to Open Food Facts database (https://openfoodfacts.org) contributors and Indian FSSAI mandatory declarations.",
+    "version": "1.0.0",
+    "total_items": 35
+  },
+  "items": [
+    {
+      "barcode": "8901262010053",
+      "name": "Amul High Protein Lassi (Rose)",
+      "brand": "Amul",
+      "category_id": "dairy_liquid",
+      "calories": 65.0,
+      "protein_g": 7.5,
+      "carbs_g": 6.0,
+      "fat_g": 1.0,
+      "fiber_g": 0.0,
+      "sodium_mg": 55.0,
+      "serving_size": 200.0,
+      "serving_unit": "ml",
+      "serving_options": [
+        {
+          "unit": "pack (200ml)",
+          "gram_weight": 206.0,
+          "is_default": true
+        },
+        {
+          "unit": "100ml",
+          "gram_weight": 103.0,
+          "is_default": false
+        }
+      ],
+      "provenance": "verified_fmcg",
+      "confidence": "high"
+    },
+    {
+      "barcode": "8901262010060",
+      "name": "Amul High Protein Buttermilk",
+      "brand": "Amul",
+      "category_id": "dairy_liquid",
+      "calories": 42.0,
+      "protein_g": 7.5,
+      "carbs_g": 2.0,
+      "fat_g": 0.5,
+      "fiber_g": 0.0,
+      "sodium_mg": 120.0,
+      "serving_size": 200.0,
+      "serving_unit": "ml",
+      "serving_options": [
+        {
+          "unit": "pack (200ml)",
+          "gram_weight": 206.0,
+          "is_default": true
+        },
+        {
+          "unit": "100ml",
+          "gram_weight": 103.0,
+          "is_default": false
+        }
+      ],
+      "provenance": "verified_fmcg",
+      "confidence": "high"
+    },
+    {
+      "barcode": "8901262010077",
+      "name": "Amul High Protein Milkshake (Chocolate)",
+      "brand": "Amul",
+      "category_id": "dairy_liquid",
+      "calories": 85.0,
+      "protein_g": 10.0,
+      "carbs_g": 8.0,
+      "fat_g": 1.5,
+      "fiber_g": 0.5,
+      "sodium_mg": 70.0,
+      "serving_size": 200.0,
+      "serving_unit": "ml",
+      "serving_options": [
+        {
+          "unit": "pack (200ml)",
+          "gram_weight": 206.0,
+          "is_default": true
+        },
+        {
+          "unit": "100ml",
+          "gram_weight": 103.0,
+          "is_default": false
+        }
+      ],
+      "provenance": "verified_fmcg",
+      "confidence": "high"
+    },
+    {
+      "barcode": "8901262010084",
+      "name": "Amul High Protein Paneer",
+      "brand": "Amul",
+      "category_id": "dairy_liquid",
+      "calories": 270.0,
+      "protein_g": 25.0,
+      "carbs_g": 2.5,
+      "fat_g": 18.0,
+      "fiber_g": 0.0,
+      "sodium_mg": 40.0,
+      "serving_size": 100.0,
+      "serving_unit": "g",
+      "serving_options": [
+        {
+          "unit": "100g",
+          "gram_weight": 100.0,
+          "is_default": true
+        },
+        {
+          "unit": "pack (200g)",
+          "gram_weight": 200.0,
+          "is_default": false
+        }
+      ],
+      "provenance": "verified_fmcg",
+      "confidence": "high"
+    },
+    {
+      "barcode": "8901262010091",
+      "name": "Amul Whey Protein Sachet (Unflavored)",
+      "brand": "Amul",
+      "category_id": "dairy_liquid",
+      "calories": 380.0,
+      "protein_g": 75.0,
+      "carbs_g": 8.0,
+      "fat_g": 5.0,
+      "fiber_g": 0.0,
+      "sodium_mg": 150.0,
+      "serving_size": 32.0,
+      "serving_unit": "g",
+      "serving_options": [
+        {
+          "unit": "sachet (32g)",
+          "gram_weight": 32.0,
+          "is_default": true
+        },
+        {
+          "unit": "100g",
+          "gram_weight": 100.0,
+          "is_default": false
+        }
+      ],
+      "provenance": "verified_fmcg",
+      "confidence": "high"
+    },
+    {
+      "barcode": "8901262010107",
+      "name": "Amul Malai Paneer",
+      "brand": "Amul",
+      "category_id": "dairy_liquid",
+      "calories": 290.0,
+      "protein_g": 18.0,
+      "carbs_g": 3.0,
+      "fat_g": 23.0,
+      "fiber_g": 0.0,
+      "sodium_mg": 30.0,
+      "serving_size": 100.0,
+      "serving_unit": "g",
+      "serving_options": [
+        {
+          "unit": "100g",
+          "gram_weight": 100.0,
+          "is_default": true
+        },
+        {
+          "unit": "pack (200g)",
+          "gram_weight": 200.0,
+          "is_default": false
+        }
+      ],
+      "provenance": "verified_fmcg",
+      "confidence": "high"
+    },
+    {
+      "barcode": "8906059630018",
+      "name": "Epigamia Greek Yogurt (Natural)",
+      "brand": "Epigamia",
+      "category_id": "dairy_liquid",
+      "calories": 90.0,
+      "protein_g": 8.0,
+      "carbs_g": 6.5,
+      "fat_g": 3.5,
+      "fiber_g": 0.0,
+      "sodium_mg": 60.0,
+      "serving_size": 100.0,
+      "serving_unit": "g",
+      "serving_options": [
+        {
+          "unit": "cup (100g)",
+          "gram_weight": 100.0,
+          "is_default": true
+        },
+        {
+          "unit": "tub (400g)",
+          "gram_weight": 400.0,
+          "is_default": false
+        }
+      ],
+      "provenance": "verified_fmcg",
+      "confidence": "high"
+    },
+    {
+      "barcode": "8906059630025",
+      "name": "Epigamia Greek Yogurt (Blueberry)",
+      "brand": "Epigamia",
+      "category_id": "dairy_liquid",
+      "calories": 110.0,
+      "protein_g": 6.0,
+      "carbs_g": 16.0,
+      "fat_g": 2.5,
+      "fiber_g": 0.5,
+      "sodium_mg": 55.0,
+      "serving_size": 100.0,
+      "serving_unit": "g",
+      "serving_options": [
+        {
+          "unit": "cup (100g)",
+          "gram_weight": 100.0,
+          "is_default": true
+        }
+      ],
+      "provenance": "verified_fmcg",
+      "confidence": "high"
+    },
+    {
+      "barcode": "8906059630032",
+      "name": "Epigamia Greek Yogurt (Strawberry)",
+      "brand": "Epigamia",
+      "category_id": "dairy_liquid",
+      "calories": 110.0,
+      "protein_g": 6.0,
+      "carbs_g": 16.0,
+      "fat_g": 2.5,
+      "fiber_g": 0.5,
+      "sodium_mg": 55.0,
+      "serving_size": 100.0,
+      "serving_unit": "g",
+      "serving_options": [
+        {
+          "unit": "cup (100g)",
+          "gram_weight": 100.0,
+          "is_default": true
+        }
+      ],
+      "provenance": "verified_fmcg",
+      "confidence": "high"
+    },
+    {
+      "barcode": "8906059630049",
+      "name": "Epigamia Protein Milkshake (Vanilla)",
+      "brand": "Epigamia",
+      "category_id": "dairy_liquid",
+      "calories": 80.0,
+      "protein_g": 9.0,
+      "carbs_g": 7.0,
+      "fat_g": 1.5,
+      "fiber_g": 0.0,
+      "sodium_mg": 70.0,
+      "serving_size": 200.0,
+      "serving_unit": "ml",
+      "serving_options": [
+        {
+          "unit": "bottle (200ml)",
+          "gram_weight": 206.0,
+          "is_default": true
+        }
+      ],
+      "provenance": "verified_fmcg",
+      "confidence": "high"
+    },
+    {
+      "barcode": "8906059630056",
+      "name": "Epigamia Protein Milkshake (Chocolate)",
+      "brand": "Epigamia",
+      "category_id": "dairy_liquid",
+      "calories": 85.0,
+      "protein_g": 9.0,
+      "carbs_g": 8.0,
+      "fat_g": 1.8,
+      "fiber_g": 0.5,
+      "sodium_mg": 75.0,
+      "serving_size": 200.0,
+      "serving_unit": "ml",
+      "serving_options": [
+        {
+          "unit": "bottle (200ml)",
+          "gram_weight": 206.0,
+          "is_default": true
+        }
+      ],
+      "provenance": "verified_fmcg",
+      "confidence": "high"
+    },
+    {
+      "barcode": "8906076130010",
+      "name": "Pintola All-Natural Peanut Butter (Crunchy)",
+      "brand": "Pintola",
+      "category_id": "oil_fat",
+      "calories": 625.0,
+      "protein_g": 30.0,
+      "carbs_g": 18.0,
+      "fat_g": 48.0,
+      "fiber_g": 8.0,
+      "sodium_mg": 10.0,
+      "serving_size": 32.0,
+      "serving_unit": "g",
+      "serving_options": [
+        {
+          "unit": "tablespoon (32g)",
+          "gram_weight": 32.0,
+          "is_default": true
+        },
+        {
+          "unit": "100g",
+          "gram_weight": 100.0,
+          "is_default": false
+        }
+      ],
+      "provenance": "verified_fmcg",
+      "confidence": "high"
+    },
+    {
+      "barcode": "8906076130027",
+      "name": "Pintola All-Natural Peanut Butter (Smooth)",
+      "brand": "Pintola",
+      "category_id": "oil_fat",
+      "calories": 625.0,
+      "protein_g": 30.0,
+      "carbs_g": 18.0,
+      "fat_g": 48.0,
+      "fiber_g": 8.0,
+      "sodium_mg": 10.0,
+      "serving_size": 32.0,
+      "serving_unit": "g",
+      "serving_options": [
+        {
+          "unit": "tablespoon (32g)",
+          "gram_weight": 32.0,
+          "is_default": true
+        },
+        {
+          "unit": "100g",
+          "gram_weight": 100.0,
+          "is_default": false
+        }
+      ],
+      "provenance": "verified_fmcg",
+      "confidence": "high"
+    },
+    {
+      "barcode": "8906076130034",
+      "name": "Pintola High Protein Peanut Butter (Dark Chocolate)",
+      "brand": "Pintola",
+      "category_id": "oil_fat",
+      "calories": 590.0,
+      "protein_g": 33.0,
+      "carbs_g": 22.0,
+      "fat_g": 41.0,
+      "fiber_g": 6.0,
+      "sodium_mg": 45.0,
+      "serving_size": 32.0,
+      "serving_unit": "g",
+      "serving_options": [
+        {
+          "unit": "tablespoon (32g)",
+          "gram_weight": 32.0,
+          "is_default": true
+        },
+        {
+          "unit": "100g",
+          "gram_weight": 100.0,
+          "is_default": false
+        }
+      ],
+      "provenance": "verified_fmcg",
+      "confidence": "high"
+    },
+    {
+      "barcode": "8906076130041",
+      "name": "Pintola Organic Wholegrain Brown Rice Cakes",
+      "brand": "Pintola",
+      "category_id": "staple_bread",
+      "calories": 380.0,
+      "protein_g": 8.5,
+      "carbs_g": 80.0,
+      "fat_g": 2.5,
+      "fiber_g": 4.5,
+      "sodium_mg": 25.0,
+      "serving_size": 10.0,
+      "serving_unit": "piece",
+      "serving_options": [
+        {
+          "unit": "cake (10g)",
+          "gram_weight": 10.0,
+          "is_default": true
+        },
+        {
+          "unit": "100g",
+          "gram_weight": 100.0,
+          "is_default": false
+        }
+      ],
+      "provenance": "verified_fmcg",
+      "confidence": "high"
+    },
+    {
+      "barcode": "8906076130058",
+      "name": "Pintola Wood Pressed Peanut Oil",
+      "brand": "Pintola",
+      "category_id": "oil_fat",
+      "calories": 890.0,
+      "protein_g": 0.0,
+      "carbs_g": 0.0,
+      "fat_g": 99.0,
+      "fiber_g": 0.0,
+      "sodium_mg": 0.0,
+      "serving_size": 15.0,
+      "serving_unit": "ml",
+      "serving_options": [
+        {
+          "unit": "tablespoon (15ml)",
+          "gram_weight": 14.0,
+          "is_default": true
+        },
+        {
+          "unit": "teaspoon (5ml)",
+          "gram_weight": 4.6,
+          "is_default": false
+        }
+      ],
+      "provenance": "verified_fmcg",
+      "confidence": "high"
+    },
+    {
+      "barcode": "8908013280015",
+      "name": "The Whole Truth Whey Isolate (Unflavored)",
+      "brand": "The Whole Truth",
+      "category_id": "dairy_liquid",
+      "calories": 375.0,
+      "protein_g": 86.0,
+      "carbs_g": 2.0,
+      "fat_g": 2.0,
+      "fiber_g": 0.0,
+      "sodium_mg": 160.0,
+      "serving_size": 30.0,
+      "serving_unit": "g",
+      "serving_options": [
+        {
+          "unit": "scoop (30g)",
+          "gram_weight": 30.0,
+          "is_default": true
+        },
+        {
+          "unit": "100g",
+          "gram_weight": 100.0,
+          "is_default": false
+        }
+      ],
+      "provenance": "verified_fmcg",
+      "confidence": "high"
+    },
+    {
+      "barcode": "8908013280022",
+      "name": "The Whole Truth Whey Isolate (Cocoa)",
+      "brand": "The Whole Truth",
+      "category_id": "dairy_liquid",
+      "calories": 380.0,
+      "protein_g": 78.0,
+      "carbs_g": 8.5,
+      "fat_g": 3.5,
+      "fiber_g": 2.0,
+      "sodium_mg": 150.0,
+      "serving_size": 33.0,
+      "serving_unit": "g",
+      "serving_options": [
+        {
+          "unit": "scoop (33g)",
+          "gram_weight": 33.0,
+          "is_default": true
+        },
+        {
+          "unit": "100g",
+          "gram_weight": 100.0,
+          "is_default": false
+        }
+      ],
+      "provenance": "verified_fmcg",
+      "confidence": "high"
+    },
+    {
+      "barcode": "8908013280039",
+      "name": "The Whole Truth Protein Bar (Dark Chocolate)",
+      "brand": "The Whole Truth",
+      "category_id": "snack_street",
+      "calories": 420.0,
+      "protein_g": 28.0,
+      "carbs_g": 38.0,
+      "fat_g": 17.0,
+      "fiber_g": 8.0,
+      "sodium_mg": 60.0,
+      "serving_size": 52.0,
+      "serving_unit": "g",
+      "serving_options": [
+        {
+          "unit": "bar (52g)",
+          "gram_weight": 52.0,
+          "is_default": true
+        },
+        {
+          "unit": "100g",
+          "gram_weight": 100.0,
+          "is_default": false
+        }
+      ],
+      "provenance": "verified_fmcg",
+      "confidence": "high"
+    },
+    {
+      "barcode": "8908013280046",
+      "name": "The Whole Truth Protein Bar (Coffee Cocoa)",
+      "brand": "The Whole Truth",
+      "category_id": "snack_street",
+      "calories": 415.0,
+      "protein_g": 28.0,
+      "carbs_g": 37.0,
+      "fat_g": 17.0,
+      "fiber_g": 8.0,
+      "sodium_mg": 55.0,
+      "serving_size": 52.0,
+      "serving_unit": "g",
+      "serving_options": [
+        {
+          "unit": "bar (52g)",
+          "gram_weight": 52.0,
+          "is_default": true
+        },
+        {
+          "unit": "100g",
+          "gram_weight": 100.0,
+          "is_default": false
+        }
+      ],
+      "provenance": "verified_fmcg",
+      "confidence": "high"
+    },
+    {
+      "barcode": "8908013280053",
+      "name": "The Whole Truth Peanut Butter (Crunchy)",
+      "brand": "The Whole Truth",
+      "category_id": "oil_fat",
+      "calories": 615.0,
+      "protein_g": 29.0,
+      "carbs_g": 19.0,
+      "fat_g": 47.0,
+      "fiber_g": 7.0,
+      "sodium_mg": 5.0,
+      "serving_size": 30.0,
+      "serving_unit": "g",
+      "serving_options": [
+        {
+          "unit": "tablespoon (30g)",
+          "gram_weight": 30.0,
+          "is_default": true
+        },
+        {
+          "unit": "100g",
+          "gram_weight": 100.0,
+          "is_default": false
+        }
+      ],
+      "provenance": "verified_fmcg",
+      "confidence": "high"
+    },
+    {
+      "barcode": "8901063140018",
+      "name": "Tata Sampann Unpolished Toor Dal",
+      "brand": "Tata Sampann",
+      "category_id": "dal_lentil",
+      "calories": 345.0,
+      "protein_g": 22.0,
+      "carbs_g": 62.0,
+      "fat_g": 1.5,
+      "fiber_g": 15.0,
+      "sodium_mg": 15.0,
+      "serving_size": 100.0,
+      "serving_unit": "g",
+      "serving_options": [
+        {
+          "unit": "100g raw",
+          "gram_weight": 100.0,
+          "is_default": true
+        },
+        {
+          "unit": "katori cooked (approx 35g raw)",
+          "gram_weight": 35.0,
+          "is_default": false
+        }
+      ],
+      "provenance": "verified_fmcg",
+      "confidence": "high"
+    },
+    {
+      "barcode": "8901063140025",
+      "name": "Tata Sampann Unpolished Moong Dal",
+      "brand": "Tata Sampann",
+      "category_id": "dal_lentil",
+      "calories": 348.0,
+      "protein_g": 24.0,
+      "carbs_g": 60.0,
+      "fat_g": 1.2,
+      "fiber_g": 16.0,
+      "sodium_mg": 18.0,
+      "serving_size": 100.0,
+      "serving_unit": "g",
+      "serving_options": [
+        {
+          "unit": "100g raw",
+          "gram_weight": 100.0,
+          "is_default": true
+        },
+        {
+          "unit": "katori cooked (approx 35g raw)",
+          "gram_weight": 35.0,
+          "is_default": false
+        }
+      ],
+      "provenance": "verified_fmcg",
+      "confidence": "high"
+    },
+    {
+      "barcode": "8901063140032",
+      "name": "Tata Sampann Fine Besan",
+      "brand": "Tata Sampann",
+      "category_id": "dal_lentil",
+      "calories": 387.0,
+      "protein_g": 22.5,
+      "carbs_g": 58.0,
+      "fat_g": 5.5,
+      "fiber_g": 11.0,
+      "sodium_mg": 20.0,
+      "serving_size": 100.0,
+      "serving_unit": "g",
+      "serving_options": [
+        {
+          "unit": "100g",
+          "gram_weight": 100.0,
+          "is_default": true
+        },
+        {
+          "unit": "tablespoon (30g)",
+          "gram_weight": 30.0,
+          "is_default": false
+        }
+      ],
+      "provenance": "verified_fmcg",
+      "confidence": "high"
+    },
+    {
+      "barcode": "8901063140049",
+      "name": "Tata Sampann Thick Poha",
+      "brand": "Tata Sampann",
+      "category_id": "staple_rice",
+      "calories": 355.0,
+      "protein_g": 7.0,
+      "carbs_g": 78.0,
+      "fat_g": 1.2,
+      "fiber_g": 3.0,
+      "sodium_mg": 10.0,
+      "serving_size": 100.0,
+      "serving_unit": "g",
+      "serving_options": [
+        {
+          "unit": "cup raw (60g)",
+          "gram_weight": 60.0,
+          "is_default": true
+        },
+        {
+          "unit": "100g raw",
+          "gram_weight": 100.0,
+          "is_default": false
+        }
+      ],
+      "provenance": "verified_fmcg",
+      "confidence": "high"
+    },
+    {
+      "barcode": "8901063140056",
+      "name": "Tata Sampann Unpolished Chana Dal",
+      "brand": "Tata Sampann",
+      "category_id": "dal_lentil",
+      "calories": 360.0,
+      "protein_g": 21.0,
+      "carbs_g": 60.0,
+      "fat_g": 4.5,
+      "fiber_g": 15.0,
+      "sodium_mg": 22.0,
+      "serving_size": 100.0,
+      "serving_unit": "g",
+      "serving_options": [
+        {
+          "unit": "100g raw",
+          "gram_weight": 100.0,
+          "is_default": true
+        },
+        {
+          "unit": "katori cooked (approx 35g raw)",
+          "gram_weight": 35.0,
+          "is_default": false
+        }
+      ],
+      "provenance": "verified_fmcg",
+      "confidence": "high"
+    },
+    {
+      "barcode": "8901648001019",
+      "name": "Mother Dairy Toned Milk",
+      "brand": "Mother Dairy",
+      "category_id": "dairy_liquid",
+      "calories": 58.0,
+      "protein_g": 3.1,
+      "carbs_g": 4.7,
+      "fat_g": 3.0,
+      "fiber_g": 0.0,
+      "sodium_mg": 48.0,
+      "serving_size": 200.0,
+      "serving_unit": "ml",
+      "serving_options": [
+        {
+          "unit": "glass (200ml)",
+          "gram_weight": 206.0,
+          "is_default": true
+        },
+        {
+          "unit": "100ml",
+          "gram_weight": 103.0,
+          "is_default": false
+        }
+      ],
+      "provenance": "verified_fmcg",
+      "confidence": "high"
+    },
+    {
+      "barcode": "8901648001026",
+      "name": "Mother Dairy Classic Dahi",
+      "brand": "Mother Dairy",
+      "category_id": "dairy_liquid",
+      "calories": 62.0,
+      "protein_g": 3.7,
+      "carbs_g": 4.8,
+      "fat_g": 3.1,
+      "fiber_g": 0.0,
+      "sodium_mg": 45.0,
+      "serving_size": 100.0,
+      "serving_unit": "g",
+      "serving_options": [
+        {
+          "unit": "katori (150g)",
+          "gram_weight": 150.0,
+          "is_default": true
+        },
+        {
+          "unit": "100g",
+          "gram_weight": 100.0,
+          "is_default": false
+        }
+      ],
+      "provenance": "verified_fmcg",
+      "confidence": "high"
+    },
+    {
+      "barcode": "8901648001033",
+      "name": "Mother Dairy Paneer",
+      "brand": "Mother Dairy",
+      "category_id": "dairy_liquid",
+      "calories": 285.0,
+      "protein_g": 18.0,
+      "carbs_g": 3.5,
+      "fat_g": 22.0,
+      "fiber_g": 0.0,
+      "sodium_mg": 35.0,
+      "serving_size": 100.0,
+      "serving_unit": "g",
+      "serving_options": [
+        {
+          "unit": "100g",
+          "gram_weight": 100.0,
+          "is_default": true
+        },
+        {
+          "unit": "pack (200g)",
+          "gram_weight": 200.0,
+          "is_default": false
+        }
+      ],
+      "provenance": "verified_fmcg",
+      "confidence": "high"
+    },
+    {
+      "barcode": "8901648001040",
+      "name": "Mother Dairy Cow Milk",
+      "brand": "Mother Dairy",
+      "category_id": "dairy_liquid",
+      "calories": 64.0,
+      "protein_g": 3.2,
+      "carbs_g": 4.9,
+      "fat_g": 3.5,
+      "fiber_g": 0.0,
+      "sodium_mg": 45.0,
+      "serving_size": 200.0,
+      "serving_unit": "ml",
+      "serving_options": [
+        {
+          "unit": "glass (200ml)",
+          "gram_weight": 206.0,
+          "is_default": true
+        },
+        {
+          "unit": "100ml",
+          "gram_weight": 103.0,
+          "is_default": false
+        }
+      ],
+      "provenance": "verified_fmcg",
+      "confidence": "high"
+    },
+    {
+      "barcode": "8906036670013",
+      "name": "Nandini Toned Milk",
+      "brand": "Nandini",
+      "category_id": "dairy_liquid",
+      "calories": 58.0,
+      "protein_g": 3.2,
+      "carbs_g": 4.7,
+      "fat_g": 3.0,
+      "fiber_g": 0.0,
+      "sodium_mg": 50.0,
+      "serving_size": 200.0,
+      "serving_unit": "ml",
+      "serving_options": [
+        {
+          "unit": "glass (200ml)",
+          "gram_weight": 206.0,
+          "is_default": true
+        },
+        {
+          "unit": "100ml",
+          "gram_weight": 103.0,
+          "is_default": false
+        }
+      ],
+      "provenance": "verified_fmcg",
+      "confidence": "high"
+    },
+    {
+      "barcode": "8906036670020",
+      "name": "Nandini Special Toned Dahi",
+      "brand": "Nandini",
+      "category_id": "dairy_liquid",
+      "calories": 61.0,
+      "protein_g": 3.8,
+      "carbs_g": 4.7,
+      "fat_g": 3.0,
+      "fiber_g": 0.0,
+      "sodium_mg": 45.0,
+      "serving_size": 100.0,
+      "serving_unit": "g",
+      "serving_options": [
+        {
+          "unit": "katori (150g)",
+          "gram_weight": 150.0,
+          "is_default": true
+        },
+        {
+          "unit": "100g",
+          "gram_weight": 100.0,
+          "is_default": false
+        }
+      ],
+      "provenance": "verified_fmcg",
+      "confidence": "high"
+    },
+    {
+      "barcode": "8906036670037",
+      "name": "Nandini Fresh Paneer",
+      "brand": "Nandini",
+      "category_id": "dairy_liquid",
+      "calories": 280.0,
+      "protein_g": 18.5,
+      "carbs_g": 3.2,
+      "fat_g": 21.5,
+      "fiber_g": 0.0,
+      "sodium_mg": 30.0,
+      "serving_size": 100.0,
+      "serving_unit": "g",
+      "serving_options": [
+        {
+          "unit": "100g",
+          "gram_weight": 100.0,
+          "is_default": true
+        },
+        {
+          "unit": "pack (200g)",
+          "gram_weight": 200.0,
+          "is_default": false
+        }
+      ],
+      "provenance": "verified_fmcg",
+      "confidence": "high"
+    },
+    {
+      "barcode": "8906036670044",
+      "name": "Nandini Low Fat Buttermilk",
+      "brand": "Nandini",
+      "category_id": "dairy_liquid",
+      "calories": 28.0,
+      "protein_g": 1.8,
+      "carbs_g": 2.5,
+      "fat_g": 1.2,
+      "fiber_g": 0.0,
+      "sodium_mg": 90.0,
+      "serving_size": 200.0,
+      "serving_unit": "ml",
+      "serving_options": [
+        {
+          "unit": "pouch (200ml)",
+          "gram_weight": 206.0,
+          "is_default": true
+        },
+        {
+          "unit": "100ml",
+          "gram_weight": 103.0,
+          "is_default": false
+        }
+      ],
+      "provenance": "verified_fmcg",
+      "confidence": "high"
+    },
+    {
+      "barcode": "8906036670051",
+      "name": "Nandini Pure Ghee",
+      "brand": "Nandini",
+      "category_id": "oil_fat",
+      "calories": 895.0,
+      "protein_g": 0.0,
+      "carbs_g": 0.0,
+      "fat_g": 99.5,
+      "fiber_g": 0.0,
+      "sodium_mg": 0.0,
+      "serving_size": 15.0,
+      "serving_unit": "ml",
+      "serving_options": [
+        {
+          "unit": "tablespoon (15ml)",
+          "gram_weight": 14.0,
+          "is_default": true
+        },
+        {
+          "unit": "teaspoon (5ml)",
+          "gram_weight": 4.6,
+          "is_default": false
+        }
+      ],
+      "provenance": "verified_fmcg",
+      "confidence": "high"
+    }
+  ]
+}

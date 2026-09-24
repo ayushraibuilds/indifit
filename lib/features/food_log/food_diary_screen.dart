@@ -3,10 +3,17 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:uuid/uuid.dart';
+
+import '../../core/di/providers.dart';
+import '../../core/nutrition_household_measures.dart';
 import '../../core/nutrition_legacy_read_models.dart';
 import '../../core/presentation/product_failure_presentation.dart';
+import '../../core/services/local_schedule_date_service.dart';
 import '../../core/theme/b05_semantic_colors.dart';
+import '../../core/typed_quantities.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
+import '../../core/widgets/indi_fit_feedback.dart';
 import '../dashboard/today_consumer_presentation.dart';
 import '../dashboard/today_surface_controller.dart';
 import '../dashboard/widgets/dashboard_date_bar.dart';
@@ -17,6 +24,7 @@ import 'meal_presentation_registry.dart';
 import 'saved_meals_screen.dart';
 import 'saved_recipe_log_screen.dart';
 import 'thali/thali_builder_screen.dart';
+import 'widgets/quick_add_macros_sheet.dart';
 
 /// Food diary screen (PV1-ENG-05D first pass).
 ///
@@ -115,9 +123,21 @@ class _FoodDiaryScreenState extends ConsumerState<FoodDiaryScreen> {
                 setState(() => _selectedDay = nextDay);
               },
             ),
-            const SizedBox(height: 12),
-            FoodDiaryPrimaryAddAction(
-              onPressed: () => _openMealPicker(context),
+            Row(
+              children: [
+                Expanded(
+                  child: FoodDiaryPrimaryAddAction(
+                    onPressed: () => _openMealPicker(context),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                FilledButton.tonalIcon(
+                  key: const ValueKey('food_diary_quick_add'),
+                  onPressed: () => _openQuickAdd(context),
+                  icon: const Icon(Icons.bolt_rounded, size: 20),
+                  label: const Text('Quick add'),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
             FoodDiarySummary(
@@ -148,25 +168,58 @@ class _FoodDiaryScreenState extends ConsumerState<FoodDiaryScreen> {
                 status: B05SemanticStatus.info,
                 label: 'Loading meals',
               ),
-            for (var index = 0; index < meals.length; index++) ...[
-              FoodDiaryMealRow(
-                type: meals[index].type,
-                label: meals[index].label,
-                records: records
-                    .where(
-                      (record) =>
-                          foodDiaryMealType(record.mealCategory) ==
-                          meals[index].type,
-                    )
-                    .toList(growable: false),
-                isLoading:
-                    daily == null && (diary.isLoading || canonical.isLoading),
-                onOpen: () => _openMealDetail(context, meals[index].type),
-                onAdd: () => _openMealAdd(context, meals[index].type),
-              ),
-              if (index < meals.length - 1)
-                Divider(height: 16, color: context.b05Colors.border),
-            ],
+            () {
+              final yesterday = _civilDay(_selectedDay.subtract(const Duration(days: 1)));
+              final yesterdayRecords = ref.watch(canonicalFoodRecordsForDayProvider(yesterday)).valueOrNull ?? const [];
+              final recentFoods = ref.watch(canonicalRecentFoodsProvider).valueOrNull ?? const [];
+
+              return Column(
+                children: [
+                  for (var index = 0; index < meals.length; index++) ...[
+                    Builder(
+                      builder: (context) {
+                        final mealType = meals[index].type;
+                        final mealRecords = records
+                            .where(
+                              (record) =>
+                                  foodDiaryMealType(record.mealCategory) == mealType,
+                            )
+                            .toList(growable: false);
+                        final yesterdayMealRecords = yesterdayRecords
+                            .where(
+                              (record) =>
+                                  foodDiaryMealType(record.mealCategory) == mealType,
+                            )
+                            .toList(growable: false);
+                        final eatAgain = recentFoods
+                            .where(
+                              (item) =>
+                                  foodDiaryMealType(item.lastLoggedMealCategory ?? '') == mealType,
+                            )
+                            .take(3)
+                            .toList(growable: false);
+
+                        return FoodDiaryMealRow(
+                          type: mealType,
+                          label: meals[index].label,
+                          records: mealRecords,
+                          isLoading: daily == null && (diary.isLoading || canonical.isLoading),
+                          onOpen: () => _openMealDetail(context, mealType),
+                          onAdd: () => _openMealAdd(context, mealType),
+                          onCopyYesterday: (mealRecords.isEmpty && yesterdayMealRecords.isNotEmpty)
+                              ? () => _copyYesterdayMeal(mealType, yesterdayMealRecords)
+                              : null,
+                          eatAgainItems: eatAgain.isNotEmpty ? eatAgain : null,
+                          onFastAdd: (recent) => _fastAddRecent(mealType, recent),
+                        );
+                      },
+                    ),
+                    if (index < meals.length - 1)
+                      Divider(height: 16, color: context.b05Colors.border),
+                  ],
+                ],
+              );
+            }(),
             const SizedBox(height: 20),
             Text('Food tools', style: B05Typography.title(context)),
             const SizedBox(height: 2),
@@ -323,6 +376,137 @@ class _FoodDiaryScreenState extends ConsumerState<FoodDiaryScreen> {
       ),
     );
     if (mounted) _refreshDiaryReads();
+  }
+
+  Future<void> _openQuickAdd(BuildContext context) async {
+    final meal = await _chooseMeal(context);
+    if (meal == null || !context.mounted) return;
+    final added = await QuickAddMacrosSheet.show(
+      context,
+      initialMealType: meal,
+      targetDate: _selectedDay,
+    );
+    if (added != null && mounted) _refreshDiaryReads();
+  }
+
+  Future<void> _fastAddRecent(
+    String mealType,
+    CanonicalRecentFood recent,
+  ) async {
+    try {
+      final option = recent.option;
+      final quantity = recent.historicalQuantity ??
+          Quantity.fromDecimal(amount: '1', unit: QuantityUnit.piece);
+      final coordinator = await ref.read(
+        nutritionFoodLoggingCoordinatorProvider.future,
+      );
+      final preview = await coordinator.preview(
+        option: option,
+        quantity: quantity,
+      );
+      final dates = LocalScheduleDateService();
+      final timezoneId =
+          await ref.read(localTimezoneServiceProvider).currentTimezoneId();
+      final localDate = dates.localDateFor(_selectedDay, timezoneId);
+      final isToday = localDate == dates.localDateFor(DateTime.now(), timezoneId);
+      final loggedAtUtc = isToday
+          ? DateTime.now().toUtc()
+          : dates.instantForLocalDate(localDate, timezoneId);
+
+      await coordinator.finalize(
+        userId: kLocalNutritionUserScopeId,
+        preview: preview,
+        mealCategory: mealType,
+        loggedAt: loggedAtUtc,
+        localDate: localDate,
+        timezoneId: timezoneId,
+        commandId: 'fast-add-command::${const Uuid().v4()}',
+        consumptionId: 'fast-add-consumption::${const Uuid().v4()}',
+      );
+      if (!mounted) return;
+      _refreshDiaryReads();
+      showIndiFitSuccessFeedback(
+        context,
+        'Logged ${option.displayName} to ${foodDiaryMealTitle(mealType)}',
+      );
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            behavior: SnackBarBehavior.floating,
+            content: Text('Could not log food. Try again.'),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _copyYesterdayMeal(
+    String mealType,
+    List<NutritionHistoricalReadRecord> yesterdayRecords,
+  ) async {
+    try {
+      final coordinator = await ref.read(
+        nutritionFoodLoggingCoordinatorProvider.future,
+      );
+      final catalog = await ref.read(
+        nutritionFoodCatalogRepositoryProvider.future,
+      );
+      final dates = LocalScheduleDateService();
+      final timezoneId =
+          await ref.read(localTimezoneServiceProvider).currentTimezoneId();
+      final localDate = dates.localDateFor(_selectedDay, timezoneId);
+      final isToday = localDate == dates.localDateFor(DateTime.now(), timezoneId);
+      final loggedAtUtc = isToday
+          ? DateTime.now().toUtc()
+          : dates.instantForLocalDate(localDate, timezoneId);
+
+      int copied = 0;
+      for (final record in yesterdayRecords) {
+        for (final item in record.items) {
+          if (item.foodId != null && item.originSourceType == 'direct_food') {
+            final option = await catalog.getOption(item.foodId!);
+            if (option != null) {
+              final qty = item.quantity.quantity ??
+                  Quantity.fromDecimal(amount: '100', unit: QuantityUnit.gram);
+              final preview = await coordinator.preview(
+                option: option,
+                quantity: qty,
+              );
+              await coordinator.finalize(
+                userId: kLocalNutritionUserScopeId,
+                preview: preview,
+                mealCategory: mealType,
+                loggedAt: loggedAtUtc,
+                localDate: localDate,
+                timezoneId: timezoneId,
+                commandId: 'copy-yesterday::${const Uuid().v4()}',
+                consumptionId: 'copy-yesterday::${const Uuid().v4()}',
+              );
+              copied++;
+            }
+          }
+        }
+      }
+      if (mounted) {
+        _refreshDiaryReads();
+        if (copied > 0) {
+          showIndiFitSuccessFeedback(
+            context,
+            'Copied $copied food${copied == 1 ? '' : 's'} from yesterday into ${foodDiaryMealTitle(mealType)}',
+          );
+        }
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            behavior: SnackBarBehavior.floating,
+            content: Text('Could not copy yesterday\'s meal.'),
+          ),
+        );
+      }
+    }
   }
 
   void _refreshDiaryReads() {

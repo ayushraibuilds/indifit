@@ -142,7 +142,7 @@ class _SavedMealDetailScreenState extends State<SavedMealDetailScreen> {
                   colors: colors.warning,
                   message: meal.requiresPartialAcknowledgement
                       ? 'Some core nutrition is incomplete. Review it before logging.'
-                      : '${ConsumerCopy.nutritionDetailsIncomplete}; unknown values stay unknown.',
+                      : '${ConsumerCopy.nutritionDetailsIncomplete}.',
                 ),
               ],
               const SizedBox(height: 20),

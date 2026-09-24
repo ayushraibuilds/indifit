@@ -64,12 +64,16 @@ class AdaptiveTdeeDayInput {
   final double? scaleWeightKg;
   final double? caloriesConsumed;
   final AdaptiveTdeeIntakeSource intakeSource;
+  final bool isPartial;
+  final double intakeWeight;
 
   const AdaptiveTdeeDayInput({
     required this.localDate,
     this.scaleWeightKg,
     this.caloriesConsumed,
     this.intakeSource = AdaptiveTdeeIntakeSource.none,
+    this.isPartial = false,
+    this.intakeWeight = 1.0,
   });
 
   bool get hasObservedIntake =>
@@ -85,6 +89,8 @@ class AdaptiveTdeeDayOutput {
   final double? rawExpenditureKcal;
   final double smoothedTdeeKcal;
   final bool hasObservedIntake;
+  final bool isPartial;
+  final double intakeWeight;
 
   const AdaptiveTdeeDayOutput({
     required this.localDate,
@@ -93,6 +99,8 @@ class AdaptiveTdeeDayOutput {
     required this.rawExpenditureKcal,
     required this.smoothedTdeeKcal,
     required this.hasObservedIntake,
+    this.isPartial = false,
+    this.intakeWeight = 1.0,
   });
 }
 

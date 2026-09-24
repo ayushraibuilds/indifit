@@ -914,6 +914,9 @@ class _CompleteMacrosProviderApiService extends FoodApiService {
   Future<List<FoodApiResult>> searchOnline(
     String query, {
     CancelToken? cancelToken,
+    String language = 'hinglish',
+    int page = 1,
+    int limit = 20,
   }) async => [
     FoodApiResult(
       name: 'Provider protein shake',

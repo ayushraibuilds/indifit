@@ -7,10 +7,12 @@ import '../../../core/nutrition_legacy_read_models.dart';
 import '../../../core/presentation/consumer_copy.dart';
 import '../../../core/presentation/consumer_number_label.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
+import '../../../core/theme/colors.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
 import '../../../data/repositories/nutrition_target_authority.dart';
 import '../../dashboard/today_consumer_presentation.dart';
 import '../../dashboard/today_surface_controller.dart';
+import '../../settings/nutrition_targets_hub_screen.dart';
 import '../food_log_surface.dart';
 import '../food_search_screen.dart';
 import '../meal_presentation_registry.dart';
@@ -153,6 +155,9 @@ class FoodDiarySummary extends StatelessWidget {
     final macros = presentation.macros
         .where((metric) => metric.nutrientId != 'fibre')
         .toList(growable: false);
+    final fiberMetric = presentation.macros
+        .cast<TodayNutritionMetricPresentation?>()
+        .firstWhere((metric) => metric?.nutrientId == 'fibre', orElse: () => null);
     final hasTarget = calories?.hasTarget == true;
     final consumed = calories?.isAvailable == true
         ? '${calories!.value} ${calories.unit}'
@@ -176,7 +181,44 @@ class FoodDiarySummary extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Daily nutrition', style: B05Typography.title(context)),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text('Daily nutrition', style: B05Typography.title(context)),
+                ),
+                InkWell(
+                  key: const ValueKey('diary_targets_link'),
+                  borderRadius: BorderRadius.circular(6),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const NutritionTargetsHubScreen(),
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Targets',
+                          style: B05Typography.caption(context).copyWith(
+                            color: context.b05Colors.action,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(width: 2),
+                        Icon(
+                          Icons.chevron_right_rounded,
+                          size: 16,
+                          color: context.b05Colors.action,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 10),
             LayoutBuilder(
               builder: (context, constraints) {
@@ -229,9 +271,9 @@ class FoodDiarySummary extends StatelessWidget {
             const SizedBox(height: 14),
             LayoutBuilder(
               builder: (context, constraints) {
-                final itemWidth = (constraints.maxWidth - 12) / 2;
+                final itemWidth = (constraints.maxWidth - 12) / 3;
                 return Wrap(
-                  spacing: 12,
+                  spacing: 6,
                   runSpacing: 8,
                   children: [
                     for (final metric in macros)
@@ -243,6 +285,42 @@ class FoodDiarySummary extends StatelessWidget {
                 );
               },
             ),
+            if (fiberMetric != null && fiberMetric.isAvailable) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: AppColors.fiberTeal.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.fiberTeal.withValues(alpha: 0.2)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.eco_rounded,
+                      size: 16,
+                      color: AppColors.fiberTeal,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Fiber',
+                      style: B05Typography.caption(context).copyWith(
+                        color: AppColors.fiberTeal,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      '${fiberMetric.value} ${fiberMetric.unit}',
+                      style: B05Typography.label(context).copyWith(
+                        color: AppColors.fiberTeal,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             if (presentation.hasIncompleteNutrition) ...[
               const SizedBox(height: 8),
               Text(
@@ -340,6 +418,9 @@ class FoodDiaryMealRow extends StatelessWidget {
     required this.records,
     required this.onOpen,
     required this.onAdd,
+    this.onCopyYesterday,
+    this.eatAgainItems,
+    this.onFastAdd,
     this.isLoading = false,
   });
 
@@ -348,6 +429,9 @@ class FoodDiaryMealRow extends StatelessWidget {
   final List<NutritionHistoricalReadRecord> records;
   final VoidCallback onOpen;
   final VoidCallback onAdd;
+  final VoidCallback? onCopyYesterday;
+  final List<CanonicalRecentFood>? eatAgainItems;
+  final ValueChanged<CanonicalRecentFood>? onFastAdd;
   final bool isLoading;
 
   @override
@@ -365,7 +449,9 @@ class FoodDiaryMealRow extends StatelessWidget {
     final preview = isLoading
         ? 'Loading logged food'
         : records.isEmpty
-        ? 'Nothing logged yet'
+        ? (onCopyYesterday != null
+            ? 'Nothing logged yet · Tap history to copy yesterday'
+            : 'Nothing logged yet')
         : labels.isEmpty
         ? '${records.length} logged'
         : labels.join(' · ');
@@ -374,60 +460,98 @@ class FoodDiaryMealRow extends StatelessWidget {
       button: true,
       label: '$label. ${foodDiaryEnergyLabel(records)}. $preview',
       hint: 'Open $label details or use the add button.',
-      child: InkWell(
-        onTap: onOpen,
-        borderRadius: B05Radii.smallRadius,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 6),
-          child: Row(
-            children: [
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  color: accent.container,
-                  shape: BoxShape.circle,
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: Icon(
-                    foodMealPresentationFor(type).icon,
-                    size: 18,
-                    color: accent.indicator,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(label, style: B05Typography.label(context)),
-                    const SizedBox(height: 2),
-                    Text(
-                      preview,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: B05Typography.caption(context),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          InkWell(
+            onTap: onOpen,
+            borderRadius: B05Radii.smallRadius,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Row(
+                children: [
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: accent.container,
+                      shape: BoxShape.circle,
                     ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: Icon(
+                        foodMealPresentationFor(type).icon,
+                        size: 18,
+                        color: accent.indicator,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(label, style: B05Typography.label(context)),
+                        const SizedBox(height: 2),
+                        Text(
+                          preview,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: B05Typography.caption(context),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Text(
+                    foodDiaryEnergyLabel(records),
+                    style: B05Typography.caption(context).copyWith(
+                      color: context.b05Colors.textPrimary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  if (records.isEmpty && onCopyYesterday != null) ...[
+                    const SizedBox(width: 2),
+                    B05IconAction(
+                      icon: Icons.history_rounded,
+                      label: 'Copy yesterday\'s $label',
+                      hint: 'Copy yesterday\'s $label meal.',
+                      onPressed: onCopyYesterday!,
+                    ),
+                  ],
+                  const SizedBox(width: 4),
+                  B05IconAction(
+                    icon: Icons.add_circle_outline_rounded,
+                    label: 'Add $label',
+                    hint: 'Log food to $label.',
+                    onPressed: onAdd,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (eatAgainItems != null && eatAgainItems!.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(left: 42, bottom: 4),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    for (final item in eatAgainItems!)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 6),
+                        child: ActionChip(
+                          visualDensity: VisualDensity.compact,
+                          avatar: const Icon(Icons.add, size: 14),
+                          label: Text(
+                            item.option.displayName,
+                            style: const TextStyle(fontSize: 11),
+                          ),
+                          onPressed: () => onFastAdd?.call(item),
+                        ),
+                      ),
                   ],
                 ),
               ),
-              Text(
-                foodDiaryEnergyLabel(records),
-                style: B05Typography.caption(context).copyWith(
-                  color: context.b05Colors.textPrimary,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(width: 4),
-              B05IconAction(
-                icon: Icons.add_circle_outline_rounded,
-                label: 'Add $label',
-                hint: 'Log food to $label.',
-                onPressed: onAdd,
-              ),
-            ],
-          ),
-        ),
+            ),
+        ],
       ),
     );
   }

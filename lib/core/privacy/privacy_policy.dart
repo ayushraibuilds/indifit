@@ -10,11 +10,13 @@ class PrivacyPolicy {
   final bool isOfflineOnly;
   final bool isTelemetryEnabled;
   final bool connectedAiEnabled;
+  final bool allowOnlineNutrition;
 
   const PrivacyPolicy({
     required this.isOfflineOnly,
     required this.isTelemetryEnabled,
     this.connectedAiEnabled = AppConfig.connectedAiEnabled,
+    this.allowOnlineNutrition = true,
   });
 
   /// Connected AI assistance is permitted when enabled in configuration and
@@ -27,6 +29,10 @@ class PrivacyPolicy {
 
   /// Third-party Open Food Facts lookups are permitted only when offline-only mode is disabled.
   bool get isOpenFoodFactsAllowed => !isOfflineOnly;
+
+  /// Online nutrition search proxy and barcode lookups are permitted only when
+  /// offline-only mode is disabled AND online nutrition preference is enabled.
+  bool get isNutritionOnlineAllowed => !isOfflineOnly && allowOnlineNutrition;
 
   /// Crash reporting and telemetry are permitted only when offline-only mode is disabled
   /// AND affirmative user consent is given.
@@ -44,6 +50,8 @@ class PrivacyPolicyNotifier extends StateNotifier<PrivacyPolicy> {
           isTelemetryEnabled:
               !(initialPrefs?.getBool(prefOfflineOnly) ?? false) &&
               (initialPrefs?.getBool(prefCrashReportingEnabled) ?? false),
+          allowOnlineNutrition:
+              initialPrefs?.getBool(prefOnlineNutritionAllowed) ?? true,
         ),
       ) {
     if (initialPrefs == null) {
@@ -54,16 +62,20 @@ class PrivacyPolicyNotifier extends StateNotifier<PrivacyPolicy> {
   static const String prefOfflineOnly = AppPreferenceKeys.offlineOnly;
   static const String prefCrashReportingEnabled =
       AppPreferenceKeys.crashReportingEnabled;
+  static const String prefOnlineNutritionAllowed =
+      AppPreferenceKeys.onlineNutritionAllowed;
 
   Future<void> loadPolicy() async {
     final prefs = _prefs ?? await SharedPreferences.getInstance();
     final offline = prefs.getBool(prefOfflineOnly) ?? false;
     final telemetry =
         !offline && (prefs.getBool(prefCrashReportingEnabled) ?? false);
+    final nutrition = prefs.getBool(prefOnlineNutritionAllowed) ?? true;
 
     state = PrivacyPolicy(
       isOfflineOnly: offline,
       isTelemetryEnabled: telemetry,
+      allowOnlineNutrition: nutrition,
     );
   }
 
@@ -72,15 +84,18 @@ class PrivacyPolicyNotifier extends StateNotifier<PrivacyPolicy> {
     await prefs.setBool(prefOfflineOnly, offline);
     if (offline) {
       await prefs.setBool(prefCrashReportingEnabled, false);
-      state = const PrivacyPolicy(
+      state = PrivacyPolicy(
         isOfflineOnly: true,
         isTelemetryEnabled: false,
+        allowOnlineNutrition: state.allowOnlineNutrition,
       );
     } else {
       final telemetry = prefs.getBool(prefCrashReportingEnabled) ?? false;
+      final nutrition = prefs.getBool(prefOnlineNutritionAllowed) ?? true;
       state = PrivacyPolicy(
         isOfflineOnly: false,
         isTelemetryEnabled: telemetry,
+        allowOnlineNutrition: nutrition,
       );
     }
   }
@@ -92,6 +107,17 @@ class PrivacyPolicyNotifier extends StateNotifier<PrivacyPolicy> {
     state = PrivacyPolicy(
       isOfflineOnly: state.isOfflineOnly,
       isTelemetryEnabled: effectiveTelemetry,
+      allowOnlineNutrition: state.allowOnlineNutrition,
+    );
+  }
+
+  Future<void> setOnlineNutritionAllowed(bool allowed) async {
+    final prefs = _prefs ?? await SharedPreferences.getInstance();
+    await prefs.setBool(prefOnlineNutritionAllowed, allowed);
+    state = PrivacyPolicy(
+      isOfflineOnly: state.isOfflineOnly,
+      isTelemetryEnabled: state.isTelemetryEnabled,
+      allowOnlineNutrition: allowed,
     );
   }
 }

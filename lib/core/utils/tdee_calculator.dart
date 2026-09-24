@@ -1,4 +1,4 @@
-enum Gender { male, female }
+enum Gender { male, female, other }
 
 enum ActivityLevel {
   sedentary, // 1.2
@@ -30,6 +30,9 @@ class MacroTargets {
 
 class TdeeCalculator {
   /// Calculates Basal Metabolic Rate (BMR) using Mifflin-St Jeor equation.
+  ///
+  /// For [Gender.other], uses the mathematical midpoint offset (-78.0 kcal,
+  /// between male +5.0 and female -161.0) as an estimated baseline approximation.
   static double calculateBmr({
     required double weightKg,
     required double heightCm,
@@ -39,7 +42,14 @@ class TdeeCalculator {
     if (weightKg <= 0 || heightCm <= 0 || ageYears <= 0) return 0.0;
 
     final base = (10.0 * weightKg) + (6.25 * heightCm) - (5.0 * ageYears);
-    return gender == Gender.male ? base + 5.0 : base - 161.0;
+    switch (gender) {
+      case Gender.male:
+        return base + 5.0;
+      case Gender.female:
+        return base - 161.0;
+      case Gender.other:
+        return base - 78.0;
+    }
   }
 
   /// Returns activity multiplier.

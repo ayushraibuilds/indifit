@@ -34,11 +34,21 @@ from backend.core.security import (  # noqa: E402
     IP_REQUEST_LOGS,
     RATE_LIMIT_WINDOW,
     MAX_REQUESTS_PER_WINDOW,
+    DEVICE_PHOTO_LOGS,
+    PHOTO_V2_WINDOW,
+    PHOTO_V2_MAX_REQUESTS,
 )
+import asyncio
+from contextlib import asynccontextmanager
+
 from backend.routers.ai import ai_router  # noqa: E402
 from backend.routers.backup import backup_router, USER_BACKUPS, BACKUP_BLOBS  # noqa: E402
 from backend.routers.sync import sync_router, USER_MUTATIONS  # noqa: E402
-from backend.routers.food import food_router  # noqa: E402
+from backend.routers.food import (  # noqa: E402
+    food_router,
+    periodic_missed_searches_flusher,
+    flush_missed_searches,
+)
 from backend.services.gemini_client import (  # noqa: E402
     query_gemini_text,
     query_gemini_vision,
@@ -52,8 +62,24 @@ from backend.services.gemini_client import (  # noqa: E402
 )
 
 
+@asynccontextmanager
+async def lifespan(application: FastAPI):
+    # Startup: spawn periodic flusher task
+    flusher_task = asyncio.create_task(periodic_missed_searches_flusher())
+    try:
+        yield
+    finally:
+        # Shutdown: cancel periodic flusher and flush remaining entries
+        flusher_task.cancel()
+        try:
+            await flusher_task
+        except (asyncio.CancelledError, Exception):
+            pass
+        flush_missed_searches()
+
+
 def create_app() -> FastAPI:
-    application = FastAPI(title="IndiFit AI Backend")
+    application = FastAPI(title="IndiFit AI Backend", lifespan=lifespan)
     application.add_middleware(
         CORSMiddleware,
         allow_origins=ALLOWED_ORIGINS,

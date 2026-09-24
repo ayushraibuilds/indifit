@@ -102,11 +102,12 @@ class AdaptiveTdeeEngine {
         rawExpenditure = day.caloriesConsumed!;
       }
 
-      // 3. Expenditure Smoothing & Clamping (Adherence-Neutral)
+      // 3. Expenditure Smoothing & Clamping (Adherence-Neutral & Down-Weighted on Partial Days)
       if (rawExpenditure != null) {
+        final effectiveBeta = policy.betaTdee * day.intakeWeight;
         final targetTdee =
-            (policy.betaTdee * rawExpenditure) +
-            ((1.0 - policy.betaTdee) * smoothedTdee);
+            (effectiveBeta * rawExpenditure) +
+            ((1.0 - effectiveBeta) * smoothedTdee);
         final delta = (targetTdee - smoothedTdee).clamp(
           -policy.maxDailyDeltaKcal,
           policy.maxDailyDeltaKcal,
@@ -125,6 +126,8 @@ class AdaptiveTdeeEngine {
           rawExpenditureKcal: rawExpenditure,
           smoothedTdeeKcal: smoothedTdee,
           hasObservedIntake: day.hasObservedIntake,
+          isPartial: day.isPartial,
+          intakeWeight: day.intakeWeight,
         ),
       );
 

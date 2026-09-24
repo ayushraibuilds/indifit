@@ -666,9 +666,8 @@ void main() {
       await _settleR07D(tester);
 
       final fastAdd = find.bySemanticsLabel('Add Compact paneer');
-      final landingScroll = find.descendant(
-        of: find.byType(ListView),
-        matching: find.byType(Scrollable),
+      final landingScroll = find.byWidgetPredicate(
+        (w) => w is Scrollable && w.axisDirection == AxisDirection.down,
       );
       expect(landingScroll, findsOneWidget);
       await tester.drag(landingScroll, const Offset(0, -180));

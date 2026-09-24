@@ -1503,4 +1503,32 @@ extension DatabaseMigrations on AppDatabase {
       );
     }
   }
+
+  /// Compares the stored manifest version in [foodSearchCache] against
+  /// [kFoodIdentityManifestVersion]. If the manifest version incremented,
+  /// flushes all device-local hybrid search cache entries.
+  Future<void> _checkAndInvalidateFoodSearchCacheOnManifestChange() async {
+    if (await _tableExists('food_search_cache')) {
+      final row = await (select(foodSearchCache)
+            ..where((tbl) => tbl.queryHash.equals('__manifest_version__')))
+          .getSingleOrNull();
+      final storedVersion = row != null ? int.tryParse(row.responseJson) : null;
+      if (storedVersion == null || storedVersion != kFoodIdentityManifestVersion) {
+        await customStatement('DELETE FROM food_search_cache;');
+        await into(foodSearchCache).insertOnConflictUpdate(
+          FoodSearchCacheCompanion.insert(
+            queryHash: '__manifest_version__',
+            queryText: '__manifest_version__',
+            responseJson: kFoodIdentityManifestVersion.toString(),
+            cachedAt: Value(DateTime.now().toUtc()),
+            ttlSeconds: const Value(315360000), // 10 years
+          ),
+        );
+      }
+    }
+  }
+
+  /// Public test & maintenance hook to trigger manifest cache invalidation.
+  Future<void> invalidateFoodSearchCacheIfManifestIncremented() =>
+      _checkAndInvalidateFoodSearchCacheOnManifestChange();
 }

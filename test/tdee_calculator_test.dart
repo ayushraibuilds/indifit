@@ -29,6 +29,19 @@ void main() {
       expect(bmr, equals(1320.25));
     });
 
+    test('calculates other/non-binary BMR via midpoint approximation', () {
+      // Other: 70kg, 170cm, 25 years
+      // 10*70 + 6.25*170 - 5*25 - 78 = 700 + 1062.5 - 125 - 78 = 1559.5 kcal
+      final bmr = TdeeCalculator.calculateBmr(
+        weightKg: 70.0,
+        heightCm: 170.0,
+        ageYears: 25,
+        gender: Gender.other,
+      );
+
+      expect(bmr, equals(1559.5));
+    });
+
     test('calculates TDEE with activity multipliers correctly', () {
       final bmr = 1700.0;
       final tdeeSedentary = TdeeCalculator.calculateTdee(

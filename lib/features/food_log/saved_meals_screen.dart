@@ -570,7 +570,7 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
               color: context.b05Colors.warning.indicator,
               message: meal.requiresPartialAcknowledgement
                   ? 'Incomplete core nutrition: review before logging.'
-                  : 'Nutrition details are partial; unknown values stay unknown.',
+                  : 'Some nutrition details are unavailable.',
             ),
           ],
 

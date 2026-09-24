@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -10,6 +12,7 @@ import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/typed_quantities.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
+import '../../core/widgets/indi_fit_feedback.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/food_repository.dart';
 import '../../data/repositories/nutrition_target_authority.dart';
@@ -199,6 +202,7 @@ class FoodLogEntriesPanel extends ConsumerWidget {
         if (canonicalItems.isNotEmpty)
           _CanonicalFoodRows(
             records: canonicalItems,
+            date: date,
             onRecordTap: onCanonicalRecordTap,
             onItemTap: onCanonicalItemTap,
           ),
@@ -238,11 +242,13 @@ String? _normalizeMealType(String? value) {
 class _CanonicalFoodRows extends StatelessWidget {
   const _CanonicalFoodRows({
     required this.records,
+    this.date,
     this.onRecordTap,
     this.onItemTap,
   });
 
   final List<NutritionHistoricalReadRecord> records;
+  final DateTime? date;
   final ValueChanged<NutritionHistoricalReadRecord>? onRecordTap;
   final void Function(
     NutritionHistoricalReadRecord record,
@@ -272,10 +278,11 @@ class _CanonicalFoodRows extends StatelessWidget {
                 _CanonicalFoodRow(
                   record: record,
                   item: item,
+                  date: date,
                   onItemTap: onItemTap,
                 )
             else
-              _CanonicalFoodRow(record: record, onTap: onRecordTap),
+              _CanonicalFoodRow(record: record, date: date, onTap: onRecordTap),
           ],
           if (entry.key != grouped.keys.last)
             const SizedBox(height: B05Layout.space8),
@@ -285,16 +292,18 @@ class _CanonicalFoodRows extends StatelessWidget {
   }
 }
 
-class _CanonicalFoodRow extends StatelessWidget {
+class _CanonicalFoodRow extends ConsumerWidget {
   const _CanonicalFoodRow({
     required this.record,
     this.item,
+    this.date,
     this.onTap,
     this.onItemTap,
   });
 
   final NutritionHistoricalReadRecord record;
   final NutritionHistoricalReadItem? item;
+  final DateTime? date;
   final ValueChanged<NutritionHistoricalReadRecord>? onTap;
   final void Function(
     NutritionHistoricalReadRecord record,
@@ -303,7 +312,7 @@ class _CanonicalFoodRow extends StatelessWidget {
   onItemTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final presentation = foodMealPresentationFor(record.mealCategory);
     final role = context.b05Colors.meal(
       presentation.accent ?? B05MealAccent.snack,
@@ -338,7 +347,8 @@ class _CanonicalFoodRow extends StatelessWidget {
         item != null &&
         (item!.facts['energy']?.isAvailable != true ||
             item!.facts['protein']?.isAvailable != true);
-    return Semantics(
+
+    final rowContent = Semantics(
       container: true,
       label: '${presentation.label}: $displayName',
       value: '$energy, $protein',
@@ -401,6 +411,73 @@ class _CanonicalFoodRow extends StatelessWidget {
           ),
         ),
       ),
+    );
+
+    final canonical = record is NutritionCanonicalSnapshotReadModel
+        ? record as NutritionCanonicalSnapshotReadModel
+        : null;
+    final isDirectOrQuickAdd = canonical != null &&
+        (canonical.snapshot.sourceType == 'direct_food' ||
+            canonical.snapshot.sourceType == 'quick_add');
+    if (!isDirectOrQuickAdd) return rowContent;
+
+    final snapshotId = canonical.snapshot.id;
+
+    return Dismissible(
+      key: ValueKey('dismissible_${record.stableId}_${item?.stableId ?? 'single'}'),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 16),
+        decoration: BoxDecoration(
+          color: context.b05Colors.danger.container,
+          borderRadius: B05Radii.smallRadius,
+        ),
+        child: Icon(
+          Icons.delete_outline_rounded,
+          color: context.b05Colors.danger.indicator,
+        ),
+      ),
+      onDismissed: (_) {
+        bool undone = false;
+        final timer = Timer(const Duration(seconds: 5), () async {
+          if (!undone) {
+            try {
+              final repository = await ref.read(
+                nutritionConsumptionRepositoryProvider.future,
+              );
+              await repository.retractConsumption(
+                userId: kLocalNutritionUserScopeId,
+                snapshotId: snapshotId,
+                expectedLocalDate: record.localDate,
+                expectedMealCategory: record.mealCategory,
+                commandId: 'swipe-delete::$snapshotId::${DateTime.now().microsecondsSinceEpoch}',
+              );
+              if (date != null) {
+                ref.invalidate(foodDiaryReadModelProvider(_civilDay(date!)));
+                ref.invalidate(canonicalFoodRecordsForDayProvider(_civilDay(date!)));
+              }
+              ref.read(todayNutritionRevisionProvider.notifier).state++;
+            } catch (_) {}
+          }
+        });
+
+        showIndiFitUndoFeedback(
+          context,
+          message: '$displayName removed.',
+          duration: const Duration(seconds: 5),
+          onUndo: () {
+            undone = true;
+            timer.cancel();
+            if (date != null) {
+              ref.invalidate(foodDiaryReadModelProvider(_civilDay(date!)));
+              ref.invalidate(canonicalFoodRecordsForDayProvider(_civilDay(date!)));
+            }
+            ref.read(todayNutritionRevisionProvider.notifier).state++;
+          },
+        );
+      },
+      child: rowContent,
     );
   }
 }

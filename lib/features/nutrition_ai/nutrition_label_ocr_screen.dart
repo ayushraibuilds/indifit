@@ -30,17 +30,20 @@ class NutritionLabelOcrScreen extends ConsumerStatefulWidget {
 class _NutritionLabelOcrScreenState
     extends ConsumerState<NutritionLabelOcrScreen> {
   late final TextEditingController _nameController;
+  late final TextEditingController _customGramsController;
   final Map<String, TextEditingController> _nutrientControllers = {};
 
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController();
+    _customGramsController = TextEditingController();
   }
 
   @override
   void dispose() {
     _nameController.dispose();
+    _customGramsController.dispose();
     for (final c in _nutrientControllers.values) {
       c.dispose();
     }
@@ -70,6 +73,15 @@ class _NutritionLabelOcrScreenState
   void _syncControllers(NutritionLabelOcrState state) {
     if (_nameController.text != state.productName) {
       _nameController.text = state.productName;
+    }
+    if (state.customGrams != null) {
+      final gramsText = state.customGrams!.toStringAsFixed(0);
+      if (_customGramsController.text != gramsText &&
+          double.tryParse(_customGramsController.text) != state.customGrams) {
+        _customGramsController.text = gramsText;
+      }
+    } else if (_customGramsController.text.isNotEmpty && state.customGrams == null) {
+      _customGramsController.clear();
     }
     for (final entry in state.editableNutrients.entries) {
       final text = entry.value.toStringAsFixed(1);
@@ -313,7 +325,7 @@ class _NutritionLabelOcrScreenState
                 segments: const [
                   ButtonSegment(
                     value: 'per_100g',
-                    label: Text('Per 100g'),
+                    label: Text('Per 100g (FSSAI)'),
                     icon: Icon(Icons.scale_rounded),
                   ),
                   ButtonSegment(
@@ -330,13 +342,16 @@ class _NutritionLabelOcrScreenState
                 children: [
                   Expanded(
                     child: Text(
-                      'Logged Amount: ${state.effectiveServingSize.toStringAsFixed(0)} ${state.servingUnit}',
+                      'Logged Amount: ${state.effectiveServingSize % 1 == 0 ? state.effectiveServingSize.toInt() : state.effectiveServingSize.toStringAsFixed(1)} ${state.servingUnit}',
                       style: B05Typography.body(context),
                     ),
                   ),
                   PopupMenuButton<double>(
                     initialValue: state.portionMultiplier,
-                    onSelected: controller.updateMultiplier,
+                    onSelected: (val) {
+                      _customGramsController.clear();
+                      controller.updateMultiplier(val);
+                    },
                     itemBuilder: (_) => const [
                       PopupMenuItem(value: 0.5, child: Text('0.5x (Half)')),
                       PopupMenuItem(value: 1.0, child: Text('1.0x (Standard)')),
@@ -344,18 +359,40 @@ class _NutritionLabelOcrScreenState
                       PopupMenuItem(value: 2.0, child: Text('2.0x (Double)')),
                     ],
                     child: Chip(
-                      label: Text('${state.portionMultiplier.toStringAsFixed(1)}x portion'),
+                      label: Text(
+                        state.customGrams != null
+                            ? '${state.portionMultiplier.toStringAsFixed(1)}x (Custom)'
+                            : '${state.portionMultiplier.toStringAsFixed(1)}x portion',
+                      ),
                       avatar: const Icon(Icons.arrow_drop_down),
                     ),
                   ),
                 ],
+              ),
+              const SizedBox(height: B05Layout.space12),
+              TextField(
+                controller: _customGramsController,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(
+                  labelText: 'Custom Grams Portion (Optional)',
+                  hintText: 'e.g. 75',
+                  suffixText: 'g',
+                  border: const OutlineInputBorder(),
+                  helperText: state.customGrams != null
+                      ? 'Using custom portion: ${state.customGrams!.toStringAsFixed(0)}g (${(state.effectiveMultiplier * 100).toStringAsFixed(0)}% of basis)'
+                      : 'Enter exact grams e.g. 75g or use standard multiplier above',
+                ),
+                onChanged: (text) {
+                  final parsed = double.tryParse(text.trim());
+                  controller.updateCustomGrams(parsed);
+                },
               ),
             ],
           ),
         ),
         const SizedBox(height: B05Layout.space16),
 
-        // Nutrients Table with Confidence Badges
+        // Nutrients Table with Confidence Badges (9 mandatory nutrients)
         B05Surface(
           padding: const EdgeInsets.all(B05Layout.space16),
           showBorder: true,
@@ -410,6 +447,56 @@ class _NutritionLabelOcrScreenState
                 key: 'fiber',
                 unit: 'g',
                 ocrData: ocr?.nutrients['fiber'],
+                state: state,
+                controller: controller,
+              ),
+              const Divider(),
+              _buildNutrientRow(
+                context,
+                label: 'Sodium',
+                key: 'sodium',
+                unit: 'mg',
+                ocrData: ocr?.nutrients['sodium'],
+                state: state,
+                controller: controller,
+              ),
+              const Divider(),
+              _buildNutrientRow(
+                context,
+                label: 'Added Sugar',
+                key: 'sugar',
+                unit: 'g',
+                ocrData: ocr?.nutrients['sugar'],
+                state: state,
+                controller: controller,
+              ),
+              const Divider(),
+              _buildNutrientRow(
+                context,
+                label: 'Saturated Fat',
+                key: 'saturated_fat',
+                unit: 'g',
+                ocrData: ocr?.nutrients['saturated_fat'],
+                state: state,
+                controller: controller,
+              ),
+              const Divider(),
+              _buildNutrientRow(
+                context,
+                label: 'Trans Fat',
+                key: 'trans_fat',
+                unit: 'g',
+                ocrData: ocr?.nutrients['trans_fat'],
+                state: state,
+                controller: controller,
+              ),
+              const Divider(),
+              _buildNutrientRow(
+                context,
+                label: 'Cholesterol',
+                key: 'cholesterol',
+                unit: 'mg',
+                ocrData: ocr?.nutrients['cholesterol'],
                 state: state,
                 controller: controller,
               ),
@@ -489,7 +576,10 @@ class _NutritionLabelOcrScreenState
 
     Color badgeColor;
     String badgeText;
-    if (confidence == 'high') {
+    if (ocrData == null) {
+      badgeColor = colors.info.indicator;
+      badgeText = 'Optional';
+    } else if (confidence == 'high') {
       badgeColor = colors.success.indicator;
       badgeText = 'High';
     } else if (confidence == 'low') {
@@ -499,6 +589,13 @@ class _NutritionLabelOcrScreenState
       badgeColor = colors.info.indicator;
       badgeText = 'Medium';
     }
+
+    final textCtrl = _nutrientControllers.putIfAbsent(
+      key,
+      () => TextEditingController(
+        text: state.editableNutrients[key]?.toStringAsFixed(1) ?? '',
+      ),
+    );
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: B05Layout.space8),
@@ -534,7 +631,7 @@ class _NutritionLabelOcrScreenState
             child: SizedBox(
               height: 40,
               child: TextField(
-                controller: _nutrientControllers[key],
+                controller: textCtrl,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 textAlign: TextAlign.right,
                 decoration: InputDecoration(

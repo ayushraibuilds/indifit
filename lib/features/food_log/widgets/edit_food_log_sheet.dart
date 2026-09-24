@@ -29,6 +29,13 @@ class _EditFoodLogSheetState extends State<EditFoodLogSheet> {
   late TextEditingController _fatController;
   late TextEditingController _servingController;
 
+  String? _nameError;
+  String? _caloriesError;
+  String? _servingError;
+  String? _proteinError;
+  String? _carbsError;
+  String? _fatError;
+
   @override
   void initState() {
     super.initState();
@@ -63,23 +70,68 @@ class _EditFoodLogSheetState extends State<EditFoodLogSheet> {
 
   void _submit() {
     final name = _nameController.text.trim();
-    final cals = int.tryParse(_caloriesController.text) ?? widget.log.calories;
-    final p = double.tryParse(_proteinController.text) ?? widget.log.proteinG;
-    final c = double.tryParse(_carbsController.text) ?? widget.log.carbsG;
-    final f = double.tryParse(_fatController.text) ?? widget.log.fatG;
-    final s =
-        double.tryParse(_servingController.text) ?? widget.log.servingLogged;
+    final calsText = _caloriesController.text.trim().replaceAll(',', '.');
+    final cals = int.tryParse(calsText);
+    final servingText = _servingController.text.trim().replaceAll(',', '.');
+    final s = double.tryParse(servingText);
+    final pText = _proteinController.text.trim().replaceAll(',', '.');
+    final p = double.tryParse(pText);
+    final cText = _carbsController.text.trim().replaceAll(',', '.');
+    final c = double.tryParse(cText);
+    final fText = _fatController.text.trim().replaceAll(',', '.');
+    final f = double.tryParse(fText);
 
-    if (name.isEmpty) return;
+    String? nameErr;
+    String? calsErr;
+    String? servingErr;
+    String? pErr;
+    String? cErr;
+    String? fErr;
+
+    if (name.isEmpty) {
+      nameErr = 'Food name is required';
+    }
+    if (cals == null || cals < 0) {
+      calsErr = 'Valid calories required (≥ 0)';
+    }
+    if (s == null || s <= 0) {
+      servingErr = 'Positive serving required';
+    }
+    if (p == null || p < 0) {
+      pErr = '≥ 0 required';
+    }
+    if (c == null || c < 0) {
+      cErr = '≥ 0 required';
+    }
+    if (f == null || f < 0) {
+      fErr = '≥ 0 required';
+    }
+
+    if (nameErr != null ||
+        calsErr != null ||
+        servingErr != null ||
+        pErr != null ||
+        cErr != null ||
+        fErr != null) {
+      setState(() {
+        _nameError = nameErr;
+        _caloriesError = calsErr;
+        _servingError = servingErr;
+        _proteinError = pErr;
+        _carbsError = cErr;
+        _fatError = fErr;
+      });
+      return;
+    }
 
     widget.onSave(
       id: widget.log.id,
       name: name,
-      calories: cals,
-      proteinG: p,
-      carbsG: c,
-      fatG: f,
-      servingLogged: s,
+      calories: cals!,
+      proteinG: p!,
+      carbsG: c!,
+      fatG: f!,
+      servingLogged: s!,
     );
     Navigator.pop(context);
   }
@@ -125,17 +177,30 @@ class _EditFoodLogSheetState extends State<EditFoodLogSheet> {
                   const SizedBox(height: 16),
                   TextField(
                     controller: _nameController,
-                    decoration: const InputDecoration(labelText: 'Food Name'),
+                    onChanged: (_) {
+                      if (_nameError != null) setState(() => _nameError = null);
+                    },
+                    decoration: InputDecoration(
+                      labelText: 'Food Name',
+                      errorText: _nameError,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
                         child: TextField(
                           controller: _caloriesController,
                           keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(
+                          onChanged: (_) {
+                            if (_caloriesError != null) {
+                              setState(() => _caloriesError = null);
+                            }
+                          },
+                          decoration: InputDecoration(
                             labelText: 'Calories (kcal)',
+                            errorText: _caloriesError,
                           ),
                         ),
                       ),
@@ -146,8 +211,14 @@ class _EditFoodLogSheetState extends State<EditFoodLogSheet> {
                           keyboardType: const TextInputType.numberWithOptions(
                             decimal: true,
                           ),
+                          onChanged: (_) {
+                            if (_servingError != null) {
+                              setState(() => _servingError = null);
+                            }
+                          },
                           decoration: InputDecoration(
                             labelText: 'Servings (${widget.log.servingUnit})',
+                            errorText: _servingError,
                           ),
                         ),
                       ),
@@ -155,6 +226,7 @@ class _EditFoodLogSheetState extends State<EditFoodLogSheet> {
                   ),
                   const SizedBox(height: 12),
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
                         child: TextField(
@@ -162,8 +234,14 @@ class _EditFoodLogSheetState extends State<EditFoodLogSheet> {
                           keyboardType: const TextInputType.numberWithOptions(
                             decimal: true,
                           ),
-                          decoration: const InputDecoration(
+                          onChanged: (_) {
+                            if (_proteinError != null) {
+                              setState(() => _proteinError = null);
+                            }
+                          },
+                          decoration: InputDecoration(
                             labelText: 'Protein (g)',
+                            errorText: _proteinError,
                           ),
                         ),
                       ),
@@ -174,8 +252,14 @@ class _EditFoodLogSheetState extends State<EditFoodLogSheet> {
                           keyboardType: const TextInputType.numberWithOptions(
                             decimal: true,
                           ),
-                          decoration: const InputDecoration(
+                          onChanged: (_) {
+                            if (_carbsError != null) {
+                              setState(() => _carbsError = null);
+                            }
+                          },
+                          decoration: InputDecoration(
                             labelText: 'Carbs (g)',
+                            errorText: _carbsError,
                           ),
                         ),
                       ),
@@ -186,8 +270,14 @@ class _EditFoodLogSheetState extends State<EditFoodLogSheet> {
                           keyboardType: const TextInputType.numberWithOptions(
                             decimal: true,
                           ),
-                          decoration: const InputDecoration(
+                          onChanged: (_) {
+                            if (_fatError != null) {
+                              setState(() => _fatError = null);
+                            }
+                          },
+                          decoration: InputDecoration(
                             labelText: 'Fat (g)',
+                            errorText: _fatError,
                           ),
                         ),
                       ),

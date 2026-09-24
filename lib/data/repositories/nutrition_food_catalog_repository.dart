@@ -196,6 +196,11 @@ class NutritionFoodCatalogRepository {
     required double? carbohydrateG,
     required double? fatG,
     double? fibreG,
+    double? sodiumMg,
+    double? addedSugarG,
+    double? saturatedFatG,
+    double? cholesterolMg,
+    double? transFatG,
     String? barcode,
   }) async {
     final name = displayName.trim();
@@ -220,9 +225,11 @@ class NutritionFoodCatalogRepository {
     }
     final id = 'user-food::${const Uuid().v4()}';
     final sourceReference =
-        'user-custom-food::$id|serving=${_numberLabel(servingSize)} $unit${storedBarcode == null ? '' : '|barcode=$storedBarcode'}';
+        'user-custom-food::$id|serving=${_numberLabel(servingSize)} $unit'
+        '${storedBarcode == null ? '' : '|barcode=$storedBarcode'}'
+        '${transFatG == null ? '' : '|trans_fat=${_numberLabel(transFatG)}g'}';
     final servingDefinition = ServingDefinitionReference(
-      id: 'food-serving::$id',
+        id: 'food-serving::$id',
       revision: 'b03-food-entry-v1',
       source: 'catalogue',
     );
@@ -236,6 +243,10 @@ class NutritionFoodCatalogRepository {
       'carbohydrate': carbohydrateG,
       'fat': fatG,
       'fibre': fibreG,
+      'sodium': sodiumMg,
+      'added_sugar': addedSugarG,
+      'saturated_fat': saturatedFatG,
+      'cholesterol': cholesterolMg,
     };
     final facts = <String, NutrientFact>{};
     for (final definition in _registry.definitions) {

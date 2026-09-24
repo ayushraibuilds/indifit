@@ -97,6 +97,7 @@ class FoodSearchRecentList extends StatelessWidget {
   final VoidCallback onOpenBarcode;
   final VoidCallback onScanNutritionLabel;
   final VoidCallback onDescribeMeal;
+  final VoidCallback? onQuickAddMacros;
   final Widget? entriesPanel;
 
   const FoodSearchRecentList({
@@ -114,6 +115,7 @@ class FoodSearchRecentList extends StatelessWidget {
     required this.onOpenBarcode,
     required this.onScanNutritionLabel,
     required this.onDescribeMeal,
+    this.onQuickAddMacros,
     this.entriesPanel,
   });
 
@@ -216,6 +218,13 @@ class FoodSearchRecentList extends StatelessWidget {
           detail: 'Log multi-item meals with standard Indian portions.',
           onTap: onDescribeMeal,
         ),
+        if (onQuickAddMacros != null)
+          FoodSearchNavigationCard(
+            icon: Icons.bolt_rounded,
+            title: 'Quick-add calories & macros',
+            detail: 'Log calories and macros in under 10 seconds.',
+            onTap: onQuickAddMacros!,
+          ),
         if (entriesPanel != null) ...[
           const SizedBox(height: 16),
           entriesPanel!,

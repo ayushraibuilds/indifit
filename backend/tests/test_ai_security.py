@@ -80,6 +80,11 @@ class AiRouteSecurityTests(unittest.TestCase):
             "/api/ai/meal-decompose": {
                 "json": {"text": "2 rotis and 1 katori dal tadka"},
             },
+            "/api/ai/meal-estimate-photo-v2": {
+                "files": {
+                    "image": ("meal.jpg", b"test-image", "image/jpeg"),
+                },
+            },
         }
 
     def test_health_and_root_are_public(self):

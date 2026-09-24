@@ -97,6 +97,31 @@ class NutritionLabelOcrState {
     return raw != null ? raw * effectiveMultiplier : null;
   }
 
+  double? get effectiveSodiumMg {
+    final raw = editableNutrients['sodium'];
+    return raw != null ? raw * effectiveMultiplier : null;
+  }
+
+  double? get effectiveSugarG {
+    final raw = editableNutrients['sugar'];
+    return raw != null ? raw * effectiveMultiplier : null;
+  }
+
+  double? get effectiveSaturatedFatG {
+    final raw = editableNutrients['saturated_fat'];
+    return raw != null ? raw * effectiveMultiplier : null;
+  }
+
+  double? get effectiveTransFatG {
+    final raw = editableNutrients['trans_fat'];
+    return raw != null ? raw * effectiveMultiplier : null;
+  }
+
+  double? get effectiveCholesterolMg {
+    final raw = editableNutrients['cholesterol'];
+    return raw != null ? raw * effectiveMultiplier : null;
+  }
+
   NutritionLabelOcrState copyWith({
     NutritionLabelOcrStatus? status,
     NutritionLabelOcrResult? ocrResult,
@@ -210,8 +235,12 @@ class NutritionLabelOcrController extends StateNotifier<NutritionLabelOcrState> 
     );
   }
 
-  void updateCustomGrams(double grams) {
-    state = state.copyWith(customGrams: grams);
+  void updateCustomGrams(double? grams) {
+    if (grams == null || grams <= 0) {
+      state = state.copyWith(clearCustomGrams: true);
+    } else {
+      state = state.copyWith(customGrams: grams);
+    }
   }
 
   void updateProductName(String name) {
@@ -243,6 +272,11 @@ class NutritionLabelOcrController extends StateNotifier<NutritionLabelOcrState> 
         carbohydrateG: state.effectiveCarbsG,
         fatG: state.effectiveFatG,
         fibreG: state.effectiveFiberG,
+        sodiumMg: state.effectiveSodiumMg,
+        addedSugarG: state.effectiveSugarG,
+        saturatedFatG: state.effectiveSaturatedFatG,
+        cholesterolMg: state.effectiveCholesterolMg,
+        transFatG: state.effectiveTransFatG,
       );
 
       state = state.copyWith(
@@ -281,6 +315,11 @@ class NutritionLabelOcrController extends StateNotifier<NutritionLabelOcrState> 
         carbohydrateG: state.effectiveCarbsG,
         fatG: state.effectiveFatG,
         fibreG: state.effectiveFiberG,
+        sodiumMg: state.effectiveSodiumMg,
+        addedSugarG: state.effectiveSugarG,
+        saturatedFatG: state.effectiveSaturatedFatG,
+        cholesterolMg: state.effectiveCholesterolMg,
+        transFatG: state.effectiveTransFatG,
       );
 
       final coordinator = await _loggingCoordinator();
@@ -536,6 +575,257 @@ class NaturalLanguageMealController
     } catch (e) {
       state = state.copyWith(
         status: NaturalLanguageMealStatus.failure,
+        errorMessage: e.toString(),
+      );
+      return false;
+    }
+  }
+}
+
+// =============================================================================
+// PHOTO MEAL CONTROLLER (Review-Only Multimodal V2)
+// =============================================================================
+
+enum PhotoMealStatus {
+  idle,
+  picking,
+  scanning,
+  ready,
+  logging,
+  success,
+  failure,
+}
+
+class PhotoMealState {
+  final PhotoMealStatus status;
+  final MealDecompositionResult? result;
+  final List<DecomposedFoodItem> editableItems;
+  final String? imagePath;
+  final String? errorMessage;
+  final bool isLogged;
+
+  const PhotoMealState({
+    this.status = PhotoMealStatus.idle,
+    this.result,
+    this.editableItems = const [],
+    this.imagePath,
+    this.errorMessage,
+    this.isLogged = false,
+  });
+
+  bool get isBusy =>
+      status == PhotoMealStatus.picking ||
+      status == PhotoMealStatus.scanning ||
+      status == PhotoMealStatus.logging;
+
+  int get totalCalories =>
+      editableItems.fold(0, (sum, item) => sum + item.estimatedCalories);
+  double get totalProtein =>
+      editableItems.fold(0.0, (sum, item) => sum + item.estimatedProtein);
+  double get totalCarbs =>
+      editableItems.fold(0.0, (sum, item) => sum + item.estimatedCarbs);
+  double get totalFat =>
+      editableItems.fold(0.0, (sum, item) => sum + item.estimatedFat);
+
+  PhotoMealState copyWith({
+    PhotoMealStatus? status,
+    MealDecompositionResult? result,
+    List<DecomposedFoodItem>? editableItems,
+    String? imagePath,
+    String? errorMessage,
+    bool clearError = false,
+    bool? isLogged,
+  }) {
+    return PhotoMealState(
+      status: status ?? this.status,
+      result: result ?? this.result,
+      editableItems: editableItems ?? this.editableItems,
+      imagePath: imagePath ?? this.imagePath,
+      errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+      isLogged: isLogged ?? this.isLogged,
+    );
+  }
+}
+
+class PhotoMealController extends StateNotifier<PhotoMealState> {
+  final Future<NaturalLanguageMealService> Function() _mealService;
+  final Future<NutritionFoodCatalogRepository> Function() _catalogRepository;
+  final Future<NutritionFoodLoggingCoordinator> Function() _loggingCoordinator;
+  final String _userId;
+  final Future<String> Function() _timezoneId;
+  final ImagePicker _picker;
+
+  PhotoMealController({
+    required Future<NaturalLanguageMealService> Function() mealService,
+    required Future<NutritionFoodCatalogRepository> Function() catalogRepository,
+    required Future<NutritionFoodLoggingCoordinator> Function() loggingCoordinator,
+    required String userId,
+    required Future<String> Function() timezoneId,
+    ImagePicker? picker,
+  })  : _mealService = mealService,
+        _catalogRepository = catalogRepository,
+        _loggingCoordinator = loggingCoordinator,
+        _userId = userId,
+        _timezoneId = timezoneId,
+        _picker = picker ?? ImagePicker(),
+        super(const PhotoMealState());
+
+  Future<void> pickAndScan(ImageSource source, {required String deviceUuid}) async {
+    state = state.copyWith(status: PhotoMealStatus.picking, clearError: true);
+    try {
+      final file = await _picker.pickImage(
+        source: source,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 80,
+      );
+
+      if (file == null) {
+        state = state.copyWith(status: PhotoMealStatus.idle);
+        return;
+      }
+
+      state = state.copyWith(
+        status: PhotoMealStatus.scanning,
+        imagePath: file.path,
+      );
+
+      final mealService = await _mealService();
+      final res = await mealService.decomposePhotoMeal(
+        imagePath: file.path,
+        deviceUuid: deviceUuid,
+      );
+
+      state = state.copyWith(
+        status: PhotoMealStatus.ready,
+        result: res,
+        editableItems: List.from(res.items),
+      );
+    } catch (e) {
+      state = state.copyWith(
+        status: PhotoMealStatus.failure,
+        errorMessage: e.toString(),
+      );
+    }
+  }
+
+  void updateItemQuantity(int index, double newAmount, String newUnit) {
+    if (index < 0 || index >= state.editableItems.length) return;
+    final item = state.editableItems[index];
+    final oldAmount = item.quantityAmount > 0 ? item.quantityAmount : 1.0;
+    final ratio = newAmount > 0 ? (newAmount / oldAmount) : 1.0;
+
+    final updated = item.copyWith(
+      quantityAmount: newAmount,
+      quantityUnit: newUnit,
+      estimatedCalories: (item.estimatedCalories * ratio).round(),
+      estimatedProtein: item.estimatedProtein * ratio,
+      estimatedCarbs: item.estimatedCarbs * ratio,
+      estimatedFat: item.estimatedFat * ratio,
+    );
+
+    final list = List<DecomposedFoodItem>.from(state.editableItems);
+    list[index] = updated;
+    state = state.copyWith(editableItems: list);
+  }
+
+  void updateItemFoodMatch(int index, NutritionFoodOption? option) {
+    if (index < 0 || index >= state.editableItems.length) return;
+    final list = List<DecomposedFoodItem>.from(state.editableItems);
+    list[index] = list[index].copyWith(
+      matchedCatalogOption: option,
+      clearCatalogOption: option == null,
+    );
+    state = state.copyWith(editableItems: list);
+  }
+
+  void removeItem(int index) {
+    if (index < 0 || index >= state.editableItems.length) return;
+    final list = List<DecomposedFoodItem>.from(state.editableItems);
+    list.removeAt(index);
+    state = state.copyWith(editableItems: list);
+  }
+
+  void reset() {
+    state = const PhotoMealState();
+  }
+
+  Future<bool> logAllToDiary({
+    required String mealType,
+    required DateTime date,
+  }) async {
+    if (state.editableItems.isEmpty) return false;
+
+    state = state.copyWith(
+      status: PhotoMealStatus.logging,
+      clearError: true,
+    );
+
+    try {
+      final mealGroupId = 'photo-meal::${const Uuid().v4()}';
+      final localDate =
+          '${date.year.toString().padLeft(4, '0')}-'
+          '${date.month.toString().padLeft(2, '0')}-'
+          '${date.day.toString().padLeft(2, '0')}';
+      final tz = await _timezoneId();
+      final catalog = await _catalogRepository();
+      final coordinator = await _loggingCoordinator();
+
+      for (final item in state.editableItems) {
+        NutritionFoodOption option;
+        Quantity quantity;
+
+        if (item.matchedCatalogOption != null) {
+          option = item.matchedCatalogOption!;
+          if (option.baseQuantity.unit == QuantityUnit.gram) {
+            final isGram = item.quantityUnit.toLowerCase() == 'g' ||
+                item.quantityUnit.toLowerCase() == 'grams';
+            final grams = isGram ? item.quantityAmount : (item.quantityAmount * 100.0);
+            quantity = Quantity.fromNum(amount: grams, unit: QuantityUnit.gram);
+          } else {
+            quantity = Quantity.fromNum(
+              amount: item.quantityAmount,
+              unit: option.baseQuantity.unit,
+              context: option.baseQuantity.context,
+            );
+          }
+        } else {
+          option = await catalog.createUserFood(
+            displayName: item.foodName,
+            servingSize: item.quantityAmount > 0 ? item.quantityAmount : 1.0,
+            servingUnit: item.quantityUnit,
+            energyKcal: item.estimatedCalories.toDouble(),
+            proteinG: item.estimatedProtein,
+            carbohydrateG: item.estimatedCarbs,
+            fatG: item.estimatedFat,
+          );
+          quantity = option.baseQuantity;
+        }
+
+        final preview = await coordinator.preview(
+          option: option,
+          quantity: quantity,
+        );
+
+        await coordinator.finalize(
+          userId: _userId,
+          preview: preview,
+          mealCategory: mealType,
+          mealGroupId: mealGroupId,
+          loggedAt: date.toUtc(),
+          localDate: localDate,
+          timezoneId: tz,
+        );
+      }
+
+      state = state.copyWith(
+        status: PhotoMealStatus.success,
+        isLogged: true,
+      );
+      return true;
+    } catch (e) {
+      state = state.copyWith(
+        status: PhotoMealStatus.failure,
         errorMessage: e.toString(),
       );
       return false;
