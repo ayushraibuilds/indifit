@@ -219,7 +219,8 @@ class NutritionLabelOcrController extends StateNotifier<NutritionLabelOcrState> 
     } catch (e) {
       state = state.copyWith(
         status: NutritionLabelOcrStatus.failure,
-        errorMessage: e.toString(),
+        errorMessage:
+            'Could not extract nutrition label facts. Please enter values manually.',
       );
     }
   }
@@ -287,7 +288,7 @@ class NutritionLabelOcrController extends StateNotifier<NutritionLabelOcrState> 
     } catch (e) {
       state = state.copyWith(
         status: NutritionLabelOcrStatus.failure,
-        errorMessage: e.toString(),
+        errorMessage: 'Could not save scanned food to catalog. Please try again.',
       );
       return null;
     }
@@ -350,7 +351,7 @@ class NutritionLabelOcrController extends StateNotifier<NutritionLabelOcrState> 
     } catch (e) {
       state = state.copyWith(
         status: NutritionLabelOcrStatus.failure,
-        errorMessage: e.toString(),
+        errorMessage: 'Could not log meal to diary. Please try again.',
       );
       return false;
     }
@@ -457,7 +458,9 @@ class NaturalLanguageMealController
     } catch (e) {
       state = state.copyWith(
         status: NaturalLanguageMealStatus.failure,
-        errorMessage: e.toString(),
+        errorMessage: e is MealAiException
+            ? e.message
+            : 'Could not analyze meal description. Please check your connection or use food search.',
       );
     }
   }
@@ -575,7 +578,7 @@ class NaturalLanguageMealController
     } catch (e) {
       state = state.copyWith(
         status: NaturalLanguageMealStatus.failure,
-        errorMessage: e.toString(),
+        errorMessage: 'Could not log meal to diary. Please try again.',
       );
       return false;
     }
@@ -704,7 +707,8 @@ class PhotoMealController extends StateNotifier<PhotoMealState> {
     } catch (e) {
       state = state.copyWith(
         status: PhotoMealStatus.failure,
-        errorMessage: e.toString(),
+        errorMessage:
+            'Could not analyze meal photo. Please try again or use text search.',
       );
     }
   }
@@ -826,7 +830,7 @@ class PhotoMealController extends StateNotifier<PhotoMealState> {
     } catch (e) {
       state = state.copyWith(
         status: PhotoMealStatus.failure,
-        errorMessage: e.toString(),
+        errorMessage: 'Unable to log meal items. Please check your connection and try again.',
       );
       return false;
     }

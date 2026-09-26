@@ -75,7 +75,7 @@ void main() {
     expect(container.read(themeModeProvider), ThemeMode.system);
   });
 
-  testWidgets('TodayHeader displays Appearance action button and triggers sheet', (
+  testWidgets('TodayHeader displays theme toggle action button and triggers callback', (
     tester,
   ) async {
     var appearanceOpened = false;
@@ -95,10 +95,10 @@ void main() {
       ),
     );
 
-    expect(find.byIcon(Icons.palette_outlined), findsOneWidget);
+    expect(find.byIcon(Icons.dark_mode_outlined), findsOneWidget);
     expect(find.byIcon(Icons.tune_rounded), findsNothing);
 
-    await tester.tap(find.byIcon(Icons.palette_outlined));
+    await tester.tap(find.byIcon(Icons.dark_mode_outlined));
     await tester.pump();
 
     expect(appearanceOpened, isTrue);

@@ -207,6 +207,11 @@ class DashboardController extends StateNotifier<DashboardState> {
     }
   }
 
+  /// Clears in-memory newly unlocked achievement IDs to prevent recurring celebration feedback.
+  void clearNewlyUnlockedAchievements() {
+    state = state.copyWith(newlyUnlockedAchievementIds: const []);
+  }
+
   Future<void> loadWeightHistory() async {
     final repo = _ref.read(workoutRepositoryProvider);
     final measurements = await repo.getBodyMeasurements();

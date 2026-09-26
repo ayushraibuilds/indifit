@@ -98,10 +98,12 @@ class ThaliNutritionSummaryBar extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       key: const Key('thali_summary_calories'),
-                      energy != null ? '${energy.round()} kcal' : '-- kcal',
+                      energy != null
+                          ? '${isPartial ? '~' : ''}${energy.round()} kcal'
+                          : (hasItems ? 'Calculating...' : '-- kcal'),
                       style: TextStyle(
                         color: colors.textPrimary,
-                        fontSize: 20,
+                        fontSize: energy == null && hasItems ? 16 : 20,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -115,8 +117,8 @@ class ThaliNutritionSummaryBar extends StatelessWidget {
                   _MacroBadge(
                     label: 'P',
                     value: protein != null
-                        ? '${(protein * 10).round() / 10}g'
-                        : '--',
+                        ? '${isPartial ? '~' : ''}${(protein * 10).round() / 10}g'
+                        : (hasItems ? '...' : '--'),
                     color: colors.action,
                     textColor: colors.textPrimary,
                   ),
@@ -124,15 +126,17 @@ class ThaliNutritionSummaryBar extends StatelessWidget {
                   _MacroBadge(
                     label: 'C',
                     value: carbs != null
-                        ? '${(carbs * 10).round() / 10}g'
-                        : '--',
+                        ? '${isPartial ? '~' : ''}${(carbs * 10).round() / 10}g'
+                        : (hasItems ? '...' : '--'),
                     color: colors.warning.indicator,
                     textColor: colors.textPrimary,
                   ),
                   const SizedBox(width: 8),
                   _MacroBadge(
                     label: 'F',
-                    value: fat != null ? '${(fat * 10).round() / 10}g' : '--',
+                    value: fat != null
+                        ? '${isPartial ? '~' : ''}${(fat * 10).round() / 10}g'
+                        : (hasItems ? '...' : '--'),
                     color: colors.info.indicator,
                     textColor: colors.textPrimary,
                   ),

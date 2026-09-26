@@ -536,16 +536,6 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
                 ),
               ],
             ),
-      floatingActionButton: items.isNotEmpty
-          ? FloatingActionButton.extended(
-              key: const Key('thali_add_item_fab'),
-              onPressed: () => _openComponentPicker(controller, state),
-              backgroundColor: colors.action,
-              foregroundColor: colors.onAction,
-              icon: const Icon(Icons.add),
-              label: const Text('Add Dish'),
-            )
-          : null,
     );
   }
 

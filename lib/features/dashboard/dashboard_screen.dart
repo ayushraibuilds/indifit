@@ -412,7 +412,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         } catch (_) {}
         prefs ??= await SharedPreferences.getInstance();
         await AchievementService.markCelebrated(prefs, nextIds);
+        ref.read(dashboardControllerProvider.notifier).clearNewlyUnlockedAchievements();
         if (!context.mounted) return;
+        dismissIndiFitFeedback(context);
         showIndiFitSuccessFeedback(
           context,
           '$plural unlocked: ${nextTitles.join(', ')}',

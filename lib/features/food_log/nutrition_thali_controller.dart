@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
@@ -123,6 +125,7 @@ class NutritionThaliController extends StateNotifier<NutritionThaliState> {
   _NutritionThaliFinalizeContext? _finalizeContext;
   String? _draftIdForRetry;
   _NutritionThaliRetryAction _retryAction = _NutritionThaliRetryAction.none;
+  Timer? _previewDebounceTimer;
 
   NutritionThaliController({
     required Future<NutritionThaliRepository> repository,
@@ -132,6 +135,22 @@ class NutritionThaliController extends StateNotifier<NutritionThaliState> {
   }) : _repositoryFuture = repository,
        _uuid = uuid ?? const Uuid(),
        super(const NutritionThaliState());
+
+  @override
+  void dispose() {
+    _previewDebounceTimer?.cancel();
+    super.dispose();
+  }
+
+  void _scheduleDebouncedPreview() {
+    _previewDebounceTimer?.cancel();
+    if (state.draft == null || state.draft!.items.isEmpty) return;
+    _previewDebounceTimer = Timer(const Duration(milliseconds: 250), () {
+      if (mounted && state.draft?.items.isNotEmpty == true) {
+        unawaited(preview());
+      }
+    });
+  }
 
   Future<void> initialize() async {
     state = state.copyWith(
@@ -751,6 +770,9 @@ class NutritionThaliController extends StateNotifier<NutritionThaliState> {
       errorCode: null,
       errorMessage: null,
     );
+    if (dirty && draft.items.isNotEmpty) {
+      _scheduleDebouncedPreview();
+    }
   }
 
   void _clearSearchResults() {

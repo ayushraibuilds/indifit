@@ -129,7 +129,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
       onRefresh: _refresh,
       child: SingleChildScrollView(
         key: const ValueKey('progress_scroll_view'),
-        physics: const AlwaysScrollableScrollPhysics(),
+        physics: const ClampingScrollPhysics(
+          parent: AlwaysScrollableScrollPhysics(),
+        ),
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
         child: Align(
           alignment: Alignment.topCenter,
@@ -149,6 +151,8 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                       ),
                   units: units,
                 ),
+                const SizedBox(height: B05Layout.space16),
+                _buildMilestonesCard(context),
                 if (snapshot.unavailableSections.isNotEmpty) ...[
                   const SizedBox(height: B05Layout.space12),
                   ConsumerStatusRow(
@@ -405,6 +409,65 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
       unawaited(IndiFitHaptics.confirmation());
       await _refresh();
     });
+  }
+
+  Widget _buildMilestonesCard(BuildContext context) {
+    final colors = context.b05Colors;
+    return Semantics(
+      container: true,
+      button: true,
+      label: 'Milestones & Badges. View all unlocked achievements.',
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          key: const Key('progress_milestones_card'),
+          borderRadius: b05Radius(B05SurfaceRadius.large),
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const AchievementsScreen()),
+          ),
+          child: B05Surface(
+            padding: const EdgeInsets.all(B05Layout.space16),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: colors.action.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.emoji_events_rounded,
+                    color: colors.action,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: B05Layout.space12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Milestones & Badges',
+                        style: B05Typography.title(context),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Track your personal records, streaks, and unlocked badges.',
+                        style: B05Typography.caption(context),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: colors.textSecondary,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   void _startWorkout() => goToTrainingTab(context);

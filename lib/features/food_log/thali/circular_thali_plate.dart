@@ -543,7 +543,7 @@ class _PositionedKatori extends StatelessWidget {
     final center = plateDiameter / 2;
     // Perimeter orbit radius: placed nicely between center staple and outer macro ring
     final orbitRadius = plateDiameter * 0.355;
-    final katoriSize = (plateDiameter * 0.21).clamp(42.0, 68.0);
+    final katoriSize = (plateDiameter * 0.24).clamp(56.0, 76.0);
 
     final x = center + orbitRadius * math.cos(slot.angle) - (katoriSize / 2);
     final y = center + orbitRadius * math.sin(slot.angle) - (katoriSize / 2);
@@ -616,17 +616,17 @@ class _PositionedKatori extends StatelessWidget {
                       children: [
                         Icon(
                           placement.icon,
-                          size: 16,
+                          size: 18,
                           color: placement.tint,
                         ),
-                        const SizedBox(height: 1),
+                        const SizedBox(height: 2),
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 4),
                           child: Text(
                             item.displayLabel ?? placement.categoryLabel,
                             style: TextStyle(
                               color: colors.textPrimary,
-                              fontSize: 9.5,
+                              fontSize: 11,
                               fontWeight: FontWeight.w600,
                             ),
                             maxLines: 1,
@@ -639,7 +639,7 @@ class _PositionedKatori extends StatelessWidget {
                             '$energyStr kcal',
                             style: TextStyle(
                               color: colors.textSecondary,
-                              fontSize: 8,
+                              fontSize: 9.5,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -678,14 +678,14 @@ class _PositionedKatori extends StatelessWidget {
                   children: [
                     Icon(
                       Icons.add_rounded,
-                      size: 18,
+                      size: 20,
                       color: colors.action,
                     ),
                     Text(
                       'Add',
                       style: TextStyle(
                         color: colors.action,
-                        fontSize: 9,
+                        fontSize: 11,
                         fontWeight: FontWeight.w600,
                       ),
                     ),

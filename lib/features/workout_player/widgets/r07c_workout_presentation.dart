@@ -18,7 +18,12 @@ String r07cFormatNumber(num value) {
 }
 
 String r07cFormatLoad(double? loadKg, B02LoadBasis? basis) {
-  if (basis == B02LoadBasis.bodyweight) return 'Bodyweight';
+  if (basis == B02LoadBasis.bodyweight) {
+    if (loadKg != null && loadKg > 0) {
+      return 'BW + ${r07cFormatNumber(loadKg)} kg';
+    }
+    return 'Bodyweight';
+  }
   if (loadKg == null) return '';
   return '${r07cFormatNumber(loadKg)} kg';
 }

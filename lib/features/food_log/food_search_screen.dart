@@ -1325,17 +1325,37 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     );
   }
 
-  static const _stapleSuggestions = ['Roti', 'Dal', 'Rice', 'Paneer', 'Chai', 'Whey'];
+  List<String> _getStapleSuggestions() {
+    String diet = 'veg';
+    try {
+      diet = ref.watch(userProfileProvider).dietPreference.toLowerCase();
+    } catch (_) {}
+    switch (diet) {
+      case 'non-veg':
+      case 'non_veg':
+      case 'non-vegetarian':
+        return const ['Roti', 'Dal', 'Rice', 'Chicken', 'Eggs', 'Paneer', 'Whey'];
+      case 'vegan':
+        return const ['Roti', 'Dal', 'Rice', 'Tofu', 'Soya', 'Chana', 'Peanut Butter'];
+      case 'eggetarian':
+        return const ['Roti', 'Dal', 'Rice', 'Eggs', 'Paneer', 'Chai', 'Whey'];
+      case 'veg':
+      case 'vegetarian':
+      default:
+        return const ['Roti', 'Dal', 'Rice', 'Paneer', 'Curd', 'Chai', 'Whey'];
+    }
+  }
 
   Widget _buildStapleChips() {
+    final suggestions = _getStapleSuggestions();
     return SizedBox(
       height: 36,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        itemCount: _stapleSuggestions.length,
+        itemCount: suggestions.length,
         separatorBuilder: (_, _) => const SizedBox(width: 8),
         itemBuilder: (context, index) {
-          final staple = _stapleSuggestions[index];
+          final staple = suggestions[index];
           return ActionChip(
             label: Text(staple),
             onPressed: () {
@@ -1417,6 +1437,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
               : '';
           context.push('/food/describe$mealParam$dateParam');
         },
+        onOpenThali: () => context.push('/food/thali'),
         onQuickAddMacros: () async {
           final added = await QuickAddMacrosSheet.show(
             context,

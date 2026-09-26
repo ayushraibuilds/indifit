@@ -530,6 +530,52 @@ class WorkoutRepository {
     });
   }
 
+  /// Updates the most recent body weight measurement and synchronizes the user profile.
+  /// Allows users to correct typos or update their weight within the 7-day rate-limit window.
+  Future<void> updateLastWeightMeasurement({required double weight}) async {
+    if (!isValidLoggedWeightKg(weight)) {
+      throw ArgumentError.value(
+        weight,
+        'weight',
+        'Weight must be finite and between $minimumLoggedWeightKg and '
+            '$maximumLoggedWeightKg kg.',
+      );
+    }
+
+    final allLogs = await (_db.select(_db.bodyMeasurements)
+          ..orderBy([
+            (tbl) => OrderingTerm(
+              expression: tbl.recordedAt,
+              mode: OrderingMode.desc,
+            ),
+            (tbl) =>
+                OrderingTerm(expression: tbl.id, mode: OrderingMode.desc),
+          ]))
+        .get();
+
+    if (allLogs.isEmpty) {
+      throw StateError('No recent weight measurement found to update.');
+    }
+
+    final latestId = allLogs.first.id;
+    final now = _dateService.nowUtc();
+
+    await _db.transaction(() async {
+      await (_db.update(_db.bodyMeasurements)
+            ..where((tbl) => tbl.id.equals(latestId)))
+          .write(BodyMeasurementsCompanion(weight: Value(weight)));
+
+      final profiles = await _db.select(_db.userProfiles).get();
+      if (profiles.isNotEmpty) {
+        await (_db.update(
+          _db.userProfiles,
+        )..where((t) => t.id.equals(profiles.first.id))).write(
+          UserProfilesCompanion(weight: Value(weight), updatedAt: Value(now)),
+        );
+      }
+    });
+  }
+
   // 10. Fetch body measurements sorted by date descending
   Future<List<BodyMeasurement>> getBodyMeasurements() async {
     return await (_db.select(_db.bodyMeasurements)..orderBy([

@@ -764,6 +764,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       title: 'Welcome to IndiFit!',
       subtitle: 'A few details help us customize your daily targets.',
       scrollController: _aboutScrollController,
+      actionClearance: 16.0,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1039,10 +1040,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       _buildPayoffMetric(
                         label: 'Calories',
                         value: '${macros.calories} kcal',
+                        subvalue: 'Target zone: ${macros.calorieRangeLabel}',
                       ),
                       _buildPayoffMetric(
                         label: 'Protein',
                         value: '${macros.proteinG} g',
+                        subvalue: 'Range: ${macros.proteinRangeLabel}',
                       ),
                       _buildPayoffMetric(
                         label: 'Carbs',
@@ -1130,10 +1133,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     );
   }
 
-  Widget _buildPayoffMetric({required String label, required String value}) {
+  Widget _buildPayoffMetric({
+    required String label,
+    required String value,
+    String? subvalue,
+  }) {
+    final colors = context.b05Colors;
     return Semantics(
       container: true,
-      label: '$label: $value',
+      label: subvalue != null ? '$label: $value ($subvalue)' : '$label: $value',
       child: B05Surface(
         tone: B05SurfaceTone.section,
         padding: const EdgeInsets.symmetric(
@@ -1146,6 +1154,17 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             Text(label, style: B05Typography.caption(context)),
             const SizedBox(height: B05Layout.space4),
             Text(value, style: B05Typography.label(context)),
+            if (subvalue != null) ...[
+              const SizedBox(height: 2),
+              Text(
+                subvalue,
+                style: TextStyle(
+                  color: colors.textSecondary,
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
           ],
         ),
       ),

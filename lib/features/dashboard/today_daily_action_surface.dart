@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/di/health_provider.dart';
+import '../../core/di/theme_provider.dart';
 import '../../core/nutrition_legacy_read_models.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
@@ -17,7 +18,6 @@ import 'dashboard_personalization_controller.dart';
 import 'today_consumer_presentation.dart';
 import 'today_presentation_types.dart';
 import 'today_surface_controller.dart';
-import 'widgets/appearance_bottom_sheet.dart';
 import 'widgets/dashboard_date_bar.dart';
 import 'widgets/today_helpers.dart';
 import 'widgets/today_hydration_card.dart';
@@ -176,7 +176,9 @@ class TodayDailyActionSurface extends ConsumerWidget {
           child: FocusTraversalGroup(
             policy: WidgetOrderTraversalPolicy(),
             child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
+              physics: const ClampingScrollPhysics(
+                parent: AlwaysScrollableScrollPhysics(),
+              ),
               padding: const EdgeInsets.fromLTRB(
                 B05Layout.space16,
                 B05Layout.space12,
@@ -192,8 +194,12 @@ class TodayDailyActionSurface extends ConsumerWidget {
                     selectedDate: selectedDate,
                     referenceNow: now,
                     onOpenSettings: onOpenSettings,
-                    onCustomize: onCustomize,
-                    onOpenAppearance: () => AppearanceBottomSheet.show(context),
+                    onOpenAppearance: () {
+                      final isDark = Theme.of(context).brightness == Brightness.dark;
+                      ref.read(themeModeProvider.notifier).setThemeMode(
+                        isDark ? ThemeMode.light : ThemeMode.dark,
+                      );
+                    },
                   ),
                   const SizedBox(height: B05Layout.space8),
                   DashboardDateBar(

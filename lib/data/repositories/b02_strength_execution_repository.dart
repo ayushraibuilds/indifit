@@ -487,6 +487,15 @@ class StrengthExecutionRepository {
         'Quick Workout exercises need at least one planned set.',
       );
     }
+    final exerciseRow = await (_db.select(_db.exercises)
+          ..where((tbl) => tbl.stableId.equals(stableId)))
+        .getSingleOrNull();
+    final isBodyweight =
+        exerciseRow?.equipment.trim().toLowerCase() == 'bodyweight';
+    final basis = isBodyweight
+        ? B02LoadBasis.bodyweight.dbValue
+        : B02LoadBasis.totalExternal.dbValue;
+
     final snapshot = _decodeSnapshot(launch.executionSnapshotJson);
     final rawPrescriptions = snapshot['prescriptions'] is List
         ? (snapshot['prescriptions'] as List)
@@ -501,6 +510,7 @@ class StrengthExecutionRepository {
       'exerciseNameSnapshot': name,
       'plannedSets': plannedSets,
       'repsRange': repsRange,
+      'loadBasis': basis,
     });
     final encoded = jsonEncode({
       ...snapshot,
@@ -955,7 +965,11 @@ class StrengthExecutionRepository {
         ? null
         : _rawLoadBasis(raw?['loadBasis']) ??
               frozenFirst?.loadBasis ??
-              _rawLoadBasis(strength?.loadBasis);
+              _rawLoadBasis(strength?.loadBasis) ??
+              (exercise != null &&
+                      exercise.equipment.trim().toLowerCase() == 'bodyweight'
+                  ? B02LoadBasis.bodyweight
+                  : null);
     final targetMin =
         _rawInt(raw?['targetRepsMin']) ??
         frozenFirst?.targetRepsMin ??

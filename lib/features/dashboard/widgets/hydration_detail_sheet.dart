@@ -73,6 +73,19 @@ class _HydrationDetailSheetState extends ConsumerState<HydrationDetailSheet> {
   Future<void> _quickAdd(int amountMl, String containerType) async {
     try {
       final repo = ref.read(hydrationRepositoryProvider);
+      final current = await repo.getDailyHydration(_localDate);
+      if (current.totalMl + amountMl > HydrationRepository.maxDailyHydrationMl) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Daily hydration safety limit (10L) reached.'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+        return;
+      }
       await repo.logIntake(
         localDate: _localDate,
         amountMl: amountMl,
@@ -117,13 +130,13 @@ class _HydrationDetailSheetState extends ConsumerState<HydrationDetailSheet> {
       }
       return;
     }
-    if (amount > 5000) {
+    if (amount > HydrationRepository.maxSingleIntakeMl) {
       if (mounted) {
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Maximum single intake is 5,000 ml.'),
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: Text('Maximum single intake is ${HydrationRepository.maxSingleIntakeMl} ml.'),
+            duration: const Duration(seconds: 2),
           ),
         );
       }
@@ -132,6 +145,19 @@ class _HydrationDetailSheetState extends ConsumerState<HydrationDetailSheet> {
 
     try {
       final repo = ref.read(hydrationRepositoryProvider);
+      final current = await repo.getDailyHydration(_localDate);
+      if (current.totalMl + amount > HydrationRepository.maxDailyHydrationMl) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Daily hydration safety limit (10L) reached.'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+        return;
+      }
       await repo.logIntake(
         localDate: _localDate,
         amountMl: amount,

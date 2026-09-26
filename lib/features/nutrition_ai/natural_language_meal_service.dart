@@ -6,6 +6,29 @@ import '../../core/config/app_config.dart';
 import '../../core/privacy/privacy_policy.dart';
 import '../../data/repositories/nutrition_food_catalog_repository.dart';
 
+/// Typed domain exceptions for AI meal parsing failures.
+sealed class MealAiException implements Exception {
+  final String message;
+  const MealAiException(this.message);
+
+  @override
+  String toString() => message;
+}
+
+class MealAiOfflineException extends MealAiException {
+  const MealAiOfflineException([
+    super.message =
+        'Unable to connect to AI meal parser. Check your internet connection or use food search.',
+  ]);
+}
+
+class MealAiUnavailableException extends MealAiException {
+  const MealAiUnavailableException([
+    super.message =
+        'Kitchen AI is currently unavailable. Your description is saved—please try again shortly.',
+  ]);
+}
+
 /// Single item parsed from a natural-language meal description.
 class DecomposedFoodItem {
   final String rawSegment;
@@ -141,13 +164,24 @@ class NaturalLanguageMealService {
     }
 
     final url = '$_baseUrl/api/ai/meal-decompose';
-    final response = await _dio.post(
-      url,
-      data: {'text': cleanText},
-    );
+    final Response<dynamic> response;
+    try {
+      response = await _dio.post(
+        url,
+        data: {'text': cleanText},
+      );
+    } on DioException catch (e) {
+      if (e.type == DioExceptionType.connectionError ||
+          e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.sendTimeout ||
+          e.type == DioExceptionType.receiveTimeout) {
+        throw const MealAiOfflineException();
+      }
+      throw const MealAiUnavailableException();
+    }
 
     if (response.statusCode != 200 || response.data is! Map<String, dynamic>) {
-      throw StateError('Failed to parse meal description from service.');
+      throw const MealAiUnavailableException();
     }
 
     final data = response.data as Map<String, dynamic>;

@@ -126,7 +126,12 @@ class UserProfileNotifier extends StateNotifier<UserProfileState> {
   }
 
   Future<void> _loadProfileOnce() async {
-    final prefs = await _getPrefs();
+    final SharedPreferences prefs;
+    try {
+      prefs = await _getPrefs();
+    } catch (_) {
+      return;
+    }
     final onboardingSkipped =
         prefs.getBool(AppPreferenceKeys.onboardingSkipped) ?? false;
     var hasProfile =

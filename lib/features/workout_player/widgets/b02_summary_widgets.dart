@@ -778,6 +778,7 @@ class B02SummaryBody extends StatelessWidget {
   final VoidCallback? onRetry;
   final VoidCallback? onFull;
   final VoidCallback? onPartial;
+  final VoidCallback? onDiscard;
   final VoidCallback onBack;
 
   const B02SummaryBody({super.key, 
@@ -787,6 +788,7 @@ class B02SummaryBody extends StatelessWidget {
     required this.onRetry,
     required this.onFull,
     required this.onPartial,
+    this.onDiscard,
     required this.onBack,
   });
 
@@ -820,6 +822,16 @@ class B02SummaryBody extends StatelessWidget {
                 OutlinedButton(
                   onPressed: onPartial,
                   child: const Text('Finish as partial workout'),
+                ),
+              ],
+              if (onDiscard != null) ...[
+                const SizedBox(height: 8),
+                TextButton(
+                  onPressed: onDiscard,
+                  style: TextButton.styleFrom(
+                    foregroundColor: Theme.of(context).colorScheme.error,
+                  ),
+                  child: const Text('Discard workout session'),
                 ),
               ],
               TextButton(

@@ -1148,10 +1148,12 @@ class _B02StrengthPlayerScreenState
                               decimal: true,
                             ),
                             decoration: InputDecoration(
-                              labelText: 'Load (kg)',
+                              labelText: (set.actualLoadBasis ?? slot.targetLoadBasis) == B02LoadBasis.bodyweight
+                                  ? 'Added weight (optional kg)'
+                                  : 'Load (kg)',
                               helperText:
-                                  set.actualLoadBasis == B02LoadBasis.bodyweight
-                                  ? 'Bodyweight'
+                                  (set.actualLoadBasis ?? slot.targetLoadBasis) == B02LoadBasis.bodyweight
+                                  ? 'Bodyweight exercise'
                                   : null,
                               errorText: loadError,
                               suffixIcon:
@@ -1286,9 +1288,9 @@ class _B02StrengthPlayerScreenState
       loadController.dispose();
       if (result == null || !mounted) return;
       final loadBasis = result.loadKg == null
-          ? set.actualLoadBasis == B02LoadBasis.bodyweight
+          ? ((set.actualLoadBasis ?? slot.targetLoadBasis) == B02LoadBasis.bodyweight
                 ? B02LoadBasis.bodyweight
-                : null
+                : null)
           : set.actualLoadBasis ??
                 slot.targetLoadBasis ??
                 B02LoadBasis.totalExternal;
@@ -1514,6 +1516,20 @@ class _B02StrengthPlayerScreenState
   }
 
   Future<void> _openSummary(dynamic provider) async {
+    final currentLaunch = launchForProvider(provider);
+    if (currentLaunch != null) {
+      final performed = currentLaunch.state.performedExercises;
+      final hasCompletedReps = performed.any(
+        (exercise) => exercise.sets.any(
+          (set) => set.actualReps != null && set.actualReps! > 0,
+        ),
+      );
+      if (!hasCompletedReps) {
+        await _discard(provider);
+        return;
+      }
+    }
+
     final controller = ref.read(provider.notifier);
     await controller.pauseElapsed();
     if (!mounted) return;

@@ -8,6 +8,8 @@ class OnboardingPageContainer extends StatelessWidget {
   final String subtitle;
   final Widget child;
   final ScrollController? scrollController;
+  final double? actionClearance;
+  final ScrollPhysics? physics;
 
   static const double bottomActionClearance = 100.0;
 
@@ -17,6 +19,8 @@ class OnboardingPageContainer extends StatelessWidget {
     required this.subtitle,
     required this.child,
     this.scrollController,
+    this.actionClearance,
+    this.physics,
   });
 
   @override
@@ -30,6 +34,7 @@ class OnboardingPageContainer extends StatelessWidget {
       ),
       child: SingleChildScrollView(
         controller: scrollController,
+        physics: physics ?? const ClampingScrollPhysics(),
         keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -39,7 +44,7 @@ class OnboardingPageContainer extends StatelessWidget {
             Text(subtitle, style: B05Typography.body(context)),
             const SizedBox(height: B05Layout.space20),
             child,
-            const SizedBox(height: bottomActionClearance),
+            SizedBox(height: actionClearance ?? bottomActionClearance),
           ],
         ),
       ),

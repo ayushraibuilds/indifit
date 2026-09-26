@@ -181,8 +181,9 @@ class TodayNutritionMetricPresentation {
 
   String get comparisonLabel {
     if (!isAvailable) return 'Not available';
-    if (!hasTarget) return '$value $unit';
-    return '$value / ${_formatNumber(targetValue!)} $unit';
+    final suffix = isIncomplete ? ' (partial)' : '';
+    if (!hasTarget) return '$value $unit$suffix';
+    return '$value / ${_formatNumber(targetValue!)} $unit$suffix';
   }
 
   factory TodayNutritionMetricPresentation.fromFact({
@@ -193,6 +194,23 @@ class TodayNutritionMetricPresentation {
     required double? targetValue,
   }) {
     if (fact == null || !fact.isAvailable) {
+      final point = fact?.point?.value.asDouble;
+      if (point != null && point > 0) {
+        return TodayNutritionMetricPresentation(
+          nutrientId: nutrientId,
+          label: label,
+          value: '${_formatNumber(point)}+',
+          unit: fact?.unit.symbol ?? fallbackUnit,
+          estimated: true,
+          isAvailable: true,
+          isRange: false,
+          isIncomplete: true,
+          pointValue: point,
+          lowerValue: null,
+          upperValue: null,
+          targetValue: targetValue,
+        );
+      }
       return TodayNutritionMetricPresentation(
         nutrientId: nutrientId,
         label: label,

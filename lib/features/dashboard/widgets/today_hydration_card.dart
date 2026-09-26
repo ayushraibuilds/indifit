@@ -33,6 +33,19 @@ class TodayHydrationCard extends ConsumerWidget {
     int amountMl,
     String containerType,
   ) async {
+    final currentTotal = hydrationRead.value?.totalMl ?? 0;
+    if (currentTotal + amountMl > HydrationRepository.maxDailyHydrationMl) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Daily hydration safety limit (10L) reached.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+      return;
+    }
     try {
       final localDate = HydrationRepository.formatLocalDate(selectedDate);
       final repo = ref.read(hydrationRepositoryProvider);

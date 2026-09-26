@@ -700,11 +700,23 @@ class _RestCardState extends State<RestCard> {
                 const SizedBox(height: 12),
                 Wrap(
                   spacing: 8,
+                  runSpacing: 8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     FilledButton(
                       onPressed: widget.onBegin,
                       child: const Text('Start rest'),
                     ),
+                    for (final sec in const [30, 60, 90, 120])
+                      ActionChip(
+                        label: Text('${sec}s'),
+                        onPressed: widget.onCustom == null
+                            ? null
+                            : () {
+                                unawaited(IndiFitHaptics.selection());
+                                widget.onCustom?.call(sec);
+                              },
+                      ),
                     OutlinedButton(
                       onPressed: widget.onCustom == null
                           ? null
@@ -815,6 +827,19 @@ class _RestCardState extends State<RestCard> {
                                 widget.onExtend?.call(period.id);
                               },
                         child: const Text('+15 sec'),
+                      ),
+                    ),
+                    Semantics(
+                      button: true,
+                      label: 'Increase rest by 30 seconds',
+                      child: OutlinedButton(
+                        onPressed: widget.onExtend == null
+                            ? null
+                            : () {
+                                unawaited(IndiFitHaptics.selection());
+                                widget.onExtend?.call(period.id);
+                              },
+                        child: const Text('+30 sec'),
                       ),
                     ),
                     Semantics(

@@ -97,6 +97,7 @@ class FoodSearchRecentList extends StatelessWidget {
   final VoidCallback onOpenBarcode;
   final VoidCallback onScanNutritionLabel;
   final VoidCallback onDescribeMeal;
+  final VoidCallback? onOpenThali;
   final VoidCallback? onQuickAddMacros;
   final Widget? entriesPanel;
 
@@ -115,6 +116,7 @@ class FoodSearchRecentList extends StatelessWidget {
     required this.onOpenBarcode,
     required this.onScanNutritionLabel,
     required this.onDescribeMeal,
+    this.onOpenThali,
     this.onQuickAddMacros,
     this.entriesPanel,
   });
@@ -129,6 +131,48 @@ class FoodSearchRecentList extends StatelessWidget {
           neutralFoodEntry!,
           const SizedBox(height: 16),
         ],
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+          child: Row(
+            children: [
+              _QuickActionChip(
+                icon: Icons.auto_awesome_rounded,
+                label: 'Describe meal',
+                onTap: onDescribeMeal,
+              ),
+              if (onOpenThali != null) ...[
+                const SizedBox(width: 8),
+                _QuickActionChip(
+                  icon: Icons.dinner_dining_rounded,
+                  label: 'Indian Thali',
+                  onTap: onOpenThali!,
+                ),
+              ],
+              const SizedBox(width: 8),
+              _QuickActionChip(
+                icon: Icons.qr_code_scanner_rounded,
+                label: 'Scan barcode',
+                onTap: onOpenBarcode,
+              ),
+              const SizedBox(width: 8),
+              _QuickActionChip(
+                icon: Icons.document_scanner_rounded,
+                label: 'Scan label',
+                onTap: onScanNutritionLabel,
+              ),
+              if (onQuickAddMacros != null) ...[
+                const SizedBox(width: 8),
+                _QuickActionChip(
+                  icon: Icons.bolt_rounded,
+                  label: 'Quick add',
+                  onTap: onQuickAddMacros!,
+                ),
+              ],
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
         const FoodSearchSectionHeader(
           title: 'Recent',
           subtitle: 'Foods you log often stay close at hand.',
@@ -233,3 +277,49 @@ class FoodSearchRecentList extends StatelessWidget {
     );
   }
 }
+
+class _QuickActionChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _QuickActionChip({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.b05Colors;
+    return Material(
+      color: colors.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(color: colors.border),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 16, color: colors.action),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: B05Typography.caption(context).copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: colors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+

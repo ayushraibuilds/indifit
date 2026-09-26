@@ -48,6 +48,12 @@ class HydrationRepository {
       '${date.month.toString().padLeft(2, '0')}-'
       '${date.day.toString().padLeft(2, '0')}';
 
+  /// Maximum safety limit for a single intake event (3,000 ml = 3L).
+  static const int maxSingleIntakeMl = 3000;
+
+  /// Maximum daily hydration volume limit (10,000 ml = 10L) to prevent accidental runaway logging.
+  static const int maxDailyHydrationMl = 10000;
+
   /// Returns current local date key.
   /// If [dates] is supplied, calls [LocalScheduleDateService.todayIn] if [timezoneId] is provided,
   /// or formats [LocalScheduleDateService.nowUtc] converted to local civil date.
@@ -176,6 +182,30 @@ class HydrationRepository {
         'Amount must be greater than zero.',
       );
     }
+    if (amountMl > maxSingleIntakeMl) {
+      throw ArgumentError.value(
+        amountMl,
+        'amountMl',
+        'Single intake cannot exceed $maxSingleIntakeMl ml.',
+      );
+    }
+
+    final prefs = await _getPrefs();
+    final entriesMap = _loadEntriesMap(prefs);
+
+    // 90-day retention prune
+    _pruneOldEntries(entriesMap);
+
+    final dayList = (entriesMap[localDate] ??= <Map<String, dynamic>>[]);
+    final currentDayTotal = dayList.fold<int>(
+      0,
+      (sum, item) => sum + ((item['amountMl'] as num?)?.toInt() ?? 0),
+    );
+    if (currentDayTotal + amountMl > maxDailyHydrationMl) {
+      throw StateError(
+        'Daily hydration cannot exceed ${maxDailyHydrationMl ~/ 1000}L for safety.',
+      );
+    }
 
     final entry = HydrationIntakeEntry(
       id: _uuid.v4(),
@@ -186,13 +216,6 @@ class HydrationRepository {
       containerType: containerType,
     );
 
-    final prefs = await _getPrefs();
-    final entriesMap = _loadEntriesMap(prefs);
-
-    // 90-day retention prune
-    _pruneOldEntries(entriesMap);
-
-    final dayList = (entriesMap[localDate] ??= <Map<String, dynamic>>[]);
     dayList.add(entry.toJson());
 
     await prefs.setString(prefHydrationEntriesJson, jsonEncode(entriesMap));

@@ -175,6 +175,50 @@ class _LogWeightBottomSheetState extends ConsumerState<LogWeightBottomSheet> {
     }
   }
 
+  Future<void> _updateRecent() async {
+    final displayed = double.tryParse(_controller.text.trim());
+    final kilograms = displayed == null
+        ? null
+        : UnitPreferencePresentation.weightForStorage(displayed, _units);
+    if (kilograms == null || !isValidLoggedWeightKg(kilograms)) {
+      final minimum = UnitPreferencePresentation.weightForDisplay(
+        minimumLoggedWeightKg,
+        _units,
+      );
+      final maximum = UnitPreferencePresentation.weightForDisplay(
+        maximumLoggedWeightKg,
+        _units,
+      );
+      final symbol = UnitPreferencePresentation.weightSymbol(_units);
+      setState(
+        () => _errorMessage =
+            'Enter a weight between ${_formatWeightLimit(minimum)} '
+            'and ${_formatWeightLimit(maximum)} $symbol.',
+      );
+      return;
+    }
+
+    setState(() {
+      _isSaving = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final repo = ref.read(workoutRepositoryProvider);
+      await repo.updateLastWeightMeasurement(weight: kilograms);
+      if (mounted) {
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+          _errorMessage = 'Weight could not be updated. Try again.';
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.listen<String>(unitPreferenceProvider, (previous, next) {
@@ -476,6 +520,29 @@ class _LogWeightBottomSheetState extends ConsumerState<LogWeightBottomSheet> {
                     ),
             ),
           ),
+          if (isLocked) ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: OutlinedButton.icon(
+                key: const Key('update_recent_weight_button'),
+                onPressed: _isSaving || _loadingStatus ? null : _updateRecent,
+                icon: const Icon(Icons.edit_outlined, size: 18),
+                label: const Text(
+                  'Update Last Weight Entry',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                ),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: colors.action,
+                  side: BorderSide(color: colors.action),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );

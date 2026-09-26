@@ -860,6 +860,8 @@ class _NutritionTargetsHubScreenState
                   },
           ),
           const SizedBox(height: B05Layout.space12),
+          _buildMacroTemplates(context),
+          const SizedBox(height: B05Layout.space12),
           LayoutBuilder(
             builder: (context, constraints) {
               final width = constraints.maxWidth < 520
@@ -937,6 +939,147 @@ class _NutritionTargetsHubScreenState
         ],
       ),
     );
+  }
+
+  Widget _buildMacroTemplates(BuildContext context) {
+    final colors = context.b05Colors;
+    return Container(
+      padding: const EdgeInsets.all(B05Layout.space12),
+      decoration: BoxDecoration(
+        color: colors.surfaceSubtle,
+        borderRadius: b05Radius(B05SurfaceRadius.medium),
+        border: Border.all(color: colors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.tune_rounded, size: 14, color: colors.action),
+              const SizedBox(width: 6),
+              Text(
+                'Macro templates',
+                style: B05Typography.caption(context).copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: colors.textPrimary,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                'Auto-split from calories',
+                style: B05Typography.caption(context).copyWith(
+                  fontSize: 10,
+                  color: colors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: B05Layout.space8),
+          Wrap(
+            spacing: B05Layout.space8,
+            runSpacing: B05Layout.space8,
+            children: [
+              _buildTemplateChip(
+                context,
+                label: 'Balanced',
+                ratio: '50C · 25P · 25F',
+                onTap: () => _applyMacroTemplate('Balanced'),
+              ),
+              _buildTemplateChip(
+                context,
+                label: 'High Protein',
+                ratio: '40C · 35P · 25F',
+                onTap: () => _applyMacroTemplate('High Protein'),
+              ),
+              _buildTemplateChip(
+                context,
+                label: 'Low Carb',
+                ratio: '20C · 35P · 45F',
+                onTap: () => _applyMacroTemplate('Low Carb'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTemplateChip(
+    BuildContext context, {
+    required String label,
+    required String ratio,
+    required VoidCallback onTap,
+  }) {
+    final colors = context.b05Colors;
+    return InkWell(
+      onTap: _saving ? null : onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: colors.surface,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: colors.border),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: colors.action,
+              ),
+            ),
+            const SizedBox(height: 1),
+            Text(
+              ratio,
+              style: TextStyle(
+                fontSize: 9.5,
+                color: colors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _applyMacroTemplate(String templateName) {
+    final calories = double.tryParse(_caloriesController.text.trim()) ?? 2000;
+    if (calories <= 0) return;
+
+    double proteinG;
+    double carbsG;
+    double fatG;
+
+    switch (templateName) {
+      case 'High Protein':
+        proteinG = (calories * 0.35) / 4.0;
+        carbsG = (calories * 0.40) / 4.0;
+        fatG = (calories * 0.25) / 9.0;
+        break;
+      case 'Low Carb':
+        proteinG = (calories * 0.35) / 4.0;
+        carbsG = (calories * 0.20) / 4.0;
+        fatG = (calories * 0.45) / 9.0;
+        break;
+      case 'Balanced':
+      default:
+        proteinG = (calories * 0.25) / 4.0;
+        carbsG = (calories * 0.50) / 4.0;
+        fatG = (calories * 0.25) / 9.0;
+        break;
+    }
+
+    setState(() {
+      _proteinController.text = proteinG.round().toString();
+      _carbsController.text = carbsG.round().toString();
+      _fatController.text = fatG.round().toString();
+      _formError = null;
+    });
   }
 
   Widget _buildHistoricalNote(BuildContext context, {required bool isPast}) {

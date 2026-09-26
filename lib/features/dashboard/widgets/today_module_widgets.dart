@@ -113,13 +113,18 @@ class TodayHeaderState extends State<TodayHeader>
               ],
             ),
           ),
-          B05IconAction(
-            icon: Icons.palette_outlined,
-            label: 'Appearance',
-            hint: 'Change app theme between system, light, and dark mode.',
-            onPressed: widget.onOpenAppearance ??
-                () => AppearanceBottomSheet.show(context),
-            focusOrder: 0,
+          Builder(
+            builder: (context) {
+              final isDark = Theme.of(context).brightness == Brightness.dark;
+              return B05IconAction(
+                icon: isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+                label: isDark ? 'Switch to light mode' : 'Switch to dark mode',
+                hint: 'Toggle between light and dark mode.',
+                onPressed: widget.onOpenAppearance ??
+                    () => AppearanceBottomSheet.show(context),
+                focusOrder: 0,
+              );
+            },
           ),
           B05IconAction(
             icon: Icons.settings_outlined,

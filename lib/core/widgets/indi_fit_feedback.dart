@@ -18,6 +18,7 @@ SnackBar indiFitSuccessSnackBar(
       shape: const RoundedRectangleBorder(borderRadius: B05Radii.mediumRadius),
       backgroundColor: colors.section,
       duration: duration,
+      persist: false,
       action: action,
       content: Text(
         message,
@@ -30,6 +31,7 @@ SnackBar indiFitSuccessSnackBar(
   return SnackBar(
     behavior: SnackBarBehavior.floating,
     duration: duration,
+    persist: false,
     action: action,
     content: Text(message),
   );

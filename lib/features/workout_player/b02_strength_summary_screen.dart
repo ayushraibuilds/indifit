@@ -124,6 +124,36 @@ class _B02StrengthSummaryScreenState
         onPartial: ui.isBusy || _isFinalizing
             ? null
             : () => _confirmPartial(context, provider),
+        onDiscard: () async {
+          final confirmed = await showDialog<bool>(
+            context: context,
+            builder: (dialogContext) => AlertDialog(
+              title: const Text('Discard workout?'),
+              content: const Text(
+                'This will discard this unfinished workout session and return to dashboard.',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext, false),
+                  child: const Text('Keep'),
+                ),
+                FilledButton(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.error,
+                    foregroundColor: Theme.of(context).colorScheme.onError,
+                  ),
+                  onPressed: () => Navigator.pop(dialogContext, true),
+                  child: const Text('Discard'),
+                ),
+              ],
+            ),
+          );
+          if (confirmed == true && mounted) {
+            await ref.read(provider.notifier).discard();
+            if (!context.mounted) return;
+            goToTrainingTab(context);
+          }
+        },
         onBack: () => context.pop(),
       ),
     );
