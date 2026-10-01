@@ -39,6 +39,8 @@ import '../../features/workout_player/quick_workout_screen.dart';
 import '../../features/workout_player/routine_editor_screen.dart';
 import '../../features/workout_player/workout_execution_route.dart';
 import '../../features/workout_player/workout_summary_screen.dart';
+import '../config/app_config.dart';
+import '../privacy/privacy_policy.dart';
 
 part 'routes/core_routes.dart';
 part 'routes/nutrition_routes.dart';
@@ -58,6 +60,9 @@ const compatibilityRouteRedirects = <String, String>{
   '/workout': '/training',
   '/workouts': '/training',
   '/food/ai': '/food',
+  '/food/label-ocr': '/food',
+  '/food/describe': '/food',
+  '/food/photo': '/food',
   '/settings/profile': '/profile',
   '/meal-planner': '/food',
   '/weekly-report': '/progress',
@@ -67,6 +72,22 @@ const compatibilityRouteRedirects = <String, String>{
 
 String? compatibilityRouteRedirect(String location) =>
     compatibilityRouteRedirects[location];
+
+String? _nutritionAiRouteRedirect(BuildContext context, GoRouterState state) {
+  final isAllowed = () {
+    try {
+      return ProviderScope.containerOf(context, listen: false)
+          .read(privacyPolicyProvider)
+          .isAiAllowed;
+    } catch (_) {
+      return AppConfig.connectedAiEnabled;
+    }
+  }();
+  if (!isAllowed) {
+    return compatibilityRouteRedirect(state.matchedLocation) ?? '/food';
+  }
+  return null;
+}
 
 /// Pure onboarding routing gate used by [appRouterProvider]'s redirect.
 ///

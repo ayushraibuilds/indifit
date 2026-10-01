@@ -29,6 +29,7 @@ final nutritionRoutes = <RouteBase>[
   ),
   GoRoute(
     path: '/food/label-ocr',
+    redirect: (context, state) => _nutritionAiRouteRedirect(context, state),
     builder: (context, state) => NutritionLabelOcrScreen(
       mealType: state.uri.queryParameters['mealType'],
       date: state.uri.queryParameters['date'],
@@ -36,6 +37,7 @@ final nutritionRoutes = <RouteBase>[
   ),
   GoRoute(
     path: '/food/describe',
+    redirect: (context, state) => _nutritionAiRouteRedirect(context, state),
     builder: (context, state) => NaturalLanguageMealScreen(
       mealType: state.uri.queryParameters['mealType'],
       date: state.uri.queryParameters['date'],
@@ -43,6 +45,7 @@ final nutritionRoutes = <RouteBase>[
   ),
   GoRoute(
     path: '/food/photo',
+    redirect: (context, state) => _nutritionAiRouteRedirect(context, state),
     builder: (context, state) => PhotoMealScreen(
       mealType: state.uri.queryParameters['mealType'],
       date: state.uri.queryParameters['date'],

@@ -15,6 +15,7 @@ import '../../core/nutrition_household_measures.dart';
 import '../../core/nutrition_legacy_read_models.dart';
 import '../../core/presentation/consumer_copy.dart';
 import '../../core/presentation/consumer_date_label.dart';
+import '../../core/privacy/privacy_policy.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/typed_quantities.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
@@ -1425,42 +1426,49 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     ],
   );
 
-  Widget _buildLandingState(DateTime logDate) => FoodSearchRecentList(
-    neutralFoodEntry: _activeMealType == null ? _buildNeutralFoodEntry() : null,
-    loadingRecent: _loadingRecent,
-    recentFailureMessage: _recentFailureMessage,
-    onRetryRecent: _retryRecentFoods,
-    canonicalRecentResults: _canonicalRecentResults,
-    recentResults: _recentResults,
-    canonicalRecentItemBuilder: (context, recent) =>
-        _buildCanonicalRecentItemRow(recent),
-    recentItemBuilder: (context, food) => _buildRecentItemRow(food),
-    onOpenSavedMeals: _openSavedMeals,
-    onOpenSavedRecipes: _openSavedRecipes,
-    onOpenBarcode: () => _openBarcode(context),
-    onScanNutritionLabel: () {
-      final mealParam = widget.mealType != null
-          ? '?mealType=${widget.mealType}'
-          : '';
-      final dateParam = widget.selectedDate != null
-          ? (mealParam.isEmpty
-                ? '?date=${widget.selectedDate!.toIso8601String().split('T').first}'
-                : '&date=${widget.selectedDate!.toIso8601String().split('T').first}')
-          : '';
-      context.push('/food/label-ocr$mealParam$dateParam');
-    },
-    onDescribeMeal: () {
-      final mealParam = widget.mealType != null
-          ? '?mealType=${widget.mealType}'
-          : '';
-      final dateParam = widget.selectedDate != null
-          ? (mealParam.isEmpty
-                ? '?date=${widget.selectedDate!.toIso8601String().split('T').first}'
-                : '&date=${widget.selectedDate!.toIso8601String().split('T').first}')
-          : '';
-      context.push('/food/describe$mealParam$dateParam');
-    },
-    onOpenThali: () => context.push('/food/thali'),
+  Widget _buildLandingState(DateTime logDate) {
+    final isAiAllowed = ref.watch(privacyPolicyProvider).isAiAllowed;
+    return FoodSearchRecentList(
+      neutralFoodEntry:
+          _activeMealType == null ? _buildNeutralFoodEntry() : null,
+      loadingRecent: _loadingRecent,
+      recentFailureMessage: _recentFailureMessage,
+      onRetryRecent: _retryRecentFoods,
+      canonicalRecentResults: _canonicalRecentResults,
+      recentResults: _recentResults,
+      canonicalRecentItemBuilder: (context, recent) =>
+          _buildCanonicalRecentItemRow(recent),
+      recentItemBuilder: (context, food) => _buildRecentItemRow(food),
+      onOpenSavedMeals: _openSavedMeals,
+      onOpenSavedRecipes: _openSavedRecipes,
+      onOpenBarcode: () => _openBarcode(context),
+      onScanNutritionLabel: isAiAllowed
+          ? () {
+              final mealParam = widget.mealType != null
+                  ? '?mealType=${widget.mealType}'
+                  : '';
+              final dateParam = widget.selectedDate != null
+                  ? (mealParam.isEmpty
+                        ? '?date=${widget.selectedDate!.toIso8601String().split('T').first}'
+                        : '&date=${widget.selectedDate!.toIso8601String().split('T').first}')
+                  : '';
+              context.push('/food/label-ocr$mealParam$dateParam');
+            }
+          : null,
+      onDescribeMeal: isAiAllowed
+          ? () {
+              final mealParam = widget.mealType != null
+                  ? '?mealType=${widget.mealType}'
+                  : '';
+              final dateParam = widget.selectedDate != null
+                  ? (mealParam.isEmpty
+                        ? '?date=${widget.selectedDate!.toIso8601String().split('T').first}'
+                        : '&date=${widget.selectedDate!.toIso8601String().split('T').first}')
+                  : '';
+              context.push('/food/describe$mealParam$dateParam');
+            }
+          : null,
+      onOpenThali: () => context.push('/food/thali'),
     onQuickAddMacros: () async {
       final added = await QuickAddMacrosSheet.show(
         context,
@@ -1477,6 +1485,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       onCanonicalItemTap: _showCanonicalActionMenu,
     ),
   );
+}
 
   Widget _buildSearchResults() => FoodSearchResultsList(
     isOnlineSearchOffline: _isOnlineSearchOffline,

@@ -96,8 +96,8 @@ class FoodSearchRecentList extends StatelessWidget {
   final VoidCallback onOpenSavedMeals;
   final VoidCallback onOpenSavedRecipes;
   final VoidCallback onOpenBarcode;
-  final VoidCallback onScanNutritionLabel;
-  final VoidCallback onDescribeMeal;
+  final VoidCallback? onScanNutritionLabel;
+  final VoidCallback? onDescribeMeal;
   final VoidCallback? onOpenThali;
   final VoidCallback? onQuickAddMacros;
   final Widget? entriesPanel;
@@ -115,8 +115,8 @@ class FoodSearchRecentList extends StatelessWidget {
     required this.onOpenSavedMeals,
     required this.onOpenSavedRecipes,
     required this.onOpenBarcode,
-    required this.onScanNutritionLabel,
-    required this.onDescribeMeal,
+    this.onScanNutritionLabel,
+    this.onDescribeMeal,
     this.onOpenThali,
     this.onQuickAddMacros,
     this.entriesPanel,
@@ -137,31 +137,35 @@ class FoodSearchRecentList extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
           child: Row(
             children: [
-              _QuickActionChip(
-                icon: Icons.auto_awesome_rounded,
-                label: 'Describe meal',
-                onTap: onDescribeMeal,
-              ),
-              if (onOpenThali != null) ...[
+              if (onDescribeMeal != null) ...[
+                _QuickActionChip(
+                  icon: Icons.auto_awesome_rounded,
+                  label: 'Describe meal',
+                  onTap: onDescribeMeal!,
+                ),
                 const SizedBox(width: 8),
+              ],
+              if (onOpenThali != null) ...[
                 _QuickActionChip(
                   icon: Icons.dinner_dining_rounded,
                   label: 'Indian Thali',
                   onTap: onOpenThali!,
                 ),
+                const SizedBox(width: 8),
               ],
-              const SizedBox(width: 8),
               _QuickActionChip(
                 icon: Icons.qr_code_scanner_rounded,
                 label: 'Scan barcode',
                 onTap: onOpenBarcode,
               ),
-              const SizedBox(width: 8),
-              _QuickActionChip(
-                icon: Icons.document_scanner_rounded,
-                label: 'Scan label',
-                onTap: onScanNutritionLabel,
-              ),
+              if (onScanNutritionLabel != null) ...[
+                const SizedBox(width: 8),
+                _QuickActionChip(
+                  icon: Icons.document_scanner_rounded,
+                  label: 'Scan label',
+                  onTap: onScanNutritionLabel!,
+                ),
+              ],
               if (onQuickAddMacros != null) ...[
                 const SizedBox(width: 8),
                 _QuickActionChip(
@@ -255,18 +259,20 @@ class FoodSearchRecentList extends StatelessWidget {
           detail: 'Find a packaged food by its barcode.',
           onTap: onOpenBarcode,
         ),
-        FoodSearchNavigationCard(
-          icon: Icons.document_scanner_rounded,
-          title: 'Scan nutrition label',
-          detail: 'Extract dual-basis facts directly from packaging.',
-          onTap: onScanNutritionLabel,
-        ),
-        FoodSearchNavigationCard(
-          icon: Icons.auto_awesome_rounded,
-          title: 'Describe meal',
-          detail: 'Log multi-item meals with standard Indian portions.',
-          onTap: onDescribeMeal,
-        ),
+        if (onScanNutritionLabel != null)
+          FoodSearchNavigationCard(
+            icon: Icons.document_scanner_rounded,
+            title: 'Scan nutrition label',
+            detail: 'Extract dual-basis facts directly from packaging.',
+            onTap: onScanNutritionLabel!,
+          ),
+        if (onDescribeMeal != null)
+          FoodSearchNavigationCard(
+            icon: Icons.auto_awesome_rounded,
+            title: 'Describe meal',
+            detail: 'Log multi-item meals with standard Indian portions.',
+            onTap: onDescribeMeal!,
+          ),
         if (onQuickAddMacros != null)
           FoodSearchNavigationCard(
             icon: Icons.bolt_rounded,
