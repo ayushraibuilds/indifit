@@ -620,7 +620,7 @@ IndiFit’s brand equity is defined as much by what it refuses to build as what 
    ✅ Sideloads and executes reliably on physical iPhone and Android devices.
    ✅ Runner-LocalTesting entitlements allow signing with personal Apple ID.
    ✅ Flawless set logging, embedded plate math, rest timers, and screen wakelock.
-   ✅ iOS Live Activity & Dynamic Island rest timers active on lock screens.
+   ⏳ iOS Live Activity & Dynamic Island rest timers (Widget extension pending paid Apple Developer account; Runner manager integrated).
    ✅ Fast Indian food logging with katori units and cooked/raw conversions.
    ✅ Interactive Circular Thali Plate & on-device Adaptive TDEE engine active.
    ✅ HealthKit and Health Connect two-way data sync functioning.
