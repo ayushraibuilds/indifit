@@ -3,17 +3,30 @@ import time
 import pytest
 
 os.environ.setdefault("INDIFIT_API_KEY", "backend-test-secret")
+os.environ["ENABLE_CLOUD_SYNC"] = "1"
 
 from fastapi.testclient import TestClient
 from backend import main
 
-client = TestClient(main.app)
+sync_app = main.create_app()
+client = TestClient(sync_app)
 
 @pytest.fixture(autouse=True)
 def reset_sync_state():
     main.USER_MUTATIONS.clear()
     yield
     main.USER_MUTATIONS.clear()
+
+def test_sync_unmounted_when_cloud_sync_disabled():
+    os.environ.pop("ENABLE_CLOUD_SYNC", None)
+    disabled_app = main.create_app()
+    disabled_client = TestClient(disabled_app)
+    res = disabled_client.get(
+        "/v1/sync/pull?node_id=dev-test&after_millis=0&limit=10",
+        headers={"Authorization": "Bearer test-user-token-123"},
+    )
+    assert res.status_code == 404
+    os.environ["ENABLE_CLOUD_SYNC"] = "1"
 
 def test_push_and_pull_mutations():
     now_millis = int(time.time() * 1000)

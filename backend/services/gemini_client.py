@@ -34,9 +34,12 @@ async def query_gemini_text(prompt: str, json_mode: bool = False) -> str:
     if not gemini_key:
         raise ValueError("Missing GEMINI_API_KEY env variable")
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{AI_MODEL}:generateContent?key={gemini_key}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{AI_MODEL}:generateContent"
 
-    headers = {"Content-Type": "application/json"}
+    headers = {
+        "Content-Type": "application/json",
+        "x-goog-api-key": gemini_key,
+    }
     payload: Dict[str, Any] = {
         "contents": [{"parts": [{"text": prompt}]}],
     }
@@ -46,18 +49,21 @@ async def query_gemini_text(prompt: str, json_mode: bool = False) -> str:
             "responseMimeType": "application/json"
         }
 
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        response = await client.post(url, headers=headers, json=payload)
-        if response.status_code != 200:
-            raise HTTPException(status_code=500, detail=f"Gemini API Error: {response.text}")
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(url, headers=headers, json=payload)
+            if response.status_code != 200:
+                raise HTTPException(status_code=502, detail="Upstream AI service error")
 
-        data = response.json()
-        try:
-            result = data["candidates"][0]["content"]["parts"][0]["text"]
-            set_cached(cache_key, result)
-            return result
-        except (KeyError, IndexError):
-            raise HTTPException(status_code=500, detail="Malformed response from Gemini API")
+            data = response.json()
+            try:
+                result = data["candidates"][0]["content"]["parts"][0]["text"]
+                set_cached(cache_key, result)
+                return result
+            except (KeyError, IndexError):
+                raise HTTPException(status_code=502, detail="Malformed response from upstream AI service")
+    except httpx.HTTPError:
+        raise HTTPException(status_code=502, detail="Upstream AI service error")
 
 
 async def query_gemini_vision(prompt: str, image_bytes: bytes, mime_type: str) -> str:
@@ -75,9 +81,12 @@ async def query_gemini_vision(prompt: str, image_bytes: bytes, mime_type: str) -
     if not gemini_key:
         raise ValueError("Missing GEMINI_API_KEY env variable")
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{AI_MODEL}:generateContent?key={gemini_key}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{AI_MODEL}:generateContent"
 
-    headers = {"Content-Type": "application/json"}
+    headers = {
+        "Content-Type": "application/json",
+        "x-goog-api-key": gemini_key,
+    }
     base64_image = base64.b64encode(image_bytes).decode("utf-8")
 
     payload: Dict[str, Any] = {
@@ -99,15 +108,18 @@ async def query_gemini_vision(prompt: str, image_bytes: bytes, mime_type: str) -
         },
     }
 
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        response = await client.post(url, headers=headers, json=payload)
-        if response.status_code != 200:
-            raise HTTPException(status_code=500, detail=f"Gemini API Error: {response.text}")
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(url, headers=headers, json=payload)
+            if response.status_code != 200:
+                raise HTTPException(status_code=502, detail="Upstream AI service error")
 
-        data = response.json()
-        try:
-            result = data["candidates"][0]["content"]["parts"][0]["text"]
-            set_cached(cache_key, result)
-            return result
-        except (KeyError, IndexError):
-            raise HTTPException(status_code=500, detail="Malformed response from Gemini API")
+            data = response.json()
+            try:
+                result = data["candidates"][0]["content"]["parts"][0]["text"]
+                set_cached(cache_key, result)
+                return result
+            except (KeyError, IndexError):
+                raise HTTPException(status_code=502, detail="Malformed response from upstream AI service")
+    except httpx.HTTPError:
+        raise HTTPException(status_code=502, detail="Upstream AI service error")

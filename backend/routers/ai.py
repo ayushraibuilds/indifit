@@ -1,5 +1,6 @@
 import json
 import sys
+from typing import Any, Dict
 from fastapi import (
     APIRouter,
     Depends,
@@ -8,7 +9,7 @@ from fastapi import (
     UploadFile,
     status,
 )
-from backend.core.config import get_gemini_api_key
+from backend.core.config import AI_MODEL, get_gemini_api_key
 from backend.core.security import enforce_rate_limit, verify_api_key
 from backend.schemas.ai import (
     MealDecompositionResponse,
@@ -19,6 +20,13 @@ from backend.schemas.ai import (
     WeeklyReportRequest,
 )
 from backend.services import gemini_client
+from backend.services.query_cache import GeminiQuotaExceededError
+
+
+def _sanitize_fallback_reason(e: Exception) -> str:
+    if isinstance(e, GeminiQuotaExceededError):
+        return "quota_exceeded"
+    return "upstream_unavailable"
 from backend.services.ai_fallbacks import (
     _mock_meal_decomposition,
     _mock_meal_estimate,
@@ -90,7 +98,8 @@ async def generate_routine(req: RoutineRequest):
     except HTTPException:
         raise
     except Exception as e:
-        return _mock_routine(req, notes=f"Fallback Mock: {str(e)}", reason=str(e))
+        reason = _sanitize_fallback_reason(e)
+        return _mock_routine(req, notes=f"Fallback Mock: {reason}", reason=reason)
 
 
 @ai_router.post("/meal-estimate-text")
@@ -124,7 +133,8 @@ async def estimate_meal_text(req: TextMealRequest):
     except HTTPException:
         raise
     except Exception as e:
-        return _mock_meal_estimate(req.text, name=f"Estimated: {req.text[:20]}", reason=str(e))
+        reason = _sanitize_fallback_reason(e)
+        return _mock_meal_estimate(req.text, name=f"Estimated: {req.text[:20]}", reason=reason)
 
 
 @ai_router.post("/meal-estimate-photo")
@@ -170,7 +180,8 @@ async def estimate_meal_photo(image: UploadFile = File(...)):
     except HTTPException:
         raise
     except Exception as e:
-        return _mock_meal_estimate("Photo Estimate Fallback", reason=str(e))
+        reason = _sanitize_fallback_reason(e)
+        return _mock_meal_estimate("Photo Estimate Fallback", reason=reason)
 
 
 @ai_router.post("/meal-estimate-photo-v2", response_model=MealDecompositionResponse)
@@ -229,7 +240,8 @@ async def estimate_meal_photo_v2(image: UploadFile = File(...)):
     except HTTPException:
         raise
     except Exception as e:
-        return _mock_photo_decomposition_v2(reason=str(e))
+        reason = _sanitize_fallback_reason(e)
+        return _mock_photo_decomposition_v2(reason=reason)
 
 
 @ai_router.post("/meal-plan")
@@ -263,7 +275,8 @@ async def generate_meal_plan(req: MealPlanRequest):
     except HTTPException:
         raise
     except Exception as e:
-        return _mock_meal_plan(req, reason=str(e))
+        reason = _sanitize_fallback_reason(e)
+        return _mock_meal_plan(req, reason=reason)
 
 
 @ai_router.post("/weekly-report")
@@ -301,7 +314,7 @@ async def generate_weekly_report(req: WeeklyReportRequest):
     except HTTPException:
         raise
     except Exception as e:
-        return _mock_weekly_report(req, str(e))
+        return _mock_weekly_report(req, _sanitize_fallback_reason(e))
 
 
 @ai_router.post("/nutrition-label-ocr", response_model=NutritionLabelOcrResponse)
@@ -353,7 +366,8 @@ async def ocr_nutrition_label(image: UploadFile = File(...)):
     except HTTPException:
         raise
     except Exception as e:
-        return _mock_nutrition_label_ocr(reason=str(e))
+        reason = _sanitize_fallback_reason(e)
+        return _mock_nutrition_label_ocr(reason=reason)
 
 
 @ai_router.post("/meal-decompose", response_model=MealDecompositionResponse)
@@ -393,4 +407,28 @@ async def decompose_meal(req: TextMealRequest):
     except HTTPException:
         raise
     except Exception as e:
-        return _mock_meal_decomposition(req.text, reason=str(e))
+        reason = _sanitize_fallback_reason(e)
+        return _mock_meal_decomposition(req.text, reason=reason)
+
+
+@ai_router.post("/coaching-wording")
+async def coaching_wording(req: Dict[str, Any]):
+    evaluation_fingerprint = req.get("evaluation_fingerprint", "")
+    recommendations = req.get("recommendations", [])
+    suggestions = []
+    if isinstance(recommendations, list):
+        for rec in recommendations:
+            if isinstance(rec, dict):
+                rec_id = rec.get("id")
+                if rec_id and rec.get("wording_allowed", False):
+                    if "wording" in rec:
+                        suggestions.append({
+                            "recommendation_id": rec_id,
+                            "wording": rec["wording"],
+                        })
+    return {
+        "response_version": "b04-optional-ai-wording-response-v1",
+        "deterministic_fingerprint": evaluation_fingerprint,
+        "provider_version": f"indifit-ai-wording-{AI_MODEL}",
+        "suggestions": suggestions,
+    }

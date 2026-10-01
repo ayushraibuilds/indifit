@@ -4,6 +4,7 @@ import os
 import unittest
 
 os.environ.setdefault("INDIFIT_API_KEY", "backend-test-secret")
+os.environ["ENABLE_CLOUD_SYNC"] = "1"
 
 from fastapi.testclient import TestClient
 from backend import main
@@ -14,12 +15,25 @@ class CloudBackupEndpointTests(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.client = TestClient(main.app)
+        os.environ["ENABLE_CLOUD_SYNC"] = "1"
+        cls.app = main.create_app()
+        cls.client = TestClient(cls.app)
 
     def setUp(self):
         main.INDIFIT_API_KEY = self.api_key
         main.USER_BACKUPS.clear()
         main.BACKUP_BLOBS.clear()
+
+    def test_backup_unmounted_when_cloud_sync_disabled(self):
+        os.environ.pop("ENABLE_CLOUD_SYNC", None)
+        disabled_app = main.create_app()
+        disabled_client = TestClient(disabled_app)
+        res = disabled_client.get(
+            "/v1/backup/snapshots",
+            headers={"Authorization": "Bearer test-user-token-123"},
+        )
+        self.assertEqual(res.status_code, 404)
+        os.environ["ENABLE_CLOUD_SYNC"] = "1"
 
     def test_upload_and_list_backup_snapshot(self):
         payload_bytes = b"encrypted-blob-data-v10"

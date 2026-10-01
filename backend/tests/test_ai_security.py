@@ -85,6 +85,18 @@ class AiRouteSecurityTests(unittest.TestCase):
                     "image": ("meal.jpg", b"test-image", "image/jpeg"),
                 },
             },
+            "/api/ai/coaching-wording": {
+                "json": {
+                    "envelope_version": "b04-optional-ai-wording-envelope-v1",
+                    "evaluation_fingerprint": "eval-fp-test",
+                    "recommendations": [
+                        {
+                            "id": "rec-1",
+                            "wording_allowed": True,
+                        }
+                    ],
+                },
+            },
         }
 
     def test_health_and_root_are_public(self):
@@ -360,6 +372,103 @@ class AiRouteSecurityTests(unittest.TestCase):
         self.assertIn("quantity_unit", first_item)
         self.assertIn("estimated_calories", first_item)
         self.assertIn("confidence", first_item)
+
+    def test_coaching_wording_contract(self):
+        res = self.client.post(
+            "/api/ai/coaching-wording",
+            headers=self.valid_headers,
+            json={
+                "envelope_version": "b04-optional-ai-wording-envelope-v1",
+                "evaluation_fingerprint": "eval-fp-999",
+                "context_fingerprint": "ctx-fp-999",
+                "scope": "nutrition_target",
+                "period": "weekly",
+                "start_local_date": "2026-08-01",
+                "end_local_date": "2026-08-07",
+                "policy_version": "b04-policy-v1",
+                "recommendations": [
+                    {
+                        "id": "recommendation-1",
+                        "action": "training",
+                        "state": "available",
+                        "priority": "normal",
+                        "confidence": "high",
+                        "completeness": "complete",
+                        "eligibility_state": "eligible",
+                        "consent_state": "consented",
+                        "policy_state": "approved",
+                        "target_acceptance_state": "accepted",
+                        "wording_allowed": True,
+                        "wording": "Maintain current training split.",
+                    }
+                ],
+            },
+        )
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertEqual(data["response_version"], "b04-optional-ai-wording-response-v1")
+        self.assertEqual(data["deterministic_fingerprint"], "eval-fp-999")
+        self.assertTrue(data["provider_version"].startswith("indifit-ai-wording-"))
+        self.assertIsInstance(data["suggestions"], list)
+        self.assertEqual(len(data["suggestions"]), 1)
+        self.assertEqual(data["suggestions"][0]["recommendation_id"], "recommendation-1")
+        self.assertEqual(data["suggestions"][0]["wording"], "Maintain current training split.")
+
+    def test_gemini_client_header_auth(self):
+        import asyncio
+        import httpx
+        from backend.services.gemini_client import query_gemini_text
+
+        main.GEMINI_API_KEY = "test-secret-key-12345"
+
+        mock_resp = unittest.mock.MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.json.return_value = {
+            "candidates": [{"content": {"parts": [{"text": "Hello world"}]}}]
+        }
+        captured_requests = []
+
+        async def fake_post(url, headers=None, json=None):
+            captured_requests.append({"url": url, "headers": headers, "json": json})
+            return mock_resp
+
+        with unittest.mock.patch.object(httpx.AsyncClient, "post", side_effect=fake_post):
+            result = asyncio.run(query_gemini_text("unique-test-prompt-header-auth"))
+            self.assertEqual(result, "Hello world")
+            self.assertEqual(len(captured_requests), 1)
+            req = captured_requests[0]
+            # Key MUST NOT be in URL query parameters
+            self.assertNotIn("key=", req["url"])
+            self.assertNotIn("test-secret-key-12345", req["url"])
+            # Key MUST be in headers
+            self.assertIn("x-goog-api-key", req["headers"])
+            self.assertEqual(req["headers"]["x-goog-api-key"], "test-secret-key-12345")
+
+    def test_fallback_error_sanitization(self):
+        main.GEMINI_API_KEY = "dummy-key-for-sanitization"
+
+        async def throwing_query(*args, **kwargs):
+            raise RuntimeError("Database connection string leaked: postgres://user:secret@db.internal/prod")
+
+        with unittest.mock.patch("backend.routers.ai._get_query_gemini_text", return_value=throwing_query):
+            res = self.client.post(
+                "/api/ai/routine",
+                headers=self.valid_headers,
+                json={
+                    "goal": "hypertrophy",
+                    "equipment": "gym",
+                    "days_per_week": 4,
+                    "experience": "intermediate",
+                    "injuries": "none",
+                },
+            )
+            self.assertEqual(res.status_code, 200)
+            data = res.json()
+            self.assertTrue(data.get("is_fallback"))
+            # Reason MUST NOT leak the internal exception string
+            self.assertEqual(data.get("fallback_reason"), "upstream_unavailable")
+            self.assertNotIn("postgres", str(data))
+            self.assertNotIn("secret", str(data))
 
 
 if __name__ == "__main__":

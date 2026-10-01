@@ -6,13 +6,15 @@ from typing import Dict, List, Optional
 from fastapi import Header, HTTPException, Request, status
 from backend.core.config import get_indifit_api_key
 
-IP_REQUEST_LOGS: Dict[str, List[float]] = {}
+from cachetools import TTLCache
+
 RATE_LIMIT_WINDOW = 3600  # 1 hour
 MAX_REQUESTS_PER_WINDOW = 30
+IP_REQUEST_LOGS: TTLCache = TTLCache(maxsize=50_000, ttl=RATE_LIMIT_WINDOW)
 
-DEVICE_PHOTO_LOGS: Dict[str, List[float]] = {}
 PHOTO_V2_WINDOW = 86400  # 24 hours
 PHOTO_V2_MAX_REQUESTS = 10  # 10 requests per 24 hours per device
+DEVICE_PHOTO_LOGS: TTLCache = TTLCache(maxsize=50_000, ttl=PHOTO_V2_WINDOW)
 
 
 def get_rate_limit_window() -> int:
