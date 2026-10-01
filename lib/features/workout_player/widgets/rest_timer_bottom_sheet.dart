@@ -133,7 +133,9 @@ class _RestTimerBottomSheetState extends State<RestTimerBottomSheet> {
                         value: progress,
                         strokeWidth: 8,
                         backgroundColor: colors.border,
-                        valueColor: AlwaysStoppedAnimation<Color>(colors.action),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          colors.action,
+                        ),
                       ),
                     ),
                     Semantics(

@@ -69,15 +69,17 @@ class WeightPeriodCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       'Body Weight Trend',
-                      style: B05Typography.title(context).copyWith(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                      ),
+                      style: B05Typography.title(
+                        context,
+                      ).copyWith(fontSize: 16, fontWeight: FontWeight.w700),
                     ),
                   ),
                   if (deltaText != null)
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
                         color: colors.inset,
                         borderRadius: BorderRadius.circular(12),
@@ -102,26 +104,23 @@ class WeightPeriodCard extends StatelessWidget {
                       children: [
                         Text(
                           'Latest Weight',
-                          style: B05Typography.caption(context).copyWith(
-                            color: colors.textSecondary,
-                            fontSize: 11,
-                          ),
+                          style: B05Typography.caption(
+                            context,
+                          ).copyWith(color: colors.textSecondary, fontSize: 11),
                         ),
                         const SizedBox(height: 2),
                         Text(
                           curLatest,
-                          style: B05Typography.body(context).copyWith(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 16,
-                          ),
+                          style: B05Typography.body(
+                            context,
+                          ).copyWith(fontWeight: FontWeight.w800, fontSize: 16),
                         ),
                         const SizedBox(height: 1),
                         Text(
                           'vs $prevLatest',
-                          style: B05Typography.caption(context).copyWith(
-                            color: colors.textSecondary,
-                            fontSize: 11,
-                          ),
+                          style: B05Typography.caption(
+                            context,
+                          ).copyWith(color: colors.textSecondary, fontSize: 11),
                         ),
                       ],
                     ),

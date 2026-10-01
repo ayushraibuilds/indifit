@@ -336,7 +336,9 @@ final savedRecipeLogControllerProvider =
       return controller;
     });
 
-final nutritionLabelOcrServiceProvider = Provider<NutritionLabelOcrService>((ref) {
+final nutritionLabelOcrServiceProvider = Provider<NutritionLabelOcrService>((
+  ref,
+) {
   return NutritionLabelOcrService(
     dio: ref.watch(dioProvider),
     privacyService: ref.watch(nutritionEstimatePrivacyServiceProvider),
@@ -344,49 +346,61 @@ final nutritionLabelOcrServiceProvider = Provider<NutritionLabelOcrService>((ref
   );
 });
 
-final naturalLanguageMealServiceProvider = FutureProvider<NaturalLanguageMealService>((ref) async {
-  return NaturalLanguageMealService(
-    dio: ref.watch(dioProvider),
-    catalog: await ref.watch(nutritionFoodCatalogRepositoryProvider.future),
-    policy: () => ref.watch(privacyPolicyProvider),
-  );
-});
+final naturalLanguageMealServiceProvider =
+    FutureProvider<NaturalLanguageMealService>((ref) async {
+      return NaturalLanguageMealService(
+        dio: ref.watch(dioProvider),
+        catalog: await ref.watch(nutritionFoodCatalogRepositoryProvider.future),
+        policy: () => ref.watch(privacyPolicyProvider),
+      );
+    });
 
-final nutritionLabelOcrControllerProvider = StateNotifierProvider.autoDispose<
-  NutritionLabelOcrController,
-  NutritionLabelOcrState
->((ref) {
-  return NutritionLabelOcrController(
-    ocrService: ref.watch(nutritionLabelOcrServiceProvider),
-    catalogRepository: () => ref.read(nutritionFoodCatalogRepositoryProvider.future),
-    loggingCoordinator: () => ref.read(nutritionFoodLoggingCoordinatorProvider.future),
-    userId: kLocalNutritionUserScopeId,
-    timezoneId: () => ref.read(localTimezoneServiceProvider).currentTimezoneId(),
-  );
-});
+final nutritionLabelOcrControllerProvider =
+    StateNotifierProvider.autoDispose<
+      NutritionLabelOcrController,
+      NutritionLabelOcrState
+    >((ref) {
+      return NutritionLabelOcrController(
+        ocrService: ref.watch(nutritionLabelOcrServiceProvider),
+        catalogRepository: () =>
+            ref.read(nutritionFoodCatalogRepositoryProvider.future),
+        loggingCoordinator: () =>
+            ref.read(nutritionFoodLoggingCoordinatorProvider.future),
+        userId: kLocalNutritionUserScopeId,
+        timezoneId: () =>
+            ref.read(localTimezoneServiceProvider).currentTimezoneId(),
+      );
+    });
 
-final naturalLanguageMealControllerProvider = StateNotifierProvider.autoDispose<
-  NaturalLanguageMealController,
-  NaturalLanguageMealState
->((ref) {
-  return NaturalLanguageMealController(
-    mealService: () => ref.read(naturalLanguageMealServiceProvider.future),
-    catalogRepository: () => ref.read(nutritionFoodCatalogRepositoryProvider.future),
-    loggingCoordinator: () => ref.read(nutritionFoodLoggingCoordinatorProvider.future),
-    userId: kLocalNutritionUserScopeId,
-    timezoneId: () => ref.read(localTimezoneServiceProvider).currentTimezoneId(),
-  );
-});
+final naturalLanguageMealControllerProvider =
+    StateNotifierProvider.autoDispose<
+      NaturalLanguageMealController,
+      NaturalLanguageMealState
+    >((ref) {
+      return NaturalLanguageMealController(
+        mealService: () => ref.read(naturalLanguageMealServiceProvider.future),
+        catalogRepository: () =>
+            ref.read(nutritionFoodCatalogRepositoryProvider.future),
+        loggingCoordinator: () =>
+            ref.read(nutritionFoodLoggingCoordinatorProvider.future),
+        userId: kLocalNutritionUserScopeId,
+        timezoneId: () =>
+            ref.read(localTimezoneServiceProvider).currentTimezoneId(),
+      );
+    });
 
-final photoMealControllerProvider = StateNotifierProvider.autoDispose<
-  PhotoMealController,
-  PhotoMealState
->((ref) {
-  return PhotoMealController(
-    mealService: () => ref.read(naturalLanguageMealServiceProvider.future),
-    catalogRepository: () => ref.read(nutritionFoodCatalogRepositoryProvider.future),
-    loggingCoordinator: () => ref.read(nutritionFoodLoggingCoordinatorProvider.future),
-    userId: kLocalNutritionUserScopeId,
-    timezoneId: () => ref.read(localTimezoneServiceProvider).currentTimezoneId(),
-  );
-});
+final photoMealControllerProvider =
+    StateNotifierProvider.autoDispose<PhotoMealController, PhotoMealState>((
+      ref,
+    ) {
+      return PhotoMealController(
+        mealService: () => ref.read(naturalLanguageMealServiceProvider.future),
+        catalogRepository: () =>
+            ref.read(nutritionFoodCatalogRepositoryProvider.future),
+        loggingCoordinator: () =>
+            ref.read(nutritionFoodLoggingCoordinatorProvider.future),
+        userId: kLocalNutritionUserScopeId,
+        timezoneId: () =>
+            ref.read(localTimezoneServiceProvider).currentTimezoneId(),
+      );
+    });

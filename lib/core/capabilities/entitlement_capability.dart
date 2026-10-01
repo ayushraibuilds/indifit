@@ -1,9 +1,5 @@
 /// Entitlement tier.
-enum EntitlementTier {
-  free,
-  pro,
-  lifetime,
-}
+enum EntitlementTier { free, pro, lifetime }
 
 /// Status descriptor for user feature entitlements.
 class EntitlementState {
@@ -41,15 +37,12 @@ class FullLocalEntitlementCapability implements EntitlementCapability {
   const FullLocalEntitlementCapability();
 
   @override
-  EntitlementState get currentEntitlement => const EntitlementState(
-        tier: EntitlementTier.free,
-        isActive: true,
-      );
+  EntitlementState get currentEntitlement =>
+      const EntitlementState(tier: EntitlementTier.free, isActive: true);
 
   @override
-  Stream<EntitlementState> get onEntitlementChanged => Stream.value(
-        currentEntitlement,
-      );
+  Stream<EntitlementState> get onEntitlementChanged =>
+      Stream.value(currentEntitlement);
 
   @override
   bool isFeatureAccessible(String featureKey) => true;

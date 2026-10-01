@@ -26,7 +26,9 @@ Future<void> _seedSession(
 
 Future<void> _seedMeals(AppDatabase db, int count) async {
   for (var i = 0; i < count; i++) {
-    await db.into(db.foodLogs).insert(
+    await db
+        .into(db.foodLogs)
+        .insert(
           FoodLogsCompanion.insert(
             name: 'Meal $i',
             calories: 400,
@@ -113,7 +115,9 @@ void main() {
     test('Stored timestamps win over freshly minted ones', () async {
       // Simulate a restore carrying an older unlock event.
       final fixed = DateTime.utc(2025, 12, 25, 10, 0);
-      await db.into(db.achievementUnlocks).insert(
+      await db
+          .into(db.achievementUnlocks)
+          .insert(
             AchievementUnlocksCompanion.insert(
               achievementId: 'meals_10',
               unlockedAt: Value(fixed),
@@ -145,14 +149,17 @@ void main() {
       expect(iron.evidence, contains('10,450 kg / 1,000 kg'));
     });
 
-    test('Direct insert relies on the unique constraint, not a pre-read', () async {
-      expect(await statsRepo.unlockAchievement('first_thali'), isTrue);
-      expect(await statsRepo.unlockAchievement('first_thali'), isFalse);
-      final rows = await db.select(db.achievementUnlocks).get();
-      expect(
-        rows.where((r) => r.achievementId == 'first_thali'),
-        hasLength(1),
-      );
-    });
+    test(
+      'Direct insert relies on the unique constraint, not a pre-read',
+      () async {
+        expect(await statsRepo.unlockAchievement('first_thali'), isTrue);
+        expect(await statsRepo.unlockAchievement('first_thali'), isFalse);
+        final rows = await db.select(db.achievementUnlocks).get();
+        expect(
+          rows.where((r) => r.achievementId == 'first_thali'),
+          hasLength(1),
+        );
+      },
+    );
   });
 }

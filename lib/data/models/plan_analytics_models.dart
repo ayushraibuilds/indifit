@@ -51,25 +51,25 @@ class PlanAnalyticsSummary {
   });
 
   const PlanAnalyticsSummary.empty()
-      : totalScheduled = 0,
-        completedCount = 0,
-        partiallyCompletedCount = 0,
-        skippedCount = 0,
-        skippedAdvanceCount = 0,
-        skippedKeepPendingCount = 0,
-        rescheduledCount = 0,
-        cancelledCount = 0,
-        inProgressCount = 0,
-        pendingUpcomingCount = 0,
-        overdueCount = 0,
-        concurrentIndependentCount = 0,
-        totalVolumeKg = 0.0,
-        totalDurationSeconds = 0,
-        hasStrengthSessions = false,
-        elapsedCount = 0,
-        elapsedEligibleCount = 0,
-        strictAdherenceRate = null,
-        compositeAdherenceRate = null;
+    : totalScheduled = 0,
+      completedCount = 0,
+      partiallyCompletedCount = 0,
+      skippedCount = 0,
+      skippedAdvanceCount = 0,
+      skippedKeepPendingCount = 0,
+      rescheduledCount = 0,
+      cancelledCount = 0,
+      inProgressCount = 0,
+      pendingUpcomingCount = 0,
+      overdueCount = 0,
+      concurrentIndependentCount = 0,
+      totalVolumeKg = 0.0,
+      totalDurationSeconds = 0,
+      hasStrengthSessions = false,
+      elapsedCount = 0,
+      elapsedEligibleCount = 0,
+      strictAdherenceRate = null,
+      compositeAdherenceRate = null;
 
   bool get hasActiveOccurrences => totalScheduled > 0;
 }
@@ -199,7 +199,8 @@ abstract final class PlanAnalyticsCalculator {
       final status = occ.status;
       final isPast = dates.compare(occ.effectiveLocalDate, todayLocalDate) < 0;
       final isToday = occ.effectiveLocalDate == todayLocalDate;
-      final isFuture = dates.compare(occ.effectiveLocalDate, todayLocalDate) > 0;
+      final isFuture =
+          dates.compare(occ.effectiveLocalDate, todayLocalDate) > 0;
 
       if (item.template.activityType == B02ActivityType.strength.dbValue) {
         hasStrengthSessions = true;
@@ -280,8 +281,9 @@ abstract final class PlanAnalyticsCalculator {
       }
     }
 
-    final elapsedEligibleCount =
-        elapsedCount > cancelledCount ? elapsedCount - cancelledCount : 0;
+    final elapsedEligibleCount = elapsedCount > cancelledCount
+        ? elapsedCount - cancelledCount
+        : 0;
 
     double? strictAdherenceRate;
     double? compositeAdherenceRate;

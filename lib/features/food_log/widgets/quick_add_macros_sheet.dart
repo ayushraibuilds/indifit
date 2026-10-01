@@ -16,7 +16,8 @@ import '../../../core/services/local_schedule_date_service.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
 import '../../../core/typed_quantities.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
-import '../../../data/database/app_database.dart' hide NutritionConsumptionSnapshot;
+import '../../../data/database/app_database.dart'
+    hide NutritionConsumptionSnapshot;
 import '../../dashboard/today_surface_controller.dart';
 import '../food_log_surface.dart';
 import '../meal_presentation_registry.dart';
@@ -112,8 +113,9 @@ class _QuickAddMacrosSheetState extends ConsumerState<QuickAddMacrosSheet> {
     try {
       final registry = await ref.read(nutritionRegistryProvider.future);
       final dates = LocalScheduleDateService();
-      final timezoneId =
-          await ref.read(localTimezoneServiceProvider).currentTimezoneId();
+      final timezoneId = await ref
+          .read(localTimezoneServiceProvider)
+          .currentTimezoneId();
 
       final localDate = dates.localDateFor(_selectedDate, timezoneId);
       final todayDate = dates.localDateFor(DateTime.now(), timezoneId);
@@ -129,7 +131,11 @@ class _QuickAddMacrosSheetState extends ConsumerState<QuickAddMacrosSheet> {
       final fiber = double.tryParse(_fiberController.text.trim());
       final description = _descriptionController.text.trim();
 
-      NutrientFact knownFact(String nutrientId, double amount, NutrientUnit unit) {
+      NutrientFact knownFact(
+        String nutrientId,
+        double amount,
+        NutrientUnit unit,
+      ) {
         return NutrientFact.known(
           nutrientId: nutrientId,
           point: NutrientAmount(
@@ -193,22 +199,22 @@ class _QuickAddMacrosSheetState extends ConsumerState<QuickAddMacrosSheet> {
 
       final calculationSnapshot =
           NutritionConsumptionCalculationSnapshot.fromFacts(
-        facts: facts,
-        registry: registry,
-        requestedNutrientIds: const [
-          'energy',
-          'protein',
-          'carbohydrate',
-          'fat',
-          'fibre',
-        ],
-        calculatorVersion: 'quick_add_v1',
-        calculationFingerprint: fingerprint,
-        lineage: {
-          'quick_add': true,
-          if (description.isNotEmpty) 'note': description,
-        },
-      );
+            facts: facts,
+            registry: registry,
+            requestedNutrientIds: const [
+              'energy',
+              'protein',
+              'carbohydrate',
+              'fat',
+              'fibre',
+            ],
+            calculatorVersion: 'quick_add_v1',
+            calculationFingerprint: fingerprint,
+            lineage: {
+              'quick_add': true,
+              if (description.isNotEmpty) 'note': description,
+            },
+          );
 
       final consumptionId = 'quick-add-consumption::${const Uuid().v4()}';
       final commandId = 'quick-add-command::${const Uuid().v4()}';
@@ -218,17 +224,19 @@ class _QuickAddMacrosSheetState extends ConsumerState<QuickAddMacrosSheet> {
       final foodId = 'food::quick_add::$consumptionId';
 
       final db = ref.read(databaseProvider);
-      await db.into(db.nutritionFoods).insert(
-        NutritionFoodsCompanion.insert(
-          id: foodId,
-          kind: 'userCreated',
-          displayName: itemLabel,
-          locale: 'en-IN',
-          sourceType: 'user',
-          lifecycle: 'active',
-        ),
-        mode: InsertMode.insertOrReplace,
-      );
+      await db
+          .into(db.nutritionFoods)
+          .insert(
+            NutritionFoodsCompanion.insert(
+              id: foodId,
+              kind: 'userCreated',
+              displayName: itemLabel,
+              locale: 'en-IN',
+              sourceType: 'user',
+              lifecycle: 'active',
+            ),
+            mode: InsertMode.insertOrReplace,
+          );
 
       final item = NutritionConsumptionItemInput(
         id: '$consumptionId::item::0',
@@ -245,8 +253,9 @@ class _QuickAddMacrosSheetState extends ConsumerState<QuickAddMacrosSheet> {
         },
       );
 
-      final consumptionRepo =
-          await ref.read(nutritionConsumptionRepositoryProvider.future);
+      final consumptionRepo = await ref.read(
+        nutritionConsumptionRepositoryProvider.future,
+      );
 
       final snapshot = await consumptionRepo.finalizeConsumption(
         NutritionConsumptionFinalizeRequest(
@@ -298,10 +307,7 @@ class _QuickAddMacrosSheetState extends ConsumerState<QuickAddMacrosSheet> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Quick-Add Macros',
-                  style: B05Typography.title(context),
-                ),
+                Text('Quick-Add Macros', style: B05Typography.title(context)),
                 IconButton(
                   icon: const Icon(Icons.close_rounded),
                   onPressed: () => Navigator.of(context).pop(),
@@ -381,8 +387,9 @@ class _QuickAddMacrosSheetState extends ConsumerState<QuickAddMacrosSheet> {
             TextField(
               controller: _caloriesController,
               autofocus: true,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               inputFormatters: [
                 FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
               ],
@@ -415,8 +422,9 @@ class _QuickAddMacrosSheetState extends ConsumerState<QuickAddMacrosSheet> {
                 Expanded(
                   child: TextField(
                     controller: _proteinController,
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                     inputFormatters: [
                       FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
                     ],
@@ -438,8 +446,9 @@ class _QuickAddMacrosSheetState extends ConsumerState<QuickAddMacrosSheet> {
                 Expanded(
                   child: TextField(
                     controller: _carbsController,
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                     inputFormatters: [
                       FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
                     ],
@@ -467,8 +476,9 @@ class _QuickAddMacrosSheetState extends ConsumerState<QuickAddMacrosSheet> {
                 Expanded(
                   child: TextField(
                     controller: _fatController,
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                     inputFormatters: [
                       FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
                     ],
@@ -490,8 +500,9 @@ class _QuickAddMacrosSheetState extends ConsumerState<QuickAddMacrosSheet> {
                 Expanded(
                   child: TextField(
                     controller: _fiberController,
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                     inputFormatters: [
                       FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
                     ],

@@ -11,7 +11,6 @@ void main() {
   });
 
   group('Phase 8 Critical UI Widget Tests', () {
-
     testWidgets('SettingsReminderToggle responds to switch toggle', (
       WidgetTester tester,
     ) async {

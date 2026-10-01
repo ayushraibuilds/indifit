@@ -13,10 +13,7 @@ final coreRoutes = <RouteBase>[
     path: '/settings',
     builder: (context, state) => const SettingsScreen(),
   ),
-  GoRoute(
-    path: '/profile',
-    builder: (context, state) => const ProfileScreen(),
-  ),
+  GoRoute(path: '/profile', builder: (context, state) => const ProfileScreen()),
   GoRoute(
     path: '/settings/profile',
     redirect: (context, state) =>
@@ -29,7 +26,6 @@ final coreRoutes = <RouteBase>[
   ),
   GoRoute(
     path: '/progress',
-    builder: (context, state) =>
-        const MainNavigationScaffold(initialIndex: 3),
+    builder: (context, state) => const MainNavigationScaffold(initialIndex: 3),
   ),
 ];

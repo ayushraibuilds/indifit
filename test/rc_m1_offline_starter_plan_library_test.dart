@@ -92,9 +92,10 @@ void main() {
       await db1.customStatement('DELETE FROM exercises;');
       await db1.customStatement('PRAGMA foreign_keys = ON;');
       final emptiedCount =
-          (await db1.customSelect(
-            'SELECT COUNT(*) as c FROM exercises;',
-          ).getSingle()).read<int>('c');
+          (await db1
+                  .customSelect('SELECT COUNT(*) as c FROM exercises;')
+                  .getSingle())
+              .read<int>('c');
       expect(emptiedCount, equals(0));
       await db1.close();
 
@@ -103,15 +104,18 @@ void main() {
 
       // Verify self-healing in beforeOpen restored the exercises
       final restoredCount =
-          (await db2.customSelect(
-            'SELECT COUNT(*) as c FROM exercises;',
-          ).getSingle()).read<int>('c');
+          (await db2
+                  .customSelect('SELECT COUNT(*) as c FROM exercises;')
+                  .getSingle())
+              .read<int>('c');
       expect(restoredCount, equals(140));
 
       // Verify that starter plans now succeed with 8 plans (not failing with Plans are unavailable)
       final programs2 = ProgramRepository(db2);
-      final snapshot =
-          await PlanLibraryReadRepository(db2, programs: programs2).read();
+      final snapshot = await PlanLibraryReadRepository(
+        db2,
+        programs: programs2,
+      ).read();
       expect(snapshot.entries, hasLength(8));
     },
   );

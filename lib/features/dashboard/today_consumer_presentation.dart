@@ -608,7 +608,8 @@ class TodayActivityPresentation {
       }
       if (facts.isNotEmpty) {
         movementSummary = facts.join(' · ');
-        healthSource = healthSummary.primarySource ??
+        healthSource =
+            healthSummary.primarySource ??
             healthSummary.activeEnergyContext?.sourceName ??
             healthSummary.sleepContext?.sourceName ??
             healthSummary.stepsContext?.sourceName;

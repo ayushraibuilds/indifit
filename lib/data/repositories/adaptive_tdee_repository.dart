@@ -29,9 +29,9 @@ class AdaptiveTdeeRepository {
     LocalScheduleDateService? dates,
     NutritionReadModelRepository? nutrition,
     AdaptiveTdeeEngine engine = const AdaptiveTdeeEngine(),
-  })  : _dates = dates ?? LocalScheduleDateService(),
-        _nutrition = nutrition,
-        _engine = engine;
+  }) : _dates = dates ?? LocalScheduleDateService(),
+       _nutrition = nutrition,
+       _engine = engine;
 
   /// Evaluates current adaptive TDEE estimate as of [nowUtc] in [timezoneId].
   Future<AdaptiveTdeeEstimate> evaluate({
@@ -131,8 +131,8 @@ class AdaptiveTdeeRepository {
     }
 
     final p = profiles.first;
-    final resolvedUserId = userId ??
-        (p.id > 0 ? p.id.toString() : kLocalNutritionUserScopeId);
+    final resolvedUserId =
+        userId ?? (p.id > 0 ? p.id.toString() : kLocalNutritionUserScopeId);
     final age = p.age;
     final height = p.height;
     final weight = p.weight;
@@ -141,7 +141,9 @@ class AdaptiveTdeeRepository {
     final multiplier = _parseActivityMultiplier(p.activityLevel);
 
     if (age <= 0 || height <= 0 || weight <= 0) {
-      final fallbackTdee = p.calorieGoal > 0 ? p.calorieGoal.toDouble() : 2000.0;
+      final fallbackTdee = p.calorieGoal > 0
+          ? p.calorieGoal.toDouble()
+          : 2000.0;
       return (userId: resolvedUserId, bmr: 0.0, tdee: fallbackTdee);
     }
 
@@ -181,10 +183,11 @@ class AdaptiveTdeeRepository {
     DateTime nowUtc,
     String timezoneId,
   ) async {
-    final rows = await (_database.select(_database.bodyMeasurements)
-          ..where((tbl) => tbl.recordedAt.isSmallerOrEqualValue(nowUtc))
-          ..where((tbl) => tbl.weight.isNotNull()))
-        .get();
+    final rows =
+        await (_database.select(_database.bodyMeasurements)
+              ..where((tbl) => tbl.recordedAt.isSmallerOrEqualValue(nowUtc))
+              ..where((tbl) => tbl.weight.isNotNull()))
+            .get();
 
     final weightsByDay = <String, List<double>>{};
     for (final row in rows) {
@@ -201,13 +204,32 @@ class AdaptiveTdeeRepository {
     return dailyMedians;
   }
 
-  Future<Map<String, ({double calories, AdaptiveTdeeIntakeSource source, bool isPartial, double intakeWeight})>>
-      _readDailyIntakes(
+  Future<
+    Map<
+      String,
+      ({
+        double calories,
+        AdaptiveTdeeIntakeSource source,
+        bool isPartial,
+        double intakeWeight,
+      })
+    >
+  >
+  _readDailyIntakes(
     DateTime nowUtc,
     String timezoneId, {
     required String userId,
   }) async {
-    final intakes = <String, ({double calories, AdaptiveTdeeIntakeSource source, bool isPartial, double intakeWeight})>{};
+    final intakes =
+        <
+          String,
+          ({
+            double calories,
+            AdaptiveTdeeIntakeSource source,
+            bool isPartial,
+            double intakeWeight,
+          })
+        >{};
 
     // 0. Use NutritionReadModelRepository if provided
     if (_nutrition != null) {
@@ -226,10 +248,16 @@ class AdaptiveTdeeRepository {
           final localDate = r.localDate;
           final energyFacts = r.items
               .expand((item) => item.facts.values)
-              .where((fact) => fact.nutrientId == 'energy' || fact.nutrientId == 'energy_kilocalorie');
+              .where(
+                (fact) =>
+                    fact.nutrientId == 'energy' ||
+                    fact.nutrientId == 'energy_kilocalorie',
+              );
           double totalKcal = 0.0;
           for (final fact in energyFacts) {
-            final amt = fact.point?.value.asDouble ?? (fact.lower?.value.asDouble ?? 0.0);
+            final amt =
+                fact.point?.value.asDouble ??
+                (fact.lower?.value.asDouble ?? 0.0);
             totalKcal += amt;
           }
           if (totalKcal > 0) {
@@ -257,9 +285,9 @@ class AdaptiveTdeeRepository {
     }
 
     // 1. Check Canonical Nutrition Snapshots via direct SQL
-    final snapshots = await (_database.select(_database.nutritionConsumptionSnapshots)
-          ..where((tbl) => tbl.loggedAt.isSmallerOrEqualValue(nowUtc)))
-        .get();
+    final snapshots = await (_database.select(
+      _database.nutritionConsumptionSnapshots,
+    )..where((tbl) => tbl.loggedAt.isSmallerOrEqualValue(nowUtc))).get();
 
     // Identify superseded snapshots
     final supersededIds = <String>{};
@@ -269,7 +297,9 @@ class AdaptiveTdeeRepository {
       try {
         final decoded = jsonDecode(raw);
         if (decoded is Map && decoded['supersedes_snapshot_id'] is String) {
-          supersededIds.add((decoded['supersedes_snapshot_id'] as String).trim());
+          supersededIds.add(
+            (decoded['supersedes_snapshot_id'] as String).trim(),
+          );
         }
       } catch (_) {}
     }
@@ -282,16 +312,18 @@ class AdaptiveTdeeRepository {
 
     if (activeSnapshots.isNotEmpty) {
       final snapshotIds = activeSnapshots.map((s) => s.id).toSet();
-      final nutrientRows = await (_database.select(_database.nutritionSnapshotNutrients)
-            ..where((tbl) => tbl.snapshotId.isIn(snapshotIds)))
-          .get();
+      final nutrientRows = await (_database.select(
+        _database.nutritionSnapshotNutrients,
+      )..where((tbl) => tbl.snapshotId.isIn(snapshotIds))).get();
 
       final energyBySnapshotId = <String, double>{};
       for (final n in nutrientRows) {
         final id = n.nutrientId.toLowerCase();
         if (id == 'energy' || id == 'energy_kilocalorie') {
           final status = n.status.toLowerCase();
-          if (status == 'known' || status == 'known_zero' || status == 'estimated') {
+          if (status == 'known' ||
+              status == 'known_zero' ||
+              status == 'estimated') {
             final amt = n.amount ?? 0.0;
             energyBySnapshotId[n.snapshotId] =
                 (energyBySnapshotId[n.snapshotId] ?? 0.0) + amt;
@@ -334,15 +366,16 @@ class AdaptiveTdeeRepository {
     }
 
     // 2. Query Food Logs for days that do NOT have active snapshot energy
-    final foodLogs = await (_database.select(_database.foodLogs)
-          ..where((tbl) => tbl.loggedAt.isSmallerOrEqualValue(nowUtc)))
-        .get();
+    final foodLogs = await (_database.select(
+      _database.foodLogs,
+    )..where((tbl) => tbl.loggedAt.isSmallerOrEqualValue(nowUtc))).get();
 
     final foodLogsByDay = <String, double>{};
     for (final log in foodLogs) {
       if (log.calories <= 0) continue;
       final localDate = _dates.localDateFor(log.loggedAt.toUtc(), timezoneId);
-      foodLogsByDay[localDate] = (foodLogsByDay[localDate] ?? 0.0) + log.calories;
+      foodLogsByDay[localDate] =
+          (foodLogsByDay[localDate] ?? 0.0) + log.calories;
     }
 
     // Apply strict precedence: snapshot > foodLog. Never sum both for the same civil day.

@@ -487,9 +487,9 @@ class StrengthExecutionRepository {
         'Quick Workout exercises need at least one planned set.',
       );
     }
-    final exerciseRow = await (_db.select(_db.exercises)
-          ..where((tbl) => tbl.stableId.equals(stableId)))
-        .getSingleOrNull();
+    final exerciseRow = await (_db.select(
+      _db.exercises,
+    )..where((tbl) => tbl.stableId.equals(stableId))).getSingleOrNull();
     final isBodyweight =
         exerciseRow?.equipment.trim().toLowerCase() == 'bodyweight';
     final basis = isBodyweight

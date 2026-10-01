@@ -38,8 +38,7 @@ final workoutPlayerRoutes = <RouteBase>[
         routineName: extra['routineName'] ?? 'Workout',
         elapsedSeconds: extra['elapsedSeconds'] ?? 0,
         loggedSets:
-            (extra['loggedSets'] as List?)?.cast<WorkoutSetsCompanion>() ??
-            [],
+            (extra['loggedSets'] as List?)?.cast<WorkoutSetsCompanion>() ?? [],
         scheduledOccurrenceId: extra['scheduledOccurrenceId'] as String?,
         completionCommandId: extra['completionCommandId'] as String?,
       );

@@ -80,8 +80,8 @@ class WorkoutRepository {
     this._db, {
     LocalScheduleDateService? dateService,
     LocalTimezoneService? timezoneService,
-  })  : _dateService = dateService ?? LocalScheduleDateService(),
-        _timezoneService = timezoneService ?? LocalTimezoneService();
+  }) : _dateService = dateService ?? LocalScheduleDateService(),
+       _timezoneService = timezoneService ?? LocalTimezoneService();
 
   Future<String> _resolveTimezone() async {
     try {
@@ -406,9 +406,17 @@ class WorkoutRepository {
 
     final tzId = await _resolveTimezone();
     final todayStr = _dateService.todayIn(tzId);
-    final todayStart = _dateService.instantForLocalDate(todayStr, tzId, hour: 0);
+    final todayStart = _dateService.instantForLocalDate(
+      todayStr,
+      tzId,
+      hour: 0,
+    );
     final tomorrowStr = _dateService.addCalendarDays(todayStr, tzId, 1);
-    final todayEnd = _dateService.instantForLocalDate(tomorrowStr, tzId, hour: 0);
+    final todayEnd = _dateService.instantForLocalDate(
+      tomorrowStr,
+      tzId,
+      hour: 0,
+    );
     final now = _dateService.nowUtc();
 
     final existing =
@@ -477,9 +485,17 @@ class WorkoutRepository {
 
     final tzId = await _resolveTimezone();
     final todayStr = _dateService.todayIn(tzId);
-    final todayStart = _dateService.instantForLocalDate(todayStr, tzId, hour: 0);
+    final todayStart = _dateService.instantForLocalDate(
+      todayStr,
+      tzId,
+      hour: 0,
+    );
     final tomorrowStr = _dateService.addCalendarDays(todayStr, tzId, 1);
-    final todayEnd = _dateService.instantForLocalDate(tomorrowStr, tzId, hour: 0);
+    final todayEnd = _dateService.instantForLocalDate(
+      tomorrowStr,
+      tzId,
+      hour: 0,
+    );
     final now = _dateService.nowUtc();
 
     return await _db.transaction(() async {
@@ -542,16 +558,16 @@ class WorkoutRepository {
       );
     }
 
-    final allLogs = await (_db.select(_db.bodyMeasurements)
-          ..orderBy([
-            (tbl) => OrderingTerm(
-              expression: tbl.recordedAt,
-              mode: OrderingMode.desc,
-            ),
-            (tbl) =>
-                OrderingTerm(expression: tbl.id, mode: OrderingMode.desc),
-          ]))
-        .get();
+    final allLogs =
+        await (_db.select(_db.bodyMeasurements)..orderBy([
+              (tbl) => OrderingTerm(
+                expression: tbl.recordedAt,
+                mode: OrderingMode.desc,
+              ),
+              (tbl) =>
+                  OrderingTerm(expression: tbl.id, mode: OrderingMode.desc),
+            ]))
+            .get();
 
     if (allLogs.isEmpty) {
       throw StateError('No recent weight measurement found to update.');

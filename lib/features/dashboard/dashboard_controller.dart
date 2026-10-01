@@ -42,9 +42,7 @@ class DashboardState {
       totalLoggedMealsCount: 0,
     );
     final titleMap = {for (final a in catalog) a.id: a.title};
-    return newlyUnlockedAchievementIds
-        .map((id) => titleMap[id] ?? id)
-        .toList();
+    return newlyUnlockedAchievementIds.map((id) => titleMap[id] ?? id).toList();
   }
 
   DashboardState({
@@ -64,9 +62,10 @@ class DashboardState {
     List<String>? newlyUnlockedAchievementIds,
     List<String>? newlyUnlockedAchievementTitles,
     this.streakMilestone,
-  })  : selectedDate = selectedDate ?? DateTime.now(),
-        newlyUnlockedAchievementIds = newlyUnlockedAchievementIds ??
-            (newlyUnlockedAchievementTitles ?? const []);
+  }) : selectedDate = selectedDate ?? DateTime.now(),
+       newlyUnlockedAchievementIds =
+           newlyUnlockedAchievementIds ??
+           (newlyUnlockedAchievementTitles ?? const []);
 
   DashboardState copyWith({
     DateTime? selectedDate,
@@ -100,7 +99,8 @@ class DashboardState {
       weeklyActionText: weeklyActionText ?? this.weeklyActionText,
       weeklyActionProgress: weeklyActionProgress ?? this.weeklyActionProgress,
       weeklyActionTarget: weeklyActionTarget ?? this.weeklyActionTarget,
-      newlyUnlockedAchievementIds: newlyUnlockedAchievementIds ??
+      newlyUnlockedAchievementIds:
+          newlyUnlockedAchievementIds ??
           (newlyUnlockedAchievementTitles ?? this.newlyUnlockedAchievementIds),
       streakMilestone: streakMilestone,
     );
@@ -118,8 +118,8 @@ class DashboardController extends StateNotifier<DashboardState> {
     SharedPreferences? prefs,
     DashboardState? initialState,
     bool loadOnInit = true,
-  })  : _prefs = prefs,
-        super(initialState ?? DashboardState()) {
+  }) : _prefs = prefs,
+       super(initialState ?? DashboardState()) {
     _automaticDate = _day(state.selectedDate);
     _followsAutomaticDate = _sameDay(_automaticDate, _day(DateTime.now()));
     if (loadOnInit) loadStateData();
@@ -195,9 +195,9 @@ class DashboardController extends StateNotifier<DashboardState> {
       // Legacy prefs key 'unlocked_achievement_ids' is left inert and no longer written to.
       final uncelebrated =
           await AchievementService.getUncelebratedNonWorkoutUnlocks(
-        statsRepository: statsRepo,
-        prefs: prefs,
-      );
+            statsRepository: statsRepo,
+            prefs: prefs,
+          );
 
       state = state.copyWith(
         newlyUnlockedAchievementIds: uncelebrated.map((a) => a.id).toList(),
@@ -273,7 +273,8 @@ class DashboardController extends StateNotifier<DashboardState> {
       return 'Max freeze tokens (2/2) already active!';
     }
 
-    final lastClaimMs = prefs.getInt(AppPreferenceKeys.lastFreezeClaimedAt) ?? 0;
+    final lastClaimMs =
+        prefs.getInt(AppPreferenceKeys.lastFreezeClaimedAt) ?? 0;
     final nowMs = DateTime.now().millisecondsSinceEpoch;
     final cooldownMs = 3 * 24 * 60 * 60 * 1000; // 3 days
 

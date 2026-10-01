@@ -474,8 +474,9 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
     if (_isStarting) return;
     setState(() => _isStarting = true);
     try {
-      final existing =
-          await ref.read(workoutRepositoryProvider).getActiveDraft();
+      final existing = await ref
+          .read(workoutRepositoryProvider)
+          .getActiveDraft();
       if (existing != null) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -489,8 +490,9 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
         return;
       }
 
-      final allExercises =
-          await ref.read(workoutRepositoryProvider).searchExercises('');
+      final allExercises = await ref
+          .read(workoutRepositoryProvider)
+          .searchExercises('');
       final exerciseMap = {
         for (final e in allExercises) e.name.toLowerCase(): e,
       };
@@ -502,15 +504,15 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
       );
       var currentLaunch = initial;
       for (final ex in exercises) {
-        final stableId = exerciseMap[ex.exerciseName.toLowerCase()]?.stableId ??
+        final stableId =
+            exerciseMap[ex.exerciseName.toLowerCase()]?.stableId ??
             ex.exerciseName;
         currentLaunch = await adapter.addUnscheduledExercise(
           launch: currentLaunch,
           exerciseId: stableId,
           exerciseName: ex.exerciseName,
           plannedSets: ex.sets < 1 ? 1 : ex.sets,
-          repsRange:
-              ex.repsRange.trim().isEmpty ? '1-20' : ex.repsRange.trim(),
+          repsRange: ex.repsRange.trim().isEmpty ? '1-20' : ex.repsRange.trim(),
         );
       }
       final prepared = await adapter.prepareExecution(currentLaunch);

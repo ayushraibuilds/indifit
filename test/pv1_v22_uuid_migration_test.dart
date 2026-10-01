@@ -32,17 +32,13 @@ void main() {
     test('fresh v22 exposes a nullable uuid column', () async {
       final db = registerTestDatabaseScope().create();
 
-      final version = await db
-          .customSelect('PRAGMA user_version')
-          .getSingle();
+      final version = await db.customSelect('PRAGMA user_version').getSingle();
       expect(version.read<int>('user_version'), 22);
 
       final columns = await db
           .customSelect("PRAGMA table_info('body_measurements')")
           .get();
-      final uuid = columns.where(
-        (row) => row.read<String>('name') == 'uuid',
-      );
+      final uuid = columns.where((row) => row.read<String>('name') == 'uuid');
       expect(uuid, hasLength(1));
       // Nullable: existing/future rows without an identity remain valid.
       expect(uuid.single.read<int>('notnull'), 0);
@@ -62,88 +58,87 @@ void main() {
       expect(stored.weight, 70.5);
     });
 
-    test('v21 file upgrades preserving rows with backfilled unique uuids',
-        () async {
-      final directory = await Directory.systemTemp.createTemp(
-        'indifit-v21-to-v22-',
-      );
-      addTearDown(() async {
-        if (await directory.exists()) {
-          await directory.delete(recursive: true);
+    test(
+      'v21 file upgrades preserving rows with backfilled unique uuids',
+      () async {
+        final directory = await Directory.systemTemp.createTemp(
+          'indifit-v21-to-v22-',
+        );
+        addTearDown(() async {
+          if (await directory.exists()) {
+            await directory.delete(recursive: true);
+          }
+        });
+        final file = File('${directory.path}/v21.db');
+
+        // Build a genuine v21 on-disk file: fresh create, marker weight rows
+        // with NULL uuid, then drop the v22 column and stamp version 21.
+        final before = <({int id, double? weight, DateTime recordedAt})>[];
+        final legacy = AppDatabase.executor(NativeDatabase(file));
+        try {
+          await legacy.customSelect('SELECT 1').get();
+          for (final (weight, day) in [(70.5, 2), (71.0, 3), (null, 4)]) {
+            final id = await legacy
+                .into(legacy.bodyMeasurements)
+                .insert(
+                  BodyMeasurementsCompanion.insert(
+                    weight: Value(weight),
+                    recordedAt: Value(DateTime.utc(2026, 1, day, 3, 4, 5)),
+                  ),
+                );
+            final row = await (legacy.select(
+              legacy.bodyMeasurements,
+            )..where((t) => t.id.equals(id))).getSingle();
+            expect(row.uuid, isNull);
+            before.add((
+              id: row.id,
+              weight: row.weight,
+              recordedAt: row.recordedAt,
+            ));
+          }
+          await legacy.customStatement(
+            'ALTER TABLE body_measurements DROP COLUMN uuid',
+          );
+          final downgraded = await legacy
+              .customSelect("PRAGMA table_info('body_measurements')")
+              .get();
+          expect(
+            downgraded.map((row) => row.read<String>('name')),
+            isNot(contains('uuid')),
+          );
+          await legacy.customStatement('PRAGMA user_version = 21');
+        } finally {
+          await legacy.close();
         }
-      });
-      final file = File('${directory.path}/v21.db');
 
-      // Build a genuine v21 on-disk file: fresh create, marker weight rows
-      // with NULL uuid, then drop the v22 column and stamp version 21.
-      final before = <({int id, double? weight, DateTime recordedAt})>[];
-      final legacy = AppDatabase.executor(NativeDatabase(file));
-      try {
-        await legacy.customSelect('SELECT 1').get();
-        for (final (weight, day) in [(70.5, 2), (71.0, 3), (null, 4)]) {
-          final id = await legacy
-              .into(legacy.bodyMeasurements)
-              .insert(
-                BodyMeasurementsCompanion.insert(
-                  weight: Value(weight),
-                  recordedAt: Value(DateTime.utc(2026, 1, day, 3, 4, 5)),
-                ),
-              );
-          final row = await (legacy.select(
-            legacy.bodyMeasurements,
-          )..where((t) => t.id.equals(id))).getSingle();
-          expect(row.uuid, isNull);
-          before.add((
-            id: row.id,
-            weight: row.weight,
-            recordedAt: row.recordedAt,
-          ));
+        // Reopen: the real onUpgrade path must run the v22 step.
+        final migrated = AppDatabase.executor(NativeDatabase(file));
+        addTearDown(migrated.close);
+        await migrated.customSelect('SELECT 1').get();
+
+        final version = await migrated
+            .customSelect('PRAGMA user_version')
+            .getSingle();
+        expect(version.read<int>('user_version'), 22);
+
+        final rows = await (migrated.select(
+          migrated.bodyMeasurements,
+        )..orderBy([(t) => OrderingTerm.asc(t.id)])).get();
+        expect(rows, hasLength(3));
+
+        // Existing identity-bearing state is untouched; every row gained a
+        // fresh UUID v4 and no two rows share one.
+        final uuids = <String>{};
+        for (var i = 0; i < rows.length; i++) {
+          expect(rows[i].id, before[i].id);
+          expect(rows[i].weight, before[i].weight);
+          expect(rows[i].recordedAt.toUtc(), before[i].recordedAt.toUtc());
+          expect(rows[i].uuid, isNotNull);
+          expect(rows[i].uuid!, matches(_uuidV4Pattern));
+          expect(uuids.add(rows[i].uuid!), isTrue, reason: 'duplicate uuid');
         }
-        await legacy.customStatement(
-          'ALTER TABLE body_measurements DROP COLUMN uuid',
-        );
-        final downgraded = await legacy
-            .customSelect("PRAGMA table_info('body_measurements')")
-            .get();
-        expect(
-          downgraded.map((row) => row.read<String>('name')),
-          isNot(contains('uuid')),
-        );
-        await legacy.customStatement('PRAGMA user_version = 21');
-      } finally {
-        await legacy.close();
-      }
-
-      // Reopen: the real onUpgrade path must run the v22 step.
-      final migrated = AppDatabase.executor(NativeDatabase(file));
-      addTearDown(migrated.close);
-      await migrated.customSelect('SELECT 1').get();
-
-      final version = await migrated
-          .customSelect('PRAGMA user_version')
-          .getSingle();
-      expect(version.read<int>('user_version'), 22);
-
-      final rows = await (migrated.select(
-        migrated.bodyMeasurements,
-      )..orderBy([(t) => OrderingTerm.asc(t.id)])).get();
-      expect(rows, hasLength(3));
-
-      // Existing identity-bearing state is untouched; every row gained a
-      // fresh UUID v4 and no two rows share one.
-      final uuids = <String>{};
-      for (var i = 0; i < rows.length; i++) {
-        expect(rows[i].id, before[i].id);
-        expect(rows[i].weight, before[i].weight);
-        expect(
-          rows[i].recordedAt.toUtc(),
-          before[i].recordedAt.toUtc(),
-        );
-        expect(rows[i].uuid, isNotNull);
-        expect(rows[i].uuid!, matches(_uuidV4Pattern));
-        expect(uuids.add(rows[i].uuid!), isTrue, reason: 'duplicate uuid');
-      }
-    });
+      },
+    );
 
     test('reopening a migrated database never rewrites uuids', () async {
       final directory = await Directory.systemTemp.createTemp(

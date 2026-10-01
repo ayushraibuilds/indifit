@@ -44,7 +44,10 @@ class _CustomFoodEditorScreenState
     setState(() => _saving = true);
 
     try {
-      final servingText = _servingSizeController.text.trim().replaceAll(',', '.');
+      final servingText = _servingSizeController.text.trim().replaceAll(
+        ',',
+        '.',
+      );
       final servingSize = double.tryParse(servingText) ?? 1.0;
       final catalog = await ref.read(
         nutritionFoodCatalogRepositoryProvider.future,
@@ -118,7 +121,9 @@ class _CustomFoodEditorScreenState
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
                           color: Theme.of(context).colorScheme.outlineVariant,
@@ -131,9 +136,8 @@ class _CustomFoodEditorScreenState
                           const SizedBox(width: 6),
                           Text(
                             'Barcode: ${widget.initialBarcode}',
-                            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                ),
+                            style: Theme.of(context).textTheme.labelMedium
+                                ?.copyWith(fontWeight: FontWeight.w600),
                           ),
                         ],
                       ),
@@ -175,8 +179,10 @@ class _CustomFoodEditorScreenState
                           hintText: 'e.g. 1',
                         ),
                         validator: (value) {
-                          final cleaned =
-                              (value ?? '').trim().replaceAll(',', '.');
+                          final cleaned = (value ?? '').trim().replaceAll(
+                            ',',
+                            '.',
+                          );
                           final parsed = double.tryParse(cleaned);
                           return parsed == null ||
                                   !parsed.isFinite ||

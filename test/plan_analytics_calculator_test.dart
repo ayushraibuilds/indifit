@@ -41,45 +41,48 @@ void main() {
     expect(weeks, isEmpty);
   });
 
-  test('fully completed plan calculates 100% adherence, volume, and duration', () {
-    final occ1 = _mockOccurrence(
-      id: 'occ-1',
-      date: '2026-08-17',
-      status: 'completed',
-    );
-    final occ2 = _mockOccurrence(
-      id: 'occ-2',
-      date: '2026-08-19',
-      status: 'completed',
-    );
-    final h1 = _mockHistory(
-      occurrenceId: 'occ-1',
-      volumeKg: 5000.0,
-      durationSec: 3600,
-    );
-    final h2 = _mockHistory(
-      occurrenceId: 'occ-2',
-      volumeKg: 4500.0,
-      durationSec: 3000,
-    );
+  test(
+    'fully completed plan calculates 100% adherence, volume, and duration',
+    () {
+      final occ1 = _mockOccurrence(
+        id: 'occ-1',
+        date: '2026-08-17',
+        status: 'completed',
+      );
+      final occ2 = _mockOccurrence(
+        id: 'occ-2',
+        date: '2026-08-19',
+        status: 'completed',
+      );
+      final h1 = _mockHistory(
+        occurrenceId: 'occ-1',
+        volumeKg: 5000.0,
+        durationSec: 3600,
+      );
+      final h2 = _mockHistory(
+        occurrenceId: 'occ-2',
+        volumeKg: 4500.0,
+        durationSec: 3000,
+      );
 
-    final summary = PlanAnalyticsCalculator.calculateSummary(
-      occurrences: [occ1, occ2],
-      history: [h1, h2],
-      concurrentIndependentCount: 0,
-      todayLocalDate: '2026-08-24',
-      dates: dates,
-    );
+      final summary = PlanAnalyticsCalculator.calculateSummary(
+        occurrences: [occ1, occ2],
+        history: [h1, h2],
+        concurrentIndependentCount: 0,
+        todayLocalDate: '2026-08-24',
+        dates: dates,
+      );
 
-    expect(summary.totalScheduled, 2);
-    expect(summary.completedCount, 2);
-    expect(summary.partiallyCompletedCount, 0);
-    expect(summary.strictAdherenceRate, 1.0);
-    expect(summary.compositeAdherenceRate, 1.0);
-    expect(summary.totalVolumeKg, 9500.0);
-    expect(summary.totalDurationSeconds, 6600);
-    expect(summary.hasStrengthSessions, isTrue);
-  });
+      expect(summary.totalScheduled, 2);
+      expect(summary.completedCount, 2);
+      expect(summary.partiallyCompletedCount, 0);
+      expect(summary.strictAdherenceRate, 1.0);
+      expect(summary.compositeAdherenceRate, 1.0);
+      expect(summary.totalVolumeKg, 9500.0);
+      expect(summary.totalDurationSeconds, 6600);
+      expect(summary.hasStrengthSessions, isTrue);
+    },
+  );
 
   test('discloses half weight for partials: strict vs composite adherence', () {
     // 2 elapsed occurrences: 1 completed, 1 partial
@@ -124,43 +127,46 @@ void main() {
     expect(summary.totalDurationSeconds, 3000);
   });
 
-  test('cancelled occurrences are excluded from adherence denominator and counted explicitly', () {
-    // 3 past occurrences: 1 completed, 1 cancelled, 1 planned (overdue)
-    final occ1 = _mockOccurrence(
-      id: 'occ-1',
-      date: '2026-08-17',
-      status: 'completed',
-    );
-    final occ2 = _mockOccurrence(
-      id: 'occ-2',
-      date: '2026-08-19',
-      status: 'cancelled',
-    );
-    final occ3 = _mockOccurrence(
-      id: 'occ-3',
-      date: '2026-08-21',
-      status: 'planned',
-    );
-    final h1 = _mockHistory(occurrenceId: 'occ-1', volumeKg: 2000.0);
+  test(
+    'cancelled occurrences are excluded from adherence denominator and counted explicitly',
+    () {
+      // 3 past occurrences: 1 completed, 1 cancelled, 1 planned (overdue)
+      final occ1 = _mockOccurrence(
+        id: 'occ-1',
+        date: '2026-08-17',
+        status: 'completed',
+      );
+      final occ2 = _mockOccurrence(
+        id: 'occ-2',
+        date: '2026-08-19',
+        status: 'cancelled',
+      );
+      final occ3 = _mockOccurrence(
+        id: 'occ-3',
+        date: '2026-08-21',
+        status: 'planned',
+      );
+      final h1 = _mockHistory(occurrenceId: 'occ-1', volumeKg: 2000.0);
 
-    final summary = PlanAnalyticsCalculator.calculateSummary(
-      occurrences: [occ1, occ2, occ3],
-      history: [h1],
-      concurrentIndependentCount: 0,
-      todayLocalDate: '2026-08-24',
-      dates: dates,
-    );
+      final summary = PlanAnalyticsCalculator.calculateSummary(
+        occurrences: [occ1, occ2, occ3],
+        history: [h1],
+        concurrentIndependentCount: 0,
+        todayLocalDate: '2026-08-24',
+        dates: dates,
+      );
 
-    expect(summary.totalScheduled, 3);
-    expect(summary.cancelledCount, 1);
-    expect(summary.completedCount, 1);
-    expect(summary.overdueCount, 1);
-    expect(summary.elapsedCount, 3);
-    // Denominator excludes cancelled: 3 - 1 = 2
-    expect(summary.elapsedEligibleCount, 2);
-    // Strict adherence: 1 / 2 = 50%
-    expect(summary.strictAdherenceRate, 0.5);
-  });
+      expect(summary.totalScheduled, 3);
+      expect(summary.cancelledCount, 1);
+      expect(summary.completedCount, 1);
+      expect(summary.overdueCount, 1);
+      expect(summary.elapsedCount, 3);
+      // Denominator excludes cancelled: 3 - 1 = 2
+      expect(summary.elapsedEligibleCount, 2);
+      // Strict adherence: 1 / 2 = 50%
+      expect(summary.strictAdherenceRate, 0.5);
+    },
+  );
 
   test('inProgress occurrences are tracked distinctly', () {
     final occ1 = _mockOccurrence(
@@ -233,26 +239,29 @@ void main() {
     expect(summary.rescheduledCount, 2);
   });
 
-  test('concurrent independent workouts are tallied but excluded from plan adherence', () {
-    final occ1 = _mockOccurrence(
-      id: 'occ-1',
-      date: '2026-08-17',
-      status: 'completed',
-    );
+  test(
+    'concurrent independent workouts are tallied but excluded from plan adherence',
+    () {
+      final occ1 = _mockOccurrence(
+        id: 'occ-1',
+        date: '2026-08-17',
+        status: 'completed',
+      );
 
-    final summary = PlanAnalyticsCalculator.calculateSummary(
-      occurrences: [occ1],
-      history: const [],
-      concurrentIndependentCount: 5,
-      todayLocalDate: '2026-08-24',
-      dates: dates,
-    );
+      final summary = PlanAnalyticsCalculator.calculateSummary(
+        occurrences: [occ1],
+        history: const [],
+        concurrentIndependentCount: 5,
+        todayLocalDate: '2026-08-24',
+        dates: dates,
+      );
 
-    expect(summary.concurrentIndependentCount, 5);
-    expect(summary.completedCount, 1);
-    expect(summary.totalScheduled, 1);
-    expect(summary.strictAdherenceRate, 1.0);
-  });
+      expect(summary.concurrentIndependentCount, 5);
+      expect(summary.completedCount, 1);
+      expect(summary.totalScheduled, 1);
+      expect(summary.strictAdherenceRate, 1.0);
+    },
+  );
 
   test('week analytics indexes displayWeekNumber from 1 (ordinal + 1)', () {
     final occ1 = _mockOccurrence(
@@ -282,146 +291,163 @@ void main() {
     expect(weeks[1].displayWeekNumber, 2);
   });
 
-  test('modality-aware week volume: cardio weeks do not produce false 0 kg comparison against strength weeks', () {
-    // Week 1: Strength week (5000 kg, 3600 sec)
-    final occ1 = _mockOccurrence(
-      id: 'occ-1',
-      weekOrdinal: 0,
-      date: '2026-08-10',
-      status: 'completed',
-    );
-    final h1 = _mockHistory(
-      occurrenceId: 'occ-1',
-      volumeKg: 5000.0,
-      durationSec: 3600,
-      activityType: B02ActivityType.strength,
-    );
+  test(
+    'modality-aware week volume: cardio weeks do not produce false 0 kg comparison against strength weeks',
+    () {
+      // Week 1: Strength week (5000 kg, 3600 sec)
+      final occ1 = _mockOccurrence(
+        id: 'occ-1',
+        weekOrdinal: 0,
+        date: '2026-08-10',
+        status: 'completed',
+      );
+      final h1 = _mockHistory(
+        occurrenceId: 'occ-1',
+        volumeKg: 5000.0,
+        durationSec: 3600,
+        activityType: B02ActivityType.strength,
+      );
 
-    // Week 2: Running week (0 kg, 2400 sec)
-    final occ2 = _mockOccurrence(
-      id: 'occ-2',
-      weekOrdinal: 1,
-      date: '2026-08-17',
-      status: 'completed',
-      activityType: 'running',
-    );
-    final h2 = _mockHistory(
-      occurrenceId: 'occ-2',
-      volumeKg: 0.0,
-      durationSec: 2400,
-      activityType: B02ActivityType.running,
-    );
+      // Week 2: Running week (0 kg, 2400 sec)
+      final occ2 = _mockOccurrence(
+        id: 'occ-2',
+        weekOrdinal: 1,
+        date: '2026-08-17',
+        status: 'completed',
+        activityType: 'running',
+      );
+      final h2 = _mockHistory(
+        occurrenceId: 'occ-2',
+        volumeKg: 0.0,
+        durationSec: 2400,
+        activityType: B02ActivityType.running,
+      );
 
-    final weeks = PlanAnalyticsCalculator.calculateWeeks(
-      occurrences: [occ1, occ2],
-      history: [h1, h2],
-      todayLocalDate: '2026-08-24',
-      dates: dates,
-    );
+      final weeks = PlanAnalyticsCalculator.calculateWeeks(
+        occurrences: [occ1, occ2],
+        history: [h1, h2],
+        todayLocalDate: '2026-08-24',
+        dates: dates,
+      );
 
-    expect(weeks[0].hasStrengthSessions, isTrue);
-    expect(weeks[0].totalVolumeKg, 5000.0);
-    expect(weeks[0].totalDurationSeconds, 3600);
+      expect(weeks[0].hasStrengthSessions, isTrue);
+      expect(weeks[0].totalVolumeKg, 5000.0);
+      expect(weeks[0].totalDurationSeconds, 3600);
 
-    expect(weeks[1].hasStrengthSessions, isFalse);
-    expect(weeks[1].totalVolumeKg, 0.0);
-    expect(weeks[1].totalDurationSeconds, 2400);
+      expect(weeks[1].hasStrengthSessions, isFalse);
+      expect(weeks[1].totalVolumeKg, 0.0);
+      expect(weeks[1].totalDurationSeconds, 2400);
 
-    // Comparison across modalities:
-    final comp = weeks[1].comparisonWithPrevious!;
-    expect(comp.isCardioOrMobilityComparison, isTrue);
-    expect(comp.volumeDeltaKg, isNull);
-    expect(comp.volumeDeltaPercentage, isNull);
-    // Duration is universal:
-    expect(comp.durationDeltaSeconds, -1200);
-    expect(comp.durationDeltaPercentage, closeTo(-33.33, 0.01));
-  });
+      // Comparison across modalities:
+      final comp = weeks[1].comparisonWithPrevious!;
+      expect(comp.isCardioOrMobilityComparison, isTrue);
+      expect(comp.volumeDeltaKg, isNull);
+      expect(comp.volumeDeltaPercentage, isNull);
+      // Duration is universal:
+      expect(comp.durationDeltaSeconds, -1200);
+      expect(comp.durationDeltaPercentage, closeTo(-33.33, 0.01));
+    },
+  );
 
-  test('week-over-week strength volume delta handles deload flags and zero volume safely', () {
-    // Week 1: 4000 kg, 3000 sec
-    final occ1 = _mockOccurrence(
-      id: 'occ-1',
-      weekOrdinal: 0,
-      date: '2026-08-10',
-      status: 'completed',
-    );
-    final h1 = _mockHistory(occurrenceId: 'occ-1', volumeKg: 4000.0, durationSec: 3000);
+  test(
+    'week-over-week strength volume delta handles deload flags and zero volume safely',
+    () {
+      // Week 1: 4000 kg, 3000 sec
+      final occ1 = _mockOccurrence(
+        id: 'occ-1',
+        weekOrdinal: 0,
+        date: '2026-08-10',
+        status: 'completed',
+      );
+      final h1 = _mockHistory(
+        occurrenceId: 'occ-1',
+        volumeKg: 4000.0,
+        durationSec: 3000,
+      );
 
-    // Week 2: Deload week (2000 kg, 2000 sec)
-    final occ2 = _mockOccurrence(
-      id: 'occ-2',
-      weekOrdinal: 1,
-      date: '2026-08-17',
-      status: 'completed',
-      isDeload: true,
-    );
-    final h2 = _mockHistory(occurrenceId: 'occ-2', volumeKg: 2000.0, durationSec: 2000);
+      // Week 2: Deload week (2000 kg, 2000 sec)
+      final occ2 = _mockOccurrence(
+        id: 'occ-2',
+        weekOrdinal: 1,
+        date: '2026-08-17',
+        status: 'completed',
+        isDeload: true,
+      );
+      final h2 = _mockHistory(
+        occurrenceId: 'occ-2',
+        volumeKg: 2000.0,
+        durationSec: 2000,
+      );
 
-    final weeks = PlanAnalyticsCalculator.calculateWeeks(
-      occurrences: [occ1, occ2],
-      history: [h1, h2],
-      todayLocalDate: '2026-08-24',
-      dates: dates,
-    );
+      final weeks = PlanAnalyticsCalculator.calculateWeeks(
+        occurrences: [occ1, occ2],
+        history: [h1, h2],
+        todayLocalDate: '2026-08-24',
+        dates: dates,
+      );
 
-    final comp = weeks[1].comparisonWithPrevious!;
-    expect(comp.isDeloadComparison, isTrue);
-    expect(comp.volumeDeltaKg, -2000.0);
-    expect(comp.volumeDeltaPercentage, -50.0);
-    expect(comp.durationDeltaSeconds, -1000);
-  });
+      final comp = weeks[1].comparisonWithPrevious!;
+      expect(comp.isDeloadComparison, isTrue);
+      expect(comp.volumeDeltaKg, -2000.0);
+      expect(comp.volumeDeltaPercentage, -50.0);
+      expect(comp.durationDeltaSeconds, -1000);
+    },
+  );
 
-  test('future strength week derives strength modality from template and does not produce comparison against previous week', () {
-    // Week 1: Elapsed strength week (completed, 5000 kg, 3600 sec)
-    final occ1 = _mockOccurrence(
-      id: 'occ-1',
-      weekOrdinal: 0,
-      date: '2026-08-10',
-      status: 'completed',
-      activityType: 'strength',
-    );
-    final h1 = _mockHistory(
-      occurrenceId: 'occ-1',
-      volumeKg: 5000.0,
-      durationSec: 3600,
-      activityType: B02ActivityType.strength,
-    );
+  test(
+    'future strength week derives strength modality from template and does not produce comparison against previous week',
+    () {
+      // Week 1: Elapsed strength week (completed, 5000 kg, 3600 sec)
+      final occ1 = _mockOccurrence(
+        id: 'occ-1',
+        weekOrdinal: 0,
+        date: '2026-08-10',
+        status: 'completed',
+        activityType: 'strength',
+      );
+      final h1 = _mockHistory(
+        occurrenceId: 'occ-1',
+        volumeKg: 5000.0,
+        durationSec: 3600,
+        activityType: B02ActivityType.strength,
+      );
 
-    // Week 2: Future strength week (planned, 0 completed, template is strength)
-    final occ2 = _mockOccurrence(
-      id: 'occ-2',
-      weekOrdinal: 1,
-      date: '2026-08-31',
-      status: 'planned',
-      activityType: 'strength',
-    );
+      // Week 2: Future strength week (planned, 0 completed, template is strength)
+      final occ2 = _mockOccurrence(
+        id: 'occ-2',
+        weekOrdinal: 1,
+        date: '2026-08-31',
+        status: 'planned',
+        activityType: 'strength',
+      );
 
-    final weeks = PlanAnalyticsCalculator.calculateWeeks(
-      occurrences: [occ1, occ2],
-      history: [h1],
-      todayLocalDate: '2026-08-24',
-      dates: dates,
-    );
+      final weeks = PlanAnalyticsCalculator.calculateWeeks(
+        occurrences: [occ1, occ2],
+        history: [h1],
+        todayLocalDate: '2026-08-24',
+        dates: dates,
+      );
 
-    expect(weeks, hasLength(2));
+      expect(weeks, hasLength(2));
 
-    // Week 1 is elapsed
-    expect(weeks[0].isElapsed, isTrue);
-    expect(weeks[0].hasStrengthSessions, isTrue);
+      // Week 1 is elapsed
+      expect(weeks[0].isElapsed, isTrue);
+      expect(weeks[0].hasStrengthSessions, isTrue);
 
-    // Week 2 is in the future:
-    // 1. Modality is strength because planned template is strength (not cardio/mobility)
-    expect(weeks[1].hasStrengthSessions, isTrue);
-    expect(weeks[1].strengthSessionCount, 0);
-    expect(weeks[1].totalVolumeKg, 0.0);
-    expect(weeks[1].isElapsed, isFalse);
-    expect(weeks[1].pendingSessions, 1);
-    expect(weeks[1].upcomingSessions, 1);
-    expect(weeks[1].overdueSessions, 0);
+      // Week 2 is in the future:
+      // 1. Modality is strength because planned template is strength (not cardio/mobility)
+      expect(weeks[1].hasStrengthSessions, isTrue);
+      expect(weeks[1].strengthSessionCount, 0);
+      expect(weeks[1].totalVolumeKg, 0.0);
+      expect(weeks[1].isElapsed, isFalse);
+      expect(weeks[1].pendingSessions, 1);
+      expect(weeks[1].upcomingSessions, 1);
+      expect(weeks[1].overdueSessions, 0);
 
-    // 2. Future weeks must NEVER produce week-over-week comparisons (no zero-deltas or false captions)
-    expect(weeks[1].comparisonWithPrevious, isNull);
-  });
+      // 2. Future weeks must NEVER produce week-over-week comparisons (no zero-deltas or false captions)
+      expect(weeks[1].comparisonWithPrevious, isNull);
+    },
+  );
 }
 
 CalendarOccurrenceReadItem _mockOccurrence({

@@ -195,10 +195,13 @@ class TodayDailyActionSurface extends ConsumerWidget {
                     referenceNow: now,
                     onOpenSettings: onOpenSettings,
                     onOpenAppearance: () {
-                      final isDark = Theme.of(context).brightness == Brightness.dark;
-                      ref.read(themeModeProvider.notifier).setThemeMode(
-                        isDark ? ThemeMode.light : ThemeMode.dark,
-                      );
+                      final isDark =
+                          Theme.of(context).brightness == Brightness.dark;
+                      ref
+                          .read(themeModeProvider.notifier)
+                          .setThemeMode(
+                            isDark ? ThemeMode.light : ThemeMode.dark,
+                          );
                     },
                   ),
                   const SizedBox(height: B05Layout.space8),
@@ -242,12 +245,15 @@ class TodayDailyActionSurface extends ConsumerWidget {
                         item: item,
                         relation: relation,
                         nutrition: nutrition,
-                        hydration: snapshot?.hydration ??
+                        hydration:
+                            snapshot?.hydration ??
                             (unavailable
-                                ? const TodayDomainRead<HydrationDailyReadModel>.unavailable(
-                                    'Hydration unavailable',
-                                  )
-                                : const TodayDomainRead<HydrationDailyReadModel>.loading()),
+                                ? const TodayDomainRead<
+                                    HydrationDailyReadModel
+                                  >.unavailable('Hydration unavailable')
+                                : const TodayDomainRead<
+                                    HydrationDailyReadModel
+                                  >.loading()),
                         nextUp: nextUp,
                         workout: workout,
                         activity: activity,
@@ -429,4 +435,3 @@ class TodayDailyActionSurface extends ConsumerWidget {
     };
   }
 }
-

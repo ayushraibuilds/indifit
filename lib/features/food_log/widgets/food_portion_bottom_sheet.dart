@@ -80,9 +80,7 @@ class FoodPortionBottomSheet extends ConsumerStatefulWidget {
   }) async {
     final isCorrection = correctionRecord != null && correctionItem != null;
     final resolvedMealType =
-        mealType ??
-        correctionRecord?.mealCategory ??
-        await ensureMealContext();
+        mealType ?? correctionRecord?.mealCategory ?? await ensureMealContext();
     if (resolvedMealType == null || !context.mounted) return null;
 
     FocusManager.instance.primaryFocus?.unfocus();
@@ -265,7 +263,9 @@ class _FoodPortionBottomSheetState
       final gramVal = opt.gramWeight;
       _setQuantity(
         Quantity.fromDecimal(
-          amount: gramVal % 1 == 0 ? gramVal.toInt().toString() : gramVal.toString(),
+          amount: gramVal % 1 == 0
+              ? gramVal.toInt().toString()
+              : gramVal.toString(),
           unit: QuantityUnit.gram,
           context: _selectedQuantity.context,
         ),
@@ -284,7 +284,9 @@ class _FoodPortionBottomSheetState
       final factor = baseGram > 0 ? opt.gramWeight / baseGram : 1.0;
       _setQuantity(
         Quantity.fromDecimal(
-          amount: factor % 1 == 0 ? factor.toInt().toString() : factor.toStringAsFixed(1),
+          amount: factor % 1 == 0
+              ? factor.toInt().toString()
+              : factor.toStringAsFixed(1),
           unit: _selectedQuantity.unit,
           context: _selectedQuantity.context,
         ),
@@ -350,11 +352,11 @@ class _FoodPortionBottomSheetState
 
   String _quantityUnitLabel(Quantity quantity) =>
       quantity.unit == QuantityUnit.householdReference
-          ? quantity.context.householdMeasure!.measureType
-          : quantity.unit == QuantityUnit.serving &&
-                widget.option.servingUnitLabel?.trim().isNotEmpty == true
-          ? widget.option.servingUnitLabel!.trim()
-          : quantity.definition.displayLabel;
+      ? quantity.context.householdMeasure!.measureType
+      : quantity.unit == QuantityUnit.serving &&
+            widget.option.servingUnitLabel?.trim().isNotEmpty == true
+      ? widget.option.servingUnitLabel!.trim()
+      : quantity.definition.displayLabel;
 
   String _mealLabel(String? value) {
     if (value == null || value.trim().isEmpty) return 'meal';
@@ -423,7 +425,9 @@ class _FoodPortionBottomSheetState
         unit: _selectedQuantity.unit,
         context: _selectedQuantity.context,
       );
-      NutritionQuantityService.validatePositiveUserEnteredPortion(finalQuantity);
+      NutritionQuantityService.validatePositiveUserEnteredPortion(
+        finalQuantity,
+      );
       _selectedQuantity = finalQuantity;
       _updatePreview();
     } on QuantityError {
@@ -479,9 +483,9 @@ class _FoodPortionBottomSheetState
       if (_isCorrection) {
         final canonicalRecord =
             widget.correctionRecord is NutritionCanonicalSnapshotReadModel
-                ? (widget.correctionRecord as NutritionCanonicalSnapshotReadModel)
-                    .snapshot
-                : null;
+            ? (widget.correctionRecord as NutritionCanonicalSnapshotReadModel)
+                  .snapshot
+            : null;
         final correctionTimezone =
             canonicalRecord?.timezoneId ??
             await ref.read(localTimezoneServiceProvider).currentTimezoneId();
@@ -589,7 +593,9 @@ class _FoodPortionBottomSheetState
                 .map(
                   (unit) => DropdownMenuItem(
                     value: unit,
-                    child: Text(QuantityUnitRegistry.definitionFor(unit).symbol),
+                    child: Text(
+                      QuantityUnitRegistry.definitionFor(unit).symbol,
+                    ),
                   ),
                 )
                 .toList(),
@@ -635,7 +641,9 @@ class _FoodPortionBottomSheetState
                   : 'Adding to ${_mealLabel(_selectedMealType)}',
               child: Text(
                 _isCorrection
-                    ? ConsumerCopy.updateFoodInMeal(_mealLabel(_selectedMealType))
+                    ? ConsumerCopy.updateFoodInMeal(
+                        _mealLabel(_selectedMealType),
+                      )
                     : ConsumerCopy.logToMeal(_mealLabel(_selectedMealType)),
                 style: TextStyle(
                   color: context.b05Colors.action,
@@ -657,7 +665,8 @@ class _FoodPortionBottomSheetState
                   initialValue: _selectedMealType,
                   decoration: const InputDecoration(
                     labelText: 'Meal',
-                    helperText: 'Choose a new meal only if you mean to move it.',
+                    helperText:
+                        'Choose a new meal only if you mean to move it.',
                   ),
                   items: [
                     for (final meal in available)
@@ -681,8 +690,11 @@ class _FoodPortionBottomSheetState
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: widget.categoryServingOptions!.map((opt) {
-                    final isSelected = (_selectedQuantity.unit == QuantityUnit.gram &&
-                        (_selectedQuantity.amount.asDouble - opt.gramWeight).abs() < 0.1);
+                    final isSelected =
+                        (_selectedQuantity.unit == QuantityUnit.gram &&
+                        (_selectedQuantity.amount.asDouble - opt.gramWeight)
+                                .abs() <
+                            0.1);
                     return Padding(
                       padding: const EdgeInsets.only(right: 8.0, bottom: 8.0),
                       child: ActionChip(
@@ -692,7 +704,9 @@ class _FoodPortionBottomSheetState
                             : context.b05Colors.surfaceSubtle,
                         labelStyle: TextStyle(
                           fontSize: 12,
-                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                          fontWeight: isSelected
+                              ? FontWeight.w700
+                              : FontWeight.w500,
                           color: isSelected
                               ? context.b05Colors.action
                               : context.b05Colors.textPrimary,

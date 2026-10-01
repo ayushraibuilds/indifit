@@ -12,10 +12,7 @@ import 'weight_period_card.dart';
 
 /// Progress tab section displaying truthful cycle-over-cycle comparisons (PV1-PROG-01).
 class PeriodComparisonSection extends ConsumerWidget {
-  const PeriodComparisonSection({
-    super.key,
-    required this.units,
-  });
+  const PeriodComparisonSection({super.key, required this.units});
 
   final String units;
 
@@ -34,8 +31,8 @@ class PeriodComparisonSection extends ConsumerWidget {
 
         final inProgressText = snapshot.currentWindow.isInProgress
             ? snapshot.range == PeriodComparisonRange.week
-                ? 'In progress · Day ${snapshot.currentWindow.inProgressDayIndex ?? 1} of 7'
-                : 'In progress · 28-day cycle'
+                  ? 'In progress · Day ${snapshot.currentWindow.inProgressDayIndex ?? 1} of 7'
+                  : 'In progress · 28-day cycle'
             : null;
 
         return Column(
@@ -46,9 +43,9 @@ class PeriodComparisonSection extends ConsumerWidget {
               children: [
                 Text(
                   'Period Comparison',
-                  style: B05Typography.title(context).copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
+                  style: B05Typography.title(
+                    context,
+                  ).copyWith(fontWeight: FontWeight.w800),
                 ),
                 TextButton(
                   onPressed: () => PeriodComparisonDrilldownSheet.show(
@@ -68,7 +65,8 @@ class PeriodComparisonSection extends ConsumerWidget {
             PeriodComparisonSelector(
               selectedRange: currentRange,
               onRangeChanged: (newRange) {
-                ref.read(periodComparisonRangeProvider.notifier).state = newRange;
+                ref.read(periodComparisonRangeProvider.notifier).state =
+                    newRange;
               },
               inProgressText: inProgressText,
             ),

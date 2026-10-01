@@ -45,18 +45,10 @@ class AdaptiveTdeePolicy {
 }
 
 /// Estimation confidence based on logging cadence in the rolling evaluation window.
-enum AdaptiveTdeeConfidence {
-  calibrating,
-  moderate,
-  high,
-}
+enum AdaptiveTdeeConfidence { calibrating, moderate, high }
 
 /// Origin of daily caloric intake evidence.
-enum AdaptiveTdeeIntakeSource {
-  snapshot,
-  foodLog,
-  none,
-}
+enum AdaptiveTdeeIntakeSource { snapshot, foodLog, none }
 
 /// An individual civil day's input data for adaptive evaluation.
 class AdaptiveTdeeDayInput {

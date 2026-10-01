@@ -43,16 +43,16 @@ class SyncService implements SyncCapability {
     this.deviceId,
     CloudBackupEnvelopeManager? envelopeManager,
     String? syncEncryptionSecret,
-  })  : _db = db,
-        _prefs = prefs,
-        _account = account,
-        _network = network,
-        _outbox = outbox,
-        _apiClient = apiClient,
-        _conflictResolver = conflictResolver,
-        _envelopeManager = envelopeManager,
-        _syncSecret = syncEncryptionSecret,
-        _tombstones = tombstones ?? DriftSyncTombstoneStore(db);
+  }) : _db = db,
+       _prefs = prefs,
+       _account = account,
+       _network = network,
+       _outbox = outbox,
+       _apiClient = apiClient,
+       _conflictResolver = conflictResolver,
+       _envelopeManager = envelopeManager,
+       _syncSecret = syncEncryptionSecret,
+       _tombstones = tombstones ?? DriftSyncTombstoneStore(db);
 
   final AppDatabase _db;
   final SharedPreferences _prefs;
@@ -70,7 +70,8 @@ class SyncService implements SyncCapability {
 
   String get _deviceNamespace => deviceId != null ? '_$deviceId' : '';
   String get lastSyncedHlcKey => 'sync_last_synced_hlc${_deviceNamespace}_v1';
-  String get lastSyncTimestampKey => 'sync_last_sync_timestamp${_deviceNamespace}_utc_v1';
+  String get lastSyncTimestampKey =>
+      'sync_last_sync_timestamp${_deviceNamespace}_utc_v1';
 
   HlcClock? _clock;
 
@@ -117,8 +118,9 @@ class SyncService implements SyncCapability {
     }
 
     final pendingOps = await _outbox.getPendingOperations();
-    final syncPendingCount =
-        pendingOps.where((op) => op.action == 'sync_mutation').length;
+    final syncPendingCount = pendingOps
+        .where((op) => op.action == 'sync_mutation')
+        .length;
 
     if (syncPendingCount > 0) {
       if (!_network.isConnected) {
@@ -134,9 +136,7 @@ class SyncService implements SyncCapability {
     }
 
     if (!_network.isConnected) {
-      return ConnectedStatusState.offline(
-        lastSuccessUtc: lastSyncTimestampUtc,
-      );
+      return ConnectedStatusState.offline(lastSuccessUtc: lastSyncTimestampUtc);
     }
 
     if (lastSyncTimestampUtc != null) {
@@ -147,12 +147,13 @@ class SyncService implements SyncCapability {
   }
 
   static OutboxDomain _toOutboxDomain(SyncDomain domain) => switch (domain) {
-        SyncDomain.workouts => OutboxDomain.workout,
-        SyncDomain.nutritionLogs || SyncDomain.nutritionRecipes => OutboxDomain.food,
-        SyncDomain.weights => OutboxDomain.weight,
-        SyncDomain.programs => OutboxDomain.plan,
-        SyncDomain.preferences => OutboxDomain.setting,
-      };
+    SyncDomain.workouts => OutboxDomain.workout,
+    SyncDomain.nutritionLogs ||
+    SyncDomain.nutritionRecipes => OutboxDomain.food,
+    SyncDomain.weights => OutboxDomain.weight,
+    SyncDomain.programs => OutboxDomain.plan,
+    SyncDomain.preferences => OutboxDomain.setting,
+  };
 
   /// Records a local mutation, enqueues it in the durable outbox, and attempts an immediate push if online.
   Future<void> recordLocalMutation(SyncMutation mutation) async {
@@ -173,7 +174,8 @@ class SyncService implements SyncCapability {
           entityType != 'achievement' &&
           !mutation.entityId.startsWith('achievement:') &&
           mutation.entityId != 'user_profile') {
-        final settingKey = (mutation.payload?['key'] as String?) ?? mutation.entityId;
+        final settingKey =
+            (mutation.payload?['key'] as String?) ?? mutation.entityId;
         if (!SyncConflictResolver.isSettingKeySyncable(settingKey)) {
           return;
         }
@@ -204,10 +206,10 @@ class SyncService implements SyncCapability {
       final mutationId = '${mutation.entityId}:${mutation.hlc}';
       final envelope = (_envelopeManager ?? CloudBackupEnvelopeManager())
           .encryptMutation(
-        mutationId: mutationId,
-        plaintextJson: jsonEncode(mutation.payload),
-        kmsKeyWrappingSecret: _syncSecret,
-      );
+            mutationId: mutationId,
+            plaintextJson: jsonEncode(mutation.payload),
+            kmsKeyWrappingSecret: _syncSecret,
+          );
       effectiveMutation = SyncMutation(
         entityId: mutation.entityId,
         domain: mutation.domain,
@@ -240,7 +242,8 @@ class SyncService implements SyncCapability {
 
   // --- Capture-Side Domain Enqueue Helpers ---
 
-  Future<void> recordNutritionLogMutation(SyncMutation mutation) => recordLocalMutation(mutation);
+  Future<void> recordNutritionLogMutation(SyncMutation mutation) =>
+      recordLocalMutation(mutation);
 
   /// Records a custom food mutation.
   ///
@@ -249,12 +252,18 @@ class SyncService implements SyncCapability {
   /// renames must be emitted as a delete-old-name mutation followed by a
   /// create-new-name mutation pair. Renaming in-place in an update mutation
   /// cannot converge across peers under name-based identity.
-  Future<void> recordCustomFoodMutation(SyncMutation mutation) => recordLocalMutation(mutation);
-  Future<void> recordMealTemplateMutation(SyncMutation mutation) => recordLocalMutation(mutation);
-  Future<void> recordGoalVersionMutation(SyncMutation mutation) => recordLocalMutation(mutation);
-  Future<void> recordRoutineMutation(SyncMutation mutation) => recordLocalMutation(mutation);
-  Future<void> recordEquipmentProfileMutation(SyncMutation mutation) => recordLocalMutation(mutation);
-  Future<void> recordProfileMutation(SyncMutation mutation) => recordLocalMutation(mutation);
+  Future<void> recordCustomFoodMutation(SyncMutation mutation) =>
+      recordLocalMutation(mutation);
+  Future<void> recordMealTemplateMutation(SyncMutation mutation) =>
+      recordLocalMutation(mutation);
+  Future<void> recordGoalVersionMutation(SyncMutation mutation) =>
+      recordLocalMutation(mutation);
+  Future<void> recordRoutineMutation(SyncMutation mutation) =>
+      recordLocalMutation(mutation);
+  Future<void> recordEquipmentProfileMutation(SyncMutation mutation) =>
+      recordLocalMutation(mutation);
+  Future<void> recordProfileMutation(SyncMutation mutation) =>
+      recordLocalMutation(mutation);
 
   Future<void> recordSettingMutation(SyncMutation mutation) async {
     final key = (mutation.payload?['key'] as String?) ?? mutation.entityId;
@@ -270,7 +279,9 @@ class SyncService implements SyncCapability {
   }
 
   @override
-  Future<List<SyncDomainResult>> triggerSync({List<SyncDomain>? domains}) async {
+  Future<List<SyncDomainResult>> triggerSync({
+    List<SyncDomain>? domains,
+  }) async {
     final isAuth = await _account.isAuthenticated;
     if (!isAuth) {
       return [
@@ -317,11 +328,16 @@ class SyncService implements SyncCapability {
       }
 
       // 2. Pull remote delta mutations (PULL, follow pagination)
-      var since = lastSyncedHlc ?? const HlcTimestamp(millis: 0, counter: 0, nodeId: 'initial');
+      var since =
+          lastSyncedHlc ??
+          const HlcTimestamp(millis: 0, counter: 0, nodeId: 'initial');
       var pulledCount = 0;
       HlcTimestamp? latestSeen;
       while (true) {
-        final pullResp = await _apiClient.pullDeltas(sinceHlc: since, limit: 100);
+        final pullResp = await _apiClient.pullDeltas(
+          sinceHlc: since,
+          limit: 100,
+        );
         for (final remoteMutation in pullResp.mutations) {
           if (!activeDomains.contains(remoteMutation.domain)) continue;
           await _applyRemoteMutation(remoteMutation);
@@ -409,11 +425,11 @@ class SyncService implements SyncCapability {
           backupFormatVersion: 0,
           createdAtUtc: DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
         );
-        final plaintextJson =
-            (_envelopeManager ?? CloudBackupEnvelopeManager()).decryptMutation(
-          envelope: envelope,
-          kmsKeyWrappingSecret: _syncSecret,
-        );
+        final plaintextJson = (_envelopeManager ?? CloudBackupEnvelopeManager())
+            .decryptMutation(
+              envelope: envelope,
+              kmsKeyWrappingSecret: _syncSecret,
+            );
         final decoded = jsonDecode(plaintextJson);
         if (decoded is! Map<String, dynamic>) {
           AppLogger.warning(
@@ -470,10 +486,14 @@ class SyncService implements SyncCapability {
       } catch (_) {
         continue;
       }
-      if (local.entityId != effective.entityId || local.domain != effective.domain) {
+      if (local.entityId != effective.entityId ||
+          local.domain != effective.domain) {
         continue;
       }
-      final result = _conflictResolver.reconcile(local: local, incoming: effective);
+      final result = _conflictResolver.reconcile(
+        local: local,
+        incoming: effective,
+      );
       if (!result.wasLocalOverwritten) return; // Local wins; keep local.
       break;
     }
@@ -494,7 +514,11 @@ class SyncService implements SyncCapability {
     }
   }
 
-  DateTime _eventTimeOrHlcFallback(Map<String, dynamic>? payload, List<String> keys, HlcTimestamp hlc) {
+  DateTime _eventTimeOrHlcFallback(
+    Map<String, dynamic>? payload,
+    List<String> keys,
+    HlcTimestamp hlc,
+  ) {
     if (payload != null) {
       for (final key in keys) {
         final raw = payload[key];
@@ -519,12 +543,13 @@ class SyncService implements SyncCapability {
     // follows that codegen. Do not work around it (no synthetic ids).
     if (remote.isDeleted) {
       // Delete by stable UUID when present; fall back to legacy int id.
-      final deletedByUuid = await (_db.delete(_db.bodyMeasurements)
-            ..where((tbl) => tbl.uuid.equals(remote.entityId)))
-          .go();
+      final deletedByUuid = await (_db.delete(
+        _db.bodyMeasurements,
+      )..where((tbl) => tbl.uuid.equals(remote.entityId))).go();
       if (deletedByUuid == 0) {
-        await (_db.delete(_db.bodyMeasurements)
-              ..where((tbl) => tbl.id.equals(int.tryParse(remote.entityId) ?? -1)))
+        await (_db.delete(_db.bodyMeasurements)..where(
+              (tbl) => tbl.id.equals(int.tryParse(remote.entityId) ?? -1),
+            ))
             .go();
       }
       return;
@@ -535,28 +560,31 @@ class SyncService implements SyncCapability {
     final weightRaw = payload['weight_kg'];
     if (weightRaw == null) return; // Never fabricate 0.0 for unknown weight.
     final weightKg = (weightRaw as num).toDouble();
-    final recordedAt = _eventTimeOrHlcFallback(
-      payload,
-      const ['recorded_at', 'recordedAt'],
-      remote.hlc,
-    );
+    final recordedAt = _eventTimeOrHlcFallback(payload, const [
+      'recorded_at',
+      'recordedAt',
+    ], remote.hlc);
 
     // Look up by uuid first so re-delivery updates instead of duplicating.
-    final existingByUuid = await (_db.select(_db.bodyMeasurements)
-          ..where((tbl) => tbl.uuid.equals(remote.entityId)))
-        .getSingleOrNull();
+    final existingByUuid = await (_db.select(
+      _db.bodyMeasurements,
+    )..where((tbl) => tbl.uuid.equals(remote.entityId))).getSingleOrNull();
     if (existingByUuid != null) {
-      await (_db.update(_db.bodyMeasurements)
-            ..where((tbl) => tbl.uuid.equals(remote.entityId)))
-          .write(BodyMeasurementsCompanion(
-        weight: Value(weightKg),
-        recordedAt: Value(recordedAt),
-        isSynced: const Value(true),
-      ));
+      await (_db.update(
+        _db.bodyMeasurements,
+      )..where((tbl) => tbl.uuid.equals(remote.entityId))).write(
+        BodyMeasurementsCompanion(
+          weight: Value(weightKg),
+          recordedAt: Value(recordedAt),
+          isSynced: const Value(true),
+        ),
+      );
       return;
     }
 
-    await _db.into(_db.bodyMeasurements).insert(
+    await _db
+        .into(_db.bodyMeasurements)
+        .insert(
           BodyMeasurementsCompanion.insert(
             weight: Value(weightKg),
             recordedAt: Value(recordedAt),
@@ -569,12 +597,13 @@ class SyncService implements SyncCapability {
   Future<void> _applyWorkoutMutation(SyncMutation remote) async {
     if (remote.isDeleted) {
       // Delete by stable UUID when present; fall back to legacy int id.
-      final deletedByUuid = await (_db.delete(_db.workoutSessions)
-            ..where((tbl) => tbl.uuid.equals(remote.entityId)))
-          .go();
+      final deletedByUuid = await (_db.delete(
+        _db.workoutSessions,
+      )..where((tbl) => tbl.uuid.equals(remote.entityId))).go();
       if (deletedByUuid == 0) {
-        await (_db.delete(_db.workoutSessions)
-              ..where((tbl) => tbl.id.equals(int.tryParse(remote.entityId) ?? -1)))
+        await (_db.delete(_db.workoutSessions)..where(
+              (tbl) => tbl.id.equals(int.tryParse(remote.entityId) ?? -1),
+            ))
             .go();
       }
       return;
@@ -584,34 +613,43 @@ class SyncService implements SyncCapability {
     if (payload == null) return;
 
     final sessionName = payload['name'] as String? ?? 'Workout';
-    final completedAt = _eventTimeOrHlcFallback(
-      payload,
-      const ['completed_at', 'completedAt'],
-      remote.hlc,
-    );
+    final completedAt = _eventTimeOrHlcFallback(payload, const [
+      'completed_at',
+      'completedAt',
+    ], remote.hlc);
     final totalVolume = (payload['total_volume'] as num?)?.toDouble();
     final durationSeconds = (payload['duration_seconds'] as num?)?.toInt();
     final estimatedCalories = (payload['estimated_calories'] as num?)?.toInt();
 
     // Preserve global UUID identity; never coerce UUIDs into autoincrement ids.
-    final existingByUuid = await (_db.select(_db.workoutSessions)
-          ..where((tbl) => tbl.uuid.equals(remote.entityId)))
-        .getSingleOrNull();
+    final existingByUuid = await (_db.select(
+      _db.workoutSessions,
+    )..where((tbl) => tbl.uuid.equals(remote.entityId))).getSingleOrNull();
     if (existingByUuid != null) {
-      await (_db.update(_db.workoutSessions)
-            ..where((tbl) => tbl.uuid.equals(remote.entityId)))
-          .write(WorkoutSessionsCompanion(
-        name: Value(sessionName),
-        completedAt: Value(completedAt),
-        totalVolume: totalVolume != null ? Value(totalVolume) : const Value.absent(),
-        durationSeconds: durationSeconds != null ? Value(durationSeconds) : const Value.absent(),
-        estimatedCalories: estimatedCalories != null ? Value(estimatedCalories) : const Value.absent(),
-        isSynced: const Value(true),
-      ));
+      await (_db.update(
+        _db.workoutSessions,
+      )..where((tbl) => tbl.uuid.equals(remote.entityId))).write(
+        WorkoutSessionsCompanion(
+          name: Value(sessionName),
+          completedAt: Value(completedAt),
+          totalVolume: totalVolume != null
+              ? Value(totalVolume)
+              : const Value.absent(),
+          durationSeconds: durationSeconds != null
+              ? Value(durationSeconds)
+              : const Value.absent(),
+          estimatedCalories: estimatedCalories != null
+              ? Value(estimatedCalories)
+              : const Value.absent(),
+          isSynced: const Value(true),
+        ),
+      );
       return;
     }
 
-    await _db.into(_db.workoutSessions).insert(
+    await _db
+        .into(_db.workoutSessions)
+        .insert(
           WorkoutSessionsCompanion.insert(
             name: sessionName,
             totalVolume: totalVolume ?? 0.0,
@@ -633,19 +671,21 @@ class SyncService implements SyncCapability {
       return;
     }
 
-    if (entityType == 'goal_version' || remote.entityId.startsWith('goal_version:')) {
+    if (entityType == 'goal_version' ||
+        remote.entityId.startsWith('goal_version:')) {
       await _applyGoalVersionMutation(remote);
       return;
     }
 
     // Standard FoodLog mutation
     if (remote.isDeleted) {
-      final deletedByUuid = await (_db.delete(_db.foodLogs)
-            ..where((tbl) => tbl.uuid.equals(remote.entityId)))
-          .go();
+      final deletedByUuid = await (_db.delete(
+        _db.foodLogs,
+      )..where((tbl) => tbl.uuid.equals(remote.entityId))).go();
       if (deletedByUuid == 0) {
-        await (_db.delete(_db.foodLogs)
-              ..where((tbl) => tbl.id.equals(int.tryParse(remote.entityId) ?? -1)))
+        await (_db.delete(_db.foodLogs)..where(
+              (tbl) => tbl.id.equals(int.tryParse(remote.entityId) ?? -1),
+            ))
             .go();
       }
       return;
@@ -658,36 +698,40 @@ class SyncService implements SyncCapability {
     final foodName = payload['name'] as String? ?? 'Food';
     final calories = (caloriesRaw as num).toInt();
     final mealType = payload['meal_type'] as String? ?? 'snack';
-    final loggedAt = _eventTimeOrHlcFallback(
-      payload,
-      const ['logged_at', 'loggedAt'],
-      remote.hlc,
-    );
+    final loggedAt = _eventTimeOrHlcFallback(payload, const [
+      'logged_at',
+      'loggedAt',
+    ], remote.hlc);
 
-    final existingByUuid = await (_db.select(_db.foodLogs)
-          ..where((tbl) => tbl.uuid.equals(remote.entityId)))
-        .getSingleOrNull();
+    final existingByUuid = await (_db.select(
+      _db.foodLogs,
+    )..where((tbl) => tbl.uuid.equals(remote.entityId))).getSingleOrNull();
     if (existingByUuid != null) {
-      await (_db.update(_db.foodLogs)
-            ..where((tbl) => tbl.uuid.equals(remote.entityId)))
-          .write(FoodLogsCompanion(
-        name: Value(foodName),
-        calories: Value(calories),
-        mealType: Value(mealType),
-        loggedAt: Value(loggedAt),
-        isSynced: const Value(true),
-      ));
+      await (_db.update(
+        _db.foodLogs,
+      )..where((tbl) => tbl.uuid.equals(remote.entityId))).write(
+        FoodLogsCompanion(
+          name: Value(foodName),
+          calories: Value(calories),
+          mealType: Value(mealType),
+          loggedAt: Value(loggedAt),
+          isSynced: const Value(true),
+        ),
+      );
       return;
     }
 
-    await _db.into(_db.foodLogs).insert(
+    await _db
+        .into(_db.foodLogs)
+        .insert(
           FoodLogsCompanion.insert(
             name: foodName,
             calories: calories,
             proteinG: ((payload['protein_g'] as num?)?.toDouble()) ?? 0.0,
             carbsG: ((payload['carbs_g'] as num?)?.toDouble()) ?? 0.0,
             fatG: ((payload['fat_g'] as num?)?.toDouble()) ?? 0.0,
-            servingLogged: ((payload['serving_logged'] as num?)?.toDouble()) ?? 1.0,
+            servingLogged:
+                ((payload['serving_logged'] as num?)?.toDouble()) ?? 1.0,
             servingUnit: payload['serving_unit'] as String? ?? 'serving',
             mealType: mealType,
             loggedAt: Value(loggedAt),
@@ -717,11 +761,17 @@ class SyncService implements SyncCapability {
     if (remote.isDeleted) {
       // Single-candidate case-insensitive name match
       if (foodName.isNotEmpty) {
-        final matches = await (_db.select(_db.foodItems)
-              ..where((t) => t.isCustom.equals(true) & t.name.lower().equals(foodName.toLowerCase())))
-            .get();
+        final matches =
+            await (_db.select(_db.foodItems)..where(
+                  (t) =>
+                      t.isCustom.equals(true) &
+                      t.name.lower().equals(foodName.toLowerCase()),
+                ))
+                .get();
         if (matches.length == 1) {
-          await (_db.delete(_db.foodItems)..where((t) => t.id.equals(matches.first.id))).go();
+          await (_db.delete(
+            _db.foodItems,
+          )..where((t) => t.id.equals(matches.first.id))).go();
         }
       }
       return;
@@ -739,12 +789,18 @@ class SyncService implements SyncCapability {
     final category = (payload['category'] as String?) ?? 'custom';
 
     // Single-candidate case-insensitive name match fallback
-    final matches = await (_db.select(_db.foodItems)
-          ..where((t) => t.isCustom.equals(true) & t.name.lower().equals(foodName.toLowerCase())))
-        .get();
+    final matches =
+        await (_db.select(_db.foodItems)..where(
+              (t) =>
+                  t.isCustom.equals(true) &
+                  t.name.lower().equals(foodName.toLowerCase()),
+            ))
+            .get();
 
     if (matches.length == 1) {
-      await (_db.update(_db.foodItems)..where((t) => t.id.equals(matches.first.id))).write(
+      await (_db.update(
+        _db.foodItems,
+      )..where((t) => t.id.equals(matches.first.id))).write(
         FoodItemsCompanion(
           name: Value(foodName),
           calories: Value(calories),
@@ -761,18 +817,22 @@ class SyncService implements SyncCapability {
     }
 
     // 0 or >1 candidates: insert as new custom food (avoids mismerging distinct foods)
-    await _db.into(_db.foodItems).insert(FoodItemsCompanion.insert(
-          name: foodName,
-          calories: calories,
-          proteinG: proteinG,
-          carbsG: carbsG,
-          fatG: fatG,
-          fiberG: Value(fiberG),
-          servingSize: servingSize,
-          servingUnit: servingUnit,
-          category: category,
-          isCustom: const Value(true),
-        ));
+    await _db
+        .into(_db.foodItems)
+        .insert(
+          FoodItemsCompanion.insert(
+            name: foodName,
+            calories: calories,
+            proteinG: proteinG,
+            carbsG: carbsG,
+            fatG: fatG,
+            fiberG: Value(fiberG),
+            servingSize: servingSize,
+            servingUnit: servingUnit,
+            category: category,
+            isCustom: const Value(true),
+          ),
+        );
   }
 
   Future<void> _applyGoalVersionMutation(SyncMutation remote) async {
@@ -800,7 +860,9 @@ class SyncService implements SyncCapability {
     final fatTarget = (payload['fat_target_g'] as num?)?.toDouble();
     final timezoneId = payload['timezone_id'] as String? ?? 'UTC';
 
-    await _db.into(_db.nutritionGoalVersions).insertOnConflictUpdate(
+    await _db
+        .into(_db.nutritionGoalVersions)
+        .insertOnConflictUpdate(
           NutritionGoalVersionsCompanion.insert(
             id: versionId,
             userId: userId,
@@ -814,11 +876,10 @@ class SyncService implements SyncCapability {
             effectiveFromLocalDate: effectiveFrom,
             timezoneId: timezoneId,
             createdAtUtc: Value(
-              _eventTimeOrHlcFallback(
-                payload,
-                const ['created_at_utc', 'createdAtUtc'],
-                remote.hlc,
-              ),
+              _eventTimeOrHlcFallback(payload, const [
+                'created_at_utc',
+                'createdAtUtc',
+              ], remote.hlc),
             ),
           ),
         );
@@ -840,7 +901,8 @@ class SyncService implements SyncCapability {
   Future<void> _applyMealTemplateMutation(SyncMutation remote) async {
     final payload = remote.payload;
     String name = (payload?['name'] as String? ?? '').trim();
-    int? intId = (payload?['id'] as num?)?.toInt() ?? int.tryParse(remote.entityId);
+    int? intId =
+        (payload?['id'] as num?)?.toInt() ?? int.tryParse(remote.entityId);
 
     if (intId == null && remote.entityId.contains(':')) {
       final colonIdx = remote.entityId.indexOf(':');
@@ -860,15 +922,19 @@ class SyncService implements SyncCapability {
       // Invariant: conjunctive id+name match for delete; never OR
       final template = intId != null
           ? await (_db.select(_db.mealTemplates)
-                ..where((t) => t.id.equals(intId!) & t.name.equals(name)))
-              .getSingleOrNull()
-          : await (_db.select(_db.mealTemplates)
-                ..where((t) => t.name.equals(name)))
-              .getSingleOrNull();
+                  ..where((t) => t.id.equals(intId!) & t.name.equals(name)))
+                .getSingleOrNull()
+          : await (_db.select(
+              _db.mealTemplates,
+            )..where((t) => t.name.equals(name))).getSingleOrNull();
 
       if (template != null) {
-        await (_db.delete(_db.mealTemplateItems)..where((t) => t.templateId.equals(template.id))).go();
-        await (_db.delete(_db.mealTemplates)..where((t) => t.id.equals(template.id))).go();
+        await (_db.delete(
+          _db.mealTemplateItems,
+        )..where((t) => t.templateId.equals(template.id))).go();
+        await (_db.delete(
+          _db.mealTemplates,
+        )..where((t) => t.id.equals(template.id))).go();
       }
       return;
     }
@@ -881,36 +947,53 @@ class SyncService implements SyncCapability {
       // Invariant: conjunctive id+name match for update; mismatch inserts new (never OR)
       final existing = intId != null
           ? await (_db.select(_db.mealTemplates)
-                ..where((t) => t.id.equals(intId!) & t.name.equals(name)))
-              .getSingleOrNull()
-          : await (_db.select(_db.mealTemplates)
-                ..where((t) => t.name.equals(name)))
-              .getSingleOrNull();
+                  ..where((t) => t.id.equals(intId!) & t.name.equals(name)))
+                .getSingleOrNull()
+          : await (_db.select(
+              _db.mealTemplates,
+            )..where((t) => t.name.equals(name))).getSingleOrNull();
 
       int templateId;
       if (existing != null) {
         templateId = existing.id;
-        await (_db.update(_db.mealTemplates)..where((t) => t.id.equals(templateId))).write(
-          MealTemplatesCompanion(name: Value(name), defaultMealType: Value(mealType)),
+        await (_db.update(
+          _db.mealTemplates,
+        )..where((t) => t.id.equals(templateId))).write(
+          MealTemplatesCompanion(
+            name: Value(name),
+            defaultMealType: Value(mealType),
+          ),
         );
-        await (_db.delete(_db.mealTemplateItems)..where((t) => t.templateId.equals(templateId))).go();
+        await (_db.delete(
+          _db.mealTemplateItems,
+        )..where((t) => t.templateId.equals(templateId))).go();
       } else {
-        templateId = await _db.into(_db.mealTemplates).insert(
-          MealTemplatesCompanion.insert(name: name, defaultMealType: Value(mealType)),
-        );
+        templateId = await _db
+            .into(_db.mealTemplates)
+            .insert(
+              MealTemplatesCompanion.insert(
+                name: name,
+                defaultMealType: Value(mealType),
+              ),
+            );
       }
       for (final item in items) {
         final itemMap = item as Map<String, dynamic>;
-        await _db.into(_db.mealTemplateItems).insert(MealTemplateItemsCompanion.insert(
-              templateId: templateId,
-              name: itemMap['name'] as String? ?? 'Item',
-              calories: (itemMap['calories'] as num?)?.toInt() ?? 0,
-              proteinG: (itemMap['protein_g'] as num?)?.toDouble() ?? 0.0,
-              carbsG: (itemMap['carbs_g'] as num?)?.toDouble() ?? 0.0,
-              fatG: (itemMap['fat_g'] as num?)?.toDouble() ?? 0.0,
-              servingLogged: (itemMap['serving_logged'] as num?)?.toDouble() ?? 1.0,
-              servingUnit: itemMap['serving_unit'] as String? ?? 'serving',
-            ));
+        await _db
+            .into(_db.mealTemplateItems)
+            .insert(
+              MealTemplateItemsCompanion.insert(
+                templateId: templateId,
+                name: itemMap['name'] as String? ?? 'Item',
+                calories: (itemMap['calories'] as num?)?.toInt() ?? 0,
+                proteinG: (itemMap['protein_g'] as num?)?.toDouble() ?? 0.0,
+                carbsG: (itemMap['carbs_g'] as num?)?.toDouble() ?? 0.0,
+                fatG: (itemMap['fat_g'] as num?)?.toDouble() ?? 0.0,
+                servingLogged:
+                    (itemMap['serving_logged'] as num?)?.toDouble() ?? 1.0,
+                servingUnit: itemMap['serving_unit'] as String? ?? 'serving',
+              ),
+            );
       }
     });
   }
@@ -920,9 +1003,9 @@ class SyncService implements SyncCapability {
     final recipeId = remote.entityId.replaceFirst('recipe:', '');
 
     if (remote.isDeleted) {
-      await (_db.update(_db.nutritionRecipes)..where((t) => t.id.equals(recipeId))).write(
-        const NutritionRecipesCompanion(lifecycle: Value('deleted')),
-      );
+      await (_db.update(_db.nutritionRecipes)
+            ..where((t) => t.id.equals(recipeId)))
+          .write(const NutritionRecipesCompanion(lifecycle: Value('deleted')));
       return;
     }
 
@@ -933,7 +1016,9 @@ class SyncService implements SyncCapability {
     final lifecycle = payload['lifecycle'] as String? ?? 'active';
     final now = DateTime.now().toUtc();
 
-    await _db.into(_db.nutritionRecipes).insertOnConflictUpdate(
+    await _db
+        .into(_db.nutritionRecipes)
+        .insertOnConflictUpdate(
           NutritionRecipesCompanion.insert(
             id: recipeId,
             userId: userId,
@@ -957,7 +1042,8 @@ class SyncService implements SyncCapability {
     final entityType = payload?['entity_type'] as String?;
 
     // 2. Equipment profile check:
-    if (entityType == 'equipment_profile' || remote.entityId.startsWith('eq_profile:')) {
+    if (entityType == 'equipment_profile' ||
+        remote.entityId.startsWith('eq_profile:')) {
       await _applyEquipmentProfileMutation(remote);
       return;
     }
@@ -969,7 +1055,8 @@ class SyncService implements SyncCapability {
   Future<void> _applyRoutineMutation(SyncMutation remote) async {
     final payload = remote.payload;
     String name = (payload?['name'] as String? ?? '').trim();
-    int? intId = (payload?['id'] as num?)?.toInt() ?? int.tryParse(remote.entityId);
+    int? intId =
+        (payload?['id'] as num?)?.toInt() ?? int.tryParse(remote.entityId);
 
     if (intId == null && remote.entityId.contains(':')) {
       final colonIdx = remote.entityId.indexOf(':');
@@ -989,21 +1076,31 @@ class SyncService implements SyncCapability {
       // Invariant: conjunctive id+name match for delete; never OR
       final routine = intId != null
           ? await (_db.select(_db.workoutRoutines)
-                ..where((t) => t.id.equals(intId!) & t.name.equals(name)))
-              .getSingleOrNull()
-          : await (_db.select(_db.workoutRoutines)
-                ..where((t) => t.name.equals(name)))
-              .getSingleOrNull();
+                  ..where((t) => t.id.equals(intId!) & t.name.equals(name)))
+                .getSingleOrNull()
+          : await (_db.select(
+              _db.workoutRoutines,
+            )..where((t) => t.name.equals(name))).getSingleOrNull();
 
       if (routine != null) {
         await _db.transaction(() async {
-          await (_db.delete(_db.legacyRoutineProgramMappings)..where((t) => t.legacyRoutineId.equals(routine.id))).go();
-          final days = await (_db.select(_db.routineDays)..where((t) => t.routineId.equals(routine.id))).get();
+          await (_db.delete(
+            _db.legacyRoutineProgramMappings,
+          )..where((t) => t.legacyRoutineId.equals(routine.id))).go();
+          final days = await (_db.select(
+            _db.routineDays,
+          )..where((t) => t.routineId.equals(routine.id))).get();
           for (final d in days) {
-            await (_db.delete(_db.routineExercises)..where((t) => t.dayId.equals(d.id))).go();
+            await (_db.delete(
+              _db.routineExercises,
+            )..where((t) => t.dayId.equals(d.id))).go();
           }
-          await (_db.delete(_db.routineDays)..where((t) => t.routineId.equals(routine.id))).go();
-          await (_db.delete(_db.workoutRoutines)..where((t) => t.id.equals(routine.id))).go();
+          await (_db.delete(
+            _db.routineDays,
+          )..where((t) => t.routineId.equals(routine.id))).go();
+          await (_db.delete(
+            _db.workoutRoutines,
+          )..where((t) => t.id.equals(routine.id))).go();
         });
       }
       return;
@@ -1018,29 +1115,39 @@ class SyncService implements SyncCapability {
       // Invariant: conjunctive id+name match for update; mismatch inserts new (never OR)
       final existing = intId != null
           ? await (_db.select(_db.workoutRoutines)
-                ..where((t) => t.id.equals(intId!) & t.name.equals(name)))
-              .getSingleOrNull()
-          : await (_db.select(_db.workoutRoutines)
-                ..where((t) => t.name.equals(name)))
-              .getSingleOrNull();
+                  ..where((t) => t.id.equals(intId!) & t.name.equals(name)))
+                .getSingleOrNull()
+          : await (_db.select(
+              _db.workoutRoutines,
+            )..where((t) => t.name.equals(name))).getSingleOrNull();
 
       int targetRoutineId;
       if (existing != null) {
         targetRoutineId = existing.id;
-        await (_db.update(_db.workoutRoutines)..where((t) => t.id.equals(targetRoutineId))).write(
+        await (_db.update(
+          _db.workoutRoutines,
+        )..where((t) => t.id.equals(targetRoutineId))).write(
           WorkoutRoutinesCompanion(
             name: Value(name),
             goal: Value(goal),
             notes: Value(notes),
           ),
         );
-        final existingDays = await (_db.select(_db.routineDays)..where((t) => t.routineId.equals(targetRoutineId))).get();
+        final existingDays = await (_db.select(
+          _db.routineDays,
+        )..where((t) => t.routineId.equals(targetRoutineId))).get();
         for (final d in existingDays) {
-          await (_db.delete(_db.routineExercises)..where((t) => t.dayId.equals(d.id))).go();
+          await (_db.delete(
+            _db.routineExercises,
+          )..where((t) => t.dayId.equals(d.id))).go();
         }
-        await (_db.delete(_db.routineDays)..where((t) => t.routineId.equals(targetRoutineId))).go();
+        await (_db.delete(
+          _db.routineDays,
+        )..where((t) => t.routineId.equals(targetRoutineId))).go();
       } else {
-        targetRoutineId = await _db.into(_db.workoutRoutines).insert(
+        targetRoutineId = await _db
+            .into(_db.workoutRoutines)
+            .insert(
               WorkoutRoutinesCompanion.insert(
                 name: name,
                 goal: goal,
@@ -1051,7 +1158,9 @@ class SyncService implements SyncCapability {
 
       for (final dayObj in daysData) {
         final dayMap = dayObj as Map<String, dynamic>;
-        final dayId = await _db.into(_db.routineDays).insert(
+        final dayId = await _db
+            .into(_db.routineDays)
+            .insert(
               RoutineDaysCompanion.insert(
                 routineId: targetRoutineId,
                 dayOfWeek: (dayMap['day_of_week'] as num?)?.toInt() ?? 1,
@@ -1062,7 +1171,9 @@ class SyncService implements SyncCapability {
         final exList = dayMap['exercises'] as List<dynamic>? ?? [];
         for (int i = 0; i < exList.length; i++) {
           final exMap = exList[i] as Map<String, dynamic>;
-          await _db.into(_db.routineExercises).insert(
+          await _db
+              .into(_db.routineExercises)
+              .insert(
                 RoutineExercisesCompanion.insert(
                   dayId: dayId,
                   exerciseName: exMap['name'] as String? ?? 'Exercise',
@@ -1075,7 +1186,9 @@ class SyncService implements SyncCapability {
       }
 
       // Re-sync B01 legacy import adapter snapshot
-      await LegacyProgramCompatibilityAdapter(_db).syncLegacyRoutineToImportVersion(targetRoutineId);
+      await LegacyProgramCompatibilityAdapter(
+        _db,
+      ).syncLegacyRoutineToImportVersion(targetRoutineId);
     });
   }
 
@@ -1083,8 +1196,12 @@ class SyncService implements SyncCapability {
     final profileId = remote.entityId.replaceFirst('eq_profile:', '');
 
     if (remote.isDeleted) {
-      await (_db.delete(_db.equipmentProfileItems)..where((t) => t.equipmentProfileId.equals(profileId))).go();
-      await (_db.delete(_db.equipmentProfiles)..where((t) => t.id.equals(profileId))).go();
+      await (_db.delete(
+        _db.equipmentProfileItems,
+      )..where((t) => t.equipmentProfileId.equals(profileId))).go();
+      await (_db.delete(
+        _db.equipmentProfiles,
+      )..where((t) => t.id.equals(profileId))).go();
       return;
     }
 
@@ -1092,23 +1209,32 @@ class SyncService implements SyncCapability {
     if (payload == null) return;
 
     final name = payload['name'] as String? ?? 'Equipment Profile';
-    final defaultWeightInc = (payload['default_weight_increment_kg'] as num?)?.toDouble();
+    final defaultWeightInc = (payload['default_weight_increment_kg'] as num?)
+        ?.toDouble();
     final items = payload['items'] as List<dynamic>? ?? [];
     final now = DateTime.now().toUtc();
 
     await _db.transaction(() async {
-      final existing = await (_db.select(_db.equipmentProfiles)..where((t) => t.id.equals(profileId))).getSingleOrNull();
+      final existing = await (_db.select(
+        _db.equipmentProfiles,
+      )..where((t) => t.id.equals(profileId))).getSingleOrNull();
       if (existing != null) {
-        await (_db.update(_db.equipmentProfiles)..where((t) => t.id.equals(profileId))).write(
+        await (_db.update(
+          _db.equipmentProfiles,
+        )..where((t) => t.id.equals(profileId))).write(
           EquipmentProfilesCompanion(
             name: Value(name),
             defaultWeightIncrementKg: Value(defaultWeightInc),
             updatedAtUtc: Value(now),
           ),
         );
-        await (_db.delete(_db.equipmentProfileItems)..where((t) => t.equipmentProfileId.equals(profileId))).go();
+        await (_db.delete(
+          _db.equipmentProfileItems,
+        )..where((t) => t.equipmentProfileId.equals(profileId))).go();
       } else {
-        await _db.into(_db.equipmentProfiles).insert(
+        await _db
+            .into(_db.equipmentProfiles)
+            .insert(
               EquipmentProfilesCompanion.insert(
                 id: profileId,
                 name: name,
@@ -1123,13 +1249,17 @@ class SyncService implements SyncCapability {
         final itemMap = item as Map<String, dynamic>;
         final itemCode = itemMap['equipment_code'] as String? ?? 'unknown';
         final itemId = '${profileId}_$itemCode';
-        await _db.into(_db.equipmentProfileItems).insert(
+        await _db
+            .into(_db.equipmentProfileItems)
+            .insert(
               EquipmentProfileItemsCompanion.insert(
                 id: itemId,
                 equipmentProfileId: profileId,
                 equipmentCode: itemCode,
                 isAvailable: Value((itemMap['is_available'] as bool?) ?? true),
-                weightIncrementKg: Value((itemMap['weight_increment_kg'] as num?)?.toDouble()),
+                weightIncrementKg: Value(
+                  (itemMap['weight_increment_kg'] as num?)?.toDouble(),
+                ),
               ),
             );
       }
@@ -1141,7 +1271,8 @@ class SyncService implements SyncCapability {
     final entityType = payload?['entity_type'] as String?;
 
     // 1. Achievements (insert-only, earliest-wins, no tombstones)
-    if (entityType == 'achievement' || remote.entityId.startsWith('achievement:')) {
+    if (entityType == 'achievement' ||
+        remote.entityId.startsWith('achievement:')) {
       await _applyAchievementMutation(remote);
       return;
     }
@@ -1160,23 +1291,32 @@ class SyncService implements SyncCapability {
     // Invariant: strictly insert-only. Remote deletions are ignored.
     if (remote.isDeleted) return;
     final payload = remote.payload;
-    final badgeId = (payload?['achievement_id'] as String?) ?? remote.entityId.replaceFirst('achievement:', '');
+    final badgeId =
+        (payload?['achievement_id'] as String?) ??
+        remote.entityId.replaceFirst('achievement:', '');
     if (badgeId.isEmpty) return;
 
     // Note: If 'unlocked_at' is absent in the payload, HLC timestamp fallback is
     // used. This is bounded-harmless: HLC reflects causal event time, cannot
     // precede an earlier recorded local unlock timestamp, and
     // unlockedAt.isBefore(existing.unlockedAt) protects historical truth.
-    final unlockedAt = _eventTimeOrHlcFallback(payload, const ['unlocked_at', 'unlockedAt'], remote.hlc);
-    final existing = await (_db.select(_db.achievementUnlocks)..where((t) => t.achievementId.equals(badgeId))).getSingleOrNull();
+    final unlockedAt = _eventTimeOrHlcFallback(payload, const [
+      'unlocked_at',
+      'unlockedAt',
+    ], remote.hlc);
+    final existing = await (_db.select(
+      _db.achievementUnlocks,
+    )..where((t) => t.achievementId.equals(badgeId))).getSingleOrNull();
     if (existing != null) {
       if (unlockedAt.isBefore(existing.unlockedAt)) {
-        await (_db.update(_db.achievementUnlocks)..where((t) => t.id.equals(existing.id))).write(
-          AchievementUnlocksCompanion(unlockedAt: Value(unlockedAt)),
-        );
+        await (_db.update(_db.achievementUnlocks)
+              ..where((t) => t.id.equals(existing.id)))
+            .write(AchievementUnlocksCompanion(unlockedAt: Value(unlockedAt)));
       }
     } else {
-      await _db.into(_db.achievementUnlocks).insert(
+      await _db
+          .into(_db.achievementUnlocks)
+          .insert(
             AchievementUnlocksCompanion.insert(
               achievementId: badgeId,
               unlockedAt: Value(unlockedAt),
@@ -1190,68 +1330,148 @@ class SyncService implements SyncCapability {
     final payload = remote.payload;
     if (payload == null) return;
 
-    final existingProfile = await (_db.select(_db.userProfiles)..limit(1)).getSingleOrNull();
+    final existingProfile = await (_db.select(
+      _db.userProfiles,
+    )..limit(1)).getSingleOrNull();
     final now = DateTime.now().toUtc();
 
     if (existingProfile != null) {
-      await (_db.update(_db.userProfiles)..where((t) => t.id.equals(existingProfile.id))).write(
+      await (_db.update(
+        _db.userProfiles,
+      )..where((t) => t.id.equals(existingProfile.id))).write(
         UserProfilesCompanion(
-          name: payload['name'] != null ? Value(payload['name'] as String) : const Value.absent(),
-          age: payload['age'] != null ? Value((payload['age'] as num).toInt()) : const Value.absent(),
-          height: payload['height'] != null ? Value((payload['height'] as num).toDouble()) : const Value.absent(),
-          weight: payload['weight'] != null ? Value((payload['weight'] as num).toDouble()) : const Value.absent(),
-          sex: payload['sex'] != null ? Value(payload['sex'] as String) : const Value.absent(),
-          activityLevel: payload['activity_level'] != null ? Value(payload['activity_level'] as String) : const Value.absent(),
-          goal: payload['goal'] != null ? Value(payload['goal'] as String) : const Value.absent(),
-          dietPreference: payload['diet_preference'] != null ? Value(payload['diet_preference'] as String) : const Value.absent(),
-          calorieGoal: payload['calorie_goal'] != null ? Value((payload['calorie_goal'] as num).toInt()) : const Value.absent(),
-          proteinGoal: payload['protein_goal'] != null ? Value((payload['protein_goal'] as num).toDouble()) : const Value.absent(),
-          carbsGoal: payload['carbs_goal'] != null ? Value((payload['carbs_goal'] as num).toDouble()) : const Value.absent(),
-          fatGoal: payload['fat_goal'] != null ? Value((payload['fat_goal'] as num).toDouble()) : const Value.absent(),
-          equipmentAccess: payload['equipment_access'] != null ? Value(payload['equipment_access'] as String) : const Value.absent(),
-          injuriesLimitations: payload['injuries_limitations'] != null ? Value(payload['injuries_limitations'] as String) : const Value.absent(),
+          name: payload['name'] != null
+              ? Value(payload['name'] as String)
+              : const Value.absent(),
+          age: payload['age'] != null
+              ? Value((payload['age'] as num).toInt())
+              : const Value.absent(),
+          height: payload['height'] != null
+              ? Value((payload['height'] as num).toDouble())
+              : const Value.absent(),
+          weight: payload['weight'] != null
+              ? Value((payload['weight'] as num).toDouble())
+              : const Value.absent(),
+          sex: payload['sex'] != null
+              ? Value(payload['sex'] as String)
+              : const Value.absent(),
+          activityLevel: payload['activity_level'] != null
+              ? Value(payload['activity_level'] as String)
+              : const Value.absent(),
+          goal: payload['goal'] != null
+              ? Value(payload['goal'] as String)
+              : const Value.absent(),
+          dietPreference: payload['diet_preference'] != null
+              ? Value(payload['diet_preference'] as String)
+              : const Value.absent(),
+          calorieGoal: payload['calorie_goal'] != null
+              ? Value((payload['calorie_goal'] as num).toInt())
+              : const Value.absent(),
+          proteinGoal: payload['protein_goal'] != null
+              ? Value((payload['protein_goal'] as num).toDouble())
+              : const Value.absent(),
+          carbsGoal: payload['carbs_goal'] != null
+              ? Value((payload['carbs_goal'] as num).toDouble())
+              : const Value.absent(),
+          fatGoal: payload['fat_goal'] != null
+              ? Value((payload['fat_goal'] as num).toDouble())
+              : const Value.absent(),
+          equipmentAccess: payload['equipment_access'] != null
+              ? Value(payload['equipment_access'] as String)
+              : const Value.absent(),
+          injuriesLimitations: payload['injuries_limitations'] != null
+              ? Value(payload['injuries_limitations'] as String)
+              : const Value.absent(),
           updatedAt: Value(now),
         ),
       );
     } else {
-      await _db.into(_db.userProfiles).insert(
+      await _db
+          .into(_db.userProfiles)
+          .insert(
             UserProfilesCompanion.insert(
               name: Value(payload['name'] as String? ?? ''),
               age: Value((payload['age'] as num?)?.toInt() ?? 25),
               height: Value((payload['height'] as num?)?.toDouble() ?? 170.0),
               weight: Value((payload['weight'] as num?)?.toDouble() ?? 70.0),
               sex: Value(payload['sex'] as String? ?? 'male'),
-              activityLevel: Value(payload['activity_level'] as String? ?? 'moderate'),
+              activityLevel: Value(
+                payload['activity_level'] as String? ?? 'moderate',
+              ),
               goal: Value(payload['goal'] as String? ?? 'maintain'),
-              dietPreference: Value(payload['diet_preference'] as String? ?? 'balanced'),
-              calorieGoal: Value((payload['calorie_goal'] as num?)?.toInt() ?? 2000),
-              proteinGoal: Value((payload['protein_goal'] as num?)?.toDouble() ?? 140.0),
-              carbsGoal: Value((payload['carbs_goal'] as num?)?.toDouble() ?? 220.0),
+              dietPreference: Value(
+                payload['diet_preference'] as String? ?? 'balanced',
+              ),
+              calorieGoal: Value(
+                (payload['calorie_goal'] as num?)?.toInt() ?? 2000,
+              ),
+              proteinGoal: Value(
+                (payload['protein_goal'] as num?)?.toDouble() ?? 140.0,
+              ),
+              carbsGoal: Value(
+                (payload['carbs_goal'] as num?)?.toDouble() ?? 220.0,
+              ),
               fatGoal: Value((payload['fat_goal'] as num?)?.toDouble() ?? 60.0),
-              equipmentAccess: Value(payload['equipment_access'] as String? ?? 'full_gym'),
-              injuriesLimitations: Value(payload['injuries_limitations'] as String? ?? ''),
+              equipmentAccess: Value(
+                payload['equipment_access'] as String? ?? 'full_gym',
+              ),
+              injuriesLimitations: Value(
+                payload['injuries_limitations'] as String? ?? '',
+              ),
               updatedAt: Value(now),
             ),
           );
     }
 
     // Mirror to SharedPreferences
-    if (payload['name'] != null) await _prefs.setString('user_name', payload['name'] as String);
-    if (payload['age'] != null) await _prefs.setInt('user_age', (payload['age'] as num).toInt());
-    if (payload['height'] != null) await _prefs.setDouble('user_height', (payload['height'] as num).toDouble());
+    if (payload['name'] != null)
+      await _prefs.setString('user_name', payload['name'] as String);
+    if (payload['age'] != null)
+      await _prefs.setInt('user_age', (payload['age'] as num).toInt());
+    if (payload['height'] != null)
+      await _prefs.setDouble(
+        'user_height',
+        (payload['height'] as num).toDouble(),
+      );
     if (payload['weight'] != null) {
       final w = (payload['weight'] as num).toDouble();
       await _prefs.setDouble('user_weight', w);
       await _prefs.setDouble('current_weight', w);
     }
-    if (payload['sex'] != null) await _prefs.setString('user_sex', payload['sex'] as String);
-    if (payload['activity_level'] != null) await _prefs.setString('user_activity_level', payload['activity_level'] as String);
-    if (payload['goal'] != null) await _prefs.setString('user_goal', payload['goal'] as String);
-    if (payload['diet_preference'] != null) await _prefs.setString('user_diet_preference', payload['diet_preference'] as String);
-    if (payload['calorie_goal'] != null) await _prefs.setInt('calorie_goal', (payload['calorie_goal'] as num).toInt());
-    if (payload['protein_goal'] != null) await _prefs.setDouble('protein_goal', (payload['protein_goal'] as num).toDouble());
-    if (payload['carbs_goal'] != null) await _prefs.setDouble('carbs_goal', (payload['carbs_goal'] as num).toDouble());
-    if (payload['fat_goal'] != null) await _prefs.setDouble('fat_goal', (payload['fat_goal'] as num).toDouble());
+    if (payload['sex'] != null)
+      await _prefs.setString('user_sex', payload['sex'] as String);
+    if (payload['activity_level'] != null)
+      await _prefs.setString(
+        'user_activity_level',
+        payload['activity_level'] as String,
+      );
+    if (payload['goal'] != null)
+      await _prefs.setString('user_goal', payload['goal'] as String);
+    if (payload['diet_preference'] != null)
+      await _prefs.setString(
+        'user_diet_preference',
+        payload['diet_preference'] as String,
+      );
+    if (payload['calorie_goal'] != null)
+      await _prefs.setInt(
+        'calorie_goal',
+        (payload['calorie_goal'] as num).toInt(),
+      );
+    if (payload['protein_goal'] != null)
+      await _prefs.setDouble(
+        'protein_goal',
+        (payload['protein_goal'] as num).toDouble(),
+      );
+    if (payload['carbs_goal'] != null)
+      await _prefs.setDouble(
+        'carbs_goal',
+        (payload['carbs_goal'] as num).toDouble(),
+      );
+    if (payload['fat_goal'] != null)
+      await _prefs.setDouble(
+        'fat_goal',
+        (payload['fat_goal'] as num).toDouble(),
+      );
   }
 
   Future<void> _applyUserSettingMutation(SyncMutation remote) async {
@@ -1262,7 +1482,9 @@ class SyncService implements SyncCapability {
     }
 
     if (remote.isDeleted) {
-      await (_db.delete(_db.userSettings)..where((t) => t.key.equals(settingKey))).go();
+      await (_db.delete(
+        _db.userSettings,
+      )..where((t) => t.key.equals(settingKey))).go();
       await _prefs.remove(settingKey);
       return;
     }
@@ -1273,7 +1495,9 @@ class SyncService implements SyncCapability {
     final rawVal = payload['value'];
     final strValue = rawVal.toString();
 
-    await _db.into(_db.userSettings).insertOnConflictUpdate(
+    await _db
+        .into(_db.userSettings)
+        .insertOnConflictUpdate(
           UserSettingsCompanion(
             key: Value(settingKey),
             value: Value(strValue),

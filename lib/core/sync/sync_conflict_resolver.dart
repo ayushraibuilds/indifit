@@ -115,7 +115,8 @@ class SyncConflictResolver {
   ];
 
   /// Returns whether a given table name is registered for multi-device synchronization.
-  static bool isTableSynced(String tableName) => syncedTables.contains(tableName);
+  static bool isTableSynced(String tableName) =>
+      syncedTables.contains(tableName);
 
   /// Returns whether a setting key is permitted to synchronize cross-device.
   static bool isSettingKeySyncable(String key) {
@@ -128,7 +129,8 @@ class SyncConflictResolver {
   }
 
   /// Identifies bundled offline starter plans by deterministic ID prefix.
-  static bool isCatalogProgramId(String id) => id.startsWith('offline-starter::');
+  static bool isCatalogProgramId(String id) =>
+      id.startsWith('offline-starter::');
 
   /// Returns whether the domain represents immutable append-only evidence (workouts, weights).
   static bool isAppendOnlyEvidence(SyncDomain domain) {

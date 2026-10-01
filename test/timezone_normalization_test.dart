@@ -44,10 +44,7 @@ void main() {
         LocalScheduleDateService.normalizeTimezoneId('US/Eastern'),
         'America/New_York',
       );
-      expect(
-        LocalScheduleDateService.normalizeTimezoneId('UTC'),
-        'UTC',
-      );
+      expect(LocalScheduleDateService.normalizeTimezoneId('UTC'), 'UTC');
     });
 
     test('locationFor resolves Aliases smoothly without throwing', () {
@@ -79,14 +76,17 @@ void main() {
       expect(id, 'Asia/Kolkata');
     });
 
-    test('falls back gracefully on empty or whitespace platform string', () async {
-      final service = LocalTimezoneService(
-        read: () async => '   ',
-        dates: LocalScheduleDateService(),
-      );
-      final id = await service.currentTimezoneId();
-      expect(id.isNotEmpty, true);
-    });
+    test(
+      'falls back gracefully on empty or whitespace platform string',
+      () async {
+        final service = LocalTimezoneService(
+          read: () async => '   ',
+          dates: LocalScheduleDateService(),
+        );
+        final id = await service.currentTimezoneId();
+        expect(id.isNotEmpty, true);
+      },
+    );
 
     test('falls back gracefully on arbitrary invalid OEM string', () async {
       final service = LocalTimezoneService(
@@ -99,49 +99,55 @@ void main() {
   });
 
   group('Provider resilience with Asia/Calcutta', () {
-    test('todaySurfaceSnapshotProvider succeeds when platform reports Asia/Calcutta', () async {
-      final db = AppDatabase.memory();
-      final container = ProviderContainer(
-        overrides: [
-          databaseProvider.overrideWithValue(db),
-          localTimezoneServiceProvider.overrideWithValue(
-            LocalTimezoneService(
-              read: () async => 'Asia/Calcutta',
-              dates: LocalScheduleDateService(),
+    test(
+      'todaySurfaceSnapshotProvider succeeds when platform reports Asia/Calcutta',
+      () async {
+        final db = AppDatabase.memory();
+        final container = ProviderContainer(
+          overrides: [
+            databaseProvider.overrideWithValue(db),
+            localTimezoneServiceProvider.overrideWithValue(
+              LocalTimezoneService(
+                read: () async => 'Asia/Calcutta',
+                dates: LocalScheduleDateService(),
+              ),
             ),
-          ),
-        ],
-      );
+          ],
+        );
 
-      final snapshot = await container.read(
-        todaySurfaceSnapshotProvider(DateTime.now()).future,
-      );
+        final snapshot = await container.read(
+          todaySurfaceSnapshotProvider(DateTime.now()).future,
+        );
 
-      expect(snapshot, isNotNull);
-      expect(snapshot.timezoneId, 'Asia/Kolkata');
-      await db.close();
-    });
+        expect(snapshot, isNotNull);
+        expect(snapshot.timezoneId, 'Asia/Kolkata');
+        await db.close();
+      },
+    );
 
-    test('trainingLandingSnapshotProvider succeeds when platform reports Asia/Calcutta', () async {
-      final db = AppDatabase.memory();
-      final container = ProviderContainer(
-        overrides: [
-          databaseProvider.overrideWithValue(db),
-          localTimezoneServiceProvider.overrideWithValue(
-            LocalTimezoneService(
-              read: () async => 'Asia/Calcutta',
-              dates: LocalScheduleDateService(),
+    test(
+      'trainingLandingSnapshotProvider succeeds when platform reports Asia/Calcutta',
+      () async {
+        final db = AppDatabase.memory();
+        final container = ProviderContainer(
+          overrides: [
+            databaseProvider.overrideWithValue(db),
+            localTimezoneServiceProvider.overrideWithValue(
+              LocalTimezoneService(
+                read: () async => 'Asia/Calcutta',
+                dates: LocalScheduleDateService(),
+              ),
             ),
-          ),
-        ],
-      );
+          ],
+        );
 
-      final snapshot = await container.read(
-        trainingLandingSnapshotProvider.future,
-      );
+        final snapshot = await container.read(
+          trainingLandingSnapshotProvider.future,
+        );
 
-      expect(snapshot, isNotNull);
-      await db.close();
-    });
+        expect(snapshot, isNotNull);
+        await db.close();
+      },
+    );
   });
 }

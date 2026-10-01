@@ -877,7 +877,9 @@ class NotificationService {
       final identifier = readTimezoneId != null
           ? await readTimezoneId()
           : (await FlutterTimezone.getLocalTimezone()).identifier;
-      final canonical = LocalScheduleDateService.normalizeTimezoneId(identifier);
+      final canonical = LocalScheduleDateService.normalizeTimezoneId(
+        identifier,
+      );
       tz.setLocalLocation(tz.getLocation(canonical));
       return;
     } catch (e) {

@@ -12,9 +12,7 @@ void main() {
     required VoidCallback onAdjustTargets,
   }) {
     return MaterialApp(
-      theme: ThemeData(
-        extensions: const [B05SemanticColors.light],
-      ),
+      theme: ThemeData(extensions: const [B05SemanticColors.light]),
       home: Scaffold(
         body: SingleChildScrollView(
           child: AdaptiveTdeeCard(
@@ -27,7 +25,9 @@ void main() {
   }
 
   group('AdaptiveTdeeCard Widget Tests', () {
-    testWidgets('renders metric, confidence pill, trend weight, and disclaimer', (tester) async {
+    testWidgets('renders metric, confidence pill, trend weight, and disclaimer', (
+      tester,
+    ) async {
       bool adjustTargetsCalled = false;
 
       final estimate = AdaptiveTdeeEstimate(
@@ -57,14 +57,19 @@ void main() {
 
       // Verify confidence pill
       expect(find.text('High Confidence'), findsOneWidget);
-      expect(find.text('High confidence (18/21 food days, 15 weigh-ins).'), findsOneWidget);
+      expect(
+        find.text('High confidence (18/21 food days, 15 weigh-ins).'),
+        findsOneWidget,
+      );
 
       // Verify trend weight chip
       expect(find.text('Trend: 74.2 kg · Scale: 74.6 kg'), findsOneWidget);
 
       // Verify wellness disclaimer
       expect(
-        find.text('Informational estimate for general wellness only. Adjust targets in the Coaching Hub.'),
+        find.text(
+          'Informational estimate for general wellness only. Adjust targets in the Coaching Hub.',
+        ),
         findsOneWidget,
       );
 
@@ -78,14 +83,17 @@ void main() {
       expect(adjustTargetsCalled, isTrue);
     });
 
-    testWidgets('tapping "How it works" opens explanatory bottom sheet', (tester) async {
+    testWidgets('tapping "How it works" opens explanatory bottom sheet', (
+      tester,
+    ) async {
       final estimate = AdaptiveTdeeEstimate(
         currentTdeeKcal: 2200.0,
         baselineTdeeKcal: 2200.0,
         currentScaleWeightKg: null,
         trendWeightKg: null,
         confidence: AdaptiveTdeeConfidence.calibrating,
-        confidenceMessage: 'Calibrating: log 4 more food days for moderate confidence.',
+        confidenceMessage:
+            'Calibrating: log 4 more food days for moderate confidence.',
         loggedFoodDaysInWindow: 3,
         loggedWeightDaysInWindow: 2,
         totalObservedFoodDays: 3,
@@ -94,10 +102,7 @@ void main() {
       );
 
       await tester.pumpWidget(
-        createWidgetUnderTest(
-          estimate: estimate,
-          onAdjustTargets: () {},
-        ),
+        createWidgetUnderTest(estimate: estimate, onAdjustTargets: () {}),
       );
 
       // Verify calibrating confidence pill
@@ -109,7 +114,12 @@ void main() {
 
       // Bottom sheet contents
       expect(find.text('How Adaptive TDEE Works'), findsOneWidget);
-      expect(find.textContaining('Expenditure = Calories In - (Delta Trend Weight * 7,700 kcal)'), findsOneWidget);
+      expect(
+        find.textContaining(
+          'Expenditure = Calories In - (Delta Trend Weight * 7,700 kcal)',
+        ),
+        findsOneWidget,
+      );
       expect(find.textContaining('Adherence-Neutral'), findsOneWidget);
 
       // Tap Got it to dismiss

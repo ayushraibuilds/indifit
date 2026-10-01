@@ -19,9 +19,7 @@ Widget _wrapResponsiveTest(
   List<dynamic> overrides = const [],
 }) {
   return ProviderScope(
-    overrides: [
-      ...overrides,
-    ],
+    overrides: [...overrides],
     child: MediaQuery(
       data: MediaQueryData(
         size: size,
@@ -49,10 +47,7 @@ void main() {
     // TODAY SURFACE
     // -------------------------------------------------------------------------
     group('Today Surface', () {
-      const viewports = [
-        Size(320, 640),
-        Size(390, 844),
-      ];
+      const viewports = [Size(320, 640), Size(390, 844)];
       const textScales = [1.0, 2.0];
       const themes = [ThemeMode.light, ThemeMode.dark];
 
@@ -155,24 +150,18 @@ void main() {
         },
       );
 
+      testWidgets('LogWeightBottomSheet close button has tooltip "Close"', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          _wrapResponsiveTest(
+            LogWeightBottomSheet(currentWeight: 75.0, onSave: (_) async {}),
+          ),
+        );
+        await tester.pumpAndSettle();
 
-
-      testWidgets(
-        'LogWeightBottomSheet close button has tooltip "Close"',
-        (tester) async {
-          await tester.pumpWidget(
-            _wrapResponsiveTest(
-              LogWeightBottomSheet(
-                currentWeight: 75.0,
-                onSave: (_) async {},
-              ),
-            ),
-          );
-          await tester.pumpAndSettle();
-
-          expect(find.byTooltip('Close'), findsOneWidget);
-        },
-      );
+        expect(find.byTooltip('Close'), findsOneWidget);
+      });
     });
 
     // -------------------------------------------------------------------------
@@ -336,19 +325,22 @@ void main() {
     // PROGRESS & CHARTS
     // -------------------------------------------------------------------------
     group('Progress & Charts', () {
-      test('LeftTitles reservedSize dynamically scales up with elevated text scale', () {
-        double calculateReservedSize(double textScale, double baseSize) {
-          return (baseSize * textScale).clamp(baseSize, 72.0);
-        }
+      test(
+        'LeftTitles reservedSize dynamically scales up with elevated text scale',
+        () {
+          double calculateReservedSize(double textScale, double baseSize) {
+            return (baseSize * textScale).clamp(baseSize, 72.0);
+          }
 
-        // At 1.0x text scale, size stays at base
-        expect(calculateReservedSize(1.0, 42.0), 42.0);
-        expect(calculateReservedSize(1.0, 44.0), 44.0);
+          // At 1.0x text scale, size stays at base
+          expect(calculateReservedSize(1.0, 42.0), 42.0);
+          expect(calculateReservedSize(1.0, 44.0), 44.0);
 
-        // At 2.0x text scale, reserved size expands up to 72.0 to avoid label clipping
-        expect(calculateReservedSize(2.0, 42.0), 72.0);
-        expect(calculateReservedSize(2.0, 44.0), 72.0);
-      });
+          // At 2.0x text scale, reserved size expands up to 72.0 to avoid label clipping
+          expect(calculateReservedSize(2.0, 42.0), 72.0);
+          expect(calculateReservedSize(2.0, 44.0), 72.0);
+        },
+      );
     });
 
     // -------------------------------------------------------------------------

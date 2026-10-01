@@ -102,7 +102,9 @@ void main() {
       isFalse,
     );
     // app_colors_extension.dart must not import colors.dart either
-    final extSource = File('lib/core/theme/app_colors_extension.dart').readAsStringSync();
+    final extSource = File(
+      'lib/core/theme/app_colors_extension.dart',
+    ).readAsStringSync();
     expect(extSource.contains('colors.dart'), isFalse);
   });
 

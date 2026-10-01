@@ -66,128 +66,129 @@ class _AchievementCelebrationSheetState
       child: SafeArea(
         key: const Key('achievement_celebration_sheet'),
         child: Padding(
-        padding: const EdgeInsets.fromLTRB(
-          B05Layout.space20,
-          B05Layout.space16,
-          B05Layout.space20,
-          B05Layout.space20,
-        ),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Grab handle
-              Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: colors.border,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: B05Layout.space16),
-
-              // Header celebration title
-              Text(
-                isMulti
-                    ? '${widget.achievements.length} Milestones Reached!'
-                    : 'Milestone Reached!',
-                style: B05Typography.pageTitle(context),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: B05Layout.space4),
-              Text(
-                'Honest progress, backed by your verified training data.',
-                style: B05Typography.caption(context),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: B05Layout.space20),
-
-              // Cards
-              if (!isMulti)
-                _buildAchievementCard(context, widget.achievements.first)
-              else ...[
-                SizedBox(
-                  height: 240,
-                  child: PageView.builder(
-                    controller: _pageController,
-                    onPageChanged: (idx) => setState(() => _currentIndex = idx),
-                    itemCount: widget.achievements.length,
-                    itemBuilder: (context, index) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        child: _buildAchievementCard(
-                          context,
-                          widget.achievements[index],
-                        ),
-                      );
-                    },
+          padding: const EdgeInsets.fromLTRB(
+            B05Layout.space20,
+            B05Layout.space16,
+            B05Layout.space20,
+            B05Layout.space20,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Grab handle
+                Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: colors.border,
+                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                const SizedBox(height: B05Layout.space12),
-                // Dot indicators
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(widget.achievements.length, (idx) {
-                    final isSelected = idx == _currentIndex;
-                    return AnimatedContainer(
-                      duration: disableAnimations
-                          ? Duration.zero
-                          : const Duration(milliseconds: 250),
-                      margin: const EdgeInsets.symmetric(horizontal: 3),
-                      width: isSelected ? 16 : 6,
-                      height: 6,
-                      decoration: BoxDecoration(
-                        color: isSelected ? colors.action : colors.border,
-                        borderRadius: BorderRadius.circular(3),
-                      ),
-                    );
-                  }),
-                ),
-              ],
-              const SizedBox(height: B05Layout.space24),
+                const SizedBox(height: B05Layout.space16),
 
-              // Action buttons
-              Row(
-                children: [
-                  Expanded(
-                    child: B05ActionButton(
-                      key: const Key('achievement_celebration_view_all'),
-                      label: 'View Badges',
-                      icon: Icons.emoji_events_rounded,
-                      emphasis: B05ActionEmphasis.secondary,
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => const AchievementsScreen(),
+                // Header celebration title
+                Text(
+                  isMulti
+                      ? '${widget.achievements.length} Milestones Reached!'
+                      : 'Milestone Reached!',
+                  style: B05Typography.pageTitle(context),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: B05Layout.space4),
+                Text(
+                  'Honest progress, backed by your verified training data.',
+                  style: B05Typography.caption(context),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: B05Layout.space20),
+
+                // Cards
+                if (!isMulti)
+                  _buildAchievementCard(context, widget.achievements.first)
+                else ...[
+                  SizedBox(
+                    height: 240,
+                    child: PageView.builder(
+                      controller: _pageController,
+                      onPageChanged: (idx) =>
+                          setState(() => _currentIndex = idx),
+                      itemCount: widget.achievements.length,
+                      itemBuilder: (context, index) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: _buildAchievementCard(
+                            context,
+                            widget.achievements[index],
                           ),
                         );
                       },
                     ),
                   ),
-                  const SizedBox(width: B05Layout.space12),
-                  Expanded(
-                    child: B05ActionButton(
-                      key: const Key('achievement_celebration_done'),
-                      label: 'Done',
-                      icon: Icons.check_rounded,
-                      emphasis: B05ActionEmphasis.primary,
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                        widget.onDismiss?.call();
-                      },
-                    ),
+                  const SizedBox(height: B05Layout.space12),
+                  // Dot indicators
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(widget.achievements.length, (idx) {
+                      final isSelected = idx == _currentIndex;
+                      return AnimatedContainer(
+                        duration: disableAnimations
+                            ? Duration.zero
+                            : const Duration(milliseconds: 250),
+                        margin: const EdgeInsets.symmetric(horizontal: 3),
+                        width: isSelected ? 16 : 6,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          color: isSelected ? colors.action : colors.border,
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                      );
+                    }),
                   ),
                 ],
-              ),
-            ],
+                const SizedBox(height: B05Layout.space24),
+
+                // Action buttons
+                Row(
+                  children: [
+                    Expanded(
+                      child: B05ActionButton(
+                        key: const Key('achievement_celebration_view_all'),
+                        label: 'View Badges',
+                        icon: Icons.emoji_events_rounded,
+                        emphasis: B05ActionEmphasis.secondary,
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const AchievementsScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: B05Layout.space12),
+                    Expanded(
+                      child: B05ActionButton(
+                        key: const Key('achievement_celebration_done'),
+                        label: 'Done',
+                        icon: Icons.check_rounded,
+                        emphasis: B05ActionEmphasis.primary,
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          widget.onDismiss?.call();
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _buildAchievementCard(BuildContext context, Achievement achievement) {
     final colors = context.b05Colors;
@@ -213,20 +214,16 @@ class _AchievementCelebrationSheetState
                 width: 2,
               ),
             ),
-            child: Icon(
-              achievement.icon,
-              size: 40,
-              color: achievement.color,
-            ),
+            child: Icon(achievement.icon, size: 40, color: achievement.color),
           ),
           const SizedBox(height: B05Layout.space12),
 
           // Title
           Text(
             achievement.title,
-            style: B05Typography.title(context).copyWith(
-              fontWeight: FontWeight.w700,
-            ),
+            style: B05Typography.title(
+              context,
+            ).copyWith(fontWeight: FontWeight.w700),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: B05Layout.space4),
@@ -277,10 +274,9 @@ class _AchievementCelebrationSheetState
                   const SizedBox(height: 2),
                   Text(
                     'Unlocked on $dateStr',
-                    style: B05Typography.caption(context).copyWith(
-                      color: colors.textSecondary,
-                      fontSize: 11,
-                    ),
+                    style: B05Typography.caption(
+                      context,
+                    ).copyWith(color: colors.textSecondary, fontSize: 11),
                   ),
                 ],
               ],

@@ -36,8 +36,6 @@ NutritionRecipeIngredientInput _ingredient(String id, String foodId) =>
       quantity: _grams('100'),
     );
 
-
-
 Future<void> _insertFood(
   AppDatabase db,
   NutrientRegistry registry, {
@@ -324,8 +322,6 @@ void main() {
   });
 
   group('R07D-3 Saved Meal Lifecycle, Fast Re-log, and Edit-Before-Log', () {
-
-
     test(
       'Saved meal remains pinned after a successor and becomes actionable-unavailable after archive',
       () async {
@@ -816,9 +812,7 @@ void main() {
         expect(find.text('Log to lunch'), findsOneWidget);
         expect(find.text('Review portions'), findsOneWidget);
         expect(
-          find.text(
-            'Some nutrition details are unavailable.',
-          ),
+          find.text('Some nutrition details are unavailable.'),
           findsOneWidget,
         );
         expect(tester.takeException(), isNull);

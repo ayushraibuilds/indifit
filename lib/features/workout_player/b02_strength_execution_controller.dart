@@ -1093,15 +1093,16 @@ class B02StrengthExecutionController
         // Enforce period-guard: discard orphaned intents belonging to an earlier or different period
         if (intent != null && intent.periodId == activePeriod.id) {
           if (intent.action == 'adjust_30s') {
-            final delta = (intent.accumulatedExtraSeconds != null &&
+            final delta =
+                (intent.accumulatedExtraSeconds != null &&
                     intent.accumulatedExtraSeconds! > 0)
                 ? intent.accumulatedExtraSeconds!
                 : (anchor != null
-                    ? (anchor.totalTargetSeconds -
-                        (activePeriod.selectedSeconds ??
-                            activePeriod.recommendedSeconds ??
-                            0))
-                    : 30);
+                      ? (anchor.totalTargetSeconds -
+                            (activePeriod.selectedSeconds ??
+                                activePeriod.recommendedSeconds ??
+                                0))
+                      : 30);
             if (delta > 0) {
               await adjustRest(activePeriod.id, seconds: delta);
             }
@@ -1115,11 +1116,13 @@ class B02StrengthExecutionController
         final currentAfter = state.launch;
         final periodToCheck = currentAfter == null
             ? activePeriod
-            : (_restPeriod(currentAfter.state, activePeriod.id) ?? activePeriod);
+            : (_restPeriod(currentAfter.state, activePeriod.id) ??
+                  activePeriod);
 
         // Check if active rest elapsed while backgrounded
         final now = _nowUtc().toUtc();
-        final totalSeconds = periodToCheck.selectedSeconds ??
+        final totalSeconds =
+            periodToCheck.selectedSeconds ??
             periodToCheck.recommendedSeconds ??
             0;
         final elapsed = now.difference(periodToCheck.startedAtUtc).inSeconds;

@@ -288,7 +288,10 @@ class _WorkoutContextualActionsState
                       child: Padding(
                         padding: const EdgeInsets.all(B05Layout.space8),
                         child: Icon(
-                          _statusIcon(occurrence.status, isOverdue: item.isOverdue),
+                          _statusIcon(
+                            occurrence.status,
+                            isOverdue: item.isOverdue,
+                          ),
                           color: status.indicator,
                         ),
                       ),
@@ -382,7 +385,8 @@ class _WorkoutContextualActionsState
                       ),
                     ],
                   )
-                else if (occurrence.status == OccurrenceStatus.skipped.dbValue ||
+                else if (occurrence.status ==
+                        OccurrenceStatus.skipped.dbValue ||
                     occurrence.status == OccurrenceStatus.cancelled.dbValue)
                   B05ActionGroup(
                     children: [
@@ -475,9 +479,7 @@ class _WorkoutContextualActionsState
     );
   }
 
-  static String _detailsLabel(
-    CalendarOccurrenceReadItem item,
-  ) {
+  static String _detailsLabel(CalendarOccurrenceReadItem item) {
     final occurrence = item.occurrence;
     return '${ConsumerDateLabel.day(occurrence.effectiveLocalDate)} • ${item.block.name} • Week ${item.week.programWeekOrdinal + 1}'
         '${item.isDeload ? ' • Deload' : ''}'
@@ -523,16 +525,18 @@ class _WorkoutContextualActionsState
   }) {
     if (isOverdue) return 'Overdue';
     return switch (status) {
-      'planned' => isToday
-          ? 'Planned for today'
-          : isFuture
-          ? 'Scheduled'
-          : 'Planned',
-      'rescheduled' => isToday
-          ? 'Rescheduled for today'
-          : isFuture
-          ? 'Rescheduled'
-          : 'Rescheduled',
+      'planned' =>
+        isToday
+            ? 'Planned for today'
+            : isFuture
+            ? 'Scheduled'
+            : 'Planned',
+      'rescheduled' =>
+        isToday
+            ? 'Rescheduled for today'
+            : isFuture
+            ? 'Rescheduled'
+            : 'Rescheduled',
       'completed' => 'Completed',
       'partiallyCompleted' => 'Partially completed',
       'inProgress' => 'In progress',

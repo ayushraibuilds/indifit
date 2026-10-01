@@ -107,10 +107,7 @@ class _WorkoutHistoryRow extends StatelessWidget {
               children: [
                 Text(item.name, style: B05Typography.label(context)),
                 const SizedBox(height: B05Layout.space4),
-                Text(
-                  subtitleText,
-                  style: B05Typography.caption(context),
-                ),
+                Text(subtitleText, style: B05Typography.caption(context)),
                 const SizedBox(height: B05Layout.space4),
                 Text(
                   '${_formatDuration(item.durationSeconds)} · $detail · $status',

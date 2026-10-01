@@ -347,7 +347,10 @@ class ProgramRepository {
     final versionIds = <String>{};
     for (final source in sources) {
       _validator.requireText(source.programId, 'Bundled program ID');
-      _validator.requireText(source.sourceVersionId, 'Bundled source version ID');
+      _validator.requireText(
+        source.sourceVersionId,
+        'Bundled source version ID',
+      );
       _validator.requireText(source.name, 'Bundled program name');
       if (!programIds.add(source.programId.trim())) {
         throw ArgumentError(
@@ -1155,7 +1158,6 @@ class ProgramRepository {
       }
     }
   }
-
 
   Future<SessionTemplate> _requireDraftTemplate(String templateId) async {
     final template = await (db.select(

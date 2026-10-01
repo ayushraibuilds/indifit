@@ -9,11 +9,7 @@ library;
 
 /// Content families a pack may carry. Each family has its own schema
 /// pre-check; unknown families fail closed.
-enum ContentPackKind {
-  regionalFoods,
-  exerciseMetadata,
-  starterPlan,
-}
+enum ContentPackKind { regionalFoods, exerciseMetadata, starterPlan }
 
 /// A single file inside a pack: exact transfer bytes are hashed, so what is
 /// verified is what gets staged — never a re-serialized approximation.
@@ -31,11 +27,11 @@ class ContentPackFile {
   });
 
   Map<String, dynamic> toJson() => {
-        'path': path,
-        'sha256': sha256Hex,
-        'size_bytes': sizeBytes,
-        if (json != null) 'json': json,
-      };
+    'path': path,
+    'sha256': sha256Hex,
+    'size_bytes': sizeBytes,
+    if (json != null) 'json': json,
+  };
 
   factory ContentPackFile.fromJson(Map<String, dynamic> json) {
     final path = json['path'];
@@ -87,18 +83,18 @@ class ContentPackEnvelope {
   /// Canonical payload covered by the signature: sorted keys, file entries
   /// in listed order, no signature field (which would be self-referential).
   Map<String, dynamic> signedPayload() => {
-        'files': [for (final f in files) f.toJson()],
-        'issued_at_utc': issuedAtUtc.toIso8601String(),
-        'kind': kind.name,
-        'min_app_version': minAppVersion,
-        'pack_id': packId,
-        'version': version,
-      };
+    'files': [for (final f in files) f.toJson()],
+    'issued_at_utc': issuedAtUtc.toIso8601String(),
+    'kind': kind.name,
+    'min_app_version': minAppVersion,
+    'pack_id': packId,
+    'version': version,
+  };
 
   Map<String, dynamic> toJson() => {
-        ...signedPayload(),
-        'signature': signatureHex,
-      };
+    ...signedPayload(),
+    'signature': signatureHex,
+  };
 
   factory ContentPackEnvelope.fromJson(Map<String, dynamic> json) {
     final packId = json['pack_id'];
@@ -140,9 +136,7 @@ class ContentPackEnvelope {
       issuedAtUtc: issuedAt,
       files: [
         for (final entry in filesRaw)
-          ContentPackFile.fromJson(
-            Map<String, dynamic>.from(entry as Map),
-          ),
+          ContentPackFile.fromJson(Map<String, dynamic>.from(entry as Map)),
       ],
       signatureHex: signatureHex is String ? signatureHex : '',
     );
@@ -153,10 +147,8 @@ class ContentPackEnvelope {
 // >0 like compareTo. Malformed segments compare as 0 (fail-open parsing is
 /// contained by the caller, which treats incompatibility as rejection).
 int compareAppVersions(String a, String b) {
-  List<int> parts(String v) => v
-      .split('.')
-      .map((s) => int.tryParse(s.trim()) ?? 0)
-      .toList();
+  List<int> parts(String v) =>
+      v.split('.').map((s) => int.tryParse(s.trim()) ?? 0).toList();
   final pa = parts(a);
   final pb = parts(b);
   for (var i = 0; i < 3; i++) {

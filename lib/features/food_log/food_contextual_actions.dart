@@ -38,29 +38,29 @@ class _FoodContextualActionsState extends ConsumerState<FoodContextualActions> {
       builder: (sheetContext) => EditFoodLogSheet(
         log: _log,
         onSave:
-              ({
-                required int id,
-                required String name,
-                required int calories,
-                required double proteinG,
-                required double carbsG,
-                required double fatG,
-                required double servingLogged,
-              }) async {
-                await _controller.edit(
-                  FoodLogEditValues(
-                    name: name,
-                    calories: calories,
-                    proteinG: proteinG,
-                    carbsG: carbsG,
-                    fatG: fatG,
-                    servingLogged: servingLogged,
-                  ),
-                );
-                widget.onChanged?.call();
-                if (mounted) _showSuccess('Food entry updated.');
-              },
-        ),
+            ({
+              required int id,
+              required String name,
+              required int calories,
+              required double proteinG,
+              required double carbsG,
+              required double fatG,
+              required double servingLogged,
+            }) async {
+              await _controller.edit(
+                FoodLogEditValues(
+                  name: name,
+                  calories: calories,
+                  proteinG: proteinG,
+                  carbsG: carbsG,
+                  fatG: fatG,
+                  servingLogged: servingLogged,
+                ),
+              );
+              widget.onChanged?.call();
+              if (mounted) _showSuccess('Food entry updated.');
+            },
+      ),
     );
   }
 

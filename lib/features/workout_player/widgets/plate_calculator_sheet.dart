@@ -179,8 +179,9 @@ class _PlateCalculatorViewState extends State<PlateCalculatorView> {
   }
 
   static String _formatPlateEntry(MapEntry<double, int> entry) {
-    final weightStr =
-        entry.key % 1 == 0 ? entry.key.toStringAsFixed(1) : '${entry.key}';
+    final weightStr = entry.key % 1 == 0
+        ? entry.key.toStringAsFixed(1)
+        : '${entry.key}';
     return '${entry.value} × $weightStr kg';
   }
 

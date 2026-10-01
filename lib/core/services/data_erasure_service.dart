@@ -83,14 +83,14 @@ class DataErasureService {
         getApplicationDocumentsDirectory,
     Future<Directory> Function() temporaryDirectoryProvider =
         getTemporaryDirectory,
-  })  : _db = db,
-        _prefs = prefs,
-        _secretStore = secretStore,
-        _cloudBackup = cloudBackup,
-        _account = account,
-        _healthService = healthService,
-        _documentsDirectoryProvider = documentsDirectoryProvider,
-        _temporaryDirectoryProvider = temporaryDirectoryProvider;
+  }) : _db = db,
+       _prefs = prefs,
+       _secretStore = secretStore,
+       _cloudBackup = cloudBackup,
+       _account = account,
+       _healthService = healthService,
+       _documentsDirectoryProvider = documentsDirectoryProvider,
+       _temporaryDirectoryProvider = temporaryDirectoryProvider;
 
   /// Executes verifiable complete erasure across all storage layers.
   Future<DataErasureReport> eraseAllData() async {
@@ -160,12 +160,12 @@ class DataErasureService {
           await _db.delete(table).go();
         }
         // Custom food items & custom exercises
-        await (_db.delete(_db.foodItems)
-              ..where((f) => f.isCustom.equals(true)))
-            .go();
-        await (_db.delete(_db.exercises)
-              ..where((e) => e.isCustom.equals(true)))
-            .go();
+        await (_db.delete(
+          _db.foodItems,
+        )..where((f) => f.isCustom.equals(true))).go();
+        await (_db.delete(
+          _db.exercises,
+        )..where((e) => e.isCustom.equals(true))).go();
       });
     } catch (e, stack) {
       AppLogger.error('Database erasure transaction failed', e, stack);
@@ -178,8 +178,9 @@ class DataErasureService {
     // Check foreign key violations
     bool foreignKeyCheckPassed = false;
     try {
-      final violations =
-          await _db.customSelect('PRAGMA foreign_key_check;').get();
+      final violations = await _db
+          .customSelect('PRAGMA foreign_key_check;')
+          .get();
       foreignKeyCheckPassed = violations.isEmpty;
       if (!foreignKeyCheckPassed) {
         failureReason ??=
@@ -208,15 +209,13 @@ class DataErasureService {
       remainingUserTableCounts[table.actualTableName] = rowCount;
     }
 
-    final remainingCustomFoods = (await (_db.select(_db.foodItems)
-              ..where((f) => f.isCustom.equals(true)))
-            .get())
-        .length;
+    final remainingCustomFoods = (await (_db.select(
+      _db.foodItems,
+    )..where((f) => f.isCustom.equals(true))).get()).length;
 
-    final remainingCustomExercises = (await (_db.select(_db.exercises)
-              ..where((e) => e.isCustom.equals(true)))
-            .get())
-        .length;
+    final remainingCustomExercises = (await (_db.select(
+      _db.exercises,
+    )..where((e) => e.isCustom.equals(true))).get()).length;
 
     final nonZeroTables = remainingUserTableCounts.entries
         .where((entry) => entry.value > 0)
@@ -302,7 +301,8 @@ class DataErasureService {
       failureReason ??= 'SharedPreferences cleanup error: $e';
     }
 
-    final isSuccess = nonZeroTables.isEmpty &&
+    final isSuccess =
+        nonZeroTables.isEmpty &&
         remainingCustomFoods == 0 &&
         remainingCustomExercises == 0 &&
         foreignKeyCheckPassed &&
@@ -426,4 +426,3 @@ class DataErasureService {
     ];
   }
 }
-

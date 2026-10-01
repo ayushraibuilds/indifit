@@ -169,80 +169,77 @@ void main() {
     },
   );
 
-  test(
-    'unknown age remains unknown while user goals stay readable',
-    () async {
-      final goals = NutritionGoalRepository(database: db);
-      final preferences = CoachingPreferenceRepository(
-        database: db,
-        nowUtc: () => DateTime.utc(2026, 8, 6, 10, 0, 1),
-      );
-      await goals.recordUserSetGoal(
-        const NutritionGoalCommand(
-          userId: 'user-a',
-          goalType: NutritionGoalType.maintenance,
-          calorieTargetKcal: 2100,
-          proteinTargetG: 140,
-          carbsTargetG: 220,
-          fatTargetG: 70,
-          effectiveFromLocalDate: '2026-08-06',
-          timezoneId: 'Asia/Kolkata',
-        ),
-      );
-      await db
-          .into(db.coachingEligibilityEvaluations)
-          .insert(
-            CoachingEligibilityEvaluationsCompanion.insert(
-              id: 'age-unknown',
-              userId: 'user-a',
-              result: 'unknown_age',
-              reasonCode: 'unknown_age',
-              ageInputSource: 'unknown',
-              evidenceTimestampUtc: DateTime.utc(2026, 8, 6, 9),
-              evaluationUtc: DateTime.utc(2026, 8, 6, 9),
-              evaluationLocalDate: '2026-08-06',
-              timezoneId: 'Asia/Kolkata',
-              policyVersion: kB04HoldPolicyVersion,
-              minimumAgeRuleVersion: 'minimum-age-v1',
-            ),
-          );
-      await preferences.recordConsent(
-        CoachingConsentCommand(
-          userId: 'user-a',
-          category: CoachingConsentCategory.adaptiveCoaching,
-          action: CoachingConsentAction.enable,
-          consentPolicyVersion: kB04AdaptiveConsentPolicyVersion,
-          copyVersion: kB04AdaptiveConsentCopyVersion,
-          timestampUtc: DateTime.utc(2026, 8, 6, 10),
-          localDate: '2026-08-06',
-          timezoneId: 'Asia/Kolkata',
-          actorSource: 'test',
-        ),
-      );
-      final availability = await preferences.adaptiveAvailability(
+  test('unknown age remains unknown while user goals stay readable', () async {
+    final goals = NutritionGoalRepository(database: db);
+    final preferences = CoachingPreferenceRepository(
+      database: db,
+      nowUtc: () => DateTime.utc(2026, 8, 6, 10, 0, 1),
+    );
+    await goals.recordUserSetGoal(
+      const NutritionGoalCommand(
         userId: 'user-a',
-      );
+        goalType: NutritionGoalType.maintenance,
+        calorieTargetKcal: 2100,
+        proteinTargetG: 140,
+        carbsTargetG: 220,
+        fatTargetG: 70,
+        effectiveFromLocalDate: '2026-08-06',
+        timezoneId: 'Asia/Kolkata',
+      ),
+    );
+    await db
+        .into(db.coachingEligibilityEvaluations)
+        .insert(
+          CoachingEligibilityEvaluationsCompanion.insert(
+            id: 'age-unknown',
+            userId: 'user-a',
+            result: 'unknown_age',
+            reasonCode: 'unknown_age',
+            ageInputSource: 'unknown',
+            evidenceTimestampUtc: DateTime.utc(2026, 8, 6, 9),
+            evaluationUtc: DateTime.utc(2026, 8, 6, 9),
+            evaluationLocalDate: '2026-08-06',
+            timezoneId: 'Asia/Kolkata',
+            policyVersion: kB04HoldPolicyVersion,
+            minimumAgeRuleVersion: 'minimum-age-v1',
+          ),
+        );
+    await preferences.recordConsent(
+      CoachingConsentCommand(
+        userId: 'user-a',
+        category: CoachingConsentCategory.adaptiveCoaching,
+        action: CoachingConsentAction.enable,
+        consentPolicyVersion: kB04AdaptiveConsentPolicyVersion,
+        copyVersion: kB04AdaptiveConsentCopyVersion,
+        timestampUtc: DateTime.utc(2026, 8, 6, 10),
+        localDate: '2026-08-06',
+        timezoneId: 'Asia/Kolkata',
+        actorSource: 'test',
+      ),
+    );
+    final availability = await preferences.adaptiveAvailability(
+      userId: 'user-a',
+    );
 
-      expect(availability.available, isFalse);
-      expect(availability.reasonCode, 'unknown_age');
-      expect(
-        b04ProductionStateCopy('unknown_age'),
-        allOf(
-          startsWith('Add your date of birth'),
-          isNot(contains('unavailable for this age')),
-          isNot(contains('ineligible')),
-        ),
-      );
-      expect(
-        (await goals.activeGoal(
-          userId: 'user-a',
-          localDate: '2026-08-06',
-          timezoneId: 'Asia/Kolkata',
-        ))!.calorieTargetKcal,
-        2100,
-      );
-    },
-  );
+    expect(availability.available, isFalse);
+    expect(availability.reasonCode, 'unknown_age');
+    expect(
+      b04ProductionStateCopy('unknown_age'),
+      allOf(
+        startsWith('Add your date of birth'),
+        isNot(contains('unavailable for this age')),
+        isNot(contains('ineligible')),
+      ),
+    );
+    expect(
+      (await goals.activeGoal(
+        userId: 'user-a',
+        localDate: '2026-08-06',
+        timezoneId: 'Asia/Kolkata',
+      ))!.calorieTargetKcal,
+      2100,
+    );
+  });
 
   test(
     'settings controller appends invalid and corrected age evidence through production state',

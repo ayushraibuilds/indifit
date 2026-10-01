@@ -32,13 +32,7 @@ final foodApiServiceProvider = Provider<FoodApiService>((ref) {
   final policy = ref.watch(privacyPolicyProvider);
   final db = ref.watch(databaseProvider);
   final offDio = ref.watch(openFoodFactsDioProvider);
-  return FoodApiService(
-    dio,
-    policy,
-    db,
-    AppConfig.backendUrl,
-    offDio,
-  );
+  return FoodApiService(dio, policy, db, AppConfig.backendUrl, offDio);
 });
 
 /// Open Food Facts is an emergency unauthenticated fallback provider and must never
@@ -173,9 +167,7 @@ class FoodApiResult {
     final double? addedSugar = _readNumber(
       nutriments['sugars_100g'] ?? nutriments['added-sugars_100g'],
     );
-    final double? saturatedFat = _readNumber(
-      nutriments['saturated-fat_100g'],
-    );
+    final double? saturatedFat = _readNumber(nutriments['saturated-fat_100g']);
 
     final servingQtyText = p['serving_quantity']?.toString() ?? '100';
     final servingSize = double.tryParse(servingQtyText) ?? 100.0;
@@ -235,18 +227,19 @@ class FoodApiService {
     AppDatabase? db,
     String? baseUrl,
     Dio? openFoodFactsDio,
-  ])  : _dio = dio ??
-            Dio(
-              BaseOptions(
-                connectTimeout: kFoodApiConnectTimeout,
-                receiveTimeout: kFoodApiReceiveTimeout,
-                sendTimeout: kFoodApiSendTimeout,
-              ),
-            ),
-        _policy = policy,
-        _db = db,
-        _baseUrl = baseUrl ?? AppConfig.backendUrl,
-        _openFoodFactsDio = openFoodFactsDio;
+  ]) : _dio =
+           dio ??
+           Dio(
+             BaseOptions(
+               connectTimeout: kFoodApiConnectTimeout,
+               receiveTimeout: kFoodApiReceiveTimeout,
+               sendTimeout: kFoodApiSendTimeout,
+             ),
+           ),
+       _policy = policy,
+       _db = db,
+       _baseUrl = baseUrl ?? AppConfig.backendUrl,
+       _openFoodFactsDio = openFoodFactsDio;
 
   static String computeQueryHash(String query, [String language = 'hinglish']) {
     final normalized = '${query.trim().toLowerCase()}_$language';
@@ -340,13 +333,14 @@ class FoodApiService {
     // 1. Check Drift disk cache (0ms latency contract)
     if (_db != null) {
       try {
-        final cached = await (_db.select(_db.foodSearchCache)
-              ..where((tbl) => tbl.queryHash.equals(queryHash)))
-            .getSingleOrNull();
+        final cached = await (_db.select(
+          _db.foodSearchCache,
+        )..where((tbl) => tbl.queryHash.equals(queryHash))).getSingleOrNull();
 
         if (cached != null) {
-          final age =
-              DateTime.now().toUtc().difference(cached.cachedAt.toUtc());
+          final age = DateTime.now().toUtc().difference(
+            cached.cachedAt.toUtc(),
+          );
           if (age.inSeconds < cached.ttlSeconds) {
             final decoded = jsonDecode(cached.responseJson);
             if (decoded is Map && decoded['results'] is List) {
@@ -380,7 +374,7 @@ class FoodApiService {
 
     AppLogger.info(
       'event=food_search_start host=${uri.host} path=${uri.path} '
-      'query_length=${trimmed.length}',
+          'query_length=${trimmed.length}',
       'FoodApiService',
     );
 
@@ -418,8 +412,8 @@ class FoodApiService {
 
       AppLogger.info(
         'event=food_search_complete host=${uri.host} path=${uri.path} '
-        'status=${response.statusCode ?? 0} '
-        'elapsed_ms=${stopwatch.elapsedMilliseconds}',
+            'status=${response.statusCode ?? 0} '
+            'elapsed_ms=${stopwatch.elapsedMilliseconds}',
         'FoodApiService',
       );
 
@@ -431,9 +425,8 @@ class FoodApiService {
           results = (data['results'] as List)
               .whereType<Map>()
               .map(
-                (e) => FoodApiResult.fromBackendJson(
-                  Map<String, dynamic>.from(e),
-                ),
+                (e) =>
+                    FoodApiResult.fromBackendJson(Map<String, dynamic>.from(e)),
               )
               .where((r) => r.name.isNotEmpty)
               .toList();
@@ -452,8 +445,9 @@ class FoodApiService {
         // Cache allowlisted results in Drift disk cache
         if (_db != null && results.isNotEmpty) {
           try {
-            final sanitizedResults =
-                results.map((r) => r.toSanitizedCacheJson()).toList();
+            final sanitizedResults = results
+                .map((r) => r.toSanitizedCacheJson())
+                .toList();
             final cachePayload = jsonEncode({
               'results': sanitizedResults,
               'count': sanitizedResults.length,
@@ -462,15 +456,17 @@ class FoodApiService {
               'query': trimmed,
             });
 
-            await _db.into(_db.foodSearchCache).insertOnConflictUpdate(
-              FoodSearchCacheCompanion.insert(
-                queryHash: queryHash,
-                queryText: trimmed,
-                responseJson: cachePayload,
-                cachedAt: Value(DateTime.now().toUtc()),
-                ttlSeconds: const Value(604800), // 7 days
-              ),
-            );
+            await _db
+                .into(_db.foodSearchCache)
+                .insertOnConflictUpdate(
+                  FoodSearchCacheCompanion.insert(
+                    queryHash: queryHash,
+                    queryText: trimmed,
+                    responseJson: cachePayload,
+                    cachedAt: Value(DateTime.now().toUtc()),
+                    ttlSeconds: const Value(604800), // 7 days
+                  ),
+                );
           } catch (e) {
             AppLogger.warning(
               'Food search cache write failed: $e',
@@ -486,11 +482,11 @@ class FoodApiService {
       stopwatch.stop();
       AppLogger.warning(
         'event=food_search_failed host=${uri.host} path=${uri.path} '
-        'type=${error.type.name} '
-        'status=${error.response?.statusCode ?? 0} '
-        'tls_failure=${error.type == DioExceptionType.badCertificate} '
-        'cancelled=${CancelToken.isCancel(error)} '
-        'elapsed_ms=${stopwatch.elapsedMilliseconds}',
+            'type=${error.type.name} '
+            'status=${error.response?.statusCode ?? 0} '
+            'tls_failure=${error.type == DioExceptionType.badCertificate} '
+            'cancelled=${CancelToken.isCancel(error)} '
+            'elapsed_ms=${stopwatch.elapsedMilliseconds}',
         'FoodApiService',
       );
       rethrow;
@@ -506,15 +502,15 @@ class FoodApiService {
       stopwatch.stop();
       AppLogger.info(
         'event=dns_result host=$host addresses='
-        '${addresses.map((address) => address.address).join(',')} '
-        'elapsed_ms=${stopwatch.elapsedMilliseconds}',
+            '${addresses.map((address) => address.address).join(',')} '
+            'elapsed_ms=${stopwatch.elapsedMilliseconds}',
         'FoodApiService',
       );
     } catch (error) {
       stopwatch.stop();
       AppLogger.warning(
         'event=dns_failed host=$host error_type=${error.runtimeType} '
-        'elapsed_ms=${stopwatch.elapsedMilliseconds}',
+            'elapsed_ms=${stopwatch.elapsedMilliseconds}',
         'FoodApiService',
       );
     }

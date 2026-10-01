@@ -188,8 +188,6 @@ void main() {
       },
     );
 
-
-
     testWidgets('6. HealthSyncHubScreen displays category permission toggles', (
       WidgetTester tester,
     ) async {

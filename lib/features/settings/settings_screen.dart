@@ -106,8 +106,7 @@ class SettingsScreen extends ConsumerWidget {
                       icon: Icons.view_agenda_outlined,
                       title: 'Diary structure',
                       summary: 'Customize meal and snack slots',
-                      onTap: () =>
-                          _push(context, const DiaryStructureScreen()),
+                      onTap: () => _push(context, const DiaryStructureScreen()),
                     ),
                   ],
                 ),

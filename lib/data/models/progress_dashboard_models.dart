@@ -334,4 +334,3 @@ class R08F4ConsistencySummary {
     );
   }
 }
-

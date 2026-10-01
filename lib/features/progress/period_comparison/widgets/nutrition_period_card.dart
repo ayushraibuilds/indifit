@@ -5,11 +5,7 @@ import '../../../../core/widgets/b05_accessibility_primitives.dart';
 import '../../../../data/models/progress_period_comparison_models.dart';
 
 class NutritionPeriodCard extends StatelessWidget {
-  const NutritionPeriodCard({
-    super.key,
-    required this.comparison,
-    this.onTap,
-  });
+  const NutritionPeriodCard({super.key, required this.comparison, this.onTap});
 
   final ComparativeNutritionMetrics comparison;
   final VoidCallback? onTap;
@@ -36,7 +32,8 @@ class NutritionPeriodCard extends StatelessWidget {
         ? '${prev.averageProteinG!.toStringAsFixed(1)}g prior'
         : '—';
 
-    final evidence = comparison.caloriesMetric.evidenceDescription ??
+    final evidence =
+        comparison.caloriesMetric.evidenceDescription ??
         '${cur.loggedDaysCount}/${cur.daysInPeriod} days logged';
 
     return B05Surface(
@@ -70,17 +67,15 @@ class NutritionPeriodCard extends StatelessWidget {
                       children: [
                         Text(
                           'Nutrition Adherence',
-                          style: B05Typography.title(context).copyWith(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                          ),
+                          style: B05Typography.title(
+                            context,
+                          ).copyWith(fontSize: 16, fontWeight: FontWeight.w700),
                         ),
                         Text(
                           evidence,
-                          style: B05Typography.caption(context).copyWith(
-                            color: colors.textSecondary,
-                            fontSize: 11,
-                          ),
+                          style: B05Typography.caption(
+                            context,
+                          ).copyWith(color: colors.textSecondary, fontSize: 11),
                         ),
                       ],
                     ),
@@ -107,8 +102,10 @@ class NutritionPeriodCard extends StatelessWidget {
                   Expanded(
                     child: _NutritionMetricColumn(
                       label: 'Logged Days',
-                      currentValue: '${cur.loggedDaysCount}/${cur.daysInPeriod}',
-                      previousValue: '${prev.loggedDaysCount}/${prev.daysInPeriod} prior',
+                      currentValue:
+                          '${cur.loggedDaysCount}/${cur.daysInPeriod}',
+                      previousValue:
+                          '${prev.loggedDaysCount}/${prev.daysInPeriod} prior',
                     ),
                   ),
                 ],
@@ -141,26 +138,23 @@ class _NutritionMetricColumn extends StatelessWidget {
       children: [
         Text(
           label,
-          style: B05Typography.caption(context).copyWith(
-            color: colors.textSecondary,
-            fontSize: 11,
-          ),
+          style: B05Typography.caption(
+            context,
+          ).copyWith(color: colors.textSecondary, fontSize: 11),
         ),
         const SizedBox(height: 2),
         Text(
           currentValue,
-          style: B05Typography.body(context).copyWith(
-            fontWeight: FontWeight.w800,
-            fontSize: 15,
-          ),
+          style: B05Typography.body(
+            context,
+          ).copyWith(fontWeight: FontWeight.w800, fontSize: 15),
         ),
         const SizedBox(height: 1),
         Text(
           previousValue,
-          style: B05Typography.caption(context).copyWith(
-            color: colors.textSecondary,
-            fontSize: 11,
-          ),
+          style: B05Typography.caption(
+            context,
+          ).copyWith(color: colors.textSecondary, fontSize: 11),
         ),
       ],
     );

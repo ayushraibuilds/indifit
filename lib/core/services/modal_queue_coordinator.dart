@@ -44,13 +44,16 @@ class ModalQueueCoordinator {
         return;
       }
       markModalActive();
-      showModal().then((result) {
-        completer.complete(result);
-      }).catchError((Object error, StackTrace stackTrace) {
-        completer.completeError(error, stackTrace);
-      }).whenComplete(() {
-        markModalDismissed();
-      });
+      showModal()
+          .then((result) {
+            completer.complete(result);
+          })
+          .catchError((Object error, StackTrace stackTrace) {
+            completer.completeError(error, stackTrace);
+          })
+          .whenComplete(() {
+            markModalDismissed();
+          });
     }
 
     if (_activeModalCount == 0) {

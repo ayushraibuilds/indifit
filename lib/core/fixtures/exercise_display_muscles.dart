@@ -92,7 +92,10 @@ class ExerciseDisplayMuscles {
   /// Passing 'All' (case-insensitive) matches any exercise.
   bool matchesPrimary(String? muscleCategory) {
     if (muscleCategory == null || muscleCategory.trim().isEmpty) return false;
-    final cleanCategory = muscleCategory.trim().replaceAll('_', ' ').toLowerCase();
+    final cleanCategory = muscleCategory
+        .trim()
+        .replaceAll('_', ' ')
+        .toLowerCase();
     if (cleanCategory == 'all') return true;
     if (!hasPrimary) return false;
     return primary!.trim().replaceAll('_', ' ').toLowerCase() == cleanCategory;
@@ -104,8 +107,12 @@ class ExerciseDisplayMuscles {
   bool containsMuscle(String? muscle) {
     if (muscle == null || muscle.trim().isEmpty) return false;
     final cleanMuscle = muscle.trim().replaceAll('_', ' ').toLowerCase();
-    if (hasPrimary && primary!.trim().replaceAll('_', ' ').toLowerCase() == cleanMuscle) return true;
-    return secondary.any((sec) => sec.trim().replaceAll('_', ' ').toLowerCase() == cleanMuscle);
+    if (hasPrimary &&
+        primary!.trim().replaceAll('_', ' ').toLowerCase() == cleanMuscle)
+      return true;
+    return secondary.any(
+      (sec) => sec.trim().replaceAll('_', ' ').toLowerCase() == cleanMuscle,
+    );
   }
 
   @override

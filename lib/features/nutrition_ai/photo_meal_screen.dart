@@ -21,11 +21,7 @@ class PhotoMealScreen extends ConsumerStatefulWidget {
   final String? mealType;
   final String? date;
 
-  const PhotoMealScreen({
-    super.key,
-    this.mealType,
-    this.date,
-  });
+  const PhotoMealScreen({super.key, this.mealType, this.date});
 
   @override
   ConsumerState<PhotoMealScreen> createState() => _PhotoMealScreenState();
@@ -97,14 +93,20 @@ class _PhotoMealScreenState extends ConsumerState<PhotoMealScreen> {
         child: switch (state.status) {
           PhotoMealStatus.idle => _buildIdleSurface(context),
           PhotoMealStatus.picking ||
-          PhotoMealStatus.scanning =>
-            _buildLoadingSurface(context, state),
-          PhotoMealStatus.failure =>
-            _buildFailureSurface(context, state, controller),
+          PhotoMealStatus.scanning => _buildLoadingSurface(context, state),
+          PhotoMealStatus.failure => _buildFailureSurface(
+            context,
+            state,
+            controller,
+          ),
           PhotoMealStatus.ready ||
           PhotoMealStatus.logging ||
-          PhotoMealStatus.success =>
-            _buildReviewSurface(context, state, controller, colors),
+          PhotoMealStatus.success => _buildReviewSurface(
+            context,
+            state,
+            controller,
+            colors,
+          ),
         },
       ),
     );
@@ -227,14 +229,15 @@ class _PhotoMealScreenState extends ConsumerState<PhotoMealScreen> {
     PhotoMealState state,
     PhotoMealController controller,
   ) {
-    final isRateLimited = state.errorMessage?.contains('429') == true ||
+    final isRateLimited =
+        state.errorMessage?.contains('429') == true ||
         state.errorMessage?.toLowerCase().contains('quota') == true ||
         state.errorMessage?.toLowerCase().contains('rate limit') == true;
 
     final displayMessage = isRateLimited
         ? 'Daily AI photo scan limit reached (10 scans per 24 hours). Please try again tomorrow, or use text description / quick-add macros.'
         : (state.errorMessage ??
-            'An error occurred while uploading or processing the photo. Please check connectivity and try again.');
+              'An error occurred while uploading or processing the photo. Please check connectivity and try again.');
 
     return Padding(
       padding: const EdgeInsets.all(B05Layout.space24),
@@ -242,7 +245,9 @@ class _PhotoMealScreenState extends ConsumerState<PhotoMealScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            isRateLimited ? Icons.hourglass_top_rounded : Icons.error_outline_rounded,
+            isRateLimited
+                ? Icons.hourglass_top_rounded
+                : Icons.error_outline_rounded,
             size: 48,
             color: isRateLimited
                 ? context.b05Colors.warning.indicator
@@ -265,10 +270,13 @@ class _PhotoMealScreenState extends ConsumerState<PhotoMealScreen> {
               label: 'Describe Meal with Text',
               icon: Icons.edit_note_rounded,
               onPressed: () {
-                final mealParam =
-                    widget.mealType != null ? '?mealType=${widget.mealType}' : '';
+                final mealParam = widget.mealType != null
+                    ? '?mealType=${widget.mealType}'
+                    : '';
                 final dateParam = widget.date != null
-                    ? (mealParam.isEmpty ? '?date=${widget.date}' : '&date=${widget.date}')
+                    ? (mealParam.isEmpty
+                          ? '?date=${widget.date}'
+                          : '&date=${widget.date}')
                     : '';
                 context.pushReplacement('/food/describe$mealParam$dateParam');
               },
@@ -278,7 +286,9 @@ class _PhotoMealScreenState extends ConsumerState<PhotoMealScreen> {
           B05ActionButton(
             label: isRateLimited ? 'Close' : 'Try Again',
             icon: isRateLimited ? Icons.close_rounded : Icons.refresh_rounded,
-            emphasis: isRateLimited ? B05ActionEmphasis.secondary : B05ActionEmphasis.primary,
+            emphasis: isRateLimited
+                ? B05ActionEmphasis.secondary
+                : B05ActionEmphasis.primary,
             onPressed: isRateLimited
                 ? () => Navigator.of(context).pop()
                 : () => _pickAndProcess(ImageSource.camera),
@@ -303,11 +313,17 @@ class _PhotoMealScreenState extends ConsumerState<PhotoMealScreen> {
           decoration: BoxDecoration(
             color: colors.warning.container,
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: colors.warning.indicator.withValues(alpha: 0.3)),
+            border: Border.all(
+              color: colors.warning.indicator.withValues(alpha: 0.3),
+            ),
           ),
           child: Row(
             children: [
-              Icon(Icons.info_outline, color: colors.warning.indicator, size: 20),
+              Icon(
+                Icons.info_outline,
+                color: colors.warning.indicator,
+                size: 20,
+              ),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
@@ -406,10 +422,10 @@ class _PhotoMealScreenState extends ConsumerState<PhotoMealScreen> {
                 onPressed: state.isBusy || state.editableItems.isEmpty
                     ? null
                     : () => _openInCircularThali(
-                          _resolveMealType(),
-                          _resolveDate(),
-                          state.editableItems,
-                        ),
+                        _resolveMealType(),
+                        _resolveDate(),
+                        state.editableItems,
+                      ),
               ),
             ),
             const SizedBox(width: B05Layout.space12),
@@ -418,8 +434,8 @@ class _PhotoMealScreenState extends ConsumerState<PhotoMealScreen> {
                 label: state.isLogged
                     ? 'Logged to Diary'
                     : (state.status == PhotoMealStatus.logging
-                        ? 'Logging Meal...'
-                        : 'Log Meal to Diary'),
+                          ? 'Logging Meal...'
+                          : 'Log Meal to Diary'),
                 icon: Icons.check_circle_outline_rounded,
                 onPressed: state.isLogged || state.isBusy
                     ? null
@@ -433,7 +449,9 @@ class _PhotoMealScreenState extends ConsumerState<PhotoMealScreen> {
                         if (ok && mounted) {
                           messenger.showSnackBar(
                             const SnackBar(
-                              content: Text('Meal logged to diary successfully!'),
+                              content: Text(
+                                'Meal logged to diary successfully!',
+                              ),
                             ),
                           );
                           router.pop(true);
@@ -457,7 +475,11 @@ class _PhotoMealScreenState extends ConsumerState<PhotoMealScreen> {
       children: [
         Text(
           value,
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: color),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+            color: color,
+          ),
         ),
         const SizedBox(height: 2),
         Text(label, style: B05Typography.caption(context)),
@@ -473,7 +495,9 @@ class _PhotoMealScreenState extends ConsumerState<PhotoMealScreen> {
     B05SemanticColors colors,
   ) {
     final isVerified = item.isCatalogVerified;
-    final badgeColor = isVerified ? colors.success.indicator : colors.info.indicator;
+    final badgeColor = isVerified
+        ? colors.success.indicator
+        : colors.info.indicator;
     final badgeText = isVerified ? 'Catalog Verified' : 'AI Vision Estimate';
 
     final confidenceColor = switch (item.confidence.toLowerCase()) {
@@ -512,7 +536,10 @@ class _PhotoMealScreenState extends ConsumerState<PhotoMealScreen> {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 3,
+                  ),
                   margin: const EdgeInsets.only(right: 6),
                   decoration: BoxDecoration(
                     color: confidenceColor.withValues(alpha: 0.12),
@@ -528,7 +555,10 @@ class _PhotoMealScreenState extends ConsumerState<PhotoMealScreen> {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: badgeColor.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(4),
@@ -560,15 +590,25 @@ class _PhotoMealScreenState extends ConsumerState<PhotoMealScreen> {
                       ? null
                       : () {
                           final step = item.quantityAmount <= 1.0 ? 0.25 : 1.0;
-                          final newAmount = (item.quantityAmount - step).clamp(0.25, 999.0);
-                          controller.updateItemQuantity(index, newAmount, item.quantityUnit);
+                          final newAmount = (item.quantityAmount - step).clamp(
+                            0.25,
+                            999.0,
+                          );
+                          controller.updateItemQuantity(
+                            index,
+                            newAmount,
+                            item.quantityUnit,
+                          );
                         },
                 ),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8.0),
                   child: Text(
                     '${item.quantityAmount.toStringAsFixed(item.quantityAmount % 1 == 0 ? 0 : 2)} ${item.quantityUnit}',
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
                   ),
                 ),
                 IconButton.outlined(
@@ -577,18 +617,25 @@ class _PhotoMealScreenState extends ConsumerState<PhotoMealScreen> {
                   onPressed: () {
                     final step = item.quantityAmount < 1.0 ? 0.25 : 1.0;
                     final newAmount = item.quantityAmount + step;
-                    controller.updateItemQuantity(index, newAmount, item.quantityUnit);
+                    controller.updateItemQuantity(
+                      index,
+                      newAmount,
+                      item.quantityUnit,
+                    );
                   },
                 ),
                 const SizedBox(width: 8),
                 TextButton.icon(
-                  style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+                  style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                  ),
                   icon: const Icon(Icons.swap_horiz, size: 16),
                   label: Text(
                     isVerified ? 'Swap' : 'Match',
                     style: const TextStyle(fontSize: 12),
                   ),
-                  onPressed: () => _openSwapModal(context, index, item, controller),
+                  onPressed: () =>
+                      _openSwapModal(context, index, item, controller),
                 ),
                 const Spacer(),
                 Text(
@@ -612,7 +659,9 @@ class _PhotoMealScreenState extends ConsumerState<PhotoMealScreen> {
     DecomposedFoodItem item,
     PhotoMealController controller,
   ) async {
-    final catalog = await ref.read(nutritionFoodCatalogRepositoryProvider.future);
+    final catalog = await ref.read(
+      nutritionFoodCatalogRepositoryProvider.future,
+    );
     final initialMatches = await catalog.search(query: item.foodName);
     if (!context.mounted) return;
 
@@ -637,7 +686,10 @@ class _PhotoMealScreenState extends ConsumerState<PhotoMealScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('Swap Food Match', style: B05Typography.title(context)),
+                          Text(
+                            'Swap Food Match',
+                            style: B05Typography.title(context),
+                          ),
                           IconButton(
                             icon: const Icon(Icons.close),
                             onPressed: () => Navigator.pop(sheetCtx),
@@ -679,19 +731,41 @@ class _PhotoMealScreenState extends ConsumerState<PhotoMealScreen> {
                                 separatorBuilder: (ctx, i) => const Divider(),
                                 itemBuilder: (ctx, i) {
                                   final option = matches[i];
-                                  final isCurrent = item.matchedCatalogOption?.id == option.id;
-                                  final energy = option.facts['energy']?.point?.value.asDouble.toStringAsFixed(0) ?? '—';
-                                  final protein = option.facts['protein']?.point?.value.asDouble.toStringAsFixed(1) ?? '—';
+                                  final isCurrent =
+                                      item.matchedCatalogOption?.id ==
+                                      option.id;
+                                  final energy =
+                                      option
+                                          .facts['energy']
+                                          ?.point
+                                          ?.value
+                                          .asDouble
+                                          .toStringAsFixed(0) ??
+                                      '—';
+                                  final protein =
+                                      option
+                                          .facts['protein']
+                                          ?.point
+                                          ?.value
+                                          .asDouble
+                                          .toStringAsFixed(1) ??
+                                      '—';
                                   return ListTile(
                                     title: Text(option.displayName),
                                     subtitle: Text(
                                       '$energy kcal • $protein g P per ${option.baseQuantity}',
                                     ),
                                     trailing: isCurrent
-                                        ? const Icon(Icons.check, color: Colors.green)
+                                        ? const Icon(
+                                            Icons.check,
+                                            color: Colors.green,
+                                          )
                                         : null,
                                     onTap: () {
-                                      controller.updateItemFoodMatch(index, option);
+                                      controller.updateItemFoodMatch(
+                                        index,
+                                        option,
+                                      );
                                       Navigator.pop(sheetCtx);
                                     },
                                   );
@@ -717,7 +791,9 @@ class _PhotoMealScreenState extends ConsumerState<PhotoMealScreen> {
     final thaliController = ref.read(
       nutritionThaliControllerProvider(mealType).notifier,
     );
-    final catalog = await ref.read(nutritionFoodCatalogRepositoryProvider.future);
+    final catalog = await ref.read(
+      nutritionFoodCatalogRepositoryProvider.future,
+    );
 
     for (final item in items) {
       NutritionFoodOption option;

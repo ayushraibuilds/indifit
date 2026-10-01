@@ -209,8 +209,8 @@ class NutritionFoodCatalogRepository {
     final storedBarcode = normalizedBarcode.isEmpty
         ? null
         : normalizedBarcode.length > 64
-            ? normalizedBarcode.substring(0, 64)
-            : normalizedBarcode;
+        ? normalizedBarcode.substring(0, 64)
+        : normalizedBarcode;
     if (name.isEmpty) {
       throw const NutritionFoodCatalogError(
         'missing_food_name',
@@ -229,7 +229,7 @@ class NutritionFoodCatalogRepository {
         '${storedBarcode == null ? '' : '|barcode=$storedBarcode'}'
         '${transFatG == null ? '' : '|trans_fat=${_numberLabel(transFatG)}g'}';
     final servingDefinition = ServingDefinitionReference(
-        id: 'food-serving::$id',
+      id: 'food-serving::$id',
       revision: 'b03-food-entry-v1',
       source: 'catalogue',
     );

@@ -26,9 +26,7 @@ class DiaryStructureScreen extends ConsumerWidget {
         .toList(growable: false);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Diary structure'),
-      ),
+      appBar: AppBar(title: const Text('Diary structure')),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(
           B05Layout.space16,
@@ -59,11 +57,7 @@ class DiaryStructureScreen extends ConsumerWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            Icons.info_outline_rounded,
-            color: colors.action,
-            size: 24,
-          ),
+          Icon(Icons.info_outline_rounded, color: colors.action, size: 24),
           const SizedBox(width: B05Layout.space12),
           Expanded(
             child: Column(
@@ -98,10 +92,7 @@ class DiaryStructureScreen extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'PRESETS',
-          style: B05Typography.label(context),
-        ),
+        Text('PRESETS', style: B05Typography.label(context)),
         const SizedBox(height: B05Layout.space4),
         Text(
           'Apply a common structure or reset to default at any time.',
@@ -115,23 +106,28 @@ class DiaryStructureScreen extends ConsumerWidget {
             ActionChip(
               label: const Text('Standard (4)'),
               tooltip: 'Breakfast, Lunch, Dinner, Snack',
-              onPressed: () => controller.applyPreset(DiaryStructurePreset.standard4),
+              onPressed: () =>
+                  controller.applyPreset(DiaryStructurePreset.standard4),
             ),
             ActionChip(
               label: const Text('3 Meals'),
               tooltip: 'Breakfast, Lunch, Dinner',
-              onPressed: () => controller.applyPreset(DiaryStructurePreset.threeMeals),
+              onPressed: () =>
+                  controller.applyPreset(DiaryStructurePreset.threeMeals),
             ),
             ActionChip(
               label: const Text('5 Meals'),
-              tooltip: 'Breakfast, Morning snack, Lunch, Afternoon snack, Dinner',
-              onPressed: () => controller.applyPreset(DiaryStructurePreset.fiveMeals),
+              tooltip:
+                  'Breakfast, Morning snack, Lunch, Afternoon snack, Dinner',
+              onPressed: () =>
+                  controller.applyPreset(DiaryStructurePreset.fiveMeals),
             ),
             ActionChip(
               label: const Text('Athlete (6)'),
               tooltip:
                   'Breakfast, Morning snack, Lunch, Afternoon snack, Dinner, Post-workout',
-              onPressed: () => controller.applyPreset(DiaryStructurePreset.athlete6),
+              onPressed: () =>
+                  controller.applyPreset(DiaryStructurePreset.athlete6),
             ),
             ActionChip(
               avatar: const Icon(Icons.refresh_rounded, size: 18),
@@ -209,10 +205,7 @@ class DiaryStructureScreen extends ConsumerWidget {
                     ),
                   ),
                 ),
-                title: Text(
-                  slot.label,
-                  style: B05Typography.title(context),
-                ),
+                title: Text(slot.label, style: B05Typography.title(context)),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -255,10 +248,7 @@ class DiaryStructureScreen extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'AVAILABLE OPTIONAL SLOTS',
-          style: B05Typography.label(context),
-        ),
+        Text('AVAILABLE OPTIONAL SLOTS', style: B05Typography.label(context)),
         const SizedBox(height: B05Layout.space4),
         Text(
           'Add extra snack or workout-timed slots to your diary.',
@@ -279,7 +269,9 @@ class DiaryStructureScreen extends ConsumerWidget {
                   color: Theme.of(context).cardColor,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: Theme.of(context).dividerColor.withValues(alpha: 0.2),
+                    color: Theme.of(
+                      context,
+                    ).dividerColor.withValues(alpha: 0.2),
                   ),
                 ),
                 child: ListTile(
@@ -297,10 +289,7 @@ class DiaryStructureScreen extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  title: Text(
-                    slot.label,
-                    style: B05Typography.title(context),
-                  ),
+                  title: Text(slot.label, style: B05Typography.title(context)),
                   trailing: TextButton.icon(
                     onPressed: () => controller.addSlot(slot.stableId),
                     icon: const Icon(Icons.add_rounded, size: 18),

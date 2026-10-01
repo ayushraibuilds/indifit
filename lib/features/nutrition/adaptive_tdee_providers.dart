@@ -10,16 +10,16 @@ import 'nutrition_providers.dart';
 /// Reactive change stream for food logs.
 final adaptiveTdeeFoodLogsSignalProvider =
     StreamProvider.autoDispose<List<FoodLog>>((ref) {
-  final db = ref.watch(databaseProvider);
-  return db.select(db.foodLogs).watch();
-});
+      final db = ref.watch(databaseProvider);
+      return db.select(db.foodLogs).watch();
+    });
 
 /// Reactive change stream for body measurements.
 final adaptiveTdeeMeasurementsSignalProvider =
     StreamProvider.autoDispose<List<BodyMeasurement>>((ref) {
-  final db = ref.watch(databaseProvider);
-  return db.select(db.bodyMeasurements).watch();
-});
+      final db = ref.watch(databaseProvider);
+      return db.select(db.bodyMeasurements).watch();
+    });
 
 /// Repository provider for adaptive TDEE evaluation.
 final adaptiveTdeeRepositoryProvider = Provider<AdaptiveTdeeRepository>((ref) {
@@ -33,17 +33,18 @@ final adaptiveTdeeRepositoryProvider = Provider<AdaptiveTdeeRepository>((ref) {
 /// weight entries, or user profiles change.
 final adaptiveTdeeEstimateProvider =
     FutureProvider.autoDispose<AdaptiveTdeeEstimate>((ref) async {
-  // Subscribe to table change streams and profile changes
-  ref.watch(adaptiveTdeeFoodLogsSignalProvider);
-  ref.watch(adaptiveTdeeMeasurementsSignalProvider);
-  ref.watch(userProfileProvider);
+      // Subscribe to table change streams and profile changes
+      ref.watch(adaptiveTdeeFoodLogsSignalProvider);
+      ref.watch(adaptiveTdeeMeasurementsSignalProvider);
+      ref.watch(userProfileProvider);
 
-  final repository = ref.watch(adaptiveTdeeRepositoryProvider);
-  final timezone =
-      await ref.watch(localTimezoneServiceProvider).currentTimezoneId();
+      final repository = ref.watch(adaptiveTdeeRepositoryProvider);
+      final timezone = await ref
+          .watch(localTimezoneServiceProvider)
+          .currentTimezoneId();
 
-  return repository.evaluate(
-    nowUtc: DateTime.now().toUtc(),
-    timezoneId: timezone,
-  );
-});
+      return repository.evaluate(
+        nowUtc: DateTime.now().toUtc(),
+        timezoneId: timezone,
+      );
+    });

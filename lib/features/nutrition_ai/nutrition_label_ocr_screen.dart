@@ -16,11 +16,7 @@ class NutritionLabelOcrScreen extends ConsumerStatefulWidget {
   final String? mealType;
   final String? date;
 
-  const NutritionLabelOcrScreen({
-    super.key,
-    this.mealType,
-    this.date,
-  });
+  const NutritionLabelOcrScreen({super.key, this.mealType, this.date});
 
   @override
   ConsumerState<NutritionLabelOcrScreen> createState() =>
@@ -80,7 +76,8 @@ class _NutritionLabelOcrScreenState
           double.tryParse(_customGramsController.text) != state.customGrams) {
         _customGramsController.text = gramsText;
       }
-    } else if (_customGramsController.text.isNotEmpty && state.customGrams == null) {
+    } else if (_customGramsController.text.isNotEmpty &&
+        state.customGrams == null) {
       _customGramsController.clear();
     }
     for (final entry in state.editableNutrients.entries) {
@@ -117,21 +114,25 @@ class _NutritionLabelOcrScreenState
     _syncControllers(state);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Scan Nutrition Label'),
-      ),
+      appBar: AppBar(title: const Text('Scan Nutrition Label')),
       body: SafeArea(
         child: switch (state.status) {
           NutritionLabelOcrStatus.idle => _buildIdleState(context, controller),
-          NutritionLabelOcrStatus.picking ||
-          NutritionLabelOcrStatus.scanning =>
+          NutritionLabelOcrStatus.picking || NutritionLabelOcrStatus.scanning =>
             _buildLoadingState(context, 'Analyzing label image...'),
-          NutritionLabelOcrStatus.failure =>
-            _buildFailureState(context, state, controller),
+          NutritionLabelOcrStatus.failure => _buildFailureState(
+            context,
+            state,
+            controller,
+          ),
           NutritionLabelOcrStatus.ready ||
           NutritionLabelOcrStatus.saving ||
-          NutritionLabelOcrStatus.success =>
-            _buildReviewState(context, state, controller, colors),
+          NutritionLabelOcrStatus.success => _buildReviewState(
+            context,
+            state,
+            controller,
+            colors,
+          ),
         },
       ),
     );
@@ -179,7 +180,8 @@ class _NutritionLabelOcrScreenState
                     child: B05ActionButton(
                       label: 'Take Photo',
                       icon: Icons.camera_alt_rounded,
-                      onPressed: () => _pickWithConsent(controller, ImageSource.camera),
+                      onPressed: () =>
+                          _pickWithConsent(controller, ImageSource.camera),
                     ),
                   ),
                   const SizedBox(width: B05Layout.space12),
@@ -188,7 +190,8 @@ class _NutritionLabelOcrScreenState
                       label: 'Choose Image',
                       icon: Icons.photo_library_rounded,
                       emphasis: B05ActionEmphasis.secondary,
-                      onPressed: () => _pickWithConsent(controller, ImageSource.gallery),
+                      onPressed: () =>
+                          _pickWithConsent(controller, ImageSource.gallery),
                     ),
                   ),
                 ],
@@ -372,7 +375,9 @@ class _NutritionLabelOcrScreenState
               const SizedBox(height: B05Layout.space12),
               TextField(
                 controller: _customGramsController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 decoration: InputDecoration(
                   labelText: 'Custom Grams Portion (Optional)',
                   hintText: 'e.g. 75',
@@ -399,7 +404,10 @@ class _NutritionLabelOcrScreenState
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Nutrition Facts (Review)', style: B05Typography.title(context)),
+              Text(
+                'Nutrition Facts (Review)',
+                style: B05Typography.title(context),
+              ),
               const SizedBox(height: B05Layout.space12),
               _buildNutrientRow(
                 context,
@@ -510,8 +518,8 @@ class _NutritionLabelOcrScreenState
           label: state.isLogged
               ? 'Logged to Diary'
               : (state.status == NutritionLabelOcrStatus.saving
-                  ? 'Logging...'
-                  : 'Log to Diary'),
+                    ? 'Logging...'
+                    : 'Log to Diary'),
           icon: Icons.check_circle_outline_rounded,
           onPressed: state.isLogged || state.isBusy
               ? null
@@ -524,7 +532,9 @@ class _NutritionLabelOcrScreenState
                   );
                   if (ok && mounted) {
                     messenger.showSnackBar(
-                      const SnackBar(content: Text('Item added to meal diary!')),
+                      const SnackBar(
+                        content: Text('Item added to meal diary!'),
+                      ),
                     );
                     router.pop(true);
                   }
@@ -535,8 +545,8 @@ class _NutritionLabelOcrScreenState
           label: state.isSaved
               ? 'Saved in My Foods'
               : (state.status == NutritionLabelOcrStatus.saving
-                  ? 'Saving...'
-                  : 'Save as Custom Food'),
+                    ? 'Saving...'
+                    : 'Save as Custom Food'),
           icon: Icons.bookmark_border_rounded,
           emphasis: B05ActionEmphasis.secondary,
           onPressed: state.isSaved || state.isBusy
@@ -546,7 +556,11 @@ class _NutritionLabelOcrScreenState
                   final opt = await controller.saveAsCustomFood();
                   if (opt != null && mounted) {
                     messenger.showSnackBar(
-                      SnackBar(content: Text('Saved "${opt.displayName}" to custom foods!')),
+                      SnackBar(
+                        content: Text(
+                          'Saved "${opt.displayName}" to custom foods!',
+                        ),
+                      ),
                     );
                   }
                 },
@@ -609,7 +623,10 @@ class _NutritionLabelOcrScreenState
                 Text(label, style: B05Typography.body(context)),
                 const SizedBox(height: 2),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: badgeColor.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(4),
@@ -632,10 +649,15 @@ class _NutritionLabelOcrScreenState
               height: 40,
               child: TextField(
                 controller: textCtrl,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 textAlign: TextAlign.right,
                 decoration: InputDecoration(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   suffixText: unit,
                   border: const OutlineInputBorder(),
                 ),

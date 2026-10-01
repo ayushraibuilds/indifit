@@ -89,9 +89,9 @@ class _EquipmentProfilesScreenState
         final msg = e is StateError
             ? e.message
             : 'Default profile could not be updated. Try again.';
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(msg)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(msg)));
       }
     }
   }
@@ -131,9 +131,9 @@ class _EquipmentProfilesScreenState
         final msg = e is ArgumentError
             ? e.message.toString()
             : 'Profile could not be created. Try again.';
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(msg)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(msg)));
       }
     }
   }
@@ -164,18 +164,18 @@ class _EquipmentProfilesScreenState
       await repo.archiveProfile(profileId);
       await _loadProfiles();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profile archived.')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Profile archived.')));
       }
     } catch (e) {
       if (mounted) {
         final msg = e is StateError
             ? e.message
             : 'Equipment profile could not be archived. Try again.';
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(msg)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(msg)));
       }
     }
   }
@@ -185,9 +185,7 @@ class _EquipmentProfilesScreenState
     final colors = context.b05Colors;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Equipment Profiles'),
-      ),
+      appBar: AppBar(title: const Text('Equipment Profiles')),
       floatingActionButton: _profiles.isNotEmpty
           ? FloatingActionButton.extended(
               onPressed: () async {
@@ -305,10 +303,7 @@ class _EquipmentProfilesScreenState
             ),
           ),
           const SizedBox(height: B05Layout.space24),
-          Text(
-            'Quick Starter Presets',
-            style: B05Typography.label(context),
-          ),
+          Text('Quick Starter Presets', style: B05Typography.label(context)),
           const SizedBox(height: B05Layout.space8),
           Text(
             'Choose a preset to create your first equipment profile in one tap:',
@@ -481,10 +476,7 @@ class _EquipmentProfilesScreenState
             ),
             if (profile.note != null && profile.note!.isNotEmpty) ...[
               const SizedBox(height: B05Layout.space4),
-              Text(
-                profile.note!,
-                style: B05Typography.body(context),
-              ),
+              Text(profile.note!, style: B05Typography.body(context)),
             ],
             const SizedBox(height: B05Layout.space8),
             Text(

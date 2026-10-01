@@ -50,7 +50,9 @@ final cloudBackupCapabilityProvider = Provider<CloudBackupCapability>((ref) {
 });
 
 /// Future provider exposing current Cloud Backup status.
-final cloudBackupStatusProvider = FutureProvider<ConnectedStatusState>((ref) async {
+final cloudBackupStatusProvider = FutureProvider<ConnectedStatusState>((
+  ref,
+) async {
   final capability = ref.watch(cloudBackupCapabilityProvider);
   return capability.getStatus();
 });
@@ -66,8 +68,9 @@ final foodCatalogCapabilityProvider = Provider<FoodCatalogCapability>((ref) {
 });
 
 /// Content and media download capability provider.
-final contentDownloadCapabilityProvider =
-    Provider<ContentDownloadCapability>((ref) {
+final contentDownloadCapabilityProvider = Provider<ContentDownloadCapability>((
+  ref,
+) {
   return const DisabledContentDownloadCapability();
 });
 

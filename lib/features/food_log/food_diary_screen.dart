@@ -94,14 +94,14 @@ class _FoodDiaryScreenState extends ConsumerState<FoodDiaryScreen> {
     for (final record in records) {
       final normType = foodDiaryMealType(record.mealCategory);
       final slotPresentation = MealPresentationRegistry.forStableId(normType);
-      if (slotPresentation.isKnown && seenSlotIds.add(slotPresentation.stableId)) {
+      if (slotPresentation.isKnown &&
+          seenSlotIds.add(slotPresentation.stableId)) {
         visibleSlots.add(slotPresentation);
       }
     }
 
     final meals = [
-      for (final p in visibleSlots)
-        (type: p.stableId, label: p.label),
+      for (final p in visibleSlots) (type: p.stableId, label: p.label),
     ];
 
     return Scaffold(
@@ -169,9 +169,17 @@ class _FoodDiaryScreenState extends ConsumerState<FoodDiaryScreen> {
                 label: 'Loading meals',
               ),
             () {
-              final yesterday = _civilDay(_selectedDay.subtract(const Duration(days: 1)));
-              final yesterdayRecords = ref.watch(canonicalFoodRecordsForDayProvider(yesterday)).valueOrNull ?? const [];
-              final recentFoods = ref.watch(canonicalRecentFoodsProvider).valueOrNull ?? const [];
+              final yesterday = _civilDay(
+                _selectedDay.subtract(const Duration(days: 1)),
+              );
+              final yesterdayRecords =
+                  ref
+                      .watch(canonicalFoodRecordsForDayProvider(yesterday))
+                      .valueOrNull ??
+                  const [];
+              final recentFoods =
+                  ref.watch(canonicalRecentFoodsProvider).valueOrNull ??
+                  const [];
 
               return Column(
                 children: [
@@ -182,19 +190,24 @@ class _FoodDiaryScreenState extends ConsumerState<FoodDiaryScreen> {
                         final mealRecords = records
                             .where(
                               (record) =>
-                                  foodDiaryMealType(record.mealCategory) == mealType,
+                                  foodDiaryMealType(record.mealCategory) ==
+                                  mealType,
                             )
                             .toList(growable: false);
                         final yesterdayMealRecords = yesterdayRecords
                             .where(
                               (record) =>
-                                  foodDiaryMealType(record.mealCategory) == mealType,
+                                  foodDiaryMealType(record.mealCategory) ==
+                                  mealType,
                             )
                             .toList(growable: false);
                         final eatAgain = recentFoods
                             .where(
                               (item) =>
-                                  foodDiaryMealType(item.lastLoggedMealCategory ?? '') == mealType,
+                                  foodDiaryMealType(
+                                    item.lastLoggedMealCategory ?? '',
+                                  ) ==
+                                  mealType,
                             )
                             .take(3)
                             .toList(growable: false);
@@ -203,14 +216,22 @@ class _FoodDiaryScreenState extends ConsumerState<FoodDiaryScreen> {
                           type: mealType,
                           label: meals[index].label,
                           records: mealRecords,
-                          isLoading: daily == null && (diary.isLoading || canonical.isLoading),
+                          isLoading:
+                              daily == null &&
+                              (diary.isLoading || canonical.isLoading),
                           onOpen: () => _openMealDetail(context, mealType),
                           onAdd: () => _openMealAdd(context, mealType),
-                          onCopyYesterday: (mealRecords.isEmpty && yesterdayMealRecords.isNotEmpty)
-                              ? () => _copyYesterdayMeal(mealType, yesterdayMealRecords)
+                          onCopyYesterday:
+                              (mealRecords.isEmpty &&
+                                  yesterdayMealRecords.isNotEmpty)
+                              ? () => _copyYesterdayMeal(
+                                  mealType,
+                                  yesterdayMealRecords,
+                                )
                               : null,
                           eatAgainItems: eatAgain.isNotEmpty ? eatAgain : null,
-                          onFastAdd: (recent) => _fastAddRecent(mealType, recent),
+                          onFastAdd: (recent) =>
+                              _fastAddRecent(mealType, recent),
                         );
                       },
                     ),
@@ -283,12 +304,11 @@ class _FoodDiaryScreenState extends ConsumerState<FoodDiaryScreen> {
     if (mounted) _refreshDiaryReads();
   }
 
-  Future<String?> _chooseMeal(
-    BuildContext context,
-  ) {
+  Future<String?> _chooseMeal(BuildContext context) {
     final activeSlots = ref.read(diaryMealSlotsProvider);
-    final items =
-        activeSlots.isNotEmpty ? activeSlots : MealPresentationRegistry.values;
+    final items = activeSlots.isNotEmpty
+        ? activeSlots
+        : MealPresentationRegistry.values;
     return showModalBottomSheet<String>(
       context: context,
       builder: (sheetContext) => SafeArea(
@@ -345,10 +365,8 @@ class _FoodDiaryScreenState extends ConsumerState<FoodDiaryScreen> {
     if (meal == null || !context.mounted) return;
     await Navigator.of(context).push<dynamic>(
       MaterialPageRoute(
-        builder: (_) => ThaliBuilderScreen(
-          mealCategory: meal,
-          selectedDate: _selectedDay,
-        ),
+        builder: (_) =>
+            ThaliBuilderScreen(mealCategory: meal, selectedDate: _selectedDay),
       ),
     );
     if (mounted) _refreshDiaryReads();
@@ -395,7 +413,8 @@ class _FoodDiaryScreenState extends ConsumerState<FoodDiaryScreen> {
   ) async {
     try {
       final option = recent.option;
-      final quantity = recent.historicalQuantity ??
+      final quantity =
+          recent.historicalQuantity ??
           Quantity.fromDecimal(amount: '1', unit: QuantityUnit.piece);
       final coordinator = await ref.read(
         nutritionFoodLoggingCoordinatorProvider.future,
@@ -405,10 +424,12 @@ class _FoodDiaryScreenState extends ConsumerState<FoodDiaryScreen> {
         quantity: quantity,
       );
       final dates = LocalScheduleDateService();
-      final timezoneId =
-          await ref.read(localTimezoneServiceProvider).currentTimezoneId();
+      final timezoneId = await ref
+          .read(localTimezoneServiceProvider)
+          .currentTimezoneId();
       final localDate = dates.localDateFor(_selectedDay, timezoneId);
-      final isToday = localDate == dates.localDateFor(DateTime.now(), timezoneId);
+      final isToday =
+          localDate == dates.localDateFor(DateTime.now(), timezoneId);
       final loggedAtUtc = isToday
           ? DateTime.now().toUtc()
           : dates.instantForLocalDate(localDate, timezoneId);
@@ -453,10 +474,12 @@ class _FoodDiaryScreenState extends ConsumerState<FoodDiaryScreen> {
         nutritionFoodCatalogRepositoryProvider.future,
       );
       final dates = LocalScheduleDateService();
-      final timezoneId =
-          await ref.read(localTimezoneServiceProvider).currentTimezoneId();
+      final timezoneId = await ref
+          .read(localTimezoneServiceProvider)
+          .currentTimezoneId();
       final localDate = dates.localDateFor(_selectedDay, timezoneId);
-      final isToday = localDate == dates.localDateFor(DateTime.now(), timezoneId);
+      final isToday =
+          localDate == dates.localDateFor(DateTime.now(), timezoneId);
       final loggedAtUtc = isToday
           ? DateTime.now().toUtc()
           : dates.instantForLocalDate(localDate, timezoneId);
@@ -467,7 +490,8 @@ class _FoodDiaryScreenState extends ConsumerState<FoodDiaryScreen> {
           if (item.foodId != null && item.originSourceType == 'direct_food') {
             final option = await catalog.getOption(item.foodId!);
             if (option != null) {
-              final qty = item.quantity.quantity ??
+              final qty =
+                  item.quantity.quantity ??
                   Quantity.fromDecimal(amount: '100', unit: QuantityUnit.gram);
               final preview = await coordinator.preview(
                 option: option,
@@ -522,4 +546,3 @@ class _FoodDiaryScreenState extends ConsumerState<FoodDiaryScreen> {
       first.month == second.month &&
       first.day == second.day;
 }
-

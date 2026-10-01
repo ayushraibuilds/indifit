@@ -14,36 +14,43 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('PV1 Stage 3: HydrationFluidFillIndicator Widget', () {
-    testWidgets('renders across ratio states: 0%, 25%, 50%, 100%, and >100% overflow', (tester) async {
-      final ratios = [0.0, 0.25, 0.50, 1.0, 1.25];
+    testWidgets(
+      'renders across ratio states: 0%, 25%, 50%, 100%, and >100% overflow',
+      (tester) async {
+        final ratios = [0.0, 0.25, 0.50, 1.0, 1.25];
 
-      for (final ratio in ratios) {
-        final isGoalMet = ratio >= 1.0;
-        await tester.pumpWidget(
-          MaterialApp(
-            theme: AppTheme.lightTheme,
-            home: Scaffold(
-              body: HydrationFluidFillIndicator(
-                progress: ratio,
-                isGoalMet: isGoalMet,
-                height: 32,
+        for (final ratio in ratios) {
+          final isGoalMet = ratio >= 1.0;
+          await tester.pumpWidget(
+            MaterialApp(
+              theme: AppTheme.lightTheme,
+              home: Scaffold(
+                body: HydrationFluidFillIndicator(
+                  progress: ratio,
+                  isGoalMet: isGoalMet,
+                  height: 32,
+                ),
               ),
             ),
-          ),
-        );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 650)); // let level rise settle
+          );
+          await tester.pump();
+          await tester.pump(
+            const Duration(milliseconds: 650),
+          ); // let level rise settle
 
-        expect(find.byType(HydrationFluidFillIndicator), findsOneWidget);
-        final indicator = tester.widget<HydrationFluidFillIndicator>(
-          find.byType(HydrationFluidFillIndicator),
-        );
-        expect(indicator.progress, equals(ratio));
-        expect(indicator.isGoalMet, equals(isGoalMet));
-      }
-    });
+          expect(find.byType(HydrationFluidFillIndicator), findsOneWidget);
+          final indicator = tester.widget<HydrationFluidFillIndicator>(
+            find.byType(HydrationFluidFillIndicator),
+          );
+          expect(indicator.progress, equals(ratio));
+          expect(indicator.isGoalMet, equals(isGoalMet));
+        }
+      },
+    );
 
-    testWidgets('smooth level rise animates without throwing exceptions', (tester) async {
+    testWidgets('smooth level rise animates without throwing exceptions', (
+      tester,
+    ) async {
       double currentProgress = 0.2;
       late StateSetter updateState;
 
@@ -72,13 +79,17 @@ void main() {
         currentProgress = 0.5;
       });
       await tester.pump(); // Start transition
-      await tester.pump(const Duration(milliseconds: 300)); // Halfway through transition
+      await tester.pump(
+        const Duration(milliseconds: 300),
+      ); // Halfway through transition
       await tester.pump(const Duration(milliseconds: 400)); // Settled
 
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('goal met transition dynamically changes to success tokens', (tester) async {
+    testWidgets('goal met transition dynamically changes to success tokens', (
+      tester,
+    ) async {
       bool isGoalMet = false;
       double currentProgress = 0.8;
       late StateSetter updateState;
@@ -119,60 +130,20 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('canvas is wrapped in ExcludeSemantics with single live card semantics', (tester) async {
-      const readModel = HydrationDailyReadModel(
-        localDate: '2026-09-08',
-        totalMl: 1500,
-        goalMl: 2500,
-      );
+    testWidgets(
+      'canvas is wrapped in ExcludeSemantics with single live card semantics',
+      (tester) async {
+        const readModel = HydrationDailyReadModel(
+          localDate: '2026-09-08',
+          totalMl: 1500,
+          goalMl: 2500,
+        );
 
-      await tester.pumpWidget(
-        ProviderScope(
-          child: MaterialApp(
-            theme: AppTheme.lightTheme,
-            home: Scaffold(
-              body: TodayHydrationCard(
-                hydrationRead: const TodayDomainRead.available(readModel),
-                selectedDate: DateTime(2026, 9, 8),
-              ),
-            ),
-          ),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 650));
-
-      // Card must have its top-level Semantics
-      final semanticsFinder = find.byWidgetPredicate(
-        (widget) =>
-            widget is Semantics &&
-            widget.properties.label != null &&
-            widget.properties.label!.startsWith('Hydration,'),
-      );
-      expect(semanticsFinder, findsOneWidget);
-
-      // Verify that ExcludeSemantics wraps the CustomPaint inside HydrationFluidFillIndicator
-      final excludeFinder = find.descendant(
-        of: find.byType(HydrationFluidFillIndicator),
-        matching: find.byType(ExcludeSemantics),
-      );
-      expect(excludeFinder, findsOneWidget);
-    });
-
-    testWidgets('B05MotionContent renders LinearProgressIndicator fallback under disableAnimations', (tester) async {
-      const readModel = HydrationDailyReadModel(
-        localDate: '2026-09-08',
-        totalMl: 1500,
-        goalMl: 2500,
-      );
-
-      await tester.pumpWidget(
-        ProviderScope(
-          child: MaterialApp(
-            theme: AppTheme.lightTheme,
-            home: MediaQuery(
-              data: const MediaQueryData(disableAnimations: true),
-              child: Scaffold(
+        await tester.pumpWidget(
+          ProviderScope(
+            child: MaterialApp(
+              theme: AppTheme.lightTheme,
+              home: Scaffold(
                 body: TodayHydrationCard(
                   hydrationRead: const TodayDomainRead.available(readModel),
                   selectedDate: DateTime(2026, 9, 8),
@@ -180,17 +151,63 @@ void main() {
               ),
             ),
           ),
-        ),
-      );
-      await tester.pump();
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 650));
 
-      // Under disableAnimations, B05MotionContent switches to the reduced motion fallback
-      expect(find.byType(LinearProgressIndicator), findsOneWidget);
-      final lpi = tester.widget<LinearProgressIndicator>(
-        find.byType(LinearProgressIndicator),
-      );
-      expect(lpi.value, closeTo(0.6, 0.01));
-    });
+        // Card must have its top-level Semantics
+        final semanticsFinder = find.byWidgetPredicate(
+          (widget) =>
+              widget is Semantics &&
+              widget.properties.label != null &&
+              widget.properties.label!.startsWith('Hydration,'),
+        );
+        expect(semanticsFinder, findsOneWidget);
+
+        // Verify that ExcludeSemantics wraps the CustomPaint inside HydrationFluidFillIndicator
+        final excludeFinder = find.descendant(
+          of: find.byType(HydrationFluidFillIndicator),
+          matching: find.byType(ExcludeSemantics),
+        );
+        expect(excludeFinder, findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'B05MotionContent renders LinearProgressIndicator fallback under disableAnimations',
+      (tester) async {
+        const readModel = HydrationDailyReadModel(
+          localDate: '2026-09-08',
+          totalMl: 1500,
+          goalMl: 2500,
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            child: MaterialApp(
+              theme: AppTheme.lightTheme,
+              home: MediaQuery(
+                data: const MediaQueryData(disableAnimations: true),
+                child: Scaffold(
+                  body: TodayHydrationCard(
+                    hydrationRead: const TodayDomainRead.available(readModel),
+                    selectedDate: DateTime(2026, 9, 8),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        // Under disableAnimations, B05MotionContent switches to the reduced motion fallback
+        expect(find.byType(LinearProgressIndicator), findsOneWidget);
+        final lpi = tester.widget<LinearProgressIndicator>(
+          find.byType(LinearProgressIndicator),
+        );
+        expect(lpi.value, closeTo(0.6, 0.01));
+      },
+    );
 
     testWidgets('RepaintBoundary isolates fluid wave repaints', (tester) async {
       await tester.pumpWidget(
@@ -214,31 +231,36 @@ void main() {
       expect(repaintBoundaryFinder, findsOneWidget);
     });
 
-    testWidgets('lifecycle pausing on paused/hidden stops animation controller', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: AppTheme.lightTheme,
-          home: const Scaffold(
-            body: HydrationFluidFillIndicator(
-              progress: 0.5,
-              isGoalMet: false,
-              height: 32,
+    testWidgets(
+      'lifecycle pausing on paused/hidden stops animation controller',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: AppTheme.lightTheme,
+            home: const Scaffold(
+              body: HydrationFluidFillIndicator(
+                progress: 0.5,
+                isGoalMet: false,
+                height: 32,
+              ),
             ),
           ),
-        ),
-      );
-      await tester.pump();
+        );
+        await tester.pump();
 
-      // Simulate app going to background
-      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
-      await tester.pump();
+        // Simulate app going to background
+        tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+        await tester.pump();
 
-      // Simulate app resuming
-      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
-      await tester.pump();
+        // Simulate app resuming
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.resumed,
+        );
+        await tester.pump();
 
-      expect(tester.takeException(), isNull);
-    });
+        expect(tester.takeException(), isNull);
+      },
+    );
   });
 
   group('HydrationWavePainter Unit Tests', () {

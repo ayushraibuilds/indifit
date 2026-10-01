@@ -1382,7 +1382,6 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
     await _addSessionTemplate(0, 0);
   }
 
-
   Future<bool> _saveDraft() async {
     if (_programNameController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(

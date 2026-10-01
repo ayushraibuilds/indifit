@@ -65,10 +65,7 @@ class CloudBackupEnvelopeManager {
     );
 
     final cipher = GCMBlockCipher(AESEngine())
-      ..init(
-        true,
-        AEADParameters(KeyParameter(dek), _tagLengthBits, iv, aad),
-      );
+      ..init(true, AEADParameters(KeyParameter(dek), _tagLengthBits, iv, aad));
     final encryptedData = cipher.process(plaintextBytes);
 
     // Ciphertext payload = IV (12 bytes) + EncryptedData (includes 16-byte tag)
@@ -102,7 +99,9 @@ class CloudBackupEnvelopeManager {
     // 1. Verify SHA-256 checksum integrity
     final actualChecksum = sha256.convert(envelope.ciphertextBytes).toString();
     if (actualChecksum != envelope.sha256Checksum) {
-      throw const FormatException('Cloud backup checksum verification failed. Payload is corrupted.');
+      throw const FormatException(
+        'Cloud backup checksum verification failed. Payload is corrupted.',
+      );
     }
 
     // 2. Unwrap the DEK using KMS wrapping secret
@@ -114,14 +113,18 @@ class CloudBackupEnvelopeManager {
 
     // 3. Extract IV and ciphertext
     if (envelope.ciphertextBytes.length < _ivLengthBytes) {
-      throw const FormatException('Ciphertext is too short to contain a valid IV.');
+      throw const FormatException(
+        'Ciphertext is too short to contain a valid IV.',
+      );
     }
     final iv = envelope.ciphertextBytes.sublist(0, _ivLengthBytes);
     final encryptedData = envelope.ciphertextBytes.sublist(_ivLengthBytes);
 
     // 4. Decrypt payload with AES-256-GCM
     final aad = Uint8List.fromList(
-      utf8.encode('INDIFIT_CLOUD_V1:${envelope.snapshotId}:${envelope.backupFormatVersion}'),
+      utf8.encode(
+        'INDIFIT_CLOUD_V1:${envelope.snapshotId}:${envelope.backupFormatVersion}',
+      ),
     );
 
     try {
@@ -133,7 +136,9 @@ class CloudBackupEnvelopeManager {
       final decryptedBytes = cipher.process(encryptedData);
       return utf8.decode(decryptedBytes, allowMalformed: false);
     } catch (e) {
-      throw FormatException('Cloud backup decryption failed: Authentication tag mismatch or corrupt payload ($e)');
+      throw FormatException(
+        'Cloud backup decryption failed: Authentication tag mismatch or corrupt payload ($e)',
+      );
     }
   }
 
@@ -172,10 +177,7 @@ class CloudBackupEnvelopeManager {
     final aad = Uint8List.fromList(utf8.encode('INDIFIT_SYNC_V1:$mutationId'));
 
     final cipher = GCMBlockCipher(AESEngine())
-      ..init(
-        true,
-        AEADParameters(KeyParameter(dek), _tagLengthBits, iv, aad),
-      );
+      ..init(true, AEADParameters(KeyParameter(dek), _tagLengthBits, iv, aad));
     final encryptedData = cipher.process(plaintextBytes);
 
     // Ciphertext payload = IV (12 bytes) + EncryptedData (includes 16-byte tag).
@@ -214,7 +216,9 @@ class CloudBackupEnvelopeManager {
     // 1. Verify SHA-256 checksum integrity.
     final actualChecksum = sha256.convert(envelope.ciphertextBytes).toString();
     if (actualChecksum != envelope.sha256Checksum) {
-      throw const FormatException('Sync mutation checksum verification failed. Payload is corrupted.');
+      throw const FormatException(
+        'Sync mutation checksum verification failed. Payload is corrupted.',
+      );
     }
 
     // 2. Unwrap the DEK (bound to snapshotId == mutationId at encrypt time).
@@ -226,7 +230,9 @@ class CloudBackupEnvelopeManager {
 
     // 3. Extract IV and ciphertext.
     if (envelope.ciphertextBytes.length < _ivLengthBytes) {
-      throw const FormatException('Sync mutation ciphertext is too short to contain a valid IV.');
+      throw const FormatException(
+        'Sync mutation ciphertext is too short to contain a valid IV.',
+      );
     }
     final iv = envelope.ciphertextBytes.sublist(0, _ivLengthBytes);
     final encryptedData = envelope.ciphertextBytes.sublist(_ivLengthBytes);
@@ -245,7 +251,9 @@ class CloudBackupEnvelopeManager {
       final decryptedBytes = cipher.process(encryptedData);
       return utf8.decode(decryptedBytes, allowMalformed: false);
     } catch (e) {
-      throw FormatException('Sync mutation decryption failed: Authentication tag mismatch or corrupt payload ($e)');
+      throw FormatException(
+        'Sync mutation decryption failed: Authentication tag mismatch or corrupt payload ($e)',
+      );
     }
   }
 
@@ -266,7 +274,11 @@ class CloudBackupEnvelopeManager {
     return Uint8List.fromList([...iv, ...wrapped]);
   }
 
-  Uint8List _unwrapDek(Uint8List wrappedPayload, String wrappingSecret, String snapshotId) {
+  Uint8List _unwrapDek(
+    Uint8List wrappedPayload,
+    String wrappingSecret,
+    String snapshotId,
+  ) {
     if (wrappedPayload.length < _ivLengthBytes) {
       throw const FormatException('Wrapped key payload is too short.');
     }
@@ -283,7 +295,9 @@ class CloudBackupEnvelopeManager {
         );
       return cipher.process(ciphertext);
     } catch (e) {
-      throw FormatException('Failed to unwrap data encryption key: Invalid KMS secret or corrupted key ($e)');
+      throw FormatException(
+        'Failed to unwrap data encryption key: Invalid KMS secret or corrupted key ($e)',
+      );
     }
   }
 

@@ -40,8 +40,7 @@ class TodayDomainRead<T> {
   const TodayDomainRead.unavailable(String errorMessage)
     : this._(errorMessage: errorMessage, available: false);
 
-  const TodayDomainRead.loading()
-    : this._(available: false, loading: true);
+  const TodayDomainRead.loading() : this._(available: false, loading: true);
 
   bool get isAvailable => _available;
   bool get isLoading => _loading;

@@ -65,7 +65,9 @@ void main() {
           sharedPreferencesProvider.overrideWithValue(prefs),
           databaseProvider.overrideWithValue(database),
           foodRepositoryProvider.overrideWithValue(FoodRepository(database)),
-          workoutRepositoryProvider.overrideWithValue(WorkoutRepository(database)),
+          workoutRepositoryProvider.overrideWithValue(
+            WorkoutRepository(database),
+          ),
           userProfileProvider.overrideWith((ref) => _TestMockProfileNotifier()),
           onboardingCompletedProvider.overrideWith((ref) => true),
         ],
@@ -80,87 +82,107 @@ void main() {
     // -------------------------------------------------------------
     // Journey 1: Quick-Add & Diary Speed
     // -------------------------------------------------------------
-    testWidgets('Journey 1: Quick-Add modal, Atwater balance, and Diary rendering', (tester) async {
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp(
-            theme: AppTheme.lightTheme,
-            home: Scaffold(
-              body: Builder(
-                builder: (context) => ElevatedButton(
-                  key: const ValueKey('open_quick_add'),
-                  onPressed: () => QuickAddMacrosSheet.show(
-                    context,
-                    initialMealType: 'lunch',
-                    targetDate: DateTime.now(),
+    testWidgets(
+      'Journey 1: Quick-Add modal, Atwater balance, and Diary rendering',
+      (tester) async {
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp(
+              theme: AppTheme.lightTheme,
+              home: Scaffold(
+                body: Builder(
+                  builder: (context) => ElevatedButton(
+                    key: const ValueKey('open_quick_add'),
+                    onPressed: () => QuickAddMacrosSheet.show(
+                      context,
+                      initialMealType: 'lunch',
+                      targetDate: DateTime.now(),
+                    ),
+                    child: const Text('Open Quick Add'),
                   ),
-                  child: const Text('Open Quick Add'),
                 ),
               ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      // Checkpoint 1.1: Open QuickAddMacrosSheet
-      await tester.tap(find.byKey(const ValueKey('open_quick_add')));
-      await tester.pumpAndSettle();
+        // Checkpoint 1.1: Open QuickAddMacrosSheet
+        await tester.tap(find.byKey(const ValueKey('open_quick_add')));
+        await tester.pumpAndSettle();
 
-      expect(find.text('Quick-Add Macros'), findsOneWidget);
-      final caloriesField = find.widgetWithText(TextField, 'Calories * (Required)');
-      expect(caloriesField, findsOneWidget);
+        expect(find.text('Quick-Add Macros'), findsOneWidget);
+        final caloriesField = find.widgetWithText(
+          TextField,
+          'Calories * (Required)',
+        );
+        expect(caloriesField, findsOneWidget);
 
-      final proteinField = find.widgetWithText(TextField, 'Protein');
-      final carbsField = find.widgetWithText(TextField, 'Carbs');
-      final fatField = find.widgetWithText(TextField, 'Fat');
-      final fiberField = find.widgetWithText(TextField, 'Fiber');
+        final proteinField = find.widgetWithText(TextField, 'Protein');
+        final carbsField = find.widgetWithText(TextField, 'Carbs');
+        final fatField = find.widgetWithText(TextField, 'Fat');
+        final fiberField = find.widgetWithText(TextField, 'Fiber');
 
-      // Checkpoint 1.2: Verify missing macro placeholder strictly '—' and validation
-      expect(find.text('Optional Macros (leave blank for —)'), findsOneWidget);
+        // Checkpoint 1.2: Verify missing macro placeholder strictly '—' and validation
+        expect(
+          find.text('Optional Macros (leave blank for —)'),
+          findsOneWidget,
+        );
 
-      // Verify required calories validation
-      final submitBtn = find.widgetWithText(ElevatedButton, 'Log Snapshot (<10s)');
-      expect(submitBtn, findsOneWidget);
-      await tester.tap(submitBtn);
-      await tester.pumpAndSettle();
-      expect(find.text('Calories are required (greater than 0).'), findsOneWidget);
+        // Verify required calories validation
+        final submitBtn = find.widgetWithText(
+          ElevatedButton,
+          'Log Snapshot (<10s)',
+        );
+        expect(submitBtn, findsOneWidget);
+        await tester.tap(submitBtn);
+        await tester.pumpAndSettle();
+        expect(
+          find.text('Calories are required (greater than 0).'),
+          findsOneWidget,
+        );
 
-      // Enter valid snapshot: 500 kcal, 30g P, 50g C, 20g F, 5g Fiber
-      await tester.enterText(caloriesField, '500');
-      await tester.enterText(proteinField, '30');
-      await tester.enterText(carbsField, '50');
-      await tester.enterText(fatField, '20');
-      await tester.enterText(fiberField, '5');
-      await tester.pump();
+        // Enter valid snapshot: 500 kcal, 30g P, 50g C, 20g F, 5g Fiber
+        await tester.enterText(caloriesField, '500');
+        await tester.enterText(proteinField, '30');
+        await tester.enterText(carbsField, '50');
+        await tester.enterText(fatField, '20');
+        await tester.enterText(fiberField, '5');
+        await tester.pump();
 
-      // Tap Log Snapshot button
-      await tester.tap(submitBtn);
-      await tester.pumpAndSettle();
+        // Tap Log Snapshot button
+        await tester.tap(submitBtn);
+        await tester.pumpAndSettle();
 
-      // Checkpoint 1.3: Render FoodDiaryScreen without overflow
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp(
-            theme: AppTheme.lightTheme,
-            home: FoodDiaryScreen(selectedDate: DateTime.now()),
+        // Checkpoint 1.3: Render FoodDiaryScreen without overflow
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp(
+              theme: AppTheme.lightTheme,
+              home: FoodDiaryScreen(selectedDate: DateTime.now()),
+            ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.text('Daily nutrition'), findsOneWidget);
-      expect(find.byKey(const ValueKey('diary_targets_link')), findsOneWidget);
-      expect(find.text('Targets'), findsOneWidget);
-      expect(find.text('Fiber'), findsOneWidget);
-    });
+        expect(find.text('Daily nutrition'), findsOneWidget);
+        expect(
+          find.byKey(const ValueKey('diary_targets_link')),
+          findsOneWidget,
+        );
+        expect(find.text('Targets'), findsOneWidget);
+        expect(find.text('Fiber'), findsOneWidget);
+      },
+    );
 
     // -------------------------------------------------------------
     // Journey 2: Search, Staple Chips, and Catalog
     // -------------------------------------------------------------
-    testWidgets('Journey 2: Food Search staple chips & search interaction', (tester) async {
+    testWidgets('Journey 2: Food Search staple chips & search interaction', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
@@ -187,7 +209,9 @@ void main() {
     // -------------------------------------------------------------
     // Journey 3: Multimodal AI & DPDP Consent Gate
     // -------------------------------------------------------------
-    testWidgets('Journey 3: Natural language screen enforces DPDP consent', (tester) async {
+    testWidgets('Journey 3: Natural language screen enforces DPDP consent', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
@@ -219,7 +243,9 @@ void main() {
     // -------------------------------------------------------------
     // Journey 4: Rate Limit Quota & Privacy Interceptor
     // -------------------------------------------------------------
-    testWidgets('Journey 4: Photo Meal Screen 429 Quota UX and Navigation', (tester) async {
+    testWidgets('Journey 4: Photo Meal Screen 429 Quota UX and Navigation', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
@@ -240,22 +266,30 @@ void main() {
     // -------------------------------------------------------------
     // Journey 5: Timezone Resilience & Onboarding
     // -------------------------------------------------------------
-    testWidgets('Journey 5: LocalTimezoneService handles legacy/OEM fallback', (tester) async {
+    testWidgets('Journey 5: LocalTimezoneService handles legacy/OEM fallback', (
+      tester,
+    ) async {
       // Checkpoint 5.3: Verify platform timezone fallback
-      final tzService1 = LocalTimezoneService(read: () async => 'Asia/Calcutta');
+      final tzService1 = LocalTimezoneService(
+        read: () async => 'Asia/Calcutta',
+      );
       expect(await tzService1.currentTimezoneId(), 'Asia/Kolkata');
 
       final tzService2 = LocalTimezoneService(read: () async => '');
       expect(await tzService2.currentTimezoneId(), 'Asia/Kolkata');
 
-      final tzService3 = LocalTimezoneService(read: () async => 'INVALID_ROM_TZ');
+      final tzService3 = LocalTimezoneService(
+        read: () async => 'INVALID_ROM_TZ',
+      );
       expect(await tzService3.currentTimezoneId(), 'Asia/Kolkata');
     });
 
     // -------------------------------------------------------------
     // Journey 6: Offline Starter Plans
     // -------------------------------------------------------------
-    testWidgets('Journey 6: Offline starter plan catalog loads instantly', (tester) async {
+    testWidgets('Journey 6: Offline starter plan catalog loads instantly', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
@@ -276,7 +310,9 @@ void main() {
     // -------------------------------------------------------------
     // Journey 7: Dashboard Appearance Theme Switching
     // -------------------------------------------------------------
-    testWidgets('Journey 7: AppearanceBottomSheet switches theme modes', (tester) async {
+    testWidgets('Journey 7: AppearanceBottomSheet switches theme modes', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
@@ -308,34 +344,35 @@ void main() {
     // -------------------------------------------------------------
     // Journey 8: Hydration Detail Logging
     // -------------------------------------------------------------
-    testWidgets('Journey 8: HydrationDetailSheet opens and renders log controls', (tester) async {
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp(
-            theme: AppTheme.lightTheme,
-            home: Scaffold(
-              body: Builder(
-                builder: (context) => ElevatedButton(
-                  key: const ValueKey('open_hydration'),
-                  onPressed: () => HydrationDetailSheet.show(
-                    context,
-                    DateTime.now(),
+    testWidgets(
+      'Journey 8: HydrationDetailSheet opens and renders log controls',
+      (tester) async {
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp(
+              theme: AppTheme.lightTheme,
+              home: Scaffold(
+                body: Builder(
+                  builder: (context) => ElevatedButton(
+                    key: const ValueKey('open_hydration'),
+                    onPressed: () =>
+                        HydrationDetailSheet.show(context, DateTime.now()),
+                    child: const Text('Open Hydration Sheet'),
                   ),
-                  child: const Text('Open Hydration Sheet'),
                 ),
               ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const ValueKey('open_hydration')));
-      await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('open_hydration')));
+        await tester.pumpAndSettle();
 
-      expect(find.byType(HydrationDetailSheet), findsOneWidget);
-      expect(find.text('Log Water'), findsWidgets);
-    });
+        expect(find.byType(HydrationDetailSheet), findsOneWidget);
+        expect(find.text('Log Water'), findsWidgets);
+      },
+    );
   });
 }

@@ -121,124 +121,135 @@ void main() {
   });
 
   group('NutritionLabelOcrService ephemeral image cleanup invariant', () {
-    test('enforces ephemeral cleanup in finally block even on network error', () async {
-      final tempDir = await Directory.systemTemp.createTemp('indifit_ocr_test');
-      final testFile = File('${tempDir.path}/test_label.jpg');
-      await testFile.writeAsBytes([1, 2, 3, 4]);
+    test(
+      'enforces ephemeral cleanup in finally block even on network error',
+      () async {
+        final tempDir = await Directory.systemTemp.createTemp(
+          'indifit_ocr_test',
+        );
+        final testFile = File('${tempDir.path}/test_label.jpg');
+        await testFile.writeAsBytes([1, 2, 3, 4]);
 
-      expect(await testFile.exists(), isTrue);
+        expect(await testFile.exists(), isTrue);
 
-      String? deletedPath;
+        String? deletedPath;
 
-      final privacyService = NutritionEstimatePrivacyService(
-        delete: (path) async {
-          deletedPath = path;
-          final f = File(path);
-          if (await f.exists()) await f.delete();
-        },
-      );
-
-      // Create Dio that throws a network error
-      final dio = Dio();
-      dio.interceptors.add(
-        InterceptorsWrapper(
-          onRequest: (options, handler) {
-            handler.reject(
-              DioException(
-                requestOptions: options,
-                error: 'Network failure',
-                type: DioExceptionType.connectionError,
-              ),
-            );
+        final privacyService = NutritionEstimatePrivacyService(
+          delete: (path) async {
+            deletedPath = path;
+            final f = File(path);
+            if (await f.exists()) await f.delete();
           },
-        ),
-      );
+        );
 
-      final service = NutritionLabelOcrService(
-        dio: dio,
-        privacyService: privacyService,
-        policy: () => const PrivacyPolicy(
-          isOfflineOnly: false,
-          isTelemetryEnabled: false,
-          connectedAiEnabled: true,
-        ),
-      );
+        // Create Dio that throws a network error
+        final dio = Dio();
+        dio.interceptors.add(
+          InterceptorsWrapper(
+            onRequest: (options, handler) {
+              handler.reject(
+                DioException(
+                  requestOptions: options,
+                  error: 'Network failure',
+                  type: DioExceptionType.connectionError,
+                ),
+              );
+            },
+          ),
+        );
 
-      await expectLater(
-        () => service.processLabelImage(imagePath: testFile.path),
-        throwsA(isA<DioException>()),
-      );
+        final service = NutritionLabelOcrService(
+          dio: dio,
+          privacyService: privacyService,
+          policy: () => const PrivacyPolicy(
+            isOfflineOnly: false,
+            isTelemetryEnabled: false,
+            connectedAiEnabled: true,
+          ),
+        );
 
-      // Verify privacy service was invoked and file is deleted
-      expect(deletedPath, testFile.path);
-      expect(await testFile.exists(), isFalse);
+        await expectLater(
+          () => service.processLabelImage(imagePath: testFile.path),
+          throwsA(isA<DioException>()),
+        );
 
-      await tempDir.delete(recursive: true);
-    });
+        // Verify privacy service was invoked and file is deleted
+        expect(deletedPath, testFile.path);
+        expect(await testFile.exists(), isFalse);
+
+        await tempDir.delete(recursive: true);
+      },
+    );
   });
 
   group('NaturalLanguageMealService model & decomposition', () {
-    test('DecomposedFoodItem calculates proportional macros when quantity changes', () {
-      const item = DecomposedFoodItem(
-        rawSegment: '2 rotis',
-        foodName: 'Whole Wheat Roti',
-        quantityAmount: 2.0,
-        quantityUnit: 'roti',
-        estimatedCalories: 160,
-        estimatedProtein: 5.0,
-        estimatedCarbs: 30.0,
-        estimatedFat: 1.6,
-        confidence: 'high',
-      );
+    test(
+      'DecomposedFoodItem calculates proportional macros when quantity changes',
+      () {
+        const item = DecomposedFoodItem(
+          rawSegment: '2 rotis',
+          foodName: 'Whole Wheat Roti',
+          quantityAmount: 2.0,
+          quantityUnit: 'roti',
+          estimatedCalories: 160,
+          estimatedProtein: 5.0,
+          estimatedCarbs: 30.0,
+          estimatedFat: 1.6,
+          confidence: 'high',
+        );
 
-      expect(item.estimatedCalories, 160);
-      expect(item.estimatedProtein, 5.0);
+        expect(item.estimatedCalories, 160);
+        expect(item.estimatedProtein, 5.0);
 
-      // Test copyWith
-      final scaled = item.copyWith(
-        quantityAmount: 3.0,
-        estimatedCalories: 240,
-        estimatedProtein: 7.5,
-      );
+        // Test copyWith
+        final scaled = item.copyWith(
+          quantityAmount: 3.0,
+          estimatedCalories: 240,
+          estimatedProtein: 7.5,
+        );
 
-      expect(scaled.quantityAmount, 3.0);
-      expect(scaled.estimatedCalories, 240);
-      expect(scaled.estimatedProtein, 7.5);
-    });
+        expect(scaled.quantityAmount, 3.0);
+        expect(scaled.estimatedCalories, 240);
+        expect(scaled.estimatedProtein, 7.5);
+      },
+    );
 
-    test('MealDecompositionResult calculates aggregate macros across all items', () {
-      const result = MealDecompositionResult(
-        query: '2 rotis and 1 bowl dal tadka',
-        items: [
-          DecomposedFoodItem(
-            rawSegment: '2 rotis',
-            foodName: 'Whole Wheat Roti',
-            quantityAmount: 2.0,
-            quantityUnit: 'roti',
-            estimatedCalories: 160,
-            estimatedProtein: 5.0,
-            estimatedCarbs: 30.0,
-            estimatedFat: 1.6,
-          ),
-          DecomposedFoodItem(
-            rawSegment: '1 bowl dal tadka',
-            foodName: 'Yellow Dal Tadka',
-            quantityAmount: 1.0,
-            quantityUnit: 'bowl',
-            estimatedCalories: 150,
-            estimatedProtein: 7.5,
-            estimatedCarbs: 21.0,
-            estimatedFat: 4.2,
-          ),
-        ],
-        totalCalories: 310,
-      );
+    test(
+      'MealDecompositionResult calculates aggregate macros across all items',
+      () {
+        const result = MealDecompositionResult(
+          query: '2 rotis and 1 bowl dal tadka',
+          items: [
+            DecomposedFoodItem(
+              rawSegment: '2 rotis',
+              foodName: 'Whole Wheat Roti',
+              quantityAmount: 2.0,
+              quantityUnit: 'roti',
+              estimatedCalories: 160,
+              estimatedProtein: 5.0,
+              estimatedCarbs: 30.0,
+              estimatedFat: 1.6,
+            ),
+            DecomposedFoodItem(
+              rawSegment: '1 bowl dal tadka',
+              foodName: 'Yellow Dal Tadka',
+              quantityAmount: 1.0,
+              quantityUnit: 'bowl',
+              estimatedCalories: 150,
+              estimatedProtein: 7.5,
+              estimatedCarbs: 21.0,
+              estimatedFat: 4.2,
+            ),
+          ],
+          totalCalories: 310,
+        );
 
-      expect(result.totalCalories, 310);
-      expect(result.totalProtein, closeTo(12.5, 0.01));
-      expect(result.totalCarbs, closeTo(51.0, 0.01));
-      expect(result.totalFat, closeTo(5.8, 0.01));
-    });
+        expect(result.totalCalories, 310);
+        expect(result.totalProtein, closeTo(12.5, 0.01));
+        expect(result.totalCarbs, closeTo(51.0, 0.01));
+        expect(result.totalFat, closeTo(5.8, 0.01));
+      },
+    );
   });
 
   group('NutritionLabelOcrController integration', () {
@@ -286,61 +297,64 @@ void main() {
   });
 
   group('NaturalLanguageMealController atomic batch finalization', () {
-    test('logs multiple decomposed items under one shared mealGroupId', () async {
-      final mealService = NaturalLanguageMealService(
-        dio: Dio(),
-        catalog: catalog,
-        policy: () => const PrivacyPolicy(
-          isOfflineOnly: false,
-          isTelemetryEnabled: false,
-          connectedAiEnabled: true,
-        ),
-      );
+    test(
+      'logs multiple decomposed items under one shared mealGroupId',
+      () async {
+        final mealService = NaturalLanguageMealService(
+          dio: Dio(),
+          catalog: catalog,
+          policy: () => const PrivacyPolicy(
+            isOfflineOnly: false,
+            isTelemetryEnabled: false,
+            connectedAiEnabled: true,
+          ),
+        );
 
-      final controller = NaturalLanguageMealController(
-        mealService: () async => mealService,
-        catalogRepository: () async => catalog,
-        loggingCoordinator: () async => coordinator,
-        userId: 'test-user',
-        timezoneId: () async => 'Asia/Kolkata',
-      );
+        final controller = NaturalLanguageMealController(
+          mealService: () async => mealService,
+          catalogRepository: () async => catalog,
+          loggingCoordinator: () async => coordinator,
+          userId: 'test-user',
+          timezoneId: () async => 'Asia/Kolkata',
+        );
 
-      // Set items
-      final item1 = const DecomposedFoodItem(
-        rawSegment: '2 rotis',
-        foodName: 'Roti',
-        quantityAmount: 2.0,
-        quantityUnit: 'roti',
-        estimatedCalories: 160,
-        estimatedProtein: 5.0,
-        estimatedCarbs: 30.0,
-        estimatedFat: 1.6,
-      );
-      final item2 = const DecomposedFoodItem(
-        rawSegment: '1 bowl dal',
-        foodName: 'Dal',
-        quantityAmount: 1.0,
-        quantityUnit: 'bowl',
-        estimatedCalories: 150,
-        estimatedProtein: 7.5,
-        estimatedCarbs: 21.0,
-        estimatedFat: 4.2,
-      );
+        // Set items
+        final item1 = const DecomposedFoodItem(
+          rawSegment: '2 rotis',
+          foodName: 'Roti',
+          quantityAmount: 2.0,
+          quantityUnit: 'roti',
+          estimatedCalories: 160,
+          estimatedProtein: 5.0,
+          estimatedCarbs: 30.0,
+          estimatedFat: 1.6,
+        );
+        final item2 = const DecomposedFoodItem(
+          rawSegment: '1 bowl dal',
+          foodName: 'Dal',
+          quantityAmount: 1.0,
+          quantityUnit: 'bowl',
+          estimatedCalories: 150,
+          estimatedProtein: 7.5,
+          estimatedCarbs: 21.0,
+          estimatedFat: 4.2,
+        );
 
-      controller.state = controller.state.copyWith(
-        status: NaturalLanguageMealStatus.ready,
-        editableItems: [item1, item2],
-      );
+        controller.state = controller.state.copyWith(
+          status: NaturalLanguageMealStatus.ready,
+          editableItems: [item1, item2],
+        );
 
-      expect(controller.state.totalCalories, 310);
+        expect(controller.state.totalCalories, 310);
 
-      final logged = await controller.logAllToDiary(
-        mealType: 'lunch',
-        date: DateTime.utc(2026, 9, 13),
-      );
+        final logged = await controller.logAllToDiary(
+          mealType: 'lunch',
+          date: DateTime.utc(2026, 9, 13),
+        );
 
-      expect(logged, isTrue);
-      expect(controller.state.isLogged, isTrue);
-    });
+        expect(logged, isTrue);
+        expect(controller.state.isLogged, isTrue);
+      },
+    );
   });
 }

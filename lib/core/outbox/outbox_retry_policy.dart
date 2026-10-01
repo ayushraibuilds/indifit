@@ -38,10 +38,13 @@ class OutboxRetryPolicy {
   Duration computeDelay(int attemptCount, {math.Random? random}) {
     if (attemptCount <= 0) return Duration.zero;
 
-    final baseMillis = initialDelay.inMilliseconds *
+    final baseMillis =
+        initialDelay.inMilliseconds *
         math.pow(backoffMultiplier, attemptCount - 1).toDouble();
-    final clampedMillis =
-        math.min(baseMillis, maxDelay.inMilliseconds.toDouble());
+    final clampedMillis = math.min(
+      baseMillis,
+      maxDelay.inMilliseconds.toDouble(),
+    );
 
     // Add jitter
     final rng = random ?? math.Random();
@@ -53,7 +56,11 @@ class OutboxRetryPolicy {
   }
 
   /// Calculates next UTC execution timestamp for attempt [attemptCount].
-  DateTime calculateNextSchedule(int attemptCount, {DateTime? fromUtc, math.Random? random}) {
+  DateTime calculateNextSchedule(
+    int attemptCount, {
+    DateTime? fromUtc,
+    math.Random? random,
+  }) {
     final base = fromUtc ?? DateTime.now().toUtc();
     return base.add(computeDelay(attemptCount, random: random));
   }

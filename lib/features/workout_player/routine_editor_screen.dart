@@ -396,7 +396,9 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen>
                           ),
                           subtitle: Text(
                             '${ex.muscleGroups} • ${ex.equipment}',
-                            style: B05Typography.caption(ctx).copyWith(fontSize: 11),
+                            style: B05Typography.caption(
+                              ctx,
+                            ).copyWith(fontSize: 11),
                           ),
                           trailing: Icon(
                             Icons.add_circle_outline,
@@ -536,7 +538,9 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen>
                     Expanded(
                       child: Text(
                         name,
-                        style: B05Typography.title(context).copyWith(fontSize: 16),
+                        style: B05Typography.title(
+                          context,
+                        ).copyWith(fontSize: 16),
                       ),
                     ),
                     Container(
@@ -591,9 +595,7 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen>
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: isRest
-                            ? colors.inset
-                            : colors.section,
+                        color: isRest ? colors.inset : colors.section,
                         borderRadius: BorderRadius.circular(6),
                         border: Border.all(color: colors.border),
                       ),
@@ -669,10 +671,9 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen>
                 children: [
                   Text(
                     'SPLIT DAYS',
-                    style: B05Typography.caption(context).copyWith(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 11,
-                    ),
+                    style: B05Typography.caption(
+                      context,
+                    ).copyWith(fontWeight: FontWeight.bold, fontSize: 11),
                   ),
                   TextButton.icon(
                     onPressed: () {
@@ -867,7 +868,10 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen>
                   : const Icon(Icons.save_rounded, size: 18),
               label: Text(
                 _savingManual ? 'Saving Split...' : 'Save Split Routine',
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
               ),
             ),
           ),

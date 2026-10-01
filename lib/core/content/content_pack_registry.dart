@@ -3,10 +3,7 @@ import 'content_pack_validator.dart';
 
 /// Activation states for downloadable content. `bundled` means the app runs
 /// on its compiled-in canonical assets; anything else names an active pack.
-enum ContentPackActivation {
-  bundled,
-  active,
-}
+enum ContentPackActivation { bundled, active }
 
 /// In-memory activation registry: which verified pack (if any) is live.
 ///
@@ -31,8 +28,9 @@ class ContentPackRegistry {
 
   ContentPackEnvelope? get active => _active;
   ContentPackEnvelope? get staged => _staged;
-  ContentPackActivation get activation =>
-      _active == null ? ContentPackActivation.bundled : ContentPackActivation.active;
+  ContentPackActivation get activation => _active == null
+      ? ContentPackActivation.bundled
+      : ContentPackActivation.active;
 
   /// Stages a verified envelope for review/inspection without activating it.
   void stage({

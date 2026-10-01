@@ -98,17 +98,17 @@ class UserProfileNotifier extends StateNotifier<UserProfileState> {
     this._db,
     LocalTimezoneService? timezones,
     SharedPreferences? prefs,
-  ])  : _timezones = timezones ?? LocalTimezoneService(),
-        _prefs = prefs,
-        super(
-          const UserProfileState(
-            calorieGoal: 2000,
-            proteinGoal: 120.0,
-            carbsGoal: 230.0,
-            fatGoal: 65.0,
-            currentWeight: 74.5,
-          ),
-        ) {
+  ]) : _timezones = timezones ?? LocalTimezoneService(),
+       _prefs = prefs,
+       super(
+         const UserProfileState(
+           calorieGoal: 2000,
+           proteinGoal: 120.0,
+           carbsGoal: 230.0,
+           fatGoal: 65.0,
+           currentWeight: 74.5,
+         ),
+       ) {
     loadProfile();
   }
 
@@ -152,7 +152,8 @@ class UserProfileNotifier extends StateNotifier<UserProfileState> {
     String activity =
         prefs.getString(AppPreferenceKeys.userActivityLevel) ?? 'moderate';
     String goal = prefs.getString(AppPreferenceKeys.userGoal) ?? 'maintain';
-    String diet = prefs.getString(AppPreferenceKeys.userDietPreference) ?? 'veg';
+    String diet =
+        prefs.getString(AppPreferenceKeys.userDietPreference) ?? 'veg';
     String equipment =
         prefs.getString(AppPreferenceKeys.userEquipment) ?? 'full_gym';
     String injuries = prefs.getString(AppPreferenceKeys.userInjuries) ?? '';
@@ -669,7 +670,10 @@ class UserProfileNotifier extends StateNotifier<UserProfileState> {
       await prefs.setString(AppPreferenceKeys.userEquipment, equipmentAccess);
     }
     if (injuriesLimitations != null) {
-      await prefs.setString(AppPreferenceKeys.userInjuries, injuriesLimitations);
+      await prefs.setString(
+        AppPreferenceKeys.userInjuries,
+        injuriesLimitations,
+      );
     }
 
     if (!mounted) return;

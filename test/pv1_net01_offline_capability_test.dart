@@ -49,95 +49,117 @@ void main() {
       },
     );
 
-    test('All default capability drivers provide safe offline fallbacks', () async {
-      const account = NoOpAccountCapability();
-      expect(await account.isAuthenticated, isFalse);
-      expect(await account.currentUserId, isNull);
-      expect(await account.deviceId, isNotEmpty);
+    test(
+      'All default capability drivers provide safe offline fallbacks',
+      () async {
+        const account = NoOpAccountCapability();
+        expect(await account.isAuthenticated, isFalse);
+        expect(await account.currentUserId, isNull);
+        expect(await account.deviceId, isNotEmpty);
 
-      const network = OfflineNetworkCapability();
-      expect(network.isConnected, isFalse);
-      expect(network.canExecuteOperation(), isFalse);
+        const network = OfflineNetworkCapability();
+        expect(network.isConnected, isFalse);
+        expect(network.canExecuteOperation(), isFalse);
 
-      const backup = DisabledCloudBackupCapability();
-      final backupStatus = await backup.getStatus();
-      expect(backupStatus.status, ConnectedStatus.neverConfigured);
-      expect(backupStatus.canPerformLocalActions, isTrue);
+        const backup = DisabledCloudBackupCapability();
+        final backupStatus = await backup.getStatus();
+        expect(backupStatus.status, ConnectedStatus.neverConfigured);
+        expect(backupStatus.canPerformLocalActions, isTrue);
 
-      const sync = DisabledSyncCapability();
-      final syncStatus = await sync.getStatus();
-      expect(syncStatus.status, ConnectedStatus.neverConfigured);
+        const sync = DisabledSyncCapability();
+        final syncStatus = await sync.getStatus();
+        expect(syncStatus.status, ConnectedStatus.neverConfigured);
 
-      const catalogue = DisabledFoodCatalogCapability();
-      final page = await catalogue.searchRemoteFoods('apple');
-      expect(page.items, isEmpty);
-      expect(await catalogue.lookupByBarcode('123456789'), isNull);
+        const catalogue = DisabledFoodCatalogCapability();
+        final page = await catalogue.searchRemoteFoods('apple');
+        expect(page.items, isEmpty);
+        expect(await catalogue.lookupByBarcode('123456789'), isNull);
 
-      const download = DisabledContentDownloadCapability();
-      expect(download.isConfigured, isFalse);
-      expect(
-        await download.downloadAsset(
-          assetId: '1',
-          sourceUrl: 'https://example.com/asset.png',
-          localDestinationPath: '/tmp/test.png',
-        ),
-        isFalse,
-      );
-
-      const ai = DisabledAiAssistanceCapability();
-      expect(ai.isEnabled, isFalse);
-      final aiResult = await ai.parseMealDescription('2 eggs and toast');
-      expect(aiResult.success, isFalse);
-
-      const integration = DisabledIntegrationCapability();
-      expect(
-        await integration.isAuthorized(IntegrationPlatform.appleHealth),
-        isFalse,
-      );
-
-      const diagnostics = NoOpDiagnosticsCapability();
-      expect(diagnostics.isEnabled, isFalse);
-
-      const entitlement = FullLocalEntitlementCapability();
-      expect(entitlement.isFeatureAccessible('any_feature'), isTrue);
-    });
-
-    test('Status tokens provide user-friendly copy without implementation jargon', () {
-      final forbiddenTerms = ['drift', 'sqlite', 'uuid', 'exception', 'error_code', 'table'];
-
-      for (final status in ConnectedStatus.values) {
-        final state = ConnectedStatusState(
-          status: status,
-          pendingOperationsCount: 3,
+        const download = DisabledContentDownloadCapability();
+        expect(download.isConfigured, isFalse);
+        expect(
+          await download.downloadAsset(
+            assetId: '1',
+            sourceUrl: 'https://example.com/asset.png',
+            localDestinationPath: '/tmp/test.png',
+          ),
+          isFalse,
         );
 
-        // Crucial invariant: local actions are ALWAYS permitted
-        expect(state.canPerformLocalActions, isTrue);
+        const ai = DisabledAiAssistanceCapability();
+        expect(ai.isEnabled, isFalse);
+        final aiResult = await ai.parseMealDescription('2 eggs and toast');
+        expect(aiResult.success, isFalse);
 
-        final message = state.displayMessage.toLowerCase();
-        for (final forbidden in forbiddenTerms) {
-          expect(
-            message.contains(forbidden),
-            isFalse,
-            reason: 'Display copy "$message" contains internal term "$forbidden"',
+        const integration = DisabledIntegrationCapability();
+        expect(
+          await integration.isAuthorized(IntegrationPlatform.appleHealth),
+          isFalse,
+        );
+
+        const diagnostics = NoOpDiagnosticsCapability();
+        expect(diagnostics.isEnabled, isFalse);
+
+        const entitlement = FullLocalEntitlementCapability();
+        expect(entitlement.isFeatureAccessible('any_feature'), isTrue);
+      },
+    );
+
+    test(
+      'Status tokens provide user-friendly copy without implementation jargon',
+      () {
+        final forbiddenTerms = [
+          'drift',
+          'sqlite',
+          'uuid',
+          'exception',
+          'error_code',
+          'table',
+        ];
+
+        for (final status in ConnectedStatus.values) {
+          final state = ConnectedStatusState(
+            status: status,
+            pendingOperationsCount: 3,
           );
+
+          // Crucial invariant: local actions are ALWAYS permitted
+          expect(state.canPerformLocalActions, isTrue);
+
+          final message = state.displayMessage.toLowerCase();
+          for (final forbidden in forbiddenTerms) {
+            expect(
+              message.contains(forbidden),
+              isFalse,
+              reason:
+                  'Display copy "$message" contains internal term "$forbidden"',
+            );
+          }
         }
-      }
-    });
+      },
+    );
 
-    test('ConnectedStatusState correctly describes singular vs plural pending updates', () {
-      const singular = ConnectedStatusState.pending(count: 1);
-      expect(singular.displayMessage, '1 update waiting to sync');
+    test(
+      'ConnectedStatusState correctly describes singular vs plural pending updates',
+      () {
+        const singular = ConnectedStatusState.pending(count: 1);
+        expect(singular.displayMessage, '1 update waiting to sync');
 
-      const plural = ConnectedStatusState.pending(count: 5);
-      expect(plural.displayMessage, '5 updates waiting to sync');
+        const plural = ConnectedStatusState.pending(count: 5);
+        expect(plural.displayMessage, '5 updates waiting to sync');
 
-      const offlineWithPending = ConnectedStatusState.offline(pendingCount: 4);
-      expect(offlineWithPending.displayMessage, 'Offline — updates will sync when connected');
+        const offlineWithPending = ConnectedStatusState.offline(
+          pendingCount: 4,
+        );
+        expect(
+          offlineWithPending.displayMessage,
+          'Offline — updates will sync when connected',
+        );
 
-      const offlineClean = ConnectedStatusState.offline(pendingCount: 0);
-      expect(offlineClean.displayMessage, 'Offline');
-    });
+        const offlineClean = ConnectedStatusState.offline(pendingCount: 0);
+        expect(offlineClean.displayMessage, 'Offline');
+      },
+    );
   });
 
   group('PV1-NET-01: Durable Outbox State Machine & Retry Policy', () {
@@ -227,19 +249,40 @@ void main() {
       expect(pending.first.operationId, 'op-101');
     });
 
-    test('Outbox retry policy differentiates transient from permanent errors', () {
-      const policy = OutboxRetryPolicy();
+    test(
+      'Outbox retry policy differentiates transient from permanent errors',
+      () {
+        const policy = OutboxRetryPolicy();
 
-      // Transient errors
-      expect(policy.isRetryable(const SocketException('Host not found')), isTrue);
-      expect(policy.isRetryable(const HttpException('503 Service Unavailable')), isTrue);
-      expect(policy.isRetryable('TimeoutException after 0:00:10.000000'), isTrue);
+        // Transient errors
+        expect(
+          policy.isRetryable(const SocketException('Host not found')),
+          isTrue,
+        );
+        expect(
+          policy.isRetryable(const HttpException('503 Service Unavailable')),
+          isTrue,
+        );
+        expect(
+          policy.isRetryable('TimeoutException after 0:00:10.000000'),
+          isTrue,
+        );
 
-      // Permanent errors
-      expect(policy.isRetryable(const FormatException('Unexpected token')), isFalse);
-      expect(policy.isRetryable('400 Bad Request: Malformed JSON payload'), isFalse);
-      expect(policy.isRetryable('401 Unauthorized: Session revoked'), isFalse);
-    });
+        // Permanent errors
+        expect(
+          policy.isRetryable(const FormatException('Unexpected token')),
+          isFalse,
+        );
+        expect(
+          policy.isRetryable('400 Bad Request: Malformed JSON payload'),
+          isFalse,
+        );
+        expect(
+          policy.isRetryable('401 Unauthorized: Session revoked'),
+          isFalse,
+        );
+      },
+    );
 
     test('Exhausted attempts transition to permanent failure', () async {
       final repo = InMemoryOutboxRepository(
@@ -263,13 +306,21 @@ void main() {
 
       // Attempt 1
       await repo.markInFlight('op-max-retry');
-      await repo.markFailed('op-max-retry', error: 'Timeout', isRetryable: true);
+      await repo.markFailed(
+        'op-max-retry',
+        error: 'Timeout',
+        isRetryable: true,
+      );
       var current = await repo.getOperationById('op-max-retry');
       expect(current!.state, OutboxState.transientFailure);
 
       // Attempt 2 (reaches maxAttempts: 2)
       await repo.markInFlight('op-max-retry');
-      await repo.markFailed('op-max-retry', error: 'Timeout again', isRetryable: true);
+      await repo.markFailed(
+        'op-max-retry',
+        error: 'Timeout again',
+        isRetryable: true,
+      );
       current = await repo.getOperationById('op-max-retry');
       expect(current!.state, OutboxState.permanentFailure);
       expect(current.isTerminal, isTrue);
@@ -280,16 +331,18 @@ void main() {
       addTearDown(repo.dispose);
 
       final now = DateTime.now().toUtc();
-      await repo.enqueue(OutboxOperation(
-        operationId: 'op-err-clear',
-        idempotencyKey: 'k-err-clear',
-        domain: OutboxDomain.food,
-        action: 'log',
-        entityId: 'e1',
-        payload: const {},
-        createdAtUtc: now,
-        scheduledAtUtc: now,
-      ));
+      await repo.enqueue(
+        OutboxOperation(
+          operationId: 'op-err-clear',
+          idempotencyKey: 'k-err-clear',
+          domain: OutboxDomain.food,
+          action: 'log',
+          entityId: 'e1',
+          payload: const {},
+          createdAtUtc: now,
+          scheduledAtUtc: now,
+        ),
+      );
       await repo.markInFlight('op-err-clear');
       await repo.markFailed('op-err-clear', error: 'boom', isRetryable: true);
       var op = await repo.getOperationById('op-err-clear');
@@ -301,35 +354,38 @@ void main() {
       expect(op.lastError, isNull);
     });
 
-    test('Terminal entries do not block re-enqueue; operationId never overwritten', () async {
-      final repo = InMemoryOutboxRepository();
-      addTearDown(repo.dispose);
+    test(
+      'Terminal entries do not block re-enqueue; operationId never overwritten',
+      () async {
+        final repo = InMemoryOutboxRepository();
+        addTearDown(repo.dispose);
 
-      final now = DateTime.now().toUtc();
-      OutboxOperation build(String opId, String key) => OutboxOperation(
-            operationId: opId,
-            idempotencyKey: key,
-            domain: OutboxDomain.food,
-            action: 'log',
-            entityId: 'e1',
-            payload: const {},
-            createdAtUtc: now,
-            scheduledAtUtc: now,
-          );
+        final now = DateTime.now().toUtc();
+        OutboxOperation build(String opId, String key) => OutboxOperation(
+          operationId: opId,
+          idempotencyKey: key,
+          domain: OutboxDomain.food,
+          action: 'log',
+          entityId: 'e1',
+          payload: const {},
+          createdAtUtc: now,
+          scheduledAtUtc: now,
+        );
 
-      await repo.enqueue(build('op-a', 'same-key'));
-      await repo.markSucceeded('op-a');
+        await repo.enqueue(build('op-a', 'same-key'));
+        await repo.markSucceeded('op-a');
 
-      // Same logical key after terminal success is accepted again.
-      await repo.enqueue(build('op-b', 'same-key'));
-      expect(await repo.getOperationById('op-b'), isNotNull);
+        // Same logical key after terminal success is accepted again.
+        await repo.enqueue(build('op-b', 'same-key'));
+        expect(await repo.getOperationById('op-b'), isNotNull);
 
-      // Same operationId with different content never overwrites the row.
-      await repo.enqueue(build('op-a', 'different-key'));
-      final original = await repo.getOperationById('op-a');
-      expect(original!.idempotencyKey, 'same-key');
-      expect(original.state, OutboxState.succeeded);
-    });
+        // Same operationId with different content never overwrites the row.
+        await repo.enqueue(build('op-a', 'different-key'));
+        final original = await repo.getOperationById('op-a');
+        expect(original!.idempotencyKey, 'same-key');
+        expect(original.state, OutboxState.succeeded);
+      },
+    );
 
     test('cancel drops pending work; prune uses completion time', () async {
       final repo = InMemoryOutboxRepository();
@@ -338,21 +394,23 @@ void main() {
       final now = DateTime.now().toUtc();
       final eightDaysAgo = now.subtract(const Duration(days: 8));
       OutboxOperation build(String opId, DateTime created) => OutboxOperation(
-            operationId: opId,
-            idempotencyKey: 'k-$opId',
-            domain: OutboxDomain.plan,
-            action: 'sync',
-            entityId: opId,
-            payload: const {},
-            createdAtUtc: created,
-            scheduledAtUtc: created,
-          );
+        operationId: opId,
+        idempotencyKey: 'k-$opId',
+        domain: OutboxDomain.plan,
+        action: 'sync',
+        entityId: opId,
+        payload: const {},
+        createdAtUtc: created,
+        scheduledAtUtc: created,
+      );
 
       // Cancelled op leaves the pending set.
       await repo.enqueue(build('op-cancel', now));
       await repo.cancel('op-cancel');
       expect(
-        (await repo.getPendingOperations()).any((o) => o.operationId == 'op-cancel'),
+        (await repo.getPendingOperations()).any(
+          (o) => o.operationId == 'op-cancel',
+        ),
         isFalse,
       );
 
@@ -361,49 +419,58 @@ void main() {
       await repo.markSucceeded('op-recent-done');
 
       // Old creation AND old completion is pruned.
-      await repo.enqueue(OutboxOperation(
-        operationId: 'op-old-done',
-        idempotencyKey: 'k-op-old-done',
-        domain: OutboxDomain.plan,
-        action: 'sync',
-        entityId: 'op-old-done',
-        payload: const {},
-        createdAtUtc: eightDaysAgo,
-        scheduledAtUtc: eightDaysAgo,
-        state: OutboxState.succeeded,
-        lastAttemptUtc: eightDaysAgo,
-      ));
+      await repo.enqueue(
+        OutboxOperation(
+          operationId: 'op-old-done',
+          idempotencyKey: 'k-op-old-done',
+          domain: OutboxDomain.plan,
+          action: 'sync',
+          entityId: 'op-old-done',
+          payload: const {},
+          createdAtUtc: eightDaysAgo,
+          scheduledAtUtc: eightDaysAgo,
+          state: OutboxState.succeeded,
+          lastAttemptUtc: eightDaysAgo,
+        ),
+      );
 
-      final pruned = await repo.pruneCompleted(olderThan: const Duration(days: 7));
+      final pruned = await repo.pruneCompleted(
+        olderThan: const Duration(days: 7),
+      );
       expect(pruned, 1);
       expect(await repo.getOperationById('op-old-done'), isNull);
       expect(await repo.getOperationById('op-recent-done'), isNotNull);
     });
 
-    test('watchPendingCount replays the current count to new subscribers', () async {
-      final repo = InMemoryOutboxRepository();
-      addTearDown(repo.dispose);
+    test(
+      'watchPendingCount replays the current count to new subscribers',
+      () async {
+        final repo = InMemoryOutboxRepository();
+        addTearDown(repo.dispose);
 
-      final now = DateTime.now().toUtc();
-      for (var i = 0; i < 2; i++) {
-        await repo.enqueue(OutboxOperation(
-          operationId: 'op-w-$i',
-          idempotencyKey: 'k-w-$i',
-          domain: OutboxDomain.weight,
-          action: 'sync',
-          entityId: '$i',
-          payload: const {},
-          createdAtUtc: now,
-          scheduledAtUtc: now,
-        ));
-      }
+        final now = DateTime.now().toUtc();
+        for (var i = 0; i < 2; i++) {
+          await repo.enqueue(
+            OutboxOperation(
+              operationId: 'op-w-$i',
+              idempotencyKey: 'k-w-$i',
+              domain: OutboxDomain.weight,
+              action: 'sync',
+              entityId: '$i',
+              payload: const {},
+              createdAtUtc: now,
+              scheduledAtUtc: now,
+            ),
+          );
+        }
 
-      // New subscriber immediately sees the current count (no silent drop).
-      expect(await repo.watchPendingCount().first, 2);
+        // New subscriber immediately sees the current count (no silent drop).
+        expect(await repo.watchPendingCount().first, 2);
 
-      await repo.markSucceeded('op-w-0');
-      expect(await repo.watchPendingCount().first, 1);
-    });
+        await repo.markSucceeded('op-w-0');
+        expect(await repo.watchPendingCount().first, 1);
+      },
+    );
 
     test('Stale inFlight rows become redeliverable after the lease', () async {
       final repo = InMemoryOutboxRepository();
@@ -425,47 +492,52 @@ void main() {
           );
 
       // Simulates a crash between dispatch and acknowledgement: stuck 20 min.
-      await repo.enqueue(build(
-        'op-stuck',
-        OutboxState.inFlight,
-        now.subtract(const Duration(minutes: 20)),
-      ));
+      await repo.enqueue(
+        build(
+          'op-stuck',
+          OutboxState.inFlight,
+          now.subtract(const Duration(minutes: 20)),
+        ),
+      );
       // Fresh dispatch still inside its lease stays out of the pending set.
       await repo.enqueue(build('op-live', OutboxState.inFlight, now));
 
       final pending = await repo.getPendingOperations();
-      expect(
-        pending.map((o) => o.operationId),
-        contains('op-stuck'),
-      );
-      expect(
-        pending.map((o) => o.operationId),
-        isNot(contains('op-live')),
-      );
+      expect(pending.map((o) => o.operationId), contains('op-stuck'));
+      expect(pending.map((o) => o.operationId), isNot(contains('op-live')));
     });
 
     test('fromJson refuses to resurrect corrupt rows', () {
       Map<String, dynamic> base() => {
-            'operationId': 'op-x',
-            'idempotencyKey': 'k-x',
-            'domain': 'food',
-            'action': 'log',
-            'entityId': 'e',
-            'payload': <String, dynamic>{},
-            'createdAtUtc': '2026-09-03T00:00:00.000Z',
-            'scheduledAtUtc': '2026-09-03T00:00:00.000Z',
-            'state': 'pending',
-            'attemptCount': 0,
-          };
+        'operationId': 'op-x',
+        'idempotencyKey': 'k-x',
+        'domain': 'food',
+        'action': 'log',
+        'entityId': 'e',
+        'payload': <String, dynamic>{},
+        'createdAtUtc': '2026-09-03T00:00:00.000Z',
+        'scheduledAtUtc': '2026-09-03T00:00:00.000Z',
+        'state': 'pending',
+        'attemptCount': 0,
+      };
 
       final unknownDomain = base()..['domain'] = 'teleportation';
-      expect(() => OutboxOperation.fromJson(unknownDomain), throwsFormatException);
+      expect(
+        () => OutboxOperation.fromJson(unknownDomain),
+        throwsFormatException,
+      );
 
       final unknownState = base()..['state'] = 'vibing';
-      expect(() => OutboxOperation.fromJson(unknownState), throwsFormatException);
+      expect(
+        () => OutboxOperation.fromJson(unknownState),
+        throwsFormatException,
+      );
 
       final missingField = base()..remove('entityId');
-      expect(() => OutboxOperation.fromJson(missingField), throwsFormatException);
+      expect(
+        () => OutboxOperation.fromJson(missingField),
+        throwsFormatException,
+      );
 
       // Round-trip of a valid row still works.
       expect(OutboxOperation.fromJson(base()).operationId, 'op-x');
@@ -498,21 +570,24 @@ void main() {
       expect(policy.isRetryable('500 Internal Server Error'), isFalse);
     });
 
-    test('TestableNetworkCapability gates wifi policy and offline fail-closed', () {
-      final network = TestableNetworkCapability(initialConnected: true);
-      expect(network.canExecuteOperation(), isTrue);
-      expect(network.canExecuteOperation(requireWifi: true), isTrue);
+    test(
+      'TestableNetworkCapability gates wifi policy and offline fail-closed',
+      () {
+        final network = TestableNetworkCapability(initialConnected: true);
+        expect(network.canExecuteOperation(), isTrue);
+        expect(network.canExecuteOperation(requireWifi: true), isTrue);
 
-      network.setConnected(true, NetworkTransportType.cellular);
-      expect(network.canExecuteOperation(), isTrue);
-      expect(network.canExecuteOperation(requireWifi: true), isFalse);
+        network.setConnected(true, NetworkTransportType.cellular);
+        expect(network.canExecuteOperation(), isTrue);
+        expect(network.canExecuteOperation(requireWifi: true), isFalse);
 
-      // Failing-adapter injection: offline blocks dispatch without gating reads.
-      network.setConnected(false);
-      expect(network.isConnected, isFalse);
-      expect(network.canExecuteOperation(), isFalse);
-      expect(network.canExecuteOperation(requireWifi: true), isFalse);
-    });
+        // Failing-adapter injection: offline blocks dispatch without gating reads.
+        network.setConnected(false);
+        expect(network.isConnected, isFalse);
+        expect(network.canExecuteOperation(), isFalse);
+        expect(network.canExecuteOperation(requireWifi: true), isFalse);
+      },
+    );
 
     test('NoOpAccountCapability honors an injected device id', () async {
       const account = NoOpAccountCapability(defaultDeviceId: 'device-xyz');
@@ -520,19 +595,22 @@ void main() {
       expect(await account.isAuthenticated, isFalse);
     });
 
-    test('ConnectedStatusState copyWith clears optional fields; pending(0) is singular', () {
-      const state = ConnectedStatusState(
-        status: ConnectedStatus.pending,
-        pendingOperationsCount: 2,
-        customMessage: 'stale',
-        lastSuccessUtc: null,
-      );
-      final cleared = state.copyWith(clearCustomMessage: true);
-      expect(cleared.customMessage, isNull);
-      expect(cleared.pendingOperationsCount, 2);
+    test(
+      'ConnectedStatusState copyWith clears optional fields; pending(0) is singular',
+      () {
+        const state = ConnectedStatusState(
+          status: ConnectedStatus.pending,
+          pendingOperationsCount: 2,
+          customMessage: 'stale',
+          lastSuccessUtc: null,
+        );
+        final cleared = state.copyWith(clearCustomMessage: true);
+        expect(cleared.customMessage, isNull);
+        expect(cleared.pendingOperationsCount, 2);
 
-      const zero = ConnectedStatusState.pending(count: 0);
-      expect(zero.displayMessage, '1 update waiting to sync');
-    });
+        const zero = ConnectedStatusState.pending(count: 0);
+        expect(zero.displayMessage, '1 update waiting to sync');
+      },
+    );
   });
 }

@@ -53,15 +53,18 @@ void main() {
       }
     });
 
-    test('iOS usage descriptions expose barcode and nutrition label purposes', () {
-      final plist = File('ios/Runner/Info.plist').readAsStringSync();
+    test(
+      'iOS usage descriptions expose barcode and nutrition label purposes',
+      () {
+        final plist = File('ios/Runner/Info.plist').readAsStringSync();
 
-      expect(plist, contains('scan food barcodes and nutrition labels'));
-      expect(plist, contains('NSPhotoLibraryUsageDescription'));
-      expect(plist, contains('nutrition label to extract nutrition facts'));
-      expect(plist, isNot(contains('NSMicrophoneUsageDescription')));
-      expect(plist, isNot(contains('AI macro estimation')));
-    });
+        expect(plist, contains('scan food barcodes and nutrition labels'));
+        expect(plist, contains('NSPhotoLibraryUsageDescription'));
+        expect(plist, contains('nutrition label to extract nutrition facts'));
+        expect(plist, isNot(contains('NSMicrophoneUsageDescription')));
+        expect(plist, isNot(contains('AI macro estimation')));
+      },
+    );
 
     test('release-facing copy contains no retired or inflated claims', () {
       final readme = File('README.md').readAsStringSync();

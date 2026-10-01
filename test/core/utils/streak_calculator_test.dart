@@ -10,11 +10,7 @@ void main() {
     });
 
     test('calculates consecutive streak when reference date is active', () {
-      final activeDays = {
-        '2026-09-14',
-        '2026-09-15',
-        '2026-09-16',
-      };
+      final activeDays = {'2026-09-14', '2026-09-15', '2026-09-16'};
       final streak = StreakCalculator.calculateStreak(
         activeDays,
         referenceLocalDate: '2026-09-16',
@@ -23,10 +19,7 @@ void main() {
     });
 
     test('steps back to yesterday if reference date is inactive', () {
-      final activeDays = {
-        '2026-09-14',
-        '2026-09-15',
-      };
+      final activeDays = {'2026-09-14', '2026-09-15'};
       // Reference date is 2026-09-16 (not yet logged today)
       final streak = StreakCalculator.calculateStreak(
         activeDays,
@@ -93,15 +86,9 @@ void main() {
 
     test('uses injected LocalScheduleDateService clock for today', () {
       final deterministicClock = DateTime.utc(2026, 5, 20, 10, 0);
-      final dates = LocalScheduleDateService(
-        nowUtc: () => deterministicClock,
-      );
+      final dates = LocalScheduleDateService(nowUtc: () => deterministicClock);
 
-      final activeDays = {
-        '2026-05-18',
-        '2026-05-19',
-        '2026-05-20',
-      };
+      final activeDays = {'2026-05-18', '2026-05-19', '2026-05-20'};
 
       final streak = StreakCalculator.calculateStreak(
         activeDays,

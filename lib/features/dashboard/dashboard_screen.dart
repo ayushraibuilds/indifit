@@ -396,8 +396,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     ref.listen<DashboardState>(dashboardControllerProvider, (previous, next) {
-      final previousIds =
-          previous?.newlyUnlockedAchievementIds ?? const [];
+      final previousIds = previous?.newlyUnlockedAchievementIds ?? const [];
       final nextIds = next.newlyUnlockedAchievementIds;
       if (nextIds.isEmpty || _sameAchievementIds(previousIds, nextIds)) {
         return;
@@ -412,7 +411,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         } catch (_) {}
         prefs ??= await SharedPreferences.getInstance();
         await AchievementService.markCelebrated(prefs, nextIds);
-        ref.read(dashboardControllerProvider.notifier).clearNewlyUnlockedAchievements();
+        ref
+            .read(dashboardControllerProvider.notifier)
+            .clearNewlyUnlockedAchievements();
         if (!context.mounted) return;
         dismissIndiFitFeedback(context);
         showIndiFitSuccessFeedback(

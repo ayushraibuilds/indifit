@@ -44,14 +44,14 @@ class CloudBackupService implements CloudBackupCapability {
     OutboxRepository? outbox,
     CloudBackupApiClient? apiClient,
     String? kmsSecret,
-  })  : _db = db,
-        _prefs = prefs,
-        _envelopeManager = envelopeManager ?? CloudBackupEnvelopeManager(),
-        _account = account ?? const NoOpAccountCapability(),
-        _network = network ?? const OfflineNetworkCapability(),
-        _outbox = outbox ?? InMemoryOutboxRepository(),
-        _apiClient = apiClient ?? InMemoryCloudBackupApiClient(),
-        _kmsSecret = kmsSecret;
+  }) : _db = db,
+       _prefs = prefs,
+       _envelopeManager = envelopeManager ?? CloudBackupEnvelopeManager(),
+       _account = account ?? const NoOpAccountCapability(),
+       _network = network ?? const OfflineNetworkCapability(),
+       _outbox = outbox ?? InMemoryOutboxRepository(),
+       _apiClient = apiClient ?? InMemoryCloudBackupApiClient(),
+       _kmsSecret = kmsSecret;
 
   String get _requireKmsSecret {
     final secret = _kmsSecret;
@@ -98,9 +98,7 @@ class CloudBackupService implements CloudBackupCapability {
     }
 
     if (!_network.isConnected) {
-      return ConnectedStatusState.offline(
-        lastSuccessUtc: lastSuccessUtc,
-      );
+      return ConnectedStatusState.offline(lastSuccessUtc: lastSuccessUtc);
     }
 
     if (lastSuccessUtc != null) {
@@ -243,7 +241,8 @@ class CloudBackupService implements CloudBackupCapability {
       await _outbox.markSucceeded(operation.operationId);
 
       final now = DateTime.now().toUtc();
-      final fingerprint = operation.payload['contentFingerprint'] as String? ??
+      final fingerprint =
+          operation.payload['contentFingerprint'] as String? ??
           request.sha256Checksum;
       await _recordSuccessfulUpload(now, fingerprint);
       return true;
@@ -258,7 +257,10 @@ class CloudBackupService implements CloudBackupCapability {
     }
   }
 
-  Future<void> _recordSuccessfulUpload(DateTime timestamp, String fingerprint) async {
+  Future<void> _recordSuccessfulUpload(
+    DateTime timestamp,
+    String fingerprint,
+  ) async {
     await _prefs.setString(lastSuccessKey, timestamp.toIso8601String());
     await _prefs.setString(lastFingerprintKey, fingerprint);
   }
@@ -330,10 +332,14 @@ class CloudBackupService implements CloudBackupCapability {
 
   /// Downloads and decrypts an encrypted snapshot from cloud storage.
   /// Throws [FormatException] if the snapshot is not found, checksum fails, or decryption fails.
-  Future<Map<String, dynamic>> downloadAndDecryptSnapshot(String snapshotId) async {
+  Future<Map<String, dynamic>> downloadAndDecryptSnapshot(
+    String snapshotId,
+  ) async {
     final envelope = await _apiClient.downloadSnapshot(snapshotId);
     if (envelope == null) {
-      throw FormatException('Cloud backup snapshot "$snapshotId" was not found on the server.');
+      throw FormatException(
+        'Cloud backup snapshot "$snapshotId" was not found on the server.',
+      );
     }
     if (envelope.backupFormatVersion > BackupV10Data.currentVersion ||
         envelope.schemaVersion > _db.schemaVersion) {
@@ -351,7 +357,9 @@ class CloudBackupService implements CloudBackupCapability {
 
     final decoded = jsonDecode(plaintextJson);
     if (decoded is! Map<String, dynamic>) {
-      throw const FormatException('Decrypted cloud backup payload is not a valid JSON object.');
+      throw const FormatException(
+        'Decrypted cloud backup payload is not a valid JSON object.',
+      );
     }
     return decoded;
   }

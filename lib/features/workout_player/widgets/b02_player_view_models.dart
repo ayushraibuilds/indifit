@@ -40,4 +40,3 @@ class B02InputIdentity {
   @override
   int get hashCode => Object.hash(slotId, actualExerciseId);
 }
-

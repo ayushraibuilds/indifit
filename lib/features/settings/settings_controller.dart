@@ -444,7 +444,8 @@ class SettingsController extends StateNotifier<SettingsState> {
     await repo.setDailyGoal(goalMl: goalMl);
     final prefs = await _getPrefs();
     final updatedGlasses =
-        prefs.getInt(AppPreferenceKeys.waterGoal) ?? (goalMl / state.glassSize).round();
+        prefs.getInt(AppPreferenceKeys.waterGoal) ??
+        (goalMl / state.glassSize).round();
     state = state.copyWith(waterGoal: updatedGlasses);
     _ref.read(todayHydrationRevisionProvider.notifier).state++;
   }

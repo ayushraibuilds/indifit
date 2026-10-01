@@ -63,19 +63,21 @@ void main() {
           isEmpty,
         );
 
-        await db.into(db.foodLogs).insert(
-          FoodLogsCompanion.insert(
-            name: 'Special Thali',
-            calories: 600,
-            proteinG: 20.0,
-            carbsG: 80.0,
-            fatG: 20.0,
-            servingLogged: 1.0,
-            servingUnit: 'plate',
-            mealType: 'lunch',
-            loggedAt: Value(DateTime.now()),
-          ),
-        );
+        await db
+            .into(db.foodLogs)
+            .insert(
+              FoodLogsCompanion.insert(
+                name: 'Special Thali',
+                calories: 600,
+                proteinG: 20.0,
+                carbsG: 80.0,
+                fatG: 20.0,
+                servingLogged: 1.0,
+                servingUnit: 'plate',
+                mealType: 'lunch',
+                loggedAt: Value(DateTime.now()),
+              ),
+            );
 
         await controller.loadStateData();
         expect(
@@ -228,39 +230,36 @@ void main() {
       },
     );
 
-    test(
-      '5. 7 days of real data produces structured weekly metrics',
-      () async {
-        final mockNow = DateTime(2026, 7, 28, 12, 0);
-        final clockedRepo = ProgressStatisticsRepository(
-          db,
-          clock: () => mockNow,
-        );
+    test('5. 7 days of real data produces structured weekly metrics', () async {
+      final mockNow = DateTime(2026, 7, 28, 12, 0);
+      final clockedRepo = ProgressStatisticsRepository(
+        db,
+        clock: () => mockNow,
+      );
 
-        // Seed 3 days of food logs
-        for (int i = 0; i < 3; i++) {
-          await db
-              .into(db.foodLogs)
-              .insert(
-                FoodLogsCompanion.insert(
-                  name: 'Meal $i',
-                  calories: 2000,
-                  proteinG: 150.0,
-                  carbsG: 200.0,
-                  fatG: 60.0,
-                  servingLogged: 1.0,
-                  servingUnit: 'plate',
-                  mealType: 'dinner',
-                  loggedAt: Value(mockNow.subtract(Duration(days: i))),
-                ),
-              );
-        }
+      // Seed 3 days of food logs
+      for (int i = 0; i < 3; i++) {
+        await db
+            .into(db.foodLogs)
+            .insert(
+              FoodLogsCompanion.insert(
+                name: 'Meal $i',
+                calories: 2000,
+                proteinG: 150.0,
+                carbsG: 200.0,
+                fatG: 60.0,
+                servingLogged: 1.0,
+                servingUnit: 'plate',
+                mealType: 'dinner',
+                loggedAt: Value(mockNow.subtract(Duration(days: i))),
+              ),
+            );
+      }
 
-        final metrics = await clockedRepo.getWeeklyMetrics();
-        expect(metrics.nutritionDaysLogged, equals(3));
-        expect(metrics.totalCaloriesLogged, equals(6000));
-      },
-    );
+      final metrics = await clockedRepo.getWeeklyMetrics();
+      expect(metrics.nutritionDaysLogged, equals(3));
+      expect(metrics.totalCaloriesLogged, equals(6000));
+    });
 
     testWidgets('6. Achievements remains usable at 320 width and 2x text', (
       tester,

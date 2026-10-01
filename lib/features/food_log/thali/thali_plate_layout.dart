@@ -53,13 +53,33 @@ abstract final class ThaliDishClassifier {
     String? recipeVersionId,
     required B05SemanticColors colors,
   }) {
-    final text = '${displayLabel ?? ''} ${foodId ?? ''} ${recipeVersionId ?? ''}'.toLowerCase();
+    final text =
+        '${displayLabel ?? ''} ${foodId ?? ''} ${recipeVersionId ?? ''}'
+            .toLowerCase();
 
     // 1. Bread and traditional regional staples (Center)
     if (_matchesAny(text, [
-      'roti', 'chapati', 'phulka', 'naan', 'paratha', 'poori', 'puri',
-      'bread', 'kulcha', 'thepla', 'bhakri', 'rumali', 'parotta',
-      'dosa', 'idli', 'uttapam', 'appam', 'vada', 'vadai', 'pesarattu', 'pathiri',
+      'roti',
+      'chapati',
+      'phulka',
+      'naan',
+      'paratha',
+      'poori',
+      'puri',
+      'bread',
+      'kulcha',
+      'thepla',
+      'bhakri',
+      'rumali',
+      'parotta',
+      'dosa',
+      'idli',
+      'uttapam',
+      'appam',
+      'vada',
+      'vadai',
+      'pesarattu',
+      'pathiri',
     ])) {
       return ThaliDishPlacement(
         zone: ThaliPlateZone.center,
@@ -72,7 +92,13 @@ abstract final class ThaliDishClassifier {
 
     // 2. Rice staples (Center or Perimeter depending on bread presence)
     if (_matchesAny(text, [
-      'rice', 'chawal', 'pulao', 'biryani', 'khichdi', 'jeera rice', 'curd rice',
+      'rice',
+      'chawal',
+      'pulao',
+      'biryani',
+      'khichdi',
+      'jeera rice',
+      'curd rice',
     ])) {
       return ThaliDishPlacement(
         zone: ThaliPlateZone.center,
@@ -85,8 +111,21 @@ abstract final class ThaliDishClassifier {
 
     // 3. Dal / Lentils / Legumes (Perimeter)
     if (_matchesAny(text, [
-      'dal', 'daal', 'tadka', 'dal fry', 'dal makhani', 'sambar', 'rasam', 'kadhi',
-      'chole', 'chana', 'rajma', 'moong', 'toor', 'urad', 'masoor',
+      'dal',
+      'daal',
+      'tadka',
+      'dal fry',
+      'dal makhani',
+      'sambar',
+      'rasam',
+      'kadhi',
+      'chole',
+      'chana',
+      'rajma',
+      'moong',
+      'toor',
+      'urad',
+      'masoor',
     ])) {
       return ThaliDishPlacement(
         zone: ThaliPlateZone.perimeter,
@@ -99,9 +138,25 @@ abstract final class ThaliDishClassifier {
 
     // 4. Sabzi / Cooked Vegetables (Perimeter)
     if (_matchesAny(text, [
-      'sabzi', 'subzi', 'bhindi', 'palak', 'gobi', 'aloo', 'poriyal',
-      'thoran', 'beans', 'cabbage', 'matar', 'karela', 'baingan',
-      'methi', 'kofta', 'capsicum', 'shimla', 'lauki', 'tinda',
+      'sabzi',
+      'subzi',
+      'bhindi',
+      'palak',
+      'gobi',
+      'aloo',
+      'poriyal',
+      'thoran',
+      'beans',
+      'cabbage',
+      'matar',
+      'karela',
+      'baingan',
+      'methi',
+      'kofta',
+      'capsicum',
+      'shimla',
+      'lauki',
+      'tinda',
     ])) {
       return ThaliDishPlacement(
         zone: ThaliPlateZone.perimeter,
@@ -114,8 +169,20 @@ abstract final class ThaliDishClassifier {
 
     // 5. Protein / Paneer / Curries (Perimeter)
     if (_matchesAny(text, [
-      'paneer', 'chicken', 'egg', 'fish', 'mutton', 'tofu', 'soya',
-      'tikka', 'curry', 'korma', 'butter masala', 'makhani', 'masala', 'keema',
+      'paneer',
+      'chicken',
+      'egg',
+      'fish',
+      'mutton',
+      'tofu',
+      'soya',
+      'tikka',
+      'curry',
+      'korma',
+      'butter masala',
+      'makhani',
+      'masala',
+      'keema',
     ])) {
       return ThaliDishPlacement(
         zone: ThaliPlateZone.perimeter,
@@ -128,7 +195,13 @@ abstract final class ThaliDishClassifier {
 
     // 6. Curd / Dairy / Fermented (Perimeter)
     if (_matchesAny(text, [
-      'dahi', 'curd', 'raita', 'chaas', 'buttermilk', 'yogurt', 'lassi',
+      'dahi',
+      'curd',
+      'raita',
+      'chaas',
+      'buttermilk',
+      'yogurt',
+      'lassi',
     ])) {
       return ThaliDishPlacement(
         zone: ThaliPlateZone.perimeter,
@@ -141,8 +214,18 @@ abstract final class ThaliDishClassifier {
 
     // 7. Sweets / Desserts (Perimeter)
     if (_matchesAny(text, [
-      'halwa', 'kheer', 'gulab', 'jamun', 'ladoo', 'laddu', 'sweet',
-      'jalebi', 'payasam', 'rasgulla', 'shrikhand', 'mithai',
+      'halwa',
+      'kheer',
+      'gulab',
+      'jamun',
+      'ladoo',
+      'laddu',
+      'sweet',
+      'jalebi',
+      'payasam',
+      'rasgulla',
+      'shrikhand',
+      'mithai',
     ])) {
       return ThaliDishPlacement(
         zone: ThaliPlateZone.perimeter,
@@ -155,8 +238,16 @@ abstract final class ThaliDishClassifier {
 
     // 8. Sides / Condiments (Perimeter)
     if (_matchesAny(text, [
-      'chutney', 'salad', 'pickle', 'achar', 'papad', 'papadum',
-      'sirka', 'onion', 'lemon', 'mirchi',
+      'chutney',
+      'salad',
+      'pickle',
+      'achar',
+      'papad',
+      'papadum',
+      'sirka',
+      'onion',
+      'lemon',
+      'mirchi',
     ])) {
       return ThaliDishPlacement(
         zone: ThaliPlateZone.perimeter,
@@ -210,10 +301,7 @@ class ThaliItemSlot extends ThaliPlateSlot {
 
 /// An empty perimeter slot inviting the user to tap and add a new dish.
 class ThaliAddSlot extends ThaliPlateSlot {
-  const ThaliAddSlot({
-    required super.angle,
-    required super.index,
-  });
+  const ThaliAddSlot({required super.angle, required super.index});
 }
 
 /// An overflow slot representing N additional dishes beyond the 6-slot circular cap.
@@ -235,14 +323,22 @@ class ThaliPlateLayoutEngine {
   static ({
     List<ThaliItemSlot> centerStaples,
     List<ThaliPlateSlot> perimeterSlots,
-  }) computeLayout({
+  })
+  computeLayout({
     required List<NutritionThaliItem> items,
     required List<NutritionThaliItemPreview> previews,
     required B05SemanticColors colors,
     bool showAddSlot = true,
   }) {
     final centerStaples = <ThaliItemSlot>[];
-    final perimeterItems = <({NutritionThaliItem item, NutritionThaliItemPreview? preview, ThaliDishPlacement placement})>[];
+    final perimeterItems =
+        <
+          ({
+            NutritionThaliItem item,
+            NutritionThaliItemPreview? preview,
+            ThaliDishPlacement placement,
+          })
+        >[];
 
     // First classify all items
     for (int i = 0; i < items.length; i++) {
@@ -266,7 +362,11 @@ class ThaliPlateLayoutEngine {
           ),
         );
       } else {
-        perimeterItems.add((item: item, preview: preview, placement: placement));
+        perimeterItems.add((
+          item: item,
+          preview: preview,
+          placement: placement,
+        ));
       }
     }
 

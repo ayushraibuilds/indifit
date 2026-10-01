@@ -1233,9 +1233,9 @@ class NutritionRecipeRepository {
     required String recipeVersionId,
     required List<NutritionRecipeIngredientInput> inputs,
   }) => _validator.validateIngredientInputs(
-        recipeVersionId: recipeVersionId,
-        inputs: inputs,
-      );
+    recipeVersionId: recipeVersionId,
+    inputs: inputs,
+  );
 
   Future<void> _validateStoredIngredients(
     String recipeVersionId,
@@ -1248,11 +1248,11 @@ class NutritionRecipeRepository {
     required String calculationRuleVersion,
     required NutritionRecipeSource source,
   }) => _validator.validateVersionInputs(
-        yieldQuantity: yieldQuantity,
-        servingDefinition: servingDefinition,
-        calculationRuleVersion: calculationRuleVersion,
-        source: source,
-      );
+    yieldQuantity: yieldQuantity,
+    servingDefinition: servingDefinition,
+    calculationRuleVersion: calculationRuleVersion,
+    source: source,
+  );
 
   Future<List<NutritionRecipeIngredientInput>> _ingredientsAsInputs(
     NutritionRecipeVersion sourceVersion,
@@ -1265,12 +1265,12 @@ class NutritionRecipeRepository {
     String? calculationRuleVersion,
     String? measureId,
   }) => _mapper.quantityFromStored(
-        value,
-        stableUnit,
-        recipeVersionId: recipeVersionId,
-        calculationRuleVersion: calculationRuleVersion,
-        measureId: measureId,
-      );
+    value,
+    stableUnit,
+    recipeVersionId: recipeVersionId,
+    calculationRuleVersion: calculationRuleVersion,
+    measureId: measureId,
+  );
 
   String _databaseUnitId(QuantityUnit unit) => _mapper.databaseUnitId(unit);
 
@@ -1283,9 +1283,8 @@ class NutritionRecipeRepository {
     Iterable<String> ingredientIds,
   ) => _mapper.substitutionCorrections(ingredientIds);
 
-  Future<void> _deleteIngredientCorrections(
-    Iterable<String> ingredientIds,
-  ) => _mapper.deleteIngredientCorrections(ingredientIds);
+  Future<void> _deleteIngredientCorrections(Iterable<String> ingredientIds) =>
+      _mapper.deleteIngredientCorrections(ingredientIds);
 
   Future<NutritionRecipe?> _recipeById(String recipeId) => (_db.select(
     _db.nutritionRecipes,
@@ -1330,10 +1329,10 @@ class NutritionRecipeRepository {
     NutritionRecipeVersion version, {
     bool allowPublished = false,
   }) => _validator.assertOwnedDraft(
-        recipe,
-        version,
-        allowPublished: allowPublished,
-      );
+    recipe,
+    version,
+    allowPublished: allowPublished,
+  );
 
   Future<void> _validateRecipeGraph(NutritionRecipe recipe) =>
       _validator.validateRecipeGraph(recipe);

@@ -53,9 +53,8 @@ abstract class OutboxRepository {
 
 /// In-memory outbox repository for testing and standalone default runtime.
 class InMemoryOutboxRepository implements OutboxRepository {
-  InMemoryOutboxRepository({
-    OutboxRetryPolicy? retryPolicy,
-  }) : _retryPolicy = retryPolicy ?? const OutboxRetryPolicy();
+  InMemoryOutboxRepository({OutboxRetryPolicy? retryPolicy})
+    : _retryPolicy = retryPolicy ?? const OutboxRetryPolicy();
 
   final OutboxRetryPolicy _retryPolicy;
   final Map<String, OutboxOperation> _operations = {};
@@ -64,10 +63,12 @@ class InMemoryOutboxRepository implements OutboxRepository {
 
   void _notifyCount() {
     final count = _operations.values
-        .where((op) =>
-            op.state == OutboxState.pending ||
-            op.state == OutboxState.inFlight ||
-            op.state == OutboxState.transientFailure)
+        .where(
+          (op) =>
+              op.state == OutboxState.pending ||
+              op.state == OutboxState.inFlight ||
+              op.state == OutboxState.transientFailure,
+        )
         .length;
     _pendingCountController.add(count);
   }
@@ -99,22 +100,20 @@ class InMemoryOutboxRepository implements OutboxRepository {
   @override
   Future<List<OutboxOperation>> getPendingOperations({int limit = 50}) async {
     final now = DateTime.now().toUtc();
-    final leaseCutoff =
-        now.subtract(OutboxRepository.stuckInFlightLease);
+    final leaseCutoff = now.subtract(OutboxRepository.stuckInFlightLease);
     bool isDue(OutboxOperation op) =>
         (op.state == OutboxState.pending ||
-                op.state == OutboxState.transientFailure) &&
-            !op.scheduledAtUtc.isAfter(now);
+            op.state == OutboxState.transientFailure) &&
+        !op.scheduledAtUtc.isAfter(now);
     // Stale-lease recovery: an inFlight row untouched for longer than the
     // lease can only be a pre-crash dispatch; requeue it redeliverable.
     // (Idempotency keys make the redelivery safe.)
     bool isStuck(OutboxOperation op) =>
         op.state == OutboxState.inFlight &&
         (op.lastAttemptUtc ?? op.createdAtUtc).isBefore(leaseCutoff);
-    final eligible = _operations.values
-        .where((op) => isDue(op) || isStuck(op))
-        .toList()
-      ..sort((a, b) => a.scheduledAtUtc.compareTo(b.scheduledAtUtc));
+    final eligible =
+        _operations.values.where((op) => isDue(op) || isStuck(op)).toList()
+          ..sort((a, b) => a.scheduledAtUtc.compareTo(b.scheduledAtUtc));
     if (eligible.length <= limit) return eligible;
     return eligible.sublist(0, limit);
   }
@@ -208,10 +207,12 @@ class InMemoryOutboxRepository implements OutboxRepository {
   @override
   Stream<int> watchPendingCount() async* {
     yield _operations.values
-        .where((op) =>
-            op.state == OutboxState.pending ||
-            op.state == OutboxState.inFlight ||
-            op.state == OutboxState.transientFailure)
+        .where(
+          (op) =>
+              op.state == OutboxState.pending ||
+              op.state == OutboxState.inFlight ||
+              op.state == OutboxState.transientFailure,
+        )
         .length;
     yield* _pendingCountController.stream;
   }

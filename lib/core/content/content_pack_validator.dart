@@ -35,9 +35,10 @@ class ContentPackValidator {
   /// Computes the HMAC-SHA256 signature for [payload] (canonical JSON).
   static String signPayload(Map<String, dynamic> payload, String signingKey) {
     final encoded = jsonEncode(_canonicalize(payload));
-    return Hmac(sha256, utf8.encode(signingKey))
-        .convert(utf8.encode(encoded))
-        .toString();
+    return Hmac(
+      sha256,
+      utf8.encode(signingKey),
+    ).convert(utf8.encode(encoded)).toString();
   }
 
   /// Recursively sorts map keys so signatures are byte-stable regardless of
@@ -45,9 +46,7 @@ class ContentPackValidator {
   static Object? _canonicalize(Object? value) {
     if (value is Map) {
       final sortedKeys = value.keys.map((k) => k.toString()).toList()..sort();
-      return {
-        for (final k in sortedKeys) k: _canonicalize(value[k]),
-      };
+      return {for (final k in sortedKeys) k: _canonicalize(value[k])};
     }
     if (value is List) return [for (final e in value) _canonicalize(e)];
     return value;
@@ -60,9 +59,9 @@ class ContentPackValidator {
     required Map<String, List<int>> fileBytesByPath,
   }) {
     if (signingKey.isEmpty) {
-      return ContentPackValidation.invalid(
-        const ['Pack-signing key is not configured.'],
-      );
+      return ContentPackValidation.invalid(const [
+        'Pack-signing key is not configured.',
+      ]);
     }
     late final ContentPackEnvelope envelope;
     try {
@@ -80,8 +79,7 @@ class ContentPackValidator {
       );
     }
 
-    final expectedSignature =
-        signPayload(envelope.signedPayload(), signingKey);
+    final expectedSignature = signPayload(envelope.signedPayload(), signingKey);
     if (!_constantTimeEquals(expectedSignature, envelope.signatureHex)) {
       errors.add('Signature mismatch: pack is not authentic.');
     }
@@ -99,8 +97,7 @@ class ContentPackValidator {
         );
         continue;
       }
-      final actual =
-          sha256.convert(bytes).toString();
+      final actual = sha256.convert(bytes).toString();
       if (actual != file.sha256Hex.toLowerCase()) {
         errors.add('Checksum mismatch for ${file.path}.');
         continue;
@@ -165,10 +162,7 @@ class ContentPackValidator {
       final protein = _asDouble(item['protein_g']);
       final carbs = _asDouble(item['carbs_g']);
       final fat = _asDouble(item['fat_g']);
-      if (calories == null ||
-          protein == null ||
-          carbs == null ||
-          fat == null) {
+      if (calories == null || protein == null || carbs == null || fat == null) {
         errors.add('${file.path}[$i] is missing calorie/macro numbers.');
         continue;
       }
@@ -227,8 +221,7 @@ class ContentPackValidator {
     return errors;
   }
 
-  double? _asDouble(Object? value) =>
-      value is num ? value.toDouble() : null;
+  double? _asDouble(Object? value) => value is num ? value.toDouble() : null;
 
   /// Constant-time comparison so validity oracles cannot shortcut guessing.
   bool _constantTimeEquals(String a, String b) {

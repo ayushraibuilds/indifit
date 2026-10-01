@@ -95,63 +95,65 @@ void main() {
     expect(find.text('550 left'), findsOneWidget);
   });
 
-  testWidgets('CalorieRing falls back to CalorieRingPainter when macros are empty', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: AppTheme.lightTheme,
-        home: const Scaffold(
-          body: Center(
-            child: CalorieRing(
-              calories: sampleCalories,
-              hasTarget: true,
-              incomplete: false,
-              noConsumption: false,
-              macros: [],
+  testWidgets(
+    'CalorieRing falls back to CalorieRingPainter when macros are empty',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.lightTheme,
+          home: const Scaffold(
+            body: Center(
+              child: CalorieRing(
+                calories: sampleCalories,
+                hasTarget: true,
+                incomplete: false,
+                noConsumption: false,
+                macros: [],
+              ),
             ),
           ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    expect(find.byType(PieChart), findsNothing);
-    expect(find.byType(CustomPaint), findsWidgets);
-    expect(find.text('1450'), findsOneWidget);
-  });
+      expect(find.byType(PieChart), findsNothing);
+      expect(find.byType(CustomPaint), findsWidgets);
+      expect(find.text('1450'), findsOneWidget);
+    },
+  );
 
-  testWidgets('CalorieRingCard renders TodayNutritionHero with standard defaults', (
-    tester,
-  ) async {
-    const presentation = TodayNutritionPresentation(
-      state: TodayPresentationState.ready,
-      headline: 'Nutrition',
-      detail: 'Daily totals',
-      calories: sampleCalories,
-      macros: sampleMacros,
-      hasAcceptedCalorieTarget: true,
-    );
+  testWidgets(
+    'CalorieRingCard renders TodayNutritionHero with standard defaults',
+    (tester) async {
+      const presentation = TodayNutritionPresentation(
+        state: TodayPresentationState.ready,
+        headline: 'Nutrition',
+        detail: 'Daily totals',
+        calories: sampleCalories,
+        macros: sampleMacros,
+        hasAcceptedCalorieTarget: true,
+      );
 
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: AppTheme.lightTheme,
-        home: Scaffold(
-          body: SingleChildScrollView(
-            child: CalorieRingCard(
-              presentation: presentation,
-              onLogFood: () {},
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.lightTheme,
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: CalorieRingCard(
+                presentation: presentation,
+                onLogFood: () {},
+              ),
             ),
           ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    expect(find.byType(TodayNutritionHero), findsOneWidget);
-    expect(find.byType(PieChart), findsOneWidget);
-    expect(find.text('1450'), findsOneWidget);
-    expect(find.text('Nutrition'), findsOneWidget);
-    expect(find.text('Log food'), findsOneWidget);
-  });
+      expect(find.byType(TodayNutritionHero), findsOneWidget);
+      expect(find.byType(PieChart), findsOneWidget);
+      expect(find.text('1450'), findsOneWidget);
+      expect(find.text('Nutrition'), findsOneWidget);
+      expect(find.text('Log food'), findsOneWidget);
+    },
+  );
 }

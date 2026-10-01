@@ -19,7 +19,8 @@ abstract final class AppPreferenceKeys {
   // --- Onboarding Status ---
   static const onboardingCompleted = 'onboarding_completed';
   static const onboardingSkipped = 'onboarding_skipped';
-  static const todayOnboardingHandoffPending = 'today_onboarding_handoff_pending';
+  static const todayOnboardingHandoffPending =
+      'today_onboarding_handoff_pending';
 
   // --- Hydration ---
   static const waterLogged = 'water_logged';
@@ -70,8 +71,10 @@ abstract final class AppPreferenceKeys {
   static const prefDinnerReminderMinute = 'pref_dinner_reminder_minute';
   static const prefWaterReminderHour = 'pref_water_reminder_hour';
   static const prefWaterReminderMinute = 'pref_water_reminder_minute';
-  static const prefDailyLoggingReminderHour = 'pref_daily_logging_reminder_hour';
-  static const prefDailyLoggingReminderMinute = 'pref_daily_logging_reminder_minute';
+  static const prefDailyLoggingReminderHour =
+      'pref_daily_logging_reminder_hour';
+  static const prefDailyLoggingReminderMinute =
+      'pref_daily_logging_reminder_minute';
   static const prefWeeklyProgressDay = 'pref_weekly_progress_day';
   static const prefWeeklyProgressHour = 'pref_weekly_progress_hour';
   static const prefWeeklyProgressMinute = 'pref_weekly_progress_minute';
@@ -85,7 +88,8 @@ abstract final class AppPreferenceKeys {
   static const healthCategorySteps = 'health_category_steps';
   static const healthCategoryActiveEnergy = 'health_category_active_energy';
   static const healthCategorySleep = 'health_category_sleep';
-  static const healthCategoryRestingHeartRate = 'health_category_resting_heart_rate';
+  static const healthCategoryRestingHeartRate =
+      'health_category_resting_heart_rate';
   static const healthCategoryWorkoutImport = 'health_category_workout_import';
   static const healthCategoryWorkoutExport = 'health_category_workout_export';
   static const healthCategoryWeightExport = 'health_category_weight_export';
@@ -100,7 +104,8 @@ abstract final class AppPreferenceKeys {
   static const weeklyActionTarget = 'weekly_action_target';
 
   // --- Auto Backup ---
-  static const autoBackupLastContentFingerprintV2 = 'auto_backup_last_content_fingerprint_v2';
+  static const autoBackupLastContentFingerprintV2 =
+      'auto_backup_last_content_fingerprint_v2';
 
   // --- Resumable Onboarding Draft Keys (17 keys) ---
   static const onboardingDraftPage = 'onboarding_draft_page';
@@ -116,10 +121,13 @@ abstract final class AppPreferenceKeys {
   static const onboardingDraftFlowVersion = 'onboarding_draft_flow_version';
   static const onboardingDraftRoutineStep = 'onboarding_draft_routine_step';
   static const onboardingDraftRoutineGoal = 'onboarding_draft_routine_goal';
-  static const onboardingDraftRoutineEquipment = 'onboarding_draft_routine_equipment';
+  static const onboardingDraftRoutineEquipment =
+      'onboarding_draft_routine_equipment';
   static const onboardingDraftRoutineDays = 'onboarding_draft_routine_days';
-  static const onboardingDraftRoutineExperience = 'onboarding_draft_routine_experience';
-  static const onboardingDraftRoutineInjuries = 'onboarding_draft_routine_injuries';
+  static const onboardingDraftRoutineExperience =
+      'onboarding_draft_routine_experience';
+  static const onboardingDraftRoutineInjuries =
+      'onboarding_draft_routine_injuries';
 
   // --- Legacy / Restore-Only Aliases (NEVER ACTIVE WRITE TARGETS) ---
   @Deprecated('Historical/restore-only key; never use as active write target')

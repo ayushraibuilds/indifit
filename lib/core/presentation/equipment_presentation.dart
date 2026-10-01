@@ -146,10 +146,7 @@ class EquipmentChoicesPresentation {
         CanonicalEquipmentItem.kettlebell,
         CanonicalEquipmentItem.bands,
       ],
-      standardIncrements: {
-        'dumbbell': 2.5,
-        'kettlebell': 2.0,
-      },
+      standardIncrements: {'dumbbell': 2.5, 'kettlebell': 2.0},
     ),
     EquipmentPreset(
       id: 'dumbbells_only',
@@ -159,17 +156,13 @@ class EquipmentChoicesPresentation {
         CanonicalEquipmentItem.dumbbell,
         CanonicalEquipmentItem.bench,
       ],
-      standardIncrements: {
-        'dumbbell': 2.5,
-      },
+      standardIncrements: {'dumbbell': 2.5},
     ),
     EquipmentPreset(
       id: 'bands_calisthenics',
       name: 'Bands & Calisthenics',
       description: 'Resistance bands and bodyweight movements.',
-      includedItems: [
-        CanonicalEquipmentItem.bands,
-      ],
+      includedItems: [CanonicalEquipmentItem.bands],
       standardIncrements: {},
     ),
   ];
@@ -252,24 +245,28 @@ class EquipmentProfilePresentation {
   }) {
     final availableItems = aggregate.items.where((i) => i.isAvailable).toList();
     final itemNames = availableItems
-        .map((i) => EquipmentChoicesPresentation.displayNameFor(i.equipmentCode))
+        .map(
+          (i) => EquipmentChoicesPresentation.displayNameFor(i.equipmentCode),
+        )
         .toList(growable: false);
     final itemCodes = availableItems
         .map((i) => i.equipmentCode)
         .toList(growable: false);
 
-    final chips = availableItems.map((item) {
-      final choice = EquipmentChoicesPresentation.find(item.equipmentCode);
-      final incText = item.weightIncrementKg != null
-          ? '+${item.weightIncrementKg! % 1 == 0 ? item.weightIncrementKg!.toInt() : item.weightIncrementKg}kg'
-          : null;
-      return EquipmentProfileItemChipPresentation(
-        code: item.equipmentCode,
-        name: choice?.displayName ?? item.equipmentCode,
-        icon: choice?.icon ?? Icons.fitness_center,
-        incrementText: incText,
-      );
-    }).toList(growable: false);
+    final chips = availableItems
+        .map((item) {
+          final choice = EquipmentChoicesPresentation.find(item.equipmentCode);
+          final incText = item.weightIncrementKg != null
+              ? '+${item.weightIncrementKg! % 1 == 0 ? item.weightIncrementKg!.toInt() : item.weightIncrementKg}kg'
+              : null;
+          return EquipmentProfileItemChipPresentation(
+            code: item.equipmentCode,
+            name: choice?.displayName ?? item.equipmentCode,
+            icon: choice?.icon ?? Icons.fitness_center,
+            incrementText: incText,
+          );
+        })
+        .toList(growable: false);
 
     final summary = availableItems.isEmpty
         ? 'Bodyweight only'

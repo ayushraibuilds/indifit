@@ -15,9 +15,9 @@ class HlcTimestamp implements Comparable<HlcTimestamp> {
     required this.millis,
     required this.counter,
     required this.nodeId,
-  })  : assert(millis >= 0, 'millis must be non-negative'),
-        assert(counter >= 0, 'counter must be non-negative'),
-        assert(nodeId.length > 0, 'nodeId cannot be empty');
+  }) : assert(millis >= 0, 'millis must be non-negative'),
+       assert(counter >= 0, 'counter must be non-negative'),
+       assert(nodeId.length > 0, 'nodeId cannot be empty');
 
   /// Physical time in milliseconds since Unix epoch.
   final int millis;
@@ -49,10 +49,10 @@ class HlcTimestamp implements Comparable<HlcTimestamp> {
   }
 
   Map<String, dynamic> toJson() => {
-        'millis': millis,
-        'counter': counter,
-        'node_id': nodeId,
-      };
+    'millis': millis,
+    'counter': counter,
+    'node_id': nodeId,
+  };
 
   factory HlcTimestamp.fromJson(Map<String, dynamic> json) {
     return HlcTimestamp(
@@ -97,27 +97,22 @@ class HlcTimestamp implements Comparable<HlcTimestamp> {
 
 /// Hybrid Logical Clock generator maintaining monotonic local state.
 class HlcClock {
-  HlcClock({
-    required this.nodeId,
-    int? initialMillis,
-    int initialCounter = 0,
-  })  : _latestMillis = initialMillis ?? 0,
-        _counter = initialCounter;
+  HlcClock({required this.nodeId, int? initialMillis, int initialCounter = 0})
+    : _latestMillis = initialMillis ?? 0,
+      _counter = initialCounter;
 
   final String nodeId;
   int _latestMillis;
   int _counter;
 
   /// Current logical time state without advancing.
-  HlcTimestamp get current => HlcTimestamp(
-        millis: _latestMillis,
-        counter: _counter,
-        nodeId: nodeId,
-      );
+  HlcTimestamp get current =>
+      HlcTimestamp(millis: _latestMillis, counter: _counter, nodeId: nodeId);
 
   /// Generates the next monotonic timestamp for a local event.
   HlcTimestamp send({int? physicalTimeMillis}) {
-    final physicalNow = physicalTimeMillis ?? DateTime.now().toUtc().millisecondsSinceEpoch;
+    final physicalNow =
+        physicalTimeMillis ?? DateTime.now().toUtc().millisecondsSinceEpoch;
 
     if (physicalNow > _latestMillis) {
       _latestMillis = physicalNow;
@@ -137,7 +132,8 @@ class HlcClock {
   ///
   /// Ensures the clock advances beyond both the local time and the remote time.
   HlcTimestamp receive(HlcTimestamp remote, {int? physicalTimeMillis}) {
-    final physicalNow = physicalTimeMillis ?? DateTime.now().toUtc().millisecondsSinceEpoch;
+    final physicalNow =
+        physicalTimeMillis ?? DateTime.now().toUtc().millisecondsSinceEpoch;
 
     final nextMillis = _max3(_latestMillis, physicalNow, remote.millis);
 

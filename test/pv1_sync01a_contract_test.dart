@@ -26,51 +26,68 @@ void main() {
         expect(list, equals([t1, t2, t3, t4]));
       });
 
-      test('HlcTimestamp serializes to canonical string and round-trips exactly', () {
-        const original = HlcTimestamp(
-          millis: 1725350000000,
-          counter: 42,
-          nodeId: 'iPhone-15-Pro',
-        );
+      test(
+        'HlcTimestamp serializes to canonical string and round-trips exactly',
+        () {
+          const original = HlcTimestamp(
+            millis: 1725350000000,
+            counter: 42,
+            nodeId: 'iPhone-15-Pro',
+          );
 
-        final canonicalString = original.toString();
-        final parsed = HlcTimestamp.fromString(canonicalString);
+          final canonicalString = original.toString();
+          final parsed = HlcTimestamp.fromString(canonicalString);
 
-        expect(parsed, equals(original));
-        expect(parsed.millis, 1725350000000);
-        expect(parsed.counter, 42);
-        expect(parsed.nodeId, 'iPhone-15-Pro');
-      });
+          expect(parsed, equals(original));
+          expect(parsed.millis, 1725350000000);
+          expect(parsed.counter, 42);
+          expect(parsed.nodeId, 'iPhone-15-Pro');
+        },
+      );
 
-      test('HlcClock maintains monotonicity across backward wall-clock jumps', () {
-        final clock = HlcClock(nodeId: 'node-1');
+      test(
+        'HlcClock maintains monotonicity across backward wall-clock jumps',
+        () {
+          final clock = HlcClock(nodeId: 'node-1');
 
-        // Local events at wall time 10000
-        final t1 = clock.send(physicalTimeMillis: 10000);
-        final t2 = clock.send(physicalTimeMillis: 10000);
-        expect(t1.millis, 10000);
-        expect(t1.counter, 0);
-        expect(t2.millis, 10000);
-        expect(t2.counter, 1);
+          // Local events at wall time 10000
+          final t1 = clock.send(physicalTimeMillis: 10000);
+          final t2 = clock.send(physicalTimeMillis: 10000);
+          expect(t1.millis, 10000);
+          expect(t1.counter, 0);
+          expect(t2.millis, 10000);
+          expect(t2.counter, 1);
 
-        // Physical clock jumps backward by 5 seconds (NTP / manual change)
-        final t3 = clock.send(physicalTimeMillis: 5000);
-        expect(t3.millis, 10000, reason: 'HLC millis must never decrease');
-        expect(t3.counter, 2);
+          // Physical clock jumps backward by 5 seconds (NTP / manual change)
+          final t3 = clock.send(physicalTimeMillis: 5000);
+          expect(t3.millis, 10000, reason: 'HLC millis must never decrease');
+          expect(t3.counter, 2);
 
-        // Physical clock advances past previous logical time
-        final t4 = clock.send(physicalTimeMillis: 12000);
-        expect(t4.millis, 12000);
-        expect(t4.counter, 0, reason: 'Counter resets to 0 when physical time advances');
-      });
+          // Physical clock advances past previous logical time
+          final t4 = clock.send(physicalTimeMillis: 12000);
+          expect(t4.millis, 12000);
+          expect(
+            t4.counter,
+            0,
+            reason: 'Counter resets to 0 when physical time advances',
+          );
+        },
+      );
 
       test('HlcClock assimilates remote timestamp and jumps forward', () {
         final localClock = HlcClock(nodeId: 'device-A', initialMillis: 1000);
 
         // Remote timestamp from device-B with higher physical time
-        const remoteT = HlcTimestamp(millis: 5000, counter: 3, nodeId: 'device-B');
+        const remoteT = HlcTimestamp(
+          millis: 5000,
+          counter: 3,
+          nodeId: 'device-B',
+        );
 
-        final updatedLocal = localClock.receive(remoteT, physicalTimeMillis: 2000);
+        final updatedLocal = localClock.receive(
+          remoteT,
+          physicalTimeMillis: 2000,
+        );
 
         expect(updatedLocal.millis, 5000);
         expect(updatedLocal.counter, 4);
@@ -83,61 +100,79 @@ void main() {
       const entityId = 'food-log-12345';
       const domain = SyncDomain.nutritionLogs;
 
-      test('Last-Write-Wins (LWW) strictly resolves concurrent edits commutatively', () {
-        const mutationA = SyncMutation(
-          entityId: entityId,
-          domain: domain,
-          type: SyncMutationType.update,
-          hlc: HlcTimestamp(millis: 2000, counter: 1, nodeId: 'device-A'),
-          payload: {'food_name': 'Roti', 'quantity': 2},
-        );
+      test(
+        'Last-Write-Wins (LWW) strictly resolves concurrent edits commutatively',
+        () {
+          const mutationA = SyncMutation(
+            entityId: entityId,
+            domain: domain,
+            type: SyncMutationType.update,
+            hlc: HlcTimestamp(millis: 2000, counter: 1, nodeId: 'device-A'),
+            payload: {'food_name': 'Roti', 'quantity': 2},
+          );
 
-        const mutationB = SyncMutation(
-          entityId: entityId,
-          domain: domain,
-          type: SyncMutationType.update,
-          hlc: HlcTimestamp(millis: 2000, counter: 2, nodeId: 'device-B'),
-          payload: {'food_name': 'Roti', 'quantity': 3},
-        );
+          const mutationB = SyncMutation(
+            entityId: entityId,
+            domain: domain,
+            type: SyncMutationType.update,
+            hlc: HlcTimestamp(millis: 2000, counter: 2, nodeId: 'device-B'),
+            payload: {'food_name': 'Roti', 'quantity': 3},
+          );
 
-        // Reconciling A against B
-        final result1 = resolver.reconcile(local: mutationA, incoming: mutationB);
-        expect(result1.winner, equals(mutationB));
-        expect(result1.wasLocalOverwritten, isTrue);
+          // Reconciling A against B
+          final result1 = resolver.reconcile(
+            local: mutationA,
+            incoming: mutationB,
+          );
+          expect(result1.winner, equals(mutationB));
+          expect(result1.wasLocalOverwritten, isTrue);
 
-        // Reconciling B against A (Commutativity)
-        final result2 = resolver.reconcile(local: mutationB, incoming: mutationA);
-        expect(result2.winner, equals(mutationB));
-        expect(result2.wasLocalOverwritten, isFalse);
-      });
+          // Reconciling B against A (Commutativity)
+          final result2 = resolver.reconcile(
+            local: mutationB,
+            incoming: mutationA,
+          );
+          expect(result2.winner, equals(mutationB));
+          expect(result2.wasLocalOverwritten, isFalse);
+        },
+      );
 
-      test('Tombstone dominance prevents resurrection from older or concurrent writes', () {
-        const olderWrite = SyncMutation(
-          entityId: entityId,
-          domain: domain,
-          type: SyncMutationType.update,
-          hlc: HlcTimestamp(millis: 3000, counter: 0, nodeId: 'device-A'),
-          payload: {'quantity': 5},
-        );
+      test(
+        'Tombstone dominance prevents resurrection from older or concurrent writes',
+        () {
+          const olderWrite = SyncMutation(
+            entityId: entityId,
+            domain: domain,
+            type: SyncMutationType.update,
+            hlc: HlcTimestamp(millis: 3000, counter: 0, nodeId: 'device-A'),
+            payload: {'quantity': 5},
+          );
 
-        const newerTombstone = SyncMutation(
-          entityId: entityId,
-          domain: domain,
-          type: SyncMutationType.delete,
-          hlc: HlcTimestamp(millis: 3500, counter: 0, nodeId: 'device-B'),
-        );
+          const newerTombstone = SyncMutation(
+            entityId: entityId,
+            domain: domain,
+            type: SyncMutationType.delete,
+            hlc: HlcTimestamp(millis: 3500, counter: 0, nodeId: 'device-B'),
+          );
 
-        // Arriving after local write
-        final res1 = resolver.reconcile(local: olderWrite, incoming: newerTombstone);
-        expect(res1.winner, equals(newerTombstone));
-        expect(res1.isTombstoneDominant, isTrue);
+          // Arriving after local write
+          final res1 = resolver.reconcile(
+            local: olderWrite,
+            incoming: newerTombstone,
+          );
+          expect(res1.winner, equals(newerTombstone));
+          expect(res1.isTombstoneDominant, isTrue);
 
-        // Delayed write arriving after local tombstone
-        final res2 = resolver.reconcile(local: newerTombstone, incoming: olderWrite);
-        expect(res2.winner, equals(newerTombstone));
-        expect(res2.isTombstoneDominant, isTrue);
-        expect(res2.wasLocalOverwritten, isFalse);
-      });
+          // Delayed write arriving after local tombstone
+          final res2 = resolver.reconcile(
+            local: newerTombstone,
+            incoming: olderWrite,
+          );
+          expect(res2.winner, equals(newerTombstone));
+          expect(res2.isTombstoneDominant, isTrue);
+          expect(res2.wasLocalOverwritten, isFalse);
+        },
+      );
 
       test('Legitimate write created strictly after tombstone succeeds', () {
         const tombstone = SyncMutation(
@@ -155,7 +190,10 @@ void main() {
           payload: {'quantity': 1},
         );
 
-        final result = resolver.reconcile(local: tombstone, incoming: recreatedWrite);
+        final result = resolver.reconcile(
+          local: tombstone,
+          incoming: recreatedWrite,
+        );
         expect(result.winner, equals(recreatedWrite));
         expect(result.wasLocalOverwritten, isTrue);
         expect(result.isTombstoneDominant, isFalse);
@@ -163,20 +201,26 @@ void main() {
     });
 
     group('Entity Inventory & Boundary Enforcement', () {
-      test('100% of syncedTables map to actual generated Drift tables in AppDatabase', () {
-        final scope = registerTestDatabaseScope();
-        final db = scope.create();
-        final allDbTableNames = db.allTables.map((t) => t.actualTableName).toSet();
+      test(
+        '100% of syncedTables map to actual generated Drift tables in AppDatabase',
+        () {
+          final scope = registerTestDatabaseScope();
+          final db = scope.create();
+          final allDbTableNames = db.allTables
+              .map((t) => t.actualTableName)
+              .toSet();
 
-        expect(SyncConflictResolver.syncedTables.length, equals(20));
-        for (final table in SyncConflictResolver.syncedTables) {
-          expect(
-            allDbTableNames.contains(table),
-            isTrue,
-            reason: 'Synced table "$table" must exist in AppDatabase.allTables',
-          );
-        }
-      });
+          expect(SyncConflictResolver.syncedTables.length, equals(20));
+          for (final table in SyncConflictResolver.syncedTables) {
+            expect(
+              allDbTableNames.contains(table),
+              isTrue,
+              reason:
+                  'Synced table "$table" must exist in AppDatabase.allTables',
+            );
+          }
+        },
+      );
 
       test('Identifies all 20 audited tables as synchronized', () {
         final expectedTables = [
@@ -203,76 +247,227 @@ void main() {
         ];
 
         for (final table in expectedTables) {
-          expect(SyncConflictResolver.isTableSynced(table), isTrue, reason: table);
+          expect(
+            SyncConflictResolver.isTableSynced(table),
+            isTrue,
+            reason: table,
+          );
         }
       });
 
-      test('Identifies internal queues, alarms, and local-only singleton tables as unsynced', () {
-        expect(SyncConflictResolver.isTableSynced('outbox_operations'), isFalse);
-        expect(SyncConflictResolver.isTableSynced('notification_schedules'), isFalse);
-        expect(SyncConflictResolver.isTableSynced('remote_catalog_cache'), isFalse);
-        expect(SyncConflictResolver.isTableSynced('barcode_cache'), isFalse);
-        expect(SyncConflictResolver.isTableSynced('training_plan_settings'), isFalse);
-      });
+      test(
+        'Identifies internal queues, alarms, and local-only singleton tables as unsynced',
+        () {
+          expect(
+            SyncConflictResolver.isTableSynced('outbox_operations'),
+            isFalse,
+          );
+          expect(
+            SyncConflictResolver.isTableSynced('notification_schedules'),
+            isFalse,
+          );
+          expect(
+            SyncConflictResolver.isTableSynced('remote_catalog_cache'),
+            isFalse,
+          );
+          expect(SyncConflictResolver.isTableSynced('barcode_cache'), isFalse);
+          expect(
+            SyncConflictResolver.isTableSynced('training_plan_settings'),
+            isFalse,
+          );
+        },
+      );
 
       test('Correctly classifies append-only historical evidence domains', () {
-        expect(SyncConflictResolver.isAppendOnlyEvidence(SyncDomain.workouts), isTrue);
-        expect(SyncConflictResolver.isAppendOnlyEvidence(SyncDomain.weights), isTrue);
-        expect(SyncConflictResolver.isAppendOnlyEvidence(SyncDomain.nutritionLogs), isFalse);
-        expect(SyncConflictResolver.isAppendOnlyEvidence(SyncDomain.preferences), isFalse);
+        expect(
+          SyncConflictResolver.isAppendOnlyEvidence(SyncDomain.workouts),
+          isTrue,
+        );
+        expect(
+          SyncConflictResolver.isAppendOnlyEvidence(SyncDomain.weights),
+          isTrue,
+        );
+        expect(
+          SyncConflictResolver.isAppendOnlyEvidence(SyncDomain.nutritionLogs),
+          isFalse,
+        );
+        expect(
+          SyncConflictResolver.isAppendOnlyEvidence(SyncDomain.preferences),
+          isFalse,
+        );
       });
 
-      test('Enforces exact 7-key settings allowlist and rejects device-local keys', () {
-        // 7 allowlisted keys
-        expect(SyncConflictResolver.isSettingKeySyncable('display_units'), isTrue);
-        expect(SyncConflictResolver.isSettingKeySyncable('user_theme_mode'), isTrue);
-        expect(SyncConflictResolver.isSettingKeySyncable('water_goal'), isTrue);
-        expect(SyncConflictResolver.isSettingKeySyncable('water_glass_size'), isTrue);
-        expect(SyncConflictResolver.isSettingKeySyncable('pref_hydration_daily_goal_ml'), isTrue);
-        expect(SyncConflictResolver.isSettingKeySyncable('streak_freezes_count'), isTrue);
-        expect(SyncConflictResolver.isSettingKeySyncable('pref_streak_freeze_count'), isTrue);
+      test(
+        'Enforces exact 7-key settings allowlist and rejects device-local keys',
+        () {
+          // 7 allowlisted keys
+          expect(
+            SyncConflictResolver.isSettingKeySyncable('display_units'),
+            isTrue,
+          );
+          expect(
+            SyncConflictResolver.isSettingKeySyncable('user_theme_mode'),
+            isTrue,
+          );
+          expect(
+            SyncConflictResolver.isSettingKeySyncable('water_goal'),
+            isTrue,
+          );
+          expect(
+            SyncConflictResolver.isSettingKeySyncable('water_glass_size'),
+            isTrue,
+          );
+          expect(
+            SyncConflictResolver.isSettingKeySyncable(
+              'pref_hydration_daily_goal_ml',
+            ),
+            isTrue,
+          );
+          expect(
+            SyncConflictResolver.isSettingKeySyncable('streak_freezes_count'),
+            isTrue,
+          );
+          expect(
+            SyncConflictResolver.isSettingKeySyncable(
+              'pref_streak_freeze_count',
+            ),
+            isTrue,
+          );
 
-        // Fictional keys dropped
-        expect(SyncConflictResolver.isSettingKeySyncable('weight_unit'), isFalse);
-        expect(SyncConflictResolver.isSettingKeySyncable('distance_unit'), isFalse);
-        expect(SyncConflictResolver.isSettingKeySyncable('height_unit'), isFalse);
-        expect(SyncConflictResolver.isSettingKeySyncable('theme_mode'), isFalse);
-        expect(SyncConflictResolver.isSettingKeySyncable('default_equipment_profile_id'), isFalse);
+          // Fictional keys dropped
+          expect(
+            SyncConflictResolver.isSettingKeySyncable('weight_unit'),
+            isFalse,
+          );
+          expect(
+            SyncConflictResolver.isSettingKeySyncable('distance_unit'),
+            isFalse,
+          );
+          expect(
+            SyncConflictResolver.isSettingKeySyncable('height_unit'),
+            isFalse,
+          );
+          expect(
+            SyncConflictResolver.isSettingKeySyncable('theme_mode'),
+            isFalse,
+          );
+          expect(
+            SyncConflictResolver.isSettingKeySyncable(
+              'default_equipment_profile_id',
+            ),
+            isFalse,
+          );
 
-        // Reminders & quiet hours
-        expect(SyncConflictResolver.isSettingKeySyncable('prefRemindWorkout'), isFalse);
-        expect(SyncConflictResolver.isSettingKeySyncable('pref_remind_meals'), isFalse);
-        expect(SyncConflictResolver.isSettingKeySyncable('prefQuietHoursStart'), isFalse);
-        expect(SyncConflictResolver.isSettingKeySyncable('pref_daily_logging_reminder_hour'), isFalse);
-        expect(SyncConflictResolver.isSettingKeySyncable('workout_reminder_days'), isFalse);
+          // Reminders & quiet hours
+          expect(
+            SyncConflictResolver.isSettingKeySyncable('prefRemindWorkout'),
+            isFalse,
+          );
+          expect(
+            SyncConflictResolver.isSettingKeySyncable('pref_remind_meals'),
+            isFalse,
+          );
+          expect(
+            SyncConflictResolver.isSettingKeySyncable('prefQuietHoursStart'),
+            isFalse,
+          );
+          expect(
+            SyncConflictResolver.isSettingKeySyncable(
+              'pref_daily_logging_reminder_hour',
+            ),
+            isFalse,
+          );
+          expect(
+            SyncConflictResolver.isSettingKeySyncable('workout_reminder_days'),
+            isFalse,
+          );
 
-        // Ephemeral today-surface state
-        expect(SyncConflictResolver.isSettingKeySyncable('water_logged'), isFalse);
-        expect(SyncConflictResolver.isSettingKeySyncable('water_last_logged_date'), isFalse);
-        expect(SyncConflictResolver.isSettingKeySyncable('weekly_action_type'), isFalse);
-        expect(SyncConflictResolver.isSettingKeySyncable('auto_sync_health_on_open'), isFalse);
+          // Ephemeral today-surface state
+          expect(
+            SyncConflictResolver.isSettingKeySyncable('water_logged'),
+            isFalse,
+          );
+          expect(
+            SyncConflictResolver.isSettingKeySyncable('water_last_logged_date'),
+            isFalse,
+          );
+          expect(
+            SyncConflictResolver.isSettingKeySyncable('weekly_action_type'),
+            isFalse,
+          );
+          expect(
+            SyncConflictResolver.isSettingKeySyncable(
+              'auto_sync_health_on_open',
+            ),
+            isFalse,
+          );
 
-        // System & secrets
-        expect(SyncConflictResolver.isSettingKeySyncable('offline_only'), isFalse);
-        expect(SyncConflictResolver.isSettingKeySyncable('pref_crash_reporting_enabled'), isFalse);
-        expect(SyncConflictResolver.isSettingKeySyncable('onboarding_completed'), isFalse);
-        expect(SyncConflictResolver.isSettingKeySyncable('indifit_auto_backup_device_secret_v1'), isFalse);
-        expect(SyncConflictResolver.isSettingKeySyncable('sync_last_synced_hlc_workouts'), isFalse);
-      });
+          // System & secrets
+          expect(
+            SyncConflictResolver.isSettingKeySyncable('offline_only'),
+            isFalse,
+          );
+          expect(
+            SyncConflictResolver.isSettingKeySyncable(
+              'pref_crash_reporting_enabled',
+            ),
+            isFalse,
+          );
+          expect(
+            SyncConflictResolver.isSettingKeySyncable('onboarding_completed'),
+            isFalse,
+          );
+          expect(
+            SyncConflictResolver.isSettingKeySyncable(
+              'indifit_auto_backup_device_secret_v1',
+            ),
+            isFalse,
+          );
+          expect(
+            SyncConflictResolver.isSettingKeySyncable(
+              'sync_last_synced_hlc_workouts',
+            ),
+            isFalse,
+          );
+        },
+      );
 
-      test('Catalog program identifier discriminates bundled starter plans from user programs', () {
-        expect(SyncConflictResolver.isCatalogProgramId('offline-starter::beginner-full-body-3-day'), isTrue);
-        expect(SyncConflictResolver.isCatalogProgramId('offline-starter::strength-foundation-3-day'), isTrue);
-        expect(SyncConflictResolver.isCatalogProgramId('user-program-uuid-12345'), isFalse);
-        expect(SyncConflictResolver.isCatalogProgramId('legacy-program:42'), isFalse);
-      });
+      test(
+        'Catalog program identifier discriminates bundled starter plans from user programs',
+        () {
+          expect(
+            SyncConflictResolver.isCatalogProgramId(
+              'offline-starter::beginner-full-body-3-day',
+            ),
+            isTrue,
+          );
+          expect(
+            SyncConflictResolver.isCatalogProgramId(
+              'offline-starter::strength-foundation-3-day',
+            ),
+            isTrue,
+          );
+          expect(
+            SyncConflictResolver.isCatalogProgramId('user-program-uuid-12345'),
+            isFalse,
+          );
+          expect(
+            SyncConflictResolver.isCatalogProgramId('legacy-program:42'),
+            isFalse,
+          );
+        },
+      );
 
       test('SyncTombstone enforces 30-day retention before expiration', () {
         final now = DateTime.utc(2026, 9, 3, 12, 0);
         final freshTombstone = SyncTombstone(
           entityId: 'item-1',
           domain: SyncDomain.workouts,
-          deletedAtHlc: const HlcTimestamp(millis: 100, counter: 0, nodeId: 'A'),
+          deletedAtHlc: const HlcTimestamp(
+            millis: 100,
+            counter: 0,
+            nodeId: 'A',
+          ),
           createdAtUtc: now.subtract(const Duration(days: 10)),
         );
         expect(freshTombstone.isExpired(now: now), isFalse);
@@ -280,7 +475,11 @@ void main() {
         final oldTombstone = SyncTombstone(
           entityId: 'item-2',
           domain: SyncDomain.workouts,
-          deletedAtHlc: const HlcTimestamp(millis: 100, counter: 0, nodeId: 'A'),
+          deletedAtHlc: const HlcTimestamp(
+            millis: 100,
+            counter: 0,
+            nodeId: 'A',
+          ),
           createdAtUtc: now.subtract(const Duration(days: 35)),
         );
         expect(oldTombstone.isExpired(now: now), isTrue);

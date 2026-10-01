@@ -17,20 +17,19 @@ Map<String, dynamic> _food(
   double protein = 6.0,
   double carbs = 12.0,
   double fat = 2.5,
-}) =>
-    {
-      'name': name,
-      'calories': calories,
-      'protein_g': protein,
-      'carbs_g': carbs,
-      'fat_g': fat,
-      'serving_size': 1.0,
-      'serving_unit': 'katori',
-    };
+}) => {
+  'name': name,
+  'calories': calories,
+  'protein_g': protein,
+  'carbs_g': carbs,
+  'fat_g': fat,
+  'serving_size': 1.0,
+  'serving_unit': 'katori',
+};
 
 /// Builds a structurally valid signed envelope plus its exact file bytes.
 ({Map<String, dynamic> envelopeJson, Map<String, List<int>> fileBytes})
-    _signedPack({
+_signedPack({
   List<Map<String, dynamic>> items = const [],
   String packId = 'regional-test-v1',
   int version = 1,
@@ -55,12 +54,9 @@ Map<String, dynamic> _food(
   return (
     envelopeJson: {
       ...unsigned,
-      'signature':
-          ContentPackValidator.signPayload(unsigned, signingKey),
+      'signature': ContentPackValidator.signPayload(unsigned, signingKey),
     },
-    fileBytes: {
-      'test.json': bytes,
-    },
+    fileBytes: {'test.json': bytes},
   );
 }
 
@@ -72,13 +68,12 @@ void main() {
     Map<String, dynamic> envelopeJson,
     Map<String, List<int>> fileBytes, {
     String appVersion = _appVersion,
-  }) =>
-      validator.validate(
-        envelopeJson: envelopeJson,
-        signingKey: _signingKey,
-        currentAppVersion: appVersion,
-        fileBytesByPath: fileBytes,
-      );
+  }) => validator.validate(
+    envelopeJson: envelopeJson,
+    signingKey: _signingKey,
+    currentAppVersion: appVersion,
+    fileBytesByPath: fileBytes,
+  );
 
   group('PV1-CONTENT-01A: envelope validation', () {
     test('Valid regional pack verifies and activates', () {
@@ -86,8 +81,7 @@ void main() {
       final result = validate(pack.envelopeJson, pack.fileBytes);
       expect(result.isValid, isTrue, reason: result.errors.join('; '));
 
-      final envelope =
-          ContentPackEnvelope.fromJson(pack.envelopeJson);
+      final envelope = ContentPackEnvelope.fromJson(pack.envelopeJson);
       final registry = ContentPackRegistry();
       registry.activateVerified(envelope: envelope, validation: result);
       expect(registry.activation, ContentPackActivation.active);
@@ -100,10 +94,7 @@ void main() {
         ..['signature'] = '0' * 64;
       final result = validate(tampered, pack.fileBytes);
       expect(result.isValid, isFalse);
-      expect(
-        result.errors.join(' '),
-        contains('Signature mismatch'),
-      );
+      expect(result.errors.join(' '), contains('Signature mismatch'));
     });
 
     test('Tampered byte fails the checksum, not the signature path', () {
@@ -131,17 +122,14 @@ void main() {
       files[0]['size_bytes'] = 999999;
       wrongSize['files'] = files;
       // Re-sign over the altered manifest so only the size check fires.
-      wrongSize['signature'] = ContentPackValidator.signPayload(
-        {
-          'pack_id': wrongSize['pack_id'],
-          'kind': wrongSize['kind'],
-          'version': wrongSize['version'],
-          'min_app_version': wrongSize['min_app_version'],
-          'issued_at_utc': wrongSize['issued_at_utc'],
-          'files': files,
-        },
-        _signingKey,
-      );
+      wrongSize['signature'] = ContentPackValidator.signPayload({
+        'pack_id': wrongSize['pack_id'],
+        'kind': wrongSize['kind'],
+        'version': wrongSize['version'],
+        'min_app_version': wrongSize['min_app_version'],
+        'issued_at_utc': wrongSize['issued_at_utc'],
+        'files': files,
+      }, _signingKey);
       final result = validate(wrongSize, pack.fileBytes);
       expect(result.isValid, isFalse);
       expect(result.errors.join(' '), contains('Size mismatch'));
@@ -162,14 +150,16 @@ void main() {
       Map<String, dynamic> mutate(
         Map<String, dynamic> Function(Map<String, dynamic>) fn,
       ) {
-        final copy = jsonDecode(jsonEncode(pack.envelopeJson))
-            as Map<String, dynamic>;
+        final copy =
+            jsonDecode(jsonEncode(pack.envelopeJson)) as Map<String, dynamic>;
         return fn(copy);
       }
 
       expect(
-        validate(mutate((m) => m..['kind'] = 'mysteryKind'), pack.fileBytes)
-            .isValid,
+        validate(
+          mutate((m) => m..['kind'] = 'mysteryKind'),
+          pack.fileBytes,
+        ).isValid,
         isFalse,
       );
       expect(
@@ -181,17 +171,16 @@ void main() {
         isFalse,
       );
       expect(
-        validate(
-          mutate((m) => m..remove('signature')),
-          pack.fileBytes,
-        ).isValid,
+        validate(mutate((m) => m..remove('signature')), pack.fileBytes).isValid,
         isFalse,
       );
     });
 
     test('Atwater-violating and negative items are rejected', () {
       final badMacro = _signedPack(
-        items: [_food('Fake', calories: 1000.0, protein: 1.0, carbs: 1.0, fat: 1.0)],
+        items: [
+          _food('Fake', calories: 1000.0, protein: 1.0, carbs: 1.0, fat: 1.0),
+        ],
       );
       final macroResult = validate(badMacro.envelopeJson, badMacro.fileBytes);
       expect(macroResult.isValid, isFalse);
@@ -206,9 +195,11 @@ void main() {
         isFalse,
       );
 
-      final nameless = _signedPack(items: [
-        {'calories': 100.0, 'protein_g': 5.0, 'carbs_g': 10.0, 'fat_g': 2.0},
-      ]);
+      final nameless = _signedPack(
+        items: [
+          {'calories': 100.0, 'protein_g': 5.0, 'carbs_g': 10.0, 'fat_g': 2.0},
+        ],
+      );
       expect(
         validate(nameless.envelopeJson, nameless.fileBytes).isValid,
         isFalse,

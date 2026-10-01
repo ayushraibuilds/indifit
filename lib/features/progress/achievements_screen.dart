@@ -143,7 +143,9 @@ class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
     final unlockedCount = _achievements.where((a) => a.isUnlocked).length;
     final allComplete =
         _achievements.isNotEmpty && unlockedCount == _achievements.length;
-    final recentlyUnlocked = AchievementService.getRecentlyUnlocked(_achievements);
+    final recentlyUnlocked = AchievementService.getRecentlyUnlocked(
+      _achievements,
+    );
 
     return ListView(
       padding: const EdgeInsets.all(B05Layout.space16),
@@ -155,9 +157,7 @@ class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
               ? 'All 9 achievements unlocked! Incredible dedication.'
               : '$unlockedCount of ${_achievements.length} achievements unlocked. Keep training and logging to earn badges.',
           child: B05Surface(
-            tone: allComplete
-                ? B05SurfaceTone.selected
-                : B05SurfaceTone.inset,
+            tone: allComplete ? B05SurfaceTone.selected : B05SurfaceTone.inset,
             padding: const EdgeInsets.all(B05Layout.space16),
             child: Row(
               children: [
@@ -244,18 +244,19 @@ class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
               key: const Key('recently_unlocked_carousel'),
               scrollDirection: Axis.horizontal,
               itemCount: recentlyUnlocked.length,
-              separatorBuilder: (_, _) => const SizedBox(width: B05Layout.space12),
+              separatorBuilder: (_, _) =>
+                  const SizedBox(width: B05Layout.space12),
               itemBuilder: (context, index) {
                 final item = recentlyUnlocked[index];
                 final dateStr = item.unlockedAt != null
-                    ? DateFormat('d MMM yyyy').format(item.unlockedAt!.toLocal())
+                    ? DateFormat(
+                        'd MMM yyyy',
+                      ).format(item.unlockedAt!.toLocal())
                     : null;
                 return InkWell(
                   borderRadius: BorderRadius.circular(B05Radii.large),
-                  onTap: () => showAchievementDetailSheet(
-                    context,
-                    achievement: item,
-                  ),
+                  onTap: () =>
+                      showAchievementDetailSheet(context, achievement: item),
                   child: B05Surface(
                     tone: B05SurfaceTone.selected,
                     radius: B05SurfaceRadius.large,
@@ -287,9 +288,9 @@ class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
                               const SizedBox(height: 2),
                               Text(
                                 dateStr,
-                                style: B05Typography.caption(context).copyWith(
-                                  color: colors.textSecondary,
-                                ),
+                                style: B05Typography.caption(
+                                  context,
+                                ).copyWith(color: colors.textSecondary),
                               ),
                             ],
                           ],
@@ -334,7 +335,9 @@ class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
               itemBuilder: (context, index) {
                 final item = _achievements[index];
                 final dateStr = item.unlockedAt != null
-                    ? DateFormat('d MMM yyyy').format(item.unlockedAt!.toLocal())
+                    ? DateFormat(
+                        'd MMM yyyy',
+                      ).format(item.unlockedAt!.toLocal())
                     : null;
                 final semanticLabel =
                     '${item.title}: ${item.description}. '
@@ -346,10 +349,8 @@ class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
                   child: InkWell(
                     key: Key('achievement_card_${item.id}'),
                     borderRadius: BorderRadius.circular(B05Radii.large),
-                    onTap: () => showAchievementDetailSheet(
-                      context,
-                      achievement: item,
-                    ),
+                    onTap: () =>
+                        showAchievementDetailSheet(context, achievement: item),
                     child: B05Surface(
                       tone: item.isUnlocked
                           ? B05SurfaceTone.selected

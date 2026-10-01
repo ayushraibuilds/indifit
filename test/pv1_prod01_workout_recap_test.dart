@@ -33,98 +33,101 @@ B02PerformedExerciseHistory _createExercise({
 
 void main() {
   group('PV1-PROD-01: WorkoutCompletionRecap model', () {
-    test('fromHistory computes exact factual metrics and exercise summaries', () {
-      final history = B02StrengthHistoryDetail(
-        sessionId: 101,
-        name: 'Full Body Push',
-        completedAt: DateTime.utc(2026, 9, 5, 10, 30),
-        durationSeconds: 3665, // 1h 1m 5s
-        completionKind: 'full',
-        totalVolumeKg: 2500.0,
-        scheduledOccurrenceId: null,
-        groups: const [],
-        exercises: [
-          _createExercise(
-            id: 'ex-1',
-            ordinal: 0,
-            actualExerciseId: 'bench-press',
-            actualExerciseNameSnapshot: 'Barbell Bench Press',
-            sets: [
-              B02PerformedSet(
-                id: 's-1',
-                performedExerciseId: 'ex-1',
-                ordinal: 0,
-                role: B02SetRole.warmup,
-                actualLoadKg: 40.0,
-                actualReps: 10,
-              ),
-              B02PerformedSet(
-                id: 's-2',
-                performedExerciseId: 'ex-1',
-                ordinal: 1,
-                role: B02SetRole.working,
-                actualLoadKg: 80.0,
-                actualReps: 8,
-              ),
-              B02PerformedSet(
-                id: 's-3',
-                performedExerciseId: 'ex-1',
-                ordinal: 2,
-                role: B02SetRole.working,
-                actualLoadKg: 85.0,
-                actualReps: 6,
-              ),
-            ],
-          ),
-          _createExercise(
-            id: 'ex-2',
-            ordinal: 1,
-            actualExerciseId: 'overhead-press',
-            actualExerciseNameSnapshot: 'Overhead Press',
-            sets: [
-              B02PerformedSet(
-                id: 's-4',
-                performedExerciseId: 'ex-2',
-                ordinal: 0,
-                role: B02SetRole.working,
-                actualLoadKg: 50.0,
-                actualReps: 10,
-              ),
-            ],
-          ),
-        ],
-      );
+    test(
+      'fromHistory computes exact factual metrics and exercise summaries',
+      () {
+        final history = B02StrengthHistoryDetail(
+          sessionId: 101,
+          name: 'Full Body Push',
+          completedAt: DateTime.utc(2026, 9, 5, 10, 30),
+          durationSeconds: 3665, // 1h 1m 5s
+          completionKind: 'full',
+          totalVolumeKg: 2500.0,
+          scheduledOccurrenceId: null,
+          groups: const [],
+          exercises: [
+            _createExercise(
+              id: 'ex-1',
+              ordinal: 0,
+              actualExerciseId: 'bench-press',
+              actualExerciseNameSnapshot: 'Barbell Bench Press',
+              sets: [
+                B02PerformedSet(
+                  id: 's-1',
+                  performedExerciseId: 'ex-1',
+                  ordinal: 0,
+                  role: B02SetRole.warmup,
+                  actualLoadKg: 40.0,
+                  actualReps: 10,
+                ),
+                B02PerformedSet(
+                  id: 's-2',
+                  performedExerciseId: 'ex-1',
+                  ordinal: 1,
+                  role: B02SetRole.working,
+                  actualLoadKg: 80.0,
+                  actualReps: 8,
+                ),
+                B02PerformedSet(
+                  id: 's-3',
+                  performedExerciseId: 'ex-1',
+                  ordinal: 2,
+                  role: B02SetRole.working,
+                  actualLoadKg: 85.0,
+                  actualReps: 6,
+                ),
+              ],
+            ),
+            _createExercise(
+              id: 'ex-2',
+              ordinal: 1,
+              actualExerciseId: 'overhead-press',
+              actualExerciseNameSnapshot: 'Overhead Press',
+              sets: [
+                B02PerformedSet(
+                  id: 's-4',
+                  performedExerciseId: 'ex-2',
+                  ordinal: 0,
+                  role: B02SetRole.working,
+                  actualLoadKg: 50.0,
+                  actualReps: 10,
+                ),
+              ],
+            ),
+          ],
+        );
 
-      final recap = WorkoutCompletionRecap.fromHistory(history);
+        final recap = WorkoutCompletionRecap.fromHistory(history);
 
-      expect(recap.sessionId, 101);
-      expect(recap.workoutTitle, 'Full Body Push');
-      expect(recap.durationSeconds, 3665);
-      expect(recap.formattedDuration, '1h 1m');
-      expect(recap.isPartial, false);
-      expect(recap.totalVolumeKg, 2500.0);
-      expect(recap.completedSetsCount, 4); // 3 + 1
-      expect(recap.completedExercisesCount, 2);
-      expect(recap.totalRepsCount, 34); // 10 + 8 + 6 + 10
-      // No previous compared: must NOT claim a verified first session.
-      expect(recap.previousComparison, isNull);
-      expect(recap.hasPreviousComparison, isFalse);
+        expect(recap.sessionId, 101);
+        expect(recap.workoutTitle, 'Full Body Push');
+        expect(recap.durationSeconds, 3665);
+        expect(recap.formattedDuration, '1h 1m');
+        expect(recap.isPartial, false);
+        expect(recap.totalVolumeKg, 2500.0);
+        expect(recap.completedSetsCount, 4); // 3 + 1
+        expect(recap.completedExercisesCount, 2);
+        expect(recap.totalRepsCount, 34); // 10 + 8 + 6 + 10
+        // No previous compared: must NOT claim a verified first session.
+        expect(recap.previousComparison, isNull);
+        expect(recap.hasPreviousComparison, isFalse);
 
-      expect(recap.exercises.length, 2);
-      final bench = recap.exercises[0];
-      expect(bench.exerciseName, 'Barbell Bench Press');
-      expect(bench.setsCount, 3);
-      expect(bench.topWeightKg, 85.0);
-      expect(bench.minReps, 6);
-      expect(bench.maxReps, 10);
+        expect(recap.exercises.length, 2);
+        final bench = recap.exercises[0];
+        expect(bench.exerciseName, 'Barbell Bench Press');
+        expect(bench.setsCount, 3);
+        expect(bench.topWeightKg, 85.0);
+        expect(bench.minReps, 6);
+        expect(bench.maxReps, 10);
 
-      final ohp = recap.exercises[1];
-      expect(ohp.exerciseName, 'Overhead Press');
-      expect(ohp.setsCount, 1);
-      expect(ohp.topWeightKg, 50.0);
-      expect(ohp.minReps, 10);
-      expect(ohp.maxReps, 10);
-    });
+        final ohp = recap.exercises[1];
+        expect(ohp.exerciseName, 'Overhead Press');
+        expect(ohp.setsCount, 1);
+        expect(ohp.topWeightKg, 50.0);
+        expect(ohp.minReps, 10);
+        expect(ohp.maxReps, 10);
+      },
+    );
 
     test('fromHistory computes comparison delta against previous session', () {
       final prevHistory = B02StrengthHistoryDetail(
@@ -220,119 +223,132 @@ void main() {
       expect(recap.previousComparison!.setsDelta, 1);
     });
 
-    test('fromLaunch calculates metrics correctly from in-memory launch draft', () {
-      final launch = B02StrengthExecutionLaunch(
-        draftId: 1,
-        occurrenceId: null,
-        executionSnapshotJson: '{}',
-        state: B02ExecutionDraftState(
-          snapshotId: 'snap-1',
-          snapshotVersion: 1,
-          activityType: B02ActivityType.strength,
-          routineName: 'Morning Upper',
-          elapsedSeconds: 150,
-          currentExerciseOrdinal: 0,
-          currentSetOrdinal: 0,
-          performedExercises: [
-            B02PerformedExerciseDraft(
-              id: 'd-ex-1',
+    test(
+      'fromLaunch calculates metrics correctly from in-memory launch draft',
+      () {
+        final launch = B02StrengthExecutionLaunch(
+          draftId: 1,
+          occurrenceId: null,
+          executionSnapshotJson: '{}',
+          state: B02ExecutionDraftState(
+            snapshotId: 'snap-1',
+            snapshotVersion: 1,
+            activityType: B02ActivityType.strength,
+            routineName: 'Morning Upper',
+            elapsedSeconds: 150,
+            currentExerciseOrdinal: 0,
+            currentSetOrdinal: 0,
+            performedExercises: [
+              B02PerformedExerciseDraft(
+                id: 'd-ex-1',
+                ordinal: 0,
+                actualExerciseId: 'pull-ups',
+                actualExerciseNameSnapshot: 'Pull-ups',
+                status: 'completed',
+                sets: [
+                  B02PerformedSet(
+                    id: 'd-s-1',
+                    performedExerciseId: 'd-ex-1',
+                    ordinal: 0,
+                    role: B02SetRole.working,
+                    actualLoadKg: 0.0,
+                    actualReps: 12,
+                  ),
+                  B02PerformedSet(
+                    id: 'd-s-2',
+                    performedExerciseId: 'd-ex-1',
+                    ordinal: 1,
+                    role: B02SetRole.working,
+                    actualLoadKg: 10.0,
+                    actualReps: 8,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+
+        final recap = WorkoutCompletionRecap.fromLaunch(launch);
+
+        expect(recap.workoutTitle, 'Morning Upper');
+        expect(recap.durationSeconds, 150);
+        expect(recap.formattedDuration, '2m 30s');
+        expect(recap.completedSetsCount, 2);
+        expect(recap.totalRepsCount, 20);
+        expect(recap.totalVolumeKg, 80.0); // 10.0 * 8
+        expect(recap.previousComparison, isNull);
+        expect(recap.hasPreviousComparison, isFalse);
+      },
+    );
+
+    test(
+      'generateShareText produces factual output with privacy redactions',
+      () {
+        final history = B02StrengthHistoryDetail(
+          sessionId: 101,
+          name: 'Leg Day',
+          completedAt: DateTime.utc(2026, 9, 5, 10, 30),
+          durationSeconds: 1800,
+          completionKind: 'full',
+          totalVolumeKg: 3200.0,
+          scheduledOccurrenceId: null,
+          groups: const [],
+          exercises: [
+            _createExercise(
+              id: 'ex-1',
               ordinal: 0,
-              actualExerciseId: 'pull-ups',
-              actualExerciseNameSnapshot: 'Pull-ups',
-              status: 'completed',
+              actualExerciseId: 'squat',
+              actualExerciseNameSnapshot: 'Back Squat',
               sets: [
                 B02PerformedSet(
-                  id: 'd-s-1',
-                  performedExerciseId: 'd-ex-1',
+                  id: 's-1',
+                  performedExerciseId: 'ex-1',
                   ordinal: 0,
                   role: B02SetRole.working,
-                  actualLoadKg: 0.0,
-                  actualReps: 12,
-                ),
-                B02PerformedSet(
-                  id: 'd-s-2',
-                  performedExerciseId: 'd-ex-1',
-                  ordinal: 1,
-                  role: B02SetRole.working,
-                  actualLoadKg: 10.0,
-                  actualReps: 8,
+                  actualLoadKg: 100.0,
+                  actualReps: 5,
                 ),
               ],
             ),
           ],
-        ),
-      );
+        );
 
-      final recap = WorkoutCompletionRecap.fromLaunch(launch);
+        final recap = WorkoutCompletionRecap.fromHistory(history);
 
-      expect(recap.workoutTitle, 'Morning Upper');
-      expect(recap.durationSeconds, 150);
-      expect(recap.formattedDuration, '2m 30s');
-      expect(recap.completedSetsCount, 2);
-      expect(recap.totalRepsCount, 20);
-      expect(recap.totalVolumeKg, 80.0); // 10.0 * 8
-      expect(recap.previousComparison, isNull);
-      expect(recap.hasPreviousComparison, isFalse);
-    });
+        // 1. With weights
+        final textWithWeights = recap.generateShareText(includeWeights: true);
+        expect(textWithWeights, contains('IndiFit Workout: Leg Day'));
+        expect(textWithWeights, contains('Duration: 30m 0s'));
+        expect(textWithWeights, contains('Total Volume: 3200.0 kg'));
+        expect(
+          textWithWeights,
+          contains('Back Squat: 1 sets × 5 reps (top: 100.0 kg)'),
+        );
+        // No unverified "first time" milestone may be claimed.
+        expect(textWithWeights, isNot(contains('First time logging')));
 
-    test('generateShareText produces factual output with privacy redactions', () {
-      final history = B02StrengthHistoryDetail(
-        sessionId: 101,
-        name: 'Leg Day',
-        completedAt: DateTime.utc(2026, 9, 5, 10, 30),
-        durationSeconds: 1800,
-        completionKind: 'full',
-        totalVolumeKg: 3200.0,
-        scheduledOccurrenceId: null,
-        groups: const [],
-        exercises: [
-          _createExercise(
-            id: 'ex-1',
-            ordinal: 0,
-            actualExerciseId: 'squat',
-            actualExerciseNameSnapshot: 'Back Squat',
-            sets: [
-              B02PerformedSet(
-                id: 's-1',
-                performedExerciseId: 'ex-1',
-                ordinal: 0,
-                role: B02SetRole.working,
-                actualLoadKg: 100.0,
-                actualReps: 5,
-              ),
-            ],
-          ),
-        ],
-      );
+        // Invariants check: NEVER contains speculative metrics
+        expect(textWithWeights, isNot(contains('e1RM')));
+        expect(textWithWeights, isNot(contains('calories')));
+        expect(textWithWeights, isNot(contains('readiness')));
 
-      final recap = WorkoutCompletionRecap.fromHistory(history);
-
-      // 1. With weights
-      final textWithWeights = recap.generateShareText(includeWeights: true);
-      expect(textWithWeights, contains('IndiFit Workout: Leg Day'));
-      expect(textWithWeights, contains('Duration: 30m 0s'));
-      expect(textWithWeights, contains('Total Volume: 3200.0 kg'));
-      expect(textWithWeights, contains('Back Squat: 1 sets × 5 reps (top: 100.0 kg)'));
-      // No unverified "first time" milestone may be claimed.
-      expect(textWithWeights, isNot(contains('First time logging')));
-
-      // Invariants check: NEVER contains speculative metrics
-      expect(textWithWeights, isNot(contains('e1RM')));
-      expect(textWithWeights, isNot(contains('calories')));
-      expect(textWithWeights, isNot(contains('readiness')));
-
-      // 2. Privacy redacted (without weights)
-      final textWithoutWeights = recap.generateShareText(includeWeights: false);
-      expect(textWithoutWeights, contains('IndiFit Workout: Leg Day'));
-      expect(textWithoutWeights, contains('Duration: 30m 0s'));
-      expect(textWithoutWeights, isNot(contains('Total Volume:')));
-      expect(textWithoutWeights, isNot(contains('100.0 kg')));
-      expect(textWithoutWeights, contains('Back Squat: 1 sets × 5 reps'));
-    });
+        // 2. Privacy redacted (without weights)
+        final textWithoutWeights = recap.generateShareText(
+          includeWeights: false,
+        );
+        expect(textWithoutWeights, contains('IndiFit Workout: Leg Day'));
+        expect(textWithoutWeights, contains('Duration: 30m 0s'));
+        expect(textWithoutWeights, isNot(contains('Total Volume:')));
+        expect(textWithoutWeights, isNot(contains('100.0 kg')));
+        expect(textWithoutWeights, contains('Back Squat: 1 sets × 5 reps'));
+      },
+    );
   });
 
   group('PV1-PROD-01: WorkoutShareCard Widget', () {
-    testWidgets('renders all factual metrics and share button correctly', (tester) async {
+    testWidgets('renders all factual metrics and share button correctly', (
+      tester,
+    ) async {
       final history = B02StrengthHistoryDetail(
         sessionId: 101,
         name: 'Push Routine',
@@ -368,9 +384,7 @@ void main() {
         MaterialApp(
           theme: AppTheme.lightTheme,
           home: Scaffold(
-            body: SingleChildScrollView(
-              child: WorkoutShareCard(recap: recap),
-            ),
+            body: SingleChildScrollView(child: WorkoutShareCard(recap: recap)),
           ),
         ),
       );
@@ -410,41 +424,44 @@ void main() {
       expect(find.text('Share workout recap'), findsOneWidget);
     });
 
-    testWidgets('showWorkoutShareSheet opens bottom sheet containing WorkoutShareCard', (tester) async {
-      final history = B02StrengthHistoryDetail(
-        sessionId: 102,
-        name: 'Pull Routine',
-        completedAt: DateTime.utc(2026, 9, 5, 11, 0),
-        durationSeconds: 1200,
-        completionKind: 'full',
-        totalVolumeKg: 500.0,
-        scheduledOccurrenceId: null,
-        groups: const [],
-        exercises: const [],
-      );
+    testWidgets(
+      'showWorkoutShareSheet opens bottom sheet containing WorkoutShareCard',
+      (tester) async {
+        final history = B02StrengthHistoryDetail(
+          sessionId: 102,
+          name: 'Pull Routine',
+          completedAt: DateTime.utc(2026, 9, 5, 11, 0),
+          durationSeconds: 1200,
+          completionKind: 'full',
+          totalVolumeKg: 500.0,
+          scheduledOccurrenceId: null,
+          groups: const [],
+          exercises: const [],
+        );
 
-      final recap = WorkoutCompletionRecap.fromHistory(history);
+        final recap = WorkoutCompletionRecap.fromHistory(history);
 
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: AppTheme.lightTheme,
-          home: Scaffold(
-            body: Builder(
-              builder: (context) => ElevatedButton(
-                onPressed: () => showWorkoutShareSheet(context, recap),
-                child: const Text('Open Share Sheet'),
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: AppTheme.lightTheme,
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () => showWorkoutShareSheet(context, recap),
+                  child: const Text('Open Share Sheet'),
+                ),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      await tester.tap(find.text('Open Share Sheet'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.text('Open Share Sheet'));
+        await tester.pumpAndSettle();
 
-      expect(find.byType(WorkoutShareCard), findsOneWidget);
-      expect(find.text('Pull Routine'), findsOneWidget);
-      expect(find.byKey(const Key('workout_share_button')), findsOneWidget);
-    });
+        expect(find.byType(WorkoutShareCard), findsOneWidget);
+        expect(find.text('Pull Routine'), findsOneWidget);
+        expect(find.byKey(const Key('workout_share_button')), findsOneWidget);
+      },
+    );
   });
 }

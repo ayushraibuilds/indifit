@@ -38,7 +38,10 @@ class _CloudBackupCardState extends ConsumerState<CloudBackupCard> {
       if (success) {
         _showSnack('Cloud backup completed.');
       } else {
-        _showSnack('Could not complete cloud backup. Please check your connection.', isError: true);
+        _showSnack(
+          'Could not complete cloud backup. Please check your connection.',
+          isError: true,
+        );
       }
     } catch (e) {
       _showSnack('Cloud backup failed: $e', isError: true);
@@ -49,7 +52,9 @@ class _CloudBackupCardState extends ConsumerState<CloudBackupCard> {
     }
   }
 
-  Future<void> _showHistoryDialog(List<RemoteBackupSnapshotMetadata> snapshots) async {
+  Future<void> _showHistoryDialog(
+    List<RemoteBackupSnapshotMetadata> snapshots,
+  ) async {
     await showDialog<void>(
       context: context,
       builder: (dialogCtx) => AlertDialog(
@@ -67,12 +72,19 @@ class _CloudBackupCardState extends ConsumerState<CloudBackupCard> {
                   separatorBuilder: (_, _) => const Divider(),
                   itemBuilder: (ctx, index) {
                     final s = snapshots[index];
-                    final dateStr = s.createdAtUtc.toLocal().toString().split('.').first;
+                    final dateStr = s.createdAtUtc
+                        .toLocal()
+                        .toString()
+                        .split('.')
+                        .first;
                     final sizeKb = (s.byteSize / 1024).toStringAsFixed(1);
 
                     return ListTile(
                       contentPadding: EdgeInsets.zero,
-                      title: Text(dateStr, style: const TextStyle(fontWeight: FontWeight.w600)),
+                      title: Text(
+                        dateStr,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
                       subtitle: Text('${s.deviceId} • $sizeKb KB'),
                       trailing: TextButton(
                         child: const Text('Restore'),
@@ -227,13 +239,25 @@ class _CloudBackupCardState extends ConsumerState<CloudBackupCard> {
     );
   }
 
-  Widget _buildStatusContent(BuildContext context, ConnectedStatusState status) {
+  Widget _buildStatusContent(
+    BuildContext context,
+    ConnectedStatusState status,
+  ) {
     final colors = context.b05Colors;
 
     final (icon, labelColor) = switch (status.status) {
-      ConnectedStatus.synced => (Icons.check_circle_rounded, colors.success.foreground),
-      ConnectedStatus.pending || ConnectedStatus.inFlight => (Icons.hourglass_top_rounded, colors.warning.foreground),
-      ConnectedStatus.offline => (Icons.cloud_off_rounded, colors.textSecondary),
+      ConnectedStatus.synced => (
+        Icons.check_circle_rounded,
+        colors.success.foreground,
+      ),
+      ConnectedStatus.pending || ConnectedStatus.inFlight => (
+        Icons.hourglass_top_rounded,
+        colors.warning.foreground,
+      ),
+      ConnectedStatus.offline => (
+        Icons.cloud_off_rounded,
+        colors.textSecondary,
+      ),
       _ => (Icons.cloud_queue_rounded, colors.textPrimary),
     };
 
@@ -263,7 +287,9 @@ class _CloudBackupCardState extends ConsumerState<CloudBackupCard> {
           children: [
             B05ActionButton(
               emphasis: B05ActionEmphasis.primary,
-              icon: _isBackingUp ? Icons.hourglass_empty_rounded : Icons.cloud_upload_rounded,
+              icon: _isBackingUp
+                  ? Icons.hourglass_empty_rounded
+                  : Icons.cloud_upload_rounded,
               label: _isBackingUp ? 'Backing up...' : 'Back up now',
               hint: 'Create an encrypted cloud backup snapshot now.',
               onPressed: _isBackingUp ? null : _handleBackUpNow,

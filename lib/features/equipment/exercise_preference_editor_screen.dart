@@ -165,9 +165,9 @@ class _ExercisePreferenceEditorScreenState
         final msg = e is ArgumentError
             ? e.message.toString()
             : 'Exercise preferences could not be saved. Try again.';
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(msg)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(msg)));
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -292,10 +292,7 @@ class _ExercisePreferenceEditorScreenState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'General Exercise Note',
-            style: B05Typography.title(context),
-          ),
+          Text('General Exercise Note', style: B05Typography.title(context)),
           const SizedBox(height: B05Layout.space8),
           TextField(
             controller: _generalNoteController,
@@ -339,10 +336,7 @@ class _ExercisePreferenceEditorScreenState
           ),
           if (_setupValueControllers.isEmpty) ...[
             const SizedBox(height: B05Layout.space12),
-            Text(
-              'Quick suggestions:',
-              style: B05Typography.caption(context),
-            ),
+            Text('Quick suggestions:', style: B05Typography.caption(context)),
             const SizedBox(height: B05Layout.space8),
             Wrap(
               spacing: B05Layout.space8,

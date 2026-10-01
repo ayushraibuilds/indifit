@@ -35,9 +35,9 @@ class HydrationRepository {
     SharedPreferences? prefs,
     Uuid? uuid,
     LocalScheduleDateService? dateService,
-  })  : _prefsInstance = prefs,
-        _uuid = uuid ?? const Uuid(),
-        _dateService = dateService ?? LocalScheduleDateService();
+  }) : _prefsInstance = prefs,
+       _uuid = uuid ?? const Uuid(),
+       _dateService = dateService ?? LocalScheduleDateService();
 
   Future<SharedPreferences> _getPrefs() async =>
       _prefsInstance ?? await SharedPreferences.getInstance();
@@ -89,23 +89,27 @@ class HydrationRepository {
     DailyHydration? record;
     if (_db != null) {
       try {
-        record = await (_db.select(_db.dailyHydrations)
-              ..where((tbl) => tbl.dateString.equals(localDate)))
-            .getSingleOrNull();
+        record = await (_db.select(
+          _db.dailyHydrations,
+        )..where((tbl) => tbl.dateString.equals(localDate))).getSingleOrNull();
       } catch (_) {
         // Database might be opening in test or edge conditions
       }
     }
 
-    final goalMl = record?.goalMl ??
+    final goalMl =
+        record?.goalMl ??
         prefs.getInt(prefHydrationDailyGoalMl) ??
         _goalMlFromLegacyGlasses(prefs);
 
     if (rawList != null && rawList.isNotEmpty) {
-      final entries = rawList
-          .map((e) => HydrationIntakeEntry.fromJson(e as Map<String, dynamic>))
-          .toList()
-        ..sort((a, b) => a.loggedAtUtc.compareTo(b.loggedAtUtc));
+      final entries =
+          rawList
+              .map(
+                (e) => HydrationIntakeEntry.fromJson(e as Map<String, dynamic>),
+              )
+              .toList()
+            ..sort((a, b) => a.loggedAtUtc.compareTo(b.loggedAtUtc));
       final totalMl = entries.fold<int>(0, (sum, e) => sum + e.amountMl);
       return HydrationDailyReadModel(
         localDate: localDate,
@@ -226,20 +230,23 @@ class HydrationRepository {
       (sum, item) => sum + ((item['amountMl'] as num?)?.toInt() ?? 0),
     );
 
-    final goalMl = prefs.getInt(prefHydrationDailyGoalMl) ??
+    final goalMl =
+        prefs.getInt(prefHydrationDailyGoalMl) ??
         _goalMlFromLegacyGlasses(prefs);
 
     // Upsert SQLite daily_hydrations row atomically
     if (_db != null) {
-      await _db.into(_db.dailyHydrations).insert(
-        DailyHydrationsCompanion.insert(
-          dateString: localDate,
-          totalMl: totalMl,
-          goalMl: goalMl,
-          updatedAt: Value(_dateService.nowUtc()),
-        ),
-        mode: InsertMode.insertOrReplace,
-      );
+      await _db
+          .into(_db.dailyHydrations)
+          .insert(
+            DailyHydrationsCompanion.insert(
+              dateString: localDate,
+              totalMl: totalMl,
+              goalMl: goalMl,
+              updatedAt: Value(_dateService.nowUtc()),
+            ),
+            mode: InsertMode.insertOrReplace,
+          );
     }
 
     // Sync legacy mirror
@@ -258,18 +265,21 @@ class HydrationRepository {
     final dayList = entriesMap[localDate];
     if (dayList == null) {
       if (entryId.startsWith('summary_') || entryId.startsWith('legacy_')) {
-        final goalMl = prefs.getInt(prefHydrationDailyGoalMl) ??
+        final goalMl =
+            prefs.getInt(prefHydrationDailyGoalMl) ??
             _goalMlFromLegacyGlasses(prefs);
         if (_db != null) {
-          await _db.into(_db.dailyHydrations).insert(
-            DailyHydrationsCompanion.insert(
-              dateString: localDate,
-              totalMl: 0,
-              goalMl: goalMl,
-              updatedAt: Value(_dateService.nowUtc()),
-            ),
-            mode: InsertMode.insertOrReplace,
-          );
+          await _db
+              .into(_db.dailyHydrations)
+              .insert(
+                DailyHydrationsCompanion.insert(
+                  dateString: localDate,
+                  totalMl: 0,
+                  goalMl: goalMl,
+                  updatedAt: Value(_dateService.nowUtc()),
+                ),
+                mode: InsertMode.insertOrReplace,
+              );
         }
         await _syncLegacyMirror(prefs, localDate, 0, goalMl);
       }
@@ -287,19 +297,22 @@ class HydrationRepository {
       (sum, item) => sum + ((item['amountMl'] as num?)?.toInt() ?? 0),
     );
 
-    final goalMl = prefs.getInt(prefHydrationDailyGoalMl) ??
+    final goalMl =
+        prefs.getInt(prefHydrationDailyGoalMl) ??
         _goalMlFromLegacyGlasses(prefs);
 
     if (_db != null) {
-      await _db.into(_db.dailyHydrations).insert(
-        DailyHydrationsCompanion.insert(
-          dateString: localDate,
-          totalMl: totalMl,
-          goalMl: goalMl,
-          updatedAt: Value(DateTime.now().toUtc()),
-        ),
-        mode: InsertMode.insertOrReplace,
-      );
+      await _db
+          .into(_db.dailyHydrations)
+          .insert(
+            DailyHydrationsCompanion.insert(
+              dateString: localDate,
+              totalMl: totalMl,
+              goalMl: goalMl,
+              updatedAt: Value(DateTime.now().toUtc()),
+            ),
+            mode: InsertMode.insertOrReplace,
+          );
     }
 
     await _syncLegacyMirror(prefs, localDate, totalMl, goalMl);
@@ -340,21 +353,23 @@ class HydrationRepository {
     }
 
     if (_db != null) {
-      final record = await (_db.select(_db.dailyHydrations)
-            ..where((tbl) => tbl.dateString.equals(localDate)))
-          .getSingleOrNull();
+      final record = await (_db.select(
+        _db.dailyHydrations,
+      )..where((tbl) => tbl.dateString.equals(localDate))).getSingleOrNull();
       if (record != null && record.totalMl > 0) {
         final decrement = amountMl ?? defaultGlassSizeMl;
         final newTotal = (record.totalMl - decrement).clamp(0, 1000000);
-        await _db.into(_db.dailyHydrations).insert(
-          DailyHydrationsCompanion.insert(
-            dateString: localDate,
-            totalMl: newTotal,
-            goalMl: record.goalMl,
-            updatedAt: Value(_dateService.nowUtc()),
-          ),
-          mode: InsertMode.insertOrReplace,
-        );
+        await _db
+            .into(_db.dailyHydrations)
+            .insert(
+              DailyHydrationsCompanion.insert(
+                dateString: localDate,
+                totalMl: newTotal,
+                goalMl: record.goalMl,
+                updatedAt: Value(_dateService.nowUtc()),
+              ),
+              mode: InsertMode.insertOrReplace,
+            );
         await _syncLegacyMirror(prefs, localDate, newTotal, record.goalMl);
       }
     }
@@ -393,19 +408,22 @@ class HydrationRepository {
       (sum, item) => sum + ((item['amountMl'] as num?)?.toInt() ?? 0),
     );
 
-    final goalMl = prefs.getInt(prefHydrationDailyGoalMl) ??
+    final goalMl =
+        prefs.getInt(prefHydrationDailyGoalMl) ??
         _goalMlFromLegacyGlasses(prefs);
 
     if (_db != null) {
-      await _db.into(_db.dailyHydrations).insert(
-        DailyHydrationsCompanion.insert(
-          dateString: localDate,
-          totalMl: totalMl,
-          goalMl: goalMl,
-          updatedAt: Value(DateTime.now().toUtc()),
-        ),
-        mode: InsertMode.insertOrReplace,
-      );
+      await _db
+          .into(_db.dailyHydrations)
+          .insert(
+            DailyHydrationsCompanion.insert(
+              dateString: localDate,
+              totalMl: totalMl,
+              goalMl: goalMl,
+              updatedAt: Value(DateTime.now().toUtc()),
+            ),
+            mode: InsertMode.insertOrReplace,
+          );
     }
 
     await _syncLegacyMirror(prefs, localDate, totalMl, goalMl);
@@ -435,20 +453,22 @@ class HydrationRepository {
 
     if (_db != null) {
       final targetDate = forDate ?? _currentDateKey();
-      final existing = await (_db.select(_db.dailyHydrations)
-            ..where((tbl) => tbl.dateString.equals(targetDate)))
-          .getSingleOrNull();
+      final existing = await (_db.select(
+        _db.dailyHydrations,
+      )..where((tbl) => tbl.dateString.equals(targetDate))).getSingleOrNull();
 
       final totalMl = existing?.totalMl ?? 0;
-      await _db.into(_db.dailyHydrations).insert(
-        DailyHydrationsCompanion.insert(
-          dateString: targetDate,
-          totalMl: totalMl,
-          goalMl: goalMl,
-          updatedAt: Value(_dateService.nowUtc()),
-        ),
-        mode: InsertMode.insertOrReplace,
-      );
+      await _db
+          .into(_db.dailyHydrations)
+          .insert(
+            DailyHydrationsCompanion.insert(
+              dateString: targetDate,
+              totalMl: totalMl,
+              goalMl: goalMl,
+              updatedAt: Value(_dateService.nowUtc()),
+            ),
+            mode: InsertMode.insertOrReplace,
+          );
     }
   }
 

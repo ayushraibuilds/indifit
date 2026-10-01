@@ -1,10 +1,8 @@
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/di/providers.dart';
 import '../../core/nutrition_household_measures.dart';
 import '../../core/typed_quantities.dart';
 import '../../data/repositories/nutrition_food_catalog_repository.dart';
-
 
 /// Food search view data (PV1-ENG-05D first pass).
 ///
@@ -130,4 +128,3 @@ final canonicalRecentFoodsProvider =
     });
 
 enum CanonicalFoodAction { edit, copy, delete }
-

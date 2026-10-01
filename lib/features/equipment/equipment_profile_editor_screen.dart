@@ -93,7 +93,8 @@ class _EquipmentProfileEditorScreenState
       if (_nameController.text.trim().isEmpty) {
         _nameController.text = preset.name;
       }
-      if (_noteController.text.trim().isEmpty && preset.description.isNotEmpty) {
+      if (_noteController.text.trim().isEmpty &&
+          preset.description.isNotEmpty) {
         _noteController.text = preset.description;
       }
 
@@ -102,8 +103,9 @@ class _EquipmentProfileEditorScreenState
         final isIncluded = includedSet.contains(item.id);
         _availability[item.id] = isIncluded;
         if (isIncluded && preset.standardIncrements.containsKey(item.id)) {
-          _incrementControllers[item.id]?.text =
-              preset.standardIncrements[item.id]!.toString();
+          _incrementControllers[item.id]?.text = preset
+              .standardIncrements[item.id]!
+              .toString();
         } else if (!isIncluded) {
           _incrementControllers[item.id]?.clear();
         }
@@ -168,9 +170,9 @@ class _EquipmentProfileEditorScreenState
           )
           .toList(growable: false);
     } on ArgumentError catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message.toString())),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.message.toString())));
       return;
     }
 
@@ -217,9 +219,9 @@ class _EquipmentProfileEditorScreenState
             : e is StateError
             ? e.message
             : 'Equipment profile could not be saved. Try again.';
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorMessage)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(errorMessage)));
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -232,9 +234,7 @@ class _EquipmentProfileEditorScreenState
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          widget.profileId == null ? 'New Profile' : 'Edit Profile',
-        ),
+        title: Text(widget.profileId == null ? 'New Profile' : 'Edit Profile'),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -262,10 +262,7 @@ class _EquipmentProfileEditorScreenState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Profile Details',
-            style: B05Typography.title(context),
-          ),
+          Text('Profile Details', style: B05Typography.title(context)),
           const SizedBox(height: B05Layout.space12),
           TextField(
             controller: _nameController,
@@ -280,7 +277,8 @@ class _EquipmentProfileEditorScreenState
           TextField(
             controller: _noteController,
             decoration: const InputDecoration(
-              labelText: 'Notes (optional, e.g. Basement setup with power rack)',
+              labelText:
+                  'Notes (optional, e.g. Basement setup with power rack)',
               border: OutlineInputBorder(),
             ),
             maxLines: 2,
@@ -291,8 +289,7 @@ class _EquipmentProfileEditorScreenState
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             decoration: const InputDecoration(
               labelText: 'Default weight increment (kg, optional)',
-              helperText:
-                  'Used when an item does not have its own increment.',
+              helperText: 'Used when an item does not have its own increment.',
               border: OutlineInputBorder(),
             ),
           ),
@@ -309,12 +306,13 @@ class _EquipmentProfileEditorScreenState
         children: [
           Row(
             children: [
-              Icon(Icons.auto_awesome, size: B05Layout.iconMedium, color: colors.action),
-              const SizedBox(width: B05Layout.space8),
-              Text(
-                'Quick Presets',
-                style: B05Typography.label(context),
+              Icon(
+                Icons.auto_awesome,
+                size: B05Layout.iconMedium,
+                color: colors.action,
               ),
+              const SizedBox(width: B05Layout.space8),
+              Text('Quick Presets', style: B05Typography.label(context)),
             ],
           ),
           const SizedBox(height: B05Layout.space4),
@@ -350,10 +348,7 @@ class _EquipmentProfileEditorScreenState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Equipment Availability',
-          style: B05Typography.title(context),
-        ),
+        Text('Equipment Availability', style: B05Typography.title(context)),
         const SizedBox(height: B05Layout.space4),
         Text(
           'Bodyweight is always available and is not stored as an item.',
@@ -369,20 +364,28 @@ class _EquipmentProfileEditorScreenState
           return Padding(
             padding: const EdgeInsets.only(bottom: B05Layout.space8),
             child: B05Surface(
-              tone: isAvailable ? B05SurfaceTone.selected : B05SurfaceTone.section,
+              tone: isAvailable
+                  ? B05SurfaceTone.selected
+                  : B05SurfaceTone.section,
               padding: const EdgeInsets.all(B05Layout.space12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
-                    secondary: Icon(icon, color: isAvailable ? colors.action : colors.textSecondary),
+                    secondary: Icon(
+                      icon,
+                      color: isAvailable ? colors.action : colors.textSecondary,
+                    ),
                     title: Text(
                       item.displayName,
                       style: B05Typography.label(context),
                     ),
                     subtitle: description.isNotEmpty
-                        ? Text(description, style: B05Typography.caption(context))
+                        ? Text(
+                            description,
+                            style: B05Typography.caption(context),
+                          )
                         : null,
                     value: isAvailable,
                     onChanged: (value) {
@@ -395,10 +398,12 @@ class _EquipmentProfileEditorScreenState
                       padding: const EdgeInsets.only(left: 40.0),
                       child: TextField(
                         controller: _incrementControllers[item.id],
-                        keyboardType:
-                            const TextInputType.numberWithOptions(decimal: true),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
                         decoration: InputDecoration(
-                          labelText: '${item.displayName} increment (kg, optional)',
+                          labelText:
+                              '${item.displayName} increment (kg, optional)',
                           hintText: 'e.g. 2.5',
                           isDense: true,
                           border: const OutlineInputBorder(),

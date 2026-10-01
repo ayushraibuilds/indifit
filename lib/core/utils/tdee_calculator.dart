@@ -35,13 +35,14 @@ class MacroTargets {
     int? maxCalories,
     double? minProteinG,
     double? maxProteinG,
-  })  : minCalories = minCalories ?? calories,
-        maxCalories = maxCalories ?? calories,
-        minProteinG = minProteinG ?? proteinG,
-        maxProteinG = maxProteinG ?? proteinG;
+  }) : minCalories = minCalories ?? calories,
+       maxCalories = maxCalories ?? calories,
+       minProteinG = minProteinG ?? proteinG,
+       maxProteinG = maxProteinG ?? proteinG;
 
   String get calorieRangeLabel => '$minCalories–$maxCalories kcal';
-  String get proteinRangeLabel => '${minProteinG.round()}–${maxProteinG.round()}g';
+  String get proteinRangeLabel =>
+      '${minProteinG.round()}–${maxProteinG.round()}g';
 }
 
 class TdeeCalculator {
@@ -123,8 +124,10 @@ class TdeeCalculator {
     // Protein: 2.0g per kg for weightLoss/muscleGain, 1.6g for maintain
     final proteinPerKg = goal == FitnessGoal.maintain ? 1.6 : 2.0;
     final proteinG = (weightKg * proteinPerKg).clamp(50.0, 250.0);
-    final minProteinG = (weightKg * (goal == FitnessGoal.maintain ? 1.4 : 1.6)).clamp(50.0, 220.0);
-    final maxProteinG = (weightKg * (goal == FitnessGoal.maintain ? 1.8 : 2.2)).clamp(60.0, 250.0);
+    final minProteinG = (weightKg * (goal == FitnessGoal.maintain ? 1.4 : 1.6))
+        .clamp(50.0, 220.0);
+    final maxProteinG = (weightKg * (goal == FitnessGoal.maintain ? 1.8 : 2.2))
+        .clamp(60.0, 250.0);
 
     // Fat: 25% of total calories (9 kcal/g)
     final fatCalFraction = 0.25;

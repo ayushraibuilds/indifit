@@ -35,13 +35,13 @@ class RestAnchorRecord {
       startedAtUtc.add(Duration(seconds: totalTargetSeconds));
 
   Map<String, dynamic> toJson() => {
-        'periodId': periodId,
-        'exerciseName': exerciseName,
-        'startedAtUtc': startedAtUtc.toIso8601String(),
-        'baseTargetSeconds': baseTargetSeconds,
-        'accumulatedExtraSeconds': accumulatedExtraSeconds,
-        'hasExactAlarmAnchor': hasExactAlarmAnchor,
-      };
+    'periodId': periodId,
+    'exerciseName': exerciseName,
+    'startedAtUtc': startedAtUtc.toIso8601String(),
+    'baseTargetSeconds': baseTargetSeconds,
+    'accumulatedExtraSeconds': accumulatedExtraSeconds,
+    'hasExactAlarmAnchor': hasExactAlarmAnchor,
+  };
 
   factory RestAnchorRecord.fromJson(Map<String, dynamic> json) =>
       RestAnchorRecord(
@@ -56,16 +56,15 @@ class RestAnchorRecord {
   RestAnchorRecord copyWith({
     int? accumulatedExtraSeconds,
     bool? hasExactAlarmAnchor,
-  }) =>
-      RestAnchorRecord(
-        periodId: periodId,
-        exerciseName: exerciseName,
-        startedAtUtc: startedAtUtc,
-        baseTargetSeconds: baseTargetSeconds,
-        accumulatedExtraSeconds:
-            accumulatedExtraSeconds ?? this.accumulatedExtraSeconds,
-        hasExactAlarmAnchor: hasExactAlarmAnchor ?? this.hasExactAlarmAnchor,
-      );
+  }) => RestAnchorRecord(
+    periodId: periodId,
+    exerciseName: exerciseName,
+    startedAtUtc: startedAtUtc,
+    baseTargetSeconds: baseTargetSeconds,
+    accumulatedExtraSeconds:
+        accumulatedExtraSeconds ?? this.accumulatedExtraSeconds,
+    hasExactAlarmAnchor: hasExactAlarmAnchor ?? this.hasExactAlarmAnchor,
+  );
 }
 
 /// Structured intent written to SharedPreferences when notification actions are
@@ -84,12 +83,12 @@ class RestPresenceIntent {
   });
 
   Map<String, dynamic> toJson() => {
-        'action': action,
-        'periodId': periodId,
-        if (accumulatedExtraSeconds != null)
-          'accumulatedExtraSeconds': accumulatedExtraSeconds,
-        'timestampUtc': timestampUtc.toIso8601String(),
-      };
+    'action': action,
+    'periodId': periodId,
+    if (accumulatedExtraSeconds != null)
+      'accumulatedExtraSeconds': accumulatedExtraSeconds,
+    'timestampUtc': timestampUtc.toIso8601String(),
+  };
 
   factory RestPresenceIntent.fromJson(Map<String, dynamic> json) =>
       RestPresenceIntent(
@@ -142,7 +141,7 @@ class LocalNotificationRestPresenceDriver implements RestPresenceDriver {
   final FlutterLocalNotificationsPlugin _plugin;
 
   LocalNotificationRestPresenceDriver([FlutterLocalNotificationsPlugin? plugin])
-      : _plugin = plugin ?? FlutterLocalNotificationsPlugin();
+    : _plugin = plugin ?? FlutterLocalNotificationsPlugin();
 
   @override
   Future<void> showOngoingRestNotification({
@@ -265,8 +264,10 @@ class LocalNotificationRestPresenceDriver implements RestPresenceDriver {
     required String channelName,
   }) async {
     try {
-      final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>();
+      final androidPlugin = _plugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
       // Query capability per schedule call on Android 12+/14+
       final canExact =
           await androidPlugin?.canScheduleExactNotifications() ?? false;
@@ -370,16 +371,16 @@ class RestPresenceService {
   String? _liveActivityPeriodId;
 
   FutureOr<void> Function(String periodId, int deltaSeconds)?
-      onAdjustRestRequested;
+  onAdjustRestRequested;
   FutureOr<void> Function(String periodId)? onSkipRestRequested;
 
   RestPresenceService({
     RestPresenceDriver? driver,
     DateTime Function()? nowUtc,
     IosLiveActivityService? liveActivity,
-  })  : _driver = driver ?? LocalNotificationRestPresenceDriver(),
-        _nowUtc = nowUtc ?? (() => DateTime.now().toUtc()),
-        _liveActivity = liveActivity ?? IosLiveActivityService.instance;
+  }) : _driver = driver ?? LocalNotificationRestPresenceDriver(),
+       _nowUtc = nowUtc ?? (() => DateTime.now().toUtc()),
+       _liveActivity = liveActivity ?? IosLiveActivityService.instance;
 
   RestPresenceState get state => _state;
   bool get isActive => _state == RestPresenceState.active;
@@ -404,7 +405,8 @@ class RestPresenceService {
   }
 
   void registerActionDelegate({
-    required FutureOr<void> Function(String periodId, int deltaSeconds) onAdjust,
+    required FutureOr<void> Function(String periodId, int deltaSeconds)
+    onAdjust,
     required FutureOr<void> Function(String periodId) onSkip,
   }) {
     onAdjustRestRequested = onAdjust;
@@ -794,9 +796,7 @@ class RestPresenceService {
       final prefs = preferences ?? await SharedPreferences.getInstance();
       final raw = prefs.getString(prefRestAnchorRecord);
       if (raw == null || raw.isEmpty) return null;
-      return RestAnchorRecord.fromJson(
-        jsonDecode(raw) as Map<String, dynamic>,
-      );
+      return RestAnchorRecord.fromJson(jsonDecode(raw) as Map<String, dynamic>);
     } catch (_) {
       return null;
     }

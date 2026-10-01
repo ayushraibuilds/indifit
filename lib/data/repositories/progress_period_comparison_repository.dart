@@ -23,10 +23,10 @@ class ProgressPeriodComparisonRepository {
     LocalScheduleDateService? dates,
     NutritionReadModelRepository? nutrition,
     NutritionTargetAuthority? nutritionTargets,
-  })  : _database = database,
-        _dates = dates ?? LocalScheduleDateService(),
-        _nutrition = nutrition,
-        _nutritionTargets = nutritionTargets;
+  }) : _database = database,
+       _dates = dates ?? LocalScheduleDateService(),
+       _nutrition = nutrition,
+       _nutritionTargets = nutritionTargets;
 
   final AppDatabase _database;
   final LocalScheduleDateService _dates;
@@ -124,10 +124,26 @@ class ProgressPeriodComparisonRepository {
     switch (range) {
       case PeriodComparisonRange.week:
         final weekday = _dates.weekday(today, timezoneId);
-        final currentMonday = _dates.addCalendarDays(today, timezoneId, 1 - weekday);
-        final currentSunday = _dates.addCalendarDays(currentMonday, timezoneId, 6);
-        final previousMonday = _dates.addCalendarDays(currentMonday, timezoneId, -7);
-        final previousSunday = _dates.addCalendarDays(previousMonday, timezoneId, 6);
+        final currentMonday = _dates.addCalendarDays(
+          today,
+          timezoneId,
+          1 - weekday,
+        );
+        final currentSunday = _dates.addCalendarDays(
+          currentMonday,
+          timezoneId,
+          6,
+        );
+        final previousMonday = _dates.addCalendarDays(
+          currentMonday,
+          timezoneId,
+          -7,
+        );
+        final previousSunday = _dates.addCalendarDays(
+          previousMonday,
+          timezoneId,
+          6,
+        );
 
         final (currentStartUtc, currentEndExclusiveUtc) = _toUtcBounds(
           currentMonday,
@@ -213,8 +229,18 @@ class ProgressPeriodComparisonRepository {
     final endParts = endLocalDate.split('-').map(int.parse).toList();
     final loc = _dates.locationFor(timezoneId);
 
-    final tzStart = tz.TZDateTime(loc, startParts[0], startParts[1], startParts[2]);
-    final tzEndNextDay = tz.TZDateTime(loc, endParts[0], endParts[1], endParts[2] + 1);
+    final tzStart = tz.TZDateTime(
+      loc,
+      startParts[0],
+      startParts[1],
+      startParts[2],
+    );
+    final tzEndNextDay = tz.TZDateTime(
+      loc,
+      endParts[0],
+      endParts[1],
+      endParts[2] + 1,
+    );
 
     return (tzStart.toUtc(), tzEndNextDay.toUtc());
   }
@@ -225,12 +251,15 @@ class ProgressPeriodComparisonRepository {
     required DateTime nowUtc,
   }) async {
     final tbl = _database.workoutSessions;
-    final rows = await (_database.select(tbl)
-          ..where((s) =>
-              s.completedAt.isBiggerOrEqualValue(window.startUtc) &
-              s.completedAt.isSmallerThanValue(window.endExclusiveUtc))
-          ..orderBy([(s) => OrderingTerm.desc(s.completedAt)]))
-        .get();
+    final rows =
+        await (_database.select(tbl)
+              ..where(
+                (s) =>
+                    s.completedAt.isBiggerOrEqualValue(window.startUtc) &
+                    s.completedAt.isSmallerThanValue(window.endExclusiveUtc),
+              )
+              ..orderBy([(s) => OrderingTerm.desc(s.completedAt)]))
+            .get();
 
     if (rows.isEmpty) return const [];
 
@@ -251,7 +280,10 @@ class ProgressPeriodComparisonRepository {
               id: row.id,
               name: row.name,
               completedAtUtc: row.completedAt.toUtc(),
-              localDate: _dates.localDateFor(row.completedAt.toUtc(), timezoneId),
+              localDate: _dates.localDateFor(
+                row.completedAt.toUtc(),
+                timezoneId,
+              ),
               activityType: row.activityType,
               totalVolumeKg: volumeIsTrustworthy ? facts!.volumeKg : 0,
               durationSeconds: row.durationSeconds,
@@ -271,24 +303,32 @@ class ProgressPeriodComparisonRepository {
     final exercises = _database.performedExercises;
     final sessions = _database.workoutSessions;
 
-    final rows = await (_database.select(sets).join([
-      innerJoin(exercises, exercises.id.equalsExp(sets.performedExerciseId)),
-      innerJoin(sessions, sessions.id.equalsExp(exercises.sessionId)),
-    ])
-          ..where(sessions.completedAt.isBiggerOrEqualValue(startUtc) &
-                  sessions.completedAt.isSmallerThanValue(endExclusiveUtc))
-          ..where(sessions.activityType.equals(B02ActivityType.strength.dbValue))
-          ..where(sets.role.equals(B02SetRole.working.dbValue)))
-        .get();
+    final rows =
+        await (_database.select(sets).join([
+                innerJoin(
+                  exercises,
+                  exercises.id.equalsExp(sets.performedExerciseId),
+                ),
+                innerJoin(sessions, sessions.id.equalsExp(exercises.sessionId)),
+              ])
+              ..where(
+                sessions.completedAt.isBiggerOrEqualValue(startUtc) &
+                    sessions.completedAt.isSmallerThanValue(endExclusiveUtc),
+              )
+              ..where(
+                sessions.activityType.equals(B02ActivityType.strength.dbValue),
+              )
+              ..where(sets.role.equals(B02SetRole.working.dbValue)))
+            .get();
 
     if (rows.isEmpty) return const {};
 
     final setIds = rows.map((r) => r.readTable(sets).id).toSet();
     final segmentedSetIds = <String>{};
     if (setIds.isNotEmpty) {
-      final segments = await (_database.select(_database.performedSetSegments)
-            ..where((seg) => seg.performedSetId.isIn(setIds)))
-          .get();
+      final segments = await (_database.select(
+        _database.performedSetSegments,
+      )..where((seg) => seg.performedSetId.isIn(setIds))).get();
       segmentedSetIds.addAll(segments.map((seg) => seg.performedSetId));
     }
 
@@ -298,7 +338,8 @@ class ProgressPeriodComparisonRepository {
       final sess = row.readTable(sessions);
       final current = facts.putIfAbsent(sess.id, _SessionFacts.new);
 
-      final hasActual = s.actualLoadKg != null &&
+      final hasActual =
+          s.actualLoadKg != null &&
           s.actualReps != null &&
           s.actualReps! >= 1 &&
           s.actualLoadKg!.isFinite &&
@@ -308,7 +349,9 @@ class ProgressPeriodComparisonRepository {
       if (hasActual) current.workingSetsCount++;
 
       final hasAnyActualFact =
-          s.actualLoadKg != null || s.actualReps != null || s.actualLoadBasis != null;
+          s.actualLoadKg != null ||
+          s.actualReps != null ||
+          s.actualLoadBasis != null;
       if (!hasAnyActualFact) continue;
 
       if (!hasActual || segmentedSetIds.contains(s.id)) {
@@ -338,27 +381,36 @@ class ProgressPeriodComparisonRepository {
     required List<ProgressWorkoutRecord> currentWorkouts,
     required List<ProgressWorkoutRecord> previousWorkouts,
   }) {
-    final currentSummary = _summarizeTrainingWindow(currentWindow, currentWorkouts);
-    final prevSummary = _summarizeTrainingWindow(previousWindow, previousWorkouts);
+    final currentSummary = _summarizeTrainingWindow(
+      currentWindow,
+      currentWorkouts,
+    );
+    final prevSummary = _summarizeTrainingWindow(
+      previousWindow,
+      previousWorkouts,
+    );
 
     final sessionDelta = currentSummary.sessionCount - prevSummary.sessionCount;
     final sessionPct = prevSummary.sessionCount > 0
         ? (sessionDelta / prevSummary.sessionCount) * 100.0
         : null;
 
-    final dayDelta = currentSummary.trainingDayCount - prevSummary.trainingDayCount;
+    final dayDelta =
+        currentSummary.trainingDayCount - prevSummary.trainingDayCount;
     final dayPct = prevSummary.trainingDayCount > 0
         ? (dayDelta / prevSummary.trainingDayCount) * 100.0
         : null;
 
-    final volumeDelta = (currentSummary.volumeIsTrustworthy && prevSummary.volumeIsTrustworthy)
+    final volumeDelta =
+        (currentSummary.volumeIsTrustworthy && prevSummary.volumeIsTrustworthy)
         ? currentSummary.totalVolumeKg - prevSummary.totalVolumeKg
         : null;
     final volumePct = (volumeDelta != null && prevSummary.totalVolumeKg > 0)
         ? (volumeDelta / prevSummary.totalVolumeKg) * 100.0
         : null;
 
-    final durationDelta = currentSummary.totalDurationSeconds - prevSummary.totalDurationSeconds;
+    final durationDelta =
+        currentSummary.totalDurationSeconds - prevSummary.totalDurationSeconds;
     final durationPct = prevSummary.totalDurationSeconds > 0
         ? (durationDelta / prevSummary.totalDurationSeconds) * 100.0
         : null;
@@ -385,7 +437,9 @@ class ProgressPeriodComparisonRepository {
         previous: prevSummary.totalVolumeKg,
         delta: volumeDelta,
         percentChange: volumePct,
-        status: (currentSummary.volumeIsTrustworthy && prevSummary.volumeIsTrustworthy)
+        status:
+            (currentSummary.volumeIsTrustworthy &&
+                prevSummary.volumeIsTrustworthy)
             ? currentWindow.status
             : PeriodCompletenessStatus.sparse,
       ),
@@ -405,7 +459,8 @@ class ProgressPeriodComparisonRepository {
   ) {
     final consistency = R08F4ConsistencySummary.summarize(workouts);
     final trustworthyVolumeWorkouts = workouts.where(
-      (w) => w.isCanonicalStrength && w.volumeIsTrustworthy && w.totalVolumeKg > 0,
+      (w) =>
+          w.isCanonicalStrength && w.volumeIsTrustworthy && w.totalVolumeKg > 0,
     );
     final totalVolume = trustworthyVolumeWorkouts.fold<double>(
       0.0,
@@ -425,7 +480,8 @@ class ProgressPeriodComparisonRepository {
       totalVolumeKg: totalVolume,
       volumeIsTrustworthy: trustworthyVolumeWorkouts.isNotEmpty,
       partialSessionCount: consistency.partialSessionCount,
-      fullSessionCount: consistency.sessionCount - consistency.partialSessionCount,
+      fullSessionCount:
+          consistency.sessionCount - consistency.partialSessionCount,
     );
   }
 
@@ -456,23 +512,28 @@ class ProgressPeriodComparisonRepository {
       return null;
     }
 
-    final caloriesDelta = (currentSummary.averageCaloriesKcal != null &&
+    final caloriesDelta =
+        (currentSummary.averageCaloriesKcal != null &&
             prevSummary.averageCaloriesKcal != null)
         ? currentSummary.averageCaloriesKcal! - prevSummary.averageCaloriesKcal!
         : null;
-    final caloriesPct = (caloriesDelta != null && prevSummary.averageCaloriesKcal! > 0)
+    final caloriesPct =
+        (caloriesDelta != null && prevSummary.averageCaloriesKcal! > 0)
         ? (caloriesDelta / prevSummary.averageCaloriesKcal!) * 100.0
         : null;
 
-    final proteinDelta = (currentSummary.averageProteinG != null &&
+    final proteinDelta =
+        (currentSummary.averageProteinG != null &&
             prevSummary.averageProteinG != null)
         ? currentSummary.averageProteinG! - prevSummary.averageProteinG!
         : null;
-    final proteinPct = (proteinDelta != null && prevSummary.averageProteinG! > 0)
+    final proteinPct =
+        (proteinDelta != null && prevSummary.averageProteinG! > 0)
         ? (proteinDelta / prevSummary.averageProteinG!) * 100.0
         : null;
 
-    final loggedDaysDelta = currentSummary.loggedDaysCount - prevSummary.loggedDaysCount;
+    final loggedDaysDelta =
+        currentSummary.loggedDaysCount - prevSummary.loggedDaysCount;
 
     return ComparativeNutritionMetrics(
       current: currentSummary,
@@ -559,7 +620,8 @@ class ProgressPeriodComparisonRepository {
       loggedDays++;
       final energyFact = model.totals.facts['energy'];
       final proteinFact =
-          model.totals.facts['protein'] ?? model.totals.facts['macronutrient_protein'];
+          model.totals.facts['protein'] ??
+          model.totals.facts['macronutrient_protein'];
 
       final calValue = _isCompleteNutrientFact(energyFact)
           ? double.tryParse(energyFact!.point!.value.toString())
@@ -613,8 +675,10 @@ class ProgressPeriodComparisonRepository {
     }
 
     double? deltaBetweenPeriods;
-    if (currentSummary.latestWeightKg != null && prevSummary.latestWeightKg != null) {
-      deltaBetweenPeriods = currentSummary.latestWeightKg! - prevSummary.latestWeightKg!;
+    if (currentSummary.latestWeightKg != null &&
+        prevSummary.latestWeightKg != null) {
+      deltaBetweenPeriods =
+          currentSummary.latestWeightKg! - prevSummary.latestWeightKg!;
     }
 
     double? ratePerWeek;
@@ -629,7 +693,8 @@ class ProgressPeriodComparisonRepository {
       }
     }
 
-    final completeness = (currentSummary.hasObservations && prevSummary.hasObservations)
+    final completeness =
+        (currentSummary.hasObservations && prevSummary.hasObservations)
         ? currentWindow.status
         : PeriodCompletenessStatus.sparse;
 
@@ -642,22 +707,24 @@ class ProgressPeriodComparisonRepository {
     );
   }
 
-  Future<WeightPeriodSummary> _readWeightWindowSummary(PeriodDateWindow window) async {
+  Future<WeightPeriodSummary> _readWeightWindowSummary(
+    PeriodDateWindow window,
+  ) async {
     final tbl = _database.bodyMeasurements;
-    final rows = await (_database.select(tbl)
-          ..where((m) =>
-              m.recordedAt.isBiggerOrEqualValue(window.startUtc) &
-              m.recordedAt.isSmallerThanValue(window.endExclusiveUtc) &
-              m.weight.isNotNull())
-          ..orderBy([(m) => OrderingTerm.asc(m.recordedAt)]))
-        .get();
+    final rows =
+        await (_database.select(tbl)
+              ..where(
+                (m) =>
+                    m.recordedAt.isBiggerOrEqualValue(window.startUtc) &
+                    m.recordedAt.isSmallerThanValue(window.endExclusiveUtc) &
+                    m.weight.isNotNull(),
+              )
+              ..orderBy([(m) => OrderingTerm.asc(m.recordedAt)]))
+            .get();
 
     final weights = rows.map((r) => r.weight!).where((w) => w > 0).toList();
     if (weights.isEmpty) {
-      return WeightPeriodSummary(
-        window: window,
-        observationCount: 0,
-      );
+      return WeightPeriodSummary(window: window, observationCount: 0);
     }
 
     final first = weights.first;
@@ -726,8 +793,9 @@ class ProgressPeriodComparisonRepository {
     comparisons.sort((a, b) {
       final byCurrVol = b.currentVolumeKg.compareTo(a.currentVolumeKg);
       if (byCurrVol != 0) return byCurrVol;
-      return (b.currentVolumeKg + b.previousVolumeKg)
-          .compareTo(a.currentVolumeKg + a.previousVolumeKg);
+      return (b.currentVolumeKg + b.previousVolumeKg).compareTo(
+        a.currentVolumeKg + a.previousVolumeKg,
+      );
     });
 
     return comparisons;
@@ -741,15 +809,23 @@ class ProgressPeriodComparisonRepository {
     final exercises = _database.performedExercises;
     final sessions = _database.workoutSessions;
 
-    final rows = await (_database.select(sets).join([
-      innerJoin(exercises, exercises.id.equalsExp(sets.performedExerciseId)),
-      innerJoin(sessions, sessions.id.equalsExp(exercises.sessionId)),
-    ])
-          ..where(sessions.completedAt.isBiggerOrEqualValue(startUtc) &
-                  sessions.completedAt.isSmallerThanValue(endExclusiveUtc))
-          ..where(sessions.activityType.equals(B02ActivityType.strength.dbValue))
-          ..where(sets.role.equals(B02SetRole.working.dbValue)))
-        .get();
+    final rows =
+        await (_database.select(sets).join([
+                innerJoin(
+                  exercises,
+                  exercises.id.equalsExp(sets.performedExerciseId),
+                ),
+                innerJoin(sessions, sessions.id.equalsExp(exercises.sessionId)),
+              ])
+              ..where(
+                sessions.completedAt.isBiggerOrEqualValue(startUtc) &
+                    sessions.completedAt.isSmallerThanValue(endExclusiveUtc),
+              )
+              ..where(
+                sessions.activityType.equals(B02ActivityType.strength.dbValue),
+              )
+              ..where(sets.role.equals(B02SetRole.working.dbValue)))
+            .get();
 
     final data = <String, _ExerciseWindowData>{};
     for (final row in rows) {
@@ -771,7 +847,8 @@ class ProgressPeriodComparisonRepository {
       item.setCount++;
       item.volumeKg += s.actualLoadKg! * s.actualReps!;
 
-      if (item.heaviestLoadKg == null || s.actualLoadKg! > item.heaviestLoadKg!) {
+      if (item.heaviestLoadKg == null ||
+          s.actualLoadKg! > item.heaviestLoadKg!) {
         item.heaviestLoadKg = s.actualLoadKg!;
         item.heaviestReps = s.actualReps!;
       }

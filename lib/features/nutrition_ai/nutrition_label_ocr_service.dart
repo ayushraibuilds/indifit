@@ -93,7 +93,8 @@ class NutritionLabelOcrResult {
       servingSizeAmount: (json['serving_size_amount'] as num?)?.toDouble(),
       servingSizeUnit: json['serving_size_unit'] as String?,
       servingDescription: json['serving_description'] as String?,
-      servingsPerContainer: (json['servings_per_container'] as num?)?.toDouble(),
+      servingsPerContainer: (json['servings_per_container'] as num?)
+          ?.toDouble(),
       basis: (json['basis'] as String?) ?? 'per_100g',
       nutrients: nutrients,
       rawText: json['raw_text'] as String?,
@@ -116,10 +117,10 @@ class NutritionLabelOcrService {
     required NutritionEstimatePrivacyService privacyService,
     required PrivacyPolicy Function() policy,
     String? baseUrl,
-  })  : _dio = dio,
-        _privacyService = privacyService,
-        _policy = policy,
-        _baseUrl = baseUrl ?? AppConfig.backendUrl;
+  }) : _dio = dio,
+       _privacyService = privacyService,
+       _policy = policy,
+       _baseUrl = baseUrl ?? AppConfig.backendUrl;
 
   Future<NutritionLabelOcrResult> processLabelImage({
     required String imagePath,

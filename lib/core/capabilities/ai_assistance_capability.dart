@@ -44,20 +44,18 @@ class DisabledAiAssistanceCapability implements AiAssistanceCapability {
   @override
   Future<AiAssistanceResult<List<Map<String, dynamic>>>> parseMealDescription(
     String input,
-  ) async =>
-      const AiAssistanceResult(
-        success: false,
-        errorMessage: 'AI assistance is disabled in offline mode.',
-      );
+  ) async => const AiAssistanceResult(
+    success: false,
+    errorMessage: 'AI assistance is disabled in offline mode.',
+  );
 
   @override
   Future<AiAssistanceResult<String>> generateCoachingGuidance({
     required String contextPrompt,
-  }) async =>
-      const AiAssistanceResult(
-        success: false,
-        errorMessage: 'AI coaching is disabled in offline mode.',
-      );
+  }) async => const AiAssistanceResult(
+    success: false,
+    errorMessage: 'AI coaching is disabled in offline mode.',
+  );
 }
 
 /// Active connected implementation for Post-V1 capability boundary.
@@ -68,8 +66,8 @@ class ConnectedAiAssistanceCapability implements AiAssistanceCapability {
   const ConnectedAiAssistanceCapability({
     required bool Function() isAllowed,
     Future<List<Map<String, dynamic>>> Function(String input)? mealParser,
-  })  : _isAllowed = isAllowed,
-        _mealParser = mealParser;
+  }) : _isAllowed = isAllowed,
+       _mealParser = mealParser;
 
   @override
   bool get isEnabled => _isAllowed();

@@ -41,15 +41,14 @@ class DriftSyncTombstoneStore {
 
   /// Records a deletion, keeping the newest HLC on conflicts.
   Future<void> recordTombstone(SyncTombstone tombstone) async {
-    final existing = await getTombstone(
-      tombstone.entityId,
-      tombstone.domain,
-    );
+    final existing = await getTombstone(tombstone.entityId, tombstone.domain);
     if (existing != null &&
         existing.deletedAtHlc.compareTo(tombstone.deletedAtHlc) >= 0) {
       return; // Stored tombstone already dominates.
     }
-    await _db.into(_db.tombstoneEntries).insertOnConflictUpdate(
+    await _db
+        .into(_db.tombstoneEntries)
+        .insertOnConflictUpdate(
           TombstoneEntriesCompanion.insert(
             entityId: tombstone.entityId,
             domain: tombstone.domain.name,
@@ -65,10 +64,11 @@ class DriftSyncTombstoneStore {
     String entityId,
     SyncDomain domain,
   ) async {
-    final row = await (_db.select(_db.tombstoneEntries)
-          ..where((t) => t.entityId.equals(entityId))
-          ..where((t) => t.domain.equals(domain.name)))
-        .getSingleOrNull();
+    final row =
+        await (_db.select(_db.tombstoneEntries)
+              ..where((t) => t.entityId.equals(entityId))
+              ..where((t) => t.domain.equals(domain.name)))
+            .getSingleOrNull();
     return row == null ? null : _toDomain(row);
   }
 
@@ -80,24 +80,23 @@ class DriftSyncTombstoneStore {
     HlcTimestamp writeHlc,
   ) async {
     final tombstone = await getTombstone(entityId, domain);
-    return tombstone != null &&
-        tombstone.deletedAtHlc.compareTo(writeHlc) >= 0;
+    return tombstone != null && tombstone.deletedAtHlc.compareTo(writeHlc) >= 0;
   }
 
   /// Purges tombstones older than [retention] (default 30 days).
   Future<int> pruneExpired({Duration? retention}) async {
     final cutoff = DateTime.now().toUtc().subtract(
-          retention ?? SyncTombstone.defaultRetention,
-        );
-    return (_db.delete(_db.tombstoneEntries)
-          ..where((t) => t.deletedAtUtc.isSmallerThanValue(cutoff)))
-        .go();
+      retention ?? SyncTombstone.defaultRetention,
+    );
+    return (_db.delete(
+      _db.tombstoneEntries,
+    )..where((t) => t.deletedAtUtc.isSmallerThanValue(cutoff))).go();
   }
 
   Future<int> count() async {
-    final row = await (_db.selectOnly(_db.tombstoneEntries)
-          ..addColumns([_db.tombstoneEntries.entityId.count()]))
-        .getSingle();
+    final row = await (_db.selectOnly(
+      _db.tombstoneEntries,
+    )..addColumns([_db.tombstoneEntries.entityId.count()])).getSingle();
     return row.read(_db.tombstoneEntries.entityId.count()) ?? 0;
   }
 }

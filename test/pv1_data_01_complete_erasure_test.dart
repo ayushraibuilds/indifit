@@ -30,7 +30,9 @@ void main() {
           (_) async => true,
         );
 
-    tempTestDir = await Directory.systemTemp.createTemp('indifit_erasure_test_');
+    tempTestDir = await Directory.systemTemp.createTemp(
+      'indifit_erasure_test_',
+    );
     tempDocDir = Directory('${tempTestDir.path}/documents');
     await tempDocDir.create(recursive: true);
     tempExportDir = Directory('${tempTestDir.path}/temporary');
@@ -66,13 +68,23 @@ void main() {
         // Populate local backup files in docDir/backups
         final backupDir = Directory('${tempDocDir.path}/backups');
         await backupDir.create(recursive: true);
-        final backupFile1 = File('${backupDir.path}/indifit_auto_backup_1.json');
-        await backupFile1.writeAsString('{"format_identifier":"INDIFIT_BACKUP_ENVELOPE"}');
-        final backupFile2 = File('${backupDir.path}/indifit_auto_backup_2.json');
-        await backupFile2.writeAsString('{"format_identifier":"INDIFIT_BACKUP_ENVELOPE"}');
+        final backupFile1 = File(
+          '${backupDir.path}/indifit_auto_backup_1.json',
+        );
+        await backupFile1.writeAsString(
+          '{"format_identifier":"INDIFIT_BACKUP_ENVELOPE"}',
+        );
+        final backupFile2 = File(
+          '${backupDir.path}/indifit_auto_backup_2.json',
+        );
+        await backupFile2.writeAsString(
+          '{"format_identifier":"INDIFIT_BACKUP_ENVELOPE"}',
+        );
 
         // Populate temp export file
-        final tempExport = File('${tempExportDir.path}/indifit_backup_2026-09-09.indifit-backup');
+        final tempExport = File(
+          '${tempExportDir.path}/indifit_backup_2026-09-09.indifit-backup',
+        );
         await tempExport.writeAsString('encrypted-backup-content');
 
         final secretStore = _TestAutoBackupSecretStore('device-secret-12345');
@@ -91,9 +103,9 @@ void main() {
         );
 
         // Pre-condition checks
-        final preCustomFoods = await (db.select(db.foodItems)
-              ..where((f) => f.isCustom.equals(true)))
-            .get();
+        final preCustomFoods = await (db.select(
+          db.foodItems,
+        )..where((f) => f.isCustom.equals(true))).get();
         expect(preCustomFoods, isNotEmpty);
         final preWorkouts = await db.select(db.workoutSessions).get();
         expect(preWorkouts, isNotEmpty);
@@ -104,7 +116,11 @@ void main() {
         final report = await service.eraseAllData();
 
         // Verification assertions
-        expect(report.isSuccess, isTrue, reason: 'Report failed: ${report.failureReason}');
+        expect(
+          report.isSuccess,
+          isTrue,
+          reason: 'Report failed: ${report.failureReason}',
+        );
         expect(report.failureReason, isNull);
         expect(report.foreignKeyCheckPassed, isTrue);
         expect(report.preferencesCleared, isTrue);
@@ -129,18 +145,36 @@ void main() {
         expect(report.remainingCustomExercisesCount, 0);
 
         // 3. Static catalogs must still exist
-        final stdFoods = await (db.select(db.foodItems)
-              ..where((f) => f.isCustom.equals(false)))
+        final stdFoods = await (db.select(
+          db.foodItems,
+        )..where((f) => f.isCustom.equals(false))).get();
+        expect(
+          stdFoods,
+          isNotEmpty,
+          reason: 'Standard food catalog must be retained',
+        );
+        final stdExercises = await (db.select(
+          db.exercises,
+        )..where((f) => f.isCustom.equals(false))).get();
+        expect(
+          stdExercises,
+          isNotEmpty,
+          reason: 'Standard exercise catalog must be retained',
+        );
+        final nutrients = await db
+            .select(db.nutritionNutrientDefinitions)
             .get();
-        expect(stdFoods, isNotEmpty, reason: 'Standard food catalog must be retained');
-        final stdExercises = await (db.select(db.exercises)
-              ..where((f) => f.isCustom.equals(false)))
-            .get();
-        expect(stdExercises, isNotEmpty, reason: 'Standard exercise catalog must be retained');
-        final nutrients = await db.select(db.nutritionNutrientDefinitions).get();
-        expect(nutrients, isNotEmpty, reason: 'Nutrient registry catalog must be retained');
+        expect(
+          nutrients,
+          isNotEmpty,
+          reason: 'Nutrient registry catalog must be retained',
+        );
         final muscles = await db.select(db.muscles).get();
-        expect(muscles, isNotEmpty, reason: 'Muscle anatomy catalog must be retained');
+        expect(
+          muscles,
+          isNotEmpty,
+          reason: 'Muscle anatomy catalog must be retained',
+        );
 
         // 4. SharedPreferences wiped & onboarding flag false
         final prefs = await SharedPreferences.getInstance();
@@ -163,67 +197,85 @@ void main() {
 
         // 8. Disclosures present
         expect(
-          report.disclosures.any((d) => d.contains('Apple Health') || d.contains('Health Connect')),
+          report.disclosures.any(
+            (d) => d.contains('Apple Health') || d.contains('Health Connect'),
+          ),
           isTrue,
         );
         expect(
-          report.disclosures.any((d) => d.contains('Static food and exercise reference catalogs')),
+          report.disclosures.any(
+            (d) => d.contains('Static food and exercise reference catalogs'),
+          ),
           isTrue,
         );
       },
     );
 
-    test('FK-check is green post-wipe and foreign keys remain active', () async {
-      final databases = registerTestDatabaseScope();
-      final db = databases.create();
+    test(
+      'FK-check is green post-wipe and foreign keys remain active',
+      () async {
+        final databases = registerTestDatabaseScope();
+        final db = databases.create();
 
-      await _populateExtensiveUserData(db);
+        await _populateExtensiveUserData(db);
 
-      final service = DataErasureService(
-        db: db,
-        secretStore: _TestAutoBackupSecretStore(),
-        cloudBackup: _TestCloudBackupCapability(),
-        account: _TestAccountCapability(),
-        healthService: _TestHealthService(),
-        documentsDirectoryProvider: () async => tempDocDir,
-        temporaryDirectoryProvider: () async => tempExportDir,
-      );
+        final service = DataErasureService(
+          db: db,
+          secretStore: _TestAutoBackupSecretStore(),
+          cloudBackup: _TestCloudBackupCapability(),
+          account: _TestAccountCapability(),
+          healthService: _TestHealthService(),
+          documentsDirectoryProvider: () async => tempDocDir,
+          temporaryDirectoryProvider: () async => tempExportDir,
+        );
 
-      final report = await service.eraseAllData();
-      expect(report.isSuccess, isTrue);
+        final report = await service.eraseAllData();
+        expect(report.isSuccess, isTrue);
 
-      // Explicit assertion on database PRAGMA foreign_key_check
-      final violations = await db.customSelect('PRAGMA foreign_key_check;').get();
-      expect(violations, isEmpty, reason: 'No dangling foreign key references may exist');
+        // Explicit assertion on database PRAGMA foreign_key_check
+        final violations = await db
+            .customSelect('PRAGMA foreign_key_check;')
+            .get();
+        expect(
+          violations,
+          isEmpty,
+          reason: 'No dangling foreign key references may exist',
+        );
 
-      // Explicit assertion that foreign_keys pragma is enabled (1)
-      final fkStatus = await db.customSelect('PRAGMA foreign_keys;').getSingle();
-      expect(fkStatus.data['foreign_keys'], 1);
-    });
+        // Explicit assertion that foreign_keys pragma is enabled (1)
+        final fkStatus = await db
+            .customSelect('PRAGMA foreign_keys;')
+            .getSingle();
+        expect(fkStatus.data['foreign_keys'], 1);
+      },
+    );
 
-    test('idempotency: executing erasure back-to-back succeeds cleanly without errors', () async {
-      final databases = registerTestDatabaseScope();
-      final db = databases.create();
+    test(
+      'idempotency: executing erasure back-to-back succeeds cleanly without errors',
+      () async {
+        final databases = registerTestDatabaseScope();
+        final db = databases.create();
 
-      final service = DataErasureService(
-        db: db,
-        secretStore: _TestAutoBackupSecretStore(),
-        cloudBackup: _TestCloudBackupCapability(),
-        account: _TestAccountCapability(),
-        healthService: _TestHealthService(),
-        documentsDirectoryProvider: () async => tempDocDir,
-        temporaryDirectoryProvider: () async => tempExportDir,
-      );
+        final service = DataErasureService(
+          db: db,
+          secretStore: _TestAutoBackupSecretStore(),
+          cloudBackup: _TestCloudBackupCapability(),
+          account: _TestAccountCapability(),
+          healthService: _TestHealthService(),
+          documentsDirectoryProvider: () async => tempDocDir,
+          temporaryDirectoryProvider: () async => tempExportDir,
+        );
 
-      // Run once on empty DB
-      final report1 = await service.eraseAllData();
-      expect(report1.isSuccess, isTrue);
+        // Run once on empty DB
+        final report1 = await service.eraseAllData();
+        expect(report1.isSuccess, isTrue);
 
-      // Run a second time immediately
-      final report2 = await service.eraseAllData();
-      expect(report2.isSuccess, isTrue);
-      expect(report2.failureReason, isNull);
-    });
+        // Run a second time immediately
+        final report2 = await service.eraseAllData();
+        expect(report2.isSuccess, isTrue);
+        expect(report2.failureReason, isNull);
+      },
+    );
 
     test(
       'remote failure (offline) still completely erases local storage and notes failure in report',
@@ -257,11 +309,17 @@ void main() {
 
         // Disclosures inform user about offline remote state
         expect(
-          report.disclosures.any((d) => d.contains('Remote cloud backup snapshots could not be reached')),
+          report.disclosures.any(
+            (d) => d.contains(
+              'Remote cloud backup snapshots could not be reached',
+            ),
+          ),
           isTrue,
         );
         expect(
-          report.disclosures.any((d) => d.contains('Remote account deletion could not be reached')),
+          report.disclosures.any(
+            (d) => d.contains('Remote account deletion could not be reached'),
+          ),
           isTrue,
         );
 
@@ -272,39 +330,42 @@ void main() {
       },
     );
 
-    test('resetIndiFitContainerUserState restores in-memory providers to initial defaults', () async {
-      final databases = registerTestDatabaseScope();
-      final db = databases.create();
+    test(
+      'resetIndiFitContainerUserState restores in-memory providers to initial defaults',
+      () async {
+        final databases = registerTestDatabaseScope();
+        final db = databases.create();
 
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('onboarding_completed', true);
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('onboarding_completed', true);
 
-      final container = ProviderContainer(
-        overrides: [
-          databaseProvider.overrideWithValue(db),
-          onboardingCompletedProvider.overrideWith((ref) => true),
-        ],
-      );
+        final container = ProviderContainer(
+          overrides: [
+            databaseProvider.overrideWithValue(db),
+            onboardingCompletedProvider.overrideWith((ref) => true),
+          ],
+        );
 
-      // Seed container state
-      expect(container.read(onboardingCompletedProvider), isTrue);
-      container.read(todayNutritionRevisionProvider.notifier).state = 42;
-      container.read(todayHydrationRevisionProvider.notifier).state = 10;
-      expect(container.read(todayNutritionRevisionProvider), 42);
-      expect(container.read(todayHydrationRevisionProvider), 10);
+        // Seed container state
+        expect(container.read(onboardingCompletedProvider), isTrue);
+        container.read(todayNutritionRevisionProvider.notifier).state = 42;
+        container.read(todayHydrationRevisionProvider.notifier).state = 10;
+        expect(container.read(todayNutritionRevisionProvider), 42);
+        expect(container.read(todayHydrationRevisionProvider), 10);
 
-      // Perform state reset
-      resetIndiFitContainerUserState(container);
+        // Perform state reset
+        resetIndiFitContainerUserState(container);
 
-      // Verify states reset
-      expect(container.read(onboardingCompletedProvider), isFalse);
-      expect(container.read(todayNutritionRevisionProvider), 0);
-      expect(container.read(todayHydrationRevisionProvider), 0);
-      expect(container.read(userProfileProvider).hasProfile, isFalse);
+        // Verify states reset
+        expect(container.read(onboardingCompletedProvider), isFalse);
+        expect(container.read(todayNutritionRevisionProvider), 0);
+        expect(container.read(todayHydrationRevisionProvider), 0);
+        expect(container.read(userProfileProvider).hasProfile, isFalse);
 
-      await pumpEventQueue();
-      container.dispose();
-    });
+        await pumpEventQueue();
+        container.dispose();
+      },
+    );
   });
 }
 
@@ -370,7 +431,9 @@ Future<void> _populateExtensiveUserData(AppDatabase db) async {
   final now = DateTime.now().toUtc();
 
   // 1. User profile
-  await db.into(db.userProfiles).insert(
+  await db
+      .into(db.userProfiles)
+      .insert(
         UserProfilesCompanion.insert(
           name: const Value('Alex Runner'),
           age: const Value(28),
@@ -388,7 +451,9 @@ Future<void> _populateExtensiveUserData(AppDatabase db) async {
       );
 
   // 2. Body measurement
-  await db.into(db.bodyMeasurements).insert(
+  await db
+      .into(db.bodyMeasurements)
+      .insert(
         BodyMeasurementsCompanion.insert(
           weight: const Value(75.2),
           recordedAt: Value(now),
@@ -396,7 +461,9 @@ Future<void> _populateExtensiveUserData(AppDatabase db) async {
       );
 
   // 3. Hydration
-  await db.into(db.dailyHydrations).insert(
+  await db
+      .into(db.dailyHydrations)
+      .insert(
         DailyHydrationsCompanion.insert(
           dateString: '2026-09-08',
           totalMl: 2500,
@@ -406,7 +473,9 @@ Future<void> _populateExtensiveUserData(AppDatabase db) async {
       );
 
   // 4. Custom food item
-  final customFoodId = await db.into(db.foodItems).insert(
+  final customFoodId = await db
+      .into(db.foodItems)
+      .insert(
         FoodItemsCompanion.insert(
           name: 'Homemade Roti Special',
           calories: 120,
@@ -421,7 +490,9 @@ Future<void> _populateExtensiveUserData(AppDatabase db) async {
       );
 
   // 5. Custom exercise
-  await db.into(db.exercises).insert(
+  await db
+      .into(db.exercises)
+      .insert(
         ExercisesCompanion.insert(
           name: 'Ring Muscle Up Special',
           muscleGroups: 'Back,Triceps',
@@ -434,7 +505,9 @@ Future<void> _populateExtensiveUserData(AppDatabase db) async {
       );
 
   // 6. Food log
-  await db.into(db.foodLogs).insert(
+  await db
+      .into(db.foodLogs)
+      .insert(
         FoodLogsCompanion.insert(
           foodItemId: Value(customFoodId),
           name: 'Homemade Roti Special',
@@ -450,7 +523,9 @@ Future<void> _populateExtensiveUserData(AppDatabase db) async {
       );
 
   // 7. Workout routine
-  await db.into(db.workoutRoutines).insert(
+  await db
+      .into(db.workoutRoutines)
+      .insert(
         WorkoutRoutinesCompanion.insert(
           name: 'Upper Hypertrophy A',
           goal: 'hypertrophy',
@@ -459,7 +534,9 @@ Future<void> _populateExtensiveUserData(AppDatabase db) async {
       );
 
   // 8. Workout session & sets
-  final sessionId = await db.into(db.workoutSessions).insert(
+  final sessionId = await db
+      .into(db.workoutSessions)
+      .insert(
         WorkoutSessionsCompanion.insert(
           name: 'Chest & Shoulders',
           totalVolume: 1200.0,
@@ -469,7 +546,9 @@ Future<void> _populateExtensiveUserData(AppDatabase db) async {
         ),
       );
 
-  await db.into(db.workoutSets).insert(
+  await db
+      .into(db.workoutSets)
+      .insert(
         WorkoutSetsCompanion.insert(
           sessionId: sessionId,
           exerciseName: 'Ring Muscle Up Special',
@@ -480,7 +559,9 @@ Future<void> _populateExtensiveUserData(AppDatabase db) async {
       );
 
   // 9. Sync tables
-  await db.into(db.outboxEntries).insert(
+  await db
+      .into(db.outboxEntries)
+      .insert(
         OutboxEntriesCompanion.insert(
           operationId: 'op-123',
           idempotencyKey: 'idem-123',
@@ -494,7 +575,9 @@ Future<void> _populateExtensiveUserData(AppDatabase db) async {
         ),
       );
 
-  await db.into(db.tombstoneEntries).insert(
+  await db
+      .into(db.tombstoneEntries)
+      .insert(
         TombstoneEntriesCompanion.insert(
           entityId: 'food-log-99',
           domain: 'food_log',
@@ -504,7 +587,9 @@ Future<void> _populateExtensiveUserData(AppDatabase db) async {
         ),
       );
 
-  await db.into(db.cachedRemoteFoods).insert(
+  await db
+      .into(db.cachedRemoteFoods)
+      .insert(
         CachedRemoteFoodsCompanion.insert(
           candidateId: 'food-cand-1',
           candidateJson: '{"name":"Apple"}',

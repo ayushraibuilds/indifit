@@ -26,7 +26,9 @@ class DriftRemoteFoodCacheStore {
     RemoteFoodCandidate candidate, {
     DateTime? fetchedAtUtc,
   }) async {
-    await _db.into(_db.cachedRemoteFoods).insertOnConflictUpdate(
+    await _db
+        .into(_db.cachedRemoteFoods)
+        .insertOnConflictUpdate(
           CachedRemoteFoodsCompanion.insert(
             candidateId: candidate.id,
             barcode: Value(candidate.barcode),
@@ -37,9 +39,9 @@ class DriftRemoteFoodCacheStore {
   }
 
   Future<RemoteFoodCandidate?> getCandidate(String candidateId) async {
-    final row = await (_db.select(_db.cachedRemoteFoods)
-          ..where((t) => t.candidateId.equals(candidateId)))
-        .getSingleOrNull();
+    final row = await (_db.select(
+      _db.cachedRemoteFoods,
+    )..where((t) => t.candidateId.equals(candidateId))).getSingleOrNull();
     if (row == null) return null;
     if (_isStale(row, DateTime.now().toUtc())) {
       await deleteCandidate(candidateId);
@@ -57,20 +59,22 @@ class DriftRemoteFoodCacheStore {
   }
 
   Future<RemoteFoodCandidate?> getByBarcode(String barcode) async {
-    final rows = await (_db.select(_db.cachedRemoteFoods)
-          ..where((t) => t.barcode.equals(barcode))
-          ..orderBy([(t) => OrderingTerm.desc(t.fetchedAtUtc)])
-          ..limit(1))
-        .get();
+    final rows =
+        await (_db.select(_db.cachedRemoteFoods)
+              ..where((t) => t.barcode.equals(barcode))
+              ..orderBy([(t) => OrderingTerm.desc(t.fetchedAtUtc)])
+              ..limit(1))
+            .get();
     if (rows.isEmpty) return null;
     return getCandidate(rows.first.candidateId);
   }
 
   Future<List<RemoteFoodCandidate>> recentCandidates({int limit = 50}) async {
-    final rows = await (_db.select(_db.cachedRemoteFoods)
-          ..orderBy([(t) => OrderingTerm.desc(t.fetchedAtUtc)])
-          ..limit(limit * 2))
-        .get();
+    final rows =
+        await (_db.select(_db.cachedRemoteFoods)
+              ..orderBy([(t) => OrderingTerm.desc(t.fetchedAtUtc)])
+              ..limit(limit * 2))
+            .get();
     final now = DateTime.now().toUtc();
     final out = <RemoteFoodCandidate>[];
     final seen = <String>{};
@@ -92,17 +96,16 @@ class DriftRemoteFoodCacheStore {
   }
 
   Future<void> deleteCandidate(String candidateId) async {
-    await (_db.delete(_db.cachedRemoteFoods)
-          ..where((t) => t.candidateId.equals(candidateId)))
-        .go();
+    await (_db.delete(
+      _db.cachedRemoteFoods,
+    )..where((t) => t.candidateId.equals(candidateId))).go();
   }
 
   /// Evicts rows older than [ttl]. Returns the evicted count.
   Future<int> pruneStale({Duration? retention}) async {
-    final cutoff =
-        DateTime.now().toUtc().subtract(retention ?? ttl);
-    return (_db.delete(_db.cachedRemoteFoods)
-          ..where((t) => t.fetchedAtUtc.isSmallerThanValue(cutoff)))
-        .go();
+    final cutoff = DateTime.now().toUtc().subtract(retention ?? ttl);
+    return (_db.delete(
+      _db.cachedRemoteFoods,
+    )..where((t) => t.fetchedAtUtc.isSmallerThanValue(cutoff))).go();
   }
 }

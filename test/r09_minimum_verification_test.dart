@@ -72,7 +72,10 @@ void main() {
       expect(inspector, contains('apksigner'));
       expect(inspector, contains('jarsigner -verify'));
       expect(inspector, contains('AAB is not signed'));
-      expect(inspector, contains('APK and AAB use different signing certificates'));
+      expect(
+        inspector,
+        contains('APK and AAB use different signing certificates'),
+      );
       expect(inspector, contains('CN=Android Debug'));
       expect(inspector, contains('throwaway CI certificate'));
       expect(inspector, contains('codesign --verify --deep --strict'));

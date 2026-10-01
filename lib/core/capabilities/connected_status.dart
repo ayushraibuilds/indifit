@@ -49,32 +49,30 @@ class ConnectedStatusState {
 
   /// Factory for unconfigured state.
   const ConnectedStatusState.neverConfigured()
-      : status = ConnectedStatus.neverConfigured,
-        lastSuccessUtc = null,
-        pendingOperationsCount = 0,
-        customMessage = null;
+    : status = ConnectedStatus.neverConfigured,
+      lastSuccessUtc = null,
+      pendingOperationsCount = 0,
+      customMessage = null;
 
   /// Factory for up-to-date state.
   const ConnectedStatusState.synced({this.lastSuccessUtc})
-      : status = ConnectedStatus.synced,
-        pendingOperationsCount = 0,
-        customMessage = null;
+    : status = ConnectedStatus.synced,
+      pendingOperationsCount = 0,
+      customMessage = null;
 
   /// Factory for normal offline state.
   const ConnectedStatusState.offline({
     this.lastSuccessUtc,
     int pendingCount = 0,
-  })  : status = ConnectedStatus.offline,
-        pendingOperationsCount = pendingCount,
-        customMessage = null;
+  }) : status = ConnectedStatus.offline,
+       pendingOperationsCount = pendingCount,
+       customMessage = null;
 
   /// Factory for queued pending operations.
-  const ConnectedStatusState.pending({
-    required int count,
-    this.lastSuccessUtc,
-  })  : status = ConnectedStatus.pending,
-        pendingOperationsCount = count,
-        customMessage = null;
+  const ConnectedStatusState.pending({required int count, this.lastSuccessUtc})
+    : status = ConnectedStatus.pending,
+      pendingOperationsCount = count,
+      customMessage = null;
 
   /// Current lifecycle status.
   final ConnectedStatus status;
@@ -155,12 +153,14 @@ class ConnectedStatusState {
   }) {
     return ConnectedStatusState(
       status: status ?? this.status,
-      lastSuccessUtc:
-          clearLastSuccessUtc ? null : (lastSuccessUtc ?? this.lastSuccessUtc),
+      lastSuccessUtc: clearLastSuccessUtc
+          ? null
+          : (lastSuccessUtc ?? this.lastSuccessUtc),
       pendingOperationsCount:
           pendingOperationsCount ?? this.pendingOperationsCount,
-      customMessage:
-          clearCustomMessage ? null : (customMessage ?? this.customMessage),
+      customMessage: clearCustomMessage
+          ? null
+          : (customMessage ?? this.customMessage),
     );
   }
 
@@ -176,11 +176,11 @@ class ConnectedStatusState {
 
   @override
   int get hashCode => Object.hash(
-        status,
-        lastSuccessUtc,
-        pendingOperationsCount,
-        customMessage,
-      );
+    status,
+    lastSuccessUtc,
+    pendingOperationsCount,
+    customMessage,
+  );
 
   @override
   String toString() =>

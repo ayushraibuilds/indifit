@@ -141,16 +141,21 @@ class AdaptiveTdeeEngine {
     final double blendedTdee =
         (warmupWeight * smoothedTdee) +
         ((1.0 - warmupWeight) * effectiveBaselineTdee);
-    final double finalTdee = blendedTdee.clamp(effectiveFloor, effectiveCeiling);
+    final double finalTdee = blendedTdee.clamp(
+      effectiveFloor,
+      effectiveCeiling,
+    );
 
     // 5. Rolling Evaluation Window & Confidence Scoring
     final windowLength = math.min(policy.windowDays, history.length);
     final windowDays = history.sublist(history.length - windowLength);
 
-    final loggedFoodDaysInWindow =
-        windowDays.where((d) => d.hasObservedIntake).length;
-    final loggedWeightDaysInWindow =
-        windowDays.where((d) => d.scaleWeightKg != null && d.scaleWeightKg! > 0).length;
+    final loggedFoodDaysInWindow = windowDays
+        .where((d) => d.hasObservedIntake)
+        .length;
+    final loggedWeightDaysInWindow = windowDays
+        .where((d) => d.scaleWeightKg != null && d.scaleWeightKg! > 0)
+        .length;
 
     AdaptiveTdeeConfidence confidence;
     String confidenceMessage;
@@ -171,11 +176,21 @@ class AdaptiveTdeeEngine {
           'Moderate confidence ($loggedFoodDaysInWindow/${policy.windowDays} food days, $loggedWeightDaysInWindow weigh-ins).';
     } else {
       confidence = AdaptiveTdeeConfidence.calibrating;
-      final neededFood = math.max(0, policy.minFoodDaysModerate - loggedFoodDaysInWindow);
-      final neededWeight = math.max(0, policy.minWeightDaysModerate - loggedWeightDaysInWindow);
+      final neededFood = math.max(
+        0,
+        policy.minFoodDaysModerate - loggedFoodDaysInWindow,
+      );
+      final neededWeight = math.max(
+        0,
+        policy.minWeightDaysModerate - loggedWeightDaysInWindow,
+      );
       final parts = <String>[];
-      if (neededFood > 0) parts.add('$neededFood more food ${neededFood == 1 ? 'day' : 'days'}');
-      if (neededWeight > 0) parts.add('$neededWeight more ${neededWeight == 1 ? 'weigh-in' : 'weigh-ins'}');
+      if (neededFood > 0)
+        parts.add('$neededFood more food ${neededFood == 1 ? 'day' : 'days'}');
+      if (neededWeight > 0)
+        parts.add(
+          '$neededWeight more ${neededWeight == 1 ? 'weigh-in' : 'weigh-ins'}',
+        );
       confidenceMessage =
           'Calibrating: log ${parts.join(' and ')} for moderate confidence.';
     }

@@ -93,9 +93,7 @@ class _RangeSegmentButton extends StatelessWidget {
       selected: isSelected,
       label: '$label $sublabel',
       child: Material(
-        color: isSelected
-            ? primary.withValues(alpha: 0.12)
-            : colors.inset,
+        color: isSelected ? primary.withValues(alpha: 0.12) : colors.inset,
         shape: RoundedRectangleBorder(
           borderRadius: b05Radius(B05SurfaceRadius.medium),
           side: BorderSide(

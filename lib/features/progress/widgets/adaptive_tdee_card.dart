@@ -67,10 +67,11 @@ class AdaptiveTdeeCard extends StatelessWidget {
                                 const SizedBox(width: B05Layout.space8),
                                 Text(
                                   'kcal/day',
-                                  style: B05Typography.caption(context).copyWith(
-                                    color: colors.textSecondary,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                  style: B05Typography.caption(context)
+                                      .copyWith(
+                                        color: colors.textSecondary,
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                 ),
                               ],
                             ),
@@ -79,9 +80,9 @@ class AdaptiveTdeeCard extends StatelessWidget {
                         const SizedBox(height: 2),
                         Text(
                           estimate.confidenceMessage,
-                          style: B05Typography.caption(context).copyWith(
-                            color: colors.textSecondary,
-                          ),
+                          style: B05Typography.caption(
+                            context,
+                          ).copyWith(color: colors.textSecondary),
                         ),
                       ],
                     ),
@@ -121,7 +122,11 @@ class AdaptiveTdeeCard extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.auto_graph_rounded, size: 16, color: colors.action),
+                      Icon(
+                        Icons.auto_graph_rounded,
+                        size: 16,
+                        color: colors.action,
+                      ),
                       const SizedBox(width: B05Layout.space8),
                       Text(
                         estimate.currentScaleWeightKg != null
@@ -211,10 +216,9 @@ class AdaptiveTdeeCard extends StatelessWidget {
                   '• Physiologically Bounded: Day-over-day changes are clamped (+/- 35 kcal/day) to prevent whiplash.\n\n'
                   '• General Wellness Only: This is an informational baseline. All target proposals and coaching adjustments '
                   'are explicitly accepted in the Coaching Hub under clinical safety checks.',
-                  style: B05Typography.body(ctx).copyWith(
-                    color: colors.textSecondary,
-                    height: 1.45,
-                  ),
+                  style: B05Typography.body(
+                    ctx,
+                  ).copyWith(color: colors.textSecondary, height: 1.45),
                 ),
                 const SizedBox(height: B05Layout.space24),
                 SizedBox(

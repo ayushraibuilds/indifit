@@ -363,7 +363,8 @@ class ProgressStatisticsRepository {
             final decoded = jsonDecode(raw);
             if (decoded is Map) {
               final evidence = decoded['evidence'];
-              final marker = (evidence is Map && evidence['request_evidence'] is Map)
+              final marker =
+                  (evidence is Map && evidence['request_evidence'] is Map)
                   ? evidence['request_evidence']['retraction']
                   : (evidence is Map ? evidence['retraction'] : null);
               if (marker != null) isRetraction = true;
@@ -425,7 +426,9 @@ class ProgressStatisticsRepository {
   /// when this call inserted the row.
   Future<bool> unlockAchievement(String achievementId) async {
     try {
-      await _db.into(_db.achievementUnlocks).insert(
+      await _db
+          .into(_db.achievementUnlocks)
+          .insert(
             AchievementUnlocksCompanion.insert(
               achievementId: achievementId,
               unlockedAt: Value(_getNow()),

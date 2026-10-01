@@ -501,7 +501,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
     // Store user parameters
     if (_nameController.text.trim().isNotEmpty) {
-      await prefs.setString(AppPreferenceKeys.userName, _nameController.text.trim());
+      await prefs.setString(
+        AppPreferenceKeys.userName,
+        _nameController.text.trim(),
+      );
     }
     await prefs.setInt(AppPreferenceKeys.userAge, _age);
     await prefs.setDouble(AppPreferenceKeys.userHeight, _height);
@@ -510,7 +513,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     if (_sex != null) await prefs.setString(AppPreferenceKeys.userSex, _sex!);
     await prefs.setString(AppPreferenceKeys.userActivityLevel, _activityLevel);
     await prefs.setString(AppPreferenceKeys.userGoal, _goal);
-    await prefs.setString(AppPreferenceKeys.userDietPreference, _dietPreference);
+    await prefs.setString(
+      AppPreferenceKeys.userDietPreference,
+      _dietPreference,
+    );
 
     // Load the existing profile/goal authority before applying this reviewed
     // setup. On a first run the compatibility bridge imports the preferences
@@ -589,8 +595,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 final screenWidth = MediaQuery.sizeOf(context).width;
                 final textScale =
                     MediaQuery.textScalerOf(context).scale(14) / 14;
-                final shouldStack =
-                    screenWidth < 360 || textScale > 1.3;
+                final shouldStack = screenWidth < 360 || textScale > 1.3;
 
                 final skipButton = TextButton(
                   onPressed: _draftLoaded && !_isCompleting && !_isSkipping
@@ -613,8 +618,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       icon: Icons.arrow_back_rounded,
                       label: 'Back',
                       hint: 'Return to the previous setup step.',
-                      onPressed:
-                          (_currentPage > 0 || _showingPayoff) ? _prevPage : null,
+                      onPressed: (_currentPage > 0 || _showingPayoff)
+                          ? _prevPage
+                          : null,
                     ),
                     const SizedBox(width: B05Layout.space8),
                     Expanded(
@@ -623,8 +629,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         child: LinearProgressIndicator(
                           value: displayStep / 5,
                           backgroundColor: colors.surfaceSubtle,
-                          valueColor:
-                              AlwaysStoppedAnimation<Color>(colors.action),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            colors.action,
+                          ),
                           minHeight: 6,
                         ),
                       ),
@@ -832,9 +839,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         textInputAction: TextInputAction.next,
                         onChanged: (_) =>
                             unawaited(_saveDraft().catchError((_) {})),
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: colors.textPrimary,
-                        ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(color: colors.textPrimary),
                         decoration: InputDecoration(
                           labelText: 'Name',
                           prefixIcon: Icon(
@@ -916,10 +922,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                           double.tryParse(_weightController.text) ?? 70.0;
                       if (current > 25.0) {
                         final next = current - 0.5;
-                        _weightController.text =
-                            next.truncateToDouble() == next
-                                ? next.toInt().toString()
-                                : next.toStringAsFixed(1);
+                        _weightController.text = next.truncateToDouble() == next
+                            ? next.toInt().toString()
+                            : next.toStringAsFixed(1);
                         _validateWeight();
                         unawaited(_saveDraft().catchError((_) {}));
                       }
@@ -929,10 +934,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                           double.tryParse(_weightController.text) ?? 70.0;
                       if (current < 350.0) {
                         final next = current + 0.5;
-                        _weightController.text =
-                            next.truncateToDouble() == next
-                                ? next.toInt().toString()
-                                : next.toStringAsFixed(1);
+                        _weightController.text = next.truncateToDouble() == next
+                            ? next.toInt().toString()
+                            : next.toStringAsFixed(1);
                         _validateWeight();
                         unawaited(_saveDraft().catchError((_) {}));
                       }

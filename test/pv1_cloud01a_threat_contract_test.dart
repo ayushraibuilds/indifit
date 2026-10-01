@@ -17,65 +17,71 @@ void main() {
     const sampleV10Json =
         '{"format_identifier":"INDIFIT_BACKUP_V10","schema_version":20,"profile":{"name":"Ayush"},"workouts":[],"foods":[{"name":"Paneer Tikka","calories":280}]}';
 
-    test('Snapshot encryption produces opaque ciphertext and decrypts identically', () {
-      final envelope = manager.encryptSnapshot(
-        snapshotId: 'snap-001',
-        plaintextJson: sampleV10Json,
-        kmsKeyWrappingSecret: testKmsSecret,
-      );
-
-      // Verify envelope properties
-      expect(envelope.snapshotId, 'snap-001');
-      expect(envelope.schemaVersion, 20);
-      expect(envelope.backupFormatVersion, 10);
-      expect(envelope.ciphertextBytes, isNotEmpty);
-      expect(envelope.wrappedKeyBytes, isNotEmpty);
-      expect(envelope.sha256Checksum, isNotEmpty);
-
-      // Verify ciphertext does not contain plaintext strings
-      final ciphertextString = String.fromCharCodes(envelope.ciphertextBytes);
-      expect(ciphertextString.contains('Paneer Tikka'), isFalse);
-      expect(ciphertextString.contains('INDIFIT_BACKUP_V10'), isFalse);
-
-      // Decrypt and verify identical match
-      final decrypted = manager.decryptSnapshot(
-        envelope: envelope,
-        kmsKeyWrappingSecret: testKmsSecret,
-      );
-      expect(decrypted, sampleV10Json);
-    });
-
-    test('Decryption rejects corrupted or bit-flipped ciphertext immediately', () {
-      final envelope = manager.encryptSnapshot(
-        snapshotId: 'snap-002',
-        plaintextJson: sampleV10Json,
-        kmsKeyWrappingSecret: testKmsSecret,
-      );
-
-      // Tamper with a byte in ciphertext (after the 12-byte IV)
-      final tamperedBytes = Uint8List.fromList(envelope.ciphertextBytes);
-      tamperedBytes[20] ^= 0xFF;
-
-      final tamperedEnvelope = CloudBackupEncryptedEnvelope(
-        snapshotId: envelope.snapshotId,
-        ciphertextBytes: tamperedBytes,
-        wrappedKeyBytes: envelope.wrappedKeyBytes,
-        sha256Checksum: envelope.sha256Checksum,
-        byteSize: envelope.byteSize,
-        schemaVersion: envelope.schemaVersion,
-        backupFormatVersion: envelope.backupFormatVersion,
-        createdAtUtc: envelope.createdAtUtc,
-      );
-
-      // Should fail checksum check
-      expect(
-        () => manager.decryptSnapshot(
-          envelope: tamperedEnvelope,
+    test(
+      'Snapshot encryption produces opaque ciphertext and decrypts identically',
+      () {
+        final envelope = manager.encryptSnapshot(
+          snapshotId: 'snap-001',
+          plaintextJson: sampleV10Json,
           kmsKeyWrappingSecret: testKmsSecret,
-        ),
-        throwsA(isA<FormatException>()),
-      );
-    });
+        );
+
+        // Verify envelope properties
+        expect(envelope.snapshotId, 'snap-001');
+        expect(envelope.schemaVersion, 20);
+        expect(envelope.backupFormatVersion, 10);
+        expect(envelope.ciphertextBytes, isNotEmpty);
+        expect(envelope.wrappedKeyBytes, isNotEmpty);
+        expect(envelope.sha256Checksum, isNotEmpty);
+
+        // Verify ciphertext does not contain plaintext strings
+        final ciphertextString = String.fromCharCodes(envelope.ciphertextBytes);
+        expect(ciphertextString.contains('Paneer Tikka'), isFalse);
+        expect(ciphertextString.contains('INDIFIT_BACKUP_V10'), isFalse);
+
+        // Decrypt and verify identical match
+        final decrypted = manager.decryptSnapshot(
+          envelope: envelope,
+          kmsKeyWrappingSecret: testKmsSecret,
+        );
+        expect(decrypted, sampleV10Json);
+      },
+    );
+
+    test(
+      'Decryption rejects corrupted or bit-flipped ciphertext immediately',
+      () {
+        final envelope = manager.encryptSnapshot(
+          snapshotId: 'snap-002',
+          plaintextJson: sampleV10Json,
+          kmsKeyWrappingSecret: testKmsSecret,
+        );
+
+        // Tamper with a byte in ciphertext (after the 12-byte IV)
+        final tamperedBytes = Uint8List.fromList(envelope.ciphertextBytes);
+        tamperedBytes[20] ^= 0xFF;
+
+        final tamperedEnvelope = CloudBackupEncryptedEnvelope(
+          snapshotId: envelope.snapshotId,
+          ciphertextBytes: tamperedBytes,
+          wrappedKeyBytes: envelope.wrappedKeyBytes,
+          sha256Checksum: envelope.sha256Checksum,
+          byteSize: envelope.byteSize,
+          schemaVersion: envelope.schemaVersion,
+          backupFormatVersion: envelope.backupFormatVersion,
+          createdAtUtc: envelope.createdAtUtc,
+        );
+
+        // Should fail checksum check
+        expect(
+          () => manager.decryptSnapshot(
+            envelope: tamperedEnvelope,
+            kmsKeyWrappingSecret: testKmsSecret,
+          ),
+          throwsA(isA<FormatException>()),
+        );
+      },
+    );
 
     test('Decryption rejects incorrect KMS wrapping secret', () {
       final envelope = manager.encryptSnapshot(
@@ -116,7 +122,9 @@ void main() {
         ),
       ];
 
-      final toPrune = CloudBackupRetentionPolicy.identifySnapshotsToPrune(snapshots);
+      final toPrune = CloudBackupRetentionPolicy.identifySnapshotsToPrune(
+        snapshots,
+      );
       expect(toPrune, isEmpty);
     });
 
@@ -136,68 +144,78 @@ void main() {
       );
 
       // 8 daily snapshots > 5 daily allowed
-      final toPrune = CloudBackupRetentionPolicy.identifySnapshotsToPrune(snapshots);
+      final toPrune = CloudBackupRetentionPolicy.identifySnapshotsToPrune(
+        snapshots,
+      );
       expect(toPrune, ['daily-5', 'daily-6', 'daily-7']);
     });
 
-    test('Retention policy preserves weekly milestones and caps total at 8', () {
-      final now = DateTime.utc(2026, 9, 3);
-      final dailies = List.generate(
-        6,
-        (i) => CloudBackupSnapshotSummary(
-          snapshotId: 'daily-$i',
-          createdAtUtc: now.subtract(Duration(days: i)),
-          byteSize: 1000,
-          schemaVersion: 20,
-          backupFormatVersion: 10,
-          deviceName: 'Phone',
-          isWeeklyMilestone: false,
-        ),
-      );
-      final weeklies = List.generate(
-        4,
-        (i) => CloudBackupSnapshotSummary(
-          snapshotId: 'weekly-$i',
-          createdAtUtc: now.subtract(Duration(days: 7 * (i + 1))),
-          byteSize: 1000,
-          schemaVersion: 20,
-          backupFormatVersion: 10,
-          deviceName: 'Phone',
-          isWeeklyMilestone: true,
-        ),
-      );
+    test(
+      'Retention policy preserves weekly milestones and caps total at 8',
+      () {
+        final now = DateTime.utc(2026, 9, 3);
+        final dailies = List.generate(
+          6,
+          (i) => CloudBackupSnapshotSummary(
+            snapshotId: 'daily-$i',
+            createdAtUtc: now.subtract(Duration(days: i)),
+            byteSize: 1000,
+            schemaVersion: 20,
+            backupFormatVersion: 10,
+            deviceName: 'Phone',
+            isWeeklyMilestone: false,
+          ),
+        );
+        final weeklies = List.generate(
+          4,
+          (i) => CloudBackupSnapshotSummary(
+            snapshotId: 'weekly-$i',
+            createdAtUtc: now.subtract(Duration(days: 7 * (i + 1))),
+            byteSize: 1000,
+            schemaVersion: 20,
+            backupFormatVersion: 10,
+            deviceName: 'Phone',
+            isWeeklyMilestone: true,
+          ),
+        );
 
-      final all = [...dailies, ...weeklies]; // 10 snapshots total
-      final toPrune = CloudBackupRetentionPolicy.identifySnapshotsToPrune(all);
+        final all = [...dailies, ...weeklies]; // 10 snapshots total
+        final toPrune = CloudBackupRetentionPolicy.identifySnapshotsToPrune(
+          all,
+        );
 
-      expect(toPrune, contains('daily-5')); // 6th daily pruned
-      expect(toPrune, contains('weekly-3')); // 4th weekly pruned
-      expect(all.length - toPrune.length, lessThanOrEqualTo(8));
-    });
+        expect(toPrune, contains('daily-5')); // 6th daily pruned
+        expect(toPrune, contains('weekly-3')); // 4th weekly pruned
+        expect(all.length - toPrune.length, lessThanOrEqualTo(8));
+      },
+    );
   });
 
   group('PV1-CLOUD-01A: API Contract Models', () {
-    test('CloudBackupSnapshotUploadRequest serializes and deserializes cleanly', () {
-      final req = CloudBackupSnapshotUploadRequest(
-        snapshotId: 'uuid-test',
-        ciphertextBase64: 'abc123==',
-        wrappedKeyBase64: 'def456==',
-        sha256Checksum: 'checksum-hash',
-        byteSize: 2048,
-        schemaVersion: 20,
-        backupFormatVersion: 10,
-        deviceName: 'Pixel 8 Pro',
-        isWeeklyMilestone: true,
-      );
+    test(
+      'CloudBackupSnapshotUploadRequest serializes and deserializes cleanly',
+      () {
+        final req = CloudBackupSnapshotUploadRequest(
+          snapshotId: 'uuid-test',
+          ciphertextBase64: 'abc123==',
+          wrappedKeyBase64: 'def456==',
+          sha256Checksum: 'checksum-hash',
+          byteSize: 2048,
+          schemaVersion: 20,
+          backupFormatVersion: 10,
+          deviceName: 'Pixel 8 Pro',
+          isWeeklyMilestone: true,
+        );
 
-      final json = req.toJson();
-      final parsed = CloudBackupSnapshotUploadRequest.fromJson(json);
+        final json = req.toJson();
+        final parsed = CloudBackupSnapshotUploadRequest.fromJson(json);
 
-      expect(parsed.snapshotId, 'uuid-test');
-      expect(parsed.byteSize, 2048);
-      expect(parsed.deviceName, 'Pixel 8 Pro');
-      expect(parsed.isWeeklyMilestone, isTrue);
-    });
+        expect(parsed.snapshotId, 'uuid-test');
+        expect(parsed.byteSize, 2048);
+        expect(parsed.deviceName, 'Pixel 8 Pro');
+        expect(parsed.isWeeklyMilestone, isTrue);
+      },
+    );
 
     test('CloudBackupListResponse serializes and deserializes cleanly', () {
       final response = CloudBackupListResponse(

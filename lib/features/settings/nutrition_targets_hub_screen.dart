@@ -317,73 +317,73 @@ class _NutritionTargetsHubScreenState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ref.watch(adaptiveTdeeEstimateProvider).maybeWhen(
-            data: (estimate) {
-              final kcal = estimate.currentTdeeKcal.round();
-              final (confText, confRole) = switch (estimate.confidence) {
-                AdaptiveTdeeConfidence.high => (
-                  'High confidence',
-                  context.b05Colors.success,
-                ),
-                AdaptiveTdeeConfidence.moderate => (
-                  'Moderate confidence',
-                  context.b05Colors.info,
-                ),
-                AdaptiveTdeeConfidence.calibrating => (
-                  'Calibrating',
-                  context.b05Colors.warning,
-                ),
-              };
-              return Padding(
-                padding: const EdgeInsets.only(bottom: B05Layout.space12),
-                child: B05Surface(
-                  padding: const EdgeInsets.all(B05Layout.space16),
-                  tone: B05SurfaceTone.inset,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+          ref
+              .watch(adaptiveTdeeEstimateProvider)
+              .maybeWhen(
+                data: (estimate) {
+                  final kcal = estimate.currentTdeeKcal.round();
+                  final (confText, confRole) = switch (estimate.confidence) {
+                    AdaptiveTdeeConfidence.high => (
+                      'High confidence',
+                      context.b05Colors.success,
+                    ),
+                    AdaptiveTdeeConfidence.moderate => (
+                      'Moderate confidence',
+                      context.b05Colors.info,
+                    ),
+                    AdaptiveTdeeConfidence.calibrating => (
+                      'Calibrating',
+                      context.b05Colors.warning,
+                    ),
+                  };
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: B05Layout.space12),
+                    child: B05Surface(
+                      padding: const EdgeInsets.all(B05Layout.space16),
+                      tone: B05SurfaceTone.inset,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            'Estimated daily burn',
-                            style: B05Typography.caption(context),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Estimated daily burn',
+                                style: B05Typography.caption(context),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                '$kcal kcal/day',
+                                style: B05Typography.title(context),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 2),
-                          Text(
-                            '$kcal kcal/day',
-                            style: B05Typography.title(context),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: B05Layout.space8,
+                              vertical: B05Layout.space4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: confRole.container,
+                              borderRadius: b05Radius(B05SurfaceRadius.small),
+                              border: Border.all(color: confRole.indicator),
+                            ),
+                            child: Text(
+                              confText,
+                              style: B05Typography.caption(context).copyWith(
+                                color: confRole.foreground,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 11,
+                              ),
+                            ),
                           ),
                         ],
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: B05Layout.space8,
-                          vertical: B05Layout.space4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: confRole.container,
-                          borderRadius: b05Radius(B05SurfaceRadius.small),
-                          border: Border.all(
-                            color: confRole.indicator,
-                          ),
-                        ),
-                        child: Text(
-                          confText,
-                          style: B05Typography.caption(context).copyWith(
-                            color: confRole.foreground,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 11,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-            orElse: () => const SizedBox.shrink(),
-          ),
+                    ),
+                  );
+                },
+                orElse: () => const SizedBox.shrink(),
+              ),
           B04ReadStatusCard(
             title: 'Coaching availability',
             message: statusMessage,
@@ -967,10 +967,9 @@ class _NutritionTargetsHubScreenState
               const Spacer(),
               Text(
                 'Auto-split from calories',
-                style: B05Typography.caption(context).copyWith(
-                  fontSize: 10,
-                  color: colors.textSecondary,
-                ),
+                style: B05Typography.caption(
+                  context,
+                ).copyWith(fontSize: 10, color: colors.textSecondary),
               ),
             ],
           ),
@@ -1036,10 +1035,7 @@ class _NutritionTargetsHubScreenState
             const SizedBox(height: 1),
             Text(
               ratio,
-              style: TextStyle(
-                fontSize: 9.5,
-                color: colors.textSecondary,
-              ),
+              style: TextStyle(fontSize: 9.5, color: colors.textSecondary),
             ),
           ],
         ),

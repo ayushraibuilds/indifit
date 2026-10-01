@@ -25,10 +25,7 @@ abstract interface class IosLiveActivityDriver {
     required bool isCompleted,
   });
 
-  Future<bool> endLiveActivity({
-    String? periodId,
-    required bool immediate,
-  });
+  Future<bool> endLiveActivity({String? periodId, required bool immediate});
 }
 
 /// Production driver communicating over MethodChannel with native Swift
@@ -89,7 +86,10 @@ class MethodChannelIosLiveActivityDriver implements IosLiveActivityDriver {
     if (periodId != null) {
       payload['periodId'] = periodId;
     }
-    final result = await _channel.invokeMethod<bool>('endLiveActivity', payload);
+    final result = await _channel.invokeMethod<bool>(
+      'endLiveActivity',
+      payload,
+    );
     return result ?? false;
   }
 }
@@ -116,8 +116,8 @@ class IosLiveActivityService {
   IosLiveActivityService({
     IosLiveActivityDriver? driver,
     bool Function()? isIosChecker,
-  })  : _driver = driver ?? const MethodChannelIosLiveActivityDriver(),
-        _isIosChecker = isIosChecker ?? _defaultIsIos;
+  }) : _driver = driver ?? const MethodChannelIosLiveActivityDriver(),
+       _isIosChecker = isIosChecker ?? _defaultIsIos;
 
   static bool _defaultIsIos() {
     if (kIsWeb) return false;
@@ -138,7 +138,9 @@ class IosLiveActivityService {
     } on MissingPluginException {
       return false;
     } on PlatformException catch (e) {
-      AppLogger.warning('Failed to query Live Activity availability: ${e.message}');
+      AppLogger.warning(
+        'Failed to query Live Activity availability: ${e.message}',
+      );
       return false;
     } catch (_) {
       return false;

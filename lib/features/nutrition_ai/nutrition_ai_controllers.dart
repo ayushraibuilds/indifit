@@ -60,7 +60,9 @@ class NutritionLabelOcrState {
 
   double get effectiveMultiplier {
     if (customGrams != null && customGrams! > 0) {
-      final base = basis == 'per_100g' ? 100.0 : (servingSizeAmount > 0 ? servingSizeAmount : 100.0);
+      final base = basis == 'per_100g'
+          ? 100.0
+          : (servingSizeAmount > 0 ? servingSizeAmount : 100.0);
       return customGrams! / base;
     }
     return portionMultiplier > 0 ? portionMultiplier : 1.0;
@@ -157,7 +159,8 @@ class NutritionLabelOcrState {
   }
 }
 
-class NutritionLabelOcrController extends StateNotifier<NutritionLabelOcrState> {
+class NutritionLabelOcrController
+    extends StateNotifier<NutritionLabelOcrState> {
   final NutritionLabelOcrService _ocrService;
   final Future<NutritionFoodCatalogRepository> Function() _catalogRepository;
   final Future<NutritionFoodLoggingCoordinator> Function() _loggingCoordinator;
@@ -167,21 +170,26 @@ class NutritionLabelOcrController extends StateNotifier<NutritionLabelOcrState> 
 
   NutritionLabelOcrController({
     required NutritionLabelOcrService ocrService,
-    required Future<NutritionFoodCatalogRepository> Function() catalogRepository,
-    required Future<NutritionFoodLoggingCoordinator> Function() loggingCoordinator,
+    required Future<NutritionFoodCatalogRepository> Function()
+    catalogRepository,
+    required Future<NutritionFoodLoggingCoordinator> Function()
+    loggingCoordinator,
     required String userId,
     required Future<String> Function() timezoneId,
     ImagePicker? picker,
-  })  : _ocrService = ocrService,
-        _catalogRepository = catalogRepository,
-        _loggingCoordinator = loggingCoordinator,
-        _userId = userId,
-        _timezoneId = timezoneId,
-        _picker = picker ?? ImagePicker(),
-        super(const NutritionLabelOcrState());
+  }) : _ocrService = ocrService,
+       _catalogRepository = catalogRepository,
+       _loggingCoordinator = loggingCoordinator,
+       _userId = userId,
+       _timezoneId = timezoneId,
+       _picker = picker ?? ImagePicker(),
+       super(const NutritionLabelOcrState());
 
   Future<void> pickAndScan(ImageSource source) async {
-    state = state.copyWith(status: NutritionLabelOcrStatus.picking, clearError: true);
+    state = state.copyWith(
+      status: NutritionLabelOcrStatus.picking,
+      clearError: true,
+    );
     try {
       final file = await _picker.pickImage(
         source: source,
@@ -211,8 +219,10 @@ class NutritionLabelOcrController extends StateNotifier<NutritionLabelOcrState> 
         basis: result.basis,
         productName: result.productName ?? '',
         brandName: result.brandName ?? '',
-        servingSizeAmount: result.servingSizeAmount ?? (result.isPer100g ? 100.0 : 1.0),
-        servingUnit: result.servingSizeUnit ?? (result.isPer100g ? 'g' : 'serving'),
+        servingSizeAmount:
+            result.servingSizeAmount ?? (result.isPer100g ? 100.0 : 1.0),
+        servingUnit:
+            result.servingSizeUnit ?? (result.isPer100g ? 'g' : 'serving'),
         portionMultiplier: 1.0,
         editableNutrients: nutrients,
       );
@@ -255,13 +265,16 @@ class NutritionLabelOcrController extends StateNotifier<NutritionLabelOcrState> 
   }
 
   Future<NutritionFoodOption?> saveAsCustomFood() async {
-    state = state.copyWith(status: NutritionLabelOcrStatus.saving, clearError: true);
+    state = state.copyWith(
+      status: NutritionLabelOcrStatus.saving,
+      clearError: true,
+    );
     try {
       final name = state.productName.trim().isNotEmpty
           ? state.productName.trim()
           : (state.brandName.trim().isNotEmpty
-              ? '${state.brandName.trim()} Item'
-              : 'Packaged Food Item');
+                ? '${state.brandName.trim()} Item'
+                : 'Packaged Food Item');
 
       final catalog = await _catalogRepository();
       final option = await catalog.createUserFood(
@@ -288,7 +301,8 @@ class NutritionLabelOcrController extends StateNotifier<NutritionLabelOcrState> 
     } catch (e) {
       state = state.copyWith(
         status: NutritionLabelOcrStatus.failure,
-        errorMessage: 'Could not save scanned food to catalog. Please try again.',
+        errorMessage:
+            'Could not save scanned food to catalog. Please try again.',
       );
       return null;
     }
@@ -298,13 +312,16 @@ class NutritionLabelOcrController extends StateNotifier<NutritionLabelOcrState> 
     required String mealType,
     required DateTime date,
   }) async {
-    state = state.copyWith(status: NutritionLabelOcrStatus.saving, clearError: true);
+    state = state.copyWith(
+      status: NutritionLabelOcrStatus.saving,
+      clearError: true,
+    );
     try {
       final name = state.productName.trim().isNotEmpty
           ? state.productName.trim()
           : (state.brandName.trim().isNotEmpty
-              ? '${state.brandName.trim()} Item'
-              : 'Packaged Food Item');
+                ? '${state.brandName.trim()} Item'
+                : 'Packaged Food Item');
 
       final catalog = await _catalogRepository();
       final option = await catalog.createUserFood(
@@ -427,16 +444,18 @@ class NaturalLanguageMealController
 
   NaturalLanguageMealController({
     required Future<NaturalLanguageMealService> Function() mealService,
-    required Future<NutritionFoodCatalogRepository> Function() catalogRepository,
-    required Future<NutritionFoodLoggingCoordinator> Function() loggingCoordinator,
+    required Future<NutritionFoodCatalogRepository> Function()
+    catalogRepository,
+    required Future<NutritionFoodLoggingCoordinator> Function()
+    loggingCoordinator,
     required String userId,
     required Future<String> Function() timezoneId,
-  })  : _mealService = mealService,
-        _catalogRepository = catalogRepository,
-        _loggingCoordinator = loggingCoordinator,
-        _userId = userId,
-        _timezoneId = timezoneId,
-        super(const NaturalLanguageMealState());
+  }) : _mealService = mealService,
+       _catalogRepository = catalogRepository,
+       _loggingCoordinator = loggingCoordinator,
+       _userId = userId,
+       _timezoneId = timezoneId,
+       super(const NaturalLanguageMealState());
 
   Future<void> analyzeMeal(String text) async {
     final clean = text.trim();
@@ -530,9 +549,12 @@ class NaturalLanguageMealController
         if (item.matchedCatalogOption != null) {
           option = item.matchedCatalogOption!;
           if (option.baseQuantity.unit == QuantityUnit.gram) {
-            final isGram = item.quantityUnit.toLowerCase() == 'g' ||
+            final isGram =
+                item.quantityUnit.toLowerCase() == 'g' ||
                 item.quantityUnit.toLowerCase() == 'grams';
-            final grams = isGram ? item.quantityAmount : (item.quantityAmount * 100.0);
+            final grams = isGram
+                ? item.quantityAmount
+                : (item.quantityAmount * 100.0);
             quantity = Quantity.fromNum(amount: grams, unit: QuantityUnit.gram);
           } else {
             quantity = Quantity.fromNum(
@@ -660,20 +682,25 @@ class PhotoMealController extends StateNotifier<PhotoMealState> {
 
   PhotoMealController({
     required Future<NaturalLanguageMealService> Function() mealService,
-    required Future<NutritionFoodCatalogRepository> Function() catalogRepository,
-    required Future<NutritionFoodLoggingCoordinator> Function() loggingCoordinator,
+    required Future<NutritionFoodCatalogRepository> Function()
+    catalogRepository,
+    required Future<NutritionFoodLoggingCoordinator> Function()
+    loggingCoordinator,
     required String userId,
     required Future<String> Function() timezoneId,
     ImagePicker? picker,
-  })  : _mealService = mealService,
-        _catalogRepository = catalogRepository,
-        _loggingCoordinator = loggingCoordinator,
-        _userId = userId,
-        _timezoneId = timezoneId,
-        _picker = picker ?? ImagePicker(),
-        super(const PhotoMealState());
+  }) : _mealService = mealService,
+       _catalogRepository = catalogRepository,
+       _loggingCoordinator = loggingCoordinator,
+       _userId = userId,
+       _timezoneId = timezoneId,
+       _picker = picker ?? ImagePicker(),
+       super(const PhotoMealState());
 
-  Future<void> pickAndScan(ImageSource source, {required String deviceUuid}) async {
+  Future<void> pickAndScan(
+    ImageSource source, {
+    required String deviceUuid,
+  }) async {
     state = state.copyWith(status: PhotoMealStatus.picking, clearError: true);
     try {
       final file = await _picker.pickImage(
@@ -760,10 +787,7 @@ class PhotoMealController extends StateNotifier<PhotoMealState> {
   }) async {
     if (state.editableItems.isEmpty) return false;
 
-    state = state.copyWith(
-      status: PhotoMealStatus.logging,
-      clearError: true,
-    );
+    state = state.copyWith(status: PhotoMealStatus.logging, clearError: true);
 
     try {
       final mealGroupId = 'photo-meal::${const Uuid().v4()}';
@@ -782,9 +806,12 @@ class PhotoMealController extends StateNotifier<PhotoMealState> {
         if (item.matchedCatalogOption != null) {
           option = item.matchedCatalogOption!;
           if (option.baseQuantity.unit == QuantityUnit.gram) {
-            final isGram = item.quantityUnit.toLowerCase() == 'g' ||
+            final isGram =
+                item.quantityUnit.toLowerCase() == 'g' ||
                 item.quantityUnit.toLowerCase() == 'grams';
-            final grams = isGram ? item.quantityAmount : (item.quantityAmount * 100.0);
+            final grams = isGram
+                ? item.quantityAmount
+                : (item.quantityAmount * 100.0);
             quantity = Quantity.fromNum(amount: grams, unit: QuantityUnit.gram);
           } else {
             quantity = Quantity.fromNum(
@@ -822,15 +849,13 @@ class PhotoMealController extends StateNotifier<PhotoMealState> {
         );
       }
 
-      state = state.copyWith(
-        status: PhotoMealStatus.success,
-        isLogged: true,
-      );
+      state = state.copyWith(status: PhotoMealStatus.success, isLogged: true);
       return true;
     } catch (e) {
       state = state.copyWith(
         status: PhotoMealStatus.failure,
-        errorMessage: 'Unable to log meal items. Please check your connection and try again.',
+        errorMessage:
+            'Unable to log meal items. Please check your connection and try again.',
       );
       return false;
     }

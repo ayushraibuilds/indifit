@@ -974,7 +974,6 @@ void main() {
     );
   });
 
-
   testWidgets('quantity and review state golden', (tester) async {
     _setViewport(tester, const Size(390, 844));
     final database = AppDatabase.memory();

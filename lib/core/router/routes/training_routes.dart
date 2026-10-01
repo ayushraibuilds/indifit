@@ -3,8 +3,7 @@ part of '../app_router.dart';
 final trainingRoutes = <RouteBase>[
   GoRoute(
     path: '/training',
-    builder: (context, state) =>
-        const MainNavigationScaffold(initialIndex: 1),
+    builder: (context, state) => const MainNavigationScaffold(initialIndex: 1),
   ),
   // Preserve the former Training entry point without reintroducing a
   // competing bottom-navigation concept.
@@ -26,9 +25,7 @@ final trainingRoutes = <RouteBase>[
   GoRoute(
     path: '/workout-history/:sessionId',
     builder: (context, state) {
-      final sessionId = parsePositiveRouteId(
-        state.pathParameters['sessionId'],
-      );
+      final sessionId = parsePositiveRouteId(state.pathParameters['sessionId']);
       if (sessionId == null) {
         return const Scaffold(
           body: Center(child: Text('Workout details are unavailable.')),
@@ -40,9 +37,7 @@ final trainingRoutes = <RouteBase>[
   GoRoute(
     path: '/activity-history/:sessionId',
     builder: (context, state) {
-      final sessionId = parsePositiveRouteId(
-        state.pathParameters['sessionId'],
-      );
+      final sessionId = parsePositiveRouteId(state.pathParameters['sessionId']);
       if (sessionId == null) {
         return const Scaffold(
           body: Center(child: Text('Activity details are unavailable.')),
@@ -86,9 +81,8 @@ final trainingRoutes = <RouteBase>[
   ),
   GoRoute(
     path: '/plan-library/:programId',
-    builder: (context, state) => PlanLibraryDetailScreen(
-      programId: state.pathParameters['programId']!,
-    ),
+    builder: (context, state) =>
+        PlanLibraryDetailScreen(programId: state.pathParameters['programId']!),
   ),
   GoRoute(
     path: '/equipment-profiles',

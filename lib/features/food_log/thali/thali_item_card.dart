@@ -41,9 +41,12 @@ class ThaliItemCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.b05Colors;
-    final energyVal = preview?.calculation.facts['energy']?.point?.value.asDouble;
-    final proteinVal = preview?.calculation.facts['protein']?.point?.value.asDouble;
-    final carbsVal = preview?.calculation.facts['carbohydrate']?.point?.value.asDouble;
+    final energyVal =
+        preview?.calculation.facts['energy']?.point?.value.asDouble;
+    final proteinVal =
+        preview?.calculation.facts['protein']?.point?.value.asDouble;
+    final carbsVal =
+        preview?.calculation.facts['carbohydrate']?.point?.value.asDouble;
     final fatVal = preview?.calculation.facts['fat']?.point?.value.asDouble;
 
     final caloriesStr = energyVal != null ? '${energyVal.round()} kcal' : null;
@@ -147,7 +150,10 @@ class ThaliItemCard extends StatelessWidget {
                   key: Key('thali_item_decrement_${item.id}'),
                   icon: const Icon(Icons.remove_circle_outline, size: 22),
                   color: colors.textSecondary,
-                  constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                  constraints: const BoxConstraints(
+                    minWidth: 36,
+                    minHeight: 36,
+                  ),
                   padding: EdgeInsets.zero,
                   onPressed: onDecrement,
                   tooltip: 'Decrease portion',
@@ -156,7 +162,10 @@ class ThaliItemCard extends StatelessWidget {
                   key: Key('thali_item_increment_${item.id}'),
                   icon: const Icon(Icons.add_circle_outline, size: 22),
                   color: colors.action,
-                  constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                  constraints: const BoxConstraints(
+                    minWidth: 36,
+                    minHeight: 36,
+                  ),
                   padding: EdgeInsets.zero,
                   onPressed: onIncrement,
                   tooltip: 'Increase portion',
@@ -165,7 +174,10 @@ class ThaliItemCard extends StatelessWidget {
                   key: Key('thali_item_delete_${item.id}'),
                   icon: const Icon(Icons.delete_outline_rounded, size: 20),
                   color: colors.danger.foreground,
-                  constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                  constraints: const BoxConstraints(
+                    minWidth: 36,
+                    minHeight: 36,
+                  ),
                   padding: EdgeInsets.zero,
                   onPressed: onDelete,
                   tooltip: 'Remove item',

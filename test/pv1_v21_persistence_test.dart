@@ -42,7 +42,8 @@ class _CountingFoodApiService extends FoodApiService {
   }
 }
 
-RemoteFoodCandidate _candidate(String id, String barcode) => RemoteFoodCandidate(
+RemoteFoodCandidate _candidate(String id, String barcode) =>
+    RemoteFoodCandidate(
       id: id,
       provider: FoodCatalogProvider.openFoodFacts,
       providerId: barcode,
@@ -114,10 +115,7 @@ void main() {
       // implementation cannot provide.
       final reopened = DriftOutboxRepository(db);
       expect(await reopened.getPendingOperations(), hasLength(1));
-      expect(
-        await reopened.watchPendingCount().first,
-        1,
-      );
+      expect(await reopened.watchPendingCount().first, 1);
     });
 
     test('Stale inFlight rows become redeliverable after the lease', () async {
@@ -125,20 +123,22 @@ void main() {
       final repo = DriftOutboxRepository(db);
       final now = DateTime.now().toUtc();
       OutboxOperation build(String id, DateTime attempt) => OutboxOperation(
-            operationId: id,
-            idempotencyKey: 'k-$id',
-            domain: OutboxDomain.backup,
-            action: 'upload_snapshot',
-            entityId: id,
-            payload: const {},
-            createdAtUtc: attempt,
-            scheduledAtUtc: attempt,
-            state: OutboxState.inFlight,
-            lastAttemptUtc: attempt,
-          );
+        operationId: id,
+        idempotencyKey: 'k-$id',
+        domain: OutboxDomain.backup,
+        action: 'upload_snapshot',
+        entityId: id,
+        payload: const {},
+        createdAtUtc: attempt,
+        scheduledAtUtc: attempt,
+        state: OutboxState.inFlight,
+        lastAttemptUtc: attempt,
+      );
 
       // Pre-crash dispatch stuck 20 minutes ago.
-      await repo.enqueue(build('op-stuck', now.subtract(const Duration(minutes: 20))));
+      await repo.enqueue(
+        build('op-stuck', now.subtract(const Duration(minutes: 20))),
+      );
       // Live dispatch inside its lease.
       await repo.enqueue(build('op-live', now));
 
@@ -147,36 +147,44 @@ void main() {
       expect(pending.map((o) => o.operationId), isNot(contains('op-live')));
     });
 
-    test('Dedup, cancel, and completion-time prune match the contract', () async {
-      final db = registerTestDatabaseScope().create();
-      final repo = DriftOutboxRepository(db);
-      final now = DateTime.now().toUtc();
+    test(
+      'Dedup, cancel, and completion-time prune match the contract',
+      () async {
+        final db = registerTestDatabaseScope().create();
+        final repo = DriftOutboxRepository(db);
+        final now = DateTime.now().toUtc();
 
-      await repo.enqueue(_op('op-a', 'same'));
-      await repo.markSucceeded('op-a');
-      await repo.enqueue(_op('op-b', 'same'));
-      expect(await repo.getOperationById('op-b'), isNotNull);
+        await repo.enqueue(_op('op-a', 'same'));
+        await repo.markSucceeded('op-a');
+        await repo.enqueue(_op('op-b', 'same'));
+        expect(await repo.getOperationById('op-b'), isNotNull);
 
-      await repo.enqueue(_op('op-a', 'other-key'));
-      expect((await repo.getOperationById('op-a'))!.idempotencyKey, 'same');
+        await repo.enqueue(_op('op-a', 'other-key'));
+        expect((await repo.getOperationById('op-a'))!.idempotencyKey, 'same');
 
-      await repo.enqueue(_op('op-c', 'k-c'));
-      await repo.cancel('op-c');
-      expect(
-        (await repo.getPendingOperations()).any((o) => o.operationId == 'op-c'),
-        isFalse,
-      );
+        await repo.enqueue(_op('op-c', 'k-c'));
+        await repo.cancel('op-c');
+        expect(
+          (await repo.getPendingOperations()).any(
+            (o) => o.operationId == 'op-c',
+          ),
+          isFalse,
+        );
 
-      final old = now.subtract(const Duration(days: 8));
-      await repo.enqueue(_op('op-old', 'k-old', at: old));
-      await repo.markSucceeded('op-old');
-      // Backdate completion to prove prune uses completion, not creation.
-      await (db.update(db.outboxEntries)
-            ..where((t) => t.operationId.equals('op-old')))
-          .write(OutboxEntriesCompanion(lastAttemptUtc: Value(old)));
-      expect(await repo.pruneCompleted(olderThan: const Duration(days: 7)), 1);
-      expect(await repo.getOperationById('op-old'), isNull);
-    });
+        final old = now.subtract(const Duration(days: 8));
+        await repo.enqueue(_op('op-old', 'k-old', at: old));
+        await repo.markSucceeded('op-old');
+        // Backdate completion to prove prune uses completion, not creation.
+        await (db.update(db.outboxEntries)
+              ..where((t) => t.operationId.equals('op-old')))
+            .write(OutboxEntriesCompanion(lastAttemptUtc: Value(old)));
+        expect(
+          await repo.pruneCompleted(olderThan: const Duration(days: 7)),
+          1,
+        );
+        expect(await repo.getOperationById('op-old'), isNull);
+      },
+    );
   });
 
   group('PV1-V21: Tombstone store (persistent anti-resurrection)', () {
@@ -186,23 +194,34 @@ void main() {
       const hlc1 = HlcTimestamp(millis: 1000, counter: 0, nodeId: 'a');
       const hlc2 = HlcTimestamp(millis: 2000, counter: 0, nodeId: 'a');
 
-      await store.recordTombstone(SyncTombstone(
-        entityId: 'e1',
-        domain: SyncDomain.workouts,
-        deletedAtHlc: hlc1,
-        createdAtUtc: DateTime.utc(2026, 9, 4),
-      ));
+      await store.recordTombstone(
+        SyncTombstone(
+          entityId: 'e1',
+          domain: SyncDomain.workouts,
+          deletedAtHlc: hlc1,
+          createdAtUtc: DateTime.utc(2026, 9, 4),
+        ),
+      );
       // Older tombstone never regresses the stored HLC.
-      await store.recordTombstone(SyncTombstone(
-        entityId: 'e1',
-        domain: SyncDomain.workouts,
-        deletedAtHlc: const HlcTimestamp(millis: 500, counter: 0, nodeId: 'a'),
-        createdAtUtc: DateTime.utc(2026, 9, 4),
-      ));
+      await store.recordTombstone(
+        SyncTombstone(
+          entityId: 'e1',
+          domain: SyncDomain.workouts,
+          deletedAtHlc: const HlcTimestamp(
+            millis: 500,
+            counter: 0,
+            nodeId: 'a',
+          ),
+          createdAtUtc: DateTime.utc(2026, 9, 4),
+        ),
+      );
       var stored = await store.getTombstone('e1', SyncDomain.workouts);
       expect(stored!.deletedAtHlc, hlc1);
 
-      expect(await store.isExtinguished('e1', SyncDomain.workouts, hlc1), isTrue);
+      expect(
+        await store.isExtinguished('e1', SyncDomain.workouts, hlc1),
+        isTrue,
+      );
       expect(
         await store.isExtinguished(
           'e1',
@@ -212,12 +231,14 @@ void main() {
         isFalse,
       );
 
-      await store.recordTombstone(SyncTombstone(
-        entityId: 'e1',
-        domain: SyncDomain.workouts,
-        deletedAtHlc: hlc2,
-        createdAtUtc: DateTime.utc(2026, 9, 4),
-      ));
+      await store.recordTombstone(
+        SyncTombstone(
+          entityId: 'e1',
+          domain: SyncDomain.workouts,
+          deletedAtHlc: hlc2,
+          createdAtUtc: DateTime.utc(2026, 9, 4),
+        ),
+      );
       stored = await store.getTombstone('e1', SyncDomain.workouts);
       expect(stored!.deletedAtHlc, hlc2);
     });
@@ -225,12 +246,16 @@ void main() {
     test('Expired tombstones compact after retention', () async {
       final db = registerTestDatabaseScope().create();
       final store = DriftSyncTombstoneStore(db);
-      await store.recordTombstone(SyncTombstone(
-        entityId: 'old',
-        domain: SyncDomain.weights,
-        deletedAtHlc: const HlcTimestamp(millis: 1, counter: 0, nodeId: 'a'),
-        createdAtUtc: DateTime.now().toUtc().subtract(const Duration(days: 40)),
-      ));
+      await store.recordTombstone(
+        SyncTombstone(
+          entityId: 'old',
+          domain: SyncDomain.weights,
+          deletedAtHlc: const HlcTimestamp(millis: 1, counter: 0, nodeId: 'a'),
+          createdAtUtc: DateTime.now().toUtc().subtract(
+            const Duration(days: 40),
+          ),
+        ),
+      );
       expect(await store.pruneExpired(), 1);
       expect(await store.getTombstone('old', SyncDomain.weights), isNull);
     });
@@ -253,7 +278,9 @@ void main() {
       expect(await store.getCandidate('off_old'), isNull);
 
       // Corrupt JSON evicts instead of throwing.
-      await db.into(db.cachedRemoteFoods).insert(
+      await db
+          .into(db.cachedRemoteFoods)
+          .insert(
             CachedRemoteFoodsCompanion.insert(
               candidateId: 'off_broken',
               candidateJson: 'not-json{{{',
@@ -316,7 +343,9 @@ void main() {
         final v20 = AppDatabase.executor(NativeDatabase(file));
         try {
           await v20.customSelect('SELECT 1').get();
-          await v20.into(v20.foodLogs).insert(
+          await v20
+              .into(v20.foodLogs)
+              .insert(
                 FoodLogsCompanion.insert(
                   name: 'Migration Marker Dal',
                   calories: 100,
@@ -347,7 +376,7 @@ void main() {
           for (final table in [
             'outbox_entries',
             'tombstone_entries',
-            'cached_remote_foods'
+            'cached_remote_foods',
           ]) {
             final found = await migrated
                 .customSelect(
@@ -360,9 +389,9 @@ void main() {
           final logs = await migrated.select(migrated.foodLogs).get();
           expect(logs.map((l) => l.name), contains('Migration Marker Dal'));
           // New tables accept writes immediately after upgrade.
-          await DriftOutboxRepository(migrated).enqueue(
-            _op('op-post-migrate', 'k-post-migrate'),
-          );
+          await DriftOutboxRepository(
+            migrated,
+          ).enqueue(_op('op-post-migrate', 'k-post-migrate'));
           expect(
             await DriftOutboxRepository(migrated).getPendingOperations(),
             hasLength(1),

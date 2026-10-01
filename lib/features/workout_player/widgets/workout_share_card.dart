@@ -166,7 +166,9 @@ class _WorkoutShareCardState extends State<WorkoutShareCard> {
           FilledButton.icon(
             key: const Key('workout_share_button'),
             onPressed: () {
-              final text = recap.generateShareText(includeWeights: _includeWeights);
+              final text = recap.generateShareText(
+                includeWeights: _includeWeights,
+              );
               Share.share(text);
             },
             icon: const Icon(Icons.share_rounded, size: 18),

@@ -26,7 +26,8 @@ class CrashReportingService {
   static Future<void> Function(
     FutureOr<void> Function(SentryFlutterOptions), {
     FutureOr<void> Function()? appRunner,
-  }) sentryInitRunner = SentryFlutter.init;
+  })
+  sentryInitRunner = SentryFlutter.init;
 
   /// Initializes Sentry crash reporting with zero-payload privacy guards.
   static Future<void> initialize(
@@ -35,15 +36,16 @@ class CrashReportingService {
   }) async {
     final p = prefs ?? await SharedPreferences.getInstance();
     final isOffline = p.getBool(AppPreferenceKeys.offlineOnly) ?? false;
-    final userTelemetryOptIn =
-        p.getBool(prefCrashReportingEnabled) ?? false;
+    final userTelemetryOptIn = p.getBool(prefCrashReportingEnabled) ?? false;
 
     // Telemetry is allowed ONLY if not offline-only AND user explicitly opted in
     _isEnabled = !isOffline && userTelemetryOptIn;
 
     final effectiveDsn = debugDsnOverride ?? _defaultDsn;
     if (!_isEnabled || effectiveDsn.contains('placeholder_key')) {
-      AppLogger.info('Sentry crash reporting disabled (opt-out or placeholder DSN).');
+      AppLogger.info(
+        'Sentry crash reporting disabled (opt-out or placeholder DSN).',
+      );
       await appRunner();
       return;
     }

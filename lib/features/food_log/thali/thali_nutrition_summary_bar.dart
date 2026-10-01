@@ -27,8 +27,7 @@ class ThaliNutritionSummaryBar extends StatelessWidget {
     final protein = facts?['protein']?.point?.value.asDouble;
     final carbs = facts?['carbohydrate']?.point?.value.asDouble;
     final fat = facts?['fat']?.point?.value.asDouble;
-    final fiber =
-        (facts?['fibre'] ?? facts?['fiber'])?.point?.value.asDouble;
+    final fiber = (facts?['fibre'] ?? facts?['fiber'])?.point?.value.asDouble;
 
     final isPartial = preview?.isPartial ?? false;
 
@@ -67,12 +66,19 @@ class ThaliNutritionSummaryBar extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  Icon(Icons.info_outline, size: 16, color: colors.warning.foreground),
+                  Icon(
+                    Icons.info_outline,
+                    size: 16,
+                    color: colors.warning.foreground,
+                  ),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
                       'Some items have partial nutrient data',
-                      style: TextStyle(fontSize: 12, color: colors.warning.foreground),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: colors.warning.foreground,
+                      ),
                     ),
                   ),
                 ],
@@ -185,7 +191,10 @@ class ThaliNutritionSummaryBar extends StatelessWidget {
                             color: colors.onAction,
                           ),
                         )
-                      : const Icon(Icons.check_circle_outline_rounded, size: 20),
+                      : const Icon(
+                          Icons.check_circle_outline_rounded,
+                          size: 20,
+                        ),
                   label: Text(
                     isLoading ? 'Logging...' : 'Log Thali',
                     style: const TextStyle(fontWeight: FontWeight.bold),

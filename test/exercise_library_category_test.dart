@@ -109,9 +109,7 @@ void main() {
 
   Widget createTestWidget() {
     return ProviderScope(
-      overrides: [
-        workoutRepositoryProvider.overrideWithValue(mockRepo),
-      ],
+      overrides: [workoutRepositoryProvider.overrideWithValue(mockRepo)],
       child: MaterialApp(
         theme: AppTheme.darkTheme,
         home: const ExerciseLibraryScreen(),
@@ -129,7 +127,9 @@ void main() {
   }
 
   group('Exercise Library Category Correctness (R08-0.4)', () {
-    testWidgets('1. Displays initial All category with total count', (tester) async {
+    testWidgets('1. Displays initial All category with total count', (
+      tester,
+    ) async {
       setTestViewport(tester);
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
@@ -273,7 +273,9 @@ void main() {
       },
     );
 
-    testWidgets('7. Handles malformed muscleGroups without crashing', (tester) async {
+    testWidgets('7. Handles malformed muscleGroups without crashing', (
+      tester,
+    ) async {
       setTestViewport(tester);
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();

@@ -44,10 +44,14 @@ class InMemoryCloudBackupApiClient implements CloudBackupApiClient {
 
   void _checkSimulatedErrors() {
     if (simulateNetworkFailure) {
-      throw const FormatException('Simulated network failure: connection refused');
+      throw const FormatException(
+        'Simulated network failure: connection refused',
+      );
     }
     if (simulateServerUnavailable) {
-      throw const FormatException('Simulated HTTP 503: Service Temporarily Unavailable');
+      throw const FormatException(
+        'Simulated HTTP 503: Service Temporarily Unavailable',
+      );
     }
   }
 
@@ -77,8 +81,9 @@ class InMemoryCloudBackupApiClient implements CloudBackupApiClient {
     );
 
     // Idempotent upsert: retrying the same snapshotId must not duplicate rows.
-    final existingIndex =
-        _summaries.indexWhere((s) => s.snapshotId == request.snapshotId);
+    final existingIndex = _summaries.indexWhere(
+      (s) => s.snapshotId == request.snapshotId,
+    );
     if (existingIndex != -1) {
       _storedEnvelopes[request.snapshotId] = envelope;
       return _summaries[existingIndex];
@@ -100,7 +105,9 @@ class InMemoryCloudBackupApiClient implements CloudBackupApiClient {
     _summaries.insert(0, summary);
 
     // Execute server-side 5+3 retention pruning
-    final toPrune = CloudBackupRetentionPolicy.identifySnapshotsToPrune(_summaries);
+    final toPrune = CloudBackupRetentionPolicy.identifySnapshotsToPrune(
+      _summaries,
+    );
     for (final pruneId in toPrune) {
       _storedEnvelopes.remove(pruneId);
       _summaries.removeWhere((s) => s.snapshotId == pruneId);

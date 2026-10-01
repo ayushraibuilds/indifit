@@ -354,111 +354,105 @@ void main() {
     },
   );
 
-  testWidgets(
-    'failure screen offers finish as partial workout button',
-    (tester) async {
-      var partialTapped = false;
-      final launch = _launch(
-        routineName: 'Failed workout',
-        actualName: 'Exercise 1',
-        elapsedSeconds: 60,
-      );
+  testWidgets('failure screen offers finish as partial workout button', (
+    tester,
+  ) async {
+    var partialTapped = false;
+    final launch = _launch(
+      routineName: 'Failed workout',
+      actualName: 'Exercise 1',
+      elapsedSeconds: 60,
+    );
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: B02SummaryBody(
-              launch: launch,
-              executionContext: WorkoutExecutionContext.fromLaunch(launch),
-              ui: const B02StrengthExecutionUiState(
-                status: B02StrengthExecutionStatus.failure,
-                errorMessage:
-                    'Incomplete exercises require finishing as a partial workout.',
-              ),
-              onRetry: () {},
-              onFull: () {},
-              onPartial: () => partialTapped = true,
-              onBack: () {},
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: B02SummaryBody(
+            launch: launch,
+            executionContext: WorkoutExecutionContext.fromLaunch(launch),
+            ui: const B02StrengthExecutionUiState(
+              status: B02StrengthExecutionStatus.failure,
+              errorMessage:
+                  'Incomplete exercises require finishing as a partial workout.',
             ),
+            onRetry: () {},
+            onFull: () {},
+            onPartial: () => partialTapped = true,
+            onBack: () {},
           ),
         ),
-      );
-      await tester.pump();
+      ),
+    );
+    await tester.pump();
 
-      expect(
-        find.text(
-          'Incomplete exercises require finishing as a partial workout.',
-        ),
-        findsOneWidget,
-      );
-      expect(find.text('Retry'), findsOneWidget);
-      expect(find.text('Finish as partial workout'), findsOneWidget);
+    expect(
+      find.text('Incomplete exercises require finishing as a partial workout.'),
+      findsOneWidget,
+    );
+    expect(find.text('Retry'), findsOneWidget);
+    expect(find.text('Finish as partial workout'), findsOneWidget);
 
-      await tester.tap(find.text('Finish as partial workout'));
-      await tester.pump();
-      expect(partialTapped, isTrue);
-    },
-  );
+    await tester.tap(find.text('Finish as partial workout'));
+    await tester.pump();
+    expect(partialTapped, isTrue);
+  });
 
-  testWidgets(
-    'workout with 0 reps disables completion actions',
-    (tester) async {
-      final emptyExercise = B02PerformedExerciseDraft(
-        id: 'empty-exercise',
-        ordinal: 0,
-        expectedExerciseId: 'quick-exercise',
-        expectedExerciseNameSnapshot: 'Quick press',
-        actualExerciseId: 'quick-exercise',
-        actualExerciseNameSnapshot: 'Quick press',
-        status: 'inProgress',
-        sets: const [],
-      );
-      final emptyLaunch = B02StrengthExecutionLaunch(
-        draftId: 92,
-        occurrenceId: null,
-        executionSnapshotJson: '{"version":1}',
-        state: B02ExecutionDraftState(
-          snapshotId: 'empty-snapshot',
-          snapshotVersion: 1,
-          activityType: B02ActivityType.strength,
-          routineName: 'Empty workout',
-          elapsedSeconds: 10,
-          currentExerciseOrdinal: 0,
-          currentSetOrdinal: 0,
-          performedExercises: [emptyExercise],
-        ),
-      );
+  testWidgets('workout with 0 reps disables completion actions', (
+    tester,
+  ) async {
+    final emptyExercise = B02PerformedExerciseDraft(
+      id: 'empty-exercise',
+      ordinal: 0,
+      expectedExerciseId: 'quick-exercise',
+      expectedExerciseNameSnapshot: 'Quick press',
+      actualExerciseId: 'quick-exercise',
+      actualExerciseNameSnapshot: 'Quick press',
+      status: 'inProgress',
+      sets: const [],
+    );
+    final emptyLaunch = B02StrengthExecutionLaunch(
+      draftId: 92,
+      occurrenceId: null,
+      executionSnapshotJson: '{"version":1}',
+      state: B02ExecutionDraftState(
+        snapshotId: 'empty-snapshot',
+        snapshotVersion: 1,
+        activityType: B02ActivityType.strength,
+        routineName: 'Empty workout',
+        elapsedSeconds: 10,
+        currentExerciseOrdinal: 0,
+        currentSetOrdinal: 0,
+        performedExercises: [emptyExercise],
+      ),
+    );
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            databaseProvider.overrideWithValue(db),
-            workoutSessionWakeLockCoordinatorProvider.overrideWithValue(
-              createTestWorkoutWakeLockCoordinator(),
-            ),
-          ],
-          child: MaterialApp(
-            home: B02StrengthSummaryScreen(launch: emptyLaunch),
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          databaseProvider.overrideWithValue(db),
+          workoutSessionWakeLockCoordinatorProvider.overrideWithValue(
+            createTestWorkoutWakeLockCoordinator(),
           ),
-        ),
-      );
-      await tester.pump();
+        ],
+        child: MaterialApp(home: B02StrengthSummaryScreen(launch: emptyLaunch)),
+      ),
+    );
+    await tester.pump();
 
-      expect(find.text('No completed reps yet'), findsOneWidget);
-      expect(
-        find.text('Log at least one set with completed reps before saving.'),
-        findsOneWidget,
-      );
-      final completeButton = tester.widget<FilledButton>(
-        find.widgetWithText(FilledButton, 'Complete workout'),
-      );
-      expect(completeButton.onPressed, isNull);
-      final partialButton = tester.widget<OutlinedButton>(
-        find.widgetWithText(OutlinedButton, 'Finish partially…'),
-      );
-      expect(partialButton.onPressed, isNull);
-    },
-  );
+    expect(find.text('No completed reps yet'), findsOneWidget);
+    expect(
+      find.text('Log at least one set with completed reps before saving.'),
+      findsOneWidget,
+    );
+    final completeButton = tester.widget<FilledButton>(
+      find.widgetWithText(FilledButton, 'Complete workout'),
+    );
+    expect(completeButton.onPressed, isNull);
+    final partialButton = tester.widget<OutlinedButton>(
+      find.widgetWithText(OutlinedButton, 'Finish partially…'),
+    );
+    expect(partialButton.onPressed, isNull);
+  });
 
   testWidgets(
     'incomplete workout prompt allows partial completion on full complete tap',

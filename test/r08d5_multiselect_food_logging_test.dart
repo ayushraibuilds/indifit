@@ -740,9 +740,18 @@ void main() {
           MealPresentationRegistry.breakfast.icon,
           Icons.wb_sunny_outlined,
         ); // Breakfast
-        expect(MealPresentationRegistry.lunch.icon, Icons.wb_twilight_rounded); // Lunch
-        expect(MealPresentationRegistry.dinner.icon, Icons.nightlight_round); // Dinner
-        expect(MealPresentationRegistry.snack.icon, Icons.cookie_outlined); // Snacks
+        expect(
+          MealPresentationRegistry.lunch.icon,
+          Icons.wb_twilight_rounded,
+        ); // Lunch
+        expect(
+          MealPresentationRegistry.dinner.icon,
+          Icons.nightlight_round,
+        ); // Dinner
+        expect(
+          MealPresentationRegistry.snack.icon,
+          Icons.cookie_outlined,
+        ); // Snacks
       },
     );
 
@@ -893,10 +902,7 @@ void main() {
         await tester.tap(find.text('Provider protein shake'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
-        expect(
-          find.text('Correct label values (per 100 g)'),
-          findsOneWidget,
-        );
+        expect(find.text('Correct label values (per 100 g)'), findsOneWidget);
 
         // Nothing entered the batch path.
         expect(tracking.batchCalls, 0);

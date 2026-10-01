@@ -65,7 +65,9 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('That barcode looks incomplete. Check the digits and try again.'),
+            content: Text(
+              'That barcode looks incomplete. Check the digits and try again.',
+            ),
           ),
         );
       }
@@ -159,7 +161,9 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
         if (_continuousMode) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Found: ${candidate.name} (${candidate.brand ?? ''})'),
+              content: Text(
+                'Found: ${candidate.name} (${candidate.brand ?? ''})',
+              ),
               action: SnackBarAction(
                 label: 'Done',
                 onPressed: () => Navigator.pop(context, candidate),
@@ -354,22 +358,25 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.videocam_off_outlined,
-                          color: Colors.white70, size: 48),
+                      const Icon(
+                        Icons.videocam_off_outlined,
+                        color: Colors.white70,
+                        size: 48,
+                      ),
                       const SizedBox(height: 12),
                       const Text(
                         'Camera access is off',
                         style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16),
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       const Text(
                         'Enable camera access in system settings to scan, or enter the barcode below.',
                         textAlign: TextAlign.center,
-                        style:
-                            TextStyle(color: Colors.white70, fontSize: 13),
+                        style: TextStyle(color: Colors.white70, fontSize: 13),
                       ),
                       const SizedBox(height: 12),
                       OutlinedButton(

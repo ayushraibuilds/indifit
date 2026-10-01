@@ -70,8 +70,7 @@ class DisabledCloudBackupCapability implements CloudBackupCapability {
     required String snapshotId,
     required List<int> encryptedBytes,
     required Map<String, dynamic> metadata,
-  }) async =>
-      false;
+  }) async => false;
 
   @override
   Future<List<RemoteBackupSnapshotMetadata>> listRemoteSnapshots() async =>
@@ -87,8 +86,7 @@ class DisabledCloudBackupCapability implements CloudBackupCapability {
   Future<bool> createAndUploadSnapshot({
     bool isManual = false,
     bool isWeeklyMilestone = false,
-  }) async =>
-      false;
+  }) async => false;
 
   @override
   Future<void> restoreCloudSnapshot(String snapshotId) async {}

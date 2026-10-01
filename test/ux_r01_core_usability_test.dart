@@ -39,8 +39,6 @@ void main() {
     }
   });
 
-
-
   test('skipped setup keeps the B04 production context fail-closed', () async {
     SharedPreferences.setMockInitialValues({});
     const store = B05OnboardingDraftStore();
@@ -246,7 +244,6 @@ void main() {
     },
   );
 }
-
 
 class _BreakfastReflectionHarness extends ConsumerWidget {
   const _BreakfastReflectionHarness({required this.selectedDate});

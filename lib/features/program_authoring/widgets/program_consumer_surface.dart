@@ -17,7 +17,6 @@ typedef ConsumerDayEntry = ({
 });
 
 String programWeekdayLabel(int weekday) => switch (weekday) {
-
   DateTime.monday => 'Mon',
 
   DateTime.tuesday => 'Tue',
@@ -33,10 +32,7 @@ String programWeekdayLabel(int weekday) => switch (weekday) {
   DateTime.sunday => 'Sun',
 
   _ => 'Unknown day',
-
 };
-
-
 
 class ProgramConsumerPlanSurface extends StatelessWidget {
   const ProgramConsumerPlanSurface({
@@ -51,7 +47,7 @@ class ProgramConsumerPlanSurface extends StatelessWidget {
   final bool canEdit;
   final VoidCallback onAddDay;
   final void Function(int blockIndex, int weekIndex, int templateIndex)
-      onAddPrescription;
+  onAddPrescription;
 
   @override
   Widget build(BuildContext context) {
@@ -116,7 +112,7 @@ class ProgramConsumerDayCard extends StatelessWidget {
   final int dayIndex;
   final bool canEdit;
   final void Function(int blockIndex, int weekIndex, int templateIndex)
-      onAddPrescription;
+  onAddPrescription;
 
   @override
   Widget build(BuildContext context) {

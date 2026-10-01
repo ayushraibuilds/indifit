@@ -39,7 +39,8 @@ class _ExerciseDetailsSheetState extends ConsumerState<ExerciseDetailsSheet> {
         ref.watch(b05ExerciseVisualRegistryProvider).valueOrNull ??
         const B05ExerciseVisualRegistry.empty();
     final set = registry.lookup(exercise.stableId ?? '');
-    final hasStartPeak = set != null &&
+    final hasStartPeak =
+        set != null &&
         set.mediaByRole['start'] != null &&
         set.mediaByRole['peak'] != null;
     final dpr = MediaQuery.devicePixelRatioOf(context);
@@ -116,7 +117,9 @@ class _ExerciseDetailsSheetState extends ConsumerState<ExerciseDetailsSheet> {
                     child: ExerciseVisual(
                       canonicalExerciseUuid: exercise.stableId ?? '',
                       registry: registry,
-                      pose: hasStartPeak ? _currentPose : ExerciseVisualPose.start,
+                      pose: hasStartPeak
+                          ? _currentPose
+                          : ExerciseVisualPose.start,
                       cacheWidth: detailCacheWidth,
                       displayMuscles: ExerciseVisualMuscleFacts(
                         primaryMuscle: displayMuscles.primary,
@@ -154,9 +157,9 @@ class _ExerciseDetailsSheetState extends ConsumerState<ExerciseDetailsSheet> {
                     },
                     style: SegmentedButton.styleFrom(
                       visualDensity: VisualDensity.compact,
-                      textStyle: B05Typography.caption(context).copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
+                      textStyle: B05Typography.caption(
+                        context,
+                      ).copyWith(fontWeight: FontWeight.w600),
                     ),
                   ),
                 ],

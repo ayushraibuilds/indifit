@@ -554,10 +554,9 @@ class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
             const SizedBox(height: 2),
             Text(
               source,
-              style: B05Typography.caption(context).copyWith(
-                color: context.b05Colors.textSecondary,
-                fontSize: 10,
-              ),
+              style: B05Typography.caption(
+                context,
+              ).copyWith(color: context.b05Colors.textSecondary, fontSize: 10),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,

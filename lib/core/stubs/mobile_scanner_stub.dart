@@ -20,11 +20,8 @@ class BarcodeCapture {
   const BarcodeCapture({this.barcodes = const []});
 }
 
-typedef MobileScannerErrorBuilder = Widget Function(
-  BuildContext context,
-  Object error,
-  Widget? child,
-);
+typedef MobileScannerErrorBuilder =
+    Widget Function(BuildContext context, Object error, Widget? child);
 
 class MobileScanner extends StatelessWidget {
   final MobileScannerController? controller;

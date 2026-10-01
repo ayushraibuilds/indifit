@@ -47,8 +47,10 @@ class ThaliQuickAdjustHud extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.b05Colors;
     final energy = preview?.calculation.facts['energy']?.point?.value.asDouble;
-    final protein = preview?.calculation.facts['protein']?.point?.value.asDouble;
-    final carbs = preview?.calculation.facts['carbohydrate']?.point?.value.asDouble;
+    final protein =
+        preview?.calculation.facts['protein']?.point?.value.asDouble;
+    final carbs =
+        preview?.calculation.facts['carbohydrate']?.point?.value.asDouble;
     final fat = preview?.calculation.facts['fat']?.point?.value.asDouble;
 
     final energyStr = energy != null ? '${energy.round()} kcal' : '-- kcal';
@@ -63,7 +65,10 @@ class ThaliQuickAdjustHud extends StatelessWidget {
       decoration: BoxDecoration(
         color: colors.surface,
         borderRadius: B05Radii.largeRadius,
-        border: Border.all(color: colors.action.withValues(alpha: 0.6), width: 1.5),
+        border: Border.all(
+          color: colors.action.withValues(alpha: 0.6),
+          width: 1.5,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.25),
@@ -125,7 +130,11 @@ class ThaliQuickAdjustHud extends StatelessWidget {
                 minHeight: B05Layout.minTouchTarget,
                 child: IconButton(
                   key: const Key('thali_quick_hud_close'),
-                  icon: Icon(Icons.close_rounded, size: 20, color: colors.textDisabled),
+                  icon: Icon(
+                    Icons.close_rounded,
+                    size: 20,
+                    color: colors.textDisabled,
+                  ),
                   onPressed: onClose,
                   tooltip: 'Deselect',
                 ),
@@ -211,7 +220,11 @@ class ThaliQuickAdjustHud extends StatelessWidget {
                   key: const Key('thali_quick_hud_remove'),
                   padding: EdgeInsets.zero,
                   visualDensity: VisualDensity.compact,
-                  icon: Icon(Icons.delete_outline_rounded, size: 20, color: colors.danger.foreground),
+                  icon: Icon(
+                    Icons.delete_outline_rounded,
+                    size: 20,
+                    color: colors.danger.foreground,
+                  ),
                   onPressed: onRemove,
                   tooltip: 'Remove Dish',
                 ),

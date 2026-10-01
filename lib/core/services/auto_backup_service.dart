@@ -32,7 +32,10 @@ class AutoBackupService {
        _secretStore = secretStore,
        _documentsDirectoryProvider = documentsDirectoryProvider;
 
-  static Future<void> performBackup(AppDatabase db, [SharedPreferences? prefs]) async {
+  static Future<void> performBackup(
+    AppDatabase db, [
+    SharedPreferences? prefs,
+  ]) async {
     await AutoBackupService(db, prefs: prefs).runAutoBackup();
   }
 

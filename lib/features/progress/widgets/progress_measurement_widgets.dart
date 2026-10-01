@@ -204,7 +204,11 @@ class ProgressLogBodyMeasurementsSheetState
 }
 
 class ProgressMeasurementField extends StatelessWidget {
-  const ProgressMeasurementField({super.key, required this.label, required this.controller});
+  const ProgressMeasurementField({
+    super.key,
+    required this.label,
+    required this.controller,
+  });
 
   final String label;
   final TextEditingController controller;
@@ -219,4 +223,3 @@ class ProgressMeasurementField extends StatelessWidget {
     );
   }
 }
-

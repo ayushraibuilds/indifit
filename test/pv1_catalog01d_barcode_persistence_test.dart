@@ -73,19 +73,22 @@ void main() {
       expect(await catalog.findUserFoodByBarcode(' 8901030383704 '), isNotNull);
     });
 
-    test('food created without barcode is invisible to barcode lookup', () async {
-      await catalog.createUserFood(
-        displayName: 'No Barcode Food',
-        servingSize: 1,
-        servingUnit: 'bowl',
-        energyKcal: 100,
-        proteinG: 2,
-        carbohydrateG: 20,
-        fatG: 1,
-      );
+    test(
+      'food created without barcode is invisible to barcode lookup',
+      () async {
+        await catalog.createUserFood(
+          displayName: 'No Barcode Food',
+          servingSize: 1,
+          servingUnit: 'bowl',
+          energyKcal: 100,
+          proteinG: 2,
+          carbohydrateG: 20,
+          fatG: 1,
+        );
 
-      expect(await catalog.findUserFoodByBarcode('8901030383704'), isNull);
-      expect(await catalog.findUserFoodByBarcode(''), isNull);
-    });
+        expect(await catalog.findUserFoodByBarcode('8901030383704'), isNull);
+        expect(await catalog.findUserFoodByBarcode(''), isNull);
+      },
+    );
   });
 }

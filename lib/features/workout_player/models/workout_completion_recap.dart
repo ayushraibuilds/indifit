@@ -63,7 +63,9 @@ class WorkoutCompletionRecap {
 
     for (final exercise in history.exercises) {
       final validSets = exercise.sets
-          .where((s) => s.role == B02SetRole.working || s.role == B02SetRole.warmup)
+          .where(
+            (s) => s.role == B02SetRole.working || s.role == B02SetRole.warmup,
+          )
           .toList();
       if (validSets.isEmpty) continue;
 
@@ -147,7 +149,9 @@ class WorkoutCompletionRecap {
         repsCount += reps;
         if (reps < minReps) minReps = reps;
         if (reps > maxReps) maxReps = reps;
-        if (s.role == B02SetRole.working && s.actualLoadKg != null && s.actualReps != null) {
+        if (s.role == B02SetRole.working &&
+            s.actualLoadKg != null &&
+            s.actualReps != null) {
           volume += s.actualLoadKg! * s.actualReps!;
         }
       }

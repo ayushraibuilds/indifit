@@ -6,13 +6,7 @@
 library;
 
 /// High-level transport type.
-enum NetworkTransportType {
-  none,
-  wifi,
-  cellular,
-  ethernet,
-  other,
-}
+enum NetworkTransportType { none, wifi, cellular, ethernet, other }
 
 /// Abstract contract for network reachability and transfer policy.
 abstract class NetworkCapability {
@@ -58,8 +52,8 @@ class TestableNetworkCapability implements NetworkCapability {
   TestableNetworkCapability({
     bool initialConnected = true,
     NetworkTransportType initialTransport = NetworkTransportType.wifi,
-  })  : _connected = initialConnected,
-        _transport = initialTransport;
+  }) : _connected = initialConnected,
+       _transport = initialTransport;
 
   bool _connected;
   NetworkTransportType _transport;

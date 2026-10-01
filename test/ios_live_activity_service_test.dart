@@ -13,7 +13,10 @@ class MockIosLiveActivityDriver implements IosLiveActivityDriver {
 
   void _maybeThrow() {
     if (throwPlatformException) {
-      throw PlatformException(code: 'ERROR', message: 'Simulated platform error');
+      throw PlatformException(
+        code: 'ERROR',
+        message: 'Simulated platform error',
+      );
     }
     if (throwMissingPluginException) {
       throw MissingPluginException();
@@ -68,10 +71,7 @@ class MockIosLiveActivityDriver implements IosLiveActivityDriver {
     required bool immediate,
   }) async {
     _maybeThrow();
-    endCalls.add({
-      'periodId': periodId,
-      'immediate': immediate,
-    });
+    endCalls.add({'periodId': periodId, 'immediate': immediate});
     return true;
   }
 }
@@ -86,15 +86,18 @@ void main() {
       mockDriver = MockIosLiveActivityDriver();
     });
 
-    test('isAvailable returns false on non-iOS platforms without invoking driver', () async {
-      final service = IosLiveActivityService(
-        driver: mockDriver,
-        isIosChecker: () => false,
-      );
+    test(
+      'isAvailable returns false on non-iOS platforms without invoking driver',
+      () async {
+        final service = IosLiveActivityService(
+          driver: mockDriver,
+          isIosChecker: () => false,
+        );
 
-      final available = await service.isAvailable();
-      expect(available, false);
-    });
+        final available = await service.isAvailable();
+        expect(available, false);
+      },
+    );
 
     test('isAvailable delegates to driver on iOS when supported', () async {
       final service = IosLiveActivityService(
@@ -109,25 +112,31 @@ void main() {
       expect(await service.isAvailable(), false);
     });
 
-    test('isAvailable catches PlatformException safely and returns false', () async {
-      final service = IosLiveActivityService(
-        driver: mockDriver,
-        isIosChecker: () => true,
-      );
+    test(
+      'isAvailable catches PlatformException safely and returns false',
+      () async {
+        final service = IosLiveActivityService(
+          driver: mockDriver,
+          isIosChecker: () => true,
+        );
 
-      mockDriver.throwPlatformException = true;
-      expect(await service.isAvailable(), false);
-    });
+        mockDriver.throwPlatformException = true;
+        expect(await service.isAvailable(), false);
+      },
+    );
 
-    test('isAvailable catches MissingPluginException safely and returns false', () async {
-      final service = IosLiveActivityService(
-        driver: mockDriver,
-        isIosChecker: () => true,
-      );
+    test(
+      'isAvailable catches MissingPluginException safely and returns false',
+      () async {
+        final service = IosLiveActivityService(
+          driver: mockDriver,
+          isIosChecker: () => true,
+        );
 
-      mockDriver.throwMissingPluginException = true;
-      expect(await service.isAvailable(), false);
-    });
+        mockDriver.throwMissingPluginException = true;
+        expect(await service.isAvailable(), false);
+      },
+    );
   });
 
   group('IosLiveActivityService method payloads & platform safety', () {
@@ -160,24 +169,30 @@ void main() {
       expect(call['expiryEpochMs'], expiry.millisecondsSinceEpoch);
     });
 
-    test('updateRestLiveActivity packages payload accurately with completion flag', () async {
-      final result = await service.updateRestLiveActivity(
-        periodId: 'rest-1',
-        exerciseName: 'Incline Dumbbell Press',
-        targetSeconds: 120,
-        expiryUtc: expiry.add(const Duration(seconds: 30)),
-        isCompleted: false,
-      );
+    test(
+      'updateRestLiveActivity packages payload accurately with completion flag',
+      () async {
+        final result = await service.updateRestLiveActivity(
+          periodId: 'rest-1',
+          exerciseName: 'Incline Dumbbell Press',
+          targetSeconds: 120,
+          expiryUtc: expiry.add(const Duration(seconds: 30)),
+          isCompleted: false,
+        );
 
-      expect(result, true);
-      expect(mockDriver.updateCalls, hasLength(1));
-      final call = mockDriver.updateCalls.first;
-      expect(call['periodId'], 'rest-1');
-      expect(call['exerciseName'], 'Incline Dumbbell Press');
-      expect(call['targetSeconds'], 120);
-      expect(call['expiryEpochMs'], expiry.add(const Duration(seconds: 30)).millisecondsSinceEpoch);
-      expect(call['isCompleted'], false);
-    });
+        expect(result, true);
+        expect(mockDriver.updateCalls, hasLength(1));
+        final call = mockDriver.updateCalls.first;
+        expect(call['periodId'], 'rest-1');
+        expect(call['exerciseName'], 'Incline Dumbbell Press');
+        expect(call['targetSeconds'], 120);
+        expect(
+          call['expiryEpochMs'],
+          expiry.add(const Duration(seconds: 30)).millisecondsSinceEpoch,
+        );
+        expect(call['isCompleted'], false);
+      },
+    );
 
     test('endRestLiveActivity passes periodId and immediate flag', () async {
       final normalEnd = await service.endRestLiveActivity(

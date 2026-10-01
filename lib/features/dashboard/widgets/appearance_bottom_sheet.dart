@@ -54,16 +54,13 @@ class AppearanceBottomSheet extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Appearance',
-                      style: B05Typography.title(context),
-                    ),
+                    Text('Appearance', style: B05Typography.title(context)),
                     const SizedBox(height: 2),
                     Text(
                       'Choose how IndiFit looks on your device',
-                      style: B05Typography.caption(context).copyWith(
-                        color: colors.textSecondary,
-                      ),
+                      style: B05Typography.caption(
+                        context,
+                      ).copyWith(color: colors.textSecondary),
                     ),
                   ],
                 ),
@@ -172,14 +169,20 @@ class _ThemeOptionCard extends StatelessWidget {
                           Icon(
                             icon,
                             size: 18,
-                            color: isSelected ? colors.action : colors.textPrimary,
+                            color: isSelected
+                                ? colors.action
+                                : colors.textPrimary,
                           ),
                           const SizedBox(width: 6),
                           Text(
                             title,
                             style: B05Typography.label(context).copyWith(
-                              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                              color: isSelected ? colors.action : colors.textPrimary,
+                              fontWeight: isSelected
+                                  ? FontWeight.w700
+                                  : FontWeight.w600,
+                              color: isSelected
+                                  ? colors.action
+                                  : colors.textPrimary,
                             ),
                           ),
                         ],
@@ -187,9 +190,9 @@ class _ThemeOptionCard extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         subtitle,
-                        style: B05Typography.caption(context).copyWith(
-                          color: colors.textSecondary,
-                        ),
+                        style: B05Typography.caption(
+                          context,
+                        ).copyWith(color: colors.textSecondary),
                       ),
                     ],
                   ),

@@ -481,16 +481,26 @@ class DataManagementSection extends ConsumerWidget {
                 style: B05Typography.label(dialogCtx),
               ),
               const SizedBox(height: B05Layout.space4),
-              Text('• All logged workouts, sets, and custom routines',
-                  style: B05Typography.body(dialogCtx)),
-              Text('• All logged foods, custom foods, recipes, and water',
-                  style: B05Typography.body(dialogCtx)),
-              Text('• Body measurements, goals, and profile information',
-                  style: B05Typography.body(dialogCtx)),
-              Text('• Local automatic and manual recovery backups',
-                  style: B05Typography.body(dialogCtx)),
-              Text('• App settings, reminders, and secure backup secrets',
-                  style: B05Typography.body(dialogCtx)),
+              Text(
+                '• All logged workouts, sets, and custom routines',
+                style: B05Typography.body(dialogCtx),
+              ),
+              Text(
+                '• All logged foods, custom foods, recipes, and water',
+                style: B05Typography.body(dialogCtx),
+              ),
+              Text(
+                '• Body measurements, goals, and profile information',
+                style: B05Typography.body(dialogCtx),
+              ),
+              Text(
+                '• Local automatic and manual recovery backups',
+                style: B05Typography.body(dialogCtx),
+              ),
+              Text(
+                '• App settings, reminders, and secure backup secrets',
+                style: B05Typography.body(dialogCtx),
+              ),
               const SizedBox(height: B05Layout.space16),
               Container(
                 padding: const EdgeInsets.all(B05Layout.space12),
@@ -959,8 +969,7 @@ class _DeleteConfirmationDialogState extends State<_DeleteConfirmationDialog> {
             backgroundColor: context.b05Colors.danger.container,
             foregroundColor: context.b05Colors.danger.foreground,
           ),
-          onPressed:
-              isDeleteTyped ? () => Navigator.pop(context, true) : null,
+          onPressed: isDeleteTyped ? () => Navigator.pop(context, true) : null,
           child: const Text('Erase all data'),
         ),
       ],

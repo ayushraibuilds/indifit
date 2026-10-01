@@ -17,7 +17,6 @@ import '../food_log_surface.dart';
 import '../food_search_screen.dart';
 import '../meal_presentation_registry.dart';
 
-
 /// Food diary widgets (PV1-ENG-05D first pass).
 ///
 /// Extracted verbatim from `food_search_screen.dart`; unchanged.
@@ -138,7 +137,8 @@ class FoodDiaryPrimaryAddAction extends StatelessWidget {
 }
 
 class FoodDiarySummary extends StatelessWidget {
-  const FoodDiarySummary({super.key, 
+  const FoodDiarySummary({
+    super.key,
     required this.presentation,
     required this.targetRead,
   });
@@ -157,7 +157,10 @@ class FoodDiarySummary extends StatelessWidget {
         .toList(growable: false);
     final fiberMetric = presentation.macros
         .cast<TodayNutritionMetricPresentation?>()
-        .firstWhere((metric) => metric?.nutrientId == 'fibre', orElse: () => null);
+        .firstWhere(
+          (metric) => metric?.nutrientId == 'fibre',
+          orElse: () => null,
+        );
     final hasTarget = calories?.hasTarget == true;
     final consumed = calories?.isAvailable == true
         ? '${calories!.value} ${calories.unit}'
@@ -185,7 +188,10 @@ class FoodDiarySummary extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Expanded(
-                  child: Text('Daily nutrition', style: B05Typography.title(context)),
+                  child: Text(
+                    'Daily nutrition',
+                    style: B05Typography.title(context),
+                  ),
                 ),
                 InkWell(
                   key: const ValueKey('diary_targets_link'),
@@ -196,7 +202,10 @@ class FoodDiarySummary extends StatelessWidget {
                     ),
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 2,
+                    ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -288,11 +297,16 @@ class FoodDiarySummary extends StatelessWidget {
             if (fiberMetric != null && fiberMetric.isAvailable) ...[
               const SizedBox(height: 12),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.fiberTeal.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.fiberTeal.withValues(alpha: 0.2)),
+                  border: Border.all(
+                    color: AppColors.fiberTeal.withValues(alpha: 0.2),
+                  ),
                 ),
                 child: Row(
                   children: [
@@ -364,7 +378,8 @@ class FoodDiarySummary extends StatelessWidget {
 }
 
 class FoodDiarySummaryMetric extends StatelessWidget {
-  const FoodDiarySummaryMetric({super.key, 
+  const FoodDiarySummaryMetric({
+    super.key,
     required this.label,
     required this.value,
     this.valueColor,
@@ -412,7 +427,8 @@ class FoodDiaryMetric extends StatelessWidget {
 }
 
 class FoodDiaryMealRow extends StatelessWidget {
-  const FoodDiaryMealRow({super.key, 
+  const FoodDiaryMealRow({
+    super.key,
     required this.type,
     required this.label,
     required this.records,
@@ -450,8 +466,8 @@ class FoodDiaryMealRow extends StatelessWidget {
         ? 'Loading logged food'
         : records.isEmpty
         ? (onCopyYesterday != null
-            ? 'Nothing logged yet · Tap history to copy yesterday'
-            : 'Nothing logged yet')
+              ? 'Nothing logged yet · Tap history to copy yesterday'
+              : 'Nothing logged yet')
         : labels.isEmpty
         ? '${records.length} logged'
         : labels.join(' · ');
@@ -558,7 +574,8 @@ class FoodDiaryMealRow extends StatelessWidget {
 }
 
 class FoodDiaryShortcut extends StatelessWidget {
-  const FoodDiaryShortcut({super.key, 
+  const FoodDiaryShortcut({
+    super.key,
     required this.icon,
     required this.title,
     required this.detail,

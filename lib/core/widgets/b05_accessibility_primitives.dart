@@ -301,11 +301,7 @@ class B05ActionButton extends StatelessWidget {
           );
   }
 
-  Widget _labelWidget() => Text(
-        label,
-        maxLines: maxLines,
-        overflow: overflow,
-      );
+  Widget _labelWidget() => Text(label, maxLines: maxLines, overflow: overflow);
 
   Widget _button(ButtonStyle style) {
     return switch (emphasis) {
@@ -329,7 +325,8 @@ class B05ActionButton extends StatelessWidget {
 
   Widget _iconButton(ButtonStyle style) {
     return switch (emphasis) {
-      B05ActionEmphasis.primary || B05ActionEmphasis.danger => FilledButton.icon(
+      B05ActionEmphasis.primary ||
+      B05ActionEmphasis.danger => FilledButton.icon(
         onPressed: onPressed,
         style: style,
         icon: Icon(icon, size: B05Layout.iconMedium),

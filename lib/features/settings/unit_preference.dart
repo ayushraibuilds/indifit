@@ -64,12 +64,10 @@ abstract final class UnitPreferencePresentation {
 }
 
 final unitPreferenceProvider =
-    StateNotifierProvider<UnitPreferenceNotifier, String>(
-      (ref) {
-        SharedPreferences? prefs;
-        try {
-          prefs = ref.watch(sharedPreferencesProvider);
-        } catch (_) {}
-        return UnitPreferenceNotifier(prefs);
-      },
-    );
+    StateNotifierProvider<UnitPreferenceNotifier, String>((ref) {
+      SharedPreferences? prefs;
+      try {
+        prefs = ref.watch(sharedPreferencesProvider);
+      } catch (_) {}
+      return UnitPreferenceNotifier(prefs);
+    });

@@ -59,10 +59,9 @@ class TrainingPeriodCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       'Training Activity',
-                      style: B05Typography.title(context).copyWith(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                      ),
+                      style: B05Typography.title(
+                        context,
+                      ).copyWith(fontSize: 16, fontWeight: FontWeight.w700),
                     ),
                   ),
                   _DeltaBadge(
@@ -109,16 +108,16 @@ class TrainingPeriodCard extends StatelessWidget {
                         children: [
                           Text(
                             'Total Volume',
-                            style: B05Typography.caption(context).copyWith(
-                              color: colors.textSecondary,
-                            ),
+                            style: B05Typography.caption(
+                              context,
+                            ).copyWith(color: colors.textSecondary),
                           ),
                           const SizedBox(height: 2),
                           Text(
                             volumeText ?? 'None',
-                            style: B05Typography.body(context).copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
+                            style: B05Typography.body(
+                              context,
+                            ).copyWith(fontWeight: FontWeight.w700),
                           ),
                         ],
                       ),
@@ -126,9 +125,9 @@ class TrainingPeriodCard extends StatelessWidget {
                     if (prevVolumeText != null)
                       Text(
                         'vs $prevVolumeText prior',
-                        style: B05Typography.caption(context).copyWith(
-                          color: colors.textSecondary,
-                        ),
+                        style: B05Typography.caption(
+                          context,
+                        ).copyWith(color: colors.textSecondary),
                       ),
                   ],
                 ),
@@ -161,26 +160,23 @@ class _MetricColumn extends StatelessWidget {
       children: [
         Text(
           label,
-          style: B05Typography.caption(context).copyWith(
-            color: colors.textSecondary,
-            fontSize: 11,
-          ),
+          style: B05Typography.caption(
+            context,
+          ).copyWith(color: colors.textSecondary, fontSize: 11),
         ),
         const SizedBox(height: 2),
         Text(
           currentValue,
-          style: B05Typography.body(context).copyWith(
-            fontWeight: FontWeight.w800,
-            fontSize: 16,
-          ),
+          style: B05Typography.body(
+            context,
+          ).copyWith(fontWeight: FontWeight.w800, fontSize: 16),
         ),
         const SizedBox(height: 1),
         Text(
           previousValue,
-          style: B05Typography.caption(context).copyWith(
-            color: colors.textSecondary,
-            fontSize: 11,
-          ),
+          style: B05Typography.caption(
+            context,
+          ).copyWith(color: colors.textSecondary, fontSize: 11),
         ),
       ],
     );
@@ -188,10 +184,7 @@ class _MetricColumn extends StatelessWidget {
 }
 
 class _DeltaBadge extends StatelessWidget {
-  const _DeltaBadge({
-    required this.delta,
-    required this.unitLabel,
-  });
+  const _DeltaBadge({required this.delta, required this.unitLabel});
 
   final double? delta;
   final String unitLabel;
@@ -208,14 +201,14 @@ class _DeltaBadge extends StatelessWidget {
     final bgColor = isZero
         ? colors.inset
         : isPositive
-            ? colors.success.container
-            : colors.textSecondary.withValues(alpha: 0.12);
+        ? colors.success.container
+        : colors.textSecondary.withValues(alpha: 0.12);
 
     final textColor = isZero
         ? colors.textSecondary
         : isPositive
-            ? colors.success.foreground
-            : colors.textPrimary;
+        ? colors.success.foreground
+        : colors.textPrimary;
 
     final text = isZero ? '= prior' : (isPositive ? '+$intDelta' : '$intDelta');
 

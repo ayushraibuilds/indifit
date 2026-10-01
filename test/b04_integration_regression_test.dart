@@ -102,16 +102,28 @@ void main() {
     final nutritionProviders = File(
       'lib/features/nutrition/nutrition_providers.dart',
     ).readAsStringSync();
-    expect(nutritionProviders, contains('nutritionReadModelRepositoryProvider'));
+    expect(
+      nutritionProviders,
+      contains('nutritionReadModelRepositoryProvider'),
+    );
     expect(nutritionProviders, contains('nutritionGoalRepositoryProvider'));
 
     final coachingProviders = File(
       'lib/features/coaching/coaching_providers.dart',
     ).readAsStringSync();
     expect(coachingProviders, contains('coachingPreferenceRepositoryProvider'));
-    expect(coachingProviders, contains('b04RecommendationHistoryRepositoryProvider'));
-    expect(coachingProviders, contains('b04DailyBriefingReadRepositoryProvider'));
-    expect(coachingProviders, contains('b04WeeklyReviewReadRepositoryProvider'));
+    expect(
+      coachingProviders,
+      contains('b04RecommendationHistoryRepositoryProvider'),
+    );
+    expect(
+      coachingProviders,
+      contains('b04DailyBriefingReadRepositoryProvider'),
+    );
+    expect(
+      coachingProviders,
+      contains('b04WeeklyReviewReadRepositoryProvider'),
+    );
 
     final dailyController = File(
       'lib/features/dashboard/b04_daily_briefing_controller.dart',

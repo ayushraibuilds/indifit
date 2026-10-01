@@ -25,10 +25,8 @@ class PeriodComparisonDrilldownSheet extends StatelessWidget {
   }) {
     showIndiFitBottomSheet<void>(
       context: context,
-      builder: (_) => PeriodComparisonDrilldownSheet(
-        snapshot: snapshot,
-        units: units,
-      ),
+      builder: (_) =>
+          PeriodComparisonDrilldownSheet(snapshot: snapshot, units: units),
     );
   }
 
@@ -45,7 +43,9 @@ class PeriodComparisonDrilldownSheet extends StatelessWidget {
         ? 'Weekly Period Breakdown'
         : '4-Week Cycle Breakdown';
 
-    final startCurrent = _formatLocalDate(snapshot.currentWindow.startLocalDate);
+    final startCurrent = _formatLocalDate(
+      snapshot.currentWindow.startLocalDate,
+    );
     final endCurrent = _formatLocalDate(snapshot.currentWindow.endLocalDate);
     final startPrev = _formatLocalDate(snapshot.previousWindow.startLocalDate);
     final endPrev = _formatLocalDate(snapshot.previousWindow.endLocalDate);
@@ -67,17 +67,16 @@ class PeriodComparisonDrilldownSheet extends StatelessWidget {
             children: [
               Text(
                 rangeLabel,
-                style: B05Typography.title(context).copyWith(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 18,
-                ),
+                style: B05Typography.title(
+                  context,
+                ).copyWith(fontWeight: FontWeight.w800, fontSize: 18),
               ),
               const SizedBox(height: B05Layout.space4),
               Text(
                 dateRangeLabel,
-                style: B05Typography.caption(context).copyWith(
-                  color: colors.textSecondary,
-                ),
+                style: B05Typography.caption(
+                  context,
+                ).copyWith(color: colors.textSecondary),
               ),
               const SizedBox(height: B05Layout.space20),
 
@@ -85,9 +84,9 @@ class PeriodComparisonDrilldownSheet extends StatelessWidget {
               if (snapshot.strengthComparisons.isNotEmpty) ...[
                 Text(
                   'Top Trained Exercises',
-                  style: B05Typography.body(context).copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
+                  style: B05Typography.body(
+                    context,
+                  ).copyWith(fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: B05Layout.space8),
                 for (final ex in snapshot.strengthComparisons.take(5))
@@ -98,32 +97,42 @@ class PeriodComparisonDrilldownSheet extends StatelessWidget {
               // Training Summary
               Text(
                 'Training Details',
-                style: B05Typography.body(context).copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
+                style: B05Typography.body(
+                  context,
+                ).copyWith(fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: B05Layout.space8),
               _DetailGrid(
                 items: [
                   _GridItem(
                     label: 'Full Sessions',
-                    current: '${snapshot.trainingComparison.current.fullSessionCount}',
-                    previous: '${snapshot.trainingComparison.previous.fullSessionCount}',
+                    current:
+                        '${snapshot.trainingComparison.current.fullSessionCount}',
+                    previous:
+                        '${snapshot.trainingComparison.previous.fullSessionCount}',
                   ),
                   _GridItem(
                     label: 'Partial Sessions',
-                    current: '${snapshot.trainingComparison.current.partialSessionCount}',
-                    previous: '${snapshot.trainingComparison.previous.partialSessionCount}',
+                    current:
+                        '${snapshot.trainingComparison.current.partialSessionCount}',
+                    previous:
+                        '${snapshot.trainingComparison.previous.partialSessionCount}',
                   ),
                   _GridItem(
                     label: 'Total Sets',
-                    current: '${snapshot.trainingComparison.current.workingSetsCount}',
-                    previous: '${snapshot.trainingComparison.previous.workingSetsCount}',
+                    current:
+                        '${snapshot.trainingComparison.current.workingSetsCount}',
+                    previous:
+                        '${snapshot.trainingComparison.previous.workingSetsCount}',
                   ),
                   _GridItem(
                     label: 'Total Time',
-                    current: _formatDuration(snapshot.trainingComparison.current.totalDurationSeconds),
-                    previous: _formatDuration(snapshot.trainingComparison.previous.totalDurationSeconds),
+                    current: _formatDuration(
+                      snapshot.trainingComparison.current.totalDurationSeconds,
+                    ),
+                    previous: _formatDuration(
+                      snapshot.trainingComparison.previous.totalDurationSeconds,
+                    ),
                   ),
                 ],
               ),
@@ -133,22 +142,26 @@ class PeriodComparisonDrilldownSheet extends StatelessWidget {
               if (snapshot.nutritionComparison != null) ...[
                 Text(
                   'Nutrition Details',
-                  style: B05Typography.body(context).copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
+                  style: B05Typography.body(
+                    context,
+                  ).copyWith(fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: B05Layout.space8),
                 _DetailGrid(
                   items: [
                     _GridItem(
                       label: 'Logged Days',
-                      current: '${snapshot.nutritionComparison!.current.loggedDaysCount} / ${snapshot.nutritionComparison!.current.daysInPeriod}',
-                      previous: '${snapshot.nutritionComparison!.previous.loggedDaysCount} / ${snapshot.nutritionComparison!.previous.daysInPeriod}',
+                      current:
+                          '${snapshot.nutritionComparison!.current.loggedDaysCount} / ${snapshot.nutritionComparison!.current.daysInPeriod}',
+                      previous:
+                          '${snapshot.nutritionComparison!.previous.loggedDaysCount} / ${snapshot.nutritionComparison!.previous.daysInPeriod}',
                     ),
                     _GridItem(
                       label: 'Target Met Days',
-                      current: '${snapshot.nutritionComparison!.current.proteinTargetMetDaysCount}',
-                      previous: '${snapshot.nutritionComparison!.previous.proteinTargetMetDaysCount}',
+                      current:
+                          '${snapshot.nutritionComparison!.current.proteinTargetMetDaysCount}',
+                      previous:
+                          '${snapshot.nutritionComparison!.previous.proteinTargetMetDaysCount}',
                     ),
                   ],
                 ),
@@ -166,15 +179,14 @@ class PeriodComparisonDrilldownSheet extends StatelessWidget {
     if (minutes < 60) return '${minutes}m';
     final hours = minutes ~/ 60;
     final remainingMinutes = minutes % 60;
-    return remainingMinutes > 0 ? '${hours}h ${remainingMinutes}m' : '${hours}h';
+    return remainingMinutes > 0
+        ? '${hours}h ${remainingMinutes}m'
+        : '${hours}h';
   }
 }
 
 class _StrengthExerciseRow extends StatelessWidget {
-  const _StrengthExerciseRow({
-    required this.exercise,
-    required this.units,
-  });
+  const _StrengthExerciseRow({required this.exercise, required this.units});
 
   final StrengthExercisePeriodComparison exercise;
   final String units;
@@ -202,9 +214,9 @@ class _StrengthExerciseRow extends StatelessWidget {
             children: [
               Text(
                 exercise.exerciseName,
-                style: B05Typography.body(context).copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+                style: B05Typography.body(
+                  context,
+                ).copyWith(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: B05Layout.space4),
               Row(
@@ -212,15 +224,15 @@ class _StrengthExerciseRow extends StatelessWidget {
                 children: [
                   Text(
                     'Heaviest: $curSet',
-                    style: B05Typography.caption(context).copyWith(
-                      color: colors.textPrimary,
-                    ),
+                    style: B05Typography.caption(
+                      context,
+                    ).copyWith(color: colors.textPrimary),
                   ),
                   Text(
                     'prior: $prevSet',
-                    style: B05Typography.caption(context).copyWith(
-                      color: colors.textSecondary,
-                    ),
+                    style: B05Typography.caption(
+                      context,
+                    ).copyWith(color: colors.textSecondary),
                   ),
                 ],
               ),
@@ -265,9 +277,9 @@ class _DetailGrid extends StatelessWidget {
                 children: [
                   Text(
                     items[i].label,
-                    style: B05Typography.caption(context).copyWith(
-                      color: colors.textSecondary,
-                    ),
+                    style: B05Typography.caption(
+                      context,
+                    ).copyWith(color: colors.textSecondary),
                   ),
                   Text(
                     '${items[i].current} (vs ${items[i].previous} prior)',

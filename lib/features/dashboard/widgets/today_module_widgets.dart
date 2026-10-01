@@ -23,7 +23,7 @@ import 'today_helpers.dart';
 
 class TodayHeader extends StatefulWidget {
   const TodayHeader({
-    super.key, 
+    super.key,
     required this.userName,
     required this.streakCount,
     required this.selectedDate,
@@ -45,8 +45,7 @@ class TodayHeader extends StatefulWidget {
   State<TodayHeader> createState() => TodayHeaderState();
 }
 
-class TodayHeaderState extends State<TodayHeader>
-    with WidgetsBindingObserver {
+class TodayHeaderState extends State<TodayHeader> with WidgetsBindingObserver {
   late DateTime _localNow;
 
   @override
@@ -117,10 +116,13 @@ class TodayHeaderState extends State<TodayHeader>
             builder: (context) {
               final isDark = Theme.of(context).brightness == Brightness.dark;
               return B05IconAction(
-                icon: isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+                icon: isDark
+                    ? Icons.light_mode_outlined
+                    : Icons.dark_mode_outlined,
                 label: isDark ? 'Switch to light mode' : 'Switch to dark mode',
                 hint: 'Toggle between light and dark mode.',
-                onPressed: widget.onOpenAppearance ??
+                onPressed:
+                    widget.onOpenAppearance ??
                     () => AppearanceBottomSheet.show(context),
                 focusOrder: 0,
               );
@@ -182,7 +184,8 @@ class StreakChip extends StatelessWidget {
 }
 
 class TodayOnboardingHandoff extends ConsumerWidget {
-  const TodayOnboardingHandoff({super.key, 
+  const TodayOnboardingHandoff({
+    super.key,
     required this.presentation,
     required this.onReviewTargets,
     required this.onLogFood,
@@ -275,7 +278,8 @@ class TodayOnboardingHandoff extends ConsumerWidget {
 }
 
 class TodayNextUpModule extends StatelessWidget {
-  const TodayNextUpModule({super.key, 
+  const TodayNextUpModule({
+    super.key,
     required this.presentation,
     required this.onOpenWorkoutPlan,
     required this.onLogMeal,
@@ -374,7 +378,8 @@ class TodayNextUpModule extends StatelessWidget {
 }
 
 class TodayMealsModule extends StatelessWidget {
-  const TodayMealsModule({super.key, 
+  const TodayMealsModule({
+    super.key,
     required this.meals,
     required this.loading,
     required this.unavailable,
@@ -430,7 +435,8 @@ class TodayMealsModule extends StatelessWidget {
 }
 
 class TodayMealRow extends StatelessWidget {
-  const TodayMealRow({super.key, 
+  const TodayMealRow({
+    super.key,
     required this.meal,
     required this.onAdd,
     required this.selectedDate,
@@ -448,7 +454,9 @@ class TodayMealRow extends StatelessWidget {
       'dinner' => context.b05Colors.dinner,
       'snack' => context.b05Colors.snack,
       _ => () {
-        final presentation = MealPresentationRegistry.forStableId(meal.mealType);
+        final presentation = MealPresentationRegistry.forStableId(
+          meal.mealType,
+        );
         return presentation.accent != null
             ? context.b05Colors.meal(presentation.accent!)
             : context.b05Colors.snack;
@@ -572,7 +580,8 @@ class MealIcon extends StatelessWidget {
 }
 
 class TodayWorkoutModule extends StatelessWidget {
-  const TodayWorkoutModule({super.key, 
+  const TodayWorkoutModule({
+    super.key,
     required this.presentation,
     required this.onOpenWorkoutPlan,
     required this.onStartWorkout,
@@ -650,7 +659,8 @@ class TodayWorkoutModule extends StatelessWidget {
 }
 
 class TodayActivityModule extends StatelessWidget {
-  const TodayActivityModule({super.key, 
+  const TodayActivityModule({
+    super.key,
     required this.presentation,
     required this.onRetry,
   });
@@ -732,7 +742,8 @@ class TodayActivityModule extends StatelessWidget {
 }
 
 class TodayProgressModule extends StatelessWidget {
-  const TodayProgressModule({super.key, 
+  const TodayProgressModule({
+    super.key,
     required this.presentation,
     required this.onRetry,
   });
@@ -780,7 +791,11 @@ class TodayProgressModule extends StatelessWidget {
 }
 
 class CollapsedTodayModule extends StatelessWidget {
-  const CollapsedTodayModule({super.key, required this.label, required this.onExpand});
+  const CollapsedTodayModule({
+    super.key,
+    required this.label,
+    required this.onExpand,
+  });
 
   final String label;
   final Future<void> Function() onExpand;
@@ -833,7 +848,11 @@ class TodayModuleSkeleton extends StatelessWidget {
 }
 
 class LoadingLine extends StatelessWidget {
-  const LoadingLine({super.key, required this.widthFactor, required this.height});
+  const LoadingLine({
+    super.key,
+    required this.widthFactor,
+    required this.height,
+  });
 
   final double widthFactor;
   final double height;
@@ -852,7 +871,8 @@ class LoadingLine extends StatelessWidget {
 }
 
 class TodayUnavailableModule extends StatelessWidget {
-  const TodayUnavailableModule({super.key, 
+  const TodayUnavailableModule({
+    super.key,
     required this.title,
     required this.detail,
     required this.onRetry,
@@ -978,4 +998,3 @@ class NoVisibleModules extends StatelessWidget {
     ),
   );
 }
-

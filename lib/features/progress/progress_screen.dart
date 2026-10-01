@@ -218,22 +218,26 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                     ),
                   ),
                   if (widget.preview == null) ...[
-                    ref.watch(adaptiveTdeeEstimateProvider).maybeWhen(
-                      data: (estimate) => Column(
-                        children: [
-                          const SizedBox(height: B05Layout.space24),
-                          AdaptiveTdeeCard(
-                            estimate: estimate,
-                            onAdjustTargets: () => Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => const NutritionTargetsHubScreen(),
+                    ref
+                        .watch(adaptiveTdeeEstimateProvider)
+                        .maybeWhen(
+                          data: (estimate) => Column(
+                            children: [
+                              const SizedBox(height: B05Layout.space24),
+                              AdaptiveTdeeCard(
+                                estimate: estimate,
+                                onAdjustTargets: () =>
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            const NutritionTargetsHubScreen(),
+                                      ),
+                                    ),
                               ),
-                            ),
+                            ],
                           ),
-                        ],
-                      ),
-                      orElse: () => const SizedBox.shrink(),
-                    ),
+                          orElse: () => const SizedBox.shrink(),
+                        ),
                   ],
                 ],
                 if (hasMeaningfulVolume(snapshot)) ...[
@@ -422,9 +426,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
         child: InkWell(
           key: const Key('progress_milestones_card'),
           borderRadius: b05Radius(B05SurfaceRadius.large),
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const AchievementsScreen()),
-          ),
+          onTap: () => Navigator.of(
+            context,
+          ).push(MaterialPageRoute(builder: (_) => const AchievementsScreen())),
           child: B05Surface(
             padding: const EdgeInsets.all(B05Layout.space16),
             child: Row(
@@ -458,10 +462,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                     ],
                   ),
                 ),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  color: colors.textSecondary,
-                ),
+                Icon(Icons.chevron_right_rounded, color: colors.textSecondary),
               ],
             ),
           ),
@@ -525,4 +526,3 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     );
   }
 }
-

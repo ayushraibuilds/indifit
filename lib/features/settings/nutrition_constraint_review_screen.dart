@@ -102,15 +102,9 @@ class NutritionConstraintEvaluationReviewCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Overall result',
-                  style: B05Typography.title(context),
-                ),
+                Text('Overall result', style: B05Typography.title(context)),
                 const SizedBox(height: B05Layout.space4),
-                Text(
-                  outcomeLabel,
-                  style: B05Typography.label(context),
-                ),
+                Text(outcomeLabel, style: B05Typography.label(context)),
                 const SizedBox(height: B05Layout.space4),
                 Text(
                   'This check uses the information available for this item. No known conflict is not a safety guarantee.',
@@ -148,20 +142,29 @@ class _EvaluationDetail extends StatelessWidget {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          evaluation.type.displayLabel,
-          style: B05Typography.title(context),
-        ),
+        Text(evaluation.type.displayLabel, style: B05Typography.title(context)),
         const SizedBox(height: B05Layout.space4),
-        Text('Item: ${_targetLabel(evaluation.targetKey)}', style: B05Typography.body(context)),
-        Text('Result: ${_outcomeLabel(evaluation.outcome)}', style: B05Typography.label(context)),
+        Text(
+          'Item: ${_targetLabel(evaluation.targetKey)}',
+          style: B05Typography.body(context),
+        ),
+        Text(
+          'Result: ${_outcomeLabel(evaluation.outcome)}',
+          style: B05Typography.label(context),
+        ),
         if (evaluation.acknowledged) ...[
           const SizedBox(height: B05Layout.space4),
-          Text('Your acknowledgement does not change the check.', style: B05Typography.caption(context)),
+          Text(
+            'Your acknowledgement does not change the check.',
+            style: B05Typography.caption(context),
+          ),
         ],
         const SizedBox(height: B05Layout.space8),
         if (evaluation.evidence.isEmpty)
-          Text('More information is needed to complete this check.', style: B05Typography.caption(context))
+          Text(
+            'More information is needed to complete this check.',
+            style: B05Typography.caption(context),
+          )
         else ...[
           Text(
             '${evaluation.evidence.length} ${evaluation.evidence.length == 1 ? 'check' : 'checks'} completed.',

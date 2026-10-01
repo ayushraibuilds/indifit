@@ -354,14 +354,10 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
           final repo = ref.read(workoutRepositoryProvider);
           await repo.deleteActiveDraft();
         }
-        final wakeLock = ref.read(
-          workoutSessionWakeLockCoordinatorProvider,
-        );
+        final wakeLock = ref.read(workoutSessionWakeLockCoordinatorProvider);
         unawaited(
           wakeLock.clearActiveSession(
-            legacyWorkoutSessionWakeLockKey(
-              draft.scheduledOccurrenceId,
-            ),
+            legacyWorkoutSessionWakeLockKey(draft.scheduledOccurrenceId),
           ),
         );
         if (!context.mounted) return;
@@ -563,12 +559,17 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
           endLocalDate: '9999-12-31',
         );
     final futureCount = upcomingOccurrences
-        .where((o) =>
-            o.programVersionId == item.occurrence.programVersionId &&
-            o.sessionTemplateId == item.occurrence.sessionTemplateId &&
-            (o.status == OccurrenceStatus.planned.dbValue ||
-                o.status == OccurrenceStatus.rescheduled.dbValue) &&
-            o.effectiveLocalDate.compareTo(item.occurrence.effectiveLocalDate) >= 0)
+        .where(
+          (o) =>
+              o.programVersionId == item.occurrence.programVersionId &&
+              o.sessionTemplateId == item.occurrence.sessionTemplateId &&
+              (o.status == OccurrenceStatus.planned.dbValue ||
+                  o.status == OccurrenceStatus.rescheduled.dbValue) &&
+              o.effectiveLocalDate.compareTo(
+                    item.occurrence.effectiveLocalDate,
+                  ) >=
+                  0,
+        )
         .length;
 
     if (!context.mounted) return;
@@ -578,29 +579,30 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
         builder: (_) => TrainingWorkoutCustomizationScreen(
           preview: preview,
           futureOccurrencesCount: futureCount,
-          onSave: ({
-            required baseSnapshotJson,
-            required changes,
-            required scope,
-          }) async {
-            if (scope == WorkoutCustomizationScope.allFuture) {
-              await ref
-                  .read(calendarControllerProvider.notifier)
-                  .customizeFutureOccurrences(
-                    item.occurrence.id,
-                    baseSnapshotJson: baseSnapshotJson,
-                    changes: changes,
-                  );
-            } else {
-              await ref
-                  .read(calendarControllerProvider.notifier)
-                  .customizeOccurrence(
-                    item.occurrence.id,
-                    baseSnapshotJson: baseSnapshotJson,
-                    changes: changes,
-                  );
-            }
-          },
+          onSave:
+              ({
+                required baseSnapshotJson,
+                required changes,
+                required scope,
+              }) async {
+                if (scope == WorkoutCustomizationScope.allFuture) {
+                  await ref
+                      .read(calendarControllerProvider.notifier)
+                      .customizeFutureOccurrences(
+                        item.occurrence.id,
+                        baseSnapshotJson: baseSnapshotJson,
+                        changes: changes,
+                      );
+                } else {
+                  await ref
+                      .read(calendarControllerProvider.notifier)
+                      .customizeOccurrence(
+                        item.occurrence.id,
+                        baseSnapshotJson: baseSnapshotJson,
+                        changes: changes,
+                      );
+                }
+              },
           onReset: ({required allFuture}) async {
             await ref
                 .read(calendarControllerProvider.notifier)

@@ -124,8 +124,7 @@ void main() {
                   return Column(
                     children: [
                       ElevatedButton(
-                        onPressed: () =>
-                            RestTimerBottomSheet.show(context, 30),
+                        onPressed: () => RestTimerBottomSheet.show(context, 30),
                         child: const Text('Show Rest Timer'),
                       ),
                       ElevatedButton(

@@ -46,17 +46,17 @@ class WaterNotifier extends StateNotifier<WaterState> {
     AppDatabase? db,
     HydrationRepository? repo,
     SharedPreferences? prefs,
-  ])  : _db = db,
-        _repo = repo ?? HydrationRepository(db, prefs: prefs),
-        _prefsInstance = prefs,
-        super(
-          WaterState(
-            waterLogged: 0,
-            waterGoal: 8,
-            lastLoggedDate: '',
-            glassSize: 250,
-          ),
-        ) {
+  ]) : _db = db,
+       _repo = repo ?? HydrationRepository(db, prefs: prefs),
+       _prefsInstance = prefs,
+       super(
+         WaterState(
+           waterLogged: 0,
+           waterGoal: 8,
+           lastLoggedDate: '',
+           glassSize: 250,
+         ),
+       ) {
     loadState();
     // Periodic check every 15 seconds to support midnight resets if app is left open
     _timer = Timer.periodic(const Duration(seconds: 15), (_) {

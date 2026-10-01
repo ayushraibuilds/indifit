@@ -22,44 +22,47 @@ void main() {
       expect(vegan?.shortLabel, 'Vegan');
     });
 
-    testWidgets('2. DietPreferenceDropdown renders shortLabel in collapsed view', (tester) async {
-      String? selectedValue;
+    testWidgets(
+      '2. DietPreferenceDropdown renders shortLabel in collapsed view',
+      (tester) async {
+        String? selectedValue;
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: Center(
-              child: SizedBox(
-                width: 250,
-                child: DietPreferenceDropdown(
-                  persistedValue: 'non-veg',
-                  onChanged: (val) => selectedValue = val,
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Center(
+                child: SizedBox(
+                  width: 250,
+                  child: DietPreferenceDropdown(
+                    persistedValue: 'non-veg',
+                    onChanged: (val) => selectedValue = val,
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      // Collapsed field displays the shortLabel without truncating
-      expect(find.text('Non-Vegetarian'), findsOneWidget);
-      expect(find.text('Non-Vegetarian (Chicken, Eggs, Fish)'), findsNothing);
+        // Collapsed field displays the shortLabel without truncating
+        expect(find.text('Non-Vegetarian'), findsOneWidget);
+        expect(find.text('Non-Vegetarian (Chicken, Eggs, Fish)'), findsNothing);
 
-      // Tap dropdown to open menu
-      await tester.tap(find.text('Non-Vegetarian'));
-      await tester.pumpAndSettle();
+        // Tap dropdown to open menu
+        await tester.tap(find.text('Non-Vegetarian'));
+        await tester.pumpAndSettle();
 
-      // In popup menu, full labels are displayed
-      expect(find.text('Vegetarian (Paneer, Curd, Dals)'), findsOneWidget);
-      expect(find.text('Non-Vegetarian (Chicken, Eggs, Fish)'), findsWidgets);
-      expect(find.text('Vegan (Plant-based, Tofu, Soya)'), findsOneWidget);
+        // In popup menu, full labels are displayed
+        expect(find.text('Vegetarian (Paneer, Curd, Dals)'), findsOneWidget);
+        expect(find.text('Non-Vegetarian (Chicken, Eggs, Fish)'), findsWidgets);
+        expect(find.text('Vegan (Plant-based, Tofu, Soya)'), findsOneWidget);
 
-      // Select Vegan
-      await tester.tap(find.text('Vegan (Plant-based, Tofu, Soya)').last);
-      await tester.pumpAndSettle();
+        // Select Vegan
+        await tester.tap(find.text('Vegan (Plant-based, Tofu, Soya)').last);
+        await tester.pumpAndSettle();
 
-      expect(selectedValue, 'vegan');
-    });
+        expect(selectedValue, 'vegan');
+      },
+    );
   });
 }

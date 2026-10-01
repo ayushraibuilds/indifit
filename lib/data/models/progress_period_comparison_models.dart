@@ -216,8 +216,7 @@ class ComparativeNutritionMetrics {
   final ComparativeMetric<double> proteinMetric;
   final ComparativeMetric<int> loggedDaysMetric;
 
-  bool get hasAnyLoggedDays =>
-      current.hasLoggedDays || previous.hasLoggedDays;
+  bool get hasAnyLoggedDays => current.hasLoggedDays || previous.hasLoggedDays;
 }
 
 /// Comparative body weight metrics across current and prior periods.

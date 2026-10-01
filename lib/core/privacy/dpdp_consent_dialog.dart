@@ -131,16 +131,16 @@ class DpdpConsentDialog extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: B05Typography.label(context).copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+                style: B05Typography.label(
+                  context,
+                ).copyWith(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 2),
               Text(
                 description,
-                style: B05Typography.caption(context).copyWith(
-                  color: colors.textSecondary,
-                ),
+                style: B05Typography.caption(
+                  context,
+                ).copyWith(color: colors.textSecondary),
               ),
             ],
           ),

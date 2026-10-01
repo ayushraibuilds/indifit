@@ -17,9 +17,9 @@ class FoodCatalogService implements FoodCatalogCapability {
     required FoodApiService foodApiService,
     PrivacyPolicy? privacyPolicy,
     DriftRemoteFoodCacheStore? persistentCache,
-  })  : _apiService = foodApiService,
-        _privacyPolicy = privacyPolicy,
-        _persistentCache = persistentCache;
+  }) : _apiService = foodApiService,
+       _privacyPolicy = privacyPolicy,
+       _persistentCache = persistentCache;
 
   final FoodApiService _apiService;
   final PrivacyPolicy? _privacyPolicy;
@@ -101,7 +101,8 @@ class FoodCatalogService implements FoodCatalogCapability {
     final cleanBarcode = barcode.trim();
     if (cleanBarcode.isEmpty) return null;
 
-    final cached = _memoryCache[cleanBarcode] ??
+    final cached =
+        _memoryCache[cleanBarcode] ??
         _memoryCache.values.where((c) => c.barcode == cleanBarcode).firstOrNull;
     if (cached != null) return cached;
 
@@ -164,8 +165,9 @@ class FoodCatalogService implements FoodCatalogCapability {
     }
     // Union with persistent Tier-1 (fresh only; store enforces TTL).
     if (deduped.length < limit && _persistentCache != null) {
-      for (final stored
-          in await _persistentCache.recentCandidates(limit: limit)) {
+      for (final stored in await _persistentCache.recentCandidates(
+        limit: limit,
+      )) {
         if (!seen.add(stored.id)) continue;
         _memoryCache[stored.id] = stored;
         deduped.add(stored);
@@ -232,22 +234,39 @@ class FoodCatalogService implements FoodCatalogCapability {
   /// Infers standard culinary categories based on common Indian culinary keywords.
   String _inferCategory(String name) {
     final lower = name.toLowerCase();
-    if (lower.contains('roti') || lower.contains('chapati') || lower.contains('bread') || lower.contains('naan')) {
+    if (lower.contains('roti') ||
+        lower.contains('chapati') ||
+        lower.contains('bread') ||
+        lower.contains('naan')) {
       return 'roti';
     }
-    if (lower.contains('dal') || lower.contains('lentil') || lower.contains('sambar')) {
+    if (lower.contains('dal') ||
+        lower.contains('lentil') ||
+        lower.contains('sambar')) {
       return 'dal';
     }
-    if (lower.contains('rice') || lower.contains('pulao') || lower.contains('biryani') || lower.contains('khichdi')) {
+    if (lower.contains('rice') ||
+        lower.contains('pulao') ||
+        lower.contains('biryani') ||
+        lower.contains('khichdi')) {
       return 'rice';
     }
-    if (lower.contains('milk') || lower.contains('paneer') || lower.contains('curd') || lower.contains('dahi') || lower.contains('cheese')) {
+    if (lower.contains('milk') ||
+        lower.contains('paneer') ||
+        lower.contains('curd') ||
+        lower.contains('dahi') ||
+        lower.contains('cheese')) {
       return 'dairy';
     }
-    if (lower.contains('sabzi') || lower.contains('curry') || lower.contains('bhaji')) {
+    if (lower.contains('sabzi') ||
+        lower.contains('curry') ||
+        lower.contains('bhaji')) {
       return 'sabzi';
     }
-    if (lower.contains('biscuit') || lower.contains('cookie') || lower.contains('namkeen') || lower.contains('chips')) {
+    if (lower.contains('biscuit') ||
+        lower.contains('cookie') ||
+        lower.contains('namkeen') ||
+        lower.contains('chips')) {
       return 'snack';
     }
     return 'general';
@@ -273,7 +292,9 @@ class FoodCatalogService implements FoodCatalogCapability {
       options.add(
         ServingOption(
           unitName: servingUnit.isNotEmpty ? servingUnit : 'serving',
-          gramWeight: servingUnit.toLowerCase() == 'ml' ? servingSize * 1.03 : servingSize,
+          gramWeight: servingUnit.toLowerCase() == 'ml'
+              ? servingSize * 1.03
+              : servingSize,
           isDefault: true,
         ),
       );
@@ -299,9 +320,7 @@ class FoodCatalogService implements FoodCatalogCapability {
         lower.contains('khichdi') ||
         lower.contains('kadhi') ||
         lower.contains('raita')) {
-      options.add(
-        const ServingOption(unitName: 'katori', gramWeight: 150.0),
-      );
+      options.add(const ServingOption(unitName: 'katori', gramWeight: 150.0));
       options.add(
         const ServingOption(unitName: 'serving_bowl', gramWeight: 300.0),
       );
@@ -345,9 +364,7 @@ class FoodCatalogService implements FoodCatalogCapability {
         lower.contains('chaas') ||
         lower.contains('lassi') ||
         lower.contains('juice')) {
-      options.add(
-        const ServingOption(unitName: 'glass', gramWeight: 206.0),
-      );
+      options.add(const ServingOption(unitName: 'glass', gramWeight: 206.0));
     }
     if (lower.contains('ghee') ||
         lower.contains('oil') ||
@@ -359,9 +376,7 @@ class FoodCatalogService implements FoodCatalogCapability {
       options.add(
         const ServingOption(unitName: 'tablespoon', gramWeight: 15.0),
       );
-      options.add(
-        const ServingOption(unitName: 'teaspoon', gramWeight: 5.0),
-      );
+      options.add(const ServingOption(unitName: 'teaspoon', gramWeight: 5.0));
     }
 
     return options;

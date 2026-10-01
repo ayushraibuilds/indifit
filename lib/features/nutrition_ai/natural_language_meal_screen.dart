@@ -18,11 +18,7 @@ class NaturalLanguageMealScreen extends ConsumerStatefulWidget {
   final String? mealType;
   final String? date;
 
-  const NaturalLanguageMealScreen({
-    super.key,
-    this.mealType,
-    this.date,
-  });
+  const NaturalLanguageMealScreen({super.key, this.mealType, this.date});
 
   @override
   ConsumerState<NaturalLanguageMealScreen> createState() =>
@@ -94,9 +90,7 @@ class _NaturalLanguageMealScreenState
     final colors = context.b05Colors;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Describe Meal'),
-      ),
+      appBar: AppBar(title: const Text('Describe Meal')),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(B05Layout.space16),
@@ -122,7 +116,8 @@ class _NaturalLanguageMealScreenState
                     controller: _textController,
                     maxLines: 3,
                     decoration: const InputDecoration(
-                      hintText: 'e.g. 2 rotis with 1 bowl dal tadka and 100g paneer',
+                      hintText:
+                          'e.g. 2 rotis with 1 bowl dal tadka and 100g paneer',
                       border: OutlineInputBorder(),
                     ),
                   ),
@@ -158,7 +153,8 @@ class _NaturalLanguageMealScreenState
               const SizedBox(height: B05Layout.space16),
               B05StatusMessage(
                 status: B05SemanticStatus.danger,
-                label: state.errorMessage ?? 'Could not analyze meal description.',
+                label:
+                    state.errorMessage ?? 'Could not analyze meal description.',
               ),
             ],
 
@@ -181,10 +177,30 @@ class _NaturalLanguageMealScreenState
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    _buildTotalStat(context, 'Calories', '${state.totalCalories} kcal', Theme.of(context).colorScheme.primary),
-                    _buildTotalStat(context, 'Protein', '${state.totalProtein.toStringAsFixed(1)}g', colors.success.indicator),
-                    _buildTotalStat(context, 'Carbs', '${state.totalCarbs.toStringAsFixed(1)}g', colors.warning.indicator),
-                    _buildTotalStat(context, 'Fat', '${state.totalFat.toStringAsFixed(1)}g', colors.danger.indicator),
+                    _buildTotalStat(
+                      context,
+                      'Calories',
+                      '${state.totalCalories} kcal',
+                      Theme.of(context).colorScheme.primary,
+                    ),
+                    _buildTotalStat(
+                      context,
+                      'Protein',
+                      '${state.totalProtein.toStringAsFixed(1)}g',
+                      colors.success.indicator,
+                    ),
+                    _buildTotalStat(
+                      context,
+                      'Carbs',
+                      '${state.totalCarbs.toStringAsFixed(1)}g',
+                      colors.warning.indicator,
+                    ),
+                    _buildTotalStat(
+                      context,
+                      'Fat',
+                      '${state.totalFat.toStringAsFixed(1)}g',
+                      colors.danger.indicator,
+                    ),
                   ],
                 ),
               ),
@@ -220,10 +236,10 @@ class _NaturalLanguageMealScreenState
                       onPressed: state.isBusy || state.editableItems.isEmpty
                           ? null
                           : () => _openInCircularThali(
-                                _resolveMealType(),
-                                _resolveDate(),
-                                state.editableItems,
-                              ),
+                              _resolveMealType(),
+                              _resolveDate(),
+                              state.editableItems,
+                            ),
                     ),
                   ),
                   const SizedBox(width: B05Layout.space12),
@@ -232,8 +248,8 @@ class _NaturalLanguageMealScreenState
                       label: state.isLogged
                           ? 'Logged to Diary'
                           : (state.status == NaturalLanguageMealStatus.logging
-                              ? 'Logging Meal...'
-                              : 'Log Meal to Diary'),
+                                ? 'Logging Meal...'
+                                : 'Log Meal to Diary'),
                       icon: Icons.check_circle_outline_rounded,
                       onPressed: state.isLogged || state.isBusy
                           ? null
@@ -247,7 +263,9 @@ class _NaturalLanguageMealScreenState
                               if (ok && mounted) {
                                 messenger.showSnackBar(
                                   const SnackBar(
-                                    content: Text('Meal logged to diary successfully!'),
+                                    content: Text(
+                                      'Meal logged to diary successfully!',
+                                    ),
                                   ),
                                 );
                                 router.pop(true);
@@ -272,7 +290,9 @@ class _NaturalLanguageMealScreenState
     final thaliController = ref.read(
       nutritionThaliControllerProvider(mealType).notifier,
     );
-    final catalog = await ref.read(nutritionFoodCatalogRepositoryProvider.future);
+    final catalog = await ref.read(
+      nutritionFoodCatalogRepositoryProvider.future,
+    );
 
     for (final item in items) {
       NutritionFoodOption option;
@@ -317,7 +337,9 @@ class _NaturalLanguageMealScreenState
     DecomposedFoodItem item,
     NaturalLanguageMealController controller,
   ) async {
-    final catalog = await ref.read(nutritionFoodCatalogRepositoryProvider.future);
+    final catalog = await ref.read(
+      nutritionFoodCatalogRepositoryProvider.future,
+    );
     final initialMatches = await catalog.search(query: item.foodName);
     if (!context.mounted) return;
 
@@ -342,7 +364,10 @@ class _NaturalLanguageMealScreenState
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('Swap Food Match', style: B05Typography.title(context)),
+                          Text(
+                            'Swap Food Match',
+                            style: B05Typography.title(context),
+                          ),
                           IconButton(
                             icon: const Icon(Icons.close),
                             onPressed: () => Navigator.pop(sheetCtx),
@@ -384,19 +409,41 @@ class _NaturalLanguageMealScreenState
                                 separatorBuilder: (ctx, i) => const Divider(),
                                 itemBuilder: (ctx, i) {
                                   final option = matches[i];
-                                  final isCurrent = item.matchedCatalogOption?.id == option.id;
-                                  final energy = option.facts['energy']?.point?.value.asDouble.toStringAsFixed(0) ?? '—';
-                                  final protein = option.facts['protein']?.point?.value.asDouble.toStringAsFixed(1) ?? '—';
+                                  final isCurrent =
+                                      item.matchedCatalogOption?.id ==
+                                      option.id;
+                                  final energy =
+                                      option
+                                          .facts['energy']
+                                          ?.point
+                                          ?.value
+                                          .asDouble
+                                          .toStringAsFixed(0) ??
+                                      '—';
+                                  final protein =
+                                      option
+                                          .facts['protein']
+                                          ?.point
+                                          ?.value
+                                          .asDouble
+                                          .toStringAsFixed(1) ??
+                                      '—';
                                   return ListTile(
                                     title: Text(option.displayName),
                                     subtitle: Text(
                                       '$energy kcal • $protein g P per ${option.baseQuantity}',
                                     ),
                                     trailing: isCurrent
-                                        ? const Icon(Icons.check, color: Colors.green)
+                                        ? const Icon(
+                                            Icons.check,
+                                            color: Colors.green,
+                                          )
                                         : null,
                                     onTap: () {
-                                      controller.updateItemFoodMatch(index, option);
+                                      controller.updateItemFoodMatch(
+                                        index,
+                                        option,
+                                      );
                                       Navigator.pop(sheetCtx);
                                     },
                                   );
@@ -422,7 +469,14 @@ class _NaturalLanguageMealScreenState
   ) {
     return Column(
       children: [
-        Text(value, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: color)),
+        Text(
+          value,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+            color: color,
+          ),
+        ),
         const SizedBox(height: 2),
         Text(label, style: B05Typography.caption(context)),
       ],
@@ -437,7 +491,9 @@ class _NaturalLanguageMealScreenState
     B05SemanticColors colors,
   ) {
     final isVerified = item.isCatalogVerified;
-    final badgeColor = isVerified ? colors.success.indicator : colors.info.indicator;
+    final badgeColor = isVerified
+        ? colors.success.indicator
+        : colors.info.indicator;
     final badgeText = isVerified ? 'Catalog Verified' : 'AI Estimate';
 
     final confidenceColor = switch (item.confidence.toLowerCase()) {
@@ -476,7 +532,10 @@ class _NaturalLanguageMealScreenState
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 3,
+                  ),
                   margin: const EdgeInsets.only(right: 6),
                   decoration: BoxDecoration(
                     color: confidenceColor.withValues(alpha: 0.12),
@@ -492,7 +551,10 @@ class _NaturalLanguageMealScreenState
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: badgeColor.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(4),
@@ -524,15 +586,25 @@ class _NaturalLanguageMealScreenState
                       ? null
                       : () {
                           final step = item.quantityAmount <= 1.0 ? 0.25 : 1.0;
-                          final newAmount = (item.quantityAmount - step).clamp(0.25, 999.0);
-                          controller.updateItemQuantity(index, newAmount, item.quantityUnit);
+                          final newAmount = (item.quantityAmount - step).clamp(
+                            0.25,
+                            999.0,
+                          );
+                          controller.updateItemQuantity(
+                            index,
+                            newAmount,
+                            item.quantityUnit,
+                          );
                         },
                 ),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8.0),
                   child: Text(
                     '${item.quantityAmount.toStringAsFixed(item.quantityAmount % 1 == 0 ? 0 : 2)} ${item.quantityUnit}',
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
                   ),
                 ),
                 IconButton.outlined(
@@ -541,18 +613,25 @@ class _NaturalLanguageMealScreenState
                   onPressed: () {
                     final step = item.quantityAmount < 1.0 ? 0.25 : 1.0;
                     final newAmount = item.quantityAmount + step;
-                    controller.updateItemQuantity(index, newAmount, item.quantityUnit);
+                    controller.updateItemQuantity(
+                      index,
+                      newAmount,
+                      item.quantityUnit,
+                    );
                   },
                 ),
                 const SizedBox(width: 8),
                 TextButton.icon(
-                  style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+                  style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                  ),
                   icon: const Icon(Icons.swap_horiz, size: 16),
                   label: Text(
                     isVerified ? 'Swap' : 'Match',
                     style: const TextStyle(fontSize: 12),
                   ),
-                  onPressed: () => _openSwapModal(context, index, item, controller),
+                  onPressed: () =>
+                      _openSwapModal(context, index, item, controller),
                 ),
                 const Spacer(),
                 Text(

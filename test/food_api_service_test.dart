@@ -13,9 +13,7 @@ void main() {
       () async {
         final adapter = _BackendSuccessAdapter();
         final dio = Dio(
-          BaseOptions(
-            headers: {'x-indifit-key': 'test-indifit-key'},
-          ),
+          BaseOptions(headers: {'x-indifit-key': 'test-indifit-key'}),
         )..httpClientAdapter = adapter;
 
         final service = FoodApiService(
@@ -62,31 +60,34 @@ void main() {
       },
     );
 
-    test('fail-closed when isNutritionOnlineAllowed is false (offline-only)', () async {
-      final adapter = _BackendSuccessAdapter();
-      final dio = Dio()..httpClientAdapter = adapter;
+    test(
+      'fail-closed when isNutritionOnlineAllowed is false (offline-only)',
+      () async {
+        final adapter = _BackendSuccessAdapter();
+        final dio = Dio()..httpClientAdapter = adapter;
 
-      final service = FoodApiService(
-        dio,
-        const PrivacyPolicy(
-          isOfflineOnly: true,
-          isTelemetryEnabled: false,
-          allowOnlineNutrition: true,
-        ),
-        null,
-        'https://api.indifit.app',
-      );
+        final service = FoodApiService(
+          dio,
+          const PrivacyPolicy(
+            isOfflineOnly: true,
+            isTelemetryEnabled: false,
+            allowOnlineNutrition: true,
+          ),
+          null,
+          'https://api.indifit.app',
+        );
 
-      await expectLater(
-        () => service.searchOnline('paneer'),
-        throwsA(isA<StateError>()),
-      );
-      await expectLater(
-        () => service.fetchByBarcode('8901262010053'),
-        throwsA(isA<StateError>()),
-      );
-      expect(adapter.called, isFalse);
-    });
+        await expectLater(
+          () => service.searchOnline('paneer'),
+          throwsA(isA<StateError>()),
+        );
+        await expectLater(
+          () => service.fetchByBarcode('8901262010053'),
+          throwsA(isA<StateError>()),
+        );
+        expect(adapter.called, isFalse);
+      },
+    );
 
     test('fail-closed when allowOnlineNutrition preference is false', () async {
       final adapter = _BackendSuccessAdapter();
@@ -114,30 +115,33 @@ void main() {
       expect(adapter.called, isFalse);
     });
 
-    test('fetchByBarcode calls backend GET /api/food/barcode/{code} and parses candidate', () async {
-      final adapter = _BarcodeSuccessAdapter();
-      final dio = Dio()..httpClientAdapter = adapter;
+    test(
+      'fetchByBarcode calls backend GET /api/food/barcode/{code} and parses candidate',
+      () async {
+        final adapter = _BarcodeSuccessAdapter();
+        final dio = Dio()..httpClientAdapter = adapter;
 
-      final service = FoodApiService(
-        dio,
-        const PrivacyPolicy(
-          isOfflineOnly: false,
-          isTelemetryEnabled: false,
-          allowOnlineNutrition: true,
-        ),
-        null,
-        'https://api.indifit.app',
-      );
+        final service = FoodApiService(
+          dio,
+          const PrivacyPolicy(
+            isOfflineOnly: false,
+            isTelemetryEnabled: false,
+            allowOnlineNutrition: true,
+          ),
+          null,
+          'https://api.indifit.app',
+        );
 
-      final result = await service.fetchByBarcode('8901262010053');
-      expect(result, isNotNull);
-      expect(result!.name, 'Amul Gold Milk');
-      expect(result.brand, 'Amul');
-      expect(result.barcode, '8901262010053');
-      expect(result.protein, 3.5);
-      expect(adapter.options!.uri.path, '/api/food/barcode/8901262010053');
-      expect(adapter.options!.method, 'GET');
-    });
+        final result = await service.fetchByBarcode('8901262010053');
+        expect(result, isNotNull);
+        expect(result!.name, 'Amul Gold Milk');
+        expect(result.brand, 'Amul');
+        expect(result.barcode, '8901262010053');
+        expect(result.protein, 3.5);
+        expect(adapter.options!.uri.path, '/api/food/barcode/8901262010053');
+        expect(adapter.options!.method, 'GET');
+      },
+    );
 
     test('fetchByBarcode returns null on 404 not found', () async {
       final adapter = _Barcode404Adapter();
@@ -158,24 +162,41 @@ void main() {
       expect(result, isNull);
     });
 
-    test('provider HTTP failure remains a typed bad-response failure', () async {
-      final dio = Dio()..httpClientAdapter = _BadResponseAdapter();
+    test(
+      'provider HTTP failure remains a typed bad-response failure',
+      () async {
+        final dio = Dio()..httpClientAdapter = _BadResponseAdapter();
 
-      await expectLater(
-        FoodApiService(dio, null, null, 'https://api.indifit.app').searchOnline('protein shake'),
-        throwsA(
-          isA<DioException>()
-              .having((error) => error.type, 'type', DioExceptionType.badResponse)
-              .having((error) => error.response?.statusCode, 'status', 503),
-        ),
-      );
-    });
+        await expectLater(
+          FoodApiService(
+            dio,
+            null,
+            null,
+            'https://api.indifit.app',
+          ).searchOnline('protein shake'),
+          throwsA(
+            isA<DioException>()
+                .having(
+                  (error) => error.type,
+                  'type',
+                  DioExceptionType.badResponse,
+                )
+                .having((error) => error.response?.statusCode, 'status', 503),
+          ),
+        );
+      },
+    );
 
     test('provider timeout remains a typed timeout failure', () async {
       final dio = Dio()..httpClientAdapter = _TimeoutAdapter();
 
       await expectLater(
-        FoodApiService(dio, null, null, 'https://api.indifit.app').searchOnline('protein shake'),
+        FoodApiService(
+          dio,
+          null,
+          null,
+          'https://api.indifit.app',
+        ).searchOnline('protein shake'),
         throwsA(
           isA<DioException>().having(
             (error) => error.type,
@@ -186,27 +207,34 @@ void main() {
       );
     });
 
-    test('provider request is cancelled through the real Dio cancel token', () async {
-      final adapter = _CancellableAdapter();
-      final dio = Dio()..httpClientAdapter = adapter;
-      final token = CancelToken();
-      final request = FoodApiService(
-        dio,
-        null,
-        null,
-        'https://api.indifit.app',
-      ).searchOnline('first query', cancelToken: token);
-      await adapter.started.future;
+    test(
+      'provider request is cancelled through the real Dio cancel token',
+      () async {
+        final adapter = _CancellableAdapter();
+        final dio = Dio()..httpClientAdapter = adapter;
+        final token = CancelToken();
+        final request = FoodApiService(
+          dio,
+          null,
+          null,
+          'https://api.indifit.app',
+        ).searchOnline('first query', cancelToken: token);
+        await adapter.started.future;
 
-      token.cancel('query changed');
+        token.cancel('query changed');
 
-      await expectLater(
-        request,
-        throwsA(
-          isA<DioException>().having(CancelToken.isCancel, 'cancelled', isTrue),
-        ),
-      );
-    });
+        await expectLater(
+          request,
+          throwsA(
+            isA<DioException>().having(
+              CancelToken.isCancel,
+              'cancelled',
+              isTrue,
+            ),
+          ),
+        );
+      },
+    );
   });
 }
 
@@ -239,13 +267,13 @@ class _BackendSuccessAdapter implements HttpClientAdapter {
           'serving_size': 100.0,
           'serving_unit': 'g',
           'serving_options': [
-            {'unit': '100g', 'gram_weight': 100.0, 'is_default': true}
+            {'unit': '100g', 'gram_weight': 100.0, 'is_default': true},
           ],
           'score': 100.0,
           'source': 'curated',
           'provenance': 'curated',
           'confidence': 'high',
-        }
+        },
       ],
       'count': 1,
       'total_hits': 1,
@@ -292,7 +320,7 @@ class _BarcodeSuccessAdapter implements HttpClientAdapter {
         'serving_size': 100.0,
         'serving_unit': 'ml',
         'serving_options': [
-          {'unit': 'glass (200ml)', 'gram_weight': 206.0, 'is_default': true}
+          {'unit': 'glass (200ml)', 'gram_weight': 206.0, 'is_default': true},
         ],
         'score': 100.0,
         'source': 'curated',

@@ -617,21 +617,21 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         return;
       }
 
-      final resolvedCategory = result.categoryId ??
+      final resolvedCategory =
+          result.categoryId ??
           // ignore: deprecated_member_use_from_same_package
-          FoodCategoryTaxonomy.resolveCategoryId(
-            name: result.name,
-          );
+          FoodCategoryTaxonomy.resolveCategoryId(name: result.name);
       final isStuffed = isStuffedParathaName(result.name);
       final List<ServingOption> servingOptions;
       if (result.servingOptions != null && result.servingOptions!.isNotEmpty) {
         servingOptions = result.servingOptions!.map((opt) {
           return ServingOption(
-            unitName: opt['unit']?.toString() ??
+            unitName:
+                opt['unit']?.toString() ??
                 opt['unitName']?.toString() ??
                 'serving',
-            gramWeight: (opt['gram_weight'] ?? opt['gramWeight'] as num?)
-                    ?.toDouble() ??
+            gramWeight:
+                (opt['gram_weight'] ?? opt['gramWeight'] as num?)?.toDouble() ??
                 100.0,
             isDefault:
                 (opt['is_default'] ?? opt['isDefault'] as bool?) ?? false,
@@ -646,7 +646,8 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         );
       }
 
-      final isIndifitCurated = result.provenance == 'curated' ||
+      final isIndifitCurated =
+          result.provenance == 'curated' ||
           result.provenance == 'verified_fmcg';
       final provider = isIndifitCurated
           ? FoodCatalogProvider.indifitCloud
@@ -654,8 +655,8 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       final candidateId = result.barcode != null && result.barcode!.isNotEmpty
           ? 'off_${result.barcode}'
           : (result.providerId != null
-              ? 'indifit_${result.providerId}'
-              : 'custom_${result.name}');
+                ? 'indifit_${result.providerId}'
+                : 'custom_${result.name}');
 
       final candidate = RemoteFoodCandidate(
         id: candidateId,
@@ -692,53 +693,53 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         candidate: candidate,
         mealType: widget.mealType ?? 'snack',
         selectedDate: widget.selectedDate ?? DateTime.now(),
-        onConfirm: ({
-          required RemoteFoodCandidate candidate,
-          required double quantity,
-          required ServingOption servingOption,
-          required bool logImmediately,
-        }) async {
-          final catalog = await ref.read(
-            nutritionFoodCatalogRepositoryProvider.future,
-          );
-          final option = await catalog.ensureProviderFood(
-            displayName: candidate.name,
-            sourceReference: reference,
-            servingSize: servingOption.gramWeight,
-            servingUnit: servingOption.unitName,
-            energyKcal: candidate.caloriesPer100g,
-            proteinG: candidate.proteinPer100g,
-            carbohydrateG: candidate.carbsPer100g,
-            fatG: candidate.fatPer100g,
-            fiberG: candidate.fiberPer100g,
-            sodiumMg: candidate.sodiumMgPer100g,
-            addedSugarG: candidate.addedSugarPer100g,
-            saturatedFatG: candidate.saturatedFatPer100g,
-            brand: candidate.brand,
-          );
-
-          if (logImmediately) {
-            // Preserve the reviewed portion: the option basis is per-100
-            // units, so scale it by the reviewed servings. Without this the
-            // dialog resets to a single serving and silently drops the
-            // reviewed amount the user just confirmed.
-            Quantity? reviewedQuantity;
-            final factor = quantity * servingOption.gramWeight / 100;
-            if (factor.isFinite && factor > 0) {
-              reviewedQuantity = option.baseQuantity * factor;
-            }
-            await _showLogDialog(
-              option,
-              initialQuantity: reviewedQuantity,
-            );
-          } else {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('${candidate.name} saved to My Foods')),
+        onConfirm:
+            ({
+              required RemoteFoodCandidate candidate,
+              required double quantity,
+              required ServingOption servingOption,
+              required bool logImmediately,
+            }) async {
+              final catalog = await ref.read(
+                nutritionFoodCatalogRepositoryProvider.future,
               );
-            }
-          }
-        },
+              final option = await catalog.ensureProviderFood(
+                displayName: candidate.name,
+                sourceReference: reference,
+                servingSize: servingOption.gramWeight,
+                servingUnit: servingOption.unitName,
+                energyKcal: candidate.caloriesPer100g,
+                proteinG: candidate.proteinPer100g,
+                carbohydrateG: candidate.carbsPer100g,
+                fatG: candidate.fatPer100g,
+                fiberG: candidate.fiberPer100g,
+                sodiumMg: candidate.sodiumMgPer100g,
+                addedSugarG: candidate.addedSugarPer100g,
+                saturatedFatG: candidate.saturatedFatPer100g,
+                brand: candidate.brand,
+              );
+
+              if (logImmediately) {
+                // Preserve the reviewed portion: the option basis is per-100
+                // units, so scale it by the reviewed servings. Without this the
+                // dialog resets to a single serving and silently drops the
+                // reviewed amount the user just confirmed.
+                Quantity? reviewedQuantity;
+                final factor = quantity * servingOption.gramWeight / 100;
+                if (factor.isFinite && factor > 0) {
+                  reviewedQuantity = option.baseQuantity * factor;
+                }
+                await _showLogDialog(option, initialQuantity: reviewedQuantity);
+              } else {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('${candidate.name} saved to My Foods'),
+                    ),
+                  );
+                }
+              }
+            },
       );
     } catch (error) {
       if (mounted) {
@@ -945,12 +946,15 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     final categoryId = FoodCategoryTaxonomy.resolveCategoryId(
       name: option.displayName,
     );
-    final categoryServingOptions = FoodCategoryTaxonomy.servingOptionsForCategory(
-      categoryId: categoryId,
-      servingSize: option.baseQuantity.amount.asDouble,
-      servingUnit: option.servingUnitLabel ?? option.baseQuantity.unit.toString().split('.').last,
-      isStuffedParatha: isStuffedParathaName(option.displayName),
-    );
+    final categoryServingOptions =
+        FoodCategoryTaxonomy.servingOptionsForCategory(
+          categoryId: categoryId,
+          servingSize: option.baseQuantity.amount.asDouble,
+          servingUnit:
+              option.servingUnitLabel ??
+              option.baseQuantity.unit.toString().split('.').last,
+          isStuffedParatha: isStuffedParathaName(option.displayName),
+        );
 
     await FoodPortionBottomSheet.show(
       context,
@@ -1231,7 +1235,6 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     );
   }
 
-
   @override
   Widget build(BuildContext context) {
     final logDate = widget.selectedDate ?? DateTime.now();
@@ -1334,9 +1337,25 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       case 'non-veg':
       case 'non_veg':
       case 'non-vegetarian':
-        return const ['Roti', 'Dal', 'Rice', 'Chicken', 'Eggs', 'Paneer', 'Whey'];
+        return const [
+          'Roti',
+          'Dal',
+          'Rice',
+          'Chicken',
+          'Eggs',
+          'Paneer',
+          'Whey',
+        ];
       case 'vegan':
-        return const ['Roti', 'Dal', 'Rice', 'Tofu', 'Soya', 'Chana', 'Peanut Butter'];
+        return const [
+          'Roti',
+          'Dal',
+          'Rice',
+          'Tofu',
+          'Soya',
+          'Chana',
+          'Peanut Butter',
+        ];
       case 'eggetarian':
         return const ['Roti', 'Dal', 'Rice', 'Eggs', 'Paneer', 'Chai', 'Whey'];
       case 'veg':
@@ -1398,83 +1417,84 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       }
     },
     itemBuilder: (_) => const [
-      PopupMenuItem(value: 'quick_add', child: Text('Quick-add calories & macros')),
+      PopupMenuItem(
+        value: 'quick_add',
+        child: Text('Quick-add calories & macros'),
+      ),
       PopupMenuItem(value: 'custom', child: Text('Create a custom food')),
     ],
   );
 
   Widget _buildLandingState(DateTime logDate) => FoodSearchRecentList(
-        neutralFoodEntry:
-            _activeMealType == null ? _buildNeutralFoodEntry() : null,
-        loadingRecent: _loadingRecent,
-        recentFailureMessage: _recentFailureMessage,
-        onRetryRecent: _retryRecentFoods,
-        canonicalRecentResults: _canonicalRecentResults,
-        recentResults: _recentResults,
-        canonicalRecentItemBuilder: (context, recent) =>
-            _buildCanonicalRecentItemRow(recent),
-        recentItemBuilder: (context, food) => _buildRecentItemRow(food),
-        onOpenSavedMeals: _openSavedMeals,
-        onOpenSavedRecipes: _openSavedRecipes,
-        onOpenBarcode: () => _openBarcode(context),
-        onScanNutritionLabel: () {
-          final mealParam =
-              widget.mealType != null ? '?mealType=${widget.mealType}' : '';
-          final dateParam = widget.selectedDate != null
-              ? (mealParam.isEmpty
-                  ? '?date=${widget.selectedDate!.toIso8601String().split('T').first}'
-                  : '&date=${widget.selectedDate!.toIso8601String().split('T').first}')
-              : '';
-          context.push('/food/label-ocr$mealParam$dateParam');
-        },
-        onDescribeMeal: () {
-          final mealParam =
-              widget.mealType != null ? '?mealType=${widget.mealType}' : '';
-          final dateParam = widget.selectedDate != null
-              ? (mealParam.isEmpty
-                  ? '?date=${widget.selectedDate!.toIso8601String().split('T').first}'
-                  : '&date=${widget.selectedDate!.toIso8601String().split('T').first}')
-              : '';
-          context.push('/food/describe$mealParam$dateParam');
-        },
-        onOpenThali: () => context.push('/food/thali'),
-        onQuickAddMacros: () async {
-          final added = await QuickAddMacrosSheet.show(
-            context,
-            initialMealType: _activeMealType ?? 'lunch',
-            targetDate: logDate,
-          );
-          if (added != null && mounted) {
-            _invalidateNutritionReads();
-          }
-        },
-        entriesPanel: FoodLogEntriesPanel(
-          date: logDate,
-          onCanonicalRecordTap: _showCanonicalActionMenu,
-          onCanonicalItemTap: _showCanonicalActionMenu,
-        ),
+    neutralFoodEntry: _activeMealType == null ? _buildNeutralFoodEntry() : null,
+    loadingRecent: _loadingRecent,
+    recentFailureMessage: _recentFailureMessage,
+    onRetryRecent: _retryRecentFoods,
+    canonicalRecentResults: _canonicalRecentResults,
+    recentResults: _recentResults,
+    canonicalRecentItemBuilder: (context, recent) =>
+        _buildCanonicalRecentItemRow(recent),
+    recentItemBuilder: (context, food) => _buildRecentItemRow(food),
+    onOpenSavedMeals: _openSavedMeals,
+    onOpenSavedRecipes: _openSavedRecipes,
+    onOpenBarcode: () => _openBarcode(context),
+    onScanNutritionLabel: () {
+      final mealParam = widget.mealType != null
+          ? '?mealType=${widget.mealType}'
+          : '';
+      final dateParam = widget.selectedDate != null
+          ? (mealParam.isEmpty
+                ? '?date=${widget.selectedDate!.toIso8601String().split('T').first}'
+                : '&date=${widget.selectedDate!.toIso8601String().split('T').first}')
+          : '';
+      context.push('/food/label-ocr$mealParam$dateParam');
+    },
+    onDescribeMeal: () {
+      final mealParam = widget.mealType != null
+          ? '?mealType=${widget.mealType}'
+          : '';
+      final dateParam = widget.selectedDate != null
+          ? (mealParam.isEmpty
+                ? '?date=${widget.selectedDate!.toIso8601String().split('T').first}'
+                : '&date=${widget.selectedDate!.toIso8601String().split('T').first}')
+          : '';
+      context.push('/food/describe$mealParam$dateParam');
+    },
+    onOpenThali: () => context.push('/food/thali'),
+    onQuickAddMacros: () async {
+      final added = await QuickAddMacrosSheet.show(
+        context,
+        initialMealType: _activeMealType ?? 'lunch',
+        targetDate: logDate,
       );
+      if (added != null && mounted) {
+        _invalidateNutritionReads();
+      }
+    },
+    entriesPanel: FoodLogEntriesPanel(
+      date: logDate,
+      onCanonicalRecordTap: _showCanonicalActionMenu,
+      onCanonicalItemTap: _showCanonicalActionMenu,
+    ),
+  );
 
   Widget _buildSearchResults() => FoodSearchResultsList(
-        isOnlineSearchOffline: _isOnlineSearchOffline,
-        searchingOnline: _searchingOnline,
-        onlineFailureMessage: _onlineFailureMessage,
-        onRetrySearch: () => _performSearch(_searchController.text),
-        searchResults: _rankedSearchResults,
-        searchResultItemBuilder: (context, result) =>
-            _buildRankedSearchRow(result),
-        onCreateCustomFood: () async {
-          final result = await Navigator.push<bool?>(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const CustomFoodEditorScreen(),
-            ),
-          );
-          if (result == true) {
-            await _performSearch(_searchController.text);
-          }
-        },
+    isOnlineSearchOffline: _isOnlineSearchOffline,
+    searchingOnline: _searchingOnline,
+    onlineFailureMessage: _onlineFailureMessage,
+    onRetrySearch: () => _performSearch(_searchController.text),
+    searchResults: _rankedSearchResults,
+    searchResultItemBuilder: (context, result) => _buildRankedSearchRow(result),
+    onCreateCustomFood: () async {
+      final result = await Navigator.push<bool?>(
+        context,
+        MaterialPageRoute(builder: (context) => const CustomFoodEditorScreen()),
       );
+      if (result == true) {
+        await _performSearch(_searchController.text);
+      }
+    },
+  );
 
   Widget _buildRankedSearchRow(NutritionFoodSearchResult result) {
     final candidate = result.candidate;
@@ -1849,11 +1869,14 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
 
   Future<void> _openCandidateReview(RemoteFoodCandidate candidate) async {
     try {
-      final resolvedCategory = candidate.category.isNotEmpty && candidate.category != 'general'
+      final resolvedCategory =
+          candidate.category.isNotEmpty && candidate.category != 'general'
           ? candidate.category
           : FoodCategoryTaxonomy.resolveCategoryId(name: candidate.name);
       final effectiveCandidate = candidate.servingOptions.isNotEmpty
-          ? (candidate.category != resolvedCategory ? candidate.copyWith(category: resolvedCategory) : candidate)
+          ? (candidate.category != resolvedCategory
+                ? candidate.copyWith(category: resolvedCategory)
+                : candidate)
           : candidate.copyWith(
               category: resolvedCategory,
               servingOptions: FoodCategoryTaxonomy.servingOptionsForCategory(
@@ -1862,7 +1885,9 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
               ),
             );
 
-      final reference = effectiveCandidate.barcode != null && effectiveCandidate.barcode!.isNotEmpty
+      final reference =
+          effectiveCandidate.barcode != null &&
+              effectiveCandidate.barcode!.isNotEmpty
           ? 'open-food-facts:barcode:${effectiveCandidate.barcode}'
           : 'open-food-facts:product:${effectiveCandidate.providerId}';
 
@@ -1871,51 +1896,51 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         candidate: effectiveCandidate,
         mealType: widget.mealType ?? 'snack',
         selectedDate: widget.selectedDate ?? DateTime.now(),
-        onConfirm: ({
-          required RemoteFoodCandidate candidate,
-          required double quantity,
-          required ServingOption servingOption,
-          required bool logImmediately,
-        }) async {
-          final catalog = await ref.read(
-            nutritionFoodCatalogRepositoryProvider.future,
-          );
-          final option = await catalog.ensureProviderFood(
-            displayName: candidate.name,
-            sourceReference: reference,
-            servingSize: servingOption.gramWeight,
-            servingUnit: servingOption.unitName,
-            energyKcal: candidate.caloriesPer100g,
-            proteinG: candidate.proteinPer100g,
-            carbohydrateG: candidate.carbsPer100g,
-            fatG: candidate.fatPer100g,
-            fiberG: candidate.fiberPer100g,
-            sodiumMg: candidate.sodiumMgPer100g,
-            addedSugarG: candidate.addedSugarPer100g,
-            saturatedFatG: candidate.saturatedFatPer100g,
-            brand: candidate.brand,
-          );
-
-          if (logImmediately) {
-            // Preserve the reviewed portion (see search-flow onConfirm):
-            // without this the dialog resets to a single serving.
-            Quantity? reviewedQuantity;
-            final factor = quantity * servingOption.gramWeight / 100;
-            if (factor.isFinite && factor > 0) {
-              reviewedQuantity = option.baseQuantity * factor;
-            }
-            await _showLogDialog(
-              option,
-              initialQuantity: reviewedQuantity,
-            );
-          } else {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('${candidate.name} saved to My Foods')),
+        onConfirm:
+            ({
+              required RemoteFoodCandidate candidate,
+              required double quantity,
+              required ServingOption servingOption,
+              required bool logImmediately,
+            }) async {
+              final catalog = await ref.read(
+                nutritionFoodCatalogRepositoryProvider.future,
               );
-            }
-          }
-        },
+              final option = await catalog.ensureProviderFood(
+                displayName: candidate.name,
+                sourceReference: reference,
+                servingSize: servingOption.gramWeight,
+                servingUnit: servingOption.unitName,
+                energyKcal: candidate.caloriesPer100g,
+                proteinG: candidate.proteinPer100g,
+                carbohydrateG: candidate.carbsPer100g,
+                fatG: candidate.fatPer100g,
+                fiberG: candidate.fiberPer100g,
+                sodiumMg: candidate.sodiumMgPer100g,
+                addedSugarG: candidate.addedSugarPer100g,
+                saturatedFatG: candidate.saturatedFatPer100g,
+                brand: candidate.brand,
+              );
+
+              if (logImmediately) {
+                // Preserve the reviewed portion (see search-flow onConfirm):
+                // without this the dialog resets to a single serving.
+                Quantity? reviewedQuantity;
+                final factor = quantity * servingOption.gramWeight / 100;
+                if (factor.isFinite && factor > 0) {
+                  reviewedQuantity = option.baseQuantity * factor;
+                }
+                await _showLogDialog(option, initialQuantity: reviewedQuantity);
+              } else {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('${candidate.name} saved to My Foods'),
+                    ),
+                  );
+                }
+              }
+            },
       );
     } catch (_) {
       if (mounted) {
@@ -2055,7 +2080,6 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     return '${quantity.amount} $symbol';
   }
 
-
   Widget _buildLocalItemRow(FoodItem food, {bool recent = false}) {
     final displayName = _consumerFoodName(food.name);
     final serving = _localServingLabel(food);
@@ -2193,15 +2217,11 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
           minVerticalPadding: 10,
           leading: _isMultiSelect
               ? Semantics(
-                  label:
-                      '$displayName needs individual review before logging',
+                  label: '$displayName needs individual review before logging',
                   child: Tooltip(
                     message:
                         'Provider results need individual review — tap the row',
-                    child: const Checkbox(
-                      value: false,
-                      onChanged: null,
-                    ),
+                    child: const Checkbox(value: false, onChanged: null),
                   ),
                 )
               : null,
@@ -2442,4 +2462,3 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     );
   }
 }
-

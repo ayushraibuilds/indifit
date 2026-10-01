@@ -22,16 +22,8 @@ String progressNutritionStrategyLabel(NutritionGoalType value) =>
 List<BodyMeasurementValue> bodyMeasurementValues(
   List<ProgressMeasurementRecord> measurements,
 ) => [
-  latestBodyMeasurementValue(
-    'Waist',
-    measurements,
-    (record) => record.waistCm,
-  ),
-  latestBodyMeasurementValue(
-    'Chest',
-    measurements,
-    (record) => record.chestCm,
-  ),
+  latestBodyMeasurementValue('Waist', measurements, (record) => record.waistCm),
+  latestBodyMeasurementValue('Chest', measurements, (record) => record.chestCm),
   latestBodyMeasurementValue('Arms', measurements, (record) => record.armsCm),
 ].whereType<BodyMeasurementValue>().toList(growable: false);
 
@@ -92,8 +84,7 @@ List<StrengthHighlight> selectStrengthHighlights(
     final values = entry.value;
     final sorted = values.toList(growable: true)
       ..sort(
-        (first, second) =>
-            compareStrengthRecordsForPresentation(first, second),
+        (first, second) => compareStrengthRecordsForPresentation(first, second),
       );
     final latestPerformedAtUtc = sorted.last.completedAtUtc;
     final latestSessionKey = presentationStrengthSessionKey(sorted.last);

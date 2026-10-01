@@ -239,7 +239,9 @@ void main() {
               if (payoffScroll.evaluate().isNotEmpty) {
                 await tester.drag(payoffScroll.last, const Offset(0, -350));
                 await tester.pumpAndSettle();
-                await binding.takeScreenshot('01_onboarding_05b_payoff_scrolled');
+                await binding.takeScreenshot(
+                  '01_onboarding_05b_payoff_scrolled',
+                );
               }
             }
           }
@@ -274,25 +276,27 @@ void main() {
       await prefs.setInt('water_goal_ml', 2500);
 
       final database = AppDatabase.memory();
-      await database.into(database.userProfiles).insert(
-        UserProfilesCompanion.insert(
-          id: const Value(1),
-          name: const Value('Aarav'),
-          age: const Value(28),
-          height: const Value(175.0),
-          weight: const Value(72.0),
-          sex: const Value('male'),
-          activityLevel: const Value('moderate'),
-          goal: const Value('maintain'),
-          dietPreference: const Value('veg'),
-          calorieGoal: const Value(2200),
-          proteinGoal: const Value(130.0),
-          carbsGoal: const Value(250.0),
-          fatGoal: const Value(65.0),
-          equipmentAccess: const Value('full_gym'),
-          injuriesLimitations: const Value(''),
-        ),
-      );
+      await database
+          .into(database.userProfiles)
+          .insert(
+            UserProfilesCompanion.insert(
+              id: const Value(1),
+              name: const Value('Aarav'),
+              age: const Value(28),
+              height: const Value(175.0),
+              weight: const Value(72.0),
+              sex: const Value('male'),
+              activityLevel: const Value('moderate'),
+              goal: const Value('maintain'),
+              dietPreference: const Value('veg'),
+              calorieGoal: const Value(2200),
+              proteinGoal: const Value(130.0),
+              carbsGoal: const Value(250.0),
+              fatGoal: const Value(65.0),
+              equipmentAccess: const Value('full_gym'),
+              injuriesLimitations: const Value(''),
+            ),
+          );
 
       final datesService = LocalScheduleDateService();
       final timezoneService = LocalTimezoneService();
@@ -343,18 +347,20 @@ void main() {
         loggedAt: now,
       );
 
-      await database.into(database.foodItems).insert(
-        FoodItemsCompanion.insert(
-          name: 'Paneer (Raw)',
-          calories: 265,
-          proteinG: 18.0,
-          carbsG: 3.5,
-          fatG: 20.0,
-          servingSize: 100.0,
-          servingUnit: 'g',
-          category: 'dairy',
-        ),
-      );
+      await database
+          .into(database.foodItems)
+          .insert(
+            FoodItemsCompanion.insert(
+              name: 'Paneer (Raw)',
+              calories: 265,
+              proteinG: 18.0,
+              carbsG: 3.5,
+              fatG: 20.0,
+              servingSize: 100.0,
+              servingUnit: 'g',
+              category: 'dairy',
+            ),
+          );
 
       await workoutRepo.logSession(
         name: 'Push Hypertrophy',
@@ -429,8 +435,10 @@ void main() {
       Future<void> popTop({bool rootNavigator = false}) async {
         final scaffolds = find.byType(Scaffold).evaluate();
         if (scaffolds.isNotEmpty) {
-          final nav =
-              Navigator.of(scaffolds.last, rootNavigator: rootNavigator);
+          final nav = Navigator.of(
+            scaffolds.last,
+            rootNavigator: rootNavigator,
+          );
           if (nav.canPop()) {
             nav.pop();
             await tester.pumpAndSettle();
@@ -615,10 +623,7 @@ void main() {
                     gramWeight: 100.0,
                     isDefault: true,
                   ),
-                  ServingOption(
-                    unitName: '1 pot (170g)',
-                    gramWeight: 170.0,
-                  ),
+                  ServingOption(unitName: '1 pot (170g)', gramWeight: 170.0),
                 ],
                 provenance: FoodProvenance(
                   provider: FoodCatalogProvider.openFoodFacts,
@@ -629,12 +634,13 @@ void main() {
               ),
               mealType: 'lunch',
               selectedDate: now,
-              onConfirm: ({
-                required candidate,
-                required quantity,
-                required servingOption,
-                required logImmediately,
-              }) async {},
+              onConfirm:
+                  ({
+                    required candidate,
+                    required quantity,
+                    required servingOption,
+                    required logImmediately,
+                  }) async {},
             ),
           );
           await tester.pump(const Duration(milliseconds: 400));
@@ -681,9 +687,8 @@ void main() {
       unawaited(
         Navigator.of(currentContext()).push(
           MaterialPageRoute(
-            builder: (_) => const CustomFoodEditorScreen(
-              initialBarcode: '8901030927341',
-            ),
+            builder: (_) =>
+                const CustomFoodEditorScreen(initialBarcode: '8901030927341'),
           ),
         ),
       );
@@ -713,9 +718,9 @@ void main() {
       // Plan Overview
       final starterPlan = OfflineStarterPlanCatalog.plans.first;
       unawaited(
-        GoRouter.of(
-          currentContext(),
-        ).push('/plan-overview/${Uri.encodeComponent(starterPlan.sourceVersionId)}'),
+        GoRouter.of(currentContext()).push(
+          '/plan-overview/${Uri.encodeComponent(starterPlan.sourceVersionId)}',
+        ),
       );
       await tester.pumpAndSettle();
       expect(find.byType(PlanOverviewScreen), findsOneWidget);
@@ -777,8 +782,7 @@ void main() {
               muscleGroups: 'chest,triceps,front_delts',
               equipment: 'barbell',
               difficulty: 'intermediate',
-              formCues:
-                  'Retract scapulae, maintain arch, touch lower sternum.',
+              formCues: 'Retract scapulae, maintain arch, touch lower sternum.',
               commonMistakes:
                   'Flaring elbows 90 degrees, lifting hips off bench.',
               isCustom: false,
@@ -1000,9 +1004,7 @@ void main() {
       // Goals & Targets hub screen
       unawaited(
         Navigator.of(currentContext()).push(
-          MaterialPageRoute(
-            builder: (_) => const NutritionTargetsHubScreen(),
-          ),
+          MaterialPageRoute(builder: (_) => const NutritionTargetsHubScreen()),
         ),
       );
       await tester.pumpAndSettle();

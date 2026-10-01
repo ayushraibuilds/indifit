@@ -80,7 +80,6 @@ class StrengthHighlight {
   final String? comparisonText;
 }
 
-
 /// Civil-date primitives shared by the range enum and formatters.
 ///
 /// Moved verbatim from `progress_screen.dart` (PV1-ENG-05A).
@@ -108,4 +107,3 @@ DateTime subtractMonths(DateTime date, int months) {
 
 String formatCivilDate(DateTime value) =>
     '${value.year.toString().padLeft(4, '0')}-${value.month.toString().padLeft(2, '0')}-${value.day.toString().padLeft(2, '0')}';
-

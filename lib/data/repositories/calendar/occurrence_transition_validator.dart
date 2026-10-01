@@ -14,10 +14,7 @@ class OccurrenceTransitionValidator {
     }
   }
 
-  void requireUnstarted(
-    ScheduledSessionOccurrence occurrence,
-    String action,
-  ) {
+  void requireUnstarted(ScheduledSessionOccurrence occurrence, String action) {
     if (occurrence.status != OccurrenceStatus.planned.dbValue &&
         occurrence.status != OccurrenceStatus.rescheduled.dbValue) {
       throw InvalidOccurrenceTransitionException(

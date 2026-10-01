@@ -38,123 +38,122 @@ class _LoadedProfileNotifier extends UserProfileNotifier {
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets(
-    'E2E Log Meal & Workout session persistence flow',
-    (tester) async {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.clear();
-      await prefs.setBool('onboarding_completed', true);
-      await prefs.setInt('user_streak_count', 1);
-      await prefs.setString('user_name', 'Aarav');
-      final database = AppDatabase.memory();
-      final foodRepo = FoodRepository(database);
-      final workoutRepo = WorkoutRepository(database);
+  testWidgets('E2E Log Meal & Workout session persistence flow', (
+    tester,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+    await prefs.setBool('onboarding_completed', true);
+    await prefs.setInt('user_streak_count', 1);
+    await prefs.setString('user_name', 'Aarav');
+    final database = AppDatabase.memory();
+    final foodRepo = FoodRepository(database);
+    final workoutRepo = WorkoutRepository(database);
 
-      final container = ProviderContainer(
-        overrides: [
-          sharedPreferencesProvider.overrideWithValue(prefs),
-          databaseProvider.overrideWithValue(database),
-          foodRepositoryProvider.overrideWithValue(foodRepo),
-          workoutRepositoryProvider.overrideWithValue(workoutRepo),
-          userProfileProvider.overrideWith((ref) => _LoadedProfileNotifier()),
-          onboardingCompletedProvider.overrideWith((ref) => true),
-        ],
-      );
+    final container = ProviderContainer(
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+        databaseProvider.overrideWithValue(database),
+        foodRepositoryProvider.overrideWithValue(foodRepo),
+        workoutRepositoryProvider.overrideWithValue(workoutRepo),
+        userProfileProvider.overrideWith((ref) => _LoadedProfileNotifier()),
+        onboardingCompletedProvider.overrideWith((ref) => true),
+      ],
+    );
 
-      final router = container.read(appRouterProvider);
+    final router = container.read(appRouterProvider);
 
-      addTearDown(() async {
-        await tester.pumpWidget(const SizedBox.shrink());
-        await tester.pump();
-        container.dispose();
-        await database.close();
-      });
+    addTearDown(() async {
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+      container.dispose();
+      await database.close();
+    });
 
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp.router(
-            routerConfig: router,
-            theme: AppTheme.lightTheme,
-          ),
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp.router(
+          routerConfig: router,
+          theme: AppTheme.lightTheme,
         ),
-      );
-      await tester.pumpAndSettle();
+      ),
+    );
+    await tester.pumpAndSettle();
 
-      // 1. Verify app boots to Dashboard
-      expect(find.byType(MaterialApp), findsOneWidget);
+    // 1. Verify app boots to Dashboard
+    expect(find.byType(MaterialApp), findsOneWidget);
 
-      // 2. Perform meal log via repository (Offline fallback / online-first model)
-      final now = DateTime.now();
-      final foodLogId = await foodRepo.logFoodEntry(
-        name: 'Dal Makhani & Roti',
-        calories: 450,
-        proteinG: 18.0,
-        carbsG: 62.0,
-        fatG: 12.0,
-        servingLogged: 1.0,
-        servingUnit: 'serving',
-        mealType: 'lunch',
-        loggedAt: now,
-      );
+    // 2. Perform meal log via repository (Offline fallback / online-first model)
+    final now = DateTime.now();
+    final foodLogId = await foodRepo.logFoodEntry(
+      name: 'Dal Makhani & Roti',
+      calories: 450,
+      proteinG: 18.0,
+      carbsG: 62.0,
+      fatG: 12.0,
+      servingLogged: 1.0,
+      servingUnit: 'serving',
+      mealType: 'lunch',
+      loggedAt: now,
+    );
 
-      expect(foodLogId, isPositive);
+    expect(foodLogId, isPositive);
 
-      // Verify Drift SQLite persistence of food log
-      final foodLogs = await database.select(database.foodLogs).get();
-      expect(foodLogs, hasLength(1));
-      expect(foodLogs.first.name, 'Dal Makhani & Roti');
-      expect(foodLogs.first.calories, 450);
-      expect(foodLogs.first.proteinG, 18.0);
-      expect(foodLogs.first.mealType, 'lunch');
+    // Verify Drift SQLite persistence of food log
+    final foodLogs = await database.select(database.foodLogs).get();
+    expect(foodLogs, hasLength(1));
+    expect(foodLogs.first.name, 'Dal Makhani & Roti');
+    expect(foodLogs.first.calories, 450);
+    expect(foodLogs.first.proteinG, 18.0);
+    expect(foodLogs.first.mealType, 'lunch');
 
-      // Trigger revision update to verify UI reactive surface
-      container.read(todayNutritionRevisionProvider.notifier).state++;
-      await tester.pumpAndSettle();
+    // Trigger revision update to verify UI reactive surface
+    container.read(todayNutritionRevisionProvider.notifier).state++;
+    await tester.pumpAndSettle();
 
-      // 3. Perform strength workout session execution & logging (100% offline Drift v22 invariant)
-      final sessionId = await workoutRepo.logSession(
-        name: 'Push Hypertrophy',
-        volume: 1200.0,
-        durationSeconds: 2700,
-        calories: 0,
-        sets: [
-          WorkoutSetsCompanion.insert(
-            sessionId: 1,
-            exerciseName: 'Flat Barbell Bench Press',
-            setNumber: 1,
-            weight: 60.0,
-            reps: 10,
-          ),
-          WorkoutSetsCompanion.insert(
-            sessionId: 1,
-            exerciseName: 'Flat Barbell Bench Press',
-            setNumber: 2,
-            weight: 60.0,
-            reps: 8,
-          ),
-        ],
-        completedAt: now,
-      );
+    // 3. Perform strength workout session execution & logging (100% offline Drift v22 invariant)
+    final sessionId = await workoutRepo.logSession(
+      name: 'Push Hypertrophy',
+      volume: 1200.0,
+      durationSeconds: 2700,
+      calories: 0,
+      sets: [
+        WorkoutSetsCompanion.insert(
+          sessionId: 1,
+          exerciseName: 'Flat Barbell Bench Press',
+          setNumber: 1,
+          weight: 60.0,
+          reps: 10,
+        ),
+        WorkoutSetsCompanion.insert(
+          sessionId: 1,
+          exerciseName: 'Flat Barbell Bench Press',
+          setNumber: 2,
+          weight: 60.0,
+          reps: 8,
+        ),
+      ],
+      completedAt: now,
+    );
 
-      expect(sessionId, isPositive);
+    expect(sessionId, isPositive);
 
-      // Verify Drift SQLite persistence of workout session & sets
-      final sessions = await database.select(database.workoutSessions).get();
-      expect(sessions, hasLength(1));
-      expect(sessions.first.name, 'Push Hypertrophy');
-      expect(sessions.first.totalVolume, 1200.0);
-      expect(sessions.first.durationSeconds, 2700);
+    // Verify Drift SQLite persistence of workout session & sets
+    final sessions = await database.select(database.workoutSessions).get();
+    expect(sessions, hasLength(1));
+    expect(sessions.first.name, 'Push Hypertrophy');
+    expect(sessions.first.totalVolume, 1200.0);
+    expect(sessions.first.durationSeconds, 2700);
 
-      final sets = await database.select(database.workoutSets).get();
-      expect(sets, hasLength(2));
-      expect(sets.first.exerciseName, 'Flat Barbell Bench Press');
-      expect(sets.first.weight, 60.0);
-      expect(sets.first.reps, 10);
-      expect(sets.last.reps, 8);
+    final sets = await database.select(database.workoutSets).get();
+    expect(sets, hasLength(2));
+    expect(sets.first.exerciseName, 'Flat Barbell Bench Press');
+    expect(sets.first.weight, 60.0);
+    expect(sets.first.reps, 10);
+    expect(sets.last.reps, 8);
 
-      await tester.pumpAndSettle();
-      expect(tester.takeException(), isNull);
-    },
-  );
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
 }

@@ -106,10 +106,9 @@ class TodayHydrationCard extends ConsumerWidget {
     final percent = model.progressPercent;
     final ratio = model.clampedProgressRatio;
 
-    final progressText =
-        model.isGoalMet
-            ? 'Goal met! ($percent%)'
-            : '${model.remainingMl} ml remaining ($percent%)';
+    final progressText = model.isGoalMet
+        ? 'Goal met! ($percent%)'
+        : '${model.remainingMl} ml remaining ($percent%)';
 
     return Semantics(
       container: true,
@@ -119,12 +118,13 @@ class TodayHydrationCard extends ConsumerWidget {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: B05Radii.largeRadius,
-          onTap: onTapDetail ??
+          onTap:
+              onTapDetail ??
               () => HydrationDetailSheet.show(
-                    context,
-                    selectedDate,
-                    initialData: model,
-                  ),
+                context,
+                selectedDate,
+                initialData: model,
+              ),
           child: B05Surface(
             tone: B05SurfaceTone.inset,
             padding: const EdgeInsets.all(B05Layout.space16),
@@ -154,14 +154,12 @@ class TodayHydrationCard extends ConsumerWidget {
                           Text(
                             progressText,
                             style: B05Typography.caption(context).copyWith(
-                              color:
-                                  model.isGoalMet
-                                      ? colors.success.indicator
-                                      : colors.textSecondary,
-                              fontWeight:
-                                  model.isGoalMet
-                                      ? FontWeight.w600
-                                      : FontWeight.w400,
+                              color: model.isGoalMet
+                                  ? colors.success.indicator
+                                  : colors.textSecondary,
+                              fontWeight: model.isGoalMet
+                                  ? FontWeight.w600
+                                  : FontWeight.w400,
                             ),
                           ),
                         ],
@@ -187,7 +185,9 @@ class TodayHydrationCard extends ConsumerWidget {
                     child: LinearProgressIndicator(
                       value: ratio,
                       minHeight: 8,
-                      backgroundColor: colors.info.container.withValues(alpha: 0.3),
+                      backgroundColor: colors.info.container.withValues(
+                        alpha: 0.3,
+                      ),
                       valueColor: AlwaysStoppedAnimation<Color>(
                         model.isGoalMet
                             ? colors.success.indicator

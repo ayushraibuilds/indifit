@@ -19,11 +19,10 @@ class FoodCategoryTaxonomy {
   /// Resolves canonical category ID from dish name and optional raw category text.
   /// Deprecated in favor of server-provided category_id from the backend search proxy.
   /// Retained strictly as an offline fallback when disconnected.
-  @Deprecated('Use server-provided category_id; retain strictly as offline fallback')
-  static String resolveCategoryId({
-    required String name,
-    String? rawCategory,
-  }) {
+  @Deprecated(
+    'Use server-provided category_id; retain strictly as offline fallback',
+  )
+  static String resolveCategoryId({required String name, String? rawCategory}) {
     final lower = name.toLowerCase();
     if (lower.contains('biryani') ||
         lower.contains('pulao') ||
@@ -87,7 +86,9 @@ class FoodCategoryTaxonomy {
       if (rc.contains('dal') || rc.contains('pulse') || rc.contains('legume')) {
         return dalLentil;
       }
-      if (rc.contains('sabzi') || rc.contains('vegetable') || rc.contains('salad')) {
+      if (rc.contains('sabzi') ||
+          rc.contains('vegetable') ||
+          rc.contains('salad')) {
         return drySabzi;
       }
       if (rc.contains('curry') || rc.contains('non-veg')) return gravyCurry;
@@ -132,21 +133,31 @@ class FoodCategoryTaxonomy {
       case dalLentil:
       case gravyCurry:
         options.add(const ServingOption(unitName: 'katori', gramWeight: 150.0));
-        options.add(const ServingOption(unitName: 'serving_bowl', gramWeight: 300.0));
+        options.add(
+          const ServingOption(unitName: 'serving_bowl', gramWeight: 300.0),
+        );
         break;
 
       case drySabzi:
         options.add(const ServingOption(unitName: 'katori', gramWeight: 150.0));
-        options.add(const ServingOption(unitName: 'small_katori', gramWeight: 80.0));
+        options.add(
+          const ServingOption(unitName: 'small_katori', gramWeight: 80.0),
+        );
         break;
 
       case stapleRice:
-        options.add(const ServingOption(unitName: 'medium_katori', gramWeight: 200.0));
-        options.add(const ServingOption(unitName: 'serving_bowl', gramWeight: 300.0));
+        options.add(
+          const ServingOption(unitName: 'medium_katori', gramWeight: 200.0),
+        );
+        options.add(
+          const ServingOption(unitName: 'serving_bowl', gramWeight: 300.0),
+        );
         break;
 
       case stapleBread:
-        options.add(const ServingOption(unitName: 'roti_piece', gramWeight: 35.0));
+        options.add(
+          const ServingOption(unitName: 'roti_piece', gramWeight: 35.0),
+        );
         options.add(
           ServingOption(
             unitName: isStuffedParatha ? 'stuffed_paratha' : 'paratha_piece',
@@ -161,7 +172,9 @@ class FoodCategoryTaxonomy {
         break;
 
       case oilFat:
-        options.add(const ServingOption(unitName: 'tablespoon', gramWeight: 15.0));
+        options.add(
+          const ServingOption(unitName: 'tablespoon', gramWeight: 15.0),
+        );
         options.add(const ServingOption(unitName: 'teaspoon', gramWeight: 5.0));
         break;
 

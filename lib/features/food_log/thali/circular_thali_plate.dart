@@ -112,10 +112,7 @@ class ThaliPlatePainter extends CustomPainter {
   final B05SemanticColors colors;
   final NutritionThaliPreview? preview;
 
-  ThaliPlatePainter({
-    required this.colors,
-    this.preview,
-  });
+  ThaliPlatePainter({required this.colors, this.preview});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -316,19 +313,11 @@ class _CenterStaplePlatter extends StatelessWidget {
         child: Column(
           children: [
             Expanded(
-              child: _buildHalfStaple(
-                context,
-                centerStaples[0],
-                isTop: true,
-              ),
+              child: _buildHalfStaple(context, centerStaples[0], isTop: true),
             ),
             Container(height: 1.0, color: colors.border.withValues(alpha: 0.5)),
             Expanded(
-              child: _buildHalfStaple(
-                context,
-                centerStaples[1],
-                isTop: false,
-              ),
+              child: _buildHalfStaple(context, centerStaples[1], isTop: false),
             ),
           ],
         ),
@@ -339,10 +328,12 @@ class _CenterStaplePlatter extends StatelessWidget {
     final stapleSlot = centerStaples.first;
     final item = stapleSlot.item;
     final isSelected = selectedItemId == item.id;
-    final energy = stapleSlot.preview?.calculation.facts['energy']?.point?.value.asDouble;
+    final energy =
+        stapleSlot.preview?.calculation.facts['energy']?.point?.value.asDouble;
     final energyStr = energy != null ? '${energy.round()} kcal' : null;
 
-    final quantityStr = '${item.quantity.amount} ${item.quantity.unit.name == 'piece' ? 'pc' : item.quantity.unit.name}';
+    final quantityStr =
+        '${item.quantity.amount} ${item.quantity.unit.name == 'piece' ? 'pc' : item.quantity.unit.name}';
 
     return B05TouchTarget(
       minWidth: B05Layout.minTouchTarget,
@@ -350,7 +341,8 @@ class _CenterStaplePlatter extends StatelessWidget {
       child: Semantics(
         button: true,
         selected: isSelected,
-        label: '${item.displayLabel ?? stapleSlot.placement.categoryLabel}, ${stapleSlot.placement.categoryLabel}, $quantityStr${energyStr != null ? ", $energyStr" : ""}',
+        label:
+            '${item.displayLabel ?? stapleSlot.placement.categoryLabel}, ${stapleSlot.placement.categoryLabel}, $quantityStr${energyStr != null ? ", $energyStr" : ""}',
         child: GestureDetector(
           key: Key('thali_plate_staple_${item.id}'),
           onTap: () {
@@ -422,7 +414,10 @@ class _CenterStaplePlatter extends StatelessWidget {
                     if (energyStr != null)
                       Container(
                         margin: const EdgeInsets.only(top: 2),
-                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 1,
+                        ),
                         decoration: BoxDecoration(
                           color: colors.surfaceSubtle,
                           borderRadius: B05Radii.smallRadius,
@@ -454,14 +449,17 @@ class _CenterStaplePlatter extends StatelessWidget {
     final colors = context.b05Colors;
     final item = stapleSlot.item;
     final isSelected = selectedItemId == item.id;
-    final energy = stapleSlot.preview?.calculation.facts['energy']?.point?.value.asDouble;
+    final energy =
+        stapleSlot.preview?.calculation.facts['energy']?.point?.value.asDouble;
     final energyStr = energy != null ? '${energy.round()} kcal' : null;
-    final quantityStr = '${item.quantity.amount} ${item.quantity.unit.name == 'piece' ? 'pc' : item.quantity.unit.name}';
+    final quantityStr =
+        '${item.quantity.amount} ${item.quantity.unit.name == 'piece' ? 'pc' : item.quantity.unit.name}';
 
     return Semantics(
       button: true,
       selected: isSelected,
-      label: '${item.displayLabel ?? stapleSlot.placement.categoryLabel}, ${stapleSlot.placement.categoryLabel}, $quantityStr${energyStr != null ? ", $energyStr" : ""}',
+      label:
+          '${item.displayLabel ?? stapleSlot.placement.categoryLabel}, ${stapleSlot.placement.categoryLabel}, $quantityStr${energyStr != null ? ", $energyStr" : ""}',
       child: GestureDetector(
         key: Key('thali_plate_staple_${item.id}'),
         onTap: () => onSelectItem(isSelected ? null : item.id),
@@ -481,7 +479,9 @@ class _CenterStaplePlatter extends StatelessWidget {
                   Icon(
                     stapleSlot.placement.icon,
                     size: 16,
-                    color: isSelected ? colors.action : stapleSlot.placement.tint,
+                    color: isSelected
+                        ? colors.action
+                        : stapleSlot.placement.tint,
                   ),
                   const SizedBox(width: 4),
                   Column(
@@ -565,7 +565,8 @@ class _PositionedKatori extends StatelessWidget {
     switch (slot) {
       case ThaliItemSlot(:final item, :final preview, :final placement):
         final isSelected = selectedItemId == item.id;
-        final energy = preview?.calculation.facts['energy']?.point?.value.asDouble;
+        final energy =
+            preview?.calculation.facts['energy']?.point?.value.asDouble;
         final energyStr = energy != null ? '${energy.round()}' : null;
 
         return B05TouchTarget(
@@ -574,7 +575,8 @@ class _PositionedKatori extends StatelessWidget {
           child: Semantics(
             button: true,
             selected: isSelected,
-            label: '${item.displayLabel ?? placement.categoryLabel}, ${placement.categoryLabel}${energyStr != null ? ", $energyStr calories" : ""}',
+            label:
+                '${item.displayLabel ?? placement.categoryLabel}, ${placement.categoryLabel}${energyStr != null ? ", $energyStr calories" : ""}',
             child: GestureDetector(
               key: Key('thali_plate_katori_${item.id}'),
               onTap: () {
@@ -614,11 +616,7 @@ class _PositionedKatori extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
-                          placement.icon,
-                          size: 18,
-                          color: placement.tint,
-                        ),
+                        Icon(placement.icon, size: 18, color: placement.tint),
                         const SizedBox(height: 2),
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -676,11 +674,7 @@ class _PositionedKatori extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
-                      Icons.add_rounded,
-                      size: 20,
-                      color: colors.action,
-                    ),
+                    Icon(Icons.add_rounded, size: 20, color: colors.action),
                     Text(
                       'Add',
                       style: TextStyle(
@@ -711,43 +705,40 @@ class _PositionedKatori extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: colors.surfaceSubtle,
-                  border: Border.all(
-                    color: colors.border,
-                  width: 1.5,
+                  border: Border.all(color: colors.border, width: 1.5),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.15),
+                      blurRadius: 4,
+                      offset: const Offset(0, 1),
+                    ),
+                  ],
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.15),
-                    blurRadius: 4,
-                    offset: const Offset(0, 1),
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    '+$overflowCount',
-                    style: TextStyle(
-                      color: colors.textPrimary,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      '+$overflowCount',
+                      style: TextStyle(
+                        color: colors.textPrimary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                  Text(
-                    'more',
-                    style: TextStyle(
-                      color: colors.textSecondary,
-                      fontSize: 8.5,
-                      fontWeight: FontWeight.w500,
+                    Text(
+                      'more',
+                      style: TextStyle(
+                        color: colors.textSecondary,
+                        fontSize: 8.5,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
-        ),
-      );
+        );
     }
   }
 }

@@ -46,7 +46,7 @@ abstract class AccountCapability {
 /// Default offline-first guest implementation.
 class NoOpAccountCapability implements AccountCapability {
   const NoOpAccountCapability({String defaultDeviceId = 'local-device'})
-      : _deviceId = defaultDeviceId;
+    : _deviceId = defaultDeviceId;
 
   final String _deviceId;
 

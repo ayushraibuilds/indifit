@@ -506,10 +506,7 @@ class _OccurrenceActionsSheetState
             if (isStartable) ...[
               if (!widget.scheduleAdjustmentsOnly)
                 ListTile(
-                  leading: Icon(
-                    Icons.play_arrow_rounded,
-                    color: colors.action,
-                  ),
+                  leading: Icon(Icons.play_arrow_rounded, color: colors.action),
                   title: Text(
                     occ.status == 'inProgress'
                         ? 'Resume Workout'

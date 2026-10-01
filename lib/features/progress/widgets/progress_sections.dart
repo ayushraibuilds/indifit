@@ -15,7 +15,8 @@ import 'progress_view_models.dart';
 /// Extracted verbatim from `progress_screen.dart`; behavior unchanged.
 
 class ProgressHighlights extends StatelessWidget {
-  const ProgressHighlights({super.key, 
+  const ProgressHighlights({
+    super.key,
     required this.snapshot,
     required this.onViewTrainingHistory,
     required this.onViewStrengthHistory,
@@ -56,9 +57,7 @@ class ProgressHighlights extends StatelessWidget {
       );
     }
 
-    final strength = selectStrengthHighlight(
-      snapshot.strengthSets ?? const [],
-    );
+    final strength = selectStrengthHighlight(snapshot.strengthSets ?? const []);
     if (strength != null) {
       highlights.add(
         ProgressHighlight(
@@ -247,7 +246,8 @@ class ProgressHighlightTile extends StatelessWidget {
 }
 
 class TrainingConsistencySection extends StatelessWidget {
-  const TrainingConsistencySection({super.key, 
+  const TrainingConsistencySection({
+    super.key,
     required this.snapshot,
     required this.onViewHistory,
   });
@@ -347,7 +347,8 @@ class TrainingConsistencySection extends StatelessWidget {
 }
 
 class WeekCalendarStrip extends StatelessWidget {
-  const WeekCalendarStrip({super.key, 
+  const WeekCalendarStrip({
+    super.key,
     required this.todayLocalDate,
     required this.timezoneId,
     required this.trainedDates,
@@ -456,7 +457,11 @@ class WeekCalendarStrip extends StatelessWidget {
 }
 
 class StrengthSection extends StatelessWidget {
-  const StrengthSection({super.key, required this.snapshot, required this.onViewHistory});
+  const StrengthSection({
+    super.key,
+    required this.snapshot,
+    required this.onViewHistory,
+  });
 
   final ProgressDashboardSnapshot snapshot;
   final void Function(String name, String stableExerciseId) onViewHistory;
@@ -618,7 +623,8 @@ class StrengthEmptySection extends StatelessWidget {
 }
 
 class NutritionAdherenceSection extends StatelessWidget {
-  const NutritionAdherenceSection({super.key, 
+  const NutritionAdherenceSection({
+    super.key,
     required this.summary,
     required this.fitnessGoalLabel,
     required this.onViewTargets,
@@ -681,7 +687,8 @@ class NutritionAdherenceSection extends StatelessWidget {
 }
 
 class NutritionHeadline extends StatelessWidget {
-  const NutritionHeadline({super.key, 
+  const NutritionHeadline({
+    super.key,
     required this.summary,
     required this.completeDays,
     required this.hasRichHistory,
@@ -761,7 +768,8 @@ class NutritionHeadline extends StatelessWidget {
 }
 
 class NutritionTargetContext extends StatelessWidget {
-  const NutritionTargetContext({super.key, 
+  const NutritionTargetContext({
+    super.key,
     required this.summary,
     required this.fitnessGoalLabel,
     required this.onViewTargets,
@@ -967,7 +975,11 @@ class NutritionWeekStrip extends StatelessWidget {
 }
 
 class TrainingVolumeSection extends StatelessWidget {
-  const TrainingVolumeSection({super.key, required this.snapshot, this.units = 'kg'});
+  const TrainingVolumeSection({
+    super.key,
+    required this.snapshot,
+    this.units = 'kg',
+  });
 
   final ProgressDashboardSnapshot snapshot;
   final String units;
@@ -1089,7 +1101,8 @@ class MuscleBalanceSection extends StatelessWidget {
 }
 
 class MeasurementsSection extends StatelessWidget {
-  const MeasurementsSection({super.key, 
+  const MeasurementsSection({
+    super.key,
     required this.measurements,
     required this.onLogMeasurement,
     required this.onViewHistory,
@@ -1189,4 +1202,3 @@ class ProgressSectionHeading extends StatelessWidget {
     );
   }
 }
-

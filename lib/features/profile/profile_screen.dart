@@ -76,11 +76,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       _sourceGoal = p.userGoal;
       _sourceActivity = p.userActivityLevel;
       _sourceEquipment = p.equipmentAccess;
-      _selectedSex = _knownOr(
-        p.userSex,
-        const {'male', 'female', 'other'},
+      _selectedSex = _knownOr(p.userSex, const {
         'male',
-      );
+        'female',
+        'other',
+      }, 'male');
       _selectedGoal = _knownOr(p.userGoal, const {
         'lose',
         'maintain',

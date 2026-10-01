@@ -22,12 +22,12 @@ class _FakeAuthenticatedAccount implements AccountCapability {
 
   @override
   Stream<AccountSession?> get onSessionChanged => Stream.value(
-        const AccountSession(
-          userId: 'user-apple-sub-12345',
-          deviceId: 'iPhone-15-Pro-Max',
-          displayName: 'Test User',
-        ),
-      );
+    const AccountSession(
+      userId: 'user-apple-sub-12345',
+      deviceId: 'iPhone-15-Pro-Max',
+      displayName: 'Test User',
+    ),
+  );
 
   @override
   Future<void> signOut() async {}
@@ -104,117 +104,133 @@ void main() {
       expect(status.displayMessage, 'Up to date');
     });
 
-    test('Fingerprint deduplication skips redundant upload when data is unchanged', () async {
-      final scope = registerTestDatabaseScope();
-      final db = scope.create();
+    test(
+      'Fingerprint deduplication skips redundant upload when data is unchanged',
+      () async {
+        final scope = registerTestDatabaseScope();
+        final db = scope.create();
 
-      final apiClient = InMemoryCloudBackupApiClient();
-      final network = TestableNetworkCapability(initialConnected: true);
-      final outbox = InMemoryOutboxRepository();
+        final apiClient = InMemoryCloudBackupApiClient();
+        final network = TestableNetworkCapability(initialConnected: true);
+        final outbox = InMemoryOutboxRepository();
 
-      final service = CloudBackupService(
-        db: db,
-        prefs: prefs,
-        account: _FakeAuthenticatedAccount(),
-        network: network,
-        outbox: outbox,
-        apiClient: apiClient,
-        kmsSecret: 'kms-wrapping-key-sub-12345',
-      );
+        final service = CloudBackupService(
+          db: db,
+          prefs: prefs,
+          account: _FakeAuthenticatedAccount(),
+          network: network,
+          outbox: outbox,
+          apiClient: apiClient,
+          kmsSecret: 'kms-wrapping-key-sub-12345',
+        );
 
-      // First upload
-      await service.createAndUploadSnapshot(isManual: true);
-      expect((await apiClient.listSnapshots()).totalCount, 1);
+        // First upload
+        await service.createAndUploadSnapshot(isManual: true);
+        expect((await apiClient.listSnapshots()).totalCount, 1);
 
-      // Second upload without changing the database
-      final secondSuccess = await service.createAndUploadSnapshot(isManual: true);
-      expect(secondSuccess, isTrue);
+        // Second upload without changing the database
+        final secondSuccess = await service.createAndUploadSnapshot(
+          isManual: true,
+        );
+        expect(secondSuccess, isTrue);
 
-      // Count in API client should still be exactly 1! (Skipped upload)
-      expect((await apiClient.listSnapshots()).totalCount, 1);
-    });
+        // Count in API client should still be exactly 1! (Skipped upload)
+        expect((await apiClient.listSnapshots()).totalCount, 1);
+      },
+    );
 
-    test('Background backup queues into Outbox and dispatches asynchronously', () async {
-      final scope = registerTestDatabaseScope();
-      final db = scope.create();
+    test(
+      'Background backup queues into Outbox and dispatches asynchronously',
+      () async {
+        final scope = registerTestDatabaseScope();
+        final db = scope.create();
 
-      final apiClient = InMemoryCloudBackupApiClient();
-      final network = TestableNetworkCapability(initialConnected: true);
-      final outbox = InMemoryOutboxRepository();
-      addTearDown(outbox.dispose);
+        final apiClient = InMemoryCloudBackupApiClient();
+        final network = TestableNetworkCapability(initialConnected: true);
+        final outbox = InMemoryOutboxRepository();
+        addTearDown(outbox.dispose);
 
-      final service = CloudBackupService(
-        db: db,
-        prefs: prefs,
-        account: _FakeAuthenticatedAccount(),
-        network: network,
-        outbox: outbox,
-        apiClient: apiClient,
-        kmsSecret: 'kms-wrapping-key-sub-12345',
-      );
+        final service = CloudBackupService(
+          db: db,
+          prefs: prefs,
+          account: _FakeAuthenticatedAccount(),
+          network: network,
+          outbox: outbox,
+          apiClient: apiClient,
+          kmsSecret: 'kms-wrapping-key-sub-12345',
+        );
 
-      // Trigger background backup (isManual: false)
-      final success = await service.createAndUploadSnapshot(isManual: false);
-      expect(success, isTrue);
+        // Trigger background backup (isManual: false)
+        final success = await service.createAndUploadSnapshot(isManual: false);
+        expect(success, isTrue);
 
-      // API client has not received it yet
-      expect((await apiClient.listSnapshots()).totalCount, 0);
+        // API client has not received it yet
+        expect((await apiClient.listSnapshots()).totalCount, 0);
 
-      // Outbox contains 1 pending backup operation
-      final pending = await outbox.getPendingOperations();
-      expect(pending, hasLength(1));
-      expect(pending.first.domain, OutboxDomain.backup);
-      expect(pending.first.state, OutboxState.pending);
+        // Outbox contains 1 pending backup operation
+        final pending = await outbox.getPendingOperations();
+        expect(pending, hasLength(1));
+        expect(pending.first.domain, OutboxDomain.backup);
+        expect(pending.first.state, OutboxState.pending);
 
-      // Status reflects pending update
-      var status = await service.getStatus();
-      expect(status.status, ConnectedStatus.pending);
-      expect(status.pendingOperationsCount, 1);
-      expect(status.displayMessage, '1 update waiting to sync');
+        // Status reflects pending update
+        var status = await service.getStatus();
+        expect(status.status, ConnectedStatus.pending);
+        expect(status.pendingOperationsCount, 1);
+        expect(status.displayMessage, '1 update waiting to sync');
 
-      // Dispatch the outbox operation
-      final processed = await service.processOutboxBackup(pending.first);
-      expect(processed, isTrue);
+        // Dispatch the outbox operation
+        final processed = await service.processOutboxBackup(pending.first);
+        expect(processed, isTrue);
 
-      // Outbox operation is now succeeded
-      final op = await outbox.getOperationById(pending.first.operationId);
-      expect(op!.state, OutboxState.succeeded);
+        // Outbox operation is now succeeded
+        final op = await outbox.getOperationById(pending.first.operationId);
+        expect(op!.state, OutboxState.succeeded);
 
-      // API client now has the snapshot
-      expect((await apiClient.listSnapshots()).totalCount, 1);
+        // API client now has the snapshot
+        expect((await apiClient.listSnapshots()).totalCount, 1);
 
-      // Status transitions to synced
-      status = await service.getStatus();
-      expect(status.status, ConnectedStatus.synced);
-    });
+        // Status transitions to synced
+        status = await service.getStatus();
+        expect(status.status, ConnectedStatus.synced);
+      },
+    );
 
-    test('Offline state queues in outbox and reports offline status without blocking', () async {
-      final scope = registerTestDatabaseScope();
-      final db = scope.create();
+    test(
+      'Offline state queues in outbox and reports offline status without blocking',
+      () async {
+        final scope = registerTestDatabaseScope();
+        final db = scope.create();
 
-      final apiClient = InMemoryCloudBackupApiClient();
-      final network = TestableNetworkCapability(initialConnected: false); // Disconnected!
-      final outbox = InMemoryOutboxRepository();
-      addTearDown(outbox.dispose);
+        final apiClient = InMemoryCloudBackupApiClient();
+        final network = TestableNetworkCapability(
+          initialConnected: false,
+        ); // Disconnected!
+        final outbox = InMemoryOutboxRepository();
+        addTearDown(outbox.dispose);
 
-      final service = CloudBackupService(
-        db: db,
-        prefs: prefs,
-        account: _FakeAuthenticatedAccount(),
-        network: network,
-        outbox: outbox,
-        apiClient: apiClient,
-        kmsSecret: 'kms-wrapping-key-sub-12345',
-      );
+        final service = CloudBackupService(
+          db: db,
+          prefs: prefs,
+          account: _FakeAuthenticatedAccount(),
+          network: network,
+          outbox: outbox,
+          apiClient: apiClient,
+          kmsSecret: 'kms-wrapping-key-sub-12345',
+        );
 
-      await service.createAndUploadSnapshot(isManual: false);
+        await service.createAndUploadSnapshot(isManual: false);
 
-      final status = await service.getStatus();
-      expect(status.status, ConnectedStatus.offline);
-      expect(status.pendingOperationsCount, 1);
-      expect(status.canPerformLocalActions, isTrue);
-      expect(status.displayMessage, 'Offline — updates will sync when connected');
-    });
+        final status = await service.getStatus();
+        expect(status.status, ConnectedStatus.offline);
+        expect(status.pendingOperationsCount, 1);
+        expect(status.canPerformLocalActions, isTrue);
+        expect(
+          status.displayMessage,
+          'Offline — updates will sync when connected',
+        );
+      },
+    );
 
     test('Unauthenticated user fails closed gracefully', () async {
       final scope = registerTestDatabaseScope();
@@ -243,63 +259,65 @@ void main() {
       expect(await outbox.getPendingOperations(), isEmpty);
     });
 
-    test('Dispatch respects sign-out and wifi policy without losing queued work', () async {
-      final scope = registerTestDatabaseScope();
-      final db = scope.create();
+    test(
+      'Dispatch respects sign-out and wifi policy without losing queued work',
+      () async {
+        final scope = registerTestDatabaseScope();
+        final db = scope.create();
 
-      final apiClient = InMemoryCloudBackupApiClient();
-      final network = TestableNetworkCapability(initialConnected: true);
-      final outbox = InMemoryOutboxRepository();
-      addTearDown(outbox.dispose);
+        final apiClient = InMemoryCloudBackupApiClient();
+        final network = TestableNetworkCapability(initialConnected: true);
+        final outbox = InMemoryOutboxRepository();
+        addTearDown(outbox.dispose);
 
-      Future<CloudBackupService> buildService({
-        required AccountCapability account,
-        required NetworkCapability networkCapability,
-      }) async =>
-          CloudBackupService(
-            db: db,
-            prefs: prefs,
-            account: account,
-            network: networkCapability,
-            outbox: outbox,
-            apiClient: apiClient,
-            kmsSecret: 'kms-wrapping-key-sub-12345',
-          );
+        Future<CloudBackupService> buildService({
+          required AccountCapability account,
+          required NetworkCapability networkCapability,
+        }) async => CloudBackupService(
+          db: db,
+          prefs: prefs,
+          account: account,
+          network: networkCapability,
+          outbox: outbox,
+          apiClient: apiClient,
+          kmsSecret: 'kms-wrapping-key-sub-12345',
+        );
 
-      // Queue one snapshot while authenticated and online.
-      final online = await buildService(
-        account: _FakeAuthenticatedAccount(),
-        networkCapability: network,
-      );
-      expect(await online.createAndUploadSnapshot(isManual: false), isTrue);
-      var pending = await outbox.getPendingOperations();
-      expect(pending, hasLength(1));
+        // Queue one snapshot while authenticated and online.
+        final online = await buildService(
+          account: _FakeAuthenticatedAccount(),
+          networkCapability: network,
+        );
+        expect(await online.createAndUploadSnapshot(isManual: false), isTrue);
+        var pending = await outbox.getPendingOperations();
+        expect(pending, hasLength(1));
 
-      // Sign-out after enqueue: dispatch refuses but keeps the op queued
-      // (retryable on next sign-in), instead of permanent-failing it.
-      final guest = await buildService(
-        account: const NoOpAccountCapability(),
-        networkCapability: network,
-      );
-      expect(await guest.processOutboxBackup(pending.first), isFalse);
-      pending = await outbox.getPendingOperations();
-      expect(pending, hasLength(1));
-      expect(pending.first.state, OutboxState.pending);
-      expect((await apiClient.listSnapshots()).totalCount, 0);
+        // Sign-out after enqueue: dispatch refuses but keeps the op queued
+        // (retryable on next sign-in), instead of permanent-failing it.
+        final guest = await buildService(
+          account: const NoOpAccountCapability(),
+          networkCapability: network,
+        );
+        expect(await guest.processOutboxBackup(pending.first), isFalse);
+        pending = await outbox.getPendingOperations();
+        expect(pending, hasLength(1));
+        expect(pending.first.state, OutboxState.pending);
+        expect((await apiClient.listSnapshots()).totalCount, 0);
 
-      // Wifi-only policy on cellular: same leave-queued behavior.
-      await prefs.setBool(CloudBackupService.wifiOnlyPrefKey, true);
-      network.setConnected(true, NetworkTransportType.cellular);
-      expect(await online.processOutboxBackup(pending.first), isFalse);
-      expect(await outbox.getPendingOperations(), hasLength(1));
+        // Wifi-only policy on cellular: same leave-queued behavior.
+        await prefs.setBool(CloudBackupService.wifiOnlyPrefKey, true);
+        network.setConnected(true, NetworkTransportType.cellular);
+        expect(await online.processOutboxBackup(pending.first), isFalse);
+        expect(await outbox.getPendingOperations(), hasLength(1));
 
-      // Back on wifi: dispatch succeeds and records the content fingerprint.
-      network.setConnected(true, NetworkTransportType.wifi);
-      expect(await online.processOutboxBackup(pending.first), isTrue);
-      expect(await outbox.getPendingOperations(), isEmpty);
-      expect((await apiClient.listSnapshots()).totalCount, 1);
-      expect(online.lastFingerprint, isNotNull);
-      await prefs.remove(CloudBackupService.wifiOnlyPrefKey);
-    });
+        // Back on wifi: dispatch succeeds and records the content fingerprint.
+        network.setConnected(true, NetworkTransportType.wifi);
+        expect(await online.processOutboxBackup(pending.first), isTrue);
+        expect(await outbox.getPendingOperations(), isEmpty);
+        expect((await apiClient.listSnapshots()).totalCount, 1);
+        expect(online.lastFingerprint, isNotNull);
+        await prefs.remove(CloudBackupService.wifiOnlyPrefKey);
+      },
+    );
   });
 }

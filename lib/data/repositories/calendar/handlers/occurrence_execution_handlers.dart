@@ -8,13 +8,19 @@ import '../../calendar_repository.dart';
 import 'occurrence_command_handler.dart';
 
 class StartOccurrenceHandler
-    implements OccurrenceCommandHandler<StartOccurrenceCommand, OccurrenceMutationResult> {
+    implements
+        OccurrenceCommandHandler<
+          StartOccurrenceCommand,
+          OccurrenceMutationResult
+        > {
   final CalendarRepository repo;
 
   const StartOccurrenceHandler(this.repo);
 
   @override
-  Future<OccurrenceMutationResult> handle(StartOccurrenceCommand command) async {
+  Future<OccurrenceMutationResult> handle(
+    StartOccurrenceCommand command,
+  ) async {
     repo.validator.validateCommand(command);
     return repo.db.transaction(() async {
       final existing = await repo.existingEvent(
@@ -118,13 +124,19 @@ class StartOccurrenceHandler
 }
 
 class DiscardStartedOccurrenceHandler
-    implements OccurrenceCommandHandler<DiscardStartedOccurrenceCommand, OccurrenceMutationResult> {
+    implements
+        OccurrenceCommandHandler<
+          DiscardStartedOccurrenceCommand,
+          OccurrenceMutationResult
+        > {
   final CalendarRepository repo;
 
   const DiscardStartedOccurrenceHandler(this.repo);
 
   @override
-  Future<OccurrenceMutationResult> handle(DiscardStartedOccurrenceCommand command) async {
+  Future<OccurrenceMutationResult> handle(
+    DiscardStartedOccurrenceCommand command,
+  ) async {
     repo.validator.validateCommand(command);
     if (command.expectedStatus != OccurrenceStatus.inProgress) {
       throw const InvalidOccurrenceTransitionException(
@@ -164,7 +176,10 @@ class DiscardStartedOccurrenceHandler
                 ..where(
                   (table) =>
                       table.occurrenceId.equals(occurrence.id) &
-                      table.eventType.isIn(['customized', 'customizationReset']),
+                      table.eventType.isIn([
+                        'customized',
+                        'customizationReset',
+                      ]),
                 )
                 ..orderBy([
                   (table) => OrderingTerm(
@@ -228,22 +243,26 @@ class DiscardStartedOccurrenceHandler
 }
 
 class CompleteOccurrenceHandler
-    implements OccurrenceCommandHandler<CompleteOccurrenceCommand, OccurrenceMutationResult> {
+    implements
+        OccurrenceCommandHandler<
+          CompleteOccurrenceCommand,
+          OccurrenceMutationResult
+        > {
   final CalendarRepository repo;
 
   const CompleteOccurrenceHandler(this.repo);
 
   @override
-  Future<OccurrenceMutationResult> handle(CompleteOccurrenceCommand command) async {
+  Future<OccurrenceMutationResult> handle(
+    CompleteOccurrenceCommand command,
+  ) async {
     repo.validator.validateCommand(command);
     if (command.expectedStatus != OccurrenceStatus.inProgress) {
       throw const InvalidOccurrenceTransitionException(
         'Only an in-progress occurrence can complete.',
       );
     }
-    return repo.db.transaction(
-      () => handleInTransaction(command),
-    );
+    return repo.db.transaction(() => handleInTransaction(command));
   }
 
   Future<OccurrenceMutationResult> handleInTransaction(

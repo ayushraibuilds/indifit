@@ -45,10 +45,10 @@ class ServingOption {
   final bool isDefault;
 
   Map<String, dynamic> toJson() => {
-        'unitName': unitName,
-        'gramWeight': gramWeight,
-        'isDefault': isDefault,
-      };
+    'unitName': unitName,
+    'gramWeight': gramWeight,
+    'isDefault': isDefault,
+  };
 
   factory ServingOption.fromJson(Map<String, dynamic> json) {
     return ServingOption(
@@ -89,12 +89,12 @@ class FoodProvenance {
   final DateTime fetchedAtUtc;
 
   Map<String, dynamic> toJson() => {
-        'provider': provider.name,
-        'attributionText': attributionText,
-        'license': license,
-        if (sourceUrl != null) 'sourceUrl': sourceUrl,
-        'fetchedAtUtc': fetchedAtUtc.toIso8601String(),
-      };
+    'provider': provider.name,
+    'attributionText': attributionText,
+    'license': license,
+    if (sourceUrl != null) 'sourceUrl': sourceUrl,
+    'fetchedAtUtc': fetchedAtUtc.toIso8601String(),
+  };
 
   factory FoodProvenance.fromJson(Map<String, dynamic> json) {
     final providerRaw = json['provider'];
@@ -103,7 +103,9 @@ class FoodProvenance {
       if (p.name == providerRaw) provider = p;
     }
     if (provider == null) {
-      throw FormatException('Unknown FoodCatalogProvider: $providerRaw. Refusing corrupt cache row.');
+      throw FormatException(
+        'Unknown FoodCatalogProvider: $providerRaw. Refusing corrupt cache row.',
+      );
     }
     return FoodProvenance(
       provider: provider,
@@ -189,14 +191,16 @@ class RemoteFoodCandidate {
       proteinPer100g: proteinPer100g ?? this.proteinPer100g,
       carbsPer100g: carbsPer100g ?? this.carbsPer100g,
       fatPer100g: fatPer100g ?? this.fatPer100g,
-      fiberPer100g:
-          fiberPer100g != null ? fiberPer100g() : this.fiberPer100g,
-      sodiumMgPer100g:
-          sodiumMgPer100g != null ? sodiumMgPer100g() : this.sodiumMgPer100g,
-      addedSugarPer100g:
-          addedSugarPer100g != null ? addedSugarPer100g() : this.addedSugarPer100g,
-      saturatedFatPer100g:
-          saturatedFatPer100g != null ? saturatedFatPer100g() : this.saturatedFatPer100g,
+      fiberPer100g: fiberPer100g != null ? fiberPer100g() : this.fiberPer100g,
+      sodiumMgPer100g: sodiumMgPer100g != null
+          ? sodiumMgPer100g()
+          : this.sodiumMgPer100g,
+      addedSugarPer100g: addedSugarPer100g != null
+          ? addedSugarPer100g()
+          : this.addedSugarPer100g,
+      saturatedFatPer100g: saturatedFatPer100g != null
+          ? saturatedFatPer100g()
+          : this.saturatedFatPer100g,
       servingOptions: servingOptions ?? this.servingOptions,
       provenance: provenance ?? this.provenance,
       verificationLevel: verificationLevel ?? this.verificationLevel,
@@ -230,8 +234,9 @@ class RemoteFoodCandidate {
   /// Validates reported calories against Atwater expected calories within 20% variance.
   bool get isMacroBalanced {
     final diff = (caloriesPer100g - expectedCaloriesPer100g).abs();
-    final allowedVariance =
-        caloriesPer100g * 0.20 > 15.0 ? caloriesPer100g * 0.20 : 15.0;
+    final allowedVariance = caloriesPer100g * 0.20 > 15.0
+        ? caloriesPer100g * 0.20
+        : 15.0;
     return diff <= allowedVariance;
   }
 
@@ -275,31 +280,32 @@ class RemoteFoodCandidate {
       if (fiberPer100g != null) 'fiber': fiberPer100g! * factor,
       if (sodiumMgPer100g != null) 'sodium': sodiumMgPer100g! * factor,
       if (addedSugarPer100g != null) 'added_sugar': addedSugarPer100g! * factor,
-      if (saturatedFatPer100g != null) 'saturated_fat': saturatedFatPer100g! * factor,
+      if (saturatedFatPer100g != null)
+        'saturated_fat': saturatedFatPer100g! * factor,
     };
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'provider': provider.name,
-        if (providerId != null) 'providerId': providerId,
-        'name': name,
-        if (nameHindi != null) 'nameHindi': nameHindi,
-        if (brand != null) 'brand': brand,
-        if (barcode != null) 'barcode': barcode,
-        'category': category,
-        'caloriesPer100g': caloriesPer100g,
-        'proteinPer100g': proteinPer100g,
-        'carbsPer100g': carbsPer100g,
-        'fatPer100g': fatPer100g,
-        if (fiberPer100g != null) 'fiberPer100g': fiberPer100g,
-        if (sodiumMgPer100g != null) 'sodiumMgPer100g': sodiumMgPer100g,
-        if (addedSugarPer100g != null) 'addedSugarPer100g': addedSugarPer100g,
-        if (saturatedFatPer100g != null) 'saturatedFatPer100g': saturatedFatPer100g,
-        'servingOptions': servingOptions.map((s) => s.toJson()).toList(),
-        'provenance': provenance.toJson(),
-        'verificationLevel': verificationLevel.name,
-      };
+    'id': id,
+    'provider': provider.name,
+    if (providerId != null) 'providerId': providerId,
+    'name': name,
+    if (nameHindi != null) 'nameHindi': nameHindi,
+    if (brand != null) 'brand': brand,
+    if (barcode != null) 'barcode': barcode,
+    'category': category,
+    'caloriesPer100g': caloriesPer100g,
+    'proteinPer100g': proteinPer100g,
+    'carbsPer100g': carbsPer100g,
+    'fatPer100g': fatPer100g,
+    if (fiberPer100g != null) 'fiberPer100g': fiberPer100g,
+    if (sodiumMgPer100g != null) 'sodiumMgPer100g': sodiumMgPer100g,
+    if (addedSugarPer100g != null) 'addedSugarPer100g': addedSugarPer100g,
+    if (saturatedFatPer100g != null) 'saturatedFatPer100g': saturatedFatPer100g,
+    'servingOptions': servingOptions.map((s) => s.toJson()).toList(),
+    'provenance': provenance.toJson(),
+    'verificationLevel': verificationLevel.name,
+  };
 
   factory RemoteFoodCandidate.fromJson(Map<String, dynamic> json) {
     final providerRaw = json['provider'];
@@ -308,7 +314,9 @@ class RemoteFoodCandidate {
       if (p.name == providerRaw) provider = p;
     }
     if (provider == null) {
-      throw FormatException('Unknown FoodCatalogProvider: $providerRaw. Refusing corrupt cache row.');
+      throw FormatException(
+        'Unknown FoodCatalogProvider: $providerRaw. Refusing corrupt cache row.',
+      );
     }
     final verificationRaw = json['verificationLevel'];
     FoodVerificationLevel? verification;
@@ -316,7 +324,9 @@ class RemoteFoodCandidate {
       if (v.name == verificationRaw) verification = v;
     }
     if (verification == null) {
-      throw FormatException('Unknown FoodVerificationLevel: $verificationRaw. Refusing corrupt cache row.');
+      throw FormatException(
+        'Unknown FoodVerificationLevel: $verificationRaw. Refusing corrupt cache row.',
+      );
     }
     return RemoteFoodCandidate(
       id: json['id'] as String,
@@ -364,12 +374,12 @@ class FoodSearchPage {
   final String query;
 
   Map<String, dynamic> toJson() => {
-        'items': items.map((i) => i.toJson()).toList(),
-        'totalCount': totalCount,
-        'page': page,
-        'hasMore': hasMore,
-        'query': query,
-      };
+    'items': items.map((i) => i.toJson()).toList(),
+    'totalCount': totalCount,
+    'page': page,
+    'hasMore': hasMore,
+    'query': query,
+  };
 
   factory FoodSearchPage.fromJson(Map<String, dynamic> json) {
     return FoodSearchPage(

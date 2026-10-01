@@ -489,25 +489,20 @@ class CalendarRepository {
     RescheduleOccurrenceCommand command,
   ) => _dispatcher.dispatch(command);
 
-  Future<OccurrenceMutationResult> skip(
-    SkipOccurrenceCommand command,
-  ) => _dispatcher.dispatch(command);
+  Future<OccurrenceMutationResult> skip(SkipOccurrenceCommand command) =>
+      _dispatcher.dispatch(command);
 
-  Future<OccurrenceMutationResult> cancel(
-    CancelOccurrenceCommand command,
-  ) => _dispatcher.dispatch(command);
+  Future<OccurrenceMutationResult> cancel(CancelOccurrenceCommand command) =>
+      _dispatcher.dispatch(command);
 
-  Future<OccurrenceMutationResult> restore(
-    RestoreOccurrenceCommand command,
-  ) => _dispatcher.dispatch(command);
+  Future<OccurrenceMutationResult> restore(RestoreOccurrenceCommand command) =>
+      _dispatcher.dispatch(command);
 
-  Future<RepeatOccurrenceResult> repeat(
-    RepeatOccurrenceCommand command,
-  ) => _dispatcher.dispatch(command);
+  Future<RepeatOccurrenceResult> repeat(RepeatOccurrenceCommand command) =>
+      _dispatcher.dispatch(command);
 
-  Future<OccurrenceMutationResult> start(
-    StartOccurrenceCommand command,
-  ) => _dispatcher.dispatch(command);
+  Future<OccurrenceMutationResult> start(StartOccurrenceCommand command) =>
+      _dispatcher.dispatch(command);
 
   Future<OccurrenceMutationResult> discardStarted(
     DiscardStartedOccurrenceCommand command,
@@ -646,8 +641,10 @@ class CalendarRepository {
         executionContext: executionContext,
       );
     }
-    final snapshot =
-        validator.decodeAndValidateOccurrenceSnapshot(stored, occurrence);
+    final snapshot = validator.decodeAndValidateOccurrenceSnapshot(
+      stored,
+      occurrence,
+    );
     if (executionContext != null) {
       snapshot['personalExerciseContext'] = executionContext;
       return jsonEncode(snapshot);

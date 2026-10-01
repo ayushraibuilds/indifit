@@ -7,13 +7,19 @@ import '../../calendar_repository.dart';
 import 'occurrence_command_handler.dart';
 
 class RescheduleOccurrenceHandler
-    implements OccurrenceCommandHandler<RescheduleOccurrenceCommand, OccurrenceMutationResult> {
+    implements
+        OccurrenceCommandHandler<
+          RescheduleOccurrenceCommand,
+          OccurrenceMutationResult
+        > {
   final CalendarRepository repo;
 
   const RescheduleOccurrenceHandler(this.repo);
 
   @override
-  Future<OccurrenceMutationResult> handle(RescheduleOccurrenceCommand command) async {
+  Future<OccurrenceMutationResult> handle(
+    RescheduleOccurrenceCommand command,
+  ) async {
     repo.validator.validateCommand(command);
     final newDate = repo.dates.normalizeLocalDate(command.effectiveLocalDate);
     repo.dates.validateTimezone(command.effectiveTimezoneId);
@@ -81,7 +87,11 @@ class RescheduleOccurrenceHandler
 }
 
 class SkipOccurrenceHandler
-    implements OccurrenceCommandHandler<SkipOccurrenceCommand, OccurrenceMutationResult> {
+    implements
+        OccurrenceCommandHandler<
+          SkipOccurrenceCommand,
+          OccurrenceMutationResult
+        > {
   final CalendarRepository repo;
 
   const SkipOccurrenceHandler(this.repo);
@@ -144,13 +154,19 @@ class SkipOccurrenceHandler
 }
 
 class CancelOccurrenceHandler
-    implements OccurrenceCommandHandler<CancelOccurrenceCommand, OccurrenceMutationResult> {
+    implements
+        OccurrenceCommandHandler<
+          CancelOccurrenceCommand,
+          OccurrenceMutationResult
+        > {
   final CalendarRepository repo;
 
   const CancelOccurrenceHandler(this.repo);
 
   @override
-  Future<OccurrenceMutationResult> handle(CancelOccurrenceCommand command) async {
+  Future<OccurrenceMutationResult> handle(
+    CancelOccurrenceCommand command,
+  ) async {
     repo.validator.validateCommand(command);
     return repo.db.transaction(() async {
       final existing = await repo.existingEvent(
@@ -203,13 +219,19 @@ class CancelOccurrenceHandler
 }
 
 class RestoreOccurrenceHandler
-    implements OccurrenceCommandHandler<RestoreOccurrenceCommand, OccurrenceMutationResult> {
+    implements
+        OccurrenceCommandHandler<
+          RestoreOccurrenceCommand,
+          OccurrenceMutationResult
+        > {
   final CalendarRepository repo;
 
   const RestoreOccurrenceHandler(this.repo);
 
   @override
-  Future<OccurrenceMutationResult> handle(RestoreOccurrenceCommand command) async {
+  Future<OccurrenceMutationResult> handle(
+    RestoreOccurrenceCommand command,
+  ) async {
     repo.validator.validateCommand(command);
     if (command.expectedStatus != OccurrenceStatus.skipped &&
         command.expectedStatus != OccurrenceStatus.cancelled) {
@@ -273,7 +295,11 @@ class RestoreOccurrenceHandler
 }
 
 class RepeatOccurrenceHandler
-    implements OccurrenceCommandHandler<RepeatOccurrenceCommand, RepeatOccurrenceResult> {
+    implements
+        OccurrenceCommandHandler<
+          RepeatOccurrenceCommand,
+          RepeatOccurrenceResult
+        > {
   final CalendarRepository repo;
 
   const RepeatOccurrenceHandler(this.repo);

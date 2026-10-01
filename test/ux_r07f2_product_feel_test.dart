@@ -120,8 +120,6 @@ void main() {
     });
   });
 
-
-
   group('R07F-2 — Feedback timing and duplicate protection', () {
     final emittedEvents = <IndiFitHapticType>[];
 

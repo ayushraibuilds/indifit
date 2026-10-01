@@ -48,7 +48,9 @@ class ThaliComponentPickerSheet extends StatefulWidget {
 
 class _ThaliComponentPickerSheetState extends State<ThaliComponentPickerSheet> {
   final TextEditingController _searchController = TextEditingController();
-  final TextEditingController _amountController = TextEditingController(text: '100');
+  final TextEditingController _amountController = TextEditingController(
+    text: '100',
+  );
 
   late NutritionThaliState _currentState;
   void Function()? _removeListener;
@@ -132,10 +134,7 @@ class _ThaliComponentPickerSheetState extends State<ThaliComponentPickerSheet> {
       } else {
         quantity = Quantity.fromNum(amount: amount, unit: _selectedUnit);
       }
-      widget.controller.addFood(
-        _selectedFood!,
-        quantity: quantity,
-      );
+      widget.controller.addFood(_selectedFood!, quantity: quantity);
     } else if (_selectedRecipe != null) {
       widget.controller.addRecipe(
         _selectedRecipe!,
@@ -340,7 +339,9 @@ class _ThaliComponentPickerSheetState extends State<ThaliComponentPickerSheet> {
                         ),
                         ...recipeResults.map(
                           (recipe) => ListTile(
-                            key: Key('thali_search_recipe_item_${recipe.recipeId}'),
+                            key: Key(
+                              'thali_search_recipe_item_${recipe.recipeId}',
+                            ),
                             dense: true,
                             contentPadding: const EdgeInsets.symmetric(
                               horizontal: 8,
@@ -378,7 +379,8 @@ class _ThaliComponentPickerSheetState extends State<ThaliComponentPickerSheet> {
   }
 
   Widget _buildPortionConfigCard(B05SemanticColors colors) {
-    final title = _selectedFood?.displayName ?? _selectedRecipe?.recipeName ?? '';
+    final title =
+        _selectedFood?.displayName ?? _selectedRecipe?.recipeName ?? '';
     final standardMeasures = _currentState.standardMeasures;
 
     return Container(
@@ -432,14 +434,22 @@ class _ThaliComponentPickerSheetState extends State<ThaliComponentPickerSheet> {
                 child: TextField(
                   key: const Key('thali_portion_amount_input'),
                   controller: _amountController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   style: TextStyle(color: colors.textPrimary),
                   decoration: InputDecoration(
                     labelText: 'Amount',
-                    labelStyle: TextStyle(color: colors.textSecondary, fontSize: 12),
+                    labelStyle: TextStyle(
+                      color: colors.textSecondary,
+                      fontSize: 12,
+                    ),
                     filled: true,
                     fillColor: colors.surface,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 8,
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                       borderSide: BorderSide(color: colors.border),
@@ -477,23 +487,26 @@ class _ThaliComponentPickerSheetState extends State<ThaliComponentPickerSheet> {
                                 });
                               },
                             ),
-                            ...standardMeasures.take(4).map(
-                              (measure) => Padding(
-                                padding: const EdgeInsets.only(left: 6),
-                                child: ChoiceChip(
-                                  label: Text(measure.displayName),
-                                  selected: _selectedMeasureId == measure.id,
-                                  onSelected: (_) {
-                                    setState(() {
-                                      _selectedUnit =
-                                          QuantityUnit.householdReference;
-                                      _selectedMeasureId = measure.id;
-                                      _amountController.text = '1';
-                                    });
-                                  },
+                            ...standardMeasures
+                                .take(4)
+                                .map(
+                                  (measure) => Padding(
+                                    padding: const EdgeInsets.only(left: 6),
+                                    child: ChoiceChip(
+                                      label: Text(measure.displayName),
+                                      selected:
+                                          _selectedMeasureId == measure.id,
+                                      onSelected: (_) {
+                                        setState(() {
+                                          _selectedUnit =
+                                              QuantityUnit.householdReference;
+                                          _selectedMeasureId = measure.id;
+                                          _amountController.text = '1';
+                                        });
+                                      },
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            ),
                           ],
                         ),
                       )

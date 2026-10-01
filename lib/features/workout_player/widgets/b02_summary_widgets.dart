@@ -17,7 +17,6 @@ import 'workout_share_card.dart';
 export '../models/workout_completion_recap.dart';
 export 'workout_share_card.dart';
 
-
 /// B02 summary widgets (PV1-ENG-05C first pass).
 ///
 /// Extracted verbatim from `b02_strength_summary_screen.dart`; unchanged.
@@ -143,17 +142,18 @@ class B02StrengthHistoryDetailScreen extends ConsumerWidget {
                   child: Text('Some saved workout details are unavailable.'),
                 ),
               )
-            : CompletionEvidence(
-                history: history,
-                onDone: () => context.pop(),
-              ),
+            : CompletionEvidence(history: history, onDone: () => context.pop()),
       ),
     );
   }
 }
 
 class SavedDetailsLoading extends StatelessWidget {
-  const SavedDetailsLoading({super.key, required this.onDone, required this.isPartial});
+  const SavedDetailsLoading({
+    super.key,
+    required this.onDone,
+    required this.isPartial,
+  });
 
   final VoidCallback onDone;
   final bool isPartial;
@@ -187,7 +187,8 @@ class SavedDetailsLoading extends StatelessWidget {
 }
 
 class CompletionEvidence extends StatelessWidget {
-  const CompletionEvidence({super.key, 
+  const CompletionEvidence({
+    super.key,
     this.launch,
     required this.onDone,
     this.completionKind = CompletionKind.full,
@@ -479,7 +480,11 @@ class HistoryExerciseEvidence {
 }
 
 class HistoryGroupEvidence extends StatelessWidget {
-  const HistoryGroupEvidence({super.key, required this.group, required this.exercises});
+  const HistoryGroupEvidence({
+    super.key,
+    required this.group,
+    required this.exercises,
+  });
 
   final B02PerformedExerciseGroupHistory group;
   final List<HistoryExerciseEvidence> exercises;
@@ -747,13 +752,12 @@ String consumerGroupLabel(String type, String? label) {
   };
 }
 
-String pausedPositionLabel(B02PausedRepPosition position) =>
-    switch (position) {
-      B02PausedRepPosition.bottom => 'bottom',
-      B02PausedRepPosition.top => 'top',
-      B02PausedRepPosition.midpoint => 'midpoint',
-      B02PausedRepPosition.custom => 'custom position',
-    };
+String pausedPositionLabel(B02PausedRepPosition position) => switch (position) {
+  B02PausedRepPosition.bottom => 'bottom',
+  B02PausedRepPosition.top => 'top',
+  B02PausedRepPosition.midpoint => 'midpoint',
+  B02PausedRepPosition.custom => 'custom position',
+};
 
 String assistanceLabel(B02AssistanceMode mode) => switch (mode) {
   B02AssistanceMode.machine => 'machine',
@@ -781,7 +785,8 @@ class B02SummaryBody extends StatelessWidget {
   final VoidCallback? onDiscard;
   final VoidCallback onBack;
 
-  const B02SummaryBody({super.key, 
+  const B02SummaryBody({
+    super.key,
     required this.launch,
     required this.executionContext,
     required this.ui,

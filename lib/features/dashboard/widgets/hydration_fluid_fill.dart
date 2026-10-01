@@ -89,10 +89,30 @@ class _HydrationFluidFillIndicatorState
   late final AnimationController _waveController;
 
   static const _bubbles = [
-    HydrationBubbleSpec(relativeX: 0.18, radius: 1.8, phaseOffset: 0.10, speed: 1.0),
-    HydrationBubbleSpec(relativeX: 0.42, radius: 1.5, phaseOffset: 0.55, speed: 1.25),
-    HydrationBubbleSpec(relativeX: 0.68, radius: 2.1, phaseOffset: 0.35, speed: 0.90),
-    HydrationBubbleSpec(relativeX: 0.86, radius: 1.4, phaseOffset: 0.80, speed: 1.15),
+    HydrationBubbleSpec(
+      relativeX: 0.18,
+      radius: 1.8,
+      phaseOffset: 0.10,
+      speed: 1.0,
+    ),
+    HydrationBubbleSpec(
+      relativeX: 0.42,
+      radius: 1.5,
+      phaseOffset: 0.55,
+      speed: 1.25,
+    ),
+    HydrationBubbleSpec(
+      relativeX: 0.68,
+      radius: 2.1,
+      phaseOffset: 0.35,
+      speed: 0.90,
+    ),
+    HydrationBubbleSpec(
+      relativeX: 0.86,
+      radius: 1.4,
+      phaseOffset: 0.80,
+      speed: 1.15,
+    ),
   ];
 
   @override
@@ -122,8 +142,9 @@ class _HydrationFluidFillIndicatorState
   void _startAnimationIfAllowed() {
     if (!mounted) return;
     if (_waveController.isAnimating) return;
-    final isTest =
-        WidgetsBinding.instance.runtimeType.toString().contains('Test');
+    final isTest = WidgetsBinding.instance.runtimeType.toString().contains(
+      'Test',
+    );
     if (isTest && !widget.repeatInTests) {
       _waveController.forward();
     } else {
@@ -136,8 +157,9 @@ class _HydrationFluidFillIndicatorState
     super.didUpdateWidget(oldWidget);
     if (oldWidget.progress != widget.progress ||
         oldWidget.isGoalMet != widget.isGoalMet) {
-      final isTest =
-          WidgetsBinding.instance.runtimeType.toString().contains('Test');
+      final isTest = WidgetsBinding.instance.runtimeType.toString().contains(
+        'Test',
+      );
       if (isTest && !widget.repeatInTests) {
         _waveController.forward(from: 0.0);
       } else {
@@ -322,7 +344,8 @@ class HydrationWavePainter extends CustomPainter {
       final secondaryPath = Path();
       secondaryPath.moveTo(0, baseY + math.sin(phase2) * amp2);
       for (double x = 1.0; x <= size.width; x += 2.0) {
-        final y = baseY +
+        final y =
+            baseY +
             math.sin((x / size.width * 2 * math.pi * f2) + phase2) * amp2;
         secondaryPath.lineTo(x, y);
       }
@@ -340,13 +363,14 @@ class HydrationWavePainter extends CustomPainter {
         final bubblePaint = Paint()..style = PaintingStyle.fill;
         for (final bubble in bubbles) {
           final p = (phase * bubble.speed + bubble.phaseOffset) % 1.0;
-          final bubbleY = (size.height - 2) -
-              p * ((size.height - 2) - (baseY + 3));
+          final bubbleY =
+              (size.height - 2) - p * ((size.height - 2) - (baseY + 3));
           if (bubbleY >= baseY + 2) {
-            final sway =
-                math.sin((p * 2 * math.pi) + bubble.phaseOffset) * 3.0;
-            final bubbleX = (size.width * bubble.relativeX + sway)
-                .clamp(bubble.radius, size.width - bubble.radius);
+            final sway = math.sin((p * 2 * math.pi) + bubble.phaseOffset) * 3.0;
+            final bubbleX = (size.width * bubble.relativeX + sway).clamp(
+              bubble.radius,
+              size.width - bubble.radius,
+            );
             final alpha = (math.sin(p * math.pi) * 0.40).clamp(0.0, 1.0);
             bubblePaint.color = crestHighlightColor.withValues(alpha: alpha);
             canvas.drawCircle(
@@ -370,7 +394,8 @@ class HydrationWavePainter extends CustomPainter {
       crestPath.moveTo(0, startY);
 
       for (double x = 1.0; x <= size.width; x += 2.0) {
-        final y = baseY +
+        final y =
+            baseY +
             math.sin((x / size.width * 2 * math.pi * f1) + phase1) * amplitude;
         primaryPath.lineTo(x, y);
         crestPath.lineTo(x, y);
@@ -383,13 +408,8 @@ class HydrationWavePainter extends CustomPainter {
         ..shader = LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [
-            waveColor.withValues(alpha: 0.82),
-            waveColor,
-          ],
-        ).createShader(
-          Rect.fromLTWH(0, baseY, size.width, size.height - baseY),
-        )
+          colors: [waveColor.withValues(alpha: 0.82), waveColor],
+        ).createShader(Rect.fromLTWH(0, baseY, size.width, size.height - baseY))
         ..style = PaintingStyle.fill;
       canvas.drawPath(primaryPath, primaryPaint);
 

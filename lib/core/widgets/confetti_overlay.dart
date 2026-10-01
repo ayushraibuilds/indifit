@@ -120,10 +120,7 @@ class _ConfettiParticle {
 }
 
 class _ConfettiPainter extends CustomPainter {
-  _ConfettiPainter({
-    required this.particles,
-    required this.progress,
-  });
+  _ConfettiPainter({required this.particles, required this.progress});
 
   final List<_ConfettiParticle> particles;
   final double progress;
@@ -136,18 +133,25 @@ class _ConfettiPainter extends CustomPainter {
       final y = effectiveProgress * (size.height + 40) * p.speedY;
       if (y > size.height + 20) continue;
 
-      final sway = math.sin(effectiveProgress * math.pi * p.swaySpeed) * p.swayAmplitude;
+      final sway =
+          math.sin(effectiveProgress * math.pi * p.swaySpeed) * p.swayAmplitude;
       final x = (p.x * size.width) + sway;
 
       final paint = Paint()
-        ..color = p.color.withValues(alpha: (1.0 - effectiveProgress * 0.5).clamp(0.0, 1.0))
+        ..color = p.color.withValues(
+          alpha: (1.0 - effectiveProgress * 0.5).clamp(0.0, 1.0),
+        )
         ..style = PaintingStyle.fill;
 
       canvas.save();
       canvas.translate(x, y);
       canvas.rotate(effectiveProgress * math.pi * p.rotationSpeed);
       canvas.drawRect(
-        Rect.fromCenter(center: Offset.zero, width: p.size, height: p.size * 0.6),
+        Rect.fromCenter(
+          center: Offset.zero,
+          width: p.size,
+          height: p.size * 0.6,
+        ),
         paint,
       );
       canvas.restore();

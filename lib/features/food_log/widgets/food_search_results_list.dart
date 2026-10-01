@@ -10,10 +10,7 @@ import 'food_search_widgets.dart';
 class FoodSearchNoResultsState extends StatelessWidget {
   final VoidCallback onCreateCustomFood;
 
-  const FoodSearchNoResultsState({
-    super.key,
-    required this.onCreateCustomFood,
-  });
+  const FoodSearchNoResultsState({super.key, required this.onCreateCustomFood});
 
   @override
   Widget build(BuildContext context) {
@@ -57,7 +54,8 @@ class FoodSearchResultsList extends StatelessWidget {
   final String? onlineFailureMessage;
   final VoidCallback onRetrySearch;
   final List<NutritionFoodSearchResult> searchResults;
-  final Widget Function(BuildContext context, NutritionFoodSearchResult result) searchResultItemBuilder;
+  final Widget Function(BuildContext context, NutritionFoodSearchResult result)
+  searchResultItemBuilder;
   final VoidCallback onCreateCustomFood;
 
   const FoodSearchResultsList({
@@ -99,12 +97,8 @@ class FoodSearchResultsList extends StatelessWidget {
             detail: 'Matching foods are ready to use.',
             loading: true,
           ),
-        if (!searchingOnline &&
-            !isOnlineSearchOffline &&
-            searchResults.isEmpty)
-          FoodSearchNoResultsState(
-            onCreateCustomFood: onCreateCustomFood,
-          ),
+        if (!searchingOnline && !isOnlineSearchOffline && searchResults.isEmpty)
+          FoodSearchNoResultsState(onCreateCustomFood: onCreateCustomFood),
       ],
     );
   }

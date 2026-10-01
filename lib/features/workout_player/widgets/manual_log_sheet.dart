@@ -379,34 +379,42 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
                             decoration: InputDecoration(
                               labelText: 'Load (kg, optional)',
                               isDense: true,
-                              suffixIcon: isBarbellPlateCalculatorSupported(
-                                exerciseName: exercise.exerciseName,
-                              ) ? IconButton(
-                                  tooltip: 'Plate calculator',
-                                  icon: const Icon(
-                                    IndiFitIcons.plateCalculator,
-                                  ),
-                                  onPressed: _saving ? null : () async {
-                                    final entered = double.tryParse(
-                                      setInput.loadController.text.trim(),
-                                    );
-                                    final initialWeight = (entered != null &&
-                                            entered > 0)
-                                        ? entered
-                                        : 20.0;
-                                    final applied =
-                                        await PlateCalculatorSheet.show(
-                                      context: context,
-                                      initialWeight: initialWeight,
-                                    );
-                                    if (applied != null && mounted) {
-                                      setState(() {
-                                        setInput.loadController.text =
-                                            r07cFormatNumber(applied);
-                                      });
-                                    }
-                                  },
-                                ) : null,
+                              suffixIcon:
+                                  isBarbellPlateCalculatorSupported(
+                                    exerciseName: exercise.exerciseName,
+                                  )
+                                  ? IconButton(
+                                      tooltip: 'Plate calculator',
+                                      icon: const Icon(
+                                        IndiFitIcons.plateCalculator,
+                                      ),
+                                      onPressed: _saving
+                                          ? null
+                                          : () async {
+                                              final entered = double.tryParse(
+                                                setInput.loadController.text
+                                                    .trim(),
+                                              );
+                                              final initialWeight =
+                                                  (entered != null &&
+                                                      entered > 0)
+                                                  ? entered
+                                                  : 20.0;
+                                              final applied =
+                                                  await PlateCalculatorSheet.show(
+                                                    context: context,
+                                                    initialWeight:
+                                                        initialWeight,
+                                                  );
+                                              if (applied != null && mounted) {
+                                                setState(() {
+                                                  setInput.loadController.text =
+                                                      r07cFormatNumber(applied);
+                                                });
+                                              }
+                                            },
+                                    )
+                                  : null,
                             ),
                             onTapOutside: (_) =>
                                 FocusScope.of(context).unfocus(),

@@ -13,10 +13,7 @@ import '../../data/services/b02_occurrence_snapshot_customizer.dart';
 import '../exercise_picker/exercise_picker.dart';
 import 'training_workout_preview.dart';
 
-enum WorkoutCustomizationScope {
-  single,
-  allFuture,
-}
+enum WorkoutCustomizationScope { single, allFuture }
 
 typedef SaveTrainingWorkoutCustomization =
     Future<void> Function({
@@ -26,9 +23,7 @@ typedef SaveTrainingWorkoutCustomization =
     });
 
 typedef ResetTrainingWorkoutCustomization =
-    Future<void> Function({
-      required bool allFuture,
-    });
+    Future<void> Function({required bool allFuture});
 
 /// Consumer-facing editor for the resolved, unstarted workout on this date.
 /// The screen holds a local draft until one explicit Save action; persistence
@@ -92,7 +87,9 @@ class _TrainingWorkoutCustomizationScreenState
           if (ex.original.exerciseId != null) ex.original.exerciseId!,
       };
       if (allIds.isNotEmpty) {
-        final rows = await (db.select(db.exercises)..where((t) => t.stableId.isIn(allIds))).get();
+        final rows = await (db.select(
+          db.exercises,
+        )..where((t) => t.stableId.isIn(allIds))).get();
         for (final row in rows) {
           if (row.stableId != null) {
             _catalogExercises[row.stableId!] = row;
@@ -125,8 +122,11 @@ class _TrainingWorkoutCustomizationScreenState
 
   Future<void> _replaceExercise(_EditableWorkoutExercise exercise) async {
     if (_saving) return;
-    final currentExerciseId = exercise.replacementExerciseId ?? exercise.original.exerciseId;
-    final currentCatalog = currentExerciseId != null ? _catalogExercises[currentExerciseId] : null;
+    final currentExerciseId =
+        exercise.replacementExerciseId ?? exercise.original.exerciseId;
+    final currentCatalog = currentExerciseId != null
+        ? _catalogExercises[currentExerciseId]
+        : null;
 
     final selection = await showExercisePicker(
       context: context,
@@ -141,7 +141,10 @@ class _TrainingWorkoutCustomizationScreenState
 
     if (!_catalogExercises.containsKey(selection.exerciseId)) {
       final db = ref.read(databaseProvider);
-      final row = await (db.select(db.exercises)..where((t) => t.stableId.equals(selection.exerciseId))).getSingleOrNull();
+      final row =
+          await (db.select(db.exercises)
+                ..where((t) => t.stableId.equals(selection.exerciseId)))
+              .getSingleOrNull();
       if (row != null) {
         _catalogExercises[selection.exerciseId] = row;
       }
@@ -196,9 +199,12 @@ class _TrainingWorkoutCustomizationScreenState
                       // ignore: deprecated_member_use
                       groupValue: localResetAll,
                       title: const Text('Reset this workout only'),
-                      subtitle: const Text('Restores published defaults for this date.'),
+                      subtitle: const Text(
+                        'Restores published defaults for this date.',
+                      ),
                       // ignore: deprecated_member_use
-                      onChanged: (val) => setDialogState(() => localResetAll = val!),
+                      onChanged: (val) =>
+                          setDialogState(() => localResetAll = val!),
                       contentPadding: EdgeInsets.zero,
                     ),
                     // ignore: deprecated_member_use
@@ -211,7 +217,8 @@ class _TrainingWorkoutCustomizationScreenState
                         'Wipes individual customizations across ${widget.futureOccurrencesCount} upcoming workouts.',
                       ),
                       // ignore: deprecated_member_use
-                      onChanged: (val) => setDialogState(() => localResetAll = val!),
+                      onChanged: (val) =>
+                          setDialogState(() => localResetAll = val!),
                       contentPadding: EdgeInsets.zero,
                     ),
                   ],
@@ -363,10 +370,12 @@ class _TrainingWorkoutCustomizationScreenState
                                   const SizedBox(width: B05Layout.space4),
                                   Text(
                                     'Equipment profile: ${_activeProfile!.profile.name}',
-                                    style: B05Typography.caption(context).copyWith(
-                                      color: context.b05Colors.textSecondary,
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                                    style: B05Typography.caption(context)
+                                        .copyWith(
+                                          color:
+                                              context.b05Colors.textSecondary,
+                                          fontWeight: FontWeight.w600,
+                                        ),
                                   ),
                                 ],
                               ),
@@ -381,11 +390,16 @@ class _TrainingWorkoutCustomizationScreenState
                   const SizedBox(height: B05Layout.space8),
                   _ScopeChoiceTile(
                     title: 'This workout only',
-                    subtitle: 'These changes apply to this workout only. Your future plan stays the same.',
-                    selected: _selectedScope == WorkoutCustomizationScope.single,
+                    subtitle:
+                        'These changes apply to this workout only. Your future plan stays the same.',
+                    selected:
+                        _selectedScope == WorkoutCustomizationScope.single,
                     onTap: _saving
                         ? null
-                        : () => setState(() => _selectedScope = WorkoutCustomizationScope.single),
+                        : () => setState(
+                            () => _selectedScope =
+                                WorkoutCustomizationScope.single,
+                          ),
                   ),
                   const SizedBox(height: B05Layout.space8),
                   _ScopeChoiceTile(
@@ -393,17 +407,21 @@ class _TrainingWorkoutCustomizationScreenState
                     subtitle: widget.futureOccurrencesCount > 1
                         ? 'Replaces individual customizations on all ${widget.futureOccurrencesCount} upcoming workouts of this type.'
                         : 'Applies to all upcoming workouts of this type.',
-                    selected: _selectedScope == WorkoutCustomizationScope.allFuture,
+                    selected:
+                        _selectedScope == WorkoutCustomizationScope.allFuture,
                     onTap: _saving
                         ? null
-                        : () => setState(() => _selectedScope = WorkoutCustomizationScope.allFuture),
+                        : () => setState(
+                            () => _selectedScope =
+                                WorkoutCustomizationScope.allFuture,
+                          ),
                   ),
                   const SizedBox(height: B05Layout.space8),
                   Text(
                     'Past workouts and logged history are frozen and will never be modified.',
-                    style: B05Typography.caption(context).copyWith(
-                      color: context.b05Colors.textSecondary,
-                    ),
+                    style: B05Typography.caption(
+                      context,
+                    ).copyWith(color: context.b05Colors.textSecondary),
                   ),
                 ],
               ),
@@ -415,8 +433,13 @@ class _TrainingWorkoutCustomizationScreenState
           for (final exercise in _exercises) ...[
             _ExerciseCustomizationCard(
               exercise: exercise,
-              equipment: _catalogExercises[exercise.replacementExerciseId ?? exercise.original.exerciseId]?.equipment,
-              compatibility: _compatibilities[exercise.replacementExerciseId ?? exercise.original.exerciseId],
+              equipment:
+                  _catalogExercises[exercise.replacementExerciseId ??
+                          exercise.original.exerciseId]
+                      ?.equipment,
+              compatibility:
+                  _compatibilities[exercise.replacementExerciseId ??
+                      exercise.original.exerciseId],
               onReplace: () => _replaceExercise(exercise),
               onEditTarget: () => _editTarget(exercise),
               enabled: !_saving,
@@ -497,8 +520,8 @@ class _TrainingWorkoutCustomizationScreenState
         label: _hasChanges ? 'Save changes' : 'Done',
         hint: _hasChanges
             ? (_selectedScope == WorkoutCustomizationScope.allFuture
-                ? 'Save changes across upcoming workouts.'
-                : 'Save changes for this workout only.')
+                  ? 'Save changes across upcoming workouts.'
+                  : 'Save changes for this workout only.')
             : 'Close workout customization.',
         icon: _hasChanges ? Icons.check_rounded : Icons.done_rounded,
         onPressed: _saving ? null : _save,
@@ -536,7 +559,9 @@ class _ScopeChoiceTile extends StatelessWidget {
           vertical: B05Layout.space8,
         ),
         decoration: BoxDecoration(
-          color: selected ? colors.action.withValues(alpha: 0.08) : Colors.transparent,
+          color: selected
+              ? colors.action.withValues(alpha: 0.08)
+              : Colors.transparent,
           border: Border.all(
             color: selected ? colors.action : colors.border,
             width: selected ? 1.5 : 1,
@@ -549,7 +574,9 @@ class _ScopeChoiceTile extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(top: 2),
               child: Icon(
-                selected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+                selected
+                    ? Icons.radio_button_checked
+                    : Icons.radio_button_unchecked,
                 size: 18,
                 color: selected ? colors.action : colors.textSecondary,
               ),
@@ -569,9 +596,9 @@ class _ScopeChoiceTile extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: B05Typography.caption(context).copyWith(
-                      color: colors.textSecondary,
-                    ),
+                    style: B05Typography.caption(
+                      context,
+                    ).copyWith(color: colors.textSecondary),
                   ),
                 ],
               ),
@@ -691,23 +718,30 @@ class _ExerciseCustomizationCard extends StatelessWidget {
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: context.b05Colors.surfaceSubtle,
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
                     equipment!,
-                    style: B05Typography.caption(context).copyWith(
-                      fontWeight: FontWeight.w500,
-                    ),
+                    style: B05Typography.caption(
+                      context,
+                    ).copyWith(fontWeight: FontWeight.w500),
                   ),
                 ),
                 if (compatibility != null &&
-                    compatibility!.status == EquipmentCompatibilityStatus.incompatible &&
+                    compatibility!.status ==
+                        EquipmentCompatibilityStatus.incompatible &&
                     compatibility!.unavailableEquipmentCodes.isNotEmpty)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: context.b05Colors.warning.container,
                       borderRadius: BorderRadius.circular(4),

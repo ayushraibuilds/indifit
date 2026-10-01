@@ -91,7 +91,9 @@ void main() {
           stats: stats,
           currentStreakDays: 1,
         );
-        final thaliBadge = achievements.firstWhere((a) => a.id == 'first_thali');
+        final thaliBadge = achievements.firstWhere(
+          (a) => a.id == 'first_thali',
+        );
         expect(thaliBadge.isUnlocked, isTrue);
         expect(thaliBadge.currentProgress, 1.0);
       },
@@ -322,7 +324,9 @@ void main() {
           registry: harness.registry,
           failureInjector: (stage) {
             if (stage == 'after_items' && failNow) {
-              throw StateError('Simulated network/disk write error mid-transaction');
+              throw StateError(
+                'Simulated network/disk write error mid-transaction',
+              );
             }
           },
         );
@@ -356,11 +360,15 @@ void main() {
         expect(controller.state.status, NutritionThaliStatus.failure);
 
         // Assert 0 rows in consumption snapshots table
-        final allSnapshots = await harness.db.select(harness.db.nutritionConsumptionSnapshots).get();
+        final allSnapshots = await harness.db
+            .select(harness.db.nutritionConsumptionSnapshots)
+            .get();
         expect(allSnapshots, isEmpty);
 
         // Assert 0 rows in snapshot items table
-        final allItems = await harness.db.select(harness.db.nutritionSnapshotItems).get();
+        final allItems = await harness.db
+            .select(harness.db.nutritionSnapshotItems)
+            .get();
         expect(allItems, isEmpty);
       },
     );
@@ -411,7 +419,9 @@ void main() {
         );
 
         expect(first.id, second.id);
-        final allSnapshots = await harness.db.select(harness.db.nutritionConsumptionSnapshots).get();
+        final allSnapshots = await harness.db
+            .select(harness.db.nutritionConsumptionSnapshots)
+            .get();
         expect(allSnapshots, hasLength(1));
       },
     );
@@ -446,9 +456,9 @@ void main() {
               nutritionThaliRepositoryProvider.overrideWith(
                 (ref) async => harness.repository,
               ),
-              nutritionThaliControllerProvider('lunch').overrideWith(
-                (ref) => controller,
-              ),
+              nutritionThaliControllerProvider(
+                'lunch',
+              ).overrideWith((ref) => controller),
             ],
             child: MaterialApp(
               theme: AppTheme.darkTheme,
@@ -459,7 +469,9 @@ void main() {
 
         // Initial pump
         await tester.pump();
-        await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 100)),
+        );
         await tester.pump(const Duration(milliseconds: 300));
 
         // Header
@@ -467,12 +479,19 @@ void main() {
         // Empty plate state
         expect(find.text('Your Thali Plate is Empty'), findsOneWidget);
         // Archetype presets
-        expect(find.byKey(const Key('thali_preset_north_indian_classic')), findsOneWidget);
+        expect(
+          find.byKey(const Key('thali_preset_north_indian_classic')),
+          findsOneWidget,
+        );
 
         // Tap preset chip
-        await tester.tap(find.byKey(const Key('thali_preset_north_indian_classic')));
+        await tester.tap(
+          find.byKey(const Key('thali_preset_north_indian_classic')),
+        );
         await tester.pump();
-        await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 200)));
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 200)),
+        );
         await tester.pump(const Duration(milliseconds: 300));
 
         // Should now have items in list
@@ -487,12 +506,15 @@ void main() {
         // Tap Log Thali button
         await tester.tap(find.byKey(const Key('thali_log_meal_button')));
         await tester.pump();
-        await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 300)));
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 300)),
+        );
         await tester.pump(const Duration(milliseconds: 300));
 
         // Snapshot is saved in db
         final allSnapshots = await tester.runAsync(
-          () => harness.db.select(harness.db.nutritionConsumptionSnapshots).get(),
+          () =>
+              harness.db.select(harness.db.nutritionConsumptionSnapshots).get(),
         );
         expect(allSnapshots, isNotNull);
         expect(allSnapshots!, hasLength(1));
@@ -547,35 +569,39 @@ void main() {
         // 3. Retract / delete the thali meal
         // Deleting a thali writes an append-only retraction snapshot carrying the same mealGroupId,
         // superseding the original snapshot.
-        await harness.db.into(harness.db.nutritionConsumptionSnapshots).insert(
-          NutritionConsumptionSnapshotsCompanion.insert(
-            id: 'thali-retraction-${snapshot!.id}',
-            userId: harness.userId,
-            loggedAt: snapshot.loggedAtUtc,
-            mealCategory: snapshot.mealCategory,
-            sourceType: 'thali',
-            calculatorVersion: snapshot.calculatorVersion,
-            completeness: 'complete',
-            estimateStatus: 'none',
-            mealGroupId: Value(snapshot.mealGroupId),
-            lineage: Value(
-              jsonEncode({
-                'contract_version': kNutritionConsumptionSnapshotContractVersion,
-                'content_fingerprint': 'fp-retraction',
-                'supersedes_snapshot_id': snapshot.id,
-                'correction_id': 'corr-retract',
-                'correction_reason': 'User deleted thali',
-                'evidence': {
-                  'retraction': {
-                    'contract_version': kNutritionConsumptionRetractionContractVersion,
-                    'predecessor_snapshot_id': snapshot.id,
-                    'reason': 'User deleted thali',
-                  },
-                },
-              }),
-            ),
-          ),
-        );
+        await harness.db
+            .into(harness.db.nutritionConsumptionSnapshots)
+            .insert(
+              NutritionConsumptionSnapshotsCompanion.insert(
+                id: 'thali-retraction-${snapshot!.id}',
+                userId: harness.userId,
+                loggedAt: snapshot.loggedAtUtc,
+                mealCategory: snapshot.mealCategory,
+                sourceType: 'thali',
+                calculatorVersion: snapshot.calculatorVersion,
+                completeness: 'complete',
+                estimateStatus: 'none',
+                mealGroupId: Value(snapshot.mealGroupId),
+                lineage: Value(
+                  jsonEncode({
+                    'contract_version':
+                        kNutritionConsumptionSnapshotContractVersion,
+                    'content_fingerprint': 'fp-retraction',
+                    'supersedes_snapshot_id': snapshot.id,
+                    'correction_id': 'corr-retract',
+                    'correction_reason': 'User deleted thali',
+                    'evidence': {
+                      'retraction': {
+                        'contract_version':
+                            kNutritionConsumptionRetractionContractVersion,
+                        'predecessor_snapshot_id': snapshot.id,
+                        'reason': 'User deleted thali',
+                      },
+                    },
+                  }),
+                ),
+              ),
+            );
 
         // Assert that the database now contains 2 rows (original + retraction),
         // both carrying mealGroupId.
@@ -588,8 +614,16 @@ void main() {
         // - Original is superseded -> excluded
         // - Retraction is a retraction marker -> excluded
         stats = await progressRepo.getLifetimeStats();
-        expect(stats.totalMealsLogged, 0, reason: 'Delete must not leave inflated meal count');
-        expect(stats.thaliLoggedCount, 0, reason: 'Delete must not leave inflated thali count');
+        expect(
+          stats.totalMealsLogged,
+          0,
+          reason: 'Delete must not leave inflated meal count',
+        );
+        expect(
+          stats.thaliLoggedCount,
+          0,
+          reason: 'Delete must not leave inflated thali count',
+        );
       },
     );
 
@@ -601,33 +635,37 @@ void main() {
         final progressRepo = ProgressStatisticsRepository(harness.db);
 
         // 1. Insert an estimate snapshot (sourceType: 'estimate')
-        await harness.db.into(harness.db.nutritionConsumptionSnapshots).insert(
-          NutritionConsumptionSnapshotsCompanion.insert(
-            id: 'estimate-snap-1',
-            userId: harness.userId,
-            loggedAt: DateTime.utc(2026, 8, 4, 14, 0),
-            mealCategory: 'lunch',
-            sourceType: 'estimate',
-            calculatorVersion: 'v1',
-            completeness: 'complete',
-            estimateStatus: 'estimated',
-            mealGroupId: const Value('meal-group:estimate-1'),
-          ),
-        );
+        await harness.db
+            .into(harness.db.nutritionConsumptionSnapshots)
+            .insert(
+              NutritionConsumptionSnapshotsCompanion.insert(
+                id: 'estimate-snap-1',
+                userId: harness.userId,
+                loggedAt: DateTime.utc(2026, 8, 4, 14, 0),
+                mealCategory: 'lunch',
+                sourceType: 'estimate',
+                calculatorVersion: 'v1',
+                completeness: 'complete',
+                estimateStatus: 'estimated',
+                mealGroupId: const Value('meal-group:estimate-1'),
+              ),
+            );
 
         // 2. Insert a recommendation event (sourceType: 'b04_production_orchestration')
-        await harness.db.into(harness.db.nutritionConsumptionSnapshots).insert(
-          NutritionConsumptionSnapshotsCompanion.insert(
-            id: 'orchestration-snap-1',
-            userId: harness.userId,
-            loggedAt: DateTime.utc(2026, 8, 4, 14, 30),
-            mealCategory: 'lunch',
-            sourceType: 'b04_production_orchestration',
-            calculatorVersion: 'v1',
-            completeness: 'complete',
-            estimateStatus: 'none',
-          ),
-        );
+        await harness.db
+            .into(harness.db.nutritionConsumptionSnapshots)
+            .insert(
+              NutritionConsumptionSnapshotsCompanion.insert(
+                id: 'orchestration-snap-1',
+                userId: harness.userId,
+                loggedAt: DateTime.utc(2026, 8, 4, 14, 30),
+                mealCategory: 'lunch',
+                sourceType: 'b04_production_orchestration',
+                calculatorVersion: 'v1',
+                completeness: 'complete',
+                estimateStatus: 'none',
+              ),
+            );
 
         // Verify neither estimate nor orchestration count towards stats
         var stats = await progressRepo.getLifetimeStats();
@@ -635,18 +673,20 @@ void main() {
         expect(stats.thaliLoggedCount, 0);
 
         // 3. Insert a legitimate direct_food meal
-        await harness.db.into(harness.db.nutritionConsumptionSnapshots).insert(
-          NutritionConsumptionSnapshotsCompanion.insert(
-            id: 'genuine-meal-1',
-            userId: harness.userId,
-            loggedAt: DateTime.utc(2026, 8, 4, 15, 0),
-            mealCategory: 'lunch',
-            sourceType: 'direct_food',
-            calculatorVersion: 'v1',
-            completeness: 'complete',
-            estimateStatus: 'none',
-          ),
-        );
+        await harness.db
+            .into(harness.db.nutritionConsumptionSnapshots)
+            .insert(
+              NutritionConsumptionSnapshotsCompanion.insert(
+                id: 'genuine-meal-1',
+                userId: harness.userId,
+                loggedAt: DateTime.utc(2026, 8, 4, 15, 0),
+                mealCategory: 'lunch',
+                sourceType: 'direct_food',
+                calculatorVersion: 'v1',
+                completeness: 'complete',
+                estimateStatus: 'none',
+              ),
+            );
 
         stats = await progressRepo.getLifetimeStats();
         expect(stats.totalMealsLogged, 1, reason: 'Only genuine meal counts');
@@ -683,6 +723,7 @@ class _ThaliTestHarness {
       await _insertFoodItem(db, 'food-dal', 150, 'Dal Tadka', 'dal');
       await _insertFoodItem(db, 'food-rice', 130, 'Steamed Rice', 'rice');
     }
+
     if (tester != null) {
       await tester.runAsync(doInserts);
     } else {
@@ -752,7 +793,9 @@ Future<void> _insertFoodItem(
   String displayName,
   String alias,
 ) async {
-  await db.into(db.nutritionFoods).insert(
+  await db
+      .into(db.nutritionFoods)
+      .insert(
         NutritionFoodsCompanion.insert(
           id: id,
           kind: 'canonical',
@@ -762,7 +805,9 @@ Future<void> _insertFoodItem(
           lifecycle: 'active',
         ),
       );
-  await db.into(db.nutritionFoodAliases).insert(
+  await db
+      .into(db.nutritionFoodAliases)
+      .insert(
         NutritionFoodAliasesCompanion.insert(
           id: '$id-alias',
           foodId: Value(id),
@@ -773,7 +818,9 @@ Future<void> _insertFoodItem(
           isActive: const Value(true),
         ),
       );
-  await db.into(db.nutritionFoodNutrientFacts).insert(
+  await db
+      .into(db.nutritionFoodNutrientFacts)
+      .insert(
         NutritionFoodNutrientFactsCompanion.insert(
           id: '$id-energy-v1',
           foodId: id,
@@ -788,7 +835,9 @@ Future<void> _insertFoodItem(
           isCurrent: const Value(true),
         ),
       );
-  await db.into(db.nutritionFoodNutrientFacts).insert(
+  await db
+      .into(db.nutritionFoodNutrientFacts)
+      .insert(
         NutritionFoodNutrientFactsCompanion.insert(
           id: '$id-protein-v1',
           foodId: id,
@@ -803,7 +852,9 @@ Future<void> _insertFoodItem(
           isCurrent: const Value(true),
         ),
       );
-  await db.into(db.nutritionFoodNutrientFacts).insert(
+  await db
+      .into(db.nutritionFoodNutrientFacts)
+      .insert(
         NutritionFoodNutrientFactsCompanion.insert(
           id: '$id-carb-v1',
           foodId: id,
@@ -818,7 +869,9 @@ Future<void> _insertFoodItem(
           isCurrent: const Value(true),
         ),
       );
-  await db.into(db.nutritionFoodNutrientFacts).insert(
+  await db
+      .into(db.nutritionFoodNutrientFacts)
+      .insert(
         NutritionFoodNutrientFactsCompanion.insert(
           id: '$id-fat-v1',
           foodId: id,

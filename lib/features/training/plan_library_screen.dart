@@ -759,10 +759,7 @@ class _PlanScheduleAndHistory extends ConsumerWidget {
           ),
           if (overview.weekAnalytics.isNotEmpty) ...[
             const SizedBox(height: B05Layout.space20),
-            _PlanWeekProgressList(
-              weeks: overview.weekAnalytics,
-              units: units,
-            ),
+            _PlanWeekProgressList(weeks: overview.weekAnalytics, units: units),
           ],
           const SizedBox(height: B05Layout.space20),
           Text('Schedule', style: B05Typography.title(context)),
@@ -844,12 +841,13 @@ class _PlanAnalyticsSummaryCards extends StatelessWidget {
     final adherenceLabel = analytics.strictAdherenceRate != null
         ? '${(analytics.strictAdherenceRate! * 100).round()}%'
         : '—';
-    final compositeLabel = analytics.partiallyCompletedCount > 0 &&
+    final compositeLabel =
+        analytics.partiallyCompletedCount > 0 &&
             analytics.compositeAdherenceRate != null
         ? '${(analytics.compositeAdherenceRate! * 100).round()}% composite (partials count half)'
         : (analytics.elapsedEligibleCount > 0
-            ? '${analytics.completedCount} of ${analytics.elapsedEligibleCount} elapsed'
-            : 'No elapsed sessions');
+              ? '${analytics.completedCount} of ${analytics.elapsedEligibleCount} elapsed'
+              : 'No elapsed sessions');
 
     final weightSymbol = UnitPreferencePresentation.weightSymbol(units);
     final volumeLabel = analytics.hasStrengthSessions
@@ -923,9 +921,7 @@ class _PlanAnalyticsSummaryCards extends StatelessWidget {
                 label: '${analytics.inProgressCount} in progress',
               ),
             if (analytics.overdueCount > 0)
-              _PlanStatusChip(
-                label: '${analytics.overdueCount} overdue',
-              ),
+              _PlanStatusChip(label: '${analytics.overdueCount} overdue'),
           ],
         ),
       ],
@@ -974,10 +970,7 @@ class _MetricCard extends StatelessWidget {
 }
 
 class _PlanWeekProgressList extends StatelessWidget {
-  const _PlanWeekProgressList({
-    required this.weeks,
-    required this.units,
-  });
+  const _PlanWeekProgressList({required this.weeks, required this.units});
 
   final List<PlanWeekAnalytics> weeks;
   final String units;
@@ -999,10 +992,7 @@ class _PlanWeekProgressList extends StatelessWidget {
 }
 
 class _PlanWeekCard extends StatelessWidget {
-  const _PlanWeekCard({
-    required this.week,
-    required this.units,
-  });
+  const _PlanWeekCard({required this.week, required this.units});
 
   final PlanWeekAnalytics week;
   final String units;
@@ -1036,9 +1026,7 @@ class _PlanWeekCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Expanded(
-                child: Text(title, style: B05Typography.label(context)),
-              ),
+              Expanded(child: Text(title, style: B05Typography.label(context))),
               if (week.isDeload) ...[
                 const SizedBox(width: B05Layout.space8),
                 const _PlanStatusChip(label: 'Deload'),
@@ -1136,10 +1124,7 @@ class _PlanOccurrenceRow extends StatelessWidget {
             ),
           ),
           const SizedBox(height: B05Layout.space4),
-          Text(
-            detailsParts.join(' · '),
-            style: B05Typography.caption(context),
-          ),
+          Text(detailsParts.join(' · '), style: B05Typography.caption(context)),
           if (history != null) ...[
             const SizedBox(height: B05Layout.space4),
             Text(
@@ -1181,7 +1166,9 @@ String _formatDuration(int seconds) {
   final hours = minutes ~/ 60;
   final remainingMinutes = minutes % 60;
   if (hours > 0) {
-    return remainingMinutes > 0 ? '${hours}h ${remainingMinutes}m' : '${hours}h';
+    return remainingMinutes > 0
+        ? '${hours}h ${remainingMinutes}m'
+        : '${hours}h';
   }
   return '$minutes min';
 }
@@ -1406,13 +1393,20 @@ class _SessionSummary extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final upcomingOccurrences = overview != null && entry?.isActive == true
         ? (overview!.occurrences
-            .where((item) =>
-                item.occurrence.sessionTemplateId == template.id &&
-                (item.occurrence.status == OccurrenceStatus.planned.dbValue ||
-                    item.occurrence.status == OccurrenceStatus.rescheduled.dbValue))
-            .toList()
-          ..sort((a, b) =>
-              a.occurrence.effectiveLocalDate.compareTo(b.occurrence.effectiveLocalDate)))
+              .where(
+                (item) =>
+                    item.occurrence.sessionTemplateId == template.id &&
+                    (item.occurrence.status ==
+                            OccurrenceStatus.planned.dbValue ||
+                        item.occurrence.status ==
+                            OccurrenceStatus.rescheduled.dbValue),
+              )
+              .toList()
+            ..sort(
+              (a, b) => a.occurrence.effectiveLocalDate.compareTo(
+                b.occurrence.effectiveLocalDate,
+              ),
+            ))
         : <CalendarOccurrenceReadItem>[];
 
     return Semantics(
@@ -1509,29 +1503,30 @@ class _SessionSummary extends ConsumerWidget {
             preview: preview,
             futureOccurrencesCount: futureCount,
             initialScope: WorkoutCustomizationScope.allFuture,
-            onSave: ({
-              required baseSnapshotJson,
-              required changes,
-              required scope,
-            }) async {
-              if (scope == WorkoutCustomizationScope.allFuture) {
-                await ref
-                    .read(calendarControllerProvider.notifier)
-                    .customizeFutureOccurrences(
-                      readItem.occurrence.id,
-                      baseSnapshotJson: baseSnapshotJson,
-                      changes: changes,
-                    );
-              } else {
-                await ref
-                    .read(calendarControllerProvider.notifier)
-                    .customizeOccurrence(
-                      readItem.occurrence.id,
-                      baseSnapshotJson: baseSnapshotJson,
-                      changes: changes,
-                    );
-              }
-            },
+            onSave:
+                ({
+                  required baseSnapshotJson,
+                  required changes,
+                  required scope,
+                }) async {
+                  if (scope == WorkoutCustomizationScope.allFuture) {
+                    await ref
+                        .read(calendarControllerProvider.notifier)
+                        .customizeFutureOccurrences(
+                          readItem.occurrence.id,
+                          baseSnapshotJson: baseSnapshotJson,
+                          changes: changes,
+                        );
+                  } else {
+                    await ref
+                        .read(calendarControllerProvider.notifier)
+                        .customizeOccurrence(
+                          readItem.occurrence.id,
+                          baseSnapshotJson: baseSnapshotJson,
+                          changes: changes,
+                        );
+                  }
+                },
             onReset: ({required allFuture}) async {
               await ref
                   .read(calendarControllerProvider.notifier)

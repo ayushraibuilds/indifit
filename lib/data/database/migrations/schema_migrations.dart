@@ -1325,11 +1325,9 @@ extension DatabaseMigrations on AppDatabase {
       bodyMeasurements,
     )..where((table) => table.uuid.isNull())).get();
     for (final row in missing) {
-      await (update(
-        bodyMeasurements,
-      )..where((table) => table.id.equals(row.id))).write(
-        BodyMeasurementsCompanion(uuid: Value(generator.v4())),
-      );
+      await (update(bodyMeasurements)
+            ..where((table) => table.id.equals(row.id)))
+          .write(BodyMeasurementsCompanion(uuid: Value(generator.v4())));
     }
   }
 
@@ -1509,11 +1507,13 @@ extension DatabaseMigrations on AppDatabase {
   /// flushes all device-local hybrid search cache entries.
   Future<void> _checkAndInvalidateFoodSearchCacheOnManifestChange() async {
     if (await _tableExists('food_search_cache')) {
-      final row = await (select(foodSearchCache)
-            ..where((tbl) => tbl.queryHash.equals('__manifest_version__')))
-          .getSingleOrNull();
+      final row =
+          await (select(foodSearchCache)
+                ..where((tbl) => tbl.queryHash.equals('__manifest_version__')))
+              .getSingleOrNull();
       final storedVersion = row != null ? int.tryParse(row.responseJson) : null;
-      if (storedVersion == null || storedVersion != kFoodIdentityManifestVersion) {
+      if (storedVersion == null ||
+          storedVersion != kFoodIdentityManifestVersion) {
         await customStatement('DELETE FROM food_search_cache;');
         await into(foodSearchCache).insertOnConflictUpdate(
           FoodSearchCacheCompanion.insert(

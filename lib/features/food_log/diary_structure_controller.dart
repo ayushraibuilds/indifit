@@ -23,13 +23,21 @@ enum DiaryStructurePreset {
 
   String get description => switch (this) {
     DiaryStructurePreset.standard4 => 'Breakfast, Lunch, Dinner, and Snacks.',
-    DiaryStructurePreset.threeMeals => 'Breakfast, Lunch, and Dinner without snack slots.',
-    DiaryStructurePreset.fiveMeals => 'Breakfast, Morning snack, Lunch, Evening snack, and Dinner.',
-    DiaryStructurePreset.athlete6 => 'Breakfast, Morning snack, Lunch, Pre-workout, Post-workout, and Dinner.',
+    DiaryStructurePreset.threeMeals =>
+      'Breakfast, Lunch, and Dinner without snack slots.',
+    DiaryStructurePreset.fiveMeals =>
+      'Breakfast, Morning snack, Lunch, Evening snack, and Dinner.',
+    DiaryStructurePreset.athlete6 =>
+      'Breakfast, Morning snack, Lunch, Pre-workout, Post-workout, and Dinner.',
   };
 
   List<String> get slotIds => switch (this) {
-    DiaryStructurePreset.standard4 => const ['breakfast', 'lunch', 'dinner', 'snack'],
+    DiaryStructurePreset.standard4 => const [
+      'breakfast',
+      'lunch',
+      'dinner',
+      'snack',
+    ],
     DiaryStructurePreset.threeMeals => const ['breakfast', 'lunch', 'dinner'],
     DiaryStructurePreset.fiveMeals => const [
       'breakfast',
@@ -63,14 +71,13 @@ class DiaryStructureState {
       .where((p) => p.isKnown)
       .toList(growable: false);
 
-  bool isSlotActive(String id) => activeSlotIds.contains(id.trim().toLowerCase());
+  bool isSlotActive(String id) =>
+      activeSlotIds.contains(id.trim().toLowerCase());
 
-  bool get isDefault => listEquals(activeSlotIds, DiaryStructurePreset.standard4.slotIds);
+  bool get isDefault =>
+      listEquals(activeSlotIds, DiaryStructurePreset.standard4.slotIds);
 
-  DiaryStructureState copyWith({
-    List<String>? activeSlotIds,
-    bool? isSaving,
-  }) =>
+  DiaryStructureState copyWith({List<String>? activeSlotIds, bool? isSaving}) =>
       DiaryStructureState(
         activeSlotIds: activeSlotIds ?? this.activeSlotIds,
         isSaving: isSaving ?? this.isSaving,
@@ -79,14 +86,14 @@ class DiaryStructureState {
 
 class DiaryStructureController extends StateNotifier<DiaryStructureState> {
   DiaryStructureController([SharedPreferences? prefs])
-      : _prefs = prefs,
-        super(
-          DiaryStructureState(
-            activeSlotIds: prefs != null
-                ? sanitizeSlotIds(prefs.getStringList(prefDiaryMealSlotsKey))
-                : DiaryStructurePreset.standard4.slotIds,
-          ),
-        ) {
+    : _prefs = prefs,
+      super(
+        DiaryStructureState(
+          activeSlotIds: prefs != null
+              ? sanitizeSlotIds(prefs.getStringList(prefDiaryMealSlotsKey))
+              : DiaryStructurePreset.standard4.slotIds,
+        ),
+      ) {
     if (prefs == null) {
       _load();
     }
@@ -139,10 +146,12 @@ class DiaryStructureController extends StateNotifier<DiaryStructureState> {
   Future<void> addSlot(String slotId) async {
     final normalized = slotId.trim().toLowerCase();
     final presentation = MealPresentationRegistry.forStableId(normalized);
-    if (!presentation.isKnown || state.activeSlotIds.contains(presentation.stableId)) {
+    if (!presentation.isKnown ||
+        state.activeSlotIds.contains(presentation.stableId)) {
       return;
     }
-    final updated = List<String>.from(state.activeSlotIds)..add(presentation.stableId);
+    final updated = List<String>.from(state.activeSlotIds)
+      ..add(presentation.stableId);
     await _persist(updated);
   }
 
@@ -151,7 +160,8 @@ class DiaryStructureController extends StateNotifier<DiaryStructureState> {
   /// Invariant: Enforces a minimum of 1 active slot.
   Future<void> removeSlot(String slotId) async {
     final normalized = slotId.trim().toLowerCase();
-    if (!state.activeSlotIds.contains(normalized) || state.activeSlotIds.length <= 1) {
+    if (!state.activeSlotIds.contains(normalized) ||
+        state.activeSlotIds.length <= 1) {
       return;
     }
     final updated = List<String>.from(state.activeSlotIds)..remove(normalized);
@@ -198,7 +208,10 @@ class DiaryStructureController extends StateNotifier<DiaryStructureState> {
 
   Future<void> _persist(List<String> slotIds) async {
     _changedLocally = true;
-    state = state.copyWith(activeSlotIds: List.unmodifiable(slotIds), isSaving: true);
+    state = state.copyWith(
+      activeSlotIds: List.unmodifiable(slotIds),
+      isSaving: true,
+    );
     try {
       final prefs = _prefs ?? await SharedPreferences.getInstance();
       _prefs = prefs;
@@ -217,12 +230,12 @@ class DiaryStructureController extends StateNotifier<DiaryStructureState> {
 
 final diaryStructureControllerProvider =
     StateNotifierProvider<DiaryStructureController, DiaryStructureState>((ref) {
-  SharedPreferences? prefs;
-  try {
-    prefs = ref.watch(sharedPreferencesProvider);
-  } catch (_) {}
-  return DiaryStructureController(prefs);
-});
+      SharedPreferences? prefs;
+      try {
+        prefs = ref.watch(sharedPreferencesProvider);
+      } catch (_) {}
+      return DiaryStructureController(prefs);
+    });
 
 final diaryMealSlotsProvider = Provider<List<FoodMealPresentation>>((ref) {
   final state = ref.watch(diaryStructureControllerProvider);

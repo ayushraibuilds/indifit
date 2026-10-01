@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 class AppColorsExtension extends ThemeExtension<AppColorsExtension> {
   final Color streakOrange;
   final Color infoBlue;

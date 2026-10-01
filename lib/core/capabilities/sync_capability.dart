@@ -67,20 +67,19 @@ class DisabledSyncCapability implements SyncCapability {
       const ConnectedStatusState.neverConfigured();
 
   @override
-  Stream<ConnectedStatusState> get onStatusChanged => Stream.value(
-        const ConnectedStatusState.neverConfigured(),
-      );
+  Stream<ConnectedStatusState> get onStatusChanged =>
+      Stream.value(const ConnectedStatusState.neverConfigured());
 
   @override
-  Future<List<SyncDomainResult>> triggerSync({List<SyncDomain>? domains}) async =>
-      const [];
+  Future<List<SyncDomainResult>> triggerSync({
+    List<SyncDomain>? domains,
+  }) async => const [];
 
   @override
   Future<List<SyncMutation>> pullDeltas({
     required HlcTimestamp sinceHlc,
     int limit = 100,
-  }) async =>
-      const [];
+  }) async => const [];
 
   @override
   Future<bool> pushMutations(List<SyncMutation> mutations) async => false;

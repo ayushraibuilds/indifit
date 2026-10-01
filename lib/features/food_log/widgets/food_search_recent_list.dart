@@ -90,7 +90,8 @@ class FoodSearchRecentList extends StatelessWidget {
   final VoidCallback onRetryRecent;
   final List<CanonicalRecentFood> canonicalRecentResults;
   final List<FoodItem> recentResults;
-  final Widget Function(BuildContext context, CanonicalRecentFood recent) canonicalRecentItemBuilder;
+  final Widget Function(BuildContext context, CanonicalRecentFood recent)
+  canonicalRecentItemBuilder;
   final Widget Function(BuildContext context, FoodItem food) recentItemBuilder;
   final VoidCallback onOpenSavedMeals;
   final VoidCallback onOpenSavedRecipes;
@@ -195,13 +196,17 @@ class FoodSearchRecentList extends StatelessWidget {
             message: 'Foods you log will appear here.',
           )
         else
-          ...canonicalRecentResults.map((item) => canonicalRecentItemBuilder(context, item)),
+          ...canonicalRecentResults.map(
+            (item) => canonicalRecentItemBuilder(context, item),
+          ),
         if (!loadingRecent &&
             recentResults.isNotEmpty &&
             canonicalRecentResults.isNotEmpty)
           const SizedBox(height: 8),
         if (!loadingRecent)
-          ...recentResults.take(6).map((food) => recentItemBuilder(context, food)),
+          ...recentResults
+              .take(6)
+              .map((food) => recentItemBuilder(context, food)),
         if (canonicalRecentResults.any((item) => item.frequencyCount > 1)) ...[
           const SizedBox(height: 16),
           const FoodSearchSectionHeader(
@@ -322,4 +327,3 @@ class _QuickActionChip extends StatelessWidget {
     );
   }
 }
-

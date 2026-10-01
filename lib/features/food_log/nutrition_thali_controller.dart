@@ -497,8 +497,9 @@ class NutritionThaliController extends StateNotifier<NutritionThaliState> {
       return null;
     }
 
-    final categoryPresentation =
-        MealPresentationRegistry.forStableId(mealCategory);
+    final categoryPresentation = MealPresentationRegistry.forStableId(
+      mealCategory,
+    );
     if (!categoryPresentation.isKnown) {
       _fail(
         const NutritionThaliValidationError(
@@ -512,8 +513,8 @@ class NutritionThaliController extends StateNotifier<NutritionThaliState> {
 
     final effectiveMealGroupId =
         (mealGroupId != null && mealGroupId.trim().isNotEmpty)
-            ? mealGroupId.trim()
-            : 'meal-group:${_uuid.v4()}';
+        ? mealGroupId.trim()
+        : 'meal-group:${_uuid.v4()}';
 
     _commandId ??= 'thali-log:${_uuid.v4()}';
     _consumptionId ??= 'thali-consumption:${_uuid.v4()}';
@@ -633,8 +634,7 @@ class NutritionThaliController extends StateNotifier<NutritionThaliState> {
         if (searchResults.isNotEmpty) {
           final exact = searchResults.where(
             (food) =>
-                food.displayName.toLowerCase() ==
-                def.searchQuery.toLowerCase(),
+                food.displayName.toLowerCase() == def.searchQuery.toLowerCase(),
           );
           if (exact.isNotEmpty) {
             match = exact.first;
@@ -666,10 +666,7 @@ class NutritionThaliController extends StateNotifier<NutritionThaliState> {
       }
 
       final currentDraft = state.draft ?? repository.newDraft(userId: userId);
-      final draft = currentDraft.copyWith(
-        name: presetName,
-        items: addedItems,
-      );
+      final draft = currentDraft.copyWith(name: presetName, items: addedItems);
 
       String? notice;
       if (missingNames.isNotEmpty) {

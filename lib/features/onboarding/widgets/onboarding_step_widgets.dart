@@ -208,7 +208,9 @@ class OnboardingGenderOptionCard extends StatelessWidget {
                       label,
                       style: B05Typography.label(context).copyWith(
                         color: selected ? colors.action : colors.textPrimary,
-                        fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                        fontWeight: selected
+                            ? FontWeight.w600
+                            : FontWeight.w500,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -329,7 +331,8 @@ class OnboardingNumberInputField extends StatelessWidget {
                   ),
                 ),
                 Text(suffix, style: B05Typography.label(context)),
-                if (!stackControls && (onStepDown != null || onStepUp != null)) ...[
+                if (!stackControls &&
+                    (onStepDown != null || onStepUp != null)) ...[
                   const SizedBox(width: B05Layout.space8),
                   _StepperButton(
                     icon: Icons.remove_rounded,
@@ -601,10 +604,9 @@ class _OnboardingHeightInputFieldState
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           child: Text(
             _unit == _HeightUnit.cm ? 'ft/in' : 'cm',
-            style: B05Typography.caption(context).copyWith(
-              color: colors.action,
-              fontWeight: FontWeight.w600,
-            ),
+            style: B05Typography.caption(
+              context,
+            ).copyWith(color: colors.action, fontWeight: FontWeight.w600),
           ),
         ),
       ),
@@ -621,9 +623,9 @@ class _OnboardingHeightInputFieldState
         textInputAction: widget.textInputAction,
         subtitle: Text(
           '≈ ${HeightConverter.formatFeetInches(cm)}',
-          style: B05Typography.caption(context).copyWith(
-            color: colors.textSecondary,
-          ),
+          style: B05Typography.caption(
+            context,
+          ).copyWith(color: colors.textSecondary),
         ),
         trailing: unitToggle,
         onStepDown: () => _stepCm(-1),
@@ -685,9 +687,9 @@ class _OnboardingHeightInputFieldState
                     focusNode: _ftFocusNode,
                     keyboardType: TextInputType.number,
                     textInputAction: TextInputAction.next,
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: colors.textPrimary,
-                        ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.titleLarge?.copyWith(color: colors.textPrimary),
                     decoration: const InputDecoration(
                       border: InputBorder.none,
                       contentPadding: EdgeInsets.zero,
@@ -704,9 +706,9 @@ class _OnboardingHeightInputFieldState
                     focusNode: _inFocusNode,
                     keyboardType: TextInputType.number,
                     textInputAction: widget.textInputAction,
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: colors.textPrimary,
-                        ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.titleLarge?.copyWith(color: colors.textPrimary),
                     decoration: const InputDecoration(
                       border: InputBorder.none,
                       contentPadding: EdgeInsets.zero,
@@ -759,9 +761,9 @@ class _OnboardingHeightInputFieldState
           padding: const EdgeInsets.only(left: B05Layout.space12),
           child: Text(
             '≈ ${widget.controller.text} cm',
-            style: B05Typography.caption(context).copyWith(
-              color: colors.textSecondary,
-            ),
+            style: B05Typography.caption(
+              context,
+            ).copyWith(color: colors.textSecondary),
           ),
         ),
         if (hasError) ...[
@@ -770,9 +772,9 @@ class _OnboardingHeightInputFieldState
             padding: const EdgeInsets.only(left: B05Layout.space12),
             child: Text(
               widget.errorText!,
-              style: B05Typography.caption(context).copyWith(
-                color: colors.danger.foreground,
-              ),
+              style: B05Typography.caption(
+                context,
+              ).copyWith(color: colors.danger.foreground),
             ),
           ),
         ],

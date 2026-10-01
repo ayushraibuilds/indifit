@@ -133,7 +133,8 @@ class HealthSourceSanitizer {
     if (lower.contains('strava')) return 'Strava';
     if (lower.contains('polar')) return 'Polar Flow';
     if (lower.contains('withings')) return 'Withings';
-    if (lower.contains('google.android.apps.fitness') || lower == 'google fit') {
+    if (lower.contains('google.android.apps.fitness') ||
+        lower == 'google fit') {
       return 'Google Fit';
     }
     if (lower.contains('healthdata') || lower == 'health connect') {
@@ -155,9 +156,11 @@ class HealthSourceSanitizer {
         final words = last
             .split(RegExp(r'[_ -]+'))
             .where((w) => w.isNotEmpty)
-            .map((w) => w.isEmpty
-                ? w
-                : w[0].toUpperCase() + (w.length > 1 ? w.substring(1) : ''))
+            .map(
+              (w) => w.isEmpty
+                  ? w
+                  : w[0].toUpperCase() + (w.length > 1 ? w.substring(1) : ''),
+            )
             .join(' ');
         if (words.isNotEmpty) return words;
       }
@@ -198,13 +201,13 @@ class HealthMetricContext<T> {
 
   @override
   int get hashCode => Object.hash(
-        value,
-        unit,
-        sourceName,
-        sourcePlatform,
-        recordedAtUtc,
-        isDeduplicated,
-      );
+    value,
+    unit,
+    sourceName,
+    sourcePlatform,
+    recordedAtUtc,
+    isDeduplicated,
+  );
 }
 
 class HealthDataSummary {
@@ -404,11 +407,11 @@ class HealthService {
     LocalTimezoneService? timezoneService,
     HealthPlatformAvailability? platformAvailabilityOverride,
     SharedPreferences? prefs,
-  })  : _health = health ?? Health(),
-        _dateService = dateService ?? LocalScheduleDateService(),
-        _timezoneService = timezoneService ?? LocalTimezoneService(),
-        _platformAvailabilityOverride = platformAvailabilityOverride,
-        _prefs = prefs;
+  }) : _health = health ?? Health(),
+       _dateService = dateService ?? LocalScheduleDateService(),
+       _timezoneService = timezoneService ?? LocalTimezoneService(),
+       _platformAvailabilityOverride = platformAvailabilityOverride,
+       _prefs = prefs;
 
   Future<SharedPreferences> _getPrefs() async =>
       _prefs ?? await SharedPreferences.getInstance();
@@ -565,7 +568,10 @@ class HealthService {
   Future<void> setLastSyncTime([DateTime? time]) async {
     final prefs = await _getPrefs();
     final t = time ?? DateTime.now();
-    await prefs.setString(AppPreferenceKeys.healthLastSyncTime, t.toIso8601String());
+    await prefs.setString(
+      AppPreferenceKeys.healthLastSyncTime,
+      t.toIso8601String(),
+    );
   }
 
   Future<bool> getCategoryState(HealthCategory category) async {
@@ -963,11 +969,17 @@ class HealthService {
       }
 
       final todayLocalDate = _dateService.todayIn(timezoneId);
-      final yesterdayLocalDate =
-          _dateService.addCalendarDays(todayLocalDate, timezoneId, -1);
+      final yesterdayLocalDate = _dateService.addCalendarDays(
+        todayLocalDate,
+        timezoneId,
+        -1,
+      );
       final nowUtc = _dateService.nowUtc();
-      final dayStartUtc =
-          _dateService.instantForLocalDate(todayLocalDate, timezoneId, hour: 0);
+      final dayStartUtc = _dateService.instantForLocalDate(
+        todayLocalDate,
+        timezoneId,
+        hour: 0,
+      );
 
       // Overnight sleep window: 18:00 yesterday to 14:00 today (civil timezone)
       final sleepWindowStartUtc = _dateService.instantForLocalDate(
@@ -1001,8 +1013,10 @@ class HealthService {
         permissions[HealthCategory.steps] ?? HealthPermissionStatus.unavailable,
       )) {
         try {
-          final total =
-              await _health.getTotalStepsInInterval(dayStartUtc, nowUtc);
+          final total = await _health.getTotalStepsInInterval(
+            dayStartUtc,
+            nowUtc,
+          );
           if (total != null) {
             steps = total;
             final stepsSource = switch (platformDisplayName) {
@@ -1107,11 +1121,13 @@ class HealthService {
               }
             }
 
-            final energySource = HealthSourceSanitizer.sanitize(
-              wearablePoints.isNotEmpty
-                  ? wearablePoints.first.sourceName
-                  : finalPoints.first.sourceName,
-            ) ?? 'Health';
+            final energySource =
+                HealthSourceSanitizer.sanitize(
+                  wearablePoints.isNotEmpty
+                      ? wearablePoints.first.sourceName
+                      : finalPoints.first.sourceName,
+                ) ??
+                'Health';
 
             DateTime? latestEnergyPoint;
             for (final p in finalPoints) {
@@ -1168,8 +1184,10 @@ class HealthService {
             );
 
             for (final span in mergedSpans) {
-              sleepMinutes +=
-                  span.end.difference(span.start).inMinutes.toDouble();
+              sleepMinutes += span.end
+                  .difference(span.start)
+                  .inMinutes
+                  .toDouble();
             }
 
             if (mergedSpans.isNotEmpty) {
@@ -1181,9 +1199,11 @@ class HealthService {
                 }
               }
 
-              final sleepSource = HealthSourceSanitizer.sanitize(
-                eligibleSleep.first.sourceName,
-              ) ?? 'Health';
+              final sleepSource =
+                  HealthSourceSanitizer.sanitize(
+                    eligibleSleep.first.sourceName,
+                  ) ??
+                  'Health';
 
               sleepContext = HealthMetricContext<double>(
                 value: sleepMinutes / 60.0,

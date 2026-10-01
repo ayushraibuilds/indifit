@@ -7,11 +7,7 @@ import '../capabilities/sync_capability.dart';
 import 'hlc_timestamp.dart';
 
 /// Type of record mutation.
-enum SyncMutationType {
-  insert,
-  update,
-  delete,
-}
+enum SyncMutationType { insert, update, delete }
 
 /// An immutable atomic change record to a synchronized entity.
 @immutable
@@ -23,14 +19,14 @@ class SyncMutation {
     required this.hlc,
     this.payload,
     this.encryptedEnvelope,
-  })  : assert(
-          type != SyncMutationType.delete || payload == null,
-          'Delete mutations cannot carry a payload.',
-        ),
-        assert(
-          type != SyncMutationType.delete || encryptedEnvelope == null,
-          'Delete mutations cannot carry an encrypted envelope.',
-        );
+  }) : assert(
+         type != SyncMutationType.delete || payload == null,
+         'Delete mutations cannot carry a payload.',
+       ),
+       assert(
+         type != SyncMutationType.delete || encryptedEnvelope == null,
+         'Delete mutations cannot carry an encrypted envelope.',
+       );
 
   /// Globally unique identifier of the entity (UUID v4).
   final String entityId;
@@ -60,13 +56,13 @@ class SyncMutation {
   bool get isDeleted => type == SyncMutationType.delete;
 
   Map<String, dynamic> toJson() => {
-        'entity_id': entityId,
-        'domain': domain.name,
-        'type': type.name,
-        'hlc': hlc.toJson(),
-        if (payload != null) 'payload': payload,
-        if (encryptedEnvelope != null) 'encrypted_envelope': encryptedEnvelope,
-      };
+    'entity_id': entityId,
+    'domain': domain.name,
+    'type': type.name,
+    'hlc': hlc.toJson(),
+    if (payload != null) 'payload': payload,
+    if (encryptedEnvelope != null) 'encrypted_envelope': encryptedEnvelope,
+  };
 
   factory SyncMutation.fromJson(Map<String, dynamic> json) {
     final envelopeRaw = json['encrypted_envelope'];
@@ -86,11 +82,13 @@ class SyncMutation {
       entityId: json['entity_id'] as String,
       domain: SyncDomain.values.firstWhere(
         (d) => d.name == json['domain'],
-        orElse: () => throw FormatException('Unknown SyncDomain: ${json['domain']}'),
+        orElse: () =>
+            throw FormatException('Unknown SyncDomain: ${json['domain']}'),
       ),
       type: SyncMutationType.values.firstWhere(
         (t) => t.name == json['type'],
-        orElse: () => throw FormatException('Unknown SyncMutationType: ${json['type']}'),
+        orElse: () =>
+            throw FormatException('Unknown SyncMutationType: ${json['type']}'),
       ),
       hlc: HlcTimestamp.fromJson(json['hlc'] as Map<String, dynamic>),
       payload: json['payload'] as Map<String, dynamic>?,
@@ -141,17 +139,19 @@ class SyncTombstone {
   }
 
   Map<String, dynamic> toJson() => {
-        'entity_id': entityId,
-        'domain': domain.name,
-        'deleted_at_hlc': deletedAtHlc.toJson(),
-        'created_at_utc': createdAtUtc.toIso8601String(),
-      };
+    'entity_id': entityId,
+    'domain': domain.name,
+    'deleted_at_hlc': deletedAtHlc.toJson(),
+    'created_at_utc': createdAtUtc.toIso8601String(),
+  };
 
   factory SyncTombstone.fromJson(Map<String, dynamic> json) {
     return SyncTombstone(
       entityId: json['entity_id'] as String,
       domain: SyncDomain.values.firstWhere((d) => d.name == json['domain']),
-      deletedAtHlc: HlcTimestamp.fromJson(json['deleted_at_hlc'] as Map<String, dynamic>),
+      deletedAtHlc: HlcTimestamp.fromJson(
+        json['deleted_at_hlc'] as Map<String, dynamic>,
+      ),
       createdAtUtc: DateTime.parse(json['created_at_utc'] as String),
     );
   }

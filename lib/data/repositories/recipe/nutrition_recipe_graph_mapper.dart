@@ -226,15 +226,14 @@ class NutritionRecipeGraphMapper {
     }
   }
 
-  NutritionRecipeModel recipeModel(NutritionRecipe row) =>
-      NutritionRecipeModel(
-        id: row.id,
-        userId: row.userId,
-        name: row.name,
-        description: row.description,
-        lifecycle: lifecycle(row.lifecycle),
-        currentVersionId: row.currentVersionId,
-      );
+  NutritionRecipeModel recipeModel(NutritionRecipe row) => NutritionRecipeModel(
+    id: row.id,
+    userId: row.userId,
+    name: row.name,
+    description: row.description,
+    lifecycle: lifecycle(row.lifecycle),
+    currentVersionId: row.currentVersionId,
+  );
 
   NutritionRecipeLifecycle lifecycle(String value) => switch (value) {
     'active' => NutritionRecipeLifecycle.active,

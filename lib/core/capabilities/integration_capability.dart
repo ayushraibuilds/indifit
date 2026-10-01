@@ -1,9 +1,5 @@
 /// Supported external platform integration partners.
-enum IntegrationPlatform {
-  appleHealth,
-  healthConnect,
-  externalSensor,
-}
+enum IntegrationPlatform { appleHealth, healthConnect, externalSensor }
 
 /// Abstract contract for third-party platform integrations (HealthKit, Health Connect).
 ///
@@ -50,13 +46,11 @@ class DisabledIntegrationCapability implements IntegrationCapability {
     required DateTime endUtc,
     required String title,
     double? activeEnergyKcal,
-  }) async =>
-      false;
+  }) async => false;
 
   @override
   Future<bool> writeWeight({
     required double weightKg,
     required DateTime recordedAtUtc,
-  }) async =>
-      false;
+  }) async => false;
 }

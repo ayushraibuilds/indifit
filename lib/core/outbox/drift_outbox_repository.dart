@@ -14,10 +14,8 @@ import 'outbox_retry_policy.dart';
 /// (backup specs are explicit allowlists). Survives process death, unlike
 /// [InMemoryOutboxRepository] which remains the choice for unit tests.
 class DriftOutboxRepository implements OutboxRepository {
-  DriftOutboxRepository(
-    this._db, {
-    OutboxRetryPolicy? retryPolicy,
-  }) : _retryPolicy = retryPolicy ?? const OutboxRetryPolicy();
+  DriftOutboxRepository(this._db, {OutboxRetryPolicy? retryPolicy})
+    : _retryPolicy = retryPolicy ?? const OutboxRetryPolicy();
 
   final AppDatabase _db;
   final OutboxRetryPolicy _retryPolicy;
@@ -66,24 +64,28 @@ class DriftOutboxRepository implements OutboxRepository {
   @override
   Future<void> enqueue(OutboxOperation operation) async {
     // Idempotent on operationId: never silently overwrite an existing row.
-    final existing = await ( _db.select(_db.outboxEntries)
-          ..where((t) => t.operationId.equals(operation.operationId)))
-        .getSingleOrNull();
+    final existing =
+        await (_db.select(_db.outboxEntries)
+              ..where((t) => t.operationId.equals(operation.operationId)))
+            .getSingleOrNull();
     if (existing != null) return;
 
     // Deduplicate by idempotency key only while an operation is still active.
-    final activeDup = await (_db.select(_db.outboxEntries)
-          ..where((t) => t.idempotencyKey.equals(operation.idempotencyKey))
-          ..where(
-            (t) =>
-                t.state.equals(OutboxState.pending.name) |
-                t.state.equals(OutboxState.inFlight.name) |
-                t.state.equals(OutboxState.transientFailure.name),
-          ))
-        .getSingleOrNull();
+    final activeDup =
+        await (_db.select(_db.outboxEntries)
+              ..where((t) => t.idempotencyKey.equals(operation.idempotencyKey))
+              ..where(
+                (t) =>
+                    t.state.equals(OutboxState.pending.name) |
+                    t.state.equals(OutboxState.inFlight.name) |
+                    t.state.equals(OutboxState.transientFailure.name),
+              ))
+            .getSingleOrNull();
     if (activeDup != null) return;
 
-    await _db.into(_db.outboxEntries).insert(
+    await _db
+        .into(_db.outboxEntries)
+        .insert(
           OutboxEntriesCompanion.insert(
             operationId: operation.operationId,
             idempotencyKey: operation.idempotencyKey,
@@ -104,23 +106,22 @@ class DriftOutboxRepository implements OutboxRepository {
   @override
   Future<List<OutboxOperation>> getPendingOperations({int limit = 50}) async {
     final now = DateTime.now().toUtc();
-    final leaseCutoff =
-        now.subtract(OutboxRepository.stuckInFlightLease);
-    final rows = await (_db.select(_db.outboxEntries)
-          ..where(
-            (t) =>
-                ((t.state.equals(OutboxState.pending.name) |
-                            t.state.equals(
-                                OutboxState.transientFailure.name)) &
+    final leaseCutoff = now.subtract(OutboxRepository.stuckInFlightLease);
+    final rows =
+        await (_db.select(_db.outboxEntries)
+              ..where(
+                (t) =>
+                    ((t.state.equals(OutboxState.pending.name) |
+                            t.state.equals(OutboxState.transientFailure.name)) &
                         t.scheduledAtUtc.isSmallerOrEqualValue(now)) |
                     // Stale-lease recovery (see contract): a pre-crash
                     // dispatch left inFlight becomes redeliverable.
                     (t.state.equals(OutboxState.inFlight.name) &
                         t.lastAttemptUtc.isSmallerThanValue(leaseCutoff)),
-          )
-          ..orderBy([(t) => OrderingTerm.asc(t.scheduledAtUtc)])
-          ..limit(limit))
-        .get();
+              )
+              ..orderBy([(t) => OrderingTerm.asc(t.scheduledAtUtc)])
+              ..limit(limit))
+            .get();
     return rows.map(_toDomain).toList();
   }
 
@@ -128,9 +129,9 @@ class DriftOutboxRepository implements OutboxRepository {
   Future<void> markInFlight(String operationId) async {
     final op = await getOperationById(operationId);
     if (op == null) return;
-    await (_db.update(_db.outboxEntries)
-          ..where((t) => t.operationId.equals(operationId)))
-        .write(
+    await (_db.update(
+      _db.outboxEntries,
+    )..where((t) => t.operationId.equals(operationId))).write(
       OutboxEntriesCompanion(
         state: Value(OutboxState.inFlight.name),
         attemptCount: Value(op.attemptCount + 1),
@@ -141,9 +142,9 @@ class DriftOutboxRepository implements OutboxRepository {
 
   @override
   Future<void> markSucceeded(String operationId) async {
-    await (_db.update(_db.outboxEntries)
-          ..where((t) => t.operationId.equals(operationId)))
-        .write(
+    await (_db.update(
+      _db.outboxEntries,
+    )..where((t) => t.operationId.equals(operationId))).write(
       OutboxEntriesCompanion(
         state: Value(OutboxState.succeeded.name),
         lastAttemptUtc: Value(DateTime.now().toUtc()),
@@ -162,10 +163,13 @@ class DriftOutboxRepository implements OutboxRepository {
     if (op == null) return;
     final now = DateTime.now().toUtc();
     if (isRetryable && op.attemptCount < _retryPolicy.maxAttempts) {
-      final next = _retryPolicy.calculateNextSchedule(op.attemptCount, fromUtc: now);
-      await (_db.update(_db.outboxEntries)
-            ..where((t) => t.operationId.equals(operationId)))
-          .write(
+      final next = _retryPolicy.calculateNextSchedule(
+        op.attemptCount,
+        fromUtc: now,
+      );
+      await (_db.update(
+        _db.outboxEntries,
+      )..where((t) => t.operationId.equals(operationId))).write(
         OutboxEntriesCompanion(
           state: Value(OutboxState.transientFailure.name),
           scheduledAtUtc: Value(next),
@@ -174,9 +178,9 @@ class DriftOutboxRepository implements OutboxRepository {
         ),
       );
     } else {
-      await (_db.update(_db.outboxEntries)
-            ..where((t) => t.operationId.equals(operationId)))
-          .write(
+      await (_db.update(
+        _db.outboxEntries,
+      )..where((t) => t.operationId.equals(operationId))).write(
         OutboxEntriesCompanion(
           state: Value(OutboxState.permanentFailure.name),
           lastAttemptUtc: Value(now),
@@ -188,31 +192,35 @@ class DriftOutboxRepository implements OutboxRepository {
 
   @override
   Future<void> cancel(String operationId) async {
-    await (_db.update(_db.outboxEntries)
-          ..where((t) => t.operationId.equals(operationId)))
-        .write(OutboxEntriesCompanion(state: Value(OutboxState.cancelled.name)));
+    await (_db.update(
+      _db.outboxEntries,
+    )..where((t) => t.operationId.equals(operationId))).write(
+      OutboxEntriesCompanion(state: Value(OutboxState.cancelled.name)),
+    );
   }
 
   @override
-  Future<int> pruneCompleted({Duration olderThan = const Duration(days: 7)}) async {
+  Future<int> pruneCompleted({
+    Duration olderThan = const Duration(days: 7),
+  }) async {
     final cutoff = DateTime.now().toUtc().subtract(olderThan);
     // Terminal rows whose completion (or creation, if never attempted) predates
     // the cutoff. Rows are small; fetch candidates then delete by id.
-    final rows = await (_db.select(_db.outboxEntries)
-          ..where(
-            (t) =>
-                t.state.equals(OutboxState.succeeded.name) |
-                t.state.equals(OutboxState.permanentFailure.name) |
-                t.state.equals(OutboxState.cancelled.name),
-          ))
-        .get();
+    final rows =
+        await (_db.select(_db.outboxEntries)..where(
+              (t) =>
+                  t.state.equals(OutboxState.succeeded.name) |
+                  t.state.equals(OutboxState.permanentFailure.name) |
+                  t.state.equals(OutboxState.cancelled.name),
+            ))
+            .get();
     var removed = 0;
     for (final row in rows) {
       final completedAt = row.lastAttemptUtc ?? row.createdAtUtc;
       if (completedAt.isBefore(cutoff)) {
-        await (_db.delete(_db.outboxEntries)
-              ..where((t) => t.operationId.equals(row.operationId)))
-            .go();
+        await (_db.delete(
+          _db.outboxEntries,
+        )..where((t) => t.operationId.equals(row.operationId))).go();
         removed++;
       }
     }
@@ -252,9 +260,9 @@ class DriftOutboxRepository implements OutboxRepository {
 
   @override
   Future<OutboxOperation?> getOperationById(String operationId) async {
-    final row = await (_db.select(_db.outboxEntries)
-          ..where((t) => t.operationId.equals(operationId)))
-        .getSingleOrNull();
+    final row = await (_db.select(
+      _db.outboxEntries,
+    )..where((t) => t.operationId.equals(operationId))).getSingleOrNull();
     return row == null ? null : _toDomain(row);
   }
 }

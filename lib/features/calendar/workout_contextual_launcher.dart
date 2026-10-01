@@ -113,9 +113,10 @@ abstract final class WorkoutContextualLauncher {
         '/b02-strength-player',
         extra: WorkoutExecutionRouteData.fromLaunch(target.launch),
       ),
-      B01WorkoutOccurrenceLaunchTarget() => throw const B02StrengthExecutionException(
-        'Workout could not be started. Try again.',
-      ),
+      B01WorkoutOccurrenceLaunchTarget() =>
+        throw const B02StrengthExecutionException(
+          'Workout could not be started. Try again.',
+        ),
     };
   }
 }

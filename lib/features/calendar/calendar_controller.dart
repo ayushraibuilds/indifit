@@ -49,11 +49,10 @@ class CalendarController extends StateNotifier<CalendarUiState> {
        super(
          CalendarUiState(
            selectedLocalDate: initialLocalDate != null
-               ? (dates ?? LocalScheduleDateService())
-                   .normalizeLocalDate(initialLocalDate)
-               : (dates ?? LocalScheduleDateService()).todayIn(
-                   timezoneId,
-                 ),
+               ? (dates ?? LocalScheduleDateService()).normalizeLocalDate(
+                   initialLocalDate,
+                 )
+               : (dates ?? LocalScheduleDateService()).todayIn(timezoneId),
            timezoneId: timezoneId,
            isLoading: true,
          ),

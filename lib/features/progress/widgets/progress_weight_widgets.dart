@@ -16,7 +16,8 @@ import 'progress_view_models.dart';
 /// Extracted verbatim from `progress_screen.dart`; behavior unchanged.
 
 class ProgressWeightSection extends StatefulWidget {
-  const ProgressWeightSection({super.key, 
+  const ProgressWeightSection({
+    super.key,
     required this.snapshot,
     required this.range,
     required this.ranges,
@@ -310,7 +311,8 @@ class ProgressWeightHistoryScreen extends StatelessWidget {
 }
 
 class ProgressWeightRangeSelector extends StatelessWidget {
-  const ProgressWeightRangeSelector({super.key, 
+  const ProgressWeightRangeSelector({
+    super.key,
     required this.ranges,
     required this.selected,
     required this.onSelected,
@@ -349,4 +351,3 @@ class ProgressWeightRangeSelector extends StatelessWidget {
     );
   }
 }
-

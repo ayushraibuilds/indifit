@@ -416,7 +416,8 @@ class _CanonicalFoodRow extends ConsumerWidget {
     final canonical = record is NutritionCanonicalSnapshotReadModel
         ? record as NutritionCanonicalSnapshotReadModel
         : null;
-    final isDirectOrQuickAdd = canonical != null &&
+    final isDirectOrQuickAdd =
+        canonical != null &&
         (canonical.snapshot.sourceType == 'direct_food' ||
             canonical.snapshot.sourceType == 'quick_add');
     if (!isDirectOrQuickAdd) return rowContent;
@@ -424,7 +425,9 @@ class _CanonicalFoodRow extends ConsumerWidget {
     final snapshotId = canonical.snapshot.id;
 
     return Dismissible(
-      key: ValueKey('dismissible_${record.stableId}_${item?.stableId ?? 'single'}'),
+      key: ValueKey(
+        'dismissible_${record.stableId}_${item?.stableId ?? 'single'}',
+      ),
       direction: DismissDirection.endToStart,
       background: Container(
         alignment: Alignment.centerRight,
@@ -451,11 +454,14 @@ class _CanonicalFoodRow extends ConsumerWidget {
                 snapshotId: snapshotId,
                 expectedLocalDate: record.localDate,
                 expectedMealCategory: record.mealCategory,
-                commandId: 'swipe-delete::$snapshotId::${DateTime.now().microsecondsSinceEpoch}',
+                commandId:
+                    'swipe-delete::$snapshotId::${DateTime.now().microsecondsSinceEpoch}',
               );
               if (date != null) {
                 ref.invalidate(foodDiaryReadModelProvider(_civilDay(date!)));
-                ref.invalidate(canonicalFoodRecordsForDayProvider(_civilDay(date!)));
+                ref.invalidate(
+                  canonicalFoodRecordsForDayProvider(_civilDay(date!)),
+                );
               }
               ref.read(todayNutritionRevisionProvider.notifier).state++;
             } catch (_) {}
@@ -471,7 +477,9 @@ class _CanonicalFoodRow extends ConsumerWidget {
             timer.cancel();
             if (date != null) {
               ref.invalidate(foodDiaryReadModelProvider(_civilDay(date!)));
-              ref.invalidate(canonicalFoodRecordsForDayProvider(_civilDay(date!)));
+              ref.invalidate(
+                canonicalFoodRecordsForDayProvider(_civilDay(date!)),
+              );
             }
             ref.read(todayNutritionRevisionProvider.notifier).state++;
           },

@@ -12,8 +12,8 @@ class SyncPushRequest {
   final List<SyncMutation> mutations;
 
   Map<String, dynamic> toJson() => {
-        'mutations': mutations.map((m) => m.toJson()).toList(),
-      };
+    'mutations': mutations.map((m) => m.toJson()).toList(),
+  };
 
   factory SyncPushRequest.fromJson(Map<String, dynamic> json) {
     return SyncPushRequest(
@@ -35,9 +35,9 @@ class SyncPushResponse {
   final HlcTimestamp serverReceivedHlc;
 
   Map<String, dynamic> toJson() => {
-        'accepted_count': acceptedCount,
-        'server_received_hlc': serverReceivedHlc.toJson(),
-      };
+    'accepted_count': acceptedCount,
+    'server_received_hlc': serverReceivedHlc.toJson(),
+  };
 
   factory SyncPushResponse.fromJson(Map<String, dynamic> json) {
     return SyncPushResponse(
@@ -62,10 +62,10 @@ class SyncPullResponse {
   final HlcTimestamp? latestHlc;
 
   Map<String, dynamic> toJson() => {
-        'mutations': mutations.map((m) => m.toJson()).toList(),
-        'has_more': hasMore,
-        if (latestHlc != null) 'latest_hlc': latestHlc!.toJson(),
-      };
+    'mutations': mutations.map((m) => m.toJson()).toList(),
+    'has_more': hasMore,
+    if (latestHlc != null) 'latest_hlc': latestHlc!.toJson(),
+  };
 
   factory SyncPullResponse.fromJson(Map<String, dynamic> json) {
     return SyncPullResponse(
@@ -116,7 +116,11 @@ class InMemorySyncApiClient implements SyncApiClient {
 
     final now = DateTime.now().toUtc().millisecondsSinceEpoch;
     var accepted = 0;
-    HlcTimestamp latest = const HlcTimestamp(millis: 0, counter: 0, nodeId: 'server');
+    HlcTimestamp latest = const HlcTimestamp(
+      millis: 0,
+      counter: 0,
+      nodeId: 'server',
+    );
 
     for (final mutation in mutations) {
       // Validate clock skew
@@ -146,10 +150,7 @@ class InMemorySyncApiClient implements SyncApiClient {
     // Keep stored mutations sorted by HLC
     _storedMutations.sort((a, b) => a.hlc.compareTo(b.hlc));
 
-    return SyncPushResponse(
-      acceptedCount: accepted,
-      serverReceivedHlc: latest,
-    );
+    return SyncPushResponse(acceptedCount: accepted, serverReceivedHlc: latest);
   }
 
   @override

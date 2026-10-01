@@ -1148,11 +1148,16 @@ class _B02StrengthPlayerScreenState
                               decimal: true,
                             ),
                             decoration: InputDecoration(
-                              labelText: (set.actualLoadBasis ?? slot.targetLoadBasis) == B02LoadBasis.bodyweight
+                              labelText:
+                                  (set.actualLoadBasis ??
+                                          slot.targetLoadBasis) ==
+                                      B02LoadBasis.bodyweight
                                   ? 'Added weight (optional kg)'
                                   : 'Load (kg)',
                               helperText:
-                                  (set.actualLoadBasis ?? slot.targetLoadBasis) == B02LoadBasis.bodyweight
+                                  (set.actualLoadBasis ??
+                                          slot.targetLoadBasis) ==
+                                      B02LoadBasis.bodyweight
                                   ? 'Bodyweight exercise'
                                   : null,
                               errorText: loadError,
@@ -1288,7 +1293,8 @@ class _B02StrengthPlayerScreenState
       loadController.dispose();
       if (result == null || !mounted) return;
       final loadBasis = result.loadKg == null
-          ? ((set.actualLoadBasis ?? slot.targetLoadBasis) == B02LoadBasis.bodyweight
+          ? ((set.actualLoadBasis ?? slot.targetLoadBasis) ==
+                    B02LoadBasis.bodyweight
                 ? B02LoadBasis.bodyweight
                 : null)
           : set.actualLoadBasis ??
@@ -1541,7 +1547,8 @@ class _B02StrengthPlayerScreenState
     );
     if (!mounted) return;
     final currentState = ref.read(provider);
-    if (currentState.completedSessionId != null || currentState.launch == null) {
+    if (currentState.completedSessionId != null ||
+        currentState.launch == null) {
       if (context.canPop()) {
         context.pop();
       }

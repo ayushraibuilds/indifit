@@ -30,8 +30,6 @@ import 'package:indifit/features/food_log/thali/thali_builder_screen.dart';
 import 'package:indifit/features/food_log/thali/thali_plate_layout.dart';
 import 'package:indifit/features/food_log/thali/thali_quick_adjust_hud.dart';
 
-
-
 class _TestHarness {
   final AppDatabase db;
   final NutrientRegistry registry;
@@ -108,7 +106,9 @@ Future<void> _insertFoodItem(
   String displayName,
   String alias,
 ) async {
-  await db.into(db.nutritionFoods).insert(
+  await db
+      .into(db.nutritionFoods)
+      .insert(
         NutritionFoodsCompanion.insert(
           id: id,
           kind: 'canonical',
@@ -118,7 +118,9 @@ Future<void> _insertFoodItem(
           lifecycle: 'active',
         ),
       );
-  await db.into(db.nutritionFoodAliases).insert(
+  await db
+      .into(db.nutritionFoodAliases)
+      .insert(
         NutritionFoodAliasesCompanion.insert(
           id: '$id-alias',
           foodId: Value(id),
@@ -129,7 +131,9 @@ Future<void> _insertFoodItem(
           isActive: const Value(true),
         ),
       );
-  await db.into(db.nutritionFoodNutrientFacts).insert(
+  await db
+      .into(db.nutritionFoodNutrientFacts)
+      .insert(
         NutritionFoodNutrientFactsCompanion.insert(
           id: '$id-energy-v1',
           foodId: id,
@@ -144,7 +148,9 @@ Future<void> _insertFoodItem(
           isCurrent: const Value(true),
         ),
       );
-  await db.into(db.nutritionFoodNutrientFacts).insert(
+  await db
+      .into(db.nutritionFoodNutrientFacts)
+      .insert(
         NutritionFoodNutrientFactsCompanion.insert(
           id: '$id-protein-v1',
           foodId: id,
@@ -159,7 +165,9 @@ Future<void> _insertFoodItem(
           isCurrent: const Value(true),
         ),
       );
-  await db.into(db.nutritionFoodNutrientFacts).insert(
+  await db
+      .into(db.nutritionFoodNutrientFacts)
+      .insert(
         NutritionFoodNutrientFactsCompanion.insert(
           id: '$id-carb-v1',
           foodId: id,
@@ -174,7 +182,9 @@ Future<void> _insertFoodItem(
           isCurrent: const Value(true),
         ),
       );
-  await db.into(db.nutritionFoodNutrientFacts).insert(
+  await db
+      .into(db.nutritionFoodNutrientFacts)
+      .insert(
         NutritionFoodNutrientFactsCompanion.insert(
           id: '$id-fat-v1',
           foodId: id,
@@ -216,7 +226,13 @@ void main() {
 
   group('1. ThaliDishClassifier', () {
     test('classifies Indian breads into center staple zone', () {
-      for (final label in ['Phulka Roti', 'Tandoori Naan', 'Aloo Paratha', 'Poori', 'Chapati']) {
+      for (final label in [
+        'Phulka Roti',
+        'Tandoori Naan',
+        'Aloo Paratha',
+        'Poori',
+        'Chapati',
+      ]) {
         final placement = ThaliDishClassifier.classify(
           displayLabel: label,
           colors: colors,
@@ -227,7 +243,13 @@ void main() {
     });
 
     test('classifies rice and grains into center staple zone', () {
-      for (final label in ['Jeera Rice', 'Steamed Chawal', 'Veg Pulao', 'Khichdi', 'Biryani']) {
+      for (final label in [
+        'Jeera Rice',
+        'Steamed Chawal',
+        'Veg Pulao',
+        'Khichdi',
+        'Biryani',
+      ]) {
         final placement = ThaliDishClassifier.classify(
           displayLabel: label,
           colors: colors,
@@ -237,19 +259,35 @@ void main() {
       }
     });
 
-    test('classifies dals, legumes, and regional lentils into perimeter dal category', () {
-      for (final label in ['Dal Tadka', 'Sambar', 'Rasam', 'Kadhi', 'Chole Masala', 'Rajma']) {
-        final placement = ThaliDishClassifier.classify(
-          displayLabel: label,
-          colors: colors,
-        );
-        expect(placement.zone, ThaliPlateZone.perimeter);
-        expect(placement.category, ThaliDishCategory.dal);
-      }
-    });
+    test(
+      'classifies dals, legumes, and regional lentils into perimeter dal category',
+      () {
+        for (final label in [
+          'Dal Tadka',
+          'Sambar',
+          'Rasam',
+          'Kadhi',
+          'Chole Masala',
+          'Rajma',
+        ]) {
+          final placement = ThaliDishClassifier.classify(
+            displayLabel: label,
+            colors: colors,
+          );
+          expect(placement.zone, ThaliPlateZone.perimeter);
+          expect(placement.category, ThaliDishCategory.dal);
+        }
+      },
+    );
 
     test('classifies regional vegetables into perimeter sabzi category', () {
-      for (final label in ['Bhindi Fry', 'Aloo Gobi', 'Beans Poriyal', 'Cabbage Thoran', 'Palak Paneer']) {
+      for (final label in [
+        'Bhindi Fry',
+        'Aloo Gobi',
+        'Beans Poriyal',
+        'Cabbage Thoran',
+        'Palak Paneer',
+      ]) {
         final placement = ThaliDishClassifier.classify(
           displayLabel: label,
           colors: colors,
@@ -275,7 +313,14 @@ void main() {
     });
 
     test('classifies South Indian staples into center staple zone', () {
-      for (final label in ['Masala Dosa', 'Steamed Idli', 'Onion Uttapam', 'Appam', 'Medu Vada', 'Pesarattu']) {
+      for (final label in [
+        'Masala Dosa',
+        'Steamed Idli',
+        'Onion Uttapam',
+        'Appam',
+        'Medu Vada',
+        'Pesarattu',
+      ]) {
         final placement = ThaliDishClassifier.classify(
           displayLabel: label,
           colors: colors,
@@ -373,197 +418,370 @@ void main() {
   });
 
   group('3. CircularThaliPlate & ThaliQuickAdjustHud Unit Tests', () {
-    testWidgets('renders plate, perimeter katoris, and invokes selection callback', (tester) async {
-      final items = [
-        _buildItem(id: 'roti_1', displayLabel: 'Roti'),
-        _buildItem(id: 'dal_1', displayLabel: 'Dal'),
-      ];
+    testWidgets(
+      'renders plate, perimeter katoris, and invokes selection callback',
+      (tester) async {
+        final items = [
+          _buildItem(id: 'roti_1', displayLabel: 'Roti'),
+          _buildItem(id: 'dal_1', displayLabel: 'Dal'),
+        ];
 
-      String? selectedId;
-      bool addTapped = false;
+        String? selectedId;
+        bool addTapped = false;
 
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: AppTheme.darkTheme,
-          home: Scaffold(
-            body: Center(
-              child: SizedBox(
-                width: 350,
-                height: 350,
-                child: CircularThaliPlate(
-                  items: items,
-                  previews: const [],
-                  selectedItemId: selectedId,
-                  onSelectItem: (id) => selectedId = id,
-                  onAddDish: () => addTapped = true,
-                  onViewAllDishes: () {},
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: AppTheme.darkTheme,
+            home: Scaffold(
+              body: Center(
+                child: SizedBox(
+                  width: 350,
+                  height: 350,
+                  child: CircularThaliPlate(
+                    items: items,
+                    previews: const [],
+                    selectedItemId: selectedId,
+                    onSelectItem: (id) => selectedId = id,
+                    onAddDish: () => addTapped = true,
+                    onViewAllDishes: () {},
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      // Verify staple and katori keys
-      expect(find.byKey(const Key('thali_plate_staple_roti_1')), findsOneWidget);
-      expect(find.byKey(const Key('thali_plate_katori_dal_1')), findsOneWidget);
-      expect(find.byKey(const Key('thali_plate_add_slot')), findsOneWidget);
+        // Verify staple and katori keys
+        expect(
+          find.byKey(const Key('thali_plate_staple_roti_1')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const Key('thali_plate_katori_dal_1')),
+          findsOneWidget,
+        );
+        expect(find.byKey(const Key('thali_plate_add_slot')), findsOneWidget);
 
-      // Tap katori
-      await tester.tap(find.byKey(const Key('thali_plate_katori_dal_1')));
-      expect(selectedId, 'dal_1');
+        // Tap katori
+        await tester.tap(find.byKey(const Key('thali_plate_katori_dal_1')));
+        expect(selectedId, 'dal_1');
 
-      // Tap add slot
-      await tester.tap(find.byKey(const Key('thali_plate_add_slot')));
-      expect(addTapped, isTrue);
-    });
+        // Tap add slot
+        await tester.tap(find.byKey(const Key('thali_plate_add_slot')));
+        expect(addTapped, isTrue);
+      },
+    );
 
-    testWidgets('ThaliQuickAdjustHud handles increment, decrement, and remove', (tester) async {
-      final item = _buildItem(id: 'dal_1', displayLabel: 'Yellow Dal Tadka', amount: 1.0);
+    testWidgets(
+      'ThaliQuickAdjustHud handles increment, decrement, and remove',
+      (tester) async {
+        final item = _buildItem(
+          id: 'dal_1',
+          displayLabel: 'Yellow Dal Tadka',
+          amount: 1.0,
+        );
 
-      int incrementCount = 0;
-      int decrementCount = 0;
-      bool removeCalled = false;
-      bool closeCalled = false;
+        int incrementCount = 0;
+        int decrementCount = 0;
+        bool removeCalled = false;
+        bool closeCalled = false;
 
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: AppTheme.darkTheme,
-          home: Scaffold(
-            body: ThaliQuickAdjustHud(
-              item: item,
-              preview: null,
-              onIncrement: () => incrementCount++,
-              onDecrement: () => decrementCount++,
-              onRemove: () => removeCalled = true,
-              onReplace: () {},
-              onClose: () => closeCalled = true,
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: AppTheme.darkTheme,
+            home: Scaffold(
+              body: ThaliQuickAdjustHud(
+                item: item,
+                preview: null,
+                onIncrement: () => incrementCount++,
+                onDecrement: () => decrementCount++,
+                onRemove: () => removeCalled = true,
+                onReplace: () {},
+                onClose: () => closeCalled = true,
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      expect(find.byKey(const Key('thali_quick_hud')), findsOneWidget);
-      expect(find.text('Yellow Dal Tadka'), findsOneWidget);
+        expect(find.byKey(const Key('thali_quick_hud')), findsOneWidget);
+        expect(find.text('Yellow Dal Tadka'), findsOneWidget);
 
-      // Steppers
-      await tester.tap(find.byKey(const Key('thali_quick_hud_increment')));
-      expect(incrementCount, 1);
+        // Steppers
+        await tester.tap(find.byKey(const Key('thali_quick_hud_increment')));
+        expect(incrementCount, 1);
 
-      await tester.tap(find.byKey(const Key('thali_quick_hud_decrement')));
-      expect(decrementCount, 1);
+        await tester.tap(find.byKey(const Key('thali_quick_hud_decrement')));
+        expect(decrementCount, 1);
 
-      // Remove
-      await tester.tap(find.byKey(const Key('thali_quick_hud_remove')));
-      expect(removeCalled, isTrue);
+        // Remove
+        await tester.tap(find.byKey(const Key('thali_quick_hud_remove')));
+        expect(removeCalled, isTrue);
 
-      // Close
-      await tester.tap(find.byKey(const Key('thali_quick_hud_close')));
-      expect(closeCalled, isTrue);
-    });
+        // Close
+        await tester.tap(find.byKey(const Key('thali_quick_hud_close')));
+        expect(closeCalled, isTrue);
+      },
+    );
 
-    testWidgets('Macro ring painter paints without error for zero calories and partial state', (tester) async {
-      final items = [_buildItem(id: '1', displayLabel: 'Water')];
+    testWidgets(
+      'Macro ring painter paints without error for zero calories and partial state',
+      (tester) async {
+        final items = [_buildItem(id: '1', displayLabel: 'Water')];
 
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: AppTheme.darkTheme,
-          home: Scaffold(
-            body: CircularThaliPlate(
-              items: items,
-              previews: const [],
-              preview: null, // 0 macro facts
-              onSelectItem: (_) {},
-              onAddDish: () {},
-              onViewAllDishes: () {},
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: AppTheme.darkTheme,
+            home: Scaffold(
+              body: CircularThaliPlate(
+                items: items,
+                previews: const [],
+                preview: null, // 0 macro facts
+                onSelectItem: (_) {},
+                onAddDish: () {},
+                onViewAllDishes: () {},
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      // Verify no crash on zero macros
-      expect(tester.takeException(), isNull);
-    });
+        // Verify no crash on zero macros
+        expect(tester.takeException(), isNull);
+      },
+    );
 
-    testWidgets('renders SizedBox.shrink when available size is smaller than 140px threshold', (tester) async {
-      final items = [_buildItem(id: '1', displayLabel: 'Roti')];
+    testWidgets(
+      'renders SizedBox.shrink when available size is smaller than 140px threshold',
+      (tester) async {
+        final items = [_buildItem(id: '1', displayLabel: 'Roti')];
 
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: AppTheme.darkTheme,
-          home: Scaffold(
-            body: Center(
-              child: SizedBox(
-                width: 120,
-                height: 120,
-                child: CircularThaliPlate(
-                  items: items,
-                  previews: const [],
-                  onSelectItem: (_) {},
-                  onAddDish: () {},
-                  onViewAllDishes: () {},
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: AppTheme.darkTheme,
+            home: Scaffold(
+              body: Center(
+                child: SizedBox(
+                  width: 120,
+                  height: 120,
+                  child: CircularThaliPlate(
+                    items: items,
+                    previews: const [],
+                    onSelectItem: (_) {},
+                    onAddDish: () {},
+                    onViewAllDishes: () {},
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      expect(find.byType(CircularThaliPlate), findsOneWidget);
-      expect(find.byKey(const Key('thali_plate_staple_1')), findsNothing);
-      expect(tester.takeException(), isNull);
-    });
+        expect(find.byType(CircularThaliPlate), findsOneWidget);
+        expect(find.byKey(const Key('thali_plate_staple_1')), findsNothing);
+        expect(tester.takeException(), isNull);
+      },
+    );
 
-    testWidgets('provides accessibility Semantics for staple, katori, and add slots', (tester) async {
-      final items = [
-        _buildItem(id: 'roti_1', displayLabel: 'Roti'),
-        _buildItem(id: 'dal_1', displayLabel: 'Dal'),
-      ];
+    testWidgets(
+      'provides accessibility Semantics for staple, katori, and add slots',
+      (tester) async {
+        final items = [
+          _buildItem(id: 'roti_1', displayLabel: 'Roti'),
+          _buildItem(id: 'dal_1', displayLabel: 'Dal'),
+        ];
 
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: AppTheme.darkTheme,
-          home: Scaffold(
-            body: Center(
-              child: SizedBox(
-                width: 350,
-                height: 350,
-                child: CircularThaliPlate(
-                  items: items,
-                  previews: const [],
-                  selectedItemId: 'dal_1',
-                  onSelectItem: (_) {},
-                  onAddDish: () {},
-                  onViewAllDishes: () {},
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: AppTheme.darkTheme,
+            home: Scaffold(
+              body: Center(
+                child: SizedBox(
+                  width: 350,
+                  height: 350,
+                  child: CircularThaliPlate(
+                    items: items,
+                    previews: const [],
+                    selectedItemId: 'dal_1',
+                    onSelectItem: (_) {},
+                    onAddDish: () {},
+                    onViewAllDishes: () {},
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      final semantics = tester.ensureSemantics();
-      try {
-        final stapleSemantics = tester.getSemantics(find.byKey(const Key('thali_plate_staple_roti_1')));
-        expect(stapleSemantics.getSemanticsData().flagsCollection.isButton, isTrue);
-        expect(stapleSemantics.getSemanticsData().label, contains('Roti'));
+        final semantics = tester.ensureSemantics();
+        try {
+          final stapleSemantics = tester.getSemantics(
+            find.byKey(const Key('thali_plate_staple_roti_1')),
+          );
+          expect(
+            stapleSemantics.getSemanticsData().flagsCollection.isButton,
+            isTrue,
+          );
+          expect(stapleSemantics.getSemanticsData().label, contains('Roti'));
 
-        final katoriSemantics = tester.getSemantics(find.byKey(const Key('thali_plate_katori_dal_1')));
-        expect(katoriSemantics.getSemanticsData().flagsCollection.isButton, isTrue);
-        expect(katoriSemantics.getSemanticsData().flagsCollection.isSelected.name, 'isTrue');
-        expect(katoriSemantics.getSemanticsData().label, contains('Dal'));
+          final katoriSemantics = tester.getSemantics(
+            find.byKey(const Key('thali_plate_katori_dal_1')),
+          );
+          expect(
+            katoriSemantics.getSemanticsData().flagsCollection.isButton,
+            isTrue,
+          );
+          expect(
+            katoriSemantics.getSemanticsData().flagsCollection.isSelected.name,
+            'isTrue',
+          );
+          expect(katoriSemantics.getSemanticsData().label, contains('Dal'));
 
-        final addSemantics = tester.getSemantics(find.byKey(const Key('thali_plate_add_slot')));
-        expect(addSemantics.getSemanticsData().flagsCollection.isButton, isTrue);
-        expect(addSemantics.getSemanticsData().label, contains('Add dish to platter'));
-      } finally {
-        semantics.dispose();
-      }
-    });
+          final addSemantics = tester.getSemantics(
+            find.byKey(const Key('thali_plate_add_slot')),
+          );
+          expect(
+            addSemantics.getSemanticsData().flagsCollection.isButton,
+            isTrue,
+          );
+          expect(
+            addSemantics.getSemanticsData().label,
+            contains('Add dish to platter'),
+          );
+        } finally {
+          semantics.dispose();
+        }
+      },
+    );
   });
 
   group('4. ThaliBuilderScreen Dual-View Integration', () {
-    testWidgets('supports toggling between Plate and List views and displays HUD on katori tap', (tester) async {
+    testWidgets(
+      'supports toggling between Plate and List views and displays HUD on katori tap',
+      (tester) async {
+        tester.view.physicalSize = const Size(390, 844);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        final harness = await _TestHarness.create(tester: tester);
+        addTearDown(() async {
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.pump();
+          unawaited(harness.close());
+        });
+
+        final controller = NutritionThaliController(
+          repository: Future.value(harness.repository),
+          userId: harness.userId,
+          mealCategory: 'lunch',
+        );
+        await tester.runAsync(controller.initialize);
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              databaseProvider.overrideWithValue(harness.db),
+              localTimezoneServiceProvider.overrideWithValue(
+                LocalTimezoneService(read: () async => 'Asia/Kolkata'),
+              ),
+              nutritionThaliRepositoryProvider.overrideWith(
+                (ref) async => harness.repository,
+              ),
+              nutritionThaliControllerProvider(
+                'lunch',
+              ).overrideWith((ref) => controller),
+            ],
+            child: MaterialApp(
+              theme: AppTheme.darkTheme,
+              home: const ThaliBuilderScreen(mealCategory: 'lunch'),
+            ),
+          ),
+        );
+
+        await tester.pump();
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 100)),
+        );
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // Initial empty state
+        expect(find.text('Your Thali Plate is Empty'), findsOneWidget);
+        expect(
+          find.byKey(const Key('thali_add_item_empty_button')),
+          findsOneWidget,
+        );
+
+        // Load North Indian Classic preset
+        await tester.tap(
+          find.byKey(const Key('thali_preset_north_indian_classic')),
+        );
+        await tester.pump();
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 200)),
+        );
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // 1. Plate view is default: CircularThaliPlate and items list are both mounted
+        expect(find.byType(CircularThaliPlate), findsOneWidget);
+        expect(find.byKey(const Key('thali_items_list')), findsOneWidget);
+        expect(find.byKey(const Key('thali_view_mode_plate')), findsOneWidget);
+        expect(find.byKey(const Key('thali_view_mode_list')), findsOneWidget);
+
+        // 2. Tap a katori on the circular plate
+        final dalItem = controller.state.draft!.items.firstWhere(
+          (i) => i.displayLabel?.contains('Dal') ?? false,
+        );
+        final katoriFinder = find.byKey(
+          Key('thali_plate_katori_${dalItem.id}'),
+        );
+        expect(katoriFinder, findsOneWidget);
+        await tester.tap(katoriFinder);
+        await tester.pump();
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 200)),
+        );
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // 3. HUD should now be visible
+        expect(find.byKey(const Key('thali_quick_hud')), findsOneWidget);
+        expect(
+          find.byKey(const Key('thali_quick_hud_increment')),
+          findsOneWidget,
+        );
+
+        // 4. Tap increment on HUD
+        await tester.tap(find.byKey(const Key('thali_quick_hud_increment')));
+        await tester.pump();
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 100)),
+        );
+        await tester.pump(const Duration(milliseconds: 200));
+
+        // 5. Switch to List view
+        await tester.tap(find.byKey(const Key('thali_view_mode_list')));
+        await tester.pump();
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 100)),
+        );
+        await tester.pump(const Duration(milliseconds: 200));
+
+        // In List view, CircularThaliPlate is hidden, list remains
+        expect(find.byType(CircularThaliPlate), findsNothing);
+        expect(find.byKey(const Key('thali_items_list')), findsOneWidget);
+
+        // 6. Switch back to Plate view
+        await tester.tap(find.byKey(const Key('thali_view_mode_plate')));
+        await tester.pump();
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 100)),
+        );
+        await tester.pump(const Duration(milliseconds: 200));
+        expect(find.byType(CircularThaliPlate), findsOneWidget);
+      },
+    );
+
+    testWidgets('supports replacing dish via HUD and component picker sheet', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(390, 844);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -593,9 +811,9 @@ void main() {
             nutritionThaliRepositoryProvider.overrideWith(
               (ref) async => harness.repository,
             ),
-            nutritionThaliControllerProvider('lunch').overrideWith(
-              (ref) => controller,
-            ),
+            nutritionThaliControllerProvider(
+              'lunch',
+            ).overrideWith((ref) => controller),
           ],
           child: MaterialApp(
             theme: AppTheme.darkTheme,
@@ -605,113 +823,19 @@ void main() {
       );
 
       await tester.pump();
-      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
-      await tester.pump(const Duration(milliseconds: 300));
-
-      // Initial empty state
-      expect(find.text('Your Thali Plate is Empty'), findsOneWidget);
-      expect(find.byKey(const Key('thali_add_item_empty_button')), findsOneWidget);
-
-      // Load North Indian Classic preset
-      await tester.tap(find.byKey(const Key('thali_preset_north_indian_classic')));
-      await tester.pump();
-      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 200)));
-      await tester.pump(const Duration(milliseconds: 300));
-
-      // 1. Plate view is default: CircularThaliPlate and items list are both mounted
-      expect(find.byType(CircularThaliPlate), findsOneWidget);
-      expect(find.byKey(const Key('thali_items_list')), findsOneWidget);
-      expect(find.byKey(const Key('thali_view_mode_plate')), findsOneWidget);
-      expect(find.byKey(const Key('thali_view_mode_list')), findsOneWidget);
-
-      // 2. Tap a katori on the circular plate
-      final dalItem = controller.state.draft!.items.firstWhere(
-        (i) => i.displayLabel?.contains('Dal') ?? false,
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 100)),
       );
-      final katoriFinder = find.byKey(Key('thali_plate_katori_${dalItem.id}'));
-      expect(katoriFinder, findsOneWidget);
-      await tester.tap(katoriFinder);
-      await tester.pump();
-      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 200)));
-      await tester.pump(const Duration(milliseconds: 300));
-
-      // 3. HUD should now be visible
-      expect(find.byKey(const Key('thali_quick_hud')), findsOneWidget);
-      expect(find.byKey(const Key('thali_quick_hud_increment')), findsOneWidget);
-
-      // 4. Tap increment on HUD
-      await tester.tap(find.byKey(const Key('thali_quick_hud_increment')));
-      await tester.pump();
-      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
-      await tester.pump(const Duration(milliseconds: 200));
-
-      // 5. Switch to List view
-      await tester.tap(find.byKey(const Key('thali_view_mode_list')));
-      await tester.pump();
-      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
-      await tester.pump(const Duration(milliseconds: 200));
-
-      // In List view, CircularThaliPlate is hidden, list remains
-      expect(find.byType(CircularThaliPlate), findsNothing);
-      expect(find.byKey(const Key('thali_items_list')), findsOneWidget);
-
-      // 6. Switch back to Plate view
-      await tester.tap(find.byKey(const Key('thali_view_mode_plate')));
-      await tester.pump();
-      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
-      await tester.pump(const Duration(milliseconds: 200));
-      expect(find.byType(CircularThaliPlate), findsOneWidget);
-    });
-
-    testWidgets('supports replacing dish via HUD and component picker sheet', (tester) async {
-      tester.view.physicalSize = const Size(390, 844);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-
-      final harness = await _TestHarness.create(tester: tester);
-      addTearDown(() async {
-        await tester.pumpWidget(const SizedBox.shrink());
-        await tester.pump();
-        unawaited(harness.close());
-      });
-
-      final controller = NutritionThaliController(
-        repository: Future.value(harness.repository),
-        userId: harness.userId,
-        mealCategory: 'lunch',
-      );
-      await tester.runAsync(controller.initialize);
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            databaseProvider.overrideWithValue(harness.db),
-            localTimezoneServiceProvider.overrideWithValue(
-              LocalTimezoneService(read: () async => 'Asia/Kolkata'),
-            ),
-            nutritionThaliRepositoryProvider.overrideWith(
-              (ref) async => harness.repository,
-            ),
-            nutritionThaliControllerProvider('lunch').overrideWith(
-              (ref) => controller,
-            ),
-          ],
-          child: MaterialApp(
-            theme: AppTheme.darkTheme,
-            home: const ThaliBuilderScreen(mealCategory: 'lunch'),
-          ),
-        ),
-      );
-
-      await tester.pump();
-      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
       await tester.pump(const Duration(milliseconds: 300));
 
       // Load North Indian Classic preset
-      await tester.tap(find.byKey(const Key('thali_preset_north_indian_classic')));
+      await tester.tap(
+        find.byKey(const Key('thali_preset_north_indian_classic')),
+      );
       await tester.pump();
-      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 200)));
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 200)),
+      );
       await tester.pump(const Duration(milliseconds: 300));
 
       // Select Dal item katori
@@ -720,7 +844,9 @@ void main() {
       );
       await tester.tap(find.byKey(Key('thali_plate_katori_${dalItem.id}')));
       await tester.pump();
-      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 200)));
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 200)),
+      );
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byKey(const Key('thali_quick_hud')), findsOneWidget);
@@ -729,23 +855,32 @@ void main() {
       // Tap replace
       await tester.tap(find.byKey(const Key('thali_quick_hud_replace')));
       await tester.pump();
-      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 300)));
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 300)),
+      );
       await tester.pump(const Duration(milliseconds: 300));
 
       // Bottom sheet should display replace title
       expect(find.text('Replace Dish in Thali'), findsOneWidget);
 
       // Search for 'Steamed Rice'
-      await tester.enterText(find.byKey(const Key('thali_search_input')), 'Steamed Rice');
+      await tester.enterText(
+        find.byKey(const Key('thali_search_input')),
+        'Steamed Rice',
+      );
       await tester.runAsync(() => controller.search('Steamed Rice'));
       await tester.pump();
 
       // Select food item from search results
-      final riceOptionFinder = find.byKey(const Key('thali_search_food_item_food-rice'));
+      final riceOptionFinder = find.byKey(
+        const Key('thali_search_food_item_food-rice'),
+      );
       expect(riceOptionFinder, findsOneWidget);
       await tester.tap(riceOptionFinder);
       await tester.pump();
-      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 100)),
+      );
       await tester.pump(const Duration(milliseconds: 200));
 
       // Portion card is visible with 'Replace on Plate' button
@@ -754,13 +889,17 @@ void main() {
       // Confirm replace
       await tester.tap(find.byKey(const Key('thali_add_selected_item_button')));
       await tester.pump();
-      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 300)));
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 300)),
+      );
       await tester.pumpAndSettle();
 
       // Old Dal item is gone, Steamed Rice item is present
       expect(find.byKey(Key('thali_plate_katori_${dalItem.id}')), findsNothing);
       expect(
-        controller.state.draft!.items.any((i) => i.displayLabel == 'Steamed Rice'),
+        controller.state.draft!.items.any(
+          (i) => i.displayLabel == 'Steamed Rice',
+        ),
         isTrue,
       );
       // Switch to List view to view all item cards

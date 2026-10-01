@@ -26,7 +26,8 @@ class GroupProgressCard extends StatelessWidget {
   final List<B02StrengthExecutionSlot> slots;
   final B02StrengthExecutionSlot selected;
 
-  const GroupProgressCard({super.key, 
+  const GroupProgressCard({
+    super.key,
     required this.launch,
     required this.slots,
     required this.selected,
@@ -211,7 +212,8 @@ class GroupProgressCard extends StatelessWidget {
 }
 
 class PrescribedWorkCompleteCard extends StatelessWidget {
-  const PrescribedWorkCompleteCard({super.key, 
+  const PrescribedWorkCompleteCard({
+    super.key,
     required this.plannedSets,
     required this.workingSets,
   });
@@ -257,7 +259,8 @@ class PrescribedWorkCompleteCard extends StatelessWidget {
 }
 
 class R07CExecutionHeader extends StatelessWidget {
-  const R07CExecutionHeader({super.key, 
+  const R07CExecutionHeader({
+    super.key,
     required this.executionContext,
     required this.exerciseIndex,
     required this.exerciseCount,
@@ -351,7 +354,8 @@ class R07CExecutionHeader extends StatelessWidget {
 }
 
 class R07CExerciseStrip extends StatelessWidget {
-  const R07CExerciseStrip({super.key, 
+  const R07CExerciseStrip({
+    super.key,
     required this.slots,
     required this.state,
     required this.selectedId,
@@ -418,7 +422,8 @@ class R07CTargetContext extends StatelessWidget {
   final VoidCallback? onApply;
   final VoidCallback? onChange;
 
-  const R07CTargetContext({super.key, 
+  const R07CTargetContext({
+    super.key,
     required this.slot,
     required this.state,
     required this.previousPerformance,
@@ -526,7 +531,8 @@ class WarmupCard extends StatelessWidget {
   final VoidCallback? onEdit;
   final VoidCallback? onSkip;
 
-  const WarmupCard({super.key, 
+  const WarmupCard({
+    super.key,
     required this.recommendation,
     required this.onAccept,
     required this.onEdit,
@@ -619,7 +625,8 @@ class RestCard extends StatefulWidget {
   final ValueChanged<String>? onSkip;
   final Future<bool> Function(String) onElapsed;
 
-  const RestCard({super.key, 
+  const RestCard({
+    super.key,
     required this.slot,
     required this.state,
     required this.onBegin,
@@ -954,7 +961,8 @@ class ErrorState extends StatelessWidget {
   final VoidCallback? onRetry;
   final VoidCallback onClose;
 
-  const ErrorState({super.key, 
+  const ErrorState({
+    super.key,
     required this.message,
     required this.canRetry,
     required this.onRetry,

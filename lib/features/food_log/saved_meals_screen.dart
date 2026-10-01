@@ -232,7 +232,6 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
     }
   }
 
-
   void _refreshTodaySurfaces() {
     ref.read(todayNutritionRevisionProvider.notifier).state++;
     ref.invalidate(b04ProductionRecommendationContextProvider);

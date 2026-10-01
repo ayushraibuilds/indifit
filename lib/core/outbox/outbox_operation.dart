@@ -1,13 +1,5 @@
 /// Target domain of an outbox operation.
-enum OutboxDomain {
-  workout,
-  food,
-  weight,
-  plan,
-  backup,
-  setting,
-  profile,
-}
+enum OutboxDomain { workout, food, weight, plan, backup, setting, profile }
 
 /// Lifecycle state machine for outbox operations.
 enum OutboxState {
@@ -58,14 +50,18 @@ class OutboxOperation {
       if (d.name == domainRaw) domain = d;
     }
     if (domain == null) {
-      throw FormatException('Unknown OutboxDomain: $domainRaw. Refusing to resurrect corrupt row.');
+      throw FormatException(
+        'Unknown OutboxDomain: $domainRaw. Refusing to resurrect corrupt row.',
+      );
     }
     OutboxState? state;
     for (final s in OutboxState.values) {
       if (s.name == stateRaw) state = s;
     }
     if (state == null) {
-      throw FormatException('Unknown OutboxState: $stateRaw. Refusing to resurrect corrupt row.');
+      throw FormatException(
+        'Unknown OutboxState: $stateRaw. Refusing to resurrect corrupt row.',
+      );
     }
     final operationId = json['operationId'];
     final idempotencyKey = json['idempotencyKey'];
@@ -74,13 +70,20 @@ class OutboxOperation {
     final payloadRaw = json['payload'];
     final createdRaw = json['createdAtUtc'];
     final scheduledRaw = json['scheduledAtUtc'];
-    if (operationId is! String || operationId.isEmpty ||
-        idempotencyKey is! String || idempotencyKey.isEmpty ||
-        action is! String || action.isEmpty ||
-        entityId is! String || entityId.isEmpty ||
+    if (operationId is! String ||
+        operationId.isEmpty ||
+        idempotencyKey is! String ||
+        idempotencyKey.isEmpty ||
+        action is! String ||
+        action.isEmpty ||
+        entityId is! String ||
+        entityId.isEmpty ||
         payloadRaw is! Map ||
-        createdRaw is! String || scheduledRaw is! String) {
-      throw const FormatException('Malformed OutboxOperation JSON: missing required fields.');
+        createdRaw is! String ||
+        scheduledRaw is! String) {
+      throw const FormatException(
+        'Malformed OutboxOperation JSON: missing required fields.',
+      );
     }
     return OutboxOperation(
       operationId: operationId,
@@ -176,26 +179,27 @@ class OutboxOperation {
       scheduledAtUtc: scheduledAtUtc ?? this.scheduledAtUtc,
       state: state ?? this.state,
       attemptCount: attemptCount ?? this.attemptCount,
-      lastAttemptUtc:
-          clearLastAttemptUtc ? null : (lastAttemptUtc ?? this.lastAttemptUtc),
+      lastAttemptUtc: clearLastAttemptUtc
+          ? null
+          : (lastAttemptUtc ?? this.lastAttemptUtc),
       lastError: clearLastError ? null : (lastError ?? this.lastError),
     );
   }
 
   Map<String, dynamic> toJson() => {
-        'operationId': operationId,
-        'idempotencyKey': idempotencyKey,
-        'domain': domain.name,
-        'action': action,
-        'entityId': entityId,
-        'payload': payload,
-        'createdAtUtc': createdAtUtc.toIso8601String(),
-        'scheduledAtUtc': scheduledAtUtc.toIso8601String(),
-        'state': state.name,
-        'attemptCount': attemptCount,
-        'lastAttemptUtc': lastAttemptUtc?.toIso8601String(),
-        'lastError': lastError,
-      };
+    'operationId': operationId,
+    'idempotencyKey': idempotencyKey,
+    'domain': domain.name,
+    'action': action,
+    'entityId': entityId,
+    'payload': payload,
+    'createdAtUtc': createdAtUtc.toIso8601String(),
+    'scheduledAtUtc': scheduledAtUtc.toIso8601String(),
+    'state': state.name,
+    'attemptCount': attemptCount,
+    'lastAttemptUtc': lastAttemptUtc?.toIso8601String(),
+    'lastError': lastError,
+  };
 
   @override
   String toString() =>

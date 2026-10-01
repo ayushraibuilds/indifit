@@ -445,32 +445,36 @@ void main() {
       );
 
       // Insert plan workout session with 4000 kg volume and 1800 sec duration
-      await db.into(db.workoutSessions).insert(
-        WorkoutSessionsCompanion.insert(
-          name: 'High session count plan · Monday',
-          totalVolume: 4000.0,
-          durationSeconds: 1800,
-          estimatedCalories: 0,
-          completedAt: Value(_now.subtract(const Duration(days: 10))),
-          scheduledOccurrenceId: Value(occ.occurrence.id),
-          completionKind: const Value('full'),
-          activityType: const Value('strength'),
-        ),
-      );
+      await db
+          .into(db.workoutSessions)
+          .insert(
+            WorkoutSessionsCompanion.insert(
+              name: 'High session count plan · Monday',
+              totalVolume: 4000.0,
+              durationSeconds: 1800,
+              estimatedCalories: 0,
+              completedAt: Value(_now.subtract(const Duration(days: 10))),
+              scheduledOccurrenceId: Value(occ.occurrence.id),
+              completionKind: const Value('full'),
+              activityType: const Value('strength'),
+            ),
+          );
 
       // Insert 505 subsequent independent sessions (more than the old 500 global limit)
       for (var i = 0; i < 505; i++) {
-        await db.into(db.workoutSessions).insert(
-          WorkoutSessionsCompanion.insert(
-            name: 'Independent session $i',
-            totalVolume: 100.0,
-            durationSeconds: 600,
-            estimatedCalories: 0,
-            completedAt: Value(_now.subtract(Duration(minutes: 505 - i))),
-            completionKind: const Value('full'),
-            activityType: const Value('strength'),
-          ),
-        );
+        await db
+            .into(db.workoutSessions)
+            .insert(
+              WorkoutSessionsCompanion.insert(
+                name: 'Independent session $i',
+                totalVolume: 100.0,
+                durationSeconds: 600,
+                estimatedCalories: 0,
+                completedAt: Value(_now.subtract(Duration(minutes: 505 - i))),
+                completionKind: const Value('full'),
+                activityType: const Value('strength'),
+              ),
+            );
       }
 
       final snapshot = await PlanOverviewReadRepository(
@@ -623,7 +627,10 @@ void main() {
       expect(find.text('Week 1'), findsWidgets);
 
       // Independent activity
-      expect(find.text('Independent workouts during this plan'), findsOneWidget);
+      expect(
+        find.text('Independent workouts during this plan'),
+        findsOneWidget,
+      );
       expect(find.textContaining('logged outside this plan'), findsOneWidget);
       expect(find.text('Concurrent quick run'), findsOneWidget);
 

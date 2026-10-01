@@ -85,8 +85,7 @@ class AchievementService {
       required String evidence,
     }) {
       final isUnlocked = thresholdMet || timestamps.containsKey(id);
-      final unlockedAt =
-          timestamps[id] ?? (thresholdMet ? clock() : null);
+      final unlockedAt = timestamps[id] ?? (thresholdMet ? clock() : null);
 
       return Achievement(
         id: id,
@@ -212,7 +211,9 @@ class AchievementService {
         currentProgress: loggedThali ? 1.0 : 0.0,
         maxProgress: 1.0,
         thresholdMet: loggedThali,
-        evidence: loggedThali ? 'Thali plate logged' : 'No thali plate logged yet',
+        evidence: loggedThali
+            ? 'Thali plate logged'
+            : 'No thali plate logged yet',
       ),
     ];
   }
@@ -272,8 +273,9 @@ class AchievementService {
     for (final achievement in evaluated) {
       if (achievement.isUnlocked &&
           !stats.unlockedAchievementIds.containsKey(achievement.id)) {
-        final inserted =
-            await statsRepository.unlockAchievement(achievement.id);
+        final inserted = await statsRepository.unlockAchievement(
+          achievement.id,
+        );
         if (inserted) {
           newlyUnlockedIds.add(achievement.id);
         }

@@ -67,15 +67,13 @@ class DisabledContentDownloadCapability implements ContentDownloadCapability {
     required String sourceUrl,
     required String localDestinationPath,
     String? expectedSha256,
-  }) async =>
-      false;
+  }) async => false;
 
   @override
   Future<bool> verifyIntegrity({
     required String localPath,
     required String expectedSha256,
-  }) async =>
-      false;
+  }) async => false;
 
   @override
   Future<void> evictAsset(String assetId) async {}

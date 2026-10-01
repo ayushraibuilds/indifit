@@ -26,16 +26,16 @@ class CloudBackupSnapshotUploadRequest {
   final bool isWeeklyMilestone;
 
   Map<String, dynamic> toJson() => {
-        'snapshotId': snapshotId,
-        'ciphertextBase64': ciphertextBase64,
-        'wrappedKeyBase64': wrappedKeyBase64,
-        'sha256Checksum': sha256Checksum,
-        'byteSize': byteSize,
-        'schemaVersion': schemaVersion,
-        'backupFormatVersion': backupFormatVersion,
-        'deviceName': deviceName,
-        'isWeeklyMilestone': isWeeklyMilestone,
-      };
+    'snapshotId': snapshotId,
+    'ciphertextBase64': ciphertextBase64,
+    'wrappedKeyBase64': wrappedKeyBase64,
+    'sha256Checksum': sha256Checksum,
+    'byteSize': byteSize,
+    'schemaVersion': schemaVersion,
+    'backupFormatVersion': backupFormatVersion,
+    'deviceName': deviceName,
+    'isWeeklyMilestone': isWeeklyMilestone,
+  };
 
   factory CloudBackupSnapshotUploadRequest.fromJson(Map<String, dynamic> json) {
     return CloudBackupSnapshotUploadRequest(
@@ -73,14 +73,14 @@ class CloudBackupSnapshotSummary {
   final bool isWeeklyMilestone;
 
   Map<String, dynamic> toJson() => {
-        'snapshotId': snapshotId,
-        'createdAtUtc': createdAtUtc.toIso8601String(),
-        'byteSize': byteSize,
-        'schemaVersion': schemaVersion,
-        'backupFormatVersion': backupFormatVersion,
-        'deviceName': deviceName,
-        'isWeeklyMilestone': isWeeklyMilestone,
-      };
+    'snapshotId': snapshotId,
+    'createdAtUtc': createdAtUtc.toIso8601String(),
+    'byteSize': byteSize,
+    'schemaVersion': schemaVersion,
+    'backupFormatVersion': backupFormatVersion,
+    'deviceName': deviceName,
+    'isWeeklyMilestone': isWeeklyMilestone,
+  };
 
   factory CloudBackupSnapshotSummary.fromJson(Map<String, dynamic> json) {
     return CloudBackupSnapshotSummary(
@@ -108,14 +108,17 @@ class CloudBackupListResponse {
   final int totalStorageBytes;
 
   Map<String, dynamic> toJson() => {
-        'snapshots': snapshots.map((s) => s.toJson()).toList(),
-        'totalCount': totalCount,
-        'totalStorageBytes': totalStorageBytes,
-      };
+    'snapshots': snapshots.map((s) => s.toJson()).toList(),
+    'totalCount': totalCount,
+    'totalStorageBytes': totalStorageBytes,
+  };
 
   factory CloudBackupListResponse.fromJson(Map<String, dynamic> json) {
     final list = (json['snapshots'] as List)
-        .map((item) => CloudBackupSnapshotSummary.fromJson(item as Map<String, dynamic>))
+        .map(
+          (item) =>
+              CloudBackupSnapshotSummary.fromJson(item as Map<String, dynamic>),
+        )
         .toList();
     return CloudBackupListResponse(
       snapshots: list,
@@ -133,7 +136,9 @@ class CloudBackupRetentionPolicy {
 
   /// Given a list of existing snapshots ordered newest to oldest, returns the list of
   /// snapshot IDs that should be pruned/deleted.
-  static List<String> identifySnapshotsToPrune(List<CloudBackupSnapshotSummary> existing) {
+  static List<String> identifySnapshotsToPrune(
+    List<CloudBackupSnapshotSummary> existing,
+  ) {
     final dailySnapshots = existing.where((s) => !s.isWeeklyMilestone).toList();
     final weeklySnapshots = existing.where((s) => s.isWeeklyMilestone).toList();
 
@@ -152,7 +157,9 @@ class CloudBackupRetentionPolicy {
     }
 
     // If still above 8 total, prune remaining oldest
-    final remaining = existing.where((s) => !toPrune.contains(s.snapshotId)).toList();
+    final remaining = existing
+        .where((s) => !toPrune.contains(s.snapshotId))
+        .toList();
     if (remaining.length > maxTotalCount) {
       final excess = remaining.sublist(maxTotalCount);
       toPrune.addAll(excess.map((s) => s.snapshotId));

@@ -96,8 +96,7 @@ class DecomposedFoodItem {
       quantityAmount: (json['quantity_amount'] as num?)?.toDouble() ?? 1.0,
       quantityUnit: (json['quantity_unit'] as String?) ?? 'serving',
       estimatedCalories: (json['estimated_calories'] as num?)?.toInt() ?? 0,
-      estimatedProtein:
-          (json['estimated_protein'] as num?)?.toDouble() ?? 0.0,
+      estimatedProtein: (json['estimated_protein'] as num?)?.toDouble() ?? 0.0,
       estimatedCarbs: (json['estimated_carbs'] as num?)?.toDouble() ?? 0.0,
       estimatedFat: (json['estimated_fat'] as num?)?.toDouble() ?? 0.0,
       confidence: (json['confidence'] as String?) ?? 'medium',
@@ -143,14 +142,12 @@ class NaturalLanguageMealService {
     required NutritionFoodCatalogRepository catalog,
     required PrivacyPolicy Function() policy,
     String? baseUrl,
-  })  : _dio = dio,
-        _catalog = catalog,
-        _policy = policy,
-        _baseUrl = baseUrl ?? AppConfig.backendUrl;
+  }) : _dio = dio,
+       _catalog = catalog,
+       _policy = policy,
+       _baseUrl = baseUrl ?? AppConfig.backendUrl;
 
-  Future<MealDecompositionResult> decomposeMeal({
-    required String text,
-  }) async {
+  Future<MealDecompositionResult> decomposeMeal({required String text}) async {
     final cleanText = text.trim();
     if (cleanText.isEmpty) {
       throw ArgumentError('Meal text cannot be empty.');
@@ -166,10 +163,7 @@ class NaturalLanguageMealService {
     final url = '$_baseUrl/api/ai/meal-decompose';
     final Response<dynamic> response;
     try {
-      response = await _dio.post(
-        url,
-        data: {'text': cleanText},
-      );
+      response = await _dio.post(url, data: {'text': cleanText});
     } on DioException catch (e) {
       if (e.type == DioExceptionType.connectionError ||
           e.type == DioExceptionType.connectionTimeout ||
@@ -251,11 +245,7 @@ class NaturalLanguageMealService {
     final response = await _dio.post(
       url,
       data: formData,
-      options: Options(
-        headers: {
-          'x-device-uuid': deviceUuid,
-        },
-      ),
+      options: Options(headers: {'x-device-uuid': deviceUuid}),
     );
 
     if (response.statusCode != 200 || response.data is! Map<String, dynamic>) {

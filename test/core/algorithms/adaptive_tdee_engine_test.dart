@@ -27,7 +27,8 @@ void main() {
       final estimate = engine.calculate(
         policy: policy,
         baselineBmr: baselineBmr,
-        baselineTdeeKcal: 2200.0, // Seeded with different prior to test convergence
+        baselineTdeeKcal:
+            2200.0, // Seeded with different prior to test convergence
         days: days,
         evaluationLocalDate: '2026-03-01',
         timezoneId: 'UTC',
@@ -143,7 +144,9 @@ void main() {
       // TDEE should NOT drop towards 0 or 1250 kcal; it stays around 2500
       expect(estimate.currentTdeeKcal, closeTo(2500.0, 30.0));
       // Unobserved days are omitted from raw expenditure
-      final unobservedOutputs = estimate.history.where((d) => !d.hasObservedIntake);
+      final unobservedOutputs = estimate.history.where(
+        (d) => !d.hasObservedIntake,
+      );
       for (final output in unobservedOutputs) {
         expect(output.rawExpenditureKcal, isNull);
       }
@@ -188,36 +191,39 @@ void main() {
       expect((spikeTdee - prevTdee).abs(), lessThanOrEqualTo(35.01));
     });
 
-    test('rate of change clamp strictly bounds day-over-day shifts to +/- 35 kcal', () {
-      // User logs a massive 10,000 kcal binge day
-      final days = [
-        const AdaptiveTdeeDayInput(
-          localDate: '2026-01-01',
-          scaleWeightKg: 75.0,
-          caloriesConsumed: 2500.0,
-          intakeSource: AdaptiveTdeeIntakeSource.foodLog,
-        ),
-        const AdaptiveTdeeDayInput(
-          localDate: '2026-01-02',
-          scaleWeightKg: 75.0,
-          caloriesConsumed: 10000.0, // +7500 kcal binge
-          intakeSource: AdaptiveTdeeIntakeSource.foodLog,
-        ),
-      ];
+    test(
+      'rate of change clamp strictly bounds day-over-day shifts to +/- 35 kcal',
+      () {
+        // User logs a massive 10,000 kcal binge day
+        final days = [
+          const AdaptiveTdeeDayInput(
+            localDate: '2026-01-01',
+            scaleWeightKg: 75.0,
+            caloriesConsumed: 2500.0,
+            intakeSource: AdaptiveTdeeIntakeSource.foodLog,
+          ),
+          const AdaptiveTdeeDayInput(
+            localDate: '2026-01-02',
+            scaleWeightKg: 75.0,
+            caloriesConsumed: 10000.0, // +7500 kcal binge
+            intakeSource: AdaptiveTdeeIntakeSource.foodLog,
+          ),
+        ];
 
-      final estimate = engine.calculate(
-        policy: policy,
-        baselineBmr: baselineBmr,
-        baselineTdeeKcal: 2500.0,
-        days: days,
-        evaluationLocalDate: '2026-01-02',
-        timezoneId: 'UTC',
-      );
+        final estimate = engine.calculate(
+          policy: policy,
+          baselineBmr: baselineBmr,
+          baselineTdeeKcal: 2500.0,
+          days: days,
+          evaluationLocalDate: '2026-01-02',
+          timezoneId: 'UTC',
+        );
 
-      final day1 = estimate.history[0].smoothedTdeeKcal;
-      final day2 = estimate.history[1].smoothedTdeeKcal;
-      expect(day2 - day1, closeTo(35.0, 0.001));
-    });
+        final day1 = estimate.history[0].smoothedTdeeKcal;
+        final day2 = estimate.history[1].smoothedTdeeKcal;
+        expect(day2 - day1, closeTo(35.0, 0.001));
+      },
+    );
   });
 
   group('AdaptiveTdeeEngine - Physiological Bounds & Bayesian Blend', () {
@@ -411,31 +417,34 @@ void main() {
       expect(estimate.trendWeightKg, closeTo(75.0, 0.01));
     });
 
-    test('invalid BMR (<= 0) falls back to absolute bounds and forces calibrating', () {
-      final days = List.generate(
-        20,
-        (i) => AdaptiveTdeeDayInput(
-          localDate: '2026-01-${(i + 1).toString().padLeft(2, '0')}',
-          scaleWeightKg: 70.0,
-          caloriesConsumed: 2000.0,
-          intakeSource: AdaptiveTdeeIntakeSource.foodLog,
-        ),
-      );
+    test(
+      'invalid BMR (<= 0) falls back to absolute bounds and forces calibrating',
+      () {
+        final days = List.generate(
+          20,
+          (i) => AdaptiveTdeeDayInput(
+            localDate: '2026-01-${(i + 1).toString().padLeft(2, '0')}',
+            scaleWeightKg: 70.0,
+            caloriesConsumed: 2000.0,
+            intakeSource: AdaptiveTdeeIntakeSource.foodLog,
+          ),
+        );
 
-      final estimate = engine.calculate(
-        policy: policy,
-        baselineBmr: 0.0, // Invalid BMR
-        baselineTdeeKcal: 0.0, // Invalid baseline TDEE
-        days: days,
-        evaluationLocalDate: '2026-01-20',
-        timezoneId: 'UTC',
-      );
+        final estimate = engine.calculate(
+          policy: policy,
+          baselineBmr: 0.0, // Invalid BMR
+          baselineTdeeKcal: 0.0, // Invalid baseline TDEE
+          days: days,
+          evaluationLocalDate: '2026-01-20',
+          timezoneId: 'UTC',
+        );
 
-      expect(estimate.confidence, AdaptiveTdeeConfidence.calibrating);
-      expect(estimate.currentTdeeKcal, isNot(isNaN));
-      expect(estimate.currentTdeeKcal, greaterThanOrEqualTo(1000.0));
-      expect(estimate.currentTdeeKcal, lessThanOrEqualTo(6000.0));
-    });
+        expect(estimate.confidence, AdaptiveTdeeConfidence.calibrating);
+        expect(estimate.currentTdeeKcal, isNot(isNaN));
+        expect(estimate.currentTdeeKcal, greaterThanOrEqualTo(1000.0));
+        expect(estimate.currentTdeeKcal, lessThanOrEqualTo(6000.0));
+      },
+    );
 
     test('caps history lookback to maxHistoryDays', () {
       // 400 days of input

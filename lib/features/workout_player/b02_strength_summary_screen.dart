@@ -280,9 +280,9 @@ class _B02StrengthSummaryScreenState
       prefs ??= await SharedPreferences.getInstance();
       final uncelebrated =
           await AchievementService.getUncelebratedWorkoutUnlocks(
-        statsRepository: statsRepo,
-        prefs: prefs,
-      );
+            statsRepository: statsRepo,
+            prefs: prefs,
+          );
       if (uncelebrated.isEmpty || !mounted) return;
 
       // Mark celebrated right before presentation: fails closed toward silence

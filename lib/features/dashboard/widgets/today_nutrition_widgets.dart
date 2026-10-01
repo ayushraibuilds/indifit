@@ -143,7 +143,8 @@ class TodayNutritionHero extends StatelessWidget {
 }
 
 class TodaySparseNutritionModule extends StatelessWidget {
-  const TodaySparseNutritionModule({super.key, 
+  const TodaySparseNutritionModule({
+    super.key,
     required this.presentation,
     required this.onLogFood,
     required this.onOpenTargetSetup,
@@ -239,7 +240,8 @@ class TodaySparseNutritionModule extends StatelessWidget {
 }
 
 class TodayMealIdeasAction extends ConsumerStatefulWidget {
-  const TodayMealIdeasAction({super.key, 
+  const TodayMealIdeasAction({
+    super.key,
     required this.dateRelation,
     required this.selectedDate,
     required this.onOpenFoodGuidance,
@@ -311,7 +313,8 @@ class TodayMealIdeasActionState extends ConsumerState<TodayMealIdeasAction> {
 }
 
 class NutritionNotice extends StatelessWidget {
-  const NutritionNotice({super.key, 
+  const NutritionNotice({
+    super.key,
     required this.icon,
     required this.label,
     required this.color,
@@ -860,4 +863,3 @@ class CalorieRingCard extends StatelessWidget {
     );
   }
 }
-
