@@ -9,8 +9,10 @@ void main() {
 
   late AppDatabase db;
   late B02StrengthExecutionController controller;
+  var now = DateTime.utc(2026, 8, 11, 10);
 
   setUp(() {
+    now = DateTime.utc(2026, 8, 11, 10);
     db = AppDatabase.memory();
     controller = B02StrengthExecutionController(
       StrengthExecutionCompatibilityAdapter(
@@ -19,6 +21,7 @@ void main() {
           calendarRepo: CalendarRepository(db),
         ),
       ),
+      nowUtc: () => now,
     );
   });
 
@@ -44,7 +47,10 @@ void main() {
     expect(await controller.finalize(commandId: 'finish-invalid'), isFalse);
     expect(controller.state.status, B02StrengthExecutionStatus.failure);
     expect(controller.state.launch, isNotNull);
-    expect(controller.state.errorMessage, contains('could not be saved'));
+    expect(
+      controller.state.errorMessage,
+      contains('Workout duration must be at least 1 second.'),
+    );
 
     await controller.startUnscheduled(
       routineName: 'Broken',

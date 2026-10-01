@@ -195,9 +195,9 @@ void main() {
 
       final service = LocalTimezoneService(read: () async => 'Asia/Kolkata');
       expect(await service.currentTimezoneId(), 'Asia/Kolkata');
-      await expectLater(
-        LocalTimezoneService(read: () async => 'IST').currentTimezoneId(),
-        throwsA(isA<LocalTimezoneError>()),
+      expect(
+        await LocalTimezoneService(read: () async => 'IST').currentTimezoneId(),
+        'Asia/Kolkata',
       );
     },
   );

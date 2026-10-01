@@ -23,8 +23,11 @@ void main() {
       expect(dio.options.connectTimeout, equals(const Duration(seconds: 15)));
     });
 
-    test('connected AI is enabled in Post-V1 capability contract', () {
-      expect(AppConfig.connectedAiEnabled, isTrue);
+    test('connected AI is gated behind compile-time flag', () {
+      expect(
+        AppConfig.connectedAiEnabled,
+        const bool.fromEnvironment('INDIFIT_CONNECTED_AI'),
+      );
     });
 
     test(

@@ -7,7 +7,6 @@ import '../../../core/nutrition_legacy_read_models.dart';
 import '../../../core/presentation/consumer_copy.dart';
 import '../../../core/presentation/consumer_number_label.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
-import '../../../core/theme/colors.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
 import '../../../data/repositories/nutrition_target_authority.dart';
 import '../../dashboard/today_consumer_presentation.dart';
@@ -302,10 +301,10 @@ class FoodDiarySummary extends StatelessWidget {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.fiberTeal.withValues(alpha: 0.08),
+                  color: const Color(0xFF14B8A6).withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: AppColors.fiberTeal.withValues(alpha: 0.2),
+                    color: const Color(0xFF14B8A6).withValues(alpha: 0.2),
                   ),
                 ),
                 child: Row(
@@ -313,13 +312,13 @@ class FoodDiarySummary extends StatelessWidget {
                     const Icon(
                       Icons.eco_rounded,
                       size: 16,
-                      color: AppColors.fiberTeal,
+                      color: Color(0xFF14B8A6),
                     ),
                     const SizedBox(width: 8),
                     Text(
                       'Fiber',
                       style: B05Typography.caption(context).copyWith(
-                        color: AppColors.fiberTeal,
+                        color: const Color(0xFF14B8A6),
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -327,7 +326,7 @@ class FoodDiarySummary extends StatelessWidget {
                     Text(
                       '${fiberMetric.value} ${fiberMetric.unit}',
                       style: B05Typography.label(context).copyWith(
-                        color: AppColors.fiberTeal,
+                        color: const Color(0xFF14B8A6),
                         fontWeight: FontWeight.w700,
                       ),
                     ),

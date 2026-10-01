@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:indifit/core/di/providers.dart';
 import 'package:indifit/core/nutrients.dart';
 import 'package:indifit/core/nutrition_calculation_service.dart';
@@ -27,6 +30,16 @@ Future<void> _settle(WidgetTester tester) async {
     () => Future<void>.delayed(const Duration(milliseconds: 100)),
   );
   await tester.pump(const Duration(milliseconds: 300));
+}
+
+void _teardownHarness(WidgetTester tester, _Harness harness) {
+  addTearDown(() async {
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+    tester.view.resetPhysicalSize();
+    tester.view.resetDevicePixelRatio();
+    unawaited(harness.close());
+  });
 }
 
 NutritionConsumptionSnapshot _testConsumptionSnapshot({
@@ -245,7 +258,10 @@ Future<void> _pumpFoodSearch({
   FoodApiService? apiServiceOverride,
   ThemeData? themeOverride,
   double textScale = 1.0,
+  Size physicalSize = const Size(800, 1000),
 }) async {
+  tester.view.physicalSize = physicalSize;
+  tester.view.devicePixelRatio = 1.0;
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
@@ -280,9 +296,10 @@ Future<void> _pumpFoodSearch({
       child: MaterialApp(
         theme: themeOverride ?? AppTheme.lightTheme,
         builder: (context, child) => MediaQuery(
-          data: MediaQuery.of(
-            context,
-          ).copyWith(textScaler: TextScaler.linear(textScale)),
+          data: MediaQuery.of(context).copyWith(
+            textScaler: TextScaler.linear(textScale),
+            disableAnimations: true,
+          ),
           child: child ?? const SizedBox.shrink(),
         ),
         home: FoodSearchScreen(
@@ -298,6 +315,10 @@ Future<void> _pumpFoodSearch({
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
 
   group('R08D.5: Canonical Coordinator Batch Persistence', () {
     test(
@@ -367,11 +388,7 @@ void main() {
       'Normal mode defaults to single-select with no checkboxes and fast add',
       (tester) async {
         final harness = await _Harness.create();
-        addTearDown(() async {
-          await tester.pumpWidget(const SizedBox.shrink());
-          await tester.pump();
-          await harness.close();
-        });
+        _teardownHarness(tester, harness);
 
         final options = (await tester.runAsync(() async {
           final r = await harness.catalog.createUserFood(
@@ -429,11 +446,7 @@ void main() {
       tester,
     ) async {
       final harness = await _Harness.create();
-      addTearDown(() async {
-        await tester.pumpWidget(const SizedBox.shrink());
-        await tester.pump();
-        await harness.close();
-      });
+      _teardownHarness(tester, harness);
 
       final option = (await tester.runAsync(() async {
         return harness.catalog.createUserFood(
@@ -494,11 +507,7 @@ void main() {
       'Select multiple foods with distinct units and log atomically',
       (tester) async {
         final harness = await _Harness.create();
-        addTearDown(() async {
-          await tester.pumpWidget(const SizedBox.shrink());
-          await tester.pump();
-          await harness.close();
-        });
+        _teardownHarness(tester, harness);
 
         final trackingCoordinator = _TrackingBatchCoordinator(
           db: harness.db,
@@ -586,11 +595,7 @@ void main() {
 
     testWidgets('Deselect via chip deletion and clear button', (tester) async {
       final harness = await _Harness.create();
-      addTearDown(() async {
-        await tester.pumpWidget(const SizedBox.shrink());
-        await tester.pump();
-        await harness.close();
-      });
+      _teardownHarness(tester, harness);
 
       final options = (await tester.runAsync(() async {
         final f1 = await harness.catalog.createUserFood(
@@ -662,11 +667,7 @@ void main() {
       tester,
     ) async {
       final harness = await _Harness.create();
-      addTearDown(() async {
-        await tester.pumpWidget(const SizedBox.shrink());
-        await tester.pump();
-        await harness.close();
-      });
+      _teardownHarness(tester, harness);
 
       final option = (await tester.runAsync(() async {
         return harness.catalog.createUserFood(
@@ -810,16 +811,8 @@ void main() {
     testWidgets(
       'FoodSearchScreen multi-select renders cleanly at 320pt and 2x text scale',
       (tester) async {
-        tester.view.physicalSize = const Size(320, 844);
-        tester.view.devicePixelRatio = 1;
         final harness = await _Harness.create();
-        addTearDown(() async {
-          await tester.pumpWidget(const SizedBox.shrink());
-          await tester.pump();
-          tester.view.resetPhysicalSize();
-          tester.view.resetDevicePixelRatio();
-          await harness.close();
-        });
+        _teardownHarness(tester, harness);
 
         final option = (await tester.runAsync(() async {
           return harness.catalog.createUserFood(
@@ -849,6 +842,7 @@ void main() {
           initialMultiSelect: true,
           themeOverride: AppTheme.darkTheme,
           textScale: 2.0,
+          physicalSize: const Size(320, 844),
         );
 
         expect(find.byType(Checkbox), findsOneWidget);
@@ -865,11 +859,7 @@ void main() {
       'Gate 1: provider results cannot join the multi-select batch; tap opens review',
       (tester) async {
         final harness = await _Harness.create();
-        addTearDown(() async {
-          await tester.pumpWidget(const SizedBox.shrink());
-          await tester.pump();
-          await tester.runAsync(harness.close);
-        });
+        _teardownHarness(tester, harness);
         final tracking = _TrackingBatchCoordinator(
           db: harness.db,
           registry: harness.registry,

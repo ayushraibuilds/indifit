@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:indifit/core/di/providers.dart';
 import 'package:indifit/core/nutrients.dart';
 import 'package:indifit/core/nutrition_calculation_service.dart';
@@ -213,6 +214,10 @@ List<Override> _d3Overrides({
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
 
   group('R08D.3 — Recent and Frequent Food Logging', () {
     test(

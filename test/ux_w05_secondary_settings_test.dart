@@ -227,7 +227,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('LOADING PER SIDE'), findsOneWidget);
-      expect(find.textContaining('20.0kg'), findsOneWidget);
+      expect(find.textContaining('20.0 kg'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );

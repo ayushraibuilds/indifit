@@ -290,7 +290,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // (80 - 20) / 2 = 30kg per side -> 1x 25kg + 1x 5kg
-      expect(find.text('1x 25.0kg  +  1x 5.0kg'), findsOneWidget);
+      expect(find.text('1 × 25.0 kg  +  1 × 5.0 kg'), findsOneWidget);
     });
 
     testWidgets('Shows exact banner when target weight equals bar weight', (

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:indifit/core/config/app_config.dart';
 import 'package:indifit/core/di/providers.dart';
 import 'package:indifit/core/nutrients.dart';
 import 'package:indifit/core/nutrition_household_measures.dart';
@@ -118,8 +119,13 @@ void main() {
         await tester.drag(verticalScroll, const Offset(0, -500));
         await tester.pumpAndSettle();
         expect(find.text('Scan barcode'), findsOneWidget);
-        expect(find.text('Scan nutrition label'), findsOneWidget);
-        expect(find.text('Describe meal'), findsOneWidget);
+        if (AppConfig.connectedAiEnabled) {
+          expect(find.text('Scan nutrition label'), findsOneWidget);
+          expect(find.text('Describe meal'), findsOneWidget);
+        } else {
+          expect(find.text('Scan nutrition label'), findsNothing);
+          expect(find.text('Describe meal'), findsNothing);
+        }
 
         // Unavailable AI/Photo surfaces must be absent
         expect(find.text('Describe with AI'), findsNothing);

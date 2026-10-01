@@ -5,6 +5,7 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/data/database/app_database.dart';
 
+import 'support/schema_version.dart';
 import 'support/indifit_test_harness.dart';
 
 /// Stream B / Agent A (schema v22): opaque sync-identity UUID on
@@ -33,7 +34,7 @@ void main() {
       final db = registerTestDatabaseScope().create();
 
       final version = await db.customSelect('PRAGMA user_version').getSingle();
-      expect(version.read<int>('user_version'), 22);
+      expect(version.read<int>('user_version'), kCurrentSchemaVersion);
 
       final columns = await db
           .customSelect("PRAGMA table_info('body_measurements')")
@@ -119,7 +120,7 @@ void main() {
         final version = await migrated
             .customSelect('PRAGMA user_version')
             .getSingle();
-        expect(version.read<int>('user_version'), 22);
+        expect(version.read<int>('user_version'), kCurrentSchemaVersion);
 
         final rows = await (migrated.select(
           migrated.bodyMeasurements,
@@ -194,7 +195,7 @@ void main() {
       final version = await second
           .customSelect('PRAGMA user_version')
           .getSingle();
-      expect(version.read<int>('user_version'), 22);
+      expect(version.read<int>('user_version'), kCurrentSchemaVersion);
     });
   });
 }

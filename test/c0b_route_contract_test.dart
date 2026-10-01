@@ -26,16 +26,18 @@ void main() {
     '/learn',
     '/health-hub',
     '/progress',
-    // Nutrition routes (11)
+    // Nutrition routes (13)
     '/food',
     '/food/ai',
     '/food/estimate-review',
     '/food/label-ocr',
     '/food/describe',
+    '/food/photo',
     '/food/recipes/edit',
     '/food/thali',
     '/settings/household-measures',
     '/settings/dietary-constraints',
+    '/settings/nutrition-targets',
     '/settings/dietary-constraints/review',
     '/meal-planner',
     // Training routes (16)
@@ -69,7 +71,7 @@ void main() {
     '/achievements',
   ];
 
-  test('root router exposes the canonical 46-path contract in order', () {
+  test('root router exposes the canonical 48-path contract in order', () {
     final container = ProviderContainer(
       overrides: [onboardingCompletedProvider.overrideWith((ref) => true)],
     );

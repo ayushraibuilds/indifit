@@ -5,6 +5,8 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/data/database/app_database.dart';
 
+import 'support/schema_version.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -12,7 +14,7 @@ void main() {
     final db = AppDatabase.memory();
     addTearDown(db.close);
 
-    expect(db.schemaVersion, 22);
+    expect(db.schemaVersion, kCurrentSchemaVersion);
     final tableRows = await db
         .customSelect(
           "SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name",
@@ -68,7 +70,7 @@ void main() {
       final migrated = AppDatabase.executor(NativeDatabase(file));
       try {
         await migrated.customSelect('PRAGMA user_version').get();
-        expect(migrated.schemaVersion, 22);
+        expect(migrated.schemaVersion, kCurrentSchemaVersion);
         expect(
           (await migrated.select(migrated.nutritionCoachingPreferences).get())
               .single
@@ -122,7 +124,7 @@ void main() {
       try {
         await retry.customSelect('PRAGMA user_version').get();
         expect(await retry.select(retry.mediaPackPreferences).get(), isEmpty);
-        expect(retry.schemaVersion, 22);
+        expect(retry.schemaVersion, kCurrentSchemaVersion);
       } finally {
         await retry.close();
         await directory.delete(recursive: true);

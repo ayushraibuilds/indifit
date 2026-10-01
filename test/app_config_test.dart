@@ -3,8 +3,11 @@ import 'package:indifit/core/config/app_config.dart';
 
 void main() {
   group('Post-V1 capability configuration contract', () {
-    test('connected AI is enabled in Post-V1 capability boundary', () {
-      expect(AppConfig.connectedAiEnabled, isTrue);
+    test('connected AI is gated behind compile-time flag', () {
+      expect(
+        AppConfig.connectedAiEnabled,
+        const bool.fromEnvironment('INDIFIT_CONNECTED_AI'),
+      );
     });
 
     test('legacy backend credential remains optional', () {

@@ -123,21 +123,36 @@ class _FoodDiaryScreenState extends ConsumerState<FoodDiaryScreen> {
                 setState(() => _selectedDay = nextDay);
               },
             ),
-            Row(
-              children: [
-                Expanded(
-                  child: FoodDiaryPrimaryAddAction(
-                    onPressed: () => _openMealPicker(context),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                FilledButton.tonalIcon(
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final primary = FoodDiaryPrimaryAddAction(
+                  onPressed: () => _openMealPicker(context),
+                );
+                final quickAdd = FilledButton.tonalIcon(
                   key: const ValueKey('food_diary_quick_add'),
                   onPressed: () => _openQuickAdd(context),
                   icon: const Icon(Icons.bolt_rounded, size: 20),
                   label: const Text('Quick add'),
-                ),
-              ],
+                );
+                final textScale = MediaQuery.textScalerOf(context).scale(1);
+                if (constraints.maxWidth < 340 || textScale > 1.3) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      primary,
+                      const SizedBox(height: 8),
+                      quickAdd,
+                    ],
+                  );
+                }
+                return Row(
+                  children: [
+                    Expanded(child: primary),
+                    const SizedBox(width: 8),
+                    quickAdd,
+                  ],
+                );
+              },
             ),
             const SizedBox(height: 16),
             FoodDiarySummary(

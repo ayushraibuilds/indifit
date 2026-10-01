@@ -444,7 +444,7 @@ void main() {
     );
     await tester.pump(const Duration(milliseconds: 250));
 
-    expect(find.text('Select your biological sex:'), findsOneWidget);
+    expect(find.text('Welcome to IndiFit!'), findsOneWidget);
     await tester.tap(find.byType(TextField).first);
     await tester.enterText(find.byType(TextField).first, 'Priya');
     expect(FocusManager.instance.primaryFocus, isNotNull);
@@ -457,7 +457,7 @@ void main() {
       return Focus.maybeOf(element)?.hasPrimaryFocus ?? false;
     });
     expect(focusedEditable, isEmpty);
-    expect(find.text('Select your biological sex:'), findsOneWidget);
+    expect(find.text('Welcome to IndiFit!'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

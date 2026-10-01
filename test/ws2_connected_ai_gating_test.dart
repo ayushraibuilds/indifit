@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:go_router/go_router.dart';
 import 'package:indifit/core/privacy/privacy_policy.dart';
 import 'package:indifit/core/router/app_router.dart';
 import 'package:indifit/features/food_log/widgets/food_search_recent_list.dart';
@@ -21,8 +20,8 @@ void main() {
                 onRetryRecent: () {},
                 canonicalRecentResults: const [],
                 recentResults: const [],
-                canonicalRecentItemBuilder: (_, __) => const SizedBox(),
-                recentItemBuilder: (_, __) => const SizedBox(),
+                canonicalRecentItemBuilder: (ctx, item) => const SizedBox(),
+                recentItemBuilder: (ctx, item) => const SizedBox(),
                 onOpenSavedMeals: () {},
                 onOpenSavedRecipes: () {},
                 onOpenBarcode: () {},
@@ -56,8 +55,8 @@ void main() {
                 onRetryRecent: () {},
                 canonicalRecentResults: const [],
                 recentResults: const [],
-                canonicalRecentItemBuilder: (_, __) => const SizedBox(),
-                recentItemBuilder: (_, __) => const SizedBox(),
+                canonicalRecentItemBuilder: (ctx, item) => const SizedBox(),
+                recentItemBuilder: (ctx, item) => const SizedBox(),
                 onOpenSavedMeals: () {},
                 onOpenSavedRecipes: () {},
                 onOpenBarcode: () {},

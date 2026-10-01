@@ -230,27 +230,31 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(
-          find.widgetWithText(RadioListTile<ThemeMode>, 'System'),
+          find.text('System default'),
           findsOneWidget,
         );
         expect(
-          find.widgetWithText(RadioListTile<ThemeMode>, 'Light'),
+          find.text('Light mode'),
           findsOneWidget,
         );
         expect(
-          find.widgetWithText(RadioListTile<ThemeMode>, 'Dark'),
+          find.text('Dark mode'),
           findsOneWidget,
         );
 
         // Tap Light option
         await tester.tap(
-          find.widgetWithText(RadioListTile<ThemeMode>, 'Light'),
+          find.text('Light mode'),
         );
+        await tester.pumpAndSettle();
+
+        // Close bottom sheet
+        await tester.tap(find.byIcon(Icons.close_rounded));
         await tester.pumpAndSettle();
 
         // Bottom sheet closed
         expect(
-          find.widgetWithText(RadioListTile<ThemeMode>, 'System'),
+          find.text('System default'),
           findsNothing,
         );
       },

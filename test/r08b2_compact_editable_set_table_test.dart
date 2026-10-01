@@ -371,7 +371,7 @@ void main() {
     expect(remaining.single.ordinal, 0);
 
     expect(await controller.deleteSet(slot: slot, setId: firstId), isFalse);
-    expect(controller.state.errorMessage, contains('could not be saved'));
+    expect(controller.state.errorMessage, contains('couldn’t'));
     expect(controller.state.errorMessage, isNot(contains('B02')));
     expect(controller.state.errorMessage, isNot(contains('UUID')));
   });

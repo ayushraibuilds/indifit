@@ -6,6 +6,8 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/data/database/app_database.dart';
 
+import 'support/schema_version.dart';
+
 import 'support/indifit_test_harness.dart';
 
 void main() {
@@ -47,16 +49,16 @@ void main() {
     }
     final digest = sha256.convert(utf8.encode(jsonEncode(contract))).toString();
 
-    expect(version.read<int>('user_version'), 22);
+    expect(version.read<int>('user_version'), kCurrentSchemaVersion);
     expect(foreignKeys.read<int>('foreign_keys'), 1);
     expect(
       byType.map((key, value) => MapEntry(key, value.length)),
-      <String, int>{'index': 85, 'table': 91, 'trigger': 73},
+      <String, int>{'index': 85, 'table': 92, 'trigger': 73},
       reason: 'Names by type: ${jsonEncode(byType)}',
     );
     expect(
       digest,
-      'bafc6f7bc1cc5611bb4dc145dd1f4cef572bdb09fe338d28baf41474f2428f67',
+      '15102e07f7ccfd4b40c04dd3d1479a54ff7f59dc71a2d8c12a3aae93e67e636c',
       reason: 'Names by type: ${jsonEncode(byType)}',
     );
   });
@@ -128,7 +130,7 @@ void main() {
         .select(migrated.trainingPlanSettings)
         .getSingle();
 
-    expect(version.read<int>('user_version'), 22);
+    expect(version.read<int>('user_version'), kCurrentSchemaVersion);
     expect(
       columns.map((row) => row.read<String>('name')).toSet(),
       containsAll(const <String>{

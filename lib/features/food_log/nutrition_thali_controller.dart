@@ -459,12 +459,14 @@ class NutritionThaliController extends StateNotifier<NutritionThaliState> {
       var persisted = draft;
       if (state.dirty) {
         persisted = await repository.saveDraft(draft);
+        if (!mounted) return;
         _setDraft(persisted, dirty: false, preserveStatus: true);
       }
       final preview = await repository.preview(
         draft: persisted,
         acknowledgedConstraintIds: state.acknowledgedConstraintIds,
       );
+      if (!mounted) return;
       state = state.copyWith(
         status: NutritionThaliStatus.previewReady,
         draft: persisted,
@@ -474,6 +476,7 @@ class NutritionThaliController extends StateNotifier<NutritionThaliState> {
         errorMessage: null,
       );
     } catch (error) {
+      if (!mounted) return;
       _fail(error, action: _NutritionThaliRetryAction.preview);
     }
   }
@@ -786,6 +789,7 @@ class NutritionThaliController extends StateNotifier<NutritionThaliState> {
   ];
 
   void _fail(Object error, {required _NutritionThaliRetryAction action}) {
+    if (!mounted) return;
     _retryAction = action;
     final code = error is NutritionThaliError
         ? error.code

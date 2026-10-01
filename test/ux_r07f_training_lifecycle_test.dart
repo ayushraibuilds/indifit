@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/backup/backup_v10.dart';
 import 'package:indifit/core/services/local_schedule_date_service.dart';
+
+import 'support/schema_version.dart';
 import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/repositories/calendar_read_repository.dart';
@@ -306,7 +308,7 @@ void main() {
       );
 
       final backup = await BackupV10Data.createFromDatabase(db);
-      expect(backup.schemaVersion, 22);
+      expect(backup.schemaVersion, kCurrentSchemaVersion);
       final json = backup.toJson();
       final settingsJson = (json['training_plan_settings'] as List).single;
       expect(settingsJson['lastEndedOutcome'], 'finished');

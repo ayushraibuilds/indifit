@@ -6,6 +6,7 @@ import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/repositories/progress_statistics_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'support/schema_version.dart';
 import 'support/indifit_test_harness.dart';
 
 void main() {
@@ -24,7 +25,7 @@ void main() {
     test(
       '1. Schema v19 initializes with retained user profile columns',
       () async {
-        expect(db.schemaVersion, equals(22));
+        expect(db.schemaVersion, equals(kCurrentSchemaVersion));
 
         // Test UserProfiles extended columns
         await db

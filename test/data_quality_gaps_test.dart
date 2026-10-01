@@ -3,6 +3,8 @@ import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/repositories/food_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'support/schema_version.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -20,8 +22,8 @@ void main() {
   });
 
   group('Data Quality Gap 1 & Schema v19 Tests', () {
-    test('AppDatabase initializes with schema version 19', () {
-      expect(db.schemaVersion, equals(22));
+    test('AppDatabase initializes with current schema version', () {
+      expect(db.schemaVersion, equals(kCurrentSchemaVersion));
     });
 
     test(

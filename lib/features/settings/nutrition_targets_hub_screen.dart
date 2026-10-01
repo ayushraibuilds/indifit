@@ -953,18 +953,36 @@ class _NutritionTargetsHubScreenState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 6,
+            runSpacing: 4,
             children: [
-              Icon(Icons.tune_rounded, size: 14, color: colors.action),
-              const SizedBox(width: 6),
-              Text(
-                'Macro templates',
-                style: B05Typography.caption(context).copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: colors.textPrimary,
+              Text.rich(
+                TextSpan(
+                  children: [
+                    WidgetSpan(
+                      alignment: PlaceholderAlignment.middle,
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 6),
+                        child: Icon(
+                          Icons.tune_rounded,
+                          size: 14,
+                          color: colors.action,
+                        ),
+                      ),
+                    ),
+                    TextSpan(
+                      text: 'Macro templates',
+                      style: B05Typography.caption(context).copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: colors.textPrimary,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const Spacer(),
               Text(
                 'Auto-split from calories',
                 style: B05Typography.caption(

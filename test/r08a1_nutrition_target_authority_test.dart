@@ -329,7 +329,7 @@ void main() {
           databaseProvider.overrideWithValue(database),
           nutritionRegistryProvider.overrideWith((_) async => registry),
           localTimezoneServiceProvider.overrideWithValue(
-            LocalTimezoneService(read: () async => ''),
+            _ThrowingTimezoneService(),
           ),
         ],
       );
@@ -343,6 +343,12 @@ void main() {
       expect(food.targets.isAvailable, isFalse);
     },
   );
+}
+
+class _ThrowingTimezoneService extends LocalTimezoneService {
+  @override
+  Future<String> currentTimezoneId() =>
+      Future.error(Exception('Timezone unavailable'));
 }
 
 Future<int> _insertProfile(AppDatabase database) =>

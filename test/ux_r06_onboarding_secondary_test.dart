@@ -154,6 +154,8 @@ void main() {
         for (final scale in const [1.0, 1.5, 2.0]) {
           for (final theme in [AppTheme.darkTheme, AppTheme.lightTheme]) {
             SharedPreferences.setMockInitialValues({});
+            tester.view.physicalSize = size;
+            tester.view.devicePixelRatio = 1;
             await tester.pumpWidget(
               ProviderScope(
                 overrides: [databaseProvider.overrideWithValue(database)],
@@ -168,8 +170,6 @@ void main() {
                 ),
               ),
             );
-            tester.view.physicalSize = size;
-            tester.view.devicePixelRatio = 1;
             await tester.pump(const Duration(milliseconds: 120));
             expect(tester.takeException(), isNull);
           }

@@ -12,7 +12,7 @@ void main() {
       final mainSource = File('lib/main.dart').readAsStringSync();
       final workflow = File('.github/workflows/ci.yml').readAsStringSync();
 
-      expect(AppConfig.connectedAiEnabled, isTrue);
+      expect(AppConfig.connectedAiEnabled, isFalse);
       expect(mainSource, isNot(contains('validateBootstrapConfig')));
       expect(mainSource, isNot(contains('INDIFIT_API_KEY')));
       expect(
