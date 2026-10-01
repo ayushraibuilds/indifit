@@ -1427,10 +1427,13 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   );
 
   Widget _buildLandingState(DateTime logDate) {
-    final isAiAllowed = ref.watch(privacyPolicyProvider).isAiAllowed;
+    final policy = ref.watch(privacyPolicyProvider);
+    final isAiAllowed = policy.isAiAllowed;
+    final isOpenFoodFactsAllowed = policy.isOpenFoodFactsAllowed;
     return FoodSearchRecentList(
-      neutralFoodEntry:
-          _activeMealType == null ? _buildNeutralFoodEntry() : null,
+      neutralFoodEntry: _activeMealType == null
+          ? _buildNeutralFoodEntry()
+          : null,
       loadingRecent: _loadingRecent,
       recentFailureMessage: _recentFailureMessage,
       onRetryRecent: _retryRecentFoods,
@@ -1442,6 +1445,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       onOpenSavedMeals: _openSavedMeals,
       onOpenSavedRecipes: _openSavedRecipes,
       onOpenBarcode: () => _openBarcode(context),
+      isOpenFoodFactsAllowed: isOpenFoodFactsAllowed,
       onScanNutritionLabel: isAiAllowed
           ? () {
               final mealParam = widget.mealType != null
@@ -1469,23 +1473,23 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
             }
           : null,
       onOpenThali: () => context.push('/food/thali'),
-    onQuickAddMacros: () async {
-      final added = await QuickAddMacrosSheet.show(
-        context,
-        initialMealType: _activeMealType ?? 'lunch',
-        targetDate: logDate,
-      );
-      if (added != null && mounted) {
-        _invalidateNutritionReads();
-      }
-    },
-    entriesPanel: FoodLogEntriesPanel(
-      date: logDate,
-      onCanonicalRecordTap: _showCanonicalActionMenu,
-      onCanonicalItemTap: _showCanonicalActionMenu,
-    ),
-  );
-}
+      onQuickAddMacros: () async {
+        final added = await QuickAddMacrosSheet.show(
+          context,
+          initialMealType: _activeMealType ?? 'lunch',
+          targetDate: logDate,
+        );
+        if (added != null && mounted) {
+          _invalidateNutritionReads();
+        }
+      },
+      entriesPanel: FoodLogEntriesPanel(
+        date: logDate,
+        onCanonicalRecordTap: _showCanonicalActionMenu,
+        onCanonicalItemTap: _showCanonicalActionMenu,
+      ),
+    );
+  }
 
   Widget _buildSearchResults() => FoodSearchResultsList(
     isOnlineSearchOffline: _isOnlineSearchOffline,

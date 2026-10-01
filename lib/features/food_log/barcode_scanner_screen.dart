@@ -2,14 +2,49 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../core/capabilities/capabilities_registry.dart';
 import '../../core/di/providers.dart';
-import '../../core/stubs/mobile_scanner_stub.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/utils/app_logger.dart';
 import '../../data/repositories/food_api_service.dart';
 import 'custom_food_editor_screen.dart';
+
+/// Signature for rendering the camera preview or its test fake.
+typedef BarcodeScannerViewBuilder =
+    Widget Function({
+      Key? key,
+      required MobileScannerController controller,
+      required Widget Function(
+        BuildContext context,
+        MobileScannerException error,
+        Widget? child,
+      )?
+      errorBuilder,
+      required void Function(BarcodeCapture capture) onDetect,
+    });
+
+/// Seam provider allowing tests to replace the native camera preview with a test fake.
+final barcodeScannerViewBuilderProvider = Provider<BarcodeScannerViewBuilder>(
+  (ref) =>
+      ({
+        Key? key,
+        required MobileScannerController controller,
+        required Widget Function(
+          BuildContext context,
+          MobileScannerException error,
+          Widget? child,
+        )?
+        errorBuilder,
+        required void Function(BarcodeCapture capture) onDetect,
+      }) => MobileScanner(
+        key: key,
+        controller: controller,
+        errorBuilder: errorBuilder,
+        onDetect: onDetect,
+      ),
+);
 
 class BarcodeScannerScreen extends ConsumerStatefulWidget {
   const BarcodeScannerScreen({super.key});
@@ -20,8 +55,18 @@ class BarcodeScannerScreen extends ConsumerStatefulWidget {
 }
 
 class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
-    with SingleTickerProviderStateMixin {
-  final MobileScannerController _scannerController = MobileScannerController();
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
+  late final MobileScannerController _scannerController =
+      MobileScannerController(
+        autoStart: false,
+        formats: const [
+          BarcodeFormat.ean13,
+          BarcodeFormat.ean8,
+          BarcodeFormat.upcA,
+          BarcodeFormat.upcE,
+        ],
+        detectionSpeed: DetectionSpeed.noDuplicates,
+      );
   final TextEditingController _manualController = TextEditingController();
   late AnimationController _animController;
   late Animation<double> _scanAnimation;
@@ -41,6 +86,7 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _animController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
@@ -51,9 +97,47 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (!_scannerController.value.isInitialized) {
+      return;
+    }
+    switch (state) {
+      case AppLifecycleState.detached:
+      case AppLifecycleState.hidden:
+      case AppLifecycleState.paused:
+        return;
+      case AppLifecycleState.resumed:
+        if (!_scannerController.value.isRunning &&
+            !_cameraDenied &&
+            !_loading) {
+          _safeStart();
+        }
+      case AppLifecycleState.inactive:
+        if (_scannerController.value.isRunning) {
+          _safeStop();
+        }
+    }
+  }
+
+  Future<void> _safeStart() async {
+    try {
+      await _scannerController.start();
+    } catch (_) {}
+  }
+
+  Future<void> _safeStop() async {
+    try {
+      await _scannerController.stop();
+    } catch (_) {}
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _animController.dispose();
-    _scannerController.dispose();
+    try {
+      _scannerController.dispose();
+    } catch (_) {}
     _manualController.dispose();
     super.dispose();
   }
@@ -75,7 +159,7 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
     }
 
     setState(() => _loading = true);
-    await _scannerController.stop(); // Stop camera scan while processing
+    await _safeStop(); // Stop camera scan while processing
 
     final catalogCapability = ref.read(foodCatalogCapabilityProvider);
     RemoteFoodCandidate? candidate;
@@ -112,7 +196,7 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
                 duration: const Duration(seconds: 4),
               ),
             );
-            await _scannerController.start();
+            await _safeStart();
             return;
           }
           Navigator.pop(context, userMatch);
@@ -171,7 +255,7 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
               duration: const Duration(seconds: 4),
             ),
           );
-          await _scannerController.start();
+          await _safeStart();
         } else {
           Navigator.pop(context, candidate);
         }
@@ -187,7 +271,7 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
               duration: const Duration(seconds: 4),
             ),
           );
-          await _scannerController.start();
+          await _safeStart();
         } else {
           Navigator.pop(context, legacyResult);
         }
@@ -213,7 +297,7 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
               TextButton(
                 onPressed: () async {
                   Navigator.pop(dialogCtx);
-                  await _scannerController.start();
+                  await _safeStart();
                 },
                 child: const Text('Try Again'),
               ),
@@ -241,7 +325,7 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
               TextButton(
                 onPressed: () async {
                   Navigator.pop(dialogCtx); // Close dialog
-                  await _scannerController.start(); // Restart scanner
+                  await _safeStart(); // Restart scanner
                 },
                 child: const Text('Try Again'),
               ),
@@ -261,7 +345,7 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
                       true,
                     ); // Return true to indicate custom item created
                   } else {
-                    await _scannerController.start();
+                    await _safeStart();
                   }
                 },
                 child: const Text('Create Custom Food'),
@@ -383,7 +467,7 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
                         onPressed: () async {
                           setState(() => _cameraDenied = false);
                           try {
-                            await _scannerController.start();
+                            await _safeStart();
                           } catch (_) {
                             if (mounted) {
                               setState(() => _cameraDenied = true);
@@ -398,7 +482,7 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
               ),
             )
           else
-            MobileScanner(
+            ref.watch(barcodeScannerViewBuilderProvider)(
               controller: _scannerController,
               errorBuilder: (context, error, child) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {

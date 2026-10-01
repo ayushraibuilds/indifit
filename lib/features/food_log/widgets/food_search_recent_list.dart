@@ -13,7 +13,8 @@ class FoodSearchNavigationCard extends StatelessWidget {
   final IconData icon;
   final String title;
   final String detail;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
+  final bool enabled;
 
   const FoodSearchNavigationCard({
     super.key,
@@ -21,6 +22,7 @@ class FoodSearchNavigationCard extends StatelessWidget {
     required this.title,
     required this.detail,
     required this.onTap,
+    this.enabled = true,
   });
 
   @override
@@ -29,16 +31,29 @@ class FoodSearchNavigationCard extends StatelessWidget {
     child: Semantics(
       container: true,
       explicitChildNodes: true,
-      button: true,
+      button: enabled,
+      enabled: enabled,
       label: title,
       hint: detail,
       child: ListTile(
+        enabled: enabled,
         minVerticalPadding: 12,
-        leading: Icon(icon, color: context.b05Colors.action),
-        title: Text(title, style: B05Typography.label(context)),
+        leading: Icon(
+          icon,
+          color: enabled ? context.b05Colors.action : Colors.grey,
+        ),
+        title: Text(
+          title,
+          style: B05Typography.label(
+            context,
+          ).copyWith(color: enabled ? null : Colors.grey),
+        ),
         subtitle: Text(detail, style: B05Typography.caption(context)),
-        trailing: const Icon(Icons.chevron_right_rounded),
-        onTap: onTap,
+        trailing: Icon(
+          Icons.chevron_right_rounded,
+          color: enabled ? null : Colors.grey,
+        ),
+        onTap: enabled ? onTap : null,
       ),
     ),
   );
@@ -101,6 +116,7 @@ class FoodSearchRecentList extends StatelessWidget {
   final VoidCallback? onOpenThali;
   final VoidCallback? onQuickAddMacros;
   final Widget? entriesPanel;
+  final bool isOpenFoodFactsAllowed;
 
   const FoodSearchRecentList({
     super.key,
@@ -120,6 +136,7 @@ class FoodSearchRecentList extends StatelessWidget {
     this.onOpenThali,
     this.onQuickAddMacros,
     this.entriesPanel,
+    this.isOpenFoodFactsAllowed = true,
   });
 
   @override
@@ -156,7 +173,18 @@ class FoodSearchRecentList extends StatelessWidget {
               _QuickActionChip(
                 icon: Icons.qr_code_scanner_rounded,
                 label: 'Scan barcode',
-                onTap: onOpenBarcode,
+                enabled: isOpenFoodFactsAllowed,
+                onTap: isOpenFoodFactsAllowed
+                    ? onOpenBarcode
+                    : () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Turn off Offline Mode to look up packaged foods.',
+                            ),
+                          ),
+                        );
+                      },
               ),
               if (onScanNutritionLabel != null) ...[
                 const SizedBox(width: 8),
@@ -256,8 +284,11 @@ class FoodSearchRecentList extends StatelessWidget {
         FoodSearchNavigationCard(
           icon: Icons.qr_code_scanner_rounded,
           title: 'Scan barcode',
-          detail: 'Find a packaged food by its barcode.',
-          onTap: onOpenBarcode,
+          detail: isOpenFoodFactsAllowed
+              ? 'Find a packaged food by its barcode.'
+              : 'Turn off Offline Mode to look up packaged foods',
+          enabled: isOpenFoodFactsAllowed,
+          onTap: isOpenFoodFactsAllowed ? onOpenBarcode : null,
         ),
         if (onScanNutritionLabel != null)
           FoodSearchNavigationCard(
@@ -292,12 +323,14 @@ class FoodSearchRecentList extends StatelessWidget {
 class _QuickActionChip extends StatelessWidget {
   final IconData icon;
   final String label;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
+  final bool enabled;
 
   const _QuickActionChip({
     required this.icon,
     required this.label,
     required this.onTap,
+    this.enabled = true,
   });
 
   @override
@@ -307,7 +340,9 @@ class _QuickActionChip extends StatelessWidget {
       color: colors.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: colors.border),
+        side: BorderSide(
+          color: enabled ? colors.border : colors.border.withAlpha(128),
+        ),
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(20),
@@ -317,13 +352,17 @@ class _QuickActionChip extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 16, color: colors.action),
+              Icon(
+                icon,
+                size: 16,
+                color: enabled ? colors.action : Colors.grey,
+              ),
               const SizedBox(width: 6),
               Text(
                 label,
                 style: B05Typography.caption(context).copyWith(
                   fontWeight: FontWeight.w600,
-                  color: colors.textPrimary,
+                  color: enabled ? colors.textPrimary : Colors.grey,
                 ),
               ),
             ],
