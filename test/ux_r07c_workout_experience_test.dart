@@ -1,3 +1,6 @@
+@Tags(['golden'])
+library;
+
 import 'dart:convert';
 
 import 'package:drift/drift.dart' show Value;
