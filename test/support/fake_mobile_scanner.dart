@@ -6,11 +6,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 Widget fakeMobileScannerViewBuilder({
   Key? key,
   required MobileScannerController controller,
-  required Widget Function(
-    BuildContext context,
-    MobileScannerException error,
-    Widget? child,
-  )?
+  required Widget Function(BuildContext context, MobileScannerException error)?
   errorBuilder,
   required void Function(BarcodeCapture capture) onDetect,
 }) {

@@ -134,7 +134,8 @@ void main() {
                 onRetryRecent: () {},
                 canonicalRecentResults: const [],
                 recentResults: const [],
-                canonicalRecentItemBuilder: (context, recent) => const SizedBox(),
+                canonicalRecentItemBuilder: (context, recent) =>
+                    const SizedBox(),
                 recentItemBuilder: (context, food) => const SizedBox(),
                 onOpenSavedMeals: () {},
                 onOpenSavedRecipes: () {},

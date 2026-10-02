@@ -45,12 +45,4 @@ post_install do |installer|
       config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'i386'
     end
   end
-  Dir.glob("#{installer.sandbox.target_support_files_root}/**/*.xcconfig").each do |path|
-    content = File.read(path)
-    if content.include?('EXCLUDED_ARCHS[sdk=iphonesimulator*]')
-      new_content = content.gsub(/EXCLUDED_ARCHS\[sdk=iphonesimulator\*\]\s*=\s*arm64/i, 'EXCLUDED_ARCHS[sdk=iphonesimulator*] = i386')
-      new_content = new_content.gsub(/EXCLUDED_ARCHS\[sdk=iphonesimulator\*\]\s*=\s*(arm64 i386|i386 arm64)/i, 'EXCLUDED_ARCHS[sdk=iphonesimulator*] = i386')
-      File.write(path, new_content)
-    end
-  end
 end

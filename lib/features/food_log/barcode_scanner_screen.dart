@@ -19,7 +19,6 @@ typedef BarcodeScannerViewBuilder =
       required Widget Function(
         BuildContext context,
         MobileScannerException error,
-        Widget? child,
       )?
       errorBuilder,
       required void Function(BarcodeCapture capture) onDetect,
@@ -34,7 +33,6 @@ final barcodeScannerViewBuilderProvider = Provider<BarcodeScannerViewBuilder>(
         required Widget Function(
           BuildContext context,
           MobileScannerException error,
-          Widget? child,
         )?
         errorBuilder,
         required void Function(BarcodeCapture capture) onDetect,
@@ -484,13 +482,13 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
           else
             ref.watch(barcodeScannerViewBuilderProvider)(
               controller: _scannerController,
-              errorBuilder: (context, error, child) {
+              errorBuilder: (context, error) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (mounted && !_cameraDenied) {
                     setState(() => _cameraDenied = true);
                   }
                 });
-                return child ?? const SizedBox.shrink();
+                return const SizedBox.shrink();
               },
               onDetect: (capture) {
                 final List<Barcode> barcodes = capture.barcodes;
