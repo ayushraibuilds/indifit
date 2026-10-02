@@ -22,6 +22,14 @@ class AppConfig {
   /// tests. V1 release startup never requires this value.
   static const String rawApiKey = String.fromEnvironment('INDIFIT_API_KEY');
 
+  /// Which AI gateway connected features use: `firebase` (default, release)
+  /// or `fastapi` for local development against `backend/`, e.g.
+  /// `--dart-define=INDIFIT_AI_GATEWAY=fastapi`.
+  static const String aiGateway = String.fromEnvironment(
+    'INDIFIT_AI_GATEWAY',
+    defaultValue: 'firebase',
+  );
+
   /// Returns true if a non-empty legacy-backend credential was supplied.
   static bool get hasValidApiKey => rawApiKey.trim().isNotEmpty;
 }
