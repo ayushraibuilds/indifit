@@ -4,7 +4,9 @@ import 'package:dio/dio.dart';
 
 import '../../core/config/app_config.dart';
 import '../../core/privacy/privacy_policy.dart';
+import '../../core/utils/app_logger.dart';
 import '../../data/repositories/nutrition_food_catalog_repository.dart';
+import 'meal_item_resolver.dart';
 
 /// Typed domain exceptions for AI meal parsing failures.
 sealed class MealAiException implements Exception {
@@ -42,6 +44,10 @@ class DecomposedFoodItem {
   final String confidence;
   final NutritionFoodOption? matchedCatalogOption;
 
+  /// Plausible catalogue foods when no single match was clear. The user must
+  /// pick one (or swap to another) before the item can be logged.
+  final List<NutritionFoodOption> catalogChoices;
+
   const DecomposedFoodItem({
     required this.rawSegment,
     required this.foodName,
@@ -53,9 +59,13 @@ class DecomposedFoodItem {
     required this.estimatedFat,
     this.confidence = 'medium',
     this.matchedCatalogOption,
+    this.catalogChoices = const [],
   });
 
   bool get isCatalogVerified => matchedCatalogOption != null;
+
+  bool get needsCatalogChoice =>
+      matchedCatalogOption == null && catalogChoices.isNotEmpty;
 
   DecomposedFoodItem copyWith({
     String? rawSegment,
@@ -68,6 +78,7 @@ class DecomposedFoodItem {
     double? estimatedFat,
     String? confidence,
     NutritionFoodOption? matchedCatalogOption,
+    List<NutritionFoodOption>? catalogChoices,
     bool clearCatalogOption = false,
   }) {
     return DecomposedFoodItem(
@@ -83,12 +94,14 @@ class DecomposedFoodItem {
       matchedCatalogOption: clearCatalogOption
           ? null
           : (matchedCatalogOption ?? this.matchedCatalogOption),
+      catalogChoices: catalogChoices ?? this.catalogChoices,
     );
   }
 
   factory DecomposedFoodItem.fromJson(
     Map<String, dynamic> json, {
     NutritionFoodOption? catalogOption,
+    List<NutritionFoodOption> catalogChoices = const [],
   }) {
     return DecomposedFoodItem(
       rawSegment: (json['raw_segment'] as String?) ?? '',
@@ -101,6 +114,7 @@ class DecomposedFoodItem {
       estimatedFat: (json['estimated_fat'] as num?)?.toDouble() ?? 0.0,
       confidence: (json['confidence'] as String?) ?? 'medium',
       matchedCatalogOption: catalogOption,
+      catalogChoices: catalogChoices,
     );
   }
 }
@@ -184,31 +198,7 @@ class NaturalLanguageMealService {
     final isFallback = (data['is_fallback'] as bool?) ?? false;
     final fallbackReason = data['fallback_reason'] as String?;
 
-    // Cross-reference each parsed item with the curated catalog
-    final resolvedItems = <DecomposedFoodItem>[];
-    for (final raw in rawItems) {
-      if (raw is Map<String, dynamic>) {
-        final foodName = (raw['food_name'] as String?) ?? '';
-        NutritionFoodOption? catalogMatch;
-        if (foodName.isNotEmpty) {
-          try {
-            final candidates = await _catalog.search(query: foodName);
-            if (candidates.isNotEmpty) {
-              // Exact match preferred, otherwise first candidate
-              catalogMatch = candidates.firstWhere(
-                (c) => c.displayName.toLowerCase() == foodName.toLowerCase(),
-                orElse: () => candidates.first,
-              );
-            }
-          } catch (_) {
-            // Non-fatal if local catalog search fails; fallback to estimate
-          }
-        }
-        resolvedItems.add(
-          DecomposedFoodItem.fromJson(raw, catalogOption: catalogMatch),
-        );
-      }
-    }
+    final resolvedItems = await _resolveAgainstCatalog(rawItems);
 
     return MealDecompositionResult(
       query: cleanText,
@@ -258,27 +248,7 @@ class NaturalLanguageMealService {
     final isFallback = (data['is_fallback'] as bool?) ?? false;
     final fallbackReason = data['fallback_reason'] as String?;
 
-    final resolvedItems = <DecomposedFoodItem>[];
-    for (final raw in rawItems) {
-      if (raw is Map<String, dynamic>) {
-        final foodName = (raw['food_name'] as String?) ?? '';
-        NutritionFoodOption? catalogMatch;
-        if (foodName.isNotEmpty) {
-          try {
-            final candidates = await _catalog.search(query: foodName);
-            if (candidates.isNotEmpty) {
-              catalogMatch = candidates.firstWhere(
-                (c) => c.displayName.toLowerCase() == foodName.toLowerCase(),
-                orElse: () => candidates.first,
-              );
-            }
-          } catch (_) {}
-        }
-        resolvedItems.add(
-          DecomposedFoodItem.fromJson(raw, catalogOption: catalogMatch),
-        );
-      }
-    }
+    final resolvedItems = await _resolveAgainstCatalog(rawItems);
 
     return MealDecompositionResult(
       query: 'Photo Upload',
@@ -287,5 +257,42 @@ class NaturalLanguageMealService {
       isFallback: isFallback,
       fallbackReason: fallbackReason,
     );
+  }
+
+  /// Matches each parsed item against the curated catalogue. A clear match
+  /// supplies the nutrition; a close call is left for the user to choose;
+  /// anything else stays an AI estimate. Catalogue failures degrade to an
+  /// estimate rather than failing the whole parse.
+  Future<List<DecomposedFoodItem>> _resolveAgainstCatalog(
+    List<dynamic> rawItems,
+  ) async {
+    final resolver = MealItemResolver(
+      search: (query) => _catalog.search(query: query),
+    );
+    final items = <DecomposedFoodItem>[];
+    for (final raw in rawItems) {
+      if (raw is! Map<String, dynamic>) continue;
+      final foodName = (raw['food_name'] as String?) ?? '';
+      var match = const CatalogMatch.unmatched();
+      if (foodName.isNotEmpty) {
+        try {
+          match = await resolver.resolve(foodName);
+        } on Object catch (error, stackTrace) {
+          AppLogger.error(
+            'Catalogue match failed for AI item',
+            error,
+            stackTrace,
+          );
+        }
+      }
+      items.add(
+        DecomposedFoodItem.fromJson(
+          raw,
+          catalogOption: match.option,
+          catalogChoices: match.choices,
+        ),
+      );
+    }
+    return items;
   }
 }
