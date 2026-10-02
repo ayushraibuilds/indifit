@@ -403,6 +403,15 @@ class _PhotoMealScreenState extends ConsumerState<PhotoMealScreen> {
           final item = entry.value;
           return _buildItemCard(context, index, item, controller, colors);
         }),
+        if (state.editableItems.any((i) => i.needsCatalogChoice))
+          Padding(
+            padding: const EdgeInsets.only(top: B05Layout.space8),
+            child: Text(
+              'Tap "Choose" on each highlighted item to pick the right food '
+              'before logging.',
+              style: B05Typography.caption(context),
+            ),
+          ),
 
         const SizedBox(height: B05Layout.space20),
 
@@ -437,7 +446,10 @@ class _PhotoMealScreenState extends ConsumerState<PhotoMealScreen> {
                           ? 'Logging Meal...'
                           : 'Log Meal to Diary'),
                 icon: Icons.check_circle_outline_rounded,
-                onPressed: state.isLogged || state.isBusy
+                onPressed:
+                    state.isLogged ||
+                        state.isBusy ||
+                        state.editableItems.any((i) => i.needsCatalogChoice)
                     ? null
                     : () async {
                         final messenger = ScaffoldMessenger.of(context);
@@ -539,6 +551,15 @@ class _PhotoMealScreenState extends ConsumerState<PhotoMealScreen> {
                         'from photo: "${item.rawSegment}"',
                         style: B05Typography.caption(context),
                       ),
+                      if (item.portionNote != null) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          item.portionNote!,
+                          style: B05Typography.caption(
+                            context,
+                          ).copyWith(color: colors.warning.indicator),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -596,7 +617,7 @@ class _PhotoMealScreenState extends ConsumerState<PhotoMealScreen> {
                   onPressed: item.quantityAmount <= 0.25
                       ? null
                       : () {
-                          final step = item.quantityAmount <= 1.0 ? 0.25 : 1.0;
+                          final step = quantityStep(item, decreasing: true);
                           final newAmount = (item.quantityAmount - step).clamp(
                             0.25,
                             999.0,
@@ -622,7 +643,7 @@ class _PhotoMealScreenState extends ConsumerState<PhotoMealScreen> {
                   icon: const Icon(Icons.add, size: 16),
                   visualDensity: VisualDensity.compact,
                   onPressed: () {
-                    final step = item.quantityAmount < 1.0 ? 0.25 : 1.0;
+                    final step = quantityStep(item, decreasing: false);
                     final newAmount = item.quantityAmount + step;
                     controller.updateItemQuantity(
                       index,

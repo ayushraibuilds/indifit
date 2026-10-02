@@ -509,10 +509,9 @@ class NaturalLanguageMealController
   void updateItemFoodMatch(int index, NutritionFoodOption? option) {
     if (index < 0 || index >= state.editableItems.length) return;
     final list = List<DecomposedFoodItem>.from(state.editableItems);
-    list[index] = list[index].copyWith(
-      matchedCatalogOption: option,
-      clearCatalogOption: option == null,
-    );
+    list[index] = option == null
+        ? list[index].copyWith(clearCatalogOption: true, clearPortionNote: true)
+        : bindToCatalog(list[index], option);
     state = state.copyWith(editableItems: list);
   }
 
@@ -528,6 +527,10 @@ class NaturalLanguageMealController
     required DateTime date,
   }) async {
     if (state.editableItems.isEmpty) return false;
+    // The screen disables logging until every ambiguous item is chosen.
+    if (state.editableItems.any((item) => item.needsCatalogChoice)) {
+      return false;
+    }
 
     state = state.copyWith(
       status: NaturalLanguageMealStatus.logging,
@@ -549,22 +552,10 @@ class NaturalLanguageMealController
         Quantity quantity;
 
         if (item.matchedCatalogOption != null) {
+          // Bound items already count the food's own measure, so this logs
+          // exactly what the review card showed.
           option = item.matchedCatalogOption!;
-          if (option.baseQuantity.unit == QuantityUnit.gram) {
-            final isGram =
-                item.quantityUnit.toLowerCase() == 'g' ||
-                item.quantityUnit.toLowerCase() == 'grams';
-            final grams = isGram
-                ? item.quantityAmount
-                : (item.quantityAmount * 100.0);
-            quantity = Quantity.fromNum(amount: grams, unit: QuantityUnit.gram);
-          } else {
-            quantity = Quantity.fromNum(
-              amount: item.quantityAmount,
-              unit: option.baseQuantity.unit,
-              context: option.baseQuantity.context,
-            );
-          }
+          quantity = catalogLogQuantity(item);
         } else {
           option = await catalog.createUserFood(
             displayName: item.foodName,
@@ -767,10 +758,9 @@ class PhotoMealController extends StateNotifier<PhotoMealState> {
   void updateItemFoodMatch(int index, NutritionFoodOption? option) {
     if (index < 0 || index >= state.editableItems.length) return;
     final list = List<DecomposedFoodItem>.from(state.editableItems);
-    list[index] = list[index].copyWith(
-      matchedCatalogOption: option,
-      clearCatalogOption: option == null,
-    );
+    list[index] = option == null
+        ? list[index].copyWith(clearCatalogOption: true, clearPortionNote: true)
+        : bindToCatalog(list[index], option);
     state = state.copyWith(editableItems: list);
   }
 
@@ -790,6 +780,10 @@ class PhotoMealController extends StateNotifier<PhotoMealState> {
     required DateTime date,
   }) async {
     if (state.editableItems.isEmpty) return false;
+    // The screen disables logging until every ambiguous item is chosen.
+    if (state.editableItems.any((item) => item.needsCatalogChoice)) {
+      return false;
+    }
 
     state = state.copyWith(status: PhotoMealStatus.logging, clearError: true);
 
@@ -808,22 +802,10 @@ class PhotoMealController extends StateNotifier<PhotoMealState> {
         Quantity quantity;
 
         if (item.matchedCatalogOption != null) {
+          // Bound items already count the food's own measure, so this logs
+          // exactly what the review card showed.
           option = item.matchedCatalogOption!;
-          if (option.baseQuantity.unit == QuantityUnit.gram) {
-            final isGram =
-                item.quantityUnit.toLowerCase() == 'g' ||
-                item.quantityUnit.toLowerCase() == 'grams';
-            final grams = isGram
-                ? item.quantityAmount
-                : (item.quantityAmount * 100.0);
-            quantity = Quantity.fromNum(amount: grams, unit: QuantityUnit.gram);
-          } else {
-            quantity = Quantity.fromNum(
-              amount: item.quantityAmount,
-              unit: option.baseQuantity.unit,
-              context: option.baseQuantity.context,
-            );
-          }
+          quantity = catalogLogQuantity(item);
         } else {
           option = await catalog.createUserFood(
             displayName: item.foodName,
