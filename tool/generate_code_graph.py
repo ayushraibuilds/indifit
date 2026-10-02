@@ -15,8 +15,6 @@ import sys
 import re
 import json
 import argparse
-from datetime import datetime, timezone
-import subprocess
 
 P0_CRITICAL_FILES = [
     "lib/features/dashboard/dashboard_controller.dart",
@@ -38,13 +36,6 @@ LEGACY_SUNSET_TARGETS = [
     "lib/features/workout_player/workout_player_screen.dart",
     "lib/features/food_log/meal_templates_screen.dart",
 ]
-
-def get_git_commit():
-    try:
-        res = subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True, check=True)
-        return res.stdout.strip()
-    except Exception:
-        return "unknown"
 
 def parse_dart_files(root_dir="lib"):
     dart_files = []
@@ -132,11 +123,11 @@ def build_code_graph(dart_files):
             edges.append({"from": fpath, "to": resolved, "type": "part_of"})
 
         # 3. Riverpod Providers
-        providers_defined = list(set(provider_def_pattern.findall(content)))
-        providers_used = list(set(provider_watch_pattern.findall(content)))
+        providers_defined = sorted(set(provider_def_pattern.findall(content)))
+        providers_used = sorted(set(provider_watch_pattern.findall(content)))
 
         # 4. GoRoutes
-        routes_defined = list(set(goroute_pattern.findall(content)))
+        routes_defined = sorted(set(goroute_pattern.findall(content)))
 
         # 5. Catch analysis
         file_catches = []
@@ -236,8 +227,8 @@ def build_code_graph(dart_files):
     p0_empty_catches = [c for c in empty_catches if c["is_p0"]]
 
     summary = {
-        "generated_at": datetime.now(timezone.utc).isoformat(),
-        "git_commit": get_git_commit(),
+        # No timestamp or commit hash: CI regenerates this file and fails on
+        # any diff, so the output must depend only on the source tree.
         "total_dart_files": len(nodes),
         "total_loc": total_loc,
         "total_internal_edges": len(edges),
