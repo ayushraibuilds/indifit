@@ -1,6 +1,3 @@
-@Tags(['golden'])
-library;
-
 import 'dart:convert';
 
 import 'package:drift/drift.dart' show Value;
@@ -295,18 +292,20 @@ void main() {
       expect(find.text('View History'), findsNothing);
     });
 
-    testWidgets('dark preview golden keeps Start visually dominant', (
-      tester,
-    ) async {
-      _setViewport(tester, const Size(390, 844));
-      await _pumpPreview(tester, _previewData(), theme: AppTheme.darkTheme);
+    testWidgets(
+      'dark preview golden keeps Start visually dominant',
+      tags: const ['golden'],
+      (tester) async {
+        _setViewport(tester, const Size(390, 844));
+        await _pumpPreview(tester, _previewData(), theme: AppTheme.darkTheme);
 
-      expect(tester.takeException(), isNull);
-      await expectLater(
-        find.byType(TrainingWorkoutPreviewScreen),
-        matchesGoldenFile('goldens/r08c2_training_workout_preview_dark.png'),
-      );
-    });
+        expect(tester.takeException(), isNull);
+        await expectLater(
+          find.byType(TrainingWorkoutPreviewScreen),
+          matchesGoldenFile('goldens/r08c2_training_workout_preview_dark.png'),
+        );
+      },
+    );
   });
 
   group('R08C.2 canonical snapshot read', () {

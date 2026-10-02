@@ -1,6 +1,3 @@
-@Tags(['golden'])
-library;
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,6 +6,7 @@ import 'package:indifit/core/nutrients.dart';
 import 'package:indifit/core/nutrition_legacy_read_models.dart';
 import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/core/typed_quantities.dart';
+import 'package:indifit/core/widgets/b05_accessibility_primitives.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/models/b02_execution_models.dart';
 import 'package:indifit/data/models/b02_progress_read_models.dart';
@@ -196,7 +194,6 @@ void main() {
   testWidgets('Today keyboard traversal follows visible reading order', (
     tester,
   ) async {
-    var customizeCalls = 0;
     var settingsCalls = 0;
     DateTime? changedDate;
     await tester.pumpWidget(
@@ -205,7 +202,7 @@ void main() {
         textScale: 1,
         disableAnimations: true,
         personalization: personalization,
-        onCustomize: () => customizeCalls++,
+        onCustomize: () {},
         onOpenSettings: () => settingsCalls++,
         onDateChanged: (date) => changedDate = date,
       ),
@@ -213,9 +210,14 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
+    // Header order: appearance toggle, then settings, then the date pager.
+    // Only check focus on the toggle so the test doesn't flip the theme.
     await tester.sendKeyEvent(LogicalKeyboardKey.tab);
-    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
-    expect(customizeCalls, 1);
+    final firstFocus = FocusManager.instance.primaryFocus?.context;
+    expect(
+      firstFocus?.findAncestorWidgetOfExactType<B05IconAction>()?.label,
+      'Switch to dark mode',
+    );
 
     await tester.sendKeyEvent(LogicalKeyboardKey.tab);
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);
@@ -226,7 +228,9 @@ void main() {
     expect(changedDate, DateTime(2026, 8, 6));
   });
 
-  testWidgets('Today dark golden benchmark', (tester) async {
+  testWidgets('Today dark golden benchmark', tags: const ['golden'], (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
     await tester.pumpWidget(
@@ -248,7 +252,9 @@ void main() {
     tester.view.resetDevicePixelRatio();
   });
 
-  testWidgets('Today light golden benchmark', (tester) async {
+  testWidgets('Today light golden benchmark', tags: const ['golden'], (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
     await tester.pumpWidget(

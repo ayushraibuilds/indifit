@@ -1,6 +1,3 @@
-@Tags(['golden'])
-library;
-
 import 'dart:convert';
 
 import 'package:drift/drift.dart' show Value;
@@ -250,34 +247,36 @@ void main() {
     );
   });
 
-  testWidgets('Quick Workout is a first-class empty entry surface', (
-    tester,
-  ) async {
-    tester.view.physicalSize = const Size(390, 844);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.reset);
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          quickWorkoutActiveDraftProvider.overrideWith((ref) async => null),
-        ],
-        child: MaterialApp(
-          theme: AppTheme.lightTheme,
-          home: const QuickWorkoutScreen(),
+  testWidgets(
+    'Quick Workout is a first-class empty entry surface',
+    tags: const ['golden'],
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            quickWorkoutActiveDraftProvider.overrideWith((ref) async => null),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.lightTheme,
+            home: const QuickWorkoutScreen(),
+          ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
-    expect(find.text('Quick workout'), findsOneWidget);
-    expect(find.text('Start anywhere'), findsOneWidget);
-    expect(find.text('Add exercise'), findsOneWidget);
-    expect(find.textContaining('No plan or schedule'), findsOneWidget);
-    expect(tester.takeException(), isNull);
-    await expectLater(
-      find.byType(QuickWorkoutScreen),
-      matchesGoldenFile('goldens/ux_r07b_quick_workout_empty_light.png'),
-    );
-  });
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Quick workout'), findsOneWidget);
+      expect(find.text('Start anywhere'), findsOneWidget);
+      expect(find.text('Add exercise'), findsOneWidget);
+      expect(find.textContaining('No plan or schedule'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await expectLater(
+        find.byType(QuickWorkoutScreen),
+        matchesGoldenFile('goldens/ux_r07b_quick_workout_empty_light.png'),
+      );
+    },
+  );
 
   for (final planned in [false, true]) {
     testWidgets(
@@ -330,38 +329,42 @@ void main() {
     );
   }
 
-  testWidgets('Quick draft recovery has a compact dark golden', (tester) async {
-    tester.view.physicalSize = const Size(320, 568);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.reset);
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: AppTheme.darkTheme,
-        home: Scaffold(
-          body: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: QuickWorkoutConflictSurface(
-                draft: _conflictingDraft(planned: false),
-                isBusy: false,
-                onResume: () {},
-                onDiscard: () {},
-                onCancel: () {},
+  testWidgets(
+    'Quick draft recovery has a compact dark golden',
+    tags: const ['golden'],
+    (tester) async {
+      tester.view.physicalSize = const Size(320, 568);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.darkTheme,
+          home: Scaffold(
+            body: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: QuickWorkoutConflictSurface(
+                  draft: _conflictingDraft(planned: false),
+                  isBusy: false,
+                  onResume: () {},
+                  onDiscard: () {},
+                  onCancel: () {},
+                ),
               ),
             ),
           ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
-    expect(tester.takeException(), isNull);
-    await expectLater(
-      find.byType(QuickWorkoutConflictSurface),
-      matchesGoldenFile(
-        'goldens/ux_r07b_quick_workout_conflict_compact_dark.png',
-      ),
-    );
-  });
+      );
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      await expectLater(
+        find.byType(QuickWorkoutConflictSurface),
+        matchesGoldenFile(
+          'goldens/ux_r07b_quick_workout_conflict_compact_dark.png',
+        ),
+      );
+    },
+  );
 
   testWidgets('active Quick set stays usable in the compact text matrix', (
     tester,
@@ -426,42 +429,44 @@ void main() {
     addTearDown(tester.view.reset);
   });
 
-  testWidgets('active Quick set has a compact representative golden', (
-    tester,
-  ) async {
-    tester.view.physicalSize = const Size(320, 568);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.reset);
-    final launch = (await tester.runAsync(activeQuickLaunch))!;
-    final controller = (await tester.runAsync(
-      () => preparedController(launch),
-    ))!;
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          b07ExerciseContextProvider.overrideWith(
-            (ref, id) async => const B07ExerciseContextResult.unavailable(),
+  testWidgets(
+    'active Quick set has a compact representative golden',
+    tags: const ['golden'],
+    (tester) async {
+      tester.view.physicalSize = const Size(320, 568);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final launch = (await tester.runAsync(activeQuickLaunch))!;
+      final controller = (await tester.runAsync(
+        () => preparedController(launch),
+      ))!;
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            b07ExerciseContextProvider.overrideWith(
+              (ref, id) async => const B07ExerciseContextResult.unavailable(),
+            ),
+            b02StrengthExecutionScreenControllerProvider.overrideWith(
+              (ref, _) => controller,
+            ),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.lightTheme,
+            home: B02StrengthPlayerScreen(launch: launch, nowUtc: _testNowUtc),
           ),
-          b02StrengthExecutionScreenControllerProvider.overrideWith(
-            (ref, _) => controller,
-          ),
-        ],
-        child: MaterialApp(
-          theme: AppTheme.lightTheme,
-          home: B02StrengthPlayerScreen(launch: launch, nowUtc: _testNowUtc),
         ),
-      ),
-    );
-    for (var pump = 0; pump < 8; pump++) {
-      await tester.pump(const Duration(milliseconds: 20));
-    }
-    await expectLater(
-      find.byType(B02StrengthPlayerScreen),
-      matchesGoldenFile('goldens/ux_r07b_quick_workout_active_compact.png'),
-    );
-    await tester.pumpWidget(const SizedBox.shrink());
-    await tester.pump();
-  });
+      );
+      for (var pump = 0; pump < 8; pump++) {
+        await tester.pump(const Duration(milliseconds: 20));
+      }
+      await expectLater(
+        find.byType(B02StrengthPlayerScreen),
+        matchesGoldenFile('goldens/ux_r07b_quick_workout_active_compact.png'),
+      );
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+    },
+  );
 
   testWidgets('rest controls remain visible at 320 width and 2x text', (
     tester,
@@ -536,30 +541,32 @@ void main() {
     await tester.pump();
   });
 
-  testWidgets('completion is readable at compact width and 2x text', (
-    tester,
-  ) async {
-    tester.view.physicalSize = const Size(320, 568);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.reset);
-    final launch = (await tester.runAsync(activeQuickLaunch))!;
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: AppTheme.darkTheme,
-        home: MediaQuery(
-          data: const MediaQueryData(textScaler: TextScaler.linear(2)),
-          child: Scaffold(
-            body: B02WorkoutCompletionSuccess(launch: launch, onDone: _noop),
+  testWidgets(
+    'completion is readable at compact width and 2x text',
+    tags: const ['golden'],
+    (tester) async {
+      tester.view.physicalSize = const Size(320, 568);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final launch = (await tester.runAsync(activeQuickLaunch))!;
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.darkTheme,
+          home: MediaQuery(
+            data: const MediaQueryData(textScaler: TextScaler.linear(2)),
+            child: Scaffold(
+              body: B02WorkoutCompletionSuccess(launch: launch, onDone: _noop),
+            ),
           ),
         ),
-      ),
-    );
-    expect(tester.takeException(), isNull);
-    await expectLater(
-      find.byType(B02WorkoutCompletionSuccess),
-      matchesGoldenFile('goldens/ux_r07b_completion_compact_2x_dark.png'),
-    );
-  });
+      );
+      expect(tester.takeException(), isNull);
+      await expectLater(
+        find.byType(B02WorkoutCompletionSuccess),
+        matchesGoldenFile('goldens/ux_r07b_completion_compact_2x_dark.png'),
+      );
+    },
+  );
 }
 
 void _noop() {}

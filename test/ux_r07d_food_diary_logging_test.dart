@@ -1,6 +1,3 @@
-@Tags(['golden'])
-library;
-
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -25,9 +22,11 @@ import 'package:indifit/data/repositories/nutrition_read_model_repository.dart';
 import 'package:indifit/data/repositories/nutrition_transformation_repository.dart';
 import 'package:indifit/features/food_log/food_log_surface.dart';
 import 'package:indifit/features/food_log/food_search_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  setUp(() => SharedPreferences.setMockInitialValues({}));
   // R07F-0: Outfit is bundled; no runtime font fetching configuration.
 
   test(
@@ -148,6 +147,7 @@ void main() {
 
   testWidgets(
     'multi-select preserves temporary selection and commits one batch per tap burst',
+    tags: const ['golden'],
     (tester) async {
       tester.view.physicalSize = const Size(390, 844);
       tester.view.devicePixelRatio = 1;
@@ -345,97 +345,99 @@ void main() {
     },
   );
 
-  testWidgets('populated diary keeps meal totals and food names in view', (
-    tester,
-  ) async {
-    tester.view.physicalSize = const Size(390, 844);
-    tester.view.devicePixelRatio = 1;
-    final fixture = await _R07DFixture.create();
-    addTearDown(() async {
-      await tester.pumpWidget(const SizedBox.shrink());
-      await tester.pump();
-      tester.view.resetPhysicalSize();
-      tester.view.resetDevicePixelRatio();
-      unawaited(fixture.close());
-    });
-    final diary = (await tester.runAsync(() async {
-      final poha = await fixture.catalog.createUserFood(
-        displayName: 'Diary poha',
-        servingSize: 1,
-        servingUnit: 'katori',
-        energyKcal: 230,
-        proteinG: 5,
-        carbohydrateG: 42,
-        fatG: 4,
-      );
-      final rice = await fixture.catalog.createUserFood(
-        displayName: 'Diary rice',
-        servingSize: 1,
-        servingUnit: 'katori',
-        energyKcal: 220,
-        proteinG: 4,
-        carbohydrateG: 45,
-        fatG: 1,
-      );
-      final dal = await fixture.catalog.createUserFood(
-        displayName: 'Diary dal',
-        servingSize: 1,
-        servingUnit: 'katori',
-        energyKcal: 180,
-        proteinG: 9,
-        carbohydrateG: 25,
-        fatG: 3,
-      );
-      final loggedAt = DateTime.utc(2026, 8, 12, 7);
-      Future<void> log(
-        NutritionFoodOption option,
-        String meal,
-        String id,
-      ) async {
-        final preview = await fixture.logger.preview(
-          option: option,
-          quantity: option.baseQuantity,
+  testWidgets(
+    'populated diary keeps meal totals and food names in view',
+    tags: const ['golden'],
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      final fixture = await _R07DFixture.create();
+      addTearDown(() async {
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+        unawaited(fixture.close());
+      });
+      final diary = (await tester.runAsync(() async {
+        final poha = await fixture.catalog.createUserFood(
+          displayName: 'Diary poha',
+          servingSize: 1,
+          servingUnit: 'katori',
+          energyKcal: 230,
+          proteinG: 5,
+          carbohydrateG: 42,
+          fatG: 4,
         );
-        await fixture.logger.finalize(
-          userId: kLocalNutritionUserScopeId,
-          preview: preview,
-          mealCategory: meal,
-          loggedAt: loggedAt,
-          localDate: '2026-08-12',
-          timezoneId: 'Asia/Kolkata',
-          commandId: 'r07d-diary-$id-command',
-          consumptionId: 'r07d-diary-$id-consumption',
+        final rice = await fixture.catalog.createUserFood(
+          displayName: 'Diary rice',
+          servingSize: 1,
+          servingUnit: 'katori',
+          energyKcal: 220,
+          proteinG: 4,
+          carbohydrateG: 45,
+          fatG: 1,
         );
-      }
+        final dal = await fixture.catalog.createUserFood(
+          displayName: 'Diary dal',
+          servingSize: 1,
+          servingUnit: 'katori',
+          energyKcal: 180,
+          proteinG: 9,
+          carbohydrateG: 25,
+          fatG: 3,
+        );
+        final loggedAt = DateTime.utc(2026, 8, 12, 7);
+        Future<void> log(
+          NutritionFoodOption option,
+          String meal,
+          String id,
+        ) async {
+          final preview = await fixture.logger.preview(
+            option: option,
+            quantity: option.baseQuantity,
+          );
+          await fixture.logger.finalize(
+            userId: kLocalNutritionUserScopeId,
+            preview: preview,
+            mealCategory: meal,
+            loggedAt: loggedAt,
+            localDate: '2026-08-12',
+            timezoneId: 'Asia/Kolkata',
+            commandId: 'r07d-diary-$id-command',
+            consumptionId: 'r07d-diary-$id-consumption',
+          );
+        }
 
-      await log(poha, 'breakfast', 'poha');
-      await log(rice, 'lunch', 'rice');
-      await log(dal, 'lunch', 'dal');
-      return _readDiaryFixture(fixture, DateTime(2026, 8, 12));
-    }))!;
-    await tester.runAsync(fixture.closeDatabase);
+        await log(poha, 'breakfast', 'poha');
+        await log(rice, 'lunch', 'rice');
+        await log(dal, 'lunch', 'dal');
+        return _readDiaryFixture(fixture, DateTime(2026, 8, 12));
+      }))!;
+      await tester.runAsync(fixture.closeDatabase);
 
-    await tester.pumpWidget(
-      _r07dFoodApp(
-        fixture: fixture,
-        home: FoodDiaryScreen(
-          selectedDate: DateTime(2026, 8, 12),
-          today: DateTime(2026, 8, 13),
+      await tester.pumpWidget(
+        _r07dFoodApp(
+          fixture: fixture,
+          home: FoodDiaryScreen(
+            selectedDate: DateTime(2026, 8, 12),
+            today: DateTime(2026, 8, 13),
+          ),
+          extraOverrides: [
+            foodDiaryReadModelProvider.overrideWith((ref, date) async => diary),
+          ],
         ),
-        extraOverrides: [
-          foodDiaryReadModelProvider.overrideWith((ref, date) async => diary),
-        ],
-      ),
-    );
-    await _settleR07D(tester);
+      );
+      await _settleR07D(tester);
 
-    expect(find.text('Diary poha'), findsOneWidget);
-    expect(find.text('Diary dal · Diary rice'), findsOneWidget);
-    await expectLater(
-      find.byType(FoodDiaryScreen),
-      matchesGoldenFile('goldens/ux_r07d_diary_populated_light.png'),
-    );
-  });
+      expect(find.text('Diary poha'), findsOneWidget);
+      expect(find.text('Diary dal · Diary rice'), findsOneWidget);
+      await expectLater(
+        find.byType(FoodDiaryScreen),
+        matchesGoldenFile('goldens/ux_r07d_diary_populated_light.png'),
+      );
+    },
+  );
 
   testWidgets(
     'food diary date navigation carries the selected historical day into meal add',
@@ -493,48 +495,50 @@ void main() {
     },
   );
 
-  testWidgets('food diary remains legible at 430px / 1.5x text', (
-    tester,
-  ) async {
-    tester.view.physicalSize = const Size(430, 932);
-    tester.view.devicePixelRatio = 1;
-    final fixture = await _R07DFixture.create();
-    addTearDown(() async {
-      await tester.pumpWidget(const SizedBox.shrink());
-      await tester.pump();
-      tester.view.resetPhysicalSize();
-      tester.view.resetDevicePixelRatio();
-      unawaited(fixture.close());
-    });
-    final loadingDiary = Completer<FoodDiaryReadModel>();
-    await tester.runAsync(fixture.closeDatabase);
+  testWidgets(
+    'food diary remains legible at 430px / 1.5x text',
+    tags: const ['golden'],
+    (tester) async {
+      tester.view.physicalSize = const Size(430, 932);
+      tester.view.devicePixelRatio = 1;
+      final fixture = await _R07DFixture.create();
+      addTearDown(() async {
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+        unawaited(fixture.close());
+      });
+      final loadingDiary = Completer<FoodDiaryReadModel>();
+      await tester.runAsync(fixture.closeDatabase);
 
-    await tester.pumpWidget(
-      _r07dFoodApp(
-        fixture: fixture,
-        textScale: 1.5,
-        home: FoodDiaryScreen(
-          selectedDate: DateTime(2026, 8, 12),
-          today: DateTime(2026, 8, 13),
-        ),
-        extraOverrides: [
-          foodDiaryReadModelProvider.overrideWith(
-            (ref, date) => loadingDiary.future,
+      await tester.pumpWidget(
+        _r07dFoodApp(
+          fixture: fixture,
+          textScale: 1.5,
+          home: FoodDiaryScreen(
+            selectedDate: DateTime(2026, 8, 12),
+            today: DateTime(2026, 8, 13),
           ),
-        ],
-      ),
-    );
-    await _settleR07D(tester);
+          extraOverrides: [
+            foodDiaryReadModelProvider.overrideWith(
+              (ref, date) => loadingDiary.future,
+            ),
+          ],
+        ),
+      );
+      await _settleR07D(tester);
 
-    final addBreakfast = find.bySemanticsLabel('Add Breakfast');
-    expect(addBreakfast, findsOneWidget);
-    expect(tester.getRect(addBreakfast).bottom, lessThanOrEqualTo(932));
-    expect(tester.takeException(), isNull);
-    await expectLater(
-      find.byType(FoodDiaryScreen),
-      matchesGoldenFile('goldens/ux_r07d_diary_430_1_5_light.png'),
-    );
-  });
+      final addBreakfast = find.bySemanticsLabel('Add Breakfast');
+      expect(addBreakfast, findsOneWidget);
+      expect(tester.getRect(addBreakfast).bottom, lessThanOrEqualTo(932));
+      expect(tester.takeException(), isNull);
+      await expectLater(
+        find.byType(FoodDiaryScreen),
+        matchesGoldenFile('goldens/ux_r07d_diary_430_1_5_light.png'),
+      );
+    },
+  );
 
   testWidgets('mass-basis fast add requires quantity confirmation', (
     tester,
@@ -613,6 +617,7 @@ void main() {
 
   testWidgets(
     'quantity sheet keeps its final action reachable at compact 2x text',
+    tags: const ['golden'],
     (tester) async {
       tester.view.physicalSize = const Size(320, 568);
       tester.view.devicePixelRatio = 1;

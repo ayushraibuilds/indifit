@@ -1,6 +1,3 @@
-@Tags(['golden'])
-library;
-
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -126,34 +123,36 @@ void main() {
     },
   );
 
-  testWidgets('two-frame approved visual remains compact and labelled', (
-    tester,
-  ) async {
-    final bytes = _syntheticPngBytes;
-    await tester.pumpWidget(
-      _app(
-        B07ExerciseVisualRegion(
-          canonicalExerciseId: 'b07-bench',
-          exerciseNameSnapshot: 'Bench press',
-          registry: _syntheticRegistry(pair: true),
-          assetBundle: _MapAssetBundle({
-            'synthetic-start.webp': bytes,
-            'synthetic-peak.webp': bytes,
-          }),
+  testWidgets(
+    'two-frame approved visual remains compact and labelled',
+    tags: const ['golden'],
+    (tester) async {
+      final bytes = _syntheticPngBytes;
+      await tester.pumpWidget(
+        _app(
+          B07ExerciseVisualRegion(
+            canonicalExerciseId: 'b07-bench',
+            exerciseNameSnapshot: 'Bench press',
+            registry: _syntheticRegistry(pair: true),
+            assetBundle: _MapAssetBundle({
+              'synthetic-start.webp': bytes,
+              'synthetic-peak.webp': bytes,
+            }),
+          ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    expect(find.text('Start position'), findsOneWidget);
-    expect(find.text('Peak position'), findsOneWidget);
-    expect(find.byType(Image), findsNWidgets(2));
-    expect(find.textContaining('synthetic'), findsNothing);
-    await expectLater(
-      find.byType(B07ExerciseVisualRegion),
-      matchesGoldenFile('goldens/r08b7_approved_pair.png'),
-    );
-  });
+      expect(find.text('Start position'), findsOneWidget);
+      expect(find.text('Peak position'), findsOneWidget);
+      expect(find.byType(Image), findsNWidgets(2));
+      expect(find.textContaining('synthetic'), findsNothing);
+      await expectLater(
+        find.byType(B07ExerciseVisualRegion),
+        matchesGoldenFile('goldens/r08b7_approved_pair.png'),
+      );
+    },
+  );
 
   testWidgets('MAIN-only visual renders one still and never invents a pair', (
     tester,

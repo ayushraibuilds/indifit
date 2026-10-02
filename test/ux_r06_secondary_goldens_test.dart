@@ -1,6 +1,3 @@
-@Tags(['golden'])
-library;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -33,7 +30,9 @@ void main() {
 
   tearDownAll(() => _r6GoldenDatabase.close());
 
-  testWidgets('onboarding About you dark golden', (tester) async {
+  testWidgets('onboarding About you dark golden', tags: const ['golden'], (
+    tester,
+  ) async {
     await _expectGolden(
       tester,
       fileName: 'ux_r06_onboarding_about_dark.png',
@@ -42,7 +41,9 @@ void main() {
     );
   });
 
-  testWidgets('onboarding Goal dark golden', (tester) async {
+  testWidgets('onboarding Goal dark golden', tags: const ['golden'], (
+    tester,
+  ) async {
     await _expectGolden(
       tester,
       fileName: 'ux_r06_onboarding_goal_dark.png',
@@ -52,7 +53,9 @@ void main() {
     );
   });
 
-  testWidgets('onboarding Nutrition dark golden', (tester) async {
+  testWidgets('onboarding Nutrition dark golden', tags: const ['golden'], (
+    tester,
+  ) async {
     await _expectGolden(
       tester,
       fileName: 'ux_r06_onboarding_nutrition_dark.png',
@@ -62,16 +65,22 @@ void main() {
     );
   });
 
-  testWidgets('onboarding skip affordance dark golden', (tester) async {
-    await _expectGolden(
-      tester,
-      fileName: 'ux_r06_onboarding_skip_dark.png',
-      theme: AppTheme.darkTheme,
-      child: const OnboardingScreen(),
-    );
-  });
+  testWidgets(
+    'onboarding skip affordance dark golden',
+    tags: const ['golden'],
+    (tester) async {
+      await _expectGolden(
+        tester,
+        fileName: 'ux_r06_onboarding_skip_dark.png',
+        theme: AppTheme.darkTheme,
+        child: const OnboardingScreen(),
+      );
+    },
+  );
 
-  testWidgets('profile root light golden', (tester) async {
+  testWidgets('profile root light golden', tags: const ['golden'], (
+    tester,
+  ) async {
     await _expectGolden(
       tester,
       fileName: 'ux_r06_profile_light.png',
@@ -80,7 +89,9 @@ void main() {
     );
   });
 
-  testWidgets('dietary needs light golden', (tester) async {
+  testWidgets('dietary needs light golden', tags: const ['golden'], (
+    tester,
+  ) async {
     await _expectGolden(
       tester,
       fileName: 'ux_r06_dietary_needs_light.png',
@@ -90,7 +101,9 @@ void main() {
     );
   });
 
-  testWidgets('household measures dark golden', (tester) async {
+  testWidgets('household measures dark golden', tags: const ['golden'], (
+    tester,
+  ) async {
     await _expectGolden(
       tester,
       fileName: 'ux_r06_household_measures_dark.png',
@@ -100,7 +113,7 @@ void main() {
     );
   });
 
-  testWidgets('learn list dark golden', (tester) async {
+  testWidgets('learn list dark golden', tags: const ['golden'], (tester) async {
     await _expectGolden(
       tester,
       fileName: 'ux_r06_learn_list_dark.png',
@@ -110,7 +123,9 @@ void main() {
     );
   });
 
-  testWidgets('lesson detail dark golden', (tester) async {
+  testWidgets('lesson detail dark golden', tags: const ['golden'], (
+    tester,
+  ) async {
     await _expectGolden(
       tester,
       fileName: 'ux_r06_lesson_detail_dark.png',
@@ -120,7 +135,9 @@ void main() {
     );
   });
 
-  testWidgets('onboarding compact 2x golden', (tester) async {
+  testWidgets('onboarding compact 2x golden', tags: const ['golden'], (
+    tester,
+  ) async {
     await _expectGolden(
       tester,
       fileName: 'ux_r06_onboarding_compact_2x.png',
@@ -131,7 +148,9 @@ void main() {
     );
   });
 
-  testWidgets('profile light representative golden', (tester) async {
+  testWidgets('profile light representative golden', tags: const ['golden'], (
+    tester,
+  ) async {
     await _expectGolden(
       tester,
       fileName: 'ux_r06_profile_light_representative.png',

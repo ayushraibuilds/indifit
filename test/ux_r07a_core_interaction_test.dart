@@ -1,6 +1,3 @@
-@Tags(['golden'])
-library;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -57,43 +54,47 @@ void main() {
     },
   );
 
-  testWidgets('Custom Food remains readable in light mode', (tester) async {
-    tester.view.physicalSize = const Size(390, 844);
-    tester.view.devicePixelRatio = 1;
-    final database = AppDatabase.memory();
-    addTearDown(() async {
-      await tester.pumpWidget(const SizedBox.shrink());
-      await tester.pump();
-      tester.view.resetPhysicalSize();
-      tester.view.resetDevicePixelRatio();
-      await database.close();
-    });
+  testWidgets(
+    'Custom Food remains readable in light mode',
+    tags: const ['golden'],
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      final database = AppDatabase.memory();
+      addTearDown(() async {
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+        await database.close();
+      });
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          databaseProvider.overrideWithValue(database),
-          foodRepositoryProvider.overrideWithValue(FoodRepository(database)),
-        ],
-        child: MaterialApp(
-          theme: AppTheme.lightTheme,
-          home: const CustomFoodEditorScreen(),
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            databaseProvider.overrideWithValue(database),
+            foodRepositoryProvider.overrideWithValue(FoodRepository(database)),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.lightTheme,
+            home: const CustomFoodEditorScreen(),
+          ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    expect(find.text('Create Custom Food'), findsOneWidget);
-    expect(find.text('Basic information'), findsOneWidget);
-    expect(find.text('Serving'), findsOneWidget);
-    expect(find.text('Nutrition'), findsOneWidget);
-    expect(find.text('Save custom food'), findsOneWidget);
-    expect(tester.takeException(), isNull);
-    await expectLater(
-      find.byType(CustomFoodEditorScreen),
-      matchesGoldenFile('goldens/ux_r07a_custom_food_light.png'),
-    );
-  });
+      expect(find.text('Create Custom Food'), findsOneWidget);
+      expect(find.text('Basic information'), findsOneWidget);
+      expect(find.text('Serving'), findsOneWidget);
+      expect(find.text('Nutrition'), findsOneWidget);
+      expect(find.text('Save custom food'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await expectLater(
+        find.byType(CustomFoodEditorScreen),
+        matchesGoldenFile('goldens/ux_r07a_custom_food_light.png'),
+      );
+    },
+  );
 
   testWidgets('Settings rows open their owned destinations', (tester) async {
     SharedPreferences.setMockInitialValues({

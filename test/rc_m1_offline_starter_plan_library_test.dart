@@ -1,6 +1,3 @@
-@Tags(['golden'])
-library;
-
 import 'dart:io';
 
 import 'package:drift/native.dart';
@@ -397,7 +394,9 @@ void main() {
     },
   );
 
-  testWidgets('fresh Plan Library light golden', (tester) async {
+  testWidgets('fresh Plan Library light golden', tags: const ['golden'], (
+    tester,
+  ) async {
     final snapshot = await tester.runAsync(
       () => PlanLibraryReadRepository(db, programs: programs).read(),
     );
@@ -411,7 +410,9 @@ void main() {
     );
   });
 
-  testWidgets('Gym Plan Library dark golden', (tester) async {
+  testWidgets('Gym Plan Library dark golden', tags: const ['golden'], (
+    tester,
+  ) async {
     final snapshot = await tester.runAsync(
       () => PlanLibraryReadRepository(db, programs: programs).read(),
     );
@@ -429,7 +430,9 @@ void main() {
     );
   });
 
-  testWidgets('Home Plan Library compact golden', (tester) async {
+  testWidgets('Home Plan Library compact golden', tags: const ['golden'], (
+    tester,
+  ) async {
     final snapshot = await tester.runAsync(
       () => PlanLibraryReadRepository(db, programs: programs).read(),
     );
@@ -448,7 +451,9 @@ void main() {
     );
   });
 
-  testWidgets('starter plan preview dark golden', (tester) async {
+  testWidgets('starter plan preview dark golden', tags: const ['golden'], (
+    tester,
+  ) async {
     final snapshot = await tester.runAsync(
       () => PlanLibraryReadRepository(db, programs: programs).read(),
     );

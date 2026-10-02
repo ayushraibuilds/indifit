@@ -1,6 +1,3 @@
-@Tags(['golden'])
-library;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -23,39 +20,43 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   for (final brightness in Brightness.values) {
-    testWidgets('Training landing ${brightness.name} golden', (tester) async {
-      _setViewport(tester, const Size(390, 844));
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            trainingLandingSnapshotProvider.overrideWith(
-              (ref) async => _populatedTrainingSnapshot,
+    testWidgets(
+      'Training landing ${brightness.name} golden',
+      tags: const ['golden'],
+      (tester) async {
+        _setViewport(tester, const Size(390, 844));
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              trainingLandingSnapshotProvider.overrideWith(
+                (ref) async => _populatedTrainingSnapshot,
+              ),
+            ],
+            child: _app(
+              brightness == Brightness.dark
+                  ? AppTheme.darkTheme
+                  : AppTheme.lightTheme,
+              const TrainingScreen(),
             ),
-          ],
-          child: _app(
-            brightness == Brightness.dark
-                ? AppTheme.darkTheme
-                : AppTheme.lightTheme,
-            const TrainingScreen(),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
-      expect(find.text('Push day'), findsOneWidget);
-      expect(find.text('Start workout'), findsOneWidget);
-      expect(find.text('Upper / Lower Strength'), findsOneWidget);
-      expect(find.text('Lower body'), findsOneWidget);
-      expect(find.text('Plan Library'), findsOneWidget);
-      expect(find.text('Builder'), findsNothing);
-      expect(find.text('Manage plan'), findsNothing);
-      expect(tester.takeException(), isNull);
-      await expectLater(
-        find.byType(TrainingScreen),
-        matchesGoldenFile(
-          'goldens/ux_r04_training_landing_${brightness.name}.png',
-        ),
-      );
-    });
+        );
+        await tester.pumpAndSettle();
+        expect(find.text('Push day'), findsOneWidget);
+        expect(find.text('Start workout'), findsOneWidget);
+        expect(find.text('Upper / Lower Strength'), findsOneWidget);
+        expect(find.text('Lower body'), findsOneWidget);
+        expect(find.text('Plan Library'), findsOneWidget);
+        expect(find.text('Builder'), findsNothing);
+        expect(find.text('Manage plan'), findsNothing);
+        expect(tester.takeException(), isNull);
+        await expectLater(
+          find.byType(TrainingScreen),
+          matchesGoldenFile(
+            'goldens/ux_r04_training_landing_${brightness.name}.png',
+          ),
+        );
+      },
+    );
   }
 
   testWidgets('Training gives the canonical Start action visual priority', (
@@ -555,100 +556,106 @@ void main() {
     },
   );
 
-  testWidgets('Calendar empty state uses natural period language', (
-    tester,
-  ) async {
-    _setViewport(tester, const Size(390, 844));
-    await tester.pumpWidget(
-      _app(
-        AppTheme.darkTheme,
-        Scaffold(
-          appBar: AppBar(title: const Text('Calendar')),
-          body: CalendarEmptyState(
-            view: CalendarView.week,
-            hasActiveProgram: false,
-            onAction: () {},
-          ),
-        ),
-      ),
-    );
-    expect(find.text('Nothing planned this week'), findsOneWidget);
-    expect(
-      find.text('Choose a plan when you’re ready to schedule workouts.'),
-      findsOneWidget,
-    );
-    expect(find.textContaining('UTC'), findsNothing);
-    expect(tester.takeException(), isNull);
-    await expectLater(
-      find.byType(CalendarEmptyState),
-      matchesGoldenFile('goldens/ux_r04_calendar_empty_dark.png'),
-    );
-  });
-
-  testWidgets('manual logging keeps a compact golden after stacking fields', (
-    tester,
-  ) async {
-    final database = registerTestDatabaseScope().create();
-    _setViewport(tester, const Size(320, 568));
-    addTearDown(() async {
-      await tester.pumpWidget(const SizedBox.shrink());
-      await tester.pump();
-    });
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [databaseProvider.overrideWithValue(database)],
-        child: _app(
-          AppTheme.darkTheme,
-          Material(
-            color: Colors.transparent,
-            child: ManualLogSheet(selectedDate: DateTime(2026, 8, 9)),
-          ),
-          textScale: 2,
-        ),
-      ),
-    );
-    await tester.pump(const Duration(milliseconds: 300));
-    expect(tester.takeException(), isNull);
-    await expectLater(
-      find.byType(ManualLogSheet),
-      matchesGoldenFile('goldens/ux_r04_manual_log_compact_2x.png'),
-    );
-  });
-
-  testWidgets('exercise detail keeps history and guide behind clear actions', (
-    tester,
-  ) async {
-    final database = registerTestDatabaseScope().create();
-    _setViewport(tester, const Size(390, 844));
-    addTearDown(() async {
-      await tester.pumpWidget(const SizedBox.shrink());
-      await tester.pump();
-    });
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [databaseProvider.overrideWithValue(database)],
-        child: _app(
+  testWidgets(
+    'Calendar empty state uses natural period language',
+    tags: const ['golden'],
+    (tester) async {
+      _setViewport(tester, const Size(390, 844));
+      await tester.pumpWidget(
+        _app(
           AppTheme.darkTheme,
           Scaffold(
-            body: Material(
-              color: Colors.transparent,
-              child: ExerciseDetailsSheet(exercise: _exercise),
+            appBar: AppBar(title: const Text('Calendar')),
+            body: CalendarEmptyState(
+              view: CalendarView.week,
+              hasActiveProgram: false,
+              onAction: () {},
             ),
           ),
         ),
-      ),
-    );
-    await tester.pump(const Duration(milliseconds: 300));
-    expect(find.text('History'), findsOneWidget);
-    expect(find.text('Plate calculator'), findsOneWidget);
-    expect(find.text('View full guide'), findsOneWidget);
-    expect(find.textContaining('stable-exercise'), findsNothing);
-    expect(tester.takeException(), isNull);
-    await expectLater(
-      find.byType(ExerciseDetailsSheet),
-      matchesGoldenFile('goldens/ux_r04_exercise_detail_dark.png'),
-    );
-  });
+      );
+      expect(find.text('Nothing planned this week'), findsOneWidget);
+      expect(
+        find.text('Choose a plan when you’re ready to schedule workouts.'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('UTC'), findsNothing);
+      expect(tester.takeException(), isNull);
+      await expectLater(
+        find.byType(CalendarEmptyState),
+        matchesGoldenFile('goldens/ux_r04_calendar_empty_dark.png'),
+      );
+    },
+  );
+
+  testWidgets(
+    'manual logging keeps a compact golden after stacking fields',
+    tags: const ['golden'],
+    (tester) async {
+      final database = registerTestDatabaseScope().create();
+      _setViewport(tester, const Size(320, 568));
+      addTearDown(() async {
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      });
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [databaseProvider.overrideWithValue(database)],
+          child: _app(
+            AppTheme.darkTheme,
+            Material(
+              color: Colors.transparent,
+              child: ManualLogSheet(selectedDate: DateTime(2026, 8, 9)),
+            ),
+            textScale: 2,
+          ),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(tester.takeException(), isNull);
+      await expectLater(
+        find.byType(ManualLogSheet),
+        matchesGoldenFile('goldens/ux_r04_manual_log_compact_2x.png'),
+      );
+    },
+  );
+
+  testWidgets(
+    'exercise detail keeps history and guide behind clear actions',
+    tags: const ['golden'],
+    (tester) async {
+      final database = registerTestDatabaseScope().create();
+      _setViewport(tester, const Size(390, 844));
+      addTearDown(() async {
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      });
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [databaseProvider.overrideWithValue(database)],
+          child: _app(
+            AppTheme.darkTheme,
+            Scaffold(
+              body: Material(
+                color: Colors.transparent,
+                child: ExerciseDetailsSheet(exercise: _exercise),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('History'), findsOneWidget);
+      expect(find.text('Plate calculator'), findsOneWidget);
+      expect(find.text('View full guide'), findsOneWidget);
+      expect(find.textContaining('stable-exercise'), findsNothing);
+      expect(tester.takeException(), isNull);
+      await expectLater(
+        find.byType(ExerciseDetailsSheet),
+        matchesGoldenFile('goldens/ux_r04_exercise_detail_dark.png'),
+      );
+    },
+  );
 }
 
 Widget _app(ThemeData theme, Widget child, {double textScale = 1}) {

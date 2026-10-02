@@ -1,6 +1,3 @@
-@Tags(['golden'])
-library;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -270,7 +267,9 @@ void main() {
 
   group('Phase 3B focused goldens', () {
     for (final brightness in Brightness.values) {
-      testWidgets('mapped library ${brightness.name}', (tester) async {
+      testWidgets('mapped library ${brightness.name}', tags: const ['golden'], (
+        tester,
+      ) async {
         _setViewport(tester);
         await _pumpLibrary(tester, brightness: brightness);
         await expectLater(
@@ -282,7 +281,9 @@ void main() {
       });
     }
 
-    testWidgets('expanded picker family dark', (tester) async {
+    testWidgets('expanded picker family dark', tags: const ['golden'], (
+      tester,
+    ) async {
       _setViewport(tester);
       await _pumpPicker(tester);
       await _browseAll(tester);
@@ -294,7 +295,9 @@ void main() {
       );
     });
 
-    testWidgets('detail variations light', (tester) async {
+    testWidgets('detail variations light', tags: const ['golden'], (
+      tester,
+    ) async {
       _setViewport(tester);
       await _pumpLibrary(tester);
       await tester.tap(find.text('Barbell Deadlift'));

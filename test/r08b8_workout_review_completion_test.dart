@@ -1,6 +1,3 @@
-@Tags(['golden'])
-library;
-
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -109,6 +106,7 @@ void main() {
 
   testWidgets(
     'saved summary uses persisted duration, identity and partial state',
+    tags: const ['golden'],
     (tester) async {
       tester.view.physicalSize = const Size(390, 844);
       tester.view.devicePixelRatio = 1;
@@ -203,49 +201,51 @@ void main() {
     expect(find.textContaining('Target'), findsNothing);
   });
 
-  testWidgets('pre-completion review does not claim persistence early', (
-    tester,
-  ) async {
-    tester.view.physicalSize = const Size(390, 844);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.reset);
-    final launch = _launch(
-      routineName: 'Quick evidence',
-      actualName: 'Quick press',
-      elapsedSeconds: 90,
-    );
+  testWidgets(
+    'pre-completion review does not claim persistence early',
+    tags: const ['golden'],
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final launch = _launch(
+        routineName: 'Quick evidence',
+        actualName: 'Quick press',
+        elapsedSeconds: 90,
+      );
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          databaseProvider.overrideWithValue(db),
-          workoutSessionWakeLockCoordinatorProvider.overrideWithValue(
-            createTestWorkoutWakeLockCoordinator(),
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            databaseProvider.overrideWithValue(db),
+            workoutSessionWakeLockCoordinatorProvider.overrideWithValue(
+              createTestWorkoutWakeLockCoordinator(),
+            ),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.lightTheme,
+            home: B02StrengthSummaryScreen(launch: launch),
           ),
-        ],
-        child: MaterialApp(
-          theme: AppTheme.lightTheme,
-          home: B02StrengthSummaryScreen(launch: launch),
         ),
-      ),
-    );
-    await tester.pump();
+      );
+      await tester.pump();
 
-    expect(find.text('Review workout'), findsOneWidget);
-    expect(
-      find.text('These completed sets will be saved with this workout.'),
-      findsOneWidget,
-    );
-    expect(
-      find.text('Your completed sets are saved with this workout.'),
-      findsNothing,
-    );
-    expect(find.text('Complete workout'), findsOneWidget);
-    await expectLater(
-      find.byType(B02StrengthSummaryScreen),
-      matchesGoldenFile('goldens/r08b8_precompletion_review_light.png'),
-    );
-  });
+      expect(find.text('Review workout'), findsOneWidget);
+      expect(
+        find.text('These completed sets will be saved with this workout.'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Your completed sets are saved with this workout.'),
+        findsNothing,
+      );
+      expect(find.text('Complete workout'), findsOneWidget);
+      await expectLater(
+        find.byType(B02StrengthSummaryScreen),
+        matchesGoldenFile('goldens/r08b8_precompletion_review_light.png'),
+      );
+    },
+  );
 
   test(
     'controller exposes the exact session returned by canonical finalization',

@@ -1,6 +1,3 @@
-@Tags(['golden'])
-library;
-
 import 'dart:async';
 
 import 'package:drift/drift.dart' as drift;
@@ -752,6 +749,7 @@ void main() {
 
     testWidgets(
       'SavedMealsScreen renders cards, macro chips, and survives large text',
+      tags: const ['golden'],
       (tester) async {
         tester.view.physicalSize = const Size(320, 568);
         tester.view.devicePixelRatio = 1;

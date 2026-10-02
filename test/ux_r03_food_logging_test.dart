@@ -1,6 +1,3 @@
-@Tags(['golden'])
-library;
-
 import 'dart:async';
 
 import 'package:dio/dio.dart';
@@ -30,14 +27,18 @@ import 'package:indifit/features/food_log/food_log_surface.dart';
 import 'package:indifit/features/food_log/food_search_screen.dart';
 import 'package:indifit/features/food_log/saved_meals_controller.dart';
 import 'package:indifit/features/food_log/saved_meals_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'support/widget_test_database.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  setUp(() => SharedPreferences.setMockInitialValues({}));
 
   // R07F-0: Outfit is bundled; no runtime font fetching configuration.
 
   testWidgets(
     'food entry starts with search and keeps secondary tools secondary',
+    tags: const ['golden'],
     (tester) async {
       _setViewport(tester, const Size(320, 568));
       final database = AppDatabase.memory();
@@ -49,7 +50,7 @@ void main() {
         container.dispose();
         tester.view.resetPhysicalSize();
         tester.view.resetDevicePixelRatio();
-        await database.close();
+        await closeWidgetTestDatabase(tester, database);
       });
 
       await tester.pumpWidget(
@@ -123,7 +124,7 @@ void main() {
         container.dispose();
         tester.view.resetPhysicalSize();
         tester.view.resetDevicePixelRatio();
-        await database.close();
+        await closeWidgetTestDatabase(tester, database);
       });
 
       await tester.pumpWidget(
@@ -191,7 +192,7 @@ void main() {
       container.dispose();
       tester.view.resetPhysicalSize();
       tester.view.resetDevicePixelRatio();
-      await database.close();
+      await closeWidgetTestDatabase(tester, database);
     });
 
     await tester.pumpWidget(
@@ -226,7 +227,7 @@ void main() {
       await tester.pump();
       container.dispose();
       tester.view.reset();
-      await database.close();
+      await closeWidgetTestDatabase(tester, database);
     });
 
     await tester.pumpWidget(
@@ -278,7 +279,7 @@ void main() {
       await tester.pump();
       container.dispose();
       tester.view.reset();
-      await database.close();
+      await closeWidgetTestDatabase(tester, database);
     });
 
     await tester.pumpWidget(
@@ -359,7 +360,7 @@ void main() {
       container.dispose();
       tester.view.resetPhysicalSize();
       tester.view.resetDevicePixelRatio();
-      await database.close();
+      await closeWidgetTestDatabase(tester, database);
     });
 
     await tester.pumpWidget(
@@ -459,7 +460,7 @@ void main() {
       container.dispose();
       tester.view.resetPhysicalSize();
       tester.view.resetDevicePixelRatio();
-      await database.close();
+      await closeWidgetTestDatabase(tester, database);
     });
     await tester.pumpWidget(
       _foodApp(
@@ -497,7 +498,7 @@ void main() {
       container.dispose();
       tester.view.resetPhysicalSize();
       tester.view.resetDevicePixelRatio();
-      await database.close();
+      await closeWidgetTestDatabase(tester, database);
     });
     await tester.pumpWidget(
       _foodApp(
@@ -548,7 +549,7 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
       container.dispose();
       tester.view.reset();
-      await database.close();
+      await closeWidgetTestDatabase(tester, database);
     });
     await tester.pumpWidget(
       _foodApp(
@@ -590,7 +591,7 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
       container.dispose();
       tester.view.reset();
-      await database.close();
+      await closeWidgetTestDatabase(tester, database);
     });
     await tester.pumpWidget(
       _foodApp(
@@ -662,7 +663,7 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
       container.dispose();
       tester.view.reset();
-      await database.close();
+      await closeWidgetTestDatabase(tester, database);
     });
     await tester.pumpWidget(
       _foodApp(
@@ -717,7 +718,7 @@ void main() {
         await tester.pumpWidget(const SizedBox.shrink());
         container.dispose();
         tester.view.reset();
-        await database.close();
+        await closeWidgetTestDatabase(tester, database);
       });
       await tester.pumpWidget(
         _foodApp(
@@ -781,7 +782,7 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
       container.dispose();
       tester.view.reset();
-      await database.close();
+      await closeWidgetTestDatabase(tester, database);
     });
     await tester.pumpWidget(
       _foodApp(
@@ -833,7 +834,7 @@ void main() {
         container.dispose();
         tester.view.resetPhysicalSize();
         tester.view.resetDevicePixelRatio();
-        await database.close();
+        await closeWidgetTestDatabase(tester, database);
       });
       await tester.pumpWidget(
         _foodApp(
@@ -871,7 +872,9 @@ void main() {
     },
   );
 
-  testWidgets('recent and saved landing state golden', (tester) async {
+  testWidgets('recent and saved landing state golden', tags: const ['golden'], (
+    tester,
+  ) async {
     _setViewport(tester, const Size(390, 844));
     final database = AppDatabase.memory();
     final repository = _TestFoodRepository(
@@ -898,7 +901,7 @@ void main() {
       container.dispose();
       tester.view.resetPhysicalSize();
       tester.view.resetDevicePixelRatio();
-      await database.close();
+      await closeWidgetTestDatabase(tester, database);
     });
 
     await tester.pumpWidget(
@@ -922,7 +925,9 @@ void main() {
     );
   });
 
-  testWidgets('search results dark golden', (tester) async {
+  testWidgets('search results dark golden', tags: const ['golden'], (
+    tester,
+  ) async {
     await _pumpSearchGolden(tester, theme: AppTheme.darkTheme);
     await expectLater(
       find.byType(FoodSearchScreen),
@@ -930,30 +935,38 @@ void main() {
     );
   });
 
-  testWidgets('roti relevance uses a narrow dark result screen', (
+  testWidgets(
+    'roti relevance uses a narrow dark result screen',
+    tags: const ['golden'],
+    (tester) async {
+      await _pumpRelevanceSearchGolden(tester, query: 'roti');
+      expect(find.text('Whole Wheat Roti / Chapati'), findsOneWidget);
+      expect(find.text('Whole Wheat Roti / Chapati (Double)'), findsNothing);
+      await expectLater(
+        find.byType(FoodSearchScreen),
+        matchesGoldenFile('goldens/rc_m1_food_search_roti_dark.png'),
+      );
+    },
+  );
+
+  testWidgets(
+    'dal relevance uses a narrow dark result screen',
+    tags: const ['golden'],
+    (tester) async {
+      await _pumpRelevanceSearchGolden(tester, query: 'dal');
+      expect(find.text('Dal Fry (Chana & Toor)'), findsOneWidget);
+      expect(find.text('Dal Makhani'), findsOneWidget);
+      expect(find.text('Chana Masala (Black Chickpeas)'), findsNothing);
+      await expectLater(
+        find.byType(FoodSearchScreen),
+        matchesGoldenFile('goldens/rc_m1_food_search_dal_dark.png'),
+      );
+    },
+  );
+
+  testWidgets('search results light golden', tags: const ['golden'], (
     tester,
   ) async {
-    await _pumpRelevanceSearchGolden(tester, query: 'roti');
-    expect(find.text('Whole Wheat Roti / Chapati'), findsOneWidget);
-    expect(find.text('Whole Wheat Roti / Chapati (Double)'), findsNothing);
-    await expectLater(
-      find.byType(FoodSearchScreen),
-      matchesGoldenFile('goldens/rc_m1_food_search_roti_dark.png'),
-    );
-  });
-
-  testWidgets('dal relevance uses a narrow dark result screen', (tester) async {
-    await _pumpRelevanceSearchGolden(tester, query: 'dal');
-    expect(find.text('Dal Fry (Chana & Toor)'), findsOneWidget);
-    expect(find.text('Dal Makhani'), findsOneWidget);
-    expect(find.text('Chana Masala (Black Chickpeas)'), findsNothing);
-    await expectLater(
-      find.byType(FoodSearchScreen),
-      matchesGoldenFile('goldens/rc_m1_food_search_dal_dark.png'),
-    );
-  });
-
-  testWidgets('search results light golden', (tester) async {
     await _pumpSearchGolden(tester, theme: AppTheme.lightTheme);
     await expectLater(
       find.byType(FoodSearchScreen),
@@ -961,23 +974,27 @@ void main() {
     );
   });
 
-  testWidgets('merged local and provider search results light golden', (
+  testWidgets(
+    'merged local and provider search results light golden',
+    tags: const ['golden'],
+    (tester) async {
+      await _pumpSearchGolden(
+        tester,
+        theme: AppTheme.lightTheme,
+        apiService: _MergedFoodApiService(),
+      );
+      expect(find.text('Search results'), findsOneWidget);
+      expect(find.text('Fit Brand'), findsOneWidget);
+      await expectLater(
+        find.byType(FoodSearchScreen),
+        matchesGoldenFile('goldens/ux_r07d_food_search_merged_light.png'),
+      );
+    },
+  );
+
+  testWidgets('quantity and review state golden', tags: const ['golden'], (
     tester,
   ) async {
-    await _pumpSearchGolden(
-      tester,
-      theme: AppTheme.lightTheme,
-      apiService: _MergedFoodApiService(),
-    );
-    expect(find.text('Search results'), findsOneWidget);
-    expect(find.text('Fit Brand'), findsOneWidget);
-    await expectLater(
-      find.byType(FoodSearchScreen),
-      matchesGoldenFile('goldens/ux_r07d_food_search_merged_light.png'),
-    );
-  });
-
-  testWidgets('quantity and review state golden', (tester) async {
     _setViewport(tester, const Size(390, 844));
     final database = AppDatabase.memory();
     final repository = _TestFoodRepository(
@@ -1013,7 +1030,7 @@ void main() {
       container.dispose();
       tester.view.resetPhysicalSize();
       tester.view.resetDevicePixelRatio();
-      await database.close();
+      await closeWidgetTestDatabase(tester, database);
     });
 
     await tester.pumpWidget(
@@ -1045,7 +1062,9 @@ void main() {
     );
   });
 
-  testWidgets('food landing dark golden', (tester) async {
+  testWidgets('food landing dark golden', tags: const ['golden'], (
+    tester,
+  ) async {
     _setViewport(tester, const Size(390, 844));
     final database = AppDatabase.memory();
     final repository = _TestFoodRepository(database);
@@ -1056,7 +1075,7 @@ void main() {
       container.dispose();
       tester.view.resetPhysicalSize();
       tester.view.resetDevicePixelRatio();
-      await database.close();
+      await closeWidgetTestDatabase(tester, database);
     });
     await tester.pumpWidget(
       _foodApp(
@@ -1077,7 +1096,9 @@ void main() {
     );
   });
 
-  testWidgets('food landing light golden', (tester) async {
+  testWidgets('food landing light golden', tags: const ['golden'], (
+    tester,
+  ) async {
     _setViewport(tester, const Size(390, 844));
     final database = AppDatabase.memory();
     final repository = _TestFoodRepository(database);
@@ -1088,7 +1109,7 @@ void main() {
       container.dispose();
       tester.view.resetPhysicalSize();
       tester.view.resetDevicePixelRatio();
-      await database.close();
+      await closeWidgetTestDatabase(tester, database);
     });
     await tester.pumpWidget(
       _foodApp(
@@ -1265,7 +1286,7 @@ Future<void> _pumpSearchGolden(
     container.dispose();
     tester.view.resetPhysicalSize();
     tester.view.resetDevicePixelRatio();
-    await database.close();
+    await closeWidgetTestDatabase(tester, database);
   });
   await tester.pumpWidget(
     _foodApp(
@@ -1310,7 +1331,7 @@ Future<void> _pumpRelevanceSearchGolden(
     container.dispose();
     tester.view.resetPhysicalSize();
     tester.view.resetDevicePixelRatio();
-    await database.close();
+    await closeWidgetTestDatabase(tester, database);
   });
   await tester.pumpWidget(
     _foodApp(

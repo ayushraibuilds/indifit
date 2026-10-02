@@ -1,6 +1,3 @@
-@Tags(['golden'])
-library;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -346,59 +343,79 @@ void main() {
     },
   );
 
-  testWidgets('Today renders dark empty/new-user state', (tester) async {
-    await _goldenToday(
-      tester,
-      personalization: personalization,
-      theme: AppTheme.darkTheme,
-      snapshot: _snapshot(DateTime(2026, 8, 9)),
-      file: 'goldens/ux_r02_today_dark_empty.png',
-    );
-  });
+  testWidgets(
+    'Today renders dark empty/new-user state',
+    tags: const ['golden'],
+    (tester) async {
+      await _goldenToday(
+        tester,
+        personalization: personalization,
+        theme: AppTheme.darkTheme,
+        snapshot: _snapshot(DateTime(2026, 8, 9)),
+        file: 'goldens/ux_r02_today_dark_empty.png',
+      );
+    },
+  );
 
-  testWidgets('Today renders dark populated nutrition state', (tester) async {
-    await _goldenToday(
-      tester,
-      personalization: personalization,
-      theme: AppTheme.darkTheme,
-      snapshot: _populatedSnapshot(DateTime(2026, 8, 9)),
-      file: 'goldens/ux_r02_today_dark_populated.png',
-    );
-  });
+  testWidgets(
+    'Today renders dark populated nutrition state',
+    tags: const ['golden'],
+    (tester) async {
+      await _goldenToday(
+        tester,
+        personalization: personalization,
+        theme: AppTheme.darkTheme,
+        snapshot: _populatedSnapshot(DateTime(2026, 8, 9)),
+        file: 'goldens/ux_r02_today_dark_populated.png',
+      );
+    },
+  );
 
-  testWidgets('Today renders dark over-target nutrition state', (tester) async {
-    await _goldenToday(
-      tester,
-      personalization: personalization,
-      theme: AppTheme.darkTheme,
-      snapshot: _overTargetSnapshot(DateTime(2026, 8, 9)),
-      file: 'goldens/ux_r02_today_dark_over_target.png',
-    );
-  });
+  testWidgets(
+    'Today renders dark over-target nutrition state',
+    tags: const ['golden'],
+    (tester) async {
+      await _goldenToday(
+        tester,
+        personalization: personalization,
+        theme: AppTheme.darkTheme,
+        snapshot: _overTargetSnapshot(DateTime(2026, 8, 9)),
+        file: 'goldens/ux_r02_today_dark_over_target.png',
+      );
+    },
+  );
 
-  testWidgets('Today renders dark partial nutrition state without false zero', (
+  testWidgets(
+    'Today renders dark partial nutrition state without false zero',
+    tags: const ['golden'],
+    (tester) async {
+      await _goldenToday(
+        tester,
+        personalization: personalization,
+        theme: AppTheme.darkTheme,
+        snapshot: _partialSnapshot(DateTime(2026, 8, 9)),
+        file: 'goldens/ux_r02_today_dark_partial.png',
+      );
+    },
+  );
+
+  testWidgets(
+    'Today renders light populated nutrition state',
+    tags: const ['golden'],
+    (tester) async {
+      await _goldenToday(
+        tester,
+        personalization: personalization,
+        theme: AppTheme.lightTheme,
+        snapshot: _populatedSnapshot(DateTime(2026, 8, 9)),
+        file: 'goldens/ux_r02_today_light_populated.png',
+      );
+    },
+  );
+
+  testWidgets('Today remains compact at 320 points', tags: const ['golden'], (
     tester,
   ) async {
-    await _goldenToday(
-      tester,
-      personalization: personalization,
-      theme: AppTheme.darkTheme,
-      snapshot: _partialSnapshot(DateTime(2026, 8, 9)),
-      file: 'goldens/ux_r02_today_dark_partial.png',
-    );
-  });
-
-  testWidgets('Today renders light populated nutrition state', (tester) async {
-    await _goldenToday(
-      tester,
-      personalization: personalization,
-      theme: AppTheme.lightTheme,
-      snapshot: _populatedSnapshot(DateTime(2026, 8, 9)),
-      file: 'goldens/ux_r02_today_light_populated.png',
-    );
-  });
-
-  testWidgets('Today remains compact at 320 points', (tester) async {
     await _goldenToday(
       tester,
       personalization: personalization,
@@ -410,20 +427,22 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('Today remains usable at 2x text with reduced motion', (
-    tester,
-  ) async {
-    await _goldenToday(
-      tester,
-      personalization: personalization,
-      theme: AppTheme.darkTheme,
-      snapshot: _populatedSnapshot(DateTime(2026, 8, 9)),
-      textScale: 2,
-      disableAnimations: true,
-      file: 'goldens/ux_r02_today_dark_2x.png',
-    );
-    expect(tester.takeException(), isNull);
-  });
+  testWidgets(
+    'Today remains usable at 2x text with reduced motion',
+    tags: const ['golden'],
+    (tester) async {
+      await _goldenToday(
+        tester,
+        personalization: personalization,
+        theme: AppTheme.darkTheme,
+        snapshot: _populatedSnapshot(DateTime(2026, 8, 9)),
+        textScale: 2,
+        disableAnimations: true,
+        file: 'goldens/ux_r02_today_dark_2x.png',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('Today has no layout errors at 1.5x text', (tester) async {
     tester.view.physicalSize = const Size(390, 844);

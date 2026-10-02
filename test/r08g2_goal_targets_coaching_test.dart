@@ -1,6 +1,3 @@
-@Tags(['golden'])
-library;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -14,6 +11,7 @@ import 'package:indifit/data/repositories/nutrition_goal_repository.dart';
 import 'package:indifit/data/repositories/nutrition_target_authority.dart';
 import 'package:indifit/features/coaching/b04_production_surface_controller.dart';
 import 'package:indifit/features/settings/nutrition_targets_hub_screen.dart';
+import 'support/widget_test_database.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -28,10 +26,26 @@ void main() {
     );
   });
 
-  tearDown(() => database.close());
+  /// Unmounts the tree before closing the database; see
+  /// [closeWidgetTestDatabase] for why the close is bounded.
+  void testWidgetsWithDatabase(
+    String description,
+    WidgetTesterCallback callback, {
+    Object? tags,
+  }) {
+    testWidgets(description, tags: tags, (tester) async {
+      addTearDown(() async {
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump(const Duration(seconds: 1));
+        await closeWidgetTestDatabase(tester, database);
+      });
+      await callback(tester);
+    });
+  }
 
-  testWidgets(
+  testWidgetsWithDatabase(
     'Goal and targets are one canonical destination with coaching collapsed',
+    tags: const ['golden'],
     (tester) async {
       await tester.pumpWidget(
         _app(
@@ -108,7 +122,7 @@ void main() {
     },
   );
 
-  testWidgets(
+  testWidgetsWithDatabase(
     'coaching loading remains optional while the canonical target stays usable',
     (tester) async {
       await tester.pumpWidget(
@@ -132,7 +146,9 @@ void main() {
     },
   );
 
-  testWidgets('coaching failure does not block target editing', (tester) async {
+  testWidgetsWithDatabase('coaching failure does not block target editing', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       _app(
         database,
@@ -150,40 +166,43 @@ void main() {
     expect(find.text('Save today’s targets'), findsOneWidget);
   });
 
-  testWidgets('missing DOB stays unknown and does not deny coaching', (
+  testWidgetsWithDatabase(
+    'missing DOB stays unknown and does not deny coaching',
+    (tester) async {
+      await tester.pumpWidget(
+        _app(
+          database,
+          dates,
+          state: _state(
+            goal: _goal(),
+            availability: _availability(
+              available: false,
+              reasonCode: 'unknown_age',
+              enabled: true,
+            ),
+          ),
+          targets: {'2026-08-06': _target(_goal(), '2026-08-06')},
+        ),
+      );
+      await _pumpForAsyncState(tester);
+      await _expandCoaching(tester);
+
+      expect(
+        find.text(
+          'Add your date of birth to check whether adaptive coaching is available.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.textContaining('unavailable for this age'), findsNothing);
+      expect(find.textContaining('ineligible'), findsNothing);
+      expect(find.text('2,100 kcal'), findsOneWidget);
+      expect(find.text('Save today’s targets'), findsOneWidget);
+    },
+  );
+
+  testWidgetsWithDatabase('known ineligible age is described truthfully', (
     tester,
   ) async {
-    await tester.pumpWidget(
-      _app(
-        database,
-        dates,
-        state: _state(
-          goal: _goal(),
-          availability: _availability(
-            available: false,
-            reasonCode: 'unknown_age',
-            enabled: true,
-          ),
-        ),
-        targets: {'2026-08-06': _target(_goal(), '2026-08-06')},
-      ),
-    );
-    await _pumpForAsyncState(tester);
-    await _expandCoaching(tester);
-
-    expect(
-      find.text(
-        'Add your date of birth to check whether adaptive coaching is available.',
-      ),
-      findsOneWidget,
-    );
-    expect(find.textContaining('unavailable for this age'), findsNothing);
-    expect(find.textContaining('ineligible'), findsNothing);
-    expect(find.text('2,100 kcal'), findsOneWidget);
-    expect(find.text('Save today’s targets'), findsOneWidget);
-  });
-
-  testWidgets('known ineligible age is described truthfully', (tester) async {
     await tester.pumpWidget(
       _app(
         database,
@@ -212,7 +231,7 @@ void main() {
     );
   });
 
-  testWidgets('coaching requires disclosure and explicit consent', (
+  testWidgetsWithDatabase('coaching requires disclosure and explicit consent', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -259,8 +278,9 @@ void main() {
     expect(find.text('Withdraw coaching consent'), findsNothing);
   });
 
-  testWidgets(
+  testWidgetsWithDatabase(
     'usable coaching keeps consent history and target authority separate',
+    tags: const ['golden'],
     (tester) async {
       await tester.pumpWidget(
         _app(
@@ -304,7 +324,7 @@ void main() {
     },
   );
 
-  testWidgets(
+  testWidgetsWithDatabase(
     'coaching history stays collapsed and groups meaningful same-day changes',
     (tester) async {
       await tester.pumpWidget(
@@ -350,7 +370,7 @@ void main() {
     },
   );
 
-  testWidgets(
+  testWidgetsWithDatabase(
     'fitness goal remains Build muscle beside a distinct gain strategy',
     (tester) async {
       final goal = _goal(goalType: NutritionGoalType.gain);
@@ -372,7 +392,7 @@ void main() {
     },
   );
 
-  testWidgets(
+  testWidgetsWithDatabase(
     'historical and future target versions stay date-scoped and read-only',
     (tester) async {
       final goal = _goal();
@@ -417,30 +437,31 @@ void main() {
     },
   );
 
-  testWidgets('unchanged consecutive targets are not repeated in history', (
-    tester,
-  ) async {
-    final goal = _goal();
-    await tester.pumpWidget(
-      _app(
-        database,
-        dates,
-        state: _state(goal: goal),
-        targets: {'2026-08-06': _target(goal, '2026-08-06')},
-        history: [goal, goal],
-      ),
-    );
-    await _pumpForAsyncState(tester);
+  testWidgetsWithDatabase(
+    'unchanged consecutive targets are not repeated in history',
+    (tester) async {
+      final goal = _goal();
+      await tester.pumpWidget(
+        _app(
+          database,
+          dates,
+          state: _state(goal: goal),
+          targets: {'2026-08-06': _target(goal, '2026-08-06')},
+          history: [goal, goal],
+        ),
+      );
+      await _pumpForAsyncState(tester);
 
-    await tester.ensureVisible(find.text('Target history'));
-    await tester.tap(find.text('Target history'));
-    await _pumpForAsyncState(tester);
+      await tester.ensureVisible(find.text('Target history'));
+      await tester.tap(find.text('Target history'));
+      await _pumpForAsyncState(tester);
 
-    // One current-goal summary and one meaningful history row.
-    expect(find.text('Maintenance · Set by you'), findsNWidgets(2));
-  });
+      // One current-goal summary and one meaningful history row.
+      expect(find.text('Maintenance · Set by you'), findsNWidgets(2));
+    },
+  );
 
-  testWidgets(
+  testWidgetsWithDatabase(
     'combined surface remains usable at narrow width and large text',
     (tester) async {
       addTearDown(tester.view.reset);

@@ -1,6 +1,3 @@
-@Tags(['golden'])
-library;
-
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -389,10 +386,14 @@ void main() {
     }
 
     for (final golden in goldenRoutes) {
-      testWidgets('${golden.name} representative golden', (tester) async {
-        addTearDown(tester.view.reset);
-        await _expectProductionRouteGolden(tester, golden);
-      });
+      testWidgets(
+        '${golden.name} representative golden',
+        tags: const ['golden'],
+        (tester) async {
+          addTearDown(tester.view.reset);
+          await _expectProductionRouteGolden(tester, golden);
+        },
+      );
     }
 
     testWidgets(
@@ -468,7 +469,9 @@ void main() {
       },
     );
 
-    testWidgets('visual system dark golden', (tester) async {
+    testWidgets('visual system dark golden', tags: const ['golden'], (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(390, 844);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
@@ -485,7 +488,9 @@ void main() {
       );
     });
 
-    testWidgets('visual system light golden', (tester) async {
+    testWidgets('visual system light golden', tags: const ['golden'], (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(390, 844);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
@@ -502,7 +507,9 @@ void main() {
       );
     });
 
-    testWidgets('standard bottom sheet dark golden', (tester) async {
+    testWidgets('standard bottom sheet dark golden', tags: const ['golden'], (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(390, 844);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);

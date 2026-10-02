@@ -1,6 +1,3 @@
-@Tags(['golden'])
-library;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -121,7 +118,7 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
 
     expect(find.text('Welcome to IndiFit!'), findsOneWidget);
-    expect(find.text('Select your biological sex:'), findsOneWidget);
+    expect(find.text('Used only to estimate daily targets'), findsOneWidget);
     expect(find.text('Skip for now'), findsOneWidget);
     expect(find.text('Next Step'), findsOneWidget);
     expect(find.textContaining('0/100'), findsNothing);
@@ -354,7 +351,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('empty state golden', (tester) async {
+  testWidgets('empty state golden', tags: const ['golden'], (tester) async {
     await tester.pumpWidget(
       MaterialApp(
         theme: AppTheme.darkTheme,

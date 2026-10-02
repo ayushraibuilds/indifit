@@ -1,6 +1,3 @@
-@Tags(['golden'])
-library;
-
 import 'dart:convert';
 
 import 'package:drift/drift.dart' show Value;
@@ -59,64 +56,68 @@ void main() {
 
   tearDown(() => db.close());
 
-  testWidgets('R07C Quick player makes Log set the primary action', (
-    tester,
-  ) async {
-    _setViewport(tester, const Size(390, 844));
-    final launch = (await tester.runAsync(() => _launch(executions)))!;
-    await _pumpPlayer(tester, launch, executions, db, AppTheme.lightTheme);
+  testWidgets(
+    'R07C Quick player makes Log set the primary action',
+    tags: const ['golden'],
+    (tester) async {
+      _setViewport(tester, const Size(390, 844));
+      final launch = (await tester.runAsync(() => _launch(executions)))!;
+      await _pumpPlayer(tester, launch, executions, db, AppTheme.lightTheme);
 
-    expect(find.text('Quick workout'), findsOneWidget);
-    expect(find.text('QUICK WORKOUT'), findsNothing);
-    expect(find.text('EXERCISE 1 OF 1'), findsOneWidget);
-    expect(find.byTooltip('Workout options'), findsOneWidget);
-    expect(find.byTooltip('Exercise actions'), findsOneWidget);
-    expect(find.text('0:00'), findsOneWidget);
-    expect(find.textContaining('1–20'), findsNothing);
-    expect(find.textContaining('1-20'), findsNothing);
-    expect(find.text('Log set'), findsOneWidget);
-    expect(find.text('Suggested'), findsNothing);
-    final fields = find.byType(TextFormField);
-    expect(fields, findsNWidgets(2));
-    final loadBounds = tester.getRect(fields.at(0));
-    final repsBounds = tester.getRect(fields.at(1));
-    expect(repsBounds.left, greaterThan(loadBounds.left));
-    expect(repsBounds.top, closeTo(loadBounds.top, 0.1));
-    expect(tester.takeException(), isNull);
-    await expectLater(
-      find.byType(B02StrengthPlayerScreen),
-      matchesGoldenFile('goldens/ux_r07c_quick_player.png'),
-    );
-  });
+      expect(find.text('Quick workout'), findsOneWidget);
+      expect(find.text('QUICK WORKOUT'), findsNothing);
+      expect(find.text('EXERCISE 1 OF 1'), findsOneWidget);
+      expect(find.byTooltip('Workout options'), findsOneWidget);
+      expect(find.byTooltip('Exercise actions'), findsOneWidget);
+      expect(find.text('0:00'), findsOneWidget);
+      expect(find.textContaining('1–20'), findsNothing);
+      expect(find.textContaining('1-20'), findsNothing);
+      expect(find.text('Log set'), findsOneWidget);
+      expect(find.text('Suggested'), findsNothing);
+      final fields = find.byType(TextFormField);
+      expect(fields, findsNWidgets(2));
+      final loadBounds = tester.getRect(fields.at(0));
+      final repsBounds = tester.getRect(fields.at(1));
+      expect(repsBounds.left, greaterThan(loadBounds.left));
+      expect(repsBounds.top, closeTo(loadBounds.top, 0.1));
+      expect(tester.takeException(), isNull);
+      await expectLater(
+        find.byType(B02StrengthPlayerScreen),
+        matchesGoldenFile('goldens/ux_r07c_quick_player.png'),
+      );
+    },
+  );
 
-  testWidgets('R07C planned player keeps target context quiet and reachable', (
-    tester,
-  ) async {
-    _setViewport(tester, const Size(390, 844));
-    final launch = (await tester.runAsync(
-      () => _launchPlannedLike(executions),
-    ))!;
-    await _pumpPlayer(tester, launch, executions, db, AppTheme.lightTheme);
+  testWidgets(
+    'R07C planned player keeps target context quiet and reachable',
+    tags: const ['golden'],
+    (tester) async {
+      _setViewport(tester, const Size(390, 844));
+      final launch = (await tester.runAsync(
+        () => _launchPlannedLike(executions),
+      ))!;
+      await _pumpPlayer(tester, launch, executions, db, AppTheme.lightTheme);
 
-    expect(find.text('Suggested'), findsOneWidget);
-    expect(find.text('Log set'), findsOneWidget);
-    await tester.tap(find.text('Apply'));
-    await tester.pump();
-    final inputs = find.byType(EditableText);
-    expect(tester.widget<EditableText>(inputs.at(0)).controller.text, '60.0');
-    expect(tester.widget<EditableText>(inputs.at(1)).controller.text, '8');
-    expect(tester.takeException(), isNull);
-    await expectLater(
-      find.byType(B02StrengthPlayerScreen),
-      matchesGoldenFile('goldens/ux_r07c_planned_player.png'),
-    );
-    await tester.scrollUntilVisible(
-      find.text('Review and finish'),
-      220,
-      scrollable: find.byType(Scrollable).first,
-    );
-    expect(find.text('Review and finish'), findsOneWidget);
-  });
+      expect(find.text('Suggested'), findsOneWidget);
+      expect(find.text('Log set'), findsOneWidget);
+      await tester.tap(find.text('Apply'));
+      await tester.pump();
+      final inputs = find.byType(EditableText);
+      expect(tester.widget<EditableText>(inputs.at(0)).controller.text, '60.0');
+      expect(tester.widget<EditableText>(inputs.at(1)).controller.text, '8');
+      expect(tester.takeException(), isNull);
+      await expectLater(
+        find.byType(B02StrengthPlayerScreen),
+        matchesGoldenFile('goldens/ux_r07c_planned_player.png'),
+      );
+      await tester.scrollUntilVisible(
+        find.text('Review and finish'),
+        220,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.text('Review and finish'), findsOneWidget);
+    },
+  );
 
   testWidgets('R08B2 repeated Log set taps persist one set', (tester) async {
     _setViewport(tester, const Size(390, 844));
@@ -174,55 +175,61 @@ void main() {
     },
   );
 
-  testWidgets('R07C rest surface keeps wall-clock controls visible', (
-    tester,
-  ) async {
-    _setViewport(tester, const Size(390, 844));
-    final launch = (await tester.runAsync(() => _launchWithRest(executions)))!;
-    await _pumpPlayer(tester, launch, executions, db, AppTheme.darkTheme);
+  testWidgets(
+    'R07C rest surface keeps wall-clock controls visible',
+    tags: const ['golden'],
+    (tester) async {
+      _setViewport(tester, const Size(390, 844));
+      final launch = (await tester.runAsync(
+        () => _launchWithRest(executions),
+      ))!;
+      await _pumpPlayer(tester, launch, executions, db, AppTheme.darkTheme);
 
-    expect(find.text('REST'), findsOneWidget);
-    expect(find.text('−15 sec'), findsOneWidget);
-    expect(find.text('+15 sec'), findsOneWidget);
-    expect(find.text('Skip'), findsOneWidget);
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
-    expect(tester.takeException(), isNull);
-    await expectLater(
-      find.byType(B02StrengthPlayerScreen),
-      matchesGoldenFile('goldens/ux_r07c_rest_state.png'),
-    );
-  });
+      expect(find.text('REST'), findsOneWidget);
+      expect(find.text('−15 sec'), findsOneWidget);
+      expect(find.text('+15 sec'), findsOneWidget);
+      expect(find.text('Skip'), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await expectLater(
+        find.byType(B02StrengthPlayerScreen),
+        matchesGoldenFile('goldens/ux_r07c_rest_state.png'),
+      );
+    },
+  );
 
-  testWidgets('R07C exercise Guide stays concise and Performance is explicit', (
-    tester,
-  ) async {
-    _setViewport(tester, const Size(390, 844));
-    final exercises = (await tester.runAsync(
-      () => db.select(db.exercises).get(),
-    ))!;
-    final exercise = exercises.firstWhere(
-      (value) => value.name == 'Bench press',
-    );
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [databaseProvider.overrideWithValue(db)],
-        child: MaterialApp(
-          theme: AppTheme.lightTheme,
-          home: Scaffold(body: ExerciseDetailsSheet(exercise: exercise)),
+  testWidgets(
+    'R07C exercise Guide stays concise and Performance is explicit',
+    tags: const ['golden'],
+    (tester) async {
+      _setViewport(tester, const Size(390, 844));
+      final exercises = (await tester.runAsync(
+        () => db.select(db.exercises).get(),
+      ))!;
+      final exercise = exercises.firstWhere(
+        (value) => value.name == 'Bench press',
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [databaseProvider.overrideWithValue(db)],
+          child: MaterialApp(
+            theme: AppTheme.lightTheme,
+            home: Scaffold(body: ExerciseDetailsSheet(exercise: exercise)),
+          ),
         ),
-      ),
-    );
-    await tester.pump(const Duration(milliseconds: 200));
+      );
+      await tester.pump(const Duration(milliseconds: 200));
 
-    expect(find.text('GUIDE'), findsOneWidget);
-    expect(find.text('PERFORMANCE'), findsOneWidget);
-    expect(find.text('Exercise education'), findsNothing);
-    expect(tester.takeException(), isNull);
-    await expectLater(
-      find.byType(ExerciseDetailsSheet),
-      matchesGoldenFile('goldens/ux_r07c_guide.png'),
-    );
-  });
+      expect(find.text('GUIDE'), findsOneWidget);
+      expect(find.text('PERFORMANCE'), findsOneWidget);
+      expect(find.text('Exercise education'), findsNothing);
+      expect(tester.takeException(), isNull);
+      await expectLater(
+        find.byType(ExerciseDetailsSheet),
+        matchesGoldenFile('goldens/ux_r07c_guide.png'),
+      );
+    },
+  );
 
   testWidgets('R07C Performance shows canonical actual sets without 1RM', (
     tester,
@@ -316,26 +323,28 @@ void main() {
     }
   });
 
-  testWidgets('R07C Performance empty state does not invent a chart', (
-    tester,
-  ) async {
-    _setViewport(tester, const Size(390, 844));
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: AppTheme.darkTheme,
-        home: const Scaffold(body: R07CPerformanceEmptyState()),
-      ),
-    );
-    await tester.pump();
+  testWidgets(
+    'R07C Performance empty state does not invent a chart',
+    tags: const ['golden'],
+    (tester) async {
+      _setViewport(tester, const Size(390, 844));
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.darkTheme,
+          home: const Scaffold(body: R07CPerformanceEmptyState()),
+        ),
+      );
+      await tester.pump();
 
-    expect(find.text('No performance logged yet'), findsOneWidget);
-    expect(find.byType(LineChart), findsNothing);
-    expect(tester.takeException(), isNull);
-    await expectLater(
-      find.byType(R07CPerformanceEmptyState),
-      matchesGoldenFile('goldens/ux_r07c_performance_empty.png'),
-    );
-  });
+      expect(find.text('No performance logged yet'), findsOneWidget);
+      expect(find.byType(LineChart), findsNothing);
+      expect(tester.takeException(), isNull);
+      await expectLater(
+        find.byType(R07CPerformanceEmptyState),
+        matchesGoldenFile('goldens/ux_r07c_performance_empty.png'),
+      );
+    },
+  );
 }
 
 void _setViewport(WidgetTester tester, Size size) {

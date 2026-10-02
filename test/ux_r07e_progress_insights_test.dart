@@ -1,6 +1,3 @@
-@Tags(['golden'])
-library;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -22,31 +19,35 @@ void main() {
 
   // R07F-0: Outfit is bundled; no runtime font fetching configuration.
 
-  testWidgets('zero-data Progress is one useful starting state dark golden', (
+  testWidgets(
+    'zero-data Progress is one useful starting state dark golden',
+    tags: const ['golden'],
+    (tester) async {
+      _setViewport(tester, const Size(390, 844));
+      await _pump(tester, _zeroData(), AppTheme.darkTheme);
+
+      expect(find.text('Your progress starts here'), findsOneWidget);
+      expect(
+        find.text(
+          'Complete a workout or log a weigh-in to start seeing useful trends.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Log weight'), findsOneWidget);
+      expect(find.text('Start workout'), findsOneWidget);
+      expect(find.textContaining('0 workouts'), findsNothing);
+      expect(find.byKey(const ValueKey('progress_weight_chart')), findsNothing);
+      expect(tester.takeException(), isNull);
+      await expectLater(
+        find.byType(ProgressScreen),
+        matchesGoldenFile('goldens/ux_r07e_progress_zero_dark.png'),
+      );
+    },
+  );
+
+  testWidgets('zero-data Progress light golden', tags: const ['golden'], (
     tester,
   ) async {
-    _setViewport(tester, const Size(390, 844));
-    await _pump(tester, _zeroData(), AppTheme.darkTheme);
-
-    expect(find.text('Your progress starts here'), findsOneWidget);
-    expect(
-      find.text(
-        'Complete a workout or log a weigh-in to start seeing useful trends.',
-      ),
-      findsOneWidget,
-    );
-    expect(find.text('Log weight'), findsOneWidget);
-    expect(find.text('Start workout'), findsOneWidget);
-    expect(find.textContaining('0 workouts'), findsNothing);
-    expect(find.byKey(const ValueKey('progress_weight_chart')), findsNothing);
-    expect(tester.takeException(), isNull);
-    await expectLater(
-      find.byType(ProgressScreen),
-      matchesGoldenFile('goldens/ux_r07e_progress_zero_dark.png'),
-    );
-  });
-
-  testWidgets('zero-data Progress light golden', (tester) async {
     _setViewport(tester, const Size(390, 844));
     await _pump(tester, _zeroData(), AppTheme.lightTheme);
 
@@ -58,28 +59,32 @@ void main() {
     );
   });
 
-  testWidgets('one weigh-in stays summary-only dark golden', (tester) async {
-    _setViewport(tester, const Size(390, 844));
-    await _pump(tester, _oneMeasurement(), AppTheme.darkTheme);
+  testWidgets(
+    'one weigh-in stays summary-only dark golden',
+    tags: const ['golden'],
+    (tester) async {
+      _setViewport(tester, const Size(390, 844));
+      await _pump(tester, _oneMeasurement(), AppTheme.darkTheme);
 
-    expect(find.text('Highlights'), findsNothing);
-    expect(
-      find.byKey(const ValueKey('progress_highlight_weight')),
-      findsNothing,
-    );
-    expect(find.text('82.0 kg'), findsWidgets);
-    expect(find.textContaining('Goal'), findsNothing);
-    expect(
-      find.text('Log another measurement to start seeing your trend.'),
-      findsOneWidget,
-    );
-    expect(find.byKey(const ValueKey('progress_weight_chart')), findsNothing);
-    expect(tester.takeException(), isNull);
-    await expectLater(
-      find.byType(ProgressScreen),
-      matchesGoldenFile('goldens/ux_r07e_progress_one_measurement_dark.png'),
-    );
-  });
+      expect(find.text('Highlights'), findsNothing);
+      expect(
+        find.byKey(const ValueKey('progress_highlight_weight')),
+        findsNothing,
+      );
+      expect(find.text('82.0 kg'), findsWidgets);
+      expect(find.textContaining('Goal'), findsNothing);
+      expect(
+        find.text('Log another measurement to start seeing your trend.'),
+        findsOneWidget,
+      );
+      expect(find.byKey(const ValueKey('progress_weight_chart')), findsNothing);
+      expect(tester.takeException(), isNull);
+      await expectLater(
+        find.byType(ProgressScreen),
+        matchesGoldenFile('goldens/ux_r07e_progress_one_measurement_dark.png'),
+      );
+    },
+  );
 
   testWidgets('two weigh-ins show a comparison not a stable trend', (
     tester,
@@ -100,6 +105,7 @@ void main() {
 
   testWidgets(
     'three or more weigh-ins render interactive line chart dark golden',
+    tags: const ['golden'],
     (tester) async {
       _setViewport(tester, const Size(390, 844));
       await _pump(tester, _weightTrendOnly(), AppTheme.darkTheme);
@@ -143,77 +149,80 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('training consistency section renders week strip dark golden', (
-    tester,
-  ) async {
-    _setViewport(tester, const Size(390, 844));
-    await _pump(
-      tester,
-      _trainingOnly(),
-      AppTheme.darkTheme,
-      overrides: [
-        workoutHistoryItemsProvider.overrideWith(
-          (ref) async => [
-            B02ActivityHistoryItem(
-              sessionId: 1,
-              name: 'Push Day',
-              activityType: B02ActivityType.strength,
-              recordKind: B02HistoryRecordKind.canonical,
-              completedAt: DateTime.utc(2026, 8, 3, 9),
-              durationSeconds: 2700,
-              scheduledOccurrenceId: null,
-              legacySetCount: 0,
-              performedExerciseCount: 2,
-              performedGroupCount: 0,
-              cardioIntervalCount: 0,
-              hasCardioDetail: false,
-              hasMobilityDetail: false,
-            ),
-            B02ActivityHistoryItem(
-              sessionId: 3,
-              name: 'Leg Day',
-              activityType: B02ActivityType.strength,
-              recordKind: B02HistoryRecordKind.canonical,
-              completedAt: DateTime.utc(2026, 8, 7, 9),
-              durationSeconds: 3300,
-              scheduledOccurrenceId: null,
-              legacySetCount: 0,
-              performedExerciseCount: 3,
-              performedGroupCount: 0,
-              cardioIntervalCount: 0,
-              hasCardioDetail: false,
-              hasMobilityDetail: false,
-            ),
-          ],
-        ),
-      ],
-    );
+  testWidgets(
+    'training consistency section renders week strip dark golden',
+    tags: const ['golden'],
+    (tester) async {
+      _setViewport(tester, const Size(390, 844));
+      await _pump(
+        tester,
+        _trainingOnly(),
+        AppTheme.darkTheme,
+        overrides: [
+          workoutHistoryItemsProvider.overrideWith(
+            (ref) async => [
+              B02ActivityHistoryItem(
+                sessionId: 1,
+                name: 'Push Day',
+                activityType: B02ActivityType.strength,
+                recordKind: B02HistoryRecordKind.canonical,
+                completedAt: DateTime.utc(2026, 8, 3, 9),
+                durationSeconds: 2700,
+                scheduledOccurrenceId: null,
+                legacySetCount: 0,
+                performedExerciseCount: 2,
+                performedGroupCount: 0,
+                cardioIntervalCount: 0,
+                hasCardioDetail: false,
+                hasMobilityDetail: false,
+              ),
+              B02ActivityHistoryItem(
+                sessionId: 3,
+                name: 'Leg Day',
+                activityType: B02ActivityType.strength,
+                recordKind: B02HistoryRecordKind.canonical,
+                completedAt: DateTime.utc(2026, 8, 7, 9),
+                durationSeconds: 3300,
+                scheduledOccurrenceId: null,
+                legacySetCount: 0,
+                performedExerciseCount: 3,
+                performedGroupCount: 0,
+                cardioIntervalCount: 0,
+                hasCardioDetail: false,
+                hasMobilityDetail: false,
+              ),
+            ],
+          ),
+        ],
+      );
 
-    expect(find.text('Training consistency'), findsOneWidget);
-    expect(find.text('3 training days'), findsOneWidget);
-    expect(find.text('3 workouts'), findsOneWidget);
-    expect(find.text('completed this week'), findsWidgets);
-    expect(
-      find.text('Your logged working sets will appear here after you train.'),
-      findsOneWidget,
-    );
-    expect(find.text('View workout history'), findsOneWidget);
-    expect(tester.takeException(), isNull);
-    await expectLater(
-      find.byType(ProgressScreen),
-      matchesGoldenFile('goldens/ux_r07e_progress_training_dark.png'),
-    );
+      expect(find.text('Training consistency'), findsOneWidget);
+      expect(find.text('3 training days'), findsOneWidget);
+      expect(find.text('3 workouts'), findsOneWidget);
+      expect(find.text('completed this week'), findsWidgets);
+      expect(
+        find.text('Your logged working sets will appear here after you train.'),
+        findsOneWidget,
+      );
+      expect(find.text('View workout history'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await expectLater(
+        find.byType(ProgressScreen),
+        matchesGoldenFile('goldens/ux_r07e_progress_training_dark.png'),
+      );
 
-    // Tap View workout history
-    await tester.tap(find.text('View workout history'));
-    await tester.pumpAndSettle();
-    expect(find.text('Workout history'), findsOneWidget);
-    expect(find.text('Push Day'), findsOneWidget);
-    expect(find.text('Leg Day'), findsOneWidget);
-  });
+      // Tap View workout history
+      await tester.tap(find.text('View workout history'));
+      await tester.pumpAndSettle();
+      expect(find.text('Workout history'), findsOneWidget);
+      expect(find.text('Push Day'), findsOneWidget);
+      expect(find.text('Leg Day'), findsOneWidget);
+    },
+  );
 
   testWidgets(
     'strength progress section shows performed load and history dark golden',
+    tags: const ['golden'],
     (tester) async {
       _setViewport(tester, const Size(390, 844));
       await _pump(tester, _strengthOnly(), AppTheme.darkTheme);
@@ -231,46 +240,52 @@ void main() {
     },
   );
 
-  testWidgets('nutrition adherence section renders week strip dark golden', (
-    tester,
-  ) async {
-    _setViewport(tester, const Size(390, 844));
-    await _pump(tester, _nutritionOnly(), AppTheme.darkTheme);
+  testWidgets(
+    'nutrition adherence section renders week strip dark golden',
+    tags: const ['golden'],
+    (tester) async {
+      _setViewport(tester, const Size(390, 844));
+      await _pump(tester, _nutritionOnly(), AppTheme.darkTheme);
 
-    expect(find.text('Nutrition adherence'), findsOneWidget);
-    expect(find.text('2,150 kcal'), findsWidgets);
-    expect(find.text('4 of 5 complete days met protein'), findsWidgets);
-    expect(
-      find.text('Avg protein: 142 / 140 g across 5 complete days'),
-      findsOneWidget,
-    );
-    expect(tester.takeException(), isNull);
-    await expectLater(
-      find.byType(ProgressScreen),
-      matchesGoldenFile('goldens/ux_r07e_progress_nutrition_dark.png'),
-    );
-  });
+      expect(find.text('Nutrition adherence'), findsOneWidget);
+      expect(find.text('2,150 kcal'), findsWidgets);
+      expect(find.text('4 of 5 complete days met protein'), findsWidgets);
+      expect(
+        find.text('Avg protein: 142 / 140 g across 5 complete days'),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+      await expectLater(
+        find.byType(ProgressScreen),
+        matchesGoldenFile('goldens/ux_r07e_progress_nutrition_dark.png'),
+      );
+    },
+  );
 
-  testWidgets('one complete nutrition day stays compact and factual', (
-    tester,
-  ) async {
-    _setViewport(tester, const Size(390, 844));
-    await _pump(tester, _oneNutritionDay(), AppTheme.darkTheme);
+  testWidgets(
+    'one complete nutrition day stays compact and factual',
+    tags: const ['golden'],
+    (tester) async {
+      _setViewport(tester, const Size(390, 844));
+      await _pump(tester, _oneNutritionDay(), AppTheme.darkTheme);
 
-    expect(find.text('Nutrition adherence'), findsOneWidget);
-    expect(find.text('640 kcal · 19 / 162 g protein'), findsOneWidget);
-    expect(find.text('1 complete logged day'), findsOneWidget);
-    expect(find.textContaining('Average'), findsNothing);
-    expect(
-      find.bySemanticsLabel('Weekly nutrition adherence day by day'),
-      findsNothing,
-    );
-    expect(tester.takeException(), isNull);
-    await expectLater(
-      find.byType(ProgressScreen),
-      matchesGoldenFile('goldens/ux_r08f_progress_one_nutrition_day_dark.png'),
-    );
-  });
+      expect(find.text('Nutrition adherence'), findsOneWidget);
+      expect(find.text('640 kcal · 19 / 162 g protein'), findsOneWidget);
+      expect(find.text('1 complete logged day'), findsOneWidget);
+      expect(find.textContaining('Average'), findsNothing);
+      expect(
+        find.bySemanticsLabel('Weekly nutrition adherence day by day'),
+        findsNothing,
+      );
+      expect(tester.takeException(), isNull);
+      await expectLater(
+        find.byType(ProgressScreen),
+        matchesGoldenFile(
+          'goldens/ux_r08f_progress_one_nutrition_day_dark.png',
+        ),
+      );
+    },
+  );
 
   testWidgets('logged nutrition without complete facts stays compact', (
     tester,
@@ -291,7 +306,9 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('populated overview dark golden', (tester) async {
+  testWidgets('populated overview dark golden', tags: const ['golden'], (
+    tester,
+  ) async {
     _setViewport(tester, const Size(390, 844));
     await _pump(tester, _populated(), AppTheme.darkTheme);
 
@@ -309,7 +326,9 @@ void main() {
     );
   });
 
-  testWidgets('populated overview light golden', (tester) async {
+  testWidgets('populated overview light golden', tags: const ['golden'], (
+    tester,
+  ) async {
     _setViewport(tester, const Size(390, 844));
     await _pump(tester, _populated(), AppTheme.lightTheme);
 
@@ -321,30 +340,38 @@ void main() {
     );
   });
 
-  testWidgets('Progress is usable at 320pt dark golden', (tester) async {
-    _setViewport(tester, const Size(320, 568));
-    await _pump(tester, _populated(), AppTheme.darkTheme);
+  testWidgets(
+    'Progress is usable at 320pt dark golden',
+    tags: const ['golden'],
+    (tester) async {
+      _setViewport(tester, const Size(320, 568));
+      await _pump(tester, _populated(), AppTheme.darkTheme);
 
-    expect(find.text('Highlights'), findsOneWidget);
-    expect(find.text('Weight'), findsWidgets);
-    expect(tester.takeException(), isNull);
-    await expectLater(
-      find.byType(ProgressScreen),
-      matchesGoldenFile('goldens/ux_r07e_progress_320_dark.png'),
-    );
-  });
+      expect(find.text('Highlights'), findsOneWidget);
+      expect(find.text('Weight'), findsWidgets);
+      expect(tester.takeException(), isNull);
+      await expectLater(
+        find.byType(ProgressScreen),
+        matchesGoldenFile('goldens/ux_r07e_progress_320_dark.png'),
+      );
+    },
+  );
 
-  testWidgets('Progress remains usable at 2x text dark golden', (tester) async {
-    _setViewport(tester, const Size(390, 844));
-    await _pump(tester, _populated(), AppTheme.darkTheme, textScale: 2.0);
+  testWidgets(
+    'Progress remains usable at 2x text dark golden',
+    tags: const ['golden'],
+    (tester) async {
+      _setViewport(tester, const Size(390, 844));
+      await _pump(tester, _populated(), AppTheme.darkTheme, textScale: 2.0);
 
-    expect(find.text('Highlights'), findsOneWidget);
-    expect(tester.takeException(), isNull);
-    await expectLater(
-      find.byType(ProgressScreen),
-      matchesGoldenFile('goldens/ux_r07e_progress_2x_dark.png'),
-    );
-  });
+      expect(find.text('Highlights'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await expectLater(
+        find.byType(ProgressScreen),
+        matchesGoldenFile('goldens/ux_r07e_progress_2x_dark.png'),
+      );
+    },
+  );
 
   testWidgets('popup menu opens Achievements screen', (tester) async {
     _setViewport(tester, const Size(390, 844));

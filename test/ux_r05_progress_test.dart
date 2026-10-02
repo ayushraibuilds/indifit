@@ -1,6 +1,3 @@
-@Tags(['golden'])
-library;
-
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -62,29 +59,31 @@ void main() {
     },
   );
 
-  testWidgets('zero-data Progress is one useful starting state dark golden', (
-    tester,
-  ) async {
-    _setViewport(tester, const Size(390, 844));
-    await _pump(tester, _zeroData(), AppTheme.darkTheme);
+  testWidgets(
+    'zero-data Progress is one useful starting state dark golden',
+    tags: const ['golden'],
+    (tester) async {
+      _setViewport(tester, const Size(390, 844));
+      await _pump(tester, _zeroData(), AppTheme.darkTheme);
 
-    expect(find.text('Your progress starts here'), findsOneWidget);
-    expect(
-      find.text(
-        'Complete a workout or log a weigh-in to start seeing useful trends.',
-      ),
-      findsOneWidget,
-    );
-    expect(find.text('Log weight'), findsOneWidget);
-    expect(find.text('Start workout'), findsOneWidget);
-    expect(find.textContaining('0 workouts'), findsNothing);
-    expect(find.byKey(const ValueKey('progress_weight_chart')), findsNothing);
-    expect(tester.takeException(), isNull);
-    await expectLater(
-      find.byType(ProgressScreen),
-      matchesGoldenFile('goldens/ux_r05_progress_zero_dark.png'),
-    );
-  });
+      expect(find.text('Your progress starts here'), findsOneWidget);
+      expect(
+        find.text(
+          'Complete a workout or log a weigh-in to start seeing useful trends.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Log weight'), findsOneWidget);
+      expect(find.text('Start workout'), findsOneWidget);
+      expect(find.textContaining('0 workouts'), findsNothing);
+      expect(find.byKey(const ValueKey('progress_weight_chart')), findsNothing);
+      expect(tester.takeException(), isNull);
+      await expectLater(
+        find.byType(ProgressScreen),
+        matchesGoldenFile('goldens/ux_r05_progress_zero_dark.png'),
+      );
+    },
+  );
 
   testWidgets('a zero-valued measurement is not presented as body progress', (
     tester,
@@ -135,28 +134,32 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('one weigh-in stays summary-only golden', (tester) async {
-    _setViewport(tester, const Size(390, 844));
-    await _pump(tester, _oneMeasurement(), AppTheme.darkTheme);
+  testWidgets(
+    'one weigh-in stays summary-only golden',
+    tags: const ['golden'],
+    (tester) async {
+      _setViewport(tester, const Size(390, 844));
+      await _pump(tester, _oneMeasurement(), AppTheme.darkTheme);
 
-    expect(find.text('Highlights'), findsNothing);
-    expect(
-      find.byKey(const ValueKey('progress_highlight_weight')),
-      findsNothing,
-    );
-    expect(find.text('82.0 kg'), findsWidgets);
-    expect(find.text('Goal 78.0 kg'), findsNothing);
-    expect(
-      find.text('Log another measurement to start seeing your trend.'),
-      findsOneWidget,
-    );
-    expect(find.byKey(const ValueKey('progress_weight_chart')), findsNothing);
-    expect(tester.takeException(), isNull);
-    await expectLater(
-      find.byType(ProgressScreen),
-      matchesGoldenFile('goldens/ux_r05_progress_one_measurement_dark.png'),
-    );
-  });
+      expect(find.text('Highlights'), findsNothing);
+      expect(
+        find.byKey(const ValueKey('progress_highlight_weight')),
+        findsNothing,
+      );
+      expect(find.text('82.0 kg'), findsWidgets);
+      expect(find.text('Goal 78.0 kg'), findsNothing);
+      expect(
+        find.text('Log another measurement to start seeing your trend.'),
+        findsOneWidget,
+      );
+      expect(find.byKey(const ValueKey('progress_weight_chart')), findsNothing);
+      expect(tester.takeException(), isNull);
+      await expectLater(
+        find.byType(ProgressScreen),
+        matchesGoldenFile('goldens/ux_r05_progress_one_measurement_dark.png'),
+      );
+    },
+  );
 
   testWidgets('two weigh-ins show a comparison, not a stable trend', (
     tester,
@@ -299,68 +302,74 @@ void main() {
   });
 
   for (final brightness in Brightness.values) {
-    testWidgets('populated overview ${brightness.name} golden', (tester) async {
-      _setViewport(tester, const Size(390, 844));
-      await _pump(
-        tester,
-        _populated(),
-        brightness == Brightness.dark
-            ? AppTheme.darkTheme
-            : AppTheme.lightTheme,
-      );
+    testWidgets(
+      'populated overview ${brightness.name} golden',
+      tags: const ['golden'],
+      (tester) async {
+        _setViewport(tester, const Size(390, 844));
+        await _pump(
+          tester,
+          _populated(),
+          brightness == Brightness.dark
+              ? AppTheme.darkTheme
+              : AppTheme.lightTheme,
+        );
 
-      expect(find.text('Highlights'), findsOneWidget);
-      expect(find.text('Training consistency'), findsOneWidget);
-      expect(find.text('Strength'), findsWidgets);
-      expect(find.text('Loaded volume'), findsOneWidget);
-      expect(find.text('Recent training emphasis'), findsOneWidget);
-      expect(find.textContaining('your goal'), findsNothing);
-      expect(tester.takeException(), isNull);
-      await expectLater(
-        find.byType(ProgressScreen),
-        matchesGoldenFile(
-          'goldens/ux_r05_progress_populated_${brightness.name}.png',
-        ),
-      );
-    });
+        expect(find.text('Highlights'), findsOneWidget);
+        expect(find.text('Training consistency'), findsOneWidget);
+        expect(find.text('Strength'), findsWidgets);
+        expect(find.text('Loaded volume'), findsOneWidget);
+        expect(find.text('Recent training emphasis'), findsOneWidget);
+        expect(find.textContaining('your goal'), findsNothing);
+        expect(tester.takeException(), isNull);
+        await expectLater(
+          find.byType(ProgressScreen),
+          matchesGoldenFile(
+            'goldens/ux_r05_progress_populated_${brightness.name}.png',
+          ),
+        );
+      },
+    );
   }
 
-  testWidgets('weight chart has a coherent period switch and inspection', (
-    tester,
-  ) async {
-    _setViewport(tester, const Size(390, 844));
-    await _pump(tester, _populated(), AppTheme.darkTheme);
+  testWidgets(
+    'weight chart has a coherent period switch and inspection',
+    tags: const ['golden'],
+    (tester) async {
+      _setViewport(tester, const Size(390, 844));
+      await _pump(tester, _populated(), AppTheme.darkTheme);
 
-    final chart = find.byKey(const ValueKey('progress_weight_chart'));
-    await tester.ensureVisible(chart);
-    expect(chart, findsOneWidget);
-    expect(
-      tester
-          .widget<LineChart>(
-            find.descendant(of: chart, matching: find.byType(LineChart)),
-          )
-          .duration,
-      Duration.zero,
-      reason: 'The chart must respect the active reduced-motion preference.',
-    );
-    expect(
-      find.text('All'),
-      findsNothing,
-      reason:
-          'Do not offer a redundant all-time range for a two-month history.',
-    );
-    await tester.ensureVisible(find.text('3M'));
-    await tester.tap(find.text('3M'));
-    await tester.pump();
-    await tester.ensureVisible(chart);
-    await tester.drag(chart, const Offset(-120, 0));
-    await tester.pump();
-    expect(tester.takeException(), isNull);
-    await expectLater(
-      chart,
-      matchesGoldenFile('goldens/ux_r05_weight_chart_dark.png'),
-    );
-  });
+      final chart = find.byKey(const ValueKey('progress_weight_chart'));
+      await tester.ensureVisible(chart);
+      expect(chart, findsOneWidget);
+      expect(
+        tester
+            .widget<LineChart>(
+              find.descendant(of: chart, matching: find.byType(LineChart)),
+            )
+            .duration,
+        Duration.zero,
+        reason: 'The chart must respect the active reduced-motion preference.',
+      );
+      expect(
+        find.text('All'),
+        findsNothing,
+        reason:
+            'Do not offer a redundant all-time range for a two-month history.',
+      );
+      await tester.ensureVisible(find.text('3M'));
+      await tester.tap(find.text('3M'));
+      await tester.pump();
+      await tester.ensureVisible(chart);
+      await tester.drag(chart, const Offset(-120, 0));
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+      await expectLater(
+        chart,
+        matchesGoldenFile('goldens/ux_r05_weight_chart_dark.png'),
+      );
+    },
+  );
 
   testWidgets('weight chart preserves local-day spacing between observations', (
     tester,
@@ -409,22 +418,26 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('strength state is based on performed values', (tester) async {
-    _setViewport(tester, const Size(390, 844));
-    await _pump(tester, _strengthOnly(), AppTheme.darkTheme);
+  testWidgets(
+    'strength state is based on performed values',
+    tags: const ['golden'],
+    (tester) async {
+      _setViewport(tester, const Size(390, 844));
+      await _pump(tester, _strengthOnly(), AppTheme.darkTheme);
 
-    expect(find.text('Bench Press'), findsOneWidget);
-    expect(find.text('90 kg × 5'), findsOneWidget);
-    expect(
-      find.textContaining('+7.5 kg at 5 reps vs previous session'),
-      findsWidgets,
-    );
-    await expectLater(
-      find.byType(ProgressScreen),
-      matchesGoldenFile('goldens/ux_r05_progress_strength_dark.png'),
-    );
-    expect(tester.takeException(), isNull);
-  });
+      expect(find.text('Bench Press'), findsOneWidget);
+      expect(find.text('90 kg × 5'), findsOneWidget);
+      expect(
+        find.textContaining('+7.5 kg at 5 reps vs previous session'),
+        findsWidgets,
+      );
+      await expectLater(
+        find.byType(ProgressScreen),
+        matchesGoldenFile('goldens/ux_r05_progress_strength_dark.png'),
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets(
     'body measurements show recorded fields and open compact history',
@@ -464,7 +477,9 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('Progress is usable at 320pt', (tester) async {
+  testWidgets('Progress is usable at 320pt', tags: const ['golden'], (
+    tester,
+  ) async {
     _setViewport(tester, const Size(320, 568));
     await _pump(tester, _populated(), AppTheme.darkTheme);
 
@@ -475,7 +490,9 @@ void main() {
     );
   });
 
-  testWidgets('Progress remains usable at 2x text', (tester) async {
+  testWidgets('Progress remains usable at 2x text', tags: const ['golden'], (
+    tester,
+  ) async {
     _setViewport(tester, const Size(390, 844));
     await _pump(tester, _oneMeasurement(), AppTheme.darkTheme, textScale: 2);
 
@@ -513,6 +530,7 @@ void main() {
 
   testWidgets(
     'mixed data keeps available sections when a secondary read fails',
+    tags: const ['golden'],
     (tester) async {
       _setViewport(tester, const Size(390, 844));
       await _pump(tester, _mixedData(), AppTheme.lightTheme);

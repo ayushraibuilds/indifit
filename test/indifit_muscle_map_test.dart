@@ -1,6 +1,3 @@
-@Tags(['golden'])
-library;
-
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -495,26 +492,32 @@ void main() {
   });
 
   group('representative goldens', () {
-    testWidgets('male front light primary and secondary', (tester) async {
-      _setGoldenViewport(tester);
-      await tester.pumpWidget(
-        _testApp(
-          const IndiFitMuscleMap.exercise(
-            primaryMuscle: 'Chest',
-            secondaryMuscles: ['Triceps', 'Shoulders'],
-            view: IndiFitMuscleMapView.front,
-            bodyModel: IndiFitMuscleMapBody.male,
+    testWidgets(
+      'male front light primary and secondary',
+      tags: const ['golden'],
+      (tester) async {
+        _setGoldenViewport(tester);
+        await tester.pumpWidget(
+          _testApp(
+            const IndiFitMuscleMap.exercise(
+              primaryMuscle: 'Chest',
+              secondaryMuscles: ['Triceps', 'Shoulders'],
+              view: IndiFitMuscleMapView.front,
+              bodyModel: IndiFitMuscleMapBody.male,
+            ),
           ),
-        ),
-      );
-      await tester.pump();
-      await expectLater(
-        find.byKey(const ValueKey<String>('indifit_muscle_map_male_front')),
-        matchesGoldenFile('goldens/indifit_muscle_map_male_front_light.png'),
-      );
-    });
+        );
+        await tester.pump();
+        await expectLater(
+          find.byKey(const ValueKey<String>('indifit_muscle_map_male_front')),
+          matchesGoldenFile('goldens/indifit_muscle_map_male_front_light.png'),
+        );
+      },
+    );
 
-    testWidgets('male back dark broad mapping', (tester) async {
+    testWidgets('male back dark broad mapping', tags: const ['golden'], (
+      tester,
+    ) async {
       _setGoldenViewport(tester);
       await tester.pumpWidget(
         _testApp(
@@ -533,7 +536,9 @@ void main() {
       );
     });
 
-    testWidgets('female both light no-data', (tester) async {
+    testWidgets('female both light no-data', tags: const ['golden'], (
+      tester,
+    ) async {
       _setGoldenViewport(tester);
       await tester.pumpWidget(
         _testApp(
@@ -550,7 +555,9 @@ void main() {
       );
     });
 
-    testWidgets('female front dark heat', (tester) async {
+    testWidgets('female front dark heat', tags: const ['golden'], (
+      tester,
+    ) async {
       _setGoldenViewport(tester);
       await tester.pumpWidget(
         _testApp(
@@ -570,26 +577,30 @@ void main() {
       );
     });
 
-    testWidgets('female back light primary and secondary', (tester) async {
-      _setGoldenViewport(tester);
-      await tester.pumpWidget(
-        _testApp(
-          const IndiFitMuscleMap.exercise(
-            primaryMuscle: 'Hamstrings',
-            secondaryMuscles: ['Glutes'],
-            view: IndiFitMuscleMapView.back,
-            bodyModel: IndiFitMuscleMapBody.female,
+    testWidgets(
+      'female back light primary and secondary',
+      tags: const ['golden'],
+      (tester) async {
+        _setGoldenViewport(tester);
+        await tester.pumpWidget(
+          _testApp(
+            const IndiFitMuscleMap.exercise(
+              primaryMuscle: 'Hamstrings',
+              secondaryMuscles: ['Glutes'],
+              view: IndiFitMuscleMapView.back,
+              bodyModel: IndiFitMuscleMapBody.female,
+            ),
           ),
-        ),
-      );
-      await tester.pump();
-      await expectLater(
-        find.byKey(const ValueKey<String>('indifit_muscle_map_female_back')),
-        matchesGoldenFile(
-          'goldens/indifit_muscle_map_female_back_exercise.png',
-        ),
-      );
-    });
+        );
+        await tester.pump();
+        await expectLater(
+          find.byKey(const ValueKey<String>('indifit_muscle_map_female_back')),
+          matchesGoldenFile(
+            'goldens/indifit_muscle_map_female_back_exercise.png',
+          ),
+        );
+      },
+    );
   });
 }
 

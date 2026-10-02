@@ -1,6 +1,3 @@
-@Tags(['golden'])
-library;
-
 import 'dart:async';
 
 import 'package:drift/drift.dart' hide isNull;
@@ -159,15 +156,19 @@ void main() {
     }
   });
 
-  testWidgets('Settings landing representative light state', (tester) async {
-    await _pumpSettings(tester);
+  testWidgets(
+    'Settings landing representative light state',
+    tags: const ['golden'],
+    (tester) async {
+      await _pumpSettings(tester);
 
-    await expectLater(
-      find.byType(Scaffold).first,
-      matchesGoldenFile('goldens/ux_r08g1_settings_landing_light.png'),
-    );
-    expect(tester.takeException(), isNull);
-  });
+      await expectLater(
+        find.byType(Scaffold).first,
+        matchesGoldenFile('goldens/ux_r08g1_settings_landing_light.png'),
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 }
 
 Future<void> _pumpSettings(

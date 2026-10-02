@@ -1,6 +1,3 @@
-@Tags(['golden'])
-library;
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -70,51 +67,53 @@ void main() {
     },
   );
 
-  testWidgets('shows denied access and routes through the existing requester', (
-    tester,
-  ) async {
-    var requestCount = 0;
-    addTearDown(() async {
-      await tester.pumpWidget(const SizedBox.shrink());
-      await tester.pump();
-    });
+  testWidgets(
+    'shows denied access and routes through the existing requester',
+    tags: const ['golden'],
+    (tester) async {
+      var requestCount = 0;
+      addTearDown(() async {
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      });
 
-    await tester.pumpWidget(
-      ProviderScope(
-        child: MaterialApp(
-          theme: AppTheme.lightTheme,
-          home: Scaffold(
-            body: SingleChildScrollView(
-              child: NotificationSettingsSection(
-                permissionStatusLoader: _deniedPermission,
-                permissionRequester: () async {
-                  requestCount++;
-                },
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            theme: AppTheme.lightTheme,
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: NotificationSettingsSection(
+                  permissionStatusLoader: _deniedPermission,
+                  permissionRequester: () async {
+                    requestCount++;
+                  },
+                ),
               ),
             ),
           ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    expect(find.text('Not allowed'), findsOneWidget);
-    final allowButton = find.text('Allow notifications');
-    expect(allowButton, findsOneWidget);
-    await tester.tap(allowButton);
-    await tester.pumpAndSettle();
+      expect(find.text('Not allowed'), findsOneWidget);
+      final allowButton = find.text('Allow notifications');
+      expect(allowButton, findsOneWidget);
+      await tester.tap(allowButton);
+      await tester.pumpAndSettle();
 
-    expect(requestCount, 1);
-    expect(
-      find.textContaining('device is blocking notifications'),
-      findsOneWidget,
-    );
-    await expectLater(
-      find.byType(Scaffold),
-      matchesGoldenFile('goldens/phase5_notifications_blocked_light.png'),
-    );
-    expect(tester.takeException(), isNull);
-  });
+      expect(requestCount, 1);
+      expect(
+        find.textContaining('device is blocking notifications'),
+        findsOneWidget,
+      );
+      await expectLater(
+        find.byType(Scaffold),
+        matchesGoldenFile('goldens/phase5_notifications_blocked_light.png'),
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('keeps a permission-request failure visible', (tester) async {
     addTearDown(() async {
@@ -179,57 +178,63 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('workout schedule editor exposes days and time on demand', (
-    tester,
-  ) async {
-    await _pumpSection(tester, size: const Size(320, 568), textScale: 2);
+  testWidgets(
+    'workout schedule editor exposes days and time on demand',
+    tags: const ['golden'],
+    (tester) async {
+      await _pumpSection(tester, size: const Size(320, 568), textScale: 2);
 
-    final edit = find.text('Edit schedule').first;
-    await tester.ensureVisible(edit);
-    await tester.tap(edit);
-    await tester.pumpAndSettle();
+      final edit = find.text('Edit schedule').first;
+      await tester.ensureVisible(edit);
+      await tester.tap(edit);
+      await tester.pumpAndSettle();
 
-    expect(find.text('Workout reminder schedule'), findsOneWidget);
-    expect(find.text('Days'), findsOneWidget);
-    expect(find.text('Mon'), findsOneWidget);
-    expect(find.text('Sun'), findsOneWidget);
-    expect(find.text('Reminder time'), findsOneWidget);
-    expect(find.text('Save schedule'), findsOneWidget);
-    await expectLater(
-      find.byType(IndiFitBottomSheet),
-      matchesGoldenFile('goldens/phase5_notification_schedule_editor_dark.png'),
-    );
-    expect(tester.takeException(), isNull);
-  });
+      expect(find.text('Workout reminder schedule'), findsOneWidget);
+      expect(find.text('Days'), findsOneWidget);
+      expect(find.text('Mon'), findsOneWidget);
+      expect(find.text('Sun'), findsOneWidget);
+      expect(find.text('Reminder time'), findsOneWidget);
+      expect(find.text('Save schedule'), findsOneWidget);
+      await expectLater(
+        find.byType(IndiFitBottomSheet),
+        matchesGoldenFile(
+          'goldens/phase5_notification_schedule_editor_dark.png',
+        ),
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 
-  testWidgets('stored schedules are rendered instead of fixed copy', (
-    tester,
-  ) async {
-    SharedPreferences.setMockInitialValues({
-      NotificationService.prefWorkoutReminderDays: ['1', '3', '5'],
-      NotificationService.prefWorkoutReminderHour: 6,
-      NotificationService.prefWorkoutReminderMinute: 45,
-      NotificationService.prefLunchReminderHour: 12,
-      NotificationService.prefLunchReminderMinute: 15,
-      NotificationService.prefDinnerReminderHour: 19,
-      NotificationService.prefDinnerReminderMinute: 40,
-      NotificationService.prefWeeklyProgressDay: DateTime.saturday,
-      NotificationService.prefWeeklyProgressHour: 9,
-      NotificationService.prefWeeklyProgressMinute: 20,
-    });
-    await _pumpSection(tester);
+  testWidgets(
+    'stored schedules are rendered instead of fixed copy',
+    tags: const ['golden'],
+    (tester) async {
+      SharedPreferences.setMockInitialValues({
+        NotificationService.prefWorkoutReminderDays: ['1', '3', '5'],
+        NotificationService.prefWorkoutReminderHour: 6,
+        NotificationService.prefWorkoutReminderMinute: 45,
+        NotificationService.prefLunchReminderHour: 12,
+        NotificationService.prefLunchReminderMinute: 15,
+        NotificationService.prefDinnerReminderHour: 19,
+        NotificationService.prefDinnerReminderMinute: 40,
+        NotificationService.prefWeeklyProgressDay: DateTime.saturday,
+        NotificationService.prefWeeklyProgressHour: 9,
+        NotificationService.prefWeeklyProgressMinute: 20,
+      });
+      await _pumpSection(tester);
 
-    expect(find.textContaining('Mon · Wed · Fri · 6:45 AM'), findsOneWidget);
-    expect(
-      find.textContaining('Lunch 12:15 PM · Dinner 7:40 PM'),
-      findsOneWidget,
-    );
-    expect(find.textContaining('Saturday · 9:20 AM'), findsOneWidget);
-    await expectLater(
-      find.byType(NotificationSettingsSection),
-      matchesGoldenFile('goldens/phase5_notifications_editable_dark.png'),
-    );
-  });
+      expect(find.textContaining('Mon · Wed · Fri · 6:45 AM'), findsOneWidget);
+      expect(
+        find.textContaining('Lunch 12:15 PM · Dinner 7:40 PM'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Saturday · 9:20 AM'), findsOneWidget);
+      await expectLater(
+        find.byType(NotificationSettingsSection),
+        matchesGoldenFile('goldens/phase5_notifications_editable_dark.png'),
+      );
+    },
+  );
 
   testWidgets('workout day edits save through the production schedule path', (
     tester,

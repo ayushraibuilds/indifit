@@ -1,6 +1,3 @@
-@Tags(['golden'])
-library;
-
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -239,29 +236,31 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('disconnected state names the available platform first', (
-      tester,
-    ) async {
-      final service = _FakeHealthService(
-        summary: const HealthDataSummary(
-          availability: HealthPlatformAvailability.supported,
-          connectionStatus: HealthConnectionStatus.notConnected,
-          platformName: 'Apple Health',
-        ),
-      );
-      await _pumpScreen(tester, service);
+    testWidgets(
+      'disconnected state names the available platform first',
+      tags: const ['golden'],
+      (tester) async {
+        final service = _FakeHealthService(
+          summary: const HealthDataSummary(
+            availability: HealthPlatformAvailability.supported,
+            connectionStatus: HealthConnectionStatus.notConnected,
+            platformName: 'Apple Health',
+          ),
+        );
+        await _pumpScreen(tester, service);
 
-      expect(find.text('Connect Apple Health'), findsOneWidget);
-      expect(
-        find.textContaining('Connect Apple Health to optionally use'),
-        findsOneWidget,
-      );
-      expect(find.text('WHAT INDIFIT MAY USE'), findsNothing);
-      await expectLater(
-        find.byType(HealthSyncHubScreen),
-        matchesGoldenFile('goldens/phase5_health_disconnected_light.png'),
-      );
-    });
+        expect(find.text('Connect Apple Health'), findsOneWidget);
+        expect(
+          find.textContaining('Connect Apple Health to optionally use'),
+          findsOneWidget,
+        );
+        expect(find.text('WHAT INDIFIT MAY USE'), findsNothing);
+        await expectLater(
+          find.byType(HealthSyncHubScreen),
+          matchesGoldenFile('goldens/phase5_health_disconnected_light.png'),
+        );
+      },
+    );
 
     testWidgets('denied state does not relabel categories as unrequested', (
       tester,
@@ -302,6 +301,7 @@ void main() {
 
     testWidgets(
       'connected state shows only allowed categories and exact copy',
+      tags: const ['golden'],
       (tester) async {
         final service = _FakeHealthService(
           summary: const HealthDataSummary(
