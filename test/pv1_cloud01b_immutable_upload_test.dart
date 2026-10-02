@@ -8,8 +8,8 @@ import 'package:indifit/core/outbox/outbox.dart';
 import 'package:indifit/data/repositories/food_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'support/schema_version.dart';
 import 'support/indifit_test_harness.dart';
+import 'support/schema_version.dart';
 
 class _FakeAuthenticatedAccount implements AccountCapability {
   @override

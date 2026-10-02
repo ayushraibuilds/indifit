@@ -488,8 +488,9 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
                                   final selectedItem = items
                                       .where((i) => i.id == _selectedItemId)
                                       .firstOrNull;
-                                  if (selectedItem == null)
+                                  if (selectedItem == null) {
                                     return const SizedBox.shrink();
+                                  }
                                   final selectedItemPreview = previewItems
                                       .where(
                                         (p) => p.item.id == selectedItem.id,

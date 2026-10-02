@@ -4,9 +4,8 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/data/database/app_database.dart';
 
-import 'support/schema_version.dart';
-
 import 'fixtures/b03_migration_backup_harness.dart';
+import 'support/schema_version.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

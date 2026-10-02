@@ -4,7 +4,6 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:indifit/core/di/providers.dart';
 import 'package:indifit/core/nutrients.dart';
 import 'package:indifit/core/nutrition_calculation_service.dart';
@@ -23,6 +22,7 @@ import 'package:indifit/data/repositories/nutrition_transformation_repository.da
 import 'package:indifit/features/food_log/food_log_surface.dart';
 import 'package:indifit/features/food_log/food_search_screen.dart';
 import 'package:indifit/features/food_log/meal_presentation_registry.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 Future<void> _settle(WidgetTester tester) async {
   await tester.pump();

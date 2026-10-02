@@ -108,8 +108,9 @@ class ExerciseDisplayMuscles {
     if (muscle == null || muscle.trim().isEmpty) return false;
     final cleanMuscle = muscle.trim().replaceAll('_', ' ').toLowerCase();
     if (hasPrimary &&
-        primary!.trim().replaceAll('_', ' ').toLowerCase() == cleanMuscle)
+        primary!.trim().replaceAll('_', ' ').toLowerCase() == cleanMuscle) {
       return true;
+    }
     return secondary.any(
       (sec) => sec.trim().replaceAll('_', ' ').toLowerCase() == cleanMuscle,
     );

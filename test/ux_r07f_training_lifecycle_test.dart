@@ -6,8 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/backup/backup_v10.dart';
 import 'package:indifit/core/services/local_schedule_date_service.dart';
-
-import 'support/schema_version.dart';
 import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/repositories/calendar_read_repository.dart';
@@ -26,6 +24,8 @@ import 'package:indifit/features/training/training_screen.dart'
         trainingWeekDaySemanticLabel,
         trainingWeekEmptyDayLabel;
 import 'package:indifit/features/workout_player/routine_display_screen.dart';
+
+import 'support/schema_version.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

@@ -73,9 +73,10 @@ String? compatibilityRouteRedirect(String location) =>
 String? _nutritionAiRouteRedirect(BuildContext context, GoRouterState state) {
   final isAllowed = () {
     try {
-      return ProviderScope.containerOf(context, listen: false)
-          .read(privacyPolicyProvider)
-          .isAiAllowed;
+      return ProviderScope.containerOf(
+        context,
+        listen: false,
+      ).read(privacyPolicyProvider).isAiAllowed;
     } catch (_) {
       return AppConfig.connectedAiEnabled;
     }

@@ -229,23 +229,12 @@ void main() {
         tile.onTap!();
         await tester.pumpAndSettle();
 
-        expect(
-          find.text('System default'),
-          findsOneWidget,
-        );
-        expect(
-          find.text('Light mode'),
-          findsOneWidget,
-        );
-        expect(
-          find.text('Dark mode'),
-          findsOneWidget,
-        );
+        expect(find.text('System default'), findsOneWidget);
+        expect(find.text('Light mode'), findsOneWidget);
+        expect(find.text('Dark mode'), findsOneWidget);
 
         // Tap Light option
-        await tester.tap(
-          find.text('Light mode'),
-        );
+        await tester.tap(find.text('Light mode'));
         await tester.pumpAndSettle();
 
         // Close bottom sheet
@@ -253,10 +242,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // Bottom sheet closed
-        expect(
-          find.text('System default'),
-          findsNothing,
-        );
+        expect(find.text('System default'), findsNothing);
       },
     );
   });

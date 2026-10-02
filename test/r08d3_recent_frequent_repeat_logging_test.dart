@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:indifit/core/di/providers.dart';
 import 'package:indifit/core/nutrients.dart';
 import 'package:indifit/core/nutrition_calculation_service.dart';
@@ -22,6 +21,7 @@ import 'package:indifit/data/repositories/nutrition_food_logging_coordinator.dar
 import 'package:indifit/data/repositories/nutrition_read_model_repository.dart';
 import 'package:indifit/data/repositories/nutrition_transformation_repository.dart';
 import 'package:indifit/features/food_log/food_search_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class _D3TestHarness {
   final AppDatabase database;

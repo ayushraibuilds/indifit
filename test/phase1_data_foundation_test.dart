@@ -6,8 +6,8 @@ import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/repositories/progress_statistics_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'support/schema_version.dart';
 import 'support/indifit_test_harness.dart';
+import 'support/schema_version.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

@@ -219,16 +219,18 @@ class AchievementDetailSheet extends StatelessWidget {
           0.0,
           double.infinity,
         );
-        if (remaining == 0)
+        if (remaining == 0) {
           return 'Next tier: Heavy Mover (5,000 kg) achieved!';
+        }
         return '${AchievementService.formatAmount(remaining)} kg to Heavy Mover (5,000 kg)';
       case 'volume_5000':
         final remaining = (10000.0 - a.currentProgress).clamp(
           0.0,
           double.infinity,
         );
-        if (remaining == 0)
+        if (remaining == 0) {
           return 'Next tier: Titan Legend (10,000 kg) achieved!';
+        }
         return '${AchievementService.formatAmount(remaining)} kg to Titan Legend (10,000 kg)';
       case 'volume_10000':
         return a.isUnlocked
@@ -238,8 +240,9 @@ class AchievementDetailSheet extends StatelessWidget {
       // Streaks chain: 7 -> 30 days
       case 'streak_7':
         final remaining = (30 - a.currentProgress.toInt()).clamp(0, 30);
-        if (remaining == 0)
+        if (remaining == 0) {
           return 'Next tier: Iron Discipline (30 days) achieved!';
+        }
         return '$remaining days to Iron Discipline (30 days)';
       case 'streak_30':
         return a.isUnlocked
@@ -249,8 +252,9 @@ class AchievementDetailSheet extends StatelessWidget {
       // Meals chain: 10 -> 50 meals
       case 'meals_10':
         final remaining = (50 - a.currentProgress.toInt()).clamp(0, 50);
-        if (remaining == 0)
+        if (remaining == 0) {
           return 'Next tier: Macro Master (50 meals) achieved!';
+        }
         return '$remaining meals to Macro Master (50 meals)';
       case 'meals_50':
         return a.isUnlocked

@@ -31,36 +31,43 @@ void main() {
           await legacy.customSelect('SELECT 1').get();
 
           // Insert test rows across multiple prior tables
-          await legacy.into(legacy.foodLogs).insert(
-            FoodLogsCompanion.insert(
-              id: const Value(9001),
-              name: 'Apple',
-              calories: 95,
-              proteinG: 0.5,
-              carbsG: 25.0,
-              fatG: 0.3,
-              servingLogged: 1.0,
-              servingUnit: 'medium',
-              mealType: 'snack',
-              loggedAt: Value(DateTime.utc(2026, 10, 1, 10)),
-            ),
-          );
+          await legacy
+              .into(legacy.foodLogs)
+              .insert(
+                FoodLogsCompanion.insert(
+                  id: const Value(9001),
+                  name: 'Apple',
+                  calories: 95,
+                  proteinG: 0.5,
+                  carbsG: 25.0,
+                  fatG: 0.3,
+                  servingLogged: 1.0,
+                  servingUnit: 'medium',
+                  mealType: 'snack',
+                  loggedAt: Value(DateTime.utc(2026, 10, 1, 10)),
+                ),
+              );
 
-          await legacy.into(legacy.bodyMeasurements).insert(
-            BodyMeasurementsCompanion.insert(
-              id: const Value(9001),
-              weight: const Value(75.5),
-              recordedAt: Value(DateTime.utc(2026, 10, 1, 8)),
-            ),
-          );
+          await legacy
+              .into(legacy.bodyMeasurements)
+              .insert(
+                BodyMeasurementsCompanion.insert(
+                  id: const Value(9001),
+                  weight: const Value(75.5),
+                  recordedAt: Value(DateTime.utc(2026, 10, 1, 8)),
+                ),
+              );
 
           // Drop food_search_cache to simulate authentic v22 state before v23 migration
-          await legacy.customStatement('DROP TABLE IF EXISTS food_search_cache');
+          await legacy.customStatement(
+            'DROP TABLE IF EXISTS food_search_cache',
+          );
           await legacy.customStatement('PRAGMA user_version = 22');
 
           // Verify v22 precondition
-          final v22Version =
-              await legacy.customSelect('PRAGMA user_version').getSingle();
+          final v22Version = await legacy
+              .customSelect('PRAGMA user_version')
+              .getSingle();
           expect(v22Version.read<int>('user_version'), 22);
 
           final v22Tables = await legacy
@@ -79,8 +86,9 @@ void main() {
           await migrated.customSelect('SELECT 1').get();
 
           // Assert user_version reached current schema version (23)
-          final v23Version =
-              await migrated.customSelect('PRAGMA user_version').getSingle();
+          final v23Version = await migrated
+              .customSelect('PRAGMA user_version')
+              .getSingle();
           expect(v23Version.read<int>('user_version'), kCurrentSchemaVersion);
 
           // Assert food_search_cache exists
@@ -95,8 +103,9 @@ void main() {
           final tableInfo = await migrated
               .customSelect("PRAGMA table_info('food_search_cache')")
               .get();
-          final columnNames =
-              tableInfo.map((row) => row.read<String>('name')).toSet();
+          final columnNames = tableInfo
+              .map((row) => row.read<String>('name'))
+              .toSet();
           expect(
             columnNames,
             containsAll(const [
@@ -116,7 +125,9 @@ void main() {
 
           // Assert row counts of all prior tables are unchanged
           final foodLogRow = await migrated
-              .customSelect('SELECT COUNT(*) as cnt FROM food_logs WHERE id = 9001')
+              .customSelect(
+                'SELECT COUNT(*) as cnt FROM food_logs WHERE id = 9001',
+              )
               .getSingle();
           expect(foodLogRow.read<int>('cnt'), 1);
 
@@ -145,8 +156,9 @@ void main() {
           expect(cachedRow.read<String>('response_json'), '{"items":[]}');
 
           // Foreign keys check
-          final fkCheck =
-              await migrated.customSelect('PRAGMA foreign_key_check').get();
+          final fkCheck = await migrated
+              .customSelect('PRAGMA foreign_key_check')
+              .get();
           expect(fkCheck, isEmpty);
         } finally {
           await migrated.close();
@@ -156,9 +168,13 @@ void main() {
         final reopened = AppDatabase.executor(NativeDatabase(file));
         try {
           await reopened.customSelect('SELECT 1').get();
-          final reopenedVersion =
-              await reopened.customSelect('PRAGMA user_version').getSingle();
-          expect(reopenedVersion.read<int>('user_version'), kCurrentSchemaVersion);
+          final reopenedVersion = await reopened
+              .customSelect('PRAGMA user_version')
+              .getSingle();
+          expect(
+            reopenedVersion.read<int>('user_version'),
+            kCurrentSchemaVersion,
+          );
 
           final cachedRow = await reopened
               .customSelect(
@@ -168,7 +184,9 @@ void main() {
           expect(cachedRow.read<String>('query_text'), 'roti');
 
           final reopenedFoodLog = await reopened
-              .customSelect('SELECT COUNT(*) as cnt FROM food_logs WHERE id = 9001')
+              .customSelect(
+                'SELECT COUNT(*) as cnt FROM food_logs WHERE id = 9001',
+              )
               .getSingle();
           expect(reopenedFoodLog.read<int>('cnt'), 1);
 

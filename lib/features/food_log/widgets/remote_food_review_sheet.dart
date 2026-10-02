@@ -559,8 +559,9 @@ class _RemoteFoodReviewSheetState extends State<RemoteFoodReviewSheet> {
                             );
                           }).toList(),
                           onChanged: (val) {
-                            if (val != null)
+                            if (val != null) {
                               setState(() => _selectedServing = val);
+                            }
                           },
                         ),
                       ),

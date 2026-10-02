@@ -185,12 +185,14 @@ class AdaptiveTdeeEngine {
         policy.minWeightDaysModerate - loggedWeightDaysInWindow,
       );
       final parts = <String>[];
-      if (neededFood > 0)
+      if (neededFood > 0) {
         parts.add('$neededFood more food ${neededFood == 1 ? 'day' : 'days'}');
-      if (neededWeight > 0)
+      }
+      if (neededWeight > 0) {
         parts.add(
           '$neededWeight more ${neededWeight == 1 ? 'weigh-in' : 'weigh-ins'}',
         );
+      }
       confidenceMessage =
           'Calibrating: log ${parts.join(' and ')} for moderate confidence.';
     }

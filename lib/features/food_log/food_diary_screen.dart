@@ -138,11 +138,7 @@ class _FoodDiaryScreenState extends ConsumerState<FoodDiaryScreen> {
                 if (constraints.maxWidth < 340 || textScale > 1.3) {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      primary,
-                      const SizedBox(height: 8),
-                      quickAdd,
-                    ],
+                    children: [primary, const SizedBox(height: 8), quickAdd],
                   );
                 }
                 return Row(

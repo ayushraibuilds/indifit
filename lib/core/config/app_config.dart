@@ -4,8 +4,9 @@ import 'package:flutter/foundation.dart';
 class AppConfig {
   /// Connected AI ships only when a safe backend exists (see P0 plan WS6).
   /// Enable for development with --dart-define=INDIFIT_CONNECTED_AI=true.
-  static const bool connectedAiEnabled =
-      bool.fromEnvironment('INDIFIT_CONNECTED_AI');
+  static const bool connectedAiEnabled = bool.fromEnvironment(
+    'INDIFIT_CONNECTED_AI',
+  );
 
   /// The base URL for the backend API (FastAPI AI router).
   /// Can be overridden during compilation using:

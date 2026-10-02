@@ -1424,54 +1424,65 @@ class SyncService implements SyncCapability {
     }
 
     // Mirror to SharedPreferences
-    if (payload['name'] != null)
+    if (payload['name'] != null) {
       await _prefs.setString('user_name', payload['name'] as String);
-    if (payload['age'] != null)
+    }
+    if (payload['age'] != null) {
       await _prefs.setInt('user_age', (payload['age'] as num).toInt());
-    if (payload['height'] != null)
+    }
+    if (payload['height'] != null) {
       await _prefs.setDouble(
         'user_height',
         (payload['height'] as num).toDouble(),
       );
+    }
     if (payload['weight'] != null) {
       final w = (payload['weight'] as num).toDouble();
       await _prefs.setDouble('user_weight', w);
       await _prefs.setDouble('current_weight', w);
     }
-    if (payload['sex'] != null)
+    if (payload['sex'] != null) {
       await _prefs.setString('user_sex', payload['sex'] as String);
-    if (payload['activity_level'] != null)
+    }
+    if (payload['activity_level'] != null) {
       await _prefs.setString(
         'user_activity_level',
         payload['activity_level'] as String,
       );
-    if (payload['goal'] != null)
+    }
+    if (payload['goal'] != null) {
       await _prefs.setString('user_goal', payload['goal'] as String);
-    if (payload['diet_preference'] != null)
+    }
+    if (payload['diet_preference'] != null) {
       await _prefs.setString(
         'user_diet_preference',
         payload['diet_preference'] as String,
       );
-    if (payload['calorie_goal'] != null)
+    }
+    if (payload['calorie_goal'] != null) {
       await _prefs.setInt(
         'calorie_goal',
         (payload['calorie_goal'] as num).toInt(),
       );
-    if (payload['protein_goal'] != null)
+    }
+    if (payload['protein_goal'] != null) {
       await _prefs.setDouble(
         'protein_goal',
         (payload['protein_goal'] as num).toDouble(),
       );
-    if (payload['carbs_goal'] != null)
+    }
+    if (payload['carbs_goal'] != null) {
       await _prefs.setDouble(
         'carbs_goal',
         (payload['carbs_goal'] as num).toDouble(),
       );
-    if (payload['fat_goal'] != null)
+    }
+    if (payload['fat_goal'] != null) {
       await _prefs.setDouble(
         'fat_goal',
         (payload['fat_goal'] as num).toDouble(),
       );
+    }
   }
 
   Future<void> _applyUserSettingMutation(SyncMutation remote) async {
