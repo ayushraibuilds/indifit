@@ -10,6 +10,7 @@ import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../data/repositories/nutrition_food_catalog_repository.dart';
 import '../nutrition/nutrition_providers.dart';
 import 'ai_items_thali_handoff.dart';
+import 'meal_item_resolver.dart';
 import 'natural_language_meal_service.dart';
 import 'nutrition_ai_controllers.dart';
 
@@ -397,7 +398,7 @@ class _NaturalLanguageMealScreenState
                                   return ListTile(
                                     title: Text(option.displayName),
                                     subtitle: Text(
-                                      '$energy kcal • $protein g P per ${option.baseQuantity}',
+                                      '$energy kcal • $protein g P per ${catalogBasisLabel(option)}',
                                     ),
                                     trailing: isCurrent
                                         ? const Icon(
@@ -606,12 +607,15 @@ class _NaturalLanguageMealScreenState
                   onPressed: () =>
                       _openSwapModal(context, index, item, controller),
                 ),
-                const Spacer(),
-                Text(
-                  '${item.estimatedCalories} kcal • ${item.estimatedProtein.toStringAsFixed(1)}g P',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w500,
-                    color: Theme.of(context).colorScheme.primary,
+                // Wraps instead of overflowing on narrow phones.
+                Expanded(
+                  child: Text(
+                    '${item.estimatedCalories} kcal • ${item.estimatedProtein.toStringAsFixed(1)}g P',
+                    textAlign: TextAlign.end,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w500,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
                   ),
                 ),
               ],

@@ -16,6 +16,6 @@ services:
       - key: INDIFIT_API_KEY
         sync: false
       - key: AI_MODEL
-        value: gemini-2.5-flash
+        value: gemini-3.8-flash
       - key: ALLOWED_ORIGINS
         value: "http://localhost,http://127.0.0.1,http://10.0.2.2,https://indifit.app"

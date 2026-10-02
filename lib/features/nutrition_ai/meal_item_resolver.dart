@@ -61,6 +61,20 @@ class MealItemResolver {
   static const int _maxChoices = 3;
   static const int _maxTokenQueries = 3;
 
+  /// Size/preparation variants ("Rumali Roti (Mini)") rank just below their
+  /// base dish so they don't crowd it out of the choice list.
+  static const double _variantPenalty = 0.05;
+
+  /// Generic names that mean one specific catalogue food in everyday use.
+  /// The catalogue has no plain "Roti", so word overlap alone ranked
+  /// "Rumali Roti" above the everyday chapati.
+  static const Map<String, String> genericDefaults = {
+    'roti': 'Whole Wheat Roti / Chapati',
+    'chapati': 'Whole Wheat Roti / Chapati',
+    'chapatti': 'Whole Wheat Roti / Chapati',
+    'phulka': 'Whole Wheat Roti / Chapati',
+  };
+
   Future<CatalogMatch> resolve(String foodName) async {
     final normalized = normalize(foodName);
     if (normalized.isEmpty) return const CatalogMatch.unmatched();
@@ -72,6 +86,15 @@ class MealItemResolver {
       }
     }
 
+    final preferred = genericDefaults[normalized];
+    if (preferred != null) {
+      final target = normalize(preferred);
+      for (final option in await search(preferred)) {
+        if (normalize(option.displayName) == target) {
+          return CatalogMatch.resolved(option);
+        }
+      }
+    }
     collect(await search(normalized));
     if (candidates.isEmpty) {
       // "Dal tadka with jeera" won't substring-match "Yellow Dal Tadka";
@@ -112,14 +135,31 @@ class MealItemResolver {
   ) {
     final query = normalize(foodName);
     final queryTokens = _tokens(query).toSet();
+    final preferred = genericDefaults[query];
+    final preferredName = preferred == null ? null : normalize(preferred);
+    final names = {
+      for (final option in candidates) normalize(option.displayName),
+    };
     final scored = [
       for (final option in candidates)
         ScoredFoodOption(
           option,
-          _score(query, queryTokens, option.displayName),
+          normalize(option.displayName) == preferredName
+              ? 1.0
+              : _score(query, queryTokens, option.displayName) -
+                    (_isVariantOfAnother(option.displayName, names)
+                        ? _variantPenalty
+                        : 0.0),
         ),
     ]..sort((a, b) => b.score.compareTo(a.score));
     return scored;
+  }
+
+  /// "Rumali Roti (Mini)" is a variant when "Rumali Roti" is also a
+  /// candidate; "Tandoori Roti (Wheat)" with no plain entry is not.
+  static bool _isVariantOfAnother(String name, Set<String> candidateNames) {
+    final base = name.replaceFirst(RegExp(r'\s*\([^)]*\)\s*$'), '');
+    return base != name && candidateNames.contains(normalize(base));
   }
 
   static double _score(String query, Set<String> queryTokens, String name) {
@@ -168,6 +208,20 @@ class MealItemResolver {
       token.length > 3 && token.endsWith('s') && !token.endsWith('ss')
       ? token.substring(0, token.length - 1)
       : token;
+}
+
+/// What a catalogue food's nutrition is per, e.g. "katori" or "100 g".
+String catalogBasisLabel(NutritionFoodOption option) {
+  final label = option.servingUnitLabel?.trim();
+  if (label != null && label.isNotEmpty) return label;
+  final base = option.baseQuantity;
+  final unit = switch (base.unit) {
+    QuantityUnit.gram => 'g',
+    QuantityUnit.millilitre => 'ml',
+    QuantityUnit.piece => 'piece',
+    _ => 'serving',
+  };
+  return '${base.amount} $unit';
 }
 
 /// The quantity to log for an AI-parsed amount against a catalogue food.

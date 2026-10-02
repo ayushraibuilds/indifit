@@ -40,7 +40,7 @@ class FirebaseAiGateway implements AiGateway {
 
   final Duration timeout;
 
-  static const _defaultModel = 'gemini-2.5-flash';
+  static const _defaultModel = 'gemini-3.8-flash';
   static Future<void>? _initialization;
 
   @override

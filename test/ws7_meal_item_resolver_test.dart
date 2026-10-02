@@ -26,12 +26,16 @@ NutritionFoodOption _food(
   servingUnitLabel: servingLabel,
 );
 
-/// Mimics the real catalogue: substring match, alphabetical order.
+/// Mimics the real catalogue: case-insensitive substring match, alphabetical
+/// order.
 MealItemResolver _resolverOver(List<NutritionFoodOption> catalog) =>
     MealItemResolver(
       search: (query) async =>
           catalog
-              .where((f) => f.displayName.toLowerCase().contains(query))
+              .where(
+                (f) =>
+                    f.displayName.toLowerCase().contains(query.toLowerCase()),
+              )
               .toList()
             ..sort((a, b) => a.displayName.compareTo(b.displayName)),
     );
@@ -65,15 +69,17 @@ void main() {
     });
 
     test('resolves via a slash alternative and folds plurals', () async {
+      final match = await resolver.resolve('butter rotis');
+
+      expect(match.state, CatalogMatchState.resolved);
+      expect(match.option!.displayName, 'Butter Roti / Chapati');
+    });
+
+    test('plain "chapatis" means the everyday chapati, not a tie', () async {
       final match = await resolver.resolve('chapatis');
 
-      // Both roti foods list "Chapati" as an alternative, so this is a
-      // genuine tie and the user picks.
-      expect(match.state, CatalogMatchState.needsChoice);
-      expect(
-        match.choices.map((f) => f.displayName),
-        containsAll(['Whole Wheat Roti / Chapati', 'Butter Roti / Chapati']),
-      );
+      expect(match.state, CatalogMatchState.resolved);
+      expect(match.option!.displayName, 'Whole Wheat Roti / Chapati');
     });
 
     test('falls back to distinctive words when the phrase misses', () async {
@@ -95,6 +101,47 @@ void main() {
 
       expect(MealItemResolver.decide(ranked).state, CatalogMatchState.resolved);
       expect(ranked.first.option.displayName, 'Dal Makhani');
+    });
+
+    // Mirrors the real catalogue, which has no plain "Roti" and generates
+    // size/preparation variants for each bread.
+    final breads = _resolverOver([
+      _food('Rumali Roti', servingLabel: 'piece'),
+      _food('Rumali Roti (Mini)', servingLabel: 'piece'),
+      _food('Tandoori Roti (Wheat)', servingLabel: 'piece'),
+      _food('Butter Roti / Chapati', servingLabel: 'piece'),
+      _food('Whole Wheat Roti / Chapati', servingLabel: 'piece'),
+      _food('Whole Wheat Roti / Chapati (Mini)', servingLabel: 'piece'),
+    ]);
+
+    test('a generic "roti" resolves to the everyday chapati', () async {
+      for (final name in ['Roti', 'Rotis', 'Chapati']) {
+        final match = await breads.resolve(name);
+
+        expect(match.state, CatalogMatchState.resolved, reason: name);
+        expect(match.option!.displayName, 'Whole Wheat Roti / Chapati');
+      }
+    });
+
+    test('a named bread still beats its own size variants', () async {
+      final match = await breads.resolve('Rumali Roti');
+
+      expect(match.state, CatalogMatchState.resolved);
+      expect(match.option!.displayName, 'Rumali Roti');
+    });
+
+    test('size variants rank below base dishes in the choice list', () {
+      final ranked = MealItemResolver.rank('Tandoori Roti', [
+        _food('Tandoori Roti (Wheat) (Mini)'),
+        _food('Tandoori Roti (Wheat)'),
+        _food('Tandoori Butter Roti'),
+      ]);
+
+      final order = ranked.map((s) => s.option.displayName).toList();
+      expect(
+        order.indexOf('Tandoori Roti (Wheat)'),
+        lessThan(order.indexOf('Tandoori Roti (Wheat) (Mini)')),
+      );
     });
   });
 
