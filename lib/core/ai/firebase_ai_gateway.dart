@@ -109,7 +109,10 @@ class FirebaseAiGateway implements AiGateway {
         AiGatewayFailure.quotaExceeded,
         'AI usage limit reached. Please try again later.',
       );
-    } on FirebaseAIException catch (error, stackTrace) {
+    } on Object catch (error, stackTrace) {
+      // FirebaseAIException, but also SDK and HTTP-client errors outside
+      // that hierarchy (e.g. FirebaseAISdkException), which previously
+      // escaped unmapped and unlogged.
       AppLogger.error('Gemini request failed', error, stackTrace);
       throw const AiGatewayException(
         AiGatewayFailure.unavailable,
@@ -117,7 +120,12 @@ class FirebaseAiGateway implements AiGateway {
       );
     }
 
-    final text = response.text;
+    String? text;
+    try {
+      text = response.text; // Throws when the prompt or response was blocked.
+    } on Object catch (error) {
+      AppLogger.error('Gemini response unreadable', error);
+    }
     if (text == null || text.trim().isEmpty) {
       throw const AiGatewayException(
         AiGatewayFailure.unusableResponse,
