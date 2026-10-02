@@ -1,6 +1,5 @@
 import json
 import sys
-from typing import Any, Dict
 from fastapi import (
     APIRouter,
     Depends,
@@ -9,7 +8,7 @@ from fastapi import (
     UploadFile,
     status,
 )
-from backend.core.config import AI_MODEL, get_gemini_api_key
+from backend.core.config import get_gemini_api_key
 from backend.core.security import enforce_rate_limit, verify_api_key
 from backend.schemas.ai import (
     MealDecompositionResponse,
@@ -409,26 +408,3 @@ async def decompose_meal(req: TextMealRequest):
     except Exception as e:
         reason = _sanitize_fallback_reason(e)
         return _mock_meal_decomposition(req.text, reason=reason)
-
-
-@ai_router.post("/coaching-wording")
-async def coaching_wording(req: Dict[str, Any]):
-    evaluation_fingerprint = req.get("evaluation_fingerprint", "")
-    recommendations = req.get("recommendations", [])
-    suggestions = []
-    if isinstance(recommendations, list):
-        for rec in recommendations:
-            if isinstance(rec, dict):
-                rec_id = rec.get("id")
-                if rec_id and rec.get("wording_allowed", False):
-                    if "wording" in rec:
-                        suggestions.append({
-                            "recommendation_id": rec_id,
-                            "wording": rec["wording"],
-                        })
-    return {
-        "response_version": "b04-optional-ai-wording-response-v1",
-        "deterministic_fingerprint": evaluation_fingerprint,
-        "provider_version": f"indifit-ai-wording-{AI_MODEL}",
-        "suggestions": suggestions,
-    }
