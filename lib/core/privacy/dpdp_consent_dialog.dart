@@ -4,9 +4,13 @@ import '../theme/b05_semantic_colors.dart';
 import '../widgets/b05_accessibility_primitives.dart';
 import '../widgets/indi_fit_bottom_sheet.dart';
 
-/// One-time consent dialog/sheet required under India's Digital Personal Data
-/// Protection (DPDP) Act 2023 and Apple App Store Review Guideline 5.1.1 prior to
-/// transmitting photos to cloud AI services (Google Gemini).
+/// Consent sheet shown before meal text or photos are sent to a third-party
+/// AI, as required by India's DPDP Act 2023 and App Store Review Guideline
+/// 5.1.2(i): it names the recipient and what is sent, and must stay accurate.
+/// Changing what it says requires bumping [DpdpConsentService.currentVersion].
+///
+/// Only claim what IndiFit itself guarantees. Retention and training terms
+/// belong to the provider's plan, so they are not promised here.
 class DpdpConsentDialog extends StatelessWidget {
   const DpdpConsentDialog({super.key});
 
@@ -51,7 +55,7 @@ class DpdpConsentDialog extends StatelessWidget {
               const SizedBox(width: B05Layout.space12),
               Expanded(
                 child: Text(
-                  'Data Privacy & AI Consent',
+                  'Use AI to read your meals?',
                   style: B05Typography.title(context),
                 ),
               ),
@@ -59,33 +63,40 @@ class DpdpConsentDialog extends StatelessWidget {
           ),
           const SizedBox(height: B05Layout.space16),
           Text(
-            'Under India\'s Digital Personal Data Protection (DPDP) Act and store guidelines, '
-            'IndiFit requires your explicit consent before analyzing food photos with cloud AI services.',
+            'To turn a meal description, food photo or nutrition label into '
+            'foods you can log, IndiFit sends it to Google\'s Gemini AI '
+            '(through Google Firebase). This happens only when you use these '
+            'AI features.',
             style: B05Typography.body(context),
           ),
           const SizedBox(height: B05Layout.space16),
           _buildPillarRow(
             context,
-            icon: Icons.flash_on_outlined,
-            title: 'Ephemeral Processing',
+            icon: Icons.upload_outlined,
+            title: 'What is sent',
             description:
-                'Images are transmitted over encrypted TLS, processed in memory for label OCR, and discarded immediately.',
+                'Only the text you type or the photo you choose. Nothing else '
+                'from your diary, profile or health data.',
           ),
           const SizedBox(height: B05Layout.space12),
           _buildPillarRow(
             context,
-            icon: Icons.block_flipped,
-            title: 'No AI Training',
+            icon: Icons.inventory_2_outlined,
+            title: 'What IndiFit keeps',
             description:
-                'Your captures are never stored permanently, never reviewed by humans, and never used to train AI models.',
+                'IndiFit doesn\'t store your photos or descriptions. Only the '
+                'foods you confirm are saved, on this device. Google\'s '
+                'handling is covered by its terms, linked in our privacy '
+                'policy.',
           ),
           const SizedBox(height: B05Layout.space12),
           _buildPillarRow(
             context,
-            icon: Icons.lock_outline_rounded,
-            title: 'Local Control',
+            icon: Icons.tune_rounded,
+            title: 'You stay in control',
             description:
-                'Extracted nutrition facts save to your on-device SQLite database. You can review or edit everything before logging.',
+                'You review every item before it\'s logged. Withdraw consent '
+                'anytime in Settings → Privacy. Food search works without AI.',
           ),
           const SizedBox(height: B05Layout.space24),
           Row(
@@ -93,7 +104,7 @@ class DpdpConsentDialog extends StatelessWidget {
               Expanded(
                 child: B05ActionButton(
                   key: const Key('dpdp_consent_cancel_button'),
-                  label: 'Cancel',
+                  label: 'Not now',
                   emphasis: B05ActionEmphasis.secondary,
                   onPressed: () => Navigator.of(context).pop(false),
                 ),
@@ -102,7 +113,7 @@ class DpdpConsentDialog extends StatelessWidget {
               Expanded(
                 child: B05ActionButton(
                   key: const Key('dpdp_consent_agree_button'),
-                  label: 'Agree & Continue',
+                  label: 'Allow AI',
                   onPressed: () => Navigator.of(context).pop(true),
                 ),
               ),

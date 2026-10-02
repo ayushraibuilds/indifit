@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/backup/backup_file_adapter.dart';
+import '../../../core/config/app_config.dart';
 import '../../../core/config/app_preferences_keys.dart';
 import '../../../core/di/providers.dart';
 import '../../../core/presentation/product_failure_presentation.dart';
@@ -15,6 +16,7 @@ import '../../../core/theme/b05_semantic_colors.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
 import '../../onboarding/onboarding_screen.dart';
 import '../settings_controller.dart';
+import 'ai_consent_toggle.dart';
 import 'backup_restore_card.dart';
 import 'cloud_backup_card.dart';
 import 'privacy_disclosure_card.dart';
@@ -700,7 +702,7 @@ class DataManagementSection extends ConsumerWidget {
           iconColor: context.b05Colors.info.indicator,
           title: 'Offline mode',
           subtitle:
-              'Block app-initiated online food search and crash reporting.',
+              'Block app-initiated online food search, AI meal features and crash reporting.',
           value: state.offlineOnly,
           requestNotificationPermission: false,
           onChanged: (value) => ref
@@ -708,6 +710,10 @@ class DataManagementSection extends ConsumerWidget {
               .toggleOfflineOnly(value),
         ),
         const SizedBox(height: B05Layout.space12),
+        if (AppConfig.connectedAiEnabled) ...[
+          const AiConsentToggle(),
+          const SizedBox(height: B05Layout.space12),
+        ],
         SettingsReminderToggle(
           icon: Icons.bug_report_outlined,
           iconColor: context.b05Colors.warning.indicator,

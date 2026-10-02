@@ -13,6 +13,7 @@ abstract final class AppPreferenceKeys {
   static const onlineNutritionAllowed = 'pref_online_nutrition_allowed';
   static const dpdpAiConsentAccepted = 'dpdp_ai_consent_accepted';
   static const dpdpAiConsentAcceptedAt = 'dpdp_ai_consent_accepted_at';
+  static const dpdpAiConsentVersion = 'dpdp_ai_consent_version';
   static const userThemeMode = 'user_theme_mode';
   static const displayUnits = 'display_units';
 
