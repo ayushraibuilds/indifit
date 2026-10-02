@@ -4,13 +4,12 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/di/core_providers.dart';
-import '../../core/nutrition_thali.dart';
 import '../../core/privacy/dpdp_consent_service.dart';
 import '../../core/theme/b05_semantic_colors.dart';
-import '../../core/typed_quantities.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../data/repositories/nutrition_food_catalog_repository.dart';
 import '../nutrition/nutrition_providers.dart';
+import 'ai_items_thali_handoff.dart';
 import 'natural_language_meal_service.dart';
 import 'nutrition_ai_controllers.dart';
 
@@ -287,48 +286,12 @@ class _NaturalLanguageMealScreenState
     DateTime date,
     List<DecomposedFoodItem> items,
   ) async {
-    final thaliController = ref.read(
-      nutritionThaliControllerProvider(mealType).notifier,
+    await openAiItemsInThali(
+      context: context,
+      ref: ref,
+      mealType: mealType,
+      items: items,
     );
-    final catalog = await ref.read(
-      nutritionFoodCatalogRepositoryProvider.future,
-    );
-
-    for (final item in items) {
-      NutritionFoodOption option;
-      Quantity qty;
-      if (item.matchedCatalogOption != null) {
-        option = item.matchedCatalogOption!;
-        qty = Quantity.fromNum(
-          amount: item.quantityAmount > 0 ? item.quantityAmount : 1.0,
-          unit: option.baseQuantity.unit,
-        );
-      } else {
-        option = await catalog.createUserFood(
-          displayName: item.foodName,
-          servingSize: item.quantityAmount > 0 ? item.quantityAmount : 1.0,
-          servingUnit: item.quantityUnit,
-          energyKcal: item.estimatedCalories.toDouble(),
-          proteinG: item.estimatedProtein,
-          carbohydrateG: item.estimatedCarbs,
-          fatG: item.estimatedFat,
-        );
-        qty = option.baseQuantity;
-      }
-
-      final thaliOption = NutritionThaliFoodOption(
-        id: option.id,
-        displayName: option.displayName,
-        kind: 'direct',
-        sourceType: option.sourceType,
-        region: null,
-      );
-      thaliController.addFood(thaliOption, quantity: qty);
-    }
-
-    if (mounted) {
-      await context.push('/food/thali?meal=$mealType');
-    }
   }
 
   Future<void> _openSwapModal(
@@ -340,7 +303,10 @@ class _NaturalLanguageMealScreenState
     final catalog = await ref.read(
       nutritionFoodCatalogRepositoryProvider.future,
     );
-    final initialMatches = await catalog.search(query: item.foodName);
+    // Ambiguous items open on the resolver's candidates; otherwise search.
+    final initialMatches = item.catalogChoices.isNotEmpty
+        ? item.catalogChoices
+        : await catalog.search(query: item.foodName);
     if (!context.mounted) return;
 
     await showModalBottomSheet<void>(
@@ -491,10 +457,17 @@ class _NaturalLanguageMealScreenState
     B05SemanticColors colors,
   ) {
     final isVerified = item.isCatalogVerified;
+    final needsChoice = item.needsCatalogChoice;
     final badgeColor = isVerified
         ? colors.success.indicator
+        : needsChoice
+        ? colors.warning.indicator
         : colors.info.indicator;
-    final badgeText = isVerified ? 'Catalog Verified' : 'AI Estimate';
+    final badgeText = isVerified
+        ? 'Catalog Verified'
+        : needsChoice
+        ? 'Choose a match'
+        : 'AI Estimate';
 
     final confidenceColor = switch (item.confidence.toLowerCase()) {
       'high' => colors.success.indicator,
@@ -627,7 +600,7 @@ class _NaturalLanguageMealScreenState
                   ),
                   icon: const Icon(Icons.swap_horiz, size: 16),
                   label: Text(
-                    isVerified ? 'Swap' : 'Match',
+                    isVerified ? 'Swap' : (needsChoice ? 'Choose' : 'Match'),
                     style: const TextStyle(fontSize: 12),
                   ),
                   onPressed: () =>

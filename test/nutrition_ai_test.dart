@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:indifit/core/ai/ai_gateway.dart';
 import 'package:indifit/core/nutrients.dart';
 import 'package:indifit/core/nutrition_calculation_service.dart';
 import 'package:indifit/core/privacy/nutrition_estimate_privacy.dart';
@@ -170,7 +171,13 @@ void main() {
 
         await expectLater(
           () => service.processLabelImage(imagePath: testFile.path),
-          throwsA(isA<DioException>()),
+          throwsA(
+            isA<AiGatewayException>().having(
+              (e) => e.failure,
+              'failure',
+              AiGatewayFailure.offline,
+            ),
+          ),
         );
 
         // Verify privacy service was invoked and file is deleted

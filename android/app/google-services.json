@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "568521959692",
+    "project_id": "indifit-d5f8d",
+    "storage_bucket": "indifit-d5f8d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:568521959692:android:dd443a19b4159341900129",
+        "android_client_info": {
+          "package_name": "com.indifit.indifit"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAnbbfa69zFmVh0qyRmMi6zIuQ81a6AHEc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

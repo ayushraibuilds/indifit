@@ -5,6 +5,7 @@ import 'package:drift/drift.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/ai/ai_gateway_provider.dart';
 import '../../core/di/core_providers.dart';
 import '../../core/nutrients.dart';
 import '../../core/nutrition_calculation_service.dart';
@@ -340,7 +341,7 @@ final nutritionLabelOcrServiceProvider = Provider<NutritionLabelOcrService>((
   ref,
 ) {
   return NutritionLabelOcrService(
-    dio: ref.watch(dioProvider),
+    gateway: ref.watch(aiGatewayProvider),
     privacyService: ref.watch(nutritionEstimatePrivacyServiceProvider),
     policy: () => ref.watch(privacyPolicyProvider),
   );
@@ -349,7 +350,7 @@ final nutritionLabelOcrServiceProvider = Provider<NutritionLabelOcrService>((
 final naturalLanguageMealServiceProvider =
     FutureProvider<NaturalLanguageMealService>((ref) async {
       return NaturalLanguageMealService(
-        dio: ref.watch(dioProvider),
+        gateway: ref.watch(aiGatewayProvider),
         catalog: await ref.watch(nutritionFoodCatalogRepositoryProvider.future),
         policy: () => ref.watch(privacyPolicyProvider),
       );
