@@ -9,6 +9,7 @@ import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../firebase_options.dart';
+import '../config/app_config.dart';
 import '../utils/app_logger.dart';
 import 'ai_gateway.dart';
 
@@ -109,7 +110,10 @@ class FirebaseAiGateway implements AiGateway {
         AiGatewayFailure.quotaExceeded,
         'AI usage limit reached. Please try again later.',
       );
-    } on FirebaseAIException catch (error, stackTrace) {
+    } on Object catch (error, stackTrace) {
+      // FirebaseAIException, but also SDK and HTTP-client errors outside
+      // that hierarchy (e.g. FirebaseAISdkException), which previously
+      // escaped unmapped and unlogged.
       AppLogger.error('Gemini request failed', error, stackTrace);
       throw const AiGatewayException(
         AiGatewayFailure.unavailable,
@@ -117,7 +121,12 @@ class FirebaseAiGateway implements AiGateway {
       );
     }
 
-    final text = response.text;
+    String? text;
+    try {
+      text = response.text; // Throws when the prompt or response was blocked.
+    } on Object catch (error) {
+      AppLogger.error('Gemini response unreadable', error);
+    }
     if (text == null || text.trim().isEmpty) {
       throw const AiGatewayException(
         AiGatewayFailure.unusableResponse,
@@ -148,12 +157,24 @@ class FirebaseAiGateway implements AiGateway {
           options: DefaultFirebaseOptions.currentPlatform,
         );
       }
+      if (AppConfig.forceAppCheckDebugProvider && !kDebugMode) {
+        AppLogger.warning(
+          'App Check debug provider forced in a non-debug build '
+          '(INDIFIT_APPCHECK_DEBUG). Never ship this to a store.',
+        );
+      }
+      // A shared, pre-registered debug token (if supplied) means devices
+      // don't each print and register their own. Without one, the SDK
+      // generates a per-install token and logs it for registration.
+      final debugToken = AppConfig.appCheckDebugToken.trim().isEmpty
+          ? null
+          : AppConfig.appCheckDebugToken.trim();
       await FirebaseAppCheck.instance.activate(
-        providerAndroid: kDebugMode
-            ? const AndroidDebugProvider()
+        providerAndroid: AppConfig.useAppCheckDebugProvider
+            ? AndroidDebugProvider(debugToken: debugToken)
             : const AndroidPlayIntegrityProvider(),
-        providerApple: kDebugMode
-            ? const AppleDebugProvider()
+        providerApple: AppConfig.useAppCheckDebugProvider
+            ? AppleDebugProvider(debugToken: debugToken)
             : const AppleAppAttestWithDeviceCheckFallbackProvider(),
       );
       final config = FirebaseRemoteConfig.instance;
