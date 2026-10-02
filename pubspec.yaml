@@ -59,6 +59,10 @@ dependencies:
   health: ^11.0.0
   go_router: ^13.2.0
   sentry_flutter: ^8.14.2
+  firebase_core: ^4.15.0
+  firebase_app_check: ^0.4.8
+  firebase_ai: ^4.0.0
+  firebase_remote_config: ^6.7.0
 
 dev_dependencies:
   flutter_test:

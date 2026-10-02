@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 
+import '../../core/ai/ai_gateway.dart';
+import '../../core/ai/backend_ai_gateway.dart';
 import '../../core/config/app_config.dart';
 import '../../core/privacy/privacy_policy.dart';
 import '../../core/utils/app_logger.dart';
@@ -143,23 +145,33 @@ class MealDecompositionResult {
       items.fold(0.0, (sum, item) => sum + item.estimatedFat);
 }
 
-/// Service that queries the backend meal decomposition endpoint and
-/// cross-references candidates with the curated food catalog repository.
+/// Turns a typed meal description or a meal photo into food items through
+/// an [AiGateway], then cross-references them with the curated catalogue.
 class NaturalLanguageMealService {
-  final Dio _dio;
+  final AiGateway? _gateway;
+  final Dio? _dio;
   final NutritionFoodCatalogRepository _catalog;
   final PrivacyPolicy Function() _policy;
   final String _baseUrl;
 
+  /// Pass [gateway] (production: Firebase). Without one, requests go to the
+  /// FastAPI backend through [dio], which is the development and test path.
   NaturalLanguageMealService({
-    required Dio dio,
+    AiGateway? gateway,
+    Dio? dio,
     required NutritionFoodCatalogRepository catalog,
     required PrivacyPolicy Function() policy,
     String? baseUrl,
-  }) : _dio = dio,
+  }) : assert(gateway != null || dio != null, 'Provide a gateway or a Dio.'),
+       _gateway = gateway,
+       _dio = dio,
        _catalog = catalog,
        _policy = policy,
        _baseUrl = baseUrl ?? AppConfig.backendUrl;
+
+  AiGateway _gatewayFor({String? deviceUuid}) =>
+      _gateway ??
+      BackendAiGateway(dio: _dio!, baseUrl: _baseUrl, deviceUuid: deviceUuid);
 
   Future<MealDecompositionResult> decomposeMeal({required String text}) async {
     final cleanText = text.trim();
@@ -174,38 +186,11 @@ class NaturalLanguageMealService {
       );
     }
 
-    final url = '$_baseUrl/api/ai/meal-decompose';
-    final Response<dynamic> response;
-    try {
-      response = await _dio.post(url, data: {'text': cleanText});
-    } on DioException catch (e) {
-      if (e.type == DioExceptionType.connectionError ||
-          e.type == DioExceptionType.connectionTimeout ||
-          e.type == DioExceptionType.sendTimeout ||
-          e.type == DioExceptionType.receiveTimeout) {
-        throw const MealAiOfflineException();
-      }
-      throw const MealAiUnavailableException();
-    }
-
-    if (response.statusCode != 200 || response.data is! Map<String, dynamic>) {
-      throw const MealAiUnavailableException();
-    }
-
-    final data = response.data as Map<String, dynamic>;
-    final rawItems = (data['items'] as List<dynamic>?) ?? [];
-    final totalCalories = (data['total_calories'] as num?)?.toInt() ?? 0;
-    final isFallback = (data['is_fallback'] as bool?) ?? false;
-    final fallbackReason = data['fallback_reason'] as String?;
-
-    final resolvedItems = await _resolveAgainstCatalog(rawItems);
-
+    final data = await _call(() => _gatewayFor().decomposeMealText(cleanText));
     return MealDecompositionResult(
       query: cleanText,
-      items: resolvedItems,
-      totalCalories: totalCalories,
-      isFallback: isFallback,
-      fallbackReason: fallbackReason,
+      items: await _resolveAgainstCatalog(_itemsOf(data)),
+      totalCalories: (data['total_calories'] as num?)?.toInt() ?? 0,
     );
   }
 
@@ -224,39 +209,34 @@ class NaturalLanguageMealService {
     if (!await file.exists()) {
       throw ArgumentError('The selected image file does not exist.');
     }
-
     final bytes = await file.readAsBytes();
-    final filename = imagePath.split(Platform.pathSeparator).last;
-    final formData = FormData.fromMap({
-      'image': MultipartFile.fromBytes(bytes, filename: filename),
-    });
 
-    final url = '$_baseUrl/api/ai/meal-estimate-photo-v2';
-    final response = await _dio.post(
-      url,
-      data: formData,
-      options: Options(headers: {'x-device-uuid': deviceUuid}),
+    final data = await _call(
+      () => _gatewayFor(deviceUuid: deviceUuid).decomposeMealPhoto(bytes),
     );
-
-    if (response.statusCode != 200 || response.data is! Map<String, dynamic>) {
-      throw StateError('Failed to parse photo meal estimate from service.');
-    }
-
-    final data = response.data as Map<String, dynamic>;
-    final rawItems = (data['items'] as List<dynamic>?) ?? [];
-    final totalCalories = (data['total_calories'] as num?)?.toInt() ?? 0;
-    final isFallback = (data['is_fallback'] as bool?) ?? false;
-    final fallbackReason = data['fallback_reason'] as String?;
-
-    final resolvedItems = await _resolveAgainstCatalog(rawItems);
-
     return MealDecompositionResult(
       query: 'Photo Upload',
-      items: resolvedItems,
-      totalCalories: totalCalories,
-      isFallback: isFallback,
-      fallbackReason: fallbackReason,
+      items: await _resolveAgainstCatalog(_itemsOf(data)),
+      totalCalories: (data['total_calories'] as num?)?.toInt() ?? 0,
     );
+  }
+
+  static List<dynamic> _itemsOf(Map<String, dynamic> data) =>
+      (data['items'] as List<dynamic>?) ?? const [];
+
+  /// Maps gateway failures onto the exceptions the screens already handle.
+  /// Gateways never return fabricated data, so there is no fallback result.
+  Future<Map<String, dynamic>> _call(
+    Future<Map<String, dynamic>> Function() request,
+  ) async {
+    try {
+      return await request();
+    } on AiGatewayException catch (error) {
+      if (error.failure == AiGatewayFailure.offline) {
+        throw const MealAiOfflineException();
+      }
+      throw MealAiUnavailableException(error.message);
+    }
   }
 
   /// Matches each parsed item against the curated catalogue. A clear match

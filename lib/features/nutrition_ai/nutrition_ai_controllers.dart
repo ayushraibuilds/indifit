@@ -196,6 +196,8 @@ class NutritionLabelOcrController
         maxWidth: 2048,
         maxHeight: 2048,
         imageQuality: 85,
+        // Don't request extra metadata such as location with the photo.
+        requestFullMetadata: false,
       );
 
       if (file == null) {
@@ -708,6 +710,8 @@ class PhotoMealController extends StateNotifier<PhotoMealState> {
         maxWidth: 1024,
         maxHeight: 1024,
         imageQuality: 80,
+        // Don't request extra metadata such as location with the photo.
+        requestFullMetadata: false,
       );
 
       if (file == null) {

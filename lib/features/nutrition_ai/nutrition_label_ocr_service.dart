@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 
+import '../../core/ai/ai_gateway.dart';
+import '../../core/ai/backend_ai_gateway.dart';
 import '../../core/config/app_config.dart';
 import '../../core/nutrition_estimates.dart';
 import '../../core/privacy/nutrition_estimate_privacy.dart';
@@ -104,20 +106,26 @@ class NutritionLabelOcrResult {
   }
 }
 
-/// Service that coordinates uploading label photos to the backend OCR endpoint
-/// and immediately guarantees ephemeral cleanup of the image file.
+/// Reads nutrition-label photos through an [AiGateway] and guarantees the
+/// temporary image file is deleted afterwards, whatever happens.
 class NutritionLabelOcrService {
-  final Dio _dio;
+  final AiGateway? _gateway;
+  final Dio? _dio;
   final NutritionEstimatePrivacyService _privacyService;
   final PrivacyPolicy Function() _policy;
   final String _baseUrl;
 
+  /// Pass [gateway] (production: Firebase). Without one, requests go to the
+  /// FastAPI backend through [dio], which is the development and test path.
   NutritionLabelOcrService({
-    required Dio dio,
+    AiGateway? gateway,
+    Dio? dio,
     required NutritionEstimatePrivacyService privacyService,
     required PrivacyPolicy Function() policy,
     String? baseUrl,
-  }) : _dio = dio,
+  }) : assert(gateway != null || dio != null, 'Provide a gateway or a Dio.'),
+       _gateway = gateway,
+       _dio = dio,
        _privacyService = privacyService,
        _policy = policy,
        _baseUrl = baseUrl ?? AppConfig.backendUrl;
@@ -149,32 +157,11 @@ class NutritionLabelOcrService {
       }
 
       final bytes = await file.readAsBytes();
-      final filename = imagePath.split(Platform.pathSeparator).last;
-      final formData = FormData.fromMap({
-        'image': MultipartFile.fromBytes(bytes, filename: filename),
-      });
-
-      final url = '$_baseUrl/api/ai/nutrition-label-ocr';
-      final response = await _dio.post(url, data: formData);
-
-      if (response.statusCode == 200 && response.data is Map<String, dynamic>) {
-        lifecycle = NutritionEstimateImageLifecycle.completed;
-        return NutritionLabelOcrResult.fromJson(
-          response.data as Map<String, dynamic>,
-        );
-      } else {
-        throw NutritionEstimatePersistenceError(
-          'ocr_request_failed',
-          'Unexpected OCR response (status ${response.statusCode}).',
-        );
-      }
-    } on DioException catch (e) {
-      if (e.type == DioExceptionType.cancel) {
-        lifecycle = NutritionEstimateImageLifecycle.cancelled;
-      }
-      rethrow;
-    } catch (e) {
-      rethrow;
+      final gateway =
+          _gateway ?? BackendAiGateway(dio: _dio!, baseUrl: _baseUrl);
+      final data = await gateway.readNutritionLabel(bytes);
+      lifecycle = NutritionEstimateImageLifecycle.completed;
+      return NutritionLabelOcrResult.fromJson(data);
     } finally {
       // Strict ephemeral privacy invariant: temporary image is cleaned up
       await _privacyService.cleanupTemporaryImage(
