@@ -70,6 +70,26 @@ Testing on Android is completely free and does not expire:
 
 ---
 
+## Testing the AI meal features
+
+AI features (describe a meal, meal photo, label scan) are off unless you build with `INDIFIT_CONNECTED_AI=true`. Requests go through Firebase AI Logic and are protected by App Check. **The AI SDK won't send any request without a valid App Check token, even while enforcement is off.**
+
+**Debug builds** use App Check's debug provider. To avoid registering a new token for every device and reinstall, register one shared token once (Firebase console → App Check → ⋮ → Manage debug tokens → Generate token), then pass it at build time. It's a secret: don't commit it.
+
+```bash
+flutter run --dart-define=INDIFIT_CONNECTED_AI=true --dart-define=INDIFIT_APPCHECK_DEBUG_TOKEN=<token>
+```
+
+Without a shared token, the SDK prints a per-install token in the Xcode console or logcat for you to register.
+
+**Release-mode check without the store:** add `--dart-define=INDIFIT_APPCHECK_DEBUG=true` to a profile or release build so it uses the debug provider. Never set this for store builds.
+
+**Real attestation:**
+- Android (Play Integrity) only works for installs from Google Play, e.g. the internal testing track.
+- iOS (App Attest) only works on real iPhones and needs the paid Apple Developer Program. Profile builds use App Attest's development environment (`Runner-Profile.entitlements`); Release builds use production (`Runner.entitlements`).
+
+---
+
 ## Technical Stack
 - **State Management**: Riverpod (`flutter_riverpod`)
 - **Local Cache & Storage**: Drift SQLite Database (`drift` + `sqlite3_flutter_libs`)

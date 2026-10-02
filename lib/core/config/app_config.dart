@@ -30,6 +30,27 @@ class AppConfig {
     defaultValue: 'firebase',
   );
 
+  /// A Firebase App Check debug token registered in the console, shared by
+  /// every debug device, simulator and CI run so tokens don't have to be
+  /// re-registered after reinstalls. Pass it at build time
+  /// (`--dart-define=INDIFIT_APPCHECK_DEBUG_TOKEN=...`); it is a secret, so
+  /// never commit it.
+  static const String appCheckDebugToken = String.fromEnvironment(
+    'INDIFIT_APPCHECK_DEBUG_TOKEN',
+  );
+
+  /// Use App Check's debug provider in a profile/release build, to test
+  /// release-mode behaviour without store attestation. Store builds must
+  /// never set this: anyone holding the debug token could then pass App
+  /// Check.
+  static const bool forceAppCheckDebugProvider = bool.fromEnvironment(
+    'INDIFIT_APPCHECK_DEBUG',
+  );
+
+  /// Debug builds always use the debug provider; others only when forced.
+  static bool get useAppCheckDebugProvider =>
+      kDebugMode || forceAppCheckDebugProvider;
+
   /// Returns true if a non-empty legacy-backend credential was supplied.
   static bool get hasValidApiKey => rawApiKey.trim().isNotEmpty;
 }
