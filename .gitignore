@@ -61,3 +61,6 @@ test_builds/
 assets/generated/repdb/**/*.webp
 graphify-out/cache/
 backend/data/missed_searches.jsonl
+
+# Golden-test failure diffs (regenerated on every failing run)
+test/failures/

@@ -1,0 +1,71 @@
+name: Update Goldens (Linux)
+
+# Regenerates golden images on the same runner image and Flutter version as
+# the "Golden Tests (Linux)" CI job, then pushes them to a review branch.
+# Golden images must come from CI's platform: macOS renders fonts differently,
+# so references generated on a Mac fail on Linux (and vice versa).
+#
+# Run it from the Actions tab (or `gh workflow run update-goldens.yml --ref
+# <branch>`), then open a PR from the pushed branch and review every image
+# diff before merging. Never merge a refresh you haven't looked at.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update_goldens:
+    name: Regenerate goldens
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.41.4'
+          channel: 'stable'
+          cache: true
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      # Non-pixel failures still fail the step, but the refreshed images are
+      # pushed regardless so they can be reviewed alongside the log.
+      - name: Regenerate Golden Images
+        id: update
+        continue-on-error: true
+        run: flutter test --tags golden --update-goldens --timeout 2m
+
+      - name: Push Review Branch
+        run: |
+          if git diff --quiet -- test/goldens; then
+            echo "Goldens already match; nothing to push."
+            exit 0
+          fi
+          branch="goldens/linux-refresh-${GITHUB_RUN_ID}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$branch"
+          git add test/goldens
+          git commit -m "test(goldens): regenerate on Linux (run ${GITHUB_RUN_ID})"
+          git push origin "$branch"
+          {
+            echo "Pushed \`$branch\` with $(git diff --name-only HEAD~1 | wc -l) updated images."
+            echo "Open a PR from it and review each image diff before merging."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Report Non-Pixel Failures
+        if: steps.update.outcome == 'failure'
+        run: |
+          echo "::warning::Some golden tests failed for reasons other than pixels; see the 'Regenerate Golden Images' log."

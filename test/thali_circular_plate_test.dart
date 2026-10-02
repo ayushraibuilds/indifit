@@ -905,6 +905,18 @@ void main() {
       // Switch to List view to view all item cards
       await tester.tap(find.byKey(const Key('thali_view_mode_list')));
       await tester.pumpAndSettle();
+      // The replacement is appended, and once nutrition finishes loading the
+      // cards are tall enough that the fifth one starts below the fold.
+      await tester.scrollUntilVisible(
+        find.text('Steamed Rice'),
+        100,
+        scrollable: find
+            .descendant(
+              of: find.byType(ReorderableListView),
+              matching: find.byType(Scrollable),
+            )
+            .first,
+      );
       expect(find.text('Steamed Rice'), findsOneWidget);
       // HUD is dismissed
       expect(find.byKey(const Key('thali_quick_hud')), findsNothing);
