@@ -255,9 +255,16 @@ class DashboardController extends StateNotifier<DashboardState> {
       );
     }
 
+    // activeDays are civil dates on the device clock, so "today" must come
+    // from the same clock. Leaving it to the calculator's UTC default made
+    // the streak drop between local midnight and UTC midnight (00:00–05:30
+    // in India).
+    final now = DateTime.now();
     final streak = StreakCalculator.calculateStreak(
       activeDays,
       streakFreezeCount: freezes,
+      referenceLocalDate:
+          '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}',
     );
     // Persist the computed streak so achievement surfaces (Achievements
     // screen, B02 player) reading userStreakCount agree with the dashboard
