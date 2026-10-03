@@ -465,6 +465,14 @@ class _B02StrengthPlayerScreenState
           ? () => _openPlateCalculator(selected)
           : null,
       showPendingEditor: showPendingEditor,
+      // The next planned row's checkmark is the same action as "Log set".
+      onCompleteNext:
+          _warmup ||
+              ui.isBusy ||
+              _isSubmittingSet ||
+              !selected.hasCanonicalExercise
+          ? null
+          : () => _record(provider, selected),
       moreContent: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
