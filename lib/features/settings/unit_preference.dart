@@ -65,9 +65,8 @@ abstract final class UnitPreferencePresentation {
 
 final unitPreferenceProvider =
     StateNotifierProvider<UnitPreferenceNotifier, String>((ref) {
-      SharedPreferences? prefs;
-      try {
-        prefs = ref.watch(sharedPreferencesProvider);
-      } catch (_) {}
+      SharedPreferences? prefs = sharedPreferencesOrNull(
+        () => ref.watch(sharedPreferencesProvider),
+      );
       return UnitPreferenceNotifier(prefs);
     });

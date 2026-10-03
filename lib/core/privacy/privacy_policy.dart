@@ -124,9 +124,8 @@ class PrivacyPolicyNotifier extends StateNotifier<PrivacyPolicy> {
 
 final privacyPolicyProvider =
     StateNotifierProvider<PrivacyPolicyNotifier, PrivacyPolicy>((ref) {
-      SharedPreferences? prefs;
-      try {
-        prefs = ref.watch(sharedPreferencesProvider);
-      } catch (_) {}
+      SharedPreferences? prefs = sharedPreferencesOrNull(
+        () => ref.watch(sharedPreferencesProvider),
+      );
       return PrivacyPolicyNotifier(prefs);
     });

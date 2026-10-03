@@ -273,10 +273,9 @@ class _B02StrengthSummaryScreenState
     if (!mounted) return;
     try {
       final statsRepo = ref.read(progressStatisticsRepositoryProvider);
-      SharedPreferences? prefs;
-      try {
-        prefs = ref.read(sharedPreferencesProvider);
-      } catch (_) {}
+      SharedPreferences? prefs = sharedPreferencesOrNull(
+        () => ref.read(sharedPreferencesProvider),
+      );
       prefs ??= await SharedPreferences.getInstance();
       final uncelebrated =
           await AchievementService.getUncelebratedWorkoutUnlocks(
