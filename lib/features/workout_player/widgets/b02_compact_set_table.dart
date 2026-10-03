@@ -155,6 +155,7 @@ class B02CompactSetTable extends StatelessWidget {
     this.onLoadChanged,
     this.onRepsChanged,
     this.onOpenPlateCalculator,
+    this.onCompleteNext,
   });
 
   final B02StrengthExecutionSlot slot;
@@ -178,9 +179,14 @@ class B02CompactSetTable extends StatelessWidget {
   final ValueChanged<String>? onRepsChanged;
   final VoidCallback? onOpenPlateCalculator;
 
+  /// Logs the next planned set with the values in the editor below, exactly
+  /// as the primary "Log set" button does. Null hides the row checkmark.
+  final VoidCallback? onCompleteNext;
+
   @override
   Widget build(BuildContext context) {
     final rows = _rows();
+    final nextRow = rows.where((row) => !row.isLogged).firstOrNull;
     final showTarget = rows.any((row) => row.plannedLabel != null);
     return B05Surface(
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
@@ -211,6 +217,7 @@ class B02CompactSetTable extends StatelessWidget {
                 isBusy: isBusy,
                 onEdit: onEdit,
                 onDelete: onDelete,
+                onComplete: identical(row, nextRow) ? onCompleteNext : null,
               ),
               if (row != rows.last) const Divider(height: 1),
             ],
@@ -343,6 +350,7 @@ class _SetRow extends StatelessWidget {
     required this.isBusy,
     required this.onEdit,
     required this.onDelete,
+    this.onComplete,
   });
 
   final B02CompactSetRow row;
@@ -350,6 +358,9 @@ class _SetRow extends StatelessWidget {
   final bool isBusy;
   final ValueChanged<B02PerformedSet>? onEdit;
   final ValueChanged<B02PerformedSet>? onDelete;
+
+  /// Set only on the next planned row: tapping its checkmark logs it.
+  final VoidCallback? onComplete;
 
   @override
   Widget build(BuildContext context) {
@@ -362,10 +373,7 @@ class _SetRow extends StatelessWidget {
   }
 
   Widget _buildWide(BuildContext context) {
-    final actual = row.isLogged
-        ? row.actualLabel ?? 'No actual value'
-        : 'Not logged';
-    final status = _statusLabel();
+    final actual = row.isLogged ? row.actualLabel ?? 'No actual value' : '—';
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(
@@ -393,9 +401,7 @@ class _SetRow extends StatelessWidget {
           ),
           SizedBox(
             width: B05Layout.minTouchTarget * 2,
-            child: row.isLogged
-                ? _actions(context)
-                : Text(status, style: B05Typography.caption(context)),
+            child: row.isLogged ? _actions(context) : _pendingStatus(context),
           ),
         ],
       ),
@@ -403,9 +409,7 @@ class _SetRow extends StatelessWidget {
   }
 
   Widget _buildCompact(BuildContext context) {
-    final actual = row.isLogged
-        ? row.actualLabel ?? 'No actual value'
-        : 'Not logged';
+    final actual = row.isLogged ? row.actualLabel ?? 'No actual value' : '—';
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 7),
       child: Column(
@@ -420,7 +424,10 @@ class _SetRow extends StatelessWidget {
                   style: B05Typography.label(context),
                 ),
               ),
-              Text(_statusLabel(), style: B05Typography.caption(context)),
+              if (row.isLogged)
+                Text(_statusLabel(), style: B05Typography.caption(context))
+              else
+                _pendingStatus(context),
             ],
           ),
           if (showTarget) ...[
@@ -473,6 +480,36 @@ class _SetRow extends StatelessWidget {
     );
   }
 
+  /// One status for an unlogged row: a checkmark that logs it (next row
+  /// only) or an empty circle for sets still to come.
+  Widget _pendingStatus(BuildContext context) {
+    final complete = onComplete;
+    if (complete != null) {
+      return Align(
+        alignment: Alignment.centerLeft,
+        child: B05IconAction(
+          icon: Icons.check_circle_outline_rounded,
+          label: 'Log set ${row.displayNumber}',
+          hint: 'Log this set with the weight and reps below',
+          onPressed: isBusy ? null : complete,
+        ),
+      );
+    }
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        child: ExcludeSemantics(
+          child: Icon(
+            Icons.radio_button_unchecked_rounded,
+            size: 22,
+            color: Theme.of(context).colorScheme.outlineVariant,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _valueWithDetails(
     BuildContext context,
     String value,
@@ -490,7 +527,7 @@ class _SetRow extends StatelessWidget {
   }
 
   String _statusLabel() {
-    if (!row.isLogged) return 'Ready';
+    if (!row.isLogged) return 'Not logged yet';
     if (row.role == B02SetRole.warmup) return 'Warm-up';
     return row.isExtra ? 'Extra' : 'Logged';
   }

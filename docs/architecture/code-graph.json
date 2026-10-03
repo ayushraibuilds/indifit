@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "summary": {
     "total_dart_files": 464,
-    "total_loc": 338526,
+    "total_loc": 338571,
     "total_internal_edges": 2307,
     "external_package_count": 28,
     "catch_metrics": {
@@ -18304,7 +18304,7 @@
       "path": "lib/features/workout_player/b02_strength_player_screen.dart",
       "layer": "features",
       "sublayer": "features/workout_player",
-      "loc": 1724,
+      "loc": 1732,
       "imports": [
         "lib/core/di/providers.dart",
         "lib/core/presentation/consumer_copy.dart",
@@ -18352,7 +18352,7 @@
       "catches": [
         {
           "file": "lib/features/workout_player/b02_strength_player_screen.dart",
-          "line": 939,
+          "line": 947,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -18362,7 +18362,7 @@
         },
         {
           "file": "lib/features/workout_player/b02_strength_player_screen.dart",
-          "line": 1115,
+          "line": 1123,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -18714,7 +18714,7 @@
       "path": "lib/features/workout_player/widgets/b02_compact_set_table.dart",
       "layer": "features",
       "sublayer": "features/workout_player",
-      "loc": 676,
+      "loc": 713,
       "imports": [
         "lib/core/theme/indifit_icons.dart",
         "lib/core/widgets/b05_accessibility_primitives.dart",
