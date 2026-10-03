@@ -26,7 +26,7 @@ Every item was checked against `main` on 2026-10-03 with the command or file ref
 
 **Order:** WS-0 → WS-A (once E0 is decided) → WS-G → WS-D part 1 → WS-D part 2 (tests and minimal fix) → WS-B → WS-C → WS-H. WS-E and WS-F any time.
 
-**Total:** about 6–7 days for P1-0 to P1-9, plus 3–4 days of UX polish. Most of it is code only and can run while P0 waits on the Apple and Google accounts. **Two items need you first:** the `indifit.app` ownership question (WS-0) and the Sentry decision (E0).
+**Total:** about 6–7 days for P1-0 to P1-9, plus 3–4 days of UX polish. Most of it is code only and can run while P0 waits on the Apple and Google accounts. **One item needs you first:** the Sentry decision (E0). (`indifit.app` ownership was confirmed on 2026-10-03.)
 
 ---
 
@@ -69,21 +69,19 @@ Use one PR per row. Each PR must pass CI before the next one merges. Run `flutte
 
 **Problem (verified 2026-10-03):**
 - `AppConfig.backendUrl` defaults to `https://api.indifit.app` in release builds (`lib/core/config/app_config.dart:14-19`). No CI workflow or doc sets `BACKEND_API_URL`.
-- `api.indifit.app` returns **NXDOMAIN**. `indifit.app` itself was registered on **2026-10-02** through Hostinger; the registration record doesn't show who owns it.
+- `api.indifit.app` returns **NXDOMAIN**. `indifit.app` was registered on 2026-10-02 through Hostinger. Ayush confirmed it's his on 2026-10-03, so there's no third-party exposure, but the subdomain isn't set up.
 - `FoodApiService.searchOnline` (`lib/data/repositories/food_api_service.dart:315-493`) uses the backend URL whenever it's non-empty and **rethrows** `DioException` with no fallback. In a release build, online food search always fails, and only local catalogue results show.
 - `fetchByBarcode` does fall back to Open Food Facts on `connectionError` (`:275-289`). So barcode lookup works in release, after a failed DNS lookup.
 - The P0 plan (D2) assumed lookups go straight to Open Food Facts. They don't.
-- **Privacy risk if the domain isn't yours:** whoever controls `indifit.app` can create `api.indifit.app` and receive every release user's food searches and barcodes.
 
 ### Steps
-1. **You:** confirm whether `indifit.app` is your domain. If not, this PR is urgent, and `privacy@indifit.app` in `doc/privacy_policy.md:81` and the user agent `https://indifit.app` (`food_api_service.dart:26`) need a domain you control.
-2. **Release default to Open Food Facts direct (E-0b):** set `backendUrl`'s release default to `''`. Development keeps `http://10.0.2.2:8000`. Code paths that already exist then take over:
+1. **Release default to Open Food Facts direct (E-0b):** set `backendUrl`'s release default to `''`. Development keeps `http://10.0.2.2:8000`. Code paths that already exist then take over:
    - search goes to `kOpenFoodFactsSearchUrl` (`https://search.openfoodfacts.org/search`), with `isOffSearch` request shaping at `:381`;
    - barcode lookup goes to `_fetchByBarcodeOff`.
-3. **Add a search fallback**, like barcode lookup has: on `connectionError`, `connectionTimeout`, 502 or 503 from the backend, retry the same query against Open Food Facts. Then a configured backend that's down doesn't break search either.
-4. **Privacy check:** `searchOnline` and `fetchByBarcode` check `isNutritionOnlineAllowed` themselves (`:325`, `:254`). The network interceptor's path rule (`core_providers.dart:107-109`, `/api/food`) wouldn't catch a direct Open Food Facts URL. Keep the explicit checks, and add a test that direct Open Food Facts search is refused when online nutrition is off.
-5. **Rate limits:** check Open Food Facts' published limits for the search API against the search screen's debounce. Record the numbers in the PR. If they're tight, raise the debounce or cache harder (`food_search_cache` exists).
-6. Correct D2's wording in `P0_REMEDIATION_PLAN.md`.
+2. **Add a search fallback**, like barcode lookup has: on `connectionError`, `connectionTimeout`, 502 or 503 from the backend, retry the same query against Open Food Facts. Then a configured backend that's down doesn't break search either.
+3. **Privacy check:** `searchOnline` and `fetchByBarcode` check `isNutritionOnlineAllowed` themselves (`:325`, `:254`). The network interceptor's path rule (`core_providers.dart:107-109`, `/api/food`) wouldn't catch a direct Open Food Facts URL. Keep the explicit checks, and add a test that direct Open Food Facts search is refused when online nutrition is off.
+4. **Rate limits:** check Open Food Facts' published limits for the search API against the search screen's debounce. Record the numbers in the PR. If they're tight, raise the debounce or cache harder (`food_search_cache` exists).
+5. Correct D2's wording in `P0_REMEDIATION_PLAN.md`.
 
 ### Tests
 - `FoodApiService` with an empty base URL sends search to `search.openfoodfacts.org` and parses results (mock Dio).
@@ -373,7 +371,6 @@ Not needed for launch: WS-F (before any backend deploy) and the WS-D part 2 refa
 
 ## 4. Things only you can do
 
-- **Confirm you own `indifit.app`** (registered 2026-10-02 through Hostinger). If not, WS-0 becomes urgent and the policy email and user agent need a domain you control.
 - **Decide E0:** create a Sentry project and add its DSN as a CI secret, or remove crash reporting from v1.
 - Run the WS-B measurements on a real mid-range Android phone (emulator numbers understate cold start).
 - Do the manual device passes for WS-B (truncated DB) and WS-D part 2 (lock the phone mid-rest, tap Skip on the notification, reopen).
