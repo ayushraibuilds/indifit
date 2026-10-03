@@ -132,6 +132,25 @@ class NutritionReadModelRepository {
     };
   }
 
+  /// Local dates with at least one food record still in effect (corrected and
+  /// retracted entries don't count), across legacy logs and canonical
+  /// snapshots. One history pass; used for streaks.
+  Future<Set<String>> activeLocalDates({required String userId}) async {
+    final allRecords = await listHistory(userId: userId);
+    final superseded = _supersededCanonicalIds(allRecords);
+    return {
+      for (final record in allRecords)
+        if (_isInEffect(record, superseded)) record.localDate,
+    };
+  }
+
+  static bool _isInEffect(
+    NutritionHistoricalReadRecord record,
+    Set<String> superseded,
+  ) =>
+      record is! NutritionCanonicalSnapshotReadModel ||
+      !(superseded.contains(record.stableId) || record.snapshot.isRetraction);
+
   Future<Map<String, List<NutritionHistoricalReadRecord>>>
   _activeRecordsForDates({
     required String userId,
@@ -142,11 +161,7 @@ class NutritionReadModelRepository {
     final grouped = <String, List<NutritionHistoricalReadRecord>>{};
     for (final record in allRecords) {
       if (!localDates.contains(record.localDate)) continue;
-      if (record is NutritionCanonicalSnapshotReadModel &&
-          (superseded.contains(record.stableId) ||
-              record.snapshot.isRetraction)) {
-        continue;
-      }
+      if (!_isInEffect(record, superseded)) continue;
       grouped.putIfAbsent(record.localDate, () => []).add(record);
     }
     return {

@@ -1,14 +1,14 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "summary": {
-    "total_dart_files": 464,
-    "total_loc": 338507,
-    "total_internal_edges": 2307,
+    "total_dart_files": 466,
+    "total_loc": 338558,
+    "total_internal_edges": 2317,
     "external_package_count": 28,
     "catch_metrics": {
       "total_catches_all": 522,
-      "total_catch_underscore": 195,
-      "total_empty_catches": 37,
+      "total_catch_underscore": 194,
+      "total_empty_catches": 36,
       "p0_empty_catches": 0
     },
     "layer_violations_count": 7,
@@ -407,16 +407,6 @@
       "is_empty": true,
       "snippet": "} catch (_) {}",
       "layer": "features/onboarding",
-      "is_p0": false
-    },
-    {
-      "file": "lib/features/progress/achievements_screen.dart",
-      "line": 43,
-      "var": "_",
-      "is_underscore": true,
-      "is_empty": true,
-      "snippet": "} catch (_) {}",
-      "layer": "features/progress",
       "is_p0": false
     },
     {
@@ -1889,7 +1879,7 @@
       "path": "lib/core/config/app_preferences_keys.dart",
       "layer": "core",
       "sublayer": "core",
-      "loc": 164,
+      "loc": 166,
       "imports": [],
       "imported_by": [
         "lib/app/bootstrap.dart",
@@ -1905,15 +1895,14 @@
         "lib/data/database/app_database.dart",
         "lib/data/repositories/health_service.dart",
         "lib/data/repositories/hydration_repository.dart",
+        "lib/data/repositories/streak_repository.dart",
         "lib/features/dashboard/dashboard_controller.dart",
         "lib/features/food_log/diary_structure_controller.dart",
         "lib/features/onboarding/b05_adaptive_onboarding.dart",
         "lib/features/onboarding/onboarding_screen.dart",
-        "lib/features/progress/achievements_screen.dart",
         "lib/features/settings/settings_controller.dart",
         "lib/features/settings/unit_preference.dart",
-        "lib/features/settings/widgets/data_management_section.dart",
-        "lib/features/workout_player/b02_strength_execution_controller.dart"
+        "lib/features/settings/widgets/data_management_section.dart"
       ],
       "parts": [],
       "part_of": null,
@@ -2045,8 +2034,8 @@
         "lib/features/nutrition/nutrition_providers.dart",
         "lib/features/nutrition_ai/natural_language_meal_screen.dart",
         "lib/features/nutrition_ai/nutrition_label_ocr_screen.dart",
-        "lib/features/progress/achievements_screen.dart",
         "lib/features/progress/period_comparison/progress_period_comparison_controller.dart",
+        "lib/features/progress/streak_provider.dart",
         "lib/features/settings/unit_preference.dart",
         "lib/features/training/training_providers.dart",
         "lib/features/workout_player/b02_strength_summary_screen.dart",
@@ -3197,6 +3186,7 @@
         "lib/data/repositories/nutrition_thali_repository.dart",
         "lib/data/repositories/progress_dashboard_read_repository.dart",
         "lib/data/repositories/progress_period_comparison_repository.dart",
+        "lib/data/repositories/streak_repository.dart",
         "lib/features/coaching/b04_production_surface_controller.dart",
         "lib/features/coaching/coaching_providers.dart",
         "lib/features/dashboard/dashboard_personalization_controller.dart",
@@ -5539,6 +5529,7 @@
         "lib/data/repositories/food_api_service.dart",
         "lib/data/repositories/food_repository.dart",
         "lib/data/repositories/health_service.dart",
+        "lib/data/repositories/streak_repository.dart",
         "lib/features/dashboard/dashboard_controller.dart",
         "lib/features/dashboard/dashboard_screen.dart",
         "lib/features/dashboard/today_surface_controller.dart",
@@ -5546,6 +5537,7 @@
         "lib/features/nutrition_ai/ai_items_thali_handoff.dart",
         "lib/features/nutrition_ai/natural_language_meal_service.dart",
         "lib/features/program_authoring/program_review_screen.dart",
+        "lib/features/progress/streak_provider.dart",
         "lib/features/settings/regional_food_packs_screen.dart",
         "lib/features/workout_player/b02_strength_execution_controller.dart",
         "lib/features/workout_player/b02_strength_summary_screen.dart",
@@ -5614,12 +5606,12 @@
       "path": "lib/core/utils/streak_calculator.dart",
       "layer": "core",
       "sublayer": "core",
-      "loc": 41,
+      "loc": 51,
       "imports": [
         "lib/core/services/local_schedule_date_service.dart"
       ],
       "imported_by": [
-        "lib/features/dashboard/dashboard_controller.dart"
+        "lib/data/repositories/streak_repository.dart"
       ],
       "parts": [],
       "part_of": null,
@@ -8824,7 +8816,7 @@
       "path": "lib/data/repositories/nutrition_read_model_repository.dart",
       "layer": "data",
       "sublayer": "data",
-      "loc": 268,
+      "loc": 283,
       "imports": [
         "lib/core/nutrients.dart",
         "lib/core/nutrition_legacy_read_models.dart",
@@ -8837,6 +8829,7 @@
         "lib/data/repositories/nutrition_protein_distribution_repository.dart",
         "lib/data/repositories/progress_dashboard_read_repository.dart",
         "lib/data/repositories/progress_period_comparison_repository.dart",
+        "lib/data/repositories/streak_repository.dart",
         "lib/data/services/b04_production_recommendation_orchestrator.dart",
         "lib/features/dashboard/today_surface_controller.dart",
         "lib/features/nutrition/nutrition_providers.dart",
@@ -9662,6 +9655,32 @@
       "empty_catch_count": 0,
       "total_catch_count": 0
     },
+    "lib/data/repositories/streak_repository.dart": {
+      "path": "lib/data/repositories/streak_repository.dart",
+      "layer": "data",
+      "sublayer": "data",
+      "loc": 68,
+      "imports": [
+        "lib/core/config/app_preferences_keys.dart",
+        "lib/core/nutrition_household_measures.dart",
+        "lib/core/utils/app_logger.dart",
+        "lib/core/utils/streak_calculator.dart",
+        "lib/data/repositories/nutrition_read_model_repository.dart",
+        "lib/data/repositories/workout_repository.dart"
+      ],
+      "imported_by": [
+        "lib/features/dashboard/dashboard_controller.dart",
+        "lib/features/progress/streak_provider.dart"
+      ],
+      "parts": [],
+      "part_of": null,
+      "providers_defined": [],
+      "providers_used": [],
+      "routes_defined": [],
+      "catches": [],
+      "empty_catch_count": 0,
+      "total_catch_count": 0
+    },
     "lib/data/repositories/training_next_action_resolver.dart": {
       "path": "lib/data/repositories/training_next_action_resolver.dart",
       "layer": "data",
@@ -9783,6 +9802,7 @@
       ],
       "imported_by": [
         "lib/data/repositories/progress_dashboard_read_repository.dart",
+        "lib/data/repositories/streak_repository.dart",
         "lib/data/repositories/workout_execution_compatibility_adapter.dart",
         "lib/features/dashboard/dashboard_controller.dart",
         "lib/features/dashboard/dashboard_screen.dart",
@@ -9793,6 +9813,7 @@
         "lib/features/onboarding/onboarding_screen.dart",
         "lib/features/program_authoring/program_review_screen.dart",
         "lib/features/progress/progress_screen.dart",
+        "lib/features/progress/streak_provider.dart",
         "lib/features/progress/widgets/progress_measurement_widgets.dart",
         "lib/features/training/plan_library_screen.dart",
         "lib/features/training/training_screen.dart",
@@ -11182,25 +11203,25 @@
       "path": "lib/features/dashboard/dashboard_controller.dart",
       "layer": "features",
       "sublayer": "features/dashboard",
-      "loc": 596,
+      "loc": 562,
       "imports": [
         "lib/core/config/app_preferences_keys.dart",
         "lib/core/di/providers.dart",
         "lib/core/services/achievement_service.dart",
         "lib/core/services/crash_reporting_service.dart",
         "lib/core/utils/app_logger.dart",
-        "lib/core/utils/streak_calculator.dart",
         "lib/data/database/app_database.dart",
         "lib/data/repositories/food_repository.dart",
         "lib/data/repositories/health_service.dart",
         "lib/data/repositories/legacy_program_compatibility_adapter.dart",
         "lib/data/repositories/progress_statistics_repository.dart",
-        "lib/data/repositories/workout_repository.dart"
+        "lib/data/repositories/streak_repository.dart",
+        "lib/data/repositories/workout_repository.dart",
+        "lib/features/progress/streak_provider.dart"
       ],
       "imported_by": [
         "lib/features/dashboard/dashboard_screen.dart",
-        "lib/features/profile/profile_screen.dart",
-        "lib/features/progress/achievements_screen.dart"
+        "lib/features/profile/profile_screen.dart"
       ],
       "parts": [],
       "part_of": null,
@@ -11212,13 +11233,14 @@
         "healthServiceProvider",
         "progressStatisticsRepositoryProvider",
         "sharedPreferencesProvider",
+        "streakRepositoryProvider",
         "workoutRepositoryProvider"
       ],
       "routes_defined": [],
       "catches": [
         {
           "file": "lib/features/dashboard/dashboard_controller.dart",
-          "line": 132,
+          "line": 133,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -11228,7 +11250,7 @@
         },
         {
           "file": "lib/features/dashboard/dashboard_controller.dart",
-          "line": 205,
+          "line": 206,
           "var": "e",
           "is_underscore": false,
           "is_empty": false,
@@ -11238,7 +11260,7 @@
         },
         {
           "file": "lib/features/dashboard/dashboard_controller.dart",
-          "line": 537,
+          "line": 503,
           "var": "e",
           "is_underscore": false,
           "is_empty": false,
@@ -11248,7 +11270,7 @@
         },
         {
           "file": "lib/features/dashboard/dashboard_controller.dart",
-          "line": 585,
+          "line": 551,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -14918,7 +14940,8 @@
         "lib/features/nutrition_ai/ai_items_thali_handoff.dart",
         "lib/features/nutrition_ai/natural_language_meal_screen.dart",
         "lib/features/nutrition_ai/nutrition_label_ocr_screen.dart",
-        "lib/features/progress/period_comparison/progress_period_comparison_controller.dart"
+        "lib/features/progress/period_comparison/progress_period_comparison_controller.dart",
+        "lib/features/progress/streak_provider.dart"
       ],
       "parts": [],
       "part_of": null,
@@ -15872,15 +15895,13 @@
       "path": "lib/features/progress/achievements_screen.dart",
       "layer": "features",
       "sublayer": "features/progress",
-      "loc": 475,
+      "loc": 465,
       "imports": [
-        "lib/core/config/app_preferences_keys.dart",
-        "lib/core/di/core_providers.dart",
         "lib/core/services/achievement_service.dart",
         "lib/core/theme/b05_semantic_colors.dart",
         "lib/core/widgets/b05_accessibility_primitives.dart",
         "lib/data/repositories/progress_statistics_repository.dart",
-        "lib/features/dashboard/dashboard_controller.dart",
+        "lib/features/progress/streak_provider.dart",
         "lib/features/progress/widgets/achievement_detail_sheet.dart"
       ],
       "imported_by": [
@@ -15893,25 +15914,14 @@
       "part_of": null,
       "providers_defined": [],
       "providers_used": [
-        "dashboardControllerProvider",
         "progressStatisticsRepositoryProvider",
-        "sharedPreferencesProvider"
+        "streakRepositoryProvider"
       ],
       "routes_defined": [],
       "catches": [
         {
           "file": "lib/features/progress/achievements_screen.dart",
-          "line": 43,
-          "var": "_",
-          "is_underscore": true,
-          "is_empty": true,
-          "snippet": "} catch (_) {}",
-          "layer": "features/progress",
-          "is_p0": false
-        },
-        {
-          "file": "lib/features/progress/achievements_screen.dart",
-          "line": 60,
+          "line": 50,
           "var": "e",
           "is_underscore": false,
           "is_empty": false,
@@ -15920,8 +15930,8 @@
           "is_p0": false
         }
       ],
-      "empty_catch_count": 1,
-      "total_catch_count": 2
+      "empty_catch_count": 0,
+      "total_catch_count": 1
     },
     "lib/features/progress/b02_progress_presentation.dart": {
       "path": "lib/features/progress/b02_progress_presentation.dart",
@@ -16353,6 +16363,48 @@
       "catches": [],
       "empty_catch_count": 0,
       "total_catch_count": 0
+    },
+    "lib/features/progress/streak_provider.dart": {
+      "path": "lib/features/progress/streak_provider.dart",
+      "layer": "features",
+      "sublayer": "features/progress",
+      "loc": 25,
+      "imports": [
+        "lib/core/di/core_providers.dart",
+        "lib/core/utils/app_logger.dart",
+        "lib/data/repositories/streak_repository.dart",
+        "lib/data/repositories/workout_repository.dart",
+        "lib/features/nutrition/nutrition_providers.dart"
+      ],
+      "imported_by": [
+        "lib/features/dashboard/dashboard_controller.dart",
+        "lib/features/progress/achievements_screen.dart",
+        "lib/features/workout_player/b02_strength_execution_controller.dart"
+      ],
+      "parts": [],
+      "part_of": null,
+      "providers_defined": [
+        "streakRepositoryProvider"
+      ],
+      "providers_used": [
+        "sharedPreferencesProvider",
+        "workoutRepositoryProvider"
+      ],
+      "routes_defined": [],
+      "catches": [
+        {
+          "file": "lib/features/progress/streak_provider.dart",
+          "line": 18,
+          "var": "error",
+          "is_underscore": false,
+          "is_empty": false,
+          "snippet": "} on Object catch (error) {",
+          "layer": "features/progress",
+          "is_p0": false
+        }
+      ],
+      "empty_catch_count": 0,
+      "total_catch_count": 1
     },
     "lib/features/progress/widgets/achievement_detail_sheet.dart": {
       "path": "lib/features/progress/widgets/achievement_detail_sheet.dart",
@@ -18013,9 +18065,8 @@
       "path": "lib/features/workout_player/b02_strength_execution_controller.dart",
       "layer": "features",
       "sublayer": "features/workout_player",
-      "loc": 1693,
+      "loc": 1668,
       "imports": [
-        "lib/core/config/app_preferences_keys.dart",
         "lib/core/di/providers.dart",
         "lib/core/presentation/consumer_copy.dart",
         "lib/core/presentation/product_failure_presentation.dart",
@@ -18030,7 +18081,8 @@
         "lib/data/services/b02_execution_progression.dart",
         "lib/data/services/b02_rest_recommendation_service.dart",
         "lib/data/services/b02_strength_execution_draft_service.dart",
-        "lib/features/exercise_picker/exercise_picker_models.dart"
+        "lib/features/exercise_picker/exercise_picker_models.dart",
+        "lib/features/progress/streak_provider.dart"
       ],
       "imported_by": [
         "lib/app/indifit_app.dart",
@@ -18051,14 +18103,14 @@
       ],
       "providers_used": [
         "databaseProvider",
-        "sharedPreferencesProvider",
+        "streakRepositoryProvider",
         "strengthExecutionCompatibilityAdapterProvider"
       ],
       "routes_defined": [],
       "catches": [
         {
           "file": "lib/features/workout_player/b02_strength_execution_controller.dart",
-          "line": 312,
+          "line": 311,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -18068,7 +18120,7 @@
         },
         {
           "file": "lib/features/workout_player/b02_strength_execution_controller.dart",
-          "line": 349,
+          "line": 348,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -18078,7 +18130,7 @@
         },
         {
           "file": "lib/features/workout_player/b02_strength_execution_controller.dart",
-          "line": 415,
+          "line": 414,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -18088,7 +18140,7 @@
         },
         {
           "file": "lib/features/workout_player/b02_strength_execution_controller.dart",
-          "line": 450,
+          "line": 449,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -18098,7 +18150,7 @@
         },
         {
           "file": "lib/features/workout_player/b02_strength_execution_controller.dart",
-          "line": 476,
+          "line": 475,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -18108,7 +18160,7 @@
         },
         {
           "file": "lib/features/workout_player/b02_strength_execution_controller.dart",
-          "line": 506,
+          "line": 505,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -18118,7 +18170,7 @@
         },
         {
           "file": "lib/features/workout_player/b02_strength_execution_controller.dart",
-          "line": 531,
+          "line": 530,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -18128,7 +18180,7 @@
         },
         {
           "file": "lib/features/workout_player/b02_strength_execution_controller.dart",
-          "line": 552,
+          "line": 551,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -18138,7 +18190,7 @@
         },
         {
           "file": "lib/features/workout_player/b02_strength_execution_controller.dart",
-          "line": 612,
+          "line": 611,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -18148,7 +18200,7 @@
         },
         {
           "file": "lib/features/workout_player/b02_strength_execution_controller.dart",
-          "line": 831,
+          "line": 830,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -18158,7 +18210,7 @@
         },
         {
           "file": "lib/features/workout_player/b02_strength_execution_controller.dart",
-          "line": 877,
+          "line": 876,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -18168,7 +18220,7 @@
         },
         {
           "file": "lib/features/workout_player/b02_strength_execution_controller.dart",
-          "line": 887,
+          "line": 886,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -18178,7 +18230,7 @@
         },
         {
           "file": "lib/features/workout_player/b02_strength_execution_controller.dart",
-          "line": 903,
+          "line": 902,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -18188,7 +18240,7 @@
         },
         {
           "file": "lib/features/workout_player/b02_strength_execution_controller.dart",
-          "line": 936,
+          "line": 935,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -18198,7 +18250,7 @@
         },
         {
           "file": "lib/features/workout_player/b02_strength_execution_controller.dart",
-          "line": 999,
+          "line": 998,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -18208,7 +18260,7 @@
         },
         {
           "file": "lib/features/workout_player/b02_strength_execution_controller.dart",
-          "line": 1026,
+          "line": 1025,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -18218,7 +18270,7 @@
         },
         {
           "file": "lib/features/workout_player/b02_strength_execution_controller.dart",
-          "line": 1069,
+          "line": 1068,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -18228,7 +18280,7 @@
         },
         {
           "file": "lib/features/workout_player/b02_strength_execution_controller.dart",
-          "line": 1134,
+          "line": 1133,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -18238,7 +18290,7 @@
         },
         {
           "file": "lib/features/workout_player/b02_strength_execution_controller.dart",
-          "line": 1239,
+          "line": 1238,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -18248,7 +18300,7 @@
         },
         {
           "file": "lib/features/workout_player/b02_strength_execution_controller.dart",
-          "line": 1266,
+          "line": 1265,
           "var": "e",
           "is_underscore": false,
           "is_empty": false,
@@ -18258,7 +18310,7 @@
         },
         {
           "file": "lib/features/workout_player/b02_strength_execution_controller.dart",
-          "line": 1327,
+          "line": 1326,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -18268,7 +18320,7 @@
         },
         {
           "file": "lib/features/workout_player/b02_strength_execution_controller.dart",
-          "line": 1348,
+          "line": 1347,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -18278,7 +18330,7 @@
         },
         {
           "file": "lib/features/workout_player/b02_strength_execution_controller.dart",
-          "line": 1375,
+          "line": 1374,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -18288,7 +18340,7 @@
         },
         {
           "file": "lib/features/workout_player/b02_strength_execution_controller.dart",
-          "line": 1377,
+          "line": 1376,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
