@@ -1,9 +1,9 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "summary": {
-    "total_dart_files": 464,
-    "total_loc": 338507,
-    "total_internal_edges": 2307,
+    "total_dart_files": 465,
+    "total_loc": 338566,
+    "total_internal_edges": 2309,
     "external_package_count": 28,
     "catch_metrics": {
       "total_catches_all": 522,
@@ -3986,7 +3986,7 @@
       "path": "lib/core/router/app_router.dart",
       "layer": "core",
       "sublayer": "core",
-      "loc": 186,
+      "loc": 193,
       "imports": [
         "lib/data/database/app_database.dart",
         "lib/data/models/b02_execution_models.dart",
@@ -4026,7 +4026,9 @@
         "lib/features/workout_player/workout_execution_route.dart",
         "lib/features/workout_player/workout_summary_screen.dart",
         "lib/core/config/app_config.dart",
-        "lib/core/privacy/privacy_policy.dart"
+        "lib/core/privacy/privacy_policy.dart",
+        "lib/core/utils/app_logger.dart",
+        "lib/core/router/route_not_found_screen.dart"
       ],
       "imported_by": [
         "lib/app/bootstrap.dart",
@@ -4057,7 +4059,7 @@
       "catches": [
         {
           "file": "lib/core/router/app_router.dart",
-          "line": 80,
+          "line": 82,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -4068,6 +4070,24 @@
       ],
       "empty_catch_count": 0,
       "total_catch_count": 1
+    },
+    "lib/core/router/route_not_found_screen.dart": {
+      "path": "lib/core/router/route_not_found_screen.dart",
+      "layer": "core",
+      "sublayer": "core",
+      "loc": 52,
+      "imports": [],
+      "imported_by": [
+        "lib/core/router/app_router.dart"
+      ],
+      "parts": [],
+      "part_of": null,
+      "providers_defined": [],
+      "providers_used": [],
+      "routes_defined": [],
+      "catches": [],
+      "empty_catch_count": 0,
+      "total_catch_count": 0
     },
     "lib/core/router/routes/core_routes.dart": {
       "path": "lib/core/router/routes/core_routes.dart",
@@ -5526,6 +5546,7 @@
         "lib/core/backup/backup_file_adapter.dart",
         "lib/core/di/theme_provider.dart",
         "lib/core/di/user_profile_provider.dart",
+        "lib/core/router/app_router.dart",
         "lib/core/services/auto_backup_service.dart",
         "lib/core/services/crash_reporting_service.dart",
         "lib/core/services/data_erasure_service.dart",
