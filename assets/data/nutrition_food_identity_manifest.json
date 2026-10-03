@@ -6994,13 +6994,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": "branded",
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0033"
     },
     {
       "id": "food-seed-0035",
@@ -7019,13 +7019,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": "branded",
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0033"
     },
     {
       "id": "food-seed-0292",
@@ -7044,13 +7044,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0291"
     },
     {
       "id": "food-seed-0293",
@@ -7069,13 +7069,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0291"
     },
     {
       "id": "food-seed-0417",
@@ -7094,13 +7094,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0416"
     },
     {
       "id": "food-seed-0418",
@@ -7119,13 +7119,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0416"
     },
     {
       "id": "food-seed-0289",
@@ -7144,13 +7144,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0288"
     },
     {
       "id": "food-seed-0290",
@@ -7169,13 +7169,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0288"
     },
     {
       "id": "food-seed-0230",
@@ -7194,13 +7194,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0229"
     },
     {
       "id": "food-seed-0231",
@@ -7219,13 +7219,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0229"
     },
     {
       "id": "food-seed-0530",
@@ -7244,13 +7244,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0529"
     },
     {
       "id": "food-seed-0531",
@@ -7269,13 +7269,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0529"
     },
     {
       "id": "food-seed-0168",
@@ -7294,13 +7294,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0167"
     },
     {
       "id": "food-seed-0169",
@@ -7319,13 +7319,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0167"
     },
     {
       "id": "food-seed-0205",
@@ -7344,13 +7344,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0204"
     },
     {
       "id": "food-seed-0206",
@@ -7369,13 +7369,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0204"
     },
     {
       "id": "food-seed-0112",
@@ -7394,13 +7394,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0111"
     },
     {
       "id": "food-seed-0113",
@@ -7419,13 +7419,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0111"
     },
     {
       "id": "food-seed-0307",
@@ -7444,13 +7444,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0306"
     },
     {
       "id": "food-seed-0308",
@@ -7469,13 +7469,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0306"
     },
     {
       "id": "food-seed-0135",
@@ -30411,11 +30411,11 @@
       "target_id": "food-seed-0034",
       "kind": "branded",
       "classification": "Paneer & Dairy",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": "branded",
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Nonsense \"(Double Paneer)\" variant of \"Amul Fresh Paneer (Raw)\" (food-seed-0033); retired 2026-10-03. Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:amul fresh paneer (raw) (low oil / diet version)": {
@@ -30424,11 +30424,11 @@
       "target_id": "food-seed-0035",
       "kind": "branded",
       "classification": "Paneer & Dairy",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": "branded",
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Nonsense \"(Low Oil / Diet version)\" variant of \"Amul Fresh Paneer (Raw)\" (food-seed-0033); retired 2026-10-03. Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:low fat paneer (double paneer)": {
@@ -30437,11 +30437,11 @@
       "target_id": "food-seed-0292",
       "kind": "preparationVariant",
       "classification": "Paneer & Dairy",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Nonsense \"(Double Paneer)\" variant of \"Low Fat Paneer\" (food-seed-0291); retired 2026-10-03. Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:low fat paneer (low oil / diet version)": {
@@ -30450,11 +30450,11 @@
       "target_id": "food-seed-0293",
       "kind": "preparationVariant",
       "classification": "Paneer & Dairy",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Nonsense \"(Low Oil / Diet version)\" variant of \"Low Fat Paneer\" (food-seed-0291); retired 2026-10-03. Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:plain curd / dahi (cow milk) (double paneer)": {
@@ -30463,11 +30463,11 @@
       "target_id": "food-seed-0417",
       "kind": "preparationVariant",
       "classification": "Paneer & Dairy",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Nonsense \"(Double Paneer)\" variant of \"Plain Curd / Dahi (Cow Milk)\" (food-seed-0416); retired 2026-10-03. Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:plain curd / dahi (cow milk) (low oil / diet version)": {
@@ -30476,11 +30476,11 @@
       "target_id": "food-seed-0418",
       "kind": "preparationVariant",
       "classification": "Paneer & Dairy",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Nonsense \"(Low Oil / Diet version)\" variant of \"Plain Curd / Dahi (Cow Milk)\" (food-seed-0416); retired 2026-10-03. Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:low fat curd / dahi (double paneer)": {
@@ -30489,11 +30489,11 @@
       "target_id": "food-seed-0289",
       "kind": "preparationVariant",
       "classification": "Paneer & Dairy",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Nonsense \"(Double Paneer)\" variant of \"Low Fat Curd / Dahi\" (food-seed-0288); retired 2026-10-03. Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:low fat curd / dahi (low oil / diet version)": {
@@ -30502,11 +30502,11 @@
       "target_id": "food-seed-0290",
       "kind": "preparationVariant",
       "classification": "Paneer & Dairy",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Nonsense \"(Low Oil / Diet version)\" variant of \"Low Fat Curd / Dahi\" (food-seed-0288); retired 2026-10-03. Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:greek yogurt (plain) (double paneer)": {
@@ -30515,11 +30515,11 @@
       "target_id": "food-seed-0230",
       "kind": "preparationVariant",
       "classification": "Paneer & Dairy",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Nonsense \"(Double Paneer)\" variant of \"Greek Yogurt (Plain)\" (food-seed-0229); retired 2026-10-03. Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:greek yogurt (plain) (low oil / diet version)": {
@@ -30528,11 +30528,11 @@
       "target_id": "food-seed-0231",
       "kind": "preparationVariant",
       "classification": "Paneer & Dairy",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Nonsense \"(Low Oil / Diet version)\" variant of \"Greek Yogurt (Plain)\" (food-seed-0229); retired 2026-10-03. Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:toned milk (1 glass) (double paneer)": {
@@ -30541,11 +30541,11 @@
       "target_id": "food-seed-0530",
       "kind": "preparationVariant",
       "classification": "Paneer & Dairy",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Nonsense \"(Double Paneer)\" variant of \"Toned Milk (1 Glass)\" (food-seed-0529); retired 2026-10-03. Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:toned milk (1 glass) (low oil / diet version)": {
@@ -30554,11 +30554,11 @@
       "target_id": "food-seed-0531",
       "kind": "preparationVariant",
       "classification": "Paneer & Dairy",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Nonsense \"(Low Oil / Diet version)\" variant of \"Toned Milk (1 Glass)\" (food-seed-0529); retired 2026-10-03. Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:double toned milk (1 glass) (double paneer)": {
@@ -30567,11 +30567,11 @@
       "target_id": "food-seed-0168",
       "kind": "preparationVariant",
       "classification": "Paneer & Dairy",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Nonsense \"(Double Paneer)\" variant of \"Double Toned Milk (1 Glass)\" (food-seed-0167); retired 2026-10-03. Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:double toned milk (1 glass) (low oil / diet version)": {
@@ -30580,11 +30580,11 @@
       "target_id": "food-seed-0169",
       "kind": "preparationVariant",
       "classification": "Paneer & Dairy",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Nonsense \"(Low Oil / Diet version)\" variant of \"Double Toned Milk (1 Glass)\" (food-seed-0167); retired 2026-10-03. Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:full cream milk (1 glass) (double paneer)": {
@@ -30593,11 +30593,11 @@
       "target_id": "food-seed-0205",
       "kind": "preparationVariant",
       "classification": "Paneer & Dairy",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Nonsense \"(Double Paneer)\" variant of \"Full Cream Milk (1 Glass)\" (food-seed-0204); retired 2026-10-03. Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:full cream milk (1 glass) (low oil / diet version)": {
@@ -30606,11 +30606,11 @@
       "target_id": "food-seed-0206",
       "kind": "preparationVariant",
       "classification": "Paneer & Dairy",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Nonsense \"(Low Oil / Diet version)\" variant of \"Full Cream Milk (1 Glass)\" (food-seed-0204); retired 2026-10-03. Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:buttermilk / chaas (plain) (double paneer)": {
@@ -30619,11 +30619,11 @@
       "target_id": "food-seed-0112",
       "kind": "preparationVariant",
       "classification": "Paneer & Dairy",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Nonsense \"(Double Paneer)\" variant of \"Buttermilk / Chaas (Plain)\" (food-seed-0111); retired 2026-10-03. Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:buttermilk / chaas (plain) (low oil / diet version)": {
@@ -30632,11 +30632,11 @@
       "target_id": "food-seed-0113",
       "kind": "preparationVariant",
       "classification": "Paneer & Dairy",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Nonsense \"(Low Oil / Diet version)\" variant of \"Buttermilk / Chaas (Plain)\" (food-seed-0111); retired 2026-10-03. Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:masala lassi (sweet) (double paneer)": {
@@ -30645,11 +30645,11 @@
       "target_id": "food-seed-0307",
       "kind": "preparationVariant",
       "classification": "Paneer & Dairy",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Nonsense \"(Double Paneer)\" variant of \"Masala Lassi (Sweet)\" (food-seed-0306); retired 2026-10-03. Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:masala lassi (sweet) (low oil / diet version)": {
@@ -30658,11 +30658,11 @@
       "target_id": "food-seed-0308",
       "kind": "preparationVariant",
       "classification": "Paneer & Dairy",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Nonsense \"(Low Oil / Diet version)\" variant of \"Masala Lassi (Sweet)\" (food-seed-0306); retired 2026-10-03. Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:chicken curry (north indian style) (extra chicken/meat pieces)": {

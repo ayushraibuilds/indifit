@@ -1,4 +1,5 @@
 import hashlib
+import json
 import logging
 import os
 import pytest
@@ -10,6 +11,7 @@ os.environ.setdefault("INDIFIT_API_KEY", "backend-test-secret")
 from backend.main import create_app
 from backend.core.config import get_indifit_api_key
 from backend.routers.food import (
+    RETIRED_FOOD_NAMES,
     SEARCH_CACHE,
     clear_missed_searches,
     flush_missed_searches,
@@ -153,6 +155,32 @@ def test_food_search_pagination_limit(client):
     data = res.json()
     assert len(data["results"]) <= 3
     assert data["count"] <= 3
+
+
+def test_retired_food_names_match_the_app_manifest():
+    manifest_path = Path(__file__).resolve().parents[2] / "assets/data/nutrition_food_identity_manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    deprecated = {
+        entry["display_name"]
+        for entry in manifest["entries"]
+        if entry["deprecated"] and entry["id"].startswith("food-seed-")
+    }
+    assert RETIRED_FOOD_NAMES == deprecated
+
+
+def test_food_search_excludes_retired_foods(client):
+    headers = _auth_headers()
+    for query, kept in [
+        ("Toned Milk", "Toned Milk (1 Glass)"),
+        ("Lassi", "Masala Lassi (Sweet)"),
+        ("Paneer", "Amul Fresh Paneer (Raw)"),
+        ("Dal Tadka", "Toor Dal / Yellow Dal Tadka"),
+    ]:
+        res = client.post("/api/food/search", json={"query": query, "limit": 50}, headers=headers)
+        assert res.status_code == 200
+        names = {r["name"] for r in res.json()["results"]}
+        assert kept in names, query
+        assert names.isdisjoint(RETIRED_FOOD_NAMES), f"{query!r}: {names & RETIRED_FOOD_NAMES}"
 
 
 def test_food_search_logs_zero_results_anonymously_without_pii(client, caplog):

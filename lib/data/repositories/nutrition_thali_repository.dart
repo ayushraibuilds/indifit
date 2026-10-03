@@ -13,6 +13,7 @@ import '../../core/typed_quantities.dart';
 import '../database/app_database.dart' as database;
 import 'nutrition_constraint_repository.dart';
 import 'nutrition_consumption_repository.dart';
+import 'nutrition_food_catalog_repository.dart';
 import 'nutrition_household_measure_repository.dart';
 import 'nutrition_recipe_log_coordinator.dart';
 import 'nutrition_recipe_repository.dart';
@@ -72,9 +73,30 @@ class NutritionThaliRepository {
       );
     }
     final normalized = query.trim().toLowerCase();
-    final allRows = await (_db.select(
+    final activeRows = await (_db.select(
       _db.nutritionFoods,
     )..where((row) => row.lifecycle.equals('active'))).get();
+    final regionalWithFacts = {
+      for (final fact
+          in await (_db.select(_db.nutritionFoodNutrientFacts)..where(
+                (fact) =>
+                    fact.foodId.like('food-regional-%') &
+                    fact.isCurrent.equals(true) &
+                    (fact.amount.isNotNull() |
+                        fact.lower.isNotNull() |
+                        fact.upper.isNotNull()),
+              ))
+              .get())
+        fact.foodId,
+    };
+    final allRows = [
+      for (final row in activeRows)
+        if (!NutritionFoodCatalogRepository.isRegionalWithoutFacts(
+          row.id,
+          regionalWithFacts.contains(row.id),
+        ))
+          row,
+    ];
     final matchingIds = <String>{};
     if (normalized.isNotEmpty) {
       matchingIds.addAll(

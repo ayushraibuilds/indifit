@@ -54,6 +54,30 @@ void main() {
       expect(legacy, isNot(contains('Rajma Masala (Kidney Beans)')));
     });
 
+    test(
+      'nonsense dairy variants leave search; their base foods stay',
+      () async {
+        for (final (query, base) in [
+          ('toned milk', 'Toned Milk (1 Glass)'),
+          ('lassi', 'Masala Lassi (Sweet)'),
+          ('fresh paneer', 'Amul Fresh Paneer (Raw)'),
+          ('low fat paneer', 'Low Fat Paneer'),
+        ]) {
+          final names = (await catalog.search(
+            query: query,
+          )).map((o) => o.displayName).toList();
+          expect(names, contains(base), reason: query);
+          expect(
+            names.where(
+              (n) => n.contains('(Double Paneer)') || n.contains('(Low Oil'),
+            ),
+            isEmpty,
+            reason: query,
+          );
+        }
+      },
+    );
+
     test('a retired food keeps its identity and facts for past logs', () async {
       // Searching adapts legacy rows, writing their facts as logging did.
       await catalog.search(query: 'yellow dal tadka');
