@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "summary": {
     "total_dart_files": 464,
-    "total_loc": 338577,
+    "total_loc": 338643,
     "total_internal_edges": 2307,
     "external_package_count": 28,
     "catch_metrics": {
@@ -18304,7 +18304,7 @@
       "path": "lib/features/workout_player/b02_strength_player_screen.dart",
       "layer": "features",
       "sublayer": "features/workout_player",
-      "loc": 1738,
+      "loc": 1743,
       "imports": [
         "lib/core/di/providers.dart",
         "lib/core/presentation/consumer_copy.dart",
@@ -18352,7 +18352,7 @@
       "catches": [
         {
           "file": "lib/features/workout_player/b02_strength_player_screen.dart",
-          "line": 948,
+          "line": 953,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -18362,7 +18362,7 @@
         },
         {
           "file": "lib/features/workout_player/b02_strength_player_screen.dart",
-          "line": 1124,
+          "line": 1129,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -18714,7 +18714,7 @@
       "path": "lib/features/workout_player/widgets/b02_compact_set_table.dart",
       "layer": "features",
       "sublayer": "features/workout_player",
-      "loc": 713,
+      "loc": 725,
       "imports": [
         "lib/core/theme/indifit_icons.dart",
         "lib/core/widgets/b05_accessibility_primitives.dart",
@@ -18791,7 +18791,7 @@
       "path": "lib/features/workout_player/widgets/b02_player_cards.dart",
       "layer": "features",
       "sublayer": "features/workout_player",
-      "loc": 993,
+      "loc": 1042,
       "imports": [
         "lib/core/presentation/consumer_copy.dart",
         "lib/core/services/indifit_haptics.dart",
@@ -18818,7 +18818,7 @@
       "catches": [
         {
           "file": "lib/features/workout_player/widgets/b02_player_cards.dart",
-          "line": 942,
+          "line": 991,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,

@@ -156,6 +156,7 @@ class B02CompactSetTable extends StatelessWidget {
     this.onRepsChanged,
     this.onOpenPlateCalculator,
     this.onCompleteNext,
+    this.targetSummary,
   });
 
   final B02StrengthExecutionSlot slot;
@@ -182,6 +183,10 @@ class B02CompactSetTable extends StatelessWidget {
   /// Logs the next planned set with the values in the editor below, exactly
   /// as the primary "Log set" button does. Null hides the row checkmark.
   final VoidCallback? onCompleteNext;
+
+  /// Last-time and suggested-target summary shown under the "Next set"
+  /// label, so the suggestion sits beside the fields it fills.
+  final Widget? targetSummary;
 
   @override
   Widget build(BuildContext context) {
@@ -239,6 +244,7 @@ class B02CompactSetTable extends StatelessWidget {
               onRepsChanged: onRepsChanged,
               moreContent: moreContent,
               onOpenPlateCalculator: onOpenPlateCalculator,
+              targetSummary: targetSummary,
             ),
           if (onAddSet != null) ...[
             const SizedBox(height: 8),
@@ -568,6 +574,7 @@ class _PendingSetEditor extends StatelessWidget {
     required this.onRepsChanged,
     required this.moreContent,
     this.onOpenPlateCalculator,
+    this.targetSummary,
   });
 
   final B02StrengthExecutionSlot slot;
@@ -584,6 +591,7 @@ class _PendingSetEditor extends StatelessWidget {
   final ValueChanged<String>? onRepsChanged;
   final Widget? moreContent;
   final VoidCallback? onOpenPlateCalculator;
+  final Widget? targetSummary;
 
   @override
   Widget build(BuildContext context) {
@@ -611,6 +619,10 @@ class _PendingSetEditor extends StatelessWidget {
                 ),
             ],
           ),
+          if (targetSummary != null) ...[
+            const SizedBox(height: 6),
+            targetSummary!,
+          ],
           const SizedBox(height: 8),
           IndiFitResponsiveFieldGroup(
             spacing: 10,
