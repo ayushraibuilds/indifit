@@ -1,0 +1,65 @@
+// One meal per line. "amount" counts the food's own catalogue measure (piece/katori/glass/serving), or grams for per-100 g foods. "food" lists acceptable catalogue names; the first is the calorie reference. See README.md.
+{"id": "m001", "text": "2 rotis and 1 katori dal tadka", "tags": ["english"], "items": [{"food": "Whole Wheat Roti / Chapati", "amount": 2}, {"food": ["Toor Dal / Yellow Dal Tadka", "Yellow Dal Tadka"], "amount": 1}]}
+{"id": "m002", "text": "2 roti aur ek katori dal", "tags": ["hinglish"], "items": [{"food": "Whole Wheat Roti / Chapati", "amount": 2}, {"food": ["Toor Dal / Yellow Dal Tadka", "Yellow Dal Tadka", "Dal Fry (Chana & Toor)", "Masoor Dal / Red Lentil Soup", "Moong Dal Chilka (Cooked)", "Urad Dal Plain"], "amount": 1}]}
+{"id": "m003", "text": "3 chapati with 1 katori rajma", "tags": ["english"], "items": [{"food": "Whole Wheat Roti / Chapati", "amount": 3}, {"food": ["Rajma Masala (Red Kidney Beans)", "Rajma Masala (Kidney Beans)"], "amount": 1}]}
+{"id": "m004", "text": "rajma chawal, 1 katori each", "tags": ["hinglish"], "items": [{"food": ["Rajma Masala (Red Kidney Beans)", "Rajma Masala (Kidney Beans)"], "amount": 1}, {"food": "Basmati White Rice (Cooked)", "amount": 1}]}
+{"id": "m005", "text": "1 katori chole and 2 bhature", "tags": ["english"], "items": [{"food": ["Chole Masala (Chickpea Curry)", "Chana Masala (Chickpea Curry)"], "amount": 1}, {"food": "Bhatura", "amount": 2}]}
+{"id": "m006", "text": "2 aloo paratha with 100g dahi", "tags": ["hinglish"], "items": [{"food": "Aloo Paratha", "amount": 2}, {"food": "Plain Curd / Dahi (Cow Milk)", "amount": 100}]}
+{"id": "m007", "text": "ek paneer paratha aur ek glass lassi", "tags": ["hinglish"], "items": [{"food": "Paneer Paratha", "amount": 1}, {"food": "Masala Lassi (Sweet)", "amount": 1}]}
+{"id": "m008", "text": "1 plate poha and 1 cup chai", "tags": ["english"], "items": [{"food": "Poha (Flattened Rice)", "amount": 1}, {"food": "Masala Chai (with milk & sugar)", "amount": 1}]}
+{"id": "m009", "text": "1 katori poha with a cup of masala chai", "tags": ["english"], "items": [{"food": "Poha (Flattened Rice)", "amount": 1}, {"food": "Masala Chai (with milk & sugar)", "amount": 1}]}
+{"id": "m010", "text": "2 idli with sambar", "tags": ["south-indian"], "items": [{"food": "Idli with Sambar (2 Idlis)", "amount": 1}]}
+{"id": "m011", "text": "4 idli and sambar", "tags": ["south-indian"], "items": [{"food": "Idli with Sambar (2 Idlis)", "amount": 2}]}
+{"id": "m012", "text": "1 masala dosa", "tags": ["south-indian"], "items": [{"food": "Masala Dosa", "amount": 1}]}
+{"id": "m013", "text": "2 plain dosa with chutney", "tags": ["south-indian"], "items": [{"food": "Plain Dosa with Chutney", "amount": 2}]}
+{"id": "m014", "text": "1 rava dosa and filter coffee", "tags": ["south-indian"], "items": [{"food": "Rava Dosa", "amount": 1}, {"food": "Filter Coffee (with sugar)", "amount": 1}]}
+{"id": "m015", "text": "2 medu vada with sambar", "tags": ["south-indian"], "items": [{"food": "Medu Vada with Sambar (2 Vadas)", "amount": 1}]}
+{"id": "m016", "text": "1 katori suji upma", "tags": ["english"], "items": [{"food": "Suji Upma", "amount": 1}]}
+{"id": "m017", "text": "oats upma 1 katori", "tags": ["english"], "items": [{"food": "Oats Upma", "amount": 1}]}
+{"id": "m018", "text": "1 katori masala oats with a glass of toned milk", "tags": ["english"], "items": [{"food": "Masala Oats", "amount": 1}, {"food": "Toned Milk (1 Glass)", "amount": 1}]}
+{"id": "m019", "text": "2 boiled eggs and 2 roti", "tags": ["english"], "items": [{"food": "Boiled Eggs (2 pieces)", "amount": 1}, {"food": "Whole Wheat Roti / Chapati", "amount": 2}]}
+{"id": "m020", "text": "4 boiled eggs", "tags": ["english", "portion-math"], "items": [{"food": "Boiled Eggs (2 pieces)", "amount": 2}]}
+{"id": "m021", "text": "1 katori egg bhurji with 2 chapati", "tags": ["english"], "items": [{"food": "Egg Bhurji (2 Eggs)", "amount": 1}, {"food": "Whole Wheat Roti / Chapati", "amount": 2}]}
+{"id": "m022", "text": "anda curry 1 katori aur 1 katori chawal", "tags": ["hinglish"], "items": [{"food": "Egg Curry (2 Eggs)", "amount": 1}, {"food": "Basmati White Rice (Cooked)", "amount": 1}]}
+{"id": "m023", "text": "1 katori butter chicken and 2 butter naan", "tags": ["english"], "items": [{"food": "Butter Chicken (Murgh Makhani)", "amount": 1}, {"food": "Butter Naan", "amount": 2}]}
+{"id": "m024", "text": "chicken curry 1 katori, rice 1 katori", "tags": ["english"], "items": [{"food": "Chicken Curry (North Indian style)", "amount": 1}, {"food": "Basmati White Rice (Cooked)", "amount": 1}]}
+{"id": "m025", "text": "1 katori chicken biryani with 1 katori raita", "tags": ["english"], "items": [{"food": "Chicken Biryani (Hyderabadi)", "amount": 1}, {"food": "Raita (Cucumber)", "amount": 1}]}
+{"id": "m026", "text": "mutton biryani 2 katori", "tags": ["english"], "items": [{"food": "Mutton Biryani", "amount": 2}]}
+{"id": "m027", "text": "1 katori mutton rogan josh and 1 tandoori roti", "tags": ["english"], "items": [{"food": "Mutton Rogan Josh", "amount": 1}, {"food": "Tandoori Roti (Wheat)", "amount": 1}]}
+{"id": "m028", "text": "1 katori fish curry with 1 katori rice", "tags": ["english", "regional"], "items": [{"food": "Fish Curry (Bengali style)", "amount": 1}, {"food": "Basmati White Rice (Cooked)", "amount": 1}]}
+{"id": "m029", "text": "machli fry 1 katori", "tags": ["hinglish"], "items": [{"food": "Fish Fry (Amritsari)", "amount": 1}]}
+{"id": "m030", "text": "1 katori palak paneer and 2 roti", "tags": ["english"], "items": [{"food": "Palak Paneer", "amount": 1}, {"food": "Whole Wheat Roti / Chapati", "amount": 2}]}
+{"id": "m031", "text": "paneer butter masala ek katori aur 2 naan", "tags": ["hinglish"], "items": [{"food": "Paneer Butter Masala", "amount": 1}, {"food": "Plain Naan", "amount": 2}]}
+{"id": "m032", "text": "1 katori kadai paneer with 1 garlic naan", "tags": ["english"], "items": [{"food": "Kadai Paneer", "amount": 1}, {"food": "Garlic Naan", "amount": 1}]}
+{"id": "m033", "text": "1 katori paneer bhurji and 2 phulka", "tags": ["english"], "items": [{"food": "Paneer Bhurji", "amount": 1}, {"food": "Whole Wheat Roti / Chapati", "amount": 2}]}
+{"id": "m034", "text": "matar paneer 1 katori", "tags": ["hinglish"], "items": [{"food": ["Mattar Paneer", "Matar Paneer", "Paneer Mattar"], "amount": 1}]}
+{"id": "m035", "text": "1 katori dal makhani, 1 katori jeera rice", "tags": ["english"], "items": [{"food": "Dal Makhani", "amount": 1}, {"food": "Jeera Rice", "amount": 1}]}
+{"id": "m036", "text": "ek katori kadhi pakora aur chawal ek katori", "tags": ["hinglish"], "items": [{"food": ["Kadhi Pakora", "Punjabi Kadhi Pakora"], "amount": 1}, {"food": "Basmati White Rice (Cooked)", "amount": 1}]}
+{"id": "m037", "text": "sambar rice: 1 katori sambar, 1 katori rice", "tags": ["south-indian"], "items": [{"food": ["Sambar", "South Indian Sambhar"], "amount": 1}, {"food": "Basmati White Rice (Cooked)", "amount": 1}]}
+{"id": "m038", "text": "1 katori bhindi masala with 2 roti", "tags": ["english"], "items": [{"food": ["Bhindi Masala (Okra)", "Bhindi Masala (Okra Fry)"], "amount": 1}, {"food": "Whole Wheat Roti / Chapati", "amount": 2}]}
+{"id": "m039", "text": "aloo gobi sabzi ek katori, do roti", "tags": ["hinglish"], "items": [{"food": ["Aloo Gobbi (Dry Sabji)", "Aloo Gobi Dry Sabji"], "amount": 1}, {"food": "Whole Wheat Roti / Chapati", "amount": 2}]}
+{"id": "m040", "text": "1 katori baingan bharta and 2 bajra roti", "tags": ["regional"], "items": [{"food": "Baingan Bharta (Roasted eggplant)", "amount": 1}, {"food": "Bajra Roti (Millet)", "amount": 2}]}
+{"id": "m041", "text": "sarson ka saag 1 katori", "tags": ["regional"], "items": [{"food": "Sarson Ka Saag", "amount": 1}]}
+{"id": "m042", "text": "1 katori lauki ki sabji and 2 roti", "tags": ["english"], "items": [{"food": ["Lauki Ki Sabji (Bottle Gourd)"], "amount": 1}, {"food": "Whole Wheat Roti / Chapati", "amount": 2}]}
+{"id": "m043", "text": "1 katori jeera aloo with 2 poori", "tags": ["english"], "items": [{"food": "Jeera Aloo", "amount": 1}, {"food": "Poori", "amount": 2}]}
+{"id": "m044", "text": "1 katori dum aloo", "tags": ["english"], "items": [{"food": ["Dum Aloo", "Dum Aloo Punjabi"], "amount": 1}]}
+{"id": "m045", "text": "1 katori undhiyu", "tags": ["regional"], "items": [{"food": "Undhiyu (Gujarati Mixed Veg)", "amount": 1}]}
+{"id": "m046", "text": "1 katori avial with 1 katori rice", "tags": ["regional", "south-indian"], "items": [{"food": "Avial (Kerala Mixed Veg)", "amount": 1}, {"food": "Basmati White Rice (Cooked)", "amount": 1}]}
+{"id": "m047", "text": "2 dhokla pieces", "tags": ["regional"], "items": [{"food": "Dhokla (2 pieces)", "amount": 1}]}
+{"id": "m048", "text": "1 samosa and 1 cup chai", "tags": ["snack"], "items": [{"food": "Samosa (1 piece)", "amount": 1}, {"food": "Masala Chai (with milk & sugar)", "amount": 1}]}
+{"id": "m049", "text": "2 samose", "tags": ["snack", "hinglish"], "items": [{"food": "Samosa (1 piece)", "amount": 2}]}
+{"id": "m050", "text": "1 vada pav", "tags": ["snack"], "items": [{"food": "Vada Pav (1 piece)", "amount": 1}]}
+{"id": "m051", "text": "pav bhaji 1 plate", "tags": ["snack"], "items": [{"food": "Pav Bhaji (2 Pavs)", "amount": 1}]}
+{"id": "m052", "text": "6 pani puri", "tags": ["snack"], "items": [{"food": "Pani Puri / Golgappa (6 pieces)", "amount": 1}]}
+{"id": "m053", "text": "1 plate bhel puri", "tags": ["snack"], "items": [{"food": "Bhel Puri", "amount": 1}]}
+{"id": "m054", "text": "2 aloo tikki", "tags": ["snack"], "items": [{"food": "Aloo Tikki (1 piece)", "amount": 2}]}
+{"id": "m055", "text": "1 plate veg hakka noodles", "tags": ["english"], "items": [{"food": "Veg Hakka Noodles", "amount": 1}]}
+{"id": "m056", "text": "1 katori sprouted moong salad", "tags": ["healthy"], "items": [{"food": ["Sprouted Moong Salad", "Sprouted Moong Salad / Sabji"], "amount": 1}]}
+{"id": "m057", "text": "1 katori fruit chaat and 1 glass coconut water", "tags": ["healthy"], "items": [{"food": "Fruit Chaat", "amount": 1}, {"food": "Coconut Water", "amount": 1}]}
+{"id": "m058", "text": "200g greek yogurt", "tags": ["healthy", "grams"], "items": [{"food": "Greek Yogurt (Plain)", "amount": 200}]}
+{"id": "m059", "text": "150 g paneer raw", "tags": ["healthy", "grams"], "items": [{"food": "Amul Fresh Paneer (Raw)", "amount": 150}]}
+{"id": "m060", "text": "1 glass buttermilk and 1 glass nimbu pani", "tags": ["drinks"], "items": [{"food": "Buttermilk / Chaas (Plain)", "amount": 1}, {"food": "Nimbu Pani (Lemonade with sugar)", "amount": 1}]}
+{"id": "m061", "text": "2 cups black coffee", "tags": ["drinks"], "items": [{"food": "Black Coffee (No sugar)", "amount": 2}]}
+{"id": "m062", "text": "1 bowl dal tadka with 2 rotis", "tags": ["unit-mismatch"], "items": [{"food": ["Toor Dal / Yellow Dal Tadka", "Yellow Dal Tadka"], "amount": 1.5}, {"food": "Whole Wheat Roti / Chapati", "amount": 2}]}
+{"id": "m063", "text": "1 plate chicken biryani", "tags": ["unit-mismatch"], "items": [{"food": "Chicken Biryani (Hyderabadi)", "amount": 2}]}
+{"id": "m064", "text": "ghar ka khana: 2 roti, 1 katori dal, 1 katori bhindi, 100g dahi", "tags": ["hinglish", "mixed-plate"], "items": [{"food": "Whole Wheat Roti / Chapati", "amount": 2}, {"food": ["Toor Dal / Yellow Dal Tadka", "Yellow Dal Tadka", "Dal Fry (Chana & Toor)", "Masoor Dal / Red Lentil Soup", "Moong Dal Chilka (Cooked)", "Urad Dal Plain"], "amount": 1}, {"food": ["Bhindi Masala (Okra)", "Bhindi Masala (Okra Fry)"], "amount": 1}, {"food": "Plain Curd / Dahi (Cow Milk)", "amount": 100}]}
