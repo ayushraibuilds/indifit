@@ -505,7 +505,7 @@ void main() {
       await tester.pump();
 
       final loadField = find.byKey(ValueKey('compact-load-${slot.id}'));
-      expect(tester.widget<TextFormField>(loadField).controller!.text, '80.0');
+      expect(tester.widget<TextFormField>(loadField).controller!.text, '80');
 
       await tester.tap(find.byTooltip('Exercise actions'));
       await tester.pump();

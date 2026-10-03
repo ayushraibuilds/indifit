@@ -103,7 +103,7 @@ void main() {
       await tester.tap(find.text('Apply'));
       await tester.pump();
       final inputs = find.byType(EditableText);
-      expect(tester.widget<EditableText>(inputs.at(0)).controller.text, '60.0');
+      expect(tester.widget<EditableText>(inputs.at(0)).controller.text, '60');
       expect(tester.widget<EditableText>(inputs.at(1)).controller.text, '8');
       expect(tester.takeException(), isNull);
       await expectLater(
