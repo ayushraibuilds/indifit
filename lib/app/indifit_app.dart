@@ -13,6 +13,8 @@ import '../core/theme/app_theme.dart';
 import '../core/utils/app_logger.dart';
 import '../data/database/app_database.dart';
 import '../features/workout_player/b02_strength_execution_controller.dart';
+import 'database_readiness.dart';
+import 'database_recovery_screen.dart';
 
 class IndiFitApp extends ConsumerStatefulWidget {
   const IndiFitApp({super.key});
@@ -29,13 +31,23 @@ class _IndiFitAppState extends ConsumerState<IndiFitApp>
   bool _reminderReconcilePending = false;
   bool _reminderTimezoneRefreshPending = false;
 
+  /// Post-frame work needs an open database; it runs once that's true.
+  bool _bootstrapped = false;
+
+  /// A notification tapped before the database was ready.
+  String? _pendingDestination;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     ref.read(civilDateRevisionProvider.notifier).start();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _runPostFrameBootstrap();
+      if (ref.read(databaseReadyProvider).hasValue) _runPostFrameBootstrap();
+    });
+    // Covers a slow first open and a successful "Try again".
+    ref.listenManual(databaseReadyProvider, (previous, next) {
+      if (next.hasValue && !next.isLoading) _runPostFrameBootstrap();
     });
   }
 
@@ -46,6 +58,11 @@ class _IndiFitAppState extends ConsumerState<IndiFitApp>
   /// Failures are logged; the resume lifecycle check re-runs the timezone
   /// reschedule as before.
   void _runPostFrameBootstrap() {
+    if (_bootstrapped || !mounted) return;
+    _bootstrapped = true;
+    final destination = _pendingDestination;
+    _pendingDestination = null;
+    if (destination != null) ref.read(appRouterProvider).go(destination);
     final db = ref.read(databaseProvider);
     _startReminderDataWatchers(db);
     unawaited(_reconcileReminders());
@@ -93,6 +110,7 @@ class _IndiFitAppState extends ConsumerState<IndiFitApp>
   /// Serializes cancel-and-replan operations. Writes that arrive while a plan
   /// is being built collapse into one additional pass rather than racing it.
   Future<void> _reconcileReminders() async {
+    if (!_bootstrapped) return;
     _reminderReconcilePending = true;
     if (_reminderReconcileRunning) return;
 
@@ -146,11 +164,36 @@ class _IndiFitAppState extends ConsumerState<IndiFitApp>
   Widget build(BuildContext context) {
     final router = ref.watch(appRouterProvider);
     final themeMode = ref.watch(themeModeProvider);
+    final database = ref.watch(databaseReadyProvider);
 
     NotificationService.onNotificationNavigate = (payload) {
       final destination = NotificationService.destinationForPayload(payload);
-      if (destination != null) router.go(destination);
+      if (destination == null) return;
+      if (_bootstrapped) {
+        router.go(destination);
+      } else {
+        _pendingDestination = destination;
+      }
     };
+
+    // Nothing that reads the database is built until it has opened.
+    if (!database.hasValue || database.isLoading) {
+      return MaterialApp(
+        title: 'IndiFit',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.lightTheme,
+        darkTheme: AppTheme.darkTheme,
+        themeMode: themeMode,
+        home: database.hasError && !database.isLoading
+            ? DatabaseRecoveryScreen(
+                error: database.error!,
+                // Recreating the database provider closes the failed
+                // connection; readiness follows it and tries again.
+                onRetry: () => ref.invalidate(databaseProvider),
+              )
+            : const DatabasePreparingScreen(),
+      );
+    }
 
     return MaterialApp.router(
       title: 'IndiFit',
