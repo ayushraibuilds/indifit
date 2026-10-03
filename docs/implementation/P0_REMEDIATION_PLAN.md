@@ -448,13 +448,13 @@ Label scan is the exception. There the AI's job is to **read printed numbers** (
 ## 3. Definition of done (all P0s)
 
 - [ ] `main` CI green across all jobs and required for merges; backend reports 71+ tests.
-- [ ] Full local `flutter test`: 0 failures, no hang.
+- [x] Full local `flutter test`: 0 failures, no hang. *(2,504 pass, 2026-10-03)*
 - [ ] AI either meets WS7 acceptance (App Check enforced, consent, no fabricated results, eval bar met) **or** is hidden by the WS2 flag, with AI deep links falling back to Food.
 - [ ] Real barcode scanning works on an Android device and an iPhone; offline state is explained in the UI.
 - [ ] iOS Release/Profile use `Runner.entitlements`; privacy manifest present; Organizer validation passes.
 - [ ] Live Activity either works on a device or isn't claimed anywhere.
-- [ ] Backend: backup/sync routers unmounted by default, current model, key in header, no error leakage, trusted proxy IPs, bounded memory.
-- [ ] README, store copy and `docs/implementation/MASTER_TRACKER.md` describe what actually ships (schema v23, features as gated).
+- [x] Backend: backup/sync routers unmounted by default, current model, key in header, no error leakage, trusted proxy IPs, bounded memory. *(Proxy trust counts hops via `TRUSTED_PROXY_HOPS`, 2026-10-03.)*
+- [ ] README, store copy and `docs/implementation/MASTER_TRACKER.md` describe what actually ships (schema v23, features as gated). *(README and tracker are done; store copy waits for the store listings.)*
 
 ## 4. Things only you can do
 

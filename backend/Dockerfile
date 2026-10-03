@@ -23,4 +23,4 @@ ENV PYTHONUNBUFFERED=1
 EXPOSE 8000
 
 # Start command pinned to 1 worker with proxy headers
-CMD uvicorn main:app --workers 1 --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips='*'
+CMD uvicorn main:app --workers 1 --host 0.0.0.0 --port ${PORT:-8000} --no-proxy-headers

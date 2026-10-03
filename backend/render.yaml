@@ -4,12 +4,16 @@ services:
     env: python
     region: oregon
     buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn main:app --workers 1 --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips='*'
+    startCommand: uvicorn main:app --workers 1 --host 0.0.0.0 --port $PORT --no-proxy-headers
     envVars:
       # Audit §4.3: Single-worker container enforcement prevents multi-worker in-memory cache and rate-limit bypass
       - key: WEB_CONCURRENCY
         value: "1"
       - key: PYTHONUNBUFFERED
+        value: "1"
+      # Render's load balancer appends the caller's address to
+      # X-Forwarded-For; trust exactly that one hop (core/security.py).
+      - key: TRUSTED_PROXY_HOPS
         value: "1"
       - key: GEMINI_API_KEY
         sync: false
