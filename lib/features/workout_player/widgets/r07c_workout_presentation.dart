@@ -53,11 +53,14 @@ String? r07cFormatTarget({
   required int? rpe,
 }) {
   final load = r07cFormatLoad(loadKg, loadBasis);
-  final reps = _formatRepRange(minReps, maxReps);
+  // The open "any reps" placeholder is not a plan; don't show it as one.
+  final reps = r07cIsPlaceholderRepRange(minReps, maxReps)
+      ? null
+      : _formatRepRange(minReps, maxReps);
   if (load.isEmpty && reps == null && rpe == null) return null;
   return [
     if (load.isNotEmpty) load,
-    reps,
+    ?reps,
     if (rpe != null) 'RPE $rpe',
   ].join(' × ');
 }
@@ -91,8 +94,13 @@ bool r07cHasUsefulTarget({
     return true;
   }
   if (minReps == null && maxReps == null) return false;
-  return !(minReps == 1 && (maxReps == null || maxReps == 20));
+  return !r07cIsPlaceholderRepRange(minReps, maxReps);
 }
+
+/// The open 1–20 rep range given to exercises with no planned reps (quick
+/// workouts, unplanned extras). It means "any reps", not a target.
+bool r07cIsPlaceholderRepRange(int? minReps, int? maxReps) =>
+    minReps == 1 && (maxReps == null || maxReps == 20);
 
 String? r07cFormatWarmupProposal(B02WarmupSetProposal proposal) {
   final load = r07cFormatLoad(proposal.loadKg, proposal.loadBasis);
