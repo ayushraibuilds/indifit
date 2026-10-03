@@ -56,9 +56,9 @@ Use one PR per row. Each PR must pass CI before the next one merges. Run `flutte
 | 3 | `fix/router-error-fallback` | WS-G (PR #25) |
 | 4 | `fix/streak-calculation` | WS-D part 1 (PR #26) |
 | 5 | `fix/rest-intent-single-owner` | WS-D part 2, steps 1–3 (PR #27) |
-| 6 | `feat/db-open-recovery` | WS-B part 1 |
-| 7 | `perf/launch-repair-gate` | WS-B part 2: only if the measurement says so |
-| 8 | `fix/no-silent-catches` | WS-C |
+| 6 | `feat/db-open-recovery` | WS-B part 1 (PR #28) |
+| 7 | `perf/launch-repair-gate` | WS-B part 2: measured ~6 ms warm on desktop, no gate; timing log only (PR #29) |
+| 8 | `fix/no-silent-catches` | WS-C (PR #30, stacked on #26) |
 | 9+ | `feat/player-*`, `fix/dashboard-colours`, … | WS-H, one PR per bullet |
 | any | `chore/backend-cors-tidy`, `docs/cloud-crypto-comment` | WS-F, WS-E |
 | post-launch | `refactor/single-draft-owner` | WS-D part 2, step 4 |
