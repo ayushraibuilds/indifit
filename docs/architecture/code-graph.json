@@ -1,19 +1,19 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "summary": {
-    "total_dart_files": 464,
-    "total_loc": 338507,
-    "total_internal_edges": 2307,
+    "total_dart_files": 465,
+    "total_loc": 338705,
+    "total_internal_edges": 2312,
     "external_package_count": 28,
     "catch_metrics": {
-      "total_catches_all": 522,
+      "total_catches_all": 524,
       "total_catch_underscore": 195,
       "total_empty_catches": 37,
       "p0_empty_catches": 0
     },
     "layer_violations_count": 7,
     "catches_by_layer": {
-      "core": 146,
+      "core": 148,
       "data": 103,
       "features": 272,
       "other": 1
@@ -527,18 +527,63 @@
       "empty_catch_count": 0,
       "total_catch_count": 1
     },
+    "lib/core/ai/ai_daily_caps.dart": {
+      "path": "lib/core/ai/ai_daily_caps.dart",
+      "layer": "core",
+      "sublayer": "core",
+      "loc": 167,
+      "imports": [
+        "lib/core/utils/app_logger.dart",
+        "lib/core/ai/ai_gateway.dart"
+      ],
+      "imported_by": [
+        "lib/core/ai/ai_gateway_provider.dart",
+        "lib/core/ai/firebase_ai_gateway.dart"
+      ],
+      "parts": [],
+      "part_of": null,
+      "providers_defined": [],
+      "providers_used": [],
+      "routes_defined": [],
+      "catches": [
+        {
+          "file": "lib/core/ai/ai_daily_caps.dart",
+          "line": 54,
+          "var": "error",
+          "is_underscore": false,
+          "is_empty": false,
+          "snippet": "} on FormatException catch (error) {",
+          "layer": "core",
+          "is_p0": false
+        },
+        {
+          "file": "lib/core/ai/ai_daily_caps.dart",
+          "line": 125,
+          "var": "error",
+          "is_underscore": false,
+          "is_empty": false,
+          "snippet": "} on AiGatewayException catch (error) {",
+          "layer": "core",
+          "is_p0": false
+        }
+      ],
+      "empty_catch_count": 0,
+      "total_catch_count": 2
+    },
     "lib/core/ai/ai_gateway.dart": {
       "path": "lib/core/ai/ai_gateway.dart",
       "layer": "core",
       "sublayer": "core",
-      "loc": 46,
+      "loc": 50,
       "imports": [],
       "imported_by": [
+        "lib/core/ai/ai_daily_caps.dart",
         "lib/core/ai/ai_gateway_provider.dart",
         "lib/core/ai/backend_ai_gateway.dart",
         "lib/core/ai/firebase_ai_gateway.dart",
         "lib/core/ai/gemini_requests.dart",
         "lib/features/nutrition_ai/natural_language_meal_service.dart",
+        "lib/features/nutrition_ai/nutrition_ai_controllers.dart",
         "lib/features/nutrition_ai/nutrition_label_ocr_service.dart"
       ],
       "parts": [],
@@ -554,10 +599,11 @@
       "path": "lib/core/ai/ai_gateway_provider.dart",
       "layer": "core",
       "sublayer": "core",
-      "loc": 16,
+      "loc": 22,
       "imports": [
         "lib/core/config/app_config.dart",
         "lib/core/di/core_providers.dart",
+        "lib/core/ai/ai_daily_caps.dart",
         "lib/core/ai/ai_gateway.dart",
         "lib/core/ai/backend_ai_gateway.dart",
         "lib/core/ai/firebase_ai_gateway.dart"
@@ -571,7 +617,8 @@
         "aiGatewayProvider"
       ],
       "providers_used": [
-        "dioProvider"
+        "dioProvider",
+        "sharedPreferencesProvider"
       ],
       "routes_defined": [],
       "catches": [],
@@ -616,11 +663,12 @@
       "path": "lib/core/ai/firebase_ai_gateway.dart",
       "layer": "core",
       "sublayer": "core",
-      "loc": 188,
+      "loc": 199,
       "imports": [
         "lib/firebase_options.dart",
         "lib/core/config/app_config.dart",
         "lib/core/utils/app_logger.dart",
+        "lib/core/ai/ai_daily_caps.dart",
         "lib/core/ai/ai_gateway.dart",
         "lib/core/ai/gemini_requests.dart"
       ],
@@ -635,7 +683,7 @@
       "catches": [
         {
           "file": "lib/core/ai/firebase_ai_gateway.dart",
-          "line": 102,
+          "line": 112,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -645,7 +693,7 @@
         },
         {
           "file": "lib/core/ai/firebase_ai_gateway.dart",
-          "line": 122,
+          "line": 132,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -5521,6 +5569,7 @@
       "imported_by": [
         "lib/app/bootstrap.dart",
         "lib/app/indifit_app.dart",
+        "lib/core/ai/ai_daily_caps.dart",
         "lib/core/ai/firebase_ai_gateway.dart",
         "lib/core/ai/gemini_requests.dart",
         "lib/core/backup/backup_file_adapter.dart",
@@ -15163,8 +15212,9 @@
       "path": "lib/features/nutrition_ai/nutrition_ai_controllers.dart",
       "layer": "features",
       "sublayer": "features/nutrition_ai",
-      "loc": 849,
+      "loc": 859,
       "imports": [
+        "lib/core/ai/ai_gateway.dart",
         "lib/core/typed_quantities.dart",
         "lib/data/repositories/nutrition_food_catalog_repository.dart",
         "lib/data/repositories/nutrition_food_logging_coordinator.dart",
@@ -15185,7 +15235,7 @@
       "catches": [
         {
           "file": "lib/features/nutrition_ai/nutrition_ai_controllers.dart",
-          "line": 231,
+          "line": 232,
           "var": "e",
           "is_underscore": false,
           "is_empty": false,
@@ -15195,7 +15245,7 @@
         },
         {
           "file": "lib/features/nutrition_ai/nutrition_ai_controllers.dart",
-          "line": 303,
+          "line": 313,
           "var": "e",
           "is_underscore": false,
           "is_empty": false,
@@ -15205,7 +15255,7 @@
         },
         {
           "file": "lib/features/nutrition_ai/nutrition_ai_controllers.dart",
-          "line": 370,
+          "line": 380,
           "var": "e",
           "is_underscore": false,
           "is_empty": false,
@@ -15215,7 +15265,7 @@
         },
         {
           "file": "lib/features/nutrition_ai/nutrition_ai_controllers.dart",
-          "line": 479,
+          "line": 489,
           "var": "e",
           "is_underscore": false,
           "is_empty": false,
@@ -15225,7 +15275,7 @@
         },
         {
           "file": "lib/features/nutrition_ai/nutrition_ai_controllers.dart",
-          "line": 593,
+          "line": 603,
           "var": "e",
           "is_underscore": false,
           "is_empty": false,
@@ -15235,7 +15285,7 @@
         },
         {
           "file": "lib/features/nutrition_ai/nutrition_ai_controllers.dart",
-          "line": 729,
+          "line": 739,
           "var": "e",
           "is_underscore": false,
           "is_empty": false,
@@ -15245,7 +15295,7 @@
         },
         {
           "file": "lib/features/nutrition_ai/nutrition_ai_controllers.dart",
-          "line": 840,
+          "line": 850,
           "var": "e",
           "is_underscore": false,
           "is_empty": false,

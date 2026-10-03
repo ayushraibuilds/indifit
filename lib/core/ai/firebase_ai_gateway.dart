@@ -10,6 +10,7 @@ import 'package:flutter/foundation.dart';
 import '../../firebase_options.dart';
 import '../config/app_config.dart';
 import '../utils/app_logger.dart';
+import 'ai_daily_caps.dart';
 import 'ai_gateway.dart';
 import 'gemini_requests.dart';
 
@@ -25,6 +26,9 @@ abstract final class AiRemoteConfigKeys {
   /// Photo meal estimates are the least accurate feature and can be switched
   /// off on their own.
   static const photoEnabled = 'ai_photo_enabled';
+
+  /// Per-device daily allowance per feature, as JSON; see [AiDailyCaps].
+  static const dailyCaps = 'ai_daily_caps';
 }
 
 /// [AiGateway] backed by Gemini through Firebase AI Logic.
@@ -68,6 +72,12 @@ class FirebaseAiGateway implements AiGateway {
     GeminiRequests.nutritionLabel(jpeg),
     schema: GeminiRequests.labelSchema,
   );
+
+  /// Today's per-feature allowances from Remote Config.
+  Future<AiDailyCaps> dailyCaps() async {
+    final config = await _remoteConfig();
+    return AiDailyCaps.parse(config.getString(AiRemoteConfigKeys.dailyCaps));
+  }
 
   Future<Map<String, dynamic>> _generate(
     List<Content> prompt, {
@@ -162,6 +172,7 @@ class FirebaseAiGateway implements AiGateway {
         AiRemoteConfigKeys.enabled: true,
         AiRemoteConfigKeys.model: GeminiRequests.defaultModel,
         AiRemoteConfigKeys.photoEnabled: true,
+        AiRemoteConfigKeys.dailyCaps: AiDailyCaps.defaultsJson,
       });
       await config.setConfigSettings(
         RemoteConfigSettings(
