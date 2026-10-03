@@ -860,8 +860,13 @@ class _B02StrengthPlayerScreenState
     setState(() {
       _loadControllerFor(slot).text =
           recommendation.recommendedLoadKg?.toString() ?? '';
-      _repControllerFor(slot).text =
-          recommendation.targetRepsMin?.toString() ?? '';
+      if (!r07cIsPlaceholderRepRange(
+        recommendation.targetRepsMin,
+        recommendation.targetRepsMax,
+      )) {
+        _repControllerFor(slot).text =
+            recommendation.targetRepsMin?.toString() ?? '';
+      }
     });
     FocusManager.instance.primaryFocus?.unfocus();
   }
@@ -1018,6 +1023,12 @@ class _B02StrengthPlayerScreenState
 
   String? _initialRepsFor(B02StrengthExecutionSlot slot) {
     if (!_hasUsefulTarget(slot) || slot.targetRepsMin == null) return null;
+    // Leave reps empty for the "any reps" placeholder: its floor of 1 would
+    // be logged as a real set, and it would block last session's reps from
+    // the previous-performance prefill.
+    if (r07cIsPlaceholderRepRange(slot.targetRepsMin, slot.targetRepsMax)) {
+      return null;
+    }
     return slot.targetRepsMin.toString();
   }
 
