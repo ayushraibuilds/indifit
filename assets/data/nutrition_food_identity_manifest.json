@@ -2044,13 +2044,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0315"
     },
     {
       "id": "food-seed-0477",
@@ -8669,13 +8669,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0315"
     },
     {
       "id": "food-seed-0478",
@@ -13494,13 +13494,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0080"
     },
     {
       "id": "food-seed-0013",
@@ -13519,13 +13519,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0010"
     },
     {
       "id": "food-seed-0280",
@@ -13569,13 +13569,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0537"
     },
     {
       "id": "food-seed-0321",
@@ -13619,13 +13619,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0336"
     },
     {
       "id": "food-seed-0223",
@@ -13769,13 +13769,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0056"
     },
     {
       "id": "food-seed-0177",
@@ -13794,13 +13794,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0174"
     },
     {
       "id": "food-seed-0352",
@@ -13844,13 +13844,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0315"
     },
     {
       "id": "food-seed-0126",
@@ -13869,13 +13869,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0142"
     },
     {
       "id": "food-seed-0448",
@@ -13894,13 +13894,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0449"
     },
     {
       "id": "food-seed-0570",
@@ -13919,13 +13919,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0532"
     },
     {
       "id": "food-seed-0492",
@@ -13944,13 +13944,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0473"
     },
     {
       "id": "food-seed-0528",
@@ -14019,13 +14019,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0261"
     },
     {
       "id": "food-seed-0500",
@@ -14044,13 +14044,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0497"
     },
     {
       "id": "food-seed-0273",
@@ -14094,13 +14094,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0014"
     },
     {
       "id": "food-seed-0021",
@@ -14119,13 +14119,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0018"
     },
     {
       "id": "food-seed-0254",
@@ -14144,13 +14144,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0456"
     },
     {
       "id": "food-seed-0569",
@@ -27837,11 +27837,11 @@
       "target_id": "food-seed-0390",
       "kind": "canonical",
       "classification": "Vegetables & Sabjis",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Duplicate of \"Mattar Paneer\" (food-seed-0315); merged 2026-10-03. Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:samosa (1 piece)": {
@@ -31282,11 +31282,11 @@
       "target_id": "food-seed-0391",
       "kind": "canonical",
       "classification": "Vegetables & Sabjis",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Duplicate of \"Mattar Paneer\" (food-seed-0315); merged 2026-10-03. Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:samosa (1 piece) (mini size)": {
@@ -33791,11 +33791,11 @@
       "target_id": "food-seed-0079",
       "kind": "canonical",
       "classification": "Vegetables & Sabji",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Duplicate of \"Bhindi Masala (Okra)\" (food-seed-0080); merged 2026-10-03. Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:aloo gobi dry sabji": {
@@ -33804,11 +33804,11 @@
       "target_id": "food-seed-0013",
       "kind": "canonical",
       "classification": "Vegetables & Sabji",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Duplicate of \"Aloo Gobbi (Dry Sabji)\" (food-seed-0010); merged 2026-10-03. Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:lauki chana dal sabji": {
@@ -33830,11 +33830,11 @@
       "target_id": "food-seed-0536",
       "kind": "canonical",
       "classification": "Vegetables & Sabji",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Duplicate of \"Torai Ki Sabji (Ridge Gourd)\" (food-seed-0537); merged 2026-10-03. Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:methi matar malai": {
@@ -33856,11 +33856,11 @@
       "target_id": "food-seed-0339",
       "kind": "canonical",
       "classification": "Vegetables & Sabji",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Duplicate of \"Mix Vegetable Sabji\" (food-seed-0336); merged 2026-10-03. Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:gobi matar dry": {
@@ -33934,11 +33934,11 @@
       "target_id": "food-seed-0202",
       "kind": "canonical",
       "classification": "Vegetables & Sabji",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Duplicate of \"Beans Poriyal\" (food-seed-0056); merged 2026-10-03. Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:dum aloo punjabi": {
@@ -33947,11 +33947,11 @@
       "target_id": "food-seed-0177",
       "kind": "canonical",
       "classification": "Vegetables & Sabji",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Duplicate of \"Dum Aloo\" (food-seed-0174); merged 2026-10-03. Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:mushroom matar curry": {
@@ -33973,11 +33973,11 @@
       "target_id": "food-seed-0314",
       "kind": "canonical",
       "classification": "Vegetables & Sabji",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Duplicate of \"Mattar Paneer\" (food-seed-0315); merged 2026-10-03. Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:chana masala (chickpea curry)": {
@@ -33986,11 +33986,11 @@
       "target_id": "food-seed-0126",
       "kind": "canonical",
       "classification": "Pulses & Legumes",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Duplicate of \"Chole Masala (Chickpea Curry)\" (food-seed-0142); merged 2026-10-03. Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:rajma masala (kidney beans)": {
@@ -33999,11 +33999,11 @@
       "target_id": "food-seed-0448",
       "kind": "canonical",
       "classification": "Pulses & Legumes",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Duplicate of \"Rajma Masala (Red Kidney Beans)\" (food-seed-0449); merged 2026-10-03. Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:yellow dal tadka": {
@@ -34012,11 +34012,11 @@
       "target_id": "food-seed-0570",
       "kind": "canonical",
       "classification": "Pulses & Legumes",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Duplicate of \"Toor Dal / Yellow Dal Tadka\" (food-seed-0532); merged 2026-10-03. Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:south indian sambhar": {
@@ -34025,11 +34025,11 @@
       "target_id": "food-seed-0492",
       "kind": "canonical",
       "classification": "Pulses & Legumes",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Duplicate of \"Sambar\" (food-seed-0473); merged 2026-10-03. Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:tomato rasam": {
@@ -34064,11 +34064,11 @@
       "target_id": "food-seed-0440",
       "kind": "canonical",
       "classification": "Dals & Curries",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Duplicate of \"Kadhi Pakora\" (food-seed-0261); merged 2026-10-03. Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:sprouted moong salad / sabji": {
@@ -34077,11 +34077,11 @@
       "target_id": "food-seed-0500",
       "kind": "canonical",
       "classification": "Vegetables & Sabji",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Duplicate of \"Sprouted Moong Salad\" (food-seed-0497); merged 2026-10-03. Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:kathal (jackfruit) sabji": {
@@ -34103,11 +34103,11 @@
       "target_id": "food-seed-0017",
       "kind": "canonical",
       "classification": "Vegetables & Sabji",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Duplicate of \"Aloo Methi\" (food-seed-0014); merged 2026-10-03. Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:aloo palak dry": {
@@ -34116,11 +34116,11 @@
       "target_id": "food-seed-0021",
       "kind": "canonical",
       "classification": "Vegetables & Sabji",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Duplicate of \"Aloo Palak\" (food-seed-0018); merged 2026-10-03. Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:kacha kela (raw banana) fry": {
@@ -34129,11 +34129,11 @@
       "target_id": "food-seed-0254",
       "kind": "preparationVariant",
       "classification": "Vegetables & Sabji",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Duplicate of \"Raw Banana Stir Fry\" (food-seed-0456); merged 2026-10-03. Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:yam (suran) fry": {

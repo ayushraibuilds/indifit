@@ -412,6 +412,7 @@ class AppDatabase extends _$AppDatabase {
         await _ensurePreReleaseV17VesselGraph();
         if (await _tableExists('nutrition_foods')) {
           await _repairMissingV17LegacyFoodMappings();
+          await _retireMergedCatalogueDuplicates();
           // Triggers are part of the durable v17 boundary. Reinstall them on
           // every open so a v17 database created before a boundary repair
           // cannot bypass the same checks through raw SQL, restore, or a

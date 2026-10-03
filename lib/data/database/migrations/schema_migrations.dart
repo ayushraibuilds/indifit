@@ -1528,6 +1528,29 @@ extension DatabaseMigrations on AppDatabase {
     }
   }
 
+  /// Brings installs seeded before the 2026-10-03 duplicate merge in line
+  /// with the manifest: retired catalogue foods become 'deprecated' (out of
+  /// search, still readable by past logs). Idempotent; runs on every open.
+  Future<void> _retireMergedCatalogueDuplicates() async {
+    final retired = kRetiredCatalogueFoods.keys.toList(growable: false);
+    final updated =
+        await (update(nutritionFoods)..where(
+              (food) => food.id.isIn(retired) & food.lifecycle.equals('active'),
+            ))
+            .write(
+              const NutritionFoodsCompanion(lifecycle: Value('deprecated')),
+            );
+    if (updated > 0 && await _tableExists('food_search_cache')) {
+      await customStatement(
+        "DELETE FROM food_search_cache WHERE query_hash != '__manifest_version__';",
+      );
+    }
+  }
+
+  /// Public test & maintenance hook to apply the duplicate merge.
+  Future<void> retireMergedCatalogueDuplicates() =>
+      _retireMergedCatalogueDuplicates();
+
   /// Public test & maintenance hook to trigger manifest cache invalidation.
   Future<void> invalidateFoodSearchCacheIfManifestIncremented() =>
       _checkAndInvalidateFoodSearchCacheOnManifestChange();

@@ -2,8 +2,8 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "summary": {
     "total_dart_files": 464,
-    "total_loc": 338303,
-    "total_internal_edges": 2305,
+    "total_loc": 338438,
+    "total_internal_edges": 2306,
     "external_package_count": 28,
     "catch_metrics": {
       "total_catches_all": 522,
@@ -2669,10 +2669,11 @@
       "path": "lib/core/fixtures/food_identity_manifest.dart",
       "layer": "core",
       "sublayer": "core",
-      "loc": 2041,
+      "loc": 2070,
       "imports": [],
       "imported_by": [
-        "lib/data/database/app_database.dart"
+        "lib/data/database/app_database.dart",
+        "lib/data/repositories/nutrition_food_catalog_repository.dart"
       ],
       "parts": [],
       "part_of": null,
@@ -5973,7 +5974,7 @@
       "path": "lib/data/database/app_database.dart",
       "layer": "data",
       "sublayer": "data",
-      "loc": 428,
+      "loc": 429,
       "imports": [
         "lib/core/config/app_preferences_keys.dart",
         "lib/core/fixtures/b02_muscle_catalog.dart",
@@ -6188,7 +6189,7 @@
       "path": "lib/data/database/migrations/schema_migrations.dart",
       "layer": "data",
       "sublayer": "data",
-      "loc": 1534,
+      "loc": 1557,
       "imports": [],
       "imported_by": [
         "lib/data/database/app_database.dart"
@@ -7982,7 +7983,7 @@
       "path": "lib/data/repositories/food_repository.dart",
       "layer": "data",
       "sublayer": "data",
-      "loc": 811,
+      "loc": 841,
       "imports": [
         "lib/core/di/providers.dart",
         "lib/core/nutrition_legacy_corrections.dart",
@@ -8552,8 +8553,9 @@
       "path": "lib/data/repositories/nutrition_food_catalog_repository.dart",
       "layer": "data",
       "sublayer": "data",
-      "loc": 912,
+      "loc": 934,
       "imports": [
+        "lib/core/fixtures/food_identity_manifest.dart",
         "lib/core/nutrients.dart",
         "lib/core/typed_quantities.dart",
         "lib/data/database/app_database.dart"
@@ -15039,7 +15041,7 @@
       "path": "lib/features/nutrition_ai/meal_item_resolver.dart",
       "layer": "features",
       "sublayer": "features/nutrition_ai",
-      "loc": 405,
+      "loc": 435,
       "imports": [
         "lib/core/typed_quantities.dart",
         "lib/data/repositories/nutrition_food_catalog_repository.dart"

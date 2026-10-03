@@ -109,9 +109,34 @@ class MealItemResolver {
     'plain dosa': 'Plain Dosa with Chutney',
     'lassi': 'Masala Lassi (Sweet)',
     'sweet lassi': 'Masala Lassi (Sweet)',
-    'sprouts salad': 'Sprouted Moong Salad',
-    'moong sprouts salad': 'Sprouted Moong Salad',
+    'sprout salad': 'Sprouted Moong Salad',
+    'moong sprout salad': 'Sprouted Moong Salad',
     'sprouted moong salad': 'Sprouted Moong Salad',
+    // Names and spellings of duplicates merged on 2026-10-03
+    // (kRetiredCatalogueFoods), so they still land on the kept food.
+    'matar paneer': _matarPaneer,
+    'mattar paneer': _matarPaneer,
+    'paneer matar': _matarPaneer,
+    'paneer mattar': _matarPaneer,
+    'sambhar': 'Sambar',
+    'south indian sambhar': 'Sambar',
+    'punjabi kadhi pakora': 'Kadhi Pakora',
+    'mix veg': _mixVeg,
+    'mixed veg': _mixVeg,
+    'mixed veg sabji': _mixVeg,
+    'mix veg sabji': _mixVeg,
+    'dum aloo punjabi': 'Dum Aloo',
+    'torai': _torai,
+    'torai curry': _torai,
+    'torai ki sabji': _torai,
+    'aloo methi dry': 'Aloo Methi',
+    'aloo palak dry': 'Aloo Palak',
+    'french bean poriyal': 'Beans Poriyal',
+    'bean poriyal': 'Beans Poriyal',
+    'raw banana fry': _rawBanana,
+    'kacha kela fry': _rawBanana,
+    'dhokla': _dhokla,
+    'khaman dhokla': _dhokla,
     'aloo gobi': 'Aloo Gobbi (Dry Sabji)',
   };
 
@@ -123,6 +148,11 @@ class MealItemResolver {
   static const _rajma = 'Rajma Masala (Red Kidney Beans)';
   static const _chole = 'Chole Masala (Chickpea Curry)';
   static const _bhindi = 'Bhindi Masala (Okra)';
+  static const _matarPaneer = 'Mattar Paneer';
+  static const _mixVeg = 'Mix Vegetable Sabji';
+  static const _torai = 'Torai Ki Sabji (Ridge Gourd)';
+  static const _rawBanana = 'Raw Banana Stir Fry';
+  static const _dhokla = 'Dhokla (2 pieces)';
 
   Future<CatalogMatch> resolve(String foodName) async {
     final normalized = normalize(foodName);

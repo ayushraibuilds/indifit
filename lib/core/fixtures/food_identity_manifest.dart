@@ -6,6 +6,32 @@ import 'package:crypto/crypto.dart';
 /// The checked-in food identity contract version.
 const int kFoodIdentityManifestVersion = 1;
 
+/// Catalogue duplicates merged on 2026-10-03: retired ID -> the food that
+/// replaces it. The manifest marks these deprecated (with the same
+/// replacement_id); existing installs are brought in line on open, and a test
+/// keeps this map and the manifest identical. Retired foods leave search but
+/// stay readable, so past logs keep resolving.
+const Map<String, String> kRetiredCatalogueFoods = {
+  'food-seed-0013': 'food-seed-0010', // Aloo Gobi Dry Sabji
+  'food-seed-0017': 'food-seed-0014', // Aloo Methi Dry
+  'food-seed-0021': 'food-seed-0018', // Aloo Palak Dry
+  'food-seed-0079': 'food-seed-0080', // Bhindi Masala (Okra Fry)
+  'food-seed-0126': 'food-seed-0142', // Chana Masala (Chickpea Curry)
+  'food-seed-0177': 'food-seed-0174', // Dum Aloo Punjabi
+  'food-seed-0202': 'food-seed-0056', // French Beans Poriyal
+  'food-seed-0254': 'food-seed-0456', // Kacha Kela (Raw Banana) Fry
+  'food-seed-0314': 'food-seed-0315', // Matar Paneer
+  'food-seed-0339': 'food-seed-0336', // Mixed Veg Sabji
+  'food-seed-0390': 'food-seed-0315', // Paneer Mattar
+  'food-seed-0391': 'food-seed-0315', // Paneer Mattar (Dhaba Style)
+  'food-seed-0440': 'food-seed-0261', // Punjabi Kadhi Pakora
+  'food-seed-0448': 'food-seed-0449', // Rajma Masala (Kidney Beans)
+  'food-seed-0492': 'food-seed-0473', // South Indian Sambhar
+  'food-seed-0500': 'food-seed-0497', // Sprouted Moong Salad / Sabji
+  'food-seed-0536': 'food-seed-0537', // Torai (Ridge Gourd) Curry
+  'food-seed-0570': 'food-seed-0532', // Yellow Dal Tadka
+};
+
 /// B03-D02 deliberately permits only case and Unicode-whitespace
 /// normalization. Punctuation, preparation words, brands, portions, and
 /// fuzzy/substring matching are outside this contract.
@@ -1441,12 +1467,15 @@ class FoodIdentityManifest {
           'external_id': null,
         },
         'review_state': reviewState.name,
-        'deprecated': false,
+        // Carried forward so regeneration never revives a merged duplicate.
+        'deprecated': reviewState == FoodIdentityReviewState.deprecated,
         'is_catalogue': true,
         'variant_type': variantType,
         'parent_id': parentId,
         'family_id': familyId,
-        'replacement_id': null,
+        'replacement_id': reviewState == FoodIdentityReviewState.deprecated
+            ? kRetiredCatalogueFoods[id]
+            : null,
       });
     }
 

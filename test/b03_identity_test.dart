@@ -483,10 +483,11 @@ void main() {
       expect(manifest.regionalVariantCount, 25);
       expect(manifest.servingPresentationVariantCount, 108);
       expect(manifest.brandedCount, 3);
-      expect(manifest.deprecatedCount, 1);
+      // 1 fixture + 18 catalogue duplicates merged on 2026-10-03.
+      expect(manifest.deprecatedCount, 19);
       expect(manifest.ambiguousCount, 10);
       expect(manifest.unresolvedCount, 2);
-      expect(manifest.manualReviewCount, 592);
+      expect(manifest.manualReviewCount, 574);
       expect(
         manifest.sourceReviews.values
             .where(
@@ -513,7 +514,7 @@ void main() {
           .toString();
       expect(
         checksum,
-        '0fa8d39aa6c9299780e62494721b0023b13f793bacce8b28ee87fa8e4d5c58c1',
+        'eb8083ec98c84291e3ea656073f676e5c5f6bb585abc757b97e5e52e599e8d40',
       );
     });
 

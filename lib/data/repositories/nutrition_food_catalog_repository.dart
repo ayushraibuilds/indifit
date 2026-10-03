@@ -4,6 +4,7 @@ import 'package:crypto/crypto.dart';
 import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../core/fixtures/food_identity_manifest.dart';
 import '../../core/nutrients.dart';
 import '../../core/typed_quantities.dart';
 import '../database/app_database.dart';
@@ -407,7 +408,22 @@ class NutritionFoodCatalogRepository {
       final option = await getOption(row.id);
       if (option != null) resultById[option.id] = option;
     }
+    // Legacy rows of merged duplicates still map to their retired identity;
+    // keep those out of search like their deprecated identity rows.
+    final retiredIds = legacyOptions.isEmpty
+        ? const <String>{}
+        : {
+            for (final row
+                in await (_db.select(_db.nutritionFoods)..where(
+                      (table) =>
+                          table.id.isIn(legacyOptions.map((o) => o.id)) &
+                          table.lifecycle.equals('deprecated'),
+                    ))
+                    .get())
+              row.id,
+          };
     for (final option in legacyOptions) {
+      if (retiredIds.contains(option.id)) continue;
       resultById.putIfAbsent(option.id, () => option);
     }
     final result = resultById.values.toList()
@@ -466,6 +482,12 @@ class NutritionFoodCatalogRepository {
         _db.nutritionFoods,
       )..where((row) => row.id.equals(mapping!.foodId!))).getSingleOrNull();
       if (canonical != null && canonical.lifecycle == 'active') {
+        return canonical.id;
+      }
+      // A merged duplicate stays on its retired identity (out of search);
+      // minting a fresh legacy identity here would bring it back.
+      if (canonical != null &&
+          kRetiredCatalogueFoods.containsKey(canonical.id)) {
         return canonical.id;
       }
     }

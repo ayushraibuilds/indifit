@@ -130,6 +130,12 @@ void main() {
       expect(match.option!.displayName, 'Rumali Roti');
     });
 
+    test('default keys are already normalised, or they never match', () {
+      for (final key in MealItemResolver.genericDefaults.keys) {
+        expect(MealItemResolver.normalize(key), key);
+      }
+    });
+
     test('nested-parenthesis variants still rank below their base', () async {
       final match = await _resolverOver([
         _food('Butter Chicken (Murgh Makhani)'),
