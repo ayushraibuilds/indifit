@@ -4,6 +4,7 @@ import 'package:timezone/timezone.dart' as tz;
 import '../../core/nutrients.dart';
 import '../../core/nutrition_household_measures.dart';
 import '../../core/services/local_schedule_date_service.dart';
+import '../../core/utils/app_logger.dart';
 import '../database/app_database.dart';
 import '../models/b02_execution_models.dart';
 import '../models/progress_dashboard_models.dart';
@@ -607,7 +608,13 @@ class ProgressPeriodComparisonRepository {
           targetCalories = targets.calorieTargetKcal?.toDouble();
           targetProtein = targets.proteinTargetG;
         }
-      } catch (_) {}
+      } catch (error) {
+        // The comparison still shows; only the target line is missing.
+        AppLogger.warning(
+          'Period comparison: target unavailable: $error',
+          'PeriodComparison',
+        );
+      }
     }
 
     for (final date in readableDates) {

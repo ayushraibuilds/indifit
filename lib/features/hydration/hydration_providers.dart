@@ -168,10 +168,9 @@ class WaterNotifier extends StateNotifier<WaterState> {
 }
 
 final hydrationRepositoryProvider = Provider<HydrationRepository>((ref) {
-  SharedPreferences? prefs;
-  try {
-    prefs = ref.watch(sharedPreferencesProvider);
-  } catch (_) {}
+  SharedPreferences? prefs = sharedPreferencesOrNull(
+    () => ref.watch(sharedPreferencesProvider),
+  );
   return HydrationRepository(
     ref.watch(databaseProvider),
     prefs: prefs,
@@ -180,10 +179,9 @@ final hydrationRepositoryProvider = Provider<HydrationRepository>((ref) {
 });
 
 final waterProvider = StateNotifierProvider<WaterNotifier, WaterState>((ref) {
-  SharedPreferences? prefs;
-  try {
-    prefs = ref.watch(sharedPreferencesProvider);
-  } catch (_) {}
+  SharedPreferences? prefs = sharedPreferencesOrNull(
+    () => ref.watch(sharedPreferencesProvider),
+  );
   return WaterNotifier(
     ref.watch(databaseProvider),
     ref.watch(hydrationRepositoryProvider),

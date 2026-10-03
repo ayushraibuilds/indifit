@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/di/providers.dart';
 import '../../core/nutrition_consumption_snapshots.dart'
     show NutritionConsumptionLineage;
+import '../../core/utils/app_logger.dart';
 import '../database/app_database.dart';
 import 'legacy_program_compatibility_adapter.dart';
 
@@ -333,7 +334,14 @@ class ProgressStatisticsRepository {
             supersededSnapshotIds.add(supersedes.trim());
           }
         }
-      } catch (_) {}
+      } catch (error) {
+        // An unreadable lineage hides a correction, so its predecessor would
+        // be counted too. Keep going, but leave a trace.
+        AppLogger.warning(
+          'Stats: unreadable lineage on snapshot ${s.id}: $error',
+          'ProgressStatistics',
+        );
+      }
     }
 
     // Filter active snapshots representing actual user meals:
@@ -369,7 +377,12 @@ class ProgressStatisticsRepository {
                   : (evidence is Map ? evidence['retraction'] : null);
               if (marker != null) isRetraction = true;
             }
-          } catch (_) {}
+          } catch (error) {
+            AppLogger.warning(
+              'Stats: unreadable lineage on snapshot ${s.id}: $error',
+              'ProgressStatistics',
+            );
+          }
         }
       }
       if (isRetraction) {

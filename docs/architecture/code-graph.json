@@ -2,20 +2,20 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "summary": {
     "total_dart_files": 466,
-    "total_loc": 338558,
-    "total_internal_edges": 2317,
+    "total_loc": 338653,
+    "total_internal_edges": 2324,
     "external_package_count": 28,
     "catch_metrics": {
-      "total_catches_all": 522,
-      "total_catch_underscore": 194,
-      "total_empty_catches": 36,
+      "total_catches_all": 502,
+      "total_catch_underscore": 162,
+      "total_empty_catches": 0,
       "p0_empty_catches": 0
     },
     "layer_violations_count": 7,
     "catches_by_layer": {
-      "core": 146,
-      "data": 103,
-      "features": 272,
+      "core": 142,
+      "data": 102,
+      "features": 257,
       "other": 1
     }
   },
@@ -78,368 +78,7 @@
       "rule": "lib/core should not import lib/features (presentation coupling)"
     }
   ],
-  "empty_catches_catalog": [
-    {
-      "file": "lib/core/di/theme_provider.dart",
-      "line": 48,
-      "var": "_",
-      "is_underscore": true,
-      "is_empty": true,
-      "snippet": "} catch (_) {}",
-      "layer": "core",
-      "is_p0": false
-    },
-    {
-      "file": "lib/core/di/user_profile_provider.dart",
-      "line": 708,
-      "var": "_",
-      "is_underscore": true,
-      "is_empty": true,
-      "snippet": "} catch (_) {}",
-      "layer": "core",
-      "is_p0": false
-    },
-    {
-      "file": "lib/core/presentation/today_onboarding_handoff.dart",
-      "line": 19,
-      "var": "_",
-      "is_underscore": true,
-      "is_empty": true,
-      "snippet": "} catch (_) {}",
-      "layer": "core",
-      "is_p0": false
-    },
-    {
-      "file": "lib/core/privacy/privacy_policy.dart",
-      "line": 130,
-      "var": "_",
-      "is_underscore": true,
-      "is_empty": true,
-      "snippet": "} catch (_) {}",
-      "layer": "core",
-      "is_p0": false
-    },
-    {
-      "file": "lib/core/services/rest_presence_service.dart",
-      "line": 789,
-      "var": "_",
-      "is_underscore": true,
-      "is_empty": true,
-      "snippet": "} catch (_) {}",
-      "layer": "core",
-      "is_p0": false
-    },
-    {
-      "file": "lib/core/services/rest_presence_service.dart",
-      "line": 811,
-      "var": "_",
-      "is_underscore": true,
-      "is_empty": true,
-      "snippet": "} catch (_) {}",
-      "layer": "core",
-      "is_p0": false
-    },
-    {
-      "file": "lib/core/services/rest_presence_service.dart",
-      "line": 821,
-      "var": "_",
-      "is_underscore": true,
-      "is_empty": true,
-      "snippet": "} catch (_) {}",
-      "layer": "core",
-      "is_p0": false
-    },
-    {
-      "file": "lib/core/services/rest_presence_service.dart",
-      "line": 846,
-      "var": "_",
-      "is_underscore": true,
-      "is_empty": true,
-      "snippet": "} catch (_) {}",
-      "layer": "core",
-      "is_p0": false
-    },
-    {
-      "file": "lib/data/repositories/adaptive_tdee_repository.dart",
-      "line": 304,
-      "var": "_",
-      "is_underscore": true,
-      "is_empty": true,
-      "snippet": "} catch (_) {}",
-      "layer": "data",
-      "is_p0": false
-    },
-    {
-      "file": "lib/data/repositories/hydration_repository.dart",
-      "line": 503,
-      "var": "_",
-      "is_underscore": true,
-      "is_empty": true,
-      "snippet": "} catch (_) {}",
-      "layer": "data",
-      "is_p0": false
-    },
-    {
-      "file": "lib/data/repositories/hydration_repository.dart",
-      "line": 539,
-      "var": "_",
-      "is_underscore": true,
-      "is_empty": true,
-      "snippet": "} catch (_) {}",
-      "layer": "data",
-      "is_p0": false
-    },
-    {
-      "file": "lib/data/repositories/progress_period_comparison_repository.dart",
-      "line": 610,
-      "var": "_",
-      "is_underscore": true,
-      "is_empty": true,
-      "snippet": "} catch (_) {}",
-      "layer": "data",
-      "is_p0": false
-    },
-    {
-      "file": "lib/data/repositories/progress_statistics_repository.dart",
-      "line": 336,
-      "var": "_",
-      "is_underscore": true,
-      "is_empty": true,
-      "snippet": "} catch (_) {}",
-      "layer": "data",
-      "is_p0": false
-    },
-    {
-      "file": "lib/data/repositories/progress_statistics_repository.dart",
-      "line": 372,
-      "var": "_",
-      "is_underscore": true,
-      "is_empty": true,
-      "snippet": "} catch (_) {}",
-      "layer": "data",
-      "is_p0": false
-    },
-    {
-      "file": "lib/features/dashboard/dashboard_screen.dart",
-      "line": 411,
-      "var": "_",
-      "is_underscore": true,
-      "is_empty": true,
-      "snippet": "} catch (_) {}",
-      "layer": "features/dashboard",
-      "is_p0": false
-    },
-    {
-      "file": "lib/features/food_log/barcode_scanner_screen.dart",
-      "line": 123,
-      "var": "_",
-      "is_underscore": true,
-      "is_empty": true,
-      "snippet": "} catch (_) {}",
-      "layer": "features/food_log",
-      "is_p0": false
-    },
-    {
-      "file": "lib/features/food_log/barcode_scanner_screen.dart",
-      "line": 129,
-      "var": "_",
-      "is_underscore": true,
-      "is_empty": true,
-      "snippet": "} catch (_) {}",
-      "layer": "features/food_log",
-      "is_p0": false
-    },
-    {
-      "file": "lib/features/food_log/barcode_scanner_screen.dart",
-      "line": 138,
-      "var": "_",
-      "is_underscore": true,
-      "is_empty": true,
-      "snippet": "} catch (_) {}",
-      "layer": "features/food_log",
-      "is_p0": false
-    },
-    {
-      "file": "lib/features/food_log/barcode_scanner_screen.dart",
-      "line": 170,
-      "var": "_",
-      "is_underscore": true,
-      "is_empty": true,
-      "snippet": "} catch (_) {}",
-      "layer": "features/food_log",
-      "is_p0": false
-    },
-    {
-      "file": "lib/features/food_log/barcode_scanner_screen.dart",
-      "line": 220,
-      "var": "_",
-      "is_underscore": true,
-      "is_empty": true,
-      "snippet": "} catch (_) {}",
-      "layer": "features/food_log",
-      "is_p0": false
-    },
-    {
-      "file": "lib/features/food_log/diary_structure_controller.dart",
-      "line": 236,
-      "var": "_",
-      "is_underscore": true,
-      "is_empty": true,
-      "snippet": "} catch (_) {}",
-      "layer": "features/food_log",
-      "is_p0": false
-    },
-    {
-      "file": "lib/features/food_log/food_log_surface.dart",
-      "line": 467,
-      "var": "_",
-      "is_underscore": true,
-      "is_empty": true,
-      "snippet": "} catch (_) {}",
-      "layer": "features/food_log",
-      "is_p0": false
-    },
-    {
-      "file": "lib/features/food_log/food_search_screen.dart",
-      "line": 1336,
-      "var": "_",
-      "is_underscore": true,
-      "is_empty": true,
-      "snippet": "} catch (_) {}",
-      "layer": "features/food_log",
-      "is_p0": false
-    },
-    {
-      "file": "lib/features/food_log/widgets/food_portion_bottom_sheet.dart",
-      "line": 522,
-      "var": "_",
-      "is_underscore": true,
-      "is_empty": true,
-      "snippet": "} catch (_) {}",
-      "layer": "features/food_log",
-      "is_p0": false
-    },
-    {
-      "file": "lib/features/hydration/hydration_providers.dart",
-      "line": 174,
-      "var": "_",
-      "is_underscore": true,
-      "is_empty": true,
-      "snippet": "} catch (_) {}",
-      "layer": "features/hydration",
-      "is_p0": false
-    },
-    {
-      "file": "lib/features/hydration/hydration_providers.dart",
-      "line": 186,
-      "var": "_",
-      "is_underscore": true,
-      "is_empty": true,
-      "snippet": "} catch (_) {}",
-      "layer": "features/hydration",
-      "is_p0": false
-    },
-    {
-      "file": "lib/features/nutrition_ai/natural_language_meal_screen.dart",
-      "line": 56,
-      "var": "_",
-      "is_underscore": true,
-      "is_empty": true,
-      "snippet": "} catch (_) {}",
-      "layer": "features/nutrition_ai",
-      "is_p0": false
-    },
-    {
-      "file": "lib/features/nutrition_ai/natural_language_meal_screen.dart",
-      "line": 72,
-      "var": "_",
-      "is_underscore": true,
-      "is_empty": true,
-      "snippet": "} catch (_) {}",
-      "layer": "features/nutrition_ai",
-      "is_p0": false
-    },
-    {
-      "file": "lib/features/nutrition_ai/nutrition_label_ocr_screen.dart",
-      "line": 56,
-      "var": "_",
-      "is_underscore": true,
-      "is_empty": true,
-      "snippet": "} catch (_) {}",
-      "layer": "features/nutrition_ai",
-      "is_p0": false
-    },
-    {
-      "file": "lib/features/nutrition_ai/nutrition_label_ocr_screen.dart",
-      "line": 99,
-      "var": "_",
-      "is_underscore": true,
-      "is_empty": true,
-      "snippet": "} catch (_) {}",
-      "layer": "features/nutrition_ai",
-      "is_p0": false
-    },
-    {
-      "file": "lib/features/nutrition_ai/photo_meal_screen.dart",
-      "line": 35,
-      "var": "_",
-      "is_underscore": true,
-      "is_empty": true,
-      "snippet": "} catch (_) {}",
-      "layer": "features/nutrition_ai",
-      "is_p0": false
-    },
-    {
-      "file": "lib/features/nutrition_ai/photo_meal_screen.dart",
-      "line": 57,
-      "var": "_",
-      "is_underscore": true,
-      "is_empty": true,
-      "snippet": "} catch (_) {}",
-      "layer": "features/nutrition_ai",
-      "is_p0": false
-    },
-    {
-      "file": "lib/features/onboarding/onboarding_screen.dart",
-      "line": 473,
-      "var": "_",
-      "is_underscore": true,
-      "is_empty": true,
-      "snippet": "} catch (_) {}",
-      "layer": "features/onboarding",
-      "is_p0": false
-    },
-    {
-      "file": "lib/features/settings/settings_controller.dart",
-      "line": 573,
-      "var": "_",
-      "is_underscore": true,
-      "is_empty": true,
-      "snippet": "} catch (_) {}",
-      "layer": "features/settings",
-      "is_p0": false
-    },
-    {
-      "file": "lib/features/settings/unit_preference.dart",
-      "line": 71,
-      "var": "_",
-      "is_underscore": true,
-      "is_empty": true,
-      "snippet": "} catch (_) {}",
-      "layer": "features/settings",
-      "is_p0": false
-    },
-    {
-      "file": "lib/features/workout_player/b02_strength_summary_screen.dart",
-      "line": 279,
-      "var": "_",
-      "is_underscore": true,
-      "is_empty": true,
-      "snippet": "} catch (_) {}",
-      "layer": "features/workout_player",
-      "is_p0": false
-    }
-  ],
+  "empty_catches_catalog": [],
   "nodes": {
     "lib/app/bootstrap.dart": {
       "path": "lib/app/bootstrap.dart",
@@ -2006,7 +1645,7 @@
       "path": "lib/core/di/core_providers.dart",
       "layer": "core",
       "sublayer": "core",
-      "loc": 123,
+      "loc": 137,
       "imports": [
         "lib/data/database/app_database.dart",
         "lib/data/repositories/health_service.dart",
@@ -2225,7 +1864,7 @@
       "path": "lib/core/di/theme_provider.dart",
       "layer": "core",
       "sublayer": "core",
-      "loc": 50,
+      "loc": 49,
       "imports": [
         "lib/core/config/app_preferences_keys.dart",
         "lib/core/utils/app_logger.dart",
@@ -2257,26 +1896,16 @@
           "snippet": "} catch (e) {",
           "layer": "core",
           "is_p0": false
-        },
-        {
-          "file": "lib/core/di/theme_provider.dart",
-          "line": 48,
-          "var": "_",
-          "is_underscore": true,
-          "is_empty": true,
-          "snippet": "} catch (_) {}",
-          "layer": "core",
-          "is_p0": false
         }
       ],
-      "empty_catch_count": 1,
-      "total_catch_count": 2
+      "empty_catch_count": 0,
+      "total_catch_count": 1
     },
     "lib/core/di/user_profile_provider.dart": {
       "path": "lib/core/di/user_profile_provider.dart",
       "layer": "core",
       "sublayer": "core",
-      "loc": 710,
+      "loc": 709,
       "imports": [
         "lib/data/database/app_database.dart",
         "lib/data/models/b04_goal_models.dart",
@@ -2327,20 +1956,10 @@
           "snippet": "} catch (_) {",
           "layer": "core",
           "is_p0": false
-        },
-        {
-          "file": "lib/core/di/user_profile_provider.dart",
-          "line": 708,
-          "var": "_",
-          "is_underscore": true,
-          "is_empty": true,
-          "snippet": "} catch (_) {}",
-          "layer": "core",
-          "is_p0": false
         }
       ],
-      "empty_catch_count": 1,
-      "total_catch_count": 3
+      "empty_catch_count": 0,
+      "total_catch_count": 2
     },
     "lib/core/di/user_provider_invalidator.dart": {
       "path": "lib/core/di/user_provider_invalidator.dart",
@@ -3755,7 +3374,7 @@
       "path": "lib/core/presentation/today_onboarding_handoff.dart",
       "layer": "core",
       "sublayer": "core",
-      "loc": 45,
+      "loc": 44,
       "imports": [
         "lib/core/config/app_preferences_keys.dart",
         "lib/core/di/core_providers.dart"
@@ -3777,20 +3396,9 @@
         "sharedPreferencesProvider"
       ],
       "routes_defined": [],
-      "catches": [
-        {
-          "file": "lib/core/presentation/today_onboarding_handoff.dart",
-          "line": 19,
-          "var": "_",
-          "is_underscore": true,
-          "is_empty": true,
-          "snippet": "} catch (_) {}",
-          "layer": "core",
-          "is_p0": false
-        }
-      ],
-      "empty_catch_count": 1,
-      "total_catch_count": 1
+      "catches": [],
+      "empty_catch_count": 0,
+      "total_catch_count": 0
     },
     "lib/core/privacy/dpdp_consent_dialog.dart": {
       "path": "lib/core/privacy/dpdp_consent_dialog.dart",
@@ -3882,7 +3490,7 @@
       "path": "lib/core/privacy/privacy_policy.dart",
       "layer": "core",
       "sublayer": "core",
-      "loc": 132,
+      "loc": 131,
       "imports": [
         "lib/core/config/app_config.dart",
         "lib/core/config/app_preferences_keys.dart",
@@ -3913,20 +3521,9 @@
         "sharedPreferencesProvider"
       ],
       "routes_defined": [],
-      "catches": [
-        {
-          "file": "lib/core/privacy/privacy_policy.dart",
-          "line": 130,
-          "var": "_",
-          "is_underscore": true,
-          "is_empty": true,
-          "snippet": "} catch (_) {}",
-          "layer": "core",
-          "is_p0": false
-        }
-      ],
-      "empty_catch_count": 1,
-      "total_catch_count": 1
+      "catches": [],
+      "empty_catch_count": 0,
+      "total_catch_count": 0
     },
     "lib/core/raw_cooked_transformations.dart": {
       "path": "lib/core/raw_cooked_transformations.dart",
@@ -4898,8 +4495,9 @@
       "path": "lib/core/services/rest_presence_service.dart",
       "layer": "core",
       "sublayer": "core",
-      "loc": 848,
+      "loc": 869,
       "imports": [
+        "lib/core/utils/app_logger.dart",
         "lib/core/services/indifit_haptics.dart",
         "lib/core/services/ios_live_activity_service.dart"
       ],
@@ -4917,7 +4515,7 @@
       "catches": [
         {
           "file": "lib/core/services/rest_presence_service.dart",
-          "line": 304,
+          "line": 305,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -4927,7 +4525,7 @@
         },
         {
           "file": "lib/core/services/rest_presence_service.dart",
-          "line": 321,
+          "line": 322,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -4937,17 +4535,17 @@
         },
         {
           "file": "lib/core/services/rest_presence_service.dart",
-          "line": 789,
-          "var": "_",
-          "is_underscore": true,
-          "is_empty": true,
-          "snippet": "} catch (_) {}",
+          "line": 790,
+          "var": "error",
+          "is_underscore": false,
+          "is_empty": false,
+          "snippet": "} catch (error) {",
           "layer": "core",
           "is_p0": false
         },
         {
           "file": "lib/core/services/rest_presence_service.dart",
-          "line": 800,
+          "line": 806,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -4957,27 +4555,27 @@
         },
         {
           "file": "lib/core/services/rest_presence_service.dart",
-          "line": 811,
-          "var": "_",
-          "is_underscore": true,
-          "is_empty": true,
-          "snippet": "} catch (_) {}",
+          "line": 817,
+          "var": "error",
+          "is_underscore": false,
+          "is_empty": false,
+          "snippet": "} catch (error) {",
           "layer": "core",
           "is_p0": false
         },
         {
           "file": "lib/core/services/rest_presence_service.dart",
-          "line": 821,
-          "var": "_",
-          "is_underscore": true,
-          "is_empty": true,
-          "snippet": "} catch (_) {}",
+          "line": 832,
+          "var": "error",
+          "is_underscore": false,
+          "is_empty": false,
+          "snippet": "} catch (error) {",
           "layer": "core",
           "is_p0": false
         },
         {
           "file": "lib/core/services/rest_presence_service.dart",
-          "line": 835,
+          "line": 851,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -4987,16 +4585,16 @@
         },
         {
           "file": "lib/core/services/rest_presence_service.dart",
-          "line": 846,
-          "var": "_",
-          "is_underscore": true,
-          "is_empty": true,
-          "snippet": "} catch (_) {}",
+          "line": 862,
+          "var": "error",
+          "is_underscore": false,
+          "is_empty": false,
+          "snippet": "} catch (error) {",
           "layer": "core",
           "is_p0": false
         }
       ],
-      "empty_catch_count": 4,
+      "empty_catch_count": 0,
       "total_catch_count": 8
     },
     "lib/core/services/workout_session_wake_lock_coordinator.dart": {
@@ -5523,19 +5121,26 @@
         "lib/core/services/local_timezone_service.dart",
         "lib/core/services/notification_service.dart",
         "lib/core/services/platform_storage_protection.dart",
+        "lib/core/services/rest_presence_service.dart",
         "lib/core/services/workout_session_wake_lock_coordinator.dart",
         "lib/core/sync/sync_service.dart",
         "lib/data/database/app_database.dart",
+        "lib/data/repositories/adaptive_tdee_repository.dart",
         "lib/data/repositories/food_api_service.dart",
         "lib/data/repositories/food_repository.dart",
         "lib/data/repositories/health_service.dart",
+        "lib/data/repositories/hydration_repository.dart",
+        "lib/data/repositories/progress_period_comparison_repository.dart",
+        "lib/data/repositories/progress_statistics_repository.dart",
         "lib/data/repositories/streak_repository.dart",
         "lib/features/dashboard/dashboard_controller.dart",
         "lib/features/dashboard/dashboard_screen.dart",
         "lib/features/dashboard/today_surface_controller.dart",
         "lib/features/food_log/barcode_scanner_screen.dart",
+        "lib/features/food_log/food_log_surface.dart",
         "lib/features/nutrition_ai/ai_items_thali_handoff.dart",
         "lib/features/nutrition_ai/natural_language_meal_service.dart",
+        "lib/features/onboarding/onboarding_screen.dart",
         "lib/features/program_authoring/program_review_screen.dart",
         "lib/features/progress/streak_provider.dart",
         "lib/features/settings/regional_food_packs_screen.dart",
@@ -7118,11 +6723,12 @@
       "path": "lib/data/repositories/adaptive_tdee_repository.dart",
       "layer": "data",
       "sublayer": "data",
-      "loc": 405,
+      "loc": 413,
       "imports": [
         "lib/core/algorithms/adaptive_tdee_engine.dart",
         "lib/core/nutrition_household_measures.dart",
         "lib/core/services/local_schedule_date_service.dart",
+        "lib/core/utils/app_logger.dart",
         "lib/core/utils/tdee_calculator.dart",
         "lib/data/database/app_database.dart",
         "lib/data/models/adaptive_tdee_models.dart",
@@ -7139,7 +6745,7 @@
       "catches": [
         {
           "file": "lib/data/repositories/adaptive_tdee_repository.dart",
-          "line": 282,
+          "line": 283,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -7149,16 +6755,16 @@
         },
         {
           "file": "lib/data/repositories/adaptive_tdee_repository.dart",
-          "line": 304,
-          "var": "_",
-          "is_underscore": true,
-          "is_empty": true,
-          "snippet": "} catch (_) {}",
+          "line": 305,
+          "var": "error",
+          "is_underscore": false,
+          "is_empty": false,
+          "snippet": "} catch (error) {",
           "layer": "data",
           "is_p0": false
         }
       ],
-      "empty_catch_count": 1,
+      "empty_catch_count": 0,
       "total_catch_count": 2
     },
     "lib/data/repositories/b02_activity_session_repository.dart": {
@@ -8097,10 +7703,11 @@
       "path": "lib/data/repositories/hydration_repository.dart",
       "layer": "data",
       "sublayer": "data",
-      "loc": 571,
+      "loc": 575,
       "imports": [
         "lib/core/config/app_preferences_keys.dart",
         "lib/core/services/local_schedule_date_service.dart",
+        "lib/core/utils/app_logger.dart",
         "lib/data/database/app_database.dart",
         "lib/data/models/hydration_models.dart"
       ],
@@ -8119,7 +7726,7 @@
       "catches": [
         {
           "file": "lib/data/repositories/hydration_repository.dart",
-          "line": 95,
+          "line": 96,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -8129,27 +7736,17 @@
         },
         {
           "file": "lib/data/repositories/hydration_repository.dart",
-          "line": 503,
-          "var": "_",
-          "is_underscore": true,
-          "is_empty": true,
-          "snippet": "} catch (_) {}",
-          "layer": "data",
-          "is_p0": false
-        },
-        {
-          "file": "lib/data/repositories/hydration_repository.dart",
-          "line": 539,
-          "var": "_",
-          "is_underscore": true,
-          "is_empty": true,
-          "snippet": "} catch (_) {}",
+          "line": 538,
+          "var": "error",
+          "is_underscore": false,
+          "is_empty": false,
+          "snippet": "} catch (error) {",
           "layer": "data",
           "is_p0": false
         }
       ],
-      "empty_catch_count": 2,
-      "total_catch_count": 3
+      "empty_catch_count": 0,
+      "total_catch_count": 2
     },
     "lib/data/repositories/legacy_program_compatibility_adapter.dart": {
       "path": "lib/data/repositories/legacy_program_compatibility_adapter.dart",
@@ -9425,11 +9022,12 @@
       "path": "lib/data/repositories/progress_period_comparison_repository.dart",
       "layer": "data",
       "sublayer": "data",
-      "loc": 873,
+      "loc": 880,
       "imports": [
         "lib/core/nutrients.dart",
         "lib/core/nutrition_household_measures.dart",
         "lib/core/services/local_schedule_date_service.dart",
+        "lib/core/utils/app_logger.dart",
         "lib/data/database/app_database.dart",
         "lib/data/models/b02_execution_models.dart",
         "lib/data/models/progress_dashboard_models.dart",
@@ -9448,7 +9046,7 @@
       "catches": [
         {
           "file": "lib/data/repositories/progress_period_comparison_repository.dart",
-          "line": 81,
+          "line": 82,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -9458,7 +9056,7 @@
         },
         {
           "file": "lib/data/repositories/progress_period_comparison_repository.dart",
-          "line": 94,
+          "line": 95,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -9468,7 +9066,7 @@
         },
         {
           "file": "lib/data/repositories/progress_period_comparison_repository.dart",
-          "line": 368,
+          "line": 369,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -9478,25 +9076,26 @@
         },
         {
           "file": "lib/data/repositories/progress_period_comparison_repository.dart",
-          "line": 610,
-          "var": "_",
-          "is_underscore": true,
-          "is_empty": true,
-          "snippet": "} catch (_) {}",
+          "line": 611,
+          "var": "error",
+          "is_underscore": false,
+          "is_empty": false,
+          "snippet": "} catch (error) {",
           "layer": "data",
           "is_p0": false
         }
       ],
-      "empty_catch_count": 1,
+      "empty_catch_count": 0,
       "total_catch_count": 4
     },
     "lib/data/repositories/progress_statistics_repository.dart": {
       "path": "lib/data/repositories/progress_statistics_repository.dart",
       "layer": "data",
       "sublayer": "data",
-      "loc": 444,
+      "loc": 457,
       "imports": [
         "lib/core/di/providers.dart",
+        "lib/core/utils/app_logger.dart",
         "lib/data/database/app_database.dart",
         "lib/data/repositories/legacy_program_compatibility_adapter.dart"
       ],
@@ -9519,17 +9118,17 @@
       "catches": [
         {
           "file": "lib/data/repositories/progress_statistics_repository.dart",
-          "line": 336,
-          "var": "_",
-          "is_underscore": true,
-          "is_empty": true,
-          "snippet": "} catch (_) {}",
+          "line": 337,
+          "var": "error",
+          "is_underscore": false,
+          "is_empty": false,
+          "snippet": "} catch (error) {",
           "layer": "data",
           "is_p0": false
         },
         {
           "file": "lib/data/repositories/progress_statistics_repository.dart",
-          "line": 361,
+          "line": 369,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -9539,17 +9138,17 @@
         },
         {
           "file": "lib/data/repositories/progress_statistics_repository.dart",
-          "line": 372,
-          "var": "_",
-          "is_underscore": true,
-          "is_empty": true,
-          "snippet": "} catch (_) {}",
+          "line": 380,
+          "var": "error",
+          "is_underscore": false,
+          "is_empty": false,
+          "snippet": "} catch (error) {",
           "layer": "data",
           "is_p0": false
         },
         {
           "file": "lib/data/repositories/progress_statistics_repository.dart",
-          "line": 438,
+          "line": 451,
           "var": "e",
           "is_underscore": false,
           "is_empty": false,
@@ -9558,7 +9157,7 @@
           "is_p0": false
         }
       ],
-      "empty_catch_count": 2,
+      "empty_catch_count": 0,
       "total_catch_count": 4
     },
     "lib/data/repositories/readiness_snapshot_repository.dart": {
@@ -11362,7 +10961,7 @@
       "path": "lib/features/dashboard/dashboard_screen.dart",
       "layer": "features",
       "sublayer": "features/dashboard",
-      "loc": 475,
+      "loc": 474,
       "imports": [
         "lib/core/di/providers.dart",
         "lib/core/navigation/app_navigation.dart",
@@ -11426,20 +11025,10 @@
           "snippet": "} catch (error) {",
           "layer": "features/dashboard",
           "is_p0": false
-        },
-        {
-          "file": "lib/features/dashboard/dashboard_screen.dart",
-          "line": 411,
-          "var": "_",
-          "is_underscore": true,
-          "is_empty": true,
-          "snippet": "} catch (_) {}",
-          "layer": "features/dashboard",
-          "is_p0": false
         }
       ],
-      "empty_catch_count": 1,
-      "total_catch_count": 3
+      "empty_catch_count": 0,
+      "total_catch_count": 2
     },
     "lib/features/dashboard/main_navigation_scaffold.dart": {
       "path": "lib/features/dashboard/main_navigation_scaffold.dart",
@@ -12533,7 +12122,7 @@
       "path": "lib/features/food_log/barcode_scanner_screen.dart",
       "layer": "features",
       "sublayer": "features/food_log",
-      "loc": 631,
+      "loc": 644,
       "imports": [
         "lib/core/capabilities/capabilities_registry.dart",
         "lib/core/di/providers.dart",
@@ -12560,46 +12149,16 @@
         {
           "file": "lib/features/food_log/barcode_scanner_screen.dart",
           "line": 123,
-          "var": "_",
-          "is_underscore": true,
-          "is_empty": true,
-          "snippet": "} catch (_) {}",
+          "var": "error",
+          "is_underscore": false,
+          "is_empty": false,
+          "snippet": "} catch (error) {",
           "layer": "features/food_log",
           "is_p0": false
         },
         {
           "file": "lib/features/food_log/barcode_scanner_screen.dart",
-          "line": 129,
-          "var": "_",
-          "is_underscore": true,
-          "is_empty": true,
-          "snippet": "} catch (_) {}",
-          "layer": "features/food_log",
-          "is_p0": false
-        },
-        {
-          "file": "lib/features/food_log/barcode_scanner_screen.dart",
-          "line": 138,
-          "var": "_",
-          "is_underscore": true,
-          "is_empty": true,
-          "snippet": "} catch (_) {}",
-          "layer": "features/food_log",
-          "is_p0": false
-        },
-        {
-          "file": "lib/features/food_log/barcode_scanner_screen.dart",
-          "line": 170,
-          "var": "_",
-          "is_underscore": true,
-          "is_empty": true,
-          "snippet": "} catch (_) {}",
-          "layer": "features/food_log",
-          "is_p0": false
-        },
-        {
-          "file": "lib/features/food_log/barcode_scanner_screen.dart",
-          "line": 203,
+          "line": 132,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -12609,17 +12168,47 @@
         },
         {
           "file": "lib/features/food_log/barcode_scanner_screen.dart",
-          "line": 220,
+          "line": 143,
           "var": "_",
           "is_underscore": true,
-          "is_empty": true,
-          "snippet": "} catch (_) {}",
+          "is_empty": false,
+          "snippet": "} catch (_) {",
           "layer": "features/food_log",
           "is_p0": false
         },
         {
           "file": "lib/features/food_log/barcode_scanner_screen.dart",
-          "line": 222,
+          "line": 177,
+          "var": "error",
+          "is_underscore": false,
+          "is_empty": false,
+          "snippet": "} catch (error) {",
+          "layer": "features/food_log",
+          "is_p0": false
+        },
+        {
+          "file": "lib/features/food_log/barcode_scanner_screen.dart",
+          "line": 213,
+          "var": "_",
+          "is_underscore": true,
+          "is_empty": false,
+          "snippet": "} catch (_) {",
+          "layer": "features/food_log",
+          "is_p0": false
+        },
+        {
+          "file": "lib/features/food_log/barcode_scanner_screen.dart",
+          "line": 230,
+          "var": "error",
+          "is_underscore": false,
+          "is_empty": false,
+          "snippet": "} catch (error) {",
+          "layer": "features/food_log",
+          "is_p0": false
+        },
+        {
+          "file": "lib/features/food_log/barcode_scanner_screen.dart",
+          "line": 235,
           "var": "e",
           "is_underscore": false,
           "is_empty": false,
@@ -12629,7 +12218,7 @@
         },
         {
           "file": "lib/features/food_log/barcode_scanner_screen.dart",
-          "line": 234,
+          "line": 247,
           "var": "e",
           "is_underscore": false,
           "is_empty": false,
@@ -12639,7 +12228,7 @@
         },
         {
           "file": "lib/features/food_log/barcode_scanner_screen.dart",
-          "line": 469,
+          "line": 482,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -12648,7 +12237,7 @@
           "is_p0": false
         }
       ],
-      "empty_catch_count": 5,
+      "empty_catch_count": 0,
       "total_catch_count": 9
     },
     "lib/features/food_log/canonical_food_delete.dart": {
@@ -12725,7 +12314,7 @@
       "path": "lib/features/food_log/diary_structure_controller.dart",
       "layer": "features",
       "sublayer": "features/food_log",
-      "loc": 243,
+      "loc": 242,
       "imports": [
         "lib/core/config/app_preferences_keys.dart",
         "lib/core/di/core_providers.dart",
@@ -12769,20 +12358,10 @@
           "snippet": "} catch (_) {",
           "layer": "features/food_log",
           "is_p0": false
-        },
-        {
-          "file": "lib/features/food_log/diary_structure_controller.dart",
-          "line": 236,
-          "var": "_",
-          "is_underscore": true,
-          "is_empty": true,
-          "snippet": "} catch (_) {}",
-          "layer": "features/food_log",
-          "is_p0": false
         }
       ],
-      "empty_catch_count": 1,
-      "total_catch_count": 3
+      "empty_catch_count": 0,
+      "total_catch_count": 2
     },
     "lib/features/food_log/food_contextual_action_controller.dart": {
       "path": "lib/features/food_log/food_contextual_action_controller.dart",
@@ -12915,7 +12494,7 @@
       "path": "lib/features/food_log/food_log_surface.dart",
       "layer": "features",
       "sublayer": "features/food_log",
-      "loc": 514,
+      "loc": 535,
       "imports": [
         "lib/core/di/providers.dart",
         "lib/core/nutrients.dart",
@@ -12925,6 +12504,7 @@
         "lib/core/presentation/product_failure_presentation.dart",
         "lib/core/theme/b05_semantic_colors.dart",
         "lib/core/typed_quantities.dart",
+        "lib/core/utils/app_logger.dart",
         "lib/core/widgets/b05_accessibility_primitives.dart",
         "lib/core/widgets/indi_fit_feedback.dart",
         "lib/data/database/app_database.dart",
@@ -12956,33 +12536,23 @@
       "catches": [
         {
           "file": "lib/features/food_log/food_log_surface.dart",
-          "line": 97,
+          "line": 98,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
           "snippet": "} catch (_) {",
           "layer": "features/food_log",
           "is_p0": false
-        },
-        {
-          "file": "lib/features/food_log/food_log_surface.dart",
-          "line": 467,
-          "var": "_",
-          "is_underscore": true,
-          "is_empty": true,
-          "snippet": "} catch (_) {}",
-          "layer": "features/food_log",
-          "is_p0": false
         }
       ],
-      "empty_catch_count": 1,
-      "total_catch_count": 2
+      "empty_catch_count": 0,
+      "total_catch_count": 1
     },
     "lib/features/food_log/food_search_screen.dart": {
       "path": "lib/features/food_log/food_search_screen.dart",
       "layer": "features",
       "sublayer": "features/food_log",
-      "loc": 2477,
+      "loc": 2479,
       "imports": [
         "lib/core/catalog/food_catalog_models.dart",
         "lib/core/catalog/food_category_taxonomy.dart",
@@ -13180,14 +12750,14 @@
           "line": 1336,
           "var": "_",
           "is_underscore": true,
-          "is_empty": true,
-          "snippet": "} catch (_) {}",
+          "is_empty": false,
+          "snippet": "} catch (_) {",
           "layer": "features/food_log",
           "is_p0": false
         },
         {
           "file": "lib/features/food_log/food_search_screen.dart",
-          "line": 1958,
+          "line": 1960,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -13196,7 +12766,7 @@
           "is_p0": false
         }
       ],
-      "empty_catch_count": 1,
+      "empty_catch_count": 0,
       "total_catch_count": 15
     },
     "lib/features/food_log/food_search_view_models.dart": {
@@ -14215,7 +13785,7 @@
       "path": "lib/features/food_log/widgets/food_portion_bottom_sheet.dart",
       "layer": "features",
       "sublayer": "features/food_log",
-      "loc": 934,
+      "loc": 936,
       "imports": [
         "lib/core/catalog/food_catalog_models.dart",
         "lib/core/di/providers.dart",
@@ -14262,14 +13832,14 @@
           "line": 522,
           "var": "_",
           "is_underscore": true,
-          "is_empty": true,
-          "snippet": "} catch (_) {}",
+          "is_empty": false,
+          "snippet": "} catch (_) {",
           "layer": "features/food_log",
           "is_p0": false
         },
         {
           "file": "lib/features/food_log/widgets/food_portion_bottom_sheet.dart",
-          "line": 525,
+          "line": 527,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -14278,7 +13848,7 @@
           "is_p0": false
         }
       ],
-      "empty_catch_count": 1,
+      "empty_catch_count": 0,
       "total_catch_count": 3
     },
     "lib/features/food_log/widgets/food_search_bar.dart": {
@@ -14487,7 +14057,7 @@
       "path": "lib/features/hydration/hydration_providers.dart",
       "layer": "features",
       "sublayer": "features/hydration",
-      "loc": 192,
+      "loc": 190,
       "imports": [
         "lib/core/di/core_providers.dart",
         "lib/data/database/app_database.dart",
@@ -14520,30 +14090,10 @@
           "snippet": "} catch (_) {",
           "layer": "features/hydration",
           "is_p0": false
-        },
-        {
-          "file": "lib/features/hydration/hydration_providers.dart",
-          "line": 174,
-          "var": "_",
-          "is_underscore": true,
-          "is_empty": true,
-          "snippet": "} catch (_) {}",
-          "layer": "features/hydration",
-          "is_p0": false
-        },
-        {
-          "file": "lib/features/hydration/hydration_providers.dart",
-          "line": 186,
-          "var": "_",
-          "is_underscore": true,
-          "is_empty": true,
-          "snippet": "} catch (_) {}",
-          "layer": "features/hydration",
-          "is_p0": false
         }
       ],
-      "empty_catch_count": 2,
-      "total_catch_count": 3
+      "empty_catch_count": 0,
+      "total_catch_count": 1
     },
     "lib/features/media/b05_exercise_visual_registry.dart": {
       "path": "lib/features/media/b05_exercise_visual_registry.dart",
@@ -15090,7 +14640,7 @@
       "path": "lib/features/nutrition_ai/natural_language_meal_screen.dart",
       "layer": "features",
       "sublayer": "features/nutrition_ai",
-      "loc": 651,
+      "loc": 650,
       "imports": [
         "lib/core/di/core_providers.dart",
         "lib/core/privacy/dpdp_consent_service.dart",
@@ -15114,30 +14664,9 @@
         "sharedPreferencesProvider"
       ],
       "routes_defined": [],
-      "catches": [
-        {
-          "file": "lib/features/nutrition_ai/natural_language_meal_screen.dart",
-          "line": 56,
-          "var": "_",
-          "is_underscore": true,
-          "is_empty": true,
-          "snippet": "} catch (_) {}",
-          "layer": "features/nutrition_ai",
-          "is_p0": false
-        },
-        {
-          "file": "lib/features/nutrition_ai/natural_language_meal_screen.dart",
-          "line": 72,
-          "var": "_",
-          "is_underscore": true,
-          "is_empty": true,
-          "snippet": "} catch (_) {}",
-          "layer": "features/nutrition_ai",
-          "is_p0": false
-        }
-      ],
-      "empty_catch_count": 2,
-      "total_catch_count": 2
+      "catches": [],
+      "empty_catch_count": 0,
+      "total_catch_count": 0
     },
     "lib/features/nutrition_ai/natural_language_meal_service.dart": {
       "path": "lib/features/nutrition_ai/natural_language_meal_service.dart",
@@ -15284,7 +14813,7 @@
       "path": "lib/features/nutrition_ai/nutrition_label_ocr_screen.dart",
       "layer": "features",
       "sublayer": "features/nutrition_ai",
-      "loc": 677,
+      "loc": 676,
       "imports": [
         "lib/core/di/core_providers.dart",
         "lib/core/privacy/dpdp_consent_service.dart",
@@ -15305,30 +14834,9 @@
         "sharedPreferencesProvider"
       ],
       "routes_defined": [],
-      "catches": [
-        {
-          "file": "lib/features/nutrition_ai/nutrition_label_ocr_screen.dart",
-          "line": 56,
-          "var": "_",
-          "is_underscore": true,
-          "is_empty": true,
-          "snippet": "} catch (_) {}",
-          "layer": "features/nutrition_ai",
-          "is_p0": false
-        },
-        {
-          "file": "lib/features/nutrition_ai/nutrition_label_ocr_screen.dart",
-          "line": 99,
-          "var": "_",
-          "is_underscore": true,
-          "is_empty": true,
-          "snippet": "} catch (_) {}",
-          "layer": "features/nutrition_ai",
-          "is_p0": false
-        }
-      ],
-      "empty_catch_count": 2,
-      "total_catch_count": 2
+      "catches": [],
+      "empty_catch_count": 0,
+      "total_catch_count": 0
     },
     "lib/features/nutrition_ai/nutrition_label_ocr_service.dart": {
       "path": "lib/features/nutrition_ai/nutrition_label_ocr_service.dart",
@@ -15361,7 +14869,7 @@
       "path": "lib/features/nutrition_ai/photo_meal_screen.dart",
       "layer": "features",
       "sublayer": "features/nutrition_ai",
-      "loc": 832,
+      "loc": 831,
       "imports": [
         "lib/core/di/providers.dart",
         "lib/core/privacy/dpdp_consent_service.dart",
@@ -15384,30 +14892,9 @@
         "sharedPreferencesProvider"
       ],
       "routes_defined": [],
-      "catches": [
-        {
-          "file": "lib/features/nutrition_ai/photo_meal_screen.dart",
-          "line": 35,
-          "var": "_",
-          "is_underscore": true,
-          "is_empty": true,
-          "snippet": "} catch (_) {}",
-          "layer": "features/nutrition_ai",
-          "is_p0": false
-        },
-        {
-          "file": "lib/features/nutrition_ai/photo_meal_screen.dart",
-          "line": 57,
-          "var": "_",
-          "is_underscore": true,
-          "is_empty": true,
-          "snippet": "} catch (_) {}",
-          "layer": "features/nutrition_ai",
-          "is_p0": false
-        }
-      ],
-      "empty_catch_count": 2,
-      "total_catch_count": 2
+      "catches": [],
+      "empty_catch_count": 0,
+      "total_catch_count": 0
     },
     "lib/features/onboarding/b05_adaptive_onboarding.dart": {
       "path": "lib/features/onboarding/b05_adaptive_onboarding.dart",
@@ -15466,7 +14953,7 @@
       "path": "lib/features/onboarding/onboarding_screen.dart",
       "layer": "features",
       "sublayer": "features/onboarding",
-      "loc": 1324,
+      "loc": 1327,
       "imports": [
         "lib/core/config/app_preferences_keys.dart",
         "lib/core/di/providers.dart",
@@ -15475,6 +14962,7 @@
         "lib/core/presentation/today_onboarding_handoff.dart",
         "lib/core/router/app_router.dart",
         "lib/core/theme/b05_semantic_colors.dart",
+        "lib/core/utils/app_logger.dart",
         "lib/core/utils/tdee_calculator.dart",
         "lib/core/widgets/b05_accessibility_primitives.dart",
         "lib/core/widgets/consumer_task_primitives.dart",
@@ -15499,7 +14987,7 @@
       "catches": [
         {
           "file": "lib/features/onboarding/onboarding_screen.dart",
-          "line": 170,
+          "line": 171,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -15509,7 +14997,7 @@
         },
         {
           "file": "lib/features/onboarding/onboarding_screen.dart",
-          "line": 416,
+          "line": 424,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -15519,27 +15007,17 @@
         },
         {
           "file": "lib/features/onboarding/onboarding_screen.dart",
-          "line": 446,
+          "line": 454,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
           "snippet": "} catch (_) {",
           "layer": "features/onboarding",
           "is_p0": false
-        },
-        {
-          "file": "lib/features/onboarding/onboarding_screen.dart",
-          "line": 473,
-          "var": "_",
-          "is_underscore": true,
-          "is_empty": true,
-          "snippet": "} catch (_) {}",
-          "layer": "features/onboarding",
-          "is_p0": false
         }
       ],
-      "empty_catch_count": 1,
-      "total_catch_count": 4
+      "empty_catch_count": 0,
+      "total_catch_count": 3
     },
     "lib/features/onboarding/widgets/onboarding_step_widgets.dart": {
       "path": "lib/features/onboarding/widgets/onboarding_step_widgets.dart",
@@ -15566,7 +15044,7 @@
       "path": "lib/features/profile/profile_screen.dart",
       "layer": "features",
       "sublayer": "features/profile",
-      "loc": 606,
+      "loc": 607,
       "imports": [
         "lib/core/di/user_profile_provider.dart",
         "lib/core/presentation/diet_preference_presentation.dart",
@@ -17119,7 +16597,7 @@
       "path": "lib/features/settings/settings_controller.dart",
       "layer": "features",
       "sublayer": "features/settings",
-      "loc": 575,
+      "loc": 574,
       "imports": [
         "lib/core/backup/backup_file_adapter.dart",
         "lib/core/backup/backup_schema.dart",
@@ -17194,20 +16672,10 @@
           "snippet": "} catch (_) {",
           "layer": "features/settings",
           "is_p0": false
-        },
-        {
-          "file": "lib/features/settings/settings_controller.dart",
-          "line": 573,
-          "var": "_",
-          "is_underscore": true,
-          "is_empty": true,
-          "snippet": "} catch (_) {}",
-          "layer": "features/settings",
-          "is_p0": false
         }
       ],
-      "empty_catch_count": 1,
-      "total_catch_count": 5
+      "empty_catch_count": 0,
+      "total_catch_count": 4
     },
     "lib/features/settings/settings_screen.dart": {
       "path": "lib/features/settings/settings_screen.dart",
@@ -17266,7 +16734,7 @@
       "path": "lib/features/settings/unit_preference.dart",
       "layer": "features",
       "sublayer": "features/settings",
-      "loc": 73,
+      "loc": 72,
       "imports": [
         "lib/core/config/app_preferences_keys.dart",
         "lib/core/di/core_providers.dart"
@@ -17289,20 +16757,9 @@
         "sharedPreferencesProvider"
       ],
       "routes_defined": [],
-      "catches": [
-        {
-          "file": "lib/features/settings/unit_preference.dart",
-          "line": 71,
-          "var": "_",
-          "is_underscore": true,
-          "is_empty": true,
-          "snippet": "} catch (_) {}",
-          "layer": "features/settings",
-          "is_p0": false
-        }
-      ],
-      "empty_catch_count": 1,
-      "total_catch_count": 1
+      "catches": [],
+      "empty_catch_count": 0,
+      "total_catch_count": 0
     },
     "lib/features/settings/widgets/ai_consent_toggle.dart": {
       "path": "lib/features/settings/widgets/ai_consent_toggle.dart",
@@ -18430,7 +17887,7 @@
       "path": "lib/features/workout_player/b02_strength_summary_screen.dart",
       "layer": "features",
       "sublayer": "features/workout_player",
-      "loc": 315,
+      "loc": 314,
       "imports": [
         "lib/core/di/core_providers.dart",
         "lib/core/navigation/app_navigation.dart",
@@ -18461,17 +17918,7 @@
       "catches": [
         {
           "file": "lib/features/workout_player/b02_strength_summary_screen.dart",
-          "line": 279,
-          "var": "_",
-          "is_underscore": true,
-          "is_empty": true,
-          "snippet": "} catch (_) {}",
-          "layer": "features/workout_player",
-          "is_p0": false
-        },
-        {
-          "file": "lib/features/workout_player/b02_strength_summary_screen.dart",
-          "line": 302,
+          "line": 301,
           "var": "e",
           "is_underscore": false,
           "is_empty": false,
@@ -18480,8 +17927,8 @@
           "is_p0": false
         }
       ],
-      "empty_catch_count": 1,
-      "total_catch_count": 2
+      "empty_catch_count": 0,
+      "total_catch_count": 1
     },
     "lib/features/workout_player/b02_workout_elapsed.dart": {
       "path": "lib/features/workout_player/b02_workout_elapsed.dart",
