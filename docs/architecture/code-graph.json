@@ -2,18 +2,18 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "summary": {
     "total_dart_files": 463,
-    "total_loc": 337976,
-    "total_internal_edges": 2300,
+    "total_loc": 338080,
+    "total_internal_edges": 2303,
     "external_package_count": 28,
     "catch_metrics": {
-      "total_catches_all": 521,
+      "total_catches_all": 522,
       "total_catch_underscore": 195,
       "total_empty_catches": 37,
       "p0_empty_catches": 0
     },
     "layer_violations_count": 7,
     "catches_by_layer": {
-      "core": 145,
+      "core": 146,
       "data": 103,
       "features": 272,
       "other": 1
@@ -341,7 +341,7 @@
     },
     {
       "file": "lib/features/nutrition_ai/natural_language_meal_screen.dart",
-      "line": 55,
+      "line": 56,
       "var": "_",
       "is_underscore": true,
       "is_empty": true,
@@ -351,7 +351,7 @@
     },
     {
       "file": "lib/features/nutrition_ai/natural_language_meal_screen.dart",
-      "line": 71,
+      "line": 72,
       "var": "_",
       "is_underscore": true,
       "is_empty": true,
@@ -381,7 +381,7 @@
     },
     {
       "file": "lib/features/nutrition_ai/photo_meal_screen.dart",
-      "line": 34,
+      "line": 35,
       "var": "_",
       "is_underscore": true,
       "is_empty": true,
@@ -391,7 +391,7 @@
     },
     {
       "file": "lib/features/nutrition_ai/photo_meal_screen.dart",
-      "line": 56,
+      "line": 57,
       "var": "_",
       "is_underscore": true,
       "is_empty": true,
@@ -615,9 +615,10 @@
       "path": "lib/core/ai/firebase_ai_gateway.dart",
       "layer": "core",
       "sublayer": "core",
-      "loc": 298,
+      "loc": 319,
       "imports": [
         "lib/firebase_options.dart",
+        "lib/core/config/app_config.dart",
         "lib/core/utils/app_logger.dart",
         "lib/core/ai/ai_gateway.dart"
       ],
@@ -632,7 +633,7 @@
       "catches": [
         {
           "file": "lib/core/ai/firebase_ai_gateway.dart",
-          "line": 106,
+          "line": 107,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -642,7 +643,17 @@
         },
         {
           "file": "lib/core/ai/firebase_ai_gateway.dart",
-          "line": 130,
+          "line": 127,
+          "var": "error",
+          "is_underscore": false,
+          "is_empty": false,
+          "snippet": "} on Object catch (error) {",
+          "layer": "core",
+          "is_p0": false
+        },
+        {
+          "file": "lib/core/ai/firebase_ai_gateway.dart",
+          "line": 139,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -652,7 +663,7 @@
         }
       ],
       "empty_catch_count": 0,
-      "total_catch_count": 2
+      "total_catch_count": 3
     },
     "lib/core/algorithms/adaptive_tdee_engine.dart": {
       "path": "lib/core/algorithms/adaptive_tdee_engine.dart",
@@ -1825,11 +1836,12 @@
       "path": "lib/core/config/app_config.dart",
       "layer": "core",
       "sublayer": "core",
-      "loc": 35,
+      "loc": 56,
       "imports": [],
       "imported_by": [
         "lib/core/ai/ai_gateway_provider.dart",
         "lib/core/ai/backend_ai_gateway.dart",
+        "lib/core/ai/firebase_ai_gateway.dart",
         "lib/core/capabilities/capabilities_registry.dart",
         "lib/core/di/core_providers.dart",
         "lib/core/privacy/privacy_policy.dart",
@@ -15010,14 +15022,16 @@
       "path": "lib/features/nutrition_ai/meal_item_resolver.dart",
       "layer": "features",
       "sublayer": "features/nutrition_ai",
-      "loc": 287,
+      "loc": 341,
       "imports": [
         "lib/core/typed_quantities.dart",
         "lib/data/repositories/nutrition_food_catalog_repository.dart"
       ],
       "imported_by": [
         "lib/features/nutrition_ai/ai_items_thali_handoff.dart",
-        "lib/features/nutrition_ai/natural_language_meal_service.dart"
+        "lib/features/nutrition_ai/natural_language_meal_screen.dart",
+        "lib/features/nutrition_ai/natural_language_meal_service.dart",
+        "lib/features/nutrition_ai/photo_meal_screen.dart"
       ],
       "parts": [],
       "part_of": null,
@@ -15032,7 +15046,7 @@
       "path": "lib/features/nutrition_ai/natural_language_meal_screen.dart",
       "layer": "features",
       "sublayer": "features/nutrition_ai",
-      "loc": 624,
+      "loc": 628,
       "imports": [
         "lib/core/di/core_providers.dart",
         "lib/core/privacy/dpdp_consent_service.dart",
@@ -15041,6 +15055,7 @@
         "lib/data/repositories/nutrition_food_catalog_repository.dart",
         "lib/features/nutrition/nutrition_providers.dart",
         "lib/features/nutrition_ai/ai_items_thali_handoff.dart",
+        "lib/features/nutrition_ai/meal_item_resolver.dart",
         "lib/features/nutrition_ai/natural_language_meal_service.dart",
         "lib/features/nutrition_ai/nutrition_ai_controllers.dart"
       ],
@@ -15058,7 +15073,7 @@
       "catches": [
         {
           "file": "lib/features/nutrition_ai/natural_language_meal_screen.dart",
-          "line": 55,
+          "line": 56,
           "var": "_",
           "is_underscore": true,
           "is_empty": true,
@@ -15068,7 +15083,7 @@
         },
         {
           "file": "lib/features/nutrition_ai/natural_language_meal_screen.dart",
-          "line": 71,
+          "line": 72,
           "var": "_",
           "is_underscore": true,
           "is_empty": true,
@@ -15300,7 +15315,7 @@
       "path": "lib/features/nutrition_ai/photo_meal_screen.dart",
       "layer": "features",
       "sublayer": "features/nutrition_ai",
-      "loc": 807,
+      "loc": 811,
       "imports": [
         "lib/core/di/providers.dart",
         "lib/core/privacy/dpdp_consent_service.dart",
@@ -15308,6 +15323,7 @@
         "lib/core/widgets/b05_accessibility_primitives.dart",
         "lib/data/repositories/nutrition_food_catalog_repository.dart",
         "lib/features/nutrition_ai/ai_items_thali_handoff.dart",
+        "lib/features/nutrition_ai/meal_item_resolver.dart",
         "lib/features/nutrition_ai/natural_language_meal_service.dart",
         "lib/features/nutrition_ai/nutrition_ai_controllers.dart"
       ],
@@ -15325,7 +15341,7 @@
       "catches": [
         {
           "file": "lib/features/nutrition_ai/photo_meal_screen.dart",
-          "line": 34,
+          "line": 35,
           "var": "_",
           "is_underscore": true,
           "is_empty": true,
@@ -15335,7 +15351,7 @@
         },
         {
           "file": "lib/features/nutrition_ai/photo_meal_screen.dart",
-          "line": 56,
+          "line": 57,
           "var": "_",
           "is_underscore": true,
           "is_empty": true,
