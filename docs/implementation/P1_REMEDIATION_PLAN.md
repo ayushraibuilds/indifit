@@ -337,6 +337,21 @@ These are not bugs, but the audit ties them to retention. **Re-check each one ag
 - a single "last time" line in the player (`b02_player_cards.dart:~472`);
 - "copy yesterday's meal" in the diary (`food_diary_screen.dart:~476`).
 
+> **Re-check in the iOS simulator (2026-10-03):**
+> - **Already done:**
+>   - "Log set" explains what's missing ("Enter your completed reps…");
+>   - weight prefills from last session and carries over between sets;
+>   - the header shows elapsed time and the full exercise name;
+>   - logged sets show in a clean SET / PLANNED / ACTUAL table.
+> - **Fixed in PR #32:** reps prefilled to "1" from the open 1–20 placeholder range, and the placeholder showed as a plan.
+> - **Still true:**
+>   - H1: "Last time" is one card below Log set, not shown per set;
+>   - H2: unlogged rows show "Not logged" plus "Ready", with no one-tap completion;
+>   - H4: the Suggested card sits below the fold;
+>   - H6: "More training" is a flat grey panel of centred links.
+> - **Minor:** a 58-second workout shows as "0 min" under Recent; the prefilled weight reads "60.0" while the rest of the UI says "60".
+> - H5 couldn't be checked: there was no target or logged food on a fresh install.
+
 | # | Change | Where | Effort |
 |---|---|---|---|
 | H1 | **Previous column:** last session's weight × reps on each set row, not one "last time" line | `widgets/b02_compact_set_table.dart`; data from `b02_previous_performance_integration.dart` | 0.5–1 day |
