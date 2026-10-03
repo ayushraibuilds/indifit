@@ -67,36 +67,14 @@ class TestAiPhotoV2(unittest.TestCase):
         self.assertEqual(response.status_code, 413)
         self.assertIn("exceeds maximum upload limit of 1 MB", response.json()["detail"])
 
-    def test_mock_fallback_structure(self):
+    def test_unconfigured_ai_fails_instead_of_inventing_food(self):
         response = self.client.post(
             "/api/ai/meal-estimate-photo-v2",
             headers=self.valid_headers,
             files={"image": self._dummy_image()},
         )
-        self.assertEqual(response.status_code, 200)
-        data = response.json()
-        self.assertTrue(data.get("is_fallback"))
-        self.assertIn("items", data)
-        self.assertGreaterEqual(len(data["items"]), 2)
-        
-        # Verify Indian decomposition items
-        item_names = [item["food_name"] for item in data["items"]]
-        self.assertIn("Roti / Chapati", item_names)
-        self.assertIn("Yellow Dal Tadka", item_names)
-        
-        for item in data["items"]:
-            self.assertIn("quantity_amount", item)
-            self.assertIn("quantity_unit", item)
-            self.assertIn("estimated_calories", item)
-            self.assertIn("estimated_protein", item)
-            self.assertIn("estimated_carbs", item)
-            self.assertIn("estimated_fat", item)
-            self.assertIn("confidence", item)
-
-        self.assertIn("total_calories", data)
-        self.assertGreater(data["total_calories"], 0)
-        self.assertIn("disclaimer", data)
-        self.assertIn("±30%", data["disclaimer"])
+        self.assertEqual(response.status_code, 503)
+        self.assertNotIn("items", response.json())
 
     def test_gemini_vision_success(self):
         main.GEMINI_API_KEY = "mock-gemini-key"
@@ -135,7 +113,6 @@ class TestAiPhotoV2(unittest.TestCase):
             )
             self.assertEqual(response.status_code, 200)
             data = response.json()
-            self.assertFalse(data.get("is_fallback"))
             self.assertEqual(data["total_calories"], 240)
             self.assertEqual(len(data["items"]), 1)
             self.assertEqual(data["items"][0]["food_name"], "Roti / Chapati")
@@ -153,7 +130,7 @@ class TestAiPhotoV2(unittest.TestCase):
                 headers=headers,
                 files={"image": self._dummy_image()},
             )
-            self.assertEqual(res.status_code, 200, f"Request {i+1} should succeed")
+            self.assertNotEqual(res.status_code, 429, f"Request {i+1} should not be rate limited")
 
         # 11th request must fail with 429
         rejected = self.client.post(
@@ -176,7 +153,7 @@ class TestAiPhotoV2(unittest.TestCase):
                 headers=headers_a,
                 files={"image": self._dummy_image()},
             )
-            self.assertEqual(res.status_code, 200)
+            self.assertNotEqual(res.status_code, 429)
 
         # Device A is now blocked
         res_a_blocked = self.client.post(
@@ -196,7 +173,7 @@ class TestAiPhotoV2(unittest.TestCase):
             headers=headers_b,
             files={"image": self._dummy_image()},
         )
-        self.assertEqual(res_b.status_code, 200)
+        self.assertNotEqual(res_b.status_code, 429)
 
     def test_rate_limit_fallback_to_ip(self):
         headers_no_uuid = {
@@ -208,7 +185,7 @@ class TestAiPhotoV2(unittest.TestCase):
                 headers=headers_no_uuid,
                 files={"image": self._dummy_image()},
             )
-            self.assertEqual(res.status_code, 200)
+            self.assertNotEqual(res.status_code, 429)
 
         res_blocked = self.client.post(
             "/api/ai/meal-estimate-photo-v2",

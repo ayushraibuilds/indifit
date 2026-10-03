@@ -130,6 +130,25 @@ void main() {
       expect(match.option!.displayName, 'Rumali Roti');
     });
 
+    test('default keys are already normalised, or they never match', () {
+      for (final key in MealItemResolver.genericDefaults.keys) {
+        expect(MealItemResolver.normalize(key), key);
+      }
+    });
+
+    test('nested-parenthesis variants still rank below their base', () async {
+      final match = await _resolverOver([
+        _food('Butter Chicken (Murgh Makhani)'),
+        _food(
+          'Butter Chicken (Murgh Makhani) (Diet prep (Low oil / breast only))',
+        ),
+        _food('Butter Chicken (Murgh Makhani) (Extra Chicken/Meat pieces)'),
+      ]).resolve('Butter Chicken');
+
+      expect(match.state, CatalogMatchState.resolved);
+      expect(match.option!.displayName, 'Butter Chicken (Murgh Makhani)');
+    });
+
     test('size variants rank below base dishes in the choice list', () {
       final ranked = MealItemResolver.rank('Tandoori Roti', [
         _food('Tandoori Roti (Wheat) (Mini)'),

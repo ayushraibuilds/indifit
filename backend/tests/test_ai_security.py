@@ -38,40 +38,6 @@ class AiRouteSecurityTests(unittest.TestCase):
     @staticmethod
     def _ai_requests():
         return {
-            "/api/ai/routine": {
-                "json": {
-                    "goal": "strength",
-                    "equipment": "gym",
-                    "days_per_week": 3,
-                    "experience": "beginner",
-                    "injuries": "",
-                },
-            },
-            "/api/ai/meal-estimate-text": {
-                "json": {"text": "one roti"},
-            },
-            "/api/ai/meal-estimate-photo": {
-                "files": {
-                    "image": ("meal.jpg", b"test-image", "image/jpeg"),
-                },
-            },
-            "/api/ai/meal-plan": {
-                "json": {
-                    "calorie_goal": 2000,
-                    "diet_preference": "veg",
-                    "days": 7,
-                },
-            },
-            "/api/ai/weekly-report": {
-                "json": {
-                    "total_calories_logged": 14000,
-                    "calorie_goal": 14000,
-                    "workout_sessions_count": 4,
-                    "total_volume_kg": 12000,
-                    "prs_count": 2,
-                    "adherence_score": 85,
-                },
-            },
             "/api/ai/nutrition-label-ocr": {
                 "files": {
                     "image": ("label.jpg", b"test-label-image", "image/jpeg"),
@@ -86,6 +52,16 @@ class AiRouteSecurityTests(unittest.TestCase):
                 },
             },
         }
+
+    def test_ai_routes_are_not_mounted_by_default(self):
+        with patch.dict(os.environ, {"ENABLE_AI_ROUTES": ""}):
+            application = main.create_app()
+        self.assertFalse(
+            any(
+                isinstance(route, APIRoute) and route.path.startswith("/api/ai/")
+                for route in application.routes
+            )
+        )
 
     def test_health_and_root_are_public(self):
         health_response = self.client.get("/health")
@@ -131,6 +107,8 @@ class AiRouteSecurityTests(unittest.TestCase):
                 self.assertEqual(response.status_code, 401)
 
     def test_valid_credentials_allow_handler_to_proceed(self):
+        # With no Gemini key configured, reaching the handler means a 503
+        # (never an invented result).
         for path, request_kwargs in self._ai_requests().items():
             with self.subTest(path=path):
                 response = self.client.post(
@@ -138,7 +116,7 @@ class AiRouteSecurityTests(unittest.TestCase):
                     headers=self.valid_headers,
                     **request_kwargs,
                 )
-                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response.status_code, 503)
 
     def test_auth_rejection_does_not_call_gemini(self):
         main.GEMINI_API_KEY = "configured-for-test"
@@ -148,7 +126,7 @@ class AiRouteSecurityTests(unittest.TestCase):
             new=AsyncMock(),
         ) as gemini:
             response = self.client.post(
-                "/api/ai/meal-estimate-text",
+                "/api/ai/meal-decompose",
                 json={"text": "one roti"},
             )
 
@@ -161,7 +139,7 @@ class AiRouteSecurityTests(unittest.TestCase):
 
         responses = [
             self.client.post(
-                "/api/ai/meal-estimate-text",
+                "/api/ai/meal-decompose",
                 headers=self.valid_headers,
                 json={"text": "one roti"},
             )
@@ -170,16 +148,13 @@ class AiRouteSecurityTests(unittest.TestCase):
 
         self.assertEqual(
             [response.status_code for response in responses],
-            [200, 200, 429],
+            [503, 503, 429],
         )
 
     def test_rate_limit_rejection_does_not_call_gemini(self):
         main.GEMINI_API_KEY = "configured-for-test"
         main.MAX_REQUESTS_PER_WINDOW = 1
-        result = (
-            '{"name":"Roti","calories":80,"protein":3,"carbs":15,'
-            '"fat":1,"serving_size":1,"serving_unit":"piece"}'
-        )
+        result = '{"query": "one roti", "items": [], "total_calories": 80}'
 
         with patch.object(
             main,
@@ -187,12 +162,12 @@ class AiRouteSecurityTests(unittest.TestCase):
             new=AsyncMock(return_value=result),
         ) as gemini:
             allowed = self.client.post(
-                "/api/ai/meal-estimate-text",
+                "/api/ai/meal-decompose",
                 headers=self.valid_headers,
                 json={"text": "one roti"},
             )
             rejected = self.client.post(
-                "/api/ai/meal-estimate-text",
+                "/api/ai/meal-decompose",
                 headers=self.valid_headers,
                 json={"text": "one roti"},
             )
@@ -203,14 +178,14 @@ class AiRouteSecurityTests(unittest.TestCase):
 
     def test_upload_validation_preserves_http_statuses(self):
         invalid_type = self.client.post(
-            "/api/ai/meal-estimate-photo",
+            "/api/ai/nutrition-label-ocr",
             headers=self.valid_headers,
             files={
                 "image": ("meal.txt", b"not-an-image", "text/plain"),
             },
         )
         oversized = self.client.post(
-            "/api/ai/meal-estimate-photo",
+            "/api/ai/nutrition-label-ocr",
             headers=self.valid_headers,
             files={
                 "image": (
@@ -224,7 +199,7 @@ class AiRouteSecurityTests(unittest.TestCase):
         self.assertEqual(invalid_type.status_code, 415)
         self.assertEqual(oversized.status_code, 413)
 
-    def test_handler_http_exception_is_not_converted_to_fallback(self):
+    def test_handler_http_exception_passes_through(self):
         main.GEMINI_API_KEY = "configured-for-test"
         with patch.object(
             main,
@@ -237,7 +212,7 @@ class AiRouteSecurityTests(unittest.TestCase):
             ),
         ):
             response = self.client.post(
-                "/api/ai/meal-estimate-text",
+                "/api/ai/meal-decompose",
                 headers=self.valid_headers,
                 json={"text": "one roti"},
             )
@@ -271,34 +246,6 @@ class AiRouteSecurityTests(unittest.TestCase):
         )
 
 
-    def test_weekly_report_structured_parameters(self):
-        response = self.client.post(
-            "/api/ai/weekly-report",
-            headers=self.valid_headers,
-            json={
-                "total_calories_logged": 14000,
-                "calorie_goal": 14000,
-                "workout_sessions_count": 4,
-                "total_volume_kg": 12000.0,
-                "prs_count": 2,
-                "adherence_score": 85.0,
-                "date_range": "2026-07-22 to 2026-07-28",
-                "nutrition_days_logged": 5,
-                "calorie_adherence_pct": 90.0,
-                "protein_adherence_pct": 85.0,
-                "hydration_days_at_goal": 6,
-                "completed_workouts": 4,
-                "planned_workouts": 4,
-            },
-        )
-        self.assertEqual(response.status_code, 200)
-        data = response.json()
-        self.assertIn("headline", data)
-        self.assertIn("summary", data)
-        self.assertIn("coaching_tip", data)
-        self.assertTrue(data.get("is_fallback"))
-        self.assertIn("2026-07-22 to 2026-07-28", data["summary"])
-
     def test_nutrition_label_ocr_features(self):
         invalid_type = self.client.post(
             "/api/ai/nutrition-label-ocr",
@@ -314,19 +261,29 @@ class AiRouteSecurityTests(unittest.TestCase):
         )
         self.assertEqual(oversized.status_code, 413)
 
-        success = self.client.post(
+        unconfigured = self.client.post(
             "/api/ai/nutrition-label-ocr",
             headers=self.valid_headers,
             files={"image": ("label.png", b"png-bytes", "image/png")},
         )
+        self.assertEqual(unconfigured.status_code, 503)
+        self.assertNotIn("nutrients", unconfigured.json())
+
+        main.GEMINI_API_KEY = "configured-for-test"
+        reading = (
+            '{"basis": "per_100g", "nutrients": {"calories": '
+            '{"value": 454, "unit": "kcal", "confidence": "high"}}}'
+        )
+        with patch.object(
+            main, "query_gemini_vision", new=AsyncMock(return_value=reading)
+        ):
+            success = self.client.post(
+                "/api/ai/nutrition-label-ocr",
+                headers=self.valid_headers,
+                files={"image": ("label.png", b"png-bytes-2", "image/png")},
+            )
         self.assertEqual(success.status_code, 200)
-        data = success.json()
-        self.assertTrue(data.get("is_fallback"))
-        self.assertIn("nutrients", data)
-        self.assertIn("calories", data["nutrients"])
-        self.assertIn("protein", data["nutrients"])
-        self.assertIn("basis", data)
-        self.assertIn(data["basis"], {"per_serving", "per_100g"})
+        self.assertEqual(success.json()["nutrients"]["calories"]["value"], 454)
 
     def test_meal_decompose_features(self):
         empty = self.client.post(
@@ -343,17 +300,32 @@ class AiRouteSecurityTests(unittest.TestCase):
         )
         self.assertEqual(oversized.status_code, 422)
 
-        success = self.client.post(
+        unconfigured = self.client.post(
             "/api/ai/meal-decompose",
             headers=self.valid_headers,
             json={"text": "2 rotis and 1 katori dal tadka"},
         )
+        self.assertEqual(unconfigured.status_code, 503)
+        self.assertNotIn("items", unconfigured.json())
+
+        main.GEMINI_API_KEY = "configured-for-test"
+        parsed = (
+            '{"query": "2 rotis", "total_calories": 170, "items": [{'
+            '"raw_segment": "2 rotis", "food_name": "Roti", '
+            '"quantity_amount": 2, "quantity_unit": "roti", '
+            '"estimated_calories": 170, "estimated_protein": 6, '
+            '"estimated_carbs": 36, "estimated_fat": 1, "confidence": "high"}]}'
+        )
+        with patch.object(
+            main, "query_gemini_text", new=AsyncMock(return_value=parsed)
+        ):
+            success = self.client.post(
+                "/api/ai/meal-decompose",
+                headers=self.valid_headers,
+                json={"text": "2 rotis"},
+            )
         self.assertEqual(success.status_code, 200)
         data = success.json()
-        self.assertTrue(data.get("is_fallback"))
-        self.assertIn("items", data)
-        self.assertTrue(len(data["items"]) >= 1)
-        self.assertTrue(data["total_calories"] > 0)
         first_item = data["items"][0]
         self.assertIn("food_name", first_item)
         self.assertIn("quantity_amount", first_item)
@@ -391,7 +363,7 @@ class AiRouteSecurityTests(unittest.TestCase):
             self.assertIn("x-goog-api-key", req["headers"])
             self.assertEqual(req["headers"]["x-goog-api-key"], "test-secret-key-12345")
 
-    def test_fallback_error_sanitization(self):
+    def test_upstream_errors_are_not_leaked(self):
         main.GEMINI_API_KEY = "dummy-key-for-sanitization"
 
         async def throwing_query(*args, **kwargs):
@@ -399,23 +371,14 @@ class AiRouteSecurityTests(unittest.TestCase):
 
         with unittest.mock.patch("backend.routers.ai._get_query_gemini_text", return_value=throwing_query):
             res = self.client.post(
-                "/api/ai/routine",
+                "/api/ai/meal-decompose",
                 headers=self.valid_headers,
-                json={
-                    "goal": "hypertrophy",
-                    "equipment": "gym",
-                    "days_per_week": 4,
-                    "experience": "intermediate",
-                    "injuries": "none",
-                },
+                json={"text": "2 rotis"},
             )
-            self.assertEqual(res.status_code, 200)
-            data = res.json()
-            self.assertTrue(data.get("is_fallback"))
-            # Reason MUST NOT leak the internal exception string
-            self.assertEqual(data.get("fallback_reason"), "upstream_unavailable")
-            self.assertNotIn("postgres", str(data))
-            self.assertNotIn("secret", str(data))
+            self.assertEqual(res.status_code, 503)
+            # The response MUST NOT leak the internal exception string
+            self.assertNotIn("postgres", res.text)
+            self.assertNotIn("secret", res.text)
 
 
 if __name__ == "__main__":

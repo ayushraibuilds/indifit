@@ -54,17 +54,47 @@ class FoodRepository {
     // Search only fields that already belong to the local food record. The
     // ranking layer still decides relevance; this query merely makes
     // searchable metadata (brand/category/region) discoverable offline.
-    return (await (_db.select(_db.foodItems)..where(
-          (tbl) =>
-              tbl.name.lower().contains(cleanQuery) |
-              (tbl.nameHindi.isNotNull() &
-                  tbl.nameHindi.lower().contains(cleanQuery)) |
-              (tbl.brand.isNotNull() & tbl.brand.lower().contains(cleanQuery)) |
-              tbl.category.lower().contains(cleanQuery) |
-              (tbl.regionPack.isNotNull() &
-                  tbl.regionPack.lower().contains(cleanQuery)),
-        ))
-        .get());
+    final rows =
+        await (_db.select(_db.foodItems)..where(
+              (tbl) =>
+                  tbl.name.lower().contains(cleanQuery) |
+                  (tbl.nameHindi.isNotNull() &
+                      tbl.nameHindi.lower().contains(cleanQuery)) |
+                  (tbl.brand.isNotNull() &
+                      tbl.brand.lower().contains(cleanQuery)) |
+                  tbl.category.lower().contains(cleanQuery) |
+                  (tbl.regionPack.isNotNull() &
+                      tbl.regionPack.lower().contains(cleanQuery)),
+            ))
+            .get();
+    if (rows.isEmpty) return rows;
+
+    // Merged catalogue duplicates keep their rows so past logs resolve, but
+    // leave search: drop rows whose canonical identity is deprecated.
+    final retired =
+        _db.selectOnly(_db.nutritionLegacyFoodMappings).join([
+            innerJoin(
+              _db.nutritionFoods,
+              _db.nutritionFoods.id.equalsExp(
+                _db.nutritionLegacyFoodMappings.foodId,
+              ),
+            ),
+          ])
+          ..addColumns([_db.nutritionLegacyFoodMappings.legacyFoodItemId])
+          ..where(
+            _db.nutritionLegacyFoodMappings.legacyFoodItemId.isIn(
+                  rows.map((row) => row.id),
+                ) &
+                _db.nutritionFoods.lifecycle.equals('deprecated'),
+          );
+    final retiredIds = {
+      for (final row in await retired.get())
+        row.read(_db.nutritionLegacyFoodMappings.legacyFoodItemId),
+    };
+    return [
+      for (final row in rows)
+        if (!retiredIds.contains(row.id)) row,
+    ];
   }
 
   /// Reads only explicit, reviewed B03 identity metadata for search rows.

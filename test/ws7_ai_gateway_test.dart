@@ -50,6 +50,9 @@ Matcher _gatewayFailure(AiGatewayFailure failure) =>
     isA<AiGatewayException>().having((e) => e.failure, 'failure', failure);
 
 void main() {
+  // The database seeds the food catalogue from assets via rootBundle.
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('BackendAiGateway', () {
     test('rejects the backend\'s canned fallback data', () async {
       final gateway = BackendAiGateway(

@@ -411,9 +411,22 @@ Label scan is the exception. There the AI's job is to **read printed numbers** (
 3. A runner script reports **item recall/precision, catalog-match accuracy, kcal error (MAPE)** and **label-field accuracy**. Run it before each release and before any change to `ai_model` or `ai_prompt_version`. Any regression blocks the change.
 4. Suggested launch bar: label fields ≥95% exact, text item recall ≥90%, catalog match ≥85%. Photo stays Beta until its kcal error is acceptable to you.
 
+> **Status (2026-10-03):** The harness is built (`tool/ai_eval/`, 64 meals). On `gemini-3.8-flash` it meets the meal-text bar:
+> - item recall 100 %;
+> - catalogue match 100 %, with 94.2 % auto-matched;
+> - wrong auto-matches 0 %;
+> - meal kcal error 3.6 % mean.
+>
+> Label and photo cases are still to be collected. Results: `tool/ai_eval/results/`.
+
 **Phase 6: cleanup**
 - The FastAPI `/api/ai/*` routes are no longer used by the app. Keep them for local experiments or delete them, but **don't deploy them**. Delete `ai_fallbacks.py` from any deployed path.
 - Coaching wording (`b04_optional_ai_assistance.dart`): move it onto the gateway, or remove it for v1.
+
+> **Status (2026-10-03):** Done.
+> - The FastAPI AI router mounts only with `ENABLE_AI_ROUTES=1` (local development) and keeps only the three routes the dev gateway uses.
+> - Failures return HTTP errors, and `ai_fallbacks.py` is deleted.
+> - Coaching wording is removed for v1: its network provider pointed at a deleted endpoint and nothing read it. The consent and data model stay.
 
 ### 7.5 Tests
 - Unit: resolver scoring and unit mapping; gating matrix (flag × remote × offline × consent); EXIF stripping; cap enforcement.

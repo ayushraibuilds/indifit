@@ -4,6 +4,7 @@ import 'package:crypto/crypto.dart';
 import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../core/fixtures/food_identity_manifest.dart';
 import '../../core/nutrients.dart';
 import '../../core/typed_quantities.dart';
 import '../database/app_database.dart';
@@ -367,6 +368,28 @@ class NutritionFoodCatalogRepository {
 
   Future<List<NutritionFoodOption>> search({String query = ''}) async {
     final normalized = query.trim().toLowerCase();
+
+    // The installed catalogue is not the only offline source.  Legacy/local
+    // foods (including user-created foods) are adapted lazily through the
+    // same canonical identity boundary so recipe authoring works immediately
+    // after an upgrade and does not require a prior meal log.  Adapt them
+    // first: adapting writes a food's current facts, and reading its identity
+    // row before that returned it with no nutrition and a 1 g base on the
+    // first search after install.
+    final legacyRows =
+        await (_db.select(_db.foodItems)
+              ..where(
+                (table) => normalized.isEmpty
+                    ? const Constant(true)
+                    : table.name.lower().contains(normalized),
+              )
+              ..orderBy([(table) => OrderingTerm(expression: table.name)])
+              ..limit(200))
+            .get();
+    final legacyOptions = [
+      for (final item in legacyRows) await ensureLegacyFood(item),
+    ];
+
     final rows =
         await (_db.select(_db.nutritionFoods)
               ..where(
@@ -385,23 +408,22 @@ class NutritionFoodCatalogRepository {
       final option = await getOption(row.id);
       if (option != null) resultById[option.id] = option;
     }
-
-    // The installed catalogue is not the only offline source.  Legacy/local
-    // foods (including user-created foods) are adapted lazily through the
-    // same canonical identity boundary so recipe authoring works immediately
-    // after an upgrade and does not require a prior meal log.
-    final legacyRows =
-        await (_db.select(_db.foodItems)
-              ..where(
-                (table) => normalized.isEmpty
-                    ? const Constant(true)
-                    : table.name.lower().contains(normalized),
-              )
-              ..orderBy([(table) => OrderingTerm(expression: table.name)])
-              ..limit(200))
-            .get();
-    for (final item in legacyRows) {
-      final option = await ensureLegacyFood(item);
+    // Legacy rows of merged duplicates still map to their retired identity;
+    // keep those out of search like their deprecated identity rows.
+    final retiredIds = legacyOptions.isEmpty
+        ? const <String>{}
+        : {
+            for (final row
+                in await (_db.select(_db.nutritionFoods)..where(
+                      (table) =>
+                          table.id.isIn(legacyOptions.map((o) => o.id)) &
+                          table.lifecycle.equals('deprecated'),
+                    ))
+                    .get())
+              row.id,
+          };
+    for (final option in legacyOptions) {
+      if (retiredIds.contains(option.id)) continue;
       resultById.putIfAbsent(option.id, () => option);
     }
     final result = resultById.values.toList()
@@ -460,6 +482,12 @@ class NutritionFoodCatalogRepository {
         _db.nutritionFoods,
       )..where((row) => row.id.equals(mapping!.foodId!))).getSingleOrNull();
       if (canonical != null && canonical.lifecycle == 'active') {
+        return canonical.id;
+      }
+      // A merged duplicate stays on its retired identity (out of search);
+      // minting a fresh legacy identity here would bring it back.
+      if (canonical != null &&
+          kRetiredCatalogueFoods.containsKey(canonical.id)) {
         return canonical.id;
       }
     }
@@ -826,15 +854,30 @@ class NutritionFoodCatalogRepository {
       final index = sourceReference!.indexOf(marker);
       if (index >= 0) return sourceReference.substring(index + marker.length);
     }
+    if (sourceReference == null) return null;
+    final FoodItem? item;
     const prefix = 'food-items:';
-    if (sourceReference == null || !sourceReference.startsWith(prefix)) {
+    // Base catalogue identities reference their asset row by name:
+    // "asset:base:<lower-case name>". Regional packs have no rows there.
+    final asset = RegExp(r'^asset:base:(.+)$').firstMatch(sourceReference);
+    if (asset != null) {
+      final name = asset.group(1)!;
+      item =
+          await (_db.select(_db.foodItems)
+                ..where(
+                  (row) => row.name.lower().equals(name) & row.isCustom.not(),
+                )
+                ..limit(1))
+              .getSingleOrNull();
+    } else if (sourceReference.startsWith(prefix)) {
+      final id = int.tryParse(sourceReference.substring(prefix.length));
+      if (id == null) return null;
+      item = await (_db.select(
+        _db.foodItems,
+      )..where((row) => row.id.equals(id))).getSingleOrNull();
+    } else {
       return null;
     }
-    final id = int.tryParse(sourceReference.substring(prefix.length));
-    if (id == null) return null;
-    final item = await (_db.select(
-      _db.foodItems,
-    )..where((row) => row.id.equals(id))).getSingleOrNull();
     if (item == null || item.servingSize != 1) return null;
     final label = item.servingUnit.trim();
     return label.isEmpty || label.toLowerCase() == 'serving' ? null : label;

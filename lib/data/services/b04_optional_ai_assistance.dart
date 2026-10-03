@@ -1,6 +1,3 @@
-import 'package:dio/dio.dart';
-
-import '../../core/config/app_config.dart';
 import '../../core/privacy/privacy_policy.dart';
 import '../models/b04_recommendation_context_models.dart';
 import '../models/b04_recommendation_models.dart';
@@ -120,28 +117,12 @@ class B04OptionalAiWordingResponse {
 
 /// A provider receives semantic states and opaque lineage fingerprints only.
 /// It never receives a prompt assembled from raw application text.
+///
+/// v1 ships no implementation: AI coaching wording is not offered (WS7
+/// Phase 6). A future one should go through `AiGateway` (Firebase AI Logic +
+/// App Check), not a backend endpoint.
 abstract interface class B04OptionalAiProvider {
   Future<Object?> request(B04OptionalAiRedactedEnvelope envelope);
-}
-
-/// The production provider boundary. It sends only [envelope.toJson] and does
-/// not persist or log either the request body or the provider response.
-class B04DioOptionalAiProvider implements B04OptionalAiProvider {
-  final Dio _dio;
-  final String _endpoint;
-
-  B04DioOptionalAiProvider({required Dio dio, String? endpoint})
-    : _dio = dio,
-      _endpoint = endpoint ?? '${AppConfig.backendUrl}/api/ai/coaching-wording';
-
-  @override
-  Future<Object?> request(B04OptionalAiRedactedEnvelope envelope) async {
-    final response = await _dio.post(_endpoint, data: envelope.toJson());
-    if (response.statusCode != 200) {
-      throw StateError('The optional AI provider returned an HTTP failure.');
-    }
-    return response.data;
-  }
 }
 
 /// The provider envelope is intentionally narrower than the deterministic

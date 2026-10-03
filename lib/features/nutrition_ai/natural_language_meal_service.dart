@@ -5,7 +5,9 @@ import 'package:dio/dio.dart';
 import '../../core/ai/ai_gateway.dart';
 import '../../core/ai/backend_ai_gateway.dart';
 import '../../core/config/app_config.dart';
+import '../../core/nutrients.dart';
 import '../../core/privacy/privacy_policy.dart';
+import '../../core/typed_quantities.dart';
 import '../../core/utils/app_logger.dart';
 import '../../data/repositories/nutrition_food_catalog_repository.dart';
 import 'meal_item_resolver.dart';
@@ -50,6 +52,11 @@ class DecomposedFoodItem {
   /// pick one (or swap to another) before the item can be logged.
   final List<NutritionFoodOption> catalogChoices;
 
+  /// Set when the AI's unit couldn't be converted to the matched food's
+  /// measure: the amount was reset to one serving and the user should check
+  /// it.
+  final String? portionNote;
+
   const DecomposedFoodItem({
     required this.rawSegment,
     required this.foodName,
@@ -62,6 +69,7 @@ class DecomposedFoodItem {
     this.confidence = 'medium',
     this.matchedCatalogOption,
     this.catalogChoices = const [],
+    this.portionNote,
   });
 
   bool get isCatalogVerified => matchedCatalogOption != null;
@@ -82,6 +90,8 @@ class DecomposedFoodItem {
     NutritionFoodOption? matchedCatalogOption,
     List<NutritionFoodOption>? catalogChoices,
     bool clearCatalogOption = false,
+    String? portionNote,
+    bool clearPortionNote = false,
   }) {
     return DecomposedFoodItem(
       rawSegment: rawSegment ?? this.rawSegment,
@@ -97,6 +107,7 @@ class DecomposedFoodItem {
           ? null
           : (matchedCatalogOption ?? this.matchedCatalogOption),
       catalogChoices: catalogChoices ?? this.catalogChoices,
+      portionNote: clearPortionNote ? null : (portionNote ?? this.portionNote),
     );
   }
 
@@ -119,6 +130,97 @@ class DecomposedFoodItem {
       catalogChoices: catalogChoices,
     );
   }
+}
+
+/// Binds [item] to the catalogue food [option]: the amount becomes a count of
+/// the food's own measure and the nutrition comes from the catalogue, so the
+/// review card shows exactly what [catalogLogQuantity] will log. A unit that
+/// doesn't convert resets the amount to one serving with a [portionNote].
+DecomposedFoodItem bindToCatalog(
+  DecomposedFoodItem item,
+  NutritionFoodOption option,
+) {
+  final portion = PortionMapping.map(
+    amount: item.quantityAmount,
+    unit: item.quantityUnit,
+    option: option,
+  );
+  final base = option.baseQuantity;
+  final amount = portion.needsReview
+      ? base.amount.asDouble
+      : item.quantityAmount;
+  final unit = portion.needsReview ? _measureWord(option) : item.quantityUnit;
+  final quantity = Quantity.fromNum(
+    amount: amount,
+    unit: base.unit,
+    context: base.context,
+  );
+  // A nutrient the catalogue lacks keeps the AI's figure rather than
+  // silently becoming zero.
+  final kcal = _scaledFact(option, 'energy', quantity);
+  return item.copyWith(
+    matchedCatalogOption: option,
+    quantityAmount: amount,
+    quantityUnit: unit,
+    estimatedCalories: kcal?.round() ?? item.estimatedCalories,
+    estimatedProtein:
+        _scaledFact(option, 'protein', quantity) ?? item.estimatedProtein,
+    estimatedCarbs:
+        _scaledFact(option, 'carbohydrate', quantity) ?? item.estimatedCarbs,
+    estimatedFat: _scaledFact(option, 'fat', quantity) ?? item.estimatedFat,
+    portionNote: portion.reviewReason,
+    clearPortionNote: !portion.needsReview,
+  );
+}
+
+/// The quantity to log for an item bound with [bindToCatalog]: its amount is
+/// already a count of the food's base measure.
+Quantity catalogLogQuantity(DecomposedFoodItem item) {
+  final base = item.matchedCatalogOption!.baseQuantity;
+  return Quantity.fromNum(
+    amount: item.quantityAmount,
+    unit: base.unit,
+    context: base.context,
+  );
+}
+
+String _measureWord(NutritionFoodOption option) {
+  final label = option.servingUnitLabel?.trim();
+  return switch (option.baseQuantity.unit) {
+    QuantityUnit.gram => 'g',
+    QuantityUnit.millilitre => 'ml',
+    QuantityUnit.piece => 'piece',
+    _ =>
+      label == null || label.isEmpty
+          ? 'serving'
+          // "1 katori" -> "katori": the amount is shown separately.
+          : label.replaceFirst(RegExp(r'^[\d.]+\s+'), ''),
+  };
+}
+
+double? _scaledFact(
+  NutritionFoodOption option,
+  String nutrientId,
+  Quantity quantity,
+) {
+  final fact = option.facts[nutrientId];
+  if (fact == null || !fact.isAvailable || fact.point == null) return null;
+  try {
+    return fact.scaleBy(quantity).point?.value.asDouble;
+  } on NutrientError {
+    return null;
+  } on QuantityError {
+    return null;
+  }
+}
+
+/// Stepper increment for an item's amount: grams and millilitres move in
+/// tens, small counts in quarters.
+double quantityStep(DecomposedFoodItem item, {required bool decreasing}) {
+  final unit = item.quantityUnit.trim().toLowerCase();
+  if (const {'g', 'gm', 'gram', 'grams', 'ml'}.contains(unit)) return 10;
+  final amount = item.quantityAmount;
+  return (decreasing ? amount <= 1.0 : amount < 1.0) ? 0.25 : 1.0;
 }
 
 /// Overall response from natural-language meal decomposition.
@@ -239,6 +341,15 @@ class NaturalLanguageMealService {
     }
   }
 
+  /// Only foods with calorie data can be a match: a catalogue entry without
+  /// facts (e.g. an uninstalled regional pack) would "verify" an item with
+  /// no numbers behind it.
+  Future<List<NutritionFoodOption>> _searchWithNutrition(String query) async =>
+      [
+        for (final option in await _catalog.search(query: query))
+          if (option.facts['energy']?.point != null) option,
+      ];
+
   /// Matches each parsed item against the curated catalogue. A clear match
   /// supplies the nutrition; a close call is left for the user to choose;
   /// anything else stays an AI estimate. Catalogue failures degrade to an
@@ -246,9 +357,7 @@ class NaturalLanguageMealService {
   Future<List<DecomposedFoodItem>> _resolveAgainstCatalog(
     List<dynamic> rawItems,
   ) async {
-    final resolver = MealItemResolver(
-      search: (query) => _catalog.search(query: query),
-    );
+    final resolver = MealItemResolver(search: _searchWithNutrition);
     final items = <DecomposedFoodItem>[];
     for (final raw in rawItems) {
       if (raw is! Map<String, dynamic>) continue;
@@ -265,13 +374,12 @@ class NaturalLanguageMealService {
           );
         }
       }
-      items.add(
-        DecomposedFoodItem.fromJson(
-          raw,
-          catalogOption: match.option,
-          catalogChoices: match.choices,
-        ),
+      final item = DecomposedFoodItem.fromJson(
+        raw,
+        catalogChoices: match.choices,
       );
+      final option = match.option;
+      items.add(option == null ? item : bindToCatalog(item, option));
     }
     return items;
   }

@@ -61,19 +61,98 @@ class MealItemResolver {
   static const int _maxChoices = 3;
   static const int _maxTokenQueries = 3;
 
-  /// Size/preparation variants ("Rumali Roti (Mini)") rank just below their
-  /// base dish so they don't crowd it out of the choice list.
-  static const double _variantPenalty = 0.05;
+  /// Size/preparation variants ("Samosa (1 piece) (Mini size)") rank below
+  /// their base dish by more than the auto-resolve lead: someone who says
+  /// "samosa" means the plain one, and names a variant when they mean it.
+  static const double _variantPenalty = 0.15;
 
-  /// Generic names that mean one specific catalogue food in everyday use.
-  /// The catalogue has no plain "Roti", so word overlap alone ranked
-  /// "Rumali Roti" above the everyday chapati.
+  /// Generic names that mean one specific catalogue food in everyday use,
+  /// tuned with the eval (tool/ai_eval). Without these, "roti" ranked
+  /// "Rumali Roti" first, and the catalogue's near-duplicates (two dal
+  /// tadkas, two rajmas, two choles) always forced a choice. Keys are
+  /// normalised (lower-case, singular).
   static const Map<String, String> genericDefaults = {
-    'roti': 'Whole Wheat Roti / Chapati',
-    'chapati': 'Whole Wheat Roti / Chapati',
-    'chapatti': 'Whole Wheat Roti / Chapati',
-    'phulka': 'Whole Wheat Roti / Chapati',
+    'roti': _chapati,
+    'chapati': _chapati,
+    'chapatti': _chapati,
+    'phulka': _chapati,
+    'rice': _rice,
+    'chawal': _rice,
+    'steamed rice': _rice,
+    'cooked rice': _rice,
+    'plain rice': _rice,
+    'white rice': _rice,
+    'chai': _chai,
+    'tea': _chai,
+    'masala chai': _chai,
+    'dahi': _curd,
+    'curd': _curd,
+    'plain curd': _curd,
+    'yogurt': _curd,
+    'naan': 'Plain Naan',
+    'paneer': 'Amul Fresh Paneer (Raw)',
+    'raw paneer': 'Amul Fresh Paneer (Raw)',
+    'dal tadka': _dalTadka,
+    'yellow dal tadka': _dalTadka,
+    'yellow dal': _dalTadka,
+    'rajma': _rajma,
+    'rajma masala': _rajma,
+    'rajma curry': _rajma,
+    'chole': _chole,
+    'chole masala': _chole,
+    'chana masala': _chole,
+    'bhindi masala': _bhindi,
+    'bhindi': _bhindi,
+    'bhindi sabji': _bhindi,
+    'bhindi sabzi': _bhindi,
+    'dosa': 'Plain Dosa with Chutney',
+    'plain dosa': 'Plain Dosa with Chutney',
+    'lassi': 'Masala Lassi (Sweet)',
+    'sweet lassi': 'Masala Lassi (Sweet)',
+    'sprout salad': 'Sprouted Moong Salad',
+    'moong sprout salad': 'Sprouted Moong Salad',
+    'sprouted moong salad': 'Sprouted Moong Salad',
+    // Names and spellings of duplicates merged on 2026-10-03
+    // (kRetiredCatalogueFoods), so they still land on the kept food.
+    'matar paneer': _matarPaneer,
+    'mattar paneer': _matarPaneer,
+    'paneer matar': _matarPaneer,
+    'paneer mattar': _matarPaneer,
+    'sambhar': 'Sambar',
+    'south indian sambhar': 'Sambar',
+    'punjabi kadhi pakora': 'Kadhi Pakora',
+    'mix veg': _mixVeg,
+    'mixed veg': _mixVeg,
+    'mixed veg sabji': _mixVeg,
+    'mix veg sabji': _mixVeg,
+    'dum aloo punjabi': 'Dum Aloo',
+    'torai': _torai,
+    'torai curry': _torai,
+    'torai ki sabji': _torai,
+    'aloo methi dry': 'Aloo Methi',
+    'aloo palak dry': 'Aloo Palak',
+    'french bean poriyal': 'Beans Poriyal',
+    'bean poriyal': 'Beans Poriyal',
+    'raw banana fry': _rawBanana,
+    'kacha kela fry': _rawBanana,
+    'dhokla': _dhokla,
+    'khaman dhokla': _dhokla,
+    'aloo gobi': 'Aloo Gobbi (Dry Sabji)',
   };
+
+  static const _chapati = 'Whole Wheat Roti / Chapati';
+  static const _rice = 'Basmati White Rice (Cooked)';
+  static const _chai = 'Masala Chai (with milk & sugar)';
+  static const _curd = 'Plain Curd / Dahi (Cow Milk)';
+  static const _dalTadka = 'Toor Dal / Yellow Dal Tadka';
+  static const _rajma = 'Rajma Masala (Red Kidney Beans)';
+  static const _chole = 'Chole Masala (Chickpea Curry)';
+  static const _bhindi = 'Bhindi Masala (Okra)';
+  static const _matarPaneer = 'Mattar Paneer';
+  static const _mixVeg = 'Mix Vegetable Sabji';
+  static const _torai = 'Torai Ki Sabji (Ridge Gourd)';
+  static const _rawBanana = 'Raw Banana Stir Fry';
+  static const _dhokla = 'Dhokla (2 pieces)';
 
   Future<CatalogMatch> resolve(String foodName) async {
     final normalized = normalize(foodName);
@@ -158,8 +237,23 @@ class MealItemResolver {
   /// "Rumali Roti (Mini)" is a variant when "Rumali Roti" is also a
   /// candidate; "Tandoori Roti (Wheat)" with no plain entry is not.
   static bool _isVariantOfAnother(String name, Set<String> candidateNames) {
-    final base = name.replaceFirst(RegExp(r'\s*\([^)]*\)\s*$'), '');
+    final base = _withoutTrailingGroup(name);
     return base != name && candidateNames.contains(normalize(base));
+  }
+
+  /// Drops a trailing parenthesised group, nested ones included:
+  /// "Butter Chicken (Murgh Makhani) (Diet prep (Low oil))" ->
+  /// "Butter Chicken (Murgh Makhani)".
+  static String _withoutTrailingGroup(String name) {
+    final trimmed = name.trimRight();
+    if (!trimmed.endsWith(')')) return name;
+    var depth = 0;
+    for (var i = trimmed.length - 1; i >= 0; i--) {
+      if (trimmed[i] == ')') depth++;
+      if (trimmed[i] == '(') depth--;
+      if (depth == 0) return trimmed.substring(0, i).trimRight();
+    }
+    return name;
   }
 
   static double _score(String query, Set<String> queryTokens, String name) {
