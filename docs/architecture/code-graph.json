@@ -2,8 +2,8 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "summary": {
     "total_dart_files": 464,
-    "total_loc": 338438,
-    "total_internal_edges": 2306,
+    "total_loc": 338507,
+    "total_internal_edges": 2307,
     "external_package_count": 28,
     "catch_metrics": {
       "total_catches_all": 522,
@@ -2669,7 +2669,7 @@
       "path": "lib/core/fixtures/food_identity_manifest.dart",
       "layer": "core",
       "sublayer": "core",
-      "loc": 2070,
+      "loc": 2105,
       "imports": [],
       "imported_by": [
         "lib/data/database/app_database.dart",
@@ -8553,7 +8553,7 @@
       "path": "lib/data/repositories/nutrition_food_catalog_repository.dart",
       "layer": "data",
       "sublayer": "data",
-      "loc": 934,
+      "loc": 946,
       "imports": [
         "lib/core/fixtures/food_identity_manifest.dart",
         "lib/core/nutrients.dart",
@@ -8562,6 +8562,7 @@
       ],
       "imported_by": [
         "lib/data/repositories/nutrition_food_logging_coordinator.dart",
+        "lib/data/repositories/nutrition_thali_repository.dart",
         "lib/data/services/nutrition_food_search_ranking.dart",
         "lib/features/food_log/food_search_screen.dart",
         "lib/features/food_log/food_search_view_models.dart",
@@ -9006,7 +9007,7 @@
       "path": "lib/data/repositories/nutrition_thali_repository.dart",
       "layer": "data",
       "sublayer": "data",
-      "loc": 1281,
+      "loc": 1303,
       "imports": [
         "lib/core/nutrients.dart",
         "lib/core/nutrition_calculation_service.dart",
@@ -9017,6 +9018,7 @@
         "lib/core/typed_quantities.dart",
         "lib/data/repositories/nutrition_constraint_repository.dart",
         "lib/data/repositories/nutrition_consumption_repository.dart",
+        "lib/data/repositories/nutrition_food_catalog_repository.dart",
         "lib/data/repositories/nutrition_household_measure_repository.dart",
         "lib/data/repositories/nutrition_recipe_log_coordinator.dart",
         "lib/data/repositories/nutrition_recipe_repository.dart"
@@ -9036,7 +9038,7 @@
       "catches": [
         {
           "file": "lib/data/repositories/nutrition_thali_repository.dart",
-          "line": 378,
+          "line": 400,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -9046,7 +9048,7 @@
         },
         {
           "file": "lib/data/repositories/nutrition_thali_repository.dart",
-          "line": 538,
+          "line": 560,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -9056,7 +9058,7 @@
         },
         {
           "file": "lib/data/repositories/nutrition_thali_repository.dart",
-          "line": 540,
+          "line": 562,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -9066,7 +9068,7 @@
         },
         {
           "file": "lib/data/repositories/nutrition_thali_repository.dart",
-          "line": 631,
+          "line": 653,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -9076,7 +9078,7 @@
         },
         {
           "file": "lib/data/repositories/nutrition_thali_repository.dart",
-          "line": 633,
+          "line": 655,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -9086,7 +9088,7 @@
         },
         {
           "file": "lib/data/repositories/nutrition_thali_repository.dart",
-          "line": 635,
+          "line": 657,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -9096,7 +9098,7 @@
         },
         {
           "file": "lib/data/repositories/nutrition_thali_repository.dart",
-          "line": 850,
+          "line": 872,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -9106,7 +9108,7 @@
         },
         {
           "file": "lib/data/repositories/nutrition_thali_repository.dart",
-          "line": 1081,
+          "line": 1103,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -9116,7 +9118,7 @@
         },
         {
           "file": "lib/data/repositories/nutrition_thali_repository.dart",
-          "line": 1089,
+          "line": 1111,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,

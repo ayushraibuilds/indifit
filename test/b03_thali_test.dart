@@ -23,6 +23,35 @@ import 'package:indifit/features/food_log/nutrition_thali_controller.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   group('B03-13 thali composition', () {
+    test('food picker hides regional foods that have no nutrition', () async {
+      final harness = await _ThaliHarness.create();
+      addTearDown(harness.close);
+      final db = harness.db;
+      await db
+          .into(db.nutritionFoods)
+          .insert(
+            NutritionFoodsCompanion.insert(
+              id: 'food-regional-test-0001',
+              kind: 'canonical',
+              displayName: 'Regional Probe Bare',
+              locale: 'en-IN',
+              sourceType: 'fixture',
+              lifecycle: 'active',
+            ),
+          );
+      await _insertFood(db, 'food-regional-test-0002', 120, 'Regional Probe');
+
+      final ids = (await harness.repository.searchFoods(
+        query: 'regional probe',
+      )).map((food) => food.id);
+      expect(ids, ['food-regional-test-0002']);
+
+      final all = (await harness.repository.searchFoods(
+        limit: 5000,
+      )).map((food) => food.id);
+      expect(all, isNot(contains('food-regional-test-0001')));
+    });
+
     test(
       'empty drafts cannot preview, and duplicate items retain identity',
       () async {
