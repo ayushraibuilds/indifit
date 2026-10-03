@@ -10,7 +10,7 @@ ALLOWED_ORIGINS = os.getenv(
 ).split(",")
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-AI_MODEL = os.getenv("AI_MODEL", "gemini-2.5-flash")
+AI_MODEL = os.getenv("AI_MODEL", "gemini-3.8-flash")
 
 INDIFIT_API_KEY = os.getenv("INDIFIT_API_KEY")
 if not INDIFIT_API_KEY:
