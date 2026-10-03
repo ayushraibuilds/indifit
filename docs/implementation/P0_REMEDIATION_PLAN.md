@@ -405,10 +405,11 @@ Label scan is the exception. There the AI's job is to **read printed numbers** (
 3. Billing guardrails: set a GCP budget of about ₹950/month with alerts at 50%, 90% and 100%. Budgets alert but **don't stop spending**, so on a 100% alert flip `ai_enabled=false` in Remote Config. Optionally automate this with a budget → Pub/Sub → function. Credits run out silently and the card on file is charged after that.
 3. Only if analytics are opt-in: count success, edit-before-save rate and abandon rate per feature. A high edit rate means the prompt or resolver needs work.
 
-> **Status (2026-10-03):** In-app part done; console parts open.
+> **Status (2026-10-03):** Done, apart from analytics.
 > - Done: local daily soft caps per feature (`DailyCapAiGateway`, `lib/core/ai/ai_daily_caps.dart`). The Remote Config key `ai_daily_caps` defaults to `{"text":30,"photo":10,"label":10}`. 0 pauses a feature. Malformed values fall back to the defaults. Each request that may reach the model counts; requests never sent (offline, switched off) are given back. Users see a "daily limit reached" message that points them to food search, on both the meal and label screens.
 > - Not done: `ai_prompt_version` is not added yet. There is only one prompt version, so a remote switch would have nothing to choose between. Add it with the second prompt version.
-> - Open (console, Ayush): the per-user rate limit in Firebase AI Logic (≈10 requests/min/user); the GCP budget (≈₹950/month, alerts at 50/90/100 %); the 100 % alert → `ai_enabled=false` runbook.
+> - Done (console): per-user rate limit. The Firebase AI Logic API quota "Generate content requests per minute per project per user" is set to 10 in all 44 regions and in the `(default)` row. Firebase applies only the regional rows. The Bidi (Live API) quotas stay at 100 because the app doesn't use them.
+> - Verified (console): a ₹950/month billing-account budget with alerts at 50/90/100/150 %, plus a Firebase-generated ₹950/month **spend cap** on the Gemini API for this project (alerts at 50/80/100 %, status Configured). The spend cap pauses Gemini when exceeded, so `ai_enabled=false` is no longer the only stop. Use it to switch AI off earlier or more gracefully.
 > - Not started: per-feature analytics. The app has no analytics SDK; this waits for an opt-in analytics decision.
 
 **Phase 5: evaluation harness (≈1–2 days, then reused on every prompt or model change)**
