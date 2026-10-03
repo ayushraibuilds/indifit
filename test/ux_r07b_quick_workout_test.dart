@@ -443,6 +443,9 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            // The golden comparison runs real async work, long enough for an
+            // un-overridden database to try opening the on-disk file.
+            databaseProvider.overrideWithValue(db),
             b07ExerciseContextProvider.overrideWith(
               (ref, id) async => const B07ExerciseContextResult.unavailable(),
             ),
