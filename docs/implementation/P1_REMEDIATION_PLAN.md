@@ -51,10 +51,10 @@ Use one PR per row. Each PR must pass CI before the next one merges. Run `flutte
 
 | Order | Branch | Contents |
 |---|---|---|
-| 1 | `fix/release-food-lookup` | WS-0 |
+| 1 | `fix/release-food-lookup` | WS-0 (PR #24) |
 | 2 | `fix/crash-reporting` | WS-A (after E0) |
-| 3 | `fix/router-error-fallback` | WS-G |
-| 4 | `fix/streak-calculation` | WS-D part 1 |
+| 3 | `fix/router-error-fallback` | WS-G (PR #25) |
+| 4 | `fix/streak-calculation` | WS-D part 1 (PR #26) |
 | 5 | `fix/rest-intent-single-owner` | WS-D part 2, steps 1–3 |
 | 6 | `feat/db-open-recovery` | WS-B part 1 |
 | 7 | `perf/launch-repair-gate` | WS-B part 2: only if the measurement says so |
@@ -200,7 +200,7 @@ A pre-`runApp` probe with a timeout was considered and rejected. If a slow upgra
 
 ### Steps
 1. **Sort each catch into one of three kinds** and record the decision in the PR table:
-   - **Expected and harmless:** keep it, add a `// Safe: <reason>` comment, and `AppLogger.debug`.
+   - **Expected and harmless:** keep it, add a `// Safe: <reason>` comment, and `AppLogger.info` (`AppLogger` has no debug level).
    - **The user should know:** rethrow or return a failure value; the controller sets an error state the screen already renders.
    - **Quiet but logged:** `AppLogger.error(msg, e, s)`, which also reaches Sentry when opted in (after WS-A).
 2. **Data rows first.** A hydration or TDEE read that silently returns a default is the "number looks wrong, nobody knows why" bug.
@@ -229,6 +229,10 @@ A pre-`runApp` probe with a timeout was considered and rejected. If a slow upgra
 | today and 2 days ago | 1 | 3 | 3 (correct; the only freeze case tested) |
 
 Freezes are also never used up: the count only grows, through `purchaseStreakFreeze`, up to 2.
+
+**Problem 3, missing food logs (found during implementation):** the dashboard read only the legacy `food_logs` table. Almost every logging path (portion sheet, thali, AI, diary, quick add) now writes canonical consumption snapshots, so most food logging never counted toward the streak. Fixed in the same PR via `NutritionReadModelRepository.activeLocalDates()`.
+
+> **Status (2026-10-03):** Done in PR #26.
 
 #### Steps
 1. **Fix the calculator (E6):**
