@@ -55,7 +55,7 @@ Use one PR per row. Each PR must pass CI before the next one merges. Run `flutte
 | 2 | `fix/crash-reporting` | WS-A (after E0) |
 | 3 | `fix/router-error-fallback` | WS-G (PR #25) |
 | 4 | `fix/streak-calculation` | WS-D part 1 (PR #26) |
-| 5 | `fix/rest-intent-single-owner` | WS-D part 2, steps 1–3 |
+| 5 | `fix/rest-intent-single-owner` | WS-D part 2, steps 1–3 (PR #27) |
 | 6 | `feat/db-open-recovery` | WS-B part 1 |
 | 7 | `perf/launch-repair-gate` | WS-B part 2: only if the measurement says so |
 | 8 | `fix/no-silent-catches` | WS-C |
@@ -260,6 +260,8 @@ Freezes are also never used up: the count only grows, through `purchaseStreakFre
   - Each calls `RestPresenceService.loadAndClearPendingIntent()`, so whichever runs first takes the notification's "Skip" or "+30 s" action.
   - The global controller's `state.launch` is the copy from when the dashboard or launcher recovered the workout, so it may hold no active rest. The action is then **lost**.
   - If the workout was recovered mid-rest, `skipRest` and `adjustRest` call `saveDraft` with a draft built from that **outdated** copy (`:1004-1030`), which could **overwrite sets logged since**.
+
+> **Status (2026-10-03):** Steps 1–3 done in PR #27. Both failures reproduced: the Skip was lost, and the old copy saved 1 set instead of 2. A third path was found: any first read of the global provider registered it as the notification's action delegate. The fix records which controller owns the delegate, claims it only with a workout loaded, and lets only the owner reconcile, unregister or clean up.
 
 #### Steps
 1. **Reproduce first** (the PR starts with failing tests):
