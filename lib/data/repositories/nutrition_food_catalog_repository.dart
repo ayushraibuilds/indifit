@@ -321,7 +321,7 @@ class NutritionFoodCatalogRepository {
     )..where((table) => table.id.equals(foodId.trim()))).getSingleOrNull();
     if (row == null || row.lifecycle != 'active') return null;
     final facts = await _readCurrentFacts(row.id);
-    return NutritionFoodOption(
+    final option = NutritionFoodOption(
       id: row.id,
       displayName: row.displayName,
       baseQuantity: _baseQuantityFor(row.id, facts),
@@ -332,6 +332,10 @@ class NutritionFoodCatalogRepository {
       brand: row.brand,
       servingUnitLabel: await _servingUnitLabelFor(row.sourceRef),
     );
+    if (isRegionalWithoutFacts(option.id, option.hasNumericFacts)) {
+      return null;
+    }
+    return option;
   }
 
   /// Finds a user-created food by its scanned barcode.
@@ -472,6 +476,14 @@ class NutritionFoodCatalogRepository {
     }
     return List.unmodifiable(options);
   }
+
+  /// Whether [foodId] is a pre-seeded regional identity with no nutrition
+  /// yet. These are hidden everywhere foods are picked: they would show as
+  /// "Nutrition details unavailable". Installed regional packs are unaffected
+  /// (their foods get legacy identities with facts), and a regional food
+  /// surfaces on its own once canonical facts are seeded for it.
+  static bool isRegionalWithoutFacts(String foodId, bool hasNumericFacts) =>
+      foodId.startsWith('food-regional-') && !hasNumericFacts;
 
   Future<String> _legacyIdentity(FoodItem item) async {
     final mapping = await (_db.select(

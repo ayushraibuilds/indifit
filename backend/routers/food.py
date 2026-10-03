@@ -6,7 +6,7 @@ import re
 import time
 from collections import Counter, deque
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set
 
 import httpx
 from cachetools import TTLCache
@@ -30,6 +30,54 @@ food_router = APIRouter(
 
 # Open Food Facts Proxy Threshold: Proxy out only when curated hits are below this threshold
 OFF_PROXY_MIN_HITS_THRESHOLD = 3
+
+# Catalogue foods the app retired (deprecated in
+# assets/data/nutrition_food_identity_manifest.json, mirrored by
+# kRetiredCatalogueFoods): merged duplicates and nonsense "(Double Paneer)" /
+# "(Low Oil / Diet version)" variants. The backend deploys without the app's
+# assets, so the names are copied here; a test keeps this set equal to the
+# manifest's deprecated catalogue entries.
+RETIRED_FOOD_NAMES: Set[str] = {
+    "Aloo Gobi Dry Sabji",
+    "Aloo Methi Dry",
+    "Aloo Palak Dry",
+    "Amul Fresh Paneer (Raw) (Double Paneer)",
+    "Amul Fresh Paneer (Raw) (Low Oil / Diet version)",
+    "Bhindi Masala (Okra Fry)",
+    "Buttermilk / Chaas (Plain) (Double Paneer)",
+    "Buttermilk / Chaas (Plain) (Low Oil / Diet version)",
+    "Chana Masala (Chickpea Curry)",
+    "Double Toned Milk (1 Glass) (Double Paneer)",
+    "Double Toned Milk (1 Glass) (Low Oil / Diet version)",
+    "Dum Aloo Punjabi",
+    "French Beans Poriyal",
+    "Full Cream Milk (1 Glass) (Double Paneer)",
+    "Full Cream Milk (1 Glass) (Low Oil / Diet version)",
+    "Greek Yogurt (Plain) (Double Paneer)",
+    "Greek Yogurt (Plain) (Low Oil / Diet version)",
+    "Kacha Kela (Raw Banana) Fry",
+    "Low Fat Curd / Dahi (Double Paneer)",
+    "Low Fat Curd / Dahi (Low Oil / Diet version)",
+    "Low Fat Paneer (Double Paneer)",
+    "Low Fat Paneer (Low Oil / Diet version)",
+    "Masala Lassi (Sweet) (Double Paneer)",
+    "Masala Lassi (Sweet) (Low Oil / Diet version)",
+    "Matar Paneer",
+    "Mixed Veg Sabji",
+    "Paneer Mattar",
+    "Paneer Mattar (Dhaba Style (High oil))",
+    "Plain Curd / Dahi (Cow Milk) (Double Paneer)",
+    "Plain Curd / Dahi (Cow Milk) (Low Oil / Diet version)",
+    "Punjabi Kadhi Pakora",
+    "Rajma Masala (Kidney Beans)",
+    "South Indian Sambhar",
+    "Sprouted Moong Salad / Sabji",
+    "Toned Milk (1 Glass) (Double Paneer)",
+    "Toned Milk (1 Glass) (Low Oil / Diet version)",
+    "Torai (Ridge Gourd) Curry",
+    "Yellow Dal Tadka",
+}
+_RETIRED_FOOD_NAMES_LOWER: Set[str] = {n.lower() for n in RETIRED_FOOD_NAMES}
 
 # Static category text to canonical taxonomy category_id mapping
 CATEGORY_TEXT_TO_ID: Dict[str, str] = {
@@ -488,6 +536,8 @@ async def search_foods(request: FoodSearchRequest):
     # 2. Score Curated FMCG Items
     for item in curated_fmcg:
         name = item.get("name", "")
+        if name.lower() in _RETIRED_FOOD_NAMES_LOWER:
+            continue
         brand = item.get("brand")
         barcode = item.get("barcode")
         score = _calculate_score(name, None, q_norm, transliterated)
@@ -520,6 +570,8 @@ async def search_foods(request: FoodSearchRequest):
     for entry in curated_foods:
         name = entry.get("name", "")
         name_hindi = entry.get("name_hindi")
+        if name.lower() in _RETIRED_FOOD_NAMES_LOWER:
+            continue
         if name.lower() in seen_ids:
             continue
 
