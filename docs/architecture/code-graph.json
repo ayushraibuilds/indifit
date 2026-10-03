@@ -2,11 +2,11 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "summary": {
     "total_dart_files": 464,
-    "total_loc": 338507,
+    "total_loc": 338576,
     "total_internal_edges": 2307,
     "external_package_count": 28,
     "catch_metrics": {
-      "total_catches_all": 522,
+      "total_catches_all": 523,
       "total_catch_underscore": 195,
       "total_empty_catches": 37,
       "p0_empty_catches": 0
@@ -14,7 +14,7 @@
     "layer_violations_count": 7,
     "catches_by_layer": {
       "core": 146,
-      "data": 103,
+      "data": 104,
       "features": 272,
       "other": 1
     }
@@ -1860,7 +1860,7 @@
       "path": "lib/core/config/app_config.dart",
       "layer": "core",
       "sublayer": "core",
-      "loc": 56,
+      "loc": 57,
       "imports": [],
       "imported_by": [
         "lib/core/ai/ai_gateway_provider.dart",
@@ -7896,7 +7896,7 @@
       "path": "lib/data/repositories/food_api_service.dart",
       "layer": "data",
       "sublayer": "data",
-      "loc": 533,
+      "loc": 601,
       "imports": [
         "lib/core/config/app_config.dart",
         "lib/core/di/core_providers.dart",
@@ -7927,7 +7927,7 @@
       "catches": [
         {
           "file": "lib/data/repositories/food_api_service.dart",
-          "line": 275,
+          "line": 277,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -7937,7 +7937,7 @@
         },
         {
           "file": "lib/data/repositories/food_api_service.dart",
-          "line": 359,
+          "line": 365,
           "var": "e",
           "is_underscore": false,
           "is_empty": false,
@@ -7947,17 +7947,7 @@
         },
         {
           "file": "lib/data/repositories/food_api_service.dart",
-          "line": 470,
-          "var": "e",
-          "is_underscore": false,
-          "is_empty": false,
-          "snippet": "} catch (e) {",
-          "layer": "data",
-          "is_p0": false
-        },
-        {
-          "file": "lib/data/repositories/food_api_service.dart",
-          "line": 481,
+          "line": 399,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -7967,7 +7957,27 @@
         },
         {
           "file": "lib/data/repositories/food_api_service.dart",
-          "line": 509,
+          "line": 461,
+          "var": "e",
+          "is_underscore": false,
+          "is_empty": false,
+          "snippet": "} catch (e) {",
+          "layer": "data",
+          "is_p0": false
+        },
+        {
+          "file": "lib/data/repositories/food_api_service.dart",
+          "line": 535,
+          "var": "error",
+          "is_underscore": false,
+          "is_empty": false,
+          "snippet": "} on DioException catch (error) {",
+          "layer": "data",
+          "is_p0": false
+        },
+        {
+          "file": "lib/data/repositories/food_api_service.dart",
+          "line": 563,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -7977,7 +7987,7 @@
         }
       ],
       "empty_catch_count": 0,
-      "total_catch_count": 5
+      "total_catch_count": 6
     },
     "lib/data/repositories/food_repository.dart": {
       "path": "lib/data/repositories/food_repository.dart",
