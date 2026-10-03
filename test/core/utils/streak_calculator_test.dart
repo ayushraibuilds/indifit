@@ -56,8 +56,62 @@ void main() {
         streakFreezeCount: 1,
         referenceLocalDate: '2026-09-13',
       );
-      // 13 is active (1), 12 uses freeze (2), 11 has no freeze -> stops
-      expect(streak, 2);
+      // 13 is active (1). The 11-12 gap needs 2 freezes to reach 10, so the
+      // single freeze can't bridge it and adds nothing.
+      expect(streak, 1);
+    });
+
+    test('unused freezes never add days to a run', () {
+      expect(
+        StreakCalculator.calculateStreak(
+          {'2026-10-03'},
+          streakFreezeCount: 1,
+          referenceLocalDate: '2026-10-03',
+        ),
+        1,
+      );
+      expect(
+        StreakCalculator.calculateStreak(
+          {'2026-10-03'},
+          streakFreezeCount: 2,
+          referenceLocalDate: '2026-10-03',
+        ),
+        1,
+      );
+    });
+
+    test('a lapsed streak is 0 even with a freeze available', () {
+      expect(
+        StreakCalculator.calculateStreak(
+          {'2026-09-28'},
+          streakFreezeCount: 1,
+          referenceLocalDate: '2026-10-03',
+        ),
+        0,
+      );
+    });
+
+    test('a freeze can bridge yesterday when today is not logged yet', () {
+      // Today (03) not logged, 02 missed, 01 active: 02 is bridged.
+      expect(
+        StreakCalculator.calculateStreak(
+          {'2026-09-30', '2026-10-01'},
+          streakFreezeCount: 1,
+          referenceLocalDate: '2026-10-03',
+        ),
+        3,
+      );
+    });
+
+    test('two freezes bridge a two-day gap', () {
+      expect(
+        StreakCalculator.calculateStreak(
+          {'2026-09-30', '2026-10-03'},
+          streakFreezeCount: 2,
+          referenceLocalDate: '2026-10-03',
+        ),
+        4,
+      );
     });
 
     test('correctly handles DST transition without dropping calendar days', () {

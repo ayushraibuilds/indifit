@@ -1,9 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../core/config/app_preferences_keys.dart';
 import '../../core/di/providers.dart';
 import '../../core/presentation/consumer_copy.dart';
 import '../../core/presentation/product_failure_presentation.dart';
@@ -19,6 +17,7 @@ import '../../data/services/b02_execution_progression.dart';
 import '../../data/services/b02_rest_recommendation_service.dart';
 import '../../data/services/b02_strength_execution_draft_service.dart';
 import '../exercise_picker/exercise_picker_models.dart';
+import '../progress/streak_provider.dart';
 
 /// UI states are deliberately separate from the durable draft. A transient
 /// failure never becomes a fake completed/ready state and a recovered draft is
@@ -1634,20 +1633,8 @@ final b02StrengthExecutionControllerProvider =
         achievementStats: ProgressStatisticsRepository(
           ref.watch(databaseProvider),
         ),
-        achievementStreakDays: () async {
-          SharedPreferences? prefs;
-          try {
-            prefs = ref.read(sharedPreferencesProvider);
-          } on Object catch (error, stackTrace) {
-            AppLogger.error(
-              'Unable to read sharedPreferencesProvider for streak calculation; reading SharedPreferences directly',
-              error,
-              stackTrace,
-            );
-          }
-          prefs ??= await SharedPreferences.getInstance();
-          return prefs.getInt(AppPreferenceKeys.userStreakCount) ?? 0;
-        },
+        achievementStreakDays: () =>
+            ref.read(streakRepositoryProvider).currentStreak(),
       ),
     );
 
@@ -1671,20 +1658,8 @@ final b02StrengthExecutionScreenControllerProvider = StateNotifierProvider
         achievementStats: ProgressStatisticsRepository(
           ref.watch(databaseProvider),
         ),
-        achievementStreakDays: () async {
-          SharedPreferences? prefs;
-          try {
-            prefs = ref.read(sharedPreferencesProvider);
-          } on Object catch (error, stackTrace) {
-            AppLogger.error(
-              'Unable to read sharedPreferencesProvider for streak calculation; reading SharedPreferences directly',
-              error,
-              stackTrace,
-            );
-          }
-          prefs ??= await SharedPreferences.getInstance();
-          return prefs.getInt(AppPreferenceKeys.userStreakCount) ?? 0;
-        },
+        achievementStreakDays: () =>
+            ref.read(streakRepositoryProvider).currentStreak(),
       ),
     );
 

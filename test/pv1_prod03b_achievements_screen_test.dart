@@ -6,7 +6,9 @@ import 'package:indifit/core/services/achievement_service.dart';
 import 'package:indifit/core/theme/b05_semantic_colors.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/repositories/progress_statistics_repository.dart';
+import 'package:indifit/data/repositories/streak_repository.dart';
 import 'package:indifit/features/progress/achievements_screen.dart';
+import 'package:indifit/features/progress/streak_provider.dart';
 import 'package:indifit/features/progress/widgets/achievement_detail_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -47,6 +49,20 @@ class _TestAchievementRepository extends ProgressStatisticsRepository {
     _unlockedMap[achievementId] = DateTime.now();
     return true;
   }
+}
+
+/// The screen's own logic is under test here; the streak has its own tests
+/// (`streak_repository_test.dart`). A real DB query would never complete in
+/// the widget tester's fake-async zone.
+class _FixedStreak implements StreakRepository {
+  @override
+  Future<int> currentStreak() async => 0;
+
+  @override
+  Future<int> freezeCount() async => StreakRepository.defaultFreezes;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 void main() {
@@ -204,6 +220,7 @@ void main() {
         ProviderScope(
           overrides: [
             databaseProvider.overrideWithValue(db),
+            streakRepositoryProvider.overrideWithValue(_FixedStreak()),
             progressStatisticsRepositoryProvider.overrideWithValue(testRepo),
           ],
           child: wrapWithTheme(const AchievementsScreen()),
@@ -237,6 +254,7 @@ void main() {
           ProviderScope(
             overrides: [
               databaseProvider.overrideWithValue(db),
+              streakRepositoryProvider.overrideWithValue(_FixedStreak()),
               progressStatisticsRepositoryProvider.overrideWithValue(testRepo),
             ],
             child: wrapWithTheme(const AchievementsScreen()),
@@ -285,6 +303,7 @@ void main() {
           ProviderScope(
             overrides: [
               databaseProvider.overrideWithValue(db),
+              streakRepositoryProvider.overrideWithValue(_FixedStreak()),
               progressStatisticsRepositoryProvider.overrideWithValue(testRepo),
             ],
             child: wrapWithTheme(
@@ -328,6 +347,7 @@ void main() {
           ProviderScope(
             overrides: [
               databaseProvider.overrideWithValue(db),
+              streakRepositoryProvider.overrideWithValue(_FixedStreak()),
               progressStatisticsRepositoryProvider.overrideWithValue(testRepo),
             ],
             child: wrapWithTheme(const AchievementsScreen()),
@@ -362,6 +382,7 @@ void main() {
           ProviderScope(
             overrides: [
               databaseProvider.overrideWithValue(db),
+              streakRepositoryProvider.overrideWithValue(_FixedStreak()),
               progressStatisticsRepositoryProvider.overrideWithValue(testRepo),
             ],
             child: wrapWithTheme(const AchievementsScreen()),
