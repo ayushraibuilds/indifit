@@ -309,7 +309,12 @@ class CloudBackupEnvelopeManager {
     }
     // HKDF-SHA256 (RFC 5869, single-block expand is enough for 32 bytes):
     // PRK = HMAC-SHA256(salt, secret), OKM = HMAC-SHA256(PRK, info || 0x01).
-    // Single-round SHA-256(secret) was brute-forceable for low-entropy secrets.
+    // HKDF assumes a high-entropy secret (a server-issued or random 256-bit
+    // key). It is NOT a password KDF: it has no work factor, so a short or
+    // user-chosen secret stays brute-forceable. Before cloud backup ships with
+    // a user-chosen secret, derive the key with PBKDF2 (600k iterations) or
+    // Argon2 and a per-user salt, as encryption_helper.dart does for local
+    // backups. Nothing constructs this service in v1.
     final salt = utf8.encode('INDIFIT-KMS-SALT-V1');
     final prk = Hmac(sha256, salt).convert(utf8.encode(secret)).bytes;
     final info = utf8.encode('INDIFIT-KMS-WRAP-V1');

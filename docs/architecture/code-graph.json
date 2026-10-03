@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "summary": {
     "total_dart_files": 464,
-    "total_loc": 338507,
+    "total_loc": 338512,
     "total_internal_edges": 2307,
     "external_package_count": 28,
     "catch_metrics": {
@@ -1275,7 +1275,7 @@
       "path": "lib/core/backup/cloud_backup_envelope_manager.dart",
       "layer": "core",
       "sublayer": "core",
-      "loc": 319,
+      "loc": 324,
       "imports": [],
       "imported_by": [
         "lib/core/backup/cloud_backup_api_client.dart",
