@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "summary": {
     "total_dart_files": 464,
-    "total_loc": 338507,
+    "total_loc": 338552,
     "total_internal_edges": 2307,
     "external_package_count": 28,
     "catch_metrics": {
@@ -4372,7 +4372,7 @@
       "path": "lib/core/services/crash_reporting_service.dart",
       "layer": "core",
       "sublayer": "core",
-      "loc": 163,
+      "loc": 208,
       "imports": [
         "lib/core/config/app_preferences_keys.dart",
         "lib/core/utils/app_logger.dart"

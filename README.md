@@ -86,6 +86,8 @@ Without a shared token, the SDK prints a per-install token in the Xcode console 
 
 **Measuring accuracy:** `tool/ai_eval/README.md` explains the evaluation harness. Run it before changing the model, a prompt or the food matcher.
 
+**Crash reporting:** opt-in Sentry is active only when the build carries a DSN: `--dart-define=SENTRY_DSN=https://…`. CI's release builds read it from the `SENTRY_DSN` repository secret; without it, reporting stays off and the Settings toggle has no effect.
+
 **Release-mode check without the store:** add `--dart-define=INDIFIT_APPCHECK_DEBUG=true` to a profile or release build so it uses the debug provider. Never set this for store builds.
 
 **Real attestation:**
