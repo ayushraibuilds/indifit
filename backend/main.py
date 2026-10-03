@@ -102,7 +102,10 @@ def create_app() -> FastAPI:
     def home():
         return {"status": "online", "message": "IndiFit AI Backend Running"}
 
-    application.include_router(ai_router)
+    # Local development only: the app reaches Gemini through Firebase AI
+    # Logic. No deployment sets this (WS7 Phase 6).
+    if os.getenv("ENABLE_AI_ROUTES") == "1":
+        application.include_router(ai_router)
     if os.getenv("ENABLE_CLOUD_SYNC") == "1":
         application.include_router(backup_router)
         application.include_router(sync_router)

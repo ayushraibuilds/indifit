@@ -80,9 +80,9 @@ class BackendAiGateway implements AiGateway {
         'The AI service is unavailable right now.',
       );
     }
-    // The backend answers failures with canned sample data flagged
-    // is_fallback (e.g. "2 rotis + dal" for any photo). Never show that as a
-    // result.
+    // Older backends answered failures with canned sample data flagged
+    // is_fallback (e.g. "2 rotis + dal" for any photo). The current one
+    // returns HTTP errors instead; never show such data as a result.
     if (body['is_fallback'] == true) {
       throw const AiGatewayException(
         AiGatewayFailure.unavailable,

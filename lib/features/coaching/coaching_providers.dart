@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/di/core_providers.dart';
 import '../../core/nutrition_household_measures.dart';
-import '../../core/privacy/privacy_policy.dart';
 import '../../data/models/b04_recommendation_context_models.dart';
 import '../../data/repositories/b02_progress_read_repository.dart';
 import '../../data/repositories/b04_briefing_read_repositories.dart';
@@ -18,7 +17,6 @@ import '../../data/services/b04_adaptive_target_engine.dart';
 import '../../data/services/b04_current_food_guidance_service.dart';
 import '../../data/services/b04_meal_opportunity_service.dart';
 import '../../data/services/b04_nutrition_safety_filter.dart';
-import '../../data/services/b04_optional_ai_assistance.dart';
 import '../../data/services/b04_production_recommendation_orchestrator.dart';
 import '../../data/services/b04_recommendation_context_assembler.dart';
 import '../../data/services/b04_recovery_production_adapter.dart';
@@ -222,18 +220,5 @@ final b04RecoveryProductionAdapterProvider =
           dates: dates,
         ),
         dates: dates,
-      );
-    });
-
-final b04OptionalAiAssistanceProvider =
-    Provider<B04OptionalAiAssistanceService>((ref) {
-      final preferences = CoachingPreferenceRepository(
-        database: ref.watch(databaseProvider),
-        dates: ref.watch(localScheduleDateServiceProvider),
-      );
-      return B04OptionalAiAssistanceService(
-        consent: CoachingPreferenceOptionalAiConsentReader(preferences),
-        provider: B04DioOptionalAiProvider(dio: ref.watch(dioProvider)),
-        privacyPolicy: ref.watch(privacyPolicyProvider),
       );
     });

@@ -82,6 +82,10 @@ flutter run --dart-define=INDIFIT_CONNECTED_AI=true --dart-define=INDIFIT_APPCHE
 
 Without a shared token, the SDK prints a per-install token in the Xcode console or logcat for you to register.
 
+**Local backend instead of Firebase:** run the FastAPI server with `ENABLE_AI_ROUTES=1` (the AI routes are off by default and never deployed) and build with `--dart-define=INDIFIT_AI_GATEWAY=fastapi`. Failures come back as HTTP errors, never sample data.
+
+**Measuring accuracy:** `tool/ai_eval/README.md` explains the evaluation harness. Run it before changing the model, a prompt or the food matcher.
+
 **Release-mode check without the store:** add `--dart-define=INDIFIT_APPCHECK_DEBUG=true` to a profile or release build so it uses the debug provider. Never set this for store builds.
 
 **Real attestation:**
