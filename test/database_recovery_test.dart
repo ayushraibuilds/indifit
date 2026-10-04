@@ -204,4 +204,21 @@ void main() {
     expect(raw, contains('IndiFit%20couldn'));
     expect(Uri.decodeComponent(raw), contains('Error type: SqliteException'));
   });
+
+  test('support email carries the app version', () {
+    final body = Uri.decodeComponent(
+      supportEmailUri('SqliteException', appVersion: '1.0.0 (7)').toString(),
+    );
+    expect(body, contains('App version: 1.0.0 (7)'));
+    expect(body, contains('Error type: SqliteException'));
+  });
+
+  test('support email says the version is unknown when it is missing', () {
+    for (final version in [null, '', '  ']) {
+      final body = Uri.decodeComponent(
+        supportEmailUri('SqliteException', appVersion: version).toString(),
+      );
+      expect(body, contains('App version: unknown'));
+    }
+  });
 }

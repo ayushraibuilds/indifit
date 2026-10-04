@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -131,4 +132,29 @@ void main() {
     expect(json, isNot(contains('aloo')));
     expect(scrubbed.exceptions!.single.type, 'FormatException');
   });
+
+  test(
+    'Sentry is configured for crash reports only, without tracing',
+    () async {
+      SharedPreferences.setMockInitialValues({
+        CrashReportingService.prefCrashReportingEnabled: true,
+      });
+      CrashReportingService.debugDsnOverride =
+          'https://key@o0.ingest.sentry.io/1';
+      FutureOr<void> Function(SentryFlutterOptions)? configure;
+      CrashReportingService.sentryInitRunner = (c, {appRunner}) async {
+        configure = c;
+        await appRunner?.call();
+      };
+
+      await CrashReportingService.initialize(() {});
+      final options = SentryFlutterOptions();
+      await configure!(options);
+
+      expect(options.tracesSampleRate, isNull);
+      expect(options.tracesSampler, isNull);
+      expect(options.enableAutoPerformanceTracing, isFalse);
+      expect(options.sendDefaultPii, isFalse);
+    },
+  );
 }
