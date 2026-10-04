@@ -66,7 +66,8 @@ class CrashReportingService {
 
   static void _configure(SentryFlutterOptions options) {
     options.dsn = _effectiveDsn;
-    options.tracesSampleRate = 0.2;
+    // No tracesSampleRate: nothing starts a transaction, and the privacy
+    // policy only describes crash reports.
     options.sendDefaultPii =
         false; // Never send personally identifiable information
     options.attachStacktrace = true;

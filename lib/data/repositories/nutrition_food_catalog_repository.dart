@@ -8,6 +8,7 @@ import '../../core/fixtures/food_identity_manifest.dart';
 import '../../core/nutrients.dart';
 import '../../core/typed_quantities.dart';
 import '../database/app_database.dart';
+import '../services/food_name_spelling.dart';
 
 /// A production-facing, typed food option used by the B03 feature flows.
 ///
@@ -371,7 +372,8 @@ class NutritionFoodCatalogRepository {
   }
 
   Future<List<NutritionFoodOption>> search({String query = ''}) async {
-    final normalized = query.trim().toLowerCase();
+    // "sabzi" finds the catalogue's "Sabji" foods.
+    final normalized = foldFoodSpellings(query.trim().toLowerCase());
 
     // The installed catalogue is not the only offline source.  Legacy/local
     // foods (including user-created foods) are adapted lazily through the
