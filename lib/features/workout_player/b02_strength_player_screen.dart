@@ -847,7 +847,7 @@ class _B02StrengthPlayerScreenState
         )) &&
         loadController.text.trim().isEmpty &&
         prefill.loadKg != null) {
-      loadController.text = prefill.loadKg.toString();
+      loadController.text = r07cFormatNumber(prefill.loadKg!);
     }
     if (repsController != null &&
         !_editedInputFields.contains((
@@ -866,8 +866,9 @@ class _B02StrengthPlayerScreenState
     final recommendation = state.targetRecommendations[slot.id];
     if (recommendation == null) return;
     setState(() {
-      _loadControllerFor(slot).text =
-          recommendation.recommendedLoadKg?.toString() ?? '';
+      _loadControllerFor(slot).text = _editableLoad(
+        recommendation.recommendedLoadKg,
+      );
       if (!r07cIsPlaceholderRepRange(
         recommendation.targetRepsMin,
         recommendation.targetRepsMax,
@@ -1018,7 +1019,7 @@ class _B02StrengthPlayerScreenState
   TextEditingController _loadControllerFor(B02StrengthExecutionSlot slot) {
     return _loadControllers.putIfAbsent(
       slot.id,
-      () => TextEditingController(text: slot.targetLoadKg?.toString() ?? ''),
+      () => TextEditingController(text: _editableLoad(slot.targetLoadKg)),
     );
   }
 
@@ -1083,7 +1084,7 @@ class _B02StrengthPlayerScreenState
         text: set.actualReps?.toString() ?? '',
       );
       final loadController = TextEditingController(
-        text: set.actualLoadKg?.toString() ?? '',
+        text: _editableLoad(set.actualLoadKg),
       );
       final result = await showIndiFitBottomSheet<B02LoggedSetEditValues>(
         context: context,
@@ -1623,7 +1624,7 @@ class _B02StrengthPlayerScreenState
     B02StrengthExecutionSlot slot,
   ) async {
     final controller = TextEditingController(
-      text: slot.targetLoadKg?.toString() ?? '',
+      text: _editableLoad(slot.targetLoadKg),
     );
     final value = await showDialog<double>(
       context: context,
@@ -1730,3 +1731,8 @@ class _B02StrengthPlayerScreenState
     }
   }
 }
+
+/// Weights in editable fields read like everywhere else ("60", "62.5"),
+/// not "60.0".
+String _editableLoad(double? loadKg) =>
+    loadKg == null ? '' : r07cFormatNumber(loadKg);
