@@ -405,19 +405,32 @@ class RestPresenceService {
     return remaining > 0 ? remaining : 0;
   }
 
+  /// The object (a workout controller) whose callbacks are registered. Only
+  /// one controller may answer notification actions at a time: the one that
+  /// holds the live workout. Others must not reconcile, unregister or clean up.
+  Object? _actionDelegateOwner;
+
   void registerActionDelegate({
     required FutureOr<void> Function(String periodId, int deltaSeconds)
     onAdjust,
     required FutureOr<void> Function(String periodId) onSkip,
+    Object? owner,
   }) {
     onAdjustRestRequested = onAdjust;
     onSkipRestRequested = onSkip;
+    _actionDelegateOwner = owner;
   }
 
-  void unregisterActionDelegate() {
+  /// Clears the callbacks. With [owner], only when [owner] registered them,
+  /// so an outdated controller can't remove the live one's.
+  void unregisterActionDelegate({Object? owner}) {
+    if (owner != null && !isActionDelegate(owner)) return;
     onAdjustRestRequested = null;
     onSkipRestRequested = null;
+    _actionDelegateOwner = null;
   }
+
+  bool isActionDelegate(Object owner) => identical(_actionDelegateOwner, owner);
 
   /// Start background presence for a rest period.
   Future<void> startRest({
