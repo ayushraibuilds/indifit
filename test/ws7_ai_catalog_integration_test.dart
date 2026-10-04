@@ -189,5 +189,52 @@ void main() {
       expect(bound.quantityAmount, 2);
       expect((await loggedKcal(bound)).round(), bound.estimatedCalories);
     });
+
+    test('pieces convert to servings of a multi-piece food', () async {
+      final result = await serviceReturning([
+        _item('Boiled Eggs (2 pieces)', 4, 'egg'),
+      ]).decomposeMeal(text: '4 boiled eggs');
+
+      final item = result.items.single;
+      expect(item.isCatalogVerified, isTrue);
+      expect(item.quantityAmount, 2);
+      expect(item.quantityUnit, 'serving');
+      expect(item.portionNote, isNull);
+      final perServing = item.matchedCatalogOption!.facts['energy']!.point!;
+      expect(item.estimatedCalories, (perServing.value.asDouble * 2).round());
+      expect((await loggedKcal(item)).round(), item.estimatedCalories);
+    });
+
+    test('"boiled eggs" means the catalogue\'s boiled eggs', () async {
+      final result = await serviceReturning([
+        _item('boiled eggs', 3, 'piece'),
+      ]).decomposeMeal(text: '3 boiled eggs');
+
+      final item = result.items.single;
+      expect(item.matchedCatalogOption!.displayName, 'Boiled Eggs (2 pieces)');
+      expect(item.quantityAmount, 1.5);
+    });
+  });
+
+  group('spelling', () {
+    test('sabzi and subzi resolve to the catalogue\'s Sabji foods', () async {
+      final result = await serviceReturning([
+        _item('Mix veg subzi', 1, 'katori'),
+        _item('aloo gobi sabzi', 1, 'katori'),
+      ]).decomposeMeal(text: 'mix veg subzi, aloo gobi sabzi');
+
+      expect(
+        result.items.map((item) => item.matchedCatalogOption?.displayName),
+        ['Mix Vegetable Sabji', 'Aloo Gobbi (Dry Sabji)'],
+      );
+    });
+
+    test('catalogue search finds Sabji foods when asked for sabzi', () async {
+      final results = await catalog.search(query: 'Lauki ki sabzi');
+      expect(
+        results.map((food) => food.displayName),
+        contains('Lauki Ki Sabji (Bottle Gourd)'),
+      );
+    });
   });
 }

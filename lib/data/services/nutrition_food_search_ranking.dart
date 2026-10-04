@@ -1,6 +1,7 @@
 import '../database/app_database.dart';
 import '../repositories/food_api_service.dart';
 import '../repositories/nutrition_food_catalog_repository.dart';
+import 'food_name_spelling.dart';
 
 /// Retrieval vocabulary used by food search. These terms are intentionally
 /// separate from B03 identity aliases: they help a query find a candidate but
@@ -16,6 +17,9 @@ class NutritionFoodSearchVocabulary {
     'poha': ['flattened rice', 'beaten rice'],
     'flattened rice': ['poha'],
     'beaten rice': ['poha'],
+    // The catalogue's "Aloo Gobbi (Dry Sabji)" carries a typo in its
+    // identity key, so searches for the usual spelling must reach it.
+    'gobi': ['gobbi'],
   };
 
   /// Reviewed search-only defaults for generic consumer concepts.
@@ -59,7 +63,7 @@ class NutritionFoodSearchVocabulary {
   static List<String> expand(String value) {
     final normalized = normalize(value);
     if (normalized.isEmpty) return const [];
-    final expanded = <String>{normalized};
+    final expanded = <String>{normalized, foldFoodSpellings(normalized)};
     final direct = _aliasGroups[normalized];
     if (direct != null) expanded.addAll(direct.map(normalize));
 
