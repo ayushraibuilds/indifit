@@ -229,7 +229,13 @@ void main() {
     expect(find.text('ACTUAL'), findsOneWidget);
     expect(find.text('Enter actuals'), findsOneWidget);
     expect(find.text('Planned input'), findsNothing);
-    expect(find.text('80 kg × 8–10 reps × RPE 8'), findsNWidgets(2));
+    // The cell is short ("reps" is implied by the column); the row's
+    // semantics keep the full wording.
+    expect(find.text('80 kg × 8–10 × RPE 8'), findsNWidgets(2));
+    expect(
+      find.bySemanticsLabel(RegExp('planned 80 kg × 8–10 reps × RPE 8')),
+      findsNWidgets(2),
+    );
     expect(find.bySemanticsLabel('Edit set 1'), findsOneWidget);
     expect(find.bySemanticsLabel('Delete set 1'), findsOneWidget);
     expect(tester.getRect(find.bySemanticsLabel('Edit set 1')).width, 48);

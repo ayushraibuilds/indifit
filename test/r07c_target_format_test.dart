@@ -24,6 +24,25 @@ void main() {
     expect(target(load: 60), '60 kg');
   });
 
+  test('table cells drop the word "reps" only when a load is shown', () {
+    String? cell({double? load, int? min, int? max, int? rpe}) =>
+        r07cFormatTargetCompact(
+          loadKg: load,
+          loadBasis: load == null ? null : B02LoadBasis.totalExternal,
+          minReps: min,
+          maxReps: max,
+          rpe: rpe,
+        );
+    expect(cell(load: 60, min: 8, max: 10), '60 kg × 8–10');
+    expect(cell(load: 60, min: 1, max: 1), '60 kg × 1');
+    expect(cell(load: 60, min: 8, max: 10, rpe: 8), '60 kg × 8–10 × RPE 8');
+    // Without a load the number needs its unit.
+    expect(cell(min: 8, max: 10), '8–10 reps');
+    expect(cell(load: 60), '60 kg');
+    expect(cell(load: 60, min: 1, max: 20), '60 kg');
+    expect(cell(min: 1, max: 20), isNull);
+  });
+
   test('placeholder detection', () {
     expect(r07cIsPlaceholderRepRange(1, 20), isTrue);
     expect(r07cIsPlaceholderRepRange(1, null), isTrue);
