@@ -99,7 +99,7 @@ class _TrainingWorkoutCustomizationScreenState
       await _updateCompatibilities();
       if (mounted) setState(() {});
     } catch (_) {
-      // Non-fatal if equipment profile lookup fails
+      // Safe: Non-fatal if equipment profile lookup fails
     }
   }
 

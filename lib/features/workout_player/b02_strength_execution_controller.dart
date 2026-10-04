@@ -1249,7 +1249,7 @@ class B02StrengthExecutionController
       try {
         await _saveDraft(finalState, allowDuringCompletion: true);
       } catch (_) {
-        // A concurrent/late caller may observe the draft after the first
+        // Safe: A concurrent/late caller may observe the draft after the first
         // completion deleted it. Let the repository replay its durable
         // completion marker before surfacing a failure.
       }

@@ -176,7 +176,7 @@ class CloudBackupService implements CloudBackupCapability {
         await _recordSuccessfulUpload(now, currentFingerprint);
         return true;
       } catch (_) {
-        // Fall back to outbox queueing on unexpected failure
+        // Safe: Fall back to outbox queueing on unexpected failure
       }
     }
 

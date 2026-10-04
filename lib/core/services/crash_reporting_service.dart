@@ -205,4 +205,9 @@ class CrashReportingService {
 
   /// Returns current crash reporting enabled state
   static bool get isEnabled => _isEnabled;
+
+  /// Whether Settings offers the opt-in. A release build without a DSN can't
+  /// report anything, so it doesn't show a toggle that would do nothing.
+  /// Debug and profile builds keep it for development and tests.
+  static bool get isOptInOffered => !kReleaseMode || _hasRealDsn;
 }

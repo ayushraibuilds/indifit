@@ -396,7 +396,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     try {
       await ref.read(progressDashboardSnapshotProvider.future);
     } catch (_) {
-      // The provider maps recoverable source failures to section-level state.
+      // Safe: The provider maps recoverable source failures to section-level state.
     }
   }
 

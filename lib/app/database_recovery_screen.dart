@@ -154,15 +154,21 @@ Future<bool> _shareDatabaseFiles() async {
 
 /// Sends only the error *type*: messages can contain user data.
 Future<void> _emailSupport(String errorType) async {
-  final uri = Uri(
-    scheme: 'mailto',
-    path: DatabaseRecoveryScreen.supportEmail,
-    queryParameters: {
-      'subject': "IndiFit couldn't open my data",
-      'body': 'Error type: $errorType',
-    },
-  );
+  final uri = supportEmailUri(errorType);
   if (!await launchUrl(uri)) {
     AppLogger.warning('No email app to contact support', 'DatabaseRecovery');
   }
+}
+
+/// The support email. Built by hand: `Uri(queryParameters:)` encodes spaces
+/// as `+`, which mail apps show literally.
+Uri supportEmailUri(String errorType) {
+  String encode(String value) => Uri.encodeComponent(value);
+  final subject = encode("IndiFit couldn't open my data");
+  final body = encode(
+    'Error type: $errorType\nPlatform: ${Platform.operatingSystem}',
+  );
+  return Uri.parse(
+    'mailto:${DatabaseRecoveryScreen.supportEmail}?subject=$subject&body=$body',
+  );
 }

@@ -1,9 +1,9 @@
 # IndiFit Implementation Tracker
 
-Last updated: 2026-10-03 (after PR #17)
+Last updated: 2026-10-04 (after PR #49)
 Current schema: v23
 Current backup format: v10
-Current focus: **V1 launch readiness** — see [P0_REMEDIATION_PLAN.md](P0_REMEDIATION_PLAN.md) (WS1–WS7) and the audit in [docs/audit/INDEPENDENT_AUDIT_2026-10-01.md](../audit/INDEPENDENT_AUDIT_2026-10-01.md).
+Current focus: **V1 launch readiness** — see [P0_REMEDIATION_PLAN.md](P0_REMEDIATION_PLAN.md) (WS1–WS7), [P1_REMEDIATION_PLAN.md](P1_REMEDIATION_PLAN.md) and the audit in [docs/audit/INDEPENDENT_AUDIT_2026-10-01.md](../audit/INDEPENDENT_AUDIT_2026-10-01.md).
 
 Batches B01–B05 and the post-v1 and R07/R08 tracks are merged into `main`. Their plans and evidence are kept in `batches/`, `post-v1/`, `r08/` and `ux/` for history; they no longer describe current work.
 
@@ -43,3 +43,15 @@ Batches B01–B05 and the post-v1 and R07/R08 tracks are merged into `main`. The
 | iOS release build | Unsigned app produced (51.3 MB) |
 | Generated Drift output and code graph | Reproducible; CI checks both |
 | AI eval (`gemini-3.8-flash`, 64 meals) | Recall 100 %, catalogue match 100 %, auto-matched 93.2 %, wrong auto-match 0 %, kcal error 3.4 %. Results: [`tool/ai_eval/results/`](../../tool/ai_eval/results/). |
+
+## P1 status (2026-10-04)
+
+All P1 PRs (#24–#49) are merged. Code work is done; the definition of done in [P1_REMEDIATION_PLAN.md §3](P1_REMEDIATION_PLAN.md#3-definition-of-done-all-p1s) lists what is still open:
+
+| Item | State |
+|:-----|:------|
+| Crash reporting DSN | **Owner:** add the `SENTRY_DSN` secret; until then release builds hide the opt-in |
+| Launch repair cost on a mid-range Android phone | **Owner** to measure (desktop: ~6 ms warm) |
+| Manual device passes: truncated DB, notification Skip mid-rest | **Owner** |
+| Recovery-screen support email carries the app version | Not done: needs a version source such as `package_info_plus` |
+| Single owner for the live workout (WS-D part 2, step 4) | After launch |

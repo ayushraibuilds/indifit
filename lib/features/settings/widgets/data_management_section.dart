@@ -12,6 +12,7 @@ import '../../../core/presentation/product_failure_presentation.dart';
 import '../../../core/presentation/today_onboarding_handoff.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/services/auto_backup_service.dart';
+import '../../../core/services/crash_reporting_service.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
 import '../../onboarding/onboarding_screen.dart';
@@ -714,18 +715,21 @@ class DataManagementSection extends ConsumerWidget {
           const AiConsentToggle(),
           const SizedBox(height: B05Layout.space12),
         ],
-        SettingsReminderToggle(
-          icon: Icons.bug_report_outlined,
-          iconColor: context.b05Colors.warning.indicator,
-          title: 'Share crash diagnostics',
-          subtitle: 'Optional and off by default. Offline mode turns this off.',
-          value: state.crashReportingEnabled,
-          requestNotificationPermission: false,
-          onChanged: (value) => ref
-              .read(settingsControllerProvider.notifier)
-              .toggleCrashReporting(value),
-        ),
-        const SizedBox(height: B05Layout.space12),
+        if (CrashReportingService.isOptInOffered) ...[
+          SettingsReminderToggle(
+            icon: Icons.bug_report_outlined,
+            iconColor: context.b05Colors.warning.indicator,
+            title: 'Share crash diagnostics',
+            subtitle:
+                'Optional and off by default. Offline mode turns this off.',
+            value: state.crashReportingEnabled,
+            requestNotificationPermission: false,
+            onChanged: (value) => ref
+                .read(settingsControllerProvider.notifier)
+                .toggleCrashReporting(value),
+          ),
+          const SizedBox(height: B05Layout.space12),
+        ],
         PrivacyDisclosureCard(
           offlineOnly: state.offlineOnly,
           crashReportingEnabled: state.crashReportingEnabled,
