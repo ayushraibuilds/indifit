@@ -1528,6 +1528,19 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     ],
   );
 
+  /// An AI tool's route, carrying this screen's meal and date.
+  String _aiToolLocation(String path) {
+    final date = widget.selectedDate;
+    final query = {
+      if (widget.mealType != null) 'mealType': widget.mealType!,
+      if (date != null) 'date': date.toIso8601String().split('T').first,
+    };
+    return Uri(
+      path: path,
+      queryParameters: query.isEmpty ? null : query,
+    ).toString();
+  }
+
   Widget _buildLandingState(DateTime logDate) {
     final policy = ref.watch(privacyPolicyProvider);
     final isAiAllowed = policy.isAiAllowed;
@@ -1550,30 +1563,13 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       onOpenBarcode: () => _openBarcode(context),
       isOpenFoodFactsAllowed: isOpenFoodFactsAllowed,
       onScanNutritionLabel: isAiAllowed
-          ? () {
-              final mealParam = widget.mealType != null
-                  ? '?mealType=${widget.mealType}'
-                  : '';
-              final dateParam = widget.selectedDate != null
-                  ? (mealParam.isEmpty
-                        ? '?date=${widget.selectedDate!.toIso8601String().split('T').first}'
-                        : '&date=${widget.selectedDate!.toIso8601String().split('T').first}')
-                  : '';
-              context.push('/food/label-ocr$mealParam$dateParam');
-            }
+          ? () => context.push(_aiToolLocation('/food/label-ocr'))
           : null,
       onDescribeMeal: isAiAllowed
-          ? () {
-              final mealParam = widget.mealType != null
-                  ? '?mealType=${widget.mealType}'
-                  : '';
-              final dateParam = widget.selectedDate != null
-                  ? (mealParam.isEmpty
-                        ? '?date=${widget.selectedDate!.toIso8601String().split('T').first}'
-                        : '&date=${widget.selectedDate!.toIso8601String().split('T').first}')
-                  : '';
-              context.push('/food/describe$mealParam$dateParam');
-            }
+          ? () => context.push(_aiToolLocation('/food/describe'))
+          : null,
+      onPhotoMeal: isAiAllowed
+          ? () => context.push(_aiToolLocation('/food/photo'))
           : null,
       onOpenThali: () => context.push('/food/thali'),
       onQuickAddMacros: () async {

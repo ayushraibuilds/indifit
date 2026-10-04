@@ -52,7 +52,7 @@ Photo calorie error is reported but has no bar. Photo logging stays **Beta** unt
   - Example: "4 boiled eggs" is `2`, because the catalogue serving is "Boiled Eggs (2 pieces)".
 - Prefer real descriptions from users, with the spelling and Hinglish people actually type. Only use foods that are in the catalogue.
 
-**Nutrition labels** (`labels/`): add a JPEG of a label, up to 1024 px (the size the app sends). Then add an entry to `labels/cases.json` with the values printed on its main column:
+**Nutrition labels** (`labels/`): add a JPEG of a label, up to 2048 px on its longest side (the size the app sends for labels). Then add an entry to `labels/cases.json` with the values printed on its main column:
 
 ```json
 [{"image": "parle-g.jpg", "basis": "per_100g",
@@ -61,6 +61,20 @@ Photo calorie error is reported but has no bar. Photo logging stays **Beta** unt
 
 Use `null` for a nutrient the label doesn't print. The plan calls for about 20 labels; include FSSAI labels and both per-100 g and per-serving layouts.
 
-**Meal photos** (`photos/`): add a JPEG of a meal, up to 1024 px, plus `photos/cases.json` entries `{"image": "thali-1.jpg", "kcal": 650}`. Use weighed ground truth where you can. The plan calls for about 30 photos.
+**Meal photos** (`photos/`): add a JPEG of a meal, up to 1024 px on its longest side, plus `photos/cases.json` entries `{"image": "thali-1.jpg", "kcal": 650}`. Use weighed ground truth where you can. The plan calls for about 30 photos.
 
 **Strip location metadata from your own photos before committing them** (on macOS: Preview → Tools → Show Inspector → GPS → Remove Location Info).
+
+`test/ws7_ai_eval_test.dart` checks both case files in CI (`ai_eval_data_check.dart`). It fails if:
+- an image is missing, isn't a JPEG, or is larger than the app sends;
+- an image still carries GPS location;
+- a label has an unknown nutrient or basis;
+- a photo has no positive `kcal`.
+
+## Before a release
+
+1. About 20 labels in `labels/` and about 30 meal photos in `photos/`, with `flutter test test/ws7_ai_eval_test.dart` green.
+2. A full run with the iOS debug token (command above). Commit the `results/` report with the release.
+3. Meal text, catalogue match and wrong auto-match must meet the bar. Label field accuracy must meet the bar before label scanning is promoted beyond the AI tools.
+4. Meal photo stays labelled **Beta** in the app until you accept its calorie error.
+
