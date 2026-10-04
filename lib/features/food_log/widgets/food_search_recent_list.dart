@@ -117,6 +117,9 @@ class FoodSearchRecentList extends StatelessWidget {
   final VoidCallback onOpenBarcode;
   final VoidCallback? onScanNutritionLabel;
   final VoidCallback? onDescribeMeal;
+
+  /// Meal photo estimate (Beta). Null hides it, like the other AI tools.
+  final VoidCallback? onPhotoMeal;
   final VoidCallback? onOpenThali;
   final VoidCallback? onQuickAddMacros;
   final Widget? entriesPanel;
@@ -138,6 +141,7 @@ class FoodSearchRecentList extends StatelessWidget {
     required this.onOpenBarcode,
     this.onScanNutritionLabel,
     this.onDescribeMeal,
+    this.onPhotoMeal,
     this.onOpenThali,
     this.onQuickAddMacros,
     this.entriesPanel,
@@ -168,6 +172,14 @@ class FoodSearchRecentList extends StatelessWidget {
                   icon: Icons.auto_awesome_rounded,
                   label: 'Describe meal',
                   onTap: onDescribeMeal!,
+                ),
+                const SizedBox(width: 8),
+              ],
+              if (onPhotoMeal != null) ...[
+                _QuickActionChip(
+                  icon: Icons.photo_camera_outlined,
+                  label: 'Meal photo',
+                  onTap: onPhotoMeal!,
                 ),
                 const SizedBox(width: 8),
               ],
@@ -312,6 +324,15 @@ class FoodSearchRecentList extends StatelessWidget {
             title: 'Describe meal',
             detail: 'Log multi-item meals with standard Indian portions.',
             onTap: onDescribeMeal!,
+          ),
+        if (onPhotoMeal != null)
+          FoodSearchNavigationCard(
+            icon: Icons.photo_camera_outlined,
+            title: 'Meal photo (Beta)',
+            detail:
+                'Estimate a plate from a photo. Check every item before '
+                'logging.',
+            onTap: onPhotoMeal!,
           ),
         if (onQuickAddMacros != null)
           FoodSearchNavigationCard(

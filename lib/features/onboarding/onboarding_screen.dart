@@ -33,6 +33,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   int _currentPage = 0;
   final int _totalPages = 4;
 
+  // The goal comes first: motivation before demographics.
+  static const _goalPage = 0;
+  static const _aboutPage = 1;
+
   // Onboarding parameters
   int _age = 25;
   double _height = 170.0;
@@ -118,7 +122,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   void _ensureFocusedFieldVisibility() {
-    if (!mounted || _currentPage != 0 || !_hasAboutFieldFocus) return;
+    if (!mounted || _currentPage != _aboutPage || !_hasAboutFieldFocus) {
+      return;
+    }
     final focusedContext = FocusManager.instance.primaryFocus?.context;
     if (focusedContext == null) return;
     Scrollable.ensureVisible(
@@ -196,7 +202,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       goal: _goal,
       targetWeight: _targetWeightController.text,
       dietPreference: _dietPreference,
-      flowVersion: 2,
+      flowVersion: 3,
     );
     // Safe: a failed earlier write was already logged by its caller; it
     // must not block this newer one.
@@ -210,10 +216,18 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   /// Old releases stored one page for each body field. R6 keeps those answers
   /// but resumes them inside the shorter consumer stages.
   int _stageForLegacyPage(int page, int flowVersion) {
-    if (flowVersion >= 2) return page.clamp(0, _totalPages - 1);
-    if (page <= 3) return 0;
+    if (flowVersion >= 3) return page.clamp(0, _totalPages - 1);
+    // Version 2 asked About (0) before Goal (1); the rest kept their places.
+    if (flowVersion == 2) {
+      return switch (page.clamp(0, _totalPages - 1)) {
+        0 => _aboutPage,
+        1 => _goalPage,
+        final other => other,
+      };
+    }
+    if (page <= 3) return _aboutPage;
     if (page <= 4) return 2;
-    if (page <= 6) return 1;
+    if (page <= 6) return _goalPage;
     return 3;
   }
 
@@ -343,22 +357,22 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     // state. A successful transition must never carry a keyboard to the next
     // page (for example, from a numeric field to goal choices).
     _dismissInputFocus();
-    if (_currentPage == 0 && _sex == null) {
+    if (_currentPage == _aboutPage && _sex == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Choose an option above to continue.')),
       );
       return;
-    } else if (_currentPage == 0 && _ageError != null) {
+    } else if (_currentPage == _aboutPage && _ageError != null) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(_ageError!)));
       return;
-    } else if (_currentPage == 0 && _heightError != null) {
+    } else if (_currentPage == _aboutPage && _heightError != null) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(_heightError!)));
       return;
-    } else if (_currentPage == 0 && _weightError != null) {
+    } else if (_currentPage == _aboutPage && _weightError != null) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(_weightError!)));
@@ -594,8 +608,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             ),
             child: Builder(
               builder: (context) {
-                // Note: PageView has _totalPages = 4 pages (indices 0..3 for Demographics,
-                // Goal, Activity, Diet). When the user advances past the 4th page,
+                // Note: PageView has _totalPages = 4 pages (indices 0..3 for Goal,
+                // Demographics, Activity, Diet). When the user advances past the 4th page,
                 // _showingPayoff becomes true to display the 5th visual step (Summary & Payoff).
                 // Therefore, total visual onboarding steps = 5, and progress is displayStep / 5.
                 final displayStep = _showingPayoff ? 5 : _currentPage + 1;
@@ -706,8 +720,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 unawaited(_saveDraftLogged());
               },
               children: [
-                _buildAboutPage(),
                 _buildGoalPage(),
+                _buildAboutPage(),
                 _buildActivityPage(),
                 _showingPayoff ? _buildPayoffPage() : _buildDietPage(),
               ],
@@ -775,7 +789,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   Widget _buildAboutPage() {
     final colors = context.b05Colors;
     return OnboardingPageContainer(
-      title: 'Welcome to IndiFit!',
+      title: 'A bit about you',
       subtitle: 'A few details help us customize your daily targets.',
       scrollController: _aboutScrollController,
       actionClearance: 16.0,
@@ -993,7 +1007,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             value:
                 '${_ageController.text.trim()} years · ${_heightController.text.trim()} cm · ${_weightController.text.trim()} kg',
             icon: Icons.person_outline_rounded,
-            page: 0,
+            page: _aboutPage,
             hint: 'Change your profile details.',
           ),
           const SizedBox(height: B05Layout.space8),
@@ -1001,7 +1015,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             label: 'Main goal',
             value: _goalLabel(),
             icon: Icons.track_changes_rounded,
-            page: 1,
+            page: _goalPage,
             hint: 'Change your main goal.',
           ),
           const SizedBox(height: B05Layout.space8),
@@ -1245,7 +1259,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   Widget _buildGoalPage() {
     return OnboardingPageContainer(
       title: 'What is your main goal?',
-      subtitle: 'You can change this later as your focus changes.',
+      subtitle:
+          'Welcome to IndiFit. Your calorie and protein targets are shaped '
+          'around this goal, and you can change it later.',
       child: Column(
         children: [
           OnboardingSelectionCard(
