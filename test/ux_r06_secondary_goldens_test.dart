@@ -38,6 +38,7 @@ void main() {
       fileName: 'ux_r06_onboarding_about_dark.png',
       theme: AppTheme.darkTheme,
       child: const OnboardingScreen(),
+      prepare: _moveToAbout,
     );
   });
 
@@ -48,8 +49,8 @@ void main() {
       tester,
       fileName: 'ux_r06_onboarding_goal_dark.png',
       theme: AppTheme.darkTheme,
+      // The goal is the first step.
       child: const OnboardingScreen(),
-      prepare: _moveToGoal,
     );
   });
 
@@ -211,15 +212,15 @@ Future<void> _expectGolden(
   await tester.pump(const Duration(milliseconds: 1));
 }
 
-Future<void> _moveToGoal(WidgetTester tester) async {
-  await tester.tap(find.text('Male'));
+Future<void> _moveToAbout(WidgetTester tester) async {
+  await tester.tap(find.text('Maintain'));
   await tester.tap(find.text('Next Step'));
   await tester.pumpAndSettle();
 }
 
 Future<void> _moveToNutrition(WidgetTester tester) async {
-  await _moveToGoal(tester);
-  await tester.tap(find.text('Maintain'));
+  await _moveToAbout(tester);
+  await tester.tap(find.text('Male'));
   await tester.tap(find.text('Next Step'));
   await tester.pumpAndSettle();
   await tester.tap(find.text('Next Step'));

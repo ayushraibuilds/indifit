@@ -56,12 +56,13 @@ void main() {
     );
     await tester.pump(const Duration(milliseconds: 200));
 
+    // The goal comes first: motivation before demographics.
     expect(find.text('1 of 5'), findsOneWidget);
-    expect(find.text('Welcome to IndiFit!'), findsOneWidget);
+    expect(find.text('What is your main goal?'), findsOneWidget);
     expect(find.text('Skip for now'), findsOneWidget);
     expect(find.text('Understanding RPE'), findsNothing);
     expect(find.textContaining('lesson'), findsNothing);
-    expect(find.text('What is your main goal?'), findsNothing);
+    expect(find.text('A bit about you'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
@@ -130,7 +131,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('What is your main goal?'), findsOneWidget);
-    expect(find.text('2 of 5'), findsOneWidget);
+    expect(find.text('1 of 5'), findsOneWidget);
     expect(find.text('What is your target weight?'), findsNothing);
     expect(find.text('Understanding RPE'), findsNothing);
     expect(tester.takeException(), isNull);
@@ -466,15 +467,16 @@ void main() {
       ),
     );
     await tester.pump(const Duration(milliseconds: 200));
-    await tester.ensureVisible(find.text('Male'));
-    await tester.pump();
-    await tester.tap(find.text('Male'));
-    await tester.tap(find.text('Next Step'));
-    await tester.pumpAndSettle();
     expect(find.text('What is your main goal?'), findsOneWidget);
     await tester.ensureVisible(find.text('Maintain'));
     await tester.pump();
     await tester.tap(find.text('Maintain'));
+    await tester.tap(find.text('Next Step'));
+    await tester.pumpAndSettle();
+    expect(find.text('A bit about you'), findsOneWidget);
+    await tester.ensureVisible(find.text('Male'));
+    await tester.pump();
+    await tester.tap(find.text('Male'));
     await tester.tap(find.text('Next Step'));
     await tester.pumpAndSettle();
     expect(find.text('How do you move most days?'), findsOneWidget);
