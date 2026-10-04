@@ -519,7 +519,9 @@ class _FoodPortionBottomSheetState
       _invalidateNutritionReads();
       try {
         await HapticFeedback.selectionClick();
-      } catch (_) {}
+      } catch (_) {
+        // Safe: haptics are optional and unsupported on some devices.
+      }
 
       if (mounted) Navigator.of(context).pop(_selectedMealType);
     } catch (error) {
