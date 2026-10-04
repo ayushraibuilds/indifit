@@ -473,9 +473,10 @@ class R07CTargetContext extends StatelessWidget {
             rpe: rpe,
           )
         : null;
-    final last = B02PreviousPerformancePresentation.lastTime(
-      previousPerformance,
-    );
+    // Inline, the set table shows last time per set, so it isn't repeated.
+    final last = inline
+        ? null
+        : B02PreviousPerformancePresentation.lastTime(previousPerformance);
     if (last == null && target == null) return const SizedBox.shrink();
     final targetLabel = recommendation == null ? 'Today’s target' : 'Suggested';
     if (inline) {

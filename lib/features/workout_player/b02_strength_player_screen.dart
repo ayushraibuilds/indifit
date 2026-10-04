@@ -311,6 +311,10 @@ class _B02StrengthPlayerScreenState
             showPendingEditor: showPendingEditor,
             pendingTechnique: pendingTechnique,
             targetSummary: currentTarget?.inline == true ? currentTarget : null,
+            previousSetLabels:
+                B02PreviousPerformancePresentation.workingSetLabels(
+                  previousPerformance,
+                ),
           );
     final primaryLabel = _warmup
         ? 'Log warm-up set'
@@ -428,6 +432,7 @@ class _B02StrengthPlayerScreenState
     required bool showPendingEditor,
     required B02TechniqueFields pendingTechnique,
     Widget? targetSummary,
+    List<String> previousSetLabels = const [],
   }) {
     final rpe = int.tryParse(_rpes[selected.id] ?? '');
     final techniqueKey = _pendingTechniqueKey(
@@ -470,6 +475,7 @@ class _B02StrengthPlayerScreenState
           : null,
       showPendingEditor: showPendingEditor,
       targetSummary: targetSummary,
+      previousSetLabels: previousSetLabels,
       // The next planned row's checkmark is the same action as "Log set".
       onCompleteNext:
           _warmup ||

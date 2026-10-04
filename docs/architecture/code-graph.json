@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "summary": {
     "total_dart_files": 464,
-    "total_loc": 338643,
+    "total_loc": 338740,
     "total_internal_edges": 2307,
     "external_package_count": 28,
     "catch_metrics": {
@@ -17980,7 +17980,7 @@
       "path": "lib/features/workout_player/b02_previous_performance_integration.dart",
       "layer": "features",
       "sublayer": "features/workout_player",
-      "loc": 215,
+      "loc": 239,
       "imports": [
         "lib/data/models/b02_execution_models.dart",
         "lib/data/models/b02_previous_performance_models.dart"
@@ -18304,7 +18304,7 @@
       "path": "lib/features/workout_player/b02_strength_player_screen.dart",
       "layer": "features",
       "sublayer": "features/workout_player",
-      "loc": 1743,
+      "loc": 1749,
       "imports": [
         "lib/core/di/providers.dart",
         "lib/core/presentation/consumer_copy.dart",
@@ -18352,7 +18352,7 @@
       "catches": [
         {
           "file": "lib/features/workout_player/b02_strength_player_screen.dart",
-          "line": 953,
+          "line": 959,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -18362,7 +18362,7 @@
         },
         {
           "file": "lib/features/workout_player/b02_strength_player_screen.dart",
-          "line": 1129,
+          "line": 1135,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -18714,7 +18714,7 @@
       "path": "lib/features/workout_player/widgets/b02_compact_set_table.dart",
       "layer": "features",
       "sublayer": "features/workout_player",
-      "loc": 725,
+      "loc": 791,
       "imports": [
         "lib/core/theme/indifit_icons.dart",
         "lib/core/widgets/b05_accessibility_primitives.dart",
@@ -18791,7 +18791,7 @@
       "path": "lib/features/workout_player/widgets/b02_player_cards.dart",
       "layer": "features",
       "sublayer": "features/workout_player",
-      "loc": 1042,
+      "loc": 1043,
       "imports": [
         "lib/core/presentation/consumer_copy.dart",
         "lib/core/services/indifit_haptics.dart",
@@ -18818,7 +18818,7 @@
       "catches": [
         {
           "file": "lib/features/workout_player/widgets/b02_player_cards.dart",
-          "line": 991,
+          "line": 992,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
