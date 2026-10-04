@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart' hide TextDirection;
-import 'package:shared_preferences/shared_preferences.dart';
-import '../../core/config/app_preferences_keys.dart';
-import '../../core/di/core_providers.dart';
 import '../../core/services/achievement_service.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../data/repositories/progress_statistics_repository.dart';
-import '../dashboard/dashboard_controller.dart';
+import 'streak_provider.dart';
 import 'widgets/achievement_detail_sheet.dart';
 
 class AchievementsScreen extends ConsumerStatefulWidget {
@@ -37,14 +34,7 @@ class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
 
     try {
       final statsRepo = ref.read(progressStatisticsRepositoryProvider);
-      SharedPreferences? prefs;
-      try {
-        prefs = ref.read(sharedPreferencesProvider);
-      } catch (_) {}
-      prefs ??= await SharedPreferences.getInstance();
-      final streak =
-          prefs.getInt(AppPreferenceKeys.userStreakCount) ??
-          ref.read(dashboardControllerProvider).streakCount;
+      final streak = await ref.read(streakRepositoryProvider).currentStreak();
 
       final achievements = await AchievementService.recordAndEvaluate(
         statsRepository: statsRepo,

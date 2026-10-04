@@ -135,10 +135,14 @@ jobs:
           keytool -genkeypair -noprompt -storetype JKS -keystore android/app/ci-release.keystore -alias ci_release_alias -keyalg RSA -keysize 2048 -validity 10000 -storepass ci_release_password -keypass ci_release_password -dname "CN=IndiFit, OU=Dev, O=IndiFit, L=Local, S=Local, C=IN"
 
       - name: Build Release APK
-        run: flutter build apk --release
+        env:
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+        run: flutter build apk --release --dart-define=SENTRY_DSN="$SENTRY_DSN"
 
       - name: Build Release App Bundle
-        run: flutter build appbundle --release
+        env:
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+        run: flutter build appbundle --release --dart-define=SENTRY_DSN="$SENTRY_DSN"
 
       - name: Verify Android Release Artifacts
         run: |
@@ -179,7 +183,9 @@ jobs:
         run: flutter pub get
 
       - name: Build Unsigned Release App
-        run: flutter build ios --release --no-codesign
+        env:
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+        run: flutter build ios --release --no-codesign --dart-define=SENTRY_DSN="$SENTRY_DSN"
 
       - name: Verify iOS Release Artifact
         run: |

@@ -8,13 +8,14 @@ import '../../core/di/providers.dart';
 import '../../core/services/achievement_service.dart';
 import '../../core/services/crash_reporting_service.dart';
 import '../../core/utils/app_logger.dart';
-import '../../core/utils/streak_calculator.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/food_repository.dart';
 import '../../data/repositories/health_service.dart';
 import '../../data/repositories/legacy_program_compatibility_adapter.dart';
 import '../../data/repositories/progress_statistics_repository.dart';
+import '../../data/repositories/streak_repository.dart';
 import '../../data/repositories/workout_repository.dart';
+import '../progress/streak_provider.dart';
 
 class DashboardState {
   final DateTime selectedDate;
@@ -229,53 +230,18 @@ class DashboardController extends StateNotifier<DashboardState> {
   }
 
   Future<void> computeStreak() async {
-    final foodRepo = _ref.read(foodRepositoryProvider);
-    final workoutRepo = _ref.read(workoutRepositoryProvider);
-    final prefs = await _getPrefs();
-
-    if (!prefs.containsKey(AppPreferenceKeys.streakFreezesCount)) {
-      await prefs.setInt(AppPreferenceKeys.streakFreezesCount, 1);
-    }
-    final freezes = prefs.getInt(AppPreferenceKeys.streakFreezesCount) ?? 1;
-
-    final foodDates = await foodRepo.getAllLogDates();
+    final streaks = _ref.read(streakRepositoryProvider);
+    final streak = await streaks.currentStreak();
+    final freezes = await streaks.freezeCount();
     if (!mounted) return;
-    final workoutDates = await workoutRepo.getAllSessionDates();
-    if (!mounted) return;
-
-    final Set<String> activeDays = {};
-    for (final d in foodDates) {
-      activeDays.add(
-        '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}',
-      );
-    }
-    for (final d in workoutDates) {
-      activeDays.add(
-        '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}',
-      );
-    }
-
-    // activeDays are civil dates on the device clock, so "today" must come
-    // from the same clock. Leaving it to the calculator's UTC default made
-    // the streak drop between local midnight and UTC midnight (00:00–05:30
-    // in India).
-    final now = DateTime.now();
-    final streak = StreakCalculator.calculateStreak(
-      activeDays,
-      streakFreezeCount: freezes,
-      referenceLocalDate:
-          '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}',
-    );
-    // Persist the computed streak so achievement surfaces (Achievements
-    // screen, B02 player) reading userStreakCount agree with the dashboard
-    // instead of showing a stale or default value.
-    await prefs.setInt(AppPreferenceKeys.userStreakCount, streak);
     state = state.copyWith(streakCount: streak, streakFreezesCount: freezes);
   }
 
   Future<String> purchaseStreakFreeze() async {
     final prefs = await _getPrefs();
-    final current = prefs.getInt(AppPreferenceKeys.streakFreezesCount) ?? 1;
+    final current =
+        prefs.getInt(AppPreferenceKeys.streakFreezesCount) ??
+        StreakRepository.defaultFreezes;
     if (current >= 2) {
       return 'Max freeze tokens (2/2) already active!';
     }

@@ -20,6 +20,20 @@ final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
   );
 });
 
+/// Reads [sharedPreferencesProvider] through [read], or returns null where it
+/// isn't overridden. Bootstrap always overrides it, so null only happens in
+/// tests and isolated widget harnesses; callers fall back to defaults or
+/// `SharedPreferences.getInstance()`.
+SharedPreferences? sharedPreferencesOrNull(SharedPreferences Function() read) {
+  try {
+    return read();
+  } on Object {
+    // Safe: the provider throws only when a container didn't override it
+    // (tests). Production bootstrap always does.
+    return null;
+  }
+}
+
 final appPreferencesServiceProvider = Provider<AppPreferencesService>((ref) {
   return AppPreferencesService(ref.watch(sharedPreferencesProvider));
 });
