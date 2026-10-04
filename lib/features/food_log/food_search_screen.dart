@@ -1333,7 +1333,9 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     String diet = 'veg';
     try {
       diet = ref.watch(userProfileProvider).dietPreference.toLowerCase();
-    } catch (_) {}
+    } catch (_) {
+      // Safe: suggestions only; without a profile they default to veg.
+    }
     switch (diet) {
       case 'non-veg':
       case 'non_veg':

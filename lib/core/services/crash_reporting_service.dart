@@ -41,35 +41,50 @@ class CrashReportingService {
     // Telemetry is allowed ONLY if not offline-only AND user explicitly opted in
     _isEnabled = !isOffline && userTelemetryOptIn;
 
-    final effectiveDsn = debugDsnOverride ?? _defaultDsn;
-    if (!_isEnabled || effectiveDsn.contains('placeholder_key')) {
+    if (!_isEnabled || !_hasRealDsn) {
       AppLogger.info(
-        'Sentry crash reporting disabled (opt-out or placeholder DSN).',
+        'Sentry crash reporting disabled (opt-out or no DSN in this build).',
       );
       await appRunner();
       return;
     }
 
-    await sentryInitRunner((options) {
-      options.dsn = effectiveDsn;
-      options.tracesSampleRate = 0.2;
-      options.sendDefaultPii =
-          false; // Never send personally identifiable information
-      options.attachStacktrace = true;
-      options.enableAutoPerformanceTracing =
-          false; // Avoid recording dynamic UI route parameters
+    _sentryStarted = true;
+    await sentryInitRunner(_configure, appRunner: appRunner);
+  }
 
-      // Privacy Filter: Strip food/body payload data before sending to remote Sentry
-      options.beforeSend = _beforeSendPrivacyFilter;
-      options.beforeBreadcrumb = _beforeBreadcrumbPrivacyFilter;
-    }, appRunner: appRunner);
+  /// Whether Sentry is running in this process.
+  static bool _sentryStarted = false;
+
+  static String get _effectiveDsn => debugDsnOverride ?? _defaultDsn;
+
+  /// Release builds pass SENTRY_DSN; without it (an empty define or the
+  /// placeholder) reporting can't run, whatever the user chose.
+  static bool get _hasRealDsn =>
+      _effectiveDsn.trim().isNotEmpty &&
+      !_effectiveDsn.contains('placeholder_key');
+
+  static void _configure(SentryFlutterOptions options) {
+    options.dsn = _effectiveDsn;
+    options.tracesSampleRate = 0.2;
+    options.sendDefaultPii =
+        false; // Never send personally identifiable information
+    options.attachStacktrace = true;
+    options.enableAutoPerformanceTracing =
+        false; // Avoid recording dynamic UI route parameters
+
+    // Privacy Filter: Strip food/body payload data before sending to remote Sentry
+    options.beforeSend = _beforeSendPrivacyFilter;
+    options.beforeBreadcrumb = _beforeBreadcrumbPrivacyFilter;
   }
 
   /// Privacy filter ensuring zero food items, meal names, calories, macros, or weight metrics escape
   static SentryEvent? _beforeSendPrivacyFilter(SentryEvent event, Hint hint) {
     if (!_isEnabled) return null; // Drop event completely if user opted out
 
-    // Strip sensitive user info
+    // Strip sensitive user info. Messages and exception values can quote
+    // user text (a food name in a FormatException), so they are replaced;
+    // the exception type and stack trace are enough to triage.
     final sanitizedEvent = event.copyWith(
       user: null, // Zero user identity attached
       request: event.request?.copyWith(
@@ -77,6 +92,10 @@ class CrashReportingService {
         cookies: null,
         data: null, // Drop all raw request body payloads
       ),
+      message: event.message == null ? null : SentryMessage(_redacted),
+      exceptions: event.exceptions
+          ?.map((exception) => exception.copyWith(value: _redacted))
+          .toList(),
     );
 
     return sanitizedEvent;
@@ -156,7 +175,33 @@ class CrashReportingService {
     final effectiveEnabled = enabled && !isOffline;
     _isEnabled = effectiveEnabled;
     await p.setBool(prefCrashReportingEnabled, effectiveEnabled);
+
+    // Take effect now, not on the next launch: start Sentry on opt-in (this
+    // session's errors are caught; startup crashes from the next launch) and
+    // stop it on opt-out so nothing queued is sent.
+    if (effectiveEnabled && !_sentryStarted && _hasRealDsn) {
+      _sentryStarted = true;
+      await sentryInitRunner(_configure);
+    } else if (!effectiveEnabled && _sentryStarted) {
+      _sentryStarted = false;
+      await sentryCloseRunner();
+    }
   }
+
+  /// Test hook to intercept Sentry.close in unit tests.
+  @visibleForTesting
+  static Future<void> Function() sentryCloseRunner = Sentry.close;
+
+  /// Test hook: forget whether Sentry was started.
+  @visibleForTesting
+  static void debugReset() => _sentryStarted = false;
+
+  static const _redacted = '<redacted>';
+
+  /// Test hook for the privacy filter applied to every event.
+  @visibleForTesting
+  static SentryEvent? debugScrub(SentryEvent event) =>
+      _beforeSendPrivacyFilter(event, Hint());
 
   /// Returns current crash reporting enabled state
   static bool get isEnabled => _isEnabled;
