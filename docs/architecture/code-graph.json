@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "summary": {
     "total_dart_files": 471,
-    "total_loc": 339825,
+    "total_loc": 339826,
     "total_internal_edges": 2340,
     "external_package_count": 28,
     "catch_metrics": {
@@ -12291,7 +12291,7 @@
       "path": "lib/features/food_log/barcode_scanner_screen.dart",
       "layer": "features",
       "sublayer": "features/food_log",
-      "loc": 644,
+      "loc": 645,
       "imports": [
         "lib/core/capabilities/capabilities_registry.dart",
         "lib/core/di/providers.dart",
@@ -12317,7 +12317,7 @@
       "catches": [
         {
           "file": "lib/features/food_log/barcode_scanner_screen.dart",
-          "line": 123,
+          "line": 124,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -12327,7 +12327,7 @@
         },
         {
           "file": "lib/features/food_log/barcode_scanner_screen.dart",
-          "line": 132,
+          "line": 133,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -12337,7 +12337,7 @@
         },
         {
           "file": "lib/features/food_log/barcode_scanner_screen.dart",
-          "line": 143,
+          "line": 144,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -12347,7 +12347,7 @@
         },
         {
           "file": "lib/features/food_log/barcode_scanner_screen.dart",
-          "line": 177,
+          "line": 178,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -12357,7 +12357,7 @@
         },
         {
           "file": "lib/features/food_log/barcode_scanner_screen.dart",
-          "line": 213,
+          "line": 214,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -12367,7 +12367,7 @@
         },
         {
           "file": "lib/features/food_log/barcode_scanner_screen.dart",
-          "line": 230,
+          "line": 231,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -12377,7 +12377,7 @@
         },
         {
           "file": "lib/features/food_log/barcode_scanner_screen.dart",
-          "line": 235,
+          "line": 236,
           "var": "e",
           "is_underscore": false,
           "is_empty": false,
@@ -12387,7 +12387,7 @@
         },
         {
           "file": "lib/features/food_log/barcode_scanner_screen.dart",
-          "line": 247,
+          "line": 248,
           "var": "e",
           "is_underscore": false,
           "is_empty": false,
@@ -12397,7 +12397,7 @@
         },
         {
           "file": "lib/features/food_log/barcode_scanner_screen.dart",
-          "line": 482,
+          "line": 483,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,

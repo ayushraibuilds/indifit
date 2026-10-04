@@ -92,6 +92,7 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
     _scanAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _animController, curve: Curves.easeInOut),
     );
+    unawaited(_safeStart());
   }
 
   @override
