@@ -2,11 +2,11 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "summary": {
     "total_dart_files": 474,
-    "total_loc": 340412,
-    "total_internal_edges": 2359,
+    "total_loc": 340733,
+    "total_internal_edges": 2366,
     "external_package_count": 29,
     "catch_metrics": {
-      "total_catches_all": 505,
+      "total_catches_all": 507,
       "total_catch_underscore": 158,
       "total_empty_catches": 0,
       "p0_empty_catches": 0
@@ -15,7 +15,7 @@
     "catches_by_layer": {
       "core": 145,
       "data": 101,
-      "features": 257,
+      "features": 259,
       "other": 2
     }
   },
@@ -2842,6 +2842,7 @@
         "lib/data/repositories/nutrition_recipe_log_coordinator.dart",
         "lib/data/repositories/nutrition_thali_repository.dart",
         "lib/features/food_log/nutrition_thali_controller.dart",
+        "lib/features/food_log/repeat_meal.dart",
         "lib/features/food_log/saved_meals_controller.dart",
         "lib/features/food_log/saved_recipe_log_controller.dart",
         "lib/features/food_log/widgets/quick_add_macros_sheet.dart"
@@ -3120,6 +3121,7 @@
       "imported_by": [
         "lib/data/repositories/nutrition_thali_repository.dart",
         "lib/features/food_log/nutrition_thali_controller.dart",
+        "lib/features/food_log/repeat_meal.dart",
         "lib/features/food_log/saved_meal_detail_screen.dart",
         "lib/features/food_log/saved_meal_editor_screen.dart",
         "lib/features/food_log/saved_meal_presentation.dart",
@@ -5335,6 +5337,7 @@
         "lib/features/food_log/food_log_surface.dart",
         "lib/features/food_log/food_search_screen.dart",
         "lib/features/food_log/nutrition_thali_controller.dart",
+        "lib/features/food_log/repeat_meal.dart",
         "lib/features/food_log/thali/thali_preset_usage.dart",
         "lib/features/nutrition_ai/ai_items_thali_handoff.dart",
         "lib/features/nutrition_ai/natural_language_meal_service.dart",
@@ -8347,6 +8350,7 @@
         "lib/features/food_log/food_search_view_models.dart",
         "lib/features/food_log/nutrition_recipe_editor_controller.dart",
         "lib/features/food_log/nutrition_recipe_editor_screen.dart",
+        "lib/features/food_log/repeat_meal.dart",
         "lib/features/food_log/saved_meal_editor_screen.dart",
         "lib/features/food_log/widgets/food_portion_bottom_sheet.dart",
         "lib/features/nutrition/nutrition_providers.dart",
@@ -8383,6 +8387,7 @@
         "lib/data/repositories/nutrition_transformation_repository.dart"
       ],
       "imported_by": [
+        "lib/features/food_log/repeat_meal.dart",
         "lib/features/food_log/widgets/food_portion_bottom_sheet.dart",
         "lib/features/nutrition/nutrition_providers.dart",
         "lib/features/nutrition_ai/nutrition_ai_controllers.dart"
@@ -8647,6 +8652,7 @@
       "imported_by": [
         "lib/data/repositories/nutrition_thali_repository.dart",
         "lib/data/services/b04_production_recommendation_orchestrator.dart",
+        "lib/features/food_log/repeat_meal.dart",
         "lib/features/food_log/saved_recipe_log_controller.dart",
         "lib/features/food_log/saved_recipe_log_screen.dart",
         "lib/features/nutrition/nutrition_providers.dart"
@@ -8806,6 +8812,7 @@
       "imported_by": [
         "lib/data/services/b04_production_recommendation_orchestrator.dart",
         "lib/features/food_log/nutrition_thali_controller.dart",
+        "lib/features/food_log/repeat_meal.dart",
         "lib/features/food_log/saved_meal_editor_screen.dart",
         "lib/features/food_log/saved_meals_controller.dart",
         "lib/features/nutrition/nutrition_providers.dart"
@@ -12621,7 +12628,7 @@
       "path": "lib/features/food_log/food_diary_screen.dart",
       "layer": "features",
       "sublayer": "features/food_log",
-      "loc": 523,
+      "loc": 525,
       "imports": [
         "lib/core/di/providers.dart",
         "lib/core/nutrition_household_measures.dart",
@@ -12734,7 +12741,7 @@
       "path": "lib/features/food_log/food_search_screen.dart",
       "layer": "features",
       "sublayer": "features/food_log",
-      "loc": 2580,
+      "loc": 2589,
       "imports": [
         "lib/core/catalog/food_catalog_models.dart",
         "lib/core/catalog/food_category_taxonomy.dart",
@@ -12911,7 +12918,7 @@
         },
         {
           "file": "lib/features/food_log/food_search_screen.dart",
-          "line": 1125,
+          "line": 1134,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -12921,7 +12928,7 @@
         },
         {
           "file": "lib/features/food_log/food_search_screen.dart",
-          "line": 1204,
+          "line": 1213,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -12931,7 +12938,7 @@
         },
         {
           "file": "lib/features/food_log/food_search_screen.dart",
-          "line": 1436,
+          "line": 1445,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -12941,7 +12948,7 @@
         },
         {
           "file": "lib/features/food_log/food_search_screen.dart",
-          "line": 2061,
+          "line": 2070,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -13381,13 +13388,20 @@
       "path": "lib/features/food_log/repeat_meal.dart",
       "layer": "features",
       "sublayer": "features/food_log",
-      "loc": 76,
+      "loc": 386,
       "imports": [
         "lib/core/di/providers.dart",
+        "lib/core/nutrition_consumption_snapshots.dart",
         "lib/core/nutrition_household_measures.dart",
         "lib/core/nutrition_legacy_read_models.dart",
+        "lib/core/nutrition_thali.dart",
         "lib/core/services/local_schedule_date_service.dart",
         "lib/core/typed_quantities.dart",
+        "lib/core/utils/app_logger.dart",
+        "lib/data/repositories/nutrition_food_catalog_repository.dart",
+        "lib/data/repositories/nutrition_food_logging_coordinator.dart",
+        "lib/data/repositories/nutrition_recipe_log_coordinator.dart",
+        "lib/data/repositories/nutrition_thali_repository.dart",
         "lib/features/food_log/widgets/food_diary_widgets.dart"
       ],
       "imported_by": [
@@ -13399,9 +13413,30 @@
       "providers_defined": [],
       "providers_used": [],
       "routes_defined": [],
-      "catches": [],
+      "catches": [
+        {
+          "file": "lib/features/food_log/repeat_meal.dart",
+          "line": 303,
+          "var": "error",
+          "is_underscore": false,
+          "is_empty": false,
+          "snippet": "} on NutritionThaliError catch (error) {",
+          "layer": "features/food_log",
+          "is_p0": false
+        },
+        {
+          "file": "lib/features/food_log/repeat_meal.dart",
+          "line": 333,
+          "var": "error",
+          "is_underscore": false,
+          "is_empty": false,
+          "snippet": "} on NutritionRecipeLogError catch (error) {",
+          "layer": "features/food_log",
+          "is_p0": false
+        }
+      ],
       "empty_catch_count": 0,
-      "total_catch_count": 0
+      "total_catch_count": 2
     },
     "lib/features/food_log/saved_meal_detail_screen.dart": {
       "path": "lib/features/food_log/saved_meal_detail_screen.dart",
