@@ -28,6 +28,10 @@ enum AiGatewayFailure {
   /// Per-user or project quota reached.
   quotaExceeded,
 
+  /// This device used today's allowance for the feature (Remote Config
+  /// `ai_daily_caps`). Resets at local midnight; never sent to the model.
+  dailyLimitReached,
+
   /// The model declined or returned something unusable.
   unusableResponse,
 

@@ -5,6 +5,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/timezone.dart' as tz;
 
+import '../utils/app_logger.dart';
 import 'indifit_haptics.dart';
 import 'ios_live_activity_service.dart';
 
@@ -799,7 +800,12 @@ class RestPresenceService {
     try {
       final prefs = preferences ?? await SharedPreferences.getInstance();
       await prefs.setString(prefRestAnchorRecord, jsonEncode(record.toJson()));
-    } catch (_) {}
+    } catch (error) {
+      AppLogger.warning(
+        'Rest presence state not saved: $error',
+        'RestPresence',
+      );
+    }
   }
 
   static Future<RestAnchorRecord?> loadAnchorRecord([
@@ -821,7 +827,12 @@ class RestPresenceService {
     try {
       final prefs = preferences ?? await SharedPreferences.getInstance();
       await prefs.remove(prefRestAnchorRecord);
-    } catch (_) {}
+    } catch (error) {
+      AppLogger.warning(
+        'Rest presence state not saved: $error',
+        'RestPresence',
+      );
+    }
   }
 
   static Future<void> savePendingIntent(
@@ -831,7 +842,12 @@ class RestPresenceService {
     try {
       final prefs = preferences ?? await SharedPreferences.getInstance();
       await prefs.setString(prefPendingRestIntent, jsonEncode(intent.toJson()));
-    } catch (_) {}
+    } catch (error) {
+      AppLogger.warning(
+        'Rest presence state not saved: $error',
+        'RestPresence',
+      );
+    }
   }
 
   static Future<RestPresenceIntent?> loadAndClearPendingIntent([
@@ -856,6 +872,11 @@ class RestPresenceService {
     try {
       final prefs = preferences ?? await SharedPreferences.getInstance();
       await prefs.remove(prefPendingRestIntent);
-    } catch (_) {}
+    } catch (error) {
+      AppLogger.warning(
+        'Rest presence state not saved: $error',
+        'RestPresence',
+      );
+    }
   }
 }

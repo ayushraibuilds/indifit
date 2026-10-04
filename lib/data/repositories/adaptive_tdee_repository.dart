@@ -4,6 +4,7 @@ import 'package:drift/drift.dart';
 import '../../core/algorithms/adaptive_tdee_engine.dart';
 import '../../core/nutrition_household_measures.dart';
 import '../../core/services/local_schedule_date_service.dart';
+import '../../core/utils/app_logger.dart';
 import '../../core/utils/tdee_calculator.dart';
 import '../database/app_database.dart';
 import '../models/adaptive_tdee_models.dart';
@@ -301,7 +302,14 @@ class AdaptiveTdeeRepository {
             (decoded['supersedes_snapshot_id'] as String).trim(),
           );
         }
-      } catch (_) {}
+      } catch (error) {
+        // An unreadable lineage hides a correction, so its predecessor would
+        // be counted too. Keep going, but leave a trace.
+        AppLogger.warning(
+          'TDEE: unreadable lineage on snapshot ${s.id}: $error',
+          'AdaptiveTdee',
+        );
+      }
     }
 
     final activeSnapshots = snapshots.where((s) {
