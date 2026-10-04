@@ -12,6 +12,7 @@ import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/services/local_schedule_date_service.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/typed_quantities.dart';
+import '../../core/utils/app_logger.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/indi_fit_feedback.dart';
 import '../dashboard/today_consumer_presentation.dart';
@@ -21,6 +22,7 @@ import 'diary_structure_controller.dart';
 import 'food_log_surface.dart';
 import 'food_search_screen.dart';
 import 'meal_presentation_registry.dart';
+import 'repeat_meal.dart';
 import 'saved_meals_screen.dart';
 import 'saved_recipe_log_screen.dart';
 import 'thali/thali_builder_screen.dart';
@@ -478,51 +480,12 @@ class _FoodDiaryScreenState extends ConsumerState<FoodDiaryScreen> {
     List<NutritionHistoricalReadRecord> yesterdayRecords,
   ) async {
     try {
-      final coordinator = await ref.read(
-        nutritionFoodLoggingCoordinatorProvider.future,
+      final copied = await repeatMealRecords(
+        ref,
+        mealType: mealType,
+        records: yesterdayRecords,
+        targetDay: _selectedDay,
       );
-      final catalog = await ref.read(
-        nutritionFoodCatalogRepositoryProvider.future,
-      );
-      final dates = LocalScheduleDateService();
-      final timezoneId = await ref
-          .read(localTimezoneServiceProvider)
-          .currentTimezoneId();
-      final localDate = dates.localDateFor(_selectedDay, timezoneId);
-      final isToday =
-          localDate == dates.localDateFor(DateTime.now(), timezoneId);
-      final loggedAtUtc = isToday
-          ? DateTime.now().toUtc()
-          : dates.instantForLocalDate(localDate, timezoneId);
-
-      int copied = 0;
-      for (final record in yesterdayRecords) {
-        for (final item in record.items) {
-          if (item.foodId != null && item.originSourceType == 'direct_food') {
-            final option = await catalog.getOption(item.foodId!);
-            if (option != null) {
-              final qty =
-                  item.quantity.quantity ??
-                  Quantity.fromDecimal(amount: '100', unit: QuantityUnit.gram);
-              final preview = await coordinator.preview(
-                option: option,
-                quantity: qty,
-              );
-              await coordinator.finalize(
-                userId: kLocalNutritionUserScopeId,
-                preview: preview,
-                mealCategory: mealType,
-                loggedAt: loggedAtUtc,
-                localDate: localDate,
-                timezoneId: timezoneId,
-                commandId: 'copy-yesterday::${const Uuid().v4()}',
-                consumptionId: 'copy-yesterday::${const Uuid().v4()}',
-              );
-              copied++;
-            }
-          }
-        }
-      }
       if (mounted) {
         _refreshDiaryReads();
         if (copied > 0) {
@@ -532,7 +495,8 @@ class _FoodDiaryScreenState extends ConsumerState<FoodDiaryScreen> {
           );
         }
       }
-    } catch (_) {
+    } on Object catch (error, stackTrace) {
+      AppLogger.error('Copying yesterday\'s meal failed', error, stackTrace);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

@@ -18,6 +18,7 @@ import '../../core/presentation/consumer_date_label.dart';
 import '../../core/privacy/privacy_policy.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/typed_quantities.dart';
+import '../../core/utils/app_logger.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/indi_fit_feedback.dart';
 import '../../core/widgets/skeleton_loader.dart';
@@ -35,6 +36,7 @@ import 'food_diary_screen.dart';
 import 'food_log_surface.dart';
 import 'food_search_view_models.dart';
 import 'meal_presentation_registry.dart';
+import 'repeat_meal.dart';
 import 'saved_meals_screen.dart';
 import 'saved_recipe_log_screen.dart';
 import 'widgets/food_portion_bottom_sheet.dart';
@@ -929,6 +931,104 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     }
   }
 
+  bool _repeatingYesterday = false;
+
+  /// One tap to log yesterday's foods for this meal again (P1 H10). Hidden
+  /// once anything is logged for this meal on [logDate], so it can't double
+  /// a meal, and when yesterday has no single foods to repeat.
+  Widget? _buildRepeatYesterday(DateTime logDate) {
+    final mealType = _activeMealType;
+    if (mealType == null) return null;
+    final day = DateTime(logDate.year, logDate.month, logDate.day);
+    final yesterday = day.subtract(const Duration(days: 1));
+    final todayRecords = ref
+        .watch(canonicalFoodRecordsForDayProvider(day))
+        .valueOrNull;
+    final yesterdayRecords = ref
+        .watch(canonicalFoodRecordsForDayProvider(yesterday))
+        .valueOrNull;
+    if (todayRecords == null || yesterdayRecords == null) return null;
+    if (recordsForMeal(todayRecords, mealType).isNotEmpty) return null;
+    final mealRecords = recordsForMeal(yesterdayRecords, mealType);
+    final items = repeatableMealItems(mealRecords);
+    if (items.isEmpty) return null;
+
+    final names = [
+      for (final item in items)
+        if (item.displayLabel?.trim().isNotEmpty == true)
+          item.displayLabel!.trim(),
+    ];
+    final shown = names.take(3).join(', ');
+    final more = names.length > 3 ? ' +${names.length - 3} more' : '';
+    final mealName = _mealLabel(mealType).toLowerCase();
+    return Card(
+      key: const Key('food_repeat_yesterday'),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      child: ListTile(
+        leading: const Icon(Icons.replay_rounded),
+        title: Text('Repeat yesterday\'s $mealName'),
+        subtitle: Text(
+          names.isEmpty
+              ? '${items.length} food${items.length == 1 ? '' : 's'}'
+              : '$shown$more',
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+        trailing: _repeatingYesterday
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : const Icon(Icons.add_circle_outline_rounded),
+        onTap: _repeatingYesterday
+            ? null
+            : () => unawaited(_repeatYesterday(mealType, mealRecords, logDate)),
+      ),
+    );
+  }
+
+  Future<void> _repeatYesterday(
+    String mealType,
+    List<NutritionHistoricalReadRecord> records,
+    DateTime logDate,
+  ) async {
+    setState(() => _repeatingYesterday = true);
+    try {
+      final copied = await repeatMealRecords(
+        ref,
+        mealType: mealType,
+        records: records,
+        targetDay: logDate,
+      );
+      if (!mounted) return;
+      _invalidateNutritionReads();
+      if (copied > 0) {
+        showIndiFitSuccessFeedback(
+          context,
+          'Logged $copied food${copied == 1 ? '' : 's'} from yesterday\'s ${_mealLabel(mealType).toLowerCase()}',
+        );
+        if (widget.returnToParentOnSave) Navigator.of(context).pop(true);
+      }
+    } on Object catch (error, stackTrace) {
+      AppLogger.error('Repeating yesterday\'s meal failed', error, stackTrace);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            behavior: SnackBarBehavior.floating,
+            content: Text(
+              'Couldn\'t repeat yesterday\'s meal. Anything already added '
+              'is in your log.',
+            ),
+          ),
+        );
+        _invalidateNutritionReads();
+      }
+    } finally {
+      if (mounted) setState(() => _repeatingYesterday = false);
+    }
+  }
+
   void _invalidateNutritionReads() {
     ref.read(todayNutritionRevisionProvider.notifier).state++;
     ref.invalidate(b04ProductionRecommendationContextProvider);
@@ -1436,6 +1536,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       neutralFoodEntry: _activeMealType == null
           ? _buildNeutralFoodEntry()
           : null,
+      repeatAction: _buildRepeatYesterday(logDate),
       loadingRecent: _loadingRecent,
       recentFailureMessage: _recentFailureMessage,
       onRetryRecent: _retryRecentFoods,
