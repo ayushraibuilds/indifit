@@ -2,11 +2,11 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "summary": {
     "total_dart_files": 472,
-    "total_loc": 339905,
+    "total_loc": 340012,
     "total_internal_edges": 2342,
     "external_package_count": 28,
     "catch_metrics": {
-      "total_catches_all": 506,
+      "total_catches_all": 507,
       "total_catch_underscore": 162,
       "total_empty_catches": 0,
       "p0_empty_catches": 0
@@ -15,7 +15,7 @@
     "catches_by_layer": {
       "core": 145,
       "data": 103,
-      "features": 257,
+      "features": 258,
       "other": 1
     }
   },
@@ -14904,7 +14904,7 @@
       "path": "lib/features/nutrition_ai/nutrition_ai_controllers.dart",
       "layer": "features",
       "sublayer": "features/nutrition_ai",
-      "loc": 859,
+      "loc": 950,
       "imports": [
         "lib/core/ai/ai_gateway.dart",
         "lib/core/typed_quantities.dart",
@@ -14927,7 +14927,7 @@
       "catches": [
         {
           "file": "lib/features/nutrition_ai/nutrition_ai_controllers.dart",
-          "line": 232,
+          "line": 238,
           "var": "e",
           "is_underscore": false,
           "is_empty": false,
@@ -14937,7 +14937,7 @@
         },
         {
           "file": "lib/features/nutrition_ai/nutrition_ai_controllers.dart",
-          "line": 313,
+          "line": 319,
           "var": "e",
           "is_underscore": false,
           "is_empty": false,
@@ -14947,7 +14947,7 @@
         },
         {
           "file": "lib/features/nutrition_ai/nutrition_ai_controllers.dart",
-          "line": 380,
+          "line": 412,
           "var": "e",
           "is_underscore": false,
           "is_empty": false,
@@ -14957,7 +14957,17 @@
         },
         {
           "file": "lib/features/nutrition_ai/nutrition_ai_controllers.dart",
-          "line": 489,
+          "line": 506,
+          "var": "error",
+          "is_underscore": false,
+          "is_empty": false,
+          "snippet": "} catch (error) {",
+          "layer": "features/nutrition_ai",
+          "is_p0": false
+        },
+        {
+          "file": "lib/features/nutrition_ai/nutrition_ai_controllers.dart",
+          "line": 639,
           "var": "e",
           "is_underscore": false,
           "is_empty": false,
@@ -14967,7 +14977,17 @@
         },
         {
           "file": "lib/features/nutrition_ai/nutrition_ai_controllers.dart",
-          "line": 603,
+          "line": 716,
+          "var": "error",
+          "is_underscore": false,
+          "is_empty": false,
+          "snippet": "} catch (error) {",
+          "layer": "features/nutrition_ai",
+          "is_p0": false
+        },
+        {
+          "file": "lib/features/nutrition_ai/nutrition_ai_controllers.dart",
+          "line": 860,
           "var": "e",
           "is_underscore": false,
           "is_empty": false,
@@ -14977,33 +14997,23 @@
         },
         {
           "file": "lib/features/nutrition_ai/nutrition_ai_controllers.dart",
-          "line": 739,
-          "var": "e",
+          "line": 934,
+          "var": "error",
           "is_underscore": false,
           "is_empty": false,
-          "snippet": "} catch (e) {",
-          "layer": "features/nutrition_ai",
-          "is_p0": false
-        },
-        {
-          "file": "lib/features/nutrition_ai/nutrition_ai_controllers.dart",
-          "line": 850,
-          "var": "e",
-          "is_underscore": false,
-          "is_empty": false,
-          "snippet": "} catch (e) {",
+          "snippet": "} catch (error) {",
           "layer": "features/nutrition_ai",
           "is_p0": false
         }
       ],
       "empty_catch_count": 0,
-      "total_catch_count": 7
+      "total_catch_count": 8
     },
     "lib/features/nutrition_ai/nutrition_label_ocr_screen.dart": {
       "path": "lib/features/nutrition_ai/nutrition_label_ocr_screen.dart",
       "layer": "features",
       "sublayer": "features/nutrition_ai",
-      "loc": 676,
+      "loc": 684,
       "imports": [
         "lib/core/di/core_providers.dart",
         "lib/core/privacy/dpdp_consent_service.dart",
@@ -15060,7 +15070,7 @@
       "path": "lib/features/nutrition_ai/photo_meal_screen.dart",
       "layer": "features",
       "sublayer": "features/nutrition_ai",
-      "loc": 831,
+      "loc": 839,
       "imports": [
         "lib/core/di/providers.dart",
         "lib/core/privacy/dpdp_consent_service.dart",
