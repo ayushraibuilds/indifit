@@ -56,7 +56,7 @@ void main() {
       await tester.testTextInput.receiveAction(TextInputAction.next);
       await tester.pump();
       expect(FocusManager.instance.primaryFocus, same(_focusNode(tester, age)));
-      expect(find.text('Welcome to IndiFit!'), findsOneWidget);
+      expect(find.text('A bit about you'), findsOneWidget);
 
       await tester.testTextInput.receiveAction(TextInputAction.next);
       await tester.pump();
@@ -64,7 +64,7 @@ void main() {
         FocusManager.instance.primaryFocus,
         same(_focusNode(tester, height)),
       );
-      expect(find.text('Welcome to IndiFit!'), findsOneWidget);
+      expect(find.text('A bit about you'), findsOneWidget);
 
       await tester.testTextInput.receiveAction(TextInputAction.next);
       await tester.pump();
@@ -85,7 +85,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 250));
       expect(find.byType(Opacity), findsNothing);
       expect(find.text('Next Step'), findsOneWidget);
-      expect(find.text('Welcome to IndiFit!'), findsOneWidget);
+      expect(find.text('A bit about you'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );
@@ -142,14 +142,14 @@ void main() {
     await tester.pump();
     await tester.testTextInput.receiveAction(TextInputAction.next);
     await tester.pump();
-    expect(find.text('Welcome to IndiFit!'), findsOneWidget);
+    expect(find.text('A bit about you'), findsOneWidget);
     expect(find.text('What is your main goal?'), findsNothing);
 
     await _tapVisible(tester, 'Male');
     await _tapVisible(tester, 'Next Step');
     await tester.pumpAndSettle();
-    expect(find.text('What is your main goal?'), findsOneWidget);
-    expect(find.text('Welcome to IndiFit!'), findsNothing);
+    expect(find.text('How do you move most days?'), findsOneWidget);
+    expect(find.text('A bit about you'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
@@ -170,7 +170,7 @@ void main() {
 
       await tester.tap(find.text('Next Step'));
       await tester.pump();
-      expect(find.text('Welcome to IndiFit!'), findsOneWidget);
+      expect(find.text('A bit about you'), findsOneWidget);
       expect(find.text('What is your main goal?'), findsNothing);
       tester
           .state<ScaffoldMessengerState>(find.byType(ScaffoldMessenger))
@@ -194,7 +194,7 @@ void main() {
       await tester.tap(back);
       await tester.pumpAndSettle();
 
-      expect(find.text('Welcome to IndiFit!'), findsOneWidget);
+      expect(find.text('A bit about you'), findsOneWidget);
       expect(tester.widget<TextField>(name).controller!.text, 'Priya');
       expect(tester.widget<TextField>(age).controller!.text, '31');
       expect(tester.widget<TextField>(height).controller!.text, '165');
@@ -230,7 +230,7 @@ void main() {
           ),
         );
         await tester.pump(const Duration(milliseconds: 250));
-        expect(find.text('Welcome to IndiFit!'), findsOneWidget);
+        expect(find.text('What is your main goal?'), findsOneWidget);
         expect(find.text('Skip for now'), findsOneWidget);
         expect(find.text('Next Step'), findsOneWidget);
         expect(tester.takeException(), isNull);
@@ -332,6 +332,9 @@ Future<AppDatabase> _pumpOnboarding(
     ),
   );
   await tester.pump(const Duration(milliseconds: 250));
+  // The goal comes first; these tests cover the body fields after it.
+  await tester.tap(find.text('Next Step'));
+  await tester.pumpAndSettle();
   return database;
 }
 

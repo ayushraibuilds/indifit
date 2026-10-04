@@ -122,9 +122,11 @@ void main() {
         if (AppConfig.connectedAiEnabled) {
           expect(find.text('Scan nutrition label'), findsOneWidget);
           expect(find.text('Describe meal'), findsOneWidget);
+          expect(find.text('Meal photo (Beta)'), findsOneWidget);
         } else {
           expect(find.text('Scan nutrition label'), findsNothing);
           expect(find.text('Describe meal'), findsNothing);
+          expect(find.text('Meal photo (Beta)'), findsNothing);
         }
 
         // Unavailable AI/Photo surfaces must be absent

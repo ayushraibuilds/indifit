@@ -47,7 +47,7 @@ void main() {
     await tester.tap(goalAdjust);
     await tester.pumpAndSettle();
     expect(find.text('What is your main goal?'), findsOneWidget);
-    expect(find.text('2 of 5'), findsOneWidget);
+    expect(find.text('1 of 5'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -86,6 +86,9 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 250));
 
+      // The goal comes first, then the body fields.
+      await _tapVisible(tester, 'Build muscle');
+      await _tapVisible(tester, 'Next Step');
       await tester.enterText(find.byType(TextField).at(0), 'Maya');
       await tester.enterText(find.byType(TextField).at(1), '31');
       await tester.enterText(find.byType(TextField).at(2), '165');
@@ -93,7 +96,7 @@ void main() {
       await _moveToReview(
         tester,
         sex: 'Female',
-        goal: 'Build muscle',
+        goal: null,
         activity: 'Very Active',
         diet: 'Non-Vegetarian',
       );
@@ -383,13 +386,17 @@ Widget _onboardingApp(AppDatabase database) {
 Future<void> _moveToReview(
   WidgetTester tester, {
   String sex = 'Male',
-  String goal = 'Maintain',
+
+  /// Null when the test already answered the goal step.
+  String? goal = 'Maintain',
   String activity = 'Moderately Active',
   String diet = 'Vegetarian',
 }) async {
+  if (goal != null) {
+    await _tapVisible(tester, goal);
+    await _tapVisible(tester, 'Next Step');
+  }
   await _tapVisible(tester, sex);
-  await _tapVisible(tester, 'Next Step');
-  await _tapVisible(tester, goal);
   await _tapVisible(tester, 'Next Step');
   await _tapVisible(tester, activity);
   await _tapVisible(tester, 'Next Step');

@@ -15,6 +15,9 @@ abstract final class GeminiRequests {
   /// Bump whenever a prompt or schema changes; eval results record it.
   static const promptVersion = 'meal-v1+label-v1';
 
+  /// Nutrient keys the label schema can return (used by the eval data check).
+  static const labelNutrientKeys = _labelNutrientKeys;
+
   static GenerationConfig config(Schema schema) => GenerationConfig(
     responseMimeType: 'application/json',
     responseSchema: schema,

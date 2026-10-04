@@ -65,26 +65,28 @@ class ConsumerTaskScaffold extends StatelessWidget {
         if (primaryActionSlot != null && !hidePrimaryAction) primaryActionSlot,
       ],
     );
-    final keyboardAwareBody = hidePrimaryAction && primaryActionSlot != null
-        ? Stack(
-            fit: StackFit.expand,
-            children: [
-              scaffoldBody,
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 0,
-                child: IgnorePointer(
-                  child: Opacity(
-                    opacity: 0,
-                    alwaysIncludeSemantics: true,
-                    child: primaryActionSlot,
-                  ),
-                ),
+    // Always a Stack, so the body keeps one place in the tree. Wrapping it
+    // only while the keyboard showed rebuilt the body from scratch, which
+    // sent a PageView in it back to its first page.
+    final keyboardAwareBody = Stack(
+      fit: StackFit.expand,
+      children: [
+        scaffoldBody,
+        if (hidePrimaryAction && primaryActionSlot != null)
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: IgnorePointer(
+              child: Opacity(
+                opacity: 0,
+                alwaysIncludeSemantics: true,
+                child: primaryActionSlot,
               ),
-            ],
-          )
-        : scaffoldBody;
+            ),
+          ),
+      ],
+    );
 
     return Scaffold(
       appBar: appBar,

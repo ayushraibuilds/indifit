@@ -117,7 +117,12 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));
 
-    expect(find.text('Welcome to IndiFit!'), findsOneWidget);
+    // The goal comes first; the required choice is on the About step.
+    expect(find.text('What is your main goal?'), findsOneWidget);
+    await tester.tap(find.text('Next Step'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('A bit about you'), findsOneWidget);
     expect(find.text('Used only to estimate daily targets'), findsOneWidget);
     expect(find.text('Skip for now'), findsOneWidget);
     expect(find.text('Next Step'), findsOneWidget);
