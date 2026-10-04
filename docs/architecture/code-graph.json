@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "summary": {
     "total_dart_files": 464,
-    "total_loc": 338507,
+    "total_loc": 338537,
     "total_internal_edges": 2307,
     "external_package_count": 28,
     "catch_metrics": {
@@ -11968,7 +11968,7 @@
       "path": "lib/features/dashboard/widgets/today_nutrition_widgets.dart",
       "layer": "features",
       "sublayer": "features/dashboard",
-      "loc": 865,
+      "loc": 895,
       "imports": [
         "lib/core/di/providers.dart",
         "lib/core/presentation/consumer_copy.dart",

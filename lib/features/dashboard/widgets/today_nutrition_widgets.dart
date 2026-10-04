@@ -70,7 +70,15 @@ class TodayNutritionHero extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Nutrition', style: B05Typography.title(context)),
+            Row(
+              children: [
+                Expanded(
+                  child: Text('Nutrition', style: B05Typography.title(context)),
+                ),
+                if (presentation.hasIncompleteNutrition)
+                  const NutritionIncompleteInfo(),
+              ],
+            ),
             const SizedBox(height: B05Layout.space12),
             LayoutBuilder(
               builder: (context, constraints) {
@@ -103,14 +111,6 @@ class TodayNutritionHero extends StatelessWidget {
                       );
               },
             ),
-            if (presentation.hasIncompleteNutrition) ...[
-              const SizedBox(height: B05Layout.space12),
-              NutritionNotice(
-                icon: Icons.info_outline_rounded,
-                label: ConsumerCopy.nutritionDetailsIncomplete,
-                color: context.b05Colors.unavailable.indicator,
-              ),
-            ],
             const SizedBox(height: B05Layout.space16),
             Wrap(
               spacing: B05Layout.space8,
@@ -312,27 +312,45 @@ class TodayMealIdeasActionState extends ConsumerState<TodayMealIdeasAction> {
   }
 }
 
-class NutritionNotice extends StatelessWidget {
-  const NutritionNotice({
-    super.key,
-    required this.icon,
-    required this.label,
-    required this.color,
-  });
+/// Macro hues. Red is reserved for "over target", so no macro uses it as
+/// its base colour.
+B05ColorRole todayMacroColorRole(B05SemanticColors colors, String nutrientId) =>
+    switch (nutrientId) {
+      'protein' => colors.success,
+      'carbohydrate' => colors.warning,
+      'fat' => colors.info,
+      'fibre' => colors.dinner,
+      _ => colors.unavailable,
+    };
 
-  final IconData icon;
-  final String label;
-  final Color color;
+/// Keeps "some details are missing" one tap away instead of a standing
+/// line on the card; most Indian foods don't list every nutrient.
+class NutritionIncompleteInfo extends StatelessWidget {
+  const NutritionIncompleteInfo({super.key});
+
+  static const explanation =
+      'Some foods you logged don’t list every nutrient. Totals include '
+      'what is known; missing values are left out, not counted as zero.';
 
   @override
-  Widget build(BuildContext context) => Semantics(
-    label: label,
-    child: Row(
-      children: [
-        Icon(icon, size: B05Layout.iconSmall, color: color),
-        const SizedBox(width: B05Layout.space8),
-        Expanded(child: Text(label, style: B05Typography.caption(context))),
-      ],
+  Widget build(BuildContext context) => IconButton(
+    tooltip: ConsumerCopy.nutritionDetailsIncomplete,
+    icon: Icon(
+      Icons.info_outline_rounded,
+      color: context.b05Colors.unavailable.indicator,
+    ),
+    onPressed: () => showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text(ConsumerCopy.nutritionDetailsIncomplete),
+        content: const Text(explanation),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
     ),
   );
 }
@@ -371,7 +389,7 @@ class CalorieRing extends StatelessWidget {
     if (proteinG > 0) {
       sections.add(
         PieChartSectionData(
-          color: colors.success.indicator,
+          color: todayMacroColorRole(colors, 'protein').indicator,
           value: proteinG,
           title: '',
           radius: 10,
@@ -382,7 +400,7 @@ class CalorieRing extends StatelessWidget {
     if (carbsG > 0) {
       sections.add(
         PieChartSectionData(
-          color: colors.warning.indicator,
+          color: todayMacroColorRole(colors, 'carbohydrate').indicator,
           value: carbsG,
           title: '',
           radius: 10,
@@ -393,7 +411,7 @@ class CalorieRing extends StatelessWidget {
     if (fatG > 0) {
       sections.add(
         PieChartSectionData(
-          color: colors.danger.indicator,
+          color: todayMacroColorRole(colors, 'fat').indicator,
           value: fatG,
           title: '',
           radius: 10,
@@ -457,8 +475,6 @@ class CalorieRing extends StatelessWidget {
               : '${formatTodayMetric(metric.targetValue! - (metric.pointValue ?? 0))} left'
         : noConsumption
         ? 'No meals yet'
-        : incomplete
-        ? 'Some nutrition incomplete'
         : 'Calories logged';
     final statusColor = isOver
         ? colors.danger.indicator
@@ -644,13 +660,7 @@ class MacroRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final role = switch (metric.nutrientId) {
-      'protein' => context.b05Colors.success,
-      'carbohydrate' => context.b05Colors.warning,
-      'fat' => context.b05Colors.danger,
-      'fibre' => context.b05Colors.info,
-      _ => context.b05Colors.unavailable,
-    };
+    final role = todayMacroColorRole(context.b05Colors, metric.nutrientId);
     final icon = switch (metric.nutrientId) {
       'protein' => Icons.egg_alt_rounded,
       'carbohydrate' => Icons.grain_rounded,
@@ -670,21 +680,7 @@ class MacroRow extends StatelessWidget {
         Expanded(
           child: Text(metric.label, style: B05Typography.label(context)),
         ),
-        if (!compact)
-          Flexible(
-            child: Text(
-              metric.comparisonLabel,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.end,
-              style: B05Typography.caption(context).copyWith(
-                color: metric.isOverTarget
-                    ? context.b05Colors.danger.indicator
-                    : context.b05Colors.textPrimary,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
+        if (!compact) Flexible(child: _value(context, TextAlign.end)),
       ],
     );
     return Semantics(
@@ -696,15 +692,7 @@ class MacroRow extends StatelessWidget {
             header,
             if (compact) ...[
               const SizedBox(height: B05Layout.space4),
-              Text(
-                metric.comparisonLabel,
-                style: B05Typography.caption(context).copyWith(
-                  color: metric.isOverTarget
-                      ? context.b05Colors.danger.indicator
-                      : context.b05Colors.textPrimary,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
+              _value(context, TextAlign.start),
             ],
             if (metric.estimated && !metric.isIncomplete) ...[
               const SizedBox(height: B05Layout.space4),
@@ -716,6 +704,48 @@ class MacroRow extends StatelessWidget {
             ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+extension on MacroRow {
+  /// Unknown values read as a quiet "—" with the reason a tap away; the
+  /// row's semantics label still says "Not available".
+  Widget _value(BuildContext context, TextAlign align) {
+    if (!metric.isAvailable) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: align == TextAlign.end
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
+        children: [
+          Text('—', style: B05Typography.caption(context)),
+          const SizedBox(width: B05Layout.space4),
+          Tooltip(
+            message:
+                '${metric.label} isn’t listed for the foods you logged, so '
+                'no total is shown.',
+            triggerMode: TooltipTriggerMode.tap,
+            child: Icon(
+              Icons.info_outline_rounded,
+              size: B05Layout.iconSmall,
+              color: context.b05Colors.unavailable.indicator,
+            ),
+          ),
+        ],
+      );
+    }
+    return Text(
+      metric.comparisonLabel,
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
+      textAlign: align,
+      style: B05Typography.caption(context).copyWith(
+        color: metric.isOverTarget
+            ? context.b05Colors.danger.indicator
+            : context.b05Colors.textPrimary,
+        fontWeight: FontWeight.w700,
       ),
     );
   }
