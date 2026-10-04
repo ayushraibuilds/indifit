@@ -63,6 +63,7 @@ dependencies:
   firebase_app_check: ^0.4.8
   firebase_ai: ^4.0.0
   firebase_remote_config: ^6.7.0
+  image: ^4.8.0
 
 dev_dependencies:
   flutter_test:

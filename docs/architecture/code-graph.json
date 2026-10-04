@@ -1,9 +1,9 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "summary": {
-    "total_dart_files": 471,
-    "total_loc": 339826,
-    "total_internal_edges": 2340,
+    "total_dart_files": 472,
+    "total_loc": 339905,
+    "total_internal_edges": 2342,
     "external_package_count": 28,
     "catch_metrics": {
       "total_catches_all": 506,
@@ -300,6 +300,25 @@
         "dioProvider",
         "sharedPreferencesProvider"
       ],
+      "routes_defined": [],
+      "catches": [],
+      "empty_catch_count": 0,
+      "total_catch_count": 0
+    },
+    "lib/core/ai/ai_photo_sanitizer.dart": {
+      "path": "lib/core/ai/ai_photo_sanitizer.dart",
+      "layer": "core",
+      "sublayer": "core",
+      "loc": 69,
+      "imports": [],
+      "imported_by": [
+        "lib/features/nutrition_ai/natural_language_meal_service.dart",
+        "lib/features/nutrition_ai/nutrition_label_ocr_service.dart"
+      ],
+      "parts": [],
+      "part_of": null,
+      "providers_defined": [],
+      "providers_used": [],
       "routes_defined": [],
       "catches": [],
       "empty_catch_count": 0,
@@ -14841,9 +14860,10 @@
       "path": "lib/features/nutrition_ai/natural_language_meal_service.dart",
       "layer": "features",
       "sublayer": "features/nutrition_ai",
-      "loc": 386,
+      "loc": 391,
       "imports": [
         "lib/core/ai/ai_gateway.dart",
+        "lib/core/ai/ai_photo_sanitizer.dart",
         "lib/core/ai/backend_ai_gateway.dart",
         "lib/core/config/app_config.dart",
         "lib/core/nutrients.dart",
@@ -14868,7 +14888,7 @@
       "catches": [
         {
           "file": "lib/features/nutrition_ai/natural_language_meal_service.dart",
-          "line": 336,
+          "line": 341,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -15012,9 +15032,10 @@
       "path": "lib/features/nutrition_ai/nutrition_label_ocr_service.dart",
       "layer": "features",
       "sublayer": "features/nutrition_ai",
-      "loc": 173,
+      "loc": 178,
       "imports": [
         "lib/core/ai/ai_gateway.dart",
+        "lib/core/ai/ai_photo_sanitizer.dart",
         "lib/core/ai/backend_ai_gateway.dart",
         "lib/core/config/app_config.dart",
         "lib/core/nutrition_estimates.dart",
