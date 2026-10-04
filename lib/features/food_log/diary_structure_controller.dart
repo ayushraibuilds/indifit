@@ -230,10 +230,9 @@ class DiaryStructureController extends StateNotifier<DiaryStructureState> {
 
 final diaryStructureControllerProvider =
     StateNotifierProvider<DiaryStructureController, DiaryStructureState>((ref) {
-      SharedPreferences? prefs;
-      try {
-        prefs = ref.watch(sharedPreferencesProvider);
-      } catch (_) {}
+      SharedPreferences? prefs = sharedPreferencesOrNull(
+        () => ref.watch(sharedPreferencesProvider),
+      );
       return DiaryStructureController(prefs);
     });
 
