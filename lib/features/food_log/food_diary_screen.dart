@@ -480,7 +480,7 @@ class _FoodDiaryScreenState extends ConsumerState<FoodDiaryScreen> {
     List<NutritionHistoricalReadRecord> yesterdayRecords,
   ) async {
     try {
-      final copied = await repeatMealRecords(
+      final outcome = await repeatMealRecords(
         ref,
         mealType: mealType,
         records: yesterdayRecords,
@@ -488,10 +488,12 @@ class _FoodDiaryScreenState extends ConsumerState<FoodDiaryScreen> {
       );
       if (mounted) {
         _refreshDiaryReads();
-        if (copied > 0) {
+        if (outcome.logged > 0) {
+          final note = outcome.skippedNote;
           showIndiFitSuccessFeedback(
             context,
-            'Copied $copied food${copied == 1 ? '' : 's'} from yesterday into ${foodDiaryMealTitle(mealType)}',
+            'Copied ${outcome.loggedLabel} from yesterday into '
+            '${foodDiaryMealTitle(mealType)}${note == null ? '' : '. $note.'}',
           );
         }
       }

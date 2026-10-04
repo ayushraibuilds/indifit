@@ -950,14 +950,10 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     if (todayRecords == null || yesterdayRecords == null) return null;
     if (recordsForMeal(todayRecords, mealType).isNotEmpty) return null;
     final mealRecords = recordsForMeal(yesterdayRecords, mealType);
-    final items = repeatableMealItems(mealRecords);
-    if (items.isEmpty) return null;
+    final plan = planRepeat(mealRecords);
+    if (plan.isEmpty) return null;
 
-    final names = [
-      for (final item in items)
-        if (item.displayLabel?.trim().isNotEmpty == true)
-          item.displayLabel!.trim(),
-    ];
+    final names = plan.names;
     final shown = names.take(3).join(', ');
     final more = names.length > 3 ? ' +${names.length - 3} more' : '';
     final mealName = _mealLabel(mealType).toLowerCase();
@@ -969,7 +965,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         title: Text('Repeat yesterday\'s $mealName'),
         subtitle: Text(
           names.isEmpty
-              ? '${items.length} food${items.length == 1 ? '' : 's'}'
+              ? '${plan.entryCount} item${plan.entryCount == 1 ? '' : 's'}'
               : '$shown$more',
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
@@ -995,7 +991,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   ) async {
     setState(() => _repeatingYesterday = true);
     try {
-      final copied = await repeatMealRecords(
+      final outcome = await repeatMealRecords(
         ref,
         mealType: mealType,
         records: records,
@@ -1003,12 +999,25 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       );
       if (!mounted) return;
       _invalidateNutritionReads();
-      if (copied > 0) {
+      final meal = _mealLabel(mealType).toLowerCase();
+      if (outcome.logged > 0) {
+        final note = outcome.skippedNote;
         showIndiFitSuccessFeedback(
           context,
-          'Logged $copied food${copied == 1 ? '' : 's'} from yesterday\'s ${_mealLabel(mealType).toLowerCase()}',
+          'Logged ${outcome.loggedLabel} from yesterday\'s $meal'
+          '${note == null ? '' : '. $note.'}',
         );
         if (widget.returnToParentOnSave) Navigator.of(context).pop(true);
+      } else if (outcome.skipped > 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            behavior: SnackBarBehavior.floating,
+            content: Text(
+              'Nothing repeated: yesterday\'s $meal changed since it was '
+              'logged.',
+            ),
+          ),
+        );
       }
     } on Object catch (error, stackTrace) {
       AppLogger.error('Repeating yesterday\'s meal failed', error, stackTrace);
