@@ -279,9 +279,13 @@ class _B02StrengthPlayerScreenState
     final previousPerformance = _previousLookup.activeKey == previousKey
         ? _previousLookup.activeResult
         : null;
+    final showPendingEditor = isQuick || !exerciseComplete || hasExtraSetReady;
+    // While a set is pending, the suggestion sits in the "Next set" header
+    // beside the fields it fills; otherwise it stays as a card below.
     final currentTarget =
         _hasUsefulTargetContext(launch.state, selected, previousPerformance)
         ? R07CTargetContext(
+            inline: groupSafe && showPendingEditor,
             slot: selected,
             state: launch.state,
             previousPerformance: previousPerformance,
@@ -304,8 +308,13 @@ class _B02StrengthPlayerScreenState
             performedSets: performedSets,
             isPlannedMode: execution is PlannedWorkoutExecutionContext,
             exerciseComplete: exerciseComplete,
-            showPendingEditor: isQuick || !exerciseComplete || hasExtraSetReady,
+            showPendingEditor: showPendingEditor,
             pendingTechnique: pendingTechnique,
+            targetSummary: currentTarget?.inline == true ? currentTarget : null,
+            previousSetLabels:
+                B02PreviousPerformancePresentation.workingSetLabels(
+                  previousPerformance,
+                ),
           );
     final primaryLabel = _warmup
         ? 'Log warm-up set'
@@ -365,9 +374,7 @@ class _B02StrengthPlayerScreenState
           ? _buildRestCard(provider, ui, launch, cursorSlot ?? selected)
           : null,
       setLoggingSlot: setLogging,
-      primaryActionSlot: isQuick || !exerciseComplete || hasExtraSetReady
-          ? primaryAction
-          : null,
+      primaryActionSlot: showPendingEditor ? primaryAction : null,
       primaryActionGap: 10,
       nextExerciseGap: hasOpenRest
           ? 12
@@ -377,7 +384,7 @@ class _B02StrengthPlayerScreenState
       nextExerciseSlot: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (currentTarget != null) ...[
+          if (currentTarget != null && !currentTarget.inline) ...[
             currentTarget,
             const SizedBox(height: 12),
           ],
@@ -424,6 +431,8 @@ class _B02StrengthPlayerScreenState
     required bool exerciseComplete,
     required bool showPendingEditor,
     required B02TechniqueFields pendingTechnique,
+    Widget? targetSummary,
+    List<String> previousSetLabels = const [],
   }) {
     final rpe = int.tryParse(_rpes[selected.id] ?? '');
     final techniqueKey = _pendingTechniqueKey(
@@ -465,6 +474,16 @@ class _B02StrengthPlayerScreenState
           ? () => _openPlateCalculator(selected)
           : null,
       showPendingEditor: showPendingEditor,
+      targetSummary: targetSummary,
+      previousSetLabels: previousSetLabels,
+      // The next planned row's checkmark is the same action as "Log set".
+      onCompleteNext:
+          _warmup ||
+              ui.isBusy ||
+              _isSubmittingSet ||
+              !selected.hasCanonicalExercise
+          ? null
+          : () => _record(provider, selected),
       moreContent: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -839,7 +858,7 @@ class _B02StrengthPlayerScreenState
         )) &&
         loadController.text.trim().isEmpty &&
         prefill.loadKg != null) {
-      loadController.text = prefill.loadKg.toString();
+      loadController.text = r07cFormatNumber(prefill.loadKg!);
     }
     if (repsController != null &&
         !_editedInputFields.contains((
@@ -858,10 +877,16 @@ class _B02StrengthPlayerScreenState
     final recommendation = state.targetRecommendations[slot.id];
     if (recommendation == null) return;
     setState(() {
-      _loadControllerFor(slot).text =
-          recommendation.recommendedLoadKg?.toString() ?? '';
-      _repControllerFor(slot).text =
-          recommendation.targetRepsMin?.toString() ?? '';
+      _loadControllerFor(slot).text = _editableLoad(
+        recommendation.recommendedLoadKg,
+      );
+      if (!r07cIsPlaceholderRepRange(
+        recommendation.targetRepsMin,
+        recommendation.targetRepsMax,
+      )) {
+        _repControllerFor(slot).text =
+            recommendation.targetRepsMin?.toString() ?? '';
+      }
     });
     FocusManager.instance.primaryFocus?.unfocus();
   }
@@ -1005,7 +1030,7 @@ class _B02StrengthPlayerScreenState
   TextEditingController _loadControllerFor(B02StrengthExecutionSlot slot) {
     return _loadControllers.putIfAbsent(
       slot.id,
-      () => TextEditingController(text: slot.targetLoadKg?.toString() ?? ''),
+      () => TextEditingController(text: _editableLoad(slot.targetLoadKg)),
     );
   }
 
@@ -1018,6 +1043,12 @@ class _B02StrengthPlayerScreenState
 
   String? _initialRepsFor(B02StrengthExecutionSlot slot) {
     if (!_hasUsefulTarget(slot) || slot.targetRepsMin == null) return null;
+    // Leave reps empty for the "any reps" placeholder: its floor of 1 would
+    // be logged as a real set, and it would block last session's reps from
+    // the previous-performance prefill.
+    if (r07cIsPlaceholderRepRange(slot.targetRepsMin, slot.targetRepsMax)) {
+      return null;
+    }
     return slot.targetRepsMin.toString();
   }
 
@@ -1064,7 +1095,7 @@ class _B02StrengthPlayerScreenState
         text: set.actualReps?.toString() ?? '',
       );
       final loadController = TextEditingController(
-        text: set.actualLoadKg?.toString() ?? '',
+        text: _editableLoad(set.actualLoadKg),
       );
       final result = await showIndiFitBottomSheet<B02LoggedSetEditValues>(
         context: context,
@@ -1604,7 +1635,7 @@ class _B02StrengthPlayerScreenState
     B02StrengthExecutionSlot slot,
   ) async {
     final controller = TextEditingController(
-      text: slot.targetLoadKg?.toString() ?? '',
+      text: _editableLoad(slot.targetLoadKg),
     );
     final value = await showDialog<double>(
       context: context,
@@ -1711,3 +1742,8 @@ class _B02StrengthPlayerScreenState
     }
   }
 }
+
+/// Weights in editable fields read like everywhere else ("60", "62.5"),
+/// not "60.0".
+String _editableLoad(double? loadKg) =>
+    loadKg == null ? '' : r07cFormatNumber(loadKg);

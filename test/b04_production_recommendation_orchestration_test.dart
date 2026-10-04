@@ -160,6 +160,45 @@ void main() {
     },
   );
 
+  test('an allergy added after issuance applies on reload', () async {
+    final scenario = await _seedScenario(
+      db: db,
+      registry: registry,
+      includeAdaptiveLineage: false,
+    );
+    container = _container(db: db, registry: registry);
+    final orchestrator = await container!.read(
+      b04ProductionRecommendationOrchestratorProvider.future,
+    );
+    final first = await orchestrator.loadCurrentFood(
+      userId: scenario.userId,
+      localDate: scenario.localDate,
+      timezoneId: scenario.timezoneId,
+    );
+    expect(first.guidance.status, B04CurrentFoodGuidanceStatus.available);
+
+    await Future<void>.delayed(const Duration(milliseconds: 1100));
+    await NutritionConstraintRepository(database: db).createUserConstraint(
+      userId: scenario.userId,
+      type: NutritionConstraintType.allergy,
+      target: NutritionConstraintTarget(
+        type: NutritionConstraintTargetType.allergen,
+        id: 'peanut',
+      ),
+      strictness: NutritionConstraintStrictness.avoid,
+      effectiveFrom: DateTime.now().toUtc(),
+      id: 'allergy-late',
+    );
+
+    final second = await orchestrator.reloadCurrentFood(
+      userId: scenario.userId,
+      localDate: scenario.localDate,
+      timezoneId: scenario.timezoneId,
+    );
+    expect(second.candidates.single.safety!.isUnavailable, isTrue);
+    expect(second.guidance.status, B04CurrentFoodGuidanceStatus.unavailable);
+  });
+
   test(
     'production candidate safety remains unavailable when B03 evidence is insufficient',
     () async {
@@ -351,6 +390,10 @@ void main() {
       expect(issued.single.consentEventId, isNull);
       expect(issued.single.eligibilityEvaluationId, isNull);
 
+      // Evaluations are stamped to the second. Reload in a later second so
+      // the replay path is always exercised (it used to pass only when both
+      // loads landed in the same second).
+      await Future<void>.delayed(const Duration(milliseconds: 1100));
       final second = await orchestrator.reloadCurrentFood(
         userId: scenario.userId,
         localDate: scenario.localDate,

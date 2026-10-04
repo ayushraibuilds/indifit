@@ -104,6 +104,94 @@ void main() {
     expect(row.plannedLabel, contains('8–10'));
   });
 
+  group('P1 H1 last time per set', () {
+    const previous = ['80 kg × 8', '80 kg × 7', '75 kg × 6'];
+    B02PerformedSet logFirst({bool hasTarget = true}) => service
+        .recordSet(
+          state: _draft(),
+          slot: _slot(plannedSets: 3, hasTarget: hasTarget),
+          reps: 8,
+          loadKg: 80,
+        )
+        .performedExercises
+        .single
+        .sets
+        .single;
+
+    testWidgets('pending planned rows show the matching set from last time', (
+      tester,
+    ) async {
+      final load = TextEditingController();
+      final reps = TextEditingController();
+      addTearDown(load.dispose);
+      addTearDown(reps.dispose);
+      await _pumpTable(
+        tester,
+        slot: _slot(plannedSets: 3),
+        loggedSets: [logFirst()],
+        isPlannedMode: true,
+        loadController: load,
+        repsController: reps,
+        currentSet: 2,
+        previousSetLabels: previous,
+      );
+
+      // Set 1 is logged, so it shows today's actual instead of last time.
+      expect(find.text('Last 80 kg × 8'), findsNothing);
+      expect(find.text('Last 80 kg × 7'), findsOneWidget);
+      expect(find.text('Last 75 kg × 6'), findsOneWidget);
+      // The pending row already carries it; the editor doesn't repeat it.
+      expect(find.text('Last time'), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets(
+      'quick workouts show last time for the next set in the editor',
+      (tester) async {
+        final load = TextEditingController();
+        final reps = TextEditingController();
+        addTearDown(load.dispose);
+        addTearDown(reps.dispose);
+        await _pumpTable(
+          tester,
+          slot: _slot(plannedSets: 3, hasTarget: false),
+          loggedSets: [logFirst(hasTarget: false)],
+          isPlannedMode: false,
+          loadController: load,
+          repsController: reps,
+          currentSet: 2,
+          previousSetLabels: previous,
+        );
+
+        expect(find.text('Last time'), findsOneWidget);
+        expect(find.text('80 kg × 7'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets('narrow phones show last time as its own line', (tester) async {
+      final load = TextEditingController();
+      final reps = TextEditingController();
+      addTearDown(load.dispose);
+      addTearDown(reps.dispose);
+      await _pumpTable(
+        tester,
+        size: const Size(360, 780),
+        slot: _slot(plannedSets: 3),
+        isPlannedMode: true,
+        loadController: load,
+        repsController: reps,
+        previousSetLabels: previous.take(2).toList(),
+      );
+
+      expect(find.text('Last time: 80 kg × 8'), findsOneWidget);
+      expect(find.text('Last time: 80 kg × 7'), findsOneWidget);
+      // Last session had two sets; set 3 has nothing to compare with.
+      expect(find.textContaining('Last time:'), findsNWidgets(2));
+      expect(tester.takeException(), isNull);
+    });
+  });
+
   testWidgets('Planned rows show targets and expose labelled edit/delete', (
     tester,
   ) async {
@@ -421,6 +509,8 @@ Future<void> _pumpTable(
   ValueChanged<B02PerformedSet>? onEdit,
   ValueChanged<B02PerformedSet>? onDelete,
   VoidCallback? onAddSet,
+  int currentSet = 1,
+  List<String> previousSetLabels = const [],
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -437,7 +527,7 @@ Future<void> _pumpTable(
               loggedSets: loggedSets,
               isPlannedMode: isPlannedMode,
               isBusy: false,
-              currentSet: 1,
+              currentSet: currentSet,
               loadController: loadController,
               repsController: repsController,
               rpe: 8,
@@ -449,6 +539,7 @@ Future<void> _pumpTable(
               onDelete: onDelete,
               moreContent: null,
               onAddSet: onAddSet,
+              previousSetLabels: previousSetLabels,
             ),
           ),
         ),

@@ -236,6 +236,183 @@ void main() {
       },
     );
   });
+
+  group('FoodApiService without a backend (release default)', () {
+    const allowed = PrivacyPolicy(
+      isOfflineOnly: false,
+      isTelemetryEnabled: false,
+      allowOnlineNutrition: true,
+    );
+
+    test(
+      'search goes straight to Open Food Facts and reads list brands',
+      () async {
+        final app = _RecordingAdapter(
+          (_) => throw StateError('backend called'),
+        );
+        final off = _RecordingAdapter((_) => _json(_offSearchHits));
+        final service = FoodApiService(
+          Dio()..httpClientAdapter = app,
+          allowed,
+          null,
+          '',
+          Dio()..httpClientAdapter = off,
+        );
+
+        final results = await service.searchOnline('parle-g');
+
+        expect(app.requests, isEmpty);
+        expect(off.requests.single.uri.host, 'search.openfoodfacts.org');
+        expect(off.requests.single.method, 'POST');
+        expect((off.requests.single.data as Map)['q'], 'parle-g');
+        expect(results.single.name, 'Parle G');
+        expect(results.single.brand, 'Parle-G, Parle');
+        expect(results.single.calories, 454);
+      },
+    );
+
+    test('barcode lookup goes straight to Open Food Facts', () async {
+      final app = _RecordingAdapter((_) => throw StateError('backend called'));
+      final off = _RecordingAdapter(
+        (_) => _json({
+          'status': 1,
+          'product': {
+            'product_name': 'Parle G',
+            'brands': 'Parle-G',
+            'nutriments': {'energy-kcal_100g': 454},
+          },
+        }),
+      );
+      final service = FoodApiService(
+        Dio()..httpClientAdapter = app,
+        allowed,
+        null,
+        '',
+        Dio()..httpClientAdapter = off,
+      );
+
+      final result = await service.fetchByBarcode('8901719100956');
+
+      expect(app.requests, isEmpty);
+      expect(
+        off.requests.single.uri.path,
+        '/api/v2/product/8901719100956.json',
+      );
+      expect(result?.name, 'Parle G');
+    });
+
+    test(
+      'online nutrition off blocks both lookups before any request',
+      () async {
+        final off = _RecordingAdapter((_) => _json(_offSearchHits));
+        final service = FoodApiService(
+          Dio(),
+          const PrivacyPolicy(
+            isOfflineOnly: false,
+            isTelemetryEnabled: false,
+            allowOnlineNutrition: false,
+          ),
+          null,
+          '',
+          Dio()..httpClientAdapter = off,
+        );
+
+        await expectLater(service.searchOnline('parle-g'), throwsStateError);
+        await expectLater(
+          service.fetchByBarcode('8901719100956'),
+          throwsStateError,
+        );
+        expect(off.requests, isEmpty);
+      },
+    );
+  });
+
+  group('FoodApiService backend fallback', () {
+    test(
+      'an unreachable backend falls back to Open Food Facts for search',
+      () async {
+        final app = _RecordingAdapter(
+          (options) => throw DioException(
+            requestOptions: options,
+            type: DioExceptionType.connectionError,
+          ),
+        );
+        final off = _RecordingAdapter((_) => _json(_offSearchHits));
+        final service = FoodApiService(
+          Dio()..httpClientAdapter = app,
+          null,
+          null,
+          'https://api.example.test',
+          Dio()..httpClientAdapter = off,
+        );
+
+        final results = await service.searchOnline('parle-g');
+
+        expect(app.requests.single.uri.path, '/api/food/search');
+        expect(off.requests.single.uri.host, 'search.openfoodfacts.org');
+        expect(results.single.name, 'Parle G');
+      },
+    );
+
+    test('a backend client error is not retried elsewhere', () async {
+      final app = _RecordingAdapter(
+        (_) => _json({'detail': 'bad'}, status: 400),
+      );
+      final off = _RecordingAdapter((_) => _json(_offSearchHits));
+      final service = FoodApiService(
+        Dio()..httpClientAdapter = app,
+        null,
+        null,
+        'https://api.example.test',
+        Dio()..httpClientAdapter = off,
+      );
+
+      await expectLater(
+        service.searchOnline('parle-g'),
+        throwsA(isA<DioException>()),
+      );
+      expect(off.requests, isEmpty);
+    });
+  });
+}
+
+const _offSearchHits = {
+  'hits': [
+    {
+      'code': '8901719100956',
+      'product_name': 'Parle G',
+      'brands': ['Parle-G', 'Parle'],
+      'nutriments': {'energy-kcal_100g': 454},
+    },
+  ],
+};
+
+ResponseBody _json(Object body, {int status = 200}) => ResponseBody.fromString(
+  jsonEncode(body),
+  status,
+  headers: {
+    Headers.contentTypeHeader: ['application/json'],
+  },
+);
+
+class _RecordingAdapter implements HttpClientAdapter {
+  _RecordingAdapter(this.respond);
+
+  final ResponseBody Function(RequestOptions options) respond;
+  final requests = <RequestOptions>[];
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<List<int>>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
+    requests.add(options);
+    return respond(options);
+  }
+
+  @override
+  void close({bool force = false}) {}
 }
 
 class _BackendSuccessAdapter implements HttpClientAdapter {

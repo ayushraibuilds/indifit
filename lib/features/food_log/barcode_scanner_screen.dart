@@ -120,13 +120,18 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
   Future<void> _safeStart() async {
     try {
       await _scannerController.start();
-    } catch (_) {}
+    } catch (error) {
+      // The scanner's errorBuilder shows camera failures to the user.
+      AppLogger.warning('Barcode scanner did not start: $error', 'Barcode');
+    }
   }
 
   Future<void> _safeStop() async {
     try {
       await _scannerController.stop();
-    } catch (_) {}
+    } catch (_) {
+      // Safe: stopping a scanner that never started or already stopped.
+    }
   }
 
   @override
@@ -135,7 +140,9 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
     _animController.dispose();
     try {
       _scannerController.dispose();
-    } catch (_) {}
+    } catch (_) {
+      // Safe: the camera may already be released on teardown.
+    }
     _manualController.dispose();
     super.dispose();
   }
@@ -167,7 +174,10 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
     // 1. Check local / Tier-1 cache first
     try {
       candidate = await catalogCapability.getCachedCandidate(cleanCode);
-    } catch (_) {}
+    } catch (error) {
+      // Fall through to the user-food and online lookups.
+      AppLogger.warning('Barcode cache read failed: $error', 'Barcode');
+    }
 
     // 1b. Check user-created foods carrying this barcode (offline, exact).
     // Runs before the network lookup so a rescan resolves even offline.
@@ -217,7 +227,10 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
         if (candidate != null) {
           try {
             await catalogCapability.cacheRemoteCandidate(candidate);
-          } catch (_) {}
+          } catch (error) {
+            // The result is still shown; only the offline cache missed it.
+            AppLogger.warning('Barcode cache write failed: $error', 'Barcode');
+          }
         }
       } catch (e) {
         lookupError = e;
