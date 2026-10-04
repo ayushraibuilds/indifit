@@ -52,6 +52,30 @@ class OnboardingPageContainer extends StatelessWidget {
   }
 }
 
+/// Shared colours for onboarding choice cards. Unselected cards sit on a
+/// neutral fill with an outline of at least 4.5:1 against the page, so they
+/// read as tappable; selection adds a tinted fill, a 2 px outline and a
+/// checkmark, so it never relies on colour alone.
+@immutable
+class OnboardingChoiceStyle {
+  const OnboardingChoiceStyle._(this.colors, this.selected);
+
+  factory OnboardingChoiceStyle.of(BuildContext context, bool selected) =>
+      OnboardingChoiceStyle._(context.b05Colors, selected);
+
+  final B05SemanticColors colors;
+  final bool selected;
+
+  Color get fill => selected ? colors.selected : colors.section;
+  Border get border => Border.all(
+    color: selected ? colors.navigationSelected : colors.textDisabled,
+    width: selected ? 2 : 1,
+  );
+  Color get iconBackground => selected ? colors.section : colors.inset;
+  Color get icon => selected ? colors.navigationSelected : colors.textSecondary;
+  Color get check => colors.navigationSelected;
+}
+
 class OnboardingSelectionCard extends StatelessWidget {
   final String title;
   final String? subtitle;
@@ -70,7 +94,7 @@ class OnboardingSelectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.b05Colors;
+    final style = OnboardingChoiceStyle.of(context, selected);
     return Semantics(
       container: true,
       button: true,
@@ -92,23 +116,21 @@ class OnboardingSelectionCard extends StatelessWidget {
                   vertical: B05Layout.space12,
                 ),
                 decoration: BoxDecoration(
-                  color: selected ? colors.selected : colors.interactive,
+                  color: style.fill,
                   borderRadius: B05Radii.largeRadius,
-                  border: selected
-                      ? Border.all(color: colors.action, width: 2)
-                      : null,
+                  border: style.border,
                 ),
                 child: Row(
                   children: [
                     Container(
                       padding: const EdgeInsets.all(B05Layout.space8),
                       decoration: BoxDecoration(
-                        color: selected ? colors.selected : colors.inset,
+                        color: style.iconBackground,
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
                         icon,
-                        color: selected ? colors.action : colors.textSecondary,
+                        color: style.icon,
                         size: B05Layout.iconMedium,
                       ),
                     ),
@@ -128,7 +150,7 @@ class OnboardingSelectionCard extends StatelessWidget {
                     if (selected)
                       Icon(
                         Icons.check_circle_rounded,
-                        color: colors.action,
+                        color: style.check,
                         size: B05Layout.iconLarge,
                       ),
                   ],
@@ -159,6 +181,7 @@ class OnboardingGenderOptionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.b05Colors;
+    final style = OnboardingChoiceStyle.of(context, selected);
     return Semantics(
       container: true,
       button: true,
@@ -180,12 +203,9 @@ class OnboardingGenderOptionCard extends StatelessWidget {
                   vertical: B05Layout.space12,
                 ),
                 decoration: BoxDecoration(
-                  color: selected ? colors.selected : colors.interactive,
+                  color: style.fill,
                   borderRadius: B05Radii.largeRadius,
-                  border: Border.all(
-                    color: selected ? colors.action : colors.border,
-                    width: selected ? 2.0 : 1.0,
-                  ),
+                  border: style.border,
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -194,12 +214,12 @@ class OnboardingGenderOptionCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(B05Layout.space8),
                       decoration: BoxDecoration(
-                        color: selected ? colors.selected : colors.inset,
+                        color: style.iconBackground,
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
-                        icon,
-                        color: selected ? colors.action : colors.textSecondary,
+                        selected ? Icons.check_rounded : icon,
+                        color: style.icon,
                         size: B05Layout.iconMedium,
                       ),
                     ),
@@ -207,9 +227,9 @@ class OnboardingGenderOptionCard extends StatelessWidget {
                     Text(
                       label,
                       style: B05Typography.label(context).copyWith(
-                        color: selected ? colors.action : colors.textPrimary,
+                        color: colors.textPrimary,
                         fontWeight: selected
-                            ? FontWeight.w600
+                            ? FontWeight.w700
                             : FontWeight.w500,
                       ),
                       maxLines: 1,

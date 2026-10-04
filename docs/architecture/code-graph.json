@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "summary": {
     "total_dart_files": 472,
-    "total_loc": 340012,
+    "total_loc": 340032,
     "total_internal_edges": 2342,
     "external_package_count": 28,
     "catch_metrics": {
@@ -15224,7 +15224,7 @@
       "path": "lib/features/onboarding/widgets/onboarding_step_widgets.dart",
       "layer": "features",
       "sublayer": "features/onboarding",
-      "loc": 784,
+      "loc": 804,
       "imports": [
         "lib/core/theme/b05_semantic_colors.dart",
         "lib/core/widgets/b05_accessibility_primitives.dart"
