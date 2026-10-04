@@ -8,6 +8,9 @@ import 'package:indifit/data/repositories/nutrition_food_catalog_repository.dart
 import 'package:indifit/features/food_log/barcode_scanner_screen.dart';
 import 'package:indifit/features/food_log/widgets/remote_food_review_sheet.dart';
 import 'package:indifit/features/nutrition/nutrition_providers.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
+
+import 'support/fake_mobile_scanner.dart';
 
 class _MockCatalogCapability implements FoodCatalogCapability {
   _MockCatalogCapability({
@@ -64,6 +67,7 @@ class _MockCatalogCapability implements FoodCatalogCapability {
 }
 
 void main() {
+  setUp(() => MobileScannerPlatform.instance = FakeMobileScannerPlatform());
   TestWidgetsFlutterBinding.ensureInitialized();
 
   final sampleCandidate = RemoteFoodCandidate(

@@ -1,9 +1,11 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:indifit/core/config/app_config.dart';
+import 'package:indifit/core/fixtures/food_identity_manifest.dart';
 import 'package:indifit/core/router/app_router.dart';
 
 void main() {
@@ -78,8 +80,22 @@ void main() {
         expect(source, isNot(contains('using encrypted storage capabilities')));
         expect(source, isNot(contains('your data never leaves your device')));
       }
-      expect(readme, contains('573 base food entries'));
-      expect(listing, contains('25 optional regional-pack entries'));
+      // Counts come from the catalogue itself: retired duplicates leave
+      // search, so they don't count.
+      List<dynamic> foods(String path) =>
+          jsonDecode(File(path).readAsStringSync()) as List<dynamic>;
+      final base =
+          foods('assets/data/indian_foods.json').length -
+          kRetiredCatalogueFoods.length;
+      final regional = Directory('assets/data/regional')
+          .listSync()
+          .whereType<File>()
+          .where((file) => file.path.endsWith('.json'))
+          .fold<int>(0, (sum, file) => sum + foods(file.path).length);
+      expect(readme, contains('$base base food entries'));
+      expect(readme, contains('$regional optional regional-pack entries'));
+      expect(listing, contains('$base Indian foods built in'));
+      expect(listing, contains('$regional more in optional regional packs'));
       expect(privacy, contains('Open Food Facts'));
       expect(privacy, contains('not password-protected in V1'));
     });
