@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "summary": {
     "total_dart_files": 464,
-    "total_loc": 338507,
+    "total_loc": 338530,
     "total_internal_edges": 2307,
     "external_package_count": 28,
     "catch_metrics": {
@@ -16472,7 +16472,7 @@
       "path": "lib/features/progress/widgets/progress_sections.dart",
       "layer": "features",
       "sublayer": "features/progress",
-      "loc": 1204,
+      "loc": 1227,
       "imports": [
         "lib/core/presentation/consumer_copy.dart",
         "lib/core/services/local_schedule_date_service.dart",
