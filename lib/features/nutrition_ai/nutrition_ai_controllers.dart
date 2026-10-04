@@ -186,6 +186,11 @@ class NutritionLabelOcrController
        _picker = picker ?? ImagePicker(),
        super(const NutritionLabelOcrState());
 
+  /// The food created and command id used by the last log attempt, keyed by
+  /// the values it logged. Retrying the same values replays that log instead
+  /// of creating a second custom food and diary entry.
+  ({String key, NutritionFoodOption food, String commandId})? _lastLog;
+
   Future<void> pickAndScan(ImageSource source) async {
     state = state.copyWith(
       status: NutritionLabelOcrStatus.picking,
@@ -208,6 +213,7 @@ class NutritionLabelOcrController
 
       state = state.copyWith(status: NutritionLabelOcrStatus.scanning);
       final result = await _ocrService.processLabelImage(imagePath: file.path);
+      _lastLog = null;
 
       final nutrients = <String, double>{};
       for (final entry in result.nutrients.entries) {
@@ -335,38 +341,64 @@ class NutritionLabelOcrController
                 ? '${state.brandName.trim()} Item'
                 : 'Packaged Food Item');
 
-      final catalog = await _catalogRepository();
-      final option = await catalog.createUserFood(
-        displayName: name,
-        servingSize: state.effectiveServingSize,
-        servingUnit: state.servingUnit,
-        energyKcal: state.effectiveEnergyKcal,
-        proteinG: state.effectiveProteinG,
-        carbohydrateG: state.effectiveCarbsG,
-        fatG: state.effectiveFatG,
-        fibreG: state.effectiveFiberG,
-        sodiumMg: state.effectiveSodiumMg,
-        addedSugarG: state.effectiveSugarG,
-        saturatedFatG: state.effectiveSaturatedFatG,
-        cholesterolMg: state.effectiveCholesterolMg,
-        transFatG: state.effectiveTransFatG,
-      );
-
-      final coordinator = await _loggingCoordinator();
-      final preview = await coordinator.preview(
-        option: option,
-        quantity: option.baseQuantity,
-      );
-
       final localDate =
           '${date.year.toString().padLeft(4, '0')}-'
           '${date.month.toString().padLeft(2, '0')}-'
           '${date.day.toString().padLeft(2, '0')}';
+      final key = [
+        name,
+        state.effectiveServingSize,
+        state.servingUnit,
+        state.effectiveEnergyKcal,
+        state.effectiveProteinG,
+        state.effectiveCarbsG,
+        state.effectiveFatG,
+        state.effectiveFiberG,
+        state.effectiveSodiumMg,
+        state.effectiveSugarG,
+        state.effectiveSaturatedFatG,
+        state.effectiveCholesterolMg,
+        state.effectiveTransFatG,
+        mealType,
+        localDate,
+      ].join('|');
+
+      var attempt = _lastLog;
+      if (attempt == null || attempt.key != key) {
+        final catalog = await _catalogRepository();
+        final option = await catalog.createUserFood(
+          displayName: name,
+          servingSize: state.effectiveServingSize,
+          servingUnit: state.servingUnit,
+          energyKcal: state.effectiveEnergyKcal,
+          proteinG: state.effectiveProteinG,
+          carbohydrateG: state.effectiveCarbsG,
+          fatG: state.effectiveFatG,
+          fibreG: state.effectiveFiberG,
+          sodiumMg: state.effectiveSodiumMg,
+          addedSugarG: state.effectiveSugarG,
+          saturatedFatG: state.effectiveSaturatedFatG,
+          cholesterolMg: state.effectiveCholesterolMg,
+          transFatG: state.effectiveTransFatG,
+        );
+        attempt = _lastLog = (
+          key: key,
+          food: option,
+          commandId: 'ai-label-log::${const Uuid().v4()}',
+        );
+      }
+
+      final coordinator = await _loggingCoordinator();
+      final preview = await coordinator.preview(
+        option: attempt.food,
+        quantity: attempt.food.baseQuantity,
+      );
 
       await coordinator.finalize(
         userId: _userId,
         preview: preview,
         mealCategory: mealType,
+        commandId: attempt.commandId,
         loggedAt: date.toUtc(),
         localDate: localDate,
         timezoneId: await _timezoneId(),
@@ -378,13 +410,128 @@ class NutritionLabelOcrController
       );
       return true;
     } catch (e) {
+      // Back to the review, not the failure screen: its "Try again" takes a
+      // new photo instead of retrying this log.
       state = state.copyWith(
-        status: NutritionLabelOcrStatus.failure,
+        status: NutritionLabelOcrStatus.ready,
         errorMessage: 'Could not log meal to diary. Please try again.',
       );
       return false;
     }
   }
+}
+
+// =============================================================================
+// RETRY-SAFE LOGGING OF REVIEWED AI ITEMS
+// =============================================================================
+
+/// Makes logging a reviewed AI meal safe to retry.
+///
+/// Items are logged one by one, so a failure part-way used to leave the first
+/// items in the diary while the screen offered to try again, which logged
+/// them a second time (and created their custom foods twice). Now every item
+/// keeps one command id and one created food while it is unchanged, so a
+/// retried item replays its earlier log instead of adding another, and items
+/// that did log are taken off the review list. Editing an item makes a new
+/// item object, so its changed content is logged as a new entry.
+class AiMealLogSession {
+  AiMealLogSession(String prefix)
+    : mealGroupId = '$prefix::${const Uuid().v4()}';
+
+  /// Shared by every attempt, so retried items join the same meal.
+  final String mealGroupId;
+
+  final _commandIds = Expando<String>('commandId');
+  final _createdFoods = Expando<NutritionFoodOption>('createdFood');
+
+  String commandIdFor(DecomposedFoodItem item) =>
+      _commandIds[item] ??= 'ai-meal-item::${const Uuid().v4()}';
+
+  /// Logs [items] in order. On failure throws [AiMealPartialLogError] with
+  /// the items that did log.
+  Future<void> logAll({
+    required List<DecomposedFoodItem> items,
+    required NutritionFoodCatalogRepository catalog,
+    required NutritionFoodLoggingCoordinator coordinator,
+    required String userId,
+    required String mealType,
+    required DateTime date,
+    required String timezoneId,
+  }) async {
+    final localDate =
+        '${date.year.toString().padLeft(4, '0')}-'
+        '${date.month.toString().padLeft(2, '0')}-'
+        '${date.day.toString().padLeft(2, '0')}';
+    final logged = <DecomposedFoodItem>[];
+    try {
+      for (final item in items) {
+        NutritionFoodOption option;
+        Quantity quantity;
+
+        if (item.matchedCatalogOption != null) {
+          // Bound items already count the food's own measure, so this logs
+          // exactly what the review card showed.
+          option = item.matchedCatalogOption!;
+          quantity = catalogLogQuantity(item);
+        } else {
+          option = _createdFoods[item] ??= await catalog.createUserFood(
+            displayName: item.foodName,
+            servingSize: item.quantityAmount > 0 ? item.quantityAmount : 1.0,
+            servingUnit: item.quantityUnit,
+            energyKcal: item.estimatedCalories.toDouble(),
+            proteinG: item.estimatedProtein,
+            carbohydrateG: item.estimatedCarbs,
+            fatG: item.estimatedFat,
+          );
+          quantity = option.baseQuantity;
+        }
+
+        final preview = await coordinator.preview(
+          option: option,
+          quantity: quantity,
+        );
+
+        await coordinator.finalize(
+          userId: userId,
+          preview: preview,
+          mealCategory: mealType,
+          mealGroupId: mealGroupId,
+          commandId: commandIdFor(item),
+          loggedAt: date.toUtc(),
+          localDate: localDate,
+          timezoneId: timezoneId,
+        );
+        logged.add(item);
+      }
+    } catch (error) {
+      throw AiMealPartialLogError(logged, error);
+    }
+  }
+}
+
+/// Logging stopped part-way; [logged] made it into the diary.
+class AiMealPartialLogError implements Exception {
+  AiMealPartialLogError(this.logged, this.cause);
+
+  final List<DecomposedFoodItem> logged;
+  final Object cause;
+
+  /// [items] without the ones that already logged.
+  List<DecomposedFoodItem> remainingOf(List<DecomposedFoodItem> items) => [
+    for (final item in items)
+      if (!logged.any((done) => identical(done, item))) item,
+  ];
+
+  /// [fallback] when nothing logged; otherwise how far it got, so the user
+  /// knows a retry adds only the rest.
+  String message({required int total, required String fallback}) =>
+      logged.isEmpty
+      ? fallback
+      : 'Logged ${logged.length} of $total items. The rest are below; '
+            'tap log again to add them.';
+
+  @override
+  String toString() => 'AiMealPartialLogError(${logged.length} logged): $cause';
 }
 
 // =============================================================================
@@ -469,6 +616,8 @@ class NaturalLanguageMealController
        _timezoneId = timezoneId,
        super(const NaturalLanguageMealState());
 
+  AiMealLogSession _logSession = AiMealLogSession('nl-meal');
+
   Future<void> analyzeMeal(String text) async {
     final clean = text.trim();
     if (clean.isEmpty) return;
@@ -481,6 +630,7 @@ class NaturalLanguageMealController
     try {
       final mealService = await _mealService();
       final res = await mealService.decomposeMeal(text: clean);
+      _logSession = AiMealLogSession('nl-meal');
       state = state.copyWith(
         status: NaturalLanguageMealStatus.ready,
         result: res,
@@ -547,63 +697,31 @@ class NaturalLanguageMealController
       clearError: true,
     );
 
+    final items = state.editableItems;
     try {
-      final mealGroupId = 'nl-meal::${const Uuid().v4()}';
-      final localDate =
-          '${date.year.toString().padLeft(4, '0')}-'
-          '${date.month.toString().padLeft(2, '0')}-'
-          '${date.day.toString().padLeft(2, '0')}';
-      final tz = await _timezoneId();
-      final catalog = await _catalogRepository();
-      final coordinator = await _loggingCoordinator();
-
-      for (final item in state.editableItems) {
-        NutritionFoodOption option;
-        Quantity quantity;
-
-        if (item.matchedCatalogOption != null) {
-          // Bound items already count the food's own measure, so this logs
-          // exactly what the review card showed.
-          option = item.matchedCatalogOption!;
-          quantity = catalogLogQuantity(item);
-        } else {
-          option = await catalog.createUserFood(
-            displayName: item.foodName,
-            servingSize: item.quantityAmount > 0 ? item.quantityAmount : 1.0,
-            servingUnit: item.quantityUnit,
-            energyKcal: item.estimatedCalories.toDouble(),
-            proteinG: item.estimatedProtein,
-            carbohydrateG: item.estimatedCarbs,
-            fatG: item.estimatedFat,
-          );
-          quantity = option.baseQuantity;
-        }
-
-        final preview = await coordinator.preview(
-          option: option,
-          quantity: quantity,
-        );
-
-        await coordinator.finalize(
-          userId: _userId,
-          preview: preview,
-          mealCategory: mealType,
-          mealGroupId: mealGroupId,
-          loggedAt: date.toUtc(),
-          localDate: localDate,
-          timezoneId: tz,
-        );
-      }
-
+      await _logSession.logAll(
+        items: items,
+        catalog: await _catalogRepository(),
+        coordinator: await _loggingCoordinator(),
+        userId: _userId,
+        mealType: mealType,
+        date: date,
+        timezoneId: await _timezoneId(),
+      );
       state = state.copyWith(
         status: NaturalLanguageMealStatus.success,
         isLogged: true,
       );
       return true;
-    } catch (e) {
+    } catch (error) {
+      const fallback = 'Could not log meal to diary. Please try again.';
+      final partial = error is AiMealPartialLogError ? error : null;
       state = state.copyWith(
         status: NaturalLanguageMealStatus.failure,
-        errorMessage: 'Could not log meal to diary. Please try again.',
+        editableItems: partial?.remainingOf(items),
+        errorMessage:
+            partial?.message(total: items.length, fallback: fallback) ??
+            fallback,
       );
       return false;
     }
@@ -700,6 +818,8 @@ class PhotoMealController extends StateNotifier<PhotoMealState> {
        _picker = picker ?? ImagePicker(),
        super(const PhotoMealState());
 
+  AiMealLogSession _logSession = AiMealLogSession('photo-meal');
+
   Future<void> pickAndScan(
     ImageSource source, {
     required String deviceUuid,
@@ -731,6 +851,7 @@ class PhotoMealController extends StateNotifier<PhotoMealState> {
         deviceUuid: deviceUuid,
       );
 
+      _logSession = AiMealLogSession('photo-meal');
       state = state.copyWith(
         status: PhotoMealStatus.ready,
         result: res,
@@ -797,61 +918,31 @@ class PhotoMealController extends StateNotifier<PhotoMealState> {
 
     state = state.copyWith(status: PhotoMealStatus.logging, clearError: true);
 
+    final items = state.editableItems;
     try {
-      final mealGroupId = 'photo-meal::${const Uuid().v4()}';
-      final localDate =
-          '${date.year.toString().padLeft(4, '0')}-'
-          '${date.month.toString().padLeft(2, '0')}-'
-          '${date.day.toString().padLeft(2, '0')}';
-      final tz = await _timezoneId();
-      final catalog = await _catalogRepository();
-      final coordinator = await _loggingCoordinator();
-
-      for (final item in state.editableItems) {
-        NutritionFoodOption option;
-        Quantity quantity;
-
-        if (item.matchedCatalogOption != null) {
-          // Bound items already count the food's own measure, so this logs
-          // exactly what the review card showed.
-          option = item.matchedCatalogOption!;
-          quantity = catalogLogQuantity(item);
-        } else {
-          option = await catalog.createUserFood(
-            displayName: item.foodName,
-            servingSize: item.quantityAmount > 0 ? item.quantityAmount : 1.0,
-            servingUnit: item.quantityUnit,
-            energyKcal: item.estimatedCalories.toDouble(),
-            proteinG: item.estimatedProtein,
-            carbohydrateG: item.estimatedCarbs,
-            fatG: item.estimatedFat,
-          );
-          quantity = option.baseQuantity;
-        }
-
-        final preview = await coordinator.preview(
-          option: option,
-          quantity: quantity,
-        );
-
-        await coordinator.finalize(
-          userId: _userId,
-          preview: preview,
-          mealCategory: mealType,
-          mealGroupId: mealGroupId,
-          loggedAt: date.toUtc(),
-          localDate: localDate,
-          timezoneId: tz,
-        );
-      }
-
+      await _logSession.logAll(
+        items: items,
+        catalog: await _catalogRepository(),
+        coordinator: await _loggingCoordinator(),
+        userId: _userId,
+        mealType: mealType,
+        date: date,
+        timezoneId: await _timezoneId(),
+      );
       state = state.copyWith(status: PhotoMealStatus.success, isLogged: true);
       return true;
-    } catch (e) {
+    } catch (error) {
+      const fallback =
+          'Unable to log meal items. Please check your connection and try again.';
+      final partial = error is AiMealPartialLogError ? error : null;
+      // Back to the review, not the failure screen: its "Try again" takes a
+      // new photo, which would lose track of the items already logged.
       state = state.copyWith(
-        status: PhotoMealStatus.failure,
+        status: PhotoMealStatus.ready,
+        editableItems: partial?.remainingOf(items),
         errorMessage:
-            'Unable to log meal items. Please check your connection and try again.',
+            partial?.message(total: items.length, fallback: fallback) ??
+            fallback,
       );
       return false;
     }
