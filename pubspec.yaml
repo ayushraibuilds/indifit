@@ -59,6 +59,8 @@ dependencies:
   health: ^11.0.0
   go_router: ^13.2.0
   sentry_flutter: ^8.14.2
+  # Already locked via sentry_flutter; used for the app version in support email.
+  package_info_plus: ^9.0.1
   firebase_core: ^4.15.0
   firebase_app_check: ^0.4.8
   firebase_ai: ^4.0.0
