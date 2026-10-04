@@ -4,7 +4,7 @@ IndiFit is an offline-first workout and nutrition tracker tailored for Indian fo
 
 ## Key Features
 - **Offline Core**: Drift (SQLite) stores workouts, nutrition logs, body measurements, plans, preferences, and recovery copies on the device. Core logging and review flows work without a network connection.
-- **Indian Food Catalogue**: The app bundles 573 base food entries and 25 optional regional-pack entries with nutrition facts and provenance metadata.
+- **Indian Food Catalogue**: The app bundles 535 base food entries and 25 optional regional-pack entries with nutrition facts and provenance metadata.
 - **Optional Online Food Lookup**: When Offline Mode is off, users can deliberately search or scan packaged foods through Open Food Facts. Local results remain available if the provider cannot be reached.
 - **Interactive Workout Player**: Responsive set counters, haptic circular countdown rest timers, and personal record confetti celebrations.
 - **Progress & Health Connections**: Review recorded workout/nutrition trends and optionally connect supported Health Connect or HealthKit categories.

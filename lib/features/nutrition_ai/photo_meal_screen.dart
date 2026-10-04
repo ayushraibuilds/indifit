@@ -306,6 +306,14 @@ class _PhotoMealScreenState extends ConsumerState<PhotoMealScreen> {
     return ListView(
       padding: const EdgeInsets.all(B05Layout.space16),
       children: [
+        // A failed log returns here, keeping the items still to log.
+        if (state.errorMessage != null) ...[
+          B05StatusMessage(
+            status: B05SemanticStatus.danger,
+            label: state.errorMessage!,
+          ),
+          const SizedBox(height: B05Layout.space16),
+        ],
         // ±30% Review Disclaimer
         Container(
           padding: const EdgeInsets.all(12),
