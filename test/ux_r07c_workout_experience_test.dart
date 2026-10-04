@@ -99,7 +99,6 @@ void main() {
       await _pumpPlayer(tester, launch, executions, db, AppTheme.lightTheme);
 
       expect(find.text('Suggested'), findsOneWidget);
-      expect(find.text('Log set'), findsOneWidget);
       await tester.tap(find.text('Apply'));
       await tester.pump();
       final inputs = find.byType(EditableText);
@@ -110,6 +109,16 @@ void main() {
         find.byType(B02StrengthPlayerScreen),
         matchesGoldenFile('goldens/ux_r07c_planned_player.png'),
       );
+      // With the suggestion in the Next set header (P1 H4), Log set sits
+      // just below the fold on this phone; the next row's checkmark (H2)
+      // logs the set from above it. Both stay reachable.
+      expect(find.bySemanticsLabel('Log set 1'), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.text('Log set'),
+        120,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.text('Log set'), findsOneWidget);
       await tester.scrollUntilVisible(
         find.text('Review and finish'),
         220,
