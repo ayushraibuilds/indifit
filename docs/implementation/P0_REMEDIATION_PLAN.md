@@ -29,7 +29,7 @@ Total to a store-ready offline-core v1: **about 6–9 working days**, plus waiti
 | Decision | Recommended default | Why | Alternative |
 |---|---|---|---|
 | D1: Connected AI (label OCR, describe meal, photo meal, coaching wording) in v1? | **Ship AI in v1 via WS7** (Firebase AI Logic). Describe-meal and label scan are GA; photo meal is labelled Beta. WS2's flag stays as the build-time and remote kill switch. | Removes the need to secure and operate your own AI backend, and keeps the Gemini key off devices | Off in v1 (WS2 only), or ship through the hardened FastAPI backend (WS6 Part B) |
-| D2: Barcode scanner in v1? | **Ship the real scanner** | Lookup goes straight to Open Food Facts (`FoodApiService`), with **no backend needed**. Packaged foods are a big share of urban Indian diets. | Hide the entry point until later |
+| D2: Barcode scanner in v1? | **Ship the real scanner** | Lookup uses Open Food Facts (`FoodApiService`), with **no backend needed**. Packaged foods are a big share of urban Indian diets. *(Correction, 2026-10-03: release builds actually defaulted to a backend at `api.indifit.app` that doesn't exist; barcode fell back to Open Food Facts but online search failed. Fixed in P1 WS-0: release builds now call Open Food Facts directly.)* | Hide the entry point until later |
 | D3: Live Activity / Dynamic Island rest timer | **Wire the widget extension** once the Apple account exists; until then, remove it from marketing copy | The Swift code exists but no Xcode target builds it | Drop the feature and delete `ios/RestTimerWidget/` |
 | D4: Cloud backup & sync endpoints | **Don't mount them in deployed builds** (env flag, default off) | They're insecure and in-memory, and the client capability is disabled anyway | — |
 
