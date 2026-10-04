@@ -491,12 +491,16 @@ void main() {
       await tester.pump(const Duration(milliseconds: 20));
 
       expect(previous.queries.single.canonicalExerciseId, 'exercise-a');
-      expect(find.text('Last time'), findsOneWidget);
-      expect(find.text('80 kg × 8 reps'), findsOneWidget);
+      // Last session's set 1 shows on today's set 1 row (compact layout on
+      // this narrow viewport), not as a separate card below the fold.
+      expect(find.text('Last time: 80 kg × 8'), findsOneWidget);
+      expect(find.text('80 kg × 8 reps'), findsNothing);
       expect(find.text('Recommended'), findsNothing);
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, 2000));
+      await tester.pump();
 
       final loadField = find.byKey(ValueKey('compact-load-${slot.id}'));
-      expect(tester.widget<TextFormField>(loadField).controller!.text, '80.0');
+      expect(tester.widget<TextFormField>(loadField).controller!.text, '80');
 
       await tester.tap(find.byTooltip('Exercise actions'));
       await tester.pump();
@@ -507,6 +511,141 @@ void main() {
       await tester.enterText(loadField, '90');
       await tester.pump();
       expect(tester.widget<TextFormField>(loadField).controller!.text, '90');
+    },
+  );
+
+  testWidgets('an open 1-20 rep range never prefills reps; last session does', (
+    tester,
+  ) async {
+    _unmountBeforeDatabaseClose(tester);
+    // What a quick workout gets once there is history: a target load from
+    // last time and the open "any reps" placeholder range.
+    final launch = (await tester.runAsync(
+      () => _launchWithHistoryContext(
+        executions,
+        snapshotId: 'placeholder-reps',
+        repsRange: '1-20',
+        targetLoadKg: 60,
+      ),
+    ))!;
+    tester.view.physicalSize = const Size(360, 780);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    final previous = _FakePreviousPerformanceRepository(
+      database,
+      _availablePerformance(exerciseId: 'exercise-a', loadKg: 60, reps: 8),
+    );
+    final controller = B02StrengthExecutionController(
+      StrengthExecutionCompatibilityAdapter(executions),
+      initialLaunch: launch,
+      nowUtc: () => DateTime.utc(2026, 8, 22, 8),
+    );
+    await tester.runAsync(controller.loadSlots);
+    final slot = controller.state.slots.single;
+    expect(slot.targetRepsMin, 1);
+    expect(slot.targetLoadKg, 60);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          b07ExerciseContextProvider.overrideWith(
+            (ref, id) async => const B07ExerciseContextResult.unavailable(),
+          ),
+          b02StrengthExecutionScreenControllerProvider.overrideWith(
+            (ref, _) => controller,
+          ),
+          b02PreviousPerformanceRepositoryProvider.overrideWithValue(previous),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.lightTheme,
+          home: B02StrengthPlayerScreen(
+            launch: launch,
+            nowUtc: () => DateTime.utc(2026, 8, 22, 8),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 20));
+
+    final repsField = find.byKey(ValueKey('compact-reps-${slot.id}'));
+    // Last session's 8, not the placeholder's floor of 1.
+    expect(tester.widget<TextFormField>(repsField).controller!.text, '8');
+    expect(find.textContaining('1–20'), findsNothing);
+  });
+
+  testWidgets(
+    'the next planned row logs the set in one tap with the prefilled values',
+    (tester) async {
+      _unmountBeforeDatabaseClose(tester);
+      final launch = (await tester.runAsync(
+        () => _launchWithHistoryContext(executions, snapshotId: 'row-complete'),
+      ))!;
+      tester.view.physicalSize = const Size(400, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final semantics = tester.ensureSemantics();
+
+      final previous = _FakePreviousPerformanceRepository(
+        database,
+        _availablePerformance(exerciseId: 'exercise-a', loadKg: 80, reps: 8),
+      );
+      final controller = B02StrengthExecutionController(
+        StrengthExecutionCompatibilityAdapter(executions),
+        initialLaunch: launch,
+        nowUtc: () => DateTime.utc(2026, 8, 22, 8),
+      );
+      await tester.runAsync(controller.loadSlots);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            b07ExerciseContextProvider.overrideWith(
+              (ref, id) async => const B07ExerciseContextResult.unavailable(),
+            ),
+            b02StrengthExecutionScreenControllerProvider.overrideWith(
+              (ref, _) => controller,
+            ),
+            b02PreviousPerformanceRepositoryProvider.overrideWithValue(
+              previous,
+            ),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.lightTheme,
+            home: B02StrengthPlayerScreen(
+              launch: launch,
+              nowUtc: () => DateTime.utc(2026, 8, 22, 8),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 20));
+
+      // One status per unlogged row, no "Not logged" / "Ready" text.
+      expect(find.text('Not logged'), findsNothing);
+      expect(find.text('Ready'), findsNothing);
+      final rowCheck = find.bySemanticsLabel('Log set 1');
+      expect(rowCheck, findsOneWidget);
+
+      await tester.tap(rowCheck);
+      await tester.pump();
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 500)),
+      );
+      await tester.pump();
+
+      final saved = (await tester.runAsync(
+        () => executions.readDraft(launch.draftId),
+      ))!;
+      final sets = saved.state.performedExercises
+          .expand((exercise) => exercise.sets)
+          .toList();
+      expect(sets, hasLength(1));
+      expect(sets.single.actualLoadKg, 80);
+      expect(sets.single.actualReps, 8);
+      semantics.dispose();
     },
   );
 
@@ -703,6 +842,8 @@ Future<B02StrengthExecutionLaunch> _quickLaunch(
 Future<B02StrengthExecutionLaunch> _launchWithHistoryContext(
   StrengthExecutionRepository executions, {
   String snapshotId = 'history-context',
+  String repsRange = '8-10',
+  double? targetLoadKg,
 }) async {
   final launch = await executions.startUnscheduledDraft(
     routineName: 'Quick workout',
@@ -717,7 +858,7 @@ Future<B02StrengthExecutionLaunch> _launchWithHistoryContext(
     launch: launch,
     exerciseId: 'exercise-a',
     exerciseName: 'Exercise A',
-    repsRange: '8-10',
+    repsRange: repsRange,
   );
   final snapshot =
       jsonDecode(withExercise.executionSnapshotJson) as Map<String, dynamic>;
@@ -725,6 +866,9 @@ Future<B02StrengthExecutionLaunch> _launchWithHistoryContext(
       .map((raw) => Map<String, dynamic>.from(raw as Map))
       .toList();
   prescriptions.single['loadBasis'] = B02LoadBasis.totalExternal.dbValue;
+  if (targetLoadKg != null) {
+    prescriptions.single['targetLoadKg'] = targetLoadKg;
+  }
   final updated = withExercise.copyWith(
     executionSnapshotJson: jsonEncode({
       ...snapshot,

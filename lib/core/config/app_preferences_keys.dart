@@ -32,6 +32,8 @@ abstract final class AppPreferenceKeys {
   static const prefHydrationEntriesJson = 'pref_hydration_entries_json';
 
   // --- Streaks & Freezes (Active) ---
+  /// No longer written: the streak comes from `StreakRepository`. Kept so
+  /// older backups that carry it still import.
   static const userStreakCount = 'user_streak_count';
   static const streakFreezesCount = 'streak_freezes_count';
   static const lastFreezeClaimedAt = 'last_freeze_claimed_at';

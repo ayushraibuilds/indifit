@@ -32,6 +32,7 @@ class B02CompactSetRow {
     this.plannedTechnique,
     this.actualTechnique,
     this.performedSet,
+    this.previousLabel,
   });
 
   factory B02CompactSetRow.fromLoggedSet({
@@ -100,6 +101,32 @@ class B02CompactSetRow {
   final B02TechniqueFields? actualTechnique;
   final B02PerformedSet? performedSet;
 
+  /// The same working set from the last comparable session ("60 kg × 8").
+  final String? previousLabel;
+
+  B02CompactSetRow withPrevious(String? label) => label == null
+      ? this
+      : B02CompactSetRow(
+          id: id,
+          displayNumber: displayNumber,
+          isLogged: isLogged,
+          isExtra: isExtra,
+          role: role,
+          plannedLoadKg: plannedLoadKg,
+          plannedLoadBasis: plannedLoadBasis,
+          plannedRepsMin: plannedRepsMin,
+          plannedRepsMax: plannedRepsMax,
+          plannedRpe: plannedRpe,
+          actualLoadKg: actualLoadKg,
+          actualLoadBasis: actualLoadBasis,
+          actualReps: actualReps,
+          actualRpe: actualRpe,
+          plannedTechnique: plannedTechnique,
+          actualTechnique: actualTechnique,
+          performedSet: performedSet,
+          previousLabel: label,
+        );
+
   String? get plannedLabel => r07cFormatTarget(
     loadKg: plannedLoadKg,
     loadBasis: plannedLoadBasis,
@@ -155,6 +182,9 @@ class B02CompactSetTable extends StatelessWidget {
     this.onLoadChanged,
     this.onRepsChanged,
     this.onOpenPlateCalculator,
+    this.onCompleteNext,
+    this.targetSummary,
+    this.previousSetLabels = const [],
   });
 
   final B02StrengthExecutionSlot slot;
@@ -178,9 +208,21 @@ class B02CompactSetTable extends StatelessWidget {
   final ValueChanged<String>? onRepsChanged;
   final VoidCallback? onOpenPlateCalculator;
 
+  /// Logs the next planned set with the values in the editor below, exactly
+  /// as the primary "Log set" button does. Null hides the row checkmark.
+  final VoidCallback? onCompleteNext;
+
+  /// Last-time and suggested-target summary shown under the "Next set"
+  /// label, so the suggestion sits beside the fields it fills.
+  final Widget? targetSummary;
+
+  /// Last session's working sets in order; set N today shows entry N - 1.
+  final List<String> previousSetLabels;
+
   @override
   Widget build(BuildContext context) {
     final rows = _rows();
+    final nextRow = rows.where((row) => !row.isLogged).firstOrNull;
     final showTarget = rows.any((row) => row.plannedLabel != null);
     return B05Surface(
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
@@ -211,6 +253,7 @@ class B02CompactSetTable extends StatelessWidget {
                 isBusy: isBusy,
                 onEdit: onEdit,
                 onDelete: onDelete,
+                onComplete: identical(row, nextRow) ? onCompleteNext : null,
               ),
               if (row != rows.last) const Divider(height: 1),
             ],
@@ -232,6 +275,10 @@ class B02CompactSetTable extends StatelessWidget {
               onRepsChanged: onRepsChanged,
               moreContent: moreContent,
               onOpenPlateCalculator: onOpenPlateCalculator,
+              targetSummary: targetSummary,
+              previousLabel: nextRow != null || isWarmup
+                  ? null
+                  : _previousFor(currentSet - 1),
             ),
           if (onAddSet != null) ...[
             const SizedBox(height: 8),
@@ -261,12 +308,15 @@ class B02CompactSetTable extends StatelessWidget {
           isPlannedMode &&
           set.role == B02SetRole.working &&
           workingLogged >= slot.plannedSets;
+      final row = B02CompactSetRow.fromLoggedSet(
+        set: set,
+        displayNumber: rows.length + 1,
+        isExtra: isExtra,
+      );
       rows.add(
-        B02CompactSetRow.fromLoggedSet(
-          set: set,
-          displayNumber: rows.length + 1,
-          isExtra: isExtra,
-        ),
+        set.role == B02SetRole.working
+            ? row.withPrevious(_previousFor(workingLogged))
+            : row,
       );
       if (set.role == B02SetRole.working) workingLogged++;
     }
@@ -288,13 +338,18 @@ class B02CompactSetTable extends StatelessWidget {
             displayNumber: rows.length + 1,
             isExtra: false,
             prescriptionOrdinal: slot.setPrescriptionOrdinal ?? workingLogged,
-          ),
+          ).withPrevious(_previousFor(workingLogged)),
         );
         workingLogged++;
       }
     }
     return rows;
   }
+
+  String? _previousFor(int workingIndex) =>
+      workingIndex >= 0 && workingIndex < previousSetLabels.length
+      ? previousSetLabels[workingIndex]
+      : null;
 }
 
 class _TableHeader extends StatelessWidget {
@@ -343,6 +398,7 @@ class _SetRow extends StatelessWidget {
     required this.isBusy,
     required this.onEdit,
     required this.onDelete,
+    this.onComplete,
   });
 
   final B02CompactSetRow row;
@@ -350,6 +406,9 @@ class _SetRow extends StatelessWidget {
   final bool isBusy;
   final ValueChanged<B02PerformedSet>? onEdit;
   final ValueChanged<B02PerformedSet>? onDelete;
+
+  /// Set only on the next planned row: tapping its checkmark logs it.
+  final VoidCallback? onComplete;
 
   @override
   Widget build(BuildContext context) {
@@ -362,10 +421,8 @@ class _SetRow extends StatelessWidget {
   }
 
   Widget _buildWide(BuildContext context) {
-    final actual = row.isLogged
-        ? row.actualLabel ?? 'No actual value'
-        : 'Not logged';
-    final status = _statusLabel();
+    final actual = row.isLogged ? row.actualLabel ?? 'No actual value' : '—';
+    final previous = row.previousLabel;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(
@@ -389,13 +446,13 @@ class _SetRow extends StatelessWidget {
             ),
           Expanded(
             flex: 3,
-            child: _valueWithDetails(context, actual, row.actualDetailsLabel),
+            child: !row.isLogged && previous != null
+                ? _previousHint(context, 'Last $previous')
+                : _valueWithDetails(context, actual, row.actualDetailsLabel),
           ),
           SizedBox(
             width: B05Layout.minTouchTarget * 2,
-            child: row.isLogged
-                ? _actions(context)
-                : Text(status, style: B05Typography.caption(context)),
+            child: row.isLogged ? _actions(context) : _pendingStatus(context),
           ),
         ],
       ),
@@ -403,9 +460,7 @@ class _SetRow extends StatelessWidget {
   }
 
   Widget _buildCompact(BuildContext context) {
-    final actual = row.isLogged
-        ? row.actualLabel ?? 'No actual value'
-        : 'Not logged';
+    final actual = row.isLogged ? row.actualLabel ?? 'No actual value' : '—';
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 7),
       child: Column(
@@ -420,7 +475,10 @@ class _SetRow extends StatelessWidget {
                   style: B05Typography.label(context),
                 ),
               ),
-              Text(_statusLabel(), style: B05Typography.caption(context)),
+              if (row.isLogged)
+                Text(_statusLabel(), style: B05Typography.caption(context))
+              else
+                _pendingStatus(context),
             ],
           ),
           if (showTarget) ...[
@@ -431,6 +489,10 @@ class _SetRow extends StatelessWidget {
               row.plannedDetailsLabel,
               style: B05Typography.caption(context),
             ),
+          ],
+          if (!row.isLogged && row.previousLabel != null) ...[
+            const SizedBox(height: 2),
+            _previousHint(context, 'Last time: ${row.previousLabel}'),
           ],
           const SizedBox(height: 2),
           Row(
@@ -473,6 +535,40 @@ class _SetRow extends StatelessWidget {
     );
   }
 
+  /// One status for an unlogged row: a checkmark that logs it (next row
+  /// only) or an empty circle for sets still to come.
+  Widget _pendingStatus(BuildContext context) {
+    final complete = onComplete;
+    if (complete != null) {
+      return Align(
+        alignment: Alignment.centerLeft,
+        child: B05IconAction(
+          icon: Icons.check_circle_outline_rounded,
+          label: 'Log set ${row.displayNumber}',
+          hint: 'Log this set with the weight and reps below',
+          onPressed: isBusy ? null : complete,
+        ),
+      );
+    }
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        child: ExcludeSemantics(
+          child: Icon(
+            Icons.radio_button_unchecked_rounded,
+            size: 22,
+            color: Theme.of(context).colorScheme.outlineVariant,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _previousHint(BuildContext context, String text) {
+    return Text(text, style: B05Typography.caption(context));
+  }
+
   Widget _valueWithDetails(
     BuildContext context,
     String value,
@@ -490,7 +586,7 @@ class _SetRow extends StatelessWidget {
   }
 
   String _statusLabel() {
-    if (!row.isLogged) return 'Ready';
+    if (!row.isLogged) return 'Not logged yet';
     if (row.role == B02SetRole.warmup) return 'Warm-up';
     return row.isExtra ? 'Extra' : 'Logged';
   }
@@ -501,6 +597,7 @@ class _SetRow extends StatelessWidget {
       _statusLabel(),
       if (row.plannedLabel != null) 'planned ${row.plannedLabel}',
       if (row.actualLabel != null) 'actual ${row.actualLabel}',
+      if (row.previousLabel != null) 'last time ${row.previousLabel}',
       if (row.plannedDetailsLabel != null)
         'planned details ${row.plannedDetailsLabel}',
       if (row.actualDetailsLabel != null)
@@ -531,6 +628,8 @@ class _PendingSetEditor extends StatelessWidget {
     required this.onRepsChanged,
     required this.moreContent,
     this.onOpenPlateCalculator,
+    this.targetSummary,
+    this.previousLabel,
   });
 
   final B02StrengthExecutionSlot slot;
@@ -547,6 +646,8 @@ class _PendingSetEditor extends StatelessWidget {
   final ValueChanged<String>? onRepsChanged;
   final Widget? moreContent;
   final VoidCallback? onOpenPlateCalculator;
+  final Widget? targetSummary;
+  final String? previousLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -574,6 +675,20 @@ class _PendingSetEditor extends StatelessWidget {
                 ),
             ],
           ),
+          if (previousLabel != null) ...[
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 8,
+              children: [
+                Text('Last time', style: B05Typography.caption(context)),
+                Text(previousLabel!),
+              ],
+            ),
+          ],
+          if (targetSummary != null) ...[
+            const SizedBox(height: 6),
+            targetSummary!,
+          ],
           const SizedBox(height: 8),
           IndiFitResponsiveFieldGroup(
             spacing: 10,

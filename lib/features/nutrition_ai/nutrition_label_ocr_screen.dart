@@ -50,10 +50,9 @@ class _NutritionLabelOcrScreenState
     NutritionLabelOcrController controller,
     ImageSource source,
   ) async {
-    SharedPreferences? prefs;
-    try {
-      prefs = ref.read(sharedPreferencesProvider);
-    } catch (_) {}
+    SharedPreferences? prefs = sharedPreferencesOrNull(
+      () => ref.read(sharedPreferencesProvider),
+    );
     prefs ??= await SharedPreferences.getInstance();
     if (!mounted) return;
 
@@ -94,9 +93,9 @@ class _NutritionLabelOcrScreenState
 
   DateTime _resolveDate() {
     if (widget.date != null) {
-      try {
-        return DateTime.parse(widget.date!);
-      } catch (_) {}
+      // An unparseable route date falls back to today.
+      final parsed = DateTime.tryParse(widget.date!);
+      if (parsed != null) return parsed;
     }
     return DateTime.now();
   }

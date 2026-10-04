@@ -214,6 +214,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
     // Haptics are optional feedback and must never delay or prevent the
     // persisted profile patch.
+    // Safe: haptics are optional and unsupported on some devices.
     unawaited(HapticFeedback.mediumImpact().catchError((_) {}));
     await ref
         .read(userProfileProvider.notifier)
