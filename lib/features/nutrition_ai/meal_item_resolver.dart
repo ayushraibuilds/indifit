@@ -332,12 +332,14 @@ String catalogBasisLabel(NutritionFoodOption option) {
 /// naming convention ("Boiled Eggs (2 pieces)", "Paneer Tikka (5 pcs)"), or
 /// null when the name doesn't say.
 int? piecesPerServing(NutritionFoodOption option) {
-  final match = RegExp(
-    r'\((\d+)\s*(?:pieces?|pcs?)\)',
-    caseSensitive: false,
-  ).firstMatch(option.displayName);
+  final match = _piecesInName.firstMatch(option.displayName);
   return match == null ? null : int.parse(match.group(1)!);
 }
+
+final _piecesInName = RegExp(
+  r'\((\d+)\s*(?:pieces?|pcs?)\)',
+  caseSensitive: false,
+);
 
 /// The quantity to log for an AI-parsed amount against a catalogue food.
 class PortionMapping {

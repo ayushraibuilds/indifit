@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "summary": {
     "total_dart_files": 475,
-    "total_loc": 340455,
+    "total_loc": 340457,
     "total_internal_edges": 2362,
     "external_package_count": 28,
     "catch_metrics": {
@@ -14876,7 +14876,7 @@
       "path": "lib/features/nutrition_ai/meal_item_resolver.dart",
       "layer": "features",
       "sublayer": "features/nutrition_ai",
-      "loc": 472,
+      "loc": 474,
       "imports": [
         "lib/core/typed_quantities.dart",
         "lib/data/repositories/nutrition_food_catalog_repository.dart",
