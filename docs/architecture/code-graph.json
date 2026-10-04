@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "summary": {
-    "total_dart_files": 470,
-    "total_loc": 339714,
-    "total_internal_edges": 2338,
+    "total_dart_files": 471,
+    "total_loc": 339864,
+    "total_internal_edges": 2348,
     "external_package_count": 28,
     "catch_metrics": {
-      "total_catches_all": 505,
-      "total_catch_underscore": 162,
+      "total_catches_all": 504,
+      "total_catch_underscore": 161,
       "total_empty_catches": 0,
       "p0_empty_catches": 0
     },
@@ -15,7 +15,7 @@
     "catches_by_layer": {
       "core": 144,
       "data": 103,
-      "features": 257,
+      "features": 256,
       "other": 1
     }
   },
@@ -1912,6 +1912,7 @@
         "lib/features/food_log/food_search_view_models.dart",
         "lib/features/food_log/nutrition_estimate_review_screen.dart",
         "lib/features/food_log/nutrition_recipe_editor_controller.dart",
+        "lib/features/food_log/repeat_meal.dart",
         "lib/features/food_log/saved_meal_editor_screen.dart",
         "lib/features/food_log/saved_meals_controller.dart",
         "lib/features/food_log/saved_meals_screen.dart",
@@ -2918,6 +2919,7 @@
         "lib/features/food_log/food_search_view_models.dart",
         "lib/features/food_log/nutrition_recipe_editor_controller.dart",
         "lib/features/food_log/nutrition_thali_controller.dart",
+        "lib/features/food_log/repeat_meal.dart",
         "lib/features/food_log/saved_meal_editor_screen.dart",
         "lib/features/food_log/saved_meals_controller.dart",
         "lib/features/food_log/widgets/food_portion_bottom_sheet.dart",
@@ -2984,6 +2986,7 @@
         "lib/features/food_log/food_diary_screen.dart",
         "lib/features/food_log/food_log_surface.dart",
         "lib/features/food_log/food_search_screen.dart",
+        "lib/features/food_log/repeat_meal.dart",
         "lib/features/food_log/widgets/food_diary_widgets.dart",
         "lib/features/food_log/widgets/food_portion_bottom_sheet.dart"
       ],
@@ -4427,6 +4430,7 @@
         "lib/features/dashboard/today_surface_controller.dart",
         "lib/features/exercise_library/exercise_history_screen.dart",
         "lib/features/food_log/food_diary_screen.dart",
+        "lib/features/food_log/repeat_meal.dart",
         "lib/features/food_log/widgets/quick_add_macros_sheet.dart",
         "lib/features/progress/b04_weekly_review_controller.dart",
         "lib/features/progress/r08f4_training_volume_presentation.dart",
@@ -5182,6 +5186,7 @@
         "lib/features/food_log/nutrition_recipe_editor_controller.dart",
         "lib/features/food_log/nutrition_recipe_editor_screen.dart",
         "lib/features/food_log/nutrition_thali_controller.dart",
+        "lib/features/food_log/repeat_meal.dart",
         "lib/features/food_log/saved_meal_editor_screen.dart",
         "lib/features/food_log/saved_meal_presentation.dart",
         "lib/features/food_log/saved_recipe_log_controller.dart",
@@ -5262,7 +5267,9 @@
         "lib/features/dashboard/dashboard_screen.dart",
         "lib/features/dashboard/today_surface_controller.dart",
         "lib/features/food_log/barcode_scanner_screen.dart",
+        "lib/features/food_log/food_diary_screen.dart",
         "lib/features/food_log/food_log_surface.dart",
+        "lib/features/food_log/food_search_screen.dart",
         "lib/features/nutrition_ai/ai_items_thali_handoff.dart",
         "lib/features/nutrition_ai/natural_language_meal_service.dart",
         "lib/features/onboarding/onboarding_screen.dart",
@@ -12567,7 +12574,7 @@
       "path": "lib/features/food_log/food_diary_screen.dart",
       "layer": "features",
       "sublayer": "features/food_log",
-      "loc": 559,
+      "loc": 523,
       "imports": [
         "lib/core/di/providers.dart",
         "lib/core/nutrition_household_measures.dart",
@@ -12576,6 +12583,7 @@
         "lib/core/services/local_schedule_date_service.dart",
         "lib/core/theme/b05_semantic_colors.dart",
         "lib/core/typed_quantities.dart",
+        "lib/core/utils/app_logger.dart",
         "lib/core/widgets/b05_accessibility_primitives.dart",
         "lib/core/widgets/indi_fit_feedback.dart",
         "lib/features/dashboard/today_consumer_presentation.dart",
@@ -12585,6 +12593,7 @@
         "lib/features/food_log/food_log_surface.dart",
         "lib/features/food_log/food_search_screen.dart",
         "lib/features/food_log/meal_presentation_registry.dart",
+        "lib/features/food_log/repeat_meal.dart",
         "lib/features/food_log/saved_meals_screen.dart",
         "lib/features/food_log/saved_recipe_log_screen.dart",
         "lib/features/food_log/thali/thali_builder_screen.dart",
@@ -12604,17 +12613,7 @@
       "catches": [
         {
           "file": "lib/features/food_log/food_diary_screen.dart",
-          "line": 464,
-          "var": "_",
-          "is_underscore": true,
-          "is_empty": false,
-          "snippet": "} catch (_) {",
-          "layer": "features/food_log",
-          "is_p0": false
-        },
-        {
-          "file": "lib/features/food_log/food_diary_screen.dart",
-          "line": 535,
+          "line": 466,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -12624,7 +12623,7 @@
         }
       ],
       "empty_catch_count": 0,
-      "total_catch_count": 2
+      "total_catch_count": 1
     },
     "lib/features/food_log/food_log_surface.dart": {
       "path": "lib/features/food_log/food_log_surface.dart",
@@ -12688,7 +12687,7 @@
       "path": "lib/features/food_log/food_search_screen.dart",
       "layer": "features",
       "sublayer": "features/food_log",
-      "loc": 2479,
+      "loc": 2580,
       "imports": [
         "lib/core/catalog/food_catalog_models.dart",
         "lib/core/catalog/food_category_taxonomy.dart",
@@ -12701,6 +12700,7 @@
         "lib/core/privacy/privacy_policy.dart",
         "lib/core/theme/b05_semantic_colors.dart",
         "lib/core/typed_quantities.dart",
+        "lib/core/utils/app_logger.dart",
         "lib/core/widgets/b05_accessibility_primitives.dart",
         "lib/core/widgets/indi_fit_feedback.dart",
         "lib/core/widgets/skeleton_loader.dart",
@@ -12718,6 +12718,7 @@
         "lib/features/food_log/food_log_surface.dart",
         "lib/features/food_log/food_search_view_models.dart",
         "lib/features/food_log/meal_presentation_registry.dart",
+        "lib/features/food_log/repeat_meal.dart",
         "lib/features/food_log/saved_meals_screen.dart",
         "lib/features/food_log/saved_recipe_log_screen.dart",
         "lib/features/food_log/widgets/food_portion_bottom_sheet.dart",
@@ -12753,7 +12754,7 @@
       "catches": [
         {
           "file": "lib/features/food_log/food_search_screen.dart",
-          "line": 399,
+          "line": 401,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -12763,7 +12764,7 @@
         },
         {
           "file": "lib/features/food_log/food_search_screen.dart",
-          "line": 411,
+          "line": 413,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -12773,7 +12774,7 @@
         },
         {
           "file": "lib/features/food_log/food_search_screen.dart",
-          "line": 430,
+          "line": 432,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -12783,7 +12784,7 @@
         },
         {
           "file": "lib/features/food_log/food_search_screen.dart",
-          "line": 500,
+          "line": 502,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -12793,7 +12794,7 @@
         },
         {
           "file": "lib/features/food_log/food_search_screen.dart",
-          "line": 537,
+          "line": 539,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -12803,7 +12804,7 @@
         },
         {
           "file": "lib/features/food_log/food_search_screen.dart",
-          "line": 583,
+          "line": 585,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -12813,7 +12814,7 @@
         },
         {
           "file": "lib/features/food_log/food_search_screen.dart",
-          "line": 598,
+          "line": 600,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -12823,7 +12824,7 @@
         },
         {
           "file": "lib/features/food_log/food_search_screen.dart",
-          "line": 745,
+          "line": 747,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -12833,7 +12834,7 @@
         },
         {
           "file": "lib/features/food_log/food_search_screen.dart",
-          "line": 805,
+          "line": 807,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -12843,7 +12844,7 @@
         },
         {
           "file": "lib/features/food_log/food_search_screen.dart",
-          "line": 886,
+          "line": 888,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -12853,7 +12854,7 @@
         },
         {
           "file": "lib/features/food_log/food_search_screen.dart",
-          "line": 918,
+          "line": 920,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -12863,7 +12864,7 @@
         },
         {
           "file": "lib/features/food_log/food_search_screen.dart",
-          "line": 1025,
+          "line": 1125,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -12873,7 +12874,7 @@
         },
         {
           "file": "lib/features/food_log/food_search_screen.dart",
-          "line": 1104,
+          "line": 1204,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -12883,7 +12884,7 @@
         },
         {
           "file": "lib/features/food_log/food_search_screen.dart",
-          "line": 1336,
+          "line": 1436,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -12893,7 +12894,7 @@
         },
         {
           "file": "lib/features/food_log/food_search_screen.dart",
-          "line": 1960,
+          "line": 2061,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -13326,6 +13327,32 @@
       ],
       "empty_catch_count": 0,
       "total_catch_count": 9
+    },
+    "lib/features/food_log/repeat_meal.dart": {
+      "path": "lib/features/food_log/repeat_meal.dart",
+      "layer": "features",
+      "sublayer": "features/food_log",
+      "loc": 76,
+      "imports": [
+        "lib/core/di/providers.dart",
+        "lib/core/nutrition_household_measures.dart",
+        "lib/core/nutrition_legacy_read_models.dart",
+        "lib/core/services/local_schedule_date_service.dart",
+        "lib/core/typed_quantities.dart",
+        "lib/features/food_log/widgets/food_diary_widgets.dart"
+      ],
+      "imported_by": [
+        "lib/features/food_log/food_diary_screen.dart",
+        "lib/features/food_log/food_search_screen.dart"
+      ],
+      "parts": [],
+      "part_of": null,
+      "providers_defined": [],
+      "providers_used": [],
+      "routes_defined": [],
+      "catches": [],
+      "empty_catch_count": 0,
+      "total_catch_count": 0
     },
     "lib/features/food_log/saved_meal_detail_screen.dart": {
       "path": "lib/features/food_log/saved_meal_detail_screen.dart",
@@ -13906,7 +13933,8 @@
         "lib/features/food_log/meal_presentation_registry.dart"
       ],
       "imported_by": [
-        "lib/features/food_log/food_search_screen.dart"
+        "lib/features/food_log/food_search_screen.dart",
+        "lib/features/food_log/repeat_meal.dart"
       ],
       "parts": [],
       "part_of": null,
@@ -14010,7 +14038,7 @@
       "path": "lib/features/food_log/widgets/food_search_recent_list.dart",
       "layer": "features",
       "sublayer": "features/food_log",
-      "loc": 374,
+      "loc": 383,
       "imports": [
         "lib/core/theme/b05_semantic_colors.dart",
         "lib/core/widgets/b05_accessibility_primitives.dart",
