@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../core/config/app_preferences_keys.dart';
 import '../../core/services/local_schedule_date_service.dart';
+import '../../core/utils/app_logger.dart';
 import '../database/app_database.dart';
 import '../models/hydration_models.dart';
 
@@ -497,11 +498,9 @@ class HydrationRepository {
 
   /// Clears all hydration data (both SQLite rows and SharedPreferences keys).
   Future<void> clearAllData() async {
-    if (_db != null) {
-      try {
-        await _db.delete(_db.dailyHydrations).go();
-      } catch (_) {}
-    }
+    // A failed delete must surface: a "clear" that leaves data behind would
+    // report success while the data stays on the device.
+    if (_db != null) await _db.delete(_db.dailyHydrations).go();
 
     final prefs = await _getPrefs();
     await prefs.remove(prefHydrationEntriesJson);
@@ -536,7 +535,12 @@ class HydrationRepository {
           ),
         );
       }
-    } catch (_) {}
+    } catch (error) {
+      AppLogger.warning(
+        'Hydration entries unreadable; starting empty: $error',
+        'Hydration',
+      );
+    }
     return <String, List<dynamic>>{};
   }
 

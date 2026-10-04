@@ -13,10 +13,9 @@ const String todayOnboardingHandoffPendingKey =
 final todayOnboardingHandoffPendingProvider = FutureProvider.autoDispose<bool>((
   ref,
 ) async {
-  SharedPreferences? prefs;
-  try {
-    prefs = ref.watch(sharedPreferencesProvider);
-  } catch (_) {}
+  SharedPreferences? prefs = sharedPreferencesOrNull(
+    () => ref.watch(sharedPreferencesProvider),
+  );
   final p = prefs ?? await SharedPreferences.getInstance();
   return p.getBool(todayOnboardingHandoffPendingKey) ?? false;
 });
