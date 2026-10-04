@@ -34,7 +34,11 @@ void main() {
         await tester.pumpWidget(createApp());
         await tester.pump(const Duration(milliseconds: 200));
 
+        // The goal comes first; the body fields are step 2.
         expect(find.text('1 of 5'), findsOneWidget);
+        await tester.tap(find.text('Next Step'));
+        await tester.pumpAndSettle();
+        expect(find.text('2 of 5'), findsOneWidget);
 
         // Verify suffixes are initially visible
         expect(find.text('years'), findsOneWidget);
@@ -68,16 +72,15 @@ void main() {
           await tester.pumpAndSettle();
         }
 
-        // Step 1 of 5: About you
+        // Step 1 of 5: Goal
         expect(find.text('1 of 5'), findsOneWidget);
-
-        // Select sex (age/height/weight already have defaults)
-        await tapVisible('Male');
+        await tapVisible('Maintain');
         await tapVisible('Next Step');
 
-        // Step 2 of 5: Goal
+        // Step 2 of 5: About you. Select sex (age/height/weight already
+        // have defaults).
         expect(find.text('2 of 5'), findsOneWidget);
-        await tapVisible('Maintain');
+        await tapVisible('Male');
         await tapVisible('Next Step');
 
         // Step 3 of 5: Activity

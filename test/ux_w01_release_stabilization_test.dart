@@ -443,8 +443,11 @@ void main() {
       ),
     );
     await tester.pump(const Duration(milliseconds: 250));
+    // The goal comes first; these checks are about the body fields.
+    await tester.tap(find.text('Next Step'));
+    await tester.pumpAndSettle();
 
-    expect(find.text('Welcome to IndiFit!'), findsOneWidget);
+    expect(find.text('A bit about you'), findsOneWidget);
     await tester.tap(find.byType(TextField).first);
     await tester.enterText(find.byType(TextField).first, 'Priya');
     expect(FocusManager.instance.primaryFocus, isNotNull);
@@ -457,7 +460,7 @@ void main() {
       return Focus.maybeOf(element)?.hasPrimaryFocus ?? false;
     });
     expect(focusedEditable, isEmpty);
-    expect(find.text('Welcome to IndiFit!'), findsOneWidget);
+    expect(find.text('A bit about you'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -481,6 +484,9 @@ void main() {
       ),
     );
     await tester.pump(const Duration(milliseconds: 250));
+    // The goal comes first; these checks are about the body fields.
+    await tester.tap(find.text('Next Step'));
+    await tester.pumpAndSettle();
 
     await tester.tap(find.byType(TextField).first);
     await tester.enterText(find.byType(TextField).first, 'Priya');
@@ -507,7 +513,7 @@ void main() {
 
     await tester.tap(find.text('Next Step'));
     await tester.pumpAndSettle();
-    expect(find.text('What is your main goal?'), findsOneWidget);
+    expect(find.text('How do you move most days?'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

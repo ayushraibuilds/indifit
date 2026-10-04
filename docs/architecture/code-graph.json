@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "summary": {
     "total_dart_files": 474,
-    "total_loc": 340391,
+    "total_loc": 340409,
     "total_internal_edges": 2359,
     "external_package_count": 28,
     "catch_metrics": {
@@ -5591,7 +5591,7 @@
       "path": "lib/core/widgets/consumer_task_primitives.dart",
       "layer": "core",
       "sublayer": "core",
-      "loc": 293,
+      "loc": 295,
       "imports": [
         "lib/core/theme/b05_semantic_colors.dart",
         "lib/core/widgets/b05_accessibility_primitives.dart"
@@ -15204,7 +15204,7 @@
       "path": "lib/features/onboarding/onboarding_screen.dart",
       "layer": "features",
       "sublayer": "features/onboarding",
-      "loc": 1327,
+      "loc": 1343,
       "imports": [
         "lib/core/config/app_preferences_keys.dart",
         "lib/core/di/providers.dart",
@@ -15238,7 +15238,7 @@
       "catches": [
         {
           "file": "lib/features/onboarding/onboarding_screen.dart",
-          "line": 171,
+          "line": 177,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -15248,7 +15248,7 @@
         },
         {
           "file": "lib/features/onboarding/onboarding_screen.dart",
-          "line": 424,
+          "line": 438,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -15258,7 +15258,7 @@
         },
         {
           "file": "lib/features/onboarding/onboarding_screen.dart",
-          "line": 454,
+          "line": 468,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
