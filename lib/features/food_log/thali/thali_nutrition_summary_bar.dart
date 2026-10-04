@@ -106,7 +106,7 @@ class ThaliNutritionSummaryBar extends StatelessWidget {
                       key: const Key('thali_summary_calories'),
                       energy != null
                           ? '${isPartial ? '~' : ''}${energy.round()} kcal'
-                          : (hasItems ? 'Calculating...' : '-- kcal'),
+                          : (hasItems ? 'Calculating...' : '0 kcal'),
                       style: TextStyle(
                         color: colors.textPrimary,
                         fontSize: energy == null && hasItems ? 16 : 20,
@@ -124,7 +124,7 @@ class ThaliNutritionSummaryBar extends StatelessWidget {
                     label: 'P',
                     value: protein != null
                         ? '${isPartial ? '~' : ''}${(protein * 10).round() / 10}g'
-                        : (hasItems ? '...' : '--'),
+                        : (hasItems ? '...' : '0g'),
                     color: colors.action,
                     textColor: colors.textPrimary,
                   ),
@@ -133,7 +133,7 @@ class ThaliNutritionSummaryBar extends StatelessWidget {
                     label: 'C',
                     value: carbs != null
                         ? '${isPartial ? '~' : ''}${(carbs * 10).round() / 10}g'
-                        : (hasItems ? '...' : '--'),
+                        : (hasItems ? '...' : '0g'),
                     color: colors.warning.indicator,
                     textColor: colors.textPrimary,
                   ),
@@ -142,7 +142,7 @@ class ThaliNutritionSummaryBar extends StatelessWidget {
                     label: 'F',
                     value: fat != null
                         ? '${isPartial ? '~' : ''}${(fat * 10).round() / 10}g'
-                        : (hasItems ? '...' : '--'),
+                        : (hasItems ? '...' : '0g'),
                     color: colors.info.indicator,
                     textColor: colors.textPrimary,
                   ),

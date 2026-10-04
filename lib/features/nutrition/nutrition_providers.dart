@@ -30,6 +30,7 @@ import '../../data/repositories/nutrition_transformation_repository.dart';
 import '../food_log/nutrition_estimate_review_controller.dart';
 import '../food_log/nutrition_thali_controller.dart';
 import '../food_log/saved_recipe_log_controller.dart';
+import '../food_log/thali/thali_preset_usage.dart';
 import '../nutrition_ai/natural_language_meal_service.dart';
 import '../nutrition_ai/nutrition_ai_controllers.dart';
 import '../nutrition_ai/nutrition_label_ocr_service.dart';
@@ -223,6 +224,9 @@ final nutritionThaliControllerProvider = StateNotifierProvider.autoDispose
         repository: ref.watch(nutritionThaliRepositoryProvider.future),
         userId: kLocalNutritionUserScopeId,
         mealCategory: mealCategory,
+        presetUsage: ThaliPresetUsage(
+          sharedPreferencesOrNull(() => ref.read(sharedPreferencesProvider)),
+        ),
       );
       unawaited(controller.initialize());
       return controller;

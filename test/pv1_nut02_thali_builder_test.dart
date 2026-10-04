@@ -28,7 +28,9 @@ import 'package:indifit/data/repositories/progress_statistics_repository.dart';
 import 'package:indifit/features/food_log/nutrition_thali_controller.dart';
 import 'package:indifit/features/food_log/saved_meals_controller.dart';
 import 'package:indifit/features/food_log/thali/thali_builder_screen.dart';
+import 'package:indifit/features/food_log/thali/thali_preset_usage.dart';
 import 'package:indifit/features/food_log/thali/thali_presets.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -138,6 +140,89 @@ void main() {
         expect(controller.state.userNotice, isNull);
       },
     );
+
+    group('P1 H9 a new thali starts from the usual preset', () {
+      test('logging a preset thali makes it the usual; a new thali starts '
+          'from it and can be cleared', () async {
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+        final harness = await _ThaliTestHarness.create();
+        addTearDown(harness.close);
+
+        NutritionThaliController newController() => NutritionThaliController(
+          repository: Future.value(harness.repository),
+          userId: harness.userId,
+          mealCategory: 'lunch',
+          presetUsage: ThaliPresetUsage(prefs),
+        );
+
+        // Nothing logged yet: the plate stays empty.
+        final first = newController();
+        addTearDown(first.dispose);
+        await first.initialize();
+        await first.startFromUsual();
+        expect(first.state.draft!.items, isEmpty);
+
+        await first.loadPreset(
+          presetName: ThaliPresets.northIndianClassic.name,
+          items: ThaliPresets.northIndianClassic.items,
+          presetId: ThaliPresets.northIndianClassic.id,
+        );
+        final logged = await first.logThali(
+          loggedAt: DateTime.utc(2026, 8, 4, 13),
+          localDate: '2026-08-04',
+          timezoneId: 'Asia/Kolkata',
+        );
+        expect(logged, isNotNull);
+        expect(ThaliPresetUsage(prefs).counts(), {
+          ThaliPresets.northIndianClassic.id: 1,
+        });
+
+        final second = newController();
+        addTearDown(second.dispose);
+        await second.initialize();
+        await second.startFromUsual();
+        expect(second.state.draft!.name, ThaliPresets.northIndianClassic.name);
+        expect(second.state.draft!.items, isNotEmpty);
+        expect(
+          second.state.userNotice,
+          startsWith('Started from your usual: North Indian Classic'),
+        );
+
+        second.clearItems();
+        expect(second.state.draft!.items, isEmpty);
+      });
+
+      test('a plate that already has items is left alone', () async {
+        SharedPreferences.setMockInitialValues({
+          ThaliPresetUsage.storageKey: '{"south_indian_meals": 3}',
+        });
+        final prefs = await SharedPreferences.getInstance();
+        final harness = await _ThaliTestHarness.create();
+        addTearDown(harness.close);
+        final controller = NutritionThaliController(
+          repository: Future.value(harness.repository),
+          userId: harness.userId,
+          mealCategory: 'lunch',
+          presetUsage: ThaliPresetUsage(prefs),
+        );
+        addTearDown(controller.dispose);
+        await controller.initialize();
+        controller.addFood(
+          const NutritionThaliFoodOption(
+            id: 'food-roti',
+            displayName: 'Roti (Whole Wheat)',
+            kind: 'canonical',
+            sourceType: 'fixture',
+            region: 'IN',
+          ),
+        );
+
+        await controller.startFromUsual();
+        expect(controller.state.draft!.items, hasLength(1));
+        expect(controller.state.userNotice, isNull);
+      });
+    });
 
     test(
       '3. Steppers increment and decrement portion amounts cleanly',

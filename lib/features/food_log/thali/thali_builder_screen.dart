@@ -48,6 +48,7 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
   final TextEditingController _nameController = TextEditingController();
   final FocusNode _nameFocusNode = FocusNode();
   bool _initialized = false;
+  bool _triedUsual = false;
   ThaliViewMode _viewMode = ThaliViewMode.plate;
   String? _selectedItemId;
 
@@ -153,17 +154,38 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
       }
     }
 
+    // A brand-new, empty thali starts from the preset the user logs most
+    // (P1 H9). Saved drafts and AI handoffs arrive with items, so they skip.
+    if (!_triedUsual &&
+        widget.initialThaliId == null &&
+        state.status == NutritionThaliStatus.ready &&
+        draft != null) {
+      _triedUsual = true;
+      if (draft.items.isEmpty) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) unawaited(controller.startFromUsual());
+        });
+      }
+    }
+
     // React to user notices (e.g. missing preset items)
     if (state.userNotice != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         final notice = state.userNotice!;
         controller.clearNotice();
+        final fromUsual = notice.startsWith('Started from your usual');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(notice),
             backgroundColor: colors.surface,
             behavior: SnackBarBehavior.floating,
+            action: fromUsual
+                ? SnackBarAction(
+                    label: 'Clear plate',
+                    onPressed: controller.clearItems,
+                  )
+                : null,
           ),
         );
       });
@@ -316,6 +338,7 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
                       controller.loadPreset(
                         presetName: preset.name,
                         items: preset.items,
+                        presetId: preset.id,
                       );
                       return;
                     }
@@ -347,6 +370,7 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
                         controller.loadPreset(
                           presetName: preset.name,
                           items: preset.items,
+                          presetId: preset.id,
                         );
                       }
                     });

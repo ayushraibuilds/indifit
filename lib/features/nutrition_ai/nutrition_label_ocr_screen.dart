@@ -284,6 +284,14 @@ class _NutritionLabelOcrScreenState
           ),
           const SizedBox(height: B05Layout.space16),
         ],
+        // A failed log returns here so it can be retried.
+        if (state.errorMessage != null) ...[
+          B05StatusMessage(
+            status: B05SemanticStatus.danger,
+            label: state.errorMessage!,
+          ),
+          const SizedBox(height: B05Layout.space16),
+        ],
         if (ocr?.isFallback == true) ...[
           const B05StatusMessage(
             status: B05SemanticStatus.warning,

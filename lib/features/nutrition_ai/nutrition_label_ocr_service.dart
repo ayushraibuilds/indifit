@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 
 import '../../core/ai/ai_gateway.dart';
+import '../../core/ai/ai_photo_sanitizer.dart';
 import '../../core/ai/backend_ai_gateway.dart';
 import '../../core/config/app_config.dart';
 import '../../core/nutrition_estimates.dart';
@@ -156,7 +157,11 @@ class NutritionLabelOcrService {
         );
       }
 
-      final bytes = await file.readAsBytes();
+      // Location and other EXIF metadata never leave the device.
+      final bytes = await AiPhotoSanitizer.sanitize(
+        await file.readAsBytes(),
+        maxDimension: AiPhotoSanitizer.labelMaxDimension,
+      );
       final gateway =
           _gateway ?? BackendAiGateway(dio: _dio!, baseUrl: _baseUrl);
       final data = await gateway.readNutritionLabel(bytes);
