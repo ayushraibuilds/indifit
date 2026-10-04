@@ -112,7 +112,7 @@ class DiaryStructureController extends StateNotifier<DiaryStructureState> {
       if (listEquals(state.activeSlotIds, sanitized)) return;
       state = state.copyWith(activeSlotIds: sanitized);
     } catch (_) {
-      // Gracefully fall back to standard defaults if SharedPreferences
+      // Safe: Gracefully fall back to standard defaults if SharedPreferences
       // channel is not available (e.g. in certain widget test environments).
     }
   }
@@ -221,7 +221,7 @@ class DiaryStructureController extends StateNotifier<DiaryStructureState> {
         await prefs.setStringList(prefDiaryMealSlotsKey, slotIds);
       }
     } catch (_) {
-      // Gracefully handle unmocked preference storage in testing environments.
+      // Safe: Gracefully handle unmocked preference storage in testing environments.
     } finally {
       state = state.copyWith(isSaving: false);
     }

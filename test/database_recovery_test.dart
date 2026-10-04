@@ -195,4 +195,13 @@ void main() {
       );
     });
   });
+
+  test('support email encodes spaces as %20, not +', () {
+    final uri = supportEmailUri('SqliteException');
+    final raw = uri.toString();
+    expect(raw, startsWith('mailto:${DatabaseRecoveryScreen.supportEmail}?'));
+    expect(raw, isNot(contains('+')));
+    expect(raw, contains('IndiFit%20couldn'));
+    expect(Uri.decodeComponent(raw), contains('Error type: SqliteException'));
+  });
 }

@@ -93,8 +93,14 @@ class HydrationRepository {
         record = await (_db.select(
           _db.dailyHydrations,
         )..where((tbl) => tbl.dateString.equals(localDate))).getSingleOrNull();
-      } catch (_) {
-        // Database might be opening in test or edge conditions
+      } catch (error, stackTrace) {
+        // Fall back to the preference entries, but never silently: a failed
+        // read makes the day's total and goal look wrong.
+        AppLogger.error(
+          'Hydration: daily record read failed',
+          error,
+          stackTrace,
+        );
       }
     }
 

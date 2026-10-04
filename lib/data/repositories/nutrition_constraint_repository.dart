@@ -225,7 +225,7 @@ class NutritionConstraintRepository {
             ),
           );
         } on NutritionConstraintError {
-          // Legacy IDs can be intentionally non-portable. They are not safe
+          // Safe: Legacy IDs can be intentionally non-portable. They are not safe
           // targets for a new consumer preference, so omit them from choices.
         }
         if (options.length == limit) break;
@@ -286,7 +286,7 @@ class NutritionConstraintRepository {
           ),
         );
       } on NutritionConstraintError {
-        // See the matching preparation note above.
+        // Safe: See the matching preparation note above.
       }
     }
     return options;

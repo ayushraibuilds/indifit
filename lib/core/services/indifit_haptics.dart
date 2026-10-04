@@ -36,7 +36,7 @@ abstract final class IndiFitHaptics {
       debugHandler?.call(type);
       await action();
     } catch (_) {
-      // Haptics are optional tactile feedback; platform unavailability or
+      // Safe: Haptics are optional tactile feedback; platform unavailability or
       // plugin/test-hook errors must be silently ignored.
     }
   }
