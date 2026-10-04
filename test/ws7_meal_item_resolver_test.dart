@@ -235,5 +235,80 @@ void main() {
         isTrue,
       );
     });
+
+    test('pieces become servings of a food whose serving holds several', () {
+      final eggs = _food('Boiled Eggs (2 pieces)');
+      final four = PortionMapping.map(amount: 4, unit: 'eggs', option: eggs);
+      expect(four.needsReview, isFalse);
+      expect(four.quantity.unit, QuantityUnit.serving);
+      expect(four.quantity.amount.asDouble, 2);
+
+      final three = PortionMapping.map(amount: 3, unit: 'egg', option: eggs);
+      expect(three.quantity.amount.asDouble, 1.5);
+
+      final puri = _food('Pani Puri / Golgappa (6 pieces)');
+      expect(
+        PortionMapping.map(
+          amount: 12,
+          unit: 'pieces',
+          option: puri,
+        ).quantity.amount.asDouble,
+        2,
+      );
+
+      final tikka = _food('Paneer Tikka (5 pcs)', servingLabel: 'katori');
+      expect(
+        PortionMapping.map(
+          amount: 10,
+          unit: 'pcs',
+          option: tikka,
+        ).quantity.amount.asDouble,
+        2,
+      );
+    });
+
+    test('a one-piece serving and a serving unit are unchanged', () {
+      final samosa = _food('Samosa (1 piece)', servingLabel: 'piece');
+      expect(
+        PortionMapping.map(
+          amount: 2,
+          unit: 'piece',
+          option: samosa,
+        ).quantity.amount.asDouble,
+        2,
+      );
+      final eggs = _food('Boiled Eggs (2 pieces)');
+      expect(
+        PortionMapping.map(
+          amount: 2,
+          unit: 'serving',
+          option: eggs,
+        ).quantity.amount.asDouble,
+        2,
+      );
+    });
+
+    test('piecesPerServing reads the catalogue name', () {
+      expect(piecesPerServing(_food('Boiled Eggs (2 pieces)')), 2);
+      expect(piecesPerServing(_food('Chicken Tikka (6 pcs) (Mini)')), 6);
+      expect(piecesPerServing(_food('Samosa (1 piece)')), 1);
+      expect(piecesPerServing(_food('Dal Makhani')), isNull);
+    });
+  });
+
+  group('spelling', () {
+    test('sabzi, subzi and sabji normalise alike', () {
+      expect(MealItemResolver.normalize('Bhindi Sabzi'), 'bhindi sabji');
+      expect(MealItemResolver.normalize('mix veg subzis'), 'mix veg sabji');
+      expect(MealItemResolver.normalize('Torai ki Subji'), 'torai ki sabji');
+    });
+
+    test('a sabzi query resolves through the sabji default', () async {
+      final bhindi = _food('Bhindi Masala (Okra)');
+      final resolver = _resolverOver([bhindi, _food('Bhindi Fry')]);
+      final match = await resolver.resolve('bhindi sabzi');
+      expect(match.state, CatalogMatchState.resolved);
+      expect(match.option, bhindi);
+    });
   });
 }

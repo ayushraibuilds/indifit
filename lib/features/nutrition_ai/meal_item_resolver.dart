@@ -1,5 +1,6 @@
 import '../../core/typed_quantities.dart';
 import '../../data/repositories/nutrition_food_catalog_repository.dart';
+import '../../data/services/food_name_spelling.dart';
 
 /// How an AI-parsed food name relates to the local catalogue.
 enum CatalogMatchState {
@@ -104,7 +105,6 @@ class MealItemResolver {
     'bhindi masala': _bhindi,
     'bhindi': _bhindi,
     'bhindi sabji': _bhindi,
-    'bhindi sabzi': _bhindi,
     'dosa': 'Plain Dosa with Chutney',
     'plain dosa': 'Plain Dosa with Chutney',
     'lassi': 'Masala Lassi (Sweet)',
@@ -135,9 +135,13 @@ class MealItemResolver {
     'bean poriyal': 'Beans Poriyal',
     'raw banana fry': _rawBanana,
     'kacha kela fry': _rawBanana,
+    'boiled egg': _boiledEggs,
+    'hard boiled egg': _boiledEggs,
     'dhokla': _dhokla,
     'khaman dhokla': _dhokla,
-    'aloo gobi': 'Aloo Gobbi (Dry Sabji)',
+    'aloo gobi': _alooGobi,
+    'aloo gobi sabji': _alooGobi,
+    'aloo gobi dry sabji': _alooGobi,
   };
 
   static const _chapati = 'Whole Wheat Roti / Chapati';
@@ -153,6 +157,9 @@ class MealItemResolver {
   static const _torai = 'Torai Ki Sabji (Ridge Gourd)';
   static const _rawBanana = 'Raw Banana Stir Fry';
   static const _dhokla = 'Dhokla (2 pieces)';
+  static const _boiledEggs = 'Boiled Eggs (2 pieces)';
+  // Spelled "Gobbi" in the catalogue; the name is part of its identity key.
+  static const _alooGobi = 'Aloo Gobbi (Dry Sabji)';
 
   Future<CatalogMatch> resolve(String foodName) async {
     final normalized = normalize(foodName);
@@ -284,10 +291,13 @@ class MealItemResolver {
     return 0.7 * shared / smaller;
   }
 
-  /// Lowercases, drops punctuation and parentheses, and folds simple plurals
-  /// ("2 rotis" and "Roti" compare equal).
+  /// Lowercases, drops punctuation and parentheses, folds simple plurals
+  /// ("2 rotis" and "Roti" compare equal) and everyday spellings ("sabzi"
+  /// and "Sabji" compare equal).
   static String normalize(String input) => _tokens(
-    input.toLowerCase().replaceAll(RegExp(r'[^a-z0-9\s]'), ' '),
+    foldFoodSpellings(
+      input.toLowerCase().replaceAll(RegExp(r'[^a-z0-9\s]'), ' '),
+    ),
   ).join(' ');
 
   static List<String> _tokens(String input) => input
@@ -317,6 +327,19 @@ String catalogBasisLabel(NutritionFoodOption option) {
   };
   return '${base.amount} $unit';
 }
+
+/// How many pieces one serving of [option] holds, from the catalogue's
+/// naming convention ("Boiled Eggs (2 pieces)", "Paneer Tikka (5 pcs)"), or
+/// null when the name doesn't say.
+int? piecesPerServing(NutritionFoodOption option) {
+  final match = _piecesInName.firstMatch(option.displayName);
+  return match == null ? null : int.parse(match.group(1)!);
+}
+
+final _piecesInName = RegExp(
+  r'\((\d+)\s*(?:pieces?|pcs?)\)',
+  caseSensitive: false,
+);
 
 /// The quantity to log for an AI-parsed amount against a catalogue food.
 class PortionMapping {
@@ -350,6 +373,22 @@ class PortionMapping {
       return PortionMapping._review(
         base,
         'Set the amount: the AI did not give a usable quantity.',
+      );
+    }
+
+    // "4 eggs" against "Boiled Eggs (2 pieces)", whose serving is two eggs:
+    // log 2 servings rather than resetting the amount.
+    final pieces = piecesPerServing(option);
+    if (base.unit == QuantityUnit.serving &&
+        aiKind == _UnitKind.piece &&
+        pieces != null &&
+        pieces > 1) {
+      return PortionMapping._(
+        Quantity.fromNum(
+          amount: amount / pieces,
+          unit: base.unit,
+          context: base.context,
+        ),
       );
     }
 

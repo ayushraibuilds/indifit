@@ -146,16 +146,15 @@ DecomposedFoodItem bindToCatalog(
     unit: item.quantityUnit,
     option: option,
   );
-  final base = option.baseQuantity;
-  final amount = portion.needsReview
-      ? base.amount.asDouble
-      : item.quantityAmount;
-  final unit = portion.needsReview ? _measureWord(option) : item.quantityUnit;
-  final quantity = Quantity.fromNum(
-    amount: amount,
-    unit: base.unit,
-    context: base.context,
-  );
+  // The mapped amount already counts the food's own measure; it differs
+  // from the AI's number when pieces convert to servings ("4 eggs" is 2
+  // servings of "Boiled Eggs (2 pieces)"), and then the unit says so too.
+  final quantity = portion.quantity;
+  final amount = quantity.amount.asDouble;
+  final converted = !portion.needsReview && amount != item.quantityAmount;
+  final unit = portion.needsReview || converted
+      ? _measureWord(option)
+      : item.quantityUnit;
   // A nutrient the catalogue lacks keeps the AI's figure rather than
   // silently becoming zero.
   final kcal = _scaledFact(option, 'energy', quantity);
