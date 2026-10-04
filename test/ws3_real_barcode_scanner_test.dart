@@ -5,6 +5,7 @@ import 'package:indifit/core/capabilities/capabilities_registry.dart';
 import 'package:indifit/features/food_log/barcode_scanner_screen.dart';
 import 'package:indifit/features/food_log/widgets/food_search_recent_list.dart';
 import 'package:indifit/features/nutrition/nutrition_providers.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 
 import 'support/fake_mobile_scanner.dart';
 
@@ -44,7 +45,25 @@ class _FakeCatalogCapability implements FoodCatalogCapability {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  late FakeMobileScannerPlatform cameraPlatform;
+  setUp(() {
+    cameraPlatform = FakeMobileScannerPlatform();
+    MobileScannerPlatform.instance = cameraPlatform;
+  });
+
   group('WS3: Real Barcode Scanner & Offline Behaviour', () {
+    // The controller is built with autoStart: false so the screen can own the
+    // lifecycle; nothing started it on open, so release builds showed a black
+    // preview. This renders the real MobileScanner, not the view fake.
+    testWidgets('opening the scanner starts the camera', (tester) async {
+      await tester.pumpWidget(
+        const ProviderScope(child: MaterialApp(home: BarcodeScannerScreen())),
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(cameraPlatform.startCalls, 1);
+    });
+
     testWidgets(
       'BarcodeScannerScreen detects simulated barcode via fake seam',
       (tester) async {

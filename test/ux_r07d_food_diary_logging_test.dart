@@ -8,6 +8,7 @@ import 'package:indifit/core/nutrients.dart';
 import 'package:indifit/core/nutrition_calculation_service.dart';
 import 'package:indifit/core/nutrition_consumption_snapshots.dart';
 import 'package:indifit/core/nutrition_household_measures.dart';
+import 'package:indifit/core/nutrition_legacy_read_models.dart';
 import 'package:indifit/core/raw_cooked_transformations.dart';
 import 'package:indifit/core/services/local_timezone_service.dart';
 import 'package:indifit/core/theme/app_theme.dart';
@@ -704,6 +705,141 @@ void main() {
         matchesGoldenFile('goldens/ux_r07d_quantity_compact_2x_light.png'),
       );
     },
+  );
+
+  group('P1 H10 repeat yesterday on the Food landing', () {
+    testWidgets('one tap logs yesterday\'s lunch into today', (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      final fixture = await _R07DFixture.create();
+      addTearDown(() async {
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+        unawaited(fixture.close());
+      });
+      final yesterday = (await tester.runAsync(
+        () => _loggedYesterdayLunch(fixture),
+      ))!;
+
+      await tester.pumpWidget(
+        _r07dFoodApp(
+          fixture: fixture,
+          home: FoodSearchScreen(
+            mealType: 'lunch',
+            selectedDate: DateTime(2026, 8, 13),
+            returnToParentOnSave: false,
+          ),
+          extraOverrides: [
+            foodLogsForDayProvider.overrideWith((ref, date) async => []),
+            canonicalFoodRecordsForDayProvider.overrideWith(
+              (ref, date) async => date.day == 12 ? yesterday : const [],
+            ),
+          ],
+        ),
+      );
+      await _settleR07D(tester);
+
+      final card = find.byKey(const Key('food_repeat_yesterday'));
+      expect(card, findsOneWidget);
+      expect(find.text('Repeat yesterday\'s lunch'), findsOneWidget);
+      expect(
+        find.descendant(of: card, matching: find.text('Repeat dal')),
+        findsOneWidget,
+      );
+
+      await tester.tap(card);
+      await tester.pump();
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 300)),
+      );
+      await tester.pump();
+      expect(
+        find.text('Logged 1 food from yesterday\'s lunch'),
+        findsOneWidget,
+      );
+
+      final today = (await tester.runAsync(
+        () => fixture.readModels.listForLocalDate(
+          userId: kLocalNutritionUserScopeId,
+          localDate: '2026-08-13',
+        ),
+      ))!;
+      expect(today, hasLength(1));
+      expect(today.single.mealCategory, 'lunch');
+      expect(today.single.items.single.displayLabel, 'Repeat dal');
+    });
+
+    testWidgets('hidden once the meal already has a log today', (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      final fixture = await _R07DFixture.create();
+      addTearDown(() async {
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+        unawaited(fixture.close());
+      });
+      final records = (await tester.runAsync(
+        () => _loggedYesterdayLunch(fixture),
+      ))!;
+
+      await tester.pumpWidget(
+        _r07dFoodApp(
+          fixture: fixture,
+          home: FoodSearchScreen(
+            mealType: 'lunch',
+            selectedDate: DateTime(2026, 8, 13),
+          ),
+          extraOverrides: [
+            foodLogsForDayProvider.overrideWith((ref, date) async => []),
+            // Both days have lunch: repeating would double today's.
+            canonicalFoodRecordsForDayProvider.overrideWith(
+              (ref, date) async => records,
+            ),
+          ],
+        ),
+      );
+      await _settleR07D(tester);
+
+      expect(find.byKey(const Key('food_repeat_yesterday')), findsNothing);
+    });
+  });
+}
+
+/// Logs "Repeat dal" for lunch on 2026-08-12 and returns that day's records
+/// read back the way the diary reads them.
+Future<List<NutritionHistoricalReadRecord>> _loggedYesterdayLunch(
+  _R07DFixture fixture,
+) async {
+  final dal = await fixture.catalog.createUserFood(
+    displayName: 'Repeat dal',
+    servingSize: 1,
+    servingUnit: 'katori',
+    energyKcal: 180,
+    proteinG: 9,
+    carbohydrateG: 25,
+    fatG: 3,
+  );
+  final preview = await fixture.logger.preview(
+    option: dal,
+    quantity: dal.baseQuantity,
+  );
+  await fixture.logger.finalize(
+    userId: kLocalNutritionUserScopeId,
+    preview: preview,
+    mealCategory: 'lunch',
+    loggedAt: DateTime.utc(2026, 8, 12, 7),
+    localDate: '2026-08-12',
+    timezoneId: 'Asia/Kolkata',
+    commandId: 'h10-dal-command',
+    consumptionId: 'h10-dal-consumption',
+  );
+  return fixture.readModels.listForLocalDate(
+    userId: kLocalNutritionUserScopeId,
+    localDate: '2026-08-12',
   );
 }
 

@@ -100,6 +100,10 @@ class FoodSearchLandingEmpty extends StatelessWidget {
 /// Encapsulates Recent, Frequent, Saved & recipes, and More ways sections.
 class FoodSearchRecentList extends StatelessWidget {
   final Widget? neutralFoodEntry;
+
+  /// "Repeat yesterday's lunch", shown first when there's something to
+  /// repeat and nothing logged for this meal yet.
+  final Widget? repeatAction;
   final bool loadingRecent;
   final String? recentFailureMessage;
   final VoidCallback onRetryRecent;
@@ -121,6 +125,7 @@ class FoodSearchRecentList extends StatelessWidget {
   const FoodSearchRecentList({
     super.key,
     this.neutralFoodEntry,
+    this.repeatAction,
     required this.loadingRecent,
     this.recentFailureMessage,
     required this.onRetryRecent,
@@ -148,6 +153,10 @@ class FoodSearchRecentList extends StatelessWidget {
         if (neutralFoodEntry != null) ...[
           neutralFoodEntry!,
           const SizedBox(height: 16),
+        ],
+        if (repeatAction != null) ...[
+          repeatAction!,
+          const SizedBox(height: 12),
         ],
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
