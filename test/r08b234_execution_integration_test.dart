@@ -510,6 +510,67 @@ void main() {
     },
   );
 
+  testWidgets('an open 1-20 rep range never prefills reps; last session does', (
+    tester,
+  ) async {
+    _unmountBeforeDatabaseClose(tester);
+    // What a quick workout gets once there is history: a target load from
+    // last time and the open "any reps" placeholder range.
+    final launch = (await tester.runAsync(
+      () => _launchWithHistoryContext(
+        executions,
+        snapshotId: 'placeholder-reps',
+        repsRange: '1-20',
+        targetLoadKg: 60,
+      ),
+    ))!;
+    tester.view.physicalSize = const Size(360, 780);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    final previous = _FakePreviousPerformanceRepository(
+      database,
+      _availablePerformance(exerciseId: 'exercise-a', loadKg: 60, reps: 8),
+    );
+    final controller = B02StrengthExecutionController(
+      StrengthExecutionCompatibilityAdapter(executions),
+      initialLaunch: launch,
+      nowUtc: () => DateTime.utc(2026, 8, 22, 8),
+    );
+    await tester.runAsync(controller.loadSlots);
+    final slot = controller.state.slots.single;
+    expect(slot.targetRepsMin, 1);
+    expect(slot.targetLoadKg, 60);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          b07ExerciseContextProvider.overrideWith(
+            (ref, id) async => const B07ExerciseContextResult.unavailable(),
+          ),
+          b02StrengthExecutionScreenControllerProvider.overrideWith(
+            (ref, _) => controller,
+          ),
+          b02PreviousPerformanceRepositoryProvider.overrideWithValue(previous),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.lightTheme,
+          home: B02StrengthPlayerScreen(
+            launch: launch,
+            nowUtc: () => DateTime.utc(2026, 8, 22, 8),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 20));
+
+    final repsField = find.byKey(ValueKey('compact-reps-${slot.id}'));
+    // Last session's 8, not the placeholder's floor of 1.
+    expect(tester.widget<TextFormField>(repsField).controller!.text, '8');
+    expect(find.textContaining('1–20'), findsNothing);
+  });
+
   testWidgets('late history prefill cannot overwrite a field the user typed', (
     tester,
   ) async {
@@ -703,6 +764,8 @@ Future<B02StrengthExecutionLaunch> _quickLaunch(
 Future<B02StrengthExecutionLaunch> _launchWithHistoryContext(
   StrengthExecutionRepository executions, {
   String snapshotId = 'history-context',
+  String repsRange = '8-10',
+  double? targetLoadKg,
 }) async {
   final launch = await executions.startUnscheduledDraft(
     routineName: 'Quick workout',
@@ -717,7 +780,7 @@ Future<B02StrengthExecutionLaunch> _launchWithHistoryContext(
     launch: launch,
     exerciseId: 'exercise-a',
     exerciseName: 'Exercise A',
-    repsRange: '8-10',
+    repsRange: repsRange,
   );
   final snapshot =
       jsonDecode(withExercise.executionSnapshotJson) as Map<String, dynamic>;
@@ -725,6 +788,9 @@ Future<B02StrengthExecutionLaunch> _launchWithHistoryContext(
       .map((raw) => Map<String, dynamic>.from(raw as Map))
       .toList();
   prescriptions.single['loadBasis'] = B02LoadBasis.totalExternal.dbValue;
+  if (targetLoadKg != null) {
+    prescriptions.single['targetLoadKg'] = targetLoadKg;
+  }
   final updated = withExercise.copyWith(
     executionSnapshotJson: jsonEncode({
       ...snapshot,
