@@ -1,9 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../core/config/app_preferences_keys.dart';
 import '../../core/di/providers.dart';
 import '../../core/presentation/consumer_copy.dart';
 import '../../core/presentation/product_failure_presentation.dart';
@@ -19,6 +17,7 @@ import '../../data/services/b02_execution_progression.dart';
 import '../../data/services/b02_rest_recommendation_service.dart';
 import '../../data/services/b02_strength_execution_draft_service.dart';
 import '../exercise_picker/exercise_picker_models.dart';
+import '../progress/streak_provider.dart';
 
 /// UI states are deliberately separate from the durable draft. A transient
 /// failure never becomes a fake completed/ready state and a recovered draft is
@@ -129,10 +128,13 @@ class B02StrengthExecutionController
                  launch: initialLaunch,
                ),
        ) {
+    // Claim the screen wake lock and the rest notification only once this
+    // controller actually holds a workout. A controller created empty (the
+    // global launcher, read lazily from many places) must not take the
+    // notification actions away from the player that owns the live draft.
     if (initialLaunch != null) {
       _ensureWakeLockForLaunch(initialLaunch);
     }
-    _registerRestPresenceDelegate();
   }
 
   static DateTime _systemNowUtc() => DateTime.now().toUtc();
@@ -141,6 +143,7 @@ class B02StrengthExecutionController
       b02WorkoutSessionWakeLockKey(launch.draftId);
 
   void _ensureWakeLockForLaunch(B02StrengthExecutionLaunch launch) {
+    _registerRestPresenceDelegate();
     final coordinator = _wakeLockCoordinator;
     if (coordinator == null) return;
     coordinator.attachToAppLifecycle();
@@ -155,8 +158,13 @@ class B02StrengthExecutionController
       onSkip: (periodId) async {
         await skipRest(periodId);
       },
+      owner: this,
     );
   }
+
+  /// Whether this controller answers the rest notification. True when there
+  /// is no presence service (tests, or presence disabled).
+  bool get _ownsRestPresence => _restPresence?.isActionDelegate(this) ?? true;
 
   /// Reconciles the session-owned screen-awake intent for route rebinds and
   /// lifecycle callbacks. It does not infer or mutate workout state.
@@ -188,8 +196,8 @@ class B02StrengthExecutionController
 
   void _releaseWakeLockForLaunch(B02StrengthExecutionLaunch launch) {
     final presence = _restPresence;
-    if (presence != null) {
-      presence.unregisterActionDelegate();
+    if (presence != null && presence.isActionDelegate(this)) {
+      presence.unregisterActionDelegate(owner: this);
       unawaited(presence.cleanup());
     }
     final coordinator = _wakeLockCoordinator;
@@ -200,8 +208,8 @@ class B02StrengthExecutionController
   @override
   void dispose() {
     final presence = _restPresence;
-    if (presence != null) {
-      presence.unregisterActionDelegate();
+    if (presence != null && presence.isActionDelegate(this)) {
+      presence.unregisterActionDelegate(owner: this);
       unawaited(presence.cleanup());
     }
     super.dispose();
@@ -1081,6 +1089,10 @@ class B02StrengthExecutionController
     try {
       final current = state.launch;
       if (current == null) return;
+      // Only the controller holding the live workout may consume the intent:
+      // another one would drop it (its copy has no matching rest) or save
+      // its outdated copy over newer sets.
+      if (!_ownsRestPresence) return;
 
       final intent = await RestPresenceService.loadAndClearPendingIntent();
       final anchor = await RestPresenceService.loadAnchorRecord();
@@ -1634,20 +1646,8 @@ final b02StrengthExecutionControllerProvider =
         achievementStats: ProgressStatisticsRepository(
           ref.watch(databaseProvider),
         ),
-        achievementStreakDays: () async {
-          SharedPreferences? prefs;
-          try {
-            prefs = ref.read(sharedPreferencesProvider);
-          } on Object catch (error, stackTrace) {
-            AppLogger.error(
-              'Unable to read sharedPreferencesProvider for streak calculation; reading SharedPreferences directly',
-              error,
-              stackTrace,
-            );
-          }
-          prefs ??= await SharedPreferences.getInstance();
-          return prefs.getInt(AppPreferenceKeys.userStreakCount) ?? 0;
-        },
+        achievementStreakDays: () =>
+            ref.read(streakRepositoryProvider).currentStreak(),
       ),
     );
 
@@ -1671,20 +1671,8 @@ final b02StrengthExecutionScreenControllerProvider = StateNotifierProvider
         achievementStats: ProgressStatisticsRepository(
           ref.watch(databaseProvider),
         ),
-        achievementStreakDays: () async {
-          SharedPreferences? prefs;
-          try {
-            prefs = ref.read(sharedPreferencesProvider);
-          } on Object catch (error, stackTrace) {
-            AppLogger.error(
-              'Unable to read sharedPreferencesProvider for streak calculation; reading SharedPreferences directly',
-              error,
-              stackTrace,
-            );
-          }
-          prefs ??= await SharedPreferences.getInstance();
-          return prefs.getInt(AppPreferenceKeys.userStreakCount) ?? 0;
-        },
+        achievementStreakDays: () =>
+            ref.read(streakRepositoryProvider).currentStreak(),
       ),
     );
 

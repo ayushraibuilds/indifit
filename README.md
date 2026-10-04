@@ -4,7 +4,7 @@ IndiFit is an offline-first workout and nutrition tracker tailored for Indian fo
 
 ## Key Features
 - **Offline Core**: Drift (SQLite) stores workouts, nutrition logs, body measurements, plans, preferences, and recovery copies on the device. Core logging and review flows work without a network connection.
-- **Indian Food Catalogue**: The app bundles 573 base food entries and 25 optional regional-pack entries with nutrition facts and provenance metadata.
+- **Indian Food Catalogue**: The app bundles 535 base food entries and 25 optional regional-pack entries with nutrition facts and provenance metadata.
 - **Optional Online Food Lookup**: When Offline Mode is off, users can deliberately search or scan packaged foods through Open Food Facts. Local results remain available if the provider cannot be reached.
 - **Interactive Workout Player**: Responsive set counters, haptic circular countdown rest timers, and personal record confetti celebrations.
 - **Progress & Health Connections**: Review recorded workout/nutrition trends and optionally connect supported Health Connect or HealthKit categories.
@@ -85,6 +85,8 @@ Without a shared token, the SDK prints a per-install token in the Xcode console 
 **Local backend instead of Firebase:** run the FastAPI server with `ENABLE_AI_ROUTES=1` (the AI routes are off by default and never deployed) and build with `--dart-define=INDIFIT_AI_GATEWAY=fastapi`. Failures come back as HTTP errors, never sample data.
 
 **Measuring accuracy:** `tool/ai_eval/README.md` explains the evaluation harness. Run it before changing the model, a prompt or the food matcher.
+
+**Crash reporting:** opt-in Sentry is active only when the build carries a DSN: `--dart-define=SENTRY_DSN=https://…`. CI's release builds read it from the `SENTRY_DSN` repository secret; without it, reporting stays off and the Settings toggle has no effect.
 
 **Release-mode check without the store:** add `--dart-define=INDIFIT_APPCHECK_DEBUG=true` to a profile or release build so it uses the debug provider. Never set this for store builds.
 

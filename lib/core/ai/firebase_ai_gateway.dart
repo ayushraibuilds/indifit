@@ -10,7 +10,9 @@ import 'package:flutter/foundation.dart';
 import '../../firebase_options.dart';
 import '../config/app_config.dart';
 import '../utils/app_logger.dart';
+import 'ai_daily_caps.dart';
 import 'ai_gateway.dart';
+import 'ai_remote_config_refresher.dart';
 import 'gemini_requests.dart';
 
 /// Remote Config keys that steer AI without an app release.
@@ -25,6 +27,9 @@ abstract final class AiRemoteConfigKeys {
   /// Photo meal estimates are the least accurate feature and can be switched
   /// off on their own.
   static const photoEnabled = 'ai_photo_enabled';
+
+  /// Per-device daily allowance per feature, as JSON; see [AiDailyCaps].
+  static const dailyCaps = 'ai_daily_caps';
 }
 
 /// [AiGateway] backed by Gemini through Firebase AI Logic.
@@ -41,6 +46,7 @@ class FirebaseAiGateway implements AiGateway {
   final Duration timeout;
 
   static Future<void>? _initialization;
+  static AiRemoteConfigRefresher? _refresher;
 
   @override
   Future<Map<String, dynamic>> decomposeMealText(String text) => _generate(
@@ -68,6 +74,12 @@ class FirebaseAiGateway implements AiGateway {
     GeminiRequests.nutritionLabel(jpeg),
     schema: GeminiRequests.labelSchema,
   );
+
+  /// Today's per-feature allowances from Remote Config.
+  Future<AiDailyCaps> dailyCaps() async {
+    final config = await _remoteConfig();
+    return AiDailyCaps.parse(config.getString(AiRemoteConfigKeys.dailyCaps));
+  }
 
   Future<Map<String, dynamic>> _generate(
     List<Content> prompt, {
@@ -125,8 +137,11 @@ class FirebaseAiGateway implements AiGateway {
     return GeminiRequests.decode(text);
   }
 
+  /// Remote Config, refreshed first if its values are stale, so the kill
+  /// switch and model reach apps that stay open.
   Future<FirebaseRemoteConfig> _remoteConfig() async {
     await (_initialization ??= _initialize());
+    await _refresher?.ensureFresh();
     return FirebaseRemoteConfig.instance;
   }
 
@@ -162,20 +177,25 @@ class FirebaseAiGateway implements AiGateway {
         AiRemoteConfigKeys.enabled: true,
         AiRemoteConfigKeys.model: GeminiRequests.defaultModel,
         AiRemoteConfigKeys.photoEnabled: true,
+        AiRemoteConfigKeys.dailyCaps: AiDailyCaps.defaultsJson,
       });
       await config.setConfigSettings(
         RemoteConfigSettings(
           fetchTimeout: const Duration(seconds: 10),
-          minimumFetchInterval: const Duration(hours: 1),
+          // No longer than the refresher's maxAge, or its re-fetch would be
+          // served from cache.
+          minimumFetchInterval: const Duration(minutes: 15),
         ),
       );
-      // A failed fetch keeps the last activated values (or the defaults).
-      unawaited(
-        config.fetchAndActivate().catchError((Object error) {
-          AppLogger.error('Remote Config fetch failed', error);
-          return false;
-        }),
+      // The first call waits briefly for current values; a slow or failed
+      // fetch keeps the last activated values (or the defaults).
+      final refresher = _refresher ??= AiRemoteConfigRefresher(
+        fetchAndActivate: config.fetchAndActivate,
+        activate: config.activate,
+        updates: config.onConfigUpdated,
+        lastFetchTime: () => config.lastFetchTime,
       );
+      await refresher.start();
     } on Object catch (error, stackTrace) {
       _initialization = null; // Allow a retry on the next AI call.
       AppLogger.error('Firebase AI initialisation failed', error, stackTrace);
