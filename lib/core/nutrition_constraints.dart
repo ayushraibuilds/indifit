@@ -1461,6 +1461,26 @@ class NutritionConstraintEvaluationResult {
     this.fingerprint = computed;
   }
 
+  /// The same result recorded at [atUtc] instead of [evaluatedAtUtc]. For
+  /// callers that evaluate against the constraints in effect now but file the
+  /// result under an earlier logical time (a replayed recommendation), so the
+  /// fingerprint depends on the outcome rather than on when it was computed.
+  NutritionConstraintEvaluationResult stampedAt(DateTime atUtc) =>
+      NutritionConstraintEvaluationResult(
+        userId: userId,
+        subjectId: subjectId,
+        foodId: foodId,
+        recipeVersionId: recipeVersionId,
+        thaliId: thaliId,
+        outcome: outcome,
+        evaluations: evaluations,
+        missingEvidence: missingEvidence,
+        provenanceSummary: provenanceSummary,
+        ruleVersion: ruleVersion,
+        taxonomyVersion: taxonomyVersion,
+        evaluatedAtUtc: atUtc,
+      );
+
   Map<String, dynamic> toJson({bool includeFingerprint = true}) => {
     'contract_version': kNutritionConstraintValueContractVersion,
     'user_id': userId,

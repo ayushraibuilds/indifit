@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
+import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:flutter/services.dart'
     show rootBundle, RootIsolateToken, BackgroundIsolateBinaryMessenger;
 import 'package:path/path.dart' as p;
@@ -393,37 +394,53 @@ class AppDatabase extends _$AppDatabase {
       await _seedReviewedMuscleCatalogIfPossible();
     },
     beforeOpen: (details) async {
-      await customStatement('PRAGMA foreign_keys = ON;');
-      if (schemaVersionOverride == null) {
-        final exCountRow = await customSelect(
-          'SELECT COUNT(*) as c FROM exercises;',
-        ).getSingle();
-        if (exCountRow.read<int>('c') == 0) {
-          await upsertSeededExercisesFromAsset();
-        }
-        final foodCountRow = await customSelect(
-          'SELECT COUNT(*) as c FROM food_items;',
-        ).getSingle();
-        if (foodCountRow.read<int>('c') == 0) {
-          await upsertSeededFoodsFromAsset();
-        }
+      // Per-launch cost of the repairs below (P1 WS-B part 2). Measured at
+      // ~6 ms warm on a desktop (2026-10-03); the budget is 300 ms on a
+      // mid-range phone. Logged outside release builds so a device check is
+      // one launch away.
+      final stopwatch = Stopwatch()..start();
+      await _runBeforeOpen(details);
+      if (!kReleaseMode) {
+        AppLogger.info(
+          'event=db_before_open elapsed_ms=${stopwatch.elapsedMilliseconds} '
+              'upgrade=${details.hadUpgrade} created=${details.wasCreated}',
+          'AppDatabase',
+        );
       }
-      if (schemaVersionOverride != 16) {
-        await _ensurePreReleaseV17VesselGraph();
-        if (await _tableExists('nutrition_foods')) {
-          await _repairMissingV17LegacyFoodMappings();
-          await _retireMergedCatalogueDuplicates();
-          // Triggers are part of the durable v17 boundary. Reinstall them on
-          // every open so a v17 database created before a boundary repair
-          // cannot bypass the same checks through raw SQL, restore, or a
-          // second writer.
-          await _createV17Indexes();
-          if (schemaVersionOverride != 17) {
-            await _createV18Indexes();
-          }
-        }
-      }
-      await _checkAndInvalidateFoodSearchCacheOnManifestChange();
     },
   );
+
+  Future<void> _runBeforeOpen(OpeningDetails details) async {
+    await customStatement('PRAGMA foreign_keys = ON;');
+    if (schemaVersionOverride == null) {
+      final exCountRow = await customSelect(
+        'SELECT COUNT(*) as c FROM exercises;',
+      ).getSingle();
+      if (exCountRow.read<int>('c') == 0) {
+        await upsertSeededExercisesFromAsset();
+      }
+      final foodCountRow = await customSelect(
+        'SELECT COUNT(*) as c FROM food_items;',
+      ).getSingle();
+      if (foodCountRow.read<int>('c') == 0) {
+        await upsertSeededFoodsFromAsset();
+      }
+    }
+    if (schemaVersionOverride != 16) {
+      await _ensurePreReleaseV17VesselGraph();
+      if (await _tableExists('nutrition_foods')) {
+        await _repairMissingV17LegacyFoodMappings();
+        await _retireMergedCatalogueDuplicates();
+        // Triggers are part of the durable v17 boundary. Reinstall them on
+        // every open so a v17 database created before a boundary repair
+        // cannot bypass the same checks through raw SQL, restore, or a
+        // second writer.
+        await _createV17Indexes();
+        if (schemaVersionOverride != 17) {
+          await _createV18Indexes();
+        }
+      }
+    }
+    await _checkAndInvalidateFoodSearchCacheOnManifestChange();
+  }
 }

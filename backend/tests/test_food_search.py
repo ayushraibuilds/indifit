@@ -228,3 +228,31 @@ def test_food_search_logs_zero_results_anonymously_without_pii(client, caplog):
     finally:
         if missed_file.exists():
             missed_file.unlink()
+
+
+def test_cors_never_allows_credentials_or_unknown_origins(client):
+    preflight = {
+        "Access-Control-Request-Method": "POST",
+        "Access-Control-Request-Headers": "content-type,x-indifit-key",
+    }
+    allowed = client.options(
+        "/api/food/search",
+        headers={"Origin": "https://indifit.app", **preflight},
+    )
+    assert allowed.headers.get("access-control-allow-origin") == "https://indifit.app"
+    assert "access-control-allow-credentials" not in allowed.headers
+
+    blocked = client.options(
+        "/api/food/search",
+        headers={"Origin": "https://evil.example", **preflight},
+    )
+    assert "access-control-allow-origin" not in blocked.headers
+
+    put = client.options(
+        "/api/food/search",
+        headers={
+            "Origin": "https://indifit.app",
+            "Access-Control-Request-Method": "PUT",
+        },
+    )
+    assert put.status_code == 400
