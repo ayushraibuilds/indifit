@@ -2,11 +2,11 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "summary": {
     "total_dart_files": 464,
-    "total_loc": 338576,
+    "total_loc": 338533,
     "total_internal_edges": 2307,
     "external_package_count": 28,
     "catch_metrics": {
-      "total_catches_all": 523,
+      "total_catches_all": 522,
       "total_catch_underscore": 195,
       "total_empty_catches": 37,
       "p0_empty_catches": 0
@@ -14,7 +14,7 @@
     "layer_violations_count": 7,
     "catches_by_layer": {
       "core": 146,
-      "data": 104,
+      "data": 103,
       "features": 272,
       "other": 1
     }
@@ -1860,7 +1860,7 @@
       "path": "lib/core/config/app_config.dart",
       "layer": "core",
       "sublayer": "core",
-      "loc": 57,
+      "loc": 56,
       "imports": [],
       "imported_by": [
         "lib/core/ai/ai_gateway_provider.dart",
@@ -2989,7 +2989,7 @@
       "path": "lib/core/nutrition_constraints.dart",
       "layer": "core",
       "sublayer": "core",
-      "loc": 2019,
+      "loc": 2039,
       "imports": [],
       "imported_by": [
         "lib/core/backup/backup_v8.dart",
@@ -3028,7 +3028,7 @@
         },
         {
           "file": "lib/core/nutrition_constraints.dart",
-          "line": 1607,
+          "line": 1627,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -3038,7 +3038,7 @@
         },
         {
           "file": "lib/core/nutrition_constraints.dart",
-          "line": 1972,
+          "line": 1992,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -7896,7 +7896,7 @@
       "path": "lib/data/repositories/food_api_service.dart",
       "layer": "data",
       "sublayer": "data",
-      "loc": 601,
+      "loc": 533,
       "imports": [
         "lib/core/config/app_config.dart",
         "lib/core/di/core_providers.dart",
@@ -7927,7 +7927,7 @@
       "catches": [
         {
           "file": "lib/data/repositories/food_api_service.dart",
-          "line": 277,
+          "line": 275,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -7937,7 +7937,7 @@
         },
         {
           "file": "lib/data/repositories/food_api_service.dart",
-          "line": 365,
+          "line": 359,
           "var": "e",
           "is_underscore": false,
           "is_empty": false,
@@ -7947,17 +7947,7 @@
         },
         {
           "file": "lib/data/repositories/food_api_service.dart",
-          "line": 399,
-          "var": "error",
-          "is_underscore": false,
-          "is_empty": false,
-          "snippet": "} on DioException catch (error) {",
-          "layer": "data",
-          "is_p0": false
-        },
-        {
-          "file": "lib/data/repositories/food_api_service.dart",
-          "line": 461,
+          "line": 470,
           "var": "e",
           "is_underscore": false,
           "is_empty": false,
@@ -7967,7 +7957,7 @@
         },
         {
           "file": "lib/data/repositories/food_api_service.dart",
-          "line": 535,
+          "line": 481,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -7977,7 +7967,7 @@
         },
         {
           "file": "lib/data/repositories/food_api_service.dart",
-          "line": 563,
+          "line": 509,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -7987,7 +7977,7 @@
         }
       ],
       "empty_catch_count": 0,
-      "total_catch_count": 6
+      "total_catch_count": 5
     },
     "lib/data/repositories/food_repository.dart": {
       "path": "lib/data/repositories/food_repository.dart",
@@ -10174,7 +10164,7 @@
       "path": "lib/data/services/b04_production_recommendation_orchestrator.dart",
       "layer": "data",
       "sublayer": "data",
-      "loc": 1221,
+      "loc": 1227,
       "imports": [
         "lib/core/fixtures/b04_adaptive_coaching_fixture_matrix.dart",
         "lib/core/nutrients.dart",
@@ -10246,7 +10236,7 @@
         },
         {
           "file": "lib/data/services/b04_production_recommendation_orchestrator.dart",
-          "line": 701,
+          "line": 707,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -10256,7 +10246,7 @@
         },
         {
           "file": "lib/data/services/b04_production_recommendation_orchestrator.dart",
-          "line": 739,
+          "line": 745,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -10266,7 +10256,7 @@
         },
         {
           "file": "lib/data/services/b04_production_recommendation_orchestrator.dart",
-          "line": 804,
+          "line": 810,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -10276,7 +10266,7 @@
         },
         {
           "file": "lib/data/services/b04_production_recommendation_orchestrator.dart",
-          "line": 851,
+          "line": 857,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -10286,7 +10276,7 @@
         },
         {
           "file": "lib/data/services/b04_production_recommendation_orchestrator.dart",
-          "line": 1013,
+          "line": 1019,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
