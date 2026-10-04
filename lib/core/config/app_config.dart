@@ -8,14 +8,15 @@ class AppConfig {
     'INDIFIT_CONNECTED_AI',
   );
 
-  /// The base URL for the backend API (FastAPI AI router).
-  /// Can be overridden during compilation using:
-  /// `--dart-define=BACKEND_API_URL=https://your-production-url.com`
+  /// The base URL for the IndiFit backend (food search proxy, dev AI routes).
+  ///
+  /// Empty in release builds: no backend is deployed, so online food search
+  /// and barcode lookup go straight to Open Food Facts. Set it once a backend
+  /// is live with `--dart-define=BACKEND_API_URL=https://…`. Debug builds use
+  /// the local FastAPI server (Android emulator loopback).
   static const String backendUrl = String.fromEnvironment(
     'BACKEND_API_URL',
-    defaultValue: kReleaseMode
-        ? 'https://api.indifit.app'
-        : 'http://10.0.2.2:8000', // Adapt for Android Emulator local loopback
+    defaultValue: kReleaseMode ? '' : 'http://10.0.2.2:8000',
   );
 
   /// Optional legacy-backend credential for development and compatibility
