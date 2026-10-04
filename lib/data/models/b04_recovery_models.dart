@@ -171,7 +171,7 @@ class RecoveryProvenance {
     } on B04RecoveryValidationError {
       rethrow;
     } on FormatException {
-      // Ordinary opaque identifiers are not JSON and are accepted.
+      // Safe: Ordinary opaque identifiers are not JSON and are accepted.
     }
   }
 

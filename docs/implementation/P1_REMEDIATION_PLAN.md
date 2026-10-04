@@ -376,17 +376,19 @@ These are not bugs, but the audit ties them to retention. **Re-check each one ag
 
 ## 3. Definition of done (all P1s)
 
-- [ ] Release builds find packaged foods online via Open Food Facts, and never contact a host the project doesn't control (WS-0).
-- [ ] Crash reporting either works in release (DSN set, takes effect without a restart, no user text in events) or is removed from the UI, the policy and the store copy (WS-A).
-- [ ] An unopenable DB shows the recovery screen and can export its files; a slow migration shows a waiting screen, never an error (WS-B part 1).
-- [ ] `beforeOpen` cost is measured and recorded, and gated if over 300 ms (WS-B part 2).
-- [ ] No unexplained empty catches, enforced by `no_silent_catch_test.dart`; data-path failures are visible (WS-C).
-- [ ] The streak is correct for the four cases in WS-D and comes from one repository (WS-D part 1).
-- [ ] A notification rest action is applied exactly once and never overwrites newer sets (WS-D part 2, steps 1–3).
-- [ ] Cloud crypto comment is truthful (WS-E).
-- [ ] Unknown routes show a friendly page with a way home (WS-G).
-- [ ] H1–H5 shipped, with screenshots in their PRs (WS-H).
-- [ ] `main` CI green after every PR; full local suite at 0 failures.
+Reviewed against `main` @ `a02dfa7` on 2026-10-04 (all P1 PRs, #24–#49, merged).
+
+- [x] Release builds find packaged foods online via Open Food Facts, and never contact a host the project doesn't control (WS-0, PR #24).
+- [ ] Crash reporting either works in release (DSN set, takes effect without a restart, no user text in events) or is removed from the UI, the policy and the store copy (WS-A, PR #33). **Code done**; release builds without a DSN now hide the toggle. **Owner:** add the `SENTRY_DSN` repository secret and pass it to store builds.
+- [x] An unopenable DB shows the recovery screen and can export its files; a slow migration shows a waiting screen, never an error (WS-B part 1, PR #28). Manual truncated-DB pass on a device is still owed.
+- [ ] `beforeOpen` cost is measured and recorded, and gated if over 300 ms (WS-B part 2, PR #29). Measured ~6 ms warm on desktop only; **owner:** measure on a mid-range Android phone.
+- [x] No unexplained silent catches, enforced by `no_silent_catch_test.dart`, which now also rejects catch blocks holding only a non-`Safe:` comment; data-path failures are logged (WS-C, PR #30 plus the 2026-10-04 follow-up).
+- [x] The streak is correct for the four cases in WS-D and comes from one repository (WS-D part 1, PR #26).
+- [x] A notification rest action is applied exactly once and never overwrites newer sets (WS-D part 2, steps 1–3, PR #27). Residual risk until the step 4 refactor: the last controller to load a workout owns the notification actions, so the global controller reloading a workout while the player is open would take them over.
+- [x] Cloud crypto comment is truthful (WS-E, PR #31).
+- [x] Unknown routes show a friendly page with a way home (WS-G, PR #25).
+- [x] H1–H5 shipped (WS-H, PRs #32, #34, #36–#39); H6–H10 also shipped (#35, #41, #47–#49).
+- [ ] `main` CI green after every PR; full local suite at 0 failures. PRs #40–#49 were merged in quick succession on 2026-10-04; confirm the run on the final merge.
 
 Not needed for launch: WS-F (before any backend deploy) and the WS-D part 2 refactor (after launch).
 

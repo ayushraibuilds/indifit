@@ -49,7 +49,7 @@ class CivilDateRevisionNotifier extends StateNotifier<int> {
       _timezone = timezone;
       _scheduleNextBoundary();
     } catch (_) {
-      // The feature providers retain their existing error/loading behavior if
+      // Safe: The feature providers retain their existing error/loading behavior if
       // timezone resolution is unavailable. A later app resume retries it.
     }
   }

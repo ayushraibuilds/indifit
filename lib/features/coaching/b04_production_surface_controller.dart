@@ -295,7 +295,7 @@ class B04GoalSettingsController extends StateNotifier<B04GoalSettingsState> {
         _dates.normalizeLocalDate(entered);
         validCivilDate = true;
       } catch (_) {
-        // Keep malformed civil dates as an explicit invalid evaluation rather
+        // Safe: Keep malformed civil dates as an explicit invalid evaluation rather
         // than retaining a previously eligible state.
       }
     }

@@ -399,7 +399,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
           byId[item.id] = item;
         }
       } catch (_) {
-        // A single retrieval-vocabulary expansion must not block the others.
+        // Safe: A single retrieval-vocabulary expansion must not block the others.
       }
     }
     if (normalized.length >= 4) {
@@ -411,7 +411,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
             byId[item.id] = item;
           }
         } catch (_) {
-          // The provider path remains available if prefix retrieval fails.
+          // Safe: The provider path remains available if prefix retrieval fails.
         }
       }
     }
@@ -430,7 +430,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         foods.map((food) => food.id),
       );
     } catch (_) {
-      // Presentation metadata must fail open; identities remain independent.
+      // Safe: Presentation metadata must fail open; identities remain independent.
     }
     if (!mounted || generation != _searchGeneration) return;
     setState(() {
@@ -537,7 +537,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         _rebuildSearchRanking(query);
       });
     } catch (_) {
-      // The legacy/local compatibility search remains usable on its own.
+      // Safe: The legacy/local compatibility search remains usable on its own.
     }
   }
 

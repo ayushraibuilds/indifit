@@ -280,8 +280,13 @@ class AdaptiveTdeeRepository {
           }
         }
         if (intakes.isNotEmpty) return intakes;
-      } catch (_) {
-        // Fall back to direct SQL queries below
+      } catch (error, stackTrace) {
+        // Fall back to direct SQL queries below.
+        AppLogger.error(
+          'Adaptive TDEE: read model unavailable, using direct queries',
+          error,
+          stackTrace,
+        );
       }
     }
 

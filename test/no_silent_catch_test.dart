@@ -6,13 +6,17 @@ import 'package:flutter_test/flutter_test.dart';
 ///
 /// The `empty_catches` lint can't do this: it exempts a catch variable named
 /// `_`, which is how every silent catch in this codebase was written. Rules:
-/// - a `catch` block may not be empty. Log the error, surface it, or explain
-///   why it is safe with a `// Safe: <reason>` comment inside the block;
+/// - a `catch` (or `on Type`) block may not do nothing. Log the error,
+///   surface it, or explain why it is safe with a `// Safe: <reason>` comment
+///   inside the block. Any other comment alone doesn't count;
 /// - a no-op `catchError((_) {})` needs a `// Safe: <reason>` comment on one
 ///   of the three lines above it.
 void main() {
   test('no unexplained silent catches in lib/', () {
-    final emptyCatch = RegExp(r'catch\s*\([^)]*\)\s*\{\s*\}');
+    // A catch clause whose body holds nothing but whitespace and comments.
+    final silentCatch = RegExp(
+      r'(?:catch\s*\([^)]*\)|\}\s*on\s+\w+(?:<[^>]*>)?)\s*\{((?:\s*//[^\n]*)*)\s*\}',
+    );
     final noOpCatchError = RegExp(
       r'catchError\(\s*\(\s*\w*\s*\)\s*(\{\s*\}|=>\s*null)\s*\)',
     );
@@ -28,8 +32,9 @@ void main() {
           '\n'.allMatches(source.substring(0, offset)).length + 1;
       final lines = source.split('\n');
 
-      for (final match in emptyCatch.allMatches(source)) {
-        violations.add('${file.path}:${lineOf(match.start)} empty catch');
+      for (final match in silentCatch.allMatches(source)) {
+        if (match.group(1)!.contains('// Safe:')) continue;
+        violations.add('${file.path}:${lineOf(match.start)} silent catch');
       }
       for (final match in noOpCatchError.allMatches(source)) {
         final line = lineOf(match.start);

@@ -2,20 +2,20 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "summary": {
     "total_dart_files": 474,
-    "total_loc": 340359,
-    "total_internal_edges": 2357,
+    "total_loc": 340391,
+    "total_internal_edges": 2359,
     "external_package_count": 28,
     "catch_metrics": {
-      "total_catches_all": 507,
-      "total_catch_underscore": 161,
+      "total_catches_all": 504,
+      "total_catch_underscore": 158,
       "total_empty_catches": 0,
       "p0_empty_catches": 0
     },
     "layer_violations_count": 7,
     "catches_by_layer": {
       "core": 145,
-      "data": 103,
-      "features": 258,
+      "data": 101,
+      "features": 257,
       "other": 1
     }
   },
@@ -144,7 +144,7 @@
       "path": "lib/app/database_recovery_screen.dart",
       "layer": "app",
       "sublayer": "app",
-      "loc": 168,
+      "loc": 174,
       "imports": [
         "lib/core/utils/app_logger.dart",
         "lib/app/database_readiness.dart"
@@ -4133,7 +4133,7 @@
       "path": "lib/core/services/crash_reporting_service.dart",
       "layer": "core",
       "sublayer": "core",
-      "loc": 208,
+      "loc": 213,
       "imports": [
         "lib/core/config/app_preferences_keys.dart",
         "lib/core/utils/app_logger.dart"
@@ -4149,7 +4149,8 @@
         "lib/features/dashboard/dashboard_controller.dart",
         "lib/features/dashboard/dashboard_screen.dart",
         "lib/features/settings/regional_food_packs_screen.dart",
-        "lib/features/settings/settings_controller.dart"
+        "lib/features/settings/settings_controller.dart",
+        "lib/features/settings/widgets/data_management_section.dart"
       ],
       "parts": [],
       "part_of": null,
@@ -5328,6 +5329,7 @@
         "lib/features/nutrition_ai/natural_language_meal_service.dart",
         "lib/features/onboarding/onboarding_screen.dart",
         "lib/features/program_authoring/program_review_screen.dart",
+        "lib/features/progress/progress_dashboard_controller.dart",
         "lib/features/progress/streak_provider.dart",
         "lib/features/settings/regional_food_packs_screen.dart",
         "lib/features/workout_player/b02_strength_execution_controller.dart",
@@ -6910,7 +6912,7 @@
       "path": "lib/data/repositories/adaptive_tdee_repository.dart",
       "layer": "data",
       "sublayer": "data",
-      "loc": 413,
+      "loc": 418,
       "imports": [
         "lib/core/algorithms/adaptive_tdee_engine.dart",
         "lib/core/nutrition_household_measures.dart",
@@ -6932,17 +6934,7 @@
       "catches": [
         {
           "file": "lib/data/repositories/adaptive_tdee_repository.dart",
-          "line": 283,
-          "var": "_",
-          "is_underscore": true,
-          "is_empty": false,
-          "snippet": "} catch (_) {",
-          "layer": "data",
-          "is_p0": false
-        },
-        {
-          "file": "lib/data/repositories/adaptive_tdee_repository.dart",
-          "line": 305,
+          "line": 310,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -6952,7 +6944,7 @@
         }
       ],
       "empty_catch_count": 0,
-      "total_catch_count": 2
+      "total_catch_count": 1
     },
     "lib/data/repositories/b02_activity_session_repository.dart": {
       "path": "lib/data/repositories/b02_activity_session_repository.dart",
@@ -7900,7 +7892,7 @@
       "path": "lib/data/repositories/hydration_repository.dart",
       "layer": "data",
       "sublayer": "data",
-      "loc": 575,
+      "loc": 581,
       "imports": [
         "lib/core/config/app_preferences_keys.dart",
         "lib/core/services/local_schedule_date_service.dart",
@@ -7923,17 +7915,7 @@
       "catches": [
         {
           "file": "lib/data/repositories/hydration_repository.dart",
-          "line": 96,
-          "var": "_",
-          "is_underscore": true,
-          "is_empty": false,
-          "snippet": "} catch (_) {",
-          "layer": "data",
-          "is_p0": false
-        },
-        {
-          "file": "lib/data/repositories/hydration_repository.dart",
-          "line": 538,
+          "line": 544,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -7943,7 +7925,7 @@
         }
       ],
       "empty_catch_count": 0,
-      "total_catch_count": 2
+      "total_catch_count": 1
     },
     "lib/data/repositories/legacy_program_compatibility_adapter.dart": {
       "path": "lib/data/repositories/legacy_program_compatibility_adapter.dart",
@@ -15944,9 +15926,10 @@
       "path": "lib/features/progress/progress_dashboard_controller.dart",
       "layer": "features",
       "sublayer": "features/progress",
-      "loc": 40,
+      "loc": 46,
       "imports": [
         "lib/core/di/providers.dart",
+        "lib/core/utils/app_logger.dart",
         "lib/data/repositories/nutrition_read_model_repository.dart",
         "lib/data/repositories/progress_dashboard_read_repository.dart",
         "lib/features/progress/progress_dashboard_models.dart"
@@ -15967,20 +15950,9 @@
         "nutritionTargetAuthorityProvider"
       ],
       "routes_defined": [],
-      "catches": [
-        {
-          "file": "lib/features/progress/progress_dashboard_controller.dart",
-          "line": 16,
-          "var": "_",
-          "is_underscore": true,
-          "is_empty": false,
-          "snippet": "} catch (_) {",
-          "layer": "features/progress",
-          "is_p0": false
-        }
-      ],
+      "catches": [],
       "empty_catch_count": 0,
-      "total_catch_count": 1
+      "total_catch_count": 0
     },
     "lib/features/progress/progress_dashboard_models.dart": {
       "path": "lib/features/progress/progress_dashboard_models.dart",
@@ -17146,7 +17118,7 @@
       "path": "lib/features/settings/widgets/data_management_section.dart",
       "layer": "features",
       "sublayer": "features/settings",
-      "loc": 984,
+      "loc": 988,
       "imports": [
         "lib/core/backup/backup_file_adapter.dart",
         "lib/core/config/app_config.dart",
@@ -17156,6 +17128,7 @@
         "lib/core/presentation/today_onboarding_handoff.dart",
         "lib/core/router/app_router.dart",
         "lib/core/services/auto_backup_service.dart",
+        "lib/core/services/crash_reporting_service.dart",
         "lib/core/theme/b05_semantic_colors.dart",
         "lib/core/widgets/b05_accessibility_primitives.dart",
         "lib/features/onboarding/onboarding_screen.dart",
@@ -17181,7 +17154,7 @@
       "catches": [
         {
           "file": "lib/features/settings/widgets/data_management_section.dart",
-          "line": 31,
+          "line": 32,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -17191,7 +17164,7 @@
         },
         {
           "file": "lib/features/settings/widgets/data_management_section.dart",
-          "line": 149,
+          "line": 150,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -17201,7 +17174,7 @@
         },
         {
           "file": "lib/features/settings/widgets/data_management_section.dart",
-          "line": 220,
+          "line": 221,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -17211,7 +17184,7 @@
         },
         {
           "file": "lib/features/settings/widgets/data_management_section.dart",
-          "line": 286,
+          "line": 287,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -17221,7 +17194,7 @@
         },
         {
           "file": "lib/features/settings/widgets/data_management_section.dart",
-          "line": 393,
+          "line": 394,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -17231,7 +17204,7 @@
         },
         {
           "file": "lib/features/settings/widgets/data_management_section.dart",
-          "line": 432,
+          "line": 433,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -17241,7 +17214,7 @@
         },
         {
           "file": "lib/features/settings/widgets/data_management_section.dart",
-          "line": 565,
+          "line": 566,
           "var": "e",
           "is_underscore": false,
           "is_empty": false,

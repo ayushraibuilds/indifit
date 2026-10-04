@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/di/providers.dart';
+import '../../core/utils/app_logger.dart';
 import '../../data/repositories/nutrition_read_model_repository.dart';
 import '../../data/repositories/progress_dashboard_read_repository.dart';
 import 'progress_dashboard_models.dart';
@@ -13,8 +14,13 @@ final progressDashboardReadRepositoryProvider =
         nutrition = await ref.watch(
           nutritionReadModelRepositoryProvider.future,
         );
-      } catch (_) {
-        // Graceful fallback if nutrition registry/catalog is uninitialized.
+      } catch (error, stackTrace) {
+        // Fall back to workout-only progress if nutrition can't load.
+        AppLogger.error(
+          'Progress: nutrition read model unavailable',
+          error,
+          stackTrace,
+        );
       }
       final targets = ref.watch(nutritionTargetAuthorityProvider);
       return ProgressDashboardReadRepository(
