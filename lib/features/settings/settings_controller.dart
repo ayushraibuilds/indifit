@@ -567,9 +567,8 @@ class SettingsController extends StateNotifier<SettingsState> {
 
 final settingsControllerProvider =
     StateNotifierProvider<SettingsController, SettingsState>((ref) {
-      SharedPreferences? prefs;
-      try {
-        prefs = ref.watch(sharedPreferencesProvider);
-      } catch (_) {}
+      SharedPreferences? prefs = sharedPreferencesOrNull(
+        () => ref.watch(sharedPreferencesProvider),
+      );
       return SettingsController(ref, prefs);
     });

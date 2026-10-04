@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "summary": {
     "total_dart_files": 464,
-    "total_loc": 338643,
+    "total_loc": 338533,
     "total_internal_edges": 2307,
     "external_package_count": 28,
     "catch_metrics": {
@@ -2989,7 +2989,7 @@
       "path": "lib/core/nutrition_constraints.dart",
       "layer": "core",
       "sublayer": "core",
-      "loc": 2019,
+      "loc": 2039,
       "imports": [],
       "imported_by": [
         "lib/core/backup/backup_v8.dart",
@@ -3028,7 +3028,7 @@
         },
         {
           "file": "lib/core/nutrition_constraints.dart",
-          "line": 1607,
+          "line": 1627,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -3038,7 +3038,7 @@
         },
         {
           "file": "lib/core/nutrition_constraints.dart",
-          "line": 1972,
+          "line": 1992,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -10164,7 +10164,7 @@
       "path": "lib/data/services/b04_production_recommendation_orchestrator.dart",
       "layer": "data",
       "sublayer": "data",
-      "loc": 1221,
+      "loc": 1227,
       "imports": [
         "lib/core/fixtures/b04_adaptive_coaching_fixture_matrix.dart",
         "lib/core/nutrients.dart",
@@ -10236,7 +10236,7 @@
         },
         {
           "file": "lib/data/services/b04_production_recommendation_orchestrator.dart",
-          "line": 701,
+          "line": 707,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -10246,7 +10246,7 @@
         },
         {
           "file": "lib/data/services/b04_production_recommendation_orchestrator.dart",
-          "line": 739,
+          "line": 745,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -10256,7 +10256,7 @@
         },
         {
           "file": "lib/data/services/b04_production_recommendation_orchestrator.dart",
-          "line": 804,
+          "line": 810,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -10266,7 +10266,7 @@
         },
         {
           "file": "lib/data/services/b04_production_recommendation_orchestrator.dart",
-          "line": 851,
+          "line": 857,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -10276,7 +10276,7 @@
         },
         {
           "file": "lib/data/services/b04_production_recommendation_orchestrator.dart",
-          "line": 1013,
+          "line": 1019,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -18304,7 +18304,7 @@
       "path": "lib/features/workout_player/b02_strength_player_screen.dart",
       "layer": "features",
       "sublayer": "features/workout_player",
-      "loc": 1743,
+      "loc": 1713,
       "imports": [
         "lib/core/di/providers.dart",
         "lib/core/presentation/consumer_copy.dart",
@@ -18352,7 +18352,7 @@
       "catches": [
         {
           "file": "lib/features/workout_player/b02_strength_player_screen.dart",
-          "line": 953,
+          "line": 934,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -18362,7 +18362,7 @@
         },
         {
           "file": "lib/features/workout_player/b02_strength_player_screen.dart",
-          "line": 1129,
+          "line": 1104,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -18714,7 +18714,7 @@
       "path": "lib/features/workout_player/widgets/b02_compact_set_table.dart",
       "layer": "features",
       "sublayer": "features/workout_player",
-      "loc": 725,
+      "loc": 676,
       "imports": [
         "lib/core/theme/indifit_icons.dart",
         "lib/core/widgets/b05_accessibility_primitives.dart",
@@ -18791,7 +18791,7 @@
       "path": "lib/features/workout_player/widgets/b02_player_cards.dart",
       "layer": "features",
       "sublayer": "features/workout_player",
-      "loc": 1042,
+      "loc": 993,
       "imports": [
         "lib/core/presentation/consumer_copy.dart",
         "lib/core/services/indifit_haptics.dart",
@@ -18818,7 +18818,7 @@
       "catches": [
         {
           "file": "lib/features/workout_player/widgets/b02_player_cards.dart",
-          "line": 991,
+          "line": 942,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -19051,7 +19051,7 @@
       "path": "lib/features/workout_player/widgets/r07c_workout_presentation.dart",
       "layer": "features",
       "sublayer": "features/workout_player",
-      "loc": 215,
+      "loc": 207,
       "imports": [
         "lib/core/theme/b05_semantic_colors.dart",
         "lib/core/widgets/b05_accessibility_primitives.dart",

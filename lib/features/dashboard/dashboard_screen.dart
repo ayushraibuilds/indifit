@@ -405,10 +405,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         if (!mounted) return;
         final nextTitles = next.newlyUnlockedAchievementTitles;
         final plural = nextTitles.length == 1 ? 'Achievement' : 'Achievements';
-        SharedPreferences? prefs;
-        try {
-          prefs = ref.read(sharedPreferencesProvider);
-        } catch (_) {}
+        SharedPreferences? prefs = sharedPreferencesOrNull(
+          () => ref.read(sharedPreferencesProvider),
+        );
         prefs ??= await SharedPreferences.getInstance();
         await AchievementService.markCelebrated(prefs, nextIds);
         ref
