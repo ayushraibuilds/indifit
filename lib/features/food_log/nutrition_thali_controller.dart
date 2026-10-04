@@ -9,8 +9,10 @@ import '../../core/nutrition_household_measures.dart';
 import '../../core/nutrition_thali.dart';
 import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/typed_quantities.dart';
+import '../../core/utils/app_logger.dart';
 import '../../data/repositories/nutrition_thali_repository.dart';
 import 'meal_presentation_registry.dart';
+import 'thali/thali_preset_usage.dart';
 import 'thali/thali_presets.dart';
 
 enum NutritionThaliStatus {
@@ -118,7 +120,12 @@ class NutritionThaliController extends StateNotifier<NutritionThaliState> {
   final Future<NutritionThaliRepository> _repositoryFuture;
   final String userId;
   final String mealCategory;
+  final ThaliPresetUsage? _presetUsage;
   final Uuid _uuid;
+
+  /// The preset this draft started from, counted towards "your usual" once
+  /// the thali is logged.
+  String? _presetId;
   String? _commandId;
   String? _consumptionId;
   NutritionConstraintAcknowledgement? _acknowledgement;
@@ -131,8 +138,10 @@ class NutritionThaliController extends StateNotifier<NutritionThaliState> {
     required Future<NutritionThaliRepository> repository,
     required this.userId,
     required this.mealCategory,
+    ThaliPresetUsage? presetUsage,
     Uuid? uuid,
   }) : _repositoryFuture = repository,
+       _presetUsage = presetUsage,
        _uuid = uuid ?? const Uuid(),
        super(const NutritionThaliState());
 
@@ -178,6 +187,7 @@ class NutritionThaliController extends StateNotifier<NutritionThaliState> {
 
   Future<void> loadDraft(String thaliId) async {
     _draftIdForRetry = thaliId;
+    _presetId = null;
     state = state.copyWith(
       status: NutritionThaliStatus.loading,
       errorCode: null,
@@ -577,6 +587,19 @@ class NutritionThaliController extends StateNotifier<NutritionThaliState> {
         errorCode: null,
         errorMessage: null,
       );
+      final presetId = _presetId;
+      if (presetId != null) {
+        try {
+          await _presetUsage?.recordLogged(presetId);
+        } on Object catch (error, stackTrace) {
+          // The meal is logged; only the "usual thali" hint is affected.
+          AppLogger.error(
+            'Recording thali preset use failed',
+            error,
+            stackTrace,
+          );
+        }
+      }
       return saved;
     } catch (error) {
       _fail(error, action: _NutritionThaliRetryAction.finalize);
@@ -613,9 +636,40 @@ class NutritionThaliController extends StateNotifier<NutritionThaliState> {
     );
   }
 
+  /// Fills an empty new thali from the user's most-logged preset. Does
+  /// nothing when nothing has been logged from a preset yet, or when the
+  /// plate already has items (a saved draft or an AI handoff).
+  Future<void> startFromUsual() async {
+    final usual = _presetUsage?.mostUsed();
+    final draft = state.draft;
+    if (usual == null || draft == null || draft.items.isNotEmpty) return;
+    await loadPreset(
+      presetName: usual.name,
+      items: usual.items,
+      presetId: usual.id,
+    );
+    if (state.draft?.items.isNotEmpty == true) {
+      final missing = state.userNotice;
+      state = state.copyWith(
+        userNotice: missing == null
+            ? 'Started from your usual: ${usual.name}'
+            : 'Started from your usual: ${usual.name}. $missing',
+      );
+    }
+  }
+
+  /// Empties the plate, e.g. after it was pre-filled from "your usual".
+  void clearItems() {
+    final draft = state.draft;
+    if (draft == null || draft.items.isEmpty) return;
+    _presetId = null;
+    _setDraft(draft.copyWith(items: const []), dirty: true, clearPreview: true);
+  }
+
   Future<void> loadPreset({
     required String presetName,
     required List<ThaliPresetItemDefinition> items,
+    String? presetId,
   }) async {
     state = state.copyWith(
       status: NutritionThaliStatus.loading,
@@ -683,6 +737,7 @@ class NutritionThaliController extends StateNotifier<NutritionThaliState> {
       }
 
       _setDraft(draft, dirty: true, clearPreview: true);
+      _presetId = addedItems.isEmpty ? null : presetId;
       state = state.copyWith(userNotice: notice);
 
       if (addedItems.isNotEmpty) {
