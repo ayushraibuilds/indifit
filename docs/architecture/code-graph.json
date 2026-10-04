@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "summary": {
     "total_dart_files": 474,
-    "total_loc": 340391,
+    "total_loc": 340411,
     "total_internal_edges": 2359,
     "external_package_count": 28,
     "catch_metrics": {
@@ -440,7 +440,7 @@
       "path": "lib/core/ai/gemini_requests.dart",
       "layer": "core",
       "sublayer": "core",
-      "loc": 169,
+      "loc": 172,
       "imports": [
         "lib/core/utils/app_logger.dart",
         "lib/core/ai/ai_gateway.dart"
@@ -456,7 +456,7 @@
       "catches": [
         {
           "file": "lib/core/ai/gemini_requests.dart",
-          "line": 49,
+          "line": 52,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -12723,7 +12723,7 @@
       "path": "lib/features/food_log/food_search_screen.dart",
       "layer": "features",
       "sublayer": "features/food_log",
-      "loc": 2580,
+      "loc": 2576,
       "imports": [
         "lib/core/catalog/food_catalog_models.dart",
         "lib/core/catalog/food_category_taxonomy.dart",
@@ -12930,7 +12930,7 @@
         },
         {
           "file": "lib/features/food_log/food_search_screen.dart",
-          "line": 2061,
+          "line": 2057,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -14110,7 +14110,7 @@
       "path": "lib/features/food_log/widgets/food_search_recent_list.dart",
       "layer": "features",
       "sublayer": "features/food_log",
-      "loc": 383,
+      "loc": 404,
       "imports": [
         "lib/core/theme/b05_semantic_colors.dart",
         "lib/core/widgets/b05_accessibility_primitives.dart",
