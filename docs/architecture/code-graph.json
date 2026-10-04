@@ -1,9 +1,9 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "summary": {
-    "total_dart_files": 465,
-    "total_loc": 338566,
-    "total_internal_edges": 2309,
+    "total_dart_files": 464,
+    "total_loc": 338533,
+    "total_internal_edges": 2307,
     "external_package_count": 28,
     "catch_metrics": {
       "total_catches_all": 522,
@@ -2989,7 +2989,7 @@
       "path": "lib/core/nutrition_constraints.dart",
       "layer": "core",
       "sublayer": "core",
-      "loc": 2019,
+      "loc": 2039,
       "imports": [],
       "imported_by": [
         "lib/core/backup/backup_v8.dart",
@@ -3028,7 +3028,7 @@
         },
         {
           "file": "lib/core/nutrition_constraints.dart",
-          "line": 1607,
+          "line": 1627,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -3038,7 +3038,7 @@
         },
         {
           "file": "lib/core/nutrition_constraints.dart",
-          "line": 1972,
+          "line": 1992,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -3986,7 +3986,7 @@
       "path": "lib/core/router/app_router.dart",
       "layer": "core",
       "sublayer": "core",
-      "loc": 193,
+      "loc": 186,
       "imports": [
         "lib/data/database/app_database.dart",
         "lib/data/models/b02_execution_models.dart",
@@ -4026,9 +4026,7 @@
         "lib/features/workout_player/workout_execution_route.dart",
         "lib/features/workout_player/workout_summary_screen.dart",
         "lib/core/config/app_config.dart",
-        "lib/core/privacy/privacy_policy.dart",
-        "lib/core/utils/app_logger.dart",
-        "lib/core/router/route_not_found_screen.dart"
+        "lib/core/privacy/privacy_policy.dart"
       ],
       "imported_by": [
         "lib/app/bootstrap.dart",
@@ -4059,7 +4057,7 @@
       "catches": [
         {
           "file": "lib/core/router/app_router.dart",
-          "line": 82,
+          "line": 80,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -4070,24 +4068,6 @@
       ],
       "empty_catch_count": 0,
       "total_catch_count": 1
-    },
-    "lib/core/router/route_not_found_screen.dart": {
-      "path": "lib/core/router/route_not_found_screen.dart",
-      "layer": "core",
-      "sublayer": "core",
-      "loc": 52,
-      "imports": [],
-      "imported_by": [
-        "lib/core/router/app_router.dart"
-      ],
-      "parts": [],
-      "part_of": null,
-      "providers_defined": [],
-      "providers_used": [],
-      "routes_defined": [],
-      "catches": [],
-      "empty_catch_count": 0,
-      "total_catch_count": 0
     },
     "lib/core/router/routes/core_routes.dart": {
       "path": "lib/core/router/routes/core_routes.dart",
@@ -5546,7 +5526,6 @@
         "lib/core/backup/backup_file_adapter.dart",
         "lib/core/di/theme_provider.dart",
         "lib/core/di/user_profile_provider.dart",
-        "lib/core/router/app_router.dart",
         "lib/core/services/auto_backup_service.dart",
         "lib/core/services/crash_reporting_service.dart",
         "lib/core/services/data_erasure_service.dart",
@@ -10185,7 +10164,7 @@
       "path": "lib/data/services/b04_production_recommendation_orchestrator.dart",
       "layer": "data",
       "sublayer": "data",
-      "loc": 1221,
+      "loc": 1227,
       "imports": [
         "lib/core/fixtures/b04_adaptive_coaching_fixture_matrix.dart",
         "lib/core/nutrients.dart",
@@ -10257,7 +10236,7 @@
         },
         {
           "file": "lib/data/services/b04_production_recommendation_orchestrator.dart",
-          "line": 701,
+          "line": 707,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -10267,7 +10246,7 @@
         },
         {
           "file": "lib/data/services/b04_production_recommendation_orchestrator.dart",
-          "line": 739,
+          "line": 745,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -10277,7 +10256,7 @@
         },
         {
           "file": "lib/data/services/b04_production_recommendation_orchestrator.dart",
-          "line": 804,
+          "line": 810,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -10287,7 +10266,7 @@
         },
         {
           "file": "lib/data/services/b04_production_recommendation_orchestrator.dart",
-          "line": 851,
+          "line": 857,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -10297,7 +10276,7 @@
         },
         {
           "file": "lib/data/services/b04_production_recommendation_orchestrator.dart",
-          "line": 1013,
+          "line": 1019,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
