@@ -404,17 +404,43 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
+      // One concise notice, behind an info icon by the card title (P1 H5).
       expect(
-        find.text('Some nutrition details are incomplete'),
+        find.byTooltip('Some nutrition details are incomplete'),
         findsOneWidget,
       );
+      expect(find.text('Some nutrition details are incomplete'), findsNothing);
       expect(find.text('No daily target for this date'), findsNothing);
-      // Ring center still reports the known calories with an honest status.
+      // Ring center still reports the known calories.
       expect(find.text('300'), findsOneWidget);
       expect(find.text('kcal logged'), findsOneWidget);
-      expect(find.text('Some nutrition incomplete'), findsOneWidget);
-      // Missing macros render one honest unavailable value each, no zeros.
-      expect(find.text('Not available'), findsNWidgets(4));
+      expect(find.text('Calories logged'), findsOneWidget);
+      // Missing macros read as a quiet dash, never a zero, and stay
+      // announced as unavailable.
+      expect(
+        find.descendant(of: find.byType(MacroRow), matching: find.text('—')),
+        findsNWidgets(4),
+      );
+      expect(find.text('0 g'), findsNothing);
+      final macroLabels = tester
+          .widgetList<Semantics>(
+            find.descendant(
+              of: find.byType(MacroRow),
+              matching: find.byType(Semantics),
+            ),
+          )
+          .map((widget) => widget.properties.label)
+          .whereType<String>()
+          .toList();
+      for (final macro in ['Protein', 'Carbs', 'Fat', 'Fiber']) {
+        expect(macroLabels, contains(startsWith('$macro: Not available')));
+      }
+
+      await tester.tap(find.byTooltip('Some nutrition details are incomplete'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('not counted as zero'), findsOneWidget);
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
 
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump();
