@@ -56,13 +56,14 @@ void main() {
     });
 
     test(
-      'iOS usage descriptions expose barcode and nutrition label purposes',
+      'iOS usage descriptions cover barcodes, labels and meal photos',
       () {
         final plist = File('ios/Runner/Info.plist').readAsStringSync();
 
         expect(plist, contains('scan food barcodes and nutrition labels'));
+        expect(plist, contains('photograph meals you choose to estimate'));
         expect(plist, contains('NSPhotoLibraryUsageDescription'));
-        expect(plist, contains('nutrition label to extract nutrition facts'));
+        expect(plist, contains('photo of a nutrition label or a meal'));
         expect(plist, isNot(contains('NSMicrophoneUsageDescription')));
         expect(plist, isNot(contains('AI macro estimation')));
       },
