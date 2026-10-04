@@ -23,7 +23,9 @@ const Duration kFoodApiSendTimeout = Duration(seconds: 15);
 const Duration kOpenFoodFactsConnectTimeout = Duration(seconds: 8);
 const Duration kOpenFoodFactsReceiveTimeout = Duration(seconds: 12);
 const Duration kOpenFoodFactsSendTimeout = Duration(seconds: 8);
-const String kOpenFoodFactsUserAgent = 'IndiFit/1.0.0 (https://indifit.app)';
+
+/// Open Food Facts asks apps to identify as `AppName/Version (ContactEmail)`.
+const String kOpenFoodFactsUserAgent = 'IndiFit/1.0.0 (privacy@indifit.app)';
 const String kOpenFoodFactsSearchUrl =
     'https://search.openfoodfacts.org/search';
 
@@ -187,7 +189,7 @@ class FoodApiResult {
       servingUnit: servingUnit,
       barcode: providerId,
       providerId: providerId,
-      brand: _readReference(p['brands']),
+      brand: _readBrands(p['brands']),
       packageQuantity: _readReference(p['quantity']),
     );
   }
@@ -257,11 +259,11 @@ class FoodApiService {
       );
     }
 
+    // No backend configured (release builds today): Open Food Facts directly.
+    if (_baseUrl.isEmpty) return _fetchByBarcodeOff(cleanCode);
+
     try {
-      final barcodeUrl = _baseUrl.isNotEmpty
-          ? '$_baseUrl/api/food/barcode/$cleanCode'
-          : '/api/food/barcode/$cleanCode';
-      final response = await _dio.get(barcodeUrl);
+      final response = await _dio.get('$_baseUrl/api/food/barcode/$cleanCode');
       if (response.statusCode == 200 && response.data is Map) {
         final data = response.data as Map;
         final candidate = data['candidate'];
@@ -277,16 +279,20 @@ class FoodApiService {
         return null;
       }
       // If backend is unreachable or internal error and OFF client is available, try fallback
-      if (_openFoodFactsDio != null &&
-          (error.type == DioExceptionType.connectionError ||
-              error.type == DioExceptionType.connectionTimeout ||
-              error.response?.statusCode == 502 ||
-              error.response?.statusCode == 503)) {
+      if (_openFoodFactsDio != null && _isBackendUnavailable(error)) {
         return _fetchByBarcodeOff(cleanCode);
       }
       rethrow;
     }
   }
+
+  /// The backend could not be reached or is down, so Open Food Facts can
+  /// answer instead. Client errors (4xx) and cancellations are not retried.
+  static bool _isBackendUnavailable(DioException error) =>
+      error.type == DioExceptionType.connectionError ||
+      error.type == DioExceptionType.connectionTimeout ||
+      error.response?.statusCode == 502 ||
+      error.response?.statusCode == 503;
 
   Future<FoodApiResult?> _fetchByBarcodeOff(String barcode) async {
     if (_openFoodFactsDio == null) return null;
@@ -364,49 +370,154 @@ class FoodApiService {
       }
     }
 
-    // 2. Network search via backend proxy
-    final searchUrl = _baseUrl.isNotEmpty
-        ? '$_baseUrl/api/food/search'
-        : kOpenFoodFactsSearchUrl;
-    final uri = Uri.parse(searchUrl);
+    // 2. Network: the IndiFit backend proxy when one is configured, otherwise
+    // (and whenever the backend is unreachable) Open Food Facts directly.
+    final offDio = _openFoodFactsDio;
+    final Map<dynamic, dynamic>? data;
+    if (_baseUrl.isEmpty) {
+      data = await _postSearch(
+        kOpenFoodFactsSearchUrl,
+        offDio ?? _dio,
+        query: trimmed,
+        language: language,
+        page: page,
+        limit: limit,
+        cancelToken: cancelToken,
+      );
+    } else {
+      Map<dynamic, dynamic>? backendData;
+      try {
+        backendData = await _postSearch(
+          '$_baseUrl/api/food/search',
+          _dio,
+          query: trimmed,
+          language: language,
+          page: page,
+          limit: limit,
+          cancelToken: cancelToken,
+        );
+      } on DioException catch (error) {
+        if (offDio == null || !_isBackendUnavailable(error)) rethrow;
+        backendData = await _postSearch(
+          kOpenFoodFactsSearchUrl,
+          offDio,
+          query: trimmed,
+          language: language,
+          page: page,
+          limit: limit,
+          cancelToken: cancelToken,
+        );
+      }
+      data = backendData;
+    }
+    if (data == null) return [];
+
+    List<FoodApiResult> results = [];
+    if (data['results'] is List) {
+      results = (data['results'] as List)
+          .whereType<Map>()
+          .map(
+            (e) => FoodApiResult.fromBackendJson(Map<String, dynamic>.from(e)),
+          )
+          .where((r) => r.name.isNotEmpty)
+          .toList();
+    } else if (data['hits'] is List) {
+      results = (data['hits'] as List)
+          .whereType<Map>()
+          .map(
+            (raw) => FoodApiResult.fromOffProductJson(
+              Map<String, dynamic>.from(raw),
+            ),
+          )
+          .where((r) => r.name.isNotEmpty)
+          .toList();
+    }
+
+    // Cache allowlisted results in Drift disk cache
+    if (_db != null && results.isNotEmpty) {
+      try {
+        final sanitizedResults = results
+            .map((r) => r.toSanitizedCacheJson())
+            .toList();
+        final cachePayload = jsonEncode({
+          'results': sanitizedResults,
+          'count': sanitizedResults.length,
+          'total_hits': data['total_hits'] ?? sanitizedResults.length,
+          'has_more': data['has_more'] ?? false,
+          'query': trimmed,
+        });
+
+        await _db
+            .into(_db.foodSearchCache)
+            .insertOnConflictUpdate(
+              FoodSearchCacheCompanion.insert(
+                queryHash: queryHash,
+                queryText: trimmed,
+                responseJson: cachePayload,
+                cachedAt: Value(DateTime.now().toUtc()),
+                ttlSeconds: const Value(604800), // 7 days
+              ),
+            );
+      } catch (e) {
+        AppLogger.warning(
+          'Food search cache write failed: $e',
+          'FoodApiService',
+        );
+      }
+    }
+
+    return results;
+  }
+
+  /// POSTs one search to [url] and returns the response body, or null for a
+  /// non-200 or non-JSON reply. Open Food Facts and the backend take different
+  /// payloads. Failures are logged (host and path only) and rethrown.
+  Future<Map<dynamic, dynamic>?> _postSearch(
+    String url,
+    Dio dio, {
+    required String query,
+    required String language,
+    required int page,
+    required int limit,
+    CancelToken? cancelToken,
+  }) async {
+    final uri = Uri.parse(url);
+    final isOffSearch = uri.host.endsWith('openfoodfacts.org');
     final stopwatch = Stopwatch()..start();
     if (kDebugMode && uri.host.isNotEmpty) unawaited(_logDns(uri.host));
 
     AppLogger.info(
       'event=food_search_start host=${uri.host} path=${uri.path} '
-          'query_length=${trimmed.length}',
+          'query_length=${query.length}',
       'FoodApiService',
     );
 
     try {
-      final isOffSearch = searchUrl.contains('openfoodfacts.org');
-      final dynamic requestData = isOffSearch
-          ? {
-              'q': trimmed,
-              'page_size': limit,
-              'page': page,
-              'langs': const ['en'],
-              'fields': const [
-                'code',
-                'brands',
-                'product_name',
-                'quantity',
-                'nutriments',
-                'serving_quantity',
-                'serving_quantity_unit',
-              ],
-            }
-          : {
-              'query': trimmed,
-              'language': language,
-              'page': page,
-              'limit': limit,
-            };
-
-      final response = await _dio.post(
-        searchUrl,
+      final response = await dio.post(
+        url,
         cancelToken: cancelToken,
-        data: requestData,
+        data: isOffSearch
+            ? {
+                'q': query,
+                'page_size': limit,
+                'page': page,
+                'langs': const ['en'],
+                'fields': const [
+                  'code',
+                  'brands',
+                  'product_name',
+                  'quantity',
+                  'nutriments',
+                  'serving_quantity',
+                  'serving_quantity_unit',
+                ],
+              }
+            : {
+                'query': query,
+                'language': language,
+                'page': page,
+                'limit': limit,
+              },
       );
       stopwatch.stop();
 
@@ -418,66 +529,9 @@ class FoodApiService {
       );
 
       if (response.statusCode == 200 && response.data is Map) {
-        final data = response.data as Map;
-        List<FoodApiResult> results = [];
-
-        if (data['results'] is List) {
-          results = (data['results'] as List)
-              .whereType<Map>()
-              .map(
-                (e) =>
-                    FoodApiResult.fromBackendJson(Map<String, dynamic>.from(e)),
-              )
-              .where((r) => r.name.isNotEmpty)
-              .toList();
-        } else if (data['hits'] is List) {
-          results = (data['hits'] as List)
-              .whereType<Map>()
-              .map(
-                (raw) => FoodApiResult.fromOffProductJson(
-                  Map<String, dynamic>.from(raw),
-                ),
-              )
-              .where((r) => r.name.isNotEmpty)
-              .toList();
-        }
-
-        // Cache allowlisted results in Drift disk cache
-        if (_db != null && results.isNotEmpty) {
-          try {
-            final sanitizedResults = results
-                .map((r) => r.toSanitizedCacheJson())
-                .toList();
-            final cachePayload = jsonEncode({
-              'results': sanitizedResults,
-              'count': sanitizedResults.length,
-              'total_hits': data['total_hits'] ?? sanitizedResults.length,
-              'has_more': data['has_more'] ?? false,
-              'query': trimmed,
-            });
-
-            await _db
-                .into(_db.foodSearchCache)
-                .insertOnConflictUpdate(
-                  FoodSearchCacheCompanion.insert(
-                    queryHash: queryHash,
-                    queryText: trimmed,
-                    responseJson: cachePayload,
-                    cachedAt: Value(DateTime.now().toUtc()),
-                    ttlSeconds: const Value(604800), // 7 days
-                  ),
-                );
-          } catch (e) {
-            AppLogger.warning(
-              'Food search cache write failed: $e',
-              'FoodApiService',
-            );
-          }
-        }
-
-        return results;
+        return response.data as Map;
       }
-      return [];
+      return null;
     } on DioException catch (error) {
       stopwatch.stop();
       AppLogger.warning(
@@ -524,6 +578,20 @@ double? _readNumber(Object? raw) {
     return parsed != null && parsed.isFinite ? parsed : null;
   }
   return null;
+}
+
+/// Open Food Facts sends `brands` as a comma-separated string from the product
+/// API and as a list from search.openfoodfacts.org.
+String? _readBrands(Object? raw) {
+  if (raw is List) {
+    return _readReference(
+      raw
+          .map((brand) => brand?.toString().trim() ?? '')
+          .where((b) => b.isNotEmpty)
+          .join(', '),
+    );
+  }
+  return _readReference(raw);
 }
 
 String? _readReference(Object? raw) {

@@ -702,9 +702,8 @@ final userProfileProvider =
     StateNotifierProvider<UserProfileNotifier, UserProfileState>((ref) {
       final db = ref.watch(databaseProvider);
       final timezones = ref.watch(localTimezoneServiceProvider);
-      SharedPreferences? prefs;
-      try {
-        prefs = ref.watch(sharedPreferencesProvider);
-      } catch (_) {}
+      SharedPreferences? prefs = sharedPreferencesOrNull(
+        () => ref.watch(sharedPreferencesProvider),
+      );
       return UserProfileNotifier(db, timezones, prefs);
     });

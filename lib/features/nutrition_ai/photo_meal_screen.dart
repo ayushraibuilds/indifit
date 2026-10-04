@@ -30,9 +30,9 @@ class PhotoMealScreen extends ConsumerStatefulWidget {
 class _PhotoMealScreenState extends ConsumerState<PhotoMealScreen> {
   DateTime _resolveDate() {
     if (widget.date != null) {
-      try {
-        return DateTime.parse(widget.date!);
-      } catch (_) {}
+      // An unparseable route date falls back to today.
+      final parsed = DateTime.tryParse(widget.date!);
+      if (parsed != null) return parsed;
     }
     return DateTime.now();
   }
@@ -51,10 +51,9 @@ class _PhotoMealScreenState extends ConsumerState<PhotoMealScreen> {
   }
 
   Future<void> _pickAndProcess(ImageSource source) async {
-    SharedPreferences? prefs;
-    try {
-      prefs = ref.read(sharedPreferencesProvider);
-    } catch (_) {}
+    SharedPreferences? prefs = sharedPreferencesOrNull(
+      () => ref.read(sharedPreferencesProvider),
+    );
     prefs ??= await SharedPreferences.getInstance();
 
     if (!mounted) return;
