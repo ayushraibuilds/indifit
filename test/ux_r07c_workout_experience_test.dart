@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/di/providers.dart';
 import 'package:indifit/core/fixtures/exercise_display_muscles.dart';
 import 'package:indifit/core/theme/app_theme.dart';
+import 'package:indifit/core/widgets/b05_accessibility_primitives.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/models/b02_execution_models.dart';
 import 'package:indifit/data/models/b02_previous_performance_models.dart';
@@ -109,15 +110,9 @@ void main() {
         find.byType(B02StrengthPlayerScreen),
         matchesGoldenFile('goldens/ux_r07c_planned_player.png'),
       );
-      // With the suggestion in the Next set header (P1 H4), Log set sits
-      // just below the fold on this phone; the next row's checkmark (H2)
-      // logs the set from above it. Both stay reachable.
+      // Both log actions are on screen: the next row's checkmark (H2) and
+      // Log set, now that planned rows fit on one line.
       expect(find.bySemanticsLabel('Log set 1'), findsOneWidget);
-      await tester.scrollUntilVisible(
-        find.text('Log set'),
-        120,
-        scrollable: find.byType(Scrollable).first,
-      );
       expect(find.text('Log set'), findsOneWidget);
       await tester.scrollUntilVisible(
         find.text('Review and finish'),
@@ -150,6 +145,11 @@ void main() {
     final loadTop = tester.getTopLeft(find.byType(EditableText).first).dy;
     expect(tester.getTopLeft(suggested).dy, lessThan(loadTop));
     expect(tester.getBottomLeft(apply).dy, lessThan(844));
+    // The suggestion must not push Log set off a 390x844 phone. Test glyphs
+    // are wider than real ones, so this holds with room to spare on device.
+    final logSet = find.widgetWithText(B05ActionButton, 'Log set');
+    expect(logSet, findsOneWidget);
+    expect(tester.getBottomLeft(logSet).dy, lessThan(844));
     await tester.tap(apply);
     await tester.pump();
     expect(

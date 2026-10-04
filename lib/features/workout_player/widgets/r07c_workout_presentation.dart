@@ -65,6 +65,31 @@ String? r07cFormatTarget({
   ].join(' × ');
 }
 
+/// [r07cFormatTarget] for a narrow table cell: "60 kg × 8–10". The column
+/// header already says these are reps, so the word is dropped when a load is
+/// shown; screen readers still get the full [r07cFormatTarget] text.
+String? r07cFormatTargetCompact({
+  required double? loadKg,
+  required B02LoadBasis? loadBasis,
+  required int? minReps,
+  required int? maxReps,
+  required int? rpe,
+}) {
+  final full = r07cFormatTarget(
+    loadKg: loadKg,
+    loadBasis: loadBasis,
+    minReps: minReps,
+    maxReps: maxReps,
+    rpe: rpe,
+  );
+  if (full == null) return null;
+  final load = r07cFormatLoad(loadKg, loadBasis);
+  if (load.isEmpty || r07cIsPlaceholderRepRange(minReps, maxReps)) {
+    return full;
+  }
+  return full.replaceFirst(RegExp(r' reps?(?= ×|$)'), '');
+}
+
 String? r07cFormatLastPerformance({
   required double? loadKg,
   required B02LoadBasis? loadBasis,

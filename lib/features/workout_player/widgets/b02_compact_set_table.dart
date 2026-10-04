@@ -135,6 +135,15 @@ class B02CompactSetRow {
     rpe: plannedRpe,
   );
 
+  /// [plannedLabel] shortened for the PLANNED cell ("60 kg × 8–10").
+  String? get plannedCellLabel => r07cFormatTargetCompact(
+    loadKg: plannedLoadKg,
+    loadBasis: plannedLoadBasis,
+    minReps: plannedRepsMin,
+    maxReps: plannedRepsMax,
+    rpe: plannedRpe,
+  );
+
   String? get actualLabel {
     final load = r07cFormatLoad(actualLoadKg, actualLoadBasis);
     if (load.isEmpty && actualReps == null && actualRpe == null) return null;
@@ -352,6 +361,9 @@ class B02CompactSetTable extends StatelessWidget {
       : null;
 }
 
+/// Wide enough for a two-digit set number; the rest goes to PLANNED.
+const double _setColumnWidth = 32;
+
 class _TableHeader extends StatelessWidget {
   const _TableHeader({required this.showTarget});
 
@@ -379,8 +391,8 @@ class _TableHeader extends StatelessWidget {
   Widget _buildWide(BuildContext context) {
     return Row(
       children: [
-        const SizedBox(width: 42, child: Text('SET')),
-        if (showTarget) const Expanded(flex: 2, child: Text('PLANNED')),
+        const SizedBox(width: _setColumnWidth, child: Text('SET')),
+        if (showTarget) const Expanded(flex: 4, child: Text('PLANNED')),
         const Expanded(flex: 3, child: Text('ACTUAL')),
         SizedBox(
           width: B05Layout.minTouchTarget * 2,
@@ -429,7 +441,7 @@ class _SetRow extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           SizedBox(
-            width: 42,
+            width: _setColumnWidth,
             child: Text(
               '${row.displayNumber}',
               style: B05Typography.label(context),
@@ -437,10 +449,10 @@ class _SetRow extends StatelessWidget {
           ),
           if (showTarget)
             Expanded(
-              flex: 2,
+              flex: 4,
               child: _valueWithDetails(
                 context,
-                row.plannedLabel ?? 'No target',
+                row.plannedCellLabel ?? 'No target',
                 row.plannedDetailsLabel,
               ),
             ),
