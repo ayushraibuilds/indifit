@@ -485,6 +485,7 @@ class B04ProductionRecommendationOrchestrator {
             nutritionUserId: nutritionUserId,
             localDate: endLocalDate,
             atUtc: sourceAtUtc,
+            evaluatedAtUtc: evaluationAtUtc,
             constraints: sources.constraints,
             day: sources.nutritionDays
                 .where((item) => item.localDate == endLocalDate)
@@ -663,6 +664,11 @@ class B04ProductionRecommendationOrchestrator {
     required String nutritionUserId,
     required String localDate,
     required DateTime atUtc,
+    // Constraints are checked as of [atUtc] (now) so a newly added allergy
+    // always applies, but results carry the recommendation's evaluation time:
+    // otherwise a replay at an earlier second never matches its stored
+    // fingerprint and every reload issues a duplicate recommendation.
+    required DateTime evaluatedAtUtc,
     required List<NutritionUserConstraint> constraints,
     required NutritionDailyReadModel? day,
   }) async {
@@ -679,11 +685,11 @@ class B04ProductionRecommendationOrchestrator {
             if (!selectionIds.add(selectionId)) continue;
             try {
               final nutrientEvidence = _aggregateFacts(item.facts);
-              final evaluation = await _constraints.evaluateFood(
+              final evaluation = (await _constraints.evaluateFood(
                 userId: nutritionUserId,
                 foodId: item.foodId!,
                 atUtc: atUtc,
-              );
+              )).stampedAt(evaluatedAtUtc);
               inputs.add(
                 _candidateInput(
                   selectionId: selectionId,
@@ -717,11 +723,11 @@ class B04ProductionRecommendationOrchestrator {
             if (!selectionIds.add(selectionId)) continue;
             try {
               final nutrientEvidence = _aggregateFacts(item.facts);
-              final evaluation = await _constraints.evaluateRecipeVersion(
+              final evaluation = (await _constraints.evaluateRecipeVersion(
                 userId: nutritionUserId,
                 recipeVersionId: item.recipeVersionId!,
                 atUtc: atUtc,
-              );
+              )).stampedAt(evaluatedAtUtc);
               inputs.add(
                 _candidateInput(
                   selectionId: selectionId,
@@ -781,11 +787,11 @@ class B04ProductionRecommendationOrchestrator {
           amount: amount,
         );
         final nutrientEvidence = _aggregateFacts(preview.calculation.facts);
-        final evaluation = await _constraints.evaluateRecipeVersion(
+        final evaluation = (await _constraints.evaluateRecipeVersion(
           userId: nutritionUserId,
           recipeVersionId: option.recipeVersionId,
           atUtc: atUtc,
-        );
+        )).stampedAt(evaluatedAtUtc);
         inputs.add(
           _candidateInput(
             selectionId: selectionId,
