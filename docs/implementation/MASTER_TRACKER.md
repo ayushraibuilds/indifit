@@ -12,7 +12,7 @@ Batches B01–B05 and the post-v1 and R07/R08 tracks are merged into `main`. The
 | Area | State |
 |:-----|:------|
 | Training, workout player, progress | Shipping |
-| Nutrition: catalogue (base + optional regional packs), Circular Thali, diary, targets | Shipping. 18 duplicate catalogue identities were retired on 2026-10-03; they are deprecated, not deleted. |
+| Nutrition: catalogue (base + optional regional packs), Circular Thali, diary, targets | Shipping. 38 catalogue entries (18 duplicates and 20 nonsense dairy variants) were retired on 2026-10-03; they are deprecated, not deleted, and leave search. |
 | Barcode lookup (Open Food Facts) | Shipping when Offline Mode is off. Uses Apple Vision on iOS. |
 | AI meal tools: describe a meal, meal photo, label scan | Off by default (`INDIFIT_CONNECTED_AI`). Uses Firebase AI Logic with App Check and needs consent. Meal photo is Beta. |
 | AI coaching wording | Not in v1 |

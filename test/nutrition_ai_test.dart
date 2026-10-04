@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:image/image.dart' as img;
 import 'package:indifit/core/ai/ai_gateway.dart';
 import 'package:indifit/core/nutrients.dart';
 import 'package:indifit/core/nutrition_calculation_service.dart';
@@ -129,7 +130,10 @@ void main() {
           'indifit_ocr_test',
         );
         final testFile = File('${tempDir.path}/test_label.jpg');
-        await testFile.writeAsBytes([1, 2, 3, 4]);
+        // A real JPEG: undecodable bytes are now refused before upload.
+        await testFile.writeAsBytes(
+          img.encodeJpg(img.Image(width: 8, height: 8)),
+        );
 
         expect(await testFile.exists(), isTrue);
 

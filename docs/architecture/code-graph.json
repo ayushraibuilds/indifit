@@ -1,19 +1,19 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "summary": {
-    "total_dart_files": 470,
-    "total_loc": 339821,
-    "total_internal_edges": 2338,
+    "total_dart_files": 472,
+    "total_loc": 340012,
+    "total_internal_edges": 2342,
     "external_package_count": 28,
     "catch_metrics": {
-      "total_catches_all": 506,
+      "total_catches_all": 507,
       "total_catch_underscore": 162,
       "total_empty_catches": 0,
       "p0_empty_catches": 0
     },
     "layer_violations_count": 7,
     "catches_by_layer": {
-      "core": 144,
+      "core": 145,
       "data": 103,
       "features": 258,
       "other": 1
@@ -305,6 +305,56 @@
       "empty_catch_count": 0,
       "total_catch_count": 0
     },
+    "lib/core/ai/ai_photo_sanitizer.dart": {
+      "path": "lib/core/ai/ai_photo_sanitizer.dart",
+      "layer": "core",
+      "sublayer": "core",
+      "loc": 69,
+      "imports": [],
+      "imported_by": [
+        "lib/features/nutrition_ai/natural_language_meal_service.dart",
+        "lib/features/nutrition_ai/nutrition_label_ocr_service.dart"
+      ],
+      "parts": [],
+      "part_of": null,
+      "providers_defined": [],
+      "providers_used": [],
+      "routes_defined": [],
+      "catches": [],
+      "empty_catch_count": 0,
+      "total_catch_count": 0
+    },
+    "lib/core/ai/ai_remote_config_refresher.dart": {
+      "path": "lib/core/ai/ai_remote_config_refresher.dart",
+      "layer": "core",
+      "sublayer": "core",
+      "loc": 102,
+      "imports": [
+        "lib/core/utils/app_logger.dart"
+      ],
+      "imported_by": [
+        "lib/core/ai/firebase_ai_gateway.dart"
+      ],
+      "parts": [],
+      "part_of": null,
+      "providers_defined": [],
+      "providers_used": [],
+      "routes_defined": [],
+      "catches": [
+        {
+          "file": "lib/core/ai/ai_remote_config_refresher.dart",
+          "line": 85,
+          "var": "error",
+          "is_underscore": false,
+          "is_empty": false,
+          "snippet": "} on Object catch (error) {",
+          "layer": "core",
+          "is_p0": false
+        }
+      ],
+      "empty_catch_count": 0,
+      "total_catch_count": 1
+    },
     "lib/core/ai/backend_ai_gateway.dart": {
       "path": "lib/core/ai/backend_ai_gateway.dart",
       "layer": "core",
@@ -343,13 +393,14 @@
       "path": "lib/core/ai/firebase_ai_gateway.dart",
       "layer": "core",
       "sublayer": "core",
-      "loc": 199,
+      "loc": 208,
       "imports": [
         "lib/firebase_options.dart",
         "lib/core/config/app_config.dart",
         "lib/core/utils/app_logger.dart",
         "lib/core/ai/ai_daily_caps.dart",
         "lib/core/ai/ai_gateway.dart",
+        "lib/core/ai/ai_remote_config_refresher.dart",
         "lib/core/ai/gemini_requests.dart"
       ],
       "imported_by": [
@@ -363,7 +414,7 @@
       "catches": [
         {
           "file": "lib/core/ai/firebase_ai_gateway.dart",
-          "line": 112,
+          "line": 114,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -373,7 +424,7 @@
         },
         {
           "file": "lib/core/ai/firebase_ai_gateway.dart",
-          "line": 132,
+          "line": 134,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -5233,6 +5284,7 @@
         "lib/app/database_recovery_screen.dart",
         "lib/app/indifit_app.dart",
         "lib/core/ai/ai_daily_caps.dart",
+        "lib/core/ai/ai_remote_config_refresher.dart",
         "lib/core/ai/firebase_ai_gateway.dart",
         "lib/core/ai/gemini_requests.dart",
         "lib/core/backup/backup_file_adapter.dart",
@@ -12258,7 +12310,7 @@
       "path": "lib/features/food_log/barcode_scanner_screen.dart",
       "layer": "features",
       "sublayer": "features/food_log",
-      "loc": 644,
+      "loc": 645,
       "imports": [
         "lib/core/capabilities/capabilities_registry.dart",
         "lib/core/di/providers.dart",
@@ -12284,7 +12336,7 @@
       "catches": [
         {
           "file": "lib/features/food_log/barcode_scanner_screen.dart",
-          "line": 123,
+          "line": 124,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -12294,7 +12346,7 @@
         },
         {
           "file": "lib/features/food_log/barcode_scanner_screen.dart",
-          "line": 132,
+          "line": 133,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -12304,7 +12356,7 @@
         },
         {
           "file": "lib/features/food_log/barcode_scanner_screen.dart",
-          "line": 143,
+          "line": 144,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -12314,7 +12366,7 @@
         },
         {
           "file": "lib/features/food_log/barcode_scanner_screen.dart",
-          "line": 177,
+          "line": 178,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -12324,7 +12376,7 @@
         },
         {
           "file": "lib/features/food_log/barcode_scanner_screen.dart",
-          "line": 213,
+          "line": 214,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -12334,7 +12386,7 @@
         },
         {
           "file": "lib/features/food_log/barcode_scanner_screen.dart",
-          "line": 230,
+          "line": 231,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -12344,7 +12396,7 @@
         },
         {
           "file": "lib/features/food_log/barcode_scanner_screen.dart",
-          "line": 235,
+          "line": 236,
           "var": "e",
           "is_underscore": false,
           "is_empty": false,
@@ -12354,7 +12406,7 @@
         },
         {
           "file": "lib/features/food_log/barcode_scanner_screen.dart",
-          "line": 247,
+          "line": 248,
           "var": "e",
           "is_underscore": false,
           "is_empty": false,
@@ -12364,7 +12416,7 @@
         },
         {
           "file": "lib/features/food_log/barcode_scanner_screen.dart",
-          "line": 482,
+          "line": 483,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -14808,9 +14860,10 @@
       "path": "lib/features/nutrition_ai/natural_language_meal_service.dart",
       "layer": "features",
       "sublayer": "features/nutrition_ai",
-      "loc": 386,
+      "loc": 391,
       "imports": [
         "lib/core/ai/ai_gateway.dart",
+        "lib/core/ai/ai_photo_sanitizer.dart",
         "lib/core/ai/backend_ai_gateway.dart",
         "lib/core/config/app_config.dart",
         "lib/core/nutrients.dart",
@@ -14835,7 +14888,7 @@
       "catches": [
         {
           "file": "lib/features/nutrition_ai/natural_language_meal_service.dart",
-          "line": 336,
+          "line": 341,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -14989,9 +15042,10 @@
       "path": "lib/features/nutrition_ai/nutrition_label_ocr_service.dart",
       "layer": "features",
       "sublayer": "features/nutrition_ai",
-      "loc": 173,
+      "loc": 178,
       "imports": [
         "lib/core/ai/ai_gateway.dart",
+        "lib/core/ai/ai_photo_sanitizer.dart",
         "lib/core/ai/backend_ai_gateway.dart",
         "lib/core/config/app_config.dart",
         "lib/core/nutrition_estimates.dart",
