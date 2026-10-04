@@ -491,15 +491,10 @@ void main() {
       await tester.pump(const Duration(milliseconds: 20));
 
       expect(previous.queries.single.canonicalExerciseId, 'exercise-a');
-      // The card sits below the set table; on this small viewport the list
-      // builds it only once it is scrolled into view.
-      await tester.scrollUntilVisible(
-        find.text('Last time'),
-        200,
-        scrollable: find.byType(Scrollable).first,
-      );
-      expect(find.text('Last time'), findsOneWidget);
-      expect(find.text('80 kg × 8 reps'), findsOneWidget);
+      // Last session's set 1 shows on today's set 1 row (compact layout on
+      // this narrow viewport), not as a separate card below the fold.
+      expect(find.text('Last time: 80 kg × 8'), findsOneWidget);
+      expect(find.text('80 kg × 8 reps'), findsNothing);
       expect(find.text('Recommended'), findsNothing);
       await tester.drag(find.byType(Scrollable).first, const Offset(0, 2000));
       await tester.pump();

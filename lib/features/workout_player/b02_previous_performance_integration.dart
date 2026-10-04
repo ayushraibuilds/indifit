@@ -197,6 +197,30 @@ abstract final class B02PreviousPerformancePresentation {
     return facts.join('  ·  ');
   }
 
+  /// Last session's working sets as short labels ("60 kg × 8"), in order,
+  /// so set N today can be shown beside set N last time.
+  static List<String> workingSetLabels(B02PreviousExercisePerformance? result) {
+    if (result?.status != B02PreviousPerformanceStatus.available) {
+      return const [];
+    }
+    return [
+      for (final occurrence in result!.occurrences)
+        for (final set in occurrence.sets)
+          if (set.role != B02SetRole.warmup) _formatShort(set),
+    ];
+  }
+
+  static String _formatShort(B02PreviousPerformanceSet set) {
+    final load = switch (set.loadBasis) {
+      B02LoadBasis.bodyweight => 'Bodyweight',
+      _ when set.actualLoadKg != null => '${_number(set.actualLoadKg!)} kg',
+      _ => null,
+    };
+    return load == null
+        ? '${set.actualReps} ${set.actualReps == 1 ? 'rep' : 'reps'}'
+        : '$load × ${set.actualReps}';
+  }
+
   static String _formatSet(B02PreviousPerformanceSet set) {
     final load = switch (set.loadBasis) {
       B02LoadBasis.bodyweight => 'Bodyweight',
