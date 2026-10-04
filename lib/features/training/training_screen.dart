@@ -1343,43 +1343,102 @@ class _TrainingSecondaryNavigation extends StatelessWidget {
   final bool showHistory;
 
   @override
-  Widget build(BuildContext context) => B05Surface(
-    tone: B05SurfaceTone.inset,
-    padding: const EdgeInsets.symmetric(
-      horizontal: B05Layout.space8,
-      vertical: B05Layout.space4,
-    ),
-    child: B05ActionGroup(
-      children: [
-        B05ActionButton(
-          label: 'Exercise Library',
-          icon: Icons.search_rounded,
-          emphasis: B05ActionEmphasis.tertiary,
-          onPressed: onOpenExercises,
+  Widget build(BuildContext context) {
+    // List rows on a plain surface, like Settings: a flat grey panel of
+    // centred links read as disabled (audit §6).
+    final rows = [
+      _TrainingNavRow(
+        icon: Icons.search_rounded,
+        title: 'Exercise Library',
+        summary: 'Find exercises, form cues and variations',
+        onTap: onOpenExercises,
+      ),
+      if (showHistory)
+        _TrainingNavRow(
+          icon: Icons.history_rounded,
+          title: 'History',
+          summary: 'Every workout you have logged',
+          onTap: onOpenHistory,
         ),
-        if (showHistory)
-          B05ActionButton(
-            label: 'History',
-            icon: Icons.history_rounded,
-            emphasis: B05ActionEmphasis.tertiary,
-            onPressed: onOpenHistory,
-          ),
-        B05ActionButton(
-          label: 'Calendar',
-          icon: Icons.calendar_month_outlined,
-          emphasis: B05ActionEmphasis.tertiary,
-          onPressed: onOpenCalendar,
-        ),
-        B05ActionButton(
-          label: 'Plan Library',
-          icon: Icons.collections_bookmark_outlined,
-          emphasis: B05ActionEmphasis.tertiary,
-          onPressed: onOpenPlan,
-        ),
-      ],
-    ),
-  );
+      _TrainingNavRow(
+        icon: Icons.calendar_month_outlined,
+        title: 'Calendar',
+        summary: 'Scheduled and completed sessions',
+        onTap: onOpenCalendar,
+      ),
+      _TrainingNavRow(
+        icon: Icons.collections_bookmark_outlined,
+        title: 'Plan Library',
+        summary: 'Choose or build a training plan',
+        onTap: onOpenPlan,
+      ),
+    ];
+    return B05Surface(
+      padding: EdgeInsets.zero,
+      child: Column(
+        children: [
+          for (var index = 0; index < rows.length; index++) ...[
+            rows[index],
+            if (index < rows.length - 1)
+              Divider(height: 1, color: context.b05Colors.border),
+          ],
+        ],
+      ),
+    );
+  }
 }
+
+class _TrainingNavRow extends StatelessWidget {
+  const _TrainingNavRow({
+    required this.icon,
+    required this.title,
+    required this.summary,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String summary;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.b05Colors;
+    return Semantics(
+      button: true,
+      label: '$title, $summary',
+      onTap: onTap,
+      excludeSemantics: true,
+      child: ListTile(
+        minVerticalPadding: B05Layout.space8,
+        leading: Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: colors.interactive,
+            borderRadius: b05Radius(B05SurfaceRadius.small),
+          ),
+          alignment: Alignment.center,
+          child: Icon(icon, color: colors.action, size: B05Layout.iconMedium),
+        ),
+        title: Text(title, style: B05Typography.label(context)),
+        subtitle: Text(summary, style: B05Typography.caption(context)),
+        trailing: Icon(
+          Icons.chevron_right_rounded,
+          color: colors.textSecondary,
+          size: B05Layout.iconMedium,
+        ),
+        onTap: onTap,
+      ),
+    );
+  }
+}
+
+/// Whole minutes for the Recent list; a short session says so rather than
+/// showing "0 min".
+@visibleForTesting
+String recentWorkoutDuration(int seconds) =>
+    seconds < 60 ? 'under 1 min' : '${seconds ~/ 60} min';
 
 TextStyle _trainingEyebrow(BuildContext context) => B05Typography.caption(
   context,
@@ -1591,7 +1650,7 @@ class _RecentTrainingRow extends StatelessWidget {
         leading: Icon(Icons.history_rounded, color: context.b05Colors.action),
         title: Text(session.name, style: B05Typography.label(context)),
         subtitle: Text(
-          '${ConsumerDateLabel.dateTime(session.completedAt)}${session.durationSeconds > 0 ? ' · ${session.durationSeconds ~/ 60} min' : ''}',
+          '${ConsumerDateLabel.dateTime(session.completedAt)}${session.durationSeconds > 0 ? ' · ${recentWorkoutDuration(session.durationSeconds)}' : ''}',
           style: B05Typography.caption(context),
         ),
       ),
