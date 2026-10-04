@@ -5,6 +5,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/timezone.dart' as tz;
 
+import '../utils/app_logger.dart';
 import 'indifit_haptics.dart';
 import 'ios_live_activity_service.dart';
 
@@ -404,19 +405,32 @@ class RestPresenceService {
     return remaining > 0 ? remaining : 0;
   }
 
+  /// The object (a workout controller) whose callbacks are registered. Only
+  /// one controller may answer notification actions at a time: the one that
+  /// holds the live workout. Others must not reconcile, unregister or clean up.
+  Object? _actionDelegateOwner;
+
   void registerActionDelegate({
     required FutureOr<void> Function(String periodId, int deltaSeconds)
     onAdjust,
     required FutureOr<void> Function(String periodId) onSkip,
+    Object? owner,
   }) {
     onAdjustRestRequested = onAdjust;
     onSkipRestRequested = onSkip;
+    _actionDelegateOwner = owner;
   }
 
-  void unregisterActionDelegate() {
+  /// Clears the callbacks. With [owner], only when [owner] registered them,
+  /// so an outdated controller can't remove the live one's.
+  void unregisterActionDelegate({Object? owner}) {
+    if (owner != null && !isActionDelegate(owner)) return;
     onAdjustRestRequested = null;
     onSkipRestRequested = null;
+    _actionDelegateOwner = null;
   }
+
+  bool isActionDelegate(Object owner) => identical(_actionDelegateOwner, owner);
 
   /// Start background presence for a rest period.
   Future<void> startRest({
@@ -786,7 +800,12 @@ class RestPresenceService {
     try {
       final prefs = preferences ?? await SharedPreferences.getInstance();
       await prefs.setString(prefRestAnchorRecord, jsonEncode(record.toJson()));
-    } catch (_) {}
+    } catch (error) {
+      AppLogger.warning(
+        'Rest presence state not saved: $error',
+        'RestPresence',
+      );
+    }
   }
 
   static Future<RestAnchorRecord?> loadAnchorRecord([
@@ -808,7 +827,12 @@ class RestPresenceService {
     try {
       final prefs = preferences ?? await SharedPreferences.getInstance();
       await prefs.remove(prefRestAnchorRecord);
-    } catch (_) {}
+    } catch (error) {
+      AppLogger.warning(
+        'Rest presence state not saved: $error',
+        'RestPresence',
+      );
+    }
   }
 
   static Future<void> savePendingIntent(
@@ -818,7 +842,12 @@ class RestPresenceService {
     try {
       final prefs = preferences ?? await SharedPreferences.getInstance();
       await prefs.setString(prefPendingRestIntent, jsonEncode(intent.toJson()));
-    } catch (_) {}
+    } catch (error) {
+      AppLogger.warning(
+        'Rest presence state not saved: $error',
+        'RestPresence',
+      );
+    }
   }
 
   static Future<RestPresenceIntent?> loadAndClearPendingIntent([
@@ -843,6 +872,11 @@ class RestPresenceService {
     try {
       final prefs = preferences ?? await SharedPreferences.getInstance();
       await prefs.remove(prefPendingRestIntent);
-    } catch (_) {}
+    } catch (error) {
+      AppLogger.warning(
+        'Rest presence state not saved: $error',
+        'RestPresence',
+      );
+    }
   }
 }

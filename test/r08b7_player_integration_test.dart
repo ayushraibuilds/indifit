@@ -206,6 +206,12 @@ void main() {
         scrollable: find.byType(Scrollable).first,
       );
       expect(find.byType(B07ExerciseContextPanel), findsOneWidget);
+      // The list is lazy: the panel may only build once scrolled to, so let
+      // its database lookup resolve before checking the visual.
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 100)),
+      );
+      await tester.pump();
       expect(find.byType(IndiFitMuscleMap), findsOneWidget);
       expect(find.textContaining('assets/generated/repdb'), findsNothing);
       expect(find.textContaining('FileSystemException'), findsNothing);

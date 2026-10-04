@@ -7,9 +7,25 @@ import 'package:indifit/core/services/achievement_service.dart';
 import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/repositories/progress_statistics_repository.dart';
+import 'package:indifit/data/repositories/streak_repository.dart';
 import 'package:indifit/features/dashboard/dashboard_controller.dart';
 import 'package:indifit/features/progress/achievements_screen.dart';
+import 'package:indifit/features/progress/streak_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+/// The screen's own logic is under test here; the streak has its own tests
+/// (`streak_repository_test.dart`). A real DB query would never complete in
+/// the widget tester's fake-async zone.
+class _FixedStreak implements StreakRepository {
+  @override
+  Future<int> currentStreak() async => 0;
+
+  @override
+  Future<int> freezeCount() async => StreakRepository.defaultFreezes;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -274,6 +290,7 @@ void main() {
         ProviderScope(
           overrides: [
             databaseProvider.overrideWithValue(db),
+            streakRepositoryProvider.overrideWithValue(_FixedStreak()),
             progressStatisticsRepositoryProvider.overrideWithValue(
               _FakeAchievementRepository(db),
             ),

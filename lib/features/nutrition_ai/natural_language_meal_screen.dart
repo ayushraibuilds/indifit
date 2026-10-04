@@ -51,9 +51,9 @@ class _NaturalLanguageMealScreenState
 
   DateTime _resolveDate() {
     if (widget.date != null) {
-      try {
-        return DateTime.parse(widget.date!);
-      } catch (_) {}
+      // An unparseable route date falls back to today.
+      final parsed = DateTime.tryParse(widget.date!);
+      if (parsed != null) return parsed;
     }
     return DateTime.now();
   }
@@ -66,10 +66,9 @@ class _NaturalLanguageMealScreenState
     final clean = text.trim();
     if (clean.isEmpty) return;
 
-    SharedPreferences? prefs;
-    try {
-      prefs = ref.read(sharedPreferencesProvider);
-    } catch (_) {}
+    SharedPreferences? prefs = sharedPreferencesOrNull(
+      () => ref.read(sharedPreferencesProvider),
+    );
     prefs ??= await SharedPreferences.getInstance();
     if (!mounted) return;
 
