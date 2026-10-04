@@ -22,6 +22,7 @@ import '../diary_structure_controller.dart';
 import '../food_search_view_models.dart';
 import '../meal_presentation_registry.dart';
 import 'food_search_widgets.dart';
+import 'household_portion_visual.dart';
 
 /// Portion, unit, and preparation review bottom sheet for canonical food logging.
 ///
@@ -293,6 +294,13 @@ class _FoodPortionBottomSheetState
       );
     }
   }
+
+  /// The household picture of the current amount, when it has one.
+  PortionVisualSpec? _portionVisual() => portionVisualSpecFor(
+    quantity: _selectedQuantity,
+    servingUnitLabel: widget.option.servingUnitLabel,
+    servingOptions: widget.categoryServingOptions ?? const [],
+  );
 
   String _formatServingOptionChipLabel(ServingOption option) {
     return switch (option.unitName) {
@@ -700,6 +708,16 @@ class _FoodPortionBottomSheetState
                     return Padding(
                       padding: const EdgeInsets.only(right: 8.0, bottom: 8.0),
                       child: ActionChip(
+                        avatar: switch (portionVisualSpecFor(
+                          quantity: Quantity.fromNum(
+                            amount: opt.gramWeight,
+                            unit: QuantityUnit.gram,
+                          ),
+                          servingOptions: [opt],
+                        )) {
+                          final spec? => PortionVesselIcon(vessel: spec.vessel),
+                          null => null,
+                        },
                         label: Text(_formatServingOptionChipLabel(opt)),
                         backgroundColor: isSelected
                             ? context.b05Colors.action.withValues(alpha: 0.15)
@@ -763,6 +781,10 @@ class _FoodPortionBottomSheetState
                 );
               },
             ),
+            if (_portionVisual() case final spec?) ...[
+              const SizedBox(height: 12),
+              HouseholdPortionVisual(spec: spec),
+            ],
             Divider(color: context.b05Colors.border, height: 24),
 
             if (widget.transformations.isNotEmpty) ...[

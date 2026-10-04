@@ -1,9 +1,9 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "summary": {
-    "total_dart_files": 474,
-    "total_loc": 340391,
-    "total_internal_edges": 2359,
+    "total_dart_files": 475,
+    "total_loc": 340817,
+    "total_internal_edges": 2364,
     "external_package_count": 28,
     "catch_metrics": {
       "total_catches_all": 504,
@@ -1518,6 +1518,7 @@
         "lib/core/catalog/remote_food_cache_store.dart",
         "lib/features/food_log/food_search_screen.dart",
         "lib/features/food_log/widgets/food_portion_bottom_sheet.dart",
+        "lib/features/food_log/widgets/household_portion_visual.dart",
         "lib/features/food_log/widgets/remote_food_review_sheet.dart"
       ],
       "parts": [],
@@ -5089,6 +5090,7 @@
         "lib/features/food_log/widgets/food_portion_bottom_sheet.dart",
         "lib/features/food_log/widgets/food_search_recent_list.dart",
         "lib/features/food_log/widgets/food_search_results_list.dart",
+        "lib/features/food_log/widgets/household_portion_visual.dart",
         "lib/features/food_log/widgets/quick_add_macros_sheet.dart",
         "lib/features/food_log/widgets/remote_food_review_sheet.dart",
         "lib/features/food_log/widgets/saved_meal_edit_before_log_sheet.dart",
@@ -5248,6 +5250,7 @@
         "lib/features/food_log/thali/thali_presets.dart",
         "lib/features/food_log/thali/thali_quick_adjust_hud.dart",
         "lib/features/food_log/widgets/food_portion_bottom_sheet.dart",
+        "lib/features/food_log/widgets/household_portion_visual.dart",
         "lib/features/food_log/widgets/quick_add_macros_sheet.dart",
         "lib/features/food_log/widgets/saved_meal_edit_before_log_sheet.dart",
         "lib/features/nutrition_ai/ai_items_thali_handoff.dart",
@@ -5491,6 +5494,7 @@
         "lib/features/food_log/widgets/food_search_recent_list.dart",
         "lib/features/food_log/widgets/food_search_results_list.dart",
         "lib/features/food_log/widgets/food_search_widgets.dart",
+        "lib/features/food_log/widgets/household_portion_visual.dart",
         "lib/features/food_log/widgets/quick_add_macros_sheet.dart",
         "lib/features/food_log/widgets/remote_food_review_sheet.dart",
         "lib/features/media/b05_media_bundle.dart",
@@ -14021,7 +14025,7 @@
       "path": "lib/features/food_log/widgets/food_portion_bottom_sheet.dart",
       "layer": "features",
       "sublayer": "features/food_log",
-      "loc": 936,
+      "loc": 958,
       "imports": [
         "lib/core/catalog/food_catalog_models.dart",
         "lib/core/di/providers.dart",
@@ -14038,7 +14042,8 @@
         "lib/features/food_log/diary_structure_controller.dart",
         "lib/features/food_log/food_search_view_models.dart",
         "lib/features/food_log/meal_presentation_registry.dart",
-        "lib/features/food_log/widgets/food_search_widgets.dart"
+        "lib/features/food_log/widgets/food_search_widgets.dart",
+        "lib/features/food_log/widgets/household_portion_visual.dart"
       ],
       "imported_by": [
         "lib/features/food_log/food_search_screen.dart"
@@ -14055,7 +14060,7 @@
       "catches": [
         {
           "file": "lib/features/food_log/widgets/food_portion_bottom_sheet.dart",
-          "line": 443,
+          "line": 451,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -14065,7 +14070,7 @@
         },
         {
           "file": "lib/features/food_log/widgets/food_portion_bottom_sheet.dart",
-          "line": 522,
+          "line": 530,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -14075,7 +14080,7 @@
         },
         {
           "file": "lib/features/food_log/widgets/food_portion_bottom_sheet.dart",
-          "line": 527,
+          "line": 535,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -14174,6 +14179,29 @@
         "lib/features/food_log/widgets/food_portion_bottom_sheet.dart",
         "lib/features/food_log/widgets/food_search_recent_list.dart",
         "lib/features/food_log/widgets/food_search_results_list.dart"
+      ],
+      "parts": [],
+      "part_of": null,
+      "providers_defined": [],
+      "providers_used": [],
+      "routes_defined": [],
+      "catches": [],
+      "empty_catch_count": 0,
+      "total_catch_count": 0
+    },
+    "lib/features/food_log/widgets/household_portion_visual.dart": {
+      "path": "lib/features/food_log/widgets/household_portion_visual.dart",
+      "layer": "features",
+      "sublayer": "features/food_log",
+      "loc": 404,
+      "imports": [
+        "lib/core/catalog/food_catalog_models.dart",
+        "lib/core/theme/b05_semantic_colors.dart",
+        "lib/core/typed_quantities.dart",
+        "lib/core/widgets/b05_accessibility_primitives.dart"
+      ],
+      "imported_by": [
+        "lib/features/food_log/widgets/food_portion_bottom_sheet.dart"
       ],
       "parts": [],
       "part_of": null,
