@@ -1134,6 +1134,130 @@ void main() {
       await database.close();
     });
 
+    group(
+      'only the controller holding the live workout answers the notification',
+      () {
+        var clock = DateTime.utc(2026, 9, 5, 10, 0);
+
+        B02StrengthExecutionController controllerFor(
+          B02StrengthExecutionLaunch launch, {
+          RestPresenceService? presence,
+        }) {
+          final controller = B02StrengthExecutionController(
+            adapter,
+            initialLaunch: launch,
+            nowUtc: () => clock,
+            restPresence: presence ?? presenceService,
+          );
+          addTearDown(controller.dispose);
+          return controller;
+        }
+
+        int loggedSets(B02ExecutionDraftState state) => state.performedExercises
+            .fold(0, (total, exercise) => total + exercise.sets.length);
+
+        setUp(() => clock = DateTime.utc(2026, 9, 5, 10, 0));
+
+        test(
+          'a background Skip is not lost to the launcher on resume',
+          () async {
+            // The global launcher holds the workout as it was at launch; the
+            // player screen opens afterwards and logs a set with a rest.
+            final launcher = controllerFor(_createLaunch());
+            final player = controllerFor(_createLaunch());
+            await player.recordSet(
+              slot: _createSlot(prescribedRest: 90),
+              reps: 8,
+              loadKg: 80,
+              startRestAfterRecord: true,
+            );
+            final periodId = player.state.launch!.state.restPeriods.single.id;
+            await RestPresenceService.savePendingIntent(
+              RestPresenceIntent(
+                action: 'skip',
+                periodId: periodId,
+                timestampUtc: clock.add(const Duration(seconds: 10)),
+              ),
+            );
+
+            // App resume: the launcher used to reconcile first and swallow it.
+            await launcher.reconcilePendingRestIntent();
+            await player.reconcilePendingRestIntent();
+
+            final period = player.state.launch!.state.restPeriods.single;
+            expect(period.endReason, B02RestEndReason.skipped);
+          },
+        );
+
+        test('an outdated controller never saves over newer sets', () async {
+          // A workout recovered mid-rest: one set logged, rest running.
+          final scratch = controllerFor(_createLaunch(), presence: null);
+          await scratch.recordSet(
+            slot: _createSlot(prescribedRest: 90),
+            reps: 8,
+            loadKg: 80,
+            startRestAfterRecord: true,
+          );
+          final recovered = scratch.state.launch!;
+
+          final launcher = controllerFor(recovered);
+          final player = controllerFor(recovered);
+          final firstRest = recovered.state.restPeriods.single.id;
+          await player.skipRest(firstRest);
+          await player.recordSet(
+            slot: _createSlot(prescribedRest: 90),
+            reps: 6,
+            loadKg: 85,
+            startRestAfterRecord: true,
+          );
+          expect(loggedSets(player.state.launch!.state), 2);
+
+          // Long enough for the launcher's copy of the first rest to "elapse".
+          clock = clock.add(const Duration(minutes: 5));
+          await launcher.reconcilePendingRestIntent();
+
+          expect(loggedSets(adapter.savedStates.last), 2);
+        });
+
+        test(
+          'disposing a non-owner keeps the live rest notification',
+          () async {
+            final launcher = B02StrengthExecutionController(
+              adapter,
+              initialLaunch: _createLaunch(),
+              nowUtc: () => clock,
+              restPresence: presenceService,
+            );
+            final player = controllerFor(_createLaunch());
+            await player.recordSet(
+              slot: _createSlot(prescribedRest: 90),
+              reps: 8,
+              loadKg: 80,
+              startRestAfterRecord: true,
+            );
+            expect(presenceService.isActive, isTrue);
+
+            launcher.dispose();
+
+            expect(presenceService.isActive, isTrue);
+            expect(presenceService.isActionDelegate(player), isTrue);
+          },
+        );
+
+        test('a controller created without a workout takes nothing over', () {
+          final player = controllerFor(_createLaunch());
+          final emptyLauncher = B02StrengthExecutionController(
+            adapter,
+            nowUtc: () => clock,
+            restPresence: presenceService,
+          );
+          addTearDown(emptyLauncher.dispose);
+
+          expect(presenceService.isActionDelegate(player), isTrue);
+        });
+      },
+    );
+
     test(
       'pending skip intent received in background reconciles on resume and marks draft rest skipped',
       () async {

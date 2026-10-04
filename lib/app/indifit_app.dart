@@ -12,7 +12,6 @@ import '../core/services/rest_presence_service.dart';
 import '../core/theme/app_theme.dart';
 import '../core/utils/app_logger.dart';
 import '../data/database/app_database.dart';
-import '../features/workout_player/b02_strength_execution_controller.dart';
 import 'database_readiness.dart';
 import 'database_recovery_screen.dart';
 
@@ -152,11 +151,8 @@ class _IndiFitAppState extends ConsumerState<IndiFitApp>
     if (state == AppLifecycleState.resumed) {
       ref.read(civilDateRevisionProvider.notifier).refresh();
       _queueReminderReconciliation(refreshTimezone: true);
-      unawaited(
-        ref
-            .read(b02StrengthExecutionControllerProvider.notifier)
-            .reconcilePendingRestIntent(),
-      );
+      // Rest notification actions taken in the background are applied by the
+      // player screen, which owns the live workout (on resume and on open).
     }
   }
 
