@@ -124,18 +124,41 @@ class ProgressHighlights extends StatelessWidget {
             builder: (context, constraints) {
               final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
               final twoColumns = constraints.maxWidth >= 330 && textScale < 1.5;
-              final width = twoColumns
-                  ? (constraints.maxWidth - B05Layout.space12) / 2
-                  : constraints.maxWidth;
-              return Wrap(
-                spacing: B05Layout.space12,
-                runSpacing: B05Layout.space12,
+              // Pairs share a row at equal height; a tile without a partner
+              // (one highlight, or the third of three) spans the full width
+              // instead of leaving an empty half.
+              final rows = <List<ProgressHighlight>>[
+                for (var i = 0; i < highlights.length; i += twoColumns ? 2 : 1)
+                  highlights.sublist(
+                    i,
+                    (i + (twoColumns ? 2 : 1)).clamp(0, highlights.length),
+                  ),
+              ];
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  for (final highlight in highlights)
-                    SizedBox(
-                      width: width,
-                      child: ProgressHighlightTile(highlight: highlight),
-                    ),
+                  for (var r = 0; r < rows.length; r++) ...[
+                    if (r > 0) const SizedBox(height: B05Layout.space12),
+                    if (rows[r].length == 1)
+                      ProgressHighlightTile(highlight: rows[r].single)
+                    else
+                      IntrinsicHeight(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            for (var c = 0; c < rows[r].length; c++) ...[
+                              if (c > 0)
+                                const SizedBox(width: B05Layout.space12),
+                              Expanded(
+                                child: ProgressHighlightTile(
+                                  highlight: rows[r][c],
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                  ],
                 ],
               );
             },
@@ -213,7 +236,7 @@ class ProgressHighlightTile extends StatelessWidget {
           const SizedBox(height: B05Layout.space4),
           Text(
             highlight.detail,
-            maxLines: 2,
+            maxLines: 3,
             overflow: TextOverflow.ellipsis,
             style: B05Typography.caption(context),
           ),
