@@ -11,6 +11,7 @@ import '../../core/presentation/consumer_copy.dart';
 import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/typed_quantities.dart';
+import '../../core/utils/app_logger.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/indi_fit_feedback.dart';
 import '../../data/database/app_database.dart';
@@ -443,6 +444,8 @@ class _CanonicalFoodRow extends ConsumerWidget {
       ),
       onDismissed: (_) {
         bool undone = false;
+        // Captured now: the row's context is gone by the time the delete runs.
+        final messenger = ScaffoldMessenger.maybeOf(context);
         final timer = Timer(const Duration(seconds: 5), () async {
           if (!undone) {
             try {
@@ -464,7 +467,25 @@ class _CanonicalFoodRow extends ConsumerWidget {
                 );
               }
               ref.read(todayNutritionRevisionProvider.notifier).state++;
-            } catch (_) {}
+            } catch (error, stackTrace) {
+              // The row is already gone from the list; bring it back and say
+              // so instead of letting it reappear later without a word.
+              AppLogger.error('Swipe delete failed', error, stackTrace);
+              if (date != null) {
+                ref.invalidate(foodDiaryReadModelProvider(_civilDay(date!)));
+                ref.invalidate(
+                  canonicalFoodRecordsForDayProvider(_civilDay(date!)),
+                );
+              }
+              ref.read(todayNutritionRevisionProvider.notifier).state++;
+              messenger?.showSnackBar(
+                SnackBar(
+                  content: Text(
+                    "Couldn't remove $displayName. It's still in your log.",
+                  ),
+                ),
+              );
+            }
           }
         });
 

@@ -11,6 +11,7 @@ import '../../core/presentation/secondary_presentation.dart';
 import '../../core/presentation/today_onboarding_handoff.dart';
 import '../../core/router/app_router.dart';
 import '../../core/theme/b05_semantic_colors.dart';
+import '../../core/utils/app_logger.dart';
 import '../../core/utils/tdee_calculator.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/consumer_task_primitives.dart';
@@ -177,6 +178,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     }
   }
 
+  /// Fire-and-forget save: onboarding carries on, but a failure is logged.
+  Future<void> _saveDraftLogged() => _saveDraft().catchError((Object error) {
+    AppLogger.warning('Onboarding draft not saved: $error', 'Onboarding');
+  });
+
   Future<void> _saveDraft() {
     if (!_draftLoaded) return Future<void>.value();
     final draft = B05ProfileOnboardingDraft(
@@ -192,6 +198,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       dietPreference: _dietPreference,
       flowVersion: 2,
     );
+    // Safe: a failed earlier write was already logged by its caller; it
+    // must not block this newer one.
     final next = _draftWrite
         .catchError((_) {})
         .then((_) => _draftStore.saveProfileDraft(draft));
@@ -273,7 +281,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   void _selectOnboardingChoice(VoidCallback selection) {
     _dismissInputFocus();
     setState(selection);
-    unawaited(_saveDraft().catchError((_) {}));
+    unawaited(_saveDraftLogged());
   }
 
   void _validateAge() {
@@ -357,7 +365,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       return;
     }
 
-    unawaited(_saveDraft().catchError((_) {}));
+    unawaited(_saveDraftLogged());
 
     if (_currentPage < _totalPages - 1) {
       final nextPage = _currentPage + 1;
@@ -374,7 +382,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         _showingPayoff = true;
         _completionError = null;
       });
-      unawaited(_saveDraft().catchError((_) {}));
+      unawaited(_saveDraftLogged());
     } else {
       _completeOnboarding();
     }
@@ -467,10 +475,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     double dailyFat = macros.fatG;
 
     // Store targets in SharedPreferences
-    SharedPreferences? prefs;
-    try {
-      prefs = ref.read(sharedPreferencesProvider);
-    } catch (_) {}
+    SharedPreferences? prefs = sharedPreferencesOrNull(
+      () => ref.read(sharedPreferencesProvider),
+    );
     prefs ??= await SharedPreferences.getInstance();
     await prefs.setInt(AppPreferenceKeys.calorieGoal, dailyCalories.round());
     await prefs.setDouble(
@@ -696,7 +703,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               onPageChanged: (page) {
                 _dismissInputFocus();
                 setState(() => _currentPage = page);
-                unawaited(_saveDraft().catchError((_) {}));
+                unawaited(_saveDraftLogged());
               },
               children: [
                 _buildAboutPage(),
@@ -837,8 +844,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                               maxLength,
                             }) => null,
                         textInputAction: TextInputAction.next,
-                        onChanged: (_) =>
-                            unawaited(_saveDraft().catchError((_) {})),
+                        onChanged: (_) => unawaited(_saveDraftLogged()),
                         style: Theme.of(context).textTheme.titleMedium
                             ?.copyWith(color: colors.textPrimary),
                         decoration: InputDecoration(
@@ -879,7 +885,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       if (current > 10) {
                         _ageController.text = '${current - 1}';
                         _validateAge();
-                        unawaited(_saveDraft().catchError((_) {}));
+                        unawaited(_saveDraftLogged());
                       }
                     },
                     onStepUp: () {
@@ -887,11 +893,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       if (current < 120) {
                         _ageController.text = '${current + 1}';
                         _validateAge();
-                        unawaited(_saveDraft().catchError((_) {}));
+                        unawaited(_saveDraftLogged());
                       }
                     },
-                    onChanged: (_) =>
-                        unawaited(_saveDraft().catchError((_) {})),
+                    onChanged: (_) => unawaited(_saveDraftLogged()),
                     textInputAction: TextInputAction.next,
                   ),
                 ),
@@ -902,8 +907,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     controller: _heightController,
                     focusNode: _heightFocusNode,
                     errorText: _heightError,
-                    onChanged: (_) =>
-                        unawaited(_saveDraft().catchError((_) {})),
+                    onChanged: (_) => unawaited(_saveDraftLogged()),
                     textInputAction: TextInputAction.next,
                   ),
                 ),
@@ -926,7 +930,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                             ? next.toInt().toString()
                             : next.toStringAsFixed(1);
                         _validateWeight();
-                        unawaited(_saveDraft().catchError((_) {}));
+                        unawaited(_saveDraftLogged());
                       }
                     },
                     onStepUp: () {
@@ -938,11 +942,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                             ? next.toInt().toString()
                             : next.toStringAsFixed(1);
                         _validateWeight();
-                        unawaited(_saveDraft().catchError((_) {}));
+                        unawaited(_saveDraftLogged());
                       }
                     },
-                    onChanged: (_) =>
-                        unawaited(_saveDraft().catchError((_) {})),
+                    onChanged: (_) => unawaited(_saveDraftLogged()),
                     onEditingComplete: _dismissInputFocus,
                     textInputAction: TextInputAction.done,
                   ),

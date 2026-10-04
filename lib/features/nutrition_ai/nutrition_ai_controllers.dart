@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../core/ai/ai_gateway.dart';
 import '../../core/typed_quantities.dart';
 import '../../data/repositories/nutrition_food_catalog_repository.dart';
 import '../../data/repositories/nutrition_food_logging_coordinator.dart';
@@ -231,8 +232,17 @@ class NutritionLabelOcrController
     } catch (e) {
       state = state.copyWith(
         status: NutritionLabelOcrStatus.failure,
+        // Limits and the kill switch explain themselves; anything else gets
+        // the generic manual-entry prompt.
         errorMessage:
-            'Could not extract nutrition label facts. Please enter values manually.',
+            e is AiGatewayException &&
+                const {
+                  AiGatewayFailure.dailyLimitReached,
+                  AiGatewayFailure.quotaExceeded,
+                  AiGatewayFailure.disabled,
+                }.contains(e.failure)
+            ? e.message
+            : 'Could not extract nutrition label facts. Please enter values manually.',
       );
     }
   }

@@ -81,12 +81,18 @@ async def lifespan(application: FastAPI):
 
 def create_app() -> FastAPI:
     application = FastAPI(title="IndiFit AI Backend", lifespan=lifespan)
+    # The mobile app sends no CORS preflights; this only governs browsers.
+    # No cookies are used, so credentials stay off, and only the methods and
+    # headers the mounted routers need are allowed.
+    allowed_methods = ["GET", "POST"]
+    if os.getenv("ENABLE_CLOUD_SYNC") == "1":
+        allowed_methods.append("DELETE")  # backup deletion
     application.add_middleware(
         CORSMiddleware,
         allow_origins=ALLOWED_ORIGINS,
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_credentials=False,
+        allow_methods=allowed_methods,
+        allow_headers=["authorization", "content-type", "x-indifit-key"],
     )
 
     @application.get("/health")
