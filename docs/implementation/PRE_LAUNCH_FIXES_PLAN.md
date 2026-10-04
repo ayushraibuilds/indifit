@@ -89,23 +89,15 @@ Merge order: A, then B, then C. Each later PR gets `main` merged in and the grap
 - Remove the now-redundant `'bhindi sabzi'` default.
 - Fold the same spellings in `NutritionFoodCatalogRepository.search`, so manual search for "aloo gobi sabzi" also finds "Sabji" foods.
 
-**Change: display name.**
-- Rename only the **display name** of the three entries to "Aloo Gobi (Dry Sabji)…". The identity key, ids and asset row stay as they are, so past logs, thali presets and aliases keep resolving.
-- New installs get the new name from the manifest.
-- Existing installs: an idempotent on-open correction updates `nutrition_foods.display_name` for those ids. This copies the existing `_retireMergedCatalogueDuplicates` pattern and needs no schema bump.
-- The manifest generator applies the same correction map, so regenerating the manifest keeps the fix.
-- Update `genericDefaults['aloo gobi']`.
-
-**Tests.**
-- "bhindi sabzi", "mix veg subzi" and "aloo gobi sabzi" resolve.
-- Repository search for "sabzi" finds "Sabji" foods.
-- A database seeded with the old name is renamed on open, keeps its id and source key, and running the correction twice is a no-op.
-- The manifest round-trip and generator tests stay green.
-
-**Risk.** Medium. The rename touches the identity manifest. Mitigations:
-- ids and keys are untouched;
-- the correction is an UPDATE limited to three ids, applied only when the stored name differs;
-- existing manifest tests cover the parser invariants (`normalized_name` must match `display_name`).
+**Change: display name (revised during implementation).** Renaming is deferred, and the search bug is fixed instead.
+- Implementation found three more places that depend on the asset name "Aloo Gobbi (Dry Sabji)":
+  - `upsertSeededFoodsFromAsset` matches `food_items` rows by name, so a renamed asset inserts a duplicate row;
+  - `_servingUnitLabelFor` finds the row by the `asset:base:` key, so the katori label would be lost;
+  - Food search lists `food_items` names directly.
+- A safe rename needs its own migration that covers all of these, plus tests.
+- What ships instead:
+  - Food search maps "gobi" to also try "gobbi", so "aloo gobi" finds the food. Before, it found nothing, because the correctly spelled duplicate was retired.
+  - The AI defaults cover "aloo gobi sabji" and "aloo gobi dry sabji".
 
 ## 5. Label and photo AI evals
 
