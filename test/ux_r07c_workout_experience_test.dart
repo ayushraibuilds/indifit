@@ -119,6 +119,40 @@ void main() {
     },
   );
 
+  testWidgets('P1 H4 suggestion sits in the Next set header, above the fold', (
+    tester,
+  ) async {
+    _setViewport(tester, const Size(390, 844));
+    final launch = (await tester.runAsync(
+      () => _launchPlannedLike(executions),
+    ))!;
+    await _pumpPlayer(tester, launch, executions, db, AppTheme.lightTheme);
+
+    final suggested = find.text('Suggested');
+    final apply = find.widgetWithText(TextButton, 'Apply');
+    expect(suggested, findsOneWidget);
+    expect(
+      find.ancestor(
+        of: suggested,
+        matching: find.bySemanticsLabel('Next set input'),
+      ),
+      findsOneWidget,
+    );
+    final loadTop = tester.getTopLeft(find.byType(EditableText).first).dy;
+    expect(tester.getTopLeft(suggested).dy, lessThan(loadTop));
+    expect(tester.getBottomLeft(apply).dy, lessThan(844));
+    await tester.tap(apply);
+    await tester.pump();
+    expect(
+      tester
+          .widget<EditableText>(find.byType(EditableText).first)
+          .controller
+          .text,
+      '60',
+    );
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('R08B2 repeated Log set taps persist one set', (tester) async {
     _setViewport(tester, const Size(390, 844));
     final launch = (await tester.runAsync(() => _launch(executions)))!;

@@ -422,6 +422,9 @@ class R07CTargetContext extends StatelessWidget {
   final VoidCallback? onApply;
   final VoidCallback? onChange;
 
+  /// Renders as plain lines for the "Next set" header instead of a card.
+  final bool inline;
+
   const R07CTargetContext({
     super.key,
     required this.slot,
@@ -429,6 +432,7 @@ class R07CTargetContext extends StatelessWidget {
     required this.previousPerformance,
     required this.onApply,
     required this.onChange,
+    this.inline = false,
   });
 
   @override
@@ -473,6 +477,40 @@ class R07CTargetContext extends StatelessWidget {
       previousPerformance,
     );
     if (last == null && target == null) return const SizedBox.shrink();
+    final targetLabel = recommendation == null ? 'Today’s target' : 'Suggested';
+    if (inline) {
+      final actionStyle = TextButton.styleFrom(
+        visualDensity: VisualDensity.compact,
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        minimumSize: const Size(48, 36),
+      );
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (last != null) _inlineLine(context, 'Last time', last),
+          if (target != null || recommendation != null)
+            Wrap(
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 4,
+              children: [
+                if (target != null) _inlineLine(context, targetLabel, target),
+                if (recommendation != null && target != null)
+                  TextButton(
+                    style: actionStyle,
+                    onPressed: onApply,
+                    child: const Text('Apply'),
+                  ),
+                if (recommendation != null)
+                  TextButton(
+                    style: actionStyle,
+                    onPressed: onChange,
+                    child: const Text('Change'),
+                  ),
+              ],
+            ),
+        ],
+      );
+    }
     return B05Surface(
       tone: B05SurfaceTone.inset,
       padding: const EdgeInsets.fromLTRB(14, 12, 10, 10),
@@ -495,10 +533,7 @@ class R07CTargetContext extends StatelessWidget {
                     ],
                     if (target != null) ...[
                       if (last != null) const SizedBox(height: 8),
-                      Text(
-                        recommendation == null ? 'Today’s target' : 'Suggested',
-                        style: B05Typography.label(context),
-                      ),
+                      Text(targetLabel, style: B05Typography.label(context)),
                       const SizedBox(height: 2),
                       Text(target),
                     ],
@@ -519,6 +554,20 @@ class R07CTargetContext extends StatelessWidget {
                 ],
               ),
             ),
+        ],
+      ),
+    );
+  }
+
+  Widget _inlineLine(BuildContext context, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Wrap(
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: 8,
+        children: [
+          Text(label, style: B05Typography.caption(context)),
+          Text(value),
         ],
       ),
     );

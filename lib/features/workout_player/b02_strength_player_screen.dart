@@ -279,9 +279,13 @@ class _B02StrengthPlayerScreenState
     final previousPerformance = _previousLookup.activeKey == previousKey
         ? _previousLookup.activeResult
         : null;
+    final showPendingEditor = isQuick || !exerciseComplete || hasExtraSetReady;
+    // While a set is pending, the suggestion sits in the "Next set" header
+    // beside the fields it fills; otherwise it stays as a card below.
     final currentTarget =
         _hasUsefulTargetContext(launch.state, selected, previousPerformance)
         ? R07CTargetContext(
+            inline: groupSafe && showPendingEditor,
             slot: selected,
             state: launch.state,
             previousPerformance: previousPerformance,
@@ -304,8 +308,9 @@ class _B02StrengthPlayerScreenState
             performedSets: performedSets,
             isPlannedMode: execution is PlannedWorkoutExecutionContext,
             exerciseComplete: exerciseComplete,
-            showPendingEditor: isQuick || !exerciseComplete || hasExtraSetReady,
+            showPendingEditor: showPendingEditor,
             pendingTechnique: pendingTechnique,
+            targetSummary: currentTarget?.inline == true ? currentTarget : null,
           );
     final primaryLabel = _warmup
         ? 'Log warm-up set'
@@ -365,9 +370,7 @@ class _B02StrengthPlayerScreenState
           ? _buildRestCard(provider, ui, launch, cursorSlot ?? selected)
           : null,
       setLoggingSlot: setLogging,
-      primaryActionSlot: isQuick || !exerciseComplete || hasExtraSetReady
-          ? primaryAction
-          : null,
+      primaryActionSlot: showPendingEditor ? primaryAction : null,
       primaryActionGap: 10,
       nextExerciseGap: hasOpenRest
           ? 12
@@ -377,7 +380,7 @@ class _B02StrengthPlayerScreenState
       nextExerciseSlot: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (currentTarget != null) ...[
+          if (currentTarget != null && !currentTarget.inline) ...[
             currentTarget,
             const SizedBox(height: 12),
           ],
@@ -424,6 +427,7 @@ class _B02StrengthPlayerScreenState
     required bool exerciseComplete,
     required bool showPendingEditor,
     required B02TechniqueFields pendingTechnique,
+    Widget? targetSummary,
   }) {
     final rpe = int.tryParse(_rpes[selected.id] ?? '');
     final techniqueKey = _pendingTechniqueKey(
@@ -465,6 +469,7 @@ class _B02StrengthPlayerScreenState
           ? () => _openPlateCalculator(selected)
           : null,
       showPendingEditor: showPendingEditor,
+      targetSummary: targetSummary,
       // The next planned row's checkmark is the same action as "Log set".
       onCompleteNext:
           _warmup ||
