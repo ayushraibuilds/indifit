@@ -1,12 +1,12 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "summary": {
-    "total_dart_files": 475,
-    "total_loc": 340817,
-    "total_internal_edges": 2364,
-    "external_package_count": 28,
+    "total_dart_files": 476,
+    "total_loc": 340904,
+    "total_internal_edges": 2367,
+    "external_package_count": 29,
     "catch_metrics": {
-      "total_catches_all": 504,
+      "total_catches_all": 505,
       "total_catch_underscore": 158,
       "total_empty_catches": 0,
       "p0_empty_catches": 0
@@ -16,7 +16,7 @@
       "core": 145,
       "data": 101,
       "features": 257,
-      "other": 1
+      "other": 2
     }
   },
   "legacy_migration": {
@@ -144,7 +144,7 @@
       "path": "lib/app/database_recovery_screen.dart",
       "layer": "app",
       "sublayer": "app",
-      "loc": 174,
+      "loc": 194,
       "imports": [
         "lib/core/utils/app_logger.dart",
         "lib/app/database_readiness.dart"
@@ -157,9 +157,20 @@
       "providers_defined": [],
       "providers_used": [],
       "routes_defined": [],
-      "catches": [],
+      "catches": [
+        {
+          "file": "lib/app/database_recovery_screen.dart",
+          "line": 172,
+          "var": "error",
+          "is_underscore": false,
+          "is_empty": false,
+          "snippet": "} catch (error) {",
+          "layer": "app",
+          "is_p0": false
+        }
+      ],
       "empty_catch_count": 0,
-      "total_catch_count": 0
+      "total_catch_count": 1
     },
     "lib/app/indifit_app.dart": {
       "path": "lib/app/indifit_app.dart",
@@ -4134,7 +4145,7 @@
       "path": "lib/core/services/crash_reporting_service.dart",
       "layer": "core",
       "sublayer": "core",
-      "loc": 213,
+      "loc": 214,
       "imports": [
         "lib/core/config/app_preferences_keys.dart",
         "lib/core/utils/app_logger.dart"
@@ -8325,12 +8336,13 @@
       "path": "lib/data/repositories/nutrition_food_catalog_repository.dart",
       "layer": "data",
       "sublayer": "data",
-      "loc": 946,
+      "loc": 948,
       "imports": [
         "lib/core/fixtures/food_identity_manifest.dart",
         "lib/core/nutrients.dart",
         "lib/core/typed_quantities.dart",
-        "lib/data/database/app_database.dart"
+        "lib/data/database/app_database.dart",
+        "lib/data/services/food_name_spelling.dart"
       ],
       "imported_by": [
         "lib/data/repositories/nutrition_food_logging_coordinator.dart",
@@ -10193,15 +10205,36 @@
       "empty_catch_count": 0,
       "total_catch_count": 2
     },
+    "lib/data/services/food_name_spelling.dart": {
+      "path": "lib/data/services/food_name_spelling.dart",
+      "layer": "data",
+      "sublayer": "data",
+      "loc": 22,
+      "imports": [],
+      "imported_by": [
+        "lib/data/repositories/nutrition_food_catalog_repository.dart",
+        "lib/data/services/nutrition_food_search_ranking.dart",
+        "lib/features/nutrition_ai/meal_item_resolver.dart"
+      ],
+      "parts": [],
+      "part_of": null,
+      "providers_defined": [],
+      "providers_used": [],
+      "routes_defined": [],
+      "catches": [],
+      "empty_catch_count": 0,
+      "total_catch_count": 0
+    },
     "lib/data/services/nutrition_food_search_ranking.dart": {
       "path": "lib/data/services/nutrition_food_search_ranking.dart",
       "layer": "data",
       "sublayer": "data",
-      "loc": 849,
+      "loc": 853,
       "imports": [
         "lib/data/database/app_database.dart",
         "lib/data/repositories/food_api_service.dart",
-        "lib/data/repositories/nutrition_food_catalog_repository.dart"
+        "lib/data/repositories/nutrition_food_catalog_repository.dart",
+        "lib/data/services/food_name_spelling.dart"
       ],
       "imported_by": [
         "lib/features/food_log/food_search_screen.dart",
@@ -14882,10 +14915,11 @@
       "path": "lib/features/nutrition_ai/meal_item_resolver.dart",
       "layer": "features",
       "sublayer": "features/nutrition_ai",
-      "loc": 435,
+      "loc": 474,
       "imports": [
         "lib/core/typed_quantities.dart",
-        "lib/data/repositories/nutrition_food_catalog_repository.dart"
+        "lib/data/repositories/nutrition_food_catalog_repository.dart",
+        "lib/data/services/food_name_spelling.dart"
       ],
       "imported_by": [
         "lib/features/nutrition_ai/ai_items_thali_handoff.dart",
@@ -14938,7 +14972,7 @@
       "path": "lib/features/nutrition_ai/natural_language_meal_service.dart",
       "layer": "features",
       "sublayer": "features/nutrition_ai",
-      "loc": 391,
+      "loc": 390,
       "imports": [
         "lib/core/ai/ai_gateway.dart",
         "lib/core/ai/ai_photo_sanitizer.dart",
@@ -14966,7 +15000,7 @@
       "catches": [
         {
           "file": "lib/features/nutrition_ai/natural_language_meal_service.dart",
-          "line": 341,
+          "line": 340,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,

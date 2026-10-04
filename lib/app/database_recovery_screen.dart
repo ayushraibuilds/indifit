@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -154,19 +155,38 @@ Future<bool> _shareDatabaseFiles() async {
 
 /// Sends only the error *type*: messages can contain user data.
 Future<void> _emailSupport(String errorType) async {
-  final uri = supportEmailUri(errorType);
+  final uri = supportEmailUri(errorType, appVersion: await _appVersion());
   if (!await launchUrl(uri)) {
     AppLogger.warning('No email app to contact support', 'DatabaseRecovery');
   }
 }
 
+/// "1.0.0 (1)", or null when the platform can't say. The database is broken
+/// on this screen, so a failed lookup must never block the email.
+Future<String?> _appVersion() async {
+  try {
+    final info = await PackageInfo.fromPlatform();
+    return info.buildNumber.isEmpty
+        ? info.version
+        : '${info.version} (${info.buildNumber})';
+  } catch (error) {
+    AppLogger.warning('App version unavailable: $error', 'DatabaseRecovery');
+    return null;
+  }
+}
+
 /// The support email. Built by hand: `Uri(queryParameters:)` encodes spaces
 /// as `+`, which mail apps show literally.
-Uri supportEmailUri(String errorType) {
+Uri supportEmailUri(String errorType, {String? appVersion}) {
   String encode(String value) => Uri.encodeComponent(value);
   final subject = encode("IndiFit couldn't open my data");
+  final version = appVersion == null || appVersion.trim().isEmpty
+      ? 'unknown'
+      : appVersion.trim();
   final body = encode(
-    'Error type: $errorType\nPlatform: ${Platform.operatingSystem}',
+    'Error type: $errorType\n'
+    'App version: $version\n'
+    'Platform: ${Platform.operatingSystem}',
   );
   return Uri.parse(
     'mailto:${DatabaseRecoveryScreen.supportEmail}?subject=$subject&body=$body',
