@@ -41,6 +41,8 @@ import '../../features/workout_player/workout_execution_route.dart';
 import '../../features/workout_player/workout_summary_screen.dart';
 import '../config/app_config.dart';
 import '../privacy/privacy_policy.dart';
+import '../utils/app_logger.dart';
+import 'route_not_found_screen.dart';
 
 part 'routes/core_routes.dart';
 part 'routes/nutrition_routes.dart';
@@ -180,6 +182,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ...trainingRoutes,
       ...workoutPlayerRoutes,
     ],
+    errorBuilder: (context, state) {
+      // Path only: query strings can carry record IDs.
+      AppLogger.warning('No route for ${state.uri.path}', 'Router');
+      return const RouteNotFoundScreen();
+    },
   );
   ref.onDispose(router.dispose);
   return router;
