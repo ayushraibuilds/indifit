@@ -69,6 +69,50 @@ void main() {
     }
   });
 
+  testWidgets('P1 H7 paired highlights share a row at equal height', (
+    tester,
+  ) async {
+    _setViewport(tester, const Size(390, 844));
+    await _pump(tester, _populated(), AppTheme.lightTheme);
+    final training = find.byKey(const ValueKey('progress_highlight_training'));
+    final strength = find.byKey(const ValueKey('progress_highlight_strength'));
+    final pairWidth = tester.getSize(training).width;
+    expect(tester.getSize(strength).width, moreOrLessEquals(pairWidth));
+    expect(tester.getSize(strength).height, tester.getSize(training).height);
+    expect(tester.getTopLeft(strength).dy, tester.getTopLeft(training).dy);
+    // A pair splits the row (minus the gap).
+    expect(pairWidth, lessThan(390 / 2));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('P1 H7 a lone highlight spans the full width', (tester) async {
+    _setViewport(tester, const Size(390, 844));
+    final training = find.byKey(const ValueKey('progress_highlight_training'));
+    final populated = _populated();
+    await _pump(
+      tester,
+      ProgressDashboardSnapshot(
+        nowUtc: populated.nowUtc,
+        timezoneId: populated.timezoneId,
+        todayLocalDate: populated.todayLocalDate,
+        measurements: populated.measurements,
+        workouts: populated.workouts,
+        strengthSets: const [],
+        muscleBalance: null,
+        unavailableSections: const {},
+      ),
+      AppTheme.lightTheme,
+    );
+    expect(
+      find.byKey(const ValueKey('progress_highlight_strength')),
+      findsNothing,
+    );
+    // One highlight uses the whole row (390 minus the 20 pt page gutters)
+    // instead of half of it.
+    expect(tester.getSize(training).width, moreOrLessEquals(390 - 40));
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('missing domains stay hidden while known weight remains useful', (
     tester,
   ) async {
