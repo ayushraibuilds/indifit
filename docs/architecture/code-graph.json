@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "summary": {
     "total_dart_files": 476,
-    "total_loc": 341277,
+    "total_loc": 341327,
     "total_internal_edges": 2374,
     "external_package_count": 29,
     "catch_metrics": {
@@ -8798,7 +8798,7 @@
       "path": "lib/data/repositories/nutrition_thali_repository.dart",
       "layer": "data",
       "sublayer": "data",
-      "loc": 1303,
+      "loc": 1379,
       "imports": [
         "lib/core/nutrients.dart",
         "lib/core/nutrition_calculation_service.dart",
@@ -8830,7 +8830,7 @@
       "catches": [
         {
           "file": "lib/data/repositories/nutrition_thali_repository.dart",
-          "line": 400,
+          "line": 401,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -8840,7 +8840,7 @@
         },
         {
           "file": "lib/data/repositories/nutrition_thali_repository.dart",
-          "line": 560,
+          "line": 607,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -8850,7 +8850,7 @@
         },
         {
           "file": "lib/data/repositories/nutrition_thali_repository.dart",
-          "line": 562,
+          "line": 609,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -8860,7 +8860,7 @@
         },
         {
           "file": "lib/data/repositories/nutrition_thali_repository.dart",
-          "line": 653,
+          "line": 700,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -8870,7 +8870,7 @@
         },
         {
           "file": "lib/data/repositories/nutrition_thali_repository.dart",
-          "line": 655,
+          "line": 702,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -8880,7 +8880,7 @@
         },
         {
           "file": "lib/data/repositories/nutrition_thali_repository.dart",
-          "line": 657,
+          "line": 704,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -8890,7 +8890,7 @@
         },
         {
           "file": "lib/data/repositories/nutrition_thali_repository.dart",
-          "line": 872,
+          "line": 919,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -8900,7 +8900,7 @@
         },
         {
           "file": "lib/data/repositories/nutrition_thali_repository.dart",
-          "line": 1103,
+          "line": 1150,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -8910,7 +8910,7 @@
         },
         {
           "file": "lib/data/repositories/nutrition_thali_repository.dart",
-          "line": 1111,
+          "line": 1158,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -13414,7 +13414,7 @@
       "path": "lib/features/food_log/repeat_meal.dart",
       "layer": "features",
       "sublayer": "features/food_log",
-      "loc": 386,
+      "loc": 360,
       "imports": [
         "lib/core/di/providers.dart",
         "lib/core/nutrition_consumption_snapshots.dart",
@@ -13442,7 +13442,7 @@
       "catches": [
         {
           "file": "lib/features/food_log/repeat_meal.dart",
-          "line": 303,
+          "line": 279,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -13452,7 +13452,7 @@
         },
         {
           "file": "lib/features/food_log/repeat_meal.dart",
-          "line": 333,
+          "line": 307,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,

@@ -260,49 +260,24 @@ Future<RepeatOutcome> logRepeatPlan({
   }
 
   for (final repeat in plan.thalis) {
-    final logged = await thalis.getDraft(
+    final draft = await thalis.getDraft(
       userId: userId,
       thaliId: repeat.thaliId,
     );
-    // Only the composition that was logged is repeated: a thali edited
-    // since (or deleted) is skipped rather than approximated.
-    if (logged == null ||
+    // Only the composition that was logged is repeated: a thali edited,
+    // archived or deleted since is skipped rather than approximated.
+    if (draft == null ||
+        draft.lifecycle != 'active' ||
         repeat.version == null ||
-        logged.currentVersion != repeat.version) {
+        draft.currentVersion != repeat.version) {
       skipped++;
       continue;
     }
-    // A logged thali's item ids belong to that log, so the repeat logs a
-    // fresh copy of it and archives the copy: it is history, not a new
-    // saved meal.
-    final copy = await thalis.saveDraft(
-      thalis.newDraft(
-        userId: userId,
-        name: logged.name,
-        description: logged.description,
-        items: [
-          for (final item in logged.items)
-            NutritionThaliItem(
-              id: 'thali-item-v1-${const Uuid().v4()}',
-              position: item.position,
-              source: item.source,
-              foodId: item.foodId,
-              recipeVersionId: item.recipeVersionId,
-              quantity: item.quantity,
-              measureId: item.measureId,
-              optional: item.optional,
-              notes: item.notes,
-              displayLabel: item.displayLabel,
-            ),
-        ],
-      ),
-    );
     final NutritionThaliPreview preview;
     try {
-      preview = await thalis.preview(draft: copy);
+      preview = await thalis.preview(draft: draft);
     } on NutritionThaliError catch (error) {
       AppLogger.warning('Thali not repeated: $error', 'RepeatMeal');
-      await thalis.deleteThali(userId: userId, thaliId: copy.id);
       skipped++;
       continue;
     }
@@ -317,7 +292,6 @@ Future<RepeatOutcome> logRepeatPlan({
       // The same thali was logged as it is, partial nutrition included.
       allowPartial: true,
     );
-    await thalis.archiveThali(userId: userId, thaliId: copy.id);
     loggedThalis++;
   }
 
