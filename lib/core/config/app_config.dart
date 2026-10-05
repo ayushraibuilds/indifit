@@ -2,11 +2,25 @@ import 'package:flutter/foundation.dart';
 
 /// Centralized app configuration for environment-specific variables.
 class AppConfig {
-  /// Connected AI ships only when a safe backend exists (see P0 plan WS6).
-  /// Enable for development with --dart-define=INDIFIT_CONNECTED_AI=true.
-  static const bool connectedAiEnabled = bool.fromEnvironment(
-    'INDIFIT_CONNECTED_AI',
-  );
+  /// The AI meal tools (describe a meal, meal photo, label scan) ship in the
+  /// v1 store build: release builds have them on unless built with
+  /// `--dart-define=INDIFIT_CONNECTED_AI=false`. Debug and test builds keep
+  /// them off unless built with `--dart-define=INDIFIT_CONNECTED_AI=true`.
+  /// Either way they still need the user's consent, App Check and the
+  /// Remote Config kill switch (`ai_enabled`).
+  static const bool connectedAiEnabled =
+      bool.hasEnvironment('INDIFIT_CONNECTED_AI')
+      ? bool.fromEnvironment('INDIFIT_CONNECTED_AI')
+      : kReleaseMode;
+
+  /// The rule behind [connectedAiEnabled], for tests: an explicit define
+  /// wins, otherwise release builds are on.
+  @visibleForTesting
+  static bool resolveConnectedAi({
+    required bool defined,
+    required bool value,
+    required bool releaseMode,
+  }) => defined ? value : releaseMode;
 
   /// The base URL for the IndiFit backend (food search proxy, dev AI routes).
   ///

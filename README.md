@@ -72,7 +72,7 @@ Testing on Android is completely free and does not expire:
 
 ## Testing the AI meal features
 
-AI features (describe a meal, meal photo, label scan) are off unless you build with `INDIFIT_CONNECTED_AI=true`. Requests go through Firebase AI Logic and are protected by App Check. **The AI SDK won't send any request without a valid App Check token, even while enforcement is off.**
+AI features (describe a meal, meal photo, label scan) ship in the v1 store build: release builds have them on unless built with `--dart-define=INDIFIT_CONNECTED_AI=false`. Debug builds keep them off unless you pass `INDIFIT_CONNECTED_AI=true`. They still need the user's consent and can be switched off remotely (Remote Config `ai_enabled`, `ai_photo_enabled`). **Before a store release, register Play Integrity and App Attest in Firebase App Check: without them every AI request from a store install fails.** Requests go through Firebase AI Logic and are protected by App Check. **The AI SDK won't send any request without a valid App Check token, even while enforcement is off.**
 
 **Debug builds** use App Check's debug provider. To avoid registering a new token for every device and reinstall, register one shared token once (Firebase console → App Check → ⋮ → Manage debug tokens → Generate token), then pass it at build time. It's a secret: don't commit it.
 
