@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:crypto/crypto.dart';
 import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
@@ -411,6 +412,20 @@ class NutritionThaliRepository {
     required NutritionThaliDraft draft,
     DateTime? evaluatedAtUtc,
     Iterable<String> acknowledgedConstraintIds = const [],
+  }) => _preview(
+    draft: draft,
+    items: draft.items,
+    evaluatedAtUtc: evaluatedAtUtc,
+    acknowledgedConstraintIds: acknowledgedConstraintIds,
+  );
+
+  /// [preview] over [items], which are [draft]'s items, possibly with
+  /// log-scoped ids (see [finalize]).
+  Future<NutritionThaliPreview> _preview({
+    required NutritionThaliDraft draft,
+    required Iterable<NutritionThaliItem> items,
+    DateTime? evaluatedAtUtc,
+    Iterable<String> acknowledgedConstraintIds = const [],
   }) async {
     _validateDraftOwner(draft);
     if (draft.lifecycle != 'active') {
@@ -426,7 +441,7 @@ class NutritionThaliRepository {
       );
     }
     final previews = <NutritionThaliItemPreview>[];
-    for (final item in draft.items) {
+    for (final item in items) {
       previews.add(await _previewItem(draft, item));
     }
     final requested = _registry.definitions
@@ -521,6 +536,38 @@ class NutritionThaliRepository {
       preview,
       allowCompositionVariation: allowCompositionVariation,
     );
+    // A saved thali's item ids become its snapshot item ids, which must be
+    // unique across all logs. Logging the same thali again therefore
+    // rebuilds this log's preview with log-scoped item ids, so items, nutrient
+    // lineage and constraint evidence all carry the same new ids.
+    if (await _itemIdsAlreadyLogged(preview)) {
+      final scope = _logScope(commandId);
+      final evaluation = preview.constraintEvaluation;
+      final rescoped = await _preview(
+        draft: preview.draft,
+        items: [
+          for (final item in preview.items)
+            _withItemId(item.item, '${item.item.id}~$scope'),
+        ],
+        evaluatedAtUtc: evaluation?.evaluatedAtUtc,
+        acknowledgedConstraintIds: [
+          for (final result in evaluation?.evaluations ?? const [])
+            if (result.acknowledged) result.constraintId,
+        ],
+      );
+      if (acknowledgement != null && rescoped.constraintEvaluation != null) {
+        // The same assent to the same evaluation; only item ids changed.
+        acknowledgement = NutritionConstraintAcknowledgement(
+          commandId: acknowledgement.commandId,
+          userId: acknowledgement.userId,
+          evaluationFingerprint: rescoped.constraintEvaluation!.fingerprint,
+          constraintId: acknowledgement.constraintId,
+          reason: acknowledgement.reason,
+          acknowledgedAtUtc: acknowledgement.acknowledgedAtUtc,
+        );
+      }
+      preview = rescoped;
+    }
     final items = [
       for (final item in preview.items) _finalizationItem(preview, item),
     ];
@@ -1114,6 +1161,35 @@ class NutritionThaliRepository {
     }
     return _DecodedItemNotes(notes: raw);
   }
+
+  Future<bool> _itemIdsAlreadyLogged(NutritionThaliPreview preview) async {
+    final ids = preview.items.map((item) => item.item.id).toSet();
+    final existing =
+        await (_db.select(_db.nutritionSnapshotItems)
+              ..where((table) => table.id.isIn(ids))
+              ..limit(1))
+            .get();
+    return existing.isNotEmpty;
+  }
+
+  /// A short, stable scope for one log: retrying the same command yields the
+  /// same item ids.
+  static String _logScope(String commandId) =>
+      sha256.convert(utf8.encode(commandId)).toString().substring(0, 12);
+
+  static NutritionThaliItem _withItemId(NutritionThaliItem item, String id) =>
+      NutritionThaliItem(
+        id: id,
+        position: item.position,
+        source: item.source,
+        foodId: item.foodId,
+        recipeVersionId: item.recipeVersionId,
+        quantity: item.quantity,
+        measureId: item.measureId,
+        optional: item.optional,
+        notes: item.notes,
+        displayLabel: item.displayLabel,
+      );
 
   NutritionConsumptionItemInput _finalizationItem(
     NutritionThaliPreview preview,
