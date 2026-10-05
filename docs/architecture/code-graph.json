@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "summary": {
     "total_dart_files": 476,
-    "total_loc": 341313,
+    "total_loc": 341327,
     "total_internal_edges": 2374,
     "external_package_count": 29,
     "catch_metrics": {
@@ -1651,7 +1651,7 @@
       "path": "lib/core/config/app_config.dart",
       "layer": "core",
       "sublayer": "core",
-      "loc": 57,
+      "loc": 71,
       "imports": [],
       "imported_by": [
         "lib/core/ai/ai_gateway_provider.dart",

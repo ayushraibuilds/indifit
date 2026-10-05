@@ -1,6 +1,6 @@
 # IndiFit — App Store & Google Play Store Listing Copy
 
-> **AI lines:** the "Optional AI meal tools" section, the AI mentions under Privacy and portability, the Camera, Photos and Internet rows, and the AI rows in section 5 apply only to store builds made with `--dart-define=INDIFIT_CONNECTED_AI=true`. Remove them for a build without AI.
+> **AI lines:** the "Optional AI meal tools" section, the AI mentions under Privacy and portability, the Camera, Photos and Internet rows, and the AI rows in section 5 describe the AI meal tools, which v1 store builds ship with (release builds have them on by default). Remove these lines only for a build made with `--dart-define=INDIFIT_CONNECTED_AI=false`.
 
 ## 1. Store titles
 
