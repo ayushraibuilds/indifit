@@ -49,7 +49,8 @@ void main() {
     expect(today, hasLength(1));
     expect(today.single.sourceType, 'thali');
     expect(today.single.mealCategory, 'lunch');
-    // The same composition, logged as a fresh copy of the thali.
+    // The same saved thali, logged again.
+    expect(today.single.thaliId, yesterday.thaliId);
     expect(
       today.single.items.map((item) => (item.foodId, item.displayLabel)),
       yesterday.items.map((item) => (item.foodId, item.displayLabel)),
@@ -58,7 +59,7 @@ void main() {
       today.single.totals.facts['energy']?.point?.value.toString(),
       yesterday.totals.facts['energy']?.point?.value.toString(),
     );
-    // The copy is history, not a new saved meal.
+    // Repeating adds no saved meals.
     final saved = await h.thalis.listDrafts(userId: _user);
     expect(saved.map((draft) => draft.id), [yesterday.thaliId]);
   });

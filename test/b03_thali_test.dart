@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/nutrients.dart';
 import 'package:indifit/core/nutrition_calculation_service.dart';
 import 'package:indifit/core/nutrition_constraints.dart';
+import 'package:indifit/core/nutrition_consumption_snapshots.dart';
 import 'package:indifit/core/nutrition_household_measures.dart';
 import 'package:indifit/core/nutrition_thali.dart';
 import 'package:indifit/core/typed_quantities.dart';
@@ -486,6 +487,150 @@ void main() {
         expect(
           saved.constraintEvaluation!.evaluations.single.acknowledged,
           isTrue,
+        );
+      },
+    );
+
+    test('a saved thali can be logged again on another day', () async {
+      final harness = await _ThaliHarness.create();
+      addTearDown(harness.close);
+      final draft = await harness.repository.saveDraft(
+        harness.repository.newDraft(
+          userId: harness.userId,
+          items: [harness.foodItem('food-a', 0)],
+        ),
+      );
+
+      Future<NutritionConsumptionSnapshot> logOn(
+        String day,
+        String command,
+      ) async {
+        final current = (await harness.repository.getDraft(
+          userId: harness.userId,
+          thaliId: draft.id,
+        ))!;
+        return harness.repository.finalize(
+          preview: await harness.repository.preview(draft: current),
+          mealCategory: 'lunch',
+          loggedAt: DateTime.parse('${day}T07:00:00Z'),
+          commandId: command,
+          localDate: day,
+          timezoneId: 'Asia/Kolkata',
+          allowPartial: true,
+        );
+      }
+
+      final first = await logOn('2026-08-04', 'thali-day-1');
+      final second = await logOn('2026-08-05', 'thali-day-2');
+      // Retrying the second log's command is still idempotent.
+      final retried = await logOn('2026-08-05', 'thali-day-2');
+
+      expect(second.id, isNot(first.id));
+      expect(retried.id, second.id);
+      expect(second.thaliId, draft.id);
+      expect(first.items.single.id, 'item-a');
+      expect(second.items.single.id, startsWith('item-a~'));
+      expect(
+        second.totals.facts['energy']?.point?.value.toString(),
+        first.totals.facts['energy']?.point?.value.toString(),
+      );
+      // Both read back through the persisted-snapshot validation.
+      final all = await harness.consumption.listAllForUser(
+        userId: harness.userId,
+      );
+      expect(all.map((snapshot) => snapshot.id).toSet(), {first.id, second.id});
+    });
+
+    test(
+      'logging a saved thali again keeps acknowledged dietary evidence intact',
+      () async {
+        final harness = await _ThaliHarness.create();
+        addTearDown(harness.close);
+        final constraints = NutritionConstraintRepository(database: harness.db);
+        final target = NutritionConstraintTarget(
+          type: NutritionConstraintTargetType.allergen,
+          id: 'milk',
+        );
+        final timestamp = DateTime.utc(2026, 8, 4);
+        await constraints.createConstraint(
+          NutritionUserConstraint(
+            id: 'constraint-milk',
+            userId: harness.userId,
+            definitionId: NutritionConstraintTaxonomy.definitionForType(
+              NutritionConstraintType.allergy,
+            ).id,
+            type: NutritionConstraintType.allergy,
+            target: target,
+            strictness: NutritionConstraintStrictness.avoid,
+            effectiveFrom: timestamp,
+            source: NutritionConstraintSource.userEntered,
+            createdAtUtc: timestamp,
+            updatedAtUtc: timestamp,
+          ),
+        );
+        await constraints.recordFoodEvidence(
+          foodId: 'food-a',
+          evidence: NutritionConstraintEvidence(
+            id: 'food-a-milk-evidence',
+            subjectId: 'food-a',
+            target: target,
+            status: NutritionConstraintEvidenceStatus.confirmed,
+            source:
+                NutritionConstraintEvidenceSource.reviewedAllergenDeclaration,
+          ),
+        );
+        final draft = await harness.repository.saveDraft(
+          harness.repository.newDraft(
+            userId: harness.userId,
+            items: [harness.foodItem('food-a', 0)],
+          ),
+        );
+
+        Future<NutritionConsumptionSnapshot> logAcknowledged(
+          String day,
+          String command,
+        ) async {
+          final preview = await harness.repository.preview(
+            draft: draft,
+            acknowledgedConstraintIds: const ['constraint-milk'],
+          );
+          final at = DateTime.parse('${day}T07:00:00Z');
+          return harness.repository.finalize(
+            preview: preview,
+            mealCategory: 'lunch',
+            loggedAt: at,
+            commandId: command,
+            localDate: day,
+            timezoneId: 'Asia/Kolkata',
+            acknowledgement: NutritionConstraintAcknowledgement(
+              commandId: command,
+              userId: harness.userId,
+              evaluationFingerprint: preview.constraintEvaluation!.fingerprint,
+              constraintId: 'constraint-milk',
+              reason: 'User acknowledged the dietary warning.',
+              acknowledgedAtUtc: at,
+            ),
+            allowPartial: true,
+          );
+        }
+
+        await logAcknowledged('2026-08-04', 'milk-day-1');
+        final second = await logAcknowledged('2026-08-05', 'milk-day-2');
+
+        final evaluation = second.constraintEvaluation!.evaluations.single;
+        expect(evaluation.acknowledged, isTrue);
+        final itemIds = second.items.map((item) => item.id).toSet();
+        for (final evidence in evaluation.evidence) {
+          final lineage = evidence.ingredientLineage!;
+          final separator = lineage.indexOf('::');
+          expect(
+            itemIds,
+            contains(separator < 1 ? lineage : lineage.substring(0, separator)),
+          );
+        }
+        expect(
+          await harness.consumption.listAllForUser(userId: harness.userId),
+          hasLength(2),
         );
       },
     );
