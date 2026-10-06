@@ -67,6 +67,8 @@ Priority classes:
   outage from disabling or redefining the offline core.
 - Never introduce synthetic e1RM, inferred PR authority, homemade calorie burn,
   numeric readiness, or unsupported strength standards.
+  (Amended 2026-10-06: factual bests derived from logged sets are allowed;
+  see [TRAINING_PROGRESS_PREMIUM_PLAN.md](TRAINING_PROGRESS_PREMIUM_PLAN.md) § 4.)
 
 ## 4. Connected systems contract
 

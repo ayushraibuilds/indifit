@@ -546,6 +546,7 @@ The mathematical uncompressed payload of a 512×512 32-bit raster is about 1 MiB
 - synthetic e1RM: reject until separately specified by canonical B02 authority;
 - formula workout calories: reject;
 - unsupported/synthetic PR events and celebration: reject until a canonical PR-event owner exists;
+  - **Amended 2026-10-06 (Ayush):** *factual* bests are allowed from v1. "Heaviest" and "most reps at this weight or more" are derived on read from logged B02 working sets, with no estimate and no stored event. See [TRAINING_PROGRESS_PREMIUM_PLAN.md](../TRAINING_PROGRESS_PREMIUM_PLAN.md) § 1 and § 4. Synthetic e1RM and inferred PRs stay rejected.
 - automatic progression outside accepted B02 rules: reject;
 - Strong/Hevy/FitNotes import: defer beyond V1;
 - all openGym code/assets: prohibited from IndiFit under this clean-room decision.

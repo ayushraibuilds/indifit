@@ -6,8 +6,11 @@ Companion documents:
 - [Market, moat and revenue](../strategy/MARKET_MOAT_REVENUE_2026-10-05.md)
 - [Final launch roadmap and fix plans](../implementation/LAUNCH_ROADMAP_FINAL.md)
 - [Nutrition catalogue packs plan](../implementation/NUTRITION_CATALOGUE_PACKS_PLAN.md)
+- [Training and progress plan](../implementation/TRAINING_PROGRESS_PREMIUM_PLAN.md)
 
 > **Update 2026-10-06:** Ayush decided nutrition will be online-sourced and locally served: versioned catalogue packs, local search, no search server. The fixes for C-01, C-04, C-06, C-09, A-01 and A-02 now run through that plan (CAT-1 … CAT-12). The findings below are unchanged.
+>
+> **Update 2026-10-06 (training):** Ayush decided factual best-ever sets and a weekly training goal ship in v1. The workout summary also becomes the reward moment, with motion and haptics. Plan: [TRAINING_PROGRESS_PREMIUM_PLAN.md](../implementation/TRAINING_PROGRESS_PREMIUM_PLAN.md) (TP-1 … TP-14). It covers UX-05 together with PR-D, and part of UX-21.
 
 **Evidence labels used throughout**
 - **Verified (live):** reproduced on the iOS Simulator, with a screenshot.

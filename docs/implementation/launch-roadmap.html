@@ -205,9 +205,9 @@ footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--line);
   <h2 id="glance-h">At a glance</h2>
   <div class="glance">
     <div><span class="n">6</span><span class="l">P0 findings (4 code, 2 owner)</span></div>
-    <div><span class="n">8</span><span class="l">fix PRs before launch (A–H), 3 after (I–K)</span></div>
+    <div><span class="n">11</span><span class="l">fix PRs before launch (A–H, L–N), 8 after</span></div>
     <div><span class="n">27</span><span class="l">days until App Check is mandatory (2 Nov)</span></div>
-    <div><span class="n" id="glance-you">35</span><span class="l">owner-only tasks left</span></div>
+    <div><span class="n" id="glance-you">36</span><span class="l">owner-only tasks left</span></div>
   </div>
 
   <div class="callout block">
@@ -229,6 +229,10 @@ footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--line);
 
   <div class="callout decided">
     <p><b>Decided 6 Oct: food data is online-sourced, locally served.</b> Training stays fully offline. Food data ships as versioned packs: a manifest plus small gzip files on Firebase Hosting. The app checks for updates at most once a day, verifies each pack and imports it in one step. Search, logging and the thali then read one fact source on the phone. There is no search server, and the expected cost at launch scale is about ₹0. Plan and tracker (CAT-1 … CAT-13): <code>docs/implementation/NUTRITION_CATALOGUE_PACKS_PLAN.md</code>.</p>
+  </div>
+
+  <div class="callout decided">
+    <p><b>Decided 6 Oct: training gets a reward loop, in v1.</b> Lifters see a <b>"New best"</b> when a set beats every earlier one. It is computed only from logged sets, never estimated. Training gets a <b>weekly goal</b> ("2 of 3 this week · 4 weeks in a row") instead of a daily streak, so rest days never break anything. The workout summary becomes the payoff, with one celebration and proper haptics. These ship to testers as PR-L, M and N, with a cut line on <span class="date">20 Oct</span>. Plan and tracker (TP-1 … TP-14): <code>docs/implementation/TRAINING_PROGRESS_PREMIUM_PLAN.md</code>.</p>
   </div>
 </section>
 
@@ -264,6 +268,8 @@ footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--line);
       <ul>
         <li><span><span class="tag t-you">You</span> TestFlight; register App Attest; device passes</span></li>
         <li><span><span class="tag t-code">Code</span> PR-D rest alerts; PR-E catalogue pipeline and data v2; PR-F AI portions; PR-H food-data updates</span></li>
+        <li><span><span class="tag t-code">Code</span> PR-L new bests; PR-M weekly goal; PR-N summary payoff and haptics (cut line <span class="date">20 Oct</span>)</span></li>
+        <li><span><span class="tag t-you">You</span> Feel the new haptics and celebrations on a real iPhone and Android phone</span></li>
         <li><span><span class="tag t-you">You</span> Publish the packs on Firebase Hosting, so testers get pack v2 over the air (by about <span class="date">20 Oct</span>)</span></li>
         <li><span><span class="tag t-you">You</span> Eval photos, then the paid eval run; raise the Gemini spend cap</span></li>
         <li><span><span class="tag t-you">You</span> Enforce App Check by <span class="date">25 Oct</span></span></li>
@@ -285,7 +291,7 @@ footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--line);
 
 <section id="fixes" aria-labelledby="fixes-h">
   <h2 id="fixes-h">Fix batches</h2>
-  <p class="section-intro">Plans with files, tests that fail on today's code, and risks are in <code>docs/implementation/LAUNCH_ROADMAP_FINAL.md</code>. Food-data items (CAT-1 … CAT-13) are tracked in <code>NUTRITION_CATALOGUE_PACKS_PLAN.md</code> § 0. Sizes: S is under half a day, M is about a day, L is several days.</p>
+  <p class="section-intro">Plans with files, tests that fail on today's code, and risks are in <code>docs/implementation/LAUNCH_ROADMAP_FINAL.md</code>. Food-data items (CAT-1 … CAT-13) are tracked in <code>NUTRITION_CATALOGUE_PACKS_PLAN.md</code> § 0, and training items (TP-1 … TP-14) in <code>TRAINING_PROGRESS_PREMIUM_PLAN.md</code> § 0. Sizes: S is under half a day, M is about a day, L is several days.</p>
   <div class="prs">
     <div class="prcard">
       <h3><code>PR-A</code> Food pack v1, thali works <span class="tag t-block">P0</span></h3>
@@ -322,15 +328,35 @@ footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--line);
       <p>The app checks a small manifest at most once a day (Wi-Fi by default, never in Offline Mode), downloads only new packs, verifies their checksums and imports them. Settings → Food database shows the version and a "Check now" button. New foods arrive without an app release. (CAT-7)</p>
       <p class="next"><b>Size:</b> M · <b>After:</b> PR-A · <b>Needs:</b> packs on Firebase Hosting (CAT-8)</p>
     </div>
-    <div class="prcard later">
-      <h3><code>PR-I · J · K</code> After launch <span class="tag t-code">Later</span></h3>
-      <p><b>I</b>: fast on-device full-text search over names and Hinglish aliases, replacing the old search path (CAT-9). <b>J</b>: grow to about 1,000 reviewed dishes through packs, using the INDB if its authors agree, otherwise dishes built from CC0 and OGL ingredient data (CAT-11). <b>K</b>: opt-in "couldn't find it" feedback (CAT-13).</p>
-      <p class="next"><b>When:</b> Nov 2026 – Feb 2027</p>
-    </div>
     <div class="prcard">
       <h3><code>PR-G</code> iPhone-only, portrait <span class="tag t-open">P1</span></h3>
       <p>The app ships to iPad and landscape today, untested, and App Review tests on iPad.</p>
       <p class="next"><b>Size:</b> S</p>
+    </div>
+    <div class="prcard">
+      <h3><code>PR-L</code> New bests <span class="tag t-open">v1</span></h3>
+      <p>When a logged set beats every earlier comparable set, the row shows "New best" with a success haptic. There are two kinds: heaviest weight, and most reps at that weight or more. Warm-ups, assisted, tempo and drop sets are left out, and the first session is the baseline. Also shown on the summary, the share card and an exercise's "Best ever" card. Derived from logged sets only: no estimates, nothing stored. (TP-1…3)</p>
+      <p class="next"><b>Size:</b> M–L · <b>First in the training queue</b></p>
+    </div>
+    <div class="prcard">
+      <h3><code>PR-M</code> Weekly training goal <span class="tag t-open">v1</span></h3>
+      <p>"2 of 3 this week · 4 weeks in a row" on Training, Progress and the summary. The goal is the plan's scheduled days, or your own (default 3). A week in progress never breaks the streak, and changing the goal never rewrites past weeks. The daily streak leaves training screens and stays on Today as "days logged". (TP-4, TP-5)</p>
+      <p class="next"><b>Size:</b> M · <b>Cut second</b> if late</p>
+    </div>
+    <div class="prcard">
+      <h3><code>PR-N</code> Summary payoff, motion, haptics <span class="tag t-open">v1</span></h3>
+      <p>The summary leads with "1,440 kg lifted", then new bests, then a "vs last time" line per exercise and "2 of 3 this week". There is one celebration per workout, using the existing confetti. Set rows tick and numbers count up using the app's existing motion timings, and everything is instant with reduce motion. New haptics: success (best, week goal) and rest end. "External volume" becomes "Total lifted". (TP-6, TP-7)</p>
+      <p class="next"><b>Size:</b> M · <b>Cut first</b> if late</p>
+    </div>
+    <div class="prcard later">
+      <h3><code>PR-I · J · K</code> Food data after launch <span class="tag t-code">Later</span></h3>
+      <p><b>I</b>: fast on-device full-text search over names and Hinglish aliases, replacing the old search path (CAT-9). <b>J</b>: grow to about 1,000 reviewed dishes through packs, using the INDB if its authors agree, otherwise dishes built from CC0 and OGL ingredient data (CAT-11). <b>K</b>: opt-in "couldn't find it" feedback (CAT-13).</p>
+      <p class="next"><b>When:</b> Nov 2026 – Feb 2027</p>
+    </div>
+    <div class="prcard later">
+      <h3><code>PR-O … S</code> Training after launch <span class="tag t-code">Later</span></h3>
+      <p><b>O</b>: player sets as simple rows, "60 kg × 8 ✓" (TP-8). <b>P</b>: a muscles-this-week body map, a 12-week consistency heatmap, recent bests, and smooth card-to-screen transitions with Flutter's <code>animations</code> package (TP-9…11). <b>Q</b>: reminders that name the workout and last time's top set (TP-12). <b>R</b>: a home-screen widget (TP-13). <b>S</b>: the rest timer on the lock screen (TP-14).</p>
+      <p class="next"><b>When:</b> O–Q Nov (v1.1), R Dec, S Jan (needs the Apple Developer Program)</p>
     </div>
   </div>
 </section>
@@ -392,7 +418,7 @@ footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--line);
   <h2 id="yours-h">Your side</h2>
   <p class="section-intro">Only you can do these: they need your accounts, money, devices or signature. Ticks are saved in this browser only.</p>
   <div class="progress" aria-live="polite">
-    <span id="prog-label">0 of 35 done</span>
+    <span id="prog-label">0 of 36 done</span>
     <span class="bar" aria-hidden="true"><i id="prog-bar"></i></span>
     <button type="button" id="reset">Clear ticks</button>
   </div>
@@ -445,6 +471,7 @@ footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--line);
       <label class="item"><input type="checkbox" id="c-dev-live"><span class="box"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.5 5 9l5-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt"><span class="what">Confirm there's no Live Activity, and remove the claim</span><span class="why">No widget-extension target is built, so it can't render.</span></span></label>
       <label class="item"><input type="checkbox" id="c-dev-repair"><span class="box"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.5 5 9l5-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt"><span class="what">Time cold start and the launch repair on a mid-range Android phone</span><span class="why">The simulator showed 55 ms on first create.</span></span></label>
       <label class="item"><input type="checkbox" id="c-dev-a11y"><span class="box"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.5 5 9l5-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt"><span class="what">TalkBack and VoiceOver pass on Add, set rows and rest controls</span><span class="why">18 icon buttons have no label today.</span></span></label>
+      <label class="item"><input type="checkbox" id="c-dev-feel"><span class="box"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.5 5 9l5-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt"><span class="what">Feel the new haptics and celebrations on a real iPhone and Android phone (after PR-L, M, N)</span><span class="why">Set saved, rest end, new best and week goal. The simulator has no haptics, so only a phone can tell whether they feel right or too much.</span></span></label>
     </div>
 
     <div class="cgroup">
@@ -486,19 +513,29 @@ footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--line);
     <li><span class="q">How to describe the catalogue in the store?</span><span class="rec"><b>Recommended:</b> "260+ Indian dishes with katori, roti and glass portions", not "535 foods".</span></li>
     <li><span class="q">Hide less-polished modules behind "Labs"?</span><span class="rec"><b>Recommended:</b> yes for coaching, Learn, calendar, program author and regional packs.</span></li>
     <li><span class="q">Revenue after launch?</span><span class="rec"><b>Recommended:</b> freemium "IndiFit Plus" from about Feb 2027 at ₹99/month or ₹699/year, never paywalling anything that was free. Details in the market doc.</span></li>
-    <li><span class="q">Commit the audit screenshots?</span><span class="rec"><b>Recommended:</b> commit the reports and a curated subset of about 20 shots; the full set is 11 MB.</span></li>
     <li><span class="q">Send the INDB permission email now?</span><span class="rec"><b>Recommended:</b> yes. It costs nothing, and the answer decides how the catalogue grows.</span></li>
     <li><span class="q">Download food updates on mobile data?</span><span class="rec"><b>Recommended:</b> Wi-Fi only by default. Updates are tiny, so offer "Also on mobile data" as a switch.</span></li>
     <li><span class="q">Pack v2 over the air during the closed test, or bundled in 1.0?</span><span class="rec"><b>Recommended:</b> over the air, if PR-H and hosting are ready by about 20 Oct. It tests the update path with real testers.</span></li>
     <li><span class="q">Dietitian review of the top 300 dishes?</span><span class="rec"><b>Recommended:</b> yes, after launch. Until then the app labels values "IndiFit estimate".</span></li>
+    <li><span class="q">Badges for keeping the weekly goal 4 and 12 weeks running?</span><span class="rec"><b>Recommended:</b> yes, in v1.1. They're cheap once the weekly goal exists, but not needed for the closed test.</span></li>
+    <li><span class="q">Let people set their own weekly goal when a plan is active?</span><span class="rec"><b>Recommended:</b> not in v1. The plan's scheduled days are the goal; revisit if testers ask.</span></li>
+    <li><span class="q">Ask testers whether "New best" or the week goal made them want to train again?</span><span class="rec"><b>Recommended:</b> yes, one question in the closed-test feedback form. It's the cheapest signal before launch.</span></li>
   </ol>
   <div class="callout decided" style="margin-top: 12px;">
-    <p><b>Already decided (6 Oct):</b> food data is online-sourced and locally served through catalogue packs. Training stays offline-first. Open Food Facts stays a live lookup and is never bundled, because its share-alike licence (ODbL) could carry over to the packs.</p>
+    <p><b>Already decided (6 Oct):</b></p>
+    <ul style="margin:0; padding-left:1.2em;">
+      <li>Food data is online-sourced and locally served through catalogue packs. Open Food Facts stays a live lookup and is never bundled, because its share-alike licence (ODbL) could carry over to the packs.</li>
+      <li>Training stays offline-first.</li>
+      <li>Factual "New best" sets ship in v1.</li>
+      <li>Training uses a weekly goal instead of a daily streak.</li>
+      <li>PR-L, M and N go into the closed test.</li>
+      <li>The audit screenshots are in PR #60 as a curated set of 20.</li>
+    </ul>
   </div>
 </section>
 
 <footer>
-  <span>Sources: <code>docs/audit/FINAL_LAUNCH_AUDIT_2026-10-05.md</code>, <code>docs/strategy/MARKET_MOAT_REVENUE_2026-10-05.md</code>, <code>docs/implementation/LAUNCH_ROADMAP_FINAL.md</code>, <code>docs/implementation/NUTRITION_CATALOGUE_PACKS_PLAN.md</code>, plus the earlier plans.</span>
+  <span>Sources: <code>docs/audit/FINAL_LAUNCH_AUDIT_2026-10-05.md</code>, <code>docs/strategy/MARKET_MOAT_REVENUE_2026-10-05.md</code>, <code>docs/implementation/LAUNCH_ROADMAP_FINAL.md</code>, <code>docs/implementation/NUTRITION_CATALOGUE_PACKS_PLAN.md</code>, <code>docs/implementation/TRAINING_PROGRESS_PREMIUM_PLAN.md</code>, plus the earlier plans.</span>
   <span>Re-checked on 5 Oct 2026: <code>main</code> at <code>25195e6</code> with CI green; live iPhone 17e simulator walkthrough (126 screenshots); probe tests against the real catalogue.</span>
 </footer>
 

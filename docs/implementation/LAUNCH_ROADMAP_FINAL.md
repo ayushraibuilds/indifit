@@ -8,6 +8,12 @@ Written 2026-10-05 against `main` @ `25195e6`.
   - Nutrition data becomes online-sourced and locally served: versioned packs, local search, no search server.
   - It re-scopes PR-A, PR-E and PR-F and adds PR-H to PR-K.
   - Track its work items (CAT-1 … CAT-13) in that plan's § 0.
+- **Training and progress (decided 2026-10-06):** [TRAINING_PROGRESS_PREMIUM_PLAN.md](TRAINING_PROGRESS_PREMIUM_PLAN.md).
+  - Factual best-ever sets ship in v1. They are derived from logged sets and never estimated.
+  - Training gets a weekly goal instead of a daily streak.
+  - A summary payoff, motion and haptics pass.
+  - Adds PR-L, M and N to the closed test (cut line 20 Oct); PR-O, P and Q in v1.1; PR-R and S after that.
+  - Track its work items (TP-1 … TP-14) in that plan's § 0.
 
 ---
 
@@ -67,8 +73,12 @@ Written 2026-10-05 against `main` @ `25195e6`.
 | Device passes (audit § 6.4) | **PR-E** `feat/catalogue-pipeline-v2` (CAT-5 pipeline + validator + CI; CAT-6 overlay: C-04, C-09, gram weights, store count) |
 | About 20 label photos, about 30 meal photos; paid eval run after PR-F | **PR-F** `fix/ai-portion-conversions` (C-06 via CAT-12, using the pack gram weights), then the eval |
 | Raise the Gemini spend cap for launch (O-03); lower the text cap to 15/day in Remote Config | **PR-H** `feat/catalogue-updates` (CAT-7: update service, Settings → Food database). If ready by about 20 Oct, testers get pack v2 over the air. |
-| Publish packs on Firebase Hosting (CAT-8; Claude prepares the config, you deploy) | Fix tester reports; store screenshots from the simulator |
-| **By 25 Oct:** enable App Check enforcement once both providers pass | — |
+| Publish packs on Firebase Hosting (CAT-8; Claude prepares the config, you deploy) | **PR-L** `feat/factual-bests` (TP-1…3: "New best" in the player, summary, share card and exercise history). First in the training queue; committed for v1. |
+| Feel the set, rest-end, best and week-goal haptics on one iPhone and one Android phone (TP-7) | **PR-M** `feat/weekly-training-goal` (TP-4, TP-5: "2 of 3 this week · 4 weeks in a row"; daily streak off training surfaces) |
+| Ask testers whether "New best" or the week goal made them want to train again (training plan § 13) | **PR-N** `feat/workout-payoff-motion` (TP-6, TP-7: summary payoff, one celebration, motion and haptics map) |
+| **By 25 Oct:** enable App Check enforcement once both providers pass | Fix tester reports; store screenshots from the simulator |
+
+**Training cut line, 20 Oct:** any of PR-L, M or N not merged by then moves to 1.0.1. Cut N first, then M.
 
 **Gate:** 14 days complete, crash-free, the eval bar is met for text (and photo, if it stays outside Beta).
 
@@ -83,8 +93,8 @@ Written 2026-10-05 against `main` @ `25195e6`.
 
 | When | Moat | Revenue | Maintainability |
 |---|---|---|---|
-| Nov–Dec | "Usual thali" one-tap from Today; vessel calibration step; **PR-I** local full-text search (CAT-9); **PR-K** opt-in "couldn't find it" feedback (CAT-13) | Measure retention (store cohorts); opt-in local counters | Split `food_search_screen`; untrack `graphify-out`; docs into one STATUS |
-| Jan–Feb 2027 | **PR-J** catalogue growth through packs (CAT-11): INDB recipes if the authors permit, otherwise dishes built from CC0/OGL ingredient data; target ~1,000 reviewed dishes | **IndiFit Plus** (₹99/mo · ₹699/yr) if the stage-2 gates pass | Rename `b0x_`/`r0x_`; move fixtures to `test/` |
+| Nov–Dec | "Usual thali" one-tap from Today; vessel calibration step; **PR-I** local full-text search (CAT-9); **PR-K** opt-in "couldn't find it" feedback (CAT-13); training v1.1: **PR-O** player sets as rows (TP-8), **PR-P** muscles-this-week map, 12-week heatmap and `animations` transitions (TP-9…11), **PR-Q** specific reminders (TP-12); **PR-R** home-screen widget (TP-13, Dec) | Measure retention (store cohorts); opt-in local counters | Split `food_search_screen`; untrack `graphify-out`; docs into one STATUS; remove `percent_indicator` (TP-11) |
+| Jan–Feb 2027 | **PR-J** catalogue growth through packs (CAT-11): INDB recipes if the authors permit, otherwise dishes built from CC0/OGL ingredient data; target ~1,000 reviewed dishes; **PR-S** lock-screen rest timer (TP-14, needs the Apple Developer Program) | **IndiFit Plus** (₹99/mo · ₹699/yr) if the stage-2 gates pass | Rename `b0x_`/`r0x_`; move fixtures to `test/` |
 | By Oct 2027 | Health Connect / HealthKit write-back; top-100 lift media | E2E-encrypted sync in Plus (backend WS6 part B) | Single live-workout owner (WS-D part 2) |
 
 ---
@@ -104,6 +114,14 @@ Written 2026-10-05 against `main` @ `25195e6`.
 | **I** `feat/catalogue-fts-search` | CAT-9 local FTS5 search; remove the legacy search path | A | M |
 | **J** `data/catalogue-growth` | CAT-11 content (INDB if permitted, else recipe-built) | E, CAT-10 | L (mostly data) |
 | **K** `feat/missed-search-feedback` | CAT-13 opt-in feedback | H | S |
+| **L** `feat/factual-bests` | TP-1 bests engine (fills technique fields in the performance read), TP-2 player chip and haptic, TP-3 summary, share card, exercise history | D (rebase onto it if D merges first) | M–L |
+| **M** `feat/weekly-training-goal` | TP-4 goal source, goal history, weekly streak; TP-5 Training, Progress and summary UI; Today chip reads "days logged" | — | M |
+| **N** `feat/workout-payoff-motion` | TP-6 summary payoff and one celebration; TP-7 `success()` and `restEnd()` haptics, motion via `B05MotionPolicy` | L, M | M |
+| **O** `feat/player-set-rows` (v1.1) | TP-8 sets as rows, full workout title | D | M |
+| **P** `feat/progress-visuals` (v1.1) | TP-9 muscles-this-week map, heatmap, recent bests; TP-10 `animations`; TP-11 housekeeping | L, M | M–L |
+| **Q** `feat/specific-reminders` (v1.1) | TP-12 | L, M | S |
+| **R** `feat/home-widget` (Dec) | TP-13 | M | L (native targets) |
+| **S** `feat/rest-live-activity` (Jan) | TP-14 | D; Apple Developer Program | L (native targets) |
 
 Every PR runs:
 
@@ -312,5 +330,8 @@ python3 tool/generate_code_graph.py
 5. **Catalogue honesty in the store listing.** *Recommend* "260+ Indian dishes with katori, roti and glass portions (plus size variants)" rather than "535 foods".
 6. **Labs gate for v1** (coaching, Learn, calendar, program author, regional packs). *Recommend yes.*
 7. **Revenue path.** *Recommend* freemium "IndiFit Plus" from about Feb 2027 at ₹99/mo · ₹699/yr, never paywalling anything that was free (market doc § 6.4).
-8. **Commit the audit screenshots (11 MB)?** *Recommend* committing the audit markdown and a curated 20-shot subset, leaving the rest out of git.
+8. **Commit the audit screenshots (11 MB)?** **Done 2026-10-06:** the audit docs and a curated 20-shot subset (1.7 MB) are in PR #60; the rest stays out of git.
 9. **Decided 2026-10-06:** nutrition is online-sourced and locally served (catalogue packs, local search, no search server). Training stays offline-first. Open sub-decisions are listed in [NUTRITION_CATALOGUE_PACKS_PLAN.md](NUTRITION_CATALOGUE_PACKS_PLAN.md) § 11: the INDB permission email, Wi-Fi-only downloads, pack v2 over the air during the closed test, and a dietitian review.
+10. **Decided 2026-10-06:** factual best-ever sets ship in v1 (PR-L). They are derived only from logged sets, with no e1RM and no stored PR flag. This amends R08_0 § 546–548.
+11. **Decided 2026-10-06:** training uses a weekly goal ("2 of 3 this week · 4 weeks in a row") instead of a daily streak (PR-M). The daily streak stays on Today as "days logged".
+12. **Decided 2026-10-06:** part of the training polish goes into the closed test: PR-L, M and N, with a cut line on 20 Oct. Open sub-decisions are in [TRAINING_PROGRESS_PREMIUM_PLAN.md](TRAINING_PROGRESS_PREMIUM_PLAN.md) § 13: weekly badges, goal override with a plan, and a tester question.

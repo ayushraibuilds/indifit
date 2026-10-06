@@ -140,7 +140,7 @@ Package and App Store ids:
    - "No account. No ads. Your data never leaves your phone unless you send it."
    - A data receipt screen that lists every network call type.
    - Guided encrypted export reminders.
-5. **Lifter loop polish:** sticky rest bar, PR badges, plate maths (exists), a protein-per-kg nudge that ties nutrition to training (the unique combo).
+5. **Lifter loop polish:** sticky rest bar, PR badges, plate maths (exists), a protein-per-kg nudge that ties nutrition to training (the unique combo). *Updated 2026-10-06:* factual "New best" sets (no estimates) and a weekly training goal ship in v1 during the closed test; the plan is [TRAINING_PROGRESS_PREMIUM_PLAN.md](../implementation/TRAINING_PROGRESS_PREMIUM_PLAN.md).
 
 **Threats**
 - HealthifyMe or cult.fit add a proper set logger.

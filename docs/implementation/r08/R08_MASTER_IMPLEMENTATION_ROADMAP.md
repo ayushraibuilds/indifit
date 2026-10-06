@@ -5,6 +5,8 @@
 **Decision baseline:** frozen product audit + Flash R08-0 readiness audit + Sol R08-0 final decision review
 **Purpose:** Convert the frozen manual product audit into an executable, multi-agent, dependency-ordered release program without reopening settled product/domain decisions.
 
+> **Amended 2026-10-06 (Ayush):** the "no invented PR badge" lines below now allow *factual* bests: heaviest, and most reps at this weight or more, derived on read from logged sets. Synthetic e1RM, calorie estimates and inferred PRs stay rejected. See [TRAINING_PROGRESS_PREMIUM_PLAN.md](../TRAINING_PROGRESS_PREMIUM_PLAN.md).
+
 ---
 
 ## 1. Source-of-truth hierarchy
