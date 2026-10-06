@@ -213,7 +213,7 @@ class _NutritionLabelOcrScreenState
               const SizedBox(width: B05Layout.space12),
               Expanded(
                 child: Text(
-                  'Privacy Notice: Images are processed ephemerally on secure cloud servers and are immediately deleted after OCR extraction. They are never stored permanently.',
+                  'IndiFit doesn\'t keep your label photo. Google may keep it briefly to prevent abuse.',
                   style: B05Typography.caption(context),
                 ),
               ),

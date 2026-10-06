@@ -320,7 +320,7 @@ void main() {
         expect(find.text('16'), findsOneWidget); // 8 + 8 reps
         expect(find.text('Reps'), findsOneWidget);
         expect(find.text('1280 kg'), findsOneWidget); // 80*8 + 80*8 = 1280
-        expect(find.text('External volume'), findsOneWidget);
+        expect(find.text('Total lifted'), findsOneWidget);
 
         // Verify strict absence of unearned PR / gamification copy
         expect(find.textContaining('PERSONAL RECORD'), findsNothing);

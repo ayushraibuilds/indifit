@@ -307,7 +307,10 @@ class _ThaliComponentPickerSheetState extends State<ThaliComponentPickerSheet> {
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
-                            subtitle: food.region != null
+                            // Base-catalogue rows carry the internal
+                            // region "bundled"; only real regions are shown.
+                            subtitle:
+                                food.region != null && food.region != 'bundled'
                                 ? Text(
                                     food.region!,
                                     style: TextStyle(

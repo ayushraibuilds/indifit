@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:indifit/core/config/app_links.dart';
 import 'package:indifit/core/di/health_provider.dart';
 import 'package:indifit/core/di/providers.dart';
 import 'package:indifit/core/di/theme_provider.dart';
@@ -17,6 +18,7 @@ import 'package:indifit/features/settings/health_sync_hub_screen.dart';
 import 'package:indifit/features/settings/nutrition_targets_hub_screen.dart';
 import 'package:indifit/features/settings/settings_screen.dart';
 import 'package:indifit/features/settings/unit_preference.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -58,6 +60,11 @@ void main() {
     ]);
     await _expectSettingsSection(tester, 'Account', ['Personal details']);
     await _expectSettingsSection(tester, 'Learn', ['Learn']);
+    await _expectSettingsSection(tester, 'About', [
+      'Privacy policy',
+      'Contact support',
+      'About & credits',
+    ]);
 
     for (final obsoleteLabel in [
       'PROFILE',
@@ -84,6 +91,66 @@ void main() {
     expect(find.textContaining('Travel'), findsNothing);
     expect(find.textContaining('Coming soon'), findsNothing);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('About links open the privacy policy and support email', (
+    tester,
+  ) async {
+    // Audit S-04 / SC-01: Apple 5.1.1(i) needs an in-app policy link.
+    PackageInfo.setMockInitialValues(
+      appName: 'IndiFit',
+      packageName: 'app.indifit',
+      version: '1.0.0',
+      buildNumber: '7',
+      buildSignature: '',
+    );
+    final opened = <Uri>[];
+    final previousLauncher = AppLinks.launcher;
+    AppLinks.launcher = (uri) async {
+      opened.add(uri);
+      return true;
+    };
+    addTearDown(() => AppLinks.launcher = previousLauncher);
+
+    await _pumpSettings(tester);
+
+    final policyRow = find.widgetWithText(ListTile, 'Privacy policy');
+    await _scrollToSettingsText(tester, policyRow);
+    await tester.tap(policyRow);
+    await tester.pump();
+    expect(opened.single, Uri.parse('https://indifit.app/privacy'));
+
+    final supportRow = find.widgetWithText(ListTile, 'Contact support');
+    await _scrollToSettingsText(tester, supportRow);
+    await tester.tap(supportRow);
+    await tester.pump();
+    expect(opened.last.scheme, 'mailto');
+    expect(opened.last.path, 'support@indifit.app');
+    expect(Uri.decodeComponent(opened.last.query), contains('1.0.0 (7)'));
+
+    final version = find.byKey(const Key('settings_app_version'));
+    await _scrollToSettingsText(tester, version);
+    expect(find.text('Version 1.0.0 (7)'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('A link that cannot open says where to go instead', (
+    tester,
+  ) async {
+    final previousLauncher = AppLinks.launcher;
+    AppLinks.launcher = (uri) async => false;
+    addTearDown(() => AppLinks.launcher = previousLauncher);
+
+    await _pumpSettings(tester);
+
+    final policyRow = find.widgetWithText(ListTile, 'Privacy policy');
+    await _scrollToSettingsText(tester, policyRow);
+    await tester.tap(policyRow);
+    await tester.pump();
+    expect(
+      find.text("Couldn't open the link. Visit indifit.app/privacy."),
+      findsOneWidget,
+    );
   });
 
   testWidgets('Settings rows keep their existing canonical destinations', (
