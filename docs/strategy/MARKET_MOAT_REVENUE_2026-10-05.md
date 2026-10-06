@@ -213,8 +213,10 @@ Package and App Store ids:
 
 ### 6.5 Decided (Ayush, 2026-10-06)
 
+**Timing is Ayush's call.** The dates and gate metrics in § 6.4 are advice, not rules. Plus can launch whenever Ayush chooses; launching before retention data exists just means pricing with less evidence.
+
 - **Stage 1 adds a supporter tip jar** (roadmap PR-T): consumable in-app purchases that unlock nothing, so there's no rating risk. It starts revenue and shows who the paying fans are.
-- **Stage 2, Plus, offers both** a subscription (₹99/mo · ₹699/yr) and a **lifetime option** at about 3× the annual price (about ₹1,999), for people who refuse subscriptions.
+- **Stage 2, Plus (about Feb 2027 was the suggestion), offers both** a subscription (₹99/mo · ₹699/yr) and a **lifetime option** at about 3× the annual price (about ₹1,999), for people who refuse subscriptions.
   - Lifetime still has AI fair-use caps, because AI is the only cost that runs forever.
 - **The free/Plus line is fixed now,** because anything shipped free can't move later.
   - **Always free:** logging, thali, catalogue packs, bests, the weekly goal, reminders, the home widget, backups.

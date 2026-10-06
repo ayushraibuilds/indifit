@@ -27,9 +27,11 @@ Update this table in every PR that touches the catalogue. IDs are referenced fro
 | CAT-10 | Licences: INDB permission request; attribution screen | Owner + code | — / B | — | **Waiting on Ayush** |
 | CAT-11 | Import INDB recipes (if CAT-10 = yes) **or** build dishes from CC0/OGL ingredient data | Data | J | CAT-5, CAT-10 | Not started |
 | CAT-12 | AI portion conversions use pack gram weights (C-06) | Code | F | CAT-4 | Not started |
-| CAT-13 | Opt-in "couldn't find it" feedback (local queue, sent only with consent) | Code | K | CAT-7 | Post-launch |
+| CAT-13 | Opt-in "couldn't find it" feedback (local queue, sent only with consent) | Code | K | CAT-7 | Not started (Next) |
 
 Status values: Not started · In progress (PR #) · Merged (PR #) · Blocked (reason).
+
+There are no dates. Items start as soon as their dependencies are met, in the order of the roadmap's ready queue ([LAUNCH_ROADMAP_FINAL.md](LAUNCH_ROADMAP_FINAL.md) § 2.5). The hard rules in that doc's § 0 apply.
 
 ---
 
@@ -386,7 +388,7 @@ Each test listed must fail on `main` before the change (`git stash push -- lib`,
 - **Change:** `PortionMapping.map` (`meal_item_resolver.dart:363`) converts via CAT-4 conversions (bowl, plate, glass, grams ↔ servings); `genericDefaults` "dal" → Toor Dal; hide templated variants from `choices`.
 - **Tests:** the audit § 3.4 probe cases become assertions. Then the paid eval rerun (owner).
 
-### CAT-13 "Couldn't find it" feedback  (PR-K, post-launch)
+### CAT-13 "Couldn't find it" feedback  (PR-K, Next)
 - A local queue of zero-result queries; nothing is sent unless the user taps "Send these to improve IndiFit" (text only, no diary data).
 - It feeds CAT-11 priorities.
 
@@ -407,5 +409,5 @@ Each test listed must fail on `main` before the change (`git stash push -- lib`,
 
 1. **INDB:** send the permission email now? *Recommend yes.* It costs nothing, and the answer decides CAT-11 path A or B.
 2. **Mobile-data downloads:** off by default? *Recommend Wi-Fi-only by default*; deltas are tiny, so offer "Also on mobile data".
-3. **Pack v2 timing:** ship over the air during the closed test (needs CAT-7 + CAT-8 by about 20 Oct) or bundle it in 1.0? *Recommend over the air.* It also exercises the update path with real testers.
+3. **Pack v2 timing:** ship over the air during the closed test (needs CAT-7 merged and CAT-8 deployed while the test is still running) or bundle it in 1.0? *Recommend over the air.* It also exercises the update path with real testers.
 4. **Dietitian review** of the top 300 dishes before calling the catalogue "reviewed"? *Recommend yes after launch*; until then, label values "IndiFit estimate".

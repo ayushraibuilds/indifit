@@ -12,10 +12,33 @@ Written 2026-10-05 against `main` @ `25195e6`.
   - Factual best-ever sets ship in v1. They are derived from logged sets and never estimated.
   - Training gets a weekly goal instead of a daily streak.
   - A summary payoff, motion and haptics pass.
-  - Adds PR-L, M and N to the closed test (cut line 20 Oct); PR-O, P and Q in v1.1; PR-R and S after that.
+  - Adds PR-L, M and N to v1; PR-O to PR-S join the ready queue (§ 2.5).
   - Track its work items (TP-1 … TP-14) in that plan's § 0.
 
 ---
+
+## 0. How to use these docs (solo developer + AI agents)
+
+**Updated 2026-10-06.** IndiFit is built by one person with AI agents, so code is not the bottleneck: review time and outside clocks are. These docs give **order and gates, not calendar dates**. Pull any item forward as soon as its dependencies are met.
+
+**Fixed clocks.** Speed doesn't shorten these; details in § 1.
+- Play's closed test: 12 testers opted in for 14 days.
+- App Check becomes mandatory for AI on 2 Nov 2026.
+- Apple Developer Program enrolment and App Review.
+- The INDB authors' reply.
+- This Mac runs one full test suite at a time (8 GB RAM).
+
+**Hard rules.** These are the only things that are not negotiable:
+1. **Truth:**
+   - no invented numbers (no e1RM, no estimated calories presented as fact);
+   - honest store claims;
+   - never paywall what was free.
+2. **CI green before merge, one PR per topic, and the tracker updated in the same PR** (plan § 0 tables).
+3. **Agents ask before every push, merge, console or billing change, and paid AI call.**
+4. **Run the full suite in a scratchpad worktree,** never in the main checkout.
+5. **Freeze bigger changes about 3 days before a store submission build.** Fixes are fine; new features wait for the next build. That way testers' last days cover what actually ships.
+
+**Everything else is guidance:** sizes, the order inside a queue, and the recommendations. When an agent starts an item, it reads the item's plan section, does the work, and updates the tracker row. It needs nothing else.
 
 ## 1. Hard dates (the critical path)
 
@@ -37,66 +60,72 @@ Written 2026-10-05 against `main` @ `25195e6`.
 - Both attestations verified by **25 Oct**, then enforcement on.
 - If attestation slips past 30 Oct, ship v1 with `--dart-define=INDIFIT_CONNECTED_AI=false` and the AI-free store copy, and turn AI on in 1.0.1.
 
-## 2. Phases
+## 2. Launch sequence: gates, not dates
 
-### Phase 0: this week (5–8 Oct): unblock
+Each step starts when the previous gate is met. The code in each step is a suggested order; agents can work ahead on anything whose dependencies are met (§ 2.5).
 
-| Owner-only | Code (Claude) |
+### Step 0: unblock (start now)
+
+| Owner-only | Code (agents) |
 |---|---|
 | Host the privacy policy at `https://indifit.app/privacy` (text: `doc/privacy_policy.md`, updated by PR-B). Today the domain is a Hostinger parked page. | **PR-A** `fix/catalogue-pack-v1-thali` (P0 C-01 via CAT-1…4: pack format, importer, bundled pack v1, single fact source; plus C-02, C-03, R-04, A-02 real-catalogue harness) |
-| Email the INDB authors for permission to use its data (CAT-10) | — |
-| Email forwarding for `privacy@` and `support@indifit.app` (no MX record today) | **PR-B** `fix/store-honesty` (P0 SC-03, S-04 code; P1 S-02, S-03, SC-05, SC-08, UX-04 jargon + copy lint) |
-| Play Console app + closed-test track + 12–15 testers recruited | — |
-| Apple Developer Program enrolment | — |
+| Email the INDB authors for permission to use its data (CAT-10) | **PR-B** `fix/store-honesty` (P0 SC-03, S-04 code; P1 S-02, S-03, SC-05, SC-08, UX-04 jargon + copy lint) |
+| Email forwarding for `privacy@` and `support@indifit.app` (no MX record today) | **PR-C** `fix/daily-loop-correctness`, **PR-G** `chore/iphone-portrait-v1` |
+| Play Console app + closed-test track + 12–15 testers recruited | **PR-L** factual bests, **PR-M** weekly goal, **PR-N** summary payoff (training plan) |
+| Apple Developer Program enrolment; start Apple's Paid Applications agreement (tip jar) | **PR-D** `fix/rest-alerts`, **PR-T** tip jar |
 | Real Android upload keystore (replace `dummy.keystore`); keep an offline backup | — |
 | Branch protection on `main` requiring all 6 CI jobs | — |
 | Sentry project + `SENTRY_DSN` secret | — |
 | Confirm the Gemini **paid** tier; restrict the Firebase API keys | — |
 
-**Gate:** PR-A and PR-B merged, the policy URL is live, email works, and the Play app exists.
+**Gate:** PR-A and PR-B merged, the policy URL is live, email works, and the Play app exists. The other v1 PRs don't block this gate; they ship in whichever tester build they're ready for.
 
-### Phase 1 (8–10 Oct): first real builds
+### Step 1: first real builds
 
 | Owner-only | Code |
 |---|---|
-| Upload a signed AAB to internal testing, then the closed track; register **Play Integrity** (upload key SHA-256) in App Check | **PR-C** `fix/daily-loop-correctness` (C-05 stepper, UX-03 ring, R-01 onboarding, UX-12 keyboard Done) |
-| Fill in Data Safety (with Device IDs, PR-B), content rating, Health Connect declaration | **PR-G** `chore/iphone-portrait-v1` (SC-06) |
+| Upload a signed AAB to internal testing, then the closed track; register **Play Integrity** (upload key SHA-256) in App Check | Keep merging the v1 PRs from Step 0 |
+| Fill in Data Safety (with Device IDs, PR-B), content rating, Health Connect declaration | — |
 | **Start the closed test** (day 0 of 14) | — |
 
 **Gate:** testers can log a thali with correct kcal on a store-signed build.
 
-### Phase 2 (10–24 Oct): closed test
+### Step 2: closed test (14 days; the ready queue keeps running)
 
 | Owner-only | Code |
 |---|---|
-| TestFlight build; register **App Attest**; verify AI on TestFlight and Play builds | **PR-D** `fix/rest-alerts` (R-02, R-03, UX-05 sticky rest bar) |
-| Device passes (audit § 6.4) | **PR-E** `feat/catalogue-pipeline-v2` (CAT-5 pipeline + validator + CI; CAT-6 overlay: C-04, C-09, gram weights, store count) |
-| About 20 label photos, about 30 meal photos; paid eval run after PR-F | **PR-F** `fix/ai-portion-conversions` (C-06 via CAT-12, using the pack gram weights), then the eval |
-| Raise the Gemini spend cap for launch (O-03); lower the text cap to 15/day in Remote Config | **PR-H** `feat/catalogue-updates` (CAT-7: update service, Settings → Food database). If ready by about 20 Oct, testers get pack v2 over the air. |
-| Publish packs on Firebase Hosting (CAT-8; Claude prepares the config, you deploy) | **PR-L** `feat/factual-bests` (TP-1…3: "New best" in the player, summary, share card and exercise history). First in the training queue; committed for v1. |
-| Feel the set, rest-end, best and week-goal haptics on one iPhone and one Android phone (TP-7) | **PR-M** `feat/weekly-training-goal` (TP-4, TP-5: "2 of 3 this week · 4 weeks in a row"; daily streak off training surfaces) |
-| Ask testers whether "New best" or the week goal made them want to train again (training plan § 13) | **PR-N** `feat/workout-payoff-motion` (TP-6, TP-7: summary payoff, one celebration, motion and haptics map) |
-| **By 25 Oct:** enable App Check enforcement once both providers pass | Fix tester reports; store screenshots from the simulator |
-
-**Training cut line, 20 Oct:** any of PR-L, M or N not merged by then moves to 1.0.1. Cut N first, then M.
+| TestFlight build; register **App Attest**; verify AI on TestFlight and Play builds | Fix tester reports first |
+| Device passes (audit § 6.4); feel the set, rest-end, best and week-goal haptics on one iPhone and one Android phone (TP-7) | **PR-E** `feat/catalogue-pipeline-v2` (CAT-5, CAT-6: C-04, C-09, gram weights, store count) |
+| About 20 label photos, about 30 meal photos; paid eval run after PR-F | **PR-F** `fix/ai-portion-conversions` (C-06 via CAT-12), then the eval |
+| Raise the Gemini spend cap for launch (O-03); lower the text cap to 15/day in Remote Config | **PR-H** `feat/catalogue-updates` (CAT-7). If it merges during the test, testers get pack v2 over the air. |
+| Publish packs on Firebase Hosting (CAT-8; agents prepare the config, you deploy) | Anything else from the ready queue (§ 2.5) |
+| Ask testers whether "New best" or the week goal made them want to train again | Store screenshots from the simulator |
+| **Enable App Check enforcement** once both providers pass. Aim for about a week before 2 Nov. | — |
 
 **Gate:** 14 days complete, crash-free, the eval bar is met for text (and photo, if it stays outside Beta).
 
-### Phase 3 (24 Oct – 2 Nov): submit
+### Step 3: submit (before 2 Nov if AI ships on)
 
 | Owner-only | Code |
 |---|---|
-| Apply for Play production; App Store submission (privacy labels per PR-B, export compliance, Organizer validation) | Release notes; version `1.0.0+N` bump |
-| For the tip jar (PR-T): sign Apple's Paid Applications agreement with bank and tax details; set up the Play payments profile; create the tip products in both stores | — |
+| Apply for Play production; App Store submission (privacy labels per PR-B, export compliance, Organizer validation) | Release notes; version `1.0.0+N` bump; feature freeze about 3 days before this build |
+| For the tip jar (PR-T): finish Apple's Paid Applications agreement with bank and tax details; set up the Play payments profile; create the tip products in both stores | — |
 | Final listing (honest catalogue count, AI lines) | — |
 
-### Post-launch track (Nov 2026 onwards)
+**Fallback:** if attestation isn't working about 3 days before 2 Nov, ship with `INDIFIT_CONNECTED_AI=false` and turn AI on in an update.
 
-| When | Moat | Revenue | Maintainability |
-|---|---|---|---|
-| Nov–Dec | "Usual thali" one-tap from Today; vessel calibration step; **PR-I** local full-text search (CAT-9); **PR-K** opt-in "couldn't find it" feedback (CAT-13); training v1.1: **PR-O** player sets as rows (TP-8), **PR-P** muscles-this-week map, 12-week heatmap and `animations` transitions (TP-9…11), **PR-Q** specific reminders (TP-12); **PR-R** home-screen widget (TP-13, Dec) | Measure retention (store cohorts); opt-in local counters | Split `food_search_screen`; untrack `graphify-out` (566 files still tracked); delete the old v8/v9 backup exporters but keep their importers (1 Oct audit § 7); docs into one STATUS; remove `percent_indicator` (TP-11) |
-| Jan–Feb 2027 | **PR-J** catalogue growth through packs (CAT-11): INDB recipes if the authors permit, otherwise dishes built from CC0/OGL ingredient data; target ~1,000 reviewed dishes; **PR-S** lock-screen rest timer (TP-14, needs the Apple Developer Program) | **IndiFit Plus** (₹99/mo · ₹699/yr) if the stage-2 gates pass | Rename `b0x_`/`r0x_`; move fixtures to `test/` |
-| By Oct 2027 | Health Connect / HealthKit write-back; top-100 lift media | E2E-encrypted sync in Plus (backend WS6 part B) | Single live-workout owner (WS-D part 2) |
+### 2.5 Ready queue (any order once dependencies are met)
+
+Agents pull from the top. A queue item can go into a tester build during the closed test, or into any update after launch.
+
+| Group | Items | Notes |
+|---|---|---|
+| **v1 core** | A, B, C, G, D, L, M, N, T, then E, F, H | A and B gate the first tester build. The rest ship as soon as they're merged. |
+| **Next** | O player rows, Q specific reminders, I local search, K "couldn't find it" feedback, "usual thali" one-tap from Today, vessel calibration step | No fixed release number |
+| **Plus-gated** | P progress visuals (the TP-9 muscle map and heatmap ship behind the Plus switch; TP-10/11 are free), Plus entitlement and paywall (subscription + lifetime) | Start whenever you choose to launch Plus. Market § 6.4 gates are advice, not rules. |
+| **Needs something outside code** | J catalogue growth (the INDB reply, or the CC0/OGL path), S lock-screen rest timer (Apple Developer Program), R home widget (new native targets) | Start when the blocker clears |
+| **Maintainability** | Split `food_search_screen`; untrack `graphify-out` (566 files still tracked); delete the old v8/v9 backup exporters but keep their importers (1 Oct audit § 7); docs into one STATUS; remove `percent_indicator` (TP-11); rename `b0x_`/`r0x_`; move fixtures to `test/`; single live-workout owner (WS-D part 2) | Good filler between features; each in its own PR |
+| **Long-term** | Health Connect / HealthKit write-back; top-100 lift media; E2E-encrypted sync in Plus (backend WS6 part B) | — |
 
 ---
 
@@ -118,12 +147,12 @@ Written 2026-10-05 against `main` @ `25195e6`.
 | **L** `feat/factual-bests` | TP-1 bests engine (fills technique fields in the performance read), TP-2 player chip and haptic, TP-3 summary, share card, exercise history | D (rebase onto it if D merges first) | M–L |
 | **M** `feat/weekly-training-goal` | TP-4 goal source, goal history, weekly streak; TP-5 Training, Progress and summary UI; Today chip reads "days logged" | — | M |
 | **N** `feat/workout-payoff-motion` | TP-6 summary payoff and one celebration; TP-7 `success()` and `restEnd()` haptics, motion via `B05MotionPolicy` | L, M | M |
-| **O** `feat/player-set-rows` (v1.1) | TP-8 sets as rows, full workout title | D | M |
-| **P** `feat/progress-visuals` (v1.1) | TP-9 muscles-this-week map, heatmap, recent bests; TP-10 `animations`; TP-11 housekeeping | L, M | M–L |
-| **Q** `feat/specific-reminders` (v1.1) | TP-12 | L, M | S |
-| **R** `feat/home-widget` (Dec) | TP-13 | M | L (native targets) |
-| **S** `feat/rest-live-activity` (Jan) | TP-14 | D; Apple Developer Program | L (native targets) |
-| **T** `feat/tip-jar` (v1 if ready by 20 Oct, else 1.0.1) | Supporter tip jar: 3 consumable IAPs (e.g. ₹49 / ₹99 / ₹199), Settings → "Support IndiFit", a thank-you screen, no unlock; `in_app_purchase`; privacy labels add "Purchases" | — (owner: store products and agreements) | S–M |
+| **O** `feat/player-set-rows` | TP-8 sets as rows, full workout title | D | M |
+| **P** `feat/progress-visuals` | TP-9 muscles-this-week map, heatmap, recent bests; TP-10 `animations`; TP-11 housekeeping | L, M | M–L |
+| **Q** `feat/specific-reminders` | TP-12 | L, M | S |
+| **R** `feat/home-widget` | TP-13 | M | L (native targets) |
+| **S** `feat/rest-live-activity` | TP-14 | D; Apple Developer Program | L (native targets) |
+| **T** `feat/tip-jar` (v1) | Supporter tip jar: 3 consumable IAPs (e.g. ₹49 / ₹99 / ₹199), Settings → "Support IndiFit", a thank-you screen, no unlock; `in_app_purchase`; privacy labels add "Purchases" | — (owner: store products and agreements) | S–M |
 
 Every PR runs:
 
@@ -338,7 +367,7 @@ python3 tool/generate_code_graph.py
 6. **Labs gate for v1** (coaching, Learn, calendar, program author, regional packs). **Decided 2026-10-06: yes.**
 7. **Revenue path.** **Decided 2026-10-06** ([market doc](../strategy/MARKET_MOAT_REVENUE_2026-10-05.md) § 6.5):
    - **Supporter tip jar at launch** (PR-T): "Buy a chai" in-app purchases that unlock nothing.
-   - **IndiFit Plus from about Feb 2027:** ₹99/mo · ₹699/yr, **plus a lifetime option** at about 3× the annual price.
+   - **IndiFit Plus whenever you choose to launch it** (about Feb 2027 was the suggestion): ₹99/mo · ₹699/yr, **plus a lifetime option** at about 3× the annual price.
    - **Always free:** logging, thali, bests, weekly goal, reminders, home widget, backups.
    - **Plus:** photo and label AI, unlimited describe, the TP-9 progress visuals (muscle map, heatmap) and period comparison, program builder, encrypted sync.
    - Nothing shipped free is ever moved to Plus.
@@ -346,4 +375,4 @@ python3 tool/generate_code_graph.py
 9. **Decided 2026-10-06:** nutrition is online-sourced and locally served (catalogue packs, local search, no search server). Training stays offline-first. Open sub-decisions are listed in [NUTRITION_CATALOGUE_PACKS_PLAN.md](NUTRITION_CATALOGUE_PACKS_PLAN.md) § 11: the INDB permission email, Wi-Fi-only downloads, pack v2 over the air during the closed test, and a dietitian review.
 10. **Decided 2026-10-06:** factual best-ever sets ship in v1 (PR-L). They are derived only from logged sets, with no e1RM and no stored PR flag. This amends R08_0 § 546–548.
 11. **Decided 2026-10-06:** training uses a weekly goal ("2 of 3 this week · 4 weeks in a row") instead of a daily streak (PR-M). The daily streak stays on Today as "days logged".
-12. **Decided 2026-10-06:** part of the training polish goes into the closed test: PR-L, M and N, with a cut line on 20 Oct. Open sub-decisions are in [TRAINING_PROGRESS_PREMIUM_PLAN.md](TRAINING_PROGRESS_PREMIUM_PLAN.md) § 13: weekly badges, goal override with a plan, and a tester question.
+12. **Decided 2026-10-06:** part of the training polish goes into v1: PR-L, M and N. The 20 Oct cut line was dropped the same day (§ 0). Open sub-decisions are in [TRAINING_PROGRESS_PREMIUM_PLAN.md](TRAINING_PROGRESS_PREMIUM_PLAN.md) § 13: weekly badges, goal override with a plan, and a tester question.

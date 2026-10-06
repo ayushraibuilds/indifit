@@ -3,7 +3,7 @@
 **Status:** approved direction (Ayush, 2026-10-06) · **Owner:** Claude (code), Ayush (review, device feel checks) · **Last updated:** 2026-10-06
 
 Related:
-- [LAUNCH_ROADMAP_FINAL.md](LAUNCH_ROADMAP_FINAL.md): PR order and launch dates. This plan adds PR-L, M and N to the closed test, PR-O, P and Q to v1.1, and PR-R and S after that.
+- [LAUNCH_ROADMAP_FINAL.md](LAUNCH_ROADMAP_FINAL.md): launch gates, the ready queue (§ 2.5) and the hard rules (§ 0). This plan adds PR-L, M and N to v1; PR-O to PR-S go in the ready queue.
 - [FINAL_LAUNCH_AUDIT_2026-10-05.md](../audit/FINAL_LAUNCH_AUDIT_2026-10-05.md): UX-05 (rest card), UX-21 (polish), shots 96–113.
 - [NUTRITION_CATALOGUE_PACKS_PLAN.md](NUTRITION_CATALOGUE_PACKS_PLAN.md): the matching plan for food data.
 - [REFERENCE_GUIDE_UPDATED.md](../reference/ui/REFERENCE_GUIDE_UPDATED.md) § 9–10: product principles and visual direction. This plan follows them.
@@ -17,24 +17,26 @@ Update this table in every PR that touches training or progress UI. IDs are refe
 
 | ID | Work item | Release | PR | Depends on | Status |
 |---|---|---|---|---|---|
-| TP-1 | Factual-bests engine: derived from logged sets, never stored, never estimated | **v1 (closed test)** | L | — | Not started |
-| TP-2 | Bests in the player: "New best" on the set row, success haptic, best shown next to "last time" | **v1 (closed test)** | L | TP-1 | Not started |
-| TP-3 | Bests on the workout summary, share card and exercise history ("Best ever") | **v1 (closed test)** | L | TP-1 | Not started |
-| TP-4 | Weekly training goal: goal source, goal history, weekly streak calculator | **v1 (closed test)** | M | — | Not started |
-| TP-5 | Weekly goal on screen: Training week card, Progress consistency, summary line; daily streak off training surfaces | **v1 (closed test)** | M | TP-4 | Not started |
-| TP-6 | Summary as the payoff: headline, "vs last time" per exercise, one celebration moment, "Total lifted" | **v1 (closed test)** | N | TP-3, TP-5 | Not started |
-| TP-7 | Motion and haptics map: `success()` and `restEnd()` haptics, set-row tick, count-up numbers, reduce-motion tests | **v1 (closed test)** | N | — | Not started |
-| TP-8 | Player sets as rows ("60 kg × 8 ✓"), no spreadsheet header; full workout title | v1.1 | O | PR-D | Not started |
-| TP-9 | Progress visuals: muscles-this-week body map, 12-week consistency heatmap (**Plus**, decided 2026-10-06); recent bests list (free) | v1.1 | P | TP-1, TP-4; Plus entitlement (~Feb 2027) | Not started |
-| TP-10 | `animations` package: card-to-screen and between-exercise transitions | v1.1 | P | — | Not started |
-| TP-11 | Dependency housekeeping: remove `percent_indicator`; upgrade `fl_chart` when charts are touched | v1.1 | P | — | Not started |
-| TP-12 | Specific reminders: "Full Body B today. Last time: Leg Press 60 kg × 8" | v1.1 | Q | TP-1 | Not started |
-| TP-13 | Home-screen widget (`home_widget`): today's workout, week goal, kcal left | Dec 2026 | R | TP-4 | Not started |
-| TP-14 | Rest timer on the lock screen (`live_activities`) | Jan 2027 | S | PR-D; Apple Developer Program | Blocked (needs the paid Apple account) |
+| TP-1 | Factual-bests engine: derived from logged sets, never stored, never estimated | **v1** | L | — | Not started |
+| TP-2 | Bests in the player: "New best" on the set row, success haptic, best shown next to "last time" | **v1** | L | TP-1 | Not started |
+| TP-3 | Bests on the workout summary, share card and exercise history ("Best ever") | **v1** | L | TP-1 | Not started |
+| TP-4 | Weekly training goal: goal source, goal history, weekly streak calculator | **v1** | M | — | Not started |
+| TP-5 | Weekly goal on screen: Training week card, Progress consistency, summary line; daily streak off training surfaces | **v1** | M | TP-4 | Not started |
+| TP-6 | Summary as the payoff: headline, "vs last time" per exercise, one celebration moment, "Total lifted" | **v1** | N | TP-3, TP-5 | Not started |
+| TP-7 | Motion and haptics map: `success()` and `restEnd()` haptics, set-row tick, count-up numbers, reduce-motion tests | **v1** | N | — | Not started |
+| TP-8 | Player sets as rows ("60 kg × 8 ✓"), no spreadsheet header; full workout title | Next | O | PR-D | Not started |
+| TP-9 | Progress visuals: muscles-this-week body map, 12-week consistency heatmap (**Plus**, decided 2026-10-06); recent bests list (free) | Plus-gated (list: Next) | P | TP-1, TP-4; Plus entitlement | Not started |
+| TP-10 | `animations` package: card-to-screen and between-exercise transitions | Next | P | — | Not started |
+| TP-11 | Dependency housekeeping: remove `percent_indicator`; upgrade `fl_chart` when charts are touched | Next | P | — | Not started |
+| TP-12 | Specific reminders: "Full Body B today. Last time: Leg Press 60 kg × 8" | Next | Q | TP-1 | Not started |
+| TP-13 | Home-screen widget (`home_widget`): today's workout, week goal, kcal left | Next (native target) | R | TP-4 | Not started |
+| TP-14 | Rest timer on the lock screen (`live_activities`) | When Apple enrolment is done | S | PR-D; Apple Developer Program | Blocked (needs the paid Apple account) |
 
-Status values: Not started · In progress (PR #) · Merged (PR #) · Cut to 1.0.1 · Blocked (reason).
+Status values: Not started · In progress (PR #) · Merged (PR #) · Blocked (reason).
 
-**Closed-test cut line: 20 Oct.** Anything in PR-L, M or N that isn't merged by then ships in 1.0.1 instead. Cut N first, then M. PR-L comes first in the queue because decision 1 puts it in v1 (§ 12).
+"Release" is a group, not a date. **v1** items ship in whichever tester or store build they're ready for. **Next** items can start as soon as their dependencies are met, during the closed test or after launch (roadmap § 2.5).
+
+**Order inside v1:** L, then M, then N (N builds on both). Only the roadmap's hard rules apply: CI green, one PR per topic, the tracker updated, and a feature freeze about 3 days before a store submission build. *(The 20 Oct cut line was dropped on 2026-10-06.)*
 
 ---
 
@@ -63,9 +65,7 @@ Status values: Not started · In progress (PR #) · Merged (PR #) · Cut to 1.0.
 2. **Training uses a weekly goal, not a daily streak.**
    - Example: "2 of 3 workouts this week · 4 weeks in a row".
    - The daily streak stays on Today as "days logged", for food. It no longer shows on training surfaces.
-3. **Some of this goes into the closed test:**
-   - PR-L (bests), PR-M (weekly goal) and PR-N (summary payoff, motion and haptics) target builds testers get by 20 Oct;
-   - everything else is v1.1 or later.
+3. **PR-L (bests), PR-M (weekly goal) and PR-N (summary payoff, motion and haptics) are v1.** They ship to testers as soon as they're merged. Everything else is in the ready queue, in any order.
 
 **Why factual bests are safe now.** The R08 objection was to *invented* numbers and to a PR "event owner" that didn't exist. Factual bests are a derived read, like the existing "Heaviest working set":
 - the same logged sets always give the same answer;
@@ -98,7 +98,7 @@ This is the "new product decision" that [post-v1-roadmap.md § 7](../roadmap/pos
 | Open Training | The week card: "2 of 3 this week" |
 | Log a set | A tick and a light haptic. "New best" appears only when it's true. |
 | Finish | The summary headline plus one celebration (bests or week goal) |
-| Progress | The week ring and, from v1.1, the muscles-this-week map |
+| Progress | The week ring and, with Plus, the muscles-this-week map |
 
 ---
 
@@ -172,7 +172,7 @@ Two kinds of best:
 | Workout summary | A "New bests" block, top 3 plus "and 2 more", above the stats | L (TP-3) |
 | Share card | One line: "2 new bests: Leg Press 62.5 kg × 8, …" | L (TP-3) |
 | Exercise history | A "Best ever" card: heaviest and most reps at the top weights, with dates | L (TP-3) |
-| Progress | Strength tile: "2 new bests this week". The recent-bests list follows in v1.1. | L (tile), P (list) |
+| Progress | Strength tile: "2 new bests this week". The recent-bests list follows with PR-P. | L (tile), P (list) |
 
 ---
 
@@ -204,7 +204,7 @@ Two kinds of best:
 | Progress → Training consistency | Headline "2 of 3 this week · 4 weeks in a row", replacing "1 workout completed this week" |
 | Workout summary | "2 of 3 this week". When this workout meets the goal: "Week goal done", which is the celebration in TP-6. |
 | Today | The daily streak chip stays and is labelled "days logged" (food or workouts, unchanged maths). It does not appear on Training, the player, the summary or Progress → Training. |
-| Achievements | `streak_7` and `streak_30` stay daily and unchanged. Weekly badges are an open question (§ 13). |
+| Achievements | `streak_7` and `streak_30` stay daily and unchanged. Weekly 4- and 12-week badges are decided as a Next item (§ 13). |
 
 ---
 
@@ -254,7 +254,7 @@ Order, top to bottom, all data first:
 
 ---
 
-## 8. v1.1 and later (TP-8 … TP-14)
+## 8. Next items (TP-8 … TP-14)
 
 - **TP-8 Player sets as rows (PR-O).**
   - Replace the PLANNED / ACTUAL / STATUS header (shot 100) with rows such as:
@@ -290,7 +290,7 @@ Order, top to bottom, all data first:
 | Package | Version / date | Licence, publisher | Decision |
 |---|---|---|---|
 | `flutter_animate` | 4.5.2 · 2024-11-25 (repo pins ^4.5.0) | BSD-3, gskinner.com | **Use more** (v1) |
-| `animations` | 3.0.0 · 2026-08-19 | BSD-3, flutter.dev | **Add in v1.1** (TP-10) |
+| `animations` | 3.0.0 · 2026-08-19 | BSD-3, flutter.dev | **Add with PR-P** (TP-10) |
 | `home_widget` | 0.10.0 · 2026-09-17 | BSD-3 | **Add in Dec** (TP-13) |
 | `live_activities` | 2.6.0 · 2026-09-11 | MIT | **Add in Jan** (TP-14) |
 | `confetti` | 0.8.0 · 2024-09-28 | MIT | **No:** the in-repo `ConfettiOverlay` already does this |
@@ -374,32 +374,24 @@ Sources: `https://pub.dev/api/packages/<name>` and `/score`, read 2026-10-06.
 - **Verification (owner, device):** feel the set, rest-end, best and week-goal haptics on one iPhone and one Android phone. The simulator has no haptics.
 
 ### TP-8 … TP-14
-Each gets its own section when it is scheduled (v1.1 or later). Their tests follow the same pattern: pure logic first, then a widget test, then goldens.
+Each gets its own section when an agent picks it up. Their tests follow the same pattern: pure logic first, then a widget test, then goldens.
 
 **Every PR in this plan runs:** `flutter analyze`, the full `flutter test` in a scratchpad worktree (never in the main checkout), `python3 tool/generate_code_graph.py`, and a golden refresh when UI changed.
 
 ---
 
-## 12. Schedule (closed-test squeeze)
+## 12. Order (no dates)
 
-| Window | Code (Claude) | Owner (Ayush) |
-|---|---|---|
-| 6–9 Oct | PR-A, PR-B (unchanged priority) | Review A and B |
-| 9–14 Oct | PR-C, PR-G, **PR-L (bests)**, PR-D | Closed test starts; review L |
-| 14–20 Oct | **PR-M (weekly goal)**, **PR-N (payoff, motion, haptics)**, PR-E, PR-H, PR-F | Device feel check (TP-7); tester feedback |
-| **20 Oct** | **Cut line:** unmerged L/M/N items move to 1.0.1 (cut N first, then M) | — |
-| 24 Oct | Code freeze for the 1.0 submission build | Submit |
-| Nov (v1.1) | PR-O, PR-P, PR-Q | — |
-| Dec–Jan | PR-R, PR-S | Apple Developer Program for PR-S |
+1. **v1:** L → M → N, alongside the roadmap's A, B, C, G, D and T. They ship in the next tester build after they merge.
+2. **Next, any order:** O, Q, P (the free parts: TP-10, TP-11 and the recent-bests list), then R. S starts once the Apple Developer Program is active.
+3. **Plus-gated:** the TP-9 muscle map and heatmap ship behind the Plus switch, whenever Plus launches.
 
-Size: L is M–L (2–3 days), M is M (1–2 days), N is M (1–2 days). They don't depend on PR-A or PR-B, but they queue behind them.
-
----
+Relative sizes: L is M–L, M and N are M. Agents can build them in parallel in separate worktrees, but they merge one at a time (L before N) and each needs a green full suite. On this Mac only one full suite runs at a time.
 
 ## 13. Open questions for Ayush
 
-**Decided 2026-10-06:** all three as recommended. Also decided: the muscle map and heatmap (TP-9) are **Plus** features. Bests, the weekly goal, reminders and the home widget stay free forever (market doc § 6.5). Until Plus exists, TP-9 waits or ships behind the Plus flag; it must not ship free and then move. Weekly badges come in v1.1, there's no goal override with a plan in v1, and the closed-test feedback form gets the tester question.
+**Decided 2026-10-06:** all three as recommended. Also decided: the muscle map and heatmap (TP-9) are **Plus** features. Bests, the weekly goal, reminders and the home widget stay free forever (market doc § 6.5). Until Plus exists, TP-9 waits or ships behind the Plus flag; it must not ship free and then move. Weekly badges come as a Next item, there's no goal override with a plan in v1, and the closed-test feedback form gets the tester question.
 
-1. **Weekly badges:** add "Week goal 4 weeks running" and "12 weeks running" achievements? *Recommend yes in v1.1.* It's cheap once TP-4 exists, but it isn't needed for the closed test.
+1. **Weekly badges:** add "Week goal 4 weeks running" and "12 weeks running" achievements? *Recommend yes, as a Next item.* It's cheap once TP-4 exists, but v1 doesn't need it.
 2. **Goal override with a plan:** allow "my goal is 4" when the plan schedules 3? *Recommend no for v1.* Keep one source; revisit if testers ask.
 3. **Ask testers directly:** add one question to the closed-test feedback form, "Did a 'New best' or the week goal make you want to train again?" *Recommend yes;* it's the cheapest signal before launch.
