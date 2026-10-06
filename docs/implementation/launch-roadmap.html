@@ -183,7 +183,7 @@ footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--line);
   <p class="lede">The final audit on 5 Oct drove the app on a simulator and probed the real food catalogue. It found that the thali, IndiFit's headline feature, records 0 kcal for real foods and saves to the wrong meal and day. It also found a cloud backup screen for a service that doesn't exist. Two fix batches (PR-A and PR-B) come before the closed test. On 6 Oct, food data moved to <b>catalogue packs</b>: downloaded and checked, then stored and searched on the phone. PR-A now ships the first pack. Two dates drive the plan: Play's 14-day closed test, and Firebase making App Check mandatory for AI on <b>2 Nov 2026</b>.</p>
   <div class="meta">
     <span><b>main</b> <span class="mono">25195e6</span>, CI green</span>
-    <span><b>Open PRs</b> none</span>
+    <span><b>Open PRs</b> #60 (audit docs)</span>
     <span><b>Full suite</b> 2,653 passed, 0 failed</span>
     <span><b>Readiness</b> closed test 5/10 · public launch 3.5/10</span>
     <span><b>Checked with</b> live simulator, probe tests, gh, store sources</span>
@@ -207,7 +207,7 @@ footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--line);
     <div><span class="n">6</span><span class="l">P0 findings (4 code, 2 owner)</span></div>
     <div><span class="n">12</span><span class="l">fix PRs before launch (A–H, L–N, T), 8 after</span></div>
     <div><span class="n">27</span><span class="l">days until App Check is mandatory (2 Nov)</span></div>
-    <div><span class="n" id="glance-you">37</span><span class="l">owner-only tasks left</span></div>
+    <div><span class="n" id="glance-you">36</span><span class="l">owner-only tasks left</span></div>
   </div>
 
   <div class="callout block">
@@ -370,12 +370,12 @@ footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--line);
     </div>
     <div class="prcard">
       <h3><code>PR-T</code> Supporter tip jar <span class="tag t-open">v1</span></h3>
-      <p>"Support IndiFit" in Settings with three small one-off purchases (for example ₹49, ₹99 and ₹199) and a thank-you screen. Nothing is unlocked, so nothing free ever becomes paid. It starts revenue and shows who the paying fans are before Plus arrives in about Feb 2027.</p>
+      <p>"Support IndiFit" in Settings with three small one-off purchases (for example ₹49, ₹99 and ₹199) and a thank-you screen. Nothing is unlocked, so nothing free ever becomes paid. It starts revenue and shows who the paying fans are before Plus arrives, whenever you choose to launch it.</p>
       <p class="next"><b>Size:</b> S–M · <b>Needs:</b> your store agreements and products</p>
     </div>
     <div class="prcard later">
       <h3><code>PR-I · J · K</code> Food data after launch <span class="tag t-code">Later</span></h3>
-      <p><b>I</b>: fast on-device full-text search over names and Hinglish aliases, replacing the old search path (CAT-9). <b>J</b>: grow to about 1,000 reviewed dishes through packs, using the INDB if its authors agree, otherwise dishes built from CC0 and OGL ingredient data (CAT-11). <b>K</b>: opt-in "couldn't find it" feedback (CAT-13).</p>
+      <p><b>I</b>: fast on-device full-text search over names and Hinglish aliases, replacing the old search path (CAT-9). <b>J</b>: grow toward about 600 reviewed dishes through packs (more if the INDB authors allow its 1,014 recipes), otherwise dishes built from CC0 and OGL ingredient data (CAT-11). <b>K</b>: opt-in "couldn't find it" feedback (CAT-13).</p>
       <p class="next"><b>When:</b> ready queue; J waits on the INDB reply or the CC0 path</p>
     </div>
     <div class="prcard later">
@@ -443,7 +443,7 @@ footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--line);
   <h2 id="yours-h">Your side</h2>
   <p class="section-intro">Only you can do these: they need your accounts, money, devices or signature. Ticks are saved in this browser only.</p>
   <div class="progress" aria-live="polite">
-    <span id="prog-label">0 of 37 done</span>
+    <span id="prog-label">0 of 36 done</span>
     <span class="bar" aria-hidden="true"><i id="prog-bar"></i></span>
     <button type="button" id="reset">Clear ticks</button>
   </div>
@@ -478,7 +478,6 @@ footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--line);
       <h3>GitHub and decisions <span class="count"></span></h3>
       <label class="item"><input type="checkbox" id="c-protect"><span class="box"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.5 5 9l5-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt"><span class="what">Add branch protection on <code>main</code> that requires CI</span><span class="why">Checked 5 Oct: <code>main</code> is <b>not protected</b>, and the repo is public.</span></span></label>
       <label class="item"><input type="checkbox" id="c-approve-ab"><span class="box"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.5 5 9l5-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt"><span class="what">Approve work on PR-A and PR-B</span><span class="why">The thali and store-honesty fixes that gate the closed test.</span></span></label>
-      <label class="item"><input type="checkbox" id="c-labs"><span class="box"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.5 5 9l5-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt"><span class="what">Decide on "Labs" for less-polished modules</span><span class="why">Coaching, Learn, calendar, program author, regional packs.</span></span></label>
     </div>
 
     <div class="cgroup">
@@ -551,7 +550,7 @@ footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--line);
       <li>Hold the closed test until PR-A lands. AI stays on in v1 if attestation works on store builds before 2 Nov.</li>
       <li>iPhone only and portrait for now. Less-polished modules go behind "Labs".</li>
       <li>Grow the catalogue before the store listing (timing above).</li>
-      <li>Training: weekly-goal badges in v1.1; no goal override when a plan is active; a "New best / week goal" question in the tester feedback form.</li>
+      <li>Training: weekly-goal badges as a Next item; no goal override when a plan is active; a "New best / week goal" question in the tester feedback form.</li>
       <li>Revenue:
         <ul style="margin:0; padding-left:1.2em;">
           <li>a supporter tip jar at launch;</li>

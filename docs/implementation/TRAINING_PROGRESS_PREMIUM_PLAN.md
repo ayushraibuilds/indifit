@@ -275,10 +275,10 @@ Order, top to bottom, all data first:
   - Workout reminder text names the session and last time's top set: "Full Body B today. Last time: Leg Press 60 kg × 8."
   - Evening nudge, only when the week goal is still reachable: "1 more workout to hit this week's goal."
   - Uses the existing `notification_service.dart` schedules. No new permissions.
-- **TP-13 Home-screen widget (PR-R, Dec):**
+- **TP-13 Home-screen widget (PR-R):**
   - Uses `home_widget`. Shows today's workout, "2 of 3 this week" and kcal left. It deep-links to the player or food search.
   - Needs a WidgetKit extension target (none today) and an Android AppWidget.
-- **TP-14 Lock-screen rest timer (PR-S, Jan):**
+- **TP-14 Lock-screen rest timer (PR-S, once the Apple Developer Program is active):**
   - Uses `live_activities` for a Live Activity with the countdown plus Skip and +30 s.
   - This makes true the Live Activity claim the audit flagged.
   - Needs the paid Apple Developer Program and an extension target.
@@ -291,8 +291,8 @@ Order, top to bottom, all data first:
 |---|---|---|---|
 | `flutter_animate` | 4.5.2 · 2024-11-25 (repo pins ^4.5.0) | BSD-3, gskinner.com | **Use more** (v1) |
 | `animations` | 3.0.0 · 2026-08-19 | BSD-3, flutter.dev | **Add with PR-P** (TP-10) |
-| `home_widget` | 0.10.0 · 2026-09-17 | BSD-3 | **Add in Dec** (TP-13) |
-| `live_activities` | 2.6.0 · 2026-09-11 | MIT | **Add in Jan** (TP-14) |
+| `home_widget` | 0.10.0 · 2026-09-17 | BSD-3 | **Add with PR-R** (TP-13) |
+| `live_activities` | 2.6.0 · 2026-09-11 | MIT | **Add with PR-S** (TP-14) |
 | `confetti` | 0.8.0 · 2024-09-28 | MIT | **No:** the in-repo `ConfettiOverlay` already does this |
 | `lottie` / `rive` | 3.6.1 / 0.14.11 | MIT / MIT | **Not now:** each animation file has its own licence and they add app size. Revisit for one or two designer-made hero animations. |
 | `percent_indicator` | in pubspec, unused | — | **Remove** (TP-11) |

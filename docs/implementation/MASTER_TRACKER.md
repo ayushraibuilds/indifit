@@ -3,7 +3,7 @@
 Last updated: 2026-10-06 (final launch audit; nutrition catalogue packs and training premium plan decided)
 Current schema: v23 (v24 planned with CAT-1)
 Current backup format: v10
-Current focus: **V1 launch readiness**. Read [LAUNCH_ROADMAP_FINAL.md § 0](LAUNCH_ROADMAP_FINAL.md) first (fixed clocks, hard rules, no calendar dates). Work from [LAUNCH_ROADMAP_FINAL.md](LAUNCH_ROADMAP_FINAL.md) (fix batches PR-A…S, plans P0-1…P1-13, owner tasks, decisions). Evidence is in [FINAL_LAUNCH_AUDIT_2026-10-05.md](../audit/FINAL_LAUNCH_AUDIT_2026-10-05.md). Nutrition-data work is tracked in [NUTRITION_CATALOGUE_PACKS_PLAN.md](NUTRITION_CATALOGUE_PACKS_PLAN.md) § 0 (CAT-1…CAT-13); training and progress polish in [TRAINING_PROGRESS_PREMIUM_PLAN.md](TRAINING_PROGRESS_PREMIUM_PLAN.md) § 0 (TP-1…TP-14). The earlier plans ([P0](P0_REMEDIATION_PLAN.md), [P1](P1_REMEDIATION_PLAN.md), [audit 2026-10-01](../audit/INDEPENDENT_AUDIT_2026-10-01.md)) are kept for history.
+Current focus: **V1 launch readiness**. Read [LAUNCH_ROADMAP_FINAL.md § 0](LAUNCH_ROADMAP_FINAL.md) first (fixed clocks, hard rules, no calendar dates). Work from [LAUNCH_ROADMAP_FINAL.md](LAUNCH_ROADMAP_FINAL.md) (fix batches PR-A…T, plans P0-1…P1-13, owner tasks, decisions). Evidence is in [FINAL_LAUNCH_AUDIT_2026-10-05.md](../audit/FINAL_LAUNCH_AUDIT_2026-10-05.md). Nutrition-data work is tracked in [NUTRITION_CATALOGUE_PACKS_PLAN.md](NUTRITION_CATALOGUE_PACKS_PLAN.md) § 0 (CAT-1…CAT-13); training and progress polish in [TRAINING_PROGRESS_PREMIUM_PLAN.md](TRAINING_PROGRESS_PREMIUM_PLAN.md) § 0 (TP-1…TP-14). The earlier plans ([P0](P0_REMEDIATION_PLAN.md), [P1](P1_REMEDIATION_PLAN.md), [audit 2026-10-01](../audit/INDEPENDENT_AUDIT_2026-10-01.md)) are kept for history.
 
 Batches B01–B05 and the post-v1 and R07/R08 tracks are merged into `main`. Their plans and evidence are kept in `batches/`, `post-v1/`, `r08/` and `ux/` for history; they no longer describe current work.
 
@@ -30,7 +30,7 @@ Batches B01–B05 and the post-v1 and R07/R08 tracks are merged into `main`. The
 | AI: App Check enforced on store builds | **Owner:** Play Integrity needs a Play Console app and an upload keystore; App Attest needs the Apple Developer Program |
 | Barcode scanning on real Android and iPhone | Code done; **owner** to verify on devices |
 | iOS entitlements and privacy manifest; Organizer validation | Entitlements per configuration and `PrivacyInfo.xcprivacy` are present; validation needs the Apple Developer Program |
-| Live Activity works on device or isn't claimed | **Owner** to verify on an iPhone |
+| Live Activity works on device or isn't claimed | Not claimed in v1: there is no widget-extension target, so PR-B removes `NSSupportsLiveActivities` (audit SC-08). The lock-screen rest timer comes later as TP-14 (PR-S). |
 | Backend: current model, key in header, no error leakage, bounded memory, trusted proxy hops | Done |
 
 ## Quality baseline (2026-10-03)
