@@ -210,3 +210,19 @@ Package and App Store ids:
 - It keeps the "no account, no ads" promise.
 - It prices below every cited competitor.
 - It never takes away a free feature, which avoids the #2 complaint cluster.
+
+### 6.5 Decided (Ayush, 2026-10-06)
+
+- **Stage 1 adds a supporter tip jar** (roadmap PR-T): consumable in-app purchases that unlock nothing, so there's no rating risk. It starts revenue and shows who the paying fans are.
+- **Stage 2, Plus, offers both** a subscription (₹99/mo · ₹699/yr) and a **lifetime option** at about 3× the annual price (about ₹1,999), for people who refuse subscriptions.
+  - Lifetime still has AI fair-use caps, because AI is the only cost that runs forever.
+- **The free/Plus line is fixed now,** because anything shipped free can't move later.
+  - **Always free:** logging, thali, catalogue packs, bests, the weekly goal, reminders, the home widget, backups.
+  - **Plus:**
+    - photo and label AI;
+    - unlimited describe (fair use);
+    - muscles-this-week map, consistency heatmap and period comparison (training plan TP-9);
+    - program builder;
+    - encrypted sync (stage 3).
+- **AI cost fallback** (being investigated by Ayush): a cheaper model through the existing `ai_model` Remote Config key, only after it passes the eval.
+

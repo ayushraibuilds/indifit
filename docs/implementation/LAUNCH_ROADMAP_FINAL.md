@@ -87,6 +87,7 @@ Written 2026-10-05 against `main` @ `25195e6`.
 | Owner-only | Code |
 |---|---|
 | Apply for Play production; App Store submission (privacy labels per PR-B, export compliance, Organizer validation) | Release notes; version `1.0.0+N` bump |
+| For the tip jar (PR-T): sign Apple's Paid Applications agreement with bank and tax details; set up the Play payments profile; create the tip products in both stores | — |
 | Final listing (honest catalogue count, AI lines) | — |
 
 ### Post-launch track (Nov 2026 onwards)
@@ -122,6 +123,7 @@ Written 2026-10-05 against `main` @ `25195e6`.
 | **Q** `feat/specific-reminders` (v1.1) | TP-12 | L, M | S |
 | **R** `feat/home-widget` (Dec) | TP-13 | M | L (native targets) |
 | **S** `feat/rest-live-activity` (Jan) | TP-14 | D; Apple Developer Program | L (native targets) |
+| **T** `feat/tip-jar` (v1 if ready by 20 Oct, else 1.0.1) | Supporter tip jar: 3 consumable IAPs (e.g. ₹49 / ₹99 / ₹199), Settings → "Support IndiFit", a thank-you screen, no unlock; `in_app_purchase`; privacy labels add "Purchases" | — (owner: store products and agreements) | S–M |
 
 Every PR runs:
 
@@ -323,13 +325,23 @@ python3 tool/generate_code_graph.py
 
 ## 5. Decisions only Ayush can make (with recommendations)
 
-1. **Hold the closed test until PR-A lands?** *Recommend yes.* Indian testers will open the thali first, and a 0-kcal thali burns their goodwill in the 14 days that count. PR-A is about 2–3 days.
-2. **Ship AI on in v1 given the 2 Nov enforcement date?** *Recommend yes, conditionally.* Keep it on only if both attestations pass on store builds by 25 Oct; otherwise build with `INDIFIT_CONNECTED_AI=false` and enable it in 1.0.1.
-3. **AI budget for launch.** *Recommend* raising the spend cap to about ₹5,000/month at public launch, lowering per-device text caps to 15/day, and adding a 50 % alert.
-4. **iPad in v1?** *Recommend iPhone-only and portrait* (PR-G).
-5. **Catalogue honesty in the store listing.** *Recommend* "260+ Indian dishes with katori, roti and glass portions (plus size variants)" rather than "535 foods".
-6. **Labs gate for v1** (coaching, Learn, calendar, program author, regional packs). *Recommend yes.*
-7. **Revenue path.** *Recommend* freemium "IndiFit Plus" from about Feb 2027 at ₹99/mo · ₹699/yr, never paywalling anything that was free (market doc § 6.4).
+1. **Hold the closed test until PR-A lands?** **Decided 2026-10-06: yes.** Indian testers will open the thali first, and a 0-kcal thali wastes the 14 days that count.
+2. **Ship AI on in v1 given the 2 Nov enforcement date?** **Decided 2026-10-06: yes, conditionally.** It stays on only if both attestations pass on store builds by 25 Oct; otherwise build with `INDIFIT_CONNECTED_AI=false` and turn AI on in 1.0.1.
+3. **AI budget for launch.** **Open; Ayush is investigating.** Idea: a cheaper model as a fallback, e.g. when spend nears the cap. The model is already a Remote Config key (`ai_model`), so switching needs no release. A candidate must pass the text eval first (0 % wrong auto-match, kcal error within the current 3.4 %), with `usageMetadata` logged for cost. Until then, *recommend* a spend cap of about ₹5,000/month at public launch, a text cap of 15/day and a 50 % alert.
+4. **iPad in v1?** **Decided 2026-10-06: iPhone-only and portrait for now** (PR-G).
+5. **Catalogue in the store listing.** **Decided 2026-10-06: grow the catalogue before the listing.** Open timing:
+   - (a) build dishes from CC0/OGL ingredient data in October (tight);
+   - (b) launch with an honest "260+ dishes" and grow monthly through packs (*recommended*: that's what packs are for);
+   - (c) delay the listing.
+
+   Either way the count must stay honest (no templated variants counted as dishes).
+6. **Labs gate for v1** (coaching, Learn, calendar, program author, regional packs). **Decided 2026-10-06: yes.**
+7. **Revenue path.** **Decided 2026-10-06** ([market doc](../strategy/MARKET_MOAT_REVENUE_2026-10-05.md) § 6.5):
+   - **Supporter tip jar at launch** (PR-T): "Buy a chai" in-app purchases that unlock nothing.
+   - **IndiFit Plus from about Feb 2027:** ₹99/mo · ₹699/yr, **plus a lifetime option** at about 3× the annual price.
+   - **Always free:** logging, thali, bests, weekly goal, reminders, home widget, backups.
+   - **Plus:** photo and label AI, unlimited describe, the TP-9 progress visuals (muscle map, heatmap) and period comparison, program builder, encrypted sync.
+   - Nothing shipped free is ever moved to Plus.
 8. **Commit the audit screenshots (11 MB)?** **Done 2026-10-06:** the audit docs and a curated 20-shot subset (1.7 MB) are in PR #60; the rest stays out of git.
 9. **Decided 2026-10-06:** nutrition is online-sourced and locally served (catalogue packs, local search, no search server). Training stays offline-first. Open sub-decisions are listed in [NUTRITION_CATALOGUE_PACKS_PLAN.md](NUTRITION_CATALOGUE_PACKS_PLAN.md) § 11: the INDB permission email, Wi-Fi-only downloads, pack v2 over the air during the closed test, and a dietitian review.
 10. **Decided 2026-10-06:** factual best-ever sets ship in v1 (PR-L). They are derived only from logged sets, with no e1RM and no stored PR flag. This amends R08_0 § 546–548.

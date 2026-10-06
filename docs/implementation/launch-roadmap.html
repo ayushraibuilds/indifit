@@ -205,9 +205,9 @@ footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--line);
   <h2 id="glance-h">At a glance</h2>
   <div class="glance">
     <div><span class="n">6</span><span class="l">P0 findings (4 code, 2 owner)</span></div>
-    <div><span class="n">11</span><span class="l">fix PRs before launch (A–H, L–N), 8 after</span></div>
+    <div><span class="n">12</span><span class="l">fix PRs before launch (A–H, L–N, T), 8 after</span></div>
     <div><span class="n">27</span><span class="l">days until App Check is mandatory (2 Nov)</span></div>
-    <div><span class="n" id="glance-you">36</span><span class="l">owner-only tasks left</span></div>
+    <div><span class="n" id="glance-you">37</span><span class="l">owner-only tasks left</span></div>
   </div>
 
   <div class="callout block">
@@ -348,6 +348,11 @@ footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--line);
       <p>The summary leads with "1,440 kg lifted", then new bests, then a "vs last time" line per exercise and "2 of 3 this week". There is one celebration per workout, using the existing confetti. Set rows tick and numbers count up using the app's existing motion timings, and everything is instant with reduce motion. New haptics: success (best, week goal) and rest end. "External volume" becomes "Total lifted". (TP-6, TP-7)</p>
       <p class="next"><b>Size:</b> M · <b>Cut first</b> if late</p>
     </div>
+    <div class="prcard">
+      <h3><code>PR-T</code> Supporter tip jar <span class="tag t-open">v1</span></h3>
+      <p>"Support IndiFit" in Settings with three small one-off purchases (for example ₹49, ₹99 and ₹199) and a thank-you screen. Nothing is unlocked, so nothing free ever becomes paid. It starts revenue and shows who the paying fans are before Plus arrives in about Feb 2027.</p>
+      <p class="next"><b>Size:</b> S–M · <b>Needs:</b> your store agreements and products · <b>If late:</b> 1.0.1</p>
+    </div>
     <div class="prcard later">
       <h3><code>PR-I · J · K</code> Food data after launch <span class="tag t-code">Later</span></h3>
       <p><b>I</b>: fast on-device full-text search over names and Hinglish aliases, replacing the old search path (CAT-9). <b>J</b>: grow to about 1,000 reviewed dishes through packs, using the INDB if its authors agree, otherwise dishes built from CC0 and OGL ingredient data (CAT-11). <b>K</b>: opt-in "couldn't find it" feedback (CAT-13).</p>
@@ -418,7 +423,7 @@ footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--line);
   <h2 id="yours-h">Your side</h2>
   <p class="section-intro">Only you can do these: they need your accounts, money, devices or signature. Ticks are saved in this browser only.</p>
   <div class="progress" aria-live="polite">
-    <span id="prog-label">0 of 36 done</span>
+    <span id="prog-label">0 of 37 done</span>
     <span class="bar" aria-hidden="true"><i id="prog-bar"></i></span>
     <button type="button" id="reset">Clear ticks</button>
   </div>
@@ -434,6 +439,7 @@ footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--line);
       <h3>Accounts and stores <span class="count"></span></h3>
       <label class="item"><input type="checkbox" id="c-play"><span class="box"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.5 5 9l5-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt"><span class="what">Create the Play Console app, recruit 12+ testers, start the closed test after PR-A</span><span class="why">New personal accounts need <b>12 testers for 14 days</b> before production. Start once thali logs real kcal.</span></span></label>
       <label class="item"><input type="checkbox" id="c-apple"><span class="box"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.5 5 9l5-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt"><span class="what">Enrol in the paid Apple Developer Program</span><span class="why">Needed for App Attest, TestFlight and Organizer validation.</span></span></label>
+      <label class="item"><input type="checkbox" id="c-tipjar"><span class="box"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.5 5 9l5-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt"><span class="what">Set up paid in-app purchases for the tip jar</span><span class="why">Apple: sign the Paid Applications agreement and add bank and tax details. Play: set up the payments profile. Then create three tip products in each store.</span></span></label>
       <label class="item"><input type="checkbox" id="c-aistudio"><span class="box"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.5 5 9l5-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt"><span class="what">Confirm the Gemini API is on the paid tier</span><span class="why">Google uses unpaid-tier prompts "to provide, improve, and develop" its products, which would contradict the privacy policy.</span></span></label>
       <label class="item"><input type="checkbox" id="c-keyrestrict"><span class="box"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.5 5 9l5-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt"><span class="what">Restrict the Firebase API keys</span><span class="why">The repo is public and includes the keys; until App Check is enforced, the key alone can reach Gemini.</span></span></label>
     </div>
@@ -506,20 +512,12 @@ footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--line);
 <section id="decide" aria-labelledby="decide-h">
   <h2 id="decide-h">Decisions waiting on you</h2>
   <ol class="decisions">
-    <li><span class="q">Hold the closed test until PR-A lands?</span><span class="rec"><b>Recommended:</b> yes. Testers will open the thali first, and a 0-kcal thali wastes the 14 days that count. PR-A is about 2–3 days.</span></li>
-    <li><span class="q">Keep AI on in v1, given App Check becomes mandatory on 2 Nov?</span><span class="rec"><b>Recommended:</b> yes, if both attestations work on store builds by 25 Oct; otherwise ship with AI off and enable it in 1.0.1.</span></li>
-    <li><span class="q">AI budget for launch?</span><span class="rec"><b>Recommended:</b> a spend cap around ₹5,000/month at public launch, the text cap lowered to 15 a day, and an alert at 50 %.</span></li>
-    <li><span class="q">iPad and landscape in v1?</span><span class="rec"><b>Recommended:</b> iPhone-only and portrait (PR-G). Neither has been tested.</span></li>
-    <li><span class="q">How to describe the catalogue in the store?</span><span class="rec"><b>Recommended:</b> "260+ Indian dishes with katori, roti and glass portions", not "535 foods".</span></li>
-    <li><span class="q">Hide less-polished modules behind "Labs"?</span><span class="rec"><b>Recommended:</b> yes for coaching, Learn, calendar, program author and regional packs.</span></li>
-    <li><span class="q">Revenue after launch?</span><span class="rec"><b>Recommended:</b> freemium "IndiFit Plus" from about Feb 2027 at ₹99/month or ₹699/year, never paywalling anything that was free. Details in the market doc.</span></li>
+    <li><span class="q">AI budget and a cheaper fallback model?</span><span class="rec"><b>You are looking into it.</b> The model is already a Remote Config setting, so a fallback needs no release. It must pass the eval first (0 % wrong matches). Meanwhile: a cap of about ₹5,000/month at launch, 15 text uses a day, and an alert at 50 %.</span></li>
+    <li><span class="q">When does the bigger catalogue land: before listing, or through packs after?</span><span class="rec"><b>Recommended:</b> list with an honest "260+ dishes" and grow every month through packs. Building hundreds of dishes in October is tight, and delaying the listing delays launch.</span></li>
     <li><span class="q">Send the INDB permission email now?</span><span class="rec"><b>Recommended:</b> yes. It costs nothing, and the answer decides how the catalogue grows.</span></li>
     <li><span class="q">Download food updates on mobile data?</span><span class="rec"><b>Recommended:</b> Wi-Fi only by default. Updates are tiny, so offer "Also on mobile data" as a switch.</span></li>
     <li><span class="q">Pack v2 over the air during the closed test, or bundled in 1.0?</span><span class="rec"><b>Recommended:</b> over the air, if PR-H and hosting are ready by about 20 Oct. It tests the update path with real testers.</span></li>
     <li><span class="q">Dietitian review of the top 300 dishes?</span><span class="rec"><b>Recommended:</b> yes, after launch. Until then the app labels values "IndiFit estimate".</span></li>
-    <li><span class="q">Badges for keeping the weekly goal 4 and 12 weeks running?</span><span class="rec"><b>Recommended:</b> yes, in v1.1. They're cheap once the weekly goal exists, but not needed for the closed test.</span></li>
-    <li><span class="q">Let people set their own weekly goal when a plan is active?</span><span class="rec"><b>Recommended:</b> not in v1. The plan's scheduled days are the goal; revisit if testers ask.</span></li>
-    <li><span class="q">Ask testers whether "New best" or the week goal made them want to train again?</span><span class="rec"><b>Recommended:</b> yes, one question in the closed-test feedback form. It's the cheapest signal before launch.</span></li>
   </ol>
   <div class="callout decided" style="margin-top: 12px;">
     <p><b>Already decided (6 Oct):</b></p>
@@ -530,6 +528,18 @@ footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--line);
       <li>Training uses a weekly goal instead of a daily streak.</li>
       <li>PR-L, M and N go into the closed test.</li>
       <li>The audit screenshots are in PR #60 as a curated set of 20.</li>
+      <li>Hold the closed test until PR-A lands. AI stays on in v1 if attestation works by 25 Oct.</li>
+      <li>iPhone only and portrait for now. Less-polished modules go behind "Labs".</li>
+      <li>Grow the catalogue before the store listing (timing above).</li>
+      <li>Training: weekly-goal badges in v1.1; no goal override when a plan is active; a "New best / week goal" question in the tester feedback form.</li>
+      <li>Revenue:
+        <ul style="margin:0; padding-left:1.2em;">
+          <li>a supporter tip jar at launch;</li>
+          <li>IndiFit Plus from about Feb 2027, both monthly/yearly (₹99 / ₹699) and lifetime (about ₹1,999).</li>
+          <li><b>Always free:</b> logging, thali, bests, weekly goal, reminders, home widget, backups.</li>
+          <li><b>Plus:</b> photo and label AI, unlimited describe, muscle map, heatmap, program builder, sync.</li>
+        </ul>
+      </li>
     </ul>
   </div>
 </section>

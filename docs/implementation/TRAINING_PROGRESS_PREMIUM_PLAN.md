@@ -25,7 +25,7 @@ Update this table in every PR that touches training or progress UI. IDs are refe
 | TP-6 | Summary as the payoff: headline, "vs last time" per exercise, one celebration moment, "Total lifted" | **v1 (closed test)** | N | TP-3, TP-5 | Not started |
 | TP-7 | Motion and haptics map: `success()` and `restEnd()` haptics, set-row tick, count-up numbers, reduce-motion tests | **v1 (closed test)** | N | — | Not started |
 | TP-8 | Player sets as rows ("60 kg × 8 ✓"), no spreadsheet header; full workout title | v1.1 | O | PR-D | Not started |
-| TP-9 | Progress visuals: muscles-this-week body map, 12-week consistency heatmap, recent bests list | v1.1 | P | TP-1, TP-4 | Not started |
+| TP-9 | Progress visuals: muscles-this-week body map, 12-week consistency heatmap (**Plus**, decided 2026-10-06); recent bests list (free) | v1.1 | P | TP-1, TP-4; Plus entitlement (~Feb 2027) | Not started |
 | TP-10 | `animations` package: card-to-screen and between-exercise transitions | v1.1 | P | — | Not started |
 | TP-11 | Dependency housekeeping: remove `percent_indicator`; upgrade `fl_chart` when charts are touched | v1.1 | P | — | Not started |
 | TP-12 | Specific reminders: "Full Body B today. Last time: Leg Press 60 kg × 8" | v1.1 | Q | TP-1 | Not started |
@@ -398,7 +398,7 @@ Size: L is M–L (2–3 days), M is M (1–2 days), N is M (1–2 days). They do
 
 ## 13. Open questions for Ayush
 
-**Decided 2026-10-06:** all three as recommended. Weekly badges come in v1.1, there's no goal override with a plan in v1, and the closed-test feedback form gets the tester question.
+**Decided 2026-10-06:** all three as recommended. Also decided: the muscle map and heatmap (TP-9) are **Plus** features. Bests, the weekly goal, reminders and the home widget stay free forever (market doc § 6.5). Until Plus exists, TP-9 waits or ships behind the Plus flag; it must not ship free and then move. Weekly badges come in v1.1, there's no goal override with a plan in v1, and the closed-test feedback form gets the tester question.
 
 1. **Weekly badges:** add "Week goal 4 weeks running" and "12 weeks running" achievements? *Recommend yes in v1.1.* It's cheap once TP-4 exists, but it isn't needed for the closed test.
 2. **Goal override with a plan:** allow "my goal is 4" when the plan schedules 3? *Recommend no for v1.* Keep one source; revisit if testers ask.
