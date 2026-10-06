@@ -1,5 +1,17 @@
 # IndiFit — Nutrition Segment Transformation: Online-First, Offline-Fallback Architectural Blueprint & Execution Spec
 
+> **Superseded in part (2026-10-06).** Ayush chose "online-sourced, locally served" food data. The plan is [NUTRITION_CATALOGUE_PACKS_PLAN.md](../implementation/NUTRITION_CATALOGUE_PACKS_PLAN.md), and its tracker (§ 0) is where nutrition-data work is followed.
+> - **Replaced:** Blueprint A's backend food-search proxy. Food data now ships as versioned packs (manifest and gzip JSON on Firebase Hosting), imported into the canonical tables and searched on the phone with FTS5. No search server.
+> - **Still applies, now delivered through packs:**
+>   - `indian_synonyms.json` becomes pack aliases (CAT-6, CAT-9);
+>   - Blueprint B's category taxonomy and serving data become pack fields (CAT-4, CAT-6);
+>   - the provenance badges from Blueprint D (CAT-3, CAT-6).
+> - **Still applies unchanged:**
+>   - § 6 "Do NOT build a proprietary 100,000-item food database";
+>   - Open Food Facts as a live lookup and cache (it is ODbL, so it is never bundled into packs);
+>   - Blueprint C's multimodal logging, which stays a separate track.
+> - The status line below ("Finalized") predates this decision.
+
 > **Authoritative Engineering Specification & Production Blueprint**  
 > **Target Release:** IndiFit 1.1.0+ (Nutrition Modernization Milestone)  
 > **Status:** Finalized Architectural Specification (Post-Review Reconciled)  

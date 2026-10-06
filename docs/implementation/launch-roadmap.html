@@ -1,0 +1,536 @@
+<title>IndiFit Launch Roadmap</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column; a phased launch path across four lanes that stack on phones; checklists for owner work. */
+:root {
+  --bg: #F3F7F5;
+  --surface: #FFFFFF;
+  --sunk: #E8EFEB;
+  --fg: #0D1915;
+  --muted: #55665F;
+  --line: #D6E1DB;
+  --accent: #14805E;       /* IndiFit primary #1D9E75, darkened for text contrast */
+  --accent-soft: #DCF1E8;
+  --you: #9A5B00;
+  --you-soft: #FBEBD3;
+  --open: #2457C5;
+  --open-soft: #DFE8FB;
+  --block: #B23A2E;
+  --block-soft: #F8DFDB;
+  --font-display: "Outfit", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #060A12; --surface: #0F172A; --sunk: #0B1220; --fg: #EEF3F7; --muted: #94A3B8; --line: #1F2B3E;
+    --accent: #34C796; --accent-soft: #0F2E26; --you: #F2B451; --you-soft: #33240B;
+    --open: #7FAEFF; --open-soft: #14223F; --block: #FF8A7A; --block-soft: #3A1611;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #060A12; --surface: #0F172A; --sunk: #0B1220; --fg: #EEF3F7; --muted: #94A3B8; --line: #1F2B3E;
+  --accent: #34C796; --accent-soft: #0F2E26; --you: #F2B451; --you-soft: #33240B;
+  --open: #7FAEFF; --open-soft: #14223F; --block: #FF8A7A; --block-soft: #3A1611;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg);
+  font-family: var(--font-body); font-size: 15.5px; line-height: 1.6;
+  padding-inline: 16px; padding-block: 0 64px;
+}
+.wrap { max-width: 880px; margin: 0 auto; }
+a { color: var(--accent); text-underline-offset: 2px; }
+a:focus-visible, input:focus-visible + .box, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; line-height: 1.2; margin: 0; }
+h1 { font-size: clamp(2rem, 5vw, 2.75rem); font-weight: 700; letter-spacing: -0.01em; }
+h2 { font-size: 1.5rem; font-weight: 600; }
+h3 { font-size: 1.08rem; font-weight: 600; }
+p { margin: 0; max-width: 68ch; }
+code, .mono { font-family: var(--font-mono); font-size: 0.86em; }
+code { background: var(--sunk); padding: 0.08em 0.35em; border-radius: 4px; overflow-wrap: anywhere; }
+
+/* Header */
+header.top { padding-block: 40px 28px; display: grid; gap: 14px; border-bottom: 1px solid var(--line); }
+.eyebrow { font-family: var(--font-mono); font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.lede { font-size: 1.08rem; color: var(--fg); }
+.meta { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 0.86rem; color: var(--muted); }
+.meta b { color: var(--fg); font-weight: 600; }
+
+nav.toc { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); padding-block: 10px; margin-bottom: 8px; }
+nav.toc ul { list-style: none; margin: 0; padding: 0; display: flex; gap: 6px 18px; flex-wrap: wrap; font-size: 0.88rem; }
+nav.toc a { color: var(--muted); text-decoration: none; }
+nav.toc a:hover { color: var(--accent); }
+
+section { padding-block: 36px 8px; display: grid; gap: 18px; scroll-margin-top: 56px; }
+@media (max-width: 640px) { section { scroll-margin-top: 120px; } }
+.section-intro { color: var(--muted); }
+
+/* Glance figures */
+.glance { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.glance div { background: var(--surface); padding: 14px 16px; display: grid; gap: 2px; min-width: 0; }
+.glance .n { font-family: var(--font-display); font-size: 1.7rem; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.glance .l { font-size: 0.82rem; color: var(--muted); }
+@media (max-width: 640px) { .glance { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+.callout { border-left: 3px solid var(--you); background: var(--you-soft); padding: 14px 16px; border-radius: 0 var(--radius) var(--radius) 0; display: grid; gap: 6px; }
+.callout p { max-width: none; }
+
+/* Tags */
+.tag { display: inline-flex; align-items: center; font-family: var(--font-mono); font-size: 0.7rem; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; padding: 1px 7px; border-radius: 999px; white-space: nowrap; vertical-align: 0.12em; }
+.t-done { background: var(--accent-soft); color: var(--accent); }
+.t-you { background: var(--you-soft); color: var(--you); }
+.t-open { background: var(--open-soft); color: var(--open); }
+.t-code { background: var(--sunk); color: var(--muted); border: 1px solid var(--line); }
+.t-block { background: var(--block-soft); color: var(--block); }
+.pr { font-family: var(--font-mono); font-size: 0.82em; text-decoration: none; white-space: nowrap; }
+.pr:hover { text-decoration: underline; }
+
+/* Launch path */
+.path { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; counter-reset: phase; }
+.phase { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.phase-head { display: grid; gap: 2px; }
+.phase-num { font-family: var(--font-mono); font-size: 0.74rem; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; }
+.phase ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; font-size: 0.88rem; line-height: 1.45; }
+.phase li { display: grid; gap: 3px; }
+.phase .gate { font-size: 0.8rem; color: var(--muted); border-top: 1px dashed var(--line); padding-top: 8px; }
+@media (max-width: 860px) { .path { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 520px) { .path { grid-template-columns: 1fr; } }
+
+/* Done ledger */
+.ledger { display: grid; gap: 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); overflow: hidden; }
+.ledger-group { padding: 14px 16px; display: grid; gap: 8px; border-top: 1px solid var(--line); }
+.ledger-group:first-child { border-top: 0; }
+.ledger-group > h3 { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.ledger-group > h3 .sub { font-family: var(--font-body); font-weight: 400; font-size: 0.85rem; color: var(--muted); }
+.rows { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; }
+.rows li { display: grid; grid-template-columns: 7.5rem minmax(0, 1fr); gap: 12px; font-size: 0.9rem; padding-block: 3px; }
+.rows .k { font-family: var(--font-mono); font-size: 0.78rem; color: var(--muted); padding-top: 0.2em; }
+@media (max-width: 520px) { .rows li { grid-template-columns: 1fr; gap: 0; } }
+
+/* Open PR cards */
+.prs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.prcard { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; display: grid; gap: 8px; align-content: start; min-width: 0; }
+.prcard h3 { font-size: 1rem; }
+.prcard p { font-size: 0.9rem; }
+.prcard .next { font-size: 0.86rem; color: var(--muted); }
+@media (max-width: 640px) { .prs { grid-template-columns: 1fr; } }
+
+/* Work tables */
+.tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 0.9rem; min-width: 560px; }
+th, td { text-align: left; vertical-align: top; padding: 10px 14px; border-top: 1px solid var(--line); }
+thead th { border-top: 0; font-family: var(--font-mono); font-size: 0.72rem; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); background: var(--sunk); }
+td.size { white-space: nowrap; font-family: var(--font-mono); font-size: 0.8rem; color: var(--muted); }
+tbody tr.grouprow td { background: var(--sunk); font-family: var(--font-display); font-weight: 600; font-size: 0.92rem; padding-block: 8px; }
+
+/* Owner checklist */
+.progress { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 0.88rem; color: var(--muted); }
+.bar { flex: 1 1 200px; height: 6px; border-radius: 999px; background: var(--sunk); overflow: hidden; }
+.bar i { display: block; height: 100%; width: 0; background: var(--you); transition: width 0.25s ease; }
+@media (prefers-reduced-motion: reduce) { .bar i { transition: none; } }
+.progress button { font: inherit; font-size: 0.8rem; color: var(--muted); background: none; border: 1px solid var(--line); border-radius: 6px; padding: 3px 9px; cursor: pointer; }
+.progress button:hover { color: var(--fg); }
+.checklist { display: grid; gap: 14px; }
+.cgroup { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; display: grid; gap: 4px; }
+.cgroup h3 { margin-bottom: 4px; display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: baseline; }
+.cgroup h3 .count { font-family: var(--font-mono); font-size: 0.78rem; font-weight: 400; color: var(--muted); }
+.item { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 10px; padding-block: 7px; border-top: 1px solid var(--line); cursor: pointer; }
+.item:first-of-type { border-top: 0; }
+.item input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.box { width: 18px; height: 18px; margin-top: 3px; border: 1.5px solid var(--muted); border-radius: 5px; display: grid; place-items: center; }
+.box svg { width: 12px; height: 12px; opacity: 0; }
+.box svg path { stroke: var(--surface); }
+.item input:checked + .box { background: var(--accent); border-color: var(--accent); }
+.item input:checked + .box svg { opacity: 1; }
+.item input:checked ~ .txt .what { text-decoration: line-through; text-decoration-color: var(--muted); color: var(--muted); }
+.txt { display: grid; gap: 2px; min-width: 0; }
+.what { font-weight: 500; }
+.why { font-size: 0.85rem; color: var(--muted); }
+.why b { color: var(--fg); font-weight: 600; }
+
+.donebyyou { font-size: 0.88rem; color: var(--muted); }
+.donebyyou ul { margin: 6px 0 0; padding-left: 1.1em; display: grid; gap: 2px; }
+
+/* Decisions */
+.decisions { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; counter-reset: d; }
+.decisions li { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 16px; display: grid; gap: 4px; }
+.decisions .q { font-weight: 600; }
+.decisions .rec { font-size: 0.88rem; color: var(--muted); }
+.decisions .rec b { color: var(--accent); font-weight: 600; }
+
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 0.82rem; color: var(--muted); display: grid; gap: 4px; }
+
+/* Audit alerts */
+.callout.block { border-left-color: var(--block); background: var(--block-soft); }
+.callout ol { margin: 0; padding-left: 1.2em; display: grid; gap: 4px; }
+.date { font-family: var(--font-mono); font-size: 0.8rem; color: var(--block); font-weight: 500; }
+.callout.decided { border-left-color: var(--accent); background: var(--accent-soft); }
+.prs .later { opacity: 0.85; }
+</style>
+
+<div class="wrap">
+
+<header class="top">
+  <div class="eyebrow">IndiFit · v1.0.0 · updated 6 Oct 2026, after the final audit and the food-data decision</div>
+  <h1>IndiFit Launch Roadmap</h1>
+  <p class="lede">The final audit on 5 Oct drove the app on a simulator and probed the real food catalogue. It found that the thali, IndiFit's headline feature, records 0 kcal for real foods and saves to the wrong meal and day. It also found a cloud backup screen for a service that doesn't exist. Two fix batches (PR-A and PR-B) come before the closed test. On 6 Oct, food data moved to <b>catalogue packs</b>: downloaded and checked, then stored and searched on the phone. PR-A now ships the first pack. Two dates drive the plan: Play's 14-day closed test, and Firebase making App Check mandatory for AI on <b>2 Nov 2026</b>.</p>
+  <div class="meta">
+    <span><b>main</b> <span class="mono">25195e6</span>, CI green</span>
+    <span><b>Open PRs</b> none</span>
+    <span><b>Full suite</b> 2,653 passed, 0 failed</span>
+    <span><b>Readiness</b> closed test 5/10 · public launch 3.5/10</span>
+    <span><b>Checked with</b> live simulator, probe tests, gh, store sources</span>
+  </div>
+</header>
+
+<nav class="toc" aria-label="Sections">
+  <ul>
+    <li><a href="#glance">At a glance</a></li>
+    <li><a href="#path">Path to launch</a></li>
+    <li><a href="#fixes">Fix batches</a></li>
+    <li><a href="#done">Completed</a></li>
+    <li><a href="#yours">Your side</a></li>
+    <li><a href="#decide">Decisions</a></li>
+  </ul>
+</nav>
+
+<section id="glance" aria-labelledby="glance-h">
+  <h2 id="glance-h">At a glance</h2>
+  <div class="glance">
+    <div><span class="n">6</span><span class="l">P0 findings (4 code, 2 owner)</span></div>
+    <div><span class="n">8</span><span class="l">fix PRs before launch (A–H), 3 after (I–K)</span></div>
+    <div><span class="n">27</span><span class="l">days until App Check is mandatory (2 Nov)</span></div>
+    <div><span class="n" id="glance-you">35</span><span class="l">owner-only tasks left</span></div>
+  </div>
+
+  <div class="callout block">
+    <p><b>What the final audit found</b> (details in <code>docs/audit/FINAL_LAUNCH_AUDIT_2026-10-05.md</code>):</p>
+    <ol>
+      <li><b>Every thali logs 0 kcal</b> and still says "Thali logged successfully!" Thali and recipe maths read a fact table that the 535 bundled foods aren't in. Seen live, and confirmed by probe tests for every preset.</li>
+      <li><b>A thali opened from any meal or day goes to today's Lunch.</b> The Indian Thali chip passes no meal or date.</li>
+      <li><b>Presets pick the wrong foods</b>: "egg" becomes Baingan Bharta (eggplant), "curd" becomes a whole Home Thali.</li>
+      <li><b>"Encrypted cloud backup · Back up now"</b> is shown, though v1 has no cloud, and it blames the user's connection.</li>
+      <li><b><code>indifit.app</code> is a parked page with no mail</b>: no privacy policy URL, and <code>privacy@indifit.app</code> bounces. The app also has no in-app privacy policy link.</li>
+      <li>AI is on in release builds, but attestation isn't registered, and enforcement becomes mandatory on 2 Nov.</li>
+    </ol>
+  </div>
+
+  <div class="callout">
+    <p><b>Do these first.</b></p>
+    <p>1. Approve PR-A (thali) and PR-B (store honesty). Testers will open the thali first. &nbsp;2. Host the privacy policy and set up email forwarding for <code>indifit.app</code>. &nbsp;3. Create the Play Console app and recruit 12 testers, enrol in the Apple Developer Program, and generate the upload keystore. &nbsp;4. Register Play Integrity and App Attest, and verify AI on store-signed builds by <span class="date">25 Oct</span>. &nbsp;5. Email the INDB authors for permission to use their data. It costs nothing, and the answer decides how the catalogue grows.</p>
+  </div>
+
+  <div class="callout decided">
+    <p><b>Decided 6 Oct: food data is online-sourced, locally served.</b> Training stays fully offline. Food data ships as versioned packs: a manifest plus small gzip files on Firebase Hosting. The app checks for updates at most once a day, verifies each pack and imports it in one step. Search, logging and the thali then read one fact source on the phone. There is no search server, and the expected cost at launch scale is about ₹0. Plan and tracker (CAT-1 … CAT-13): <code>docs/implementation/NUTRITION_CATALOGUE_PACKS_PLAN.md</code>.</p>
+  </div>
+</section>
+
+<section id="path" aria-labelledby="path-h">
+  <h2 id="path-h">Path to launch</h2>
+  <p class="section-intro">Four phases in order. Each ends at the gate that unlocks the next. <span class="tag t-you">You</span> marks owner-only steps; <span class="tag t-code">Code</span> marks steps Claude can do.</p>
+  <div class="path">
+    <div class="phase">
+      <div class="phase-head"><span class="phase-num">Phase 0 · 5–8 Oct</span><h3>Unblock</h3></div>
+      <ul>
+        <li><span><span class="tag t-code">Code</span> PR-A: food data as bundled pack v1 with one fact source, so the thali logs real kcal to the right meal and day</span></li>
+        <li><span><span class="tag t-code">Code</span> PR-B: hide the fake cloud card, add the privacy link, remove jargon, fix privacy labels</span></li>
+        <li><span><span class="tag t-you">You</span> Host the privacy policy; email forwarding</span></li>
+        <li><span><span class="tag t-you">You</span> Email the INDB authors for data permission</span></li>
+        <li><span><span class="tag t-you">You</span> Play Console app and testers; Apple enrolment; upload keystore</span></li>
+        <li><span><span class="tag t-you">You</span> Branch protection, Sentry, Gemini paid tier</span></li>
+      </ul>
+      <div class="gate">Gate: PR-A and PR-B merged; policy URL live; email works.</div>
+    </div>
+    <div class="phase">
+      <div class="phase-head"><span class="phase-num">Phase 1 · 8–10 Oct</span><h3>First real builds</h3></div>
+      <ul>
+        <li><span><span class="tag t-you">You</span> Signed AAB to internal, then the closed track; register Play Integrity</span></li>
+        <li><span><span class="tag t-you">You</span> Data Safety (with device IDs), content rating, Health Connect declaration</span></li>
+        <li><span><span class="tag t-you">You</span> <b>Start the closed test</b> (day 0 of 14)</span></li>
+        <li><span><span class="tag t-code">Code</span> PR-C: portion steps, Today ring, onboarding fix</span></li>
+        <li><span><span class="tag t-code">Code</span> PR-G: iPhone-only, portrait</span></li>
+      </ul>
+      <div class="gate">Gate: a thali shows correct kcal on a store-signed build.</div>
+    </div>
+    <div class="phase">
+      <div class="phase-head"><span class="phase-num">Phase 2 · 10–24 Oct</span><h3>Closed test</h3></div>
+      <ul>
+        <li><span><span class="tag t-you">You</span> TestFlight; register App Attest; device passes</span></li>
+        <li><span><span class="tag t-code">Code</span> PR-D rest alerts; PR-E catalogue pipeline and data v2; PR-F AI portions; PR-H food-data updates</span></li>
+        <li><span><span class="tag t-you">You</span> Publish the packs on Firebase Hosting, so testers get pack v2 over the air (by about <span class="date">20 Oct</span>)</span></li>
+        <li><span><span class="tag t-you">You</span> Eval photos, then the paid eval run; raise the Gemini spend cap</span></li>
+        <li><span><span class="tag t-you">You</span> Enforce App Check by <span class="date">25 Oct</span></span></li>
+      </ul>
+      <div class="gate">Gate: 14 days complete; eval bar met; AI works with enforcement on.</div>
+    </div>
+    <div class="phase">
+      <div class="phase-head"><span class="phase-num">Phase 3 · 24 Oct – 2 Nov</span><h3>Submit</h3></div>
+      <ul>
+        <li><span><span class="tag t-you">You</span> Apply for Play production; App Store submission</span></li>
+        <li><span><span class="tag t-you">You</span> Listing with an honest catalogue count</span></li>
+        <li><span><span class="tag t-code">Code</span> Release notes and version bump</span></li>
+        <li><span><span class="tag t-block">Fallback</span> If attestation isn't working by 30 Oct, ship with AI off and turn it on in 1.0.1</span></li>
+      </ul>
+      <div class="gate">Gate: store review.</div>
+    </div>
+  </div>
+</section>
+
+<section id="fixes" aria-labelledby="fixes-h">
+  <h2 id="fixes-h">Fix batches</h2>
+  <p class="section-intro">Plans with files, tests that fail on today's code, and risks are in <code>docs/implementation/LAUNCH_ROADMAP_FINAL.md</code>. Food-data items (CAT-1 … CAT-13) are tracked in <code>NUTRITION_CATALOGUE_PACKS_PLAN.md</code> § 0. Sizes: S is under half a day, M is about a day, L is several days.</p>
+  <div class="prs">
+    <div class="prcard">
+      <h3><code>PR-A</code> Food pack v1, thali works <span class="tag t-block">P0</span></h3>
+      <p>Today's catalogue becomes bundled pack v1: a pack format, schema v24 and an importer that writes every food's facts in one transaction. That leaves one nutrition-fact source, so thalis and recipes compute kcal. Logging is refused when calories are unknown. The thali chip passes meal and date. Presets use exact foods and their own portions. The summary shows failures instead of "Calculating…". Adds a real-catalogue test harness. (CAT-1…4)</p>
+      <p class="next"><b>Size:</b> L · <b>Proof today:</b> probe tests show NULL energy for all 4 presets</p>
+    </div>
+    <div class="prcard">
+      <h3><code>PR-B</code> Store honesty <span class="tag t-block">P0</span></h3>
+      <p>Hide the cloud-backup card. Privacy policy, support and version rows in Settings, plus a link in the consent sheet. Device IDs added to the privacy labels. Drop "never retained" and "±30% variance". Plain words instead of "Canonical nutrition snapshot", "bundled" and "Log Snapshot (&lt;10s)", with a copy-lint test.</p>
+      <p class="next"><b>Size:</b> M</p>
+    </div>
+    <div class="prcard">
+      <h3><code>PR-C</code> Daily-loop correctness <span class="tag t-open">P1</span></h3>
+      <p>The portion stepper adds ½ katori instead of compounding (it shows "3.0517578125 katori" today). The Today ring shows calories against target, not a macro pie. Fixes the onboarding page desync and adds a Done key on number pads.</p>
+      <p class="next"><b>Size:</b> M</p>
+    </div>
+    <div class="prcard">
+      <h3><code>PR-D</code> Rest alerts <span class="tag t-open">P1</span></h3>
+      <p>Ask for notification permission on the first rest (iOS never asks today). Android falls back to an inexact alarm when exact alarms are denied. A sticky rest bar keeps the countdown on screen while logging.</p>
+      <p class="next"><b>Size:</b> M</p>
+    </div>
+    <div class="prcard">
+      <h3><code>PR-E</code> Catalogue pipeline and data v2 <span class="tag t-open">P1</span></h3>
+      <p>A build pipeline in <code>tool/catalog/</code> with a validator that CI runs on every pack. Its first overlay fixes 29 "Double / Small bowl" rows that say "1 katori" and 6 rows storing grams as katori. It also retires nonsense variants such as "Idli … with extra cheese". Adds gram weights per serving and an honest store count (about 260 dishes). The result is pack v2. (CAT-5, CAT-6)</p>
+      <p class="next"><b>Size:</b> M · <b>After:</b> PR-A</p>
+    </div>
+    <div class="prcard">
+      <h3><code>PR-F</code> AI portions, then eval <span class="tag t-open">P1</span></h3>
+      <p>Bowl, plate and gram amounts convert using the packs' gram weights. "Katori dal" auto-matches toor dal. Templated variants leave the choices. Then the paid eval rerun with label and meal photos. (CAT-12)</p>
+      <p class="next"><b>Size:</b> M · <b>After:</b> PR-E · <b>Needs:</b> your photos and App Check token</p>
+    </div>
+    <div class="prcard">
+      <h3><code>PR-H</code> Food-data updates <span class="tag t-open">P1</span></h3>
+      <p>The app checks a small manifest at most once a day (Wi-Fi by default, never in Offline Mode), downloads only new packs, verifies their checksums and imports them. Settings → Food database shows the version and a "Check now" button. New foods arrive without an app release. (CAT-7)</p>
+      <p class="next"><b>Size:</b> M · <b>After:</b> PR-A · <b>Needs:</b> packs on Firebase Hosting (CAT-8)</p>
+    </div>
+    <div class="prcard later">
+      <h3><code>PR-I · J · K</code> After launch <span class="tag t-code">Later</span></h3>
+      <p><b>I</b>: fast on-device full-text search over names and Hinglish aliases, replacing the old search path (CAT-9). <b>J</b>: grow to about 1,000 reviewed dishes through packs, using the INDB if its authors agree, otherwise dishes built from CC0 and OGL ingredient data (CAT-11). <b>K</b>: opt-in "couldn't find it" feedback (CAT-13).</p>
+      <p class="next"><b>When:</b> Nov 2026 – Feb 2027</p>
+    </div>
+    <div class="prcard">
+      <h3><code>PR-G</code> iPhone-only, portrait <span class="tag t-open">P1</span></h3>
+      <p>The app ships to iPad and landscape today, untested, and App Review tests on iPad.</p>
+      <p class="next"><b>Size:</b> S</p>
+    </div>
+  </div>
+</section>
+
+<section id="done" aria-labelledby="done-h">
+  <h2 id="done-h">Completed</h2>
+  <p class="section-intro">Everything here is merged into <code>main</code>, and CI is green on it. The final audit re-checked the parts it could reach on the simulator; what still fails is listed under Fix batches.</p>
+
+  <div class="ledger">
+    <div class="ledger-group">
+      <h3>Final audit <span class="sub">5 Oct</span></h3>
+      <ul class="rows">
+        <li><span class="k">Baseline</span><span>Analyzer clean, format clean, 2,653 Flutter tests and 76 backend tests pass, code-graph gate passes.</span></li>
+        <li><span class="k">Held up live</span><span>One-tap food add with Undo; offline search; Hinglish and "sabzi" search; repeat yesterday for single foods; one-tap set rows and carried weights; clean resume mid-rest; barcode fallback and manual lookup; AI consent sheet; correct onboarding target maths.</span></li>
+        <li><span class="k">Market</span><span>504 recent low-star reviews across 14 competitors: paywalls, mandatory accounts and ads are the top complaints IndiFit already avoids. See <code>docs/strategy/MARKET_MOAT_REVENUE_2026-10-05.md</code>.</span></li>
+      </ul>
+    </div>
+
+    <div class="ledger-group">
+      <h3>Pre-launch fixes and daily-loop polish <span class="sub">5 Oct</span></h3>
+      <ul class="rows">
+        <li><span class="k">Review gaps</span><span>Silent-catch test tightened; crash toggle hidden without a DSN; support email encoding <a class="pr" href="https://github.com/ayushraibuilds/indifit/pull/50">#50</a>. Planned set rows on one line, "Log set" back on screen <a class="pr" href="https://github.com/ayushraibuilds/indifit/pull/51">#51</a>.</span></li>
+        <li><span class="k">Support</span><span>The recovery-screen email carries the app version; unused Sentry tracing removed. <a class="pr" href="https://github.com/ayushraibuilds/indifit/pull/52">#52</a></span></li>
+        <li><span class="k">Meal photo</span><span>"Meal photo (Beta)" on the Food screen; iOS permission text covers it; CI rejects bad eval photos before a paid run. <a class="pr" href="https://github.com/ayushraibuilds/indifit/pull/53">#53</a></span></li>
+        <li><span class="k">AI matcher</span><span>"4 eggs" logs 2 servings of "Boiled Eggs (2 pieces)"; sabzi/subzi find "Sabji"; "aloo gobi" is findable. <a class="pr" href="https://github.com/ayushraibuilds/indifit/pull/54">#54</a></span></li>
+        <li><span class="k">Onboarding</span><span>Asks the goal first. <a class="pr" href="https://github.com/ayushraibuilds/indifit/pull/55">#55</a> (the audit still saw a page desync after the keyboard closed; fixed in PR-C)</span></li>
+        <li><span class="k">Portions</span><span>The portion sheet draws the katori, bowl or glass. <a class="pr" href="https://github.com/ayushraibuilds/indifit/pull/56">#56</a></span></li>
+        <li><span class="k">Repeat</span><span>"Repeat yesterday" covers thali and recipe meals. <a class="pr" href="https://github.com/ayushraibuilds/indifit/pull/57">#57</a></span></li>
+        <li><span class="k">Thali twice</span><span>A saved thali can be logged on a second day. <a class="pr" href="https://github.com/ayushraibuilds/indifit/pull/58">#58</a> (its totals are 0 kcal until PR-A)</span></li>
+        <li><span class="k">AI on</span><span>Release builds ship with the AI meal tools on. <a class="pr" href="https://github.com/ayushraibuilds/indifit/pull/59">#59</a></span></li>
+      </ul>
+    </div>
+
+    <div class="ledger-group">
+      <h3>P0 · Make what ships true <span class="sub">audit blockers, 2–4 Oct</span></h3>
+      <ul class="rows">
+        <li><span class="k">CI + tests</span><span>CI tells the truth: backend tests, split jobs, timeouts, Linux-only goldens with a refresh workflow. <a class="pr" href="https://github.com/ayushraibuilds/indifit/pull/12">#12</a> <a class="pr" href="https://github.com/ayushraibuilds/indifit/pull/42">#42</a></span></li>
+        <li><span class="k">AI in v1</span><span>Firebase AI Logic gateway with App Check and a remote kill switch; catalogue-backed meal items; consent; eval harness; daily caps. <a class="pr" href="https://github.com/ayushraibuilds/indifit/pull/14">#14</a> <a class="pr" href="https://github.com/ayushraibuilds/indifit/pull/16">#16</a> <a class="pr" href="https://github.com/ayushraibuilds/indifit/pull/17">#17</a> <a class="pr" href="https://github.com/ayushraibuilds/indifit/pull/22">#22</a></span></li>
+        <li><span class="k">AI safety</span><span>Kill switch reaches running apps; photo EXIF stripped; AI log retries don't duplicate. <a class="pr" href="https://github.com/ayushraibuilds/indifit/pull/43">#43</a> <a class="pr" href="https://github.com/ayushraibuilds/indifit/pull/44">#44</a> <a class="pr" href="https://github.com/ayushraibuilds/indifit/pull/45">#45</a></span></li>
+        <li><span class="k">Scanner</span><span>The barcode camera starts when the scanner opens. <a class="pr" href="https://github.com/ayushraibuilds/indifit/pull/40">#40</a></span></li>
+        <li><span class="k">iOS config</span><span>Release uses <code>Runner.entitlements</code>; <code>PrivacyInfo.xcprivacy</code>; export compliance declared.</span></li>
+        <li><span class="k">Backend</span><span>Backup and sync routes unmounted by default, current model, no error leakage. <a class="pr" href="https://github.com/ayushraibuilds/indifit/pull/19">#19</a></span></li>
+        <li><span class="k">Catalogue</span><span>38 duplicate or nonsense foods retired. <a class="pr" href="https://github.com/ayushraibuilds/indifit/pull/20">#20</a></span></li>
+      </ul>
+    </div>
+
+    <div class="ledger-group">
+      <h3>P1 · Reliability and daily-loop UX <span class="sub">4 Oct</span></h3>
+      <ul class="rows">
+        <li><span class="k">Reliability</span><span>Food search goes to Open Food Facts <a class="pr" href="https://github.com/ayushraibuilds/indifit/pull/24">#24</a>; crash opt-in works without restart <a class="pr" href="https://github.com/ayushraibuilds/indifit/pull/33">#33</a>; DB recovery screen <a class="pr" href="https://github.com/ayushraibuilds/indifit/pull/28">#28</a>; no silent catches <a class="pr" href="https://github.com/ayushraibuilds/indifit/pull/30">#30</a>; one streak source <a class="pr" href="https://github.com/ayushraibuilds/indifit/pull/26">#26</a>; rest actions owned by the live workout <a class="pr" href="https://github.com/ayushraibuilds/indifit/pull/27">#27</a>.</span></li>
+        <li><span class="k">Player</span><span>Last session's set per row <a class="pr" href="https://github.com/ayushraibuilds/indifit/pull/38">#38</a>; one-tap set rows <a class="pr" href="https://github.com/ayushraibuilds/indifit/pull/34">#34</a>; suggestion in the header <a class="pr" href="https://github.com/ayushraibuilds/indifit/pull/37">#37</a>; "60 kg" format <a class="pr" href="https://github.com/ayushraibuilds/indifit/pull/36">#36</a>.</span></li>
+        <li><span class="k">Screens</span><span>Training list rows <a class="pr" href="https://github.com/ayushraibuilds/indifit/pull/35">#35</a>; Progress highlights <a class="pr" href="https://github.com/ayushraibuilds/indifit/pull/41">#41</a>; onboarding contrast <a class="pr" href="https://github.com/ayushraibuilds/indifit/pull/47">#47</a>; usual-preset thali <a class="pr" href="https://github.com/ayushraibuilds/indifit/pull/48">#48</a>; repeat yesterday <a class="pr" href="https://github.com/ayushraibuilds/indifit/pull/49">#49</a>; dashboard colours <a class="pr" href="https://github.com/ayushraibuilds/indifit/pull/39">#39</a> (the Today ring is still a macro pie; fixed in PR-C).</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="yours" aria-labelledby="yours-h">
+  <h2 id="yours-h">Your side</h2>
+  <p class="section-intro">Only you can do these: they need your accounts, money, devices or signature. Ticks are saved in this browser only.</p>
+  <div class="progress" aria-live="polite">
+    <span id="prog-label">0 of 35 done</span>
+    <span class="bar" aria-hidden="true"><i id="prog-bar"></i></span>
+    <button type="button" id="reset">Clear ticks</button>
+  </div>
+
+  <div class="checklist" id="checklist">
+    <div class="cgroup">
+      <h3>Domain and email <span class="count"></span></h3>
+      <label class="item"><input type="checkbox" id="c-policy"><span class="box"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.5 5 9l5-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt"><span class="what">Host the privacy policy at <code>indifit.app/privacy</code></span><span class="why">Every path on <code>indifit.app</code> is a Hostinger parked page today. Both stores and Health Connect need the URL, and Apple also needs an in-app link (PR-B adds it).</span></span></label>
+      <label class="item"><input type="checkbox" id="c-email"><span class="box"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.5 5 9l5-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt"><span class="what">Set up email for <code>privacy@</code> and <code>support@indifit.app</code></span><span class="why">The domain has <b>no MX record</b>, so the privacy contact, the recovery-screen support email and the Open Food Facts contact all bounce.</span></span></label>
+    </div>
+
+    <div class="cgroup">
+      <h3>Accounts and stores <span class="count"></span></h3>
+      <label class="item"><input type="checkbox" id="c-play"><span class="box"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.5 5 9l5-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt"><span class="what">Create the Play Console app, recruit 12+ testers, start the closed test after PR-A</span><span class="why">New personal accounts need <b>12 testers for 14 days</b> before production. Start once thali logs real kcal.</span></span></label>
+      <label class="item"><input type="checkbox" id="c-apple"><span class="box"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.5 5 9l5-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt"><span class="what">Enrol in the paid Apple Developer Program</span><span class="why">Needed for App Attest, TestFlight and Organizer validation.</span></span></label>
+      <label class="item"><input type="checkbox" id="c-aistudio"><span class="box"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.5 5 9l5-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt"><span class="what">Confirm the Gemini API is on the paid tier</span><span class="why">Google uses unpaid-tier prompts "to provide, improve, and develop" its products, which would contradict the privacy policy.</span></span></label>
+      <label class="item"><input type="checkbox" id="c-keyrestrict"><span class="box"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.5 5 9l5-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt"><span class="what">Restrict the Firebase API keys</span><span class="why">The repo is public and includes the keys; until App Check is enforced, the key alone can reach Gemini.</span></span></label>
+    </div>
+
+    <div class="cgroup">
+      <h3>Keys, secrets and attestation <span class="count"></span></h3>
+      <label class="item"><input type="checkbox" id="c-keystore"><span class="box"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.5 5 9l5-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt"><span class="what">Generate the real Android upload keystore</span><span class="why"><code>android/key.properties</code> still points at <code>dummy.keystore</code>. Use Play App Signing and keep an offline backup.</span></span></label>
+      <label class="item"><input type="checkbox" id="c-sentry"><span class="box"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.5 5 9l5-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt"><span class="what">Create the Sentry project and add the <code>SENTRY_DSN</code> repo secret</span><span class="why">The repo has no secrets; release builds hide the crash opt-in until it exists.</span></span></label>
+      <label class="item"><input type="checkbox" id="c-rotate"><span class="box"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.5 5 9l5-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt"><span class="what">Rotate both App Check debug tokens</span><span class="why">They were pasted into chat earlier.</span></span></label>
+      <label class="item"><input type="checkbox" id="c-integrity"><span class="box"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.5 5 9l5-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt"><span class="what">Register Play Integrity in App Check</span><span class="why">Needs the Play app and the upload key's SHA-256. Without it, every AI request from a Play install fails.</span></span></label>
+      <label class="item"><input type="checkbox" id="c-attest"><span class="box"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.5 5 9l5-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt"><span class="what">Register App Attest in App Check</span><span class="why">Needs the Apple Developer Program. Required for AI on iPhone store builds.</span></span></label>
+      <label class="item"><input type="checkbox" id="c-enforce"><span class="box"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.5 5 9l5-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt"><span class="what">Verify AI on store-signed builds, then enforce App Check, by <span class="date">25 Oct</span></span><span class="why">Firebase makes enforcement <b>mandatory for AI Logic on 2 Nov 2026</b>. If it isn't working by 30 Oct, ship with AI off.</span></span></label>
+    </div>
+
+    <div class="cgroup">
+      <h3>GitHub and decisions <span class="count"></span></h3>
+      <label class="item"><input type="checkbox" id="c-protect"><span class="box"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.5 5 9l5-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt"><span class="what">Add branch protection on <code>main</code> that requires CI</span><span class="why">Checked 5 Oct: <code>main</code> is <b>not protected</b>, and the repo is public.</span></span></label>
+      <label class="item"><input type="checkbox" id="c-approve-ab"><span class="box"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.5 5 9l5-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt"><span class="what">Approve work on PR-A and PR-B</span><span class="why">The thali and store-honesty fixes that gate the closed test.</span></span></label>
+      <label class="item"><input type="checkbox" id="c-labs"><span class="box"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.5 5 9l5-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt"><span class="what">Decide on "Labs" for less-polished modules</span><span class="why">Coaching, Learn, calendar, program author, regional packs.</span></span></label>
+    </div>
+
+    <div class="cgroup">
+      <h3>Food data <span class="count"></span></h3>
+      <label class="item"><input type="checkbox" id="c-indb"><span class="box"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.5 5 9l5-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt"><span class="what">Email the INDB authors for permission to use their data (CAT-10)</span><span class="why">The paper is CC BY, but the data repo has no licence and builds on IFCT, so it needs their permission. A yes means about 1,000 recipe-based dishes; a no means dishes built from CC0/OGL ingredient data.</span></span></label>
+      <label class="item"><input type="checkbox" id="c-packs-hosting"><span class="box"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.5 5 9l5-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt"><span class="what">Deploy the food packs to Firebase Hosting (CAT-8)</span><span class="why">Claude prepares the config and the packs; you run the deploy. Free up to 10 GB stored and 360 MB a day, and a pack update is well under 1 MB. Needed by about <span class="date">20 Oct</span> for pack v2 to reach testers over the air.</span></span></label>
+    </div>
+
+    <div class="cgroup">
+      <h3>Device checks on release builds <span class="count"></span></h3>
+      <label class="item"><input type="checkbox" id="c-dev-search"><span class="box"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.5 5 9l5-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt"><span class="what">Online food search returns packaged foods</span><span class="why">Release build with Offline Mode off.</span></span></label>
+      <label class="item"><input type="checkbox" id="c-dev-scan"><span class="box"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.5 5 9l5-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt"><span class="what">Barcode scanning on an Android phone and an iPhone</span><span class="why">The simulator has no camera; the manual-entry fallback works.</span></span></label>
+      <label class="item"><input type="checkbox" id="c-dev-skip"><span class="box"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.5 5 9l5-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt"><span class="what">Lock-screen rest notification and its Skip action (after PR-D)</span><span class="why">iOS never asks for notification permission today, so it can't appear.</span></span></label>
+      <label class="item"><input type="checkbox" id="c-dev-android-rest"><span class="box"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.5 5 9l5-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt"><span class="what">Android 14+: rest alert while the app is in the background</span><span class="why">Exact alarms are denied by default on new installs, and the code schedules nothing in that case (PR-D adds a fallback).</span></span></label>
+      <label class="item"><input type="checkbox" id="c-dev-db"><span class="box"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.5 5 9l5-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt"><span class="what">Recovery screen appears with a truncated database</span><span class="why">Export should hand over the DB files.</span></span></label>
+      <label class="item"><input type="checkbox" id="c-dev-live"><span class="box"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.5 5 9l5-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt"><span class="what">Confirm there's no Live Activity, and remove the claim</span><span class="why">No widget-extension target is built, so it can't render.</span></span></label>
+      <label class="item"><input type="checkbox" id="c-dev-repair"><span class="box"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.5 5 9l5-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt"><span class="what">Time cold start and the launch repair on a mid-range Android phone</span><span class="why">The simulator showed 55 ms on first create.</span></span></label>
+      <label class="item"><input type="checkbox" id="c-dev-a11y"><span class="box"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.5 5 9l5-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt"><span class="what">TalkBack and VoiceOver pass on Add, set rows and rest controls</span><span class="why">18 icon buttons have no label today.</span></span></label>
+    </div>
+
+    <div class="cgroup">
+      <h3>Store compliance <span class="count"></span></h3>
+      <label class="item"><input type="checkbox" id="c-datasafety"><span class="box"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.5 5 9l5-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt"><span class="what">Fill in Play's Data Safety form</span><span class="why">Include device IDs (Firebase App Check, Remote Config, Installations), AI text and photos to Google, and opt-in crash logs.</span></span></label>
+      <label class="item"><input type="checkbox" id="c-appprivacy"><span class="box"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.5 5 9l5-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt"><span class="what">Fill in the App Store privacy labels</span><span class="why">Firebase's guidance adds Device ID, Usage Data and Diagnostics to what <code>PrivacyInfo.xcprivacy</code> declares today (PR-B updates the manifest).</span></span></label>
+      <label class="item"><input type="checkbox" id="c-hc"><span class="box"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.5 5 9l5-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt"><span class="what">Submit the Health Connect permissions declaration</span><span class="why">Play reviews every request for health permissions.</span></span></label>
+      <label class="item"><input type="checkbox" id="c-export"><span class="box"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.5 5 9l5-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt"><span class="what">Answer App Store Connect's export-compliance questions</span><span class="why"><code>Info.plist</code> already declares no non-exempt encryption.</span></span></label>
+      <label class="item"><input type="checkbox" id="c-organizer"><span class="box"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.5 5 9l5-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt"><span class="what">Pass Xcode Organizer validation on an archive</span><span class="why">Confirms entitlements and the privacy manifest are accepted.</span></span></label>
+      <label class="item"><input type="checkbox" id="c-listing"><span class="box"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.5 5 9l5-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt"><span class="what">Finalise the store listings with an honest catalogue count</span><span class="why">"535 Indian foods" is 261 dishes plus size and oil variants. Suggested: "260+ Indian dishes with katori, roti and glass portions".</span></span></label>
+    </div>
+
+    <div class="cgroup">
+      <h3>AI quality and budget <span class="count"></span></h3>
+      <label class="item"><input type="checkbox" id="c-labels"><span class="box"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.5 5 9l5-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt"><span class="what">Photograph about 20 nutrition labels</span><span class="why">For <code>tool/ai_eval/labels</code>; label scanning has never been measured.</span></span></label>
+      <label class="item"><input type="checkbox" id="c-photos"><span class="box"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.5 5 9l5-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt"><span class="what">Photograph about 30 real meals</span><span class="why">For <code>tool/ai_eval/photos</code>; the photo screen's "±30%" claim has no data behind it.</span></span></label>
+      <label class="item"><input type="checkbox" id="c-eval"><span class="box"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.5 5 9l5-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt"><span class="what">Run the paid AI eval after PR-F</span><span class="why">The last run (3 Oct) predates #54; it should also record token use for the cost model.</span></span></label>
+      <label class="item"><input type="checkbox" id="c-spendcap"><span class="box"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.5 5 9l5-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt"><span class="what">Raise the Gemini spend cap for public launch</span><span class="why">₹950/month covers roughly 50–140 AI-active users a month (estimate). At the cap, AI pauses for everyone.</span></span></label>
+    </div>
+  </div>
+
+  <div class="donebyyou">
+    <b>Already done on your side:</b>
+    <ul>
+      <li>Firebase project <code>indifit-d5f8d</code> on Blaze, with a ₹950/month budget and a Gemini spend cap.</li>
+      <li>AI rate limit of 10 requests per minute per user in every region.</li>
+      <li><code>indifit.app</code> domain owned.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="decide" aria-labelledby="decide-h">
+  <h2 id="decide-h">Decisions waiting on you</h2>
+  <ol class="decisions">
+    <li><span class="q">Hold the closed test until PR-A lands?</span><span class="rec"><b>Recommended:</b> yes. Testers will open the thali first, and a 0-kcal thali wastes the 14 days that count. PR-A is about 2–3 days.</span></li>
+    <li><span class="q">Keep AI on in v1, given App Check becomes mandatory on 2 Nov?</span><span class="rec"><b>Recommended:</b> yes, if both attestations work on store builds by 25 Oct; otherwise ship with AI off and enable it in 1.0.1.</span></li>
+    <li><span class="q">AI budget for launch?</span><span class="rec"><b>Recommended:</b> a spend cap around ₹5,000/month at public launch, the text cap lowered to 15 a day, and an alert at 50 %.</span></li>
+    <li><span class="q">iPad and landscape in v1?</span><span class="rec"><b>Recommended:</b> iPhone-only and portrait (PR-G). Neither has been tested.</span></li>
+    <li><span class="q">How to describe the catalogue in the store?</span><span class="rec"><b>Recommended:</b> "260+ Indian dishes with katori, roti and glass portions", not "535 foods".</span></li>
+    <li><span class="q">Hide less-polished modules behind "Labs"?</span><span class="rec"><b>Recommended:</b> yes for coaching, Learn, calendar, program author and regional packs.</span></li>
+    <li><span class="q">Revenue after launch?</span><span class="rec"><b>Recommended:</b> freemium "IndiFit Plus" from about Feb 2027 at ₹99/month or ₹699/year, never paywalling anything that was free. Details in the market doc.</span></li>
+    <li><span class="q">Commit the audit screenshots?</span><span class="rec"><b>Recommended:</b> commit the reports and a curated subset of about 20 shots; the full set is 11 MB.</span></li>
+    <li><span class="q">Send the INDB permission email now?</span><span class="rec"><b>Recommended:</b> yes. It costs nothing, and the answer decides how the catalogue grows.</span></li>
+    <li><span class="q">Download food updates on mobile data?</span><span class="rec"><b>Recommended:</b> Wi-Fi only by default. Updates are tiny, so offer "Also on mobile data" as a switch.</span></li>
+    <li><span class="q">Pack v2 over the air during the closed test, or bundled in 1.0?</span><span class="rec"><b>Recommended:</b> over the air, if PR-H and hosting are ready by about 20 Oct. It tests the update path with real testers.</span></li>
+    <li><span class="q">Dietitian review of the top 300 dishes?</span><span class="rec"><b>Recommended:</b> yes, after launch. Until then the app labels values "IndiFit estimate".</span></li>
+  </ol>
+  <div class="callout decided" style="margin-top: 12px;">
+    <p><b>Already decided (6 Oct):</b> food data is online-sourced and locally served through catalogue packs. Training stays offline-first. Open Food Facts stays a live lookup and is never bundled, because its share-alike licence (ODbL) could carry over to the packs.</p>
+  </div>
+</section>
+
+<footer>
+  <span>Sources: <code>docs/audit/FINAL_LAUNCH_AUDIT_2026-10-05.md</code>, <code>docs/strategy/MARKET_MOAT_REVENUE_2026-10-05.md</code>, <code>docs/implementation/LAUNCH_ROADMAP_FINAL.md</code>, <code>docs/implementation/NUTRITION_CATALOGUE_PACKS_PLAN.md</code>, plus the earlier plans.</span>
+  <span>Re-checked on 5 Oct 2026: <code>main</code> at <code>25195e6</code> with CI green; live iPhone 17e simulator walkthrough (126 screenshots); probe tests against the real catalogue.</span>
+</footer>
+
+</div>
+
+<script>
+(function () {
+  var KEY = 'indifit-roadmap-ticks-v1';
+  var boxes = Array.prototype.slice.call(document.querySelectorAll('#checklist input[type=checkbox]'));
+  var total = boxes.length;
+  var saved = {};
+  try { saved = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { saved = {}; }
+  boxes.forEach(function (b) { b.checked = !!saved[b.id]; });
+
+  function update() {
+    var done = 0, state = {};
+    boxes.forEach(function (b) { if (b.checked) { done++; state[b.id] = true; } });
+    document.getElementById('prog-label').textContent = done + ' of ' + total + ' done';
+    document.getElementById('prog-bar').style.width = (total ? (done / total) * 100 : 0) + '%';
+    document.getElementById('glance-you').textContent = String(total - done);
+    document.querySelectorAll('.cgroup').forEach(function (g) {
+      var inputs = g.querySelectorAll('input[type=checkbox]');
+      var d = 0; inputs.forEach(function (i) { if (i.checked) d++; });
+      var c = g.querySelector('.count'); if (c) c.textContent = d + ' / ' + inputs.length;
+    });
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+  }
+  boxes.forEach(function (b) { b.addEventListener('change', update); });
+  document.getElementById('reset').addEventListener('click', function () {
+    boxes.forEach(function (b) { b.checked = false; });
+    update();
+  });
+  update();
+})();
+</script>

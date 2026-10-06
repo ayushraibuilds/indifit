@@ -1,9 +1,9 @@
 # IndiFit Implementation Tracker
 
-Last updated: 2026-10-04 (after PR #49)
-Current schema: v23
+Last updated: 2026-10-06 (final launch audit; nutrition catalogue packs decided)
+Current schema: v23 (v24 planned with CAT-1)
 Current backup format: v10
-Current focus: **V1 launch readiness** — see [P0_REMEDIATION_PLAN.md](P0_REMEDIATION_PLAN.md) (WS1–WS7), [P1_REMEDIATION_PLAN.md](P1_REMEDIATION_PLAN.md) and the audit in [docs/audit/INDEPENDENT_AUDIT_2026-10-01.md](../audit/INDEPENDENT_AUDIT_2026-10-01.md).
+Current focus: **V1 launch readiness**. Work from [LAUNCH_ROADMAP_FINAL.md](LAUNCH_ROADMAP_FINAL.md) (fix batches PR-A…K, plans P0-1…P1-13, owner tasks, decisions). Evidence is in [FINAL_LAUNCH_AUDIT_2026-10-05.md](../audit/FINAL_LAUNCH_AUDIT_2026-10-05.md). Nutrition-data work is tracked in [NUTRITION_CATALOGUE_PACKS_PLAN.md](NUTRITION_CATALOGUE_PACKS_PLAN.md) § 0 (CAT-1…CAT-13). The earlier plans ([P0](P0_REMEDIATION_PLAN.md), [P1](P1_REMEDIATION_PLAN.md), [audit 2026-10-01](../audit/INDEPENDENT_AUDIT_2026-10-01.md)) are kept for history.
 
 Batches B01–B05 and the post-v1 and R07/R08 tracks are merged into `main`. Their plans and evidence are kept in `batches/`, `post-v1/`, `r08/` and `ux/` for history; they no longer describe current work.
 
@@ -12,7 +12,7 @@ Batches B01–B05 and the post-v1 and R07/R08 tracks are merged into `main`. The
 | Area | State |
 |:-----|:------|
 | Training, workout player, progress | Shipping |
-| Nutrition: catalogue (base + optional regional packs), Circular Thali, diary, targets | Shipping. 38 catalogue entries (18 duplicates and 20 nonsense dairy variants) were retired on 2026-10-03; they are deprecated, not deleted, and leave search. |
+| Nutrition: catalogue (base + optional regional packs), Circular Thali, diary, targets | Shipping. 38 catalogue entries (18 duplicates and 20 nonsense dairy variants) were retired on 2026-10-03; they are deprecated, not deleted, and leave search. **P0 open:** every thali logs 0 kcal for bundled foods (audit C-01). The fix is PR-A, which ships the catalogue as bundled pack v1 with one read path ([packs plan](NUTRITION_CATALOGUE_PACKS_PLAN.md) CAT-1…4). |
 | Barcode lookup (Open Food Facts) | Shipping when Offline Mode is off. Uses Apple Vision on iOS. |
 | AI meal tools: describe a meal, meal photo, label scan | **Shipping in v1** (decided 2026-10-05): on in release builds, off in debug unless `INDIFIT_CONNECTED_AI=true`. Uses Firebase AI Logic with App Check and needs consent. Meal photo is Beta until its eval runs. Needs Play Integrity and App Attest registered before release. |
 | AI coaching wording | Not in v1 |
