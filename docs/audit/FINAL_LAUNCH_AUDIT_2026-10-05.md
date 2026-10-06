@@ -250,7 +250,7 @@ Severity: **P0** blocks the closed test or public launch; **P1** must be fixed b
 
 ### 4.8 UI/UX findings (live simulator is the primary evidence)
 
-Shots live in [`docs/audit/screenshots/2026-10-05/`](screenshots/2026-10-05/). The device was an iPhone 17e (390×844 pt), iOS 26.5, debug build with `INDIFIT_CONNECTED_AI=true`, no App Check token.
+Shots live in [`docs/audit/screenshots/2026-10-05/`](screenshots/2026-10-05/). Only 20 of the 126 shots are committed, to keep the repo small (1.7 MB, not 11 MB). They are the evidence for the P0 and P1 findings: 08, 17, 24, 27, 32, 38, 42, 44, 45, 48, 54, 66, 79, 81, 102, 104, 111, 118, 124 and 125. The full set stays untracked on Ayush's Mac. The device was an iPhone 17e (390×844 pt), iOS 26.5, debug build with `INDIFIT_CONNECTED_AI=true`, no App Check token.
 
 | ID | Sev | Screen / state (shot) | What's wrong | Why it matters | Improvement | Eff | Source |
 |---|---|---|---|---|---|---|---|
