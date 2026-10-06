@@ -184,6 +184,47 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('UX-05 rest time is on screen right after Log set', (
+    tester,
+  ) async {
+    _setViewport(tester, const Size(390, 844));
+    // Mid-workout: a set is already logged, so the set table has grown.
+    final launch = (await tester.runAsync(
+      () => _launchPlannedWithWorkingSets(executions, count: 1),
+    ))!;
+    await _pumpPlayer(tester, launch, executions, db, AppTheme.lightTheme);
+
+    await tester.enterText(find.byType(TextFormField).at(1), '8');
+    await tester.tap(find.text('Log set'));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 500)),
+    );
+    await tester.pump();
+    final saved = (await tester.runAsync(
+      () => executions.readDraft(launch.draftId),
+    ))!;
+    expect(
+      saved.state.restPeriods.where((period) => period.endedAtUtc == null),
+      hasLength(1),
+    );
+
+    // No scrolling: some copy of the countdown must sit inside the 844 px
+    // screen, below the app bar.
+    final remaining = find.byWidgetPredicate(
+      (widget) =>
+          widget is Semantics &&
+          (widget.properties.label ?? '').startsWith('Rest remaining '),
+    );
+    expect(remaining, findsWidgets);
+    final appBarBottom = tester.getBottomLeft(find.byType(AppBar)).dy;
+    final onScreen = [
+      for (var index = 0; index < remaining.evaluate().length; index++)
+        tester.getRect(remaining.at(index)),
+    ].where((rect) => rect.top >= appBarBottom && rect.bottom <= 844);
+    expect(onScreen, isNotEmpty);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets(
     'planned terminal state removes the pending editor but keeps review flow',
     (tester) async {
@@ -229,8 +270,8 @@ void main() {
       await _pumpPlayer(tester, launch, executions, db, AppTheme.darkTheme);
 
       expect(find.text('REST'), findsOneWidget);
-      expect(find.text('−15 sec'), findsOneWidget);
-      expect(find.text('+15 sec'), findsOneWidget);
+      expect(find.text('−15'), findsOneWidget);
+      expect(find.text('+30'), findsOneWidget);
       expect(find.text('Skip'), findsOneWidget);
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
       expect(tester.takeException(), isNull);

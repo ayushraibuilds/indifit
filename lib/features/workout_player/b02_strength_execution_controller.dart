@@ -6,6 +6,7 @@ import '../../core/di/providers.dart';
 import '../../core/presentation/consumer_copy.dart';
 import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/services/achievement_service.dart';
+import '../../core/services/rest_alert_permission_service.dart';
 import '../../core/services/rest_presence_service.dart';
 import '../../core/services/workout_session_wake_lock_coordinator.dart';
 import '../../core/utils/app_logger.dart';
@@ -92,6 +93,7 @@ class B02StrengthExecutionController
   final DateTime Function() _nowUtc;
   final WorkoutSessionWakeLockCoordinator? _wakeLockCoordinator;
   final RestPresenceService? _restPresence;
+  final RestAlertPermissionService? _restAlerts;
   final ProgressStatisticsRepository? _achievementStats;
   final Future<int> Function()? _achievementStreakDays;
   Future<bool>? _finalizationInFlight;
@@ -111,6 +113,7 @@ class B02StrengthExecutionController
     DateTime Function()? nowUtc,
     WorkoutSessionWakeLockCoordinator? wakeLockCoordinator,
     RestPresenceService? restPresence,
+    RestAlertPermissionService? restAlerts,
     ProgressStatisticsRepository? achievementStats,
     Future<int> Function()? achievementStreakDays,
   }) : _draftService = draftService ?? const B02StrengthExecutionDraftService(),
@@ -118,6 +121,7 @@ class B02StrengthExecutionController
        _nowUtc = nowUtc ?? _systemNowUtc,
        _wakeLockCoordinator = wakeLockCoordinator,
        _restPresence = restPresence,
+       _restAlerts = restAlerts,
        _achievementStats = achievementStats,
        _achievementStreakDays = achievementStreakDays,
        super(
@@ -710,6 +714,7 @@ class B02StrengthExecutionController
     B02StrengthExecutionSlot slot, {
     int? selectedSeconds,
   }) async {
+    var started = false;
     try {
       await _enqueueRestAction<void>(() async {
         final current = state.launch;
@@ -835,11 +840,15 @@ class B02StrengthExecutionController
               period.selectedSeconds ?? period.recommendedSeconds ?? 90,
           startedAtUtc: period.startedAtUtc,
         );
+        started = true;
       });
     } catch (error) {
       final current = state.launch;
       if (current != null) _setFailure(error, current);
     }
+    // The one-time alert ask waits on the user, so it runs outside the rest
+    // queue and never delays Log set.
+    if (started) unawaited(_restAlerts?.onRestStarted());
   }
 
   Future<void> overrideTarget(
@@ -1643,6 +1652,7 @@ final b02StrengthExecutionControllerProvider =
         // so that exactly one lifecycle root owns notification IDs 998/999 across
         // player and screen controllers, preventing dual-notification collisions.
         restPresence: RestPresenceService.instance,
+        restAlerts: RestAlertPermissionService.instance,
         achievementStats: ProgressStatisticsRepository(
           ref.watch(databaseProvider),
         ),
@@ -1668,6 +1678,7 @@ final b02StrengthExecutionScreenControllerProvider = StateNotifierProvider
         // so that exactly one lifecycle root owns notification IDs 998/999 across
         // player and screen controllers, preventing dual-notification collisions.
         restPresence: RestPresenceService.instance,
+        restAlerts: RestAlertPermissionService.instance,
         achievementStats: ProgressStatisticsRepository(
           ref.watch(databaseProvider),
         ),

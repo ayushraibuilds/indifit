@@ -196,8 +196,8 @@ void main() {
       );
       expect(find.bySemanticsLabel('Rest in progress'), findsOneWidget);
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
-      expect(find.text('−15 sec'), findsOneWidget);
-      expect(find.text('+15 sec'), findsOneWidget);
+      expect(find.text('−15'), findsOneWidget);
+      expect(find.text('+30'), findsOneWidget);
       expect(find.text('Skip'), findsOneWidget);
 
       await tester.scrollUntilVisible(
