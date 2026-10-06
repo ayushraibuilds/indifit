@@ -1,9 +1,9 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "summary": {
-    "total_dart_files": 476,
-    "total_loc": 341327,
-    "total_internal_edges": 2374,
+    "total_dart_files": 477,
+    "total_loc": 341339,
+    "total_internal_edges": 2375,
     "external_package_count": 29,
     "catch_metrics": {
       "total_catches_all": 507,
@@ -80,11 +80,29 @@
   ],
   "empty_catches_catalog": [],
   "nodes": {
+    "lib/app/app_orientation.dart": {
+      "path": "lib/app/app_orientation.dart",
+      "layer": "app",
+      "sublayer": "app",
+      "loc": 10,
+      "imports": [],
+      "imported_by": [
+        "lib/app/bootstrap.dart"
+      ],
+      "parts": [],
+      "part_of": null,
+      "providers_defined": [],
+      "providers_used": [],
+      "routes_defined": [],
+      "catches": [],
+      "empty_catch_count": 0,
+      "total_catch_count": 0
+    },
     "lib/app/bootstrap.dart": {
       "path": "lib/app/bootstrap.dart",
       "layer": "app",
       "sublayer": "app",
-      "loc": 99,
+      "loc": 101,
       "imports": [
         "lib/core/config/app_preferences_keys.dart",
         "lib/core/di/providers.dart",
@@ -96,6 +114,7 @@
         "lib/core/services/notification_service.dart",
         "lib/core/utils/app_logger.dart",
         "lib/data/database/app_database.dart",
+        "lib/app/app_orientation.dart",
         "lib/app/indifit_app.dart"
       ],
       "imported_by": [

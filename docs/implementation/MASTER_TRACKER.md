@@ -17,6 +17,7 @@ Batches B01–B05 and the post-v1 and R07/R08 tracks are merged into `main`. The
 | AI meal tools: describe a meal, meal photo, label scan | **Shipping in v1** (decided 2026-10-05): on in release builds, off in debug unless `INDIFIT_CONNECTED_AI=true`. Uses Firebase AI Logic with App Check and needs consent. Meal photo is Beta until its eval runs. Needs Play Integrity and App Attest registered before release. |
 | AI coaching wording | Not in v1 |
 | Cloud backup and sync | Not in v1. Backend routes are unmounted unless `ENABLE_CLOUD_SYNC=1`. |
+| Devices and orientation | iPhone only, portrait only (decided 2026-10-06, audit SC-06). PR-G sets `TARGETED_DEVICE_FAMILY = 1`, limits `Info.plist` to portrait, and locks portrait at boot, which also holds Android phones upright. iPads run the app in iPhone compatibility mode. |
 
 ## P0 definition of done
 
