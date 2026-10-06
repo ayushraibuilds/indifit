@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../config/app_config.dart';
 import '../di/core_providers.dart';
+import '../privacy/privacy_policy.dart';
 import 'ai_daily_caps.dart';
 import 'ai_gateway.dart';
 import 'backend_ai_gateway.dart';
@@ -14,6 +17,11 @@ final aiGatewayProvider = Provider<AiGateway>((ref) {
     return BackendAiGateway(dio: ref.watch(dioProvider));
   }
   final firebase = FirebaseAiGateway();
+  // Offline Mode must stop every Firebase connection, including the
+  // Remote Config listener an earlier AI call opened.
+  ref.listen<PrivacyPolicy>(privacyPolicyProvider, (_, policy) {
+    if (!policy.isAiAllowed) unawaited(FirebaseAiGateway.stopRealtimeUpdates());
+  }, fireImmediately: true);
   return DailyCapAiGateway(
     inner: firebase,
     caps: firebase.dailyCaps,

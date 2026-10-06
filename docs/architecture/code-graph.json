@@ -2,8 +2,8 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "summary": {
     "total_dart_files": 477,
-    "total_loc": 341463,
-    "total_internal_edges": 2378,
+    "total_loc": 341494,
+    "total_internal_edges": 2379,
     "external_package_count": 29,
     "catch_metrics": {
       "total_catches_all": 509,
@@ -290,10 +290,11 @@
       "path": "lib/core/ai/ai_gateway_provider.dart",
       "layer": "core",
       "sublayer": "core",
-      "loc": 22,
+      "loc": 30,
       "imports": [
         "lib/core/config/app_config.dart",
         "lib/core/di/core_providers.dart",
+        "lib/core/privacy/privacy_policy.dart",
         "lib/core/ai/ai_daily_caps.dart",
         "lib/core/ai/ai_gateway.dart",
         "lib/core/ai/backend_ai_gateway.dart",
@@ -339,7 +340,7 @@
       "path": "lib/core/ai/ai_remote_config_refresher.dart",
       "layer": "core",
       "sublayer": "core",
-      "loc": 102,
+      "loc": 114,
       "imports": [
         "lib/core/utils/app_logger.dart"
       ],
@@ -354,7 +355,7 @@
       "catches": [
         {
           "file": "lib/core/ai/ai_remote_config_refresher.dart",
-          "line": 85,
+          "line": 97,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -404,7 +405,7 @@
       "path": "lib/core/ai/firebase_ai_gateway.dart",
       "layer": "core",
       "sublayer": "core",
-      "loc": 208,
+      "loc": 219,
       "imports": [
         "lib/firebase_options.dart",
         "lib/core/config/app_config.dart",
@@ -425,7 +426,7 @@
       "catches": [
         {
           "file": "lib/core/ai/firebase_ai_gateway.dart",
-          "line": 114,
+          "line": 124,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -435,7 +436,7 @@
         },
         {
           "file": "lib/core/ai/firebase_ai_gateway.dart",
-          "line": 134,
+          "line": 144,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -3712,6 +3713,7 @@
       ],
       "imported_by": [
         "lib/app/bootstrap.dart",
+        "lib/core/ai/ai_gateway_provider.dart",
         "lib/core/capabilities/capabilities_registry.dart",
         "lib/core/catalog/food_catalog_service.dart",
         "lib/core/di/core_providers.dart",
