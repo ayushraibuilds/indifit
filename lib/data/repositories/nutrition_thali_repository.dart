@@ -11,6 +11,7 @@ import '../../core/nutrition_consumption_snapshots.dart';
 import '../../core/nutrition_household_measures.dart';
 import '../../core/nutrition_thali.dart';
 import '../../core/typed_quantities.dart';
+import '../catalog/catalogue_quantity_resolver.dart';
 import '../database/app_database.dart' as database;
 import 'nutrition_constraint_repository.dart';
 import 'nutrition_consumption_repository.dart';
@@ -40,6 +41,7 @@ class NutritionThaliRepository {
   final Uuid _uuid;
   final DateTime Function() _nowUtc;
   final NutritionThaliFailureInjector? _failureInjector;
+  final CatalogueQuantityResolver _catalogueQuantities;
 
   NutritionThaliRepository({
     required database.AppDatabase db,
@@ -61,7 +63,8 @@ class NutritionThaliRepository {
        _consumption = consumption,
        _uuid = uuid ?? const Uuid(),
        _nowUtc = nowUtc ?? (() => DateTime.now().toUtc()),
-       _failureInjector = failureInjector;
+       _failureInjector = failureInjector,
+       _catalogueQuantities = CatalogueQuantityResolver(db);
 
   Future<List<NutritionThaliFoodOption>> searchFoods({
     String query = '',
@@ -750,6 +753,41 @@ class NutritionThaliRepository {
     NutritionThaliItem item,
   ) async {
     NutritionQuantityService.validatePositiveConsumedQuantity(item.quantity);
+    final foodId = item.foodId;
+    if (item.source == NutritionThaliItemSource.food && foodId != null) {
+      // A food is measured in its own unit (2 pieces, 1 katori, 100 g). The
+      // pack's serving conversions turn that into the basis of its facts.
+      // Only vessels of a per-100-mL food still resolve through volume.
+      final measure = await _catalogueQuantities.measureFor(foodId);
+      final viaVolume =
+          item.quantity.unit == QuantityUnit.householdReference &&
+          (measure == null || measure.isPerMillilitre);
+      if (measure != null && !viaVolume) {
+        final Quantity calculationQuantity;
+        try {
+          calculationQuantity = measure.toFactBasis(item.quantity);
+        } on CatalogueQuantityError catch (error) {
+          throw NutritionThaliValidationError(
+            error.code,
+            error.message,
+            cause: error,
+          );
+        }
+        final converted = !identical(calculationQuantity, item.quantity);
+        return NutritionThaliResolvedQuantity(
+          original: item.quantity,
+          calculationQuantity: calculationQuantity,
+          measureId: item.measureId,
+          evidence: converted
+              ? {
+                  'resolution': 'catalogue_serving',
+                  'food_basis': measure.basis,
+                  if (measure.unit != null) 'food_unit': measure.unit,
+                }
+              : {'resolution': 'not_required'},
+        );
+      }
+    }
     if (item.quantity.unit != QuantityUnit.householdReference) {
       return NutritionThaliResolvedQuantity(
         original: item.quantity,

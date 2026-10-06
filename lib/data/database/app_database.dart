@@ -22,11 +22,14 @@ import '../../core/nutrition_constraints.dart';
 import '../../core/services/crash_reporting_service.dart';
 import '../../core/services/platform_storage_protection.dart';
 import '../../core/utils/app_logger.dart';
+import '../catalog/catalog_pack.dart';
+import '../catalog/catalog_pack_importer.dart';
 import '../models/b02_execution_models.dart';
 import 'b01_legacy_import_support.dart';
 import 'tables/achievement_tables.dart';
 import 'tables/b02_activity_tables.dart';
 import 'tables/b05_ui_tables.dart';
+import 'tables/catalog_tables.dart';
 import 'tables/food_tables.dart';
 import 'tables/health_tables.dart';
 import 'tables/hydration_tables.dart';
@@ -187,6 +190,7 @@ typedef V19MigrationFailureStageInjector =
     TombstoneEntries,
     CachedRemoteFoods,
     FoodSearchCache,
+    CatalogState,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -247,10 +251,10 @@ class AppDatabase extends _$AppDatabase {
   /// migration; production instances always use the current version.
   final int? schemaVersionOverride;
 
-  /// Schema v23 retains the complete graph and adds the additive FoodSearchCache
-  /// table for online hybrid search results.
+  /// Schema v24 adds [CatalogState]: the food catalogue pack installed on
+  /// this device (CAT-1). The bundled pack itself is applied on open.
   @override
-  int get schemaVersion => schemaVersionOverride ?? 23;
+  int get schemaVersion => schemaVersionOverride ?? 24;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -350,6 +354,11 @@ class AppDatabase extends _$AppDatabase {
       if (from < 23 && to >= 23) {
         await m.createTable(foodSearchCache);
       }
+      if (from < 24 && to >= 24) {
+        // V24: the catalogue pack state (CAT-1). The bundled pack is applied
+        // by beforeOpen, which also repairs an install where it failed.
+        await m.createTable(catalogState);
+      }
     },
 
     onCreate: (m) async {
@@ -442,5 +451,8 @@ class AppDatabase extends _$AppDatabase {
       }
     }
     await _checkAndInvalidateFoodSearchCacheOnManifestChange();
+    if (schemaVersionOverride == null) {
+      await _ensureBundledCatalogPack();
+    }
   }
 }

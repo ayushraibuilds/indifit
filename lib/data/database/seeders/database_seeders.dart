@@ -212,6 +212,52 @@ extension DatabaseSeeders on AppDatabase {
     return rootBundle.loadString(path);
   }
 
+  Future<List<int>> _loadAssetBytes(String path) async {
+    final file = File(path);
+    if (file.existsSync()) return file.readAsBytes();
+    final data = await rootBundle.load(path);
+    return data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
+  }
+
+  /// Applies the catalogue pack bundled with this build when the device has
+  /// none at or above its version (CAT-3). Runs on every open, so a fresh
+  /// install, an upgrade and an earlier failed attempt all converge on one
+  /// fact source. A failure is reported and leaves the database usable:
+  /// foods without facts read as unknown, never as zero.
+  Future<void> _ensureBundledCatalogPack() async {
+    if (!await _tableExists('catalog_state') ||
+        !await _tableExists('nutrition_foods')) {
+      return;
+    }
+    try {
+      final contracts = await _loadV17Contracts();
+      final nutrientIds = contracts.registry.definitions
+          .map((definition) => definition.id)
+          .toList(growable: false);
+      final importer = CatalogPackImporter(db: this, nutrientIds: nutrientIds);
+      final installed = await importer.installedVersion();
+      if (installed != null && installed >= kBundledCatalogPackVersion) return;
+      final manifest = CatalogPackManifest.parse(
+        jsonDecode(await _loadV17AssetText(kBundledCatalogManifestAsset)),
+      );
+      final entry = manifest.fullPack(kBundledCatalogPackVersion);
+      final pack = CatalogPack.decode(
+        await _loadAssetBytes('$kBundledCatalogAssetDirectory${entry.url}'),
+        expectedSha256: entry.sha256,
+        registryVersion: '${contracts.registry.version}',
+        nutrientIds: nutrientIds.toSet(),
+      );
+      await importer.apply(pack, source: 'bundled');
+    } catch (e, st) {
+      AppLogger.warning('Bundled catalogue pack was not applied: $e');
+      CrashReportingService.recordCrash(
+        e,
+        st,
+        reason: 'bundled catalogue pack apply failed',
+      );
+    }
+  }
+
   Future<void> _seedV17NutrientRegistry(NutrientRegistry registry) async {
     final existing = await select(nutritionNutrientDefinitions).get();
     if (existing.isNotEmpty) return;

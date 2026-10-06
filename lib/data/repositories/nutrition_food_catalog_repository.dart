@@ -83,11 +83,19 @@ class NutritionFoodCatalogRepository {
           basis: authority.basis,
         ),
     };
-    await _ensureFacts(
-      foodId: identity,
-      facts: facts,
-      sourceReference: 'legacy-food-item:${item.id}',
-    );
+    // Catalogue foods get their facts from the installed pack (CAT-3); a
+    // search must never write over them. Only foods the pack doesn't cover
+    // (legacy custom foods, regional packs) are still adapted here.
+    final packOwned =
+        !identity.startsWith('legacy-food-item::') &&
+        await _hasCurrentFacts(identity);
+    if (!packOwned) {
+      await _ensureFacts(
+        foodId: identity,
+        facts: facts,
+        sourceReference: 'legacy-food-item:${item.id}',
+      );
+    }
     final currentFacts = await _readCurrentFacts(identity, fallback: facts);
     return NutritionFoodOption(
       id: identity,
@@ -635,6 +643,18 @@ class NutritionFoodCatalogRepository {
         ]);
       });
     });
+  }
+
+  Future<bool> _hasCurrentFacts(String foodId) async {
+    final row =
+        await (_db.select(_db.nutritionFoodNutrientFacts)
+              ..where(
+                (fact) =>
+                    fact.foodId.equals(foodId) & fact.isCurrent.equals(true),
+              )
+              ..limit(1))
+            .getSingleOrNull();
+    return row != null;
   }
 
   Future<Map<String, NutrientFact>> _readCurrentFacts(
