@@ -53,5 +53,5 @@ All P1 PRs (#24–#49) are merged. Code work is done; the definition of done in 
 | Crash reporting DSN | **Owner:** add the `SENTRY_DSN` secret; until then release builds hide the opt-in |
 | Launch repair cost on a mid-range Android phone | **Owner** to measure (desktop: ~6 ms warm) |
 | Manual device passes: truncated DB, notification Skip mid-rest | **Owner** |
-| Recovery-screen support email carries the app version | Not done: needs a version source such as `package_info_plus` |
+| Recovery-screen support email carries the app version | Done in #52 (`package_info_plus`) |
 | Single owner for the live workout (WS-D part 2, step 4) | After launch |

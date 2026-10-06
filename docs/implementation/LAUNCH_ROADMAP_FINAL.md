@@ -93,7 +93,7 @@ Written 2026-10-05 against `main` @ `25195e6`.
 
 | When | Moat | Revenue | Maintainability |
 |---|---|---|---|
-| Nov–Dec | "Usual thali" one-tap from Today; vessel calibration step; **PR-I** local full-text search (CAT-9); **PR-K** opt-in "couldn't find it" feedback (CAT-13); training v1.1: **PR-O** player sets as rows (TP-8), **PR-P** muscles-this-week map, 12-week heatmap and `animations` transitions (TP-9…11), **PR-Q** specific reminders (TP-12); **PR-R** home-screen widget (TP-13, Dec) | Measure retention (store cohorts); opt-in local counters | Split `food_search_screen`; untrack `graphify-out`; docs into one STATUS; remove `percent_indicator` (TP-11) |
+| Nov–Dec | "Usual thali" one-tap from Today; vessel calibration step; **PR-I** local full-text search (CAT-9); **PR-K** opt-in "couldn't find it" feedback (CAT-13); training v1.1: **PR-O** player sets as rows (TP-8), **PR-P** muscles-this-week map, 12-week heatmap and `animations` transitions (TP-9…11), **PR-Q** specific reminders (TP-12); **PR-R** home-screen widget (TP-13, Dec) | Measure retention (store cohorts); opt-in local counters | Split `food_search_screen`; untrack `graphify-out` (566 files still tracked); delete the old v8/v9 backup exporters but keep their importers (1 Oct audit § 7); docs into one STATUS; remove `percent_indicator` (TP-11) |
 | Jan–Feb 2027 | **PR-J** catalogue growth through packs (CAT-11): INDB recipes if the authors permit, otherwise dishes built from CC0/OGL ingredient data; target ~1,000 reviewed dishes; **PR-S** lock-screen rest timer (TP-14, needs the Apple Developer Program) | **IndiFit Plus** (₹99/mo · ₹699/yr) if the stage-2 gates pass | Rename `b0x_`/`r0x_`; move fixtures to `test/` |
 | By Oct 2027 | Health Connect / HealthKit write-back; top-100 lift media | E2E-encrypted sync in Plus (backend WS6 part B) | Single live-workout owner (WS-D part 2) |
 
@@ -105,7 +105,7 @@ Written 2026-10-05 against `main` @ `25195e6`.
 |---|---|---|---|
 | **A** `fix/catalogue-pack-v1-thali` | CAT-1…4 (pack format, schema v24, importer, bundled pack v1, single fact source; fixes C-01, C-07), C-02, C-03, R-04, A-02 harness | — | L |
 | **B** `fix/store-honesty` | SC-03, S-04 (code), S-02, S-03, SC-05, SC-08, UX-04 + copy lint; data-source attributions (CAT-10) | — | M |
-| **C** `fix/daily-loop-correctness` | C-05, UX-03, R-01, UX-12 | — | M |
+| **C** `fix/daily-loop-correctness` | C-05, UX-03, R-01, UX-12; carried from the 1 Oct audit § 6: move the macro "(partial)" labels to the info icon (re-check after PR-A, which may clear them) and shrink the date bar | — | M |
 | **D** `fix/rest-alerts` | R-02, R-03, UX-05 | — | M |
 | **E** `feat/catalogue-pipeline-v2` | CAT-5 (`tool/catalog` build + validator + CI), CAT-6 overlay (C-04, C-09, gram weights, store count) | A | M |
 | **F** `fix/ai-portion-conversions` | C-06 via CAT-12 | E (gram weights) | M |
