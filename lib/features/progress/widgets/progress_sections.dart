@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/presentation/consumer_copy.dart';
 import '../../../core/services/local_schedule_date_service.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
+import '../../../core/utils/weekly_training_goal_calculator.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
 import '../../../data/models/b02_muscle_volume_models.dart';
 import '../progress_dashboard_models.dart';
@@ -273,10 +274,15 @@ class TrainingConsistencySection extends StatelessWidget {
     super.key,
     required this.snapshot,
     required this.onViewHistory,
+    this.weeklyGoal,
   });
 
   final ProgressDashboardSnapshot snapshot;
   final VoidCallback onViewHistory;
+
+  /// This week against the training goal. When present the headline reads
+  /// "2 of 3 workouts this week · 4 weeks in a row".
+  final WeeklyTrainingGoalStatus? weeklyGoal;
 
   @override
   Widget build(BuildContext context) {
@@ -299,18 +305,27 @@ class TrainingConsistencySection extends StatelessWidget {
     final recentSessionCount = lastFourWeeksSummary.sessionCount;
     final recentDaysCount = lastFourWeeksSummary.trainingDayCount;
 
-    final headingText = R08F4TrainingVolumePresentation.formatThisWeekHeading(
-      thisWeekSessionCount,
-    );
-    final subtitleText = R08F4TrainingVolumePresentation.formatThisWeekSubtitle(
-      sessionCount: thisWeekSessionCount,
-      dayCount: thisWeekDaysCount,
-    );
-    final semanticsLabel =
-        R08F4TrainingVolumePresentation.formatThisWeekSemantics(
-          sessionCount: thisWeekSessionCount,
-          dayCount: thisWeekDaysCount,
-        );
+    final goal = weeklyGoal;
+    final goalRun = goal == null
+        ? null
+        : WeeklyTrainingGoalCopy.weeksInARow(goal);
+    final headingText = goal != null
+        ? WeeklyTrainingGoalCopy.progress(goal)
+        : R08F4TrainingVolumePresentation.formatThisWeekHeading(
+            thisWeekSessionCount,
+          );
+    final subtitleText = goal != null
+        ? ['workouts this week', ?goalRun].join(' · ')
+        : R08F4TrainingVolumePresentation.formatThisWeekSubtitle(
+            sessionCount: thisWeekSessionCount,
+            dayCount: thisWeekDaysCount,
+          );
+    final semanticsLabel = goal != null
+        ? '${[WeeklyTrainingGoalCopy.thisWeek(goal), ?goalRun].join('. ')}.'
+        : R08F4TrainingVolumePresentation.formatThisWeekSemantics(
+            sessionCount: thisWeekSessionCount,
+            dayCount: thisWeekDaysCount,
+          );
     final fourWeeksSummaryText =
         R08F4TrainingVolumePresentation.formatRecentHistorySummary(
           sessionCount: recentSessionCount,

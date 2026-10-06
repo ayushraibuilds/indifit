@@ -12,6 +12,7 @@ import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/services/indifit_haptics.dart';
 import '../../core/services/workout_session_wake_lock_coordinator.dart';
 import '../../core/theme/b05_semantic_colors.dart';
+import '../../core/utils/app_logger.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/consumer_task_primitives.dart';
 import '../../core/widgets/indi_fit_bottom_sheet.dart';
@@ -28,8 +29,10 @@ import '../workout_player/b02_strength_execution_controller.dart';
 import '../workout_player/widgets/manual_log_sheet.dart';
 import '../workout_player/workout_execution_route.dart';
 import 'training_plan_lifecycle_controller.dart';
+import 'training_week_goal_widgets.dart';
 import 'training_workout_customization.dart';
 import 'training_workout_preview.dart';
+import 'weekly_training_goal_providers.dart';
 
 /// Read-only, presentation-ready data for the Training landing page.
 ///
@@ -50,6 +53,7 @@ class TrainingLandingSnapshot {
     this.activeDraft,
     this.activeStrengthDraft,
     this.nextActionResolution,
+    this.weeklyGoal,
   });
 
   final String localDate;
@@ -69,6 +73,10 @@ class TrainingLandingSnapshot {
   /// read model alongside its legacy fixture fields so older callers can
   /// continue constructing snapshots while production uses one authority.
   final TrainingNextActionResolution? nextActionResolution;
+
+  /// This week against its goal. Null when it couldn't be read, which hides
+  /// the goal card rather than blocking Training.
+  final WeeklyTrainingGoalStatus? weeklyGoal;
 
   bool get hasActiveDraft =>
       nextActionResolution?.hasActiveDraft ??
@@ -143,6 +151,25 @@ final trainingLandingSnapshotProvider =
       final upcoming = resolution.upcomingOccurrences
           .take(3)
           .toList(growable: false);
+      final currentWeekOccurrences = activeOccurrences
+          .where(
+            (item) =>
+                dates.compare(item.occurrence.effectiveLocalDate, weekStart) >=
+                    0 &&
+                dates.compare(item.occurrence.effectiveLocalDate, weekEnd) <= 0,
+          )
+          .toList(growable: false);
+      WeeklyTrainingGoalStatus? weeklyGoal;
+      try {
+        weeklyGoal = await ref
+            .read(weeklyTrainingGoalRepositoryProvider)
+            .status(
+              timezoneId: timezoneId,
+              planGoal: trainingPlanWeekGoal(currentWeekOccurrences),
+            );
+      } on Object catch (error, stackTrace) {
+        AppLogger.error('Training: weekly goal unavailable', error, stackTrace);
+      }
       return TrainingLandingSnapshot(
         localDate: localDate,
         timezoneId: timezoneId,
@@ -151,23 +178,13 @@ final trainingLandingSnapshotProvider =
         recentSessions: sessions.take(3).toList(growable: false),
         activeProgramName: calendar.activeProgramName,
         currentWeekStartLocalDate: weekStart,
-        currentWeekOccurrences: activeOccurrences
-            .where(
-              (item) =>
-                  dates.compare(
-                        item.occurrence.effectiveLocalDate,
-                        weekStart,
-                      ) >=
-                      0 &&
-                  dates.compare(item.occurrence.effectiveLocalDate, weekEnd) <=
-                      0,
-            )
-            .toList(growable: false),
+        currentWeekOccurrences: currentWeekOccurrences,
         lastEndedProgramName: calendar.lastEndedProgramName,
         lastEndedOutcome: calendar.lastEndedOutcome,
         activeDraft: activeDraft,
         activeStrengthDraft: resumableDraft,
         nextActionResolution: resolution,
+        weeklyGoal: weeklyGoal,
       );
     });
 
@@ -651,6 +668,33 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
     }
   }
 
+  Future<void> _editWeekGoal(
+    BuildContext context,
+    WeeklyTrainingGoalStatus status,
+  ) async {
+    final goal = await showIndiFitBottomSheet<int>(
+      context: context,
+      semanticLabel: 'Weekly goal',
+      builder: (_) => TrainingWeekGoalSheet(initialGoal: status.goal),
+    );
+    if (goal == null || !context.mounted) return;
+    try {
+      await ref.read(weeklyTrainingGoalRepositoryProvider).setUserGoal(goal);
+    } on Object catch (error, stackTrace) {
+      AppLogger.error('Training: weekly goal not saved', error, stackTrace);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Goal not saved. Try again.')),
+      );
+      return;
+    }
+    if (!context.mounted) return;
+    unawaited(IndiFitHaptics.confirmation());
+    ref
+      ..invalidate(trainingLandingSnapshotProvider)
+      ..invalidate(weeklyTrainingGoalStatusProvider);
+  }
+
   @override
   Widget build(BuildContext context) {
     final snapshot = ref.watch(trainingLandingSnapshotProvider);
@@ -697,6 +741,7 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
               : () => _resumeDraft(context, ref, _resumableDraftFor(data)!),
           onOpenPlan: () => context.push('/plan-library'),
           onOpenPlanActions: () => _showPlanActions(context, ref, data),
+          onEditWeekGoal: (status) => _editWeekGoal(context, status),
           onOpenCalendar: () => context.push('/calendar'),
           onOpenExercises: () => context.push('/exercises'),
           onOpenHistory: () => context.push('/workout-history'),
@@ -981,6 +1026,7 @@ class _DominantTrainingLandingBody extends StatelessWidget {
     required this.onResumeDraft,
     required this.onOpenPlan,
     required this.onOpenPlanActions,
+    required this.onEditWeekGoal,
     required this.onOpenCalendar,
     required this.onOpenExercises,
     required this.onOpenHistory,
@@ -994,6 +1040,7 @@ class _DominantTrainingLandingBody extends StatelessWidget {
   final VoidCallback? onResumeDraft;
   final VoidCallback onOpenPlan;
   final VoidCallback onOpenPlanActions;
+  final ValueChanged<WeeklyTrainingGoalStatus> onEditWeekGoal;
   final VoidCallback onOpenCalendar;
   final VoidCallback onOpenExercises;
   final VoidCallback onOpenHistory;
@@ -1010,6 +1057,10 @@ class _DominantTrainingLandingBody extends StatelessWidget {
     final planContext =
         data.nextActionResolution?.dominantScheduledOccurrence ??
         data.currentPlanContext;
+    final weeklyGoal = data.weeklyGoal;
+    final showWeek =
+        weeklyGoal != null ||
+        (activePlan && data.currentWeekOccurrences.isNotEmpty);
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(
@@ -1037,18 +1088,33 @@ class _DominantTrainingLandingBody extends StatelessWidget {
             item: planContext,
             onOpenActions: onOpenPlanActions,
           ),
-          if (data.currentWeekOccurrences.isNotEmpty) ...[
-            const SizedBox(height: B05Layout.space16),
-            const _SectionLabel(label: 'THIS WEEK'),
-            const SizedBox(height: B05Layout.space8),
-            _TrainingWeekStrip(
-              weekStartLocalDate:
-                  data.currentWeekStartLocalDate ??
-                  _trainingMondayForLocalDate(data.localDate),
-              occurrences: data.currentWeekOccurrences,
-              localDate: data.localDate,
+        ],
+        if (showWeek) ...[
+          const SizedBox(height: B05Layout.space16),
+          const _SectionLabel(label: 'THIS WEEK'),
+          const SizedBox(height: B05Layout.space8),
+          if (weeklyGoal != null) ...[
+            TrainingWeekGoalSummary(
+              status: weeklyGoal,
+              // A plan's goal is its schedule; only a no-plan goal is edited.
+              onEditGoal: weeklyGoal.source == WeeklyTrainingGoalSource.user
+                  ? () => onEditWeekGoal(weeklyGoal)
+                  : null,
             ),
+            const SizedBox(height: B05Layout.space8),
           ],
+          _TrainingWeekStrip(
+            weekStartLocalDate:
+                data.currentWeekStartLocalDate ??
+                weeklyGoal?.weekStartLocalDate ??
+                _trainingMondayForLocalDate(data.localDate),
+            occurrences: activePlan
+                ? data.currentWeekOccurrences
+                : const <CalendarOccurrenceReadItem>[],
+            trainedLocalDates:
+                weeklyGoal?.trainedLocalDates ?? const <String>{},
+            localDate: data.localDate,
+          ),
         ],
         if (nextWorkout != null) ...[
           const SizedBox(height: B05Layout.space16),
@@ -1449,11 +1515,13 @@ class _TrainingWeekStrip extends StatelessWidget {
     required this.weekStartLocalDate,
     required this.occurrences,
     required this.localDate,
+    this.trainedLocalDates = const <String>{},
   });
 
   final String weekStartLocalDate;
   final List<CalendarOccurrenceReadItem> occurrences;
   final String localDate;
+  final Set<String> trainedLocalDates;
 
   @override
   Widget build(BuildContext context) {
@@ -1474,6 +1542,9 @@ class _TrainingWeekStrip extends StatelessWidget {
                 date: start.add(Duration(days: index)),
                 isToday:
                     _formatDate(start.add(Duration(days: index))) == localDate,
+                trained: trainedLocalDates.contains(
+                  _formatDate(start.add(Duration(days: index))),
+                ),
                 occurrences: occurrences
                     .where(
                       (item) =>
@@ -1514,6 +1585,7 @@ class _TrainingWeekDay extends StatelessWidget {
     required this.date,
     required this.isToday,
     required this.occurrences,
+    this.trained = false,
   });
 
   final String label;
@@ -1521,9 +1593,19 @@ class _TrainingWeekDay extends StatelessWidget {
   final bool isToday;
   final List<CalendarOccurrenceReadItem> occurrences;
 
+  /// A workout was saved on this day, planned or not.
+  final bool trained;
+
   @override
   Widget build(BuildContext context) {
-    final status = _TrainingWeekStatus.from(occurrences);
+    final scheduledStatus = _TrainingWeekStatus.from(occurrences);
+    // A saved workout outranks a schedule that hasn't caught up (or none).
+    final status =
+        trained &&
+            scheduledStatus != _TrainingWeekStatus.complete &&
+            scheduledStatus != _TrainingWeekStatus.partial
+        ? _TrainingWeekStatus.trained
+        : scheduledStatus;
     final colors = context.b05Colors;
     final workoutName = occurrences.isEmpty
         ? null
@@ -1556,7 +1638,11 @@ class _TrainingWeekDay extends StatelessWidget {
               ),
             ),
             const SizedBox(height: B05Layout.space4),
-            Icon(status.icon, size: 18, color: status.color(context)),
+            Icon(
+              trained ? status.trainedIcon : status.icon,
+              size: 18,
+              color: status.color(context),
+            ),
             const SizedBox(height: B05Layout.space4),
             Text(
               '${date.day}',
@@ -1589,7 +1675,12 @@ enum _TrainingWeekStatus {
   complete,
   partial,
   skipped,
-  cancelled;
+  cancelled,
+  trained;
+
+  /// The filled tick for a day with a saved workout.
+  IconData get trainedIcon =>
+      this == partial ? Icons.timelapse_rounded : Icons.check_circle_rounded;
 
   IconData get icon => switch (this) {
     rest => Icons.circle_outlined,
@@ -1599,6 +1690,7 @@ enum _TrainingWeekStatus {
     partial => Icons.timelapse_rounded,
     skipped => Icons.skip_next_rounded,
     cancelled => Icons.remove_circle_outline_rounded,
+    trained => Icons.check_circle_rounded,
   };
 
   String get accessibleLabel => switch (this) {
@@ -1611,6 +1703,7 @@ enum _TrainingWeekStatus {
     partial => 'partially completed',
     skipped => 'skipped',
     cancelled => 'cancelled',
+    trained => 'workout saved',
   };
 
   Color color(BuildContext context) => switch (this) {
@@ -1621,6 +1714,7 @@ enum _TrainingWeekStatus {
     partial => context.b05Colors.warning.foreground,
     skipped => context.b05Colors.textSecondary,
     cancelled => context.b05Colors.textSecondary,
+    trained => context.b05Colors.success.foreground,
   };
 
   static _TrainingWeekStatus from(List<CalendarOccurrenceReadItem> items) {

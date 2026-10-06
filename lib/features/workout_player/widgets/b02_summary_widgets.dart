@@ -10,6 +10,7 @@ import '../../../data/repositories/b02_strength_execution_repository.dart';
 import '../../../data/repositories/calendar_repository.dart';
 import '../../progress/training_bests.dart';
 import '../../progress/training_bests_providers.dart';
+import '../../training/weekly_training_goal_providers.dart';
 import '../b02_strength_execution_controller.dart';
 import '../models/workout_completion_recap.dart';
 import '../workout_execution_context.dart';
@@ -51,6 +52,11 @@ class B02WorkoutCompletionSuccess extends ConsumerWidget {
       final detail = ref.watch(
         b02StrengthHistoryDetailProvider(savedSessionId),
       );
+      // Read only after the save, so this workout is already counted. A
+      // missing value simply leaves the line out.
+      final weeklyGoal = ref
+          .watch(weeklyTrainingGoalStatusProvider)
+          .valueOrNull;
       return detail.when(
         loading: () => SavedDetailsLoading(
           onDone: onDone,
@@ -64,6 +70,7 @@ class B02WorkoutCompletionSuccess extends ConsumerWidget {
           completionKind: completionKind,
           onDone: onDone,
           detailsUnavailable: true,
+          weeklyGoal: weeklyGoal,
         ),
         data: (history) => CompletionEvidence(
           // A null read is treated like unavailable persisted detail rather
@@ -73,6 +80,7 @@ class B02WorkoutCompletionSuccess extends ConsumerWidget {
           history: history,
           onDone: onDone,
           detailsUnavailable: history == null,
+          weeklyGoal: weeklyGoal,
         ),
       );
     }
@@ -208,6 +216,7 @@ class CompletionEvidence extends StatelessWidget {
     this.history,
     this.detailsUnavailable = false,
     this.showShareCard = false,
+    this.weeklyGoal,
   });
 
   final B02StrengthExecutionLaunch? launch;
@@ -216,6 +225,11 @@ class CompletionEvidence extends StatelessWidget {
   final CompletionKind completionKind;
   final bool detailsUnavailable;
   final bool showShareCard;
+
+  /// "2 of 3 workouts this week" on the just-saved summary only; history
+  /// detail leaves it null. PR-N turns the "Week goal done" case into the
+  /// summary's celebration.
+  final WeeklyTrainingGoalStatus? weeklyGoal;
 
   @override
   Widget build(BuildContext context) {
@@ -294,6 +308,15 @@ class CompletionEvidence extends StatelessWidget {
                         : 'Your workout is saved to history.',
                     textAlign: TextAlign.center,
                   ),
+                  if (weeklyGoal case final goal?) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      WeeklyTrainingGoalCopy.summary(goal),
+                      key: const Key('workout_summary_week_goal'),
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.titleSmall,
+                    ),
+                  ],
                   const SizedBox(height: 20),
                   if (history != null)
                     TrainingBestsSummaryBlock(sessionId: history!.sessionId),
