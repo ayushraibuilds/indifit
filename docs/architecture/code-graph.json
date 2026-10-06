@@ -1,9 +1,9 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "summary": {
-    "total_dart_files": 476,
-    "total_loc": 341327,
-    "total_internal_edges": 2374,
+    "total_dart_files": 477,
+    "total_loc": 341420,
+    "total_internal_edges": 2376,
     "external_package_count": 29,
     "catch_metrics": {
       "total_catches_all": 507,
@@ -5264,6 +5264,7 @@
         "lib/features/food_log/thali/thali_quick_adjust_hud.dart",
         "lib/features/food_log/widgets/food_portion_bottom_sheet.dart",
         "lib/features/food_log/widgets/household_portion_visual.dart",
+        "lib/features/food_log/widgets/portion_steps.dart",
         "lib/features/food_log/widgets/quick_add_macros_sheet.dart",
         "lib/features/food_log/widgets/saved_meal_edit_before_log_sheet.dart",
         "lib/features/nutrition_ai/ai_items_thali_handoff.dart",
@@ -11281,7 +11282,7 @@
       "path": "lib/features/dashboard/today_consumer_presentation.dart",
       "layer": "features",
       "sublayer": "features/dashboard",
-      "loc": 1000,
+      "loc": 1006,
       "imports": [
         "lib/core/nutrients.dart",
         "lib/core/nutrition_legacy_read_models.dart",
@@ -11802,7 +11803,7 @@
       "path": "lib/features/dashboard/widgets/today_nutrition_widgets.dart",
       "layer": "features",
       "sublayer": "features/dashboard",
-      "loc": 895,
+      "loc": 847,
       "imports": [
         "lib/core/di/providers.dart",
         "lib/core/presentation/consumer_copy.dart",
@@ -14111,7 +14112,8 @@
         "lib/features/food_log/food_search_view_models.dart",
         "lib/features/food_log/meal_presentation_registry.dart",
         "lib/features/food_log/widgets/food_search_widgets.dart",
-        "lib/features/food_log/widgets/household_portion_visual.dart"
+        "lib/features/food_log/widgets/household_portion_visual.dart",
+        "lib/features/food_log/widgets/portion_steps.dart"
       ],
       "imported_by": [
         "lib/features/food_log/food_search_screen.dart"
@@ -14128,7 +14130,7 @@
       "catches": [
         {
           "file": "lib/features/food_log/widgets/food_portion_bottom_sheet.dart",
-          "line": 451,
+          "line": 452,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -14138,7 +14140,7 @@
         },
         {
           "file": "lib/features/food_log/widgets/food_portion_bottom_sheet.dart",
-          "line": 530,
+          "line": 531,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -14148,7 +14150,7 @@
         },
         {
           "file": "lib/features/food_log/widgets/food_portion_bottom_sheet.dart",
-          "line": 535,
+          "line": 536,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -14267,6 +14269,26 @@
         "lib/core/theme/b05_semantic_colors.dart",
         "lib/core/typed_quantities.dart",
         "lib/core/widgets/b05_accessibility_primitives.dart"
+      ],
+      "imported_by": [
+        "lib/features/food_log/widgets/food_portion_bottom_sheet.dart"
+      ],
+      "parts": [],
+      "part_of": null,
+      "providers_defined": [],
+      "providers_used": [],
+      "routes_defined": [],
+      "catches": [],
+      "empty_catch_count": 0,
+      "total_catch_count": 0
+    },
+    "lib/features/food_log/widgets/portion_steps.dart": {
+      "path": "lib/features/food_log/widgets/portion_steps.dart",
+      "layer": "features",
+      "sublayer": "features/food_log",
+      "loc": 50,
+      "imports": [
+        "lib/core/typed_quantities.dart"
       ],
       "imported_by": [
         "lib/features/food_log/widgets/food_portion_bottom_sheet.dart"
@@ -15301,7 +15323,7 @@
       "path": "lib/features/onboarding/onboarding_screen.dart",
       "layer": "features",
       "sublayer": "features/onboarding",
-      "loc": 1343,
+      "loc": 1428,
       "imports": [
         "lib/core/config/app_preferences_keys.dart",
         "lib/core/di/providers.dart",
@@ -15335,7 +15357,7 @@
       "catches": [
         {
           "file": "lib/features/onboarding/onboarding_screen.dart",
-          "line": 177,
+          "line": 210,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -15345,7 +15367,7 @@
         },
         {
           "file": "lib/features/onboarding/onboarding_screen.dart",
-          "line": 438,
+          "line": 473,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -15355,7 +15377,7 @@
         },
         {
           "file": "lib/features/onboarding/onboarding_screen.dart",
-          "line": 468,
+          "line": 503,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
