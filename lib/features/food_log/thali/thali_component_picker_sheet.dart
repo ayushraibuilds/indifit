@@ -5,6 +5,7 @@ import '../../../core/theme/b05_semantic_colors.dart';
 import '../../../core/typed_quantities.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
 import '../nutrition_thali_controller.dart';
+import 'thali_quantity_label.dart';
 
 class ThaliComponentPickerSheet extends StatefulWidget {
   final NutritionThaliController controller;
@@ -58,8 +59,8 @@ class _ThaliComponentPickerSheetState extends State<ThaliComponentPickerSheet> {
   NutritionThaliFoodOption? _selectedFood;
   NutritionThaliRecipeOption? _selectedRecipe;
 
-  QuantityUnit _selectedUnit = QuantityUnit.gram;
-  String? _selectedMeasureId;
+  /// True: the food's own unit ("piece", "katori"); false: grams.
+  bool _ownUnitSelected = true;
 
   @override
   void initState() {
@@ -91,12 +92,14 @@ class _ThaliComponentPickerSheetState extends State<ThaliComponentPickerSheet> {
   }
 
   void _selectFood(NutritionThaliFoodOption food) {
+    final own = food.defaultQuantity;
     setState(() {
       _selectedFood = food;
       _selectedRecipe = null;
-      _selectedUnit = QuantityUnit.gram;
-      _selectedMeasureId = null;
-      _amountController.text = '100';
+      _ownUnitSelected = own != null;
+      _amountController.text = own == null
+          ? '100'
+          : _amountText(own.amount.asDouble);
     });
   }
 
@@ -104,8 +107,6 @@ class _ThaliComponentPickerSheetState extends State<ThaliComponentPickerSheet> {
     setState(() {
       _selectedRecipe = recipe;
       _selectedFood = null;
-      _selectedUnit = QuantityUnit.serving;
-      _selectedMeasureId = null;
       _amountController.text = '1';
     });
   }
@@ -119,21 +120,14 @@ class _ThaliComponentPickerSheetState extends State<ThaliComponentPickerSheet> {
     }
 
     if (_selectedFood != null) {
-      Quantity quantity;
-      if (_selectedUnit == QuantityUnit.householdReference &&
-          _selectedMeasureId != null) {
-        quantity = Quantity(
-          amount: QuantityAmount.fromNum(amount),
-          unit: QuantityUnit.householdReference,
-          context: QuantityContext(
-            householdMeasure: HouseholdMeasureReference(
-              measureType: _selectedMeasureId!,
-            ),
-          ),
-        );
-      } else {
-        quantity = Quantity.fromNum(amount: amount, unit: _selectedUnit);
-      }
+      final own = _selectedFood!.defaultQuantity;
+      final quantity = _ownUnitSelected && own != null
+          ? Quantity(
+              amount: QuantityAmount.fromNum(amount),
+              unit: own.unit,
+              context: own.context,
+            )
+          : Quantity.fromNum(amount: amount, unit: QuantityUnit.gram);
       widget.controller.addFood(_selectedFood!, quantity: quantity);
     } else if (_selectedRecipe != null) {
       widget.controller.addRecipe(
@@ -154,6 +148,10 @@ class _ThaliComponentPickerSheetState extends State<ThaliComponentPickerSheet> {
 
     Navigator.of(context).pop();
   }
+
+  static String _amountText(double value) => value == value.roundToDouble()
+      ? value.toStringAsFixed(0)
+      : value.toString();
 
   @override
   Widget build(BuildContext context) {
@@ -381,7 +379,6 @@ class _ThaliComponentPickerSheetState extends State<ThaliComponentPickerSheet> {
   Widget _buildPortionConfigCard(B05SemanticColors colors) {
     final title =
         _selectedFood?.displayName ?? _selectedRecipe?.recipeName ?? '';
-    final standardMeasures = _currentState.standardMeasures;
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -460,55 +457,41 @@ class _ThaliComponentPickerSheetState extends State<ThaliComponentPickerSheet> {
               const SizedBox(width: 8),
               Expanded(
                 child: _selectedFood != null
-                    ? SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: [
+                    ? Wrap(
+                        spacing: 6,
+                        children: [
+                          if (_selectedFood!.defaultQuantity != null)
                             ChoiceChip(
-                              label: const Text('g'),
-                              selected: _selectedUnit == QuantityUnit.gram,
+                              label: Text(
+                                thaliUnitLabel(_selectedFood!.defaultQuantity!),
+                              ),
+                              selected: _ownUnitSelected,
                               onSelected: (_) {
                                 setState(() {
-                                  _selectedUnit = QuantityUnit.gram;
-                                  _selectedMeasureId = null;
+                                  _ownUnitSelected = true;
+                                  _amountController.text = _amountText(
+                                    _selectedFood!
+                                        .defaultQuantity!
+                                        .amount
+                                        .asDouble,
+                                  );
+                                });
+                              },
+                            ),
+                          if (_selectedFood!.acceptsGrams &&
+                              _selectedFood!.defaultQuantity?.unit !=
+                                  QuantityUnit.gram)
+                            ChoiceChip(
+                              label: const Text('g'),
+                              selected: !_ownUnitSelected,
+                              onSelected: (_) {
+                                setState(() {
+                                  _ownUnitSelected = false;
                                   _amountController.text = '100';
                                 });
                               },
                             ),
-                            const SizedBox(width: 6),
-                            ChoiceChip(
-                              label: const Text('piece'),
-                              selected: _selectedUnit == QuantityUnit.piece,
-                              onSelected: (_) {
-                                setState(() {
-                                  _selectedUnit = QuantityUnit.piece;
-                                  _selectedMeasureId = null;
-                                  _amountController.text = '1';
-                                });
-                              },
-                            ),
-                            ...standardMeasures
-                                .take(4)
-                                .map(
-                                  (measure) => Padding(
-                                    padding: const EdgeInsets.only(left: 6),
-                                    child: ChoiceChip(
-                                      label: Text(measure.displayName),
-                                      selected:
-                                          _selectedMeasureId == measure.id,
-                                      onSelected: (_) {
-                                        setState(() {
-                                          _selectedUnit =
-                                              QuantityUnit.householdReference;
-                                          _selectedMeasureId = measure.id;
-                                          _amountController.text = '1';
-                                        });
-                                      },
-                                    ),
-                                  ),
-                                ),
-                          ],
-                        ),
+                        ],
                       )
                     : Text(
                         '1 Serving',

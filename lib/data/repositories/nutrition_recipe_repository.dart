@@ -640,6 +640,7 @@ class NutritionRecipeRepository {
               recipeVersionId: current.id,
               calculationRuleVersion: current.calcRuleVersion,
               measureId: row.measureId,
+              foodId: row.foodId,
             )!,
             position: row.position,
             preparationId: row.preparationId,
@@ -1264,12 +1265,14 @@ class NutritionRecipeRepository {
     String? recipeVersionId,
     String? calculationRuleVersion,
     String? measureId,
+    String? foodId,
   }) => _mapper.quantityFromStored(
     value,
     stableUnit,
     recipeVersionId: recipeVersionId,
     calculationRuleVersion: calculationRuleVersion,
     measureId: measureId,
+    foodId: foodId,
   );
 
   String _databaseUnitId(QuantityUnit unit) => _mapper.databaseUnitId(unit);

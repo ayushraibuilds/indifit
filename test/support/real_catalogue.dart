@@ -41,9 +41,7 @@ class RealCatalogue {
     // The first query opens the database: onCreate seeds the catalogue and
     // beforeOpen applies the bundled pack.
     await db.customSelect('SELECT 1').get();
-    final registry = NutrientRegistry.fromAssetFileSync(
-      'assets/data/nutrient_registry.json',
-    );
+    final registry = loadRegistry();
     final recipes = NutritionRecipeRepository(db: db);
     final consumption = NutritionConsumptionRepository(
       db: db,
@@ -74,6 +72,9 @@ class RealCatalogue {
       ),
     );
   }
+
+  static NutrientRegistry loadRegistry() =>
+      NutrientRegistry.fromAssetFileSync('assets/data/nutrient_registry.json');
 
   /// The stable id of the bundled food named [name] (exact display name).
   Future<String> foodId(String name) async {
