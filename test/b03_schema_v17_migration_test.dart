@@ -373,7 +373,16 @@ void main() {
           await db.select(db.nutritionNutrientDefinitions).get(),
           hasLength(18),
         );
-        expect(await db.select(db.nutritionFoodNutrientFacts).get(), isEmpty);
+        // The only facts are the bundled catalogue pack's (CAT-3); the v17
+        // migration itself invents none.
+        final facts = await db.select(db.nutritionFoodNutrientFacts).get();
+        expect(facts, isNotEmpty);
+        expect(
+          facts.where(
+            (fact) => !(fact.sourceRef ?? '').startsWith('catalog-pack:'),
+          ),
+          isEmpty,
+        );
         expect(await db.select(db.nutritionRecipes).get(), isEmpty);
         expect(await db.select(db.nutritionRecipeVersions).get(), isEmpty);
         expect(await db.select(db.nutritionRecipeIngredients).get(), isEmpty);

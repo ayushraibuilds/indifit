@@ -230,13 +230,17 @@ extension DatabaseSeeders on AppDatabase {
       return;
     }
     try {
+      // The common case, checked before any asset is read: already applied.
+      final latest = catalogState.version.max();
+      final installed = (await (selectOnly(
+        catalogState,
+      )..addColumns([latest])).getSingle()).read(latest);
+      if (installed != null && installed >= kBundledCatalogPackVersion) return;
       final contracts = await _loadV17Contracts();
       final nutrientIds = contracts.registry.definitions
           .map((definition) => definition.id)
           .toList(growable: false);
       final importer = CatalogPackImporter(db: this, nutrientIds: nutrientIds);
-      final installed = await importer.installedVersion();
-      if (installed != null && installed >= kBundledCatalogPackVersion) return;
       final manifest = CatalogPackManifest.parse(
         jsonDecode(await _loadV17AssetText(kBundledCatalogManifestAsset)),
       );

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "summary": {
     "total_dart_files": 482,
-    "total_loc": 343306,
+    "total_loc": 343310,
     "total_internal_edges": 2389,
     "external_package_count": 29,
     "catch_metrics": {
@@ -6095,7 +6095,7 @@
       "path": "lib/data/database/seeders/database_seeders.dart",
       "layer": "data",
       "sublayer": "data",
-      "loc": 549,
+      "loc": 553,
       "imports": [],
       "imported_by": [
         "lib/data/database/app_database.dart"
