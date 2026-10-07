@@ -35,13 +35,22 @@ class TrainingWeekGoalSummary extends StatelessWidget {
           ExcludeSemantics(
             child: SizedBox.square(
               dimension: 44,
-              child: CircularProgressIndicator(
-                key: const ValueKey('training_week_goal_ring'),
-                value: (status.completed / status.goal).clamp(0, 1).toDouble(),
-                strokeWidth: 5,
-                strokeCap: StrokeCap.round,
-                color: ringColor,
-                backgroundColor: colors.surfaceSubtle,
+              // Shows the current value on first build, then animates from
+              // the old value to the new one (instant with reduce motion).
+              child: TweenAnimationBuilder<double>(
+                tween: Tween(
+                  end: (status.completed / status.goal).clamp(0, 1).toDouble(),
+                ),
+                duration: B05MotionPolicy.transitionDuration(context),
+                curve: B05MotionPolicy.standardCurve,
+                builder: (context, value, _) => CircularProgressIndicator(
+                  key: const ValueKey('training_week_goal_ring'),
+                  value: value,
+                  strokeWidth: 5,
+                  strokeCap: StrokeCap.round,
+                  color: ringColor,
+                  backgroundColor: colors.surfaceSubtle,
+                ),
               ),
             ),
           ),

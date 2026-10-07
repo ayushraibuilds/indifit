@@ -1,6 +1,6 @@
 # Training and progress: premium feel and a weekly habit
 
-**Status:** approved direction (Ayush, 2026-10-06) · **Owner:** Claude (code), Ayush (review, device feel checks) · **Last updated:** 2026-10-07 (PR-M: TP-4, TP-5)
+**Status:** approved direction (Ayush, 2026-10-06) · **Owner:** Claude (code), Ayush (review, device feel checks) · **Last updated:** 2026-10-07 (PR-N: TP-6, TP-7)
 
 Related:
 - [LAUNCH_ROADMAP_FINAL.md](LAUNCH_ROADMAP_FINAL.md): launch gates, the ready queue (§ 2.5) and the hard rules (§ 0). This plan adds PR-L, M and N to v1; PR-O to PR-S go in the ready queue.
@@ -22,8 +22,8 @@ Update this table in every PR that touches training or progress UI. IDs are refe
 | TP-3 | Bests on the workout summary, share card and exercise history ("Best ever") | **v1** | L | TP-1 | In progress (PR-L) |
 | TP-4 | Weekly training goal: goal source, goal history, weekly streak calculator | **v1** | M | — | Done in PR-M (`feat/weekly-training-goal`) |
 | TP-5 | Weekly goal on screen: Training week card, Progress consistency, summary line; daily streak off training surfaces | **v1** | M | TP-4 | Done in PR-M (`feat/weekly-training-goal`) |
-| TP-6 | Summary as the payoff: headline, "vs last time" per exercise, one celebration moment, "Total lifted" | **v1** | N | TP-3, TP-5 | Not started |
-| TP-7 | Motion and haptics map: `success()` and `restEnd()` haptics, set-row tick, count-up numbers, reduce-motion tests | **v1** | N | — | Not started |
+| TP-6 | Summary as the payoff: headline, "vs last time" per exercise, one celebration moment, "Total lifted" | **v1** | N | TP-3, TP-5 | In progress (PR-N, `feat/workout-payoff-motion`) |
+| TP-7 | Motion and haptics map: `success()` and `restEnd()` haptics, set-row tick, count-up numbers, reduce-motion tests | **v1** | N | — | In progress (PR-N, `feat/workout-payoff-motion`) |
 | TP-8 | Player sets as rows ("60 kg × 8 ✓"), no spreadsheet header; full workout title | Next | O | PR-D | Not started |
 | TP-9 | Progress visuals: muscles-this-week body map, 12-week consistency heatmap (**Plus**, decided 2026-10-06); recent bests list (free) | Plus-gated (list: Next) | P | TP-1, TP-4; Plus entitlement | Not started |
 | TP-10 | `animations` package: card-to-screen and between-exercise transitions | Next | P | — | Not started |

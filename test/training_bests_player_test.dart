@@ -152,6 +152,13 @@ void main() {
     expect(find.text('New best'), findsNothing);
     expect(find.byKey(const ValueKey('compact-set-new-best')), findsNothing);
     expect(haptics, [IndiFitHapticType.confirmation]);
+    // TP-7: the saved row ticks.
+    final tick = find.byKey(ValueKey('compact-set-logged-${saved.id}'));
+    expect(tick, findsOneWidget);
+    expect(
+      find.descendant(of: tick, matching: find.byIcon(Icons.check_rounded)),
+      findsOneWidget,
+    );
     semantics.dispose();
   });
 }

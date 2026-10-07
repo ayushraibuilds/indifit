@@ -45,6 +45,11 @@ abstract final class AppPreferenceKeys {
   /// JSON `{weekStart: goal}`, so each past week keeps the goal it had.
   static const trainingWeekGoals = 'training_week_goals_v1';
 
+  /// Saved session IDs whose summary already showed its one celebration (a
+  /// new best or the week goal met), newest last, at most 200. Device-only
+  /// presentation state, so it is not in backups.
+  static const trainingBestsCelebrated = 'training_bests_celebrated_v1';
+
   // --- User Profile & Goals (Active - exact disk strings) ---
   static const userName = 'user_name';
   static const userAge = 'user_age';
