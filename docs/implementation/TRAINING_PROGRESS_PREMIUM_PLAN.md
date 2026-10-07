@@ -377,7 +377,7 @@ Sources: `https://pub.dev/api/packages/<name>` and `/score`, read 2026-10-06.
 ### TP-8 … TP-14
 Each gets its own section when an agent picks it up. Their tests follow the same pattern: pure logic first, then a widget test, then goldens.
 
-**Every PR in this plan runs:** `flutter analyze`, the full `flutter test` in a scratchpad worktree (never in the main checkout), `python3 tool/generate_code_graph.py`, and a golden refresh when UI changed.
+**Every PR in this plan runs:** `flutter analyze`, the full `flutter test` in a scratchpad worktree (never in the main checkout), `python3 tool/generate_code_graph.py --ci` (the graph itself isn't committed), and a golden refresh when UI changed.
 
 ---
 
