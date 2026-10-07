@@ -39,8 +39,10 @@ jobs:
           fi
           changed="$(git diff --name-only "origin/$BASE_REF...HEAD")"
           echo "$changed"
-          # Docs and the backend (which has its own job) don't need Flutter.
-          if echo "$changed" | grep -qvE '^(docs/|doc/|backend/)|\.md$'; then
+          # Docs and the backend (which has its own job) don't need Flutter,
+          # except the synonyms the catalogue packs are built from (CAT-5).
+          if echo "$changed" | grep -qvE '^(docs/|doc/|backend/)|\.md$' ||
+            echo "$changed" | grep -qx 'backend/data/indian_synonyms.json'; then
             echo "flutter=true" >> "$GITHUB_OUTPUT"
           else
             echo "flutter=false" >> "$GITHUB_OUTPUT"
