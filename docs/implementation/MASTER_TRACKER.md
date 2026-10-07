@@ -47,7 +47,7 @@ Batches B01–B05 and the post-v1 and R07/R08 tracks are merged into `main`. The
 | Flutter tests (goldens excluded) | 2,504 passed |
 | Backend tests (pytest) | 73 passed |
 | iOS release build | Unsigned app produced (51.3 MB) |
-| Generated Drift output and code graph | Reproducible; CI checks both |
+| Generated Drift output and code graph | Drift output is reproducible and CI checks it. The code graph is no longer committed: CI runs the architecture gate (`--ci`) and uploads the graph as an artifact. |
 | AI eval (`gemini-3.8-flash`, 64 meals) | Recall 100 %, catalogue match 100 %, auto-matched 93.2 %, wrong auto-match 0 %, kcal error 3.4 %. Results: [`tool/ai_eval/results/`](../../tool/ai_eval/results/). |
 
 ## P1 status (2026-10-04)
