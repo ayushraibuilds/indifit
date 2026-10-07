@@ -11,7 +11,9 @@ import '../core/services/notification_service.dart';
 import '../core/services/rest_presence_service.dart';
 import '../core/theme/app_theme.dart';
 import '../core/utils/app_logger.dart';
+import '../data/catalog/catalog_update_service.dart';
 import '../data/database/app_database.dart';
+import '../features/settings/food_database_providers.dart';
 import 'database_readiness.dart';
 import 'database_recovery_screen.dart';
 
@@ -76,6 +78,19 @@ class _IndiFitAppState extends ConsumerState<IndiFitApp>
     unawaited(
       AutoBackupService.performBackup(db).catchError((e) {
         AppLogger.warning('Auto-backup startup check failed: $e');
+      }),
+    );
+    _checkFoodDatabaseUpdates();
+  }
+
+  /// At most once a day, and never in Offline Mode or without a manifest
+  /// URL; the service owns those rules (CAT-7).
+  void _checkFoodDatabaseUpdates() {
+    if (!_bootstrapped) return;
+    unawaited(
+      ref.read(catalogUpdateServiceProvider).checkOnResume().catchError((e) {
+        AppLogger.warning('Food database update check failed: $e');
+        return const CatalogUpdateResult(CatalogUpdateOutcome.failed);
       }),
     );
   }
@@ -151,6 +166,7 @@ class _IndiFitAppState extends ConsumerState<IndiFitApp>
     if (state == AppLifecycleState.resumed) {
       ref.read(civilDateRevisionProvider.notifier).refresh();
       _queueReminderReconciliation(refreshTimezone: true);
+      _checkFoodDatabaseUpdates();
       // Rest notification actions taken in the background are applied by the
       // player screen, which owns the live workout (on resume and on open).
     }

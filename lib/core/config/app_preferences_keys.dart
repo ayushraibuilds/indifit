@@ -114,6 +114,14 @@ abstract final class AppPreferenceKeys {
   // --- Food & Diary ---
   static const prefDiaryMealSlots = 'pref_diary_meal_slots';
 
+  // --- Food database updates (device-local; CAT-7) ---
+  static const catalogUpdateAllowMobileData =
+      'catalog_update_allow_mobile_data';
+  static const catalogUpdateLastCheckAt = 'catalog_update_last_check_at';
+  static const catalogUpdateLastOutcome = 'catalog_update_last_outcome';
+  static const catalogUpdateManifestEtag = 'catalog_update_manifest_etag';
+  static const catalogUpdateManifestJson = 'catalog_update_manifest_json';
+
   // --- Achievements & Weekly Actions ---
   static const unlockedAchievementIds = 'unlocked_achievement_ids';
   static const weeklyActionType = 'weekly_action_type';

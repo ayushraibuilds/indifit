@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/widgets/b05_accessibility_primitives.dart';
+import 'food_data_credits.dart';
 
 class AboutCreditsScreen extends StatelessWidget {
   const AboutCreditsScreen({super.key});
@@ -34,15 +35,13 @@ class AboutCreditsScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: B05Layout.space12),
                 const _Credit(
-                  title: 'Open Food Facts',
-                  detail:
-                      'Packaged-food search and barcode results come from Open Food Facts when you use those features. Its data is available under the Open Database License (ODbL).',
+                  title: FoodDataCredits.openFoodFactsTitle,
+                  detail: FoodDataCredits.openFoodFacts,
                 ),
                 const SizedBox(height: B05Layout.space12),
                 const _Credit(
-                  title: 'IndiFit food catalogue',
-                  detail:
-                      'Nutrition values for the built-in Indian dishes are IndiFit estimates. They have not yet been reviewed by a dietitian.',
+                  title: FoodDataCredits.catalogueTitle,
+                  detail: FoodDataCredits.catalogue,
                 ),
                 const SizedBox(height: B05Layout.space20),
                 B05ActionButton(

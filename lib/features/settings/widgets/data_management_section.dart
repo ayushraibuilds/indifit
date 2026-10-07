@@ -709,7 +709,7 @@ class DataManagementSection extends ConsumerWidget {
           iconColor: context.b05Colors.info.indicator,
           title: 'Offline mode',
           subtitle:
-              'Block app-initiated online food search, AI meal features and crash reporting.',
+              'Block app-initiated online food search, food database updates, AI meal features and crash reporting.',
           value: state.offlineOnly,
           requestNotificationPermission: false,
           onChanged: (value) => ref
