@@ -219,5 +219,25 @@ void main() {
         '0.001235 kilograms',
       );
     });
+
+    test('formatter says one piece, not one pieces (UX-18)', () {
+      String format(String amount, QuantityUnit unit) =>
+          QuantityFormatter.format(
+            Quantity.fromDecimal(amount: amount, unit: unit),
+          );
+
+      expect(format('1', QuantityUnit.piece), '1 piece');
+      expect(format('1.0', QuantityUnit.piece), '1 piece');
+      expect(format('2', QuantityUnit.piece), '2 pieces');
+      expect(format('1', QuantityUnit.gram), '1 gram');
+      expect(format('150', QuantityUnit.gram), '150 grams');
+      expect(format('0.5', QuantityUnit.millilitre), '0.5 millilitres');
+      expect(
+        QuantityUnitRegistry.definitionFor(
+          QuantityUnit.serving,
+        ).labelFor(QuantityAmount.one),
+        'serving',
+      );
+    });
   });
 }

@@ -463,7 +463,7 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
                         Text(
                           hasServing
                               ? 'Makes ${_formatServingCount(version.servingDefinition!.count)} serving${version.servingDefinition!.count.asDouble == 1.0 ? '' : 's'}'
-                              : 'Total yield: ${version.yieldQuantity!.amount} ${version.yieldQuantity!.definition.displayLabel}',
+                              : 'Total yield: ${version.yieldQuantity!.amount} ${version.yieldQuantity!.definition.labelFor(version.yieldQuantity!.amount)}',
                           style: const TextStyle(fontWeight: FontWeight.w700),
                         ),
                         Text(
@@ -532,7 +532,7 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
                         ),
                       ),
                       Text(
-                        '${ingredient.quantity.amount} ${ingredient.quantity.definition.displayLabel}',
+                        '${ingredient.quantity.amount} ${ingredient.quantity.definition.labelFor(ingredient.quantity.amount)}',
                         style: TextStyle(
                           color: context.b05Colors.textSecondary,
                           fontWeight: FontWeight.w500,
