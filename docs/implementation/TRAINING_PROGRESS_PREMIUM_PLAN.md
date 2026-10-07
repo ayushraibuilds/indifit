@@ -24,7 +24,7 @@ Update this table in every PR that touches training or progress UI. IDs are refe
 | TP-5 | Weekly goal on screen: Training week card, Progress consistency, summary line; daily streak off training surfaces | **v1** | M | TP-4 | Merged (#67) |
 | TP-6 | Summary as the payoff: headline, "vs last time" per exercise, one celebration moment, "Total lifted" | **v1** | N | TP-3, TP-5 | Merged (#68) |
 | TP-7 | Motion and haptics map: `success()` and `restEnd()` haptics, set-row tick, count-up numbers, reduce-motion tests | **v1** | N | — | Merged (#68) |
-| TP-8 | Player sets as rows ("60 kg × 8 ✓"), no spreadsheet header; full workout title | Next | O | PR-D | Not started |
+| TP-8 | Player sets as rows ("60 kg × 8 ✓"), no spreadsheet header; full workout title | Next | O | PR-D | In progress (PR-O `feat/player-set-rows`): one row per set, "Set 2 · 8–12 reps" with a faint "Last 60 kg × 8" while to come and "✓ 60 kg × 8" once logged; no PLANNED/ACTUAL/STATUS header and no separate stacked layout. Planned workouts are titled with the session name ("Full Body A") from the occurrence snapshot; saved names are unchanged. |
 | TP-9 | Progress visuals: muscles-this-week body map, 12-week consistency heatmap (**Plus**, decided 2026-10-06); recent bests list (free) | Plus-gated (list: Next) | P | TP-1, TP-4; Plus entitlement | Not started |
 | TP-10 | `animations` package: card-to-screen and between-exercise transitions | Next | P | — | Not started |
 | TP-11 | Dependency housekeeping: remove `percent_indicator`; upgrade `fl_chart` when charts are touched | Next | P | — | Not started |
