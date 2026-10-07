@@ -1,0 +1,152 @@
+# C-09: templated variants retired into their base foods. Retired foods stay
+# in the pack (past logs resolve) but leave search. Never delete or reuse an id.
+version: 2
+retire:
+  - id: food-seed-0385
+    name: "Paneer Butter Masala (Double Paneer)"
+    replaced_by: food-seed-0384  # Paneer Butter Masala
+    reason: "Templated \"Double Paneer\" variant (C-09): twice the base kcal in the same 1 katori, with no measure that explains it. Log more of the base instead."
+  - id: food-seed-0256
+    name: "Kadai Paneer (Double Paneer)"
+    replaced_by: food-seed-0255  # Kadai Paneer
+    reason: "Templated \"Double Paneer\" variant (C-09): twice the base kcal in the same 1 katori, with no measure that explains it. Log more of the base instead."
+  - id: food-seed-0487
+    name: "Shahi Paneer (Double Paneer)"
+    replaced_by: food-seed-0486  # Shahi Paneer
+    reason: "Templated \"Double Paneer\" variant (C-09): twice the base kcal in the same 1 katori, with no measure that explains it. Log more of the base instead."
+  - id: food-seed-0376
+    name: "Palak Paneer (Double Paneer)"
+    replaced_by: food-seed-0375  # Palak Paneer
+    reason: "Templated \"Double Paneer\" variant (C-09): twice the base kcal in the same 1 katori, with no measure that explains it. Log more of the base instead."
+  - id: food-seed-0382
+    name: "Paneer Bhurji (Double Paneer)"
+    replaced_by: food-seed-0381  # Paneer Bhurji
+    reason: "Templated \"Double Paneer\" variant (C-09): twice the base kcal in the same 1 katori, with no measure that explains it. Log more of the base instead."
+  - id: food-seed-0316
+    name: "Mattar Paneer (Double Paneer)"
+    replaced_by: food-seed-0315  # Mattar Paneer
+    reason: "Templated \"Double Paneer\" variant (C-09): twice the base kcal in the same 1 katori, with no measure that explains it. Log more of the base instead."
+  - id: food-seed-0405
+    name: "Paneer Tikka (5 pcs) (Double Paneer)"
+    replaced_by: food-seed-0404  # Paneer Tikka (5 pcs)
+    reason: "Templated \"Double Paneer\" variant (C-09): twice the base kcal in the same 1 katori, with no measure that explains it. Log more of the base instead."
+  - id: food-seed-0388
+    name: "Paneer Lababdar (Double Paneer)"
+    replaced_by: food-seed-0387  # Paneer Lababdar
+    reason: "Templated \"Double Paneer\" variant (C-09): twice the base kcal in the same 1 katori, with no measure that explains it. Log more of the base instead."
+  - id: food-seed-0135
+    name: "Chicken Curry (North Indian style) (Extra Chicken/Meat pieces)"
+    replaced_by: food-seed-0133  # Chicken Curry (North Indian style)
+    reason: "Templated \"extra chicken/meat\" variant (C-09): 1.4x the base kcal in the same measure, and on egg and fish dishes the label is wrong. Log more of the base instead."
+  - id: food-seed-0100
+    name: "Butter Chicken (Murgh Makhani) (Extra Chicken/Meat pieces)"
+    replaced_by: food-seed-0098  # Butter Chicken (Murgh Makhani)
+    reason: "Templated \"extra chicken/meat\" variant (C-09): 1.4x the base kcal in the same measure, and on egg and fish dishes the label is wrong. Log more of the base instead."
+  - id: food-seed-0141
+    name: "Chicken Tikka (6 pcs) (Extra Chicken/Meat pieces)"
+    replaced_by: food-seed-0139  # Chicken Tikka (6 pcs)
+    reason: "Templated \"extra chicken/meat\" variant (C-09): 1.4x the base kcal in the same measure, and on egg and fish dishes the label is wrong. Log more of the base instead."
+  - id: food-seed-0516
+    name: "Tandoori Chicken (Half) (Extra Chicken/Meat pieces)"
+    replaced_by: food-seed-0514  # Tandoori Chicken (Half)
+    reason: "Templated \"extra chicken/meat\" variant (C-09): 1.4x the base kcal in the same measure, and on egg and fish dishes the label is wrong. Log more of the base instead."
+  - id: food-seed-0138
+    name: "Chicken Korma (Extra Chicken/Meat pieces)"
+    replaced_by: food-seed-0136  # Chicken Korma
+    reason: "Templated \"extra chicken/meat\" variant (C-09): 1.4x the base kcal in the same measure, and on egg and fish dishes the label is wrong. Log more of the base instead."
+  - id: food-seed-0132
+    name: "Chicken Biryani (Hyderabadi) (Extra Chicken/Meat pieces)"
+    replaced_by: food-seed-0130  # Chicken Biryani (Hyderabadi)
+    reason: "Templated \"extra chicken/meat\" variant (C-09): 1.4x the base kcal in the same measure, and on egg and fish dishes the label is wrong. Log more of the base instead."
+  - id: food-seed-0183
+    name: "Egg Curry (2 Eggs) (Extra Chicken/Meat pieces)"
+    replaced_by: food-seed-0181  # Egg Curry (2 Eggs)
+    reason: "Templated \"extra chicken/meat\" variant (C-09): 1.4x the base kcal in the same measure, and on egg and fish dishes the label is wrong. Log more of the base instead."
+  - id: food-seed-0180
+    name: "Egg Bhurji (2 Eggs) (Extra Chicken/Meat pieces)"
+    replaced_by: food-seed-0178  # Egg Bhurji (2 Eggs)
+    reason: "Templated \"extra chicken/meat\" variant (C-09): 1.4x the base kcal in the same measure, and on egg and fish dishes the label is wrong. Log more of the base instead."
+  - id: food-seed-0091
+    name: "Boiled Eggs (2 pieces) (Extra Chicken/Meat pieces)"
+    replaced_by: food-seed-0089  # Boiled Eggs (2 pieces)
+    reason: "Templated \"extra chicken/meat\" variant (C-09): 1.4x the base kcal in the same measure, and on egg and fish dishes the label is wrong. Log more of the base instead."
+  - id: food-seed-0186
+    name: "Egg White Omelette (3 Eggs) (Extra Chicken/Meat pieces)"
+    replaced_by: food-seed-0184  # Egg White Omelette (3 Eggs)
+    reason: "Templated \"extra chicken/meat\" variant (C-09): 1.4x the base kcal in the same measure, and on egg and fish dishes the label is wrong. Log more of the base instead."
+  - id: food-seed-0358
+    name: "Mutton Rogan Josh (Extra Chicken/Meat pieces)"
+    replaced_by: food-seed-0356  # Mutton Rogan Josh
+    reason: "Templated \"extra chicken/meat\" variant (C-09): 1.4x the base kcal in the same measure, and on egg and fish dishes the label is wrong. Log more of the base instead."
+  - id: food-seed-0355
+    name: "Mutton Biryani (Extra Chicken/Meat pieces)"
+    replaced_by: food-seed-0353  # Mutton Biryani
+    reason: "Templated \"extra chicken/meat\" variant (C-09): 1.4x the base kcal in the same measure, and on egg and fish dishes the label is wrong. Log more of the base instead."
+  - id: food-seed-0195
+    name: "Fish Curry (Bengali style) (Extra Chicken/Meat pieces)"
+    replaced_by: food-seed-0193  # Fish Curry (Bengali style)
+    reason: "Templated \"extra chicken/meat\" variant (C-09): 1.4x the base kcal in the same measure, and on egg and fish dishes the label is wrong. Log more of the base instead."
+  - id: food-seed-0198
+    name: "Fish Fry (Amritsari) (Extra Chicken/Meat pieces)"
+    replaced_by: food-seed-0196  # Fish Fry (Amritsari)
+    reason: "Templated \"extra chicken/meat\" variant (C-09): 1.4x the base kcal in the same measure, and on egg and fish dishes the label is wrong. Log more of the base instead."
+  - id: food-seed-0479
+    name: "Samosa (1 piece) (With extra cheese / butter)"
+    replaced_by: food-seed-0477  # Samosa (1 piece)
+    reason: "Templated \"extra cheese / butter\" variant (C-09): cheese and butter are different additions, and the label is nonsense on most of these dishes."
+  - id: food-seed-0371
+    name: "Onion Pakora (4-5 pieces) (With extra cheese / butter)"
+    replaced_by: food-seed-0369  # Onion Pakora (4-5 pieces)
+    reason: "Templated \"extra cheese / butter\" variant (C-09): cheese and butter are different additions, and the label is nonsense on most of these dishes."
+  - id: food-seed-0395
+    name: "Paneer Pakora (3 pieces) (With extra cheese / butter)"
+    replaced_by: food-seed-0393  # Paneer Pakora (3 pieces)
+    reason: "Templated \"extra cheese / butter\" variant (C-09): cheese and butter are different additions, and the label is nonsense on most of these dishes."
+  - id: food-seed-0166
+    name: "Dhokla (2 pieces) (With extra cheese / butter)"
+    replaced_by: food-seed-0164  # Dhokla (2 pieces)
+    reason: "Templated \"extra cheese / butter\" variant (C-09): cheese and butter are different additions, and the label is nonsense on most of these dishes."
+  - id: food-seed-0240
+    name: "Idli with Sambar (2 Idlis) (With extra cheese / butter)"
+    replaced_by: food-seed-0238  # Idli with Sambar (2 Idlis)
+    reason: "Templated \"extra cheese / butter\" variant (C-09): cheese and butter are different additions, and the label is nonsense on most of these dishes."
+  - id: food-seed-0320
+    name: "Medu Vada with Sambar (2 Vadas) (With extra cheese / butter)"
+    replaced_by: food-seed-0318  # Medu Vada with Sambar (2 Vadas)
+    reason: "Templated \"extra cheese / butter\" variant (C-09): cheese and butter are different additions, and the label is nonsense on most of these dishes."
+  - id: food-seed-0421
+    name: "Plain Dosa with Chutney (With extra cheese / butter)"
+    replaced_by: food-seed-0419  # Plain Dosa with Chutney
+    reason: "Templated \"extra cheese / butter\" variant (C-09): cheese and butter are different additions, and the label is nonsense on most of these dishes."
+  - id: food-seed-0305
+    name: "Masala Dosa (With extra cheese / butter)"
+    replaced_by: food-seed-0303  # Masala Dosa
+    reason: "Templated \"extra cheese / butter\" variant (C-09): cheese and butter are different additions, and the label is nonsense on most of these dishes."
+  - id: food-seed-0455
+    name: "Rava Dosa (With extra cheese / butter)"
+    replaced_by: food-seed-0453  # Rava Dosa
+    reason: "Templated \"extra cheese / butter\" variant (C-09): cheese and butter are different additions, and the label is nonsense on most of these dishes."
+  - id: food-seed-0552
+    name: "Veg Hakka Noodles (With extra cheese / butter)"
+    replaced_by: food-seed-0550  # Veg Hakka Noodles
+    reason: "Templated \"extra cheese / butter\" variant (C-09): cheese and butter are different additions, and the label is nonsense on most of these dishes."
+  - id: food-seed-0032
+    name: "Aloo Tikki (1 piece) (With extra cheese / butter)"
+    replaced_by: food-seed-0030  # Aloo Tikki (1 piece)
+    reason: "Templated \"extra cheese / butter\" variant (C-09): cheese and butter are different additions, and the label is nonsense on most of these dishes."
+  - id: food-seed-0409
+    name: "Pani Puri / Golgappa (6 pieces) (With extra cheese / butter)"
+    replaced_by: food-seed-0407  # Pani Puri / Golgappa (6 pieces)
+    reason: "Templated \"extra cheese / butter\" variant (C-09): cheese and butter are different additions, and the label is nonsense on most of these dishes."
+  - id: food-seed-0075
+    name: "Bhel Puri (With extra cheese / butter)"
+    replaced_by: food-seed-0073  # Bhel Puri
+    reason: "Templated \"extra cheese / butter\" variant (C-09): cheese and butter are different additions, and the label is nonsense on most of these dishes."
+  - id: food-seed-0415
+    name: "Pav Bhaji (2 Pavs) (With extra cheese / butter)"
+    replaced_by: food-seed-0413  # Pav Bhaji (2 Pavs)
+    reason: "Templated \"extra cheese / butter\" variant (C-09): cheese and butter are different additions, and the label is nonsense on most of these dishes."
+  - id: food-seed-0549
+    name: "Vada Pav (1 piece) (With extra cheese / butter)"
+    replaced_by: food-seed-0547  # Vada Pav (1 piece)
+    reason: "Templated \"extra cheese / butter\" variant (C-09): cheese and butter are different additions, and the label is nonsense on most of these dishes."

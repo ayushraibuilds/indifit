@@ -4,6 +4,7 @@ import 'package:crypto/crypto.dart';
 import 'package:drift/drift.dart' hide isNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:indifit/data/catalog/catalog_pack_importer.dart';
 import 'package:indifit/data/database/app_database.dart';
 
 import 'fixtures/b03_migration_backup_harness.dart';
@@ -357,7 +358,12 @@ void main() {
         final after = await B03LogicalSnapshot.capture(db);
         before.assertLogicallyEquals(after);
         expect(await db.select(db.nutritionFoods).get(), hasLength(598));
-        expect(await db.select(db.nutritionFoodAliases).get(), hasLength(15));
+        // The 15 manifest aliases; the bundled pack adds its own (CAT-6).
+        final aliases = await db.select(db.nutritionFoodAliases).get();
+        expect(
+          aliases.where((alias) => alias.source != kCatalogPackAliasSource),
+          hasLength(15),
+        );
         final reviewedMapping = await (db.select(
           db.nutritionLegacyFoodMappings,
         )..where((row) => row.legacyFoodItemId.equals(1))).getSingle();

@@ -2,8 +2,8 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "summary": {
     "total_dart_files": 494,
-    "total_loc": 345669,
-    "total_internal_edges": 2441,
+    "total_loc": 345796,
+    "total_internal_edges": 2442,
     "external_package_count": 30,
     "catch_metrics": {
       "total_catches_all": 517,
@@ -2508,9 +2508,10 @@
       "path": "lib/core/fixtures/food_identity_manifest.dart",
       "layer": "core",
       "sublayer": "core",
-      "loc": 2105,
+      "loc": 2171,
       "imports": [],
       "imported_by": [
+        "lib/data/catalog/catalog_pack_importer.dart",
         "lib/data/database/app_database.dart",
         "lib/data/repositories/nutrition_food_catalog_repository.dart"
       ],
@@ -5908,7 +5909,7 @@
       "path": "lib/data/catalog/catalog_pack.dart",
       "layer": "data",
       "sublayer": "data",
-      "loc": 496,
+      "loc": 515,
       "imports": [
         "lib/core/typed_quantities.dart"
       ],
@@ -5927,7 +5928,7 @@
       "catches": [
         {
           "file": "lib/data/catalog/catalog_pack.dart",
-          "line": 199,
+          "line": 210,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -5943,8 +5944,9 @@
       "path": "lib/data/catalog/catalog_pack_importer.dart",
       "layer": "data",
       "sublayer": "data",
-      "loc": 318,
+      "loc": 360,
       "imports": [
+        "lib/core/fixtures/food_identity_manifest.dart",
         "lib/data/database/app_database.dart",
         "lib/data/catalog/catalog_pack.dart"
       ],

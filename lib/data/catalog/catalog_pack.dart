@@ -15,7 +15,8 @@ const int kCatalogPackFormat = 1;
 
 /// The pack bundled with this app build. A device without a catalogue state
 /// at or above this version applies it on create, upgrade or next open.
-const int kBundledCatalogPackVersion = 1;
+/// Pack 2 is built by tool/catalog/build.py (CAT-5, CAT-6).
+const int kBundledCatalogPackVersion = 2;
 const String kBundledCatalogManifestAsset = 'assets/catalog/manifest.json';
 const String kBundledCatalogAssetDirectory = 'assets/catalog/';
 
@@ -103,6 +104,14 @@ class CatalogPackServing {
   });
 }
 
+/// Another name a food is searched by ("Arhar Dal" for Toor Dal).
+class CatalogPackAlias {
+  final String text;
+  final String locale;
+
+  const CatalogPackAlias({required this.text, required this.locale});
+}
+
 class CatalogPackFood {
   final String id;
   final String displayName;
@@ -112,6 +121,7 @@ class CatalogPackFood {
   final CatalogPackBasis basis;
   final Map<String, double> values;
   final List<CatalogPackServing> servings;
+  final List<CatalogPackAlias> aliases;
 
   const CatalogPackFood({
     required this.id,
@@ -122,6 +132,7 @@ class CatalogPackFood {
     required this.basis,
     required this.values,
     required this.servings,
+    this.aliases = const [],
   });
 
   CatalogPackServing get defaultServing =>
@@ -394,6 +405,13 @@ class CatalogPack {
         'Food $id is per 100 g, so its default serving needs grams.',
       );
     }
+    final aliases = [
+      for (final entry in _list(json['aliases'] ?? const [], 'food.aliases'))
+        CatalogPackAlias(
+          text: _text(_map(entry, 'alias')['text'], 'alias.text'),
+          locale: _text(_map(entry, 'alias')['locale'], 'alias.locale'),
+        ),
+    ];
     return CatalogPackFood(
       id: id,
       displayName: _text(json['display_name'], 'food.display_name'),
@@ -403,6 +421,7 @@ class CatalogPack {
       basis: basis,
       values: Map.unmodifiable(values),
       servings: List.unmodifiable(servings),
+      aliases: List.unmodifiable(aliases),
     );
   }
 }

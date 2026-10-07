@@ -75,20 +75,35 @@ void main() {
       expect(kcal, ['170', '210', '155']);
     });
 
-    test('grams on a food counted in katoris are refused, not guessed', () {
+    test('grams convert only through a known gram weight', () async {
+      // Pack v2 gives katori servings the app's 150 g katori (CAT-6), so
+      // 75 g of dal is half a katori.
+      final dal = await catalogue.foodId(_dal);
+      final preview = await catalogue.thali.preview(
+        draft: _draft(catalogue, [
+          (dal, Quantity.fromNum(amount: 75, unit: QuantityUnit.gram)),
+        ]),
+      );
+      expect(
+        preview.items.single.calculation.facts['energy']!.point!.value
+            .toString(),
+        '70',
+      );
+      // A roti has no gram weight in the repo, so grams are refused, not
+      // guessed.
       expect(
         () async {
-          final dal = await catalogue.foodId(_dal);
+          final roti = await catalogue.foodId(_roti);
           await catalogue.thali.preview(
             draft: _draft(catalogue, [
-              (dal, Quantity.fromNum(amount: 150, unit: QuantityUnit.gram)),
+              (roti, Quantity.fromNum(amount: 40, unit: QuantityUnit.gram)),
             ]),
           );
         }(),
         throwsA(
           isA<NutritionThaliValidationError>()
               .having((e) => e.code, 'code', 'unsupported_food_unit')
-              .having((e) => e.message, 'message', contains('katori')),
+              .having((e) => e.message, 'message', contains('pieces')),
         ),
       );
     });
@@ -320,7 +335,7 @@ void main() {
     test('a delta on the wrong base is rejected and changes nothing', () async {
       final before = await _factCount(catalogue.db);
       final delta = pack(
-        _packJson(version: 3, base: 2, kind: 'delta', energy: 90),
+        _packJson(version: 4, base: 3, kind: 'delta', energy: 90),
       );
       await expectLater(
         importer.apply(delta, source: 'download'),
@@ -332,7 +347,7 @@ void main() {
           ),
         ),
       );
-      expect(await importer.installedVersion(), 1);
+      expect(await importer.installedVersion(), kBundledCatalogPackVersion);
       expect(await _factCount(catalogue.db), before);
     });
 
@@ -349,7 +364,7 @@ void main() {
           ),
         );
         final delta = pack(
-          _packJson(version: 2, base: 1, kind: 'delta', energy: 90, id: roti),
+          _packJson(version: 3, base: 2, kind: 'delta', energy: 90, id: roti),
         );
         final result = await importer.apply(delta, source: 'download');
         expect(result.applied, isTrue);
@@ -382,13 +397,13 @@ void main() {
         nutrientIds: [...nutrientIds, 'not_a_nutrient'],
       );
       final delta = pack(
-        _packJson(version: 2, base: 1, kind: 'delta', energy: 90, id: roti),
+        _packJson(version: 3, base: 2, kind: 'delta', energy: 90, id: roti),
       );
       await expectLater(
         broken.apply(delta, source: 'download'),
         throwsA(anything),
       );
-      expect(await importer.installedVersion(), 1);
+      expect(await importer.installedVersion(), kBundledCatalogPackVersion);
       final energy =
           await (catalogue.db.select(catalogue.db.nutritionFoodNutrientFacts)
                 ..where(
@@ -403,7 +418,7 @@ void main() {
 
     test('a retirement deprecates the food without deleting it', () async {
       final roti = await catalogue.foodId(_roti);
-      final json = _packJson(version: 2, base: 1, kind: 'delta', energy: 85)
+      final json = _packJson(version: 3, base: 2, kind: 'delta', energy: 85)
         ..['retire'] = [
           {'id': roti, 'replaced_by': null},
         ];
@@ -469,12 +484,21 @@ void main() {
       );
     });
 
-    test('the bundled pack is current with its build script', () async {
-      final result = await Process.run('python3', [
-        'tool/catalog/build_bundled_pack_v1.py',
-        '--check',
-      ]);
-      expect(result.exitCode, 0, reason: '${result.stdout}${result.stderr}');
+    test('the bundled pack is the latest pack the pipeline built', () {
+      // tool/catalog/validate.py (CI) checks packs/ against sources and
+      // overlays; this checks the app bundles exactly that pack.
+      final manifest = CatalogPackManifest.parse(
+        jsonDecode(File(kBundledCatalogManifestAsset).readAsStringSync()),
+      );
+      final entry = manifest.fullPack(kBundledCatalogPackVersion);
+      expect(manifest.latest, kBundledCatalogPackVersion);
+      expect(
+        File('$kBundledCatalogAssetDirectory${entry.url}').readAsBytesSync(),
+        File(
+          'tool/catalog/packs/v$kBundledCatalogPackVersion/'
+          '$kBundledCatalogPackVersion.json.gz',
+        ).readAsBytesSync(),
+      );
     });
   });
 
@@ -508,7 +532,10 @@ void main() {
       db = AppDatabase.executor(NativeDatabase(file));
       addTearDown(db.close);
       await db.customSelect('SELECT 1').get();
-      expect((await db.select(db.catalogState).get()).single.version, 1);
+      expect(
+        (await db.select(db.catalogState).get()).single.version,
+        kBundledCatalogPackVersion,
+      );
       expect(await _foodsWithoutEnergy(db), isEmpty);
       final rotiFacts = await (db.select(
         db.nutritionFoodNutrientFacts,

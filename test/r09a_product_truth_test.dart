@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:indifit/core/config/app_config.dart';
-import 'package:indifit/core/fixtures/food_identity_manifest.dart';
 import 'package:indifit/core/router/app_router.dart';
 
 void main() {
@@ -79,21 +78,53 @@ void main() {
         expect(source, isNot(contains('using encrypted storage capabilities')));
         expect(source, isNot(contains('your data never leaves your device')));
       }
-      // Counts come from the catalogue itself: retired duplicates leave
-      // search, so they don't count.
+      // Counts come from the bundled catalogue pack (SC-09): retired foods
+      // leave search, so they don't count, and a templated size or oil
+      // variant is the same dish, so only foods that are not variants are
+      // dishes.
       List<dynamic> foods(String path) =>
           jsonDecode(File(path).readAsStringSync()) as List<dynamic>;
-      final base =
-          foods('assets/data/indian_foods.json').length -
-          kRetiredCatalogueFoods.length;
+      final manifest =
+          jsonDecode(File('assets/catalog/manifest.json').readAsStringSync())
+              as Map<String, dynamic>;
+      final entry = (manifest['packs'] as List).cast<Map>().firstWhere(
+        (pack) =>
+            pack['version'] == manifest['latest'] && pack['kind'] == 'full',
+      );
+      final pack =
+          jsonDecode(
+                utf8.decode(
+                  gzip.decode(
+                    File('assets/catalog/${entry['url']}').readAsBytesSync(),
+                  ),
+                ),
+              )
+              as Map<String, dynamic>;
+      final retired = {
+        for (final retirement in pack['retire'] as List) retirement['id'],
+      };
+      final active = (pack['foods'] as List)
+          .cast<Map>()
+          .where((food) => !retired.contains(food['id']))
+          .toList();
+      final dishes = active.where((food) => food['variant_of'] == null).length;
       final regional = Directory('assets/data/regional')
           .listSync()
           .whereType<File>()
           .where((file) => file.path.endsWith('.json'))
           .fold<int>(0, (sum, file) => sum + foods(file.path).length);
-      expect(readme, contains('$base base food entries'));
+      expect(
+        readme,
+        contains(
+          '$dishes distinct Indian dishes (${active.length} entries '
+          'counting their size and oil variants)',
+        ),
+      );
       expect(readme, contains('$regional optional regional-pack entries'));
-      expect(listing, contains('$base Indian foods built in'));
+      expect(
+        listing,
+        contains('$dishes Indian dishes built in, with size and oil variants'),
+      );
       expect(listing, contains('$regional more in optional regional packs'));
       expect(privacy, contains('Open Food Facts'));
       expect(privacy, contains('not password-protected in V1'));

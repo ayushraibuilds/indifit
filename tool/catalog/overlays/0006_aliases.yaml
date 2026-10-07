@@ -1,0 +1,17 @@
+# Hinglish and regional aliases, moved from backend/data/indian_synonyms.json
+# (the search proxy's query rewrites) into pack aliases.
+#
+# The synonyms file maps each regional term to a canonical term; terms with
+# the same canonical term form a cluster. For every active, non-variant food
+# whose name contains a cluster term (as a whole word), the pack adds one
+# alias per other term in the cluster, by substitution ("Toor Dal" ->
+# "Arhar Dal"). An alias that equals another food's name, or that two foods
+# would share, is dropped: an alias must point at exactly one food.
+version: 2
+source: backend/data/indian_synonyms.json
+locale: hi-Latn
+# Clusters whose terms are not interchangeable inside a dish name.
+skip_clusters:
+  vegetable: "sabzi, bhaji, poriyal and tarkari are different dish styles, not one word."
+  sweet: "mithai is a category of sweets, not the word 'sweet'."
+  chana: "chole and kabuli chana are white chickpeas; kala chana is black chickpeas."
