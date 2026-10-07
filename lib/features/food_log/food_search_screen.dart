@@ -583,7 +583,12 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       );
       final option = await catalog.ensureLegacyFood(food);
       await _showLogDialog(option);
-    } catch (error) {
+    } catch (error, stackTrace) {
+      AppLogger.error(
+        'Food search: could not open a food for logging',
+        error,
+        stackTrace,
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('This food is unavailable. Try again.')),
@@ -598,7 +603,12 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         nutritionFoodCatalogRepositoryProvider.future,
       );
       await _addOptionFast(await catalog.ensureLegacyFood(food));
-    } catch (_) {
+    } catch (error, stackTrace) {
+      AppLogger.error(
+        'Food search: could not open a food for logging',
+        error,
+        stackTrace,
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('This food is unavailable. Try again.')),
@@ -745,7 +755,12 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
               }
             },
       );
-    } catch (error) {
+    } catch (error, stackTrace) {
+      AppLogger.error(
+        'Food search: could not open a food for logging',
+        error,
+        stackTrace,
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('This food is unavailable. Try again.')),
@@ -2069,7 +2084,12 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
               }
             },
       );
-    } catch (_) {
+    } catch (error, stackTrace) {
+      AppLogger.error(
+        'Food search: could not open a food for logging',
+        error,
+        stackTrace,
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('This food is unavailable. Try again.')),

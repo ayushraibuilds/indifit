@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../core/raw_cooked_transformations.dart';
 import '../../core/typed_quantities.dart';
+import '../catalog/catalog_pack_importer.dart';
 import '../database/app_database.dart';
 
 /// Single durable owner for reviewed and user-scoped raw/cooked
@@ -27,7 +28,7 @@ class NutritionTransformationRepository {
     final row = await (_db.select(
       _db.nutritionQuantityConversions,
     )..where((table) => table.id.equals(id))).getSingleOrNull();
-    return row == null ? null : _fromRow(row);
+    return row == null || !_isTransformationRow(row) ? null : _fromRow(row);
   }
 
   Future<List<NutritionTransformation>> findForSource({
@@ -41,7 +42,7 @@ class NutritionTransformationRepository {
             .get();
     final result = <NutritionTransformation>[];
     for (final row in rows) {
-      if (_isArchived(row)) continue;
+      if (!_isTransformationRow(row) || _isArchived(row)) continue;
       final transformation = _fromRow(row);
       if (transformation.sourcePreparationId != sourcePreparationId) {
         continue;
@@ -65,7 +66,7 @@ class NutritionTransformationRepository {
             .get();
     return List.unmodifiable([
       for (final row in rows)
-        if (!_isArchived(row)) _fromRow(row),
+        if (_isTransformationRow(row) && !_isArchived(row)) _fromRow(row),
     ]);
   }
 
@@ -280,6 +281,13 @@ class NutritionTransformationRepository {
       );
     }
   }
+
+  /// The conversions table also holds the catalogue pack's plain serving
+  /// conversions ("1 serving = 2 piece"), which `CatalogueQuantityResolver`
+  /// reads. They carry no transformation envelope, so they are not
+  /// transformations and must never reach [_fromRow].
+  static bool _isTransformationRow(NutritionQuantityConversion row) =>
+      row.ruleVersion != kCatalogPackConversionRule;
 
   NutritionTransformation _fromRow(NutritionQuantityConversion row) {
     try {

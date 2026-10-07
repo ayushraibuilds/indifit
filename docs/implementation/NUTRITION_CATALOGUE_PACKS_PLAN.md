@@ -16,7 +16,7 @@ Update this table in every PR that touches the catalogue. IDs are referenced fro
 | ID | Work item | Kind | PR | Depends on | Status |
 |---|---|---|---|---|---|
 | CAT-1 | Pack format v1 spec + schema v24 (`catalog_state`) | Code | A | — | Merged (#61) |
-| CAT-2 | Pack importer (validate → one transaction → canonical tables) | Code | A | CAT-1 | Merged (#61). PR-E adds pack aliases to the format and importer. |
+| CAT-2 | Pack importer (validate → one transaction → canonical tables) | Code | A | CAT-1 | Merged (#61). PR-E adds pack aliases to the format and importer. Fix (`fix/portion-sheet-pack-conversions`): its serving conversions share `nutrition_quantity_conversions` with transformations, and the transformation reader parsed them as JSON, so the portion sheet failed for every pack food (smoke pass 2026-10-08). The reader now skips `catalog-pack` rows. |
 | CAT-3 | Bundled pack v1 from today's catalogue; single nutrition-fact read path (fixes C-01) | Code | A | CAT-2 | Merged (#61) |
 | CAT-4 | Servings with gram weights + household conversions in packs | Code + data | A (format), E (data) | CAT-1 | Format merged (#61). Data merged (#72): option (a), gram weights only where derivable (stated grams, the app's 150 g katori and 300 g bowl), each with its `basis`: 316 of 498 active foods. The rest get none, and the app declines to convert them to grams. |
 | CAT-5 | Pack build pipeline `tool/catalog/` + validator + CI job | Code | E | CAT-1 | In progress (PR-E): `build.py`, `validate.py` (all § 5 invariants), CI step in `static`. `--baseline` reports 101 violations on today's data, including C-04's 6 + 29. |
