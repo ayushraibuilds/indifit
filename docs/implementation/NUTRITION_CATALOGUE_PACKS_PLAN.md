@@ -21,8 +21,8 @@ Update this table in every PR that touches the catalogue. IDs are referenced fro
 | CAT-4 | Servings with gram weights + household conversions in packs | Code + data | A (format), E (data) | CAT-1 | Format in progress (PR-A); gram-weight data waits for E |
 | CAT-5 | Pack build pipeline `tool/catalog/` + validator + CI job | Code | E | CAT-1 | Not started |
 | CAT-6 | Curated overlay v2: C-04 measure fixes, C-09 retirements, honest count | Data | E | CAT-5 | Not started |
-| CAT-7 | Update service: manifest check, download, verify, import; Settings → Food database | Code | H | CAT-2 | Not started |
-| CAT-8 | Hosting: publish packs on Firebase Hosting | Owner | — | CAT-5 | Not started |
+| CAT-7 | Update service: manifest check, download, verify, import; Settings → Food database | Code | H | CAT-2 | In progress (PR-H `feat/catalogue-updates`). Updates stay off until a build sets `INDIFIT_CATALOG_MANIFEST_URL` (after CAT-8). |
+| CAT-8 | Hosting: publish packs on Firebase Hosting | Owner | — | CAT-5 | Config ready (PR-H: `firebase.json` hosting, `.firebaserc`, runbook § 10.1). **Deploy is owner work** once PR-E's `build.py` writes `public/catalog/v1/`. |
 | CAT-9 | Local full-text search (FTS5) over names + aliases; retire the legacy search path | Code | I | CAT-3 | Not started |
 | CAT-10 | Licences: INDB permission request; attribution screen | Owner + code | — / B | — | **Waiting on Ayush** (INDB email). Code: About & credits names Open Food Facts (ODbL) and labels catalogue values "IndiFit estimates" (PR-B); CC0/OGL credits join when that data ships (CAT-11). |
 | CAT-11 | Import INDB recipes (if CAT-10 = yes) **or** build dishes from CC0/OGL ingredient data | Data | J | CAT-5, CAT-10 | Not started |
@@ -218,6 +218,11 @@ There are no dates. Items start as soon as their dependencies are met, in the or
   - Default: Wi-Fi only.
   - User setting: "Also update on mobile data", showing the pack size.
 - **Fetch:** `manifest.json` with `If-None-Match`, then the delta if `base` matches, else the full pack; verify sha256; import.
+- **As built (PR-H):**
+  - the manifest URL comes from `--dart-define=INDIFIT_CATALOG_MANIFEST_URL`; empty (the default) means updates are off and nothing is requested;
+  - the small manifest is checked on any connection, so the mobile-data switch can show the waiting download's size; the pack itself waits for Wi-Fi;
+  - an update held for Wi-Fi goes ahead on the next resume on Wi-Fi without re-fetching the manifest; everything else waits for the 24-hour mark;
+  - the manifest's `min_app_build` is checked before the download, and each pack's again when it is decoded.
 - **No Firebase SDK and no Remote Config** on this path (Remote Config charges past 100,000 requests a day since 1 Sep 2026). A plain HTTPS GET through the app's existing Dio client, so Offline Mode enforcement applies.
 - **Settings → Food database** shows:
   - catalogue version and date;
@@ -405,9 +410,44 @@ Each test listed must fail on `main` before the change (`git stash push -- lib`,
 | New nutrient | Update the nutrient registry (`assets/data/nutrient_registry.json`) in an app release first; packs with an unknown registry version are rejected |
 | Check state on a device | Settings → Food database shows the version, date and count |
 
+### 10.1 Hosting runbook (CAT-8, owner)
+
+The hosting config is in `firebase.json` (project `indifit-d5f8d`, set in `.firebaserc`). It serves `public/`; the packs live under `public/catalog/v1/`:
+
+- `manifest.json`: `Cache-Control: no-cache` (clients revalidate with `If-None-Match`, so an unchanged manifest costs a 304);
+- `packs/*`: `Cache-Control: public, max-age=31536000, immutable` (a pack file never changes; a fix is a new version).
+
+`public/` is not committed. `tool/catalog/build.py` (PR-E) writes `manifest.json` and `packs/` into it.
+
+1. Build and validate the packs (PR-E's pipeline), so `public/catalog/v1/manifest.json` and every file it lists exist.
+2. Deploy from the repo root:
+   ```bash
+   firebase deploy --only hosting --project indifit-d5f8d
+   ```
+3. Verify the headers:
+   ```bash
+   curl -I https://indifit-d5f8d.web.app/catalog/v1/manifest.json
+   # expect: HTTP/2 200, cache-control: no-cache, an etag
+
+   curl -I -H 'If-None-Match: "<etag from above>"' \
+     https://indifit-d5f8d.web.app/catalog/v1/manifest.json
+   # expect: HTTP/2 304
+
+   curl -I https://indifit-d5f8d.web.app/catalog/v1/packs/<N>.json.gz
+   # expect: HTTP/2 200, cache-control: public, max-age=31536000, immutable,
+   # and NO content-encoding header (the app checks the sha256 of the .gz bytes)
+   ```
+4. Check a pack's checksum against the manifest:
+   ```bash
+   curl -s https://indifit-d5f8d.web.app/catalog/v1/packs/<N>.json.gz | shasum -a 256
+   ```
+5. Turn updates on in a build:
+   `--dart-define=INDIFIT_CATALOG_MANIFEST_URL=https://indifit-d5f8d.web.app/catalog/v1/manifest.json`.
+   Without it, the app never makes an update request. Test on your own devices for 24 hours (Settings → Food database → Check for updates) before bumping `latest` for everyone (§ 9 CAT-7 risk).
+
 ## 11. Open questions for Ayush
 
 1. **INDB:** send the permission email now? *Recommend yes.* It costs nothing, and the answer decides CAT-11 path A or B.
-2. **Mobile-data downloads:** off by default? *Recommend Wi-Fi-only by default*; deltas are tiny, so offer "Also on mobile data".
+2. **Mobile-data downloads:** off by default? *Recommend Wi-Fi-only by default*; deltas are tiny, so offer "Also on mobile data". **Decided (Ayush): Wi-Fi only by default**, with the "Also update on mobile data" switch (PR-H).
 3. **Pack v2 timing:** ship over the air during the closed test (needs CAT-7 merged and CAT-8 deployed while the test is still running) or bundle it in 1.0? *Recommend over the air.* It also exercises the update path with real testers.
 4. **Dietitian review** of the top 300 dishes before calling the catalogue "reviewed"? *Recommend yes after launch*; until then, label values "IndiFit estimate".

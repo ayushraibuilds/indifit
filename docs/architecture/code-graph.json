@@ -1,10 +1,10 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "summary": {
-    "total_dart_files": 494,
-    "total_loc": 345669,
-    "total_internal_edges": 2441,
-    "external_package_count": 30,
+    "total_dart_files": 498,
+    "total_loc": 346468,
+    "total_internal_edges": 2464,
+    "external_package_count": 31,
     "catch_metrics": {
       "total_catches_all": 517,
       "total_catch_underscore": 158,
@@ -195,7 +195,7 @@
       "path": "lib/app/indifit_app.dart",
       "layer": "app",
       "sublayer": "app",
-      "loc": 203,
+      "loc": 219,
       "imports": [
         "lib/core/di/providers.dart",
         "lib/core/di/theme_provider.dart",
@@ -205,7 +205,9 @@
         "lib/core/services/rest_presence_service.dart",
         "lib/core/theme/app_theme.dart",
         "lib/core/utils/app_logger.dart",
+        "lib/data/catalog/catalog_update_service.dart",
         "lib/data/database/app_database.dart",
+        "lib/features/settings/food_database_providers.dart",
         "lib/app/database_readiness.dart",
         "lib/app/database_recovery_screen.dart"
       ],
@@ -217,6 +219,7 @@
       "providers_defined": [],
       "providers_used": [
         "appRouterProvider",
+        "catalogUpdateServiceProvider",
         "databaseProvider",
         "databaseReadyProvider",
         "themeModeProvider"
@@ -225,7 +228,7 @@
       "catches": [
         {
           "file": "lib/app/indifit_app.dart",
-          "line": 132,
+          "line": 147,
           "var": "e",
           "is_underscore": false,
           "is_empty": false,
@@ -1672,7 +1675,7 @@
       "path": "lib/core/config/app_config.dart",
       "layer": "core",
       "sublayer": "core",
-      "loc": 71,
+      "loc": 81,
       "imports": [],
       "imported_by": [
         "lib/core/ai/ai_gateway_provider.dart",
@@ -1685,6 +1688,7 @@
         "lib/data/repositories/food_api_service.dart",
         "lib/features/nutrition_ai/natural_language_meal_service.dart",
         "lib/features/nutrition_ai/nutrition_label_ocr_service.dart",
+        "lib/features/settings/food_database_providers.dart",
         "lib/features/settings/widgets/ai_consent_toggle.dart",
         "lib/features/settings/widgets/data_management_section.dart"
       ],
@@ -1745,7 +1749,7 @@
       "path": "lib/core/config/app_preferences_keys.dart",
       "layer": "core",
       "sublayer": "core",
-      "loc": 168,
+      "loc": 176,
       "imports": [],
       "imported_by": [
         "lib/app/bootstrap.dart",
@@ -1759,6 +1763,7 @@
         "lib/core/services/data_erasure_service.dart",
         "lib/core/services/notification_service.dart",
         "lib/core/services/rest_alert_permission_service.dart",
+        "lib/data/catalog/catalog_update_service.dart",
         "lib/data/database/app_database.dart",
         "lib/data/repositories/health_service.dart",
         "lib/data/repositories/hydration_repository.dart",
@@ -1904,6 +1909,7 @@
         "lib/features/nutrition_ai/nutrition_label_ocr_screen.dart",
         "lib/features/progress/period_comparison/progress_period_comparison_controller.dart",
         "lib/features/progress/streak_provider.dart",
+        "lib/features/settings/food_database_providers.dart",
         "lib/features/settings/unit_preference.dart",
         "lib/features/training/training_providers.dart",
         "lib/features/workout_player/b02_strength_summary_screen.dart",
@@ -2656,6 +2662,7 @@
         "lib/core/nutrition_legacy_read_models.dart",
         "lib/core/nutrition_protein_distribution.dart",
         "lib/core/nutrition_thali.dart",
+        "lib/data/catalog/catalog_update_service.dart",
         "lib/data/database/app_database.dart",
         "lib/data/models/b04_current_food_models.dart",
         "lib/data/models/b04_nutrition_safety_models.dart",
@@ -3747,6 +3754,8 @@
         "lib/features/nutrition/nutrition_providers.dart",
         "lib/features/nutrition_ai/natural_language_meal_service.dart",
         "lib/features/nutrition_ai/nutrition_label_ocr_service.dart",
+        "lib/features/settings/food_database_providers.dart",
+        "lib/features/settings/food_database_screen.dart",
         "lib/features/settings/settings_controller.dart",
         "lib/features/support/tip_jar_controller.dart"
       ],
@@ -4229,6 +4238,7 @@
         "lib/core/di/user_profile_provider.dart",
         "lib/core/services/notification_service.dart",
         "lib/core/utils/app_logger.dart",
+        "lib/data/catalog/catalog_update_service.dart",
         "lib/data/database/app_database.dart",
         "lib/data/repositories/health_service.dart",
         "lib/features/dashboard/dashboard_controller.dart",
@@ -5251,6 +5261,7 @@
         "lib/features/progress/widgets/progress_sections.dart",
         "lib/features/progress/widgets/progress_weight_widgets.dart",
         "lib/features/settings/diary_structure_screen.dart",
+        "lib/features/settings/food_database_screen.dart",
         "lib/features/settings/health_sync_hub_screen.dart",
         "lib/features/settings/nutrition_targets_hub_screen.dart",
         "lib/features/settings/regional_food_packs_screen.dart",
@@ -5447,6 +5458,7 @@
         "lib/core/services/rest_presence_service.dart",
         "lib/core/services/workout_session_wake_lock_coordinator.dart",
         "lib/core/sync/sync_service.dart",
+        "lib/data/catalog/catalog_update_service.dart",
         "lib/data/database/app_database.dart",
         "lib/data/repositories/adaptive_tdee_repository.dart",
         "lib/data/repositories/food_api_service.dart",
@@ -5665,6 +5677,7 @@
         "lib/features/settings/about_credits_screen.dart",
         "lib/features/settings/data_management_sub_screen.dart",
         "lib/features/settings/diary_structure_screen.dart",
+        "lib/features/settings/food_database_screen.dart",
         "lib/features/settings/health_sync_hub_screen.dart",
         "lib/features/settings/household_measures_screen.dart",
         "lib/features/settings/notification_settings_screen.dart",
@@ -5908,12 +5921,13 @@
       "path": "lib/data/catalog/catalog_pack.dart",
       "layer": "data",
       "sublayer": "data",
-      "loc": 496,
+      "loc": 519,
       "imports": [
         "lib/core/typed_quantities.dart"
       ],
       "imported_by": [
         "lib/data/catalog/catalog_pack_importer.dart",
+        "lib/data/catalog/catalog_update_service.dart",
         "lib/data/catalog/catalogue_quantity_resolver.dart",
         "lib/data/database/app_database.dart",
         "lib/data/repositories/nutrition_recipe_log_coordinator.dart",
@@ -5949,7 +5963,36 @@
         "lib/data/catalog/catalog_pack.dart"
       ],
       "imported_by": [
+        "lib/data/catalog/catalog_update_service.dart",
         "lib/data/database/app_database.dart"
+      ],
+      "parts": [],
+      "part_of": null,
+      "providers_defined": [],
+      "providers_used": [],
+      "routes_defined": [],
+      "catches": [],
+      "empty_catch_count": 0,
+      "total_catch_count": 0
+    },
+    "lib/data/catalog/catalog_update_service.dart": {
+      "path": "lib/data/catalog/catalog_update_service.dart",
+      "layer": "data",
+      "sublayer": "data",
+      "loc": 437,
+      "imports": [
+        "lib/core/config/app_preferences_keys.dart",
+        "lib/core/nutrients.dart",
+        "lib/core/services/crash_reporting_service.dart",
+        "lib/core/utils/app_logger.dart",
+        "lib/data/database/app_database.dart",
+        "lib/data/catalog/catalog_pack.dart",
+        "lib/data/catalog/catalog_pack_importer.dart"
+      ],
+      "imported_by": [
+        "lib/app/indifit_app.dart",
+        "lib/features/settings/food_database_providers.dart",
+        "lib/features/settings/food_database_screen.dart"
       ],
       "parts": [],
       "part_of": null,
@@ -6040,6 +6083,7 @@
         "lib/core/sync/sync_tombstone_store.dart",
         "lib/core/utils/csv_exporter.dart",
         "lib/data/catalog/catalog_pack_importer.dart",
+        "lib/data/catalog/catalog_update_service.dart",
         "lib/data/catalog/catalogue_quantity_resolver.dart",
         "lib/data/database/app_database.g.dart",
         "lib/data/database/connection/database_connection.dart",
@@ -15139,7 +15183,8 @@
         "lib/features/nutrition_ai/natural_language_meal_screen.dart",
         "lib/features/nutrition_ai/nutrition_label_ocr_screen.dart",
         "lib/features/progress/period_comparison/progress_period_comparison_controller.dart",
-        "lib/features/progress/streak_provider.dart"
+        "lib/features/progress/streak_provider.dart",
+        "lib/features/settings/food_database_providers.dart"
       ],
       "parts": [],
       "part_of": null,
@@ -16792,9 +16837,10 @@
       "path": "lib/features/settings/about_credits_screen.dart",
       "layer": "features",
       "sublayer": "features/settings",
-      "loc": 86,
+      "loc": 85,
       "imports": [
-        "lib/core/widgets/b05_accessibility_primitives.dart"
+        "lib/core/widgets/b05_accessibility_primitives.dart",
+        "lib/features/settings/food_data_credits.dart"
       ],
       "imported_by": [
         "lib/features/settings/settings_screen.dart"
@@ -16848,6 +16894,93 @@
       "providers_defined": [],
       "providers_used": [
         "diaryStructureControllerProvider"
+      ],
+      "routes_defined": [],
+      "catches": [],
+      "empty_catch_count": 0,
+      "total_catch_count": 0
+    },
+    "lib/features/settings/food_data_credits.dart": {
+      "path": "lib/features/settings/food_data_credits.dart",
+      "layer": "features",
+      "sublayer": "features/settings",
+      "loc": 12,
+      "imports": [],
+      "imported_by": [
+        "lib/features/settings/about_credits_screen.dart",
+        "lib/features/settings/food_database_screen.dart"
+      ],
+      "parts": [],
+      "part_of": null,
+      "providers_defined": [],
+      "providers_used": [],
+      "routes_defined": [],
+      "catches": [],
+      "empty_catch_count": 0,
+      "total_catch_count": 0
+    },
+    "lib/features/settings/food_database_providers.dart": {
+      "path": "lib/features/settings/food_database_providers.dart",
+      "layer": "features",
+      "sublayer": "features/settings",
+      "loc": 36,
+      "imports": [
+        "lib/core/config/app_config.dart",
+        "lib/core/di/core_providers.dart",
+        "lib/core/privacy/privacy_policy.dart",
+        "lib/data/catalog/catalog_update_service.dart",
+        "lib/features/nutrition/nutrition_providers.dart"
+      ],
+      "imported_by": [
+        "lib/app/indifit_app.dart",
+        "lib/features/settings/food_database_screen.dart"
+      ],
+      "parts": [],
+      "part_of": null,
+      "providers_defined": [
+        "catalogManifestUrlProvider",
+        "catalogNetworkProbeProvider",
+        "catalogStatusProvider",
+        "catalogUpdateServiceProvider"
+      ],
+      "providers_used": [
+        "catalogManifestUrlProvider",
+        "catalogNetworkProbeProvider",
+        "catalogUpdateServiceProvider",
+        "databaseProvider",
+        "dioProvider",
+        "privacyPolicyProvider",
+        "sharedPreferencesProvider"
+      ],
+      "routes_defined": [],
+      "catches": [],
+      "empty_catch_count": 0,
+      "total_catch_count": 0
+    },
+    "lib/features/settings/food_database_screen.dart": {
+      "path": "lib/features/settings/food_database_screen.dart",
+      "layer": "features",
+      "sublayer": "features/settings",
+      "loc": 251,
+      "imports": [
+        "lib/core/privacy/privacy_policy.dart",
+        "lib/core/theme/b05_semantic_colors.dart",
+        "lib/core/widgets/b05_accessibility_primitives.dart",
+        "lib/data/catalog/catalog_update_service.dart",
+        "lib/features/settings/food_data_credits.dart",
+        "lib/features/settings/food_database_providers.dart",
+        "lib/features/settings/widgets/settings_reminder_toggle.dart"
+      ],
+      "imported_by": [
+        "lib/features/settings/settings_screen.dart"
+      ],
+      "parts": [],
+      "part_of": null,
+      "providers_defined": [],
+      "providers_used": [
+        "catalogStatusProvider",
+        "catalogUpdateServiceProvider",
+        "privacyPolicyProvider"
       ],
       "routes_defined": [],
       "catches": [],
@@ -17391,7 +17524,7 @@
       "path": "lib/features/settings/settings_screen.dart",
       "layer": "features",
       "sublayer": "features/settings",
-      "loc": 552,
+      "loc": 559,
       "imports": [
         "lib/core/config/app_links.dart",
         "lib/core/di/health_provider.dart",
@@ -17415,6 +17548,7 @@
         "lib/features/settings/about_credits_screen.dart",
         "lib/features/settings/data_management_sub_screen.dart",
         "lib/features/settings/diary_structure_screen.dart",
+        "lib/features/settings/food_database_screen.dart",
         "lib/features/settings/health_sync_hub_screen.dart",
         "lib/features/settings/household_measures_screen.dart",
         "lib/features/settings/notification_settings_screen.dart",
@@ -17790,6 +17924,7 @@
         "lib/core/widgets/b05_accessibility_primitives.dart"
       ],
       "imported_by": [
+        "lib/features/settings/food_database_screen.dart",
         "lib/features/settings/widgets/ai_consent_toggle.dart",
         "lib/features/settings/widgets/data_management_section.dart",
         "lib/features/settings/widgets/notification_settings_section.dart"

@@ -25,10 +25,11 @@ Core logging and review features work offline. When Offline Mode is off, these o
 - **Open Food Facts:** If you deliberately use online food search or scan a packaged-food barcode, IndiFit sends the search text or barcode needed to request product information from Open Food Facts. IndiFit does not attach an IndiFit backend credential or your local logs to that request.
 - **AI meal tools:** Describe-a-meal, meal-photo and nutrition-label scanning send the text or photo you submit to Google's Gemini AI. They are used only after you consent; see section 3.
 - **Google Firebase services for the AI meal tools:** The first time you use an AI meal tool, IndiFit starts Google Firebase App Check, Remote Config and Installations. App Check confirms the request comes from a genuine copy of IndiFit; Remote Config delivers settings such as the AI on/off switch and daily limits, and keeps them current while the app is open. These services receive a random installation identifier, basic app and device information (such as the app version and operating system) and technical diagnostics. They are not linked to your identity and contain no food, workout, health or profile data.
+- **Food database updates:** IndiFit downloads food database updates from its servers (Firebase Hosting): automatically at most once a day, on Wi-Fi unless you allow mobile data, or when you tap "Check for updates". These downloads send no information about you or your meals. As with any download, the hosting service receives standard request details such as your IP address.
 - **Crash diagnostics:** If you affirmatively enable crash diagnostics, technical error information may be sent to our diagnostics provider. See section 5.
 - **Supporter tips:** Tips are optional and unlock nothing. They are processed by Apple (App Store) or Google (Google Play); IndiFit receives no card details and keeps no record of your tips. The tip screen contacts the store only when you open it, and not while Offline Mode is on.
 
-Turning on Offline Mode blocks app-initiated online food lookups, the AI meal tools (and so the Firebase services above), and crash diagnostics.
+Turning on Offline Mode blocks app-initiated online food lookups, food database updates, the AI meal tools (and so the Firebase services above), and crash diagnostics.
 
 ---
 

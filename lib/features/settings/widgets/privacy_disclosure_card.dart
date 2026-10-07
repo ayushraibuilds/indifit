@@ -56,7 +56,7 @@ class PrivacyDisclosureCard extends StatelessWidget {
           ),
           const SizedBox(height: B05Layout.space12),
           Text(
-            'IndiFit stores your logs on this device. IndiFit doesn\'t keep the text or photos you send to the AI meal tools; Google may keep them briefly to prevent abuse. Online food search sends only the search or barcode request needed for that feature. Crash diagnostics are optional and off by default.',
+            'IndiFit stores your logs on this device. IndiFit doesn\'t keep the text or photos you send to the AI meal tools; Google may keep them briefly to prevent abuse. Online food search sends only the search or barcode request needed for that feature. Food database updates are downloads that send no information about you or your meals. Crash diagnostics are optional and off by default.',
             style: B05Typography.body(context),
           ),
           const SizedBox(height: B05Layout.space12),

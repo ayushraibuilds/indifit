@@ -37,6 +37,20 @@ void main() {
     );
     expect(find.text('Copy food & workout CSV'), findsOneWidget);
     expect(find.text('Offline mode'), findsOneWidget);
+    // Offline Mode also stops food database updates (CAT-7), and the
+    // disclosure says what those downloads send.
+    expect(
+      find.text(
+        'Block app-initiated online food search, food database updates, AI meal features and crash reporting.',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining(
+        'Food database updates are downloads that send no information about you or your meals.',
+      ),
+      findsOneWidget,
+    );
     expect(find.text('Share crash diagnostics'), findsOneWidget);
 
     expect(find.text('Regional Food Packs'), findsNothing);

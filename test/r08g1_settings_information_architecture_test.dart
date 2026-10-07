@@ -37,6 +37,7 @@ void main() {
     await _expectSettingsSection(tester, 'Food & nutrition', [
       'Dietary needs & preferences',
       'Household measures',
+      'Food database',
       'Regional foods',
       'Diary structure',
     ]);

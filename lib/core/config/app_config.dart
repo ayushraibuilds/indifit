@@ -33,6 +33,16 @@ class AppConfig {
     defaultValue: kReleaseMode ? '' : 'http://10.0.2.2:8000',
   );
 
+  /// Where food database updates are published (CAT-7, CAT-8): the
+  /// `manifest.json` URL, e.g.
+  /// `--dart-define=INDIFIT_CATALOG_MANIFEST_URL=https://indifit-d5f8d.web.app/catalog/v1/manifest.json`.
+  ///
+  /// Empty by default, which turns updates off: no build calls a host until
+  /// the packs are deployed and the URL is set on purpose.
+  static const String catalogManifestUrl = String.fromEnvironment(
+    'INDIFIT_CATALOG_MANIFEST_URL',
+  );
+
   /// Optional legacy-backend credential for development and compatibility
   /// tests. V1 release startup never requires this value.
   static const String rawApiKey = String.fromEnvironment('INDIFIT_API_KEY');
