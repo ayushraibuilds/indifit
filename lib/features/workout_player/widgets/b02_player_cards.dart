@@ -1112,16 +1112,15 @@ class _StickyRestBarState extends State<StickyRestBar> {
 
   Future<void> _completeElapsedRest(String periodId) async {
     try {
+      // The rest-end haptic is not fired here: the controller saves the end
+      // and RestPresenceService then fires IndiFitHaptics.restEnd() once.
       final completed = await widget.onElapsed(periodId);
-      if (completed && mounted) {
-        unawaited(IndiFitHaptics.confirmation());
-      } else if (!completed && mounted) {
+      if (!completed && mounted) {
         _finishingElapsedRest = false;
         _now = DateTime.now().toUtc();
         _syncTicker();
       }
     } catch (_) {
-      // A failed durable completion must not create tactile success feedback.
       if (mounted) {
         _finishingElapsedRest = false;
         _now = DateTime.now().toUtc();

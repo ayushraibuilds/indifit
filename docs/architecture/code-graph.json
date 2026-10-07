@@ -1,12 +1,12 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "summary": {
-    "total_dart_files": 498,
-    "total_loc": 346468,
-    "total_internal_edges": 2464,
+    "total_dart_files": 505,
+    "total_loc": 347956,
+    "total_internal_edges": 2501,
     "external_package_count": 31,
     "catch_metrics": {
-      "total_catches_all": 517,
+      "total_catches_all": 519,
       "total_catch_underscore": 158,
       "total_empty_catches": 0,
       "p0_empty_catches": 0
@@ -14,8 +14,8 @@
     "layer_violations_count": 7,
     "catches_by_layer": {
       "core": 149,
-      "data": 103,
-      "features": 263,
+      "data": 104,
+      "features": 264,
       "other": 2
     }
   },
@@ -584,7 +584,7 @@
       "path": "lib/core/backup/backup_schema.dart",
       "layer": "core",
       "sublayer": "core",
-      "loc": 4202,
+      "loc": 4204,
       "imports": [
         "lib/core/services/local_schedule_date_service.dart",
         "lib/data/database/app_database.dart",
@@ -607,7 +607,7 @@
       "catches": [
         {
           "file": "lib/core/backup/backup_schema.dart",
-          "line": 1484,
+          "line": 1486,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -617,7 +617,7 @@
         },
         {
           "file": "lib/core/backup/backup_schema.dart",
-          "line": 1510,
+          "line": 1512,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -627,7 +627,7 @@
         },
         {
           "file": "lib/core/backup/backup_schema.dart",
-          "line": 2256,
+          "line": 2258,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -637,7 +637,7 @@
         },
         {
           "file": "lib/core/backup/backup_schema.dart",
-          "line": 2519,
+          "line": 2521,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -647,7 +647,7 @@
         },
         {
           "file": "lib/core/backup/backup_schema.dart",
-          "line": 2869,
+          "line": 2871,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -657,7 +657,7 @@
         },
         {
           "file": "lib/core/backup/backup_schema.dart",
-          "line": 2942,
+          "line": 2944,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -667,7 +667,7 @@
         },
         {
           "file": "lib/core/backup/backup_schema.dart",
-          "line": 3114,
+          "line": 3116,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -677,7 +677,7 @@
         },
         {
           "file": "lib/core/backup/backup_schema.dart",
-          "line": 3138,
+          "line": 3140,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -687,7 +687,7 @@
         },
         {
           "file": "lib/core/backup/backup_schema.dart",
-          "line": 3742,
+          "line": 3744,
           "var": "e",
           "is_underscore": false,
           "is_empty": false,
@@ -1749,7 +1749,7 @@
       "path": "lib/core/config/app_preferences_keys.dart",
       "layer": "core",
       "sublayer": "core",
-      "loc": 176,
+      "loc": 188,
       "imports": [],
       "imported_by": [
         "lib/app/bootstrap.dart",
@@ -1768,13 +1768,15 @@
         "lib/data/repositories/health_service.dart",
         "lib/data/repositories/hydration_repository.dart",
         "lib/data/repositories/streak_repository.dart",
+        "lib/data/repositories/weekly_training_goal_repository.dart",
         "lib/features/dashboard/dashboard_controller.dart",
         "lib/features/food_log/diary_structure_controller.dart",
         "lib/features/onboarding/b05_adaptive_onboarding.dart",
         "lib/features/onboarding/onboarding_screen.dart",
         "lib/features/settings/settings_controller.dart",
         "lib/features/settings/unit_preference.dart",
-        "lib/features/settings/widgets/data_management_section.dart"
+        "lib/features/settings/widgets/data_management_section.dart",
+        "lib/features/workout_player/workout_celebration_store.dart"
       ],
       "parts": [],
       "part_of": null,
@@ -1912,7 +1914,9 @@
         "lib/features/settings/food_database_providers.dart",
         "lib/features/settings/unit_preference.dart",
         "lib/features/training/training_providers.dart",
+        "lib/features/training/weekly_training_goal_providers.dart",
         "lib/features/workout_player/b02_strength_summary_screen.dart",
+        "lib/features/workout_player/widgets/workout_payoff_widgets.dart",
         "lib/features/workout_player/workout_player_providers.dart"
       ],
       "parts": [],
@@ -4380,7 +4384,7 @@
       "path": "lib/core/services/indifit_haptics.dart",
       "layer": "core",
       "sublayer": "core",
-      "loc": 56,
+      "loc": 64,
       "imports": [],
       "imported_by": [
         "lib/core/services/rest_presence_service.dart",
@@ -4391,7 +4395,8 @@
         "lib/features/workout_player/b02_strength_player_screen.dart",
         "lib/features/workout_player/b02_strength_summary_screen.dart",
         "lib/features/workout_player/routine_display_screen.dart",
-        "lib/features/workout_player/widgets/b02_player_cards.dart"
+        "lib/features/workout_player/widgets/b02_player_cards.dart",
+        "lib/features/workout_player/widgets/workout_payoff_widgets.dart"
       ],
       "parts": [],
       "part_of": null,
@@ -4401,7 +4406,7 @@
       "catches": [
         {
           "file": "lib/core/services/indifit_haptics.dart",
-          "line": 48,
+          "line": 56,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -4539,6 +4544,7 @@
         "lib/core/services/local_timezone_service.dart",
         "lib/core/services/notification_service.dart",
         "lib/core/utils/streak_calculator.dart",
+        "lib/core/utils/weekly_training_goal_calculator.dart",
         "lib/data/models/b04_adaptive_target_models.dart",
         "lib/data/models/plan_analytics_models.dart",
         "lib/data/repositories/adaptive_tdee_repository.dart",
@@ -4563,6 +4569,7 @@
         "lib/data/repositories/readiness_snapshot_repository.dart",
         "lib/data/repositories/recovery_observation_repository.dart",
         "lib/data/repositories/travel_repository.dart",
+        "lib/data/repositories/weekly_training_goal_repository.dart",
         "lib/data/repositories/workout_repository.dart",
         "lib/data/services/b04_adaptive_target_engine.dart",
         "lib/data/services/b04_meal_opportunity_service.dart",
@@ -4813,7 +4820,7 @@
       "path": "lib/core/services/rest_presence_service.dart",
       "layer": "core",
       "sublayer": "core",
-      "loc": 893,
+      "loc": 923,
       "imports": [
         "lib/core/utils/app_logger.dart",
         "lib/core/services/indifit_haptics.dart",
@@ -4853,7 +4860,7 @@
         },
         {
           "file": "lib/core/services/rest_presence_service.dart",
-          "line": 814,
+          "line": 844,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -4863,7 +4870,7 @@
         },
         {
           "file": "lib/core/services/rest_presence_service.dart",
-          "line": 830,
+          "line": 860,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -4873,37 +4880,37 @@
         },
         {
           "file": "lib/core/services/rest_presence_service.dart",
-          "line": 841,
+          "line": 871,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
           "snippet": "} catch (error) {",
-          "layer": "core",
-          "is_p0": false
-        },
-        {
-          "file": "lib/core/services/rest_presence_service.dart",
-          "line": 856,
-          "var": "error",
-          "is_underscore": false,
-          "is_empty": false,
-          "snippet": "} catch (error) {",
-          "layer": "core",
-          "is_p0": false
-        },
-        {
-          "file": "lib/core/services/rest_presence_service.dart",
-          "line": 875,
-          "var": "_",
-          "is_underscore": true,
-          "is_empty": false,
-          "snippet": "} catch (_) {",
           "layer": "core",
           "is_p0": false
         },
         {
           "file": "lib/core/services/rest_presence_service.dart",
           "line": 886,
+          "var": "error",
+          "is_underscore": false,
+          "is_empty": false,
+          "snippet": "} catch (error) {",
+          "layer": "core",
+          "is_p0": false
+        },
+        {
+          "file": "lib/core/services/rest_presence_service.dart",
+          "line": 905,
+          "var": "_",
+          "is_underscore": true,
+          "is_empty": false,
+          "snippet": "} catch (_) {",
+          "layer": "core",
+          "is_p0": false
+        },
+        {
+          "file": "lib/core/services/rest_presence_service.dart",
+          "line": 916,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -5275,6 +5282,7 @@
         "lib/features/support/tip_jar_screen.dart",
         "lib/features/training/plan_library_screen.dart",
         "lib/features/training/training_screen.dart",
+        "lib/features/training/training_week_goal_widgets.dart",
         "lib/features/training/training_workout_customization.dart",
         "lib/features/training/training_workout_preview.dart",
         "lib/features/training/workout_history_screen.dart",
@@ -5294,6 +5302,7 @@
         "lib/features/workout_player/widgets/rest_alert_prompt_sheet.dart",
         "lib/features/workout_player/widgets/rest_timer_bottom_sheet.dart",
         "lib/features/workout_player/widgets/training_bests_summary.dart",
+        "lib/features/workout_player/widgets/workout_payoff_widgets.dart",
         "lib/features/workout_player/widgets/workout_player_header.dart",
         "lib/features/workout_player/widgets/workout_share_card.dart",
         "lib/features/workout_player/workout_summary_screen.dart"
@@ -5468,6 +5477,7 @@
         "lib/data/repositories/progress_period_comparison_repository.dart",
         "lib/data/repositories/progress_statistics_repository.dart",
         "lib/data/repositories/streak_repository.dart",
+        "lib/data/repositories/weekly_training_goal_repository.dart",
         "lib/features/dashboard/dashboard_controller.dart",
         "lib/features/dashboard/dashboard_screen.dart",
         "lib/features/dashboard/today_surface_controller.dart",
@@ -5486,11 +5496,13 @@
         "lib/features/progress/streak_provider.dart",
         "lib/features/settings/regional_food_packs_screen.dart",
         "lib/features/support/tip_jar_controller.dart",
+        "lib/features/training/training_screen.dart",
         "lib/features/workout_player/b02_strength_execution_controller.dart",
         "lib/features/workout_player/b02_strength_player_screen.dart",
         "lib/features/workout_player/b02_strength_summary_screen.dart",
         "lib/features/workout_player/quick_workout_screen.dart",
-        "lib/features/workout_player/routine_editor_screen.dart"
+        "lib/features/workout_player/routine_editor_screen.dart",
+        "lib/features/workout_player/widgets/workout_payoff_widgets.dart"
       ],
       "parts": [],
       "part_of": null,
@@ -5579,6 +5591,30 @@
       "imported_by": [
         "lib/data/repositories/adaptive_tdee_repository.dart",
         "lib/features/onboarding/onboarding_screen.dart"
+      ],
+      "parts": [],
+      "part_of": null,
+      "providers_defined": [],
+      "providers_used": [],
+      "routes_defined": [],
+      "catches": [],
+      "empty_catch_count": 0,
+      "total_catch_count": 0
+    },
+    "lib/core/utils/weekly_training_goal_calculator.dart": {
+      "path": "lib/core/utils/weekly_training_goal_calculator.dart",
+      "layer": "core",
+      "sublayer": "core",
+      "loc": 152,
+      "imports": [
+        "lib/core/services/local_schedule_date_service.dart"
+      ],
+      "imported_by": [
+        "lib/data/repositories/weekly_training_goal_repository.dart",
+        "lib/features/progress/widgets/progress_sections.dart",
+        "lib/features/training/training_week_goal_widgets.dart",
+        "lib/features/training/weekly_training_goal_providers.dart",
+        "lib/features/workout_player/widgets/workout_payoff_widgets.dart"
       ],
       "parts": [],
       "part_of": null,
@@ -5695,6 +5731,7 @@
         "lib/features/support/tip_jar_screen.dart",
         "lib/features/training/plan_library_screen.dart",
         "lib/features/training/training_screen.dart",
+        "lib/features/training/training_week_goal_widgets.dart",
         "lib/features/training/training_workout_customization.dart",
         "lib/features/training/training_workout_preview.dart",
         "lib/features/training/workout_history_screen.dart",
@@ -5716,6 +5753,7 @@
         "lib/features/workout_player/widgets/rest_alert_prompt_sheet.dart",
         "lib/features/workout_player/widgets/rest_timer_bottom_sheet.dart",
         "lib/features/workout_player/widgets/training_bests_summary.dart",
+        "lib/features/workout_player/widgets/workout_payoff_widgets.dart",
         "lib/features/workout_player/widgets/workout_player_header.dart",
         "lib/features/workout_player/widgets/workout_share_card.dart",
         "lib/features/workout_player/workout_summary_screen.dart"
@@ -5736,7 +5774,8 @@
       "loc": 164,
       "imports": [],
       "imported_by": [
-        "lib/features/workout_player/widgets/achievement_celebration_sheet.dart"
+        "lib/features/workout_player/widgets/achievement_celebration_sheet.dart",
+        "lib/features/workout_player/widgets/workout_payoff_widgets.dart"
       ],
       "parts": [],
       "part_of": null,
@@ -6609,6 +6648,7 @@
         "lib/features/progress/b02_progress_presentation.dart",
         "lib/features/progress/r08f3_strength_performance_presentation.dart",
         "lib/features/progress/training_bests.dart",
+        "lib/features/progress/training_vs_last_time.dart",
         "lib/features/training/plan_library_screen.dart",
         "lib/features/training/training_workout_preview.dart",
         "lib/features/training/workout_history_screen.dart",
@@ -7804,7 +7844,8 @@
         "lib/features/training/plan_library_screen.dart",
         "lib/features/training/training_providers.dart",
         "lib/features/training/training_screen.dart",
-        "lib/features/training/training_workout_preview.dart"
+        "lib/features/training/training_workout_preview.dart",
+        "lib/features/training/weekly_training_goal_providers.dart"
       ],
       "parts": [],
       "part_of": null,
@@ -9825,6 +9866,40 @@
       "empty_catch_count": 0,
       "total_catch_count": 0
     },
+    "lib/data/repositories/weekly_training_goal_repository.dart": {
+      "path": "lib/data/repositories/weekly_training_goal_repository.dart",
+      "layer": "data",
+      "sublayer": "data",
+      "loc": 108,
+      "imports": [
+        "lib/core/config/app_preferences_keys.dart",
+        "lib/core/services/local_schedule_date_service.dart",
+        "lib/core/utils/app_logger.dart",
+        "lib/core/utils/weekly_training_goal_calculator.dart"
+      ],
+      "imported_by": [
+        "lib/features/training/weekly_training_goal_providers.dart"
+      ],
+      "parts": [],
+      "part_of": null,
+      "providers_defined": [],
+      "providers_used": [],
+      "routes_defined": [],
+      "catches": [
+        {
+          "file": "lib/data/repositories/weekly_training_goal_repository.dart",
+          "line": 102,
+          "var": "error",
+          "is_underscore": false,
+          "is_empty": false,
+          "snippet": "} on FormatException catch (error) {",
+          "layer": "data",
+          "is_p0": false
+        }
+      ],
+      "empty_catch_count": 0,
+      "total_catch_count": 1
+    },
     "lib/data/repositories/workout_execution_compatibility_adapter.dart": {
       "path": "lib/data/repositories/workout_execution_compatibility_adapter.dart",
       "layer": "data",
@@ -9913,6 +9988,7 @@
         "lib/features/progress/widgets/progress_measurement_widgets.dart",
         "lib/features/training/plan_library_screen.dart",
         "lib/features/training/training_screen.dart",
+        "lib/features/training/weekly_training_goal_providers.dart",
         "lib/features/workout_player/quick_workout_screen.dart",
         "lib/features/workout_player/routine_display_screen.dart",
         "lib/features/workout_player/routine_editor_screen.dart",
@@ -12061,7 +12137,7 @@
       "path": "lib/features/dashboard/widgets/today_module_widgets.dart",
       "layer": "features",
       "sublayer": "features/dashboard",
-      "loc": 1000,
+      "loc": 1005,
       "imports": [
         "lib/core/presentation/consumer_copy.dart",
         "lib/core/presentation/daypart_greeting.dart",
@@ -16441,7 +16517,7 @@
       "path": "lib/features/progress/progress_screen.dart",
       "layer": "features",
       "sublayer": "features/progress",
-      "loc": 528,
+      "loc": 536,
       "imports": [
         "lib/core/di/user_profile_provider.dart",
         "lib/core/navigation/app_navigation.dart",
@@ -16458,6 +16534,7 @@
         "lib/features/nutrition/adaptive_tdee_providers.dart",
         "lib/features/settings/nutrition_targets_hub_screen.dart",
         "lib/features/settings/unit_preference.dart",
+        "lib/features/training/weekly_training_goal_providers.dart",
         "lib/features/training/workout_history_screen.dart",
         "lib/features/progress/achievements_screen.dart",
         "lib/features/progress/period_comparison/widgets/period_comparison_section.dart",
@@ -16485,7 +16562,7 @@
       "catches": [
         {
           "file": "lib/features/progress/progress_screen.dart",
-          "line": 398,
+          "line": 406,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -16595,6 +16672,7 @@
         "lib/features/exercise_library/exercise_history_screen.dart",
         "lib/features/progress/r08f3_strength_performance_presentation.dart",
         "lib/features/progress/training_bests_providers.dart",
+        "lib/features/progress/training_vs_last_time.dart",
         "lib/features/workout_player/b02_strength_player_screen.dart",
         "lib/features/workout_player/models/workout_completion_recap.dart",
         "lib/features/workout_player/widgets/b02_compact_set_table.dart",
@@ -16614,26 +16692,51 @@
       "path": "lib/features/progress/training_bests_providers.dart",
       "layer": "features",
       "sublayer": "features/progress",
-      "loc": 64,
+      "loc": 108,
       "imports": [
         "lib/core/di/providers.dart",
         "lib/data/repositories/b02_exercise_performance_read_repository.dart",
-        "lib/features/progress/training_bests.dart"
+        "lib/features/progress/training_bests.dart",
+        "lib/features/progress/training_vs_last_time.dart"
       ],
       "imported_by": [
         "lib/features/exercise_library/exercise_history_screen.dart",
         "lib/features/workout_player/b02_strength_player_screen.dart",
         "lib/features/workout_player/widgets/b02_summary_widgets.dart",
-        "lib/features/workout_player/widgets/training_bests_summary.dart"
+        "lib/features/workout_player/widgets/training_bests_summary.dart",
+        "lib/features/workout_player/widgets/workout_payoff_widgets.dart"
       ],
       "parts": [],
       "part_of": null,
       "providers_defined": [
-        "trainingBestsForSessionProvider"
+        "trainingBestsForSessionProvider",
+        "trainingVsLastTimeForSessionProvider"
       ],
       "providers_used": [
         "b02ExercisePerformanceReadRepositoryProvider"
       ],
+      "routes_defined": [],
+      "catches": [],
+      "empty_catch_count": 0,
+      "total_catch_count": 0
+    },
+    "lib/features/progress/training_vs_last_time.dart": {
+      "path": "lib/features/progress/training_vs_last_time.dart",
+      "layer": "features",
+      "sublayer": "features/progress",
+      "loc": 200,
+      "imports": [
+        "lib/data/models/b02_execution_models.dart",
+        "lib/features/progress/training_bests.dart"
+      ],
+      "imported_by": [
+        "lib/features/progress/training_bests_providers.dart",
+        "lib/features/workout_player/widgets/workout_payoff_widgets.dart"
+      ],
+      "parts": [],
+      "part_of": null,
+      "providers_defined": [],
+      "providers_used": [],
       "routes_defined": [],
       "catches": [],
       "empty_catch_count": 0,
@@ -16757,11 +16860,12 @@
       "path": "lib/features/progress/widgets/progress_sections.dart",
       "layer": "features",
       "sublayer": "features/progress",
-      "loc": 1227,
+      "loc": 1242,
       "imports": [
         "lib/core/presentation/consumer_copy.dart",
         "lib/core/services/local_schedule_date_service.dart",
         "lib/core/theme/b05_semantic_colors.dart",
+        "lib/core/utils/weekly_training_goal_calculator.dart",
         "lib/core/widgets/b05_accessibility_primitives.dart",
         "lib/data/models/b02_muscle_volume_models.dart",
         "lib/features/progress/progress_dashboard_models.dart",
@@ -18180,6 +18284,7 @@
       "imported_by": [
         "lib/core/di/providers.dart",
         "lib/core/di/user_provider_invalidator.dart",
+        "lib/features/training/weekly_training_goal_providers.dart",
         "lib/features/workout_player/workout_player_providers.dart"
       ],
       "parts": [],
@@ -18225,7 +18330,7 @@
       "path": "lib/features/training/training_screen.dart",
       "layer": "features",
       "sublayer": "features/training",
-      "loc": 1676,
+      "loc": 1770,
       "imports": [
         "lib/core/di/providers.dart",
         "lib/core/presentation/consumer_copy.dart",
@@ -18234,6 +18339,7 @@
         "lib/core/services/indifit_haptics.dart",
         "lib/core/services/workout_session_wake_lock_coordinator.dart",
         "lib/core/theme/b05_semantic_colors.dart",
+        "lib/core/utils/app_logger.dart",
         "lib/core/widgets/b05_accessibility_primitives.dart",
         "lib/core/widgets/consumer_task_primitives.dart",
         "lib/core/widgets/indi_fit_bottom_sheet.dart",
@@ -18250,8 +18356,10 @@
         "lib/features/workout_player/widgets/manual_log_sheet.dart",
         "lib/features/workout_player/workout_execution_route.dart",
         "lib/features/training/training_plan_lifecycle_controller.dart",
+        "lib/features/training/training_week_goal_widgets.dart",
         "lib/features/training/training_workout_customization.dart",
-        "lib/features/training/training_workout_preview.dart"
+        "lib/features/training/training_workout_preview.dart",
+        "lib/features/training/weekly_training_goal_providers.dart"
       ],
       "imported_by": [
         "lib/features/dashboard/main_navigation_scaffold.dart"
@@ -18268,6 +18376,7 @@
         "localScheduleDateServiceProvider",
         "trainingLandingSnapshotProvider",
         "trainingPlanLifecycleControllerProvider",
+        "weeklyTrainingGoalRepositoryProvider",
         "workoutRepositoryProvider",
         "workoutSessionWakeLockCoordinatorProvider"
       ],
@@ -18275,7 +18384,7 @@
       "catches": [
         {
           "file": "lib/features/training/training_screen.dart",
-          "line": 322,
+          "line": 339,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -18285,7 +18394,7 @@
         },
         {
           "file": "lib/features/training/training_screen.dart",
-          "line": 327,
+          "line": 344,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -18295,7 +18404,7 @@
         },
         {
           "file": "lib/features/training/training_screen.dart",
-          "line": 390,
+          "line": 407,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -18305,7 +18414,7 @@
         },
         {
           "file": "lib/features/training/training_screen.dart",
-          "line": 489,
+          "line": 506,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -18315,7 +18424,7 @@
         },
         {
           "file": "lib/features/training/training_screen.dart",
-          "line": 534,
+          "line": 551,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -18326,6 +18435,28 @@
       ],
       "empty_catch_count": 0,
       "total_catch_count": 5
+    },
+    "lib/features/training/training_week_goal_widgets.dart": {
+      "path": "lib/features/training/training_week_goal_widgets.dart",
+      "layer": "features",
+      "sublayer": "features/training",
+      "loc": 165,
+      "imports": [
+        "lib/core/theme/b05_semantic_colors.dart",
+        "lib/core/utils/weekly_training_goal_calculator.dart",
+        "lib/core/widgets/b05_accessibility_primitives.dart"
+      ],
+      "imported_by": [
+        "lib/features/training/training_screen.dart"
+      ],
+      "parts": [],
+      "part_of": null,
+      "providers_defined": [],
+      "providers_used": [],
+      "routes_defined": [],
+      "catches": [],
+      "empty_catch_count": 0,
+      "total_catch_count": 0
     },
     "lib/features/training/training_workout_customization.dart": {
       "path": "lib/features/training/training_workout_customization.dart",
@@ -18428,6 +18559,43 @@
       ],
       "empty_catch_count": 0,
       "total_catch_count": 1
+    },
+    "lib/features/training/weekly_training_goal_providers.dart": {
+      "path": "lib/features/training/weekly_training_goal_providers.dart",
+      "layer": "features",
+      "sublayer": "features/training",
+      "loc": 84,
+      "imports": [
+        "lib/core/di/core_providers.dart",
+        "lib/core/utils/weekly_training_goal_calculator.dart",
+        "lib/data/repositories/calendar_read_repository.dart",
+        "lib/data/repositories/weekly_training_goal_repository.dart",
+        "lib/data/repositories/workout_repository.dart",
+        "lib/features/training/training_providers.dart",
+        "lib/core/utils/weekly_training_goal_calculator.dart"
+      ],
+      "imported_by": [
+        "lib/features/progress/progress_screen.dart",
+        "lib/features/training/training_screen.dart",
+        "lib/features/workout_player/widgets/b02_summary_widgets.dart"
+      ],
+      "parts": [],
+      "part_of": null,
+      "providers_defined": [
+        "weeklyTrainingGoalRepositoryProvider",
+        "weeklyTrainingGoalStatusProvider"
+      ],
+      "providers_used": [
+        "calendarReadRepositoryProvider",
+        "civilDateRevisionProvider",
+        "localScheduleDateServiceProvider",
+        "sharedPreferencesProvider",
+        "workoutRepositoryProvider"
+      ],
+      "routes_defined": [],
+      "catches": [],
+      "empty_catch_count": 0,
+      "total_catch_count": 0
     },
     "lib/features/training/workout_history_screen.dart": {
       "path": "lib/features/training/workout_history_screen.dart",
@@ -18880,7 +19048,7 @@
       "path": "lib/features/workout_player/b02_strength_summary_screen.dart",
       "layer": "features",
       "sublayer": "features/workout_player",
-      "loc": 316,
+      "loc": 330,
       "imports": [
         "lib/core/di/core_providers.dart",
         "lib/core/navigation/app_navigation.dart",
@@ -18911,7 +19079,7 @@
       "catches": [
         {
           "file": "lib/features/workout_player/b02_strength_summary_screen.dart",
-          "line": 303,
+          "line": 316,
           "var": "e",
           "is_underscore": false,
           "is_empty": false,
@@ -19207,7 +19375,7 @@
       "path": "lib/features/workout_player/widgets/b02_compact_set_table.dart",
       "layer": "features",
       "sublayer": "features/workout_player",
-      "loc": 903,
+      "loc": 968,
       "imports": [
         "lib/core/theme/b05_semantic_colors.dart",
         "lib/core/theme/indifit_icons.dart",
@@ -19286,7 +19454,7 @@
       "path": "lib/features/workout_player/widgets/b02_player_cards.dart",
       "layer": "features",
       "sublayer": "features/workout_player",
-      "loc": 1189,
+      "loc": 1188,
       "imports": [
         "lib/core/presentation/consumer_copy.dart",
         "lib/core/services/indifit_haptics.dart",
@@ -19349,7 +19517,7 @@
       "path": "lib/features/workout_player/widgets/b02_summary_widgets.dart",
       "layer": "features",
       "sublayer": "features/workout_player",
-      "loc": 966,
+      "loc": 1022,
       "imports": [
         "lib/core/di/providers.dart",
         "lib/core/widgets/b05_accessibility_primitives.dart",
@@ -19359,11 +19527,12 @@
         "lib/data/repositories/calendar_repository.dart",
         "lib/features/progress/training_bests.dart",
         "lib/features/progress/training_bests_providers.dart",
+        "lib/features/training/weekly_training_goal_providers.dart",
         "lib/features/workout_player/b02_strength_execution_controller.dart",
         "lib/features/workout_player/models/workout_completion_recap.dart",
         "lib/features/workout_player/workout_execution_context.dart",
         "lib/features/workout_player/widgets/r07c_workout_presentation.dart",
-        "lib/features/workout_player/widgets/training_bests_summary.dart",
+        "lib/features/workout_player/widgets/workout_payoff_widgets.dart",
         "lib/features/workout_player/widgets/workout_share_card.dart",
         "lib/features/workout_player/models/workout_completion_recap.dart",
         "lib/features/workout_player/widgets/workout_share_card.dart"
@@ -19377,7 +19546,8 @@
         "b02StrengthHistoryDetailProvider"
       ],
       "providers_used": [
-        "databaseProvider"
+        "databaseProvider",
+        "weeklyTrainingGoalStatusProvider"
       ],
       "routes_defined": [],
       "catches": [],
@@ -19549,7 +19719,7 @@
       "path": "lib/features/workout_player/widgets/r07c_workout_presentation.dart",
       "layer": "features",
       "sublayer": "features/workout_player",
-      "loc": 240,
+      "loc": 255,
       "imports": [
         "lib/core/theme/b05_semantic_colors.dart",
         "lib/core/widgets/b05_accessibility_primitives.dart",
@@ -19562,7 +19732,8 @@
         "lib/features/workout_player/widgets/b02_player_cards.dart",
         "lib/features/workout_player/widgets/b02_summary_widgets.dart",
         "lib/features/workout_player/widgets/exercise_set_input_card.dart",
-        "lib/features/workout_player/widgets/manual_log_sheet.dart"
+        "lib/features/workout_player/widgets/manual_log_sheet.dart",
+        "lib/features/workout_player/widgets/workout_payoff_widgets.dart"
       ],
       "parts": [],
       "part_of": null,
@@ -19629,7 +19800,7 @@
         "lib/features/progress/training_bests_providers.dart"
       ],
       "imported_by": [
-        "lib/features/workout_player/widgets/b02_summary_widgets.dart"
+        "lib/features/workout_player/widgets/workout_payoff_widgets.dart"
       ],
       "parts": [],
       "part_of": null,
@@ -19639,6 +19810,50 @@
       "catches": [],
       "empty_catch_count": 0,
       "total_catch_count": 0
+    },
+    "lib/features/workout_player/widgets/workout_payoff_widgets.dart": {
+      "path": "lib/features/workout_player/widgets/workout_payoff_widgets.dart",
+      "layer": "features",
+      "sublayer": "features/workout_player",
+      "loc": 383,
+      "imports": [
+        "lib/core/di/core_providers.dart",
+        "lib/core/services/indifit_haptics.dart",
+        "lib/core/theme/b05_semantic_colors.dart",
+        "lib/core/utils/app_logger.dart",
+        "lib/core/utils/weekly_training_goal_calculator.dart",
+        "lib/core/widgets/b05_accessibility_primitives.dart",
+        "lib/core/widgets/confetti_overlay.dart",
+        "lib/features/progress/training_bests_providers.dart",
+        "lib/features/progress/training_vs_last_time.dart",
+        "lib/features/workout_player/workout_celebration_store.dart",
+        "lib/features/workout_player/widgets/r07c_workout_presentation.dart",
+        "lib/features/workout_player/widgets/training_bests_summary.dart"
+      ],
+      "imported_by": [
+        "lib/features/workout_player/widgets/b02_summary_widgets.dart"
+      ],
+      "parts": [],
+      "part_of": null,
+      "providers_defined": [],
+      "providers_used": [
+        "sharedPreferencesProvider"
+      ],
+      "routes_defined": [],
+      "catches": [
+        {
+          "file": "lib/features/workout_player/widgets/workout_payoff_widgets.dart",
+          "line": 246,
+          "var": "error",
+          "is_underscore": false,
+          "is_empty": false,
+          "snippet": "} catch (error) {",
+          "layer": "features/workout_player",
+          "is_p0": false
+        }
+      ],
+      "empty_catch_count": 0,
+      "total_catch_count": 1
     },
     "lib/features/workout_player/widgets/workout_player_header.dart": {
       "path": "lib/features/workout_player/widgets/workout_player_header.dart",
@@ -19672,6 +19887,26 @@
       ],
       "imported_by": [
         "lib/features/workout_player/widgets/b02_summary_widgets.dart"
+      ],
+      "parts": [],
+      "part_of": null,
+      "providers_defined": [],
+      "providers_used": [],
+      "routes_defined": [],
+      "catches": [],
+      "empty_catch_count": 0,
+      "total_catch_count": 0
+    },
+    "lib/features/workout_player/workout_celebration_store.dart": {
+      "path": "lib/features/workout_player/workout_celebration_store.dart",
+      "layer": "features",
+      "sublayer": "features/workout_player",
+      "loc": 29,
+      "imports": [
+        "lib/core/config/app_preferences_keys.dart"
+      ],
+      "imported_by": [
+        "lib/features/workout_player/widgets/workout_payoff_widgets.dart"
       ],
       "parts": [],
       "part_of": null,

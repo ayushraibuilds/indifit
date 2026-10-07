@@ -17,7 +17,7 @@ abstract final class IndiFitHaptics {
 
   /// Medium tactile confirmation feedback for verified completion actions:
   /// successful set completion, fast food logging, saved meal re-log,
-  /// workout finish, plan finish, or rest timer expiration.
+  /// workout finish or plan finish. A rest ending uses [restEnd].
   ///
   /// Rule: Always fire after authoritative persistence succeeds, never on tap.
   static Future<void> confirmation() =>
@@ -31,6 +31,14 @@ abstract final class IndiFitHaptics {
       _trigger(IndiFitHapticType.success, () async {
         await HapticFeedback.mediumImpact();
         await HapticFeedback.heavyImpact();
+      });
+
+  /// A rest ended in the app: two light pulses. Fires once per rest, after
+  /// the rest's end is saved, and never for Skip.
+  static Future<void> restEnd() =>
+      _trigger(IndiFitHapticType.restEnd, () async {
+        await HapticFeedback.lightImpact();
+        await HapticFeedback.lightImpact();
       });
 
   /// Heavy / warning feedback for consequential confirmations:
@@ -53,4 +61,4 @@ abstract final class IndiFitHaptics {
 }
 
 /// Category of haptic feedback emitted by IndiFit.
-enum IndiFitHapticType { selection, confirmation, warning, success }
+enum IndiFitHapticType { selection, confirmation, warning, success, restEnd }

@@ -559,6 +559,8 @@ void main() {
           ),
         ),
       );
+      // Capture the settled summary, not a count-up frame (TP-7).
+      await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
       await expectLater(
         find.byType(B02WorkoutCompletionSuccess),

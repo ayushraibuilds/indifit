@@ -484,7 +484,14 @@ class _SetRow extends StatelessWidget {
             child: !row.isLogged && previous != null
                 ? _previousHint(context, 'Last $previous')
                 : _withBest(
-                    _valueWithDetails(context, actual, row.actualDetailsLabel),
+                    _logged(
+                      context,
+                      _valueWithDetails(
+                        context,
+                        actual,
+                        row.actualDetailsLabel,
+                      ),
+                    ),
                   ),
           ),
           SizedBox(
@@ -537,10 +544,13 @@ class _SetRow extends StatelessWidget {
             children: [
               Expanded(
                 child: _withBest(
-                  _valueWithDetails(
+                  _logged(
                     context,
-                    'Actual: $actual',
-                    row.actualDetailsLabel,
+                    _valueWithDetails(
+                      context,
+                      'Actual: $actual',
+                      row.actualDetailsLabel,
+                    ),
                   ),
                 ),
               ),
@@ -601,6 +611,17 @@ class _SetRow extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  /// A logged value gets a tick, and fills in once when the set is saved:
+  /// scale 0.9 to 1 with a fade over [B05MotionPolicy.fastDuration], instant
+  /// with reduce motion. Unlogged rows are returned unchanged.
+  Widget _logged(BuildContext context, Widget value) {
+    if (!row.isLogged) return value;
+    return B02LoggedSetTick(
+      key: ValueKey('compact-set-logged-${row.id}'),
+      child: value,
     );
   }
 
@@ -897,6 +918,50 @@ class B02NewBestChip extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// The tick on a saved set row (TP-7). The row's own semantics already say
+/// the set is logged, so the icon is decorative.
+class B02LoggedSetTick extends StatelessWidget {
+  const B02LoggedSetTick({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: B05MotionPolicy.transitionDuration(
+        context,
+        standard: B05MotionPolicy.fastDuration,
+      ),
+      curve: B05MotionPolicy.standardCurve,
+      builder: (context, progress, child) => Opacity(
+        opacity: progress,
+        child: Transform.scale(
+          scale: 0.9 + 0.1 * progress,
+          alignment: Alignment.centerLeft,
+          child: child,
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ExcludeSemantics(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 1, right: 4),
+              child: Icon(
+                Icons.check_rounded,
+                size: 16,
+                color: context.b05Colors.action,
+              ),
+            ),
+          ),
+          Flexible(child: child),
+        ],
       ),
     );
   }

@@ -135,7 +135,12 @@ void main() {
 
       expect(find.text('Workout complete'), findsOneWidget);
       expect(find.text('Completion press'), findsOneWidget);
-      expect(find.textContaining('1 min 30 sec'), findsOneWidget);
+      // The Duration tile; the headline line also ends with the duration.
+      expect(find.text('1 min 30 sec'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('workout_summary_headline_stats')),
+        findsOneWidget,
+      );
       expect(find.text('Done'), findsOneWidget);
 
       await tester.tap(find.text('Done'));
