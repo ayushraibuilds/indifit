@@ -222,7 +222,7 @@ There are no dates. Items start as soon as their dependencies are met, in the or
   - the manifest URL comes from `--dart-define=INDIFIT_CATALOG_MANIFEST_URL`; empty (the default) means updates are off and nothing is requested;
   - the small manifest is checked on any connection, so the mobile-data switch can show the waiting download's size; the pack itself waits for Wi-Fi;
   - an update held for Wi-Fi goes ahead on the next resume on Wi-Fi without re-fetching the manifest; everything else waits for the 24-hour mark;
-  - the manifest's `min_app_build` is checked before the download, and each pack's again when it is decoded.
+  - the manifest's `min_app_build` is checked before the download, and each pack's again when it is decoded. Both compare against this build's real number (`versionCode` / `CFBundleVersion`, via `package_info_plus`), so a pack that needs build 7 or later needs no code change; if the platform can't report it, the app assumes build 1, which can only refuse a gated pack.
 - **No Firebase SDK and no Remote Config** on this path (Remote Config charges past 100,000 requests a day since 1 Sep 2026). A plain HTTPS GET through the app's existing Dio client, so Offline Mode enforcement applies.
 - **Settings → Food database** shows:
   - catalogue version and date;

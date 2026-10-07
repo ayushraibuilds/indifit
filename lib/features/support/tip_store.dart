@@ -1,5 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
+import 'package:in_app_purchase_android/billing_client_wrappers.dart'
+    show BillingResponse;
+import 'package:in_app_purchase_android/in_app_purchase_android.dart';
+
+import '../../core/utils/app_logger.dart';
 
 /// A tip product as the store reports it. [price] is the store's own
 /// localized price string (for example "₹49.00").
@@ -53,6 +59,38 @@ class TipPurchaseUpdate {
   final Object? platformPurchase;
 }
 
+/// How a store transaction is finished.
+enum TipCompletion {
+  /// Nothing to do: the store isn't waiting on this transaction.
+  none,
+
+  /// Finish it (iOS `finishTransaction`, Android acknowledge).
+  complete,
+
+  /// Android: consume it. Consuming also acknowledges, so Play never
+  /// refunds it, and the same tip can be given again.
+  consume,
+}
+
+/// How to finish a tip transaction. Every tip is a consumable, so on Android
+/// a purchased or recovered tip is always consumed by the app itself: the
+/// plugin's auto-consume only covers a purchase that completes in the same
+/// app session as its `buy`, so a slow payment (UPI, pending card) that
+/// clears after the person left would otherwise stay unconsumed and be
+/// refunded after three days.
+TipCompletion tipCompletionFor({
+  required TipPurchaseStatus status,
+  required bool pendingCompletePurchase,
+  required bool isAndroid,
+}) {
+  if (isAndroid &&
+      (status == TipPurchaseStatus.purchased ||
+          status == TipPurchaseStatus.restored)) {
+    return TipCompletion.consume;
+  }
+  return pendingCompletePurchase ? TipCompletion.complete : TipCompletion.none;
+}
+
 /// The small slice of the store that the tip jar needs.
 ///
 /// Wrapping `InAppPurchase` keeps the plugin out of widget tests and makes
@@ -68,9 +106,17 @@ abstract interface class TipStore {
   /// not be sent.
   Future<bool> buy(String productId);
 
-  /// Finishes a transaction (acknowledge and consume on Android, finish on
-  /// iOS). Safe to call for any update with [TipPurchaseUpdate.needsCompletion].
+  /// Finishes a transaction (consume on Android, finish on iOS). Safe to
+  /// call for any update with [TipPurchaseUpdate.needsCompletion].
   Future<void> complete(TipPurchaseUpdate update);
+
+  /// Asks the store again for tips it is still waiting on the app to finish,
+  /// so they arrive on [purchaseUpdates]. Android only: Play hands back
+  /// unconsumed purchases (for example a UPI payment that cleared after the
+  /// tip screen closed). iOS re-delivers unfinished transactions on its own
+  /// once [purchaseUpdates] is listened to, without the Apple ID prompt a
+  /// restore can show.
+  Future<void> recoverUnfinished();
 }
 
 /// The real store, backed by `in_app_purchase`.
@@ -111,41 +157,76 @@ class InAppPurchaseTipStore implements TipStore {
   @override
   Stream<List<TipPurchaseUpdate>> get purchaseUpdates =>
       _iap.purchaseStream.map(
-        (purchases) => [
-          for (final purchase in purchases)
-            TipPurchaseUpdate(
-              productId: purchase.productID,
-              status: switch (purchase.status) {
-                PurchaseStatus.pending => TipPurchaseStatus.pending,
-                PurchaseStatus.purchased => TipPurchaseStatus.purchased,
-                PurchaseStatus.canceled => TipPurchaseStatus.cancelled,
-                PurchaseStatus.error => TipPurchaseStatus.error,
-                PurchaseStatus.restored => TipPurchaseStatus.restored,
-              },
-              needsCompletion: purchase.pendingCompletePurchase,
-              errorCode: purchase.error?.code,
-              platformPurchase: purchase,
-            ),
-        ],
+        (purchases) => [for (final purchase in purchases) _update(purchase)],
       );
+
+  static TipPurchaseUpdate _update(PurchaseDetails purchase) {
+    final status = switch (purchase.status) {
+      PurchaseStatus.pending => TipPurchaseStatus.pending,
+      PurchaseStatus.purchased => TipPurchaseStatus.purchased,
+      PurchaseStatus.canceled => TipPurchaseStatus.cancelled,
+      PurchaseStatus.error => TipPurchaseStatus.error,
+      PurchaseStatus.restored => TipPurchaseStatus.restored,
+    };
+    final completion = tipCompletionFor(
+      status: status,
+      pendingCompletePurchase: purchase.pendingCompletePurchase,
+      isAndroid: purchase is GooglePlayPurchaseDetails,
+    );
+    return TipPurchaseUpdate(
+      productId: purchase.productID,
+      status: status,
+      needsCompletion: completion != TipCompletion.none,
+      errorCode: purchase.error?.code,
+      platformPurchase: purchase,
+    );
+  }
 
   @override
   Future<bool> buy(String productId) async {
     final details = _details[productId];
     if (details == null) return false;
-    // Consumable with autoConsume: a tip can be given again and never turns
-    // into an owned item.
+    // A consumable, so a tip never turns into an owned item. The app consumes
+    // it in [complete] rather than relying on auto-consume, which only lasts
+    // for this app session (see [tipCompletionFor]).
     return _iap.buyConsumable(
       purchaseParam: PurchaseParam(productDetails: details),
+      autoConsume: false,
     );
   }
 
   @override
   Future<void> complete(TipPurchaseUpdate update) async {
     final purchase = update.platformPurchase;
-    if (purchase is PurchaseDetails && purchase.pendingCompletePurchase) {
-      await _iap.completePurchase(purchase);
+    if (purchase is! PurchaseDetails) return;
+    switch (tipCompletionFor(
+      status: update.status,
+      pendingCompletePurchase: purchase.pendingCompletePurchase,
+      isAndroid: purchase is GooglePlayPurchaseDetails,
+    )) {
+      case TipCompletion.none:
+        return;
+      case TipCompletion.complete:
+        await _iap.completePurchase(purchase);
+      case TipCompletion.consume:
+        final result = await _iap
+            .getPlatformAddition<InAppPurchaseAndroidPlatformAddition>()
+            .consumePurchase(purchase);
+        if (result.responseCode != BillingResponse.ok) {
+          // Play keeps it unconsumed; the next visit's recoverUnfinished
+          // hands it back to try again.
+          AppLogger.warning(
+            'Tip consume failed: ${result.responseCode}',
+            'TipJar',
+          );
+        }
     }
+  }
+
+  @override
+  Future<void> recoverUnfinished() async {
+    if (defaultTargetPlatform != TargetPlatform.android) return;
+    await _iap.restorePurchases();
   }
 }
 

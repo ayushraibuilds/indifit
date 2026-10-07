@@ -152,7 +152,7 @@ Agents pull from the top. A queue item can go into a tester build during the clo
 | **Q** `feat/specific-reminders` | TP-12 | L, M | S |
 | **R** `feat/home-widget` | TP-13 | M | L (native targets) |
 | **S** `feat/rest-live-activity` | TP-14 | D; Apple Developer Program | L (native targets) |
-| **T** `feat/tip-jar` (v1) | Supporter tip jar: 3 consumable IAPs (e.g. ₹49 / ₹99 / ₹199), Settings → "Support IndiFit", a thank-you screen, no unlock; `in_app_purchase`; privacy labels add "Purchases" | — (owner: store products and agreements) | S–M |
+| **T** `feat/tip-jar` (v1) | Supporter tip jar: 3 consumable IAPs (e.g. ₹49 / ₹99 / ₹199), Settings → "Support IndiFit", a thank-you screen, no unlock; `in_app_purchase`. No Purchases privacy label: the app never sends purchase data anywhere (reasons in `doc/store_listing_copy.md`) | — (owner: store products and agreements) | S–M |
 
 Every PR runs:
 

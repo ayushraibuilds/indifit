@@ -11,6 +11,7 @@ import 'package:indifit/data/catalog/catalog_pack.dart';
 import 'package:indifit/data/catalog/catalog_update_service.dart';
 import 'package:indifit/features/nutrition/nutrition_providers.dart';
 import 'package:indifit/features/settings/food_database_providers.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/catalog_update_fakes.dart';
@@ -60,6 +61,7 @@ void main() {
     String manifestUrl = kTestManifestUrl,
     Dio? dio,
     bool offline = false,
+    int? appBuild = 1,
   }) => CatalogUpdateService(
     dio: dio ?? (Dio()..httpClientAdapter = server),
     manifestUrl: manifestUrl,
@@ -69,10 +71,16 @@ void main() {
     isOfflineMode: () => offline,
     network: network,
     nowUtc: () => now,
+    // Null: the service reads the build number from the platform.
+    appBuild: appBuild == null ? null : () async => appBuild,
   );
 
   /// Pack [version] as a full pack, with roti's energy set to [rotiEnergy].
-  TestPackFile fullPack(int version, {double rotiEnergy = 300}) {
+  TestPackFile fullPack(
+    int version, {
+    double rotiEnergy = 300,
+    int minAppBuild = 1,
+  }) {
     final foods = [
       for (final food in bundledPack['foods']! as List)
         _withEnergy(food as Map<String, Object?>, rotiEnergy),
@@ -82,6 +90,7 @@ void main() {
       'version': version,
       'kind': 'full',
       'base': null,
+      'min_app_build': minAppBuild,
       'foods': foods,
     }, '$version.json.gz');
   }
@@ -261,6 +270,59 @@ void main() {
     expect(server.urls, [kTestManifestUrl]);
     expect(await installed(), bundled);
   });
+
+  test('a pack for a later build is applied by that build', () async {
+    // Packs gate on the real build number (versionCode / CFBundleVersion),
+    // not on a constant that has to be bumped by hand.
+    final newer = fullPack(next, rotiEnergy: 305, minAppBuild: 7);
+    publish(newer);
+    server.manifest(testManifest(next, [newer], minAppBuild: 7));
+
+    expect(
+      (await service(appBuild: 6).checkNow()).outcome,
+      CatalogUpdateOutcome.appTooOld,
+    );
+    expect(await installed(), bundled);
+
+    // By default the service asks the platform, so build 7 needs no code
+    // change to accept the pack.
+    PackageInfo.setMockInitialValues(
+      appName: 'IndiFit',
+      packageName: 'app.indifit',
+      version: '1.0.0',
+      buildNumber: '7',
+      buildSignature: '',
+    );
+    expect(
+      (await service(appBuild: null).checkNow()).outcome,
+      CatalogUpdateOutcome.updated,
+    );
+    expect(await installed(), next);
+    expect(await rotiEnergyPer100g(), 305);
+  });
+
+  test(
+    'the build number comes from the platform, else the lowest build',
+    () async {
+      PackageInfo.setMockInitialValues(
+        appName: 'IndiFit',
+        packageName: 'app.indifit',
+        version: '1.0.0',
+        buildNumber: '12',
+        buildSignature: '',
+      );
+      expect(await platformAppBuild(), 12);
+
+      PackageInfo.setMockInitialValues(
+        appName: 'IndiFit',
+        packageName: 'app.indifit',
+        version: '1.0.0',
+        buildNumber: '',
+        buildSignature: '',
+      );
+      expect(await platformAppBuild(), kCatalogAppBuild);
+    },
+  );
 
   test('a delta is applied when its base is installed', () async {
     final delta = deltaPack(next, bundled, rotiEnergy: 301);

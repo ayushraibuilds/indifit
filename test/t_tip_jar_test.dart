@@ -91,6 +91,75 @@ void main() {
     expect(find.textContaining('stays exactly the same'), findsOneWidget);
   });
 
+  testWidgets('opening the tip jar finishes a tip that cleared later', (
+    tester,
+  ) async {
+    // A UPI tip went pending, the person left, and Play approved it while
+    // the screen was closed. Unconsumed, Play would refund it in 3 days.
+    final store = _FakeTipStore()
+      ..unfinished = const [
+        TipPurchaseUpdate(
+          productId: TipJarProducts.small,
+          status: TipPurchaseStatus.restored,
+          needsCompletion: true,
+        ),
+      ];
+    await _pumpTipJar(tester, store);
+
+    expect(store.recoveries, 1);
+    expect(store.completedIds, [TipJarProducts.small]);
+    // Nothing new was bought, so the list stays and no thanks screen shows.
+    expect(find.byType(TipThanksScreen), findsNothing);
+    expect(find.text('₹49.00'), findsOneWidget);
+  });
+
+  group('tipCompletionFor', () {
+    TipCompletion android(TipPurchaseStatus status, {bool pending = false}) =>
+        tipCompletionFor(
+          status: status,
+          pendingCompletePurchase: pending,
+          isAndroid: true,
+        );
+    TipCompletion ios(TipPurchaseStatus status, {bool pending = false}) =>
+        tipCompletionFor(
+          status: status,
+          pendingCompletePurchase: pending,
+          isAndroid: false,
+        );
+
+    test('Android consumes every purchased or recovered tip', () {
+      // Even when the plugin says nothing is pending: its auto-consume list
+      // only lasts one app session.
+      expect(android(TipPurchaseStatus.purchased), TipCompletion.consume);
+      expect(
+        android(TipPurchaseStatus.purchased, pending: true),
+        TipCompletion.consume,
+      );
+      expect(
+        android(TipPurchaseStatus.restored, pending: true),
+        TipCompletion.consume,
+      );
+      expect(android(TipPurchaseStatus.pending), TipCompletion.none);
+      expect(android(TipPurchaseStatus.cancelled), TipCompletion.none);
+      expect(
+        android(TipPurchaseStatus.error, pending: true),
+        TipCompletion.complete,
+      );
+    });
+
+    test('iOS finishes whatever StoreKit is waiting on', () {
+      expect(
+        ios(TipPurchaseStatus.purchased, pending: true),
+        TipCompletion.complete,
+      );
+      expect(
+        ios(TipPurchaseStatus.error, pending: true),
+        TipCompletion.complete,
+      );
+      expect(ios(TipPurchaseStatus.pending), TipCompletion.none);
+    });
+  });
+
   testWidgets('cancelling returns to the list without thanks', (tester) async {
     final store = _FakeTipStore();
     await _pumpTipJar(tester, store);
@@ -271,6 +340,16 @@ class _FakeTipStore implements TipStore {
   @override
   Future<void> complete(TipPurchaseUpdate update) async {
     completedIds.add(update.productId);
+  }
+
+  /// Unfinished tips the store hands back when asked (Android).
+  List<TipPurchaseUpdate> unfinished = const [];
+  int recoveries = 0;
+
+  @override
+  Future<void> recoverUnfinished() async {
+    recoveries++;
+    if (unfinished.isNotEmpty) _updates.add(unfinished);
   }
 }
 

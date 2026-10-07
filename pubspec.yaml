@@ -67,6 +67,9 @@ dependencies:
   firebase_remote_config: ^6.7.0
   image: ^4.8.0
   in_app_purchase: ^3.3.1
+  # Consumes Android tips directly (tip_store.dart); same version as the
+  # federated plugin's.
+  in_app_purchase_android: ^0.5.0
   # 6.x: 7.1+ needs Xcode 26.1.1 (NWPath.isUltraConstrained), newer than CI.
   connectivity_plus: ">=6.1.5 <7.0.0"
 

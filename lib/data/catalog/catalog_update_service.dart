@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/config/app_preferences_keys.dart';
@@ -12,6 +13,19 @@ import '../../core/utils/app_logger.dart';
 import '../database/app_database.dart';
 import 'catalog_pack.dart';
 import 'catalog_pack_importer.dart';
+
+/// This build's number (`CFBundleVersion` on iOS, `versionCode` on Android),
+/// which a downloaded pack's `min_app_build` is compared against. Falls back
+/// to [kCatalogAppBuild] when the platform can't say.
+Future<int> platformAppBuild() async {
+  try {
+    final build = int.tryParse((await PackageInfo.fromPlatform()).buildNumber);
+    if (build != null && build > 0) return build;
+  } catch (error) {
+    AppLogger.warning('App build number unavailable: $error');
+  }
+  return kCatalogAppBuild;
+}
 
 /// The kind of connection a download would use.
 enum CatalogNetwork { wifi, mobile, none }
@@ -146,7 +160,7 @@ class CatalogUpdateService {
   final bool Function() _isOfflineMode;
   final CatalogNetworkProbe _network;
   final DateTime Function() _nowUtc;
-  final int _appBuild;
+  final Future<int> Function() _appBuild;
 
   Future<CatalogUpdateResult>? _running;
 
@@ -159,7 +173,7 @@ class CatalogUpdateService {
     required bool Function() isOfflineMode,
     required CatalogNetworkProbe network,
     DateTime Function()? nowUtc,
-    int appBuild = kCatalogAppBuild,
+    Future<int> Function()? appBuild,
   }) : _dio = dio,
        _manifestUrl = manifestUrl.trim(),
        _db = db,
@@ -168,7 +182,7 @@ class CatalogUpdateService {
        _isOfflineMode = isOfflineMode,
        _network = network,
        _nowUtc = nowUtc ?? (() => DateTime.now().toUtc()),
-       _appBuild = appBuild;
+       _appBuild = appBuild ?? platformAppBuild;
 
   /// False when this build has no manifest URL: nothing is ever requested.
   bool get updatesAvailableInBuild => _manifestUrl.isNotEmpty;
@@ -244,7 +258,8 @@ class CatalogUpdateService {
         return _finish(prefs, CatalogUpdateOutcome.upToDate, installed);
       }
       final minAppBuild = manifest.minAppBuild;
-      if (minAppBuild != null && minAppBuild > _appBuild) {
+      final appBuild = await _appBuild();
+      if (minAppBuild != null && minAppBuild > appBuild) {
         return _finish(prefs, CatalogUpdateOutcome.appTooOld, installed);
       }
       final entry = manifest.entryFrom(installed);
@@ -263,7 +278,7 @@ class CatalogUpdateService {
         expectedSha256: entry.sha256,
         registryVersion: '${registry.version}',
         nutrientIds: nutrientIds.toSet(),
-        appBuild: _appBuild,
+        appBuild: appBuild,
       );
       final result = await CatalogPackImporter(
         db: _db,

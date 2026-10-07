@@ -86,6 +86,9 @@ class TipJarController extends StateNotifier<TipJarState> {
           }
         },
       );
+      // A tip paid slowly (UPI, pending card) may have cleared after the
+      // screen closed; finish it now so the store doesn't refund it.
+      unawaited(_recoverUnfinished(store));
       final result = await store.queryProducts(TipJarProducts.ids.toSet());
       if (!mounted) return;
       final byId = {for (final product in result.products) product.id: product};
@@ -125,6 +128,17 @@ class TipJarController extends StateNotifier<TipJarState> {
     } catch (error) {
       AppLogger.warning('Tip purchase could not start: $error', 'TipJar');
       if (mounted) state = state.copyWith(purchase: TipPurchasePhase.failed);
+    }
+  }
+
+  Future<void> _recoverUnfinished(TipStore store) async {
+    try {
+      await store.recoverUnfinished();
+    } catch (error) {
+      AppLogger.warning(
+        'Unfinished tips could not be fetched: $error',
+        'TipJar',
+      );
     }
   }
 

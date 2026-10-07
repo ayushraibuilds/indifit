@@ -20,7 +20,11 @@ const int kBundledCatalogPackVersion = 2;
 const String kBundledCatalogManifestAsset = 'assets/catalog/manifest.json';
 const String kBundledCatalogAssetDirectory = 'assets/catalog/';
 
-/// The app build number that packs compare `min_app_build` against.
+/// The lowest app build. Bundled packs are checked against it (they always
+/// say `min_app_build: 1`), and downloads fall back to it when the platform
+/// can't report this build's number, which can only refuse a gated pack,
+/// never apply one too early. Downloads otherwise compare `min_app_build`
+/// against the real build number (see `platformAppBuild`).
 const int kCatalogAppBuild = 1;
 
 class CatalogPackError implements Exception {
