@@ -430,9 +430,10 @@ void main() {
   test(
     'production missing consent, eligibility, and nutrition evidence stays typed and offline',
     () async {
-      final nowUtc = DateTime.now().toUtc();
       final dates = LocalScheduleDateService();
       final timezoneId = 'Asia/Kolkata';
+      await _clearOfLocalMidnight(timezoneId);
+      final nowUtc = DateTime.now().toUtc();
       final localDate = dates.localDateFor(nowUtc, timezoneId);
       container = _container(db: db, registry: registry);
 
@@ -459,6 +460,37 @@ void main() {
       expect(daily.eligibilityState, B04RecommendationEligibilityState.missing);
     },
   );
+
+  group('midnight guard', () {
+    // 23:59:59.5 IST is 18:29:59.5 UTC.
+    final lastHalfSecond = DateTime.utc(2026, 10, 7, 18, 29, 59, 500);
+    final midday = DateTime.utc(2026, 10, 7, 6, 30);
+
+    test('waits out the end of the local day', () async {
+      final waits = <Duration>[];
+      await _clearOfLocalMidnight(
+        'Asia/Kolkata',
+        nowUtc: () => lastHalfSecond,
+        wait: (duration) async => waits.add(duration),
+      );
+      expect(waits, [_localDayMargin]);
+      final dates = LocalScheduleDateService();
+      expect(
+        dates.localDateFor(lastHalfSecond.add(waits.single), 'Asia/Kolkata'),
+        '2026-10-08',
+      );
+    });
+
+    test('doesn\'t wait during the day', () async {
+      final waits = <Duration>[];
+      await _clearOfLocalMidnight(
+        'Asia/Kolkata',
+        nowUtc: () => midday,
+        wait: (duration) async => waits.add(duration),
+      );
+      expect(waits, isEmpty);
+    });
+  });
 }
 
 ProviderContainer _container({
@@ -474,6 +506,32 @@ ProviderContainer _container({
   ],
 );
 
+/// How long a scenario needs its local day to stay the same: seeding, two
+/// loads and the 1.1 s wait before a reload, with room to spare.
+const _localDayMargin = Duration(seconds: 30);
+
+/// Waits out the last [_localDayMargin] of the local day.
+///
+/// A scenario takes "today" from the wall clock when it seeds, while the
+/// orchestrator reads the clock again for its meal opportunity. A run
+/// straddling midnight in [timezoneId] seeded one day and evaluated the
+/// next, and the assembler rejected it ("Meal opportunity local date must
+/// be inside the frozen context period"; CI run 37666921558 at 00:00 IST).
+/// Starting on the new day keeps every read on one local day.
+Future<void> _clearOfLocalMidnight(
+  String timezoneId, {
+  DateTime Function()? nowUtc,
+  Future<void> Function(Duration)? wait,
+}) async {
+  final now = (nowUtc ?? () => DateTime.now().toUtc())();
+  final dates = LocalScheduleDateService();
+  if (dates.localDateFor(now, timezoneId) ==
+      dates.localDateFor(now.add(_localDayMargin), timezoneId)) {
+    return;
+  }
+  await (wait ?? Future<void>.delayed)(_localDayMargin);
+}
+
 Future<_Scenario> _seedScenario({
   required AppDatabase db,
   required NutrientRegistry registry,
@@ -486,6 +544,7 @@ Future<_Scenario> _seedScenario({
   final nutritionOwner = nutritionUserId ?? userId;
   const timezoneId = 'Asia/Kolkata';
   final dates = LocalScheduleDateService();
+  await _clearOfLocalMidnight(timezoneId);
   final nowUtc = DateTime.now().toUtc();
   final localDate = dates.localDateFor(nowUtc, timezoneId);
   final weekStart = dates.addCalendarDays(localDate, timezoneId, -6);
