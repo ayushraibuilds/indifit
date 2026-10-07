@@ -185,6 +185,30 @@ class NotificationService {
     return (androidGranted ?? false) || (iosGranted ?? false);
   }
 
+  /// Whether Android lets the app schedule exact alarms. Android 14+ turns
+  /// this off by default for new installs. Null on other platforms.
+  static Future<bool?> canScheduleExactAlarms() async {
+    try {
+      return await _plugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >()
+          ?.canScheduleExactNotifications();
+    } catch (e) {
+      AppLogger.warning('exact alarm status unavailable: $e');
+      return null;
+    }
+  }
+
+  /// Opens Android's "Alarms & reminders" setting for IndiFit.
+  static Future<void> openExactAlarmSettings() async {
+    await _plugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
+        ?.requestExactAlarmsPermission();
+  }
+
   /// Reads the OS notification permission without changing the app's reminder
   /// preferences. Unsupported platforms return [NotificationPermissionStatus
   /// .unavailable] rather than implying that notifications are allowed.

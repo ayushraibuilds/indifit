@@ -1,21 +1,21 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "summary": {
-    "total_dart_files": 482,
-    "total_loc": 343310,
-    "total_internal_edges": 2389,
-    "external_package_count": 29,
+    "total_dart_files": 488,
+    "total_loc": 344366,
+    "total_internal_edges": 2411,
+    "external_package_count": 30,
     "catch_metrics": {
-      "total_catches_all": 509,
+      "total_catches_all": 514,
       "total_catch_underscore": 158,
       "total_empty_catches": 0,
       "p0_empty_catches": 0
     },
     "layer_violations_count": 7,
     "catches_by_layer": {
-      "core": 145,
+      "core": 147,
       "data": 103,
-      "features": 259,
+      "features": 262,
       "other": 2
     }
   },
@@ -1680,7 +1680,7 @@
       "path": "lib/core/config/app_preferences_keys.dart",
       "layer": "core",
       "sublayer": "core",
-      "loc": 166,
+      "loc": 168,
       "imports": [],
       "imported_by": [
         "lib/app/bootstrap.dart",
@@ -1693,6 +1693,7 @@
         "lib/core/services/crash_reporting_service.dart",
         "lib/core/services/data_erasure_service.dart",
         "lib/core/services/notification_service.dart",
+        "lib/core/services/rest_alert_permission_service.dart",
         "lib/data/database/app_database.dart",
         "lib/data/repositories/health_service.dart",
         "lib/data/repositories/hydration_repository.dart",
@@ -3678,7 +3679,8 @@
         "lib/features/nutrition/nutrition_providers.dart",
         "lib/features/nutrition_ai/natural_language_meal_service.dart",
         "lib/features/nutrition_ai/nutrition_label_ocr_service.dart",
-        "lib/features/settings/settings_controller.dart"
+        "lib/features/settings/settings_controller.dart",
+        "lib/features/support/tip_jar_controller.dart"
       ],
       "parts": [],
       "part_of": null,
@@ -3741,7 +3743,7 @@
       "path": "lib/core/router/app_router.dart",
       "layer": "core",
       "sublayer": "core",
-      "loc": 193,
+      "loc": 194,
       "imports": [
         "lib/data/database/app_database.dart",
         "lib/data/models/b02_execution_models.dart",
@@ -3772,6 +3774,7 @@
         "lib/features/settings/nutrition_constraints_screen.dart",
         "lib/features/settings/nutrition_targets_hub_screen.dart",
         "lib/features/settings/settings_screen.dart",
+        "lib/features/support/tip_jar_screen.dart",
         "lib/features/training/plan_library_screen.dart",
         "lib/features/training/workout_history_screen.dart",
         "lib/features/workout_player/b02_strength_player_screen.dart",
@@ -3814,7 +3817,7 @@
       "catches": [
         {
           "file": "lib/core/router/app_router.dart",
-          "line": 82,
+          "line": 83,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -3848,7 +3851,7 @@
       "path": "lib/core/router/routes/core_routes.dart",
       "layer": "core",
       "sublayer": "core",
-      "loc": 31,
+      "loc": 39,
       "imports": [],
       "imported_by": [
         "lib/core/router/app_router.dart"
@@ -4602,7 +4605,7 @@
       "path": "lib/core/services/notification_service.dart",
       "layer": "core",
       "sublayer": "core",
-      "loc": 937,
+      "loc": 961,
       "imports": [
         "lib/data/database/app_database.dart",
         "lib/core/config/app_preferences_keys.dart",
@@ -4615,6 +4618,7 @@
         "lib/app/bootstrap.dart",
         "lib/app/indifit_app.dart",
         "lib/core/services/data_erasure_service.dart",
+        "lib/core/services/rest_alert_permission_service.dart",
         "lib/features/dashboard/widgets/hydration_detail_sheet.dart",
         "lib/features/settings/settings_controller.dart",
         "lib/features/settings/widgets/notification_settings_section.dart",
@@ -4628,7 +4632,7 @@
       "catches": [
         {
           "file": "lib/core/services/notification_service.dart",
-          "line": 885,
+          "line": 197,
           "var": "e",
           "is_underscore": false,
           "is_empty": false,
@@ -4638,7 +4642,17 @@
         },
         {
           "file": "lib/core/services/notification_service.dart",
-          "line": 896,
+          "line": 909,
+          "var": "e",
+          "is_underscore": false,
+          "is_empty": false,
+          "snippet": "} catch (e) {",
+          "layer": "core",
+          "is_p0": false
+        },
+        {
+          "file": "lib/core/services/notification_service.dart",
+          "line": 920,
           "var": "e",
           "is_underscore": false,
           "is_empty": false,
@@ -4648,7 +4662,7 @@
         }
       ],
       "empty_catch_count": 0,
-      "total_catch_count": 2
+      "total_catch_count": 3
     },
     "lib/core/services/platform_storage_protection.dart": {
       "path": "lib/core/services/platform_storage_protection.dart",
@@ -4682,11 +4696,46 @@
       "empty_catch_count": 0,
       "total_catch_count": 1
     },
+    "lib/core/services/rest_alert_permission_service.dart": {
+      "path": "lib/core/services/rest_alert_permission_service.dart",
+      "layer": "core",
+      "sublayer": "core",
+      "loc": 115,
+      "imports": [
+        "lib/core/config/app_preferences_keys.dart",
+        "lib/core/utils/app_logger.dart",
+        "lib/core/services/notification_service.dart"
+      ],
+      "imported_by": [
+        "lib/features/workout_player/b02_strength_execution_controller.dart",
+        "lib/features/workout_player/b02_strength_player_screen.dart",
+        "lib/features/workout_player/widgets/rest_alert_prompt_sheet.dart"
+      ],
+      "parts": [],
+      "part_of": null,
+      "providers_defined": [],
+      "providers_used": [],
+      "routes_defined": [],
+      "catches": [
+        {
+          "file": "lib/core/services/rest_alert_permission_service.dart",
+          "line": 108,
+          "var": "error",
+          "is_underscore": false,
+          "is_empty": false,
+          "snippet": "} catch (error) {",
+          "layer": "core",
+          "is_p0": false
+        }
+      ],
+      "empty_catch_count": 0,
+      "total_catch_count": 1
+    },
     "lib/core/services/rest_presence_service.dart": {
       "path": "lib/core/services/rest_presence_service.dart",
       "layer": "core",
       "sublayer": "core",
-      "loc": 882,
+      "loc": 893,
       "imports": [
         "lib/core/utils/app_logger.dart",
         "lib/core/services/indifit_haptics.dart",
@@ -4706,7 +4755,7 @@
       "catches": [
         {
           "file": "lib/core/services/rest_presence_service.dart",
-          "line": 305,
+          "line": 309,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -4716,7 +4765,7 @@
         },
         {
           "file": "lib/core/services/rest_presence_service.dart",
-          "line": 322,
+          "line": 330,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -4726,47 +4775,17 @@
         },
         {
           "file": "lib/core/services/rest_presence_service.dart",
-          "line": 803,
+          "line": 814,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
           "snippet": "} catch (error) {",
-          "layer": "core",
-          "is_p0": false
-        },
-        {
-          "file": "lib/core/services/rest_presence_service.dart",
-          "line": 819,
-          "var": "_",
-          "is_underscore": true,
-          "is_empty": false,
-          "snippet": "} catch (_) {",
           "layer": "core",
           "is_p0": false
         },
         {
           "file": "lib/core/services/rest_presence_service.dart",
           "line": 830,
-          "var": "error",
-          "is_underscore": false,
-          "is_empty": false,
-          "snippet": "} catch (error) {",
-          "layer": "core",
-          "is_p0": false
-        },
-        {
-          "file": "lib/core/services/rest_presence_service.dart",
-          "line": 845,
-          "var": "error",
-          "is_underscore": false,
-          "is_empty": false,
-          "snippet": "} catch (error) {",
-          "layer": "core",
-          "is_p0": false
-        },
-        {
-          "file": "lib/core/services/rest_presence_service.dart",
-          "line": 864,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -4776,7 +4795,37 @@
         },
         {
           "file": "lib/core/services/rest_presence_service.dart",
+          "line": 841,
+          "var": "error",
+          "is_underscore": false,
+          "is_empty": false,
+          "snippet": "} catch (error) {",
+          "layer": "core",
+          "is_p0": false
+        },
+        {
+          "file": "lib/core/services/rest_presence_service.dart",
+          "line": 856,
+          "var": "error",
+          "is_underscore": false,
+          "is_empty": false,
+          "snippet": "} catch (error) {",
+          "layer": "core",
+          "is_p0": false
+        },
+        {
+          "file": "lib/core/services/rest_presence_service.dart",
           "line": 875,
+          "var": "_",
+          "is_underscore": true,
+          "is_empty": false,
+          "snippet": "} catch (_) {",
+          "layer": "core",
+          "is_p0": false
+        },
+        {
+          "file": "lib/core/services/rest_presence_service.dart",
+          "line": 886,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -5144,6 +5193,7 @@
         "lib/features/settings/widgets/notification_settings_section.dart",
         "lib/features/settings/widgets/privacy_disclosure_card.dart",
         "lib/features/settings/widgets/settings_reminder_toggle.dart",
+        "lib/features/support/tip_jar_screen.dart",
         "lib/features/training/plan_library_screen.dart",
         "lib/features/training/training_screen.dart",
         "lib/features/training/training_workout_customization.dart",
@@ -5161,6 +5211,7 @@
         "lib/features/workout_player/widgets/plate_calculator_sheet.dart",
         "lib/features/workout_player/widgets/prior_session_card.dart",
         "lib/features/workout_player/widgets/r07c_workout_presentation.dart",
+        "lib/features/workout_player/widgets/rest_alert_prompt_sheet.dart",
         "lib/features/workout_player/widgets/rest_timer_bottom_sheet.dart",
         "lib/features/workout_player/widgets/workout_player_header.dart",
         "lib/features/workout_player/widgets/workout_share_card.dart",
@@ -5320,6 +5371,7 @@
         "lib/core/services/local_timezone_service.dart",
         "lib/core/services/notification_service.dart",
         "lib/core/services/platform_storage_protection.dart",
+        "lib/core/services/rest_alert_permission_service.dart",
         "lib/core/services/rest_presence_service.dart",
         "lib/core/services/workout_session_wake_lock_coordinator.dart",
         "lib/core/sync/sync_service.dart",
@@ -5349,6 +5401,7 @@
         "lib/features/progress/progress_dashboard_controller.dart",
         "lib/features/progress/streak_provider.dart",
         "lib/features/settings/regional_food_packs_screen.dart",
+        "lib/features/support/tip_jar_controller.dart",
         "lib/features/workout_player/b02_strength_execution_controller.dart",
         "lib/features/workout_player/b02_strength_summary_screen.dart",
         "lib/features/workout_player/quick_workout_screen.dart",
@@ -5553,6 +5606,7 @@
         "lib/features/settings/widgets/notification_settings_section.dart",
         "lib/features/settings/widgets/privacy_disclosure_card.dart",
         "lib/features/settings/widgets/settings_reminder_toggle.dart",
+        "lib/features/support/tip_jar_screen.dart",
         "lib/features/training/plan_library_screen.dart",
         "lib/features/training/training_screen.dart",
         "lib/features/training/training_workout_customization.dart",
@@ -5573,6 +5627,7 @@
         "lib/features/workout_player/widgets/plate_calculator_sheet.dart",
         "lib/features/workout_player/widgets/prior_session_card.dart",
         "lib/features/workout_player/widgets/r07c_workout_presentation.dart",
+        "lib/features/workout_player/widgets/rest_alert_prompt_sheet.dart",
         "lib/features/workout_player/widgets/rest_timer_bottom_sheet.dart",
         "lib/features/workout_player/widgets/workout_player_header.dart",
         "lib/features/workout_player/widgets/workout_share_card.dart",
@@ -5632,6 +5687,7 @@
         "lib/features/settings/nutrition_targets_hub_screen.dart",
         "lib/features/settings/regional_food_packs_screen.dart",
         "lib/features/settings/settings_screen.dart",
+        "lib/features/support/tip_jar_screen.dart",
         "lib/features/training/plan_library_screen.dart",
         "lib/features/training/training_screen.dart",
         "lib/features/training/training_workout_customization.dart",
@@ -5677,6 +5733,7 @@
         "lib/features/workout_player/routine_editor_screen.dart",
         "lib/features/workout_player/widgets/b07_exercise_context.dart",
         "lib/features/workout_player/widgets/plate_calculator_sheet.dart",
+        "lib/features/workout_player/widgets/rest_alert_prompt_sheet.dart",
         "lib/features/workout_player/widgets/rest_timer_bottom_sheet.dart"
       ],
       "parts": [],
@@ -17175,7 +17232,7 @@
       "path": "lib/features/settings/settings_screen.dart",
       "layer": "features",
       "sublayer": "features/settings",
-      "loc": 501,
+      "loc": 514,
       "imports": [
         "lib/core/di/health_provider.dart",
         "lib/core/di/theme_provider.dart",
@@ -17194,6 +17251,7 @@
         "lib/features/equipment/equipment_profiles_screen.dart",
         "lib/features/media/b05_playlist_launcher.dart",
         "lib/features/profile/profile_screen.dart",
+        "lib/features/support/tip_jar_screen.dart",
         "lib/features/settings/about_credits_screen.dart",
         "lib/features/settings/data_management_sub_screen.dart",
         "lib/features/settings/diary_structure_screen.dart",
@@ -17576,6 +17634,132 @@
       "parts": [],
       "part_of": null,
       "providers_defined": [],
+      "providers_used": [],
+      "routes_defined": [],
+      "catches": [],
+      "empty_catch_count": 0,
+      "total_catch_count": 0
+    },
+    "lib/features/support/tip_jar_controller.dart": {
+      "path": "lib/features/support/tip_jar_controller.dart",
+      "layer": "features",
+      "sublayer": "features/support",
+      "loc": 178,
+      "imports": [
+        "lib/core/privacy/privacy_policy.dart",
+        "lib/core/utils/app_logger.dart",
+        "lib/features/support/tip_jar_products.dart",
+        "lib/features/support/tip_store.dart"
+      ],
+      "imported_by": [
+        "lib/features/support/tip_jar_screen.dart"
+      ],
+      "parts": [],
+      "part_of": null,
+      "providers_defined": [
+        "tipJarControllerProvider"
+      ],
+      "providers_used": [
+        "tipStoreProvider"
+      ],
+      "routes_defined": [],
+      "catches": [
+        {
+          "file": "lib/features/support/tip_jar_controller.dart",
+          "line": 110,
+          "var": "error",
+          "is_underscore": false,
+          "is_empty": false,
+          "snippet": "} catch (error) {",
+          "layer": "features/support",
+          "is_p0": false
+        },
+        {
+          "file": "lib/features/support/tip_jar_controller.dart",
+          "line": 125,
+          "var": "error",
+          "is_underscore": false,
+          "is_empty": false,
+          "snippet": "} catch (error) {",
+          "layer": "features/support",
+          "is_p0": false
+        },
+        {
+          "file": "lib/features/support/tip_jar_controller.dart",
+          "line": 146,
+          "var": "error",
+          "is_underscore": false,
+          "is_empty": false,
+          "snippet": "} catch (error) {",
+          "layer": "features/support",
+          "is_p0": false
+        }
+      ],
+      "empty_catch_count": 0,
+      "total_catch_count": 3
+    },
+    "lib/features/support/tip_jar_products.dart": {
+      "path": "lib/features/support/tip_jar_products.dart",
+      "layer": "features",
+      "sublayer": "features/support",
+      "loc": 24,
+      "imports": [],
+      "imported_by": [
+        "lib/features/support/tip_jar_controller.dart",
+        "lib/features/support/tip_jar_screen.dart"
+      ],
+      "parts": [],
+      "part_of": null,
+      "providers_defined": [],
+      "providers_used": [],
+      "routes_defined": [],
+      "catches": [],
+      "empty_catch_count": 0,
+      "total_catch_count": 0
+    },
+    "lib/features/support/tip_jar_screen.dart": {
+      "path": "lib/features/support/tip_jar_screen.dart",
+      "layer": "features",
+      "sublayer": "features/support",
+      "loc": 237,
+      "imports": [
+        "lib/core/theme/b05_semantic_colors.dart",
+        "lib/core/widgets/b05_accessibility_primitives.dart",
+        "lib/core/widgets/consumer_task_primitives.dart",
+        "lib/features/support/tip_jar_controller.dart",
+        "lib/features/support/tip_jar_products.dart",
+        "lib/features/support/tip_store.dart"
+      ],
+      "imported_by": [
+        "lib/core/router/app_router.dart",
+        "lib/features/settings/settings_screen.dart"
+      ],
+      "parts": [],
+      "part_of": null,
+      "providers_defined": [],
+      "providers_used": [
+        "tipJarControllerProvider"
+      ],
+      "routes_defined": [],
+      "catches": [],
+      "empty_catch_count": 0,
+      "total_catch_count": 0
+    },
+    "lib/features/support/tip_store.dart": {
+      "path": "lib/features/support/tip_store.dart",
+      "layer": "features",
+      "sublayer": "features/support",
+      "loc": 154,
+      "imports": [],
+      "imported_by": [
+        "lib/features/support/tip_jar_controller.dart",
+        "lib/features/support/tip_jar_screen.dart"
+      ],
+      "parts": [],
+      "part_of": null,
+      "providers_defined": [
+        "tipStoreProvider"
+      ],
       "providers_used": [],
       "routes_defined": [],
       "catches": [],
@@ -18017,12 +18201,13 @@
       "path": "lib/features/workout_player/b02_strength_execution_controller.dart",
       "layer": "features",
       "sublayer": "features/workout_player",
-      "loc": 1681,
+      "loc": 1692,
       "imports": [
         "lib/core/di/providers.dart",
         "lib/core/presentation/consumer_copy.dart",
         "lib/core/presentation/product_failure_presentation.dart",
         "lib/core/services/achievement_service.dart",
+        "lib/core/services/rest_alert_permission_service.dart",
         "lib/core/services/rest_presence_service.dart",
         "lib/core/services/workout_session_wake_lock_coordinator.dart",
         "lib/core/utils/app_logger.dart",
@@ -18061,7 +18246,7 @@
       "catches": [
         {
           "file": "lib/features/workout_player/b02_strength_execution_controller.dart",
-          "line": 320,
+          "line": 324,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -18071,7 +18256,7 @@
         },
         {
           "file": "lib/features/workout_player/b02_strength_execution_controller.dart",
-          "line": 357,
+          "line": 361,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -18081,7 +18266,7 @@
         },
         {
           "file": "lib/features/workout_player/b02_strength_execution_controller.dart",
-          "line": 423,
+          "line": 427,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -18091,7 +18276,7 @@
         },
         {
           "file": "lib/features/workout_player/b02_strength_execution_controller.dart",
-          "line": 458,
+          "line": 462,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -18101,7 +18286,7 @@
         },
         {
           "file": "lib/features/workout_player/b02_strength_execution_controller.dart",
-          "line": 484,
+          "line": 488,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -18111,7 +18296,7 @@
         },
         {
           "file": "lib/features/workout_player/b02_strength_execution_controller.dart",
-          "line": 514,
+          "line": 518,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -18121,7 +18306,7 @@
         },
         {
           "file": "lib/features/workout_player/b02_strength_execution_controller.dart",
-          "line": 539,
+          "line": 543,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -18131,7 +18316,7 @@
         },
         {
           "file": "lib/features/workout_player/b02_strength_execution_controller.dart",
-          "line": 560,
+          "line": 564,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -18141,7 +18326,7 @@
         },
         {
           "file": "lib/features/workout_player/b02_strength_execution_controller.dart",
-          "line": 620,
+          "line": 624,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -18151,7 +18336,7 @@
         },
         {
           "file": "lib/features/workout_player/b02_strength_execution_controller.dart",
-          "line": 839,
+          "line": 845,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -18161,7 +18346,7 @@
         },
         {
           "file": "lib/features/workout_player/b02_strength_execution_controller.dart",
-          "line": 885,
+          "line": 894,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -18171,7 +18356,7 @@
         },
         {
           "file": "lib/features/workout_player/b02_strength_execution_controller.dart",
-          "line": 895,
+          "line": 904,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -18181,7 +18366,7 @@
         },
         {
           "file": "lib/features/workout_player/b02_strength_execution_controller.dart",
-          "line": 911,
+          "line": 920,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -18191,7 +18376,7 @@
         },
         {
           "file": "lib/features/workout_player/b02_strength_execution_controller.dart",
-          "line": 944,
+          "line": 953,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -18201,7 +18386,7 @@
         },
         {
           "file": "lib/features/workout_player/b02_strength_execution_controller.dart",
-          "line": 1007,
+          "line": 1016,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -18211,7 +18396,7 @@
         },
         {
           "file": "lib/features/workout_player/b02_strength_execution_controller.dart",
-          "line": 1034,
+          "line": 1043,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -18221,7 +18406,7 @@
         },
         {
           "file": "lib/features/workout_player/b02_strength_execution_controller.dart",
-          "line": 1077,
+          "line": 1086,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -18231,7 +18416,7 @@
         },
         {
           "file": "lib/features/workout_player/b02_strength_execution_controller.dart",
-          "line": 1146,
+          "line": 1155,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -18241,7 +18426,7 @@
         },
         {
           "file": "lib/features/workout_player/b02_strength_execution_controller.dart",
-          "line": 1251,
+          "line": 1260,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -18251,7 +18436,7 @@
         },
         {
           "file": "lib/features/workout_player/b02_strength_execution_controller.dart",
-          "line": 1278,
+          "line": 1287,
           "var": "e",
           "is_underscore": false,
           "is_empty": false,
@@ -18261,7 +18446,7 @@
         },
         {
           "file": "lib/features/workout_player/b02_strength_execution_controller.dart",
-          "line": 1339,
+          "line": 1348,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -18271,7 +18456,7 @@
         },
         {
           "file": "lib/features/workout_player/b02_strength_execution_controller.dart",
-          "line": 1360,
+          "line": 1369,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -18281,7 +18466,7 @@
         },
         {
           "file": "lib/features/workout_player/b02_strength_execution_controller.dart",
-          "line": 1387,
+          "line": 1396,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -18291,7 +18476,7 @@
         },
         {
           "file": "lib/features/workout_player/b02_strength_execution_controller.dart",
-          "line": 1389,
+          "line": 1398,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -18307,11 +18492,12 @@
       "path": "lib/features/workout_player/b02_strength_player_screen.dart",
       "layer": "features",
       "sublayer": "features/workout_player",
-      "loc": 1749,
+      "loc": 1772,
       "imports": [
         "lib/core/di/providers.dart",
         "lib/core/presentation/consumer_copy.dart",
         "lib/core/services/indifit_haptics.dart",
+        "lib/core/services/rest_alert_permission_service.dart",
         "lib/core/theme/indifit_icons.dart",
         "lib/core/widgets/b05_accessibility_primitives.dart",
         "lib/core/widgets/indi_fit_bottom_sheet.dart",
@@ -18335,6 +18521,7 @@
         "lib/features/workout_player/widgets/b07_exercise_context.dart",
         "lib/features/workout_player/widgets/plate_calculator_sheet.dart",
         "lib/features/workout_player/widgets/r07c_workout_presentation.dart",
+        "lib/features/workout_player/widgets/rest_alert_prompt_sheet.dart",
         "lib/features/workout_player/workout_execution_context.dart",
         "lib/features/workout_player/workout_execution_route.dart",
         "lib/features/workout_player/workout_execution_shell.dart",
@@ -18355,7 +18542,7 @@
       "catches": [
         {
           "file": "lib/features/workout_player/b02_strength_player_screen.dart",
-          "line": 959,
+          "line": 982,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -18365,7 +18552,7 @@
         },
         {
           "file": "lib/features/workout_player/b02_strength_player_screen.dart",
-          "line": 1135,
+          "line": 1158,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -18784,7 +18971,7 @@
       "path": "lib/features/workout_player/widgets/b02_player_cards.dart",
       "layer": "features",
       "sublayer": "features/workout_player",
-      "loc": 1043,
+      "loc": 1189,
       "imports": [
         "lib/core/presentation/consumer_copy.dart",
         "lib/core/services/indifit_haptics.dart",
@@ -18811,7 +18998,7 @@
       "catches": [
         {
           "file": "lib/features/workout_player/widgets/b02_player_cards.dart",
-          "line": 992,
+          "line": 1123,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -19068,6 +19255,29 @@
       "empty_catch_count": 0,
       "total_catch_count": 0
     },
+    "lib/features/workout_player/widgets/rest_alert_prompt_sheet.dart": {
+      "path": "lib/features/workout_player/widgets/rest_alert_prompt_sheet.dart",
+      "layer": "features",
+      "sublayer": "features/workout_player",
+      "loc": 95,
+      "imports": [
+        "lib/core/services/rest_alert_permission_service.dart",
+        "lib/core/theme/b05_semantic_colors.dart",
+        "lib/core/widgets/b05_accessibility_primitives.dart",
+        "lib/core/widgets/indi_fit_bottom_sheet.dart"
+      ],
+      "imported_by": [
+        "lib/features/workout_player/b02_strength_player_screen.dart"
+      ],
+      "parts": [],
+      "part_of": null,
+      "providers_defined": [],
+      "providers_used": [],
+      "routes_defined": [],
+      "catches": [],
+      "empty_catch_count": 0,
+      "total_catch_count": 0
+    },
     "lib/features/workout_player/widgets/rest_timer_bottom_sheet.dart": {
       "path": "lib/features/workout_player/widgets/rest_timer_bottom_sheet.dart",
       "layer": "features",
@@ -19186,7 +19396,7 @@
       "path": "lib/features/workout_player/workout_execution_shell.dart",
       "layer": "features",
       "sublayer": "features/workout_player",
-      "loc": 162,
+      "loc": 176,
       "imports": [
         "lib/features/workout_player/workout_execution_context.dart"
       ],

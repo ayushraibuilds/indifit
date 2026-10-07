@@ -665,15 +665,14 @@ bool b02RestPeriodBelongsToSlot(
       period.id.startsWith('rest:${slot.id}:');
 }
 
+/// The rest card in the scrolling list. While a rest is open it shows the
+/// ring and the next set; the controls live in [StickyRestBar], which stays
+/// on screen under the header (audit UX-05).
 class RestCard extends StatefulWidget {
   final B02StrengthExecutionSlot slot;
   final B02ExecutionDraftState state;
   final VoidCallback? onBegin;
   final ValueChanged<int>? onCustom;
-  final ValueChanged<String>? onExtend;
-  final ValueChanged<String>? onDecrease;
-  final ValueChanged<String>? onSkip;
-  final Future<bool> Function(String) onElapsed;
 
   const RestCard({
     super.key,
@@ -681,10 +680,6 @@ class RestCard extends StatefulWidget {
     required this.state,
     required this.onBegin,
     required this.onCustom,
-    required this.onExtend,
-    required this.onDecrease,
-    required this.onSkip,
-    required this.onElapsed,
   });
 
   @override
@@ -692,9 +687,11 @@ class RestCard extends StatefulWidget {
 }
 
 class _RestCardState extends State<RestCard> {
+  static const _ringSize = 112.0;
+  static const _ringStroke = 5.0;
+
   late DateTime _now;
   Timer? _ticker;
-  var _finishingElapsedRest = false;
 
   @override
   void initState() {
@@ -720,8 +717,10 @@ class _RestCardState extends State<RestCard> {
 
   @override
   Widget build(BuildContext context) {
-    final period = _openPeriod(widget);
-    final remaining = period == null ? null : _remainingLabel(period);
+    final period = b02OpenRestPeriod(widget.state);
+    final remaining = period == null
+        ? null
+        : b02RestRemainingLabel(period, _now);
     final remainingSeconds = period == null
         ? null
         : b02RestRemainingSeconds(period, _now);
@@ -817,29 +816,45 @@ class _RestCardState extends State<RestCard> {
               ] else ...[
                 Center(
                   child: SizedBox.square(
-                    dimension: 92,
+                    dimension: _ringSize,
                     child: Stack(
                       alignment: Alignment.center,
                       children: [
-                        CircularProgressIndicator(
-                          value:
-                              period.selectedSeconds == null ||
-                                  period.selectedSeconds == 0
-                              ? 0
-                              : (remainingSeconds! / period.selectedSeconds!)
-                                    .clamp(0.0, 1.0),
-                          strokeWidth: 5,
-                          backgroundColor: Theme.of(
-                            context,
-                          ).colorScheme.surfaceContainerLow,
+                        SizedBox.expand(
+                          child: CircularProgressIndicator(
+                            value:
+                                period.selectedSeconds == null ||
+                                    period.selectedSeconds == 0
+                                ? 0
+                                : (remainingSeconds! / period.selectedSeconds!)
+                                      .clamp(0.0, 1.0),
+                            strokeWidth: _ringStroke,
+                            backgroundColor: Theme.of(
+                              context,
+                            ).colorScheme.surfaceContainerLow,
+                          ),
                         ),
-                        Semantics(
-                          label: 'Rest remaining $remaining',
-                          liveRegion: false,
-                          child: ExcludeSemantics(
-                            child: Text(
-                              remaining!,
-                              style: Theme.of(context).textTheme.titleLarge,
+                        // Keep the digits inside the stroke: inset by the
+                        // stroke plus a margin, and shrink rather than clip
+                        // at large text sizes.
+                        Padding(
+                          padding: const EdgeInsets.all(_ringStroke + 14),
+                          child: Semantics(
+                            label: 'Rest remaining $remaining',
+                            liveRegion: false,
+                            child: ExcludeSemantics(
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  remaining!,
+                                  style: Theme.of(context).textTheme.titleLarge
+                                      ?.copyWith(
+                                        fontFeatures: const [
+                                          FontFeature.tabularFigures(),
+                                        ],
+                                      ),
+                                ),
+                              ),
                             ),
                           ),
                         ),
@@ -854,82 +869,12 @@ class _RestCardState extends State<RestCard> {
                       'Next set: ${widget.slot.targetRepsMin ?? '—'}${widget.slot.targetRepsMax == null || widget.slot.targetRepsMax == widget.slot.targetRepsMin ? '' : '–${widget.slot.targetRepsMax}'} reps',
                     ),
                   ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  alignment: WrapAlignment.center,
-                  children: [
-                    Semantics(
-                      button: true,
-                      label: 'Decrease rest by 15 seconds',
-                      child: OutlinedButton(
-                        onPressed: widget.onDecrease == null
-                            ? null
-                            : () {
-                                unawaited(IndiFitHaptics.selection());
-                                widget.onDecrease?.call(period.id);
-                              },
-                        child: const Text('−15 sec'),
-                      ),
-                    ),
-                    Semantics(
-                      button: true,
-                      label: 'Increase rest by 15 seconds',
-                      child: OutlinedButton(
-                        onPressed: widget.onExtend == null
-                            ? null
-                            : () {
-                                unawaited(IndiFitHaptics.selection());
-                                widget.onExtend?.call(period.id);
-                              },
-                        child: const Text('+15 sec'),
-                      ),
-                    ),
-                    Semantics(
-                      button: true,
-                      label: 'Increase rest by 30 seconds',
-                      child: OutlinedButton(
-                        onPressed: widget.onExtend == null
-                            ? null
-                            : () {
-                                unawaited(IndiFitHaptics.selection());
-                                widget.onExtend?.call(period.id);
-                              },
-                        child: const Text('+30 sec'),
-                      ),
-                    ),
-                    Semantics(
-                      button: true,
-                      label: 'Skip rest',
-                      child: TextButton(
-                        onPressed: widget.onSkip == null
-                            ? null
-                            : () {
-                                unawaited(IndiFitHaptics.selection());
-                                widget.onSkip?.call(period.id);
-                              },
-                        // Keep the compact visible action label stable for the
-                        // existing player surface; the surrounding Semantics
-                        // label retains the clearer "Skip rest" announcement.
-                        child: const Text('Skip'),
-                      ),
-                    ),
-                  ],
-                ),
               ],
             ],
           ),
         ),
       ),
     );
-  }
-
-  String _remainingLabel(B02RestPeriod period) {
-    final remaining = b02RestRemainingSeconds(period, _now);
-    final minutes = remaining ~/ 60;
-    final seconds = remaining % 60;
-    return '$minutes:${seconds.toString().padLeft(2, '0')}';
   }
 
   bool _hasUsefulTarget(B02StrengthExecutionSlot slot) {
@@ -942,20 +887,206 @@ class _RestCardState extends State<RestCard> {
     );
   }
 
-  B02RestPeriod? _openPeriod(RestCard value) {
-    final open = value.state.restPeriods
-        .where((period) => period.endedAtUtc == null)
-        .toList();
-    return open.isEmpty ? null : open.last;
+  // Repaints the ring only. Ending the rest belongs to [StickyRestBar],
+  // which is always built while this card can scroll out of view.
+  void _syncTicker() {
+    final period = b02OpenRestPeriod(widget.state);
+    if (period != null && _ticker == null) {
+      _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+        if (!mounted) return;
+        if (b02OpenRestPeriod(widget.state) == null) {
+          _syncTicker();
+          return;
+        }
+        setState(() => _now = DateTime.now().toUtc());
+      });
+    } else if (period == null) {
+      _ticker?.cancel();
+      _ticker = null;
+    }
+  }
+}
+
+/// Rest time left, −15 / +30 and Skip, pinned under the player header while a
+/// rest is open, so the countdown stays visible while you log (audit UX-05).
+/// It also owns ending the rest when the countdown reaches zero.
+class StickyRestBar extends StatefulWidget {
+  final B02ExecutionDraftState state;
+  final ValueChanged<String>? onDecrease;
+  final ValueChanged<String>? onExtend;
+  final ValueChanged<String>? onSkip;
+  final Future<bool> Function(String) onElapsed;
+
+  const StickyRestBar({
+    super.key,
+    required this.state,
+    required this.onDecrease,
+    required this.onExtend,
+    required this.onSkip,
+    required this.onElapsed,
+  });
+
+  @override
+  State<StickyRestBar> createState() => _StickyRestBarState();
+}
+
+class _StickyRestBarState extends State<StickyRestBar> {
+  late DateTime _now;
+  Timer? _ticker;
+  var _finishingElapsedRest = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _now = DateTime.now().toUtc();
+    _syncTicker();
+  }
+
+  @override
+  void didUpdateWidget(covariant StickyRestBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _now = DateTime.now().toUtc();
+    _syncTicker();
+  }
+
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final period = b02OpenRestPeriod(widget.state);
+    if (period == null) return const SizedBox.shrink();
+    final theme = Theme.of(context);
+    final remaining = b02RestRemainingLabel(period, _now);
+    final remainingSeconds = b02RestRemainingSeconds(period, _now);
+    final selected = period.selectedSeconds ?? 0;
+    final buttonStyle = OutlinedButton.styleFrom(
+      minimumSize: const Size(48, 40),
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      visualDensity: VisualDensity.compact,
+    );
+    return Semantics(
+      container: true,
+      label: 'Rest timer',
+      child: Material(
+        color: theme.colorScheme.surfaceContainerHighest,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 6, 12, 6),
+              child: Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 8,
+                runSpacing: 4,
+                children: [
+                  Wrap(
+                    spacing: 8,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.timer_outlined,
+                        color: context.b05Colors.action,
+                        size: 20,
+                      ),
+                      Text('Rest', style: theme.textTheme.labelLarge),
+                      Semantics(
+                        label: 'Rest remaining $remaining',
+                        child: ExcludeSemantics(
+                          child: Text(
+                            remaining,
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontFeatures: const [
+                                FontFeature.tabularFigures(),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      Semantics(
+                        button: true,
+                        label: 'Decrease rest by 15 seconds',
+                        child: OutlinedButton(
+                          style: buttonStyle,
+                          onPressed: widget.onDecrease == null
+                              ? null
+                              : () {
+                                  unawaited(IndiFitHaptics.selection());
+                                  widget.onDecrease?.call(period.id);
+                                },
+                          child: const Text('−15'),
+                        ),
+                      ),
+                      Semantics(
+                        button: true,
+                        label: 'Increase rest by 30 seconds',
+                        child: OutlinedButton(
+                          style: buttonStyle,
+                          onPressed: widget.onExtend == null
+                              ? null
+                              : () {
+                                  unawaited(IndiFitHaptics.selection());
+                                  widget.onExtend?.call(period.id);
+                                },
+                          child: const Text('+30'),
+                        ),
+                      ),
+                      Semantics(
+                        button: true,
+                        label: 'Skip rest',
+                        child: TextButton(
+                          style: TextButton.styleFrom(
+                            minimumSize: const Size(48, 40),
+                            visualDensity: VisualDensity.compact,
+                          ),
+                          onPressed: widget.onSkip == null
+                              ? null
+                              : () {
+                                  unawaited(IndiFitHaptics.selection());
+                                  widget.onSkip?.call(period.id);
+                                },
+                          child: const Text('Skip'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            ExcludeSemantics(
+              child: LinearProgressIndicator(
+                minHeight: 3,
+                value: selected == 0
+                    ? 0
+                    : (remainingSeconds / selected).clamp(0.0, 1.0),
+                backgroundColor: theme.colorScheme.surfaceContainerLow,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _syncTicker() {
-    final period = _openPeriod(widget);
+    final period = b02OpenRestPeriod(widget.state);
     if (period != null && _ticker == null) {
       _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
         if (!mounted) return;
         final now = DateTime.now().toUtc();
-        final open = _openPeriod(widget);
+        final open = b02OpenRestPeriod(widget.state);
         if (open == null) {
           _syncTicker();
           return;
@@ -998,6 +1129,21 @@ class _RestCardState extends State<RestCard> {
       }
     }
   }
+}
+
+/// The open rest period, if any. B02 permits one open period per draft.
+B02RestPeriod? b02OpenRestPeriod(B02ExecutionDraftState state) {
+  final open = state.restPeriods
+      .where((period) => period.endedAtUtc == null)
+      .toList();
+  return open.isEmpty ? null : open.last;
+}
+
+String b02RestRemainingLabel(B02RestPeriod period, DateTime now) {
+  final remaining = b02RestRemainingSeconds(period, now);
+  final minutes = remaining ~/ 60;
+  final seconds = remaining % 60;
+  return '$minutes:${seconds.toString().padLeft(2, '0')}';
 }
 
 @visibleForTesting

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/di/health_provider.dart';
 import '../../core/di/theme_provider.dart';
@@ -18,6 +19,7 @@ import '../education/learn_screen.dart';
 import '../equipment/equipment_profiles_screen.dart';
 import '../media/b05_playlist_launcher.dart';
 import '../profile/profile_screen.dart';
+import '../support/tip_jar_screen.dart';
 import 'about_credits_screen.dart';
 import 'data_management_sub_screen.dart';
 import 'diary_structure_screen.dart';
@@ -232,6 +234,17 @@ class SettingsScreen extends ConsumerWidget {
                       title: 'Learn',
                       summary: 'Short, optional guides',
                       onTap: () => _push(context, const LearnScreen()),
+                    ),
+                  ],
+                ),
+                _SettingsSection(
+                  title: 'Support',
+                  children: [
+                    _SettingsRow(
+                      icon: Icons.volunteer_activism_outlined,
+                      title: 'Support IndiFit',
+                      summary: 'Leave an optional tip',
+                      onTap: () => context.push(tipJarRoutePath),
                     ),
                   ],
                 ),

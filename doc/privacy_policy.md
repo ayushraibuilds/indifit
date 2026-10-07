@@ -25,6 +25,7 @@ Core logging and review features work offline. When Offline Mode is off, these o
 - **Open Food Facts:** If you deliberately use online food search or scan a packaged-food barcode, IndiFit sends the search text or barcode needed to request product information from Open Food Facts. IndiFit does not attach an IndiFit backend credential or your local logs to that request.
 - **AI meal tools:** Describe-a-meal, meal-photo and nutrition-label scanning send the text or photo you submit to Google's Gemini AI. They are used only after you consent; see section 3.
 - **Crash diagnostics:** If you affirmatively enable crash diagnostics, technical error information may be sent to our diagnostics provider. See section 5.
+- **Supporter tips:** Tips are optional and unlock nothing. They are processed by Apple (App Store) or Google (Google Play); IndiFit receives no card details and keeps no record of your tips. The tip screen contacts the store only when you open it, and not while Offline Mode is on.
 
 Turning on Offline Mode blocks app-initiated online food lookups, the AI meal tools, and crash diagnostics.
 

@@ -58,6 +58,7 @@ void main() {
     ]);
     await _expectSettingsSection(tester, 'Account', ['Personal details']);
     await _expectSettingsSection(tester, 'Learn', ['Learn']);
+    await _expectSettingsSection(tester, 'Support', ['Support IndiFit']);
 
     for (final obsoleteLabel in [
       'PROFILE',
