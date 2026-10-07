@@ -45,6 +45,10 @@ void main() {
     expect(find.text('Export Local Backup (Encrypted)'), findsNothing);
     expect(find.text('No Backend Mode'), findsNothing);
     expect(find.text('Anonymous Diagnostic Logging'), findsNothing);
+    // v1 has no cloud service, so no cloud backup card (audit SC-03).
+    expect(find.text('Encrypted cloud backup'), findsNothing);
+    expect(find.text('Back up now'), findsNothing);
+    expect(find.text('Cloud history'), findsNothing);
     expect(find.byType(Switch), findsNWidgets(2));
     expect(tester.takeException(), isNull);
   });
@@ -150,6 +154,8 @@ void main() {
     expect(find.text('MuscleMap'), findsOneWidget);
     expect(find.text('RepDB'), findsOneWidget);
     expect(find.text('Open Food Facts'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Open-source licenses'), 200);
+    expect(find.text('IndiFit food catalogue'), findsOneWidget);
     expect(find.text('Open-source licenses'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });

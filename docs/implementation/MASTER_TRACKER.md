@@ -1,7 +1,7 @@
 # IndiFit Implementation Tracker
 
 Last updated: 2026-10-06 (final launch audit; nutrition catalogue packs and training premium plan decided)
-Current schema: v23 (v24 planned with CAT-1)
+Current schema: v23 on `main`; v24 (`catalog_state`, bundled food pack v1) in PR-A
 Current backup format: v10
 Current focus: **V1 launch readiness**. Read [LAUNCH_ROADMAP_FINAL.md § 0](LAUNCH_ROADMAP_FINAL.md) first (fixed clocks, hard rules, no calendar dates). Work from [LAUNCH_ROADMAP_FINAL.md](LAUNCH_ROADMAP_FINAL.md) (fix batches PR-A…T, plans P0-1…P1-13, owner tasks, decisions). Evidence is in [FINAL_LAUNCH_AUDIT_2026-10-05.md](../audit/FINAL_LAUNCH_AUDIT_2026-10-05.md). Nutrition-data work is tracked in [NUTRITION_CATALOGUE_PACKS_PLAN.md](NUTRITION_CATALOGUE_PACKS_PLAN.md) § 0 (CAT-1…CAT-13); training and progress polish in [TRAINING_PROGRESS_PREMIUM_PLAN.md](TRAINING_PROGRESS_PREMIUM_PLAN.md) § 0 (TP-1…TP-14). The earlier plans ([P0](P0_REMEDIATION_PLAN.md), [P1](P1_REMEDIATION_PLAN.md), [audit 2026-10-01](../audit/INDEPENDENT_AUDIT_2026-10-01.md)) are kept for history.
 
@@ -17,6 +17,8 @@ Batches B01–B05 and the post-v1 and R07/R08 tracks are merged into `main`. The
 | AI meal tools: describe a meal, meal photo, label scan | **Shipping in v1** (decided 2026-10-05): on in release builds, off in debug unless `INDIFIT_CONNECTED_AI=true`. Uses Firebase AI Logic with App Check and needs consent. Meal photo is Beta until its eval runs. Needs Play Integrity and App Attest registered before release. |
 | AI coaching wording | Not in v1 |
 | Cloud backup and sync | Not in v1. Backend routes are unmounted unless `ENABLE_CLOUD_SYNC=1`. |
+| Devices and orientation | iPhone only, portrait only (decided 2026-10-06, audit SC-06). PR-G sets `TARGETED_DEVICE_FAMILY = 1`, limits `Info.plist` to portrait, and locks portrait at boot, which also holds Android phones upright. iPads run the app in iPhone compatibility mode. |
+| Supporter tip jar (Settings → Support IndiFit) | **Code done in PR-T:** 3 consumable tips (`indifit_tip_small/medium/large`, suggested ₹49 / ₹99 / ₹199) via `in_app_purchase`; unlock nothing; store contacted only when the tip screen opens and never in Offline Mode; every transaction is completed. Until the products exist the screen says tips aren't set up yet. **Owner:** Apple Paid Applications agreement (bank and tax), Play payments profile, and the three products in both stores. |
 
 ## P0 definition of done
 
@@ -29,9 +31,10 @@ Batches B01–B05 and the post-v1 and R07/R08 tracks are merged into `main`. The
 | AI: consent, no fabricated results, eval bar | Done for meal text: catalogue match 100 %, wrong auto-match 0 %. Label and photo eval need real images. |
 | AI: App Check enforced on store builds | **Owner:** Play Integrity needs a Play Console app and an upload keystore; App Attest needs the Apple Developer Program |
 | Barcode scanning on real Android and iPhone | Code done; **owner** to verify on devices |
-| iOS entitlements and privacy manifest; Organizer validation | Entitlements per configuration and `PrivacyInfo.xcprivacy` are present; validation needs the Apple Developer Program |
-| Live Activity works on device or isn't claimed | Not claimed in v1: there is no widget-extension target, so PR-B removes `NSSupportsLiveActivities` (audit SC-08). The lock-screen rest timer comes later as TP-14 (PR-S). |
+| iOS entitlements and privacy manifest; Organizer validation | Entitlements per configuration and `PrivacyInfo.xcprivacy` are present. PR-B adds the Firebase types (Device ID, Product Interaction, Other Diagnostic Data; not linked, app functionality; audit S-02). Validation needs the Apple Developer Program |
+| Live Activity works on device or isn't claimed | Not claimed in v1: there is no widget-extension target, so PR-B removes `NSSupportsLiveActivities` from `Info.plist` (audit SC-08; the Swift manager stays for TP-14). The lock-screen rest timer comes later as TP-14 (PR-S). |
 | Backend: current model, key in header, no error leakage, bounded memory, trusted proxy hops | Done |
+| Store honesty (PR-B) | In PR-B: no cloud backup card in v1 (SC-03); Settings → Privacy policy, Contact support and Version, plus a policy link in the AI consent sheet (S-04 code; **owner** hosts `indifit.app/privacy` and the `support@`/`privacy@` mailboxes first); "never retained" and "±30%" removed (S-03, SC-05); UX-04 jargon replaced; `test/copy_lint_test.dart` guards it (A-07) |
 | Rest alerts (PR-D) | In PR-D: the first rest explains rest alerts once, then asks for notification permission (iOS and Android 13+; R-02); without Android exact alarms the rest alert is scheduled inexactly instead of not at all, with a one-time "Allow precise rest alerts" offer (R-03); a rest bar under the player header shows time left, −15 / +30 and Skip, and the ring digits no longer touch the stroke (UX-05). **Owner:** check the lock-screen alert on an iPhone and on Android 14+ with and without "Alarms & reminders" |
 | Factual bests (PR-L, TP-1…TP-3) | In PR-L: "New best" is derived on read from logged working sets ("Heaviest", or "Most reps" at that weight or more, 0.1 kg tolerance); the first session is the baseline; assisted, tempo, paused and drop sets never count. Nothing is stored and there's no schema change. The player shows a "New best" chip on the saved set row with one `success()` haptic instead of the usual one, and "Best 62.5 kg × 8" under Sets; the saved summary lists the top 3 bests; the share card adds one line; exercise history gets a "Best ever" card. The performance read now fills technique fields, so the existing "Heaviest working set" no longer counts assisted or segmented sets. **Owner:** feel the best-set haptic on one iPhone and one Android phone |
 

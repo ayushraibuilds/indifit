@@ -23,6 +23,7 @@ import '../food_search_view_models.dart';
 import '../meal_presentation_registry.dart';
 import 'food_search_widgets.dart';
 import 'household_portion_visual.dart';
+import 'portion_steps.dart';
 
 /// Portion, unit, and preparation review bottom sheet for canonical food logging.
 ///
@@ -550,15 +551,14 @@ class _FoodPortionBottomSheetState
 
   @override
   Widget build(BuildContext context) {
-    final stepQuantity = _selectedQuantity / 4;
+    final smaller = nextPortion(_selectedQuantity, increase: false);
+    final larger = nextPortion(_selectedQuantity, increase: true);
     final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
 
     Widget decreaseButton() => IconButton(
       tooltip: 'Decrease amount',
       icon: const Icon(Icons.remove_circle_outline),
-      onPressed: _selectedQuantity.compareTo(stepQuantity) > 0
-          ? () => _setQuantity(_selectedQuantity - stepQuantity)
-          : null,
+      onPressed: smaller == null ? null : () => _setQuantity(smaller),
     );
 
     Widget amountInput() => TextField(
@@ -621,7 +621,7 @@ class _FoodPortionBottomSheetState
     Widget increaseButton() => IconButton(
       tooltip: 'Increase amount',
       icon: const Icon(Icons.add_circle_outline),
-      onPressed: () => _setQuantity(_selectedQuantity + stepQuantity),
+      onPressed: larger == null ? null : () => _setQuantity(larger),
     );
 
     return ConstrainedBox(

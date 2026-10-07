@@ -38,16 +38,17 @@ void main() {
   });
 
   group('R09-A V1 disclosure truthfulness', () {
-    testWidgets('privacy card states connected AI is not part of V1', (
+    testWidgets('privacy card states what IndiFit and Google keep', (
       tester,
     ) async {
       await tester.pumpWidget(
         const MaterialApp(home: Scaffold(body: PrivacyDisclosureCard())),
       );
       expect(
-        find.textContaining('process photos ephemerally and never retain them'),
+        find.textContaining('Google may keep them briefly to prevent abuse'),
         findsOneWidget,
       );
+      expect(find.textContaining('never retain'), findsNothing);
       expect(find.textContaining('send text or photo queries'), findsNothing);
     });
   });

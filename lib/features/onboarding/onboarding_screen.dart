@@ -102,12 +102,29 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     if (_lastKeyboardInset != keyboardInset) {
       _lastKeyboardInset = keyboardInset;
       if (keyboardInset > 0) _scheduleFocusedFieldVisibility();
+      // The keyboard coming or going must never leave the pages showing a
+      // different step from the counter (audit R-01).
+      WidgetsBinding.instance.addPostFrameCallback((_) => _syncPageView());
     }
   }
 
   void _onAboutFieldFocusChange() {
     if (_hasAboutFieldFocus) _scheduleFocusedFieldVisibility();
+    // The keyboard bar follows which number field has focus.
+    if (mounted) setState(() {});
   }
+
+  /// The number field after the focused one, or null on the last field.
+  FocusNode? get _nextNumberField => _ageFocusNode.hasFocus
+      ? _heightFocusNode
+      : _heightFocusNode.hasFocus
+      ? _weightFocusNode
+      : null;
+
+  bool get _hasNumberFieldFocus =>
+      _ageFocusNode.hasFocus ||
+      _heightFocusNode.hasFocus ||
+      _weightFocusNode.hasFocus;
 
   bool get _hasAboutFieldFocus =>
       _nameFocusNode.hasFocus ||
@@ -127,12 +144,28 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     }
     final focusedContext = FocusManager.instance.primaryFocus?.context;
     if (focusedContext == null) return;
-    Scrollable.ensureVisible(
-      focusedContext,
+    // Scroll only the page's own vertical list. Scrollable.ensureVisible
+    // would also move every enclosing scrollable, including the pages.
+    final scrollable = Scrollable.maybeOf(focusedContext, axis: Axis.vertical);
+    final target = focusedContext.findRenderObject();
+    if (scrollable == null || target == null) return;
+    scrollable.position.ensureVisible(
+      target,
       alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
       duration: B05MotionPolicy.transitionDuration(context),
       curve: Curves.easeOut,
     );
+  }
+
+  /// Puts the pages back on [_currentPage] if anything moved them without
+  /// a page change (the step counter and checks always follow
+  /// [_currentPage]).
+  void _syncPageView() {
+    if (!mounted || !_pageController.hasClients) return;
+    final shown = _pageController.page?.round();
+    if (shown != null && shown != _currentPage) {
+      _pageController.jumpToPage(_currentPage);
+    }
   }
 
   Future<void> _loadDraft() async {
@@ -353,6 +386,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   void _nextPage() {
     if (_isCompleting) return;
+    _syncPageView();
     // A failed validation should still reveal the required choice or error
     // state. A successful transition must never carry a keyboard to the next
     // page (for example, from a numeric field to goal choices).
@@ -404,6 +438,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   void _prevPage() {
     _dismissInputFocus();
+    _syncPageView();
     if (_showingPayoff) {
       setState(() {
         _showingPayoff = false;
@@ -633,17 +668,20 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   child: const Text('Skip for now'),
                 );
 
+                // No Back on the first step: there is nowhere to go, and an
+                // inert arrow reads as broken (audit UX-21).
+                final canGoBack = _currentPage > 0 || _showingPayoff;
                 final progressRow = Row(
                   children: [
-                    B05IconAction(
-                      icon: Icons.arrow_back_rounded,
-                      label: 'Back',
-                      hint: 'Return to the previous setup step.',
-                      onPressed: (_currentPage > 0 || _showingPayoff)
-                          ? _prevPage
-                          : null,
-                    ),
-                    const SizedBox(width: B05Layout.space8),
+                    if (canGoBack) ...[
+                      B05IconAction(
+                        icon: Icons.arrow_back_rounded,
+                        label: 'Back',
+                        hint: 'Return to the previous setup step.',
+                        onPressed: _prevPage,
+                      ),
+                      const SizedBox(width: B05Layout.space8),
+                    ],
                     Expanded(
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(10),
@@ -727,6 +765,17 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               ],
             ),
           ),
+          // iOS number pads have no return key, so Next and Done live in a
+          // bar on top of the keyboard (audit UX-12). It sits after the
+          // pages, so showing it never moves them in the tree.
+          if (_hasNumberFieldFocus &&
+              MediaQuery.viewInsetsOf(context).bottom > 0)
+            _KeyboardBar(
+              onNext: _nextNumberField == null
+                  ? null
+                  : () => _nextNumberField!.requestFocus(),
+              onDone: _dismissInputFocus,
+            ),
         ],
       ),
       primaryAction: B05ActionButton(
@@ -1335,6 +1384,42 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               () => _dietPreference =
                   DietPreferencePresentation.normalizeForOnboarding('vegan'),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _KeyboardBar extends StatelessWidget {
+  const _KeyboardBar({required this.onNext, required this.onDone});
+
+  final VoidCallback? onNext;
+  final VoidCallback onDone;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.b05Colors;
+    return Container(
+      key: const Key('onboarding_keyboard_bar'),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        border: Border(top: BorderSide(color: colors.border)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: B05Layout.space8),
+      child: Row(
+        children: [
+          if (onNext != null)
+            TextButton(
+              key: const Key('onboarding_keyboard_next'),
+              onPressed: onNext,
+              child: const Text('Next'),
+            ),
+          const Spacer(),
+          TextButton(
+            key: const Key('onboarding_keyboard_done'),
+            onPressed: onDone,
+            child: const Text('Done'),
           ),
         ],
       ),
