@@ -90,6 +90,13 @@ class _EmptyFoodRepository extends FoodRepository {
   @override
   Future<List<FoodItem>> getRecentFoods(int limit) async => const [];
 
+  // The on-device index reads the database; these fakes serve all
+  // local results through searchFoodLocal.
+  @override
+  Future<({List<FoodItem> items, Map<int, List<String>> matchedTerms})>
+  searchCatalogueIndex(String query) async =>
+      (items: const <FoodItem>[], matchedTerms: const <int, List<String>>{});
+
   @override
   Future<List<FoodItem>> searchFoodLocal(String query) async => const [];
 }

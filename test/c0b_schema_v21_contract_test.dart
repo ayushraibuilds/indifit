@@ -27,6 +27,9 @@ void main() {
       FROM sqlite_master
       WHERE type IN ('table', 'index', 'trigger')
         AND name NOT LIKE 'sqlite_%'
+        -- The food search index (CAT-9) is a derived cache, rebuilt from
+        -- the catalogue at any time; it isn't part of the schema contract.
+        AND name NOT LIKE 'catalog_food_fts%'
       ORDER BY type, name
     ''').get();
 

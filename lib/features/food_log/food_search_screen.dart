@@ -84,6 +84,10 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   List<FoodItem> _localResults = [];
   Map<int, FoodSearchPresentationAuthority> _localSearchAuthority = const {};
   List<NutritionFoodOption> _canonicalResults = [];
+
+  /// Aliases and corrected spellings the on-device index matched, by
+  /// `food_items` id, so the ranking keeps those results (CAT-9).
+  Map<int, List<String>> _localMatchedTerms = const {};
   List<FoodApiResult> _onlineResults = [];
   List<NutritionFoodSearchResult> _rankedSearchResults = [];
   List<FoodItem> _recentResults = [];
@@ -357,6 +361,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
           canonicalIdentityId: _localSearchAuthority[food.id]?.canonicalFoodId,
           presentationKind: _localSearchAuthority[food.id]?.kind,
           variantOfFoodId: _localSearchAuthority[food.id]?.variantOfFoodId,
+          matchedTerms: _localMatchedTerms[food.id] ?? const [],
         ),
       for (final option in _canonicalResults)
         NutritionFoodSearchCandidate.canonical(option),
@@ -389,8 +394,11 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     );
   }
 
+  Map<int, List<String>> _pendingMatchedTerms = const {};
+
   Future<List<FoodItem>> _loadLocalSearchResults(String query) async {
     final repository = ref.read(foodRepositoryProvider);
+    _pendingMatchedTerms = const {};
     final byId = <int, FoodItem>{};
     final normalized = NutritionFoodSearchVocabulary.normalize(query);
     final variants = NutritionFoodSearchVocabulary.expand(query);
@@ -402,6 +410,15 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       } catch (_) {
         // Safe: A single retrieval-vocabulary expansion must not block the others.
       }
+    }
+    try {
+      final indexed = await repository.searchCatalogueIndex(query);
+      for (final item in indexed.items) {
+        byId[item.id] = item;
+      }
+      _pendingMatchedTerms = indexed.matchedTerms;
+    } catch (_) {
+      // Safe: The name search above still answers without the index.
     }
     if (normalized.length >= 4) {
       final firstToken = normalized.split(' ').first;
@@ -476,6 +493,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     if (!mounted || generation != _searchGeneration) return;
     setState(() {
       _localResults = local;
+      _localMatchedTerms = _pendingMatchedTerms;
       _localSearchAuthority = const {};
       _rebuildSearchRanking(query);
       _searching = false;

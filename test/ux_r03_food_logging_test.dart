@@ -1381,6 +1381,13 @@ class _TestFoodRepository extends FoodRepository {
   @override
   Future<List<FoodItem>> getRecentFoods(int limit) async => recent;
 
+  // The on-device index reads the database; these fakes serve all
+  // local results through searchFoodLocal.
+  @override
+  Future<({List<FoodItem> items, Map<int, List<String>> matchedTerms})>
+  searchCatalogueIndex(String query) async =>
+      (items: const <FoodItem>[], matchedTerms: const <int, List<String>>{});
+
   @override
   Future<List<FoodItem>> searchFoodLocal(String query) async => searchResults;
 
@@ -1402,6 +1409,13 @@ class _AcceptanceFoodRepository extends FoodRepository {
 
   @override
   Future<List<FoodItem>> getRecentFoods(int limit) async => const [];
+
+  // The on-device index reads the database; these fakes serve all
+  // local results through searchFoodLocal.
+  @override
+  Future<({List<FoodItem> items, Map<int, List<String>> matchedTerms})>
+  searchCatalogueIndex(String query) async =>
+      (items: const <FoodItem>[], matchedTerms: const <int, List<String>>{});
 
   @override
   Future<List<FoodItem>> searchFoodLocal(String query) async => foods;
@@ -1457,6 +1471,13 @@ class _QueryAwareFoodRepository extends FoodRepository {
   Future<Map<int, FoodSearchPresentationAuthority>>
   readSearchPresentationAuthority(Iterable<int> legacyFoodItemIds) async =>
       const {};
+
+  // The on-device index reads the database; these fakes serve all
+  // local results through searchFoodLocal.
+  @override
+  Future<({List<FoodItem> items, Map<int, List<String>> matchedTerms})>
+  searchCatalogueIndex(String query) async =>
+      (items: const <FoodItem>[], matchedTerms: const <int, List<String>>{});
 
   @override
   Future<List<FoodItem>> searchFoodLocal(String query) async => switch (query) {
