@@ -60,6 +60,7 @@ void main() {
     ]);
     await _expectSettingsSection(tester, 'Account', ['Personal details']);
     await _expectSettingsSection(tester, 'Learn', ['Learn']);
+    await _expectSettingsSection(tester, 'Support', ['Support IndiFit']);
     await _expectSettingsSection(tester, 'About', [
       'Privacy policy',
       'Contact support',
