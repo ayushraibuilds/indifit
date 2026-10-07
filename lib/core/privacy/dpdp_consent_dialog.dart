@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../config/app_links.dart';
 import '../theme/b05_semantic_colors.dart';
 import '../widgets/b05_accessibility_primitives.dart';
 import '../widgets/indi_fit_bottom_sheet.dart';
@@ -96,9 +97,20 @@ class DpdpConsentDialog extends StatelessWidget {
             title: 'You stay in control',
             description:
                 'You review every item before it\'s logged. Withdraw consent '
-                'anytime in Settings → Privacy. Food search works without AI.',
+                'anytime in Settings → Manage your data → AI meal assistance. '
+                'Food search works without AI.',
           ),
-          const SizedBox(height: B05Layout.space24),
+          const SizedBox(height: B05Layout.space8),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              key: const Key('dpdp_consent_privacy_policy_link'),
+              icon: const Icon(Icons.open_in_new_rounded, size: 18),
+              label: const Text('Privacy policy'),
+              onPressed: () => AppLinks.open(AppLinks.privacyPolicy),
+            ),
+          ),
+          const SizedBox(height: B05Layout.space16),
           Row(
             children: [
               Expanded(

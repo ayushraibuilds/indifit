@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/backup/backup_file_adapter.dart';
+import '../../../core/capabilities/capabilities_registry.dart';
 import '../../../core/config/app_config.dart';
 import '../../../core/config/app_preferences_keys.dart';
 import '../../../core/di/providers.dart';
@@ -623,10 +624,15 @@ class DataManagementSection extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const CloudBackupCard(),
-              const SizedBox(height: B05Layout.space16),
-              Divider(color: context.b05Colors.border),
-              const SizedBox(height: B05Layout.space16),
+              // v1 has no cloud service: only show the card when a real
+              // cloud backup capability is wired in (audit SC-03).
+              if (ref.watch(cloudBackupCapabilityProvider)
+                  is! DisabledCloudBackupCapability) ...[
+                const CloudBackupCard(),
+                const SizedBox(height: B05Layout.space16),
+                Divider(color: context.b05Colors.border),
+                const SizedBox(height: B05Layout.space16),
+              ],
               Text('Manual backup files', style: B05Typography.title(context)),
               const SizedBox(height: B05Layout.space4),
               Text(

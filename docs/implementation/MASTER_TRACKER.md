@@ -30,9 +30,10 @@ Batches B01–B05 and the post-v1 and R07/R08 tracks are merged into `main`. The
 | AI: consent, no fabricated results, eval bar | Done for meal text: catalogue match 100 %, wrong auto-match 0 %. Label and photo eval need real images. |
 | AI: App Check enforced on store builds | **Owner:** Play Integrity needs a Play Console app and an upload keystore; App Attest needs the Apple Developer Program |
 | Barcode scanning on real Android and iPhone | Code done; **owner** to verify on devices |
-| iOS entitlements and privacy manifest; Organizer validation | Entitlements per configuration and `PrivacyInfo.xcprivacy` are present; validation needs the Apple Developer Program |
-| Live Activity works on device or isn't claimed | Not claimed in v1: there is no widget-extension target, so PR-B removes `NSSupportsLiveActivities` (audit SC-08). The lock-screen rest timer comes later as TP-14 (PR-S). |
+| iOS entitlements and privacy manifest; Organizer validation | Entitlements per configuration and `PrivacyInfo.xcprivacy` are present. PR-B adds the Firebase types (Device ID, Product Interaction, Other Diagnostic Data; not linked, app functionality; audit S-02). Validation needs the Apple Developer Program |
+| Live Activity works on device or isn't claimed | Not claimed in v1: there is no widget-extension target, so PR-B removes `NSSupportsLiveActivities` from `Info.plist` (audit SC-08; the Swift manager stays for TP-14). The lock-screen rest timer comes later as TP-14 (PR-S). |
 | Backend: current model, key in header, no error leakage, bounded memory, trusted proxy hops | Done |
+| Store honesty (PR-B) | In PR-B: no cloud backup card in v1 (SC-03); Settings → Privacy policy, Contact support and Version, plus a policy link in the AI consent sheet (S-04 code; **owner** hosts `indifit.app/privacy` and the `support@`/`privacy@` mailboxes first); "never retained" and "±30%" removed (S-03, SC-05); UX-04 jargon replaced; `test/copy_lint_test.dart` guards it (A-07) |
 | Rest alerts (PR-D) | In PR-D: the first rest explains rest alerts once, then asks for notification permission (iOS and Android 13+; R-02); without Android exact alarms the rest alert is scheduled inexactly instead of not at all, with a one-time "Allow precise rest alerts" offer (R-03); a rest bar under the player header shows time left, −15 / +30 and Skip, and the ring digits no longer touch the stroke (UX-05). **Owner:** check the lock-screen alert on an iPhone and on Android 14+ with and without "Alarms & reminders" |
 
 ## Quality baseline (2026-10-03)

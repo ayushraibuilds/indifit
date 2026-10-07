@@ -36,7 +36,13 @@ class AboutCreditsScreen extends StatelessWidget {
                 const _Credit(
                   title: 'Open Food Facts',
                   detail:
-                      'Online food search results can be provided by Open Food Facts when you choose to use that feature.',
+                      'Packaged-food search and barcode results come from Open Food Facts when you use those features. Its data is available under the Open Database License (ODbL).',
+                ),
+                const SizedBox(height: B05Layout.space12),
+                const _Credit(
+                  title: 'IndiFit food catalogue',
+                  detail:
+                      'Nutrition values for the built-in Indian dishes are IndiFit estimates. They have not yet been reviewed by a dietitian.',
                 ),
                 const SizedBox(height: B05Layout.space20),
                 B05ActionButton(

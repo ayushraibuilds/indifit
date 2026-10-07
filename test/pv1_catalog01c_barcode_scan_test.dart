@@ -309,7 +309,10 @@ void main() {
 
         expect(find.text('Amul Taaza Milk'), findsOneWidget);
         expect(find.text('Source: Open Food Facts (ODbL)'), findsOneWidget);
-        expect(find.text('Balanced macros (4-4-9 verified)'), findsOneWidget);
+        expect(
+          find.text('Calories match the protein, carbs and fat'),
+          findsOneWidget,
+        );
         expect(find.text('glass (200 ml)'), findsOneWidget);
         expect(find.text('Save to My Foods'), findsOneWidget);
         expect(find.text('Log Lunch'), findsOneWidget);

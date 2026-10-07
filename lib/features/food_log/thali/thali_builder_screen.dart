@@ -633,7 +633,7 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Select a preset archetype above or add individual dishes like roti, dal, sabzi, or rice.',
+              'Pick a quick start above, or add dishes like roti, dal, sabzi or rice.',
               textAlign: TextAlign.center,
               style: TextStyle(color: colors.textSecondary, fontSize: 14),
             ),

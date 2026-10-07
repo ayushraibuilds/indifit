@@ -1,19 +1,19 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "summary": {
-    "total_dart_files": 488,
-    "total_loc": 344366,
-    "total_internal_edges": 2411,
+    "total_dart_files": 489,
+    "total_loc": 344533,
+    "total_internal_edges": 2416,
     "external_package_count": 30,
     "catch_metrics": {
-      "total_catches_all": 514,
+      "total_catches_all": 516,
       "total_catch_underscore": 158,
       "total_empty_catches": 0,
       "p0_empty_catches": 0
     },
     "layer_violations_count": 7,
     "catches_by_layer": {
-      "core": 147,
+      "core": 149,
       "data": 103,
       "features": 262,
       "other": 2
@@ -290,10 +290,11 @@
       "path": "lib/core/ai/ai_gateway_provider.dart",
       "layer": "core",
       "sublayer": "core",
-      "loc": 22,
+      "loc": 30,
       "imports": [
         "lib/core/config/app_config.dart",
         "lib/core/di/core_providers.dart",
+        "lib/core/privacy/privacy_policy.dart",
         "lib/core/ai/ai_daily_caps.dart",
         "lib/core/ai/ai_gateway.dart",
         "lib/core/ai/backend_ai_gateway.dart",
@@ -339,7 +340,7 @@
       "path": "lib/core/ai/ai_remote_config_refresher.dart",
       "layer": "core",
       "sublayer": "core",
-      "loc": 102,
+      "loc": 114,
       "imports": [
         "lib/core/utils/app_logger.dart"
       ],
@@ -354,7 +355,7 @@
       "catches": [
         {
           "file": "lib/core/ai/ai_remote_config_refresher.dart",
-          "line": 85,
+          "line": 97,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -404,7 +405,7 @@
       "path": "lib/core/ai/firebase_ai_gateway.dart",
       "layer": "core",
       "sublayer": "core",
-      "loc": 208,
+      "loc": 219,
       "imports": [
         "lib/firebase_options.dart",
         "lib/core/config/app_config.dart",
@@ -425,7 +426,7 @@
       "catches": [
         {
           "file": "lib/core/ai/firebase_ai_gateway.dart",
-          "line": 114,
+          "line": 124,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -435,7 +436,7 @@
         },
         {
           "file": "lib/core/ai/firebase_ai_gateway.dart",
-          "line": 134,
+          "line": 144,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
@@ -1306,7 +1307,8 @@
         "lib/core/di/user_provider_invalidator.dart",
         "lib/core/services/data_erasure_service.dart",
         "lib/features/food_log/barcode_scanner_screen.dart",
-        "lib/features/settings/widgets/cloud_backup_card.dart"
+        "lib/features/settings/widgets/cloud_backup_card.dart",
+        "lib/features/settings/widgets/data_management_section.dart"
       ],
       "parts": [],
       "part_of": null,
@@ -1675,6 +1677,50 @@
       "catches": [],
       "empty_catch_count": 0,
       "total_catch_count": 0
+    },
+    "lib/core/config/app_links.dart": {
+      "path": "lib/core/config/app_links.dart",
+      "layer": "core",
+      "sublayer": "core",
+      "loc": 64,
+      "imports": [
+        "lib/core/utils/app_logger.dart"
+      ],
+      "imported_by": [
+        "lib/core/privacy/dpdp_consent_dialog.dart",
+        "lib/features/settings/settings_screen.dart"
+      ],
+      "parts": [],
+      "part_of": null,
+      "providers_defined": [
+        "appVersionLabelProvider"
+      ],
+      "providers_used": [],
+      "routes_defined": [],
+      "catches": [
+        {
+          "file": "lib/core/config/app_links.dart",
+          "line": 28,
+          "var": "error",
+          "is_underscore": false,
+          "is_empty": false,
+          "snippet": "} catch (error) {",
+          "layer": "core",
+          "is_p0": false
+        },
+        {
+          "file": "lib/core/config/app_links.dart",
+          "line": 60,
+          "var": "error",
+          "is_underscore": false,
+          "is_empty": false,
+          "snippet": "} catch (error) {",
+          "layer": "core",
+          "is_p0": false
+        }
+      ],
+      "empty_catch_count": 0,
+      "total_catch_count": 2
     },
     "lib/core/config/app_preferences_keys.dart": {
       "path": "lib/core/config/app_preferences_keys.dart",
@@ -3029,7 +3075,7 @@
       "path": "lib/core/nutrition_legacy_read_models.dart",
       "layer": "core",
       "sublayer": "core",
-      "loc": 489,
+      "loc": 498,
       "imports": [
         "lib/core/nutrients.dart",
         "lib/core/nutrition_consumption_snapshots.dart",
@@ -3063,7 +3109,7 @@
       "catches": [
         {
           "file": "lib/core/nutrition_legacy_read_models.dart",
-          "line": 390,
+          "line": 399,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -3073,7 +3119,7 @@
         },
         {
           "file": "lib/core/nutrition_legacy_read_models.dart",
-          "line": 407,
+          "line": 416,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -3573,8 +3619,9 @@
       "path": "lib/core/privacy/dpdp_consent_dialog.dart",
       "layer": "core",
       "sublayer": "core",
-      "loc": 162,
+      "loc": 174,
       "imports": [
+        "lib/core/config/app_links.dart",
         "lib/core/theme/b05_semantic_colors.dart",
         "lib/core/widgets/b05_accessibility_primitives.dart",
         "lib/core/widgets/indi_fit_bottom_sheet.dart"
@@ -3659,7 +3706,7 @@
       "path": "lib/core/privacy/privacy_policy.dart",
       "layer": "core",
       "sublayer": "core",
-      "loc": 131,
+      "loc": 132,
       "imports": [
         "lib/core/config/app_config.dart",
         "lib/core/config/app_preferences_keys.dart",
@@ -3667,6 +3714,7 @@
       ],
       "imported_by": [
         "lib/app/bootstrap.dart",
+        "lib/core/ai/ai_gateway_provider.dart",
         "lib/core/capabilities/capabilities_registry.dart",
         "lib/core/catalog/food_catalog_service.dart",
         "lib/core/di/core_providers.dart",
@@ -5361,6 +5409,7 @@
         "lib/core/ai/firebase_ai_gateway.dart",
         "lib/core/ai/gemini_requests.dart",
         "lib/core/backup/backup_file_adapter.dart",
+        "lib/core/config/app_links.dart",
         "lib/core/di/theme_provider.dart",
         "lib/core/di/user_profile_provider.dart",
         "lib/core/router/app_router.dart",
@@ -14025,7 +14074,7 @@
       "path": "lib/features/food_log/thali/thali_component_picker_sheet.dart",
       "layer": "features",
       "sublayer": "features/food_log",
-      "loc": 531,
+      "loc": 534,
       "imports": [
         "lib/core/nutrition_thali.dart",
         "lib/core/theme/b05_semantic_colors.dart",
@@ -16633,7 +16682,7 @@
       "path": "lib/features/settings/about_credits_screen.dart",
       "layer": "features",
       "sublayer": "features/settings",
-      "loc": 80,
+      "loc": 86,
       "imports": [
         "lib/core/widgets/b05_accessibility_primitives.dart"
       ],
@@ -17232,8 +17281,9 @@
       "path": "lib/features/settings/settings_screen.dart",
       "layer": "features",
       "sublayer": "features/settings",
-      "loc": 514,
+      "loc": 552,
       "imports": [
+        "lib/core/config/app_links.dart",
         "lib/core/di/health_provider.dart",
         "lib/core/di/theme_provider.dart",
         "lib/core/di/user_profile_provider.dart",
@@ -17271,6 +17321,7 @@
       "part_of": null,
       "providers_defined": [],
       "providers_used": [
+        "appVersionLabelProvider",
         "healthStateProvider",
         "settingsControllerProvider",
         "themeModeProvider",
@@ -17429,9 +17480,10 @@
       "path": "lib/features/settings/widgets/data_management_section.dart",
       "layer": "features",
       "sublayer": "features/settings",
-      "loc": 988,
+      "loc": 994,
       "imports": [
         "lib/core/backup/backup_file_adapter.dart",
+        "lib/core/capabilities/capabilities_registry.dart",
         "lib/core/config/app_config.dart",
         "lib/core/config/app_preferences_keys.dart",
         "lib/core/di/providers.dart",
@@ -17457,6 +17509,7 @@
       "part_of": null,
       "providers_defined": [],
       "providers_used": [
+        "cloudBackupCapabilityProvider",
         "dataErasureServiceProvider",
         "settingsControllerProvider",
         "sharedPreferencesProvider"
@@ -17465,7 +17518,7 @@
       "catches": [
         {
           "file": "lib/features/settings/widgets/data_management_section.dart",
-          "line": 32,
+          "line": 33,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -17475,7 +17528,7 @@
         },
         {
           "file": "lib/features/settings/widgets/data_management_section.dart",
-          "line": 150,
+          "line": 151,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -17485,7 +17538,7 @@
         },
         {
           "file": "lib/features/settings/widgets/data_management_section.dart",
-          "line": 221,
+          "line": 222,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -17495,7 +17548,7 @@
         },
         {
           "file": "lib/features/settings/widgets/data_management_section.dart",
-          "line": 287,
+          "line": 288,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -17505,7 +17558,7 @@
         },
         {
           "file": "lib/features/settings/widgets/data_management_section.dart",
-          "line": 394,
+          "line": 395,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -17515,7 +17568,7 @@
         },
         {
           "file": "lib/features/settings/widgets/data_management_section.dart",
-          "line": 433,
+          "line": 434,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -17525,7 +17578,7 @@
         },
         {
           "file": "lib/features/settings/widgets/data_management_section.dart",
-          "line": 566,
+          "line": 567,
           "var": "e",
           "is_underscore": false,
           "is_empty": false,
@@ -18098,7 +18151,7 @@
       "path": "lib/features/training/training_workout_preview.dart",
       "layer": "features",
       "sublayer": "features/training",
-      "loc": 935,
+      "loc": 932,
       "imports": [
         "lib/core/presentation/consumer_date_label.dart",
         "lib/core/theme/b05_semantic_colors.dart",
@@ -18119,7 +18172,7 @@
       "catches": [
         {
           "file": "lib/features/training/training_workout_preview.dart",
-          "line": 851,
+          "line": 848,
           "var": "error",
           "is_underscore": false,
           "is_empty": false,
