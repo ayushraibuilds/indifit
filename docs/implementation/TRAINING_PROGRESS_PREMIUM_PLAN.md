@@ -28,7 +28,7 @@ Update this table in every PR that touches training or progress UI. IDs are refe
 | TP-9 | Progress visuals: muscles-this-week body map, 12-week consistency heatmap (**Plus**, decided 2026-10-06); recent bests list (free) | Plus-gated (list: Next) | P | TP-1, TP-4; Plus entitlement | Not started |
 | TP-10 | `animations` package: card-to-screen and between-exercise transitions | Next | P | — | Not started |
 | TP-11 | Dependency housekeeping: remove `percent_indicator`; upgrade `fl_chart` when charts are touched | Next | P | — | Not started |
-| TP-12 | Specific reminders: "Full Body B today. Last time: Leg Press 60 kg × 8" | Next | Q | TP-1 | Not started |
+| TP-12 | Specific reminders: "Full Body B today. Last time: Leg Press 60 kg × 8" | Next | Q | TP-1 | In progress (PR-Q `feat/specific-reminders`): "Next up: Full Body B. Last time: Leg Press 60 kg × 8." ("Next up", since the weekly reminder repeats and the next session only changes when a workout is saved, which reschedules); a one-off evening "1 more workout to hit this week's goal." only when reachable at one a day and not trained today. Plain text on any failure. |
 | TP-13 | Home-screen widget (`home_widget`): today's workout, week goal, kcal left | Next (native target) | R | TP-4 | Not started |
 | TP-14 | Rest timer on the lock screen (`live_activities`) | When Apple enrolment is done | S | PR-D; Apple Developer Program | Blocked (needs the paid Apple account) |
 
