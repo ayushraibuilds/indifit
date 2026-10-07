@@ -1,12 +1,12 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "summary": {
-    "total_dart_files": 476,
-    "total_loc": 341327,
-    "total_internal_edges": 2374,
-    "external_package_count": 29,
+    "total_dart_files": 480,
+    "total_loc": 341942,
+    "total_internal_edges": 2386,
+    "external_package_count": 30,
     "catch_metrics": {
-      "total_catches_all": 507,
+      "total_catches_all": 510,
       "total_catch_underscore": 158,
       "total_empty_catches": 0,
       "p0_empty_catches": 0
@@ -15,7 +15,7 @@
     "catches_by_layer": {
       "core": 145,
       "data": 101,
-      "features": 259,
+      "features": 262,
       "other": 2
     }
   },
@@ -3678,7 +3678,8 @@
         "lib/features/nutrition/nutrition_providers.dart",
         "lib/features/nutrition_ai/natural_language_meal_service.dart",
         "lib/features/nutrition_ai/nutrition_label_ocr_service.dart",
-        "lib/features/settings/settings_controller.dart"
+        "lib/features/settings/settings_controller.dart",
+        "lib/features/support/tip_jar_controller.dart"
       ],
       "parts": [],
       "part_of": null,
@@ -3741,7 +3742,7 @@
       "path": "lib/core/router/app_router.dart",
       "layer": "core",
       "sublayer": "core",
-      "loc": 193,
+      "loc": 194,
       "imports": [
         "lib/data/database/app_database.dart",
         "lib/data/models/b02_execution_models.dart",
@@ -3772,6 +3773,7 @@
         "lib/features/settings/nutrition_constraints_screen.dart",
         "lib/features/settings/nutrition_targets_hub_screen.dart",
         "lib/features/settings/settings_screen.dart",
+        "lib/features/support/tip_jar_screen.dart",
         "lib/features/training/plan_library_screen.dart",
         "lib/features/training/workout_history_screen.dart",
         "lib/features/workout_player/b02_strength_player_screen.dart",
@@ -3814,7 +3816,7 @@
       "catches": [
         {
           "file": "lib/core/router/app_router.dart",
-          "line": 82,
+          "line": 83,
           "var": "_",
           "is_underscore": true,
           "is_empty": false,
@@ -3848,7 +3850,7 @@
       "path": "lib/core/router/routes/core_routes.dart",
       "layer": "core",
       "sublayer": "core",
-      "loc": 31,
+      "loc": 39,
       "imports": [],
       "imported_by": [
         "lib/core/router/app_router.dart"
@@ -5144,6 +5146,7 @@
         "lib/features/settings/widgets/notification_settings_section.dart",
         "lib/features/settings/widgets/privacy_disclosure_card.dart",
         "lib/features/settings/widgets/settings_reminder_toggle.dart",
+        "lib/features/support/tip_jar_screen.dart",
         "lib/features/training/plan_library_screen.dart",
         "lib/features/training/training_screen.dart",
         "lib/features/training/training_workout_customization.dart",
@@ -5349,6 +5352,7 @@
         "lib/features/progress/progress_dashboard_controller.dart",
         "lib/features/progress/streak_provider.dart",
         "lib/features/settings/regional_food_packs_screen.dart",
+        "lib/features/support/tip_jar_controller.dart",
         "lib/features/workout_player/b02_strength_execution_controller.dart",
         "lib/features/workout_player/b02_strength_summary_screen.dart",
         "lib/features/workout_player/quick_workout_screen.dart",
@@ -5553,6 +5557,7 @@
         "lib/features/settings/widgets/notification_settings_section.dart",
         "lib/features/settings/widgets/privacy_disclosure_card.dart",
         "lib/features/settings/widgets/settings_reminder_toggle.dart",
+        "lib/features/support/tip_jar_screen.dart",
         "lib/features/training/plan_library_screen.dart",
         "lib/features/training/training_screen.dart",
         "lib/features/training/training_workout_customization.dart",
@@ -5632,6 +5637,7 @@
         "lib/features/settings/nutrition_targets_hub_screen.dart",
         "lib/features/settings/regional_food_packs_screen.dart",
         "lib/features/settings/settings_screen.dart",
+        "lib/features/support/tip_jar_screen.dart",
         "lib/features/training/plan_library_screen.dart",
         "lib/features/training/training_screen.dart",
         "lib/features/training/training_workout_customization.dart",
@@ -17019,7 +17025,7 @@
       "path": "lib/features/settings/settings_screen.dart",
       "layer": "features",
       "sublayer": "features/settings",
-      "loc": 501,
+      "loc": 514,
       "imports": [
         "lib/core/di/health_provider.dart",
         "lib/core/di/theme_provider.dart",
@@ -17038,6 +17044,7 @@
         "lib/features/equipment/equipment_profiles_screen.dart",
         "lib/features/media/b05_playlist_launcher.dart",
         "lib/features/profile/profile_screen.dart",
+        "lib/features/support/tip_jar_screen.dart",
         "lib/features/settings/about_credits_screen.dart",
         "lib/features/settings/data_management_sub_screen.dart",
         "lib/features/settings/diary_structure_screen.dart",
@@ -17420,6 +17427,132 @@
       "parts": [],
       "part_of": null,
       "providers_defined": [],
+      "providers_used": [],
+      "routes_defined": [],
+      "catches": [],
+      "empty_catch_count": 0,
+      "total_catch_count": 0
+    },
+    "lib/features/support/tip_jar_controller.dart": {
+      "path": "lib/features/support/tip_jar_controller.dart",
+      "layer": "features",
+      "sublayer": "features/support",
+      "loc": 178,
+      "imports": [
+        "lib/core/privacy/privacy_policy.dart",
+        "lib/core/utils/app_logger.dart",
+        "lib/features/support/tip_jar_products.dart",
+        "lib/features/support/tip_store.dart"
+      ],
+      "imported_by": [
+        "lib/features/support/tip_jar_screen.dart"
+      ],
+      "parts": [],
+      "part_of": null,
+      "providers_defined": [
+        "tipJarControllerProvider"
+      ],
+      "providers_used": [
+        "tipStoreProvider"
+      ],
+      "routes_defined": [],
+      "catches": [
+        {
+          "file": "lib/features/support/tip_jar_controller.dart",
+          "line": 110,
+          "var": "error",
+          "is_underscore": false,
+          "is_empty": false,
+          "snippet": "} catch (error) {",
+          "layer": "features/support",
+          "is_p0": false
+        },
+        {
+          "file": "lib/features/support/tip_jar_controller.dart",
+          "line": 125,
+          "var": "error",
+          "is_underscore": false,
+          "is_empty": false,
+          "snippet": "} catch (error) {",
+          "layer": "features/support",
+          "is_p0": false
+        },
+        {
+          "file": "lib/features/support/tip_jar_controller.dart",
+          "line": 146,
+          "var": "error",
+          "is_underscore": false,
+          "is_empty": false,
+          "snippet": "} catch (error) {",
+          "layer": "features/support",
+          "is_p0": false
+        }
+      ],
+      "empty_catch_count": 0,
+      "total_catch_count": 3
+    },
+    "lib/features/support/tip_jar_products.dart": {
+      "path": "lib/features/support/tip_jar_products.dart",
+      "layer": "features",
+      "sublayer": "features/support",
+      "loc": 24,
+      "imports": [],
+      "imported_by": [
+        "lib/features/support/tip_jar_controller.dart",
+        "lib/features/support/tip_jar_screen.dart"
+      ],
+      "parts": [],
+      "part_of": null,
+      "providers_defined": [],
+      "providers_used": [],
+      "routes_defined": [],
+      "catches": [],
+      "empty_catch_count": 0,
+      "total_catch_count": 0
+    },
+    "lib/features/support/tip_jar_screen.dart": {
+      "path": "lib/features/support/tip_jar_screen.dart",
+      "layer": "features",
+      "sublayer": "features/support",
+      "loc": 237,
+      "imports": [
+        "lib/core/theme/b05_semantic_colors.dart",
+        "lib/core/widgets/b05_accessibility_primitives.dart",
+        "lib/core/widgets/consumer_task_primitives.dart",
+        "lib/features/support/tip_jar_controller.dart",
+        "lib/features/support/tip_jar_products.dart",
+        "lib/features/support/tip_store.dart"
+      ],
+      "imported_by": [
+        "lib/core/router/app_router.dart",
+        "lib/features/settings/settings_screen.dart"
+      ],
+      "parts": [],
+      "part_of": null,
+      "providers_defined": [],
+      "providers_used": [
+        "tipJarControllerProvider"
+      ],
+      "routes_defined": [],
+      "catches": [],
+      "empty_catch_count": 0,
+      "total_catch_count": 0
+    },
+    "lib/features/support/tip_store.dart": {
+      "path": "lib/features/support/tip_store.dart",
+      "layer": "features",
+      "sublayer": "features/support",
+      "loc": 154,
+      "imports": [],
+      "imported_by": [
+        "lib/features/support/tip_jar_controller.dart",
+        "lib/features/support/tip_jar_screen.dart"
+      ],
+      "parts": [],
+      "part_of": null,
+      "providers_defined": [
+        "tipStoreProvider"
+      ],
       "providers_used": [],
       "routes_defined": [],
       "catches": [],

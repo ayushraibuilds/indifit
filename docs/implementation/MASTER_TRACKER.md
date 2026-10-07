@@ -17,6 +17,7 @@ Batches B01–B05 and the post-v1 and R07/R08 tracks are merged into `main`. The
 | AI meal tools: describe a meal, meal photo, label scan | **Shipping in v1** (decided 2026-10-05): on in release builds, off in debug unless `INDIFIT_CONNECTED_AI=true`. Uses Firebase AI Logic with App Check and needs consent. Meal photo is Beta until its eval runs. Needs Play Integrity and App Attest registered before release. |
 | AI coaching wording | Not in v1 |
 | Cloud backup and sync | Not in v1. Backend routes are unmounted unless `ENABLE_CLOUD_SYNC=1`. |
+| Supporter tip jar (Settings → Support IndiFit) | **Code done in PR-T:** 3 consumable tips (`indifit_tip_small/medium/large`, suggested ₹49 / ₹99 / ₹199) via `in_app_purchase`; unlock nothing; store contacted only when the tip screen opens and never in Offline Mode; every transaction is completed. Until the products exist the screen says tips aren't set up yet. **Owner:** Apple Paid Applications agreement (bank and tax), Play payments profile, and the three products in both stores. |
 
 ## P0 definition of done
 

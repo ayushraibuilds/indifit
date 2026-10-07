@@ -84,6 +84,8 @@ What leaves the device, for filling in both forms. `ios/Runner/PrivacyInfo.xcpri
 | Nutrition-label photos | Photos or Videos / Photos | Only when the user scans a label, after consent | Google (Gemini via Firebase) | App functionality |
 | Crash logs | Crash Data / Crash logs | Only if the user turns on crash diagnostics | Sentry | App functionality |
 
+Supporter tips (Settings → Support IndiFit) are consumable in-app purchases that unlock nothing. Apple or Google processes the payment; IndiFit receives no card details, has no server, and sends no purchase record anywhere. Under Apple's rules ("you are not responsible for disclosing data collected by Apple"; payment info entered outside the app "is not collected") and Google's (no declaration for data the billing system collects when the app never accesses it), neither form needs a Purchases or Payment info entry, so `PrivacyInfo.xcprivacy` adds none. Revisit this if tips are ever sent to a server or crash reports.
+
 Not collected: account details, health and fitness records, food and workout logs, body measurements, location and contacts. These stay on the device. Barcode and food-search lookups send only the barcode or search text to Open Food Facts.
 
 Data is encrypted in transit (HTTPS). Users can delete their on-device data from the app's data controls. IndiFit stores no AI requests itself; Google's retention is set by the Gemini API terms.
