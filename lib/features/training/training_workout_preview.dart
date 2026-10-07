@@ -455,10 +455,7 @@ class _TrainingWorkoutPreviewScreenState
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'PLANNED CONTEXT',
-                          style: _previewEyebrow(context),
-                        ),
+                        Text('FROM YOUR PLAN', style: _previewEyebrow(context)),
                         const SizedBox(height: B05Layout.space4),
                         Text(
                           '${item.block.name} · Week ${item.week.programWeekOrdinal + 1}',

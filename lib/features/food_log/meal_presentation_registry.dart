@@ -127,6 +127,16 @@ abstract final class MealPresentationRegistry {
     lateSnack,
   ];
 
+  /// The default meal slot for a local time: breakfast until 11:00, lunch
+  /// until 16:00, a snack until 19:00, then dinner.
+  static FoodMealPresentation forLocalTime(DateTime localTime) {
+    final hour = localTime.hour;
+    if (hour < 11) return breakfast;
+    if (hour < 16) return lunch;
+    if (hour < 19) return snack;
+    return dinner;
+  }
+
   static FoodMealPresentation forStableId(String? rawId) {
     var id = rawId?.trim().toLowerCase();
     if (id == 'snacks') id = 'snack';

@@ -14,6 +14,7 @@ import '../core/services/crash_reporting_service.dart';
 import '../core/services/notification_service.dart';
 import '../core/utils/app_logger.dart';
 import '../data/database/app_database.dart';
+import 'app_orientation.dart';
 import 'indifit_app.dart';
 
 /// Bootstraps the application before the first frame is rendered.
@@ -25,6 +26,7 @@ import 'indifit_app.dart';
 Future<void> bootstrap() async {
   WidgetsFlutterBinding.ensureInitialized();
   AppDatabase.rootIsolateToken = RootIsolateToken.instance;
+  await lockAppOrientation();
 
   // Log uncaught Flutter framework errors
   FlutterError.onError = (FlutterErrorDetails details) {

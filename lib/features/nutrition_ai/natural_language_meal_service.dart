@@ -32,7 +32,7 @@ class MealAiOfflineException extends MealAiException {
 class MealAiUnavailableException extends MealAiException {
   const MealAiUnavailableException([
     super.message =
-        'Kitchen AI is currently unavailable. Your description is saved—please try again shortly.',
+        'The AI meal tool is unavailable right now. Your description is saved, so try again shortly.',
   ]);
 }
 

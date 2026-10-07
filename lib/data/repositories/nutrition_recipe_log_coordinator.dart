@@ -4,6 +4,7 @@ import '../../core/nutrients.dart';
 import '../../core/nutrition_calculation_service.dart';
 import '../../core/nutrition_consumption_snapshots.dart';
 import '../../core/typed_quantities.dart';
+import '../catalog/catalog_pack.dart';
 import '../database/app_database.dart' hide NutritionConsumptionSnapshot;
 import 'nutrition_consumption_repository.dart';
 import 'nutrition_recipe_repository.dart';
@@ -588,7 +589,7 @@ class NutritionRecipeLogCoordinator {
         'food:${row.foodId}:nutrient:${row.nutrientId}:v${row.factVersion}';
     final factVersion = row.factVersion.toString();
     final status = NutrientFactStatusContract.fromStableId(row.status);
-    final basis = _basisFromDatabase(row.basis);
+    final basis = _basisFromDatabase(row.basis, foodId: row.foodId);
     if (basis == null) {
       return NutrientFact.missing(
         nutrientId: row.nutrientId,
@@ -648,15 +649,22 @@ class NutritionRecipeLogCoordinator {
     );
   }
 
-  NutrientBasis? _basisFromDatabase(String value) => switch (value) {
-    'per_100_grams' => NutrientBasis(NutrientBasisKind.per100Grams),
-    'per_100_millilitres' => NutrientBasis(NutrientBasisKind.per100Millilitres),
-    'absolute' => NutrientBasis(NutrientBasisKind.absolute),
-    // v17 facts do not carry a portable serving-definition reference. Do not
-    // borrow the recipe's serving definition or invent one for a food fact.
-    'per_serving' => null,
-    _ => null,
-  };
+  NutrientBasis? _basisFromDatabase(String value, {required String foodId}) =>
+      switch (value) {
+        'per_100_grams' => NutrientBasis(NutrientBasisKind.per100Grams),
+        'per_100_millilitres' => NutrientBasis(
+          NutrientBasisKind.per100Millilitres,
+        ),
+        'absolute' => NutrientBasis(NutrientBasisKind.absolute),
+        // A per-serving food fact always means one serving of that food: the
+        // portable definition every reader rebuilds from the food id. Never
+        // borrow the recipe's serving definition for a food fact.
+        'per_serving' => NutrientBasis(
+          NutrientBasisKind.perServing,
+          servingDefinition: CatalogueServing.reference(foodId),
+        ),
+        _ => null,
+      };
 
   NutrientSourceType _sourceFromDatabase(String value) => switch (value) {
     'bundled_asset' => NutrientSourceType.bundledCatalogue,

@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -90,7 +89,6 @@ class TodayNutritionHero extends StatelessWidget {
                   hasTarget: presentation.hasAcceptedCalorieTarget,
                   incomplete: presentation.hasIncompleteNutrition,
                   noConsumption: presentation.isNoConsumptionKnown,
-                  macros: presentation.macros,
                 );
                 final macros = MacroComparison(metrics: presentation.macros);
                 return compact
@@ -362,84 +360,12 @@ class CalorieRing extends StatelessWidget {
     required this.hasTarget,
     required this.incomplete,
     required this.noConsumption,
-    this.macros = const [],
   });
 
   final TodayNutritionMetricPresentation? calories;
   final bool hasTarget;
   final bool incomplete;
   final bool noConsumption;
-  final List<TodayNutritionMetricPresentation> macros;
-
-  Widget _buildDonutChart(BuildContext context, double diameter) {
-    final colors = context.b05Colors;
-
-    double proteinG = 0;
-    double carbsG = 0;
-    double fatG = 0;
-
-    for (final m in macros) {
-      final grams = m.pointValue ?? 0;
-      if (m.nutrientId == 'protein') proteinG = grams > 0 ? grams : 0;
-      if (m.nutrientId == 'carbohydrate') carbsG = grams > 0 ? grams : 0;
-      if (m.nutrientId == 'fat') fatG = grams > 0 ? grams : 0;
-    }
-
-    final sections = <PieChartSectionData>[];
-    if (proteinG > 0) {
-      sections.add(
-        PieChartSectionData(
-          color: todayMacroColorRole(colors, 'protein').indicator,
-          value: proteinG,
-          title: '',
-          radius: 10,
-          showTitle: false,
-        ),
-      );
-    }
-    if (carbsG > 0) {
-      sections.add(
-        PieChartSectionData(
-          color: todayMacroColorRole(colors, 'carbohydrate').indicator,
-          value: carbsG,
-          title: '',
-          radius: 10,
-          showTitle: false,
-        ),
-      );
-    }
-    if (fatG > 0) {
-      sections.add(
-        PieChartSectionData(
-          color: todayMacroColorRole(colors, 'fat').indicator,
-          value: fatG,
-          title: '',
-          radius: 10,
-          showTitle: false,
-        ),
-      );
-    }
-    if (sections.isEmpty) {
-      sections.add(
-        PieChartSectionData(
-          color: colors.inset,
-          value: 1,
-          title: '',
-          radius: 10,
-          showTitle: false,
-        ),
-      );
-    }
-
-    return PieChart(
-      PieChartData(
-        sections: sections,
-        sectionsSpace: sections.length > 1 ? 2 : 0,
-        centerSpaceRadius: (diameter / 2) - 10,
-        startDegreeOffset: -90,
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -505,18 +431,20 @@ class CalorieRing extends StatelessWidget {
               child: Stack(
                 alignment: Alignment.center,
                 children: [
+                  // Calories eaten against the target, never a macro pie: a
+                  // full circle of macro shares read as "done" at 40 % of
+                  // the day's calories (audit UX-03). Macros are the bars.
                   Positioned.fill(
-                    child: macros.isNotEmpty
-                        ? _buildDonutChart(context, diameter)
-                        : CustomPaint(
-                            painter: CalorieRingPainter(
-                              progressLow: lowValue,
-                              progressHigh: value,
-                              color: color,
-                              trackColor: colors.inset,
-                              range: metric.isRange,
-                            ),
-                          ),
+                    child: CustomPaint(
+                      key: const Key('today_calorie_ring'),
+                      painter: CalorieRingPainter(
+                        progressLow: lowValue,
+                        progressHigh: value,
+                        color: color,
+                        trackColor: colors.inset,
+                        range: metric.isRange,
+                      ),
+                    ),
                   ),
                   Padding(
                     padding: EdgeInsets.all(inset),
@@ -736,8 +664,8 @@ extension on MacroRow {
         ],
       );
     }
-    return Text(
-      metric.comparisonLabel,
+    final value = Text(
+      metric.valueLabel,
       maxLines: 2,
       overflow: TextOverflow.ellipsis,
       textAlign: align,
@@ -747,6 +675,30 @@ extension on MacroRow {
             : context.b05Colors.textPrimary,
         fontWeight: FontWeight.w700,
       ),
+    );
+    if (!metric.isIncomplete) return value;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: align == TextAlign.end
+          ? MainAxisAlignment.end
+          : MainAxisAlignment.start,
+      children: [
+        Flexible(child: value),
+        const SizedBox(width: B05Layout.space4),
+        Tooltip(
+          key: ValueKey('macro_partial_${metric.nutrientId}'),
+          message:
+              'Partial: some foods you logged don’t list '
+              '${metric.label.toLowerCase()}, so this total is lower than '
+              'what you ate.',
+          triggerMode: TooltipTriggerMode.tap,
+          child: Icon(
+            Icons.info_outline_rounded,
+            size: B05Layout.iconSmall,
+            color: context.b05Colors.unavailable.indicator,
+          ),
+        ),
+      ],
     );
   }
 }

@@ -272,12 +272,21 @@ class NutritionThaliFoodOption {
   final String sourceType;
   final String? region;
 
+  /// One serving in the food's own unit ("2 pieces", "1 katori", "100 g"),
+  /// the amount the thali offers first. Null when the food has no facts.
+  final Quantity? defaultQuantity;
+
+  /// Whether the food can also be measured in grams.
+  final bool acceptsGrams;
+
   const NutritionThaliFoodOption({
     required this.id,
     required this.displayName,
     required this.kind,
     required this.sourceType,
     required this.region,
+    this.defaultQuantity,
+    this.acceptsGrams = true,
   });
 }
 
@@ -345,6 +354,16 @@ class NutritionThaliPreview {
   }) : items = List.unmodifiable(items);
 
   bool get isEmpty => items.isEmpty;
+
+  /// Items whose calories couldn't be worked out. Logging them would add
+  /// too few kcal to the day, so finalize refuses unless the user chooses
+  /// to log without calories (audit C-01).
+  List<NutritionThaliItemPreview> get itemsWithUnknownEnergy => [
+    for (final item in items)
+      if (!(item.calculation.facts['energy']?.hasNumericValue ?? false) ||
+          item.calculation.facts['energy']!.coverageIncomplete)
+        item,
+  ];
   bool get isPartial =>
       aggregate.completeness.state == NutrientCompletenessState.partial;
   bool get isUnknown =>

@@ -48,6 +48,16 @@ class FirebaseAiGateway implements AiGateway {
   static Future<void>? _initialization;
   static AiRemoteConfigRefresher? _refresher;
 
+  /// Closes Remote Config's real-time connection when AI is no longer
+  /// allowed (Offline Mode on), so nothing stays connected to Firebase. The
+  /// next AI call reopens it. A no-op if Firebase never started.
+  static Future<void> stopRealtimeUpdates() async => _refresher?.pause();
+
+  /// Installs a refresher without starting Firebase, for tests.
+  @visibleForTesting
+  static set debugRefresher(AiRemoteConfigRefresher? refresher) =>
+      _refresher = refresher;
+
   @override
   Future<Map<String, dynamic>> decomposeMealText(String text) => _generate(
     GeminiRequests.mealText(text),
@@ -141,6 +151,7 @@ class FirebaseAiGateway implements AiGateway {
   /// switch and model reach apps that stay open.
   Future<FirebaseRemoteConfig> _remoteConfig() async {
     await (_initialization ??= _initialize());
+    _refresher?.listen();
     await _refresher?.ensureFresh();
     return FirebaseRemoteConfig.instance;
   }
