@@ -93,6 +93,10 @@ class MealItemResolver {
     'naan': 'Plain Naan',
     'paneer': 'Amul Fresh Paneer (Raw)',
     'raw paneer': 'Amul Fresh Paneer (Raw)',
+    // Plain "dal" in an everyday meal is the yellow toor dal tadka (audit
+    // C-06: "1 katori dal" offered Dal Makhani, Urad and Dal Fry instead).
+    'dal': _dalTadka,
+    'daal': _dalTadka,
     'dal tadka': _dalTadka,
     'yellow dal tadka': _dalTadka,
     'yellow dal': _dalTadka,
@@ -205,9 +209,22 @@ class MealItemResolver {
     if (top.score >= _resolveThreshold && top.score - runnerUp >= _clearLead) {
       return CatalogMatch.resolved(top.option);
     }
+    // A size or oil variant ("Suji Upma (Double healthy bowl)") only crowds
+    // the list when its base dish is offered too: the amount already says
+    // how much. It stays when it is the best match, because then it was
+    // named.
+    final offered = {for (final s in ranked) s.option.id};
+    final names = {for (final s in ranked) normalize(s.option.displayName)};
+    bool crowds(ScoredFoodOption s) {
+      if (identical(s, top)) return false;
+      final base = s.option.variantOfFoodId;
+      if (base != null) return offered.contains(base);
+      return _isVariantOfAnother(s.option.displayName, names);
+    }
+
     return CatalogMatch.needsChoice(
       ranked
-          .where((s) => s.score >= _choiceThreshold)
+          .where((s) => s.score >= _choiceThreshold && !crowds(s))
           .take(_maxChoices)
           .map((s) => s.option)
           .toList(growable: false),
@@ -392,6 +409,9 @@ class PortionMapping {
       );
     }
 
+    final converted = _viaCatalogueMeasure(amount, unit, aiKind, option);
+    if (converted != null) return PortionMapping._(converted);
+
     final matches = switch (base.unit) {
       QuantityUnit.gram => aiKind == _UnitKind.mass,
       QuantityUnit.millilitre => aiKind == _UnitKind.volume,
@@ -420,6 +440,79 @@ class PortionMapping {
       '$target measure.',
     );
   }
+
+  /// Household vessels in katori: the app's katori is 150 g and its bowl
+  /// 300 g (`food_catalog_service.dart`; the packs' gram rules), and a plate
+  /// of rice, poha or biryani is two katori (roadmap P1-4).
+  static const Map<String, double> _katoriPerVessel = {
+    'katori': 1,
+    'bowl': 2,
+    'plate': 2,
+  };
+  static const double _gramsPerKatori = 150;
+
+  /// Converts with the installed catalogue's own measure (CAT-4, CAT-12):
+  /// vessels into the food's vessel ("1 bowl dal" is 2 katori), grams into
+  /// servings through the serving's gram weight ("150 g rice" is 1 katori),
+  /// and a vessel of a per-100 g dish into grams ("1 katori curd" is 150 g).
+  /// Null when the measure can't say, so the caller asks the user.
+  static Quantity? _viaCatalogueMeasure(
+    double amount,
+    String unit,
+    _UnitKind aiKind,
+    NutritionFoodOption option,
+  ) {
+    final measure = option.measure;
+    if (measure == null) return null;
+    final base = option.baseQuantity;
+    final aiUnit = MealItemResolver.normalize(unit);
+    final aiKatori = _katoriPerVessel[aiUnit];
+
+    if (base.unit == QuantityUnit.gram) {
+      // Only a base dish: per-100 g variants are dry snacks or mini rice
+      // rows, where a cooked dish's 150 g katori would be wrong.
+      if (aiKatori != null && option.variantOfFoodId == null) {
+        return _grams(amount * aiKatori * _gramsPerKatori);
+      }
+      final grams = measure.gramsPerServing?.asDouble;
+      if (aiKind == _UnitKind.serving && grams != null) {
+        return _grams(amount * grams);
+      }
+      return null;
+    }
+    if (base.unit != QuantityUnit.serving) return null;
+
+    double? servings;
+    final unitsPerServing = measure.unitsPerServing?.asDouble;
+    final foodUnit = measure.unit;
+    final gramsPerServing = measure.gramsPerServing?.asDouble;
+    if (aiKind == _UnitKind.mass && gramsPerServing != null) {
+      servings = amount / gramsPerServing;
+    } else if (foodUnit != null && unitsPerServing != null) {
+      final foodKatori = _katoriPerVessel[foodUnit];
+      if (aiKatori != null && foodKatori != null) {
+        servings = amount * aiKatori / foodKatori / unitsPerServing;
+      } else if (aiKind == _UnitKind.piece && foodUnit == 'piece') {
+        servings = amount / unitsPerServing;
+      } else if (aiKind == _UnitKind.household && aiUnit == foodUnit) {
+        // Same vessel the catalogue counts in: glass, cup.
+        servings = amount / unitsPerServing;
+      }
+    }
+    if (servings == null || !servings.isFinite || servings <= 0) return null;
+    return Quantity.fromNum(
+      amount: _round(servings),
+      unit: base.unit,
+      context: base.context,
+    );
+  }
+
+  static Quantity _grams(double grams) =>
+      Quantity.fromNum(amount: _round(grams), unit: QuantityUnit.gram);
+
+  /// Two decimals: enough for a third of a katori, and no float noise
+  /// ("0.30000000000000004") reaching the review card.
+  static double _round(double value) => (value * 100).roundToDouble() / 100;
 
   static bool _sameServing(String aiUnit, String? servingLabel) {
     if (servingLabel == null) return false;
