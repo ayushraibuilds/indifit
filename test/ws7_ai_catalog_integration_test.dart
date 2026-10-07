@@ -91,16 +91,18 @@ void main() {
   });
 
   test('a vague name asks the user instead of taking the first hit', () async {
+    // ("Dal" alone now means Toor Dal Tadka, audit C-06; biryani has no
+    // everyday default.)
     final result = await serviceReturning([
-      _item('Dal', 1, 'katori'),
-    ]).decomposeMeal(text: '1 katori dal');
+      _item('Biryani', 1, 'katori'),
+    ]).decomposeMeal(text: '1 katori biryani');
 
     final item = result.items.single;
     expect(item.isCatalogVerified, isFalse);
     expect(item.needsCatalogChoice, isTrue);
     expect(item.catalogChoices.length, inInclusiveRange(2, 3));
     for (final choice in item.catalogChoices) {
-      expect(choice.displayName.toLowerCase(), contains('dal'));
+      expect(choice.displayName.toLowerCase(), contains('biryani'));
     }
   });
 
@@ -161,30 +163,32 @@ void main() {
     });
 
     test('an unconvertible unit resets to one serving with a note', () async {
+      // A bowl converts now (2 katori, audit C-06); a ladle has no
+      // agreed weight.
       final result = await serviceReturning([
-        _item('Dal Makhani', 2, 'bowl'),
-      ]).decomposeMeal(text: '2 bowls dal makhani');
+        _item('Dal Makhani', 2, 'ladle'),
+      ]).decomposeMeal(text: '2 ladles dal makhani');
 
       final item = result.items.single;
       expect(item.isCatalogVerified, isTrue);
       expect(item.quantityAmount, 1);
       expect(item.quantityUnit, 'katori');
-      expect(item.portionNote, contains('2 bowl'));
+      expect(item.portionNote, contains('2 ladle'));
       // Not "2 katori" logged silently, and not the AI's 100 kcal.
       expect((await loggedKcal(item)).round(), item.estimatedCalories);
     });
 
     test('picking a choice binds the item to that food', () async {
       final result = await serviceReturning([
-        _item('Dal', 2, 'katori'),
-      ]).decomposeMeal(text: '2 katori dal');
+        _item('Biryani', 2, 'katori'),
+      ]).decomposeMeal(text: '2 katori biryani');
 
       final item = result.items.single;
       expect(item.needsCatalogChoice, isTrue);
-      final katoriDal = item.catalogChoices.firstWhere(
+      final katoriBiryani = item.catalogChoices.firstWhere(
         (choice) => choice.servingUnitLabel == 'katori',
       );
-      final bound = bindToCatalog(item, katoriDal);
+      final bound = bindToCatalog(item, katoriBiryani);
       expect(bound.needsCatalogChoice, isFalse);
       expect(bound.quantityAmount, 2);
       expect((await loggedKcal(bound)).round(), bound.estimatedCalories);

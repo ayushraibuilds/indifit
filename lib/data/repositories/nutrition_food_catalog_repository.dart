@@ -7,6 +7,7 @@ import 'package:uuid/uuid.dart';
 import '../../core/fixtures/food_identity_manifest.dart';
 import '../../core/nutrients.dart';
 import '../../core/typed_quantities.dart';
+import '../catalog/catalogue_quantity_resolver.dart';
 import '../database/app_database.dart';
 import '../services/food_name_spelling.dart';
 
@@ -27,6 +28,14 @@ class NutritionFoodOption {
   final String? brand;
   final String? servingUnitLabel;
 
+  /// How the installed catalogue measures this food: its household unit,
+  /// units and grams per serving (CAT-4). Null for foods without catalogue
+  /// conversions, such as user foods and provider results.
+  final CatalogueFoodMeasure? measure;
+
+  /// The base dish this food is a size or oil variant of (pack `variant_of`).
+  final String? variantOfFoodId;
+
   const NutritionFoodOption({
     required this.id,
     required this.displayName,
@@ -37,7 +46,24 @@ class NutritionFoodOption {
     required this.preparationId,
     this.brand,
     this.servingUnitLabel,
+    this.measure,
+    this.variantOfFoodId,
   });
+
+  NutritionFoodOption withMeasure(CatalogueFoodMeasure? measure) =>
+      NutritionFoodOption(
+        id: id,
+        displayName: displayName,
+        baseQuantity: baseQuantity,
+        facts: facts,
+        sourceType: sourceType,
+        sourceReference: sourceReference,
+        preparationId: preparationId,
+        brand: brand,
+        servingUnitLabel: servingUnitLabel,
+        measure: measure,
+        variantOfFoodId: variantOfFoodId,
+      );
 
   bool get hasNumericFacts => facts.values.any((fact) => fact.hasNumericValue);
 }
@@ -325,6 +351,14 @@ class NutritionFoodCatalogRepository {
   }
 
   Future<NutritionFoodOption?> getOption(String foodId) async {
+    final option = await _optionWithoutMeasure(foodId);
+    if (option == null) return null;
+    return option.withMeasure(
+      await CatalogueQuantityResolver(_db).measureFor(option.id),
+    );
+  }
+
+  Future<NutritionFoodOption?> _optionWithoutMeasure(String foodId) async {
     final row = await (_db.select(
       _db.nutritionFoods,
     )..where((table) => table.id.equals(foodId.trim()))).getSingleOrNull();
@@ -340,6 +374,7 @@ class NutritionFoodCatalogRepository {
       preparationId: null,
       brand: row.brand,
       servingUnitLabel: await _servingUnitLabelFor(row.sourceRef),
+      variantOfFoodId: row.variantOfFoodId,
     );
     if (isRegionalWithoutFacts(option.id, option.hasNumericFacts)) {
       return null;
@@ -419,7 +454,7 @@ class NutritionFoodCatalogRepository {
             .get();
     final resultById = <String, NutritionFoodOption>{};
     for (final row in rows) {
-      final option = await getOption(row.id);
+      final option = await _optionWithoutMeasure(row.id);
       if (option != null) resultById[option.id] = option;
     }
     // Legacy rows of merged duplicates still map to their retired identity;
@@ -440,12 +475,19 @@ class NutritionFoodCatalogRepository {
       if (retiredIds.contains(option.id)) continue;
       resultById.putIfAbsent(option.id, () => option);
     }
-    final result = resultById.values.toList()
-      ..sort(
-        (left, right) => left.displayName.toLowerCase().compareTo(
-          right.displayName.toLowerCase(),
-        ),
-      );
+    // One batched read of the catalogue measures for every result.
+    final measures = await CatalogueQuantityResolver(
+      _db,
+    ).measuresFor(resultById.keys);
+    final result =
+        [
+          for (final option in resultById.values)
+            option.withMeasure(measures[option.id]),
+        ]..sort(
+          (left, right) => left.displayName.toLowerCase().compareTo(
+            right.displayName.toLowerCase(),
+          ),
+        );
     return List.unmodifiable(result);
   }
 

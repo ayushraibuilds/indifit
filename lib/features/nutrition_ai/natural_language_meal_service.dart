@@ -185,6 +185,13 @@ Quantity catalogLogQuantity(DecomposedFoodItem item) {
 }
 
 String _measureWord(NutritionFoodOption option) {
+  // The catalogue's own unit when one serving is one of it ("katori").
+  final measure = option.measure;
+  if (option.baseQuantity.unit == QuantityUnit.serving &&
+      measure?.unit != null &&
+      measure?.unitsPerServing?.asDouble == 1) {
+    return measure!.unit!;
+  }
   final label = option.servingUnitLabel?.trim();
   return switch (option.baseQuantity.unit) {
     QuantityUnit.gram => 'g',
