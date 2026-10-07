@@ -38,6 +38,19 @@ Batches B01–B05 and the post-v1 and R07/R08 tracks are merged into `main`. The
 | Rest alerts (PR-D) | In PR-D: the first rest explains rest alerts once, then asks for notification permission (iOS and Android 13+; R-02); without Android exact alarms the rest alert is scheduled inexactly instead of not at all, with a one-time "Allow precise rest alerts" offer (R-03); a rest bar under the player header shows time left, −15 / +30 and Skip, and the ring digits no longer touch the stroke (UX-05). **Owner:** check the lock-screen alert on an iPhone and on Android 14+ with and without "Alarms & reminders" |
 | Factual bests (PR-L, TP-1…TP-3) | In PR-L: "New best" is derived on read from logged working sets ("Heaviest", or "Most reps" at that weight or more, 0.1 kg tolerance); the first session is the baseline; assisted, tempo, paused and drop sets never count. Nothing is stored and there's no schema change. The player shows a "New best" chip on the saved set row with one `success()` haptic instead of the usual one, and "Best 62.5 kg × 8" under Sets; the saved summary lists the top 3 bests; the share card adds one line; exercise history gets a "Best ever" card. The performance read now fills technique fields, so the existing "Heaviest working set" no longer counts assisted or segmented sets. **Owner:** feel the best-set haptic on one iPhone and one Android phone |
 
+## Audit P2/P3 polish (branch `fix/audit-p2-polish`)
+
+Findings from [the final audit](../audit/FINAL_LAUNCH_AUDIT_2026-10-05.md) § UX that no v1 PR covered, fixed for the closed-test builds. One commit per finding.
+
+| Finding | State |
+|:--------|:------|
+| UX-17 Offline Mode search banner | Fixed: with Offline Mode on, search skips the online call and says "Offline Mode is on · Showing foods on this phone." No Retry, and "Create a custom food" stays when nothing matches |
+| UX-10 Meal photo with camera access denied | Fixed: "Camera access is off" (or "Photo access is off"), the other source first, and Open Settings on iOS (ask again on Android). Label scan gets the same message |
+| UX-16 Diet step | Fixed: no "AI meal suggestions" claim (the choice only orders search suggestions); Eggetarian and Jain added to onboarding, profile and Dietary needs. **Follow-up:** choosing Jain doesn't yet add the Jain restriction that flags onion and garlic in meal checks |
+| UX-18 Plurals | Fixed: "1 piece", "1 serving" in diary and search rows (`QuantityUnitDefinition.labelFor`) |
+| UX-15 Thali notices | Fixed: notices replace each other, last 4 s even with an action, sit above Log Thali, and an error shows once |
+| UX-14 Icon buttons without a name | Fixed: all 18 have tooltips; `test/icon_button_tooltip_test.dart` guards it |
+
 ## Quality baseline (2026-10-03)
 
 | Check | Result |
