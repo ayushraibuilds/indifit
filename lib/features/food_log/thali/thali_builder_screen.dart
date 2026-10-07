@@ -334,6 +334,7 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
                         ),
                       ),
                       IconButton(
+                        tooltip: 'Rename thali',
                         icon: Icon(
                           Icons.edit_outlined,
                           size: 18,

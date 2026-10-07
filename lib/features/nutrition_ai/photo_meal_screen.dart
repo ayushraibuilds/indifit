@@ -686,6 +686,7 @@ class _PhotoMealScreenState extends ConsumerState<PhotoMealScreen> {
               children: [
                 // Inline Stepper
                 IconButton.outlined(
+                  tooltip: 'Decrease amount',
                   icon: const Icon(Icons.remove, size: 16),
                   visualDensity: VisualDensity.compact,
                   onPressed: item.quantityAmount <= 0.25
@@ -714,6 +715,7 @@ class _PhotoMealScreenState extends ConsumerState<PhotoMealScreen> {
                   ),
                 ),
                 IconButton.outlined(
+                  tooltip: 'Increase amount',
                   icon: const Icon(Icons.add, size: 16),
                   visualDensity: VisualDensity.compact,
                   onPressed: () {
@@ -799,6 +801,7 @@ class _PhotoMealScreenState extends ConsumerState<PhotoMealScreen> {
                             style: B05Typography.title(context),
                           ),
                           IconButton(
+                            tooltip: 'Close',
                             icon: const Icon(Icons.close),
                             onPressed: () => Navigator.pop(sheetCtx),
                           ),
@@ -811,6 +814,7 @@ class _PhotoMealScreenState extends ConsumerState<PhotoMealScreen> {
                           hintText: 'Search food in catalog...',
                           prefixIcon: const Icon(Icons.search),
                           suffixIcon: IconButton(
+                            tooltip: 'Clear results',
                             icon: const Icon(Icons.clear),
                             onPressed: () {
                               setSheetState(() {
