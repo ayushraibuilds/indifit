@@ -13,6 +13,8 @@ import '../../data/models/b02_execution_models.dart';
 import '../../data/repositories/b02_exercise_performance_read_repository.dart';
 import '../../data/repositories/workout_repository.dart';
 import '../progress/r08f3_strength_performance_presentation.dart';
+import '../progress/training_bests.dart';
+import '../progress/training_bests_providers.dart';
 import '../workout_player/widgets/plate_calculator_sheet.dart';
 import '../workout_player/widgets/r07c_workout_presentation.dart';
 
@@ -185,10 +187,14 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
   Widget _buildCanonicalHistoryTab(List<B02ExercisePerformanceRecord> history) {
     if (history.isEmpty) return const R07CPerformanceEmptyState();
     final summary = R08F3StrengthPerformancePresentation.summarize(history);
+    final bestEver = TrainingBests.bestEver(
+      history.map((record) => record.toTrainingBestsEntry()),
+    );
     return _buildActualHistory(
       heading: 'Actual performance',
       detail: _canonicalHistoryDetail(summary),
       summary: summary,
+      bestEver: bestEver,
       records: [
         for (final record in history)
           _PerformanceHistoryItem(
@@ -255,12 +261,23 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
     required String detail,
     required List<_PerformanceHistoryItem> records,
     R08F3StrengthPerformanceSummary? summary,
+    List<TrainingBestRecord> bestEver = const [],
   }) => SingleChildScrollView(
     padding: const EdgeInsets.all(B05Layout.space16),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _HistoryHeader(heading: heading, detail: detail, summary: summary),
+        _HistoryHeader(
+          heading: heading,
+          detail: detail,
+          summary: summary,
+          // The "Best ever" card below covers the heaviest set.
+          showHeaviest: bestEver.isEmpty,
+        ),
+        if (bestEver.isNotEmpty) ...[
+          const SizedBox(height: B05Layout.space16),
+          _BestEverCard(records: bestEver, formatDate: _formatBestDate),
+        ],
         if (summary != null) ...[
           const SizedBox(height: B05Layout.space16),
           _buildCanonicalTrend(summary),
@@ -320,6 +337,9 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
       ],
     ),
   );
+
+  String _formatBestDate(DateTime instant) =>
+      DateFormat('MMM d, y').format(_dateInHistoryTimezone(instant));
 
   static String _statusLabel(String status, [String? completionKind]) {
     if (completionKind == 'partial') return 'Partially complete';
@@ -613,11 +633,13 @@ class _HistoryHeader extends StatelessWidget {
     required this.heading,
     required this.detail,
     this.summary,
+    this.showHeaviest = true,
   });
 
   final String heading;
   final String detail;
   final R08F3StrengthPerformanceSummary? summary;
+  final bool showHeaviest;
 
   @override
   Widget build(BuildContext context) {
@@ -657,7 +679,7 @@ class _HistoryHeader extends StatelessWidget {
           ),
           if (summary != null &&
               (summary!.latestRecordedSet != null ||
-                  summary!.heaviestRecordedSet != null ||
+                  (showHeaviest && summary!.heaviestRecordedSet != null) ||
                   summary!.comparisonText != null ||
                   summary!.partialSessionCount > 0)) ...[
             const SizedBox(height: B05Layout.space16),
@@ -682,7 +704,8 @@ class _HistoryHeader extends StatelessWidget {
                 ),
               ),
             ],
-            if (summary!.heaviestRecordedSet case final heaviest?) ...[
+            if (summary!.heaviestRecordedSet case final heaviest?
+                when showHeaviest) ...[
               const SizedBox(height: B05Layout.space8),
               Text(
                 'Heaviest working set (${R08F3StrengthPerformancePresentation.formatLoadBasis(summary!.trendBasis!)})',
@@ -715,6 +738,78 @@ class _HistoryHeader extends StatelessWidget {
             ],
           ],
         ],
+      ),
+    );
+  }
+}
+
+/// Best-ever facts from logged sets: the heaviest set, then the most reps at
+/// lighter top weights, each with the date it was first done.
+class _BestEverCard extends StatelessWidget {
+  const _BestEverCard({required this.records, required this.formatDate});
+
+  final List<TrainingBestRecord> records;
+  final String Function(DateTime) formatDate;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.b05Colors;
+    final showBasis = records.length > 1;
+    return B05Surface(
+      key: const ValueKey('exercise_history_best_ever'),
+      tone: B05SurfaceTone.inset,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.emoji_events_rounded,
+                color: colors.action,
+                size: B05Layout.iconMedium,
+              ),
+              const SizedBox(width: B05Layout.space8),
+              Expanded(
+                child: Text('Best ever', style: B05Typography.title(context)),
+              ),
+            ],
+          ),
+          for (final record in records) ...[
+            if (showBasis) ...[
+              const SizedBox(height: B05Layout.space12),
+              Text(
+                R08F3StrengthPerformancePresentation.formatLoadBasis(
+                  record.basis,
+                ),
+                style: B05Typography.label(context),
+              ),
+            ],
+            const SizedBox(height: B05Layout.space8),
+            _fact(context, 'Heaviest', record.heaviest),
+            for (final fact in record.mostReps) ...[
+              const SizedBox(height: B05Layout.space8),
+              _fact(context, 'Most reps', fact),
+            ],
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _fact(BuildContext context, String label, TrainingBestsSetFact fact) {
+    final value = TrainingBestsCopy.setLabel(fact);
+    final date = formatDate(fact.performedAt);
+    return Semantics(
+      label: '$label: $value, $date',
+      child: ExcludeSemantics(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: B05Typography.caption(context)),
+            Text(value, style: B05Typography.title(context)),
+            Text(date, style: B05Typography.caption(context)),
+          ],
+        ),
       ),
     );
   }

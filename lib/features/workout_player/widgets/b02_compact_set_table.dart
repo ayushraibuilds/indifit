@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/b05_semantic_colors.dart';
 import '../../../core/theme/indifit_icons.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
 import '../../../core/widgets/responsive_form_primitives.dart';
 import '../../../data/models/b02_execution_models.dart';
+import '../../progress/training_bests.dart';
 import 'b02_execution_semantics.dart';
 import 'r07c_workout_presentation.dart';
 
@@ -194,6 +196,8 @@ class B02CompactSetTable extends StatelessWidget {
     this.onCompleteNext,
     this.targetSummary,
     this.previousSetLabels = const [],
+    this.bestSetKinds = const {},
+    this.bestLabel,
   });
 
   final B02StrengthExecutionSlot slot;
@@ -228,6 +232,12 @@ class B02CompactSetTable extends StatelessWidget {
   /// Last session's working sets in order; set N today shows entry N - 1.
   final List<String> previousSetLabels;
 
+  /// Logged sets that are factual new bests, by set ID.
+  final Map<String, TrainingBestKind> bestSetKinds;
+
+  /// The best to beat ("Best 62.5 kg × 8") or the first-time baseline note.
+  final String? bestLabel;
+
   @override
   Widget build(BuildContext context) {
     final rows = _rows();
@@ -251,6 +261,14 @@ class B02CompactSetTable extends StatelessWidget {
                 ),
             ],
           ),
+          if (bestLabel case final label?) ...[
+            const SizedBox(height: 2),
+            Text(
+              label,
+              key: const ValueKey('compact-set-best-label'),
+              style: B05Typography.caption(context),
+            ),
+          ],
           const SizedBox(height: 10),
           if (rows.isNotEmpty) ...[
             _TableHeader(showTarget: showTarget),
@@ -263,6 +281,7 @@ class B02CompactSetTable extends StatelessWidget {
                 onEdit: onEdit,
                 onDelete: onDelete,
                 onComplete: identical(row, nextRow) ? onCompleteNext : null,
+                bestKind: row.isLogged ? bestSetKinds[row.id] : null,
               ),
               if (row != rows.last) const Divider(height: 1),
             ],
@@ -411,6 +430,7 @@ class _SetRow extends StatelessWidget {
     required this.onEdit,
     required this.onDelete,
     this.onComplete,
+    this.bestKind,
   });
 
   final B02CompactSetRow row;
@@ -421,6 +441,9 @@ class _SetRow extends StatelessWidget {
 
   /// Set only on the next planned row: tapping its checkmark logs it.
   final VoidCallback? onComplete;
+
+  /// Non-null when this logged set beat every earlier comparable set.
+  final TrainingBestKind? bestKind;
 
   @override
   Widget build(BuildContext context) {
@@ -460,7 +483,9 @@ class _SetRow extends StatelessWidget {
             flex: 3,
             child: !row.isLogged && previous != null
                 ? _previousHint(context, 'Last $previous')
-                : _valueWithDetails(context, actual, row.actualDetailsLabel),
+                : _withBest(
+                    _valueWithDetails(context, actual, row.actualDetailsLabel),
+                  ),
           ),
           SizedBox(
             width: B05Layout.minTouchTarget * 2,
@@ -511,10 +536,12 @@ class _SetRow extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
-                child: _valueWithDetails(
-                  context,
-                  'Actual: $actual',
-                  row.actualDetailsLabel,
+                child: _withBest(
+                  _valueWithDetails(
+                    context,
+                    'Actual: $actual',
+                    row.actualDetailsLabel,
+                  ),
                 ),
               ),
               if (row.isLogged) _actions(context),
@@ -574,6 +601,19 @@ class _SetRow extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _withBest(Widget value) {
+    final kind = bestKind;
+    if (kind == null) return value;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        value,
+        const SizedBox(height: 2),
+        B02NewBestChip(kind: kind),
+      ],
     );
   }
 
@@ -800,4 +840,64 @@ class _PendingSetEditor extends StatelessWidget {
     maxReps: slot.targetRepsMax,
     rpe: slot.targetRpe,
   );
+}
+
+/// "New best" on a saved set row. It scales in once when the row first shows
+/// it (instantly with reduce motion) and is never shown before the save.
+class B02NewBestChip extends StatelessWidget {
+  const B02NewBestChip({super.key, required this.kind});
+
+  final TrainingBestKind kind;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.b05Colors;
+    // Its own node, read right after the row: "New best, heaviest".
+    return Semantics(
+      container: true,
+      label: TrainingBestsCopy.semanticsLabel(kind),
+      excludeSemantics: true,
+      child: TweenAnimationBuilder<double>(
+        tween: Tween(begin: 0.6, end: 1),
+        duration: B05MotionPolicy.transitionDuration(
+          context,
+          standard: B05MotionPolicy.completionDuration,
+        ),
+        curve: B05MotionPolicy.standardCurve,
+        builder: (context, scale, child) => Transform.scale(
+          scale: scale,
+          alignment: Alignment.centerLeft,
+          child: child,
+        ),
+        child: Container(
+          key: const ValueKey('compact-set-new-best'),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+          decoration: BoxDecoration(
+            color: colors.success.container,
+            borderRadius: b05Radius(B05SurfaceRadius.small),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.emoji_events_rounded,
+                size: 14,
+                color: colors.success.foreground,
+              ),
+              const SizedBox(width: 4),
+              Flexible(
+                child: Text(
+                  TrainingBestsCopy.newBest,
+                  style: B05Typography.caption(context).copyWith(
+                    color: colors.success.foreground,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }

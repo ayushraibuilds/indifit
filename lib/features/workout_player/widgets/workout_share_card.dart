@@ -98,6 +98,31 @@ class _WorkoutShareCardState extends State<WorkoutShareCard> {
                 ),
             ],
           ),
+          if (recap.bestsLine(includeWeights: _includeWeights)
+              case final bests?) ...[
+            const SizedBox(height: B05Layout.space12),
+            Row(
+              key: const Key('workout_share_bests_line'),
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.emoji_events_rounded,
+                  size: 16,
+                  color: colors.success.indicator,
+                ),
+                const SizedBox(width: B05Layout.space8),
+                Expanded(
+                  child: Text(
+                    bests,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colors.textPrimary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
           if (recap.previousComparison case final prev?) ...[
             const SizedBox(height: B05Layout.space12),
             Container(

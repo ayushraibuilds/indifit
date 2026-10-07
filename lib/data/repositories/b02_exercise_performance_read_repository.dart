@@ -47,6 +47,9 @@ class B02ExercisePerformanceReadRepository {
                 OrderingTerm.asc(sets.ordinal),
               ]))
             .get();
+    final segmentedSetIds = await _segmentedSetIds(
+      rows.map((row) => row.readTable(sets).id),
+    );
 
     final records = <String, _MutableRecord>{};
     for (final row in rows) {
@@ -74,6 +77,7 @@ class B02ExercisePerformanceReadRepository {
           completedAt: persistedSession.completedAt.toUtc(),
           completionKind: completionKind!,
           actualExerciseId: persistedExercise.actualExerciseId,
+          actualExerciseName: persistedExercise.actualExerciseNameSnapshot,
           expectedExerciseId: persistedExercise.expectedExerciseId,
           expectedExerciseName: persistedExercise.expectedExerciseNameSnapshot,
           substitutionReason: persistedExercise.substitutionReason,
@@ -82,11 +86,44 @@ class B02ExercisePerformanceReadRepository {
         ),
       );
       record.sets.add(set);
+      if (segmentedSetIds.contains(set.id)) record.segmentedSetIds.add(set.id);
     }
 
     return records.values
         .map((record) => record.freeze())
         .toList(growable: false);
+  }
+
+  /// The distinct exercises actually performed in one saved session, in
+  /// workout order. Used to read each exercise's history for that session.
+  Future<List<String>> readSessionExerciseIds(int sessionId) async {
+    final exercises = _database.performedExercises;
+    final rows =
+        await (_database.select(exercises)
+              ..where((table) => table.sessionId.equals(sessionId))
+              ..orderBy([(table) => OrderingTerm.asc(table.ordinal)]))
+            .get();
+    final ids = <String>[];
+    for (final row in rows) {
+      final id = row.actualExerciseId.trim();
+      if (id.isNotEmpty && !ids.contains(id)) ids.add(id);
+    }
+    return List.unmodifiable(ids);
+  }
+
+  /// Sets with persisted drop-set or rest-pause segments. The segment rows do
+  /// not store which of the two techniques was used, so the set is flagged
+  /// rather than rebuilt with a guessed intent.
+  Future<Set<String>> _segmentedSetIds(Iterable<String> setIds) async {
+    final ids = setIds.toSet();
+    if (ids.isEmpty) return const {};
+    final segments = _database.performedSetSegments;
+    final rows =
+        await (_database.selectOnly(segments, distinct: true)
+              ..addColumns([segments.performedSetId])
+              ..where(segments.performedSetId.isIn(ids)))
+            .get();
+    return {for (final row in rows) row.read(segments.performedSetId)!};
   }
 
   B02PerformedSet? _toPerformedSet(PerformedSet set) {
@@ -113,6 +150,26 @@ class B02ExercisePerformanceReadRepository {
             : B02LoadBasis.parse(set.actualLoadBasis),
         actualReps: set.actualReps,
         actualRpe: set.actualRpe,
+        // Assistance, tempo and paused reps change what a set means, so bests
+        // and the heaviest-set read must see them rather than an empty value.
+        technique: B02TechniqueFields(
+          effortMode: set.effortMode == null
+              ? B02EffortMode.standard
+              : B02EffortMode.parse(set.effortMode),
+          endedAtFailure: set.endedAtFailure,
+          tempoEccentricSeconds: set.tempoEccentricSeconds,
+          tempoBottomPauseSeconds: set.tempoBottomPauseSeconds,
+          tempoConcentricSeconds: set.tempoConcentricSeconds,
+          tempoLockoutPauseSeconds: set.tempoLockoutPauseSeconds,
+          pausedRepPosition: set.pausedRepPosition == null
+              ? null
+              : B02PausedRepPosition.parse(set.pausedRepPosition),
+          pausedRepSeconds: set.pausedRepSeconds,
+          assistanceMode: set.assistanceMode == null
+              ? null
+              : B02AssistanceMode.parse(set.assistanceMode),
+          assistanceKg: set.assistanceKg,
+        ),
         notes: set.notes,
       );
     } on B02ValidationException {
@@ -142,12 +199,14 @@ class B02ExercisePerformanceRecord {
     required this.completedAt,
     this.completionKind = 'full',
     this.actualExerciseId = '',
+    this.actualExerciseName = '',
     this.expectedExerciseId,
     this.expectedExerciseName,
     this.substitutionReason,
     required this.exerciseStatus,
     required this.exerciseOrdinal,
     required this.sets,
+    this.segmentedSetIds = const {},
   });
 
   final int sessionId;
@@ -156,12 +215,16 @@ class B02ExercisePerformanceRecord {
   final DateTime completedAt;
   final String completionKind;
   final String actualExerciseId;
+  final String actualExerciseName;
   final String? expectedExerciseId;
   final String? expectedExerciseName;
   final String? substitutionReason;
   final String exerciseStatus;
   final int exerciseOrdinal;
   final List<B02PerformedSet> sets;
+
+  /// IDs of [sets] that carry drop-set or rest-pause segments.
+  final Set<String> segmentedSetIds;
 
   bool get isPartial => completionKind == 'partial';
 
@@ -177,6 +240,7 @@ class _MutableRecord {
     required this.completedAt,
     required this.completionKind,
     required this.actualExerciseId,
+    required this.actualExerciseName,
     required this.expectedExerciseId,
     required this.expectedExerciseName,
     required this.substitutionReason,
@@ -190,12 +254,14 @@ class _MutableRecord {
   final DateTime completedAt;
   final String completionKind;
   final String actualExerciseId;
+  final String actualExerciseName;
   final String? expectedExerciseId;
   final String? expectedExerciseName;
   final String? substitutionReason;
   final String exerciseStatus;
   final int exerciseOrdinal;
   final List<B02PerformedSet> sets = [];
+  final Set<String> segmentedSetIds = {};
 
   B02ExercisePerformanceRecord freeze() => B02ExercisePerformanceRecord(
     sessionId: sessionId,
@@ -204,11 +270,13 @@ class _MutableRecord {
     completedAt: completedAt,
     completionKind: completionKind,
     actualExerciseId: actualExerciseId,
+    actualExerciseName: actualExerciseName,
     expectedExerciseId: expectedExerciseId,
     expectedExerciseName: expectedExerciseName,
     substitutionReason: substitutionReason,
     exerciseStatus: exerciseStatus,
     exerciseOrdinal: exerciseOrdinal,
     sets: List.unmodifiable(sets),
+    segmentedSetIds: Set.unmodifiable(segmentedSetIds),
   );
 }

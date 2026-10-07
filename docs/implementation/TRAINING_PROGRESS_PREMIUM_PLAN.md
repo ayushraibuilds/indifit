@@ -17,9 +17,9 @@ Update this table in every PR that touches training or progress UI. IDs are refe
 
 | ID | Work item | Release | PR | Depends on | Status |
 |---|---|---|---|---|---|
-| TP-1 | Factual-bests engine: derived from logged sets, never stored, never estimated | **v1** | L | — | Not started |
-| TP-2 | Bests in the player: "New best" on the set row, success haptic, best shown next to "last time" | **v1** | L | TP-1 | Not started |
-| TP-3 | Bests on the workout summary, share card and exercise history ("Best ever") | **v1** | L | TP-1 | Not started |
+| TP-1 | Factual-bests engine: derived from logged sets, never stored, never estimated | **v1** | L | — | In progress (PR-L) |
+| TP-2 | Bests in the player: "New best" on the set row, success haptic, best shown next to "last time" | **v1** | L | TP-1 | In progress (PR-L) |
+| TP-3 | Bests on the workout summary, share card and exercise history ("Best ever") | **v1** | L | TP-1 | In progress (PR-L) |
 | TP-4 | Weekly training goal: goal source, goal history, weekly streak calculator | **v1** | M | — | Not started |
 | TP-5 | Weekly goal on screen: Training week card, Progress consistency, summary line; daily streak off training surfaces | **v1** | M | TP-4 | Not started |
 | TP-6 | Summary as the payoff: headline, "vs last time" per exercise, one celebration moment, "Total lifted" | **v1** | N | TP-3, TP-5 | Not started |

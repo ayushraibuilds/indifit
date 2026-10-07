@@ -1,5 +1,6 @@
 import '../../data/models/b02_execution_models.dart';
 import '../../data/repositories/b02_exercise_performance_read_repository.dart';
+import 'training_bests.dart';
 
 /// Presentation-only facts for R08F.3.
 ///
@@ -138,7 +139,8 @@ abstract final class R08F3StrengthPerformancePresentation {
                   set.role == B02SetRole.working &&
                   set.actualLoadKg != null &&
                   set.actualLoadBasis != null &&
-                  set.actualLoadBasis != B02LoadBasis.bodyweight,
+                  set.actualLoadBasis != B02LoadBasis.bodyweight &&
+                  _isPlain(record, set),
             )
             .toList(growable: true)
           ..sort((first, second) => first.ordinal.compareTo(second.ordinal));
@@ -156,7 +158,8 @@ abstract final class R08F3StrengthPerformancePresentation {
               set.role == B02SetRole.working &&
               set.actualLoadKg != null &&
               set.actualLoadBasis == basis &&
-              (reps == null || set.actualReps == reps),
+              (reps == null || set.actualReps == reps) &&
+              _isPlain(record, set),
         )
         .toList(growable: false);
     if (sets.isEmpty) return null;
@@ -164,6 +167,16 @@ abstract final class R08F3StrengthPerformancePresentation {
       return _heavierRecordedSet(first, second);
     });
   }
+
+  /// Assisted, tempo, paused and segmented sets aren't compared as plain
+  /// sets: an assisted 80 kg isn't a heavier lift than an unassisted 70 kg.
+  static bool _isPlain(
+    B02ExercisePerformanceRecord record,
+    B02PerformedSet set,
+  ) => !TrainingBests.hasTechnique(
+    set,
+    segmented: record.segmentedSetIds.contains(set.id),
+  );
 
   static B02PerformedSet _heavierRecordedSet(
     B02PerformedSet first,

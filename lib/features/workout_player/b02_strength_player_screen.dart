@@ -9,6 +9,7 @@ import '../../core/presentation/consumer_copy.dart';
 import '../../core/services/indifit_haptics.dart';
 import '../../core/services/rest_alert_permission_service.dart';
 import '../../core/theme/indifit_icons.dart';
+import '../../core/utils/app_logger.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/indi_fit_bottom_sheet.dart';
 import '../../core/widgets/indi_fit_feedback.dart';
@@ -20,6 +21,8 @@ import '../../data/models/b02_rich_set_helpers.dart';
 import '../../data/repositories/b02_strength_execution_repository.dart';
 import '../../data/services/b02_execution_progression.dart';
 import '../exercise_picker/exercise_picker.dart';
+import '../progress/training_bests.dart';
+import '../progress/training_bests_providers.dart';
 import 'b02_previous_performance_integration.dart';
 import 'b02_strength_execution_controller.dart';
 import 'quick_workout_screen.dart';
@@ -88,6 +91,11 @@ class _B02StrengthPlayerScreenState
   final _editedInputFields =
       <({String slotId, B02PreviousPerformanceInputField field})>{};
   final _extraSetReady = <String>{};
+
+  /// Saved history per actual exercise, for factual bests. Null while loading
+  /// or when the read failed; bests are then simply not shown.
+  final _bestsHistory = <String, List<TrainingBestsEntry>?>{};
+  final _bestsHistoryLoads = <String, Future<List<TrainingBestsEntry>?>>{};
   late final B02PreviousPerformanceLookupCoordinator _previousLookup;
   String? _selectedSlotId;
   bool _warmup = false;
@@ -291,6 +299,12 @@ class _B02StrengthPlayerScreenState
     final previousPerformance = _previousLookup.activeKey == previousKey
         ? _previousLookup.activeResult
         : null;
+    final bests = _bestsView(
+      provider,
+      launch.state,
+      selected,
+      actualExerciseId,
+    );
     final showPendingEditor = isQuick || !exerciseComplete || hasExtraSetReady;
     // While a set is pending, the suggestion sits in the "Next set" header
     // beside the fields it fills; otherwise it stays as a card below.
@@ -327,6 +341,8 @@ class _B02StrengthPlayerScreenState
                 B02PreviousPerformancePresentation.workingSetLabels(
                   previousPerformance,
                 ),
+            bestSetKinds: bests.kindsBySetId,
+            bestLabel: bests.label,
           );
     final primaryLabel = _warmup
         ? 'Log warm-up set'
@@ -448,6 +464,8 @@ class _B02StrengthPlayerScreenState
     required B02TechniqueFields pendingTechnique,
     Widget? targetSummary,
     List<String> previousSetLabels = const [],
+    Map<String, TrainingBestKind> bestSetKinds = const {},
+    String? bestLabel,
   }) {
     final rpe = int.tryParse(_rpes[selected.id] ?? '');
     final techniqueKey = _pendingTechniqueKey(
@@ -491,6 +509,8 @@ class _B02StrengthPlayerScreenState
       showPendingEditor: showPendingEditor,
       targetSummary: targetSummary,
       previousSetLabels: previousSetLabels,
+      bestSetKinds: bestSetKinds,
+      bestLabel: bestLabel,
       // The next planned row's checkmark is the same action as "Log set".
       onCompleteNext:
           _warmup ||
@@ -591,6 +611,110 @@ class _B02StrengthPlayerScreenState
         GroupProgressCard(launch: launch, slots: slots, selected: selected),
       ],
     );
+  }
+
+  /// Factual bests for the selected exercise: which logged sets beat every
+  /// earlier one, and the best to beat ("Best 62.5 kg × 8").
+  ({Map<String, TrainingBestKind> kindsBySetId, String? label}) _bestsView(
+    dynamic provider,
+    B02ExecutionDraftState state,
+    B02StrengthExecutionSlot slot,
+    String? actualExerciseId,
+  ) {
+    const none = (kindsBySetId: <String, TrainingBestKind>{}, label: null);
+    final exerciseId = actualExerciseId?.trim();
+    if (exerciseId == null || exerciseId.isEmpty) return none;
+    unawaited(_loadBestsHistory(provider, exerciseId));
+    final history = _bestsHistory[exerciseId];
+    if (history == null) return none;
+    final result = TrainingBests.evaluate(
+      history: history,
+      current: _currentBestsEntries(state, exerciseId),
+    );
+    final basis = slot.targetLoadBasis;
+    final record = TrainingBests.bestEver(
+      history,
+    ).where((record) => record.basis == basis).firstOrNull;
+    final label = record != null
+        ? 'Best ${TrainingBestsCopy.setLabel(record.heaviest)}'
+        : result.baselineExerciseIds.contains(exerciseId)
+        ? TrainingBestsCopy.baseline
+        : null;
+    return (kindsBySetId: result.kindsBySetId, label: label);
+  }
+
+  List<TrainingBestsEntry> _currentBestsEntries(
+    B02ExecutionDraftState state,
+    String exerciseId,
+  ) {
+    final now = (widget.nowUtc?.call() ?? DateTime.now()).toUtc();
+    return [
+      for (final exercise in state.performedExercises)
+        if (exercise.actualExerciseId == exerciseId)
+          TrainingBestsEntry(
+            sessionId: null,
+            completedAt: now,
+            actualExerciseId: exercise.actualExerciseId,
+            actualExerciseName: exercise.actualExerciseNameSnapshot,
+            exerciseOrdinal: exercise.ordinal,
+            sets: exercise.sets,
+          ),
+    ];
+  }
+
+  Future<List<TrainingBestsEntry>?> _loadBestsHistory(
+    dynamic provider,
+    String exerciseId,
+  ) {
+    return _bestsHistoryLoads.putIfAbsent(exerciseId, () async {
+      // Requested from build; never complete (or setState) synchronously.
+      await Future<void>.value();
+      List<TrainingBestsEntry>? history;
+      try {
+        final controller =
+            ref.read(provider.notifier) as B02StrengthExecutionController;
+        final records = await controller.readExerciseHistory(exerciseId);
+        history = [for (final record in records) record.toTrainingBestsEntry()];
+      } catch (error) {
+        // Safe: bests are optional presentation. Without history the player
+        // shows no chip and no best line; logging is unaffected.
+        AppLogger.warning(
+          'Training bests history unavailable: $error',
+          'B02StrengthPlayerScreen',
+        );
+      }
+      if (mounted) setState(() => _bestsHistory[exerciseId] = history);
+      return history;
+    });
+  }
+
+  /// One haptic per saved set, after persistence: [IndiFitHaptics.success]
+  /// when the new set is a best, otherwise [IndiFitHaptics.confirmation].
+  Future<void> _savedSetHaptic(
+    dynamic provider,
+    B02StrengthExecutionSlot slot,
+    Set<String> setIdsBefore,
+  ) async {
+    var isBest = false;
+    final launch = launchForProvider(provider);
+    final exerciseId = launch == null
+        ? null
+        : _actualExerciseId(launch.state, slot)?.trim();
+    if (launch != null && exerciseId != null && exerciseId.isNotEmpty) {
+      final saved = _performedSets(
+        launch.state,
+        slot,
+      ).where((set) => !setIdsBefore.contains(set.id)).map((set) => set.id);
+      final history = await _loadBestsHistory(provider, exerciseId);
+      if (history != null && saved.isNotEmpty) {
+        final kinds = TrainingBests.evaluate(
+          history: history,
+          current: _currentBestsEntries(launch.state, exerciseId),
+        ).kindsBySetId;
+        isBest = saved.any(kinds.containsKey);
+      }
+    }
+    await (isBest ? IndiFitHaptics.success() : IndiFitHaptics.confirmation());
   }
 
   String _actualExerciseName(
@@ -977,6 +1101,12 @@ class _B02StrengthPlayerScreenState
         ? 1
         : _workingSetCount(currentLaunch.state, slot) + 1;
     final technique = _pendingTechniqueFor(slot, currentSet);
+    final setIdsBefore = currentLaunch == null
+        ? const <String>{}
+        : _performedSets(
+            currentLaunch.state,
+            slot,
+          ).map((set) => set.id).toSet();
     try {
       B02RichSetValidator.validateTechnique(technique, headerReps: reps);
     } on B02ValidationException catch (error) {
@@ -1002,7 +1132,7 @@ class _B02StrengthPlayerScreenState
       final saved = ref.read(provider);
       if (saved.status != B02StrengthExecutionStatus.failure &&
           saved.status != B02StrengthExecutionStatus.recovery) {
-        unawaited(IndiFitHaptics.confirmation());
+        unawaited(_savedSetHaptic(provider, slot, setIdsBefore));
         final afterSave = ref.read(provider);
         final cursorLaunch = afterSave.launch;
         final cursor = cursorLaunch == null

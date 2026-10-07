@@ -23,6 +23,16 @@ abstract final class IndiFitHaptics {
   static Future<void> confirmation() =>
       _trigger(IndiFitHapticType.confirmation, HapticFeedback.mediumImpact);
 
+  /// A new best set was saved: one medium pulse, then one heavy. Fires
+  /// instead of [confirmation] for that set, so a save still emits one event.
+  ///
+  /// Rule: Always fire after authoritative persistence succeeds, never on tap.
+  static Future<void> success() =>
+      _trigger(IndiFitHapticType.success, () async {
+        await HapticFeedback.mediumImpact();
+        await HapticFeedback.heavyImpact();
+      });
+
   /// Heavy / warning feedback for consequential confirmations:
   /// Leave Plan confirmed, Delete Saved Meal confirmed, Discard Workout.
   static Future<void> warning() =>
@@ -43,4 +53,4 @@ abstract final class IndiFitHaptics {
 }
 
 /// Category of haptic feedback emitted by IndiFit.
-enum IndiFitHapticType { selection, confirmation, warning }
+enum IndiFitHapticType { selection, confirmation, warning, success }

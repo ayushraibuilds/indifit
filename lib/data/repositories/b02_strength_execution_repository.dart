@@ -11,6 +11,7 @@ import '../database/app_database.dart';
 import '../models/b02_execution_models.dart';
 import '../models/b02_rich_set_helpers.dart';
 import '../services/b02_workout_preparation_orchestrator.dart';
+import 'b02_exercise_performance_read_repository.dart';
 import 'b02_target_recommendation_repository.dart';
 import 'calendar_repository.dart';
 import 'equipment_preference_repository.dart';
@@ -2202,6 +2203,14 @@ class StrengthExecutionCompatibilityAdapter {
 
   Future<Map<String, String>> readCanonicalExercises() =>
       _repository.readCanonicalExercises();
+
+  /// Saved history for one exercise, from the database this draft is saved
+  /// in. The player derives factual bests from it.
+  Future<List<B02ExercisePerformanceRecord>> readExercisePerformance(
+    String exerciseId,
+  ) => B02ExercisePerformanceReadRepository(
+    _repository._db,
+  ).read(stableExerciseId: exerciseId);
 
   Future<List<B02StrengthExecutionSlot>> readExecutionSlots(
     B02StrengthExecutionLaunch launch,
