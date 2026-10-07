@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../core/config/app_links.dart';
 import '../../core/di/providers.dart';
 import '../../core/privacy/dpdp_consent_service.dart';
 import '../../core/theme/b05_semantic_colors.dart';
@@ -228,6 +230,10 @@ class _PhotoMealScreenState extends ConsumerState<PhotoMealScreen> {
     PhotoMealState state,
     PhotoMealController controller,
   ) {
+    final deniedSource = state.deniedSource;
+    if (deniedSource != null) {
+      return _buildAccessDeniedSurface(context, state, deniedSource);
+    }
     final isRateLimited =
         state.errorMessage?.contains('429') == true ||
         state.errorMessage?.toLowerCase().contains('quota') == true ||
@@ -292,6 +298,67 @@ class _PhotoMealScreenState extends ConsumerState<PhotoMealScreen> {
                 ? () => Navigator.of(context).pop()
                 : () => _pickAndProcess(ImageSource.camera),
           ),
+        ],
+      ),
+    );
+  }
+
+  /// Retrying can't fix a refused permission: offer the other source, and
+  /// Settings where the app can open it (iOS); elsewhere, asking again.
+  Widget _buildAccessDeniedSurface(
+    BuildContext context,
+    PhotoMealState state,
+    ImageSource deniedSource,
+  ) {
+    final camera = deniedSource == ImageSource.camera;
+    final canOpenSettings = defaultTargetPlatform == TargetPlatform.iOS;
+    return Padding(
+      padding: const EdgeInsets.all(B05Layout.space24),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            camera ? Icons.no_photography_outlined : Icons.hide_image_outlined,
+            size: 48,
+            color: context.b05Colors.warning.indicator,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            camera ? 'Camera access is off' : 'Photo access is off',
+            style: B05Typography.title(context),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            state.errorMessage ?? '',
+            style: B05Typography.body(context),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          B05ActionButton(
+            label: camera ? 'Choose from Gallery' : 'Take Photo with Camera',
+            icon: camera
+                ? Icons.photo_library_rounded
+                : Icons.photo_camera_rounded,
+            onPressed: () => _pickAndProcess(
+              camera ? ImageSource.gallery : ImageSource.camera,
+            ),
+          ),
+          const SizedBox(height: 12),
+          if (canOpenSettings)
+            B05ActionButton(
+              label: 'Open Settings',
+              icon: Icons.settings_outlined,
+              emphasis: B05ActionEmphasis.secondary,
+              onPressed: () => AppLinks.open(AppLinks.iosAppSettings),
+            )
+          else
+            B05ActionButton(
+              label: camera ? 'Ask for Camera Again' : 'Ask for Photos Again',
+              icon: Icons.refresh_rounded,
+              emphasis: B05ActionEmphasis.secondary,
+              onPressed: () => _pickAndProcess(deniedSource),
+            ),
         ],
       ),
     );

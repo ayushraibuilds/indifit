@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
@@ -160,6 +161,19 @@ class NutritionLabelOcrState {
   }
 }
 
+/// True when image_picker failed because the person refused camera or photo
+/// access (the plugin's codes on iOS and Android). Retrying can't help then;
+/// only Settings or the other source can (audit UX-10).
+bool isImageAccessDenied(Object error) =>
+    error is PlatformException &&
+    (error.code == 'camera_access_denied' ||
+        error.code == 'photo_access_denied');
+
+String imageAccessDeniedMessage(ImageSource source) =>
+    source == ImageSource.camera
+    ? 'Camera access is off for IndiFit. Allow it in Settings, or choose a photo from your gallery.'
+    : 'Photo access is off for IndiFit. Allow it in Settings, or take a photo with the camera.';
+
 class NutritionLabelOcrController
     extends StateNotifier<NutritionLabelOcrState> {
   final NutritionLabelOcrService _ocrService;
@@ -238,15 +252,16 @@ class NutritionLabelOcrController
     } catch (e) {
       state = state.copyWith(
         status: NutritionLabelOcrStatus.failure,
-        // Limits and the kill switch explain themselves; anything else gets
-        // the generic manual-entry prompt.
-        errorMessage:
-            e is AiGatewayException &&
-                const {
-                  AiGatewayFailure.dailyLimitReached,
-                  AiGatewayFailure.quotaExceeded,
-                  AiGatewayFailure.disabled,
-                }.contains(e.failure)
+        // Refused access, limits and the kill switch explain themselves;
+        // anything else gets the generic manual-entry prompt.
+        errorMessage: isImageAccessDenied(e)
+            ? imageAccessDeniedMessage(source)
+            : e is AiGatewayException &&
+                  const {
+                    AiGatewayFailure.dailyLimitReached,
+                    AiGatewayFailure.quotaExceeded,
+                    AiGatewayFailure.disabled,
+                  }.contains(e.failure)
             ? e.message
             : 'Could not extract nutrition label facts. Please enter values manually.',
       );
@@ -748,6 +763,10 @@ class PhotoMealState {
   final List<DecomposedFoodItem> editableItems;
   final String? imagePath;
   final String? errorMessage;
+
+  /// The source whose access the person refused, when that is why the last
+  /// pick failed.
+  final ImageSource? deniedSource;
   final bool isLogged;
 
   const PhotoMealState({
@@ -756,6 +775,7 @@ class PhotoMealState {
     this.editableItems = const [],
     this.imagePath,
     this.errorMessage,
+    this.deniedSource,
     this.isLogged = false,
   });
 
@@ -779,6 +799,7 @@ class PhotoMealState {
     List<DecomposedFoodItem>? editableItems,
     String? imagePath,
     String? errorMessage,
+    ImageSource? deniedSource,
     bool clearError = false,
     bool? isLogged,
   }) {
@@ -788,6 +809,7 @@ class PhotoMealState {
       editableItems: editableItems ?? this.editableItems,
       imagePath: imagePath ?? this.imagePath,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+      deniedSource: clearError ? null : (deniedSource ?? this.deniedSource),
       isLogged: isLogged ?? this.isLogged,
     );
   }
@@ -858,6 +880,14 @@ class PhotoMealController extends StateNotifier<PhotoMealState> {
         editableItems: List.from(res.items),
       );
     } catch (e) {
+      if (isImageAccessDenied(e)) {
+        state = state.copyWith(
+          status: PhotoMealStatus.failure,
+          errorMessage: imageAccessDeniedMessage(source),
+          deniedSource: source,
+        );
+        return;
+      }
       state = state.copyWith(
         status: PhotoMealStatus.failure,
         errorMessage:
