@@ -169,6 +169,22 @@ class CatalogPackImporter {
     if (inserts.isNotEmpty) {
       await _db.batch((batch) => batch.insertAll(_db.nutritionFoods, inserts));
     }
+    // Base-dish links go in after every identity exists, so a variant never
+    // points at a parent that isn't written yet.
+    for (final food in pack.foods) {
+      if (!food.statesVariantOf) continue;
+      final row = existing[food.id];
+      if (row != null && row.variantOfFoodId == food.variantOf) continue;
+      if (row == null && food.variantOf == null) continue;
+      await (_db.update(
+        _db.nutritionFoods,
+      )..where((table) => table.id.equals(food.id))).write(
+        NutritionFoodsCompanion(
+          variantOfFoodId: Value(food.variantOf),
+          updatedAt: Value(now),
+        ),
+      );
+    }
   }
 
   /// Writes a new fact version for each food whose current facts differ from

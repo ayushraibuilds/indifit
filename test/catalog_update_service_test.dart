@@ -404,9 +404,10 @@ void main() {
     expect(status.source, 'bundled');
     expect(status.installedAt, isNotNull);
     // Pack v2 carries 573 foods; 75 are retired. Of the 498 active ones,
-    // 244 have a variant kind in the food identity manifest.
+    // 255 are size or oil variants of a dish (`variant_of`), so 243 are
+    // dishes: the number the store copy states.
     expect(status.foodCount, 498);
-    expect(status.variantCount, 244);
+    expect(status.variantCount, 255);
     expect(status.lastCheckAt, isNull);
     expect(status.allowMobileData, isFalse);
   });

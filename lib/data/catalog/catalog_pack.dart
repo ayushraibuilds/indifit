@@ -127,6 +127,13 @@ class CatalogPackFood {
   final List<CatalogPackServing> servings;
   final List<CatalogPackAlias> aliases;
 
+  /// Whether the pack states each food's base dish (`variant_of`, from pack
+  /// 2). When it does, [variantOf] is authoritative, null included.
+  final bool statesVariantOf;
+
+  /// The base dish this food is a size or oil variant of, or null for a dish.
+  final String? variantOf;
+
   const CatalogPackFood({
     required this.id,
     required this.displayName,
@@ -137,6 +144,8 @@ class CatalogPackFood {
     required this.values,
     required this.servings,
     this.aliases = const [],
+    this.statesVariantOf = false,
+    this.variantOf,
   });
 
   CatalogPackServing get defaultServing =>
@@ -409,6 +418,14 @@ class CatalogPack {
         'Food $id is per 100 g, so its default serving needs grams.',
       );
     }
+    final variantOf = json['variant_of'];
+    if (variantOf != null &&
+        (variantOf is! String || variantOf.trim().isEmpty || variantOf == id)) {
+      throw CatalogPackError(
+        'invalid_variant_of',
+        'Food $id has an invalid variant_of.',
+      );
+    }
     final aliases = [
       for (final entry in _list(json['aliases'] ?? const [], 'food.aliases'))
         CatalogPackAlias(
@@ -426,6 +443,8 @@ class CatalogPack {
       values: Map.unmodifiable(values),
       servings: List.unmodifiable(servings),
       aliases: List.unmodifiable(aliases),
+      statesVariantOf: json.containsKey('variant_of'),
+      variantOf: variantOf as String?,
     );
   }
 }
