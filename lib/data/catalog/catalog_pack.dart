@@ -123,6 +123,14 @@ class CatalogPackFood {
   final List<CatalogPackServing> servings;
   final List<CatalogPackAlias> aliases;
 
+  /// The base dish this food is a size or preparation variant of, or null
+  /// for a dish of its own. Only meaningful when [declaresVariantOf].
+  final String? variantOf;
+
+  /// Whether the pack carries `variant_of` for this food. Pack v1 predates
+  /// the field; its foods leave the existing variant link alone.
+  final bool declaresVariantOf;
+
   const CatalogPackFood({
     required this.id,
     required this.displayName,
@@ -133,6 +141,8 @@ class CatalogPackFood {
     required this.values,
     required this.servings,
     this.aliases = const [],
+    this.variantOf,
+    this.declaresVariantOf = false,
   });
 
   CatalogPackServing get defaultServing =>
@@ -299,6 +309,17 @@ class CatalogPack {
       retire.add(CatalogPackRetirement(id: id, replacedBy: replacedBy));
     }
     if (!isDelta) {
+      // A delta may name a base installed by an earlier pack; the database
+      // foreign key checks it on apply.
+      for (final food in foods) {
+        final base = food.variantOf;
+        if (base != null && !foodIds.contains(base)) {
+          throw CatalogPackError(
+            'dangling_variant',
+            'Food ${food.id} is a variant of missing $base.',
+          );
+        }
+      }
       for (final retirement in retire) {
         final replacement = retirement.replacedBy;
         if (replacement != null && !foodIds.contains(replacement)) {
@@ -405,6 +426,15 @@ class CatalogPack {
         'Food $id is per 100 g, so its default serving needs grams.',
       );
     }
+    final variantOf = json['variant_of'] == null
+        ? null
+        : _text(json['variant_of'], 'food.variant_of');
+    if (variantOf == id) {
+      throw CatalogPackError(
+        'invalid_variant',
+        'Food $id cannot be a variant of itself.',
+      );
+    }
     final aliases = [
       for (final entry in _list(json['aliases'] ?? const [], 'food.aliases'))
         CatalogPackAlias(
@@ -422,6 +452,8 @@ class CatalogPack {
       values: Map.unmodifiable(values),
       servings: List.unmodifiable(servings),
       aliases: List.unmodifiable(aliases),
+      variantOf: variantOf,
+      declaresVariantOf: json.containsKey('variant_of'),
     );
   }
 }

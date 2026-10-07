@@ -75,7 +75,8 @@ void main() {
       findsOneWidget,
     );
     expect(
-      find.text('498 foods, including 244 size and preparation variants'),
+      // 243 dishes, as README and the store listing say (r09a).
+      find.text('498 foods, including 255 size and preparation variants'),
       findsOneWidget,
     );
     expect(find.text('Not checked for updates yet'), findsOneWidget);

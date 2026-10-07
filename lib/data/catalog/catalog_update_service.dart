@@ -388,9 +388,11 @@ class CatalogUpdateService {
           )..where((row) => row.version.equals(installed))).getSingle();
     final count = await _db
         .customSelect(
-          'SELECT COUNT(*) AS foods, COALESCE(SUM(f.kind IN '
-          "('preparationVariant', 'servingPresentationVariant')), 0) "
-          'AS variants FROM nutrition_foods f '
+          // Variants are the pack's `variant_of` links (written by
+          // CatalogPackImporter), so foods minus variants is the dish count
+          // README and the store listing state.
+          'SELECT COUNT(*) AS foods, '
+          'COUNT(f.variant_of_food_id) AS variants FROM nutrition_foods f '
           "WHERE f.lifecycle = 'active' "
           'AND EXISTS (SELECT 1 FROM nutrition_food_nutrient_facts n '
           'WHERE n.food_id = f.id AND n.is_current = 1 '

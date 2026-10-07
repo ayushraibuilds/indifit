@@ -484,6 +484,39 @@ void main() {
       );
     });
 
+    test('reads variant_of, and rejects a self or dangling variant', () {
+      CatalogPack parseFood(Map<String, Object?> extra) => CatalogPack.parse(
+        {
+          ...json,
+          'foods': [
+            {
+              ...(json['foods']! as List).single as Map<String, Object?>,
+              ...extra,
+            },
+          ],
+        },
+        sha256: 'x',
+        registryVersion: '1',
+        nutrientIds: nutrientIds,
+      );
+      String? code(Map<String, Object?> extra) {
+        try {
+          parseFood(extra);
+          return null;
+        } on CatalogPackError catch (error) {
+          return error.code;
+        }
+      }
+
+      // Format 1 packs from before the field (pack v1) don't declare it.
+      final legacy = parseFood({}).foods.single;
+      expect((legacy.declaresVariantOf, legacy.variantOf), (false, null));
+      final base = parseFood({'variant_of': null}).foods.single;
+      expect((base.declaresVariantOf, base.variantOf), (true, null));
+      expect(code({'variant_of': 'food-a'}), 'invalid_variant');
+      expect(code({'variant_of': 'food-missing'}), 'dangling_variant');
+    });
+
     test('the bundled pack is the latest pack the pipeline built', () {
       // tool/catalog/validate.py (CI) checks packs/ against sources and
       // overlays; this checks the app bundles exactly that pack.

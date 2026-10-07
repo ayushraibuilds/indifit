@@ -169,6 +169,24 @@ class CatalogPackImporter {
     if (inserts.isNotEmpty) {
       await _db.batch((batch) => batch.insertAll(_db.nutritionFoods, inserts));
     }
+    // Variant links come from the pack, not the identity manifest, whose
+    // kinds and parents miss some variants. Linked after the inserts so a
+    // variant may precede its base. `kind` stays as is: search ranks by it.
+    final links = [
+      for (final food in pack.foods)
+        if (food.declaresVariantOf &&
+            existing[food.id]?.variantOfFoodId != food.variantOf)
+          [food.id, food.variantOf],
+    ];
+    if (links.isNotEmpty) {
+      await _db.customStatement(
+        'UPDATE nutrition_foods SET updated_at = ?1, variant_of_food_id = '
+        "(SELECT json_extract(value, '\$[1]') FROM json_each(?2) "
+        "WHERE json_extract(value, '\$[0]') = nutrition_foods.id) "
+        "WHERE id IN (SELECT json_extract(value, '\$[0]') FROM json_each(?2))",
+        [now.millisecondsSinceEpoch ~/ 1000, jsonEncode(links)],
+      );
+    }
   }
 
   /// Writes a new fact version for each food whose current facts differ from

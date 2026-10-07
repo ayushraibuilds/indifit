@@ -45,6 +45,16 @@ void main() {
         'Whole Wheat Roti / Chapati (Double)',
       );
       expect(await _conversion(catalogue.db, doubleRoti, 'piece'), 1);
+      // v1 predates `variant_of`, so the identity manifest's links stay.
+      // Legacy rows share the base names; the pack names the pack's ids.
+      final ids = {
+        for (final food in (_bundledJson()['foods'] as List).cast<Map>())
+          food['display_name'] as String: food['id'] as String,
+      };
+      final roti = ids['Whole Wheat Roti / Chapati'];
+      final miniDosa = await catalogue.foodId('Masala Dosa (Mini size)');
+      expect(await _variantOf(catalogue.db, doubleRoti), roti);
+      expect(await _variantOf(catalogue.db, miniDosa), isNull);
 
       final v2 = _builtPack(catalogue, '2.json.gz');
       final first = await importer.apply(v2, source: 'bundled');
@@ -52,6 +62,9 @@ void main() {
       final after = await _state(catalogue.db);
       expect(await importer.installedVersion(), 2);
       expect(await _conversion(catalogue.db, doubleRoti, 'piece'), 2);
+      // v2 declares `variant_of`, which the manifest missed for Mini size.
+      expect(await _variantOf(catalogue.db, doubleRoti), roti);
+      expect(await _variantOf(catalogue.db, miniDosa), ids['Masala Dosa']);
       final dal = await catalogue.foodId('Toor Dal / Yellow Dal Tadka');
       expect(await _conversion(catalogue.db, dal, 'gram'), 150);
       // A gram-as-katori row becomes grams: a new fact version per 100 g.
@@ -121,6 +134,38 @@ void main() {
         expect(names, isNot(contains(retired)));
       }
     });
+
+    test(
+      'variant links come from the pack, and kinds stay as they were',
+      () async {
+        final pack = _bundledJson();
+        final expected = {
+          for (final food in (pack['foods'] as List).cast<Map>())
+            food['id'] as String: food['variant_of'] as String?,
+        };
+        final rows = await catalogue.db
+            .customSelect(
+              'SELECT id, kind, variant_of_food_id FROM nutrition_foods '
+              'WHERE id IN (SELECT value FROM json_each(?))',
+              variables: [Variable(jsonEncode(expected.keys.toList()))],
+            )
+            .get();
+        expect(rows, hasLength(expected.length));
+        expect({
+          for (final row in rows)
+            row.read<String>('id'): row.read<String?>('variant_of_food_id'),
+        }, expected);
+        // Search ranking reads `kind`; the pack doesn't rewrite it, so the
+        // manifest's "canonical" Mini size dosa keeps its kind.
+        final miniDosa = await catalogue.foodId('Masala Dosa (Mini size)');
+        expect(
+          rows
+              .singleWhere((row) => row.read<String>('id') == miniDosa)
+              .read<String>('kind'),
+          'canonical',
+        );
+      },
+    );
 
     test('no household-unit serving is more than 6 units (C-04)', () async {
       final rows = await catalogue.db
@@ -228,8 +273,23 @@ void main() {
 }
 
 /// A device on the pre-pack catalogue: no pack state, facts, conversions or
-/// aliases, and only the retirements made before packs existed.
+/// aliases, only the retirements made before packs existed, and the identity
+/// manifest's variant links.
 Future<void> _resetToBeforePacks(AppDatabase db) async {
+  final manifest =
+      jsonDecode(
+            File(
+              'assets/data/nutrition_food_identity_manifest.json',
+            ).readAsStringSync(),
+          )
+          as Map<String, dynamic>;
+  await db.customStatement(
+    'UPDATE nutrition_foods SET variant_of_food_id = '
+    "(SELECT json_extract(value, '\$.parent_id') FROM json_each(?) "
+    "WHERE json_extract(value, '\$.id') = nutrition_foods.id) "
+    "WHERE id LIKE 'food-seed-%'",
+    [jsonEncode(manifest['entries'])],
+  );
   await db.customStatement(
     "DELETE FROM nutrition_food_nutrient_facts WHERE source_ref LIKE 'catalog-pack:%'",
   );
@@ -310,6 +370,11 @@ Future<double?> _conversion(AppDatabase db, String foodId, String to) async {
   return row?.read<double>('factor');
 }
 
+Future<String?> _variantOf(AppDatabase db, String foodId) async =>
+    (await (db.select(
+      db.nutritionFoods,
+    )..where((f) => f.id.equals(foodId))).getSingle()).variantOfFoodId;
+
 Future<NutritionFoodNutrientFact> _energy(AppDatabase db, String foodId) =>
     (db.select(db.nutritionFoodNutrientFacts)..where(
           (f) =>
@@ -331,7 +396,7 @@ Future<List<String>> _state(AppDatabase db) async {
         'nutrition_quantity_conversions ORDER BY 1, 2, 3',
     'SELECT food_id, alias, locale FROM nutrition_food_aliases '
         "WHERE source = 'catalog-pack' ORDER BY 1, 2",
-    'SELECT id, display_name, lifecycle FROM nutrition_foods '
+    'SELECT id, display_name, lifecycle, variant_of_food_id FROM nutrition_foods '
         "WHERE id LIKE 'food-seed-%' ORDER BY 1",
   ]) {
     for (final row in await db.customSelect(query).get()) {

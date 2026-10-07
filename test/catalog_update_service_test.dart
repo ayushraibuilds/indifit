@@ -342,9 +342,19 @@ void main() {
     expect(status.source, 'bundled');
     expect(status.installedAt, isNotNull);
     // Pack v2 carries 573 foods; 75 are retired. Of the 498 active ones,
-    // 244 have a variant kind in the food identity manifest.
-    expect(status.foodCount, 498);
-    expect(status.variantCount, 244);
+    // 255 name a `variant_of` in the pack, so 243 are dishes: the count the
+    // README and store listing state (r09a_product_truth_test).
+    final retired = {
+      for (final retirement in bundledPack['retire']! as List)
+        (retirement as Map)['id'],
+    };
+    final active = (bundledPack['foods']! as List).cast<Map>().where(
+      (food) => !retired.contains(food['id']),
+    );
+    final variants = active.where((food) => food['variant_of'] != null);
+    expect(status.foodCount, active.length);
+    expect(status.variantCount, variants.length);
+    expect((status.foodCount, status.variantCount), (498, 255));
     expect(status.lastCheckAt, isNull);
     expect(status.allowMobileData, isFalse);
   });
