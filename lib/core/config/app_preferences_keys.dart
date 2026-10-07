@@ -38,6 +38,13 @@ abstract final class AppPreferenceKeys {
   static const streakFreezesCount = 'streak_freezes_count';
   static const lastFreezeClaimedAt = 'last_freeze_claimed_at';
 
+  // --- Weekly Training Goal ---
+  /// Workouts per week the user picked (1–7) when no plan is active.
+  static const trainingWeekGoal = 'training_week_goal_v1';
+
+  /// JSON `{weekStart: goal}`, so each past week keeps the goal it had.
+  static const trainingWeekGoals = 'training_week_goals_v1';
+
   // --- User Profile & Goals (Active - exact disk strings) ---
   static const userName = 'user_name';
   static const userAge = 'user_age';

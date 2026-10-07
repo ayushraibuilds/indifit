@@ -281,6 +281,8 @@ class BackupData {
         'user_streak_count',
         'last_streak_date',
         'last_freeze_claimed_at',
+        'training_week_goal_v1',
+        'training_week_goals_v1',
         'auto_sync_health_on_open',
         'health_last_sync_time',
         'user_name',

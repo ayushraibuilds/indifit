@@ -18,6 +18,7 @@ import '../exercise_library/exercise_history_screen.dart';
 import '../nutrition/adaptive_tdee_providers.dart';
 import '../settings/nutrition_targets_hub_screen.dart';
 import '../settings/unit_preference.dart';
+import '../training/weekly_training_goal_providers.dart';
 import '../training/workout_history_screen.dart';
 import 'achievements_screen.dart';
 import 'period_comparison/widgets/period_comparison_section.dart';
@@ -167,6 +168,11 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                   TrainingConsistencySection(
                     snapshot: snapshot,
                     onViewHistory: _openTrainingHistory,
+                    weeklyGoal: widget.preview == null
+                        ? ref
+                              .watch(weeklyTrainingGoalStatusProvider)
+                              .valueOrNull
+                        : null,
                   ),
                 ],
                 if (widget.preview == null) ...[
@@ -392,7 +398,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
 
   Future<void> _refresh() async {
     if (widget.preview != null) return;
-    ref.invalidate(progressDashboardSnapshotProvider);
+    ref
+      ..invalidate(progressDashboardSnapshotProvider)
+      ..invalidate(weeklyTrainingGoalStatusProvider);
     try {
       await ref.read(progressDashboardSnapshotProvider.future);
     } catch (_) {
