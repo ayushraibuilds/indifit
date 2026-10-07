@@ -61206,6 +61206,355 @@ class FoodSearchCacheCompanion extends UpdateCompanion<FoodSearchCacheData> {
   }
 }
 
+class $CatalogStateTable extends CatalogState
+    with TableInfo<$CatalogStateTable, CatalogStateData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CatalogStateTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _versionMeta = const VerificationMeta(
+    'version',
+  );
+  @override
+  late final GeneratedColumn<int> version = GeneratedColumn<int>(
+    'version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sha256Meta = const VerificationMeta('sha256');
+  @override
+  late final GeneratedColumn<String> sha256 = GeneratedColumn<String>(
+    'sha256',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sourceMeta = const VerificationMeta('source');
+  @override
+  late final GeneratedColumn<String> source = GeneratedColumn<String>(
+    'source',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _foodCountMeta = const VerificationMeta(
+    'foodCount',
+  );
+  @override
+  late final GeneratedColumn<int> foodCount = GeneratedColumn<int>(
+    'food_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _appliedAtMeta = const VerificationMeta(
+    'appliedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> appliedAt = GeneratedColumn<DateTime>(
+    'applied_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    version,
+    sha256,
+    source,
+    foodCount,
+    appliedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'catalog_state';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CatalogStateData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('version')) {
+      context.handle(
+        _versionMeta,
+        version.isAcceptableOrUnknown(data['version']!, _versionMeta),
+      );
+    }
+    if (data.containsKey('sha256')) {
+      context.handle(
+        _sha256Meta,
+        sha256.isAcceptableOrUnknown(data['sha256']!, _sha256Meta),
+      );
+    } else if (isInserting) {
+      context.missing(_sha256Meta);
+    }
+    if (data.containsKey('source')) {
+      context.handle(
+        _sourceMeta,
+        source.isAcceptableOrUnknown(data['source']!, _sourceMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sourceMeta);
+    }
+    if (data.containsKey('food_count')) {
+      context.handle(
+        _foodCountMeta,
+        foodCount.isAcceptableOrUnknown(data['food_count']!, _foodCountMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_foodCountMeta);
+    }
+    if (data.containsKey('applied_at')) {
+      context.handle(
+        _appliedAtMeta,
+        appliedAt.isAcceptableOrUnknown(data['applied_at']!, _appliedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {version};
+  @override
+  CatalogStateData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CatalogStateData(
+      version: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}version'],
+      )!,
+      sha256: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sha256'],
+      )!,
+      source: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source'],
+      )!,
+      foodCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}food_count'],
+      )!,
+      appliedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}applied_at'],
+      )!,
+    );
+  }
+
+  @override
+  $CatalogStateTable createAlias(String alias) {
+    return $CatalogStateTable(attachedDatabase, alias);
+  }
+}
+
+class CatalogStateData extends DataClass
+    implements Insertable<CatalogStateData> {
+  final int version;
+  final String sha256;
+  final String source;
+  final int foodCount;
+  final DateTime appliedAt;
+  const CatalogStateData({
+    required this.version,
+    required this.sha256,
+    required this.source,
+    required this.foodCount,
+    required this.appliedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['version'] = Variable<int>(version);
+    map['sha256'] = Variable<String>(sha256);
+    map['source'] = Variable<String>(source);
+    map['food_count'] = Variable<int>(foodCount);
+    map['applied_at'] = Variable<DateTime>(appliedAt);
+    return map;
+  }
+
+  CatalogStateCompanion toCompanion(bool nullToAbsent) {
+    return CatalogStateCompanion(
+      version: Value(version),
+      sha256: Value(sha256),
+      source: Value(source),
+      foodCount: Value(foodCount),
+      appliedAt: Value(appliedAt),
+    );
+  }
+
+  factory CatalogStateData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CatalogStateData(
+      version: serializer.fromJson<int>(json['version']),
+      sha256: serializer.fromJson<String>(json['sha256']),
+      source: serializer.fromJson<String>(json['source']),
+      foodCount: serializer.fromJson<int>(json['foodCount']),
+      appliedAt: serializer.fromJson<DateTime>(json['appliedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'version': serializer.toJson<int>(version),
+      'sha256': serializer.toJson<String>(sha256),
+      'source': serializer.toJson<String>(source),
+      'foodCount': serializer.toJson<int>(foodCount),
+      'appliedAt': serializer.toJson<DateTime>(appliedAt),
+    };
+  }
+
+  CatalogStateData copyWith({
+    int? version,
+    String? sha256,
+    String? source,
+    int? foodCount,
+    DateTime? appliedAt,
+  }) => CatalogStateData(
+    version: version ?? this.version,
+    sha256: sha256 ?? this.sha256,
+    source: source ?? this.source,
+    foodCount: foodCount ?? this.foodCount,
+    appliedAt: appliedAt ?? this.appliedAt,
+  );
+  CatalogStateData copyWithCompanion(CatalogStateCompanion data) {
+    return CatalogStateData(
+      version: data.version.present ? data.version.value : this.version,
+      sha256: data.sha256.present ? data.sha256.value : this.sha256,
+      source: data.source.present ? data.source.value : this.source,
+      foodCount: data.foodCount.present ? data.foodCount.value : this.foodCount,
+      appliedAt: data.appliedAt.present ? data.appliedAt.value : this.appliedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CatalogStateData(')
+          ..write('version: $version, ')
+          ..write('sha256: $sha256, ')
+          ..write('source: $source, ')
+          ..write('foodCount: $foodCount, ')
+          ..write('appliedAt: $appliedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(version, sha256, source, foodCount, appliedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CatalogStateData &&
+          other.version == this.version &&
+          other.sha256 == this.sha256 &&
+          other.source == this.source &&
+          other.foodCount == this.foodCount &&
+          other.appliedAt == this.appliedAt);
+}
+
+class CatalogStateCompanion extends UpdateCompanion<CatalogStateData> {
+  final Value<int> version;
+  final Value<String> sha256;
+  final Value<String> source;
+  final Value<int> foodCount;
+  final Value<DateTime> appliedAt;
+  const CatalogStateCompanion({
+    this.version = const Value.absent(),
+    this.sha256 = const Value.absent(),
+    this.source = const Value.absent(),
+    this.foodCount = const Value.absent(),
+    this.appliedAt = const Value.absent(),
+  });
+  CatalogStateCompanion.insert({
+    this.version = const Value.absent(),
+    required String sha256,
+    required String source,
+    required int foodCount,
+    this.appliedAt = const Value.absent(),
+  }) : sha256 = Value(sha256),
+       source = Value(source),
+       foodCount = Value(foodCount);
+  static Insertable<CatalogStateData> custom({
+    Expression<int>? version,
+    Expression<String>? sha256,
+    Expression<String>? source,
+    Expression<int>? foodCount,
+    Expression<DateTime>? appliedAt,
+  }) {
+    return RawValuesInsertable({
+      if (version != null) 'version': version,
+      if (sha256 != null) 'sha256': sha256,
+      if (source != null) 'source': source,
+      if (foodCount != null) 'food_count': foodCount,
+      if (appliedAt != null) 'applied_at': appliedAt,
+    });
+  }
+
+  CatalogStateCompanion copyWith({
+    Value<int>? version,
+    Value<String>? sha256,
+    Value<String>? source,
+    Value<int>? foodCount,
+    Value<DateTime>? appliedAt,
+  }) {
+    return CatalogStateCompanion(
+      version: version ?? this.version,
+      sha256: sha256 ?? this.sha256,
+      source: source ?? this.source,
+      foodCount: foodCount ?? this.foodCount,
+      appliedAt: appliedAt ?? this.appliedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (version.present) {
+      map['version'] = Variable<int>(version.value);
+    }
+    if (sha256.present) {
+      map['sha256'] = Variable<String>(sha256.value);
+    }
+    if (source.present) {
+      map['source'] = Variable<String>(source.value);
+    }
+    if (foodCount.present) {
+      map['food_count'] = Variable<int>(foodCount.value);
+    }
+    if (appliedAt.present) {
+      map['applied_at'] = Variable<DateTime>(appliedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CatalogStateCompanion(')
+          ..write('version: $version, ')
+          ..write('sha256: $sha256, ')
+          ..write('source: $source, ')
+          ..write('foodCount: $foodCount, ')
+          ..write('appliedAt: $appliedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -61392,6 +61741,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $FoodSearchCacheTable foodSearchCache = $FoodSearchCacheTable(
     this,
   );
+  late final $CatalogStateTable catalogState = $CatalogStateTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -61489,6 +61839,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     tombstoneEntries,
     cachedRemoteFoods,
     foodSearchCache,
+    catalogState,
   ];
 }
 
@@ -113504,6 +113855,200 @@ typedef $$FoodSearchCacheTableProcessedTableManager =
       FoodSearchCacheData,
       PrefetchHooks Function()
     >;
+typedef $$CatalogStateTableCreateCompanionBuilder =
+    CatalogStateCompanion Function({
+      Value<int> version,
+      required String sha256,
+      required String source,
+      required int foodCount,
+      Value<DateTime> appliedAt,
+    });
+typedef $$CatalogStateTableUpdateCompanionBuilder =
+    CatalogStateCompanion Function({
+      Value<int> version,
+      Value<String> sha256,
+      Value<String> source,
+      Value<int> foodCount,
+      Value<DateTime> appliedAt,
+    });
+
+class $$CatalogStateTableFilterComposer
+    extends Composer<_$AppDatabase, $CatalogStateTable> {
+  $$CatalogStateTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get version => $composableBuilder(
+    column: $table.version,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sha256 => $composableBuilder(
+    column: $table.sha256,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get source => $composableBuilder(
+    column: $table.source,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get foodCount => $composableBuilder(
+    column: $table.foodCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get appliedAt => $composableBuilder(
+    column: $table.appliedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$CatalogStateTableOrderingComposer
+    extends Composer<_$AppDatabase, $CatalogStateTable> {
+  $$CatalogStateTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get version => $composableBuilder(
+    column: $table.version,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sha256 => $composableBuilder(
+    column: $table.sha256,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get source => $composableBuilder(
+    column: $table.source,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get foodCount => $composableBuilder(
+    column: $table.foodCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get appliedAt => $composableBuilder(
+    column: $table.appliedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$CatalogStateTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CatalogStateTable> {
+  $$CatalogStateTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get version =>
+      $composableBuilder(column: $table.version, builder: (column) => column);
+
+  GeneratedColumn<String> get sha256 =>
+      $composableBuilder(column: $table.sha256, builder: (column) => column);
+
+  GeneratedColumn<String> get source =>
+      $composableBuilder(column: $table.source, builder: (column) => column);
+
+  GeneratedColumn<int> get foodCount =>
+      $composableBuilder(column: $table.foodCount, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get appliedAt =>
+      $composableBuilder(column: $table.appliedAt, builder: (column) => column);
+}
+
+class $$CatalogStateTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $CatalogStateTable,
+          CatalogStateData,
+          $$CatalogStateTableFilterComposer,
+          $$CatalogStateTableOrderingComposer,
+          $$CatalogStateTableAnnotationComposer,
+          $$CatalogStateTableCreateCompanionBuilder,
+          $$CatalogStateTableUpdateCompanionBuilder,
+          (
+            CatalogStateData,
+            BaseReferences<_$AppDatabase, $CatalogStateTable, CatalogStateData>,
+          ),
+          CatalogStateData,
+          PrefetchHooks Function()
+        > {
+  $$CatalogStateTableTableManager(_$AppDatabase db, $CatalogStateTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CatalogStateTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$CatalogStateTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$CatalogStateTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> version = const Value.absent(),
+                Value<String> sha256 = const Value.absent(),
+                Value<String> source = const Value.absent(),
+                Value<int> foodCount = const Value.absent(),
+                Value<DateTime> appliedAt = const Value.absent(),
+              }) => CatalogStateCompanion(
+                version: version,
+                sha256: sha256,
+                source: source,
+                foodCount: foodCount,
+                appliedAt: appliedAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> version = const Value.absent(),
+                required String sha256,
+                required String source,
+                required int foodCount,
+                Value<DateTime> appliedAt = const Value.absent(),
+              }) => CatalogStateCompanion.insert(
+                version: version,
+                sha256: sha256,
+                source: source,
+                foodCount: foodCount,
+                appliedAt: appliedAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$CatalogStateTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $CatalogStateTable,
+      CatalogStateData,
+      $$CatalogStateTableFilterComposer,
+      $$CatalogStateTableOrderingComposer,
+      $$CatalogStateTableAnnotationComposer,
+      $$CatalogStateTableCreateCompanionBuilder,
+      $$CatalogStateTableUpdateCompanionBuilder,
+      (
+        CatalogStateData,
+        BaseReferences<_$AppDatabase, $CatalogStateTable, CatalogStateData>,
+      ),
+      CatalogStateData,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -113824,4 +114369,6 @@ class $AppDatabaseManager {
       $$CachedRemoteFoodsTableTableManager(_db, _db.cachedRemoteFoods);
   $$FoodSearchCacheTableTableManager get foodSearchCache =>
       $$FoodSearchCacheTableTableManager(_db, _db.foodSearchCache);
+  $$CatalogStateTableTableManager get catalogState =>
+      $$CatalogStateTableTableManager(_db, _db.catalogState);
 }

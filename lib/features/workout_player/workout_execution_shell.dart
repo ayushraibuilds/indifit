@@ -19,6 +19,7 @@ class WorkoutExecutionShell extends StatelessWidget {
     this.primaryActionSlot,
     this.nextExerciseSlot,
     this.restSlot,
+    this.stickyRestSlot,
     this.completionSlot,
     this.contentOverride,
     this.onClose,
@@ -39,6 +40,10 @@ class WorkoutExecutionShell extends StatelessWidget {
   final Widget? primaryActionSlot;
   final Widget? nextExerciseSlot;
   final Widget? restSlot;
+
+  /// Pinned under the app bar, outside the scrolling slots, so the rest
+  /// countdown stays visible while the user logs.
+  final Widget? stickyRestSlot;
   final Widget? completionSlot;
 
   /// Used for loading, unavailable, and empty states while retaining the
@@ -130,15 +135,24 @@ class WorkoutExecutionShell extends StatelessWidget {
         ),
     ];
 
+    final list = ListView(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
+      children: [
+        for (var index = 0; index < slots.length; index++) ...[
+          if (index > 0) SizedBox(height: slots[index].gapBefore ?? 12),
+          _slot(slots[index].child, label: slots[index].label),
+        ],
+      ],
+    );
+    final sticky = stickyRestSlot;
+    if (sticky == null) return SafeArea(child: list);
     return SafeArea(
-      child: ListView(
-        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          for (var index = 0; index < slots.length; index++) ...[
-            if (index > 0) SizedBox(height: slots[index].gapBefore ?? 12),
-            _slot(slots[index].child, label: slots[index].label),
-          ],
+          _slot(sticky, label: 'Rest timer'),
+          Expanded(child: list),
         ],
       ),
     );

@@ -562,7 +562,7 @@ class _QuickAddMacrosSheetState extends ConsumerState<QuickAddMacrosSheet> {
                       ),
                     )
                   : const Text(
-                      'Log Snapshot (<10s)',
+                      'Log calories',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,

@@ -51,6 +51,15 @@ class AiRemoteConfigRefresher {
 
   /// Listens for real-time updates and waits briefly for a first fetch.
   Future<void> start() async {
+    listen();
+    await _fetch();
+  }
+
+  /// Whether the real-time connection is open.
+  bool get isListening => _subscription != null;
+
+  /// Opens the real-time connection if it isn't open (after [pause]).
+  void listen() {
     _subscription ??= _updates.listen(
       (_) => unawaited(_activateUpdate()),
       onError: (Object error) {
@@ -58,8 +67,11 @@ class AiRemoteConfigRefresher {
         AppLogger.warning('Remote Config real-time updates failed: $error');
       },
     );
-    await _fetch();
   }
+
+  /// Closes the real-time connection, e.g. when Offline Mode turns on. The
+  /// next AI call opens it again.
+  Future<void> pause() => dispose();
 
   /// Fetches again when neither the last successful fetch nor the last
   /// attempt is within [maxAge]. Counting attempts means a slow or failing

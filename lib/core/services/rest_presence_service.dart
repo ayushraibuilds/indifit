@@ -122,8 +122,9 @@ abstract interface class RestPresenceDriver {
     required String channelName,
   });
 
-  /// Schedules an exact alarm at expiryUtc if capability is available.
-  /// Returns true if scheduled as an exact alarm, or false if unavailable/denied.
+  /// Schedules the rest-done alert at expiryUtc: exact when the capability is
+  /// available, otherwise inexact on Android (it may arrive a few minutes
+  /// late). Returns true only if scheduled to fire on time.
   Future<bool> scheduleExactExpiryAlarm({
     required int id,
     required DateTime expiryUtc,
@@ -269,12 +270,15 @@ class LocalNotificationRestPresenceDriver implements RestPresenceDriver {
           .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin
           >();
-      // Query capability per schedule call on Android 12+/14+
-      final canExact =
-          await androidPlugin?.canScheduleExactNotifications() ?? false;
-      if (!canExact) {
-        return false;
-      }
+      // Query capability per schedule call on Android 12+/14+. Without exact
+      // alarms (the Android 14+ default) the alert is still scheduled, only
+      // inexactly: the OS may deliver it a few minutes late, which beats no
+      // alert at all once the app is in the background. iOS has no such
+      // switch: a timed notification is delivered on time, and it is the only
+      // way to alert while the app is suspended on a locked phone.
+      final canExact = androidPlugin == null
+          ? true
+          : await androidPlugin.canScheduleExactNotifications() ?? false;
 
       final body = exerciseName.isNotEmpty
           ? 'Time to hit your next set of $exerciseName!'
@@ -313,12 +317,16 @@ class LocalNotificationRestPresenceDriver implements RestPresenceDriver {
         body,
         tzExpiry,
         details,
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        androidScheduleMode: canExact
+            ? AndroidScheduleMode.exactAllowWhileIdle
+            : AndroidScheduleMode.inexactAllowWhileIdle,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
         payload: 'workout',
       );
-      return true;
+      // Only an exact alarm counts as the anchor: with an inexact one the
+      // app still posts the alert itself when it sees the rest end.
+      return canExact;
     } catch (_) {
       return false;
     }
@@ -580,6 +588,9 @@ class RestPresenceService {
     // If exact alarm capability was denied/unavailable, Dart posts fallback 999.
     final isSilent = silentCompletion ?? _hasExactAlarmAnchor;
     if (!isSilent) {
+      // Drop a pending inexact alarm first, so it can't repeat the alert
+      // minutes later in the middle of the next set.
+      await _driver.cancelNotification(expiredNotificationId);
       await _driver.showRestExpiredNotification(
         id: expiredNotificationId,
         exerciseName: _currentExerciseName ?? '',

@@ -33,8 +33,9 @@ Log home-cooked meals, follow structured training plans, record completed sets a
 
 - Describe a meal in your own words, Hinglish included ("2 roti aur ek katori dal"). IndiFit matches each food to its own catalogue and shows portions you can adjust.
 - Photograph a packaged food's nutrition label to save it as a custom food from the printed values.
+- Meal photo (Beta): photograph your plate and review the foods and portions it suggests.
 - Nothing is logged until you review it.
-- IndiFit asks for your consent before first use. Only the text you type or the label photo you take is sent, through Google Firebase, to Google's Gemini AI. You can withdraw consent in Settings → Privacy.
+- IndiFit asks for your consent before first use. Only the text you type or the photo you choose is sent, through Google Firebase, to Google's Gemini AI. You can withdraw consent in Settings → Manage your data → AI meal assistance.
 - Needs an internet connection; switched off in Offline Mode.
 
 ### Workout planning and execution
@@ -66,8 +67,8 @@ IndiFit does not generate meal plans, workouts or reports.
 
 | Permission | Purpose |
 |---|---|
-| **Camera** | Used only when you choose to scan a packaged-food barcode or photograph a nutrition label. |
-| **Photos (iOS)** | Used only when you choose a nutrition-label photo from your library. |
+| **Camera** | Used only when you choose to scan a packaged-food barcode, photograph a nutrition label or take a meal photo. |
+| **Photos (iOS)** | Used only when you choose a nutrition-label or meal photo from your library. |
 | **Notifications** | Used for optional workout, meal-logging and progress reminders you enable. |
 | **Activity / Health** | Used only for the Health Connect or HealthKit categories you approve. |
 | **Internet** | Used for optional Open Food Facts lookup, the optional AI meal tools and opt-in crash diagnostics. Core logging remains available offline. |
@@ -81,9 +82,16 @@ What leaves the device, for filling in both forms. `ios/Runner/PrivacyInfo.xcpri
 | Data | Category (Apple / Google) | When | Recipient | Purpose |
 |---|---|---|---|---|
 | Typed meal descriptions | Other User Content / Other user-generated content | Only when the user uses Describe a meal, after consent | Google (Gemini via Firebase) | App functionality |
-| Nutrition-label photos | Photos or Videos / Photos | Only when the user scans a label, after consent | Google (Gemini via Firebase) | App functionality |
+| Meal and nutrition-label photos | Photos or Videos / Photos | Only when the user takes a meal photo or scans a label, after consent | Google (Gemini via Firebase) | App functionality |
+| Installation identifier (Firebase Installations ID, App Check token) | Device ID / Device or other IDs | From the first AI request, while the AI tools are available | Google (Firebase) | App functionality |
+| App interaction with Firebase (Remote Config fetches) | Product Interaction / App interactions | From the first AI request, while the AI tools are available | Google (Firebase) | App functionality |
+| Technical diagnostics from the Firebase SDKs | Other Diagnostic Data / Diagnostics | From the first AI request, while the AI tools are available | Google (Firebase) | App functionality |
 | Crash logs | Crash Data / Crash logs | Only if the user turns on crash diagnostics | Sentry | App functionality |
+
+Supporter tips (Settings → Support IndiFit) are consumable in-app purchases that unlock nothing. Apple or Google processes the payment; IndiFit receives no card details, has no server, and sends no purchase record anywhere. Under Apple's rules ("you are not responsible for disclosing data collected by Apple"; payment info entered outside the app "is not collected") and Google's (no declaration for data the billing system collects when the app never accesses it), neither form needs a Purchases or Payment info entry, so `PrivacyInfo.xcprivacy` adds none. Revisit this if tips are ever sent to a server or crash reports.
 
 Not collected: account details, health and fitness records, food and workout logs, body measurements, location and contacts. These stay on the device. Barcode and food-search lookups send only the barcode or search text to Open Food Facts.
 
-Data is encrypted in transit (HTTPS). Users can delete their on-device data from the app's data controls. IndiFit stores no AI requests itself; Google's retention is set by the Gemini API terms.
+Data is encrypted in transit (HTTPS). Users can delete their on-device data from the app's data controls. IndiFit stores no AI requests itself; Google may keep them for a limited period to detect abuse, under the Gemini API terms.
+
+The Firebase rows follow Firebase's own disclosure guides ([App Store](https://firebase.google.com/docs/ios/app-store-data-collection), [Play](https://firebase.google.com/docs/android/play-data-disclosure)); re-check them when filling in the forms.

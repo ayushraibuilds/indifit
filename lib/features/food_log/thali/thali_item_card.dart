@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/nutrition_thali.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
-import '../../../core/typed_quantities.dart';
+import 'thali_quantity_label.dart';
 
 class ThaliItemCard extends StatelessWidget {
   final NutritionThaliItem item;
@@ -21,22 +21,6 @@ class ThaliItemCard extends StatelessWidget {
     required this.onDecrement,
     required this.onDelete,
   });
-
-  String _formatQuantity(Quantity quantity) {
-    final amount = quantity.amount.toString();
-    final unit = switch (quantity.unit) {
-      QuantityUnit.gram => 'g',
-      QuantityUnit.milligram => 'mg',
-      QuantityUnit.kilogram => 'kg',
-      QuantityUnit.millilitre => 'ml',
-      QuantityUnit.litre => 'L',
-      QuantityUnit.piece => 'pc',
-      QuantityUnit.serving => 'srv',
-      QuantityUnit.householdReference => item.measureId ?? 'measure',
-      _ => quantity.unit.name,
-    };
-    return '$amount $unit';
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -108,7 +92,7 @@ class ThaliItemCard extends StatelessWidget {
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
-                          _formatQuantity(item.quantity),
+                          thaliQuantityLabel(item.quantity),
                           style: TextStyle(
                             color: colors.action,
                             fontSize: 12,

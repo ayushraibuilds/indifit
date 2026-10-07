@@ -1,7 +1,7 @@
 # Privacy Policy for IndiFit
 
 **Effective Date:** August 29, 2026
-**Last Updated:** October 2, 2026
+**Last Updated:** October 6, 2026
 **App Version:** 1.0.0
 
 IndiFit ("we", "our", or "us") is an offline-first workout and nutrition application. This policy explains what the V1 application stores, which optional features can connect to other services, and the controls available to you.
@@ -24,9 +24,11 @@ Core logging and review features work offline. When Offline Mode is off, these o
 
 - **Open Food Facts:** If you deliberately use online food search or scan a packaged-food barcode, IndiFit sends the search text or barcode needed to request product information from Open Food Facts. IndiFit does not attach an IndiFit backend credential or your local logs to that request.
 - **AI meal tools:** Describe-a-meal, meal-photo and nutrition-label scanning send the text or photo you submit to Google's Gemini AI. They are used only after you consent; see section 3.
+- **Google Firebase services for the AI meal tools:** The first time you use an AI meal tool, IndiFit starts Google Firebase App Check, Remote Config and Installations. App Check confirms the request comes from a genuine copy of IndiFit; Remote Config delivers settings such as the AI on/off switch and daily limits, and keeps them current while the app is open. These services receive a random installation identifier, basic app and device information (such as the app version and operating system) and technical diagnostics. They are not linked to your identity and contain no food, workout, health or profile data.
 - **Crash diagnostics:** If you affirmatively enable crash diagnostics, technical error information may be sent to our diagnostics provider. See section 5.
+- **Supporter tips:** Tips are optional and unlock nothing. They are processed by Apple (App Store) or Google (Google Play); IndiFit receives no card details and keeps no record of your tips. The tip screen contacts the store only when you open it, and not while Offline Mode is on.
 
-Turning on Offline Mode blocks app-initiated online food lookups, the AI meal tools, and crash diagnostics.
+Turning on Offline Mode blocks app-initiated online food lookups, the AI meal tools (and so the Firebase services above), and crash diagnostics.
 
 ---
 
@@ -37,7 +39,8 @@ The AI meal tools are optional. IndiFit asks for your consent before first use a
 - **What is sent:** Only the meal description you type, or the meal or nutrition-label photo you choose. IndiFit does not send your diary, profile, body measurements or health data with these requests.
 - **Who receives it:** Google, which runs the Gemini models through Google Firebase. Google processes the request to return a result. Its handling of that data is governed by the [Gemini API Additional Terms of Service](https://ai.google.dev/gemini-api/terms) and [Firebase privacy information](https://firebase.google.com/support/privacy).
 - **What IndiFit keeps:** IndiFit does not store your photos or descriptions. The app shows the AI's suggestions for you to review, and only the foods you confirm are saved, on your device.
-- **Your choices:** You can withdraw consent at any time in Settings → Privacy → AI meal assistance; the app will ask again before any further AI use. Food search and manual logging work without AI.
+- **What Google keeps:** Under the Gemini API terms, Google may log requests and responses for a limited period to detect abuse.
+- **Your choices:** You can withdraw consent at any time in Settings → Manage your data → AI meal assistance; the app will ask again before any further AI use. Food search and manual logging work without AI.
 
 ---
 
@@ -79,3 +82,5 @@ You can erase supported IndiFit records from the app's data controls. Uninstalli
 
 If you have questions about this policy or IndiFit's privacy behavior, contact:
 `privacy@indifit.app`
+
+For help with the app, contact `support@indifit.app`.

@@ -531,8 +531,12 @@ void main() {
             ),
           ),
         );
+        // The bundled catalogue pack's serving conversions are not user
+        // data; the rejected restore must not have written any user row.
         expect(
-          await target.select(target.nutritionQuantityConversions).get(),
+          await (target.select(
+            target.nutritionQuantityConversions,
+          )..where((row) => row.ownerScope.equals('user'))).get(),
           isEmpty,
         );
       },

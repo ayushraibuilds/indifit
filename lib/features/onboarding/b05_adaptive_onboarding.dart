@@ -588,7 +588,7 @@ class B05AdaptiveLessonPath extends ConsumerWidget {
             label: 'Retry lessons',
             icon: Icons.refresh_rounded,
             emphasis: B05ActionEmphasis.secondary,
-            hint: 'Retry loading the bundled lessons offline.',
+            hint: 'Retry loading the lessons that come with the app.',
             onPressed: controller.retry,
           ),
         ],
