@@ -9,6 +9,7 @@ import 'package:indifit/core/nutrients.dart';
 import 'package:indifit/core/nutrition_calculation_service.dart';
 import 'package:indifit/core/nutrition_household_measures.dart';
 import 'package:indifit/core/nutrition_legacy_read_models.dart';
+import 'package:indifit/core/privacy/privacy_policy.dart';
 import 'package:indifit/core/raw_cooked_transformations.dart';
 import 'package:indifit/core/services/local_timezone_service.dart';
 import 'package:indifit/core/theme/app_theme.dart';
@@ -823,6 +824,77 @@ void main() {
     expect(find.text('Online search unavailable'), findsNothing);
   });
 
+  testWidgets('Offline Mode searches this phone only and says so', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      PrivacyPolicyNotifier.prefOfflineOnly: true,
+    });
+    _setViewport(tester, const Size(390, 844));
+    final database = AppDatabase.memory();
+    final apiService = _CountingFoodApiService();
+    addTearDown(() async {
+      await tester.pumpWidget(const SizedBox.shrink());
+      tester.view.reset();
+      await closeWidgetTestDatabase(tester, database);
+    });
+    await tester.pumpWidget(
+      _foodApp(
+        database: database,
+        repository: _MatchingFoodRepository(
+          database,
+          searchResults: const [
+            FoodItem(
+              id: 9,
+              name: 'Local protein smoothie',
+              calories: 180,
+              proteinG: 18,
+              carbsG: 20,
+              fatG: 3,
+              servingSize: 1,
+              servingUnit: 'glass',
+              category: 'Local',
+              isCustom: false,
+            ),
+          ],
+        ),
+        apiService: apiService,
+        mealType: 'breakfast',
+        selectedDate: DateTime(2026, 8, 12),
+      ),
+    );
+    await _pumpFood(tester);
+
+    await tester.enterText(find.byType(TextField).first, 'protein');
+    await tester.pump(const Duration(milliseconds: 800));
+    await tester.pump();
+
+    expect(find.text('Local protein smoothie'), findsOneWidget);
+    expect(find.text('Offline Mode is on'), findsOneWidget);
+    expect(find.text('Showing foods on this phone.'), findsOneWidget);
+    expect(
+      find.text('Online results are temporarily unavailable.'),
+      findsNothing,
+    );
+    expect(find.byIcon(Icons.refresh_rounded), findsNothing);
+    expect(apiService.searchCalls, 0);
+
+    await tester.enterText(find.byType(TextField).first, 'zzqx');
+    await tester.pump(const Duration(milliseconds: 800));
+    await tester.pump();
+
+    expect(find.text('Offline Mode is on'), findsOneWidget);
+    expect(
+      find.text(
+        'No foods on this phone match. Packaged foods need online search.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Online search unavailable'), findsNothing);
+    expect(find.text('Create a custom food'), findsOneWidget);
+    expect(apiService.searchCalls, 0);
+  });
+
   testWidgets(
     'Saved meals completion unwinds the food entry route to its caller',
     (tester) async {
@@ -1591,6 +1663,32 @@ class _HttpFailureFoodApiService extends FoodApiService {
       response: Response<void>(requestOptions: request, statusCode: 503),
       type: DioExceptionType.badResponse,
     );
+  }
+}
+
+class _MatchingFoodRepository extends _TestFoodRepository {
+  _MatchingFoodRepository(super.database, {super.searchResults});
+
+  @override
+  Future<List<FoodItem>> searchFoodLocal(String query) async => [
+    for (final food in searchResults)
+      if (food.name.toLowerCase().contains(query.toLowerCase())) food,
+  ];
+}
+
+class _CountingFoodApiService extends FoodApiService {
+  int searchCalls = 0;
+
+  @override
+  Future<List<FoodApiResult>> searchOnline(
+    String query, {
+    CancelToken? cancelToken,
+    String language = 'hinglish',
+    int page = 1,
+    int limit = 20,
+  }) async {
+    searchCalls++;
+    return const [];
   }
 }
 

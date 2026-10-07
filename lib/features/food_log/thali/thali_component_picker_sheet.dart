@@ -201,6 +201,7 @@ class _ThaliComponentPickerSheetState extends State<ThaliComponentPickerSheet> {
                   ),
                 ),
                 IconButton(
+                  tooltip: 'Close',
                   icon: Icon(Icons.close, color: colors.textSecondary),
                   onPressed: () => Navigator.of(context).pop(),
                 ),
@@ -219,6 +220,7 @@ class _ThaliComponentPickerSheetState extends State<ThaliComponentPickerSheet> {
                 prefixIcon: Icon(Icons.search, color: colors.textSecondary),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
+                        tooltip: 'Clear search',
                         icon: Icon(Icons.clear, color: colors.textSecondary),
                         onPressed: () {
                           _searchController.clear();
@@ -407,6 +409,7 @@ class _ThaliComponentPickerSheetState extends State<ThaliComponentPickerSheet> {
                 ),
               ),
               IconButton(
+                tooltip: 'Clear selection',
                 icon: Icon(Icons.close, size: 18, color: colors.textDisabled),
                 onPressed: () {
                   setState(() {

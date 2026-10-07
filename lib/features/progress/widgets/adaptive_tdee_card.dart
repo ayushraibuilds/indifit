@@ -201,6 +201,7 @@ class AdaptiveTdeeCard extends StatelessWidget {
                       style: B05Typography.title(ctx),
                     ),
                     IconButton(
+                      tooltip: 'Close',
                       icon: const Icon(Icons.close_rounded),
                       onPressed: () => Navigator.of(ctx).pop(),
                     ),

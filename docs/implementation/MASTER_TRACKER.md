@@ -39,6 +39,19 @@ Batches B01–B05 and the post-v1 and R07/R08 tracks are merged into `main`. The
 | Factual bests (PR-L, TP-1…TP-3) | Done in PR-L (#66): "New best" is derived on read from logged working sets ("Heaviest", or "Most reps" at that weight or more, 0.1 kg tolerance); the first session is the baseline; assisted, tempo, paused and drop sets never count. Nothing is stored and there's no schema change. The player shows a "New best" chip on the saved set row with one `success()` haptic instead of the usual one, and "Best 62.5 kg × 8" under Sets; the saved summary lists the top 3 bests; the share card adds one line; exercise history gets a "Best ever" card. The performance read now fills technique fields, so the existing "Heaviest working set" no longer counts assisted or segmented sets. **Owner:** feel the best-set haptic on one iPhone and one Android phone |
 | Workout payoff, motion and haptics (PR-N, TP-6, TP-7) | Done in PR-N (#68): the saved summary leads with "Workout complete" and one line of numbers ("1,440 kg lifted · 3 sets · 2 min 48 sec"), then one moment (the new bests, or the week goal when this workout met it), "Vs last time" per exercise ("Leg press: +2.5 kg on top set", "same as last time", "first time logged"), the week line, then the tiles ("External volume" is now "Total lifted"). The moment is celebrated once per saved workout with the existing confetti and `success()`; the session id goes into `training_bests_celebrated_v1` (last 200, not backed up) before it shows, and an achievement sheet takes the burst when one opens. New `restEnd()` haptic (two light pulses): `RestPresenceService` fires it once per rest, after the controller saves the rest's end, never on Skip; the sticky rest bar no longer adds its own `confirmation()`. Set rows tick and fill in (`fastDuration`), summary numbers count up (`completionDuration`), the week ring animates old to new; all through `B05MotionPolicy`, instant with reduce motion. **Owner:** feel the rest-end and week-goal haptics on one iPhone and one Android phone |
 
+## Audit P2/P3 polish (branch `fix/audit-p2-polish`)
+
+Findings from [the final audit](../audit/FINAL_LAUNCH_AUDIT_2026-10-05.md) § UX that no v1 PR covered, fixed for the closed-test builds. One commit per finding.
+
+| Finding | State |
+|:--------|:------|
+| UX-17 Offline Mode search banner | Fixed: with Offline Mode on, search skips the online call and says "Offline Mode is on · Showing foods on this phone." No Retry, and "Create a custom food" stays when nothing matches |
+| UX-10 Meal photo with camera access denied | Fixed: "Camera access is off" (or "Photo access is off"), the other source first, and Open Settings on iOS (ask again on Android). Label scan gets the same message |
+| UX-16 Diet step | Fixed: no "AI meal suggestions" claim (the choice only orders search suggestions); Eggetarian and Jain added to onboarding, profile and Dietary needs. **Follow-up:** choosing Jain doesn't yet add the Jain restriction that flags onion and garlic in meal checks |
+| UX-18 Plurals | Fixed: "1 piece", "1 serving" in diary and search rows (`QuantityUnitDefinition.labelFor`) |
+| UX-15 Thali notices | Fixed: notices replace each other, last 4 s even with an action, sit above Log Thali, and an error shows once |
+| UX-14 Icon buttons without a name | Fixed: all 18 have tooltips; `test/icon_button_tooltip_test.dart` guards it |
+
 ## Quality baseline (2026-10-03)
 
 | Check | Result |

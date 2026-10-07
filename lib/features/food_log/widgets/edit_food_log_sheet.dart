@@ -169,6 +169,7 @@ class _EditFoodLogSheetState extends State<EditFoodLogSheet> {
                         ),
                       ),
                       IconButton(
+                        tooltip: 'Close',
                         icon: const Icon(Icons.close),
                         onPressed: () => Navigator.pop(context),
                       ),

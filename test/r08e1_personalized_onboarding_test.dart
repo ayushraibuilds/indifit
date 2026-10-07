@@ -51,6 +51,39 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('diet step offers Eggetarian and Jain and promises no AI', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final database = await _pumpDatabase(tester);
+    await tester.pumpWidget(_onboardingApp(database));
+    await tester.pump(const Duration(milliseconds: 250));
+
+    await _tapVisible(tester, 'Maintain');
+    await _tapVisible(tester, 'Next Step');
+    await _tapVisible(tester, 'Male');
+    await _tapVisible(tester, 'Next Step');
+    await _tapVisible(tester, 'Next Step');
+
+    expect(find.text('How do you like to eat?'), findsOneWidget);
+    expect(find.textContaining('AI meal suggestions'), findsNothing);
+    expect(find.textContaining('dietary badges'), findsNothing);
+    for (final diet in const [
+      'Vegetarian',
+      'Eggetarian',
+      'Non-Vegetarian',
+      'Vegan',
+      'Jain',
+    ]) {
+      expect(find.text(diet), findsOneWidget, reason: diet);
+    }
+
+    await _tapVisible(tester, 'Jain');
+    await _tapVisible(tester, 'Review setup');
+    expect(find.text('Jain'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets(
     'finish persists the reviewed profile and canonical target values',
     (tester) async {

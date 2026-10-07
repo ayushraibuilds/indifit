@@ -20,6 +20,10 @@ void main() {
 
       final vegan = DietPreferencePresentation.optionForUiValue('vegan');
       expect(vegan?.shortLabel, 'Vegan');
+
+      expect(DietPreferencePresentation.uiValueFor('Eggetarian'), 'eggetarian');
+      expect(DietPreferencePresentation.uiValueFor('jain'), 'jain');
+      expect(DietPreferencePresentation.normalizeForOnboarding('jain'), 'jain');
     });
 
     testWidgets(
