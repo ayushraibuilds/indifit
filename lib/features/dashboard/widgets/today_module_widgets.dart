@@ -148,8 +148,11 @@ class StreakChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final compact = MediaQuery.textScalerOf(context).scale(1) > 1.35;
+    // Days in a row with food or a workout logged. Training shows a weekly
+    // goal instead, so this chip says "days logged", not "streak".
+    final label = '$count ${count == 1 ? 'day' : 'days'} logged';
     return Semantics(
-      label: '$count day streak',
+      label: '$label in a row',
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: context.b05Colors.warning.container,
@@ -169,11 +172,13 @@ class StreakChip extends StatelessWidget {
                 color: context.b05Colors.warning.indicator,
               ),
               const SizedBox(width: B05Layout.space4),
-              Text(
-                compact ? '$count' : '$count day streak',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: B05Typography.caption(context),
+              Flexible(
+                child: Text(
+                  compact ? '$count' : label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: B05Typography.caption(context),
+                ),
               ),
             ],
           ),

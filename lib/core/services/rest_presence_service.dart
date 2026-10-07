@@ -339,7 +339,7 @@ class LocalNotificationRestPresenceDriver implements RestPresenceDriver {
 
   @override
   Future<void> triggerHapticFeedback() async {
-    await IndiFitHaptics.confirmation();
+    await IndiFitHaptics.restEnd();
   }
 }
 
@@ -378,6 +378,11 @@ class RestPresenceService {
   bool _hasExactAlarmAnchor = false;
   Timer? _ticker;
   String? _liveActivityPeriodId;
+
+  /// A rest this service saw run out on its own clock while a workout
+  /// controller owns it. Its haptic waits for the controller to save the
+  /// rest's end, so it never fires before persistence (or after a Skip).
+  String? _restEndHapticPendingPeriodId;
 
   FutureOr<void> Function(String periodId, int deltaSeconds)?
   onAdjustRestRequested;
@@ -451,6 +456,7 @@ class RestPresenceService {
     // Cancel any previous rest timer or ticker
     _ticker?.cancel();
     _ticker = null;
+    _restEndHapticPendingPeriodId = null;
 
     _state = RestPresenceState.active;
     _currentPeriodId = periodId;
@@ -463,7 +469,7 @@ class RestPresenceService {
 
     if (remaining <= 0) {
       _hasExactAlarmAnchor = false;
-      await onRestElapsed(periodId: periodId);
+      await _elapse(periodId: periodId, ranOutOnOwnClock: true);
       return;
     }
 
@@ -535,7 +541,7 @@ class RestPresenceService {
       if (rem <= 0) {
         timer.cancel();
         _ticker = null;
-        await onRestElapsed(periodId: periodId);
+        await _elapse(periodId: periodId, ranOutOnOwnClock: true);
       } else if (rem % 5 == 0) {
         await _driver.showOngoingRestNotification(
           id: ongoingNotificationId,
@@ -551,13 +557,29 @@ class RestPresenceService {
   }
 
   /// Called when the rest period reaches 0 or is completed due to timer elapsing.
+  ///
+  /// The workout controller calls this after it saves the rest's end, so the
+  /// rest-end haptic fires here exactly once per rest.
   Future<void> onRestElapsed({
     required String periodId,
     bool? silentCompletion,
+  }) => _elapse(periodId: periodId, silentCompletion: silentCompletion);
+
+  Future<void> _elapse({
+    required String periodId,
+    bool? silentCompletion,
+    bool ranOutOnOwnClock = false,
   }) async {
     if (_state != RestPresenceState.active || _currentPeriodId != periodId) {
       // If already expired or not matching current, still ensure ongoing notification is removed
       await _driver.cancelNotification(ongoingNotificationId);
+      if (_state == RestPresenceState.expired &&
+          _restEndHapticPendingPeriodId == periodId) {
+        // The controller has now saved the end of the rest that ran out
+        // on this service's clock.
+        _restEndHapticPendingPeriodId = null;
+        await _driver.triggerHapticFeedback();
+      }
       return;
     }
 
@@ -601,7 +623,13 @@ class RestPresenceService {
 
     await clearAnchorRecord();
     await clearPendingIntent();
-    await _driver.triggerHapticFeedback();
+    if (ranOutOnOwnClock && _actionDelegateOwner != null) {
+      // A live workout controller will save this rest's end; the haptic
+      // waits for that save instead of firing ahead of it.
+      _restEndHapticPendingPeriodId = periodId;
+    } else {
+      await _driver.triggerHapticFeedback();
+    }
   }
 
   /// Cancel rest presence (e.g. user skips rest, advances to next set, or adjusts).
@@ -612,6 +640,7 @@ class RestPresenceService {
 
     _ticker?.cancel();
     _ticker = null;
+    _restEndHapticPendingPeriodId = null;
     _state = RestPresenceState.cancelled;
     _currentPeriodId = null;
     _currentExerciseName = null;
@@ -643,6 +672,7 @@ class RestPresenceService {
   Future<void> cleanup() async {
     _ticker?.cancel();
     _ticker = null;
+    _restEndHapticPendingPeriodId = null;
     _state = RestPresenceState.idle;
     _currentPeriodId = null;
     _currentExerciseName = null;

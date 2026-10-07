@@ -24,6 +24,7 @@ import '../support/tip_jar_screen.dart';
 import 'about_credits_screen.dart';
 import 'data_management_sub_screen.dart';
 import 'diary_structure_screen.dart';
+import 'food_database_screen.dart';
 import 'health_sync_hub_screen.dart';
 import 'household_measures_screen.dart';
 import 'notification_settings_screen.dart';
@@ -98,6 +99,12 @@ class SettingsScreen extends ConsumerWidget {
                       summary: 'Cups, bowls, and personal measures',
                       onTap: () =>
                           _push(context, const HouseholdMeasuresScreen()),
+                    ),
+                    _SettingsRow(
+                      icon: Icons.menu_book_outlined,
+                      title: 'Food database',
+                      summary: 'Version, updates and sources',
+                      onTap: () => _push(context, const FoodDatabaseScreen()),
                     ),
                     _SettingsRow(
                       icon: Icons.restaurant_menu_outlined,

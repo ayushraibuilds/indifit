@@ -79,6 +79,7 @@ void main() {
         tester.view.physicalSize = const Size(320, 640);
         tester.view.devicePixelRatio = 1.0;
         addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
 
         await tester.pumpWidget(
           _wrapWithScope(const SettingsScreen(), size: const Size(320, 640)),
@@ -96,6 +97,7 @@ void main() {
         tester.view.physicalSize = const Size(390, 844);
         tester.view.devicePixelRatio = 1.0;
         addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
 
         await tester.pumpWidget(
           _wrapWithScope(
@@ -117,6 +119,7 @@ void main() {
         tester.view.physicalSize = const Size(320, 640);
         tester.view.devicePixelRatio = 1.0;
         addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
 
         // Data Management
         await tester.pumpWidget(
@@ -171,6 +174,12 @@ void main() {
     testWidgets(
       'Settings landing provides accessible semantics labels for all rows',
       (tester) async {
+        // A phone screen of its own: these tests must not depend on the
+        // view size an earlier test leaves behind (CI runs them in shards).
+        tester.view.physicalSize = const Size(390, 844);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
         final semantics = tester.ensureSemantics();
         await tester.pumpWidget(_wrapWithScope(const SettingsScreen()));
         await tester.pumpAndSettle();
@@ -215,6 +224,12 @@ void main() {
     testWidgets(
       'Theme and Unit bottom sheets open and have accessible option selection',
       (tester) async {
+        // A phone screen of its own: these tests must not depend on the
+        // view size an earlier test leaves behind (CI runs them in shards).
+        tester.view.physicalSize = const Size(390, 844);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
         await tester.pumpWidget(_wrapWithScope(const SettingsScreen()));
         await tester.pumpAndSettle();
 

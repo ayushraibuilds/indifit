@@ -160,10 +160,11 @@ Every PR runs:
 dart format lib test tool
 flutter analyze
 flutter test --exclude-tags golden --timeout 120s
-python3 tool/generate_code_graph.py
+python3 tool/generate_code_graph.py --ci
 ```
 
-- Every new test is shown to fail on the old `lib/` (`git stash push -- lib`, run the test, `git stash pop`).
+- Every new test is shown to fail on the old `lib/`. Use a temporary `git worktree add --detach <dir> HEAD` rather than `git stash`: the stash is shared by every worktree.
+- `docs/architecture/code-graph.json` is generated, not committed, so PRs never conflict on it. CI runs the architecture gate and uploads the graph as an artifact.
 - Golden refreshes go through `update-goldens.yml`.
 
 ---

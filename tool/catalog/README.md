@@ -39,8 +39,10 @@ sha256 never changes.
 | `packs/v{N}/{N}-from-{N-1}.json.gz` | Delta from N-1 |
 | `assets/catalog/pack-{N}.json.gz`, `manifest.json` | The pack bundled with the app |
 
-Hosting (CAT-8) is owner work: publish `packs/` with `manifest.json` served
-`Cache-Control: no-cache` and the packs `immutable`.
+Hosting (CAT-8) is owner work: copy `packs/` to `public/catalog/v1/` and run
+`firebase deploy --only hosting`. `firebase.json` serves `manifest.json` with
+`Cache-Control: no-cache` and every pack `immutable`. Steps: the packs plan,
+§ 10.1.
 
 ## See what the invariants catch on today's data
 

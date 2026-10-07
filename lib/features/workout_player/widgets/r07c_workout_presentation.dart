@@ -210,10 +210,19 @@ class R07CPerformedSetList extends StatelessWidget {
 }
 
 class R07CMetricTile extends StatelessWidget {
-  const R07CMetricTile({required this.label, required this.value, super.key});
+  const R07CMetricTile({
+    required this.label,
+    required this.value,
+    this.valueChild,
+    super.key,
+  });
 
   final String label;
   final String value;
+
+  /// Replaces the plain [value] text, e.g. with a count-up number. It gets
+  /// the same title style.
+  final Widget? valueChild;
 
   @override
   Widget build(BuildContext context) {
@@ -223,7 +232,13 @@ class R07CMetricTile extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(value, style: B05Typography.title(context)),
+          if (valueChild case final child?)
+            DefaultTextStyle.merge(
+              style: B05Typography.title(context),
+              child: child,
+            )
+          else
+            Text(value, style: B05Typography.title(context)),
           const SizedBox(height: 2),
           Text(label, style: B05Typography.caption(context)),
         ],

@@ -154,12 +154,18 @@ void main() {
         ),
       );
       await tester.pump();
+      // Let the summary numbers finish counting up (TP-7).
+      await tester.pump(const Duration(milliseconds: 400));
 
       expect(find.text('Workout partially completed'), findsOneWidget);
       expect(find.text('Workout complete'), findsNothing);
       expect(find.text('Persisted strength'), findsOneWidget);
       expect(find.text('Replacement strength'), findsOneWidget);
-      expect(find.textContaining('20 min 34 sec'), findsOneWidget);
+      expect(find.text('20 min 34 sec'), findsOneWidget);
+      expect(
+        find.text('480 kg lifted · 1 set · 20 min 34 sec'),
+        findsOneWidget,
+      );
       expect(find.text('480 kg'), findsOneWidget);
       expect(find.text('Stale draft exercise'), findsNothing);
       expect(find.textContaining('RPE 8'), findsOneWidget);
@@ -172,6 +178,13 @@ void main() {
         find.byType(Scaffold),
         matchesGoldenFile('goldens/r08b8_partial_saved_summary_dark.png'),
       );
+
+      // The weekly goal line watches Drift streams on the real database.
+      // Give their zero-duration cleanup timer one frame after disposal
+      // instead of leaving a pending timer in the widget binding.
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 1));
     },
   );
 

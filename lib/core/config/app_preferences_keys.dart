@@ -38,6 +38,18 @@ abstract final class AppPreferenceKeys {
   static const streakFreezesCount = 'streak_freezes_count';
   static const lastFreezeClaimedAt = 'last_freeze_claimed_at';
 
+  // --- Weekly Training Goal ---
+  /// Workouts per week the user picked (1–7) when no plan is active.
+  static const trainingWeekGoal = 'training_week_goal_v1';
+
+  /// JSON `{weekStart: goal}`, so each past week keeps the goal it had.
+  static const trainingWeekGoals = 'training_week_goals_v1';
+
+  /// Saved session IDs whose summary already showed its one celebration (a
+  /// new best or the week goal met), newest last, at most 200. Device-only
+  /// presentation state, so it is not in backups.
+  static const trainingBestsCelebrated = 'training_bests_celebrated_v1';
+
   // --- User Profile & Goals (Active - exact disk strings) ---
   static const userName = 'user_name';
   static const userAge = 'user_age';
@@ -101,6 +113,14 @@ abstract final class AppPreferenceKeys {
 
   // --- Food & Diary ---
   static const prefDiaryMealSlots = 'pref_diary_meal_slots';
+
+  // --- Food database updates (device-local; CAT-7) ---
+  static const catalogUpdateAllowMobileData =
+      'catalog_update_allow_mobile_data';
+  static const catalogUpdateLastCheckAt = 'catalog_update_last_check_at';
+  static const catalogUpdateLastOutcome = 'catalog_update_last_outcome';
+  static const catalogUpdateManifestEtag = 'catalog_update_manifest_etag';
+  static const catalogUpdateManifestJson = 'catalog_update_manifest_json';
 
   // --- Achievements & Weekly Actions ---
   static const unlockedAchievementIds = 'unlocked_achievement_ids';

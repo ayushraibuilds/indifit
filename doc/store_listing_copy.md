@@ -54,7 +54,7 @@ Log home-cooked meals, follow structured training plans, record completed sets a
 ### Privacy and portability
 
 - Core logging and review work without a network connection or IndiFit account.
-- Offline Mode blocks app-initiated online food lookup, the AI meal tools and crash diagnostics.
+- Offline Mode blocks app-initiated online food lookup, food database updates, the AI meal tools and crash diagnostics.
 - Create and restore JSON backups; optional password protection is available for manual backup files.
 - Copy a food and workout CSV summary when you choose.
 - Automatic rolling recovery copies are kept in the app's local storage.
@@ -71,7 +71,7 @@ IndiFit does not generate meal plans, workouts or reports.
 | **Photos (iOS)** | Used only when you choose a nutrition-label or meal photo from your library. |
 | **Notifications** | Used for optional workout, meal-logging and progress reminders you enable. |
 | **Activity / Health** | Used only for the Health Connect or HealthKit categories you approve. |
-| **Internet** | Used for optional Open Food Facts lookup, the optional AI meal tools and opt-in crash diagnostics. Core logging remains available offline. |
+| **Internet** | Used for food database updates, optional Open Food Facts lookup, the optional AI meal tools and opt-in crash diagnostics. Core logging remains available offline. |
 
 ---
 

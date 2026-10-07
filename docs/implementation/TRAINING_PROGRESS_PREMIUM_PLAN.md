@@ -1,6 +1,6 @@
 # Training and progress: premium feel and a weekly habit
 
-**Status:** approved direction (Ayush, 2026-10-06) · **Owner:** Claude (code), Ayush (review, device feel checks) · **Last updated:** 2026-10-06
+**Status:** approved direction (Ayush, 2026-10-06) · **Owner:** Claude (code), Ayush (review, device feel checks) · **Last updated:** 2026-10-07 (tracker: PR-L, M and N merged)
 
 Related:
 - [LAUNCH_ROADMAP_FINAL.md](LAUNCH_ROADMAP_FINAL.md): launch gates, the ready queue (§ 2.5) and the hard rules (§ 0). This plan adds PR-L, M and N to v1; PR-O to PR-S go in the ready queue.
@@ -17,13 +17,13 @@ Update this table in every PR that touches training or progress UI. IDs are refe
 
 | ID | Work item | Release | PR | Depends on | Status |
 |---|---|---|---|---|---|
-| TP-1 | Factual-bests engine: derived from logged sets, never stored, never estimated | **v1** | L | — | In progress (PR-L) |
-| TP-2 | Bests in the player: "New best" on the set row, success haptic, best shown next to "last time" | **v1** | L | TP-1 | In progress (PR-L) |
-| TP-3 | Bests on the workout summary, share card and exercise history ("Best ever") | **v1** | L | TP-1 | In progress (PR-L) |
-| TP-4 | Weekly training goal: goal source, goal history, weekly streak calculator | **v1** | M | — | Not started |
-| TP-5 | Weekly goal on screen: Training week card, Progress consistency, summary line; daily streak off training surfaces | **v1** | M | TP-4 | Not started |
-| TP-6 | Summary as the payoff: headline, "vs last time" per exercise, one celebration moment, "Total lifted" | **v1** | N | TP-3, TP-5 | Not started |
-| TP-7 | Motion and haptics map: `success()` and `restEnd()` haptics, set-row tick, count-up numbers, reduce-motion tests | **v1** | N | — | Not started |
+| TP-1 | Factual-bests engine: derived from logged sets, never stored, never estimated | **v1** | L | — | Merged (#66) |
+| TP-2 | Bests in the player: "New best" on the set row, success haptic, best shown next to "last time" | **v1** | L | TP-1 | Merged (#66) |
+| TP-3 | Bests on the workout summary, share card and exercise history ("Best ever") | **v1** | L | TP-1 | Merged (#66) |
+| TP-4 | Weekly training goal: goal source, goal history, weekly streak calculator | **v1** | M | — | Merged (#67) |
+| TP-5 | Weekly goal on screen: Training week card, Progress consistency, summary line; daily streak off training surfaces | **v1** | M | TP-4 | Merged (#67) |
+| TP-6 | Summary as the payoff: headline, "vs last time" per exercise, one celebration moment, "Total lifted" | **v1** | N | TP-3, TP-5 | Merged (#68) |
+| TP-7 | Motion and haptics map: `success()` and `restEnd()` haptics, set-row tick, count-up numbers, reduce-motion tests | **v1** | N | — | Merged (#68) |
 | TP-8 | Player sets as rows ("60 kg × 8 ✓"), no spreadsheet header; full workout title | Next | O | PR-D | Not started |
 | TP-9 | Progress visuals: muscles-this-week body map, 12-week consistency heatmap (**Plus**, decided 2026-10-06); recent bests list (free) | Plus-gated (list: Next) | P | TP-1, TP-4; Plus entitlement | Not started |
 | TP-10 | `animations` package: card-to-screen and between-exercise transitions | Next | P | — | Not started |
@@ -182,6 +182,7 @@ Two kinds of best:
 - **Week:** Monday to Sunday in device-local civil dates, as the Training week strip already uses.
 - **What counts:** a saved workout session of any activity type (full or partial) on that local date. Several workouts on one day each count.
   - Check in PR-M: does `WorkoutRepository.getAllSessionDates()` only ever see saved sessions? It doesn't filter by `completionKind` ([workout_repository.dart:745](../../lib/data/repositories/workout_repository.dart)). Add a test either way.
+  - *Answered in PR-M:* yes. Every `workout_sessions` insert is a finished workout (full or partial, or an import); unfinished workouts live in `workout_drafts`. `weekly_training_goal_repository_test.dart` covers it.
 - **Goal:**
   - With an active plan: the number of scheduled sessions this week. The data is already loaded as `currentWeekOccurrences`.
   - Without a plan: the user's goal, 1–7 and default 3, set from the week card in one sheet.
@@ -376,7 +377,7 @@ Sources: `https://pub.dev/api/packages/<name>` and `/score`, read 2026-10-06.
 ### TP-8 … TP-14
 Each gets its own section when an agent picks it up. Their tests follow the same pattern: pure logic first, then a widget test, then goldens.
 
-**Every PR in this plan runs:** `flutter analyze`, the full `flutter test` in a scratchpad worktree (never in the main checkout), `python3 tool/generate_code_graph.py`, and a golden refresh when UI changed.
+**Every PR in this plan runs:** `flutter analyze`, the full `flutter test` in a scratchpad worktree (never in the main checkout), `python3 tool/generate_code_graph.py --ci` (the graph itself isn't committed), and a golden refresh when UI changed.
 
 ---
 

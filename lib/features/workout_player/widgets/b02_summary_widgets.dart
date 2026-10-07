@@ -10,11 +10,12 @@ import '../../../data/repositories/b02_strength_execution_repository.dart';
 import '../../../data/repositories/calendar_repository.dart';
 import '../../progress/training_bests.dart';
 import '../../progress/training_bests_providers.dart';
+import '../../training/weekly_training_goal_providers.dart';
 import '../b02_strength_execution_controller.dart';
 import '../models/workout_completion_recap.dart';
 import '../workout_execution_context.dart';
 import 'r07c_workout_presentation.dart';
-import 'training_bests_summary.dart';
+import 'workout_payoff_widgets.dart';
 import 'workout_share_card.dart';
 
 export '../models/workout_completion_recap.dart';
@@ -38,6 +39,8 @@ class B02WorkoutCompletionSuccess extends ConsumerWidget {
     this.sessionId,
     this.completionKind = CompletionKind.full,
     required this.onDone,
+    this.allowCelebration = false,
+    this.achievementSheetWillOpen = false,
   });
 
   final B02StrengthExecutionLaunch launch;
@@ -45,12 +48,30 @@ class B02WorkoutCompletionSuccess extends ConsumerWidget {
   final CompletionKind completionKind;
   final VoidCallback onDone;
 
+  /// True only on the summary shown right after saving, never from history.
+  final bool allowCelebration;
+
+  /// Whether an achievement sheet opens over this summary. Null while that
+  /// is still being worked out; the celebration waits for it.
+  final bool? achievementSheetWillOpen;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (sessionId case final savedSessionId?) {
       final detail = ref.watch(
         b02StrengthHistoryDetailProvider(savedSessionId),
       );
+      // Read only after the save, so this workout is already counted. A
+      // missing value simply leaves the line out.
+      final weeklyGoalRead = ref.watch(weeklyTrainingGoalStatusProvider);
+      final weeklyGoal = weeklyGoalRead.valueOrNull;
+      final sheetWillOpen = achievementSheetWillOpen;
+      // Decide on the one celebration only once everything it depends on
+      // is known.
+      final celebrate =
+          allowCelebration &&
+          !weeklyGoalRead.isLoading &&
+          sheetWillOpen != null;
       return detail.when(
         loading: () => SavedDetailsLoading(
           onDone: onDone,
@@ -64,6 +85,10 @@ class B02WorkoutCompletionSuccess extends ConsumerWidget {
           completionKind: completionKind,
           onDone: onDone,
           detailsUnavailable: true,
+          weeklyGoal: weeklyGoal,
+          sessionId: savedSessionId,
+          celebrate: celebrate,
+          achievementSheetWillOpen: sheetWillOpen ?? false,
         ),
         data: (history) => CompletionEvidence(
           // A null read is treated like unavailable persisted detail rather
@@ -73,6 +98,10 @@ class B02WorkoutCompletionSuccess extends ConsumerWidget {
           history: history,
           onDone: onDone,
           detailsUnavailable: history == null,
+          weeklyGoal: weeklyGoal,
+          sessionId: savedSessionId,
+          celebrate: celebrate,
+          achievementSheetWillOpen: sheetWillOpen ?? false,
         ),
       );
     }
@@ -208,6 +237,10 @@ class CompletionEvidence extends StatelessWidget {
     this.history,
     this.detailsUnavailable = false,
     this.showShareCard = false,
+    this.weeklyGoal,
+    this.sessionId,
+    this.celebrate = false,
+    this.achievementSheetWillOpen = false,
   });
 
   final B02StrengthExecutionLaunch? launch;
@@ -216,6 +249,19 @@ class CompletionEvidence extends StatelessWidget {
   final CompletionKind completionKind;
   final bool detailsUnavailable;
   final bool showShareCard;
+
+  /// "2 of 3 workouts this week" on the just-saved summary only; history
+  /// detail leaves it null. When this workout met the goal and set no bests,
+  /// the goal is the summary's one moment.
+  final WeeklyTrainingGoalStatus? weeklyGoal;
+
+  /// The saved session, even when its detail could not be read. Defaults to
+  /// the [history] session.
+  final int? sessionId;
+
+  /// Celebrate the summary's moment, once per saved workout (TP-6).
+  final bool celebrate;
+  final bool achievementSheetWillOpen;
 
   @override
   Widget build(BuildContext context) {
@@ -259,6 +305,8 @@ class CompletionEvidence extends StatelessWidget {
           in history?.groups ?? const <B02PerformedExerciseGroupHistory>[])
         group.id: group,
     };
+    final bestsSessionId = history?.sessionId;
+    final savedSessionId = sessionId ?? bestsSessionId;
     return SafeArea(
       child: Column(
         children: [
@@ -267,36 +315,37 @@ class CompletionEvidence extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
               child: Column(
                 children: [
-                  Icon(
-                    isPartial
-                        ? Icons.check_circle_outline_rounded
-                        : Icons.check_circle_rounded,
-                    size: 56,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    isPartial
-                        ? 'Workout partially completed'
-                        : 'Workout complete',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    routineName,
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    detailsUnavailable
+                  WorkoutSummaryHeadline(
+                    isPartial: isPartial,
+                    routineName: routineName,
+                    savedLine: detailsUnavailable
                         ? 'Your workout is saved. Some result details are unavailable.'
                         : 'Your workout is saved to history.',
-                    textAlign: TextAlign.center,
+                    totalLiftedKg: hasVolume ? volume : 0,
+                    setCount: setCount,
+                    durationLabel: durationSeconds > 0
+                        ? formatB02WorkoutDuration(durationSeconds)
+                        : null,
                   ),
                   const SizedBox(height: 20),
-                  if (history != null)
-                    TrainingBestsSummaryBlock(sessionId: history!.sessionId),
+                  // Order (plan § 6): the one moment (new bests, or the week
+                  // goal), vs last time, this week, then the numbers and
+                  // what was logged.
+                  if (savedSessionId != null || bestsSessionId != null)
+                    WorkoutPayoffMoment(
+                      sessionId: savedSessionId,
+                      bestsSessionId: bestsSessionId,
+                      weeklyGoal: weeklyGoal,
+                      celebrate: celebrate,
+                      achievementSheetWillOpen: achievementSheetWillOpen,
+                    ),
+                  if (bestsSessionId != null)
+                    WorkoutVsLastTimeBlock(sessionId: bestsSessionId),
+                  if (weeklyGoal case final goal?)
+                    WorkoutWeekGoalLine(
+                      goal: goal,
+                      bestsSessionId: bestsSessionId,
+                    ),
                   LayoutBuilder(
                     builder: (context, constraints) {
                       final metrics = <Widget>[
@@ -315,7 +364,14 @@ class CompletionEvidence extends StatelessWidget {
                         if (hasVolume)
                           R07CMetricTile(
                             label: 'Total lifted',
-                            value: '${r07cFormatNumber(volume)} kg',
+                            value: formatKgLifted(volume),
+                            valueChild: CountUpText(
+                              key: const ValueKey(
+                                'workout_summary_total_lifted',
+                              ),
+                              value: volume,
+                              format: formatKgLifted,
+                            ),
                           ),
                       ];
                       final width = (constraints.maxWidth - 8) / 2;

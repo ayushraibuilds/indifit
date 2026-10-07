@@ -429,9 +429,18 @@ class CatalogPack {
 /// The small manifest published next to packs.
 class CatalogPackManifest {
   final int latest;
+
+  /// The oldest app build that can apply [latest], when the manifest says.
+  /// Each pack repeats its own `min_app_build`, which [CatalogPack.decode]
+  /// enforces; this lets a client skip the download altogether.
+  final int? minAppBuild;
   final List<CatalogPackManifestEntry> packs;
 
-  const CatalogPackManifest({required this.latest, required this.packs});
+  const CatalogPackManifest({
+    required this.latest,
+    required this.packs,
+    this.minAppBuild,
+  });
 
   factory CatalogPackManifest.parse(Object? raw) {
     final json = _map(raw, 'manifest');
@@ -447,8 +456,22 @@ class CatalogPackManifest {
     ];
     return CatalogPackManifest(
       latest: _positiveInt(json['latest'], 'latest'),
+      minAppBuild: json['min_app_build'] == null
+          ? null
+          : _positiveInt(json['min_app_build'], 'min_app_build'),
       packs: List.unmodifiable(packs),
     );
+  }
+
+  /// The pack that takes a device from [installed] to [latest]: the delta
+  /// whose base is [installed] when the manifest has one, else the full pack.
+  CatalogPackManifestEntry entryFrom(int? installed) {
+    for (final pack in packs) {
+      if (pack.version == latest && pack.isDelta && pack.base == installed) {
+        return pack;
+      }
+    }
+    return fullPack(latest);
   }
 
   /// The full pack for [version], which every client can apply.
