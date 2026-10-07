@@ -84,7 +84,9 @@ class _B02StrengthSummaryScreenState
               tooltip: 'Share workout recap',
               onPressed: () => showWorkoutShareSheet(
                 context,
-                WorkoutCompletionRecap.fromLaunch(completionLaunch),
+                WorkoutCompletionRecap.fromLaunch(
+                  completionLaunch,
+                ).withBests(savedSessionBests(ref, ui.completedSessionId)),
               ),
             ),
           ],

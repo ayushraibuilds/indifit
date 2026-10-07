@@ -1,12 +1,14 @@
 import '../../../data/models/b02_execution_models.dart';
 import '../../../data/repositories/b02_execution_compatibility_read_repository.dart';
 import '../../../data/repositories/b02_strength_execution_repository.dart';
+import '../../progress/training_bests.dart';
 
 /// Immutable factual read model for workout completion recap and share card.
 ///
 /// Invariant: Must contain ONLY exact logged facts (sets, reps, weight, duration,
-/// completed exercises, volume). Never contains e1RM, inferred PRs, fake calorie
-/// estimates, or speculative readiness scores.
+/// completed exercises, volume, factual bests derived from logged sets). Never
+/// contains e1RM, inferred PRs, fake calorie estimates, or speculative
+/// readiness scores.
 class WorkoutCompletionRecap {
   final int? sessionId;
   final String workoutTitle;
@@ -20,6 +22,9 @@ class WorkoutCompletionRecap {
   final List<ExerciseRecapSummary> exercises;
   final PreviousSessionComparison? previousComparison;
 
+  /// Sets in this workout that beat every earlier comparable set.
+  final List<TrainingBest> newBests;
+
   const WorkoutCompletionRecap({
     this.sessionId,
     required this.workoutTitle,
@@ -32,7 +37,41 @@ class WorkoutCompletionRecap {
     required this.totalRepsCount,
     required this.exercises,
     this.previousComparison,
+    this.newBests = const [],
   });
+
+  WorkoutCompletionRecap withBests(List<TrainingBest> bests) =>
+      WorkoutCompletionRecap(
+        sessionId: sessionId,
+        workoutTitle: workoutTitle,
+        completedAt: completedAt,
+        durationSeconds: durationSeconds,
+        isPartial: isPartial,
+        totalVolumeKg: totalVolumeKg,
+        completedSetsCount: completedSetsCount,
+        completedExercisesCount: completedExercisesCount,
+        totalRepsCount: totalRepsCount,
+        exercises: exercises,
+        previousComparison: previousComparison,
+        newBests: List.unmodifiable(bests),
+      );
+
+  /// "2 new bests: Leg Press 62.5 kg × 8, Bench Press 60 kg × 10". Without
+  /// weights only the exercise names are listed. Null when there are none.
+  String? bestsLine({bool includeWeights = true, bool forShare = false}) {
+    if (newBests.isEmpty) return null;
+    final count = newBests.length;
+    final label =
+        '$count new ${count == 1 ? 'best' : 'bests'}${forShare ? ' (PR)' : ''}';
+    final items = [
+      for (final best in newBests)
+        includeWeights
+            ? '${best.exerciseName} ${TrainingBestsCopy.setLabel(best.set)}'
+            : best.exerciseName,
+    ];
+    final unique = includeWeights ? items : items.toSet().toList();
+    return '$label: ${unique.join(', ')}';
+  }
 
   /// Null [previousComparison] means no previous session was compared — it
   /// is NOT a verified first session. Surfaces must never present it as a
@@ -196,6 +235,10 @@ class WorkoutCompletionRecap {
     );
     if (includeWeights && totalVolumeKg > 0) {
       buffer.writeln('Total Volume: ${totalVolumeKg.toStringAsFixed(1)} kg');
+    }
+    if (bestsLine(includeWeights: includeWeights, forShare: true)
+        case final bests?) {
+      buffer.writeln(bests);
     }
     if (previousComparison case final prev?) {
       final sign = prev.volumeDeltaKg >= 0 ? '+' : '';

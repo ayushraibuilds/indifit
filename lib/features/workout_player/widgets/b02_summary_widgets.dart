@@ -8,10 +8,13 @@ import '../../../data/models/b02_execution_models.dart';
 import '../../../data/repositories/b02_execution_compatibility_read_repository.dart';
 import '../../../data/repositories/b02_strength_execution_repository.dart';
 import '../../../data/repositories/calendar_repository.dart';
+import '../../progress/training_bests.dart';
+import '../../progress/training_bests_providers.dart';
 import '../b02_strength_execution_controller.dart';
 import '../models/workout_completion_recap.dart';
 import '../workout_execution_context.dart';
 import 'r07c_workout_presentation.dart';
+import 'training_bests_summary.dart';
 import 'workout_share_card.dart';
 
 export '../models/workout_completion_recap.dart';
@@ -95,6 +98,14 @@ Future<void> showWorkoutShareSheet(
   );
 }
 
+/// Bests already read for a saved session, for the share card. Empty while
+/// the read is pending or failed; the share card then has no bests line.
+List<TrainingBest> savedSessionBests(WidgetRef ref, int? sessionId) =>
+    sessionId == null
+    ? const []
+    : ref.read(trainingBestsForSessionProvider(sessionId)).valueOrNull?.bests ??
+          const [];
+
 /// Reopens the same factual result from persisted history. It has no route
 /// back to an active draft and cannot finalize or resume a workout.
 class B02StrengthHistoryDetailScreen extends ConsumerWidget {
@@ -117,7 +128,9 @@ class B02StrengthHistoryDetailScreen extends ConsumerWidget {
               tooltip: 'Share workout recap',
               onPressed: () => showWorkoutShareSheet(
                 context,
-                WorkoutCompletionRecap.fromHistory(history),
+                WorkoutCompletionRecap.fromHistory(
+                  history,
+                ).withBests(savedSessionBests(ref, sessionId)),
               ),
             ),
         ],
@@ -282,6 +295,8 @@ class CompletionEvidence extends StatelessWidget {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 20),
+                  if (history != null)
+                    TrainingBestsSummaryBlock(sessionId: history!.sessionId),
                   LayoutBuilder(
                     builder: (context, constraints) {
                       final metrics = <Widget>[

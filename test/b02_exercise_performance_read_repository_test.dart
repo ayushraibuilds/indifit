@@ -1,4 +1,4 @@
-import 'package:drift/drift.dart';
+import 'package:drift/drift.dart' hide isNull;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/models/b02_execution_models.dart';
@@ -274,6 +274,97 @@ void main() {
 
     expect(await repository.read(stableExerciseId: 'bench'), isEmpty);
   });
+
+  test(
+    'fills technique fields and flags segmented sets so bests can skip them',
+    () async {
+      await _insertExercise(database, 'pull-up', 'Pull-up');
+      final sessionId = await _insertSession(
+        database,
+        name: 'Pull day',
+        completedAt: DateTime.utc(2026, 8, 18, 9),
+      );
+      await _insertPerformedExercise(
+        database,
+        id: 'pull-performed',
+        sessionId: sessionId,
+        actualExerciseId: 'pull-up',
+        actualName: 'Pull-up',
+      );
+      await _insertPerformedSet(
+        database,
+        id: 'plain',
+        performedExerciseId: 'pull-performed',
+        ordinal: 0,
+        role: B02SetRole.working,
+        loadKg: 10,
+        reps: 6,
+      );
+      await database
+          .into(database.performedSets)
+          .insert(
+            PerformedSetsCompanion.insert(
+              id: 'assisted-tempo-paused',
+              performedExerciseId: 'pull-performed',
+              ordinal: 1,
+              role: B02SetRole.working.dbValue,
+              actualLoadKg: const Value(20),
+              actualLoadBasis: const Value('totalExternal'),
+              actualReps: const Value(8),
+              effortMode: const Value('amrap'),
+              endedAtFailure: const Value(true),
+              tempoEccentricSeconds: const Value(3),
+              tempoBottomPauseSeconds: const Value(1),
+              tempoConcentricSeconds: const Value(1),
+              tempoLockoutPauseSeconds: const Value(0),
+              pausedRepPosition: const Value('bottom'),
+              pausedRepSeconds: const Value(2),
+              assistanceMode: const Value('band'),
+              assistanceKg: const Value(15),
+            ),
+          );
+      await _insertPerformedSet(
+        database,
+        id: 'dropped',
+        performedExerciseId: 'pull-performed',
+        ordinal: 2,
+        role: B02SetRole.working,
+        loadKg: 30,
+        reps: 10,
+      );
+      for (final (ordinal, load) in const [(0, 30.0), (1, 20.0)]) {
+        await database
+            .into(database.performedSetSegments)
+            .insert(
+              PerformedSetSegmentsCompanion.insert(
+                id: 'dropped-$ordinal',
+                performedSetId: 'dropped',
+                ordinal: ordinal,
+                reps: 5,
+                externalLoadKg: Value(load),
+              ),
+            );
+      }
+
+      final record = (await repository.read(
+        stableExerciseId: 'pull-up',
+      )).single;
+
+      expect(record.actualExerciseName, 'Pull-up');
+      final technique = record.sets[1].technique;
+      expect(technique.effortMode, B02EffortMode.amrap);
+      expect(technique.endedAtFailure, isTrue);
+      expect(technique.tempoEccentricSeconds, 3);
+      expect(technique.tempoLockoutPauseSeconds, 0);
+      expect(technique.pausedRepPosition, B02PausedRepPosition.bottom);
+      expect(technique.pausedRepSeconds, 2);
+      expect(technique.assistanceMode, B02AssistanceMode.band);
+      expect(technique.assistanceKg, 15);
+      expect(record.sets.first.technique.assistanceMode, isNull);
+      expect(record.segmentedSetIds, {'dropped'});
+      expect(await repository.readSessionExerciseIds(sessionId), ['pull-up']);
+    },
+  );
 }
 
 Future<void> _insertExercise(

@@ -11,6 +11,7 @@ import '../../core/services/rest_presence_service.dart';
 import '../../core/services/workout_session_wake_lock_coordinator.dart';
 import '../../core/utils/app_logger.dart';
 import '../../data/models/b02_execution_models.dart';
+import '../../data/repositories/b02_exercise_performance_read_repository.dart';
 import '../../data/repositories/b02_strength_execution_repository.dart';
 import '../../data/repositories/calendar_repository.dart';
 import '../../data/repositories/progress_statistics_repository.dart';
@@ -327,6 +328,11 @@ class B02StrengthExecutionController
       }
     });
   }
+
+  /// Saved history for one exercise. Read-only; the draft isn't touched.
+  Future<List<B02ExercisePerformanceRecord>> readExerciseHistory(
+    String exerciseId,
+  ) => _adapter.readExercisePerformance(exerciseId);
 
   Future<void> loadSlots() async {
     final current = state.launch;

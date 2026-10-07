@@ -110,6 +110,132 @@ void main() {
     expect(summary.comparisonText, '+5 kg at 5 reps vs previous session');
   });
 
+  test('heaviest working set skips assisted, tempo, paused and drop sets', () {
+    B02PerformedSet working(
+      String id,
+      int ordinal,
+      double load, {
+      B02TechniqueFields? technique,
+    }) => B02PerformedSet(
+      id: id,
+      performedExerciseId: 'technique',
+      ordinal: ordinal,
+      role: B02SetRole.working,
+      actualLoadKg: load,
+      actualLoadBasis: B02LoadBasis.totalExternal,
+      actualReps: 5,
+      technique: technique,
+    );
+    final record = B02ExercisePerformanceRecord(
+      sessionId: 1,
+      performedExerciseId: 'technique',
+      sessionName: 'Push day',
+      completedAt: DateTime.utc(2026, 8, 1, 9),
+      actualExerciseId: 'actual-bench',
+      exerciseStatus: 'completed',
+      exerciseOrdinal: 0,
+      segmentedSetIds: const {'segmented'},
+      sets: [
+        working('plain', 0, 70),
+        working(
+          'assisted',
+          1,
+          90,
+          technique: B02TechniqueFields(
+            assistanceMode: B02AssistanceMode.machine,
+            assistanceKg: 20,
+          ),
+        ),
+        working(
+          'paused',
+          2,
+          85,
+          technique: B02TechniqueFields(
+            pausedRepPosition: B02PausedRepPosition.bottom,
+            pausedRepSeconds: 2,
+          ),
+        ),
+        working('segmented', 3, 95),
+      ],
+    );
+
+    final summary = R08F3StrengthPerformancePresentation.summarize([record]);
+
+    expect(summary.heaviestRecordedSet!.id, 'plain');
+    expect(summary.trendPoints.single.loadKg, 70);
+  });
+
+  testWidgets('exercise history shows a Best ever card from the engine', (
+    tester,
+  ) async {
+    _setViewport(tester, const Size(390, 844));
+    B02PerformedSet working(String id, double load, int reps) =>
+        B02PerformedSet(
+          id: id,
+          performedExerciseId: id,
+          ordinal: 0,
+          role: B02SetRole.working,
+          actualLoadKg: load,
+          actualLoadBasis: B02LoadBasis.totalExternal,
+          actualReps: reps,
+        );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          b02ExercisePerformanceReadRepositoryProvider.overrideWithValue(
+            _FakePerformanceRepository(database, [
+              _record(
+                sessionId: 1,
+                performedExerciseId: 'performed-1',
+                completedAt: DateTime.utc(2026, 8, 1, 9),
+                loadKg: 60,
+                reps: 10,
+                sets: [working('a', 60, 10)],
+              ),
+              _record(
+                sessionId: 2,
+                performedExerciseId: 'performed-2',
+                completedAt: DateTime.utc(2026, 8, 8, 9),
+                loadKg: 62.5,
+                reps: 8,
+                sets: [working('b', 62.5, 8)],
+              ),
+            ]),
+          ),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.darkTheme,
+          home: const ExerciseHistoryScreen(
+            exerciseName: 'Bench press',
+            stableExerciseId: 'actual-bench',
+            timezoneId: 'Asia/Kolkata',
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    final card = find.byKey(const ValueKey('exercise_history_best_ever'));
+    expect(card, findsOneWidget);
+    expect(
+      find.descendant(of: card, matching: find.text('Best ever')),
+      findsOneWidget,
+    );
+    expect(
+      find.bySemanticsLabel('Heaviest: 62.5 kg × 8, Aug 8, 2026'),
+      findsOneWidget,
+    );
+    expect(
+      find.bySemanticsLabel('Most reps: 60 kg × 10, Aug 1, 2026'),
+      findsOneWidget,
+    );
+    // The card replaces the header's heaviest line rather than repeating it.
+    expect(find.textContaining('Heaviest working set'), findsNothing);
+    expect(find.textContaining('PR'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets(
     'canonical history shows actual trend, partial state, and replacement provenance',
     (tester) async {
