@@ -1,0 +1,257 @@
+# C-04: serving measures that contradict their own kcal (audit 2026-10-05).
+# Each entry replaces the source row's serving. `name` must match the source
+# row, so an id can never drift onto another food. Ids never change.
+version: 2
+measures:
+  - id: food-seed-0565
+    name: "Whole Wheat Roti / Chapati (Double)"
+    serving: {unit: piece, amount: 2}
+    reason: "\"Double\": 170 kcal is twice the base's 85 kcal per 1 piece, so one serving is 2 pieces."
+  - id: food-seed-0107
+    name: "Butter Roti / Chapati (Double)"
+    serving: {unit: piece, amount: 2}
+    reason: "\"Double\": 220 kcal is twice the base's 110 kcal per 1 piece, so one serving is 2 pieces."
+  - id: food-seed-0328
+    name: "Missi Roti (Gram flour) (Double)"
+    serving: {unit: piece, amount: 2}
+    reason: "\"Double\": 290 kcal is twice the base's 145 kcal per 1 piece, so one serving is 2 pieces."
+  - id: food-seed-0047
+    name: "Bajra Roti (Millet) (Double)"
+    serving: {unit: piece, amount: 2}
+    reason: "\"Double\": 230 kcal is twice the base's 115 kcal per 1 piece, so one serving is 2 pieces."
+  - id: food-seed-0250
+    name: "Jowar Roti (Sorghum) (Double)"
+    serving: {unit: piece, amount: 2}
+    reason: "\"Double\": 220 kcal is twice the base's 110 kcal per 1 piece, so one serving is 2 pieces."
+  - id: food-seed-0443
+    name: "Ragi Roti (Finger millet) (Double)"
+    serving: {unit: piece, amount: 2}
+    reason: "\"Double\": 240 kcal is twice the base's 120 kcal per 1 piece, so one serving is 2 pieces."
+  - id: food-seed-0518
+    name: "Tandoori Roti (Wheat) (Double)"
+    serving: {unit: piece, amount: 2}
+    reason: "\"Double\": 220 kcal is twice the base's 110 kcal per 1 piece, so one serving is 2 pieces."
+  - id: food-seed-0510
+    name: "Tandoori Butter Roti (Double)"
+    serving: {unit: piece, amount: 2}
+    reason: "\"Double\": 270 kcal is twice the base's 135 kcal per 1 piece, so one serving is 2 pieces."
+  - id: food-seed-0423
+    name: "Plain Naan (Double)"
+    serving: {unit: piece, amount: 2}
+    reason: "\"Double\": 520 kcal is twice the base's 260 kcal per 1 piece, so one serving is 2 pieces."
+  - id: food-seed-0102
+    name: "Butter Naan (Double)"
+    serving: {unit: piece, amount: 2}
+    reason: "\"Double\": 620 kcal is twice the base's 310 kcal per 1 piece, so one serving is 2 pieces."
+  - id: food-seed-0216
+    name: "Garlic Naan (Double)"
+    serving: {unit: piece, amount: 2}
+    reason: "\"Double\": 560 kcal is twice the base's 280 kcal per 1 piece, so one serving is 2 pieces."
+  - id: food-seed-0211
+    name: "Garlic Butter Naan (Double)"
+    serving: {unit: piece, amount: 2}
+    reason: "\"Double\": 660 kcal is twice the base's 330 kcal per 1 piece, so one serving is 2 pieces."
+  - id: food-seed-0428
+    name: "Plain Paratha (Double)"
+    serving: {unit: piece, amount: 2}
+    reason: "\"Double\": 360 kcal is twice the base's 180 kcal per 1 piece, so one serving is 2 pieces."
+  - id: food-seed-0023
+    name: "Aloo Paratha (Double)"
+    serving: {unit: piece, amount: 2}
+    reason: "\"Double\": 580 kcal is twice the base's 290 kcal per 1 piece, so one serving is 2 pieces."
+  - id: food-seed-0397
+    name: "Paneer Paratha (Double)"
+    serving: {unit: piece, amount: 2}
+    reason: "\"Double\": 680 kcal is twice the base's 340 kcal per 1 piece, so one serving is 2 pieces."
+  - id: food-seed-0225
+    name: "Gobi Paratha (Double)"
+    serving: {unit: piece, amount: 2}
+    reason: "\"Double\": 480 kcal is twice the base's 240 kcal per 1 piece, so one serving is 2 pieces."
+  - id: food-seed-0341
+    name: "Mooli Paratha (Double)"
+    serving: {unit: piece, amount: 2}
+    reason: "\"Double\": 460 kcal is twice the base's 230 kcal per 1 piece, so one serving is 2 pieces."
+  - id: food-seed-0323
+    name: "Methi Paratha (Double)"
+    serving: {unit: piece, amount: 2}
+    reason: "\"Double\": 440 kcal is twice the base's 220 kcal per 1 piece, so one serving is 2 pieces."
+  - id: food-seed-0276
+    name: "Lachha Paratha (Double)"
+    serving: {unit: piece, amount: 2}
+    reason: "\"Double\": 520 kcal is twice the base's 260 kcal per 1 piece, so one serving is 2 pieces."
+  - id: food-seed-0436
+    name: "Poori (Double)"
+    serving: {unit: piece, amount: 2}
+    reason: "\"Double\": 220 kcal is twice the base's 110 kcal per 1 piece, so one serving is 2 pieces."
+  - id: food-seed-0069
+    name: "Bhatura (Double)"
+    serving: {unit: piece, amount: 2}
+    reason: "\"Double\": 440 kcal is twice the base's 220 kcal per 1 piece, so one serving is 2 pieces."
+  - id: food-seed-0464
+    name: "Rumali Roti (Double)"
+    serving: {unit: piece, amount: 2}
+    reason: "\"Double\": 320 kcal is twice the base's 160 kcal per 1 piece, so one serving is 2 pieces."
+  - id: food-seed-0054
+    name: "Basmati White Rice (Cooked) (Mini)"
+    serving: {unit: g, amount: 60}
+    reason: "Gram amount stored as 60 katori; 60 g at 78 kcal."
+  - id: food-seed-0052
+    name: "Basmati White Rice (Cooked) (Double)"
+    serving: {unit: katori, amount: 2}
+    reason: "\"Double\": 260 kcal is twice the base's 130 kcal per 1 katori, so one serving is 2 katori."
+  - id: food-seed-0096
+    name: "Brown Rice (Cooked) (Mini)"
+    serving: {unit: g, amount: 60}
+    reason: "Gram amount stored as 60 katori; 60 g at 67 kcal."
+  - id: food-seed-0094
+    name: "Brown Rice (Cooked) (Double)"
+    serving: {unit: katori, amount: 2}
+    reason: "\"Double\": 222 kcal is twice the base's 111 kcal per 1 katori, so one serving is 2 katori."
+  - id: food-seed-0247
+    name: "Jeera Rice (Mini)"
+    serving: {unit: g, amount: 60}
+    reason: "Gram amount stored as 60 katori; 60 g at 87 kcal."
+  - id: food-seed-0245
+    name: "Jeera Rice (Double)"
+    serving: {unit: katori, amount: 2}
+    reason: "\"Double\": 290 kcal is twice the base's 145 kcal per 1 katori, so one serving is 2 katori."
+  - id: food-seed-0471
+    name: "Saffron Rice / Pulao (Mini)"
+    serving: {unit: g, amount: 60}
+    reason: "Gram amount stored as 60 katori; 60 g at 96 kcal."
+  - id: food-seed-0469
+    name: "Saffron Rice / Pulao (Double)"
+    serving: {unit: katori, amount: 2}
+    reason: "\"Double\": 320 kcal is twice the base's 160 kcal per 1 katori, so one serving is 2 katori."
+  - id: food-seed-0560
+    name: "Vegetable Pulao (Double)"
+    serving: {unit: katori, amount: 2}
+    reason: "\"Double\": 360 kcal is twice the base's 180 kcal per 1 katori, so one serving is 2 katori."
+  - id: food-seed-0269
+    name: "Kashmiri Pulao (with nuts) (Double)"
+    serving: {unit: katori, amount: 2}
+    reason: "\"Double\": 480 kcal is twice the base's 240 kcal per 1 katori, so one serving is 2 katori."
+  - id: food-seed-0533
+    name: "Toor Dal / Yellow Dal Tadka (Double serving)"
+    serving: {unit: katori, amount: 2}
+    reason: "\"Double serving\": 280 kcal is twice the base's 140 kcal per 1 katori, so one serving is 2 katori."
+  - id: food-seed-0157
+    name: "Dal Fry (Chana & Toor) (Double serving)"
+    serving: {unit: katori, amount: 2}
+    reason: "\"Double serving\": 330 kcal is twice the base's 165 kcal per 1 katori, so one serving is 2 katori."
+  - id: food-seed-0161
+    name: "Dal Makhani (Double serving)"
+    serving: {unit: katori, amount: 2}
+    reason: "\"Double serving\": 560 kcal is twice the base's 280 kcal per 1 katori, so one serving is 2 katori."
+  - id: food-seed-0346
+    name: "Moong Dal Chilka (Cooked) (Double serving)"
+    serving: {unit: katori, amount: 2}
+    reason: "\"Double serving\": 240 kcal is twice the base's 120 kcal per 1 katori, so one serving is 2 katori."
+  - id: food-seed-0311
+    name: "Masoor Dal / Red Lentil Soup (Double serving)"
+    serving: {unit: katori, amount: 2}
+    reason: "\"Double serving\": 230 kcal is twice the base's 115 kcal per 1 katori, so one serving is 2 katori."
+  - id: food-seed-0544
+    name: "Urad Dal Plain (Double serving)"
+    serving: {unit: katori, amount: 2}
+    reason: "\"Double serving\": 260 kcal is twice the base's 130 kcal per 1 katori, so one serving is 2 katori."
+  - id: food-seed-0143
+    name: "Chole Masala (Chickpea Curry) (Double serving)"
+    serving: {unit: katori, amount: 2}
+    reason: "\"Double serving\": 480 kcal is twice the base's 240 kcal per 1 katori, so one serving is 2 katori."
+  - id: food-seed-0450
+    name: "Rajma Masala (Red Kidney Beans) (Double serving)"
+    serving: {unit: katori, amount: 2}
+    reason: "\"Double serving\": 420 kcal is twice the base's 210 kcal per 1 katori, so one serving is 2 katori."
+  - id: food-seed-0285
+    name: "Lobia Masala (Black Eyed Peas) (Double serving)"
+    serving: {unit: katori, amount: 2}
+    reason: "\"Double serving\": 380 kcal is twice the base's 190 kcal per 1 katori, so one serving is 2 katori."
+  - id: food-seed-0123
+    name: "Chana Masala (Black Chickpeas) (Double serving)"
+    serving: {unit: katori, amount: 2}
+    reason: "\"Double serving\": 360 kcal is twice the base's 180 kcal per 1 katori, so one serving is 2 katori."
+  - id: food-seed-0474
+    name: "Sambar (Double serving)"
+    serving: {unit: katori, amount: 2}
+    reason: "\"Double serving\": 170 kcal is twice the base's 85 kcal per 1 katori, so one serving is 2 katori."
+  - id: food-seed-0262
+    name: "Kadhi Pakora (Double serving)"
+    serving: {unit: katori, amount: 2}
+    reason: "\"Double serving\": 440 kcal is twice the base's 220 kcal per 1 katori, so one serving is 2 katori."
+  - id: food-seed-0370
+    name: "Onion Pakora (4-5 pieces) (Mini size)"
+    serving: {unit: g, amount: 48}
+    reason: "Gram amount stored as 48 serving; 48 g at 126 kcal."
+  - id: food-seed-0088
+    name: "Boiled Chickpea Salad (Small side bowl)"
+    serving: {unit: katori, amount: 0.5}
+    reason: "\"Small side bowl\": 80 kcal is about half the base's 160 kcal per 1 katori, so one serving is 0.5 katori."
+  - id: food-seed-0087
+    name: "Boiled Chickpea Salad (Double healthy bowl)"
+    serving: {unit: katori, amount: 2}
+    reason: "\"Double healthy bowl\": 320 kcal is twice the base's 160 kcal per 1 katori, so one serving is 2 katori."
+  - id: food-seed-0499
+    name: "Sprouted Moong Salad (Small side bowl)"
+    serving: {unit: katori, amount: 0.5}
+    reason: "\"Small side bowl\": 60 kcal is about half the base's 120 kcal per 1 katori, so one serving is 0.5 katori."
+  - id: food-seed-0498
+    name: "Sprouted Moong Salad (Double healthy bowl)"
+    serving: {unit: katori, amount: 2}
+    reason: "\"Double healthy bowl\": 240 kcal is twice the base's 120 kcal per 1 katori, so one serving is 2 katori."
+  - id: food-seed-0154
+    name: "Cucumber Tomato Salad (Kachumber) (Small side bowl)"
+    serving: {unit: katori, amount: 0.5}
+    reason: "\"Small side bowl\": 18 kcal is about half the base's 35 kcal per 1 katori, so one serving is 0.5 katori."
+  - id: food-seed-0153
+    name: "Cucumber Tomato Salad (Kachumber) (Double healthy bowl)"
+    serving: {unit: katori, amount: 2}
+    reason: "\"Double healthy bowl\": 70 kcal is twice the base's 35 kcal per 1 katori, so one serving is 2 katori."
+  - id: food-seed-0462
+    name: "Roasted Chana (with skin) (Small side bowl)"
+    serving: {unit: g, amount: 25}
+    reason: "Gram amount stored as 25 katori; 25 g at 90 kcal."
+  - id: food-seed-0461
+    name: "Roasted Chana (with skin) (Double healthy bowl)"
+    serving: {unit: katori, amount: 2}
+    reason: "\"Double healthy bowl\": 360 kcal is twice the base's 180 kcal per 1 katori, so one serving is 2 katori."
+  - id: food-seed-0367
+    name: "Oats Upma (Small side bowl)"
+    serving: {unit: katori, amount: 0.5}
+    reason: "\"Small side bowl\": 95 kcal is about half the base's 190 kcal per 1 katori, so one serving is 0.5 katori."
+  - id: food-seed-0366
+    name: "Oats Upma (Double healthy bowl)"
+    serving: {unit: katori, amount: 2}
+    reason: "\"Double healthy bowl\": 380 kcal is twice the base's 190 kcal per 1 katori, so one serving is 2 katori."
+  - id: food-seed-0508
+    name: "Suji Upma (Small side bowl)"
+    serving: {unit: katori, amount: 0.5}
+    reason: "\"Small side bowl\": 105 kcal is about half the base's 210 kcal per 1 katori, so one serving is 0.5 katori."
+  - id: food-seed-0507
+    name: "Suji Upma (Double healthy bowl)"
+    serving: {unit: katori, amount: 2}
+    reason: "\"Double healthy bowl\": 420 kcal is twice the base's 210 kcal per 1 katori, so one serving is 2 katori."
+  - id: food-seed-0434
+    name: "Poha (Flattened Rice) (Small side bowl)"
+    serving: {unit: katori, amount: 0.5}
+    reason: "\"Small side bowl\": 115 kcal is about half the base's 230 kcal per 1 katori, so one serving is 0.5 katori."
+  - id: food-seed-0433
+    name: "Poha (Flattened Rice) (Double healthy bowl)"
+    serving: {unit: katori, amount: 2}
+    reason: "\"Double healthy bowl\": 460 kcal is twice the base's 230 kcal per 1 katori, so one serving is 2 katori."
+  - id: food-seed-0403
+    name: "Paneer Salad (Olive oil) (Small side bowl)"
+    serving: {unit: katori, amount: 0.5}
+    reason: "\"Small side bowl\": 110 kcal is about half the base's 220 kcal per 1 katori, so one serving is 0.5 katori."
+  - id: food-seed-0402
+    name: "Paneer Salad (Olive oil) (Double healthy bowl)"
+    serving: {unit: katori, amount: 2}
+    reason: "\"Double healthy bowl\": 440 kcal is twice the base's 220 kcal per 1 katori, so one serving is 2 katori."
+  - id: food-seed-0189
+    name: "Egg White Salad (Small side bowl)"
+    serving: {unit: katori, amount: 0.5}
+    reason: "\"Small side bowl\": 55 kcal is about half the base's 110 kcal per 1 katori, so one serving is 0.5 katori."
+  - id: food-seed-0188
+    name: "Egg White Salad (Double healthy bowl)"
+    serving: {unit: katori, amount: 2}
+    reason: "\"Double healthy bowl\": 220 kcal is twice the base's 110 kcal per 1 katori, so one serving is 2 katori."

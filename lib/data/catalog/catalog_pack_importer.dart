@@ -2,12 +2,17 @@ import 'dart:convert';
 
 import 'package:drift/drift.dart';
 
+import '../../core/fixtures/food_identity_manifest.dart';
 import '../database/app_database.dart';
 import 'catalog_pack.dart';
 
 /// The rule version on every conversion row a pack writes. Re-applying a
 /// pack replaces these rows; user-owned conversions are never touched.
 const String kCatalogPackConversionRule = 'catalog-pack';
+
+/// The `source` of every alias row a pack writes. Re-applying a pack
+/// replaces these rows; manifest and user aliases are never touched.
+const String kCatalogPackAliasSource = 'catalog-pack';
 
 /// The 11 leading fact columns, read from each JSON row array in order.
 final String _factColumns = List.generate(
@@ -84,6 +89,7 @@ class CatalogPackImporter {
       await _writeIdentities(pack, now);
       final changed = await _writeFacts(pack, sources, now);
       await _writeConversions(pack, now);
+      await _writeAliases(pack, now);
       if (pack.retire.isNotEmpty) {
         await (_db.update(_db.nutritionFoods)..where(
               (food) => food.id.isIn(pack.retire.map((retired) => retired.id)),
@@ -266,6 +272,42 @@ class CatalogPackImporter {
       }
     }
     return true;
+  }
+
+  Future<void> _writeAliases(CatalogPack pack, DateTime now) async {
+    final ids = pack.foods.map((food) => food.id).toList(growable: false);
+    await (_db.delete(_db.nutritionFoodAliases)..where(
+          (row) =>
+              row.foodId.isIn(ids) & row.source.equals(kCatalogPackAliasSource),
+        ))
+        .go();
+    final inserts = [
+      for (final food in pack.foods)
+        for (final alias in food.aliases)
+          NutritionFoodAliasesCompanion.insert(
+            id:
+                'catalog-pack:${food.id}:'
+                '${FoodIdentityNormalizer.normalize(alias.text)}',
+            foodId: Value(food.id),
+            alias: alias.text,
+            normalizedAlias: FoodIdentityNormalizer.normalize(alias.text),
+            locale: alias.locale,
+            source: kCatalogPackAliasSource,
+            createdAt: Value(now),
+            updatedAt: Value(now),
+          ),
+    ];
+    if (inserts.isNotEmpty) {
+      // An alias another source already owns (same text and locale) stays
+      // with that source: one alias names exactly one food.
+      await _db.batch(
+        (batch) => batch.insertAll(
+          _db.nutritionFoodAliases,
+          inserts,
+          mode: InsertMode.insertOrIgnore,
+        ),
+      );
+    }
   }
 
   Future<void> _writeConversions(CatalogPack pack, DateTime now) async {

@@ -6594,13 +6594,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0384"
     },
     {
       "id": "food-seed-0386",
@@ -6644,13 +6644,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0255"
     },
     {
       "id": "food-seed-0257",
@@ -6694,13 +6694,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0486"
     },
     {
       "id": "food-seed-0488",
@@ -6744,13 +6744,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0375"
     },
     {
       "id": "food-seed-0377",
@@ -6794,13 +6794,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0381"
     },
     {
       "id": "food-seed-0383",
@@ -6844,13 +6844,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0315"
     },
     {
       "id": "food-seed-0317",
@@ -6894,13 +6894,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0404"
     },
     {
       "id": "food-seed-0406",
@@ -6944,13 +6944,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0387"
     },
     {
       "id": "food-seed-0389",
@@ -7494,13 +7494,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0133"
     },
     {
       "id": "food-seed-0134",
@@ -7544,13 +7544,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0098"
     },
     {
       "id": "food-seed-0099",
@@ -7594,13 +7594,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0139"
     },
     {
       "id": "food-seed-0140",
@@ -7644,13 +7644,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0514"
     },
     {
       "id": "food-seed-0515",
@@ -7694,13 +7694,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0136"
     },
     {
       "id": "food-seed-0137",
@@ -7744,13 +7744,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0130"
     },
     {
       "id": "food-seed-0131",
@@ -7794,13 +7794,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0181"
     },
     {
       "id": "food-seed-0182",
@@ -7844,13 +7844,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0178"
     },
     {
       "id": "food-seed-0179",
@@ -7894,13 +7894,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0089"
     },
     {
       "id": "food-seed-0090",
@@ -7944,13 +7944,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0184"
     },
     {
       "id": "food-seed-0185",
@@ -7994,13 +7994,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0356"
     },
     {
       "id": "food-seed-0357",
@@ -8044,13 +8044,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0353"
     },
     {
       "id": "food-seed-0354",
@@ -8094,13 +8094,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0193"
     },
     {
       "id": "food-seed-0194",
@@ -8144,13 +8144,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0196"
     },
     {
       "id": "food-seed-0197",
@@ -8719,13 +8719,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0477"
     },
     {
       "id": "food-seed-0370",
@@ -8769,13 +8769,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0369"
     },
     {
       "id": "food-seed-0394",
@@ -8819,13 +8819,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0393"
     },
     {
       "id": "food-seed-0165",
@@ -8869,13 +8869,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0164"
     },
     {
       "id": "food-seed-0239",
@@ -8919,13 +8919,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0238"
     },
     {
       "id": "food-seed-0319",
@@ -8969,13 +8969,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0318"
     },
     {
       "id": "food-seed-0420",
@@ -9019,13 +9019,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0419"
     },
     {
       "id": "food-seed-0304",
@@ -9069,13 +9069,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0303"
     },
     {
       "id": "food-seed-0454",
@@ -9119,13 +9119,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0453"
     },
     {
       "id": "food-seed-0551",
@@ -9169,13 +9169,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0550"
     },
     {
       "id": "food-seed-0031",
@@ -9219,13 +9219,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0030"
     },
     {
       "id": "food-seed-0408",
@@ -9269,13 +9269,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0407"
     },
     {
       "id": "food-seed-0074",
@@ -9319,13 +9319,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0073"
     },
     {
       "id": "food-seed-0414",
@@ -9369,13 +9369,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0413"
     },
     {
       "id": "food-seed-0548",
@@ -9419,13 +9419,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0547"
     },
     {
       "id": "food-seed-0088",
@@ -30203,11 +30203,11 @@
       "target_id": "food-seed-0385",
       "kind": "preparationVariant",
       "classification": "Paneer & Dairy",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Templated \"(Double Paneer)\" variant of \"Paneer Butter Masala\" (food-seed-0384); retired in catalogue pack v2 (C-09). Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:paneer butter masala (low oil / diet version)": {
@@ -30229,11 +30229,11 @@
       "target_id": "food-seed-0256",
       "kind": "preparationVariant",
       "classification": "Paneer & Dairy",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Templated \"(Double Paneer)\" variant of \"Kadai Paneer\" (food-seed-0255); retired in catalogue pack v2 (C-09). Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:kadai paneer (low oil / diet version)": {
@@ -30255,11 +30255,11 @@
       "target_id": "food-seed-0487",
       "kind": "preparationVariant",
       "classification": "Paneer & Dairy",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Templated \"(Double Paneer)\" variant of \"Shahi Paneer\" (food-seed-0486); retired in catalogue pack v2 (C-09). Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:shahi paneer (low oil / diet version)": {
@@ -30281,11 +30281,11 @@
       "target_id": "food-seed-0376",
       "kind": "preparationVariant",
       "classification": "Paneer & Dairy",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Templated \"(Double Paneer)\" variant of \"Palak Paneer\" (food-seed-0375); retired in catalogue pack v2 (C-09). Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:palak paneer (low oil / diet version)": {
@@ -30307,11 +30307,11 @@
       "target_id": "food-seed-0382",
       "kind": "preparationVariant",
       "classification": "Paneer & Dairy",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Templated \"(Double Paneer)\" variant of \"Paneer Bhurji\" (food-seed-0381); retired in catalogue pack v2 (C-09). Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:paneer bhurji (low oil / diet version)": {
@@ -30333,11 +30333,11 @@
       "target_id": "food-seed-0316",
       "kind": "preparationVariant",
       "classification": "Paneer & Dairy",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Templated \"(Double Paneer)\" variant of \"Mattar Paneer\" (food-seed-0315); retired in catalogue pack v2 (C-09). Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:mattar paneer (low oil / diet version)": {
@@ -30359,11 +30359,11 @@
       "target_id": "food-seed-0405",
       "kind": "preparationVariant",
       "classification": "Paneer & Dairy",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Templated \"(Double Paneer)\" variant of \"Paneer Tikka (5 pcs)\" (food-seed-0404); retired in catalogue pack v2 (C-09). Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:paneer tikka (5 pcs) (low oil / diet version)": {
@@ -30385,11 +30385,11 @@
       "target_id": "food-seed-0388",
       "kind": "preparationVariant",
       "classification": "Paneer & Dairy",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Templated \"(Double Paneer)\" variant of \"Paneer Lababdar\" (food-seed-0387); retired in catalogue pack v2 (C-09). Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:paneer lababdar (low oil / diet version)": {
@@ -30671,11 +30671,11 @@
       "target_id": "food-seed-0135",
       "kind": "canonical",
       "classification": "Non-Veg",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Templated \"(Extra Chicken/Meat pieces)\" variant of \"Chicken Curry (North Indian style)\" (food-seed-0133); retired in catalogue pack v2 (C-09). Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:chicken curry (north indian style) (diet prep (low oil / breast only))": {
@@ -30697,11 +30697,11 @@
       "target_id": "food-seed-0100",
       "kind": "canonical",
       "classification": "Non-Veg",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Templated \"(Extra Chicken/Meat pieces)\" variant of \"Butter Chicken (Murgh Makhani)\" (food-seed-0098); retired in catalogue pack v2 (C-09). Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:butter chicken (murgh makhani) (diet prep (low oil / breast only))": {
@@ -30723,11 +30723,11 @@
       "target_id": "food-seed-0141",
       "kind": "canonical",
       "classification": "Non-Veg",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Templated \"(Extra Chicken/Meat pieces)\" variant of \"Chicken Tikka (6 pcs)\" (food-seed-0139); retired in catalogue pack v2 (C-09). Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:chicken tikka (6 pcs) (diet prep (low oil / breast only))": {
@@ -30749,11 +30749,11 @@
       "target_id": "food-seed-0516",
       "kind": "preparationVariant",
       "classification": "Non-Veg",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Templated \"(Extra Chicken/Meat pieces)\" variant of \"Tandoori Chicken (Half)\" (food-seed-0514); retired in catalogue pack v2 (C-09). Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:tandoori chicken (half) (diet prep (low oil / breast only))": {
@@ -30775,11 +30775,11 @@
       "target_id": "food-seed-0138",
       "kind": "canonical",
       "classification": "Non-Veg",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Templated \"(Extra Chicken/Meat pieces)\" variant of \"Chicken Korma\" (food-seed-0136); retired in catalogue pack v2 (C-09). Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:chicken korma (diet prep (low oil / breast only))": {
@@ -30801,11 +30801,11 @@
       "target_id": "food-seed-0132",
       "kind": "canonical",
       "classification": "Non-Veg",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Templated \"(Extra Chicken/Meat pieces)\" variant of \"Chicken Biryani (Hyderabadi)\" (food-seed-0130); retired in catalogue pack v2 (C-09). Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:chicken biryani (hyderabadi) (diet prep (low oil / breast only))": {
@@ -30827,11 +30827,11 @@
       "target_id": "food-seed-0183",
       "kind": "canonical",
       "classification": "Non-Veg",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Templated \"(Extra Chicken/Meat pieces)\" variant of \"Egg Curry (2 Eggs)\" (food-seed-0181); retired in catalogue pack v2 (C-09). Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:egg curry (2 eggs) (diet prep (low oil / breast only))": {
@@ -30853,11 +30853,11 @@
       "target_id": "food-seed-0180",
       "kind": "canonical",
       "classification": "Non-Veg",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Templated \"(Extra Chicken/Meat pieces)\" variant of \"Egg Bhurji (2 Eggs)\" (food-seed-0178); retired in catalogue pack v2 (C-09). Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:egg bhurji (2 eggs) (diet prep (low oil / breast only))": {
@@ -30879,11 +30879,11 @@
       "target_id": "food-seed-0091",
       "kind": "preparationVariant",
       "classification": "Non-Veg",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Templated \"(Extra Chicken/Meat pieces)\" variant of \"Boiled Eggs (2 pieces)\" (food-seed-0089); retired in catalogue pack v2 (C-09). Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:boiled eggs (2 pieces) (diet prep (low oil / breast only))": {
@@ -30905,11 +30905,11 @@
       "target_id": "food-seed-0186",
       "kind": "canonical",
       "classification": "Non-Veg",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Templated \"(Extra Chicken/Meat pieces)\" variant of \"Egg White Omelette (3 Eggs)\" (food-seed-0184); retired in catalogue pack v2 (C-09). Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:egg white omelette (3 eggs) (diet prep (low oil / breast only))": {
@@ -30931,11 +30931,11 @@
       "target_id": "food-seed-0358",
       "kind": "canonical",
       "classification": "Non-Veg",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Templated \"(Extra Chicken/Meat pieces)\" variant of \"Mutton Rogan Josh\" (food-seed-0356); retired in catalogue pack v2 (C-09). Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:mutton rogan josh (diet prep (low oil / breast only))": {
@@ -30957,11 +30957,11 @@
       "target_id": "food-seed-0355",
       "kind": "canonical",
       "classification": "Non-Veg",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Templated \"(Extra Chicken/Meat pieces)\" variant of \"Mutton Biryani\" (food-seed-0353); retired in catalogue pack v2 (C-09). Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:mutton biryani (diet prep (low oil / breast only))": {
@@ -30983,11 +30983,11 @@
       "target_id": "food-seed-0195",
       "kind": "canonical",
       "classification": "Non-Veg",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Templated \"(Extra Chicken/Meat pieces)\" variant of \"Fish Curry (Bengali style)\" (food-seed-0193); retired in catalogue pack v2 (C-09). Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:fish curry (bengali style) (diet prep (low oil / breast only))": {
@@ -31009,11 +31009,11 @@
       "target_id": "food-seed-0198",
       "kind": "canonical",
       "classification": "Non-Veg",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Templated \"(Extra Chicken/Meat pieces)\" variant of \"Fish Fry (Amritsari)\" (food-seed-0196); retired in catalogue pack v2 (C-09). Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:fish fry (amritsari) (diet prep (low oil / breast only))": {
@@ -31308,11 +31308,11 @@
       "target_id": "food-seed-0479",
       "kind": "canonical",
       "classification": "Snacks & Street Food",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Templated \"(With extra cheese / butter)\" variant of \"Samosa (1 piece)\" (food-seed-0477); retired in catalogue pack v2 (C-09). Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:onion pakora (4-5 pieces) (mini size)": {
@@ -31334,11 +31334,11 @@
       "target_id": "food-seed-0371",
       "kind": "canonical",
       "classification": "Snacks & Street Food",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Templated \"(With extra cheese / butter)\" variant of \"Onion Pakora (4-5 pieces)\" (food-seed-0369); retired in catalogue pack v2 (C-09). Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:paneer pakora (3 pieces) (mini size)": {
@@ -31360,11 +31360,11 @@
       "target_id": "food-seed-0395",
       "kind": "canonical",
       "classification": "Snacks & Street Food",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Templated \"(With extra cheese / butter)\" variant of \"Paneer Pakora (3 pieces)\" (food-seed-0393); retired in catalogue pack v2 (C-09). Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:dhokla (2 pieces) (mini size)": {
@@ -31386,11 +31386,11 @@
       "target_id": "food-seed-0166",
       "kind": "canonical",
       "classification": "Snacks & Street Food",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Templated \"(With extra cheese / butter)\" variant of \"Dhokla (2 pieces)\" (food-seed-0164); retired in catalogue pack v2 (C-09). Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:idli with sambar (2 idlis) (mini size)": {
@@ -31412,11 +31412,11 @@
       "target_id": "food-seed-0240",
       "kind": "canonical",
       "classification": "Snacks & Street Food",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Templated \"(With extra cheese / butter)\" variant of \"Idli with Sambar (2 Idlis)\" (food-seed-0238); retired in catalogue pack v2 (C-09). Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:medu vada with sambar (2 vadas) (mini size)": {
@@ -31438,11 +31438,11 @@
       "target_id": "food-seed-0320",
       "kind": "canonical",
       "classification": "Snacks & Street Food",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Templated \"(With extra cheese / butter)\" variant of \"Medu Vada with Sambar (2 Vadas)\" (food-seed-0318); retired in catalogue pack v2 (C-09). Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:plain dosa with chutney (mini size)": {
@@ -31464,11 +31464,11 @@
       "target_id": "food-seed-0421",
       "kind": "canonical",
       "classification": "Snacks & Street Food",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Templated \"(With extra cheese / butter)\" variant of \"Plain Dosa with Chutney\" (food-seed-0419); retired in catalogue pack v2 (C-09). Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:masala dosa (mini size)": {
@@ -31490,11 +31490,11 @@
       "target_id": "food-seed-0305",
       "kind": "canonical",
       "classification": "Snacks & Street Food",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Templated \"(With extra cheese / butter)\" variant of \"Masala Dosa\" (food-seed-0303); retired in catalogue pack v2 (C-09). Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:rava dosa (mini size)": {
@@ -31516,11 +31516,11 @@
       "target_id": "food-seed-0455",
       "kind": "canonical",
       "classification": "Snacks & Street Food",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Templated \"(With extra cheese / butter)\" variant of \"Rava Dosa\" (food-seed-0453); retired in catalogue pack v2 (C-09). Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:veg hakka noodles (mini size)": {
@@ -31542,11 +31542,11 @@
       "target_id": "food-seed-0552",
       "kind": "canonical",
       "classification": "Snacks & Street Food",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Templated \"(With extra cheese / butter)\" variant of \"Veg Hakka Noodles\" (food-seed-0550); retired in catalogue pack v2 (C-09). Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:aloo tikki (1 piece) (mini size)": {
@@ -31568,11 +31568,11 @@
       "target_id": "food-seed-0032",
       "kind": "canonical",
       "classification": "Snacks & Street Food",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Templated \"(With extra cheese / butter)\" variant of \"Aloo Tikki (1 piece)\" (food-seed-0030); retired in catalogue pack v2 (C-09). Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:pani puri / golgappa (6 pieces) (mini size)": {
@@ -31594,11 +31594,11 @@
       "target_id": "food-seed-0409",
       "kind": "canonical",
       "classification": "Snacks & Street Food",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Templated \"(With extra cheese / butter)\" variant of \"Pani Puri / Golgappa (6 pieces)\" (food-seed-0407); retired in catalogue pack v2 (C-09). Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:bhel puri (mini size)": {
@@ -31620,11 +31620,11 @@
       "target_id": "food-seed-0075",
       "kind": "canonical",
       "classification": "Snacks & Street Food",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Templated \"(With extra cheese / butter)\" variant of \"Bhel Puri\" (food-seed-0073); retired in catalogue pack v2 (C-09). Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:pav bhaji (2 pavs) (mini size)": {
@@ -31646,11 +31646,11 @@
       "target_id": "food-seed-0415",
       "kind": "canonical",
       "classification": "Snacks & Street Food",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Templated \"(With extra cheese / butter)\" variant of \"Pav Bhaji (2 Pavs)\" (food-seed-0413); retired in catalogue pack v2 (C-09). Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:vada pav (1 piece) (mini size)": {
@@ -31672,11 +31672,11 @@
       "target_id": "food-seed-0549",
       "kind": "canonical",
       "classification": "Snacks & Street Food",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
+      "reason": "Templated \"(With extra cheese / butter)\" variant of \"Vada Pav (1 piece)\" (food-seed-0547); retired in catalogue pack v2 (C-09). Kept so past logs still resolve.",
       "evidence_ref": null
     },
     "asset:base:boiled chickpea salad (small side bowl)": {

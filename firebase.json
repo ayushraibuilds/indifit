@@ -45,7 +45,7 @@
         ]
       },
       {
-        "source": "/catalog/v1/packs/**",
+        "source": "/catalog/v1/**/*.json.gz",
         "headers": [
           {
             "key": "Cache-Control",

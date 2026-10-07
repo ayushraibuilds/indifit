@@ -1,6 +1,6 @@
 # Nutrition catalogue packs: online-sourced, locally served
 
-**Status:** approved direction (Ayush, 2026-10-06) · **Owner:** Ayush (data, hosting, licences), Claude (code) · **Last updated:** 2026-10-06
+**Status:** approved direction (Ayush, 2026-10-06) · **Owner:** Ayush (data, hosting, licences), Claude (code) · **Last updated:** 2026-10-07
 
 Related:
 - [LAUNCH_ROADMAP_FINAL.md](LAUNCH_ROADMAP_FINAL.md): PR order and launch dates. PR-A, E and F are re-scoped by this plan.
@@ -15,14 +15,14 @@ Update this table in every PR that touches the catalogue. IDs are referenced fro
 
 | ID | Work item | Kind | PR | Depends on | Status |
 |---|---|---|---|---|---|
-| CAT-1 | Pack format v1 spec + schema v24 (`catalog_state`) | Code | A | — | In progress (PR-A) |
-| CAT-2 | Pack importer (validate → one transaction → canonical tables) | Code | A | CAT-1 | In progress (PR-A) |
-| CAT-3 | Bundled pack v1 from today's catalogue; single nutrition-fact read path (fixes C-01) | Code | A | CAT-2 | In progress (PR-A) |
-| CAT-4 | Servings with gram weights + household conversions in packs | Code + data | A (format), E (data) | CAT-1 | Format in progress (PR-A); gram-weight data waits for E |
-| CAT-5 | Pack build pipeline `tool/catalog/` + validator + CI job | Code | E | CAT-1 | Not started |
-| CAT-6 | Curated overlay v2: C-04 measure fixes, C-09 retirements, honest count | Data | E | CAT-5 | Not started |
-| CAT-7 | Update service: manifest check, download, verify, import; Settings → Food database | Code | H | CAT-2 | In progress (PR-H `feat/catalogue-updates`). Updates stay off until a build sets `INDIFIT_CATALOG_MANIFEST_URL` (after CAT-8). |
-| CAT-8 | Hosting: publish packs on Firebase Hosting | Owner | — | CAT-5 | Config ready (PR-H: `firebase.json` hosting, `.firebaserc`, runbook § 10.1). **Deploy is owner work** once PR-E's `build.py` writes `public/catalog/v1/`. |
+| CAT-1 | Pack format v1 spec + schema v24 (`catalog_state`) | Code | A | — | Merged (#61) |
+| CAT-2 | Pack importer (validate → one transaction → canonical tables) | Code | A | CAT-1 | Merged (#61). PR-E adds pack aliases to the format and importer. |
+| CAT-3 | Bundled pack v1 from today's catalogue; single nutrition-fact read path (fixes C-01) | Code | A | CAT-2 | Merged (#61) |
+| CAT-4 | Servings with gram weights + household conversions in packs | Code + data | A (format), E (data) | CAT-1 | Format merged (#61). Data in progress (PR-E): option (a), gram weights only where derivable (stated grams, the app's 150 g katori and 300 g bowl), each with its `basis`: 316 of 498 active foods. The rest get none, and the app declines to convert them to grams. |
+| CAT-5 | Pack build pipeline `tool/catalog/` + validator + CI job | Code | E | CAT-1 | In progress (PR-E): `build.py`, `validate.py` (all § 5 invariants), CI step in `static`. `--baseline` reports 101 violations on today's data, including C-04's 6 + 29. |
+| CAT-6 | Curated overlay v2: C-04 measure fixes, C-09 retirements, honest count | Data | E | CAT-5 | In progress (PR-E): pack v2 bundled; 63 measures fixed, 37 variants retired (75 in the pack), 392 aliases from `indian_synonyms.json`; store and README say 243 dishes. Spot-check sheet `tool/catalog/spotcheck_50.csv` waits for Ayush. |
+| CAT-7 | Update service: manifest check, download, verify, import; Settings → Food database | Code | H | CAT-2 | Merged (#70). Updates stay off until a build sets `INDIFIT_CATALOG_MANIFEST_URL` (after CAT-8). |
+| CAT-8 | Hosting: publish packs on Firebase Hosting | Owner | — | CAT-5 | Config ready (PR-H #70: `firebase.json` hosting, `.firebaserc`). Files ready (PR-E): `tool/catalog/packs/` (manifest + full and delta packs), copied to `public/catalog/v1/` per runbook § 10.1. **Deploy is owner work.** |
 | CAT-9 | Local full-text search (FTS5) over names + aliases; retire the legacy search path | Code | I | CAT-3 | Not started |
 | CAT-10 | Licences: INDB permission request; attribution screen | Owner + code | — / B | — | **Waiting on Ayush** (INDB email). Code: About & credits names Open Food Facts (ODbL) and labels catalogue values "IndiFit estimates" (PR-B); CC0/OGL credits join when that data ships (CAT-11). |
 | CAT-11 | Import INDB recipes (if CAT-10 = yes) **or** build dishes from CC0/OGL ingredient data | Data | J | CAT-5, CAT-10 | Not started |
@@ -116,7 +116,7 @@ There are no dates. Items start as soon as their dependencies are met, in the or
 ```
              tool/catalog (repo, CI)                      Firebase Hosting (static, CDN)
   sources/ + overlays/ ──build.py──► packs/v{N}/ ──deploy──► /catalog/v1/manifest.json
-                         validate.py (CI gate)               /catalog/v1/packs/{N}.json.gz
+                         validate.py (CI gate)               /catalog/v1/v{N}/{N}.json.gz
                                                                    │
   ┌──────────────────────────── app ─────────────────────────────────┼──────────────┐
   │ assets/catalog/pack-{N0}.json.gz (bundled)          CatalogUpdateService ◄──────┘
@@ -351,7 +351,7 @@ Each test listed must fail on `main` before the change (`git stash push -- lib`,
 - **Tests:** `validate.py` run on today's data reports the known C-04 violations (6 gram-as-katori rows, 29 Double/Small rows), proving the invariants bite. The CI job is green after CAT-6.
 
 ### CAT-6 Curated overlay v2  (PR-E)
-- **Change:** overlays fix C-04 and retire C-09's nonsense variants; gram weights for the top 300 dishes; aliases (Hinglish and regional) moved from `backend/data/indian_synonyms.json`.
+- **Change:** overlays fix C-04 and retire C-09's nonsense variants; gram weights only where the repo's data gives them (decided 2026-10-07, option (a): stated grams, the app's 150 g katori and 300 g bowl; no invented weights); aliases (Hinglish and regional) moved from `backend/data/indian_synonyms.json`.
 - **Verification:** the validator is clean; a spot-check sheet of 50 random foods against reference values (Ayush, optionally a dietitian).
 
 ### CAT-7 Update service + Settings screen  (PR-H)
@@ -415,11 +415,17 @@ Each test listed must fail on `main` before the change (`git stash push -- lib`,
 The hosting config is in `firebase.json` (project `indifit-d5f8d`, set in `.firebaserc`). It serves `public/`; the packs live under `public/catalog/v1/`:
 
 - `manifest.json`: `Cache-Control: no-cache` (clients revalidate with `If-None-Match`, so an unchanged manifest costs a 304);
-- `packs/*`: `Cache-Control: public, max-age=31536000, immutable` (a pack file never changes; a fix is a new version).
+- every `*.json.gz` under it (`v{N}/{N}.json.gz`, `v{N}/{N}-from-{N-1}.json.gz`): `Cache-Control: public, max-age=31536000, immutable` (a pack file never changes; a fix is a new version).
 
-`public/` is not committed. `tool/catalog/build.py` (PR-E) writes `manifest.json` and `packs/` into it.
+`public/` is not committed (it is in `.gitignore`). The packs are committed in `tool/catalog/packs/` (PR-E), and the manifest's pack URLs are relative to it, so the directory is copied as it is.
 
-1. Build and validate the packs (PR-E's pipeline), so `public/catalog/v1/manifest.json` and every file it lists exist.
+1. Check the committed packs are current and valid, then stage them:
+   ```bash
+   python3 tool/catalog/build.py --check
+   python3 tool/catalog/validate.py
+   rm -rf public/catalog/v1 && mkdir -p public/catalog/v1
+   cp -R tool/catalog/packs/. public/catalog/v1/
+   ```
 2. Deploy from the repo root:
    ```bash
    firebase deploy --only hosting --project indifit-d5f8d
@@ -433,13 +439,13 @@ The hosting config is in `firebase.json` (project `indifit-d5f8d`, set in `.fire
      https://indifit-d5f8d.web.app/catalog/v1/manifest.json
    # expect: HTTP/2 304
 
-   curl -I https://indifit-d5f8d.web.app/catalog/v1/packs/<N>.json.gz
+   curl -I https://indifit-d5f8d.web.app/catalog/v1/v<N>/<N>.json.gz
    # expect: HTTP/2 200, cache-control: public, max-age=31536000, immutable,
    # and NO content-encoding header (the app checks the sha256 of the .gz bytes)
    ```
 4. Check a pack's checksum against the manifest:
    ```bash
-   curl -s https://indifit-d5f8d.web.app/catalog/v1/packs/<N>.json.gz | shasum -a 256
+   curl -s https://indifit-d5f8d.web.app/catalog/v1/v<N>/<N>.json.gz | shasum -a 256
    ```
 5. Turn updates on in a build:
    `--dart-define=INDIFIT_CATALOG_MANIFEST_URL=https://indifit-d5f8d.web.app/catalog/v1/manifest.json`.

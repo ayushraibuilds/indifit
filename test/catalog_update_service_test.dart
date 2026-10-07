@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/config/app_preferences_keys.dart';
 import 'package:indifit/core/di/core_providers.dart';
+import 'package:indifit/data/catalog/catalog_pack.dart';
 import 'package:indifit/data/catalog/catalog_update_service.dart';
 import 'package:indifit/features/nutrition/nutrition_providers.dart';
 import 'package:indifit/features/settings/food_database_providers.dart';
@@ -25,14 +26,20 @@ void main() {
   late FakeCatalogNetwork network;
   late SharedPreferences prefs;
   late DateTime now;
-  late Map<String, Object?> pack1;
+  late Map<String, Object?> bundledPack;
+
+  // A fresh install has the bundled pack; updates are the versions after it.
+  const bundled = kBundledCatalogPackVersion;
+  const next = bundled + 1;
 
   setUpAll(() {
-    pack1 =
+    bundledPack =
         jsonDecode(
               utf8.decode(
                 gzip.decode(
-                  File('assets/catalog/pack-1.json.gz').readAsBytesSync(),
+                  File(
+                    'assets/catalog/pack-$bundled.json.gz',
+                  ).readAsBytesSync(),
                 ),
               ),
             )
@@ -67,11 +74,11 @@ void main() {
   /// Pack [version] as a full pack, with roti's energy set to [rotiEnergy].
   TestPackFile fullPack(int version, {double rotiEnergy = 300}) {
     final foods = [
-      for (final food in pack1['foods']! as List)
+      for (final food in bundledPack['foods']! as List)
         _withEnergy(food as Map<String, Object?>, rotiEnergy),
     ];
     return encodeTestPack({
-      ...pack1,
+      ...bundledPack,
       'version': version,
       'kind': 'full',
       'base': null,
@@ -81,11 +88,11 @@ void main() {
 
   /// A delta from [base] to [version] that changes only roti.
   TestPackFile deltaPack(int version, int base, {double rotiEnergy = 300}) {
-    final roti = (pack1['foods']! as List)
+    final roti = (bundledPack['foods']! as List)
         .cast<Map<String, Object?>>()
         .firstWhere((food) => food['display_name'] == _roti);
     return encodeTestPack({
-      ...pack1,
+      ...bundledPack,
       'version': version,
       'kind': 'delta',
       'base': base,
@@ -123,9 +130,9 @@ void main() {
   });
 
   test('an ETag hit makes no download', () async {
-    final v2 = fullPack(2);
-    publish(v2);
-    server.manifest(testManifest(1, [fullPack(1)]), etag: '"m1"');
+    final newer = fullPack(next);
+    publish(newer);
+    server.manifest(testManifest(bundled, [fullPack(bundled)]), etag: '"m1"');
     final updates = service();
 
     expect((await updates.checkNow()).outcome, CatalogUpdateOutcome.upToDate);
@@ -137,35 +144,35 @@ void main() {
     expect((await updates.checkNow()).outcome, CatalogUpdateOutcome.upToDate);
     expect(server.urls, [kTestManifestUrl]);
     expect(server.requests.single.headers['If-None-Match'], '"m1"');
-    expect(await installed(), 1);
+    expect(await installed(), bundled);
   });
 
   test('Wi-Fi only on mobile data makes no download', () async {
-    final v2 = fullPack(2);
-    publish(v2);
-    server.manifest(testManifest(2, [v2]));
+    final newer = fullPack(next);
+    publish(newer);
+    server.manifest(testManifest(next, [newer]));
     network.value = CatalogNetwork.mobile;
     final updates = service();
 
     final result = await updates.checkNow();
     expect(result.outcome, CatalogUpdateOutcome.waitingForWifi);
     expect(server.urls, [kTestManifestUrl]);
-    expect(await installed(), 1);
+    expect(await installed(), bundled);
     // The switch can show what the waiting download costs.
-    expect((await updates.status()).pendingUpdateBytes, v2.bytes.length);
+    expect((await updates.status()).pendingUpdateBytes, newer.bytes.length);
 
     // Allowed on mobile data, the same check downloads it.
     await updates.setAllowMobileData(true);
     expect((await updates.checkNow()).outcome, CatalogUpdateOutcome.updated);
-    expect(server.urls.last, v2.url);
-    expect(await installed(), 2);
+    expect(server.urls.last, newer.url);
+    expect(await installed(), next);
   });
 
   test('an update held for Wi-Fi downloads on the next resume on Wi-Fi, '
       'without asking for the manifest again', () async {
-    final v2 = fullPack(2);
-    publish(v2);
-    server.manifest(testManifest(2, [v2]));
+    final newer = fullPack(next);
+    publish(newer);
+    server.manifest(testManifest(next, [newer]));
     network.value = CatalogNetwork.mobile;
     final updates = service();
     expect(
@@ -180,7 +187,7 @@ void main() {
       (await updates.checkOnResume()).outcome,
       CatalogUpdateOutcome.updated,
     );
-    expect(server.urls, [v2.url]);
+    expect(server.urls, [newer.url]);
   });
 
   test('Offline Mode makes no request', () async {
@@ -200,7 +207,7 @@ void main() {
     addTearDown(container.dispose);
     // The app's shared client, with its Offline Mode interceptor.
     container.read(dioProvider).httpClientAdapter = server;
-    server.manifest(testManifest(2, [fullPack(2)]));
+    server.manifest(testManifest(next, [fullPack(next)]));
 
     final updates = container.read(catalogUpdateServiceProvider);
     expect(
@@ -218,72 +225,72 @@ void main() {
     final racing = service(dio: container.read(dioProvider), offline: false);
     expect((await racing.checkNow()).outcome, CatalogUpdateOutcome.failed);
     expect(server.requests, isEmpty);
-    expect(await installed(), 1);
+    expect(await installed(), bundled);
   });
 
   test(
     'a sha256 mismatch is rejected and the installed version kept',
     () async {
       final before = await rotiEnergyPer100g();
-      final v2 = fullPack(2, rotiEnergy: before! + 50);
-      publish(v2);
+      final newer = fullPack(next, rotiEnergy: before! + 50);
+      publish(newer);
       server.manifest(
-        testManifest(2, [
-          TestPackFile(v2.bytes, {...v2.entry, 'sha256': 'ab' * 32}),
+        testManifest(next, [
+          TestPackFile(newer.bytes, {...newer.entry, 'sha256': 'ab' * 32}),
         ]),
       );
       final updates = service();
 
       expect((await updates.checkNow()).outcome, CatalogUpdateOutcome.failed);
-      expect(server.urls, [kTestManifestUrl, v2.url]);
-      expect(await installed(), 1);
+      expect(server.urls, [kTestManifestUrl, newer.url]);
+      expect(await installed(), bundled);
       expect(await rotiEnergyPer100g(), before);
       expect((await updates.status()).lastOutcome, CatalogUpdateOutcome.failed);
     },
   );
 
   test('a pack for a newer app build is not downloaded', () async {
-    final v2 = fullPack(2);
-    publish(v2);
-    server.manifest(testManifest(2, [v2], minAppBuild: 99));
+    final newer = fullPack(next);
+    publish(newer);
+    server.manifest(testManifest(next, [newer], minAppBuild: 99));
 
     expect(
       (await service().checkNow()).outcome,
       CatalogUpdateOutcome.appTooOld,
     );
     expect(server.urls, [kTestManifestUrl]);
-    expect(await installed(), 1);
+    expect(await installed(), bundled);
   });
 
   test('a delta is applied when its base is installed', () async {
-    final delta = deltaPack(2, 1, rotiEnergy: 301);
-    final full = fullPack(2, rotiEnergy: 301);
+    final delta = deltaPack(next, bundled, rotiEnergy: 301);
+    final full = fullPack(next, rotiEnergy: 301);
     publish(delta);
     publish(full);
-    server.manifest(testManifest(2, [delta, full]));
+    server.manifest(testManifest(next, [delta, full]));
 
     expect((await service().checkNow()).outcome, CatalogUpdateOutcome.updated);
     expect(server.urls, [kTestManifestUrl, delta.url]);
-    expect(await installed(), 2);
+    expect(await installed(), next);
     expect(await rotiEnergyPer100g(), 301);
   });
 
   test('the full pack is fetched when no delta starts at the installed '
       'version', () async {
-    final delta = deltaPack(3, 2, rotiEnergy: 302);
-    final full = fullPack(3, rotiEnergy: 302);
+    final delta = deltaPack(next + 1, next, rotiEnergy: 302);
+    final full = fullPack(next + 1, rotiEnergy: 302);
     publish(delta);
     publish(full);
-    server.manifest(testManifest(3, [delta, full]));
+    server.manifest(testManifest(next + 1, [delta, full]));
 
     expect((await service().checkNow()).outcome, CatalogUpdateOutcome.updated);
     expect(server.urls, [kTestManifestUrl, full.url]);
-    expect(await installed(), 3);
+    expect(await installed(), next + 1);
     expect(await rotiEnergyPer100g(), 302);
   });
 
   test('resume checks run at most once every 24 hours', () async {
-    server.manifest(testManifest(1, [fullPack(1)]));
+    server.manifest(testManifest(bundled, [fullPack(bundled)]));
     final updates = service();
 
     expect(
@@ -312,7 +319,7 @@ void main() {
   });
 
   test('no connection sends nothing and leaves the daily check due', () async {
-    server.manifest(testManifest(1, [fullPack(1)]));
+    server.manifest(testManifest(bundled, [fullPack(bundled)]));
     network.value = CatalogNetwork.none;
     final updates = service();
     expect(
@@ -331,13 +338,13 @@ void main() {
 
   test('status reports the installed catalogue', () async {
     final status = await service().status();
-    expect(status.version, 1);
+    expect(status.version, bundled);
     expect(status.source, 'bundled');
     expect(status.installedAt, isNotNull);
-    // Pack v1 carries 573 foods; 38 are retired. Of the 535 active ones,
-    // 254 are size or preparation variants of a dish.
-    expect(status.foodCount, 535);
-    expect(status.variantCount, 254);
+    // Pack v2 carries 573 foods; 75 are retired. Of the 498 active ones,
+    // 244 have a variant kind in the food identity manifest.
+    expect(status.foodCount, 498);
+    expect(status.variantCount, 244);
     expect(status.lastCheckAt, isNull);
     expect(status.allowMobileData, isFalse);
   });

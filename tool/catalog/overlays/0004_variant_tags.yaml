@@ -1,0 +1,28 @@
+# Templated variants: the label after the base name, and what it changes.
+# A variant is a row named "<base food> (<label>)" where the base food exists.
+#
+# The validator lets a variant's kcal per gram (or per unit, when neither side
+# has a gram weight) differ from its base by more than 25 % only when it is
+# tagged `size` (a different-sized unit: a mini roti, a tall glass) or `oil`
+# (more or less fat in the same dish). Labels that mean "more of the same
+# unit" ("Double", "Small side bowl") are untagged: their serving amount
+# carries the difference, so the check catches "Double = 1 katori" (C-04).
+version: 2
+labels:
+  "Mini": [size]
+  "Mini size": [size]
+  "Jumbo / Large": [size]
+  "Half plate": [size]
+  "Medium cup / Glass": [size]
+  "Large cup / Tall Glass": [size]
+  "Low Oil cooking": [oil]
+  "Low Oil / Diet version": [oil]
+  "Premium ghee / extra oil": [oil]
+  "Extra Butter / Ghee": [oil]
+  "Double": []
+  "Double serving": []
+  "Double healthy bowl": []
+  "Small side bowl": []
+  "Double Paneer": []
+  "With extra cheese / butter": []
+  "Extra Chicken/Meat pieces": []

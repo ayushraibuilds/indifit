@@ -6,31 +6,60 @@ import 'package:crypto/crypto.dart';
 /// The checked-in food identity contract version.
 const int kFoodIdentityManifestVersion = 1;
 
-/// Catalogue duplicates merged on 2026-10-03, plus nonsense "(Double
-/// Paneer)" / "(Low Oil / Diet version)" variants of milk, curd and raw
-/// paneer retired into their base foods: retired ID -> the food that
-/// replaces it. The manifest marks these deprecated (with
-/// the same replacement_id); existing installs are brought in line on open,
-/// and a test keeps this map and the manifest identical. Retired foods leave
-/// search but stay readable, so past logs keep resolving.
+/// Catalogue duplicates merged on 2026-10-03, nonsense "(Double Paneer)" /
+/// "(Low Oil / Diet version)" variants of milk, curd and raw paneer, and the
+/// templated variants catalogue pack v2 retires (C-09: "With extra cheese /
+/// butter", "Double Paneer", "Extra Chicken/Meat pieces"): retired ID -> the
+/// food that replaces it. The manifest marks these deprecated (with the same
+/// replacement_id) and the bundled pack carries them as `retire` entries;
+/// tests keep all three identical. Existing installs are brought in line on
+/// open. Retired foods leave search but stay readable, so past logs keep
+/// resolving.
 const Map<String, String> kRetiredCatalogueFoods = {
   'food-seed-0013': 'food-seed-0010', // Aloo Gobi Dry Sabji
   'food-seed-0017': 'food-seed-0014', // Aloo Methi Dry
   'food-seed-0021': 'food-seed-0018', // Aloo Palak Dry
+  'food-seed-0032':
+      'food-seed-0030', // Aloo Tikki (1 piece) (With extra cheese / butter)
   'food-seed-0034': 'food-seed-0033', // Amul Fresh Paneer (Raw) (Double Paneer)
   'food-seed-0035':
       'food-seed-0033', // Amul Fresh Paneer (Raw) (Low Oil / Diet version)
+  'food-seed-0075': 'food-seed-0073', // Bhel Puri (With extra cheese / butter)
   'food-seed-0079': 'food-seed-0080', // Bhindi Masala (Okra Fry)
+  'food-seed-0091':
+      'food-seed-0089', // Boiled Eggs (2 pieces) (Extra Chicken/Meat pieces)
+  'food-seed-0100':
+      'food-seed-0098', // Butter Chicken (Murgh Makhani) (Extra Chicken/Meat pieces)
   'food-seed-0112':
       'food-seed-0111', // Buttermilk / Chaas (Plain) (Double Paneer)
   'food-seed-0113':
       'food-seed-0111', // Buttermilk / Chaas (Plain) (Low Oil / Diet version)
   'food-seed-0126': 'food-seed-0142', // Chana Masala (Chickpea Curry)
+  'food-seed-0132':
+      'food-seed-0130', // Chicken Biryani (Hyderabadi) (Extra Chicken/Meat pieces)
+  'food-seed-0135':
+      'food-seed-0133', // Chicken Curry (North Indian style) (Extra Chicken/Meat pieces)
+  'food-seed-0138':
+      'food-seed-0136', // Chicken Korma (Extra Chicken/Meat pieces)
+  'food-seed-0141':
+      'food-seed-0139', // Chicken Tikka (6 pcs) (Extra Chicken/Meat pieces)
+  'food-seed-0166':
+      'food-seed-0164', // Dhokla (2 pieces) (With extra cheese / butter)
   'food-seed-0168':
       'food-seed-0167', // Double Toned Milk (1 Glass) (Double Paneer)
   'food-seed-0169':
       'food-seed-0167', // Double Toned Milk (1 Glass) (Low Oil / Diet version)
   'food-seed-0177': 'food-seed-0174', // Dum Aloo Punjabi
+  'food-seed-0180':
+      'food-seed-0178', // Egg Bhurji (2 Eggs) (Extra Chicken/Meat pieces)
+  'food-seed-0183':
+      'food-seed-0181', // Egg Curry (2 Eggs) (Extra Chicken/Meat pieces)
+  'food-seed-0186':
+      'food-seed-0184', // Egg White Omelette (3 Eggs) (Extra Chicken/Meat pieces)
+  'food-seed-0195':
+      'food-seed-0193', // Fish Curry (Bengali style) (Extra Chicken/Meat pieces)
+  'food-seed-0198':
+      'food-seed-0196', // Fish Fry (Amritsari) (Extra Chicken/Meat pieces)
   'food-seed-0202': 'food-seed-0056', // French Beans Poriyal
   'food-seed-0205':
       'food-seed-0204', // Full Cream Milk (1 Glass) (Double Paneer)
@@ -39,31 +68,68 @@ const Map<String, String> kRetiredCatalogueFoods = {
   'food-seed-0230': 'food-seed-0229', // Greek Yogurt (Plain) (Double Paneer)
   'food-seed-0231':
       'food-seed-0229', // Greek Yogurt (Plain) (Low Oil / Diet version)
+  'food-seed-0240':
+      'food-seed-0238', // Idli with Sambar (2 Idlis) (With extra cheese / butter)
   'food-seed-0254': 'food-seed-0456', // Kacha Kela (Raw Banana) Fry
+  'food-seed-0256': 'food-seed-0255', // Kadai Paneer (Double Paneer)
   'food-seed-0289': 'food-seed-0288', // Low Fat Curd / Dahi (Double Paneer)
   'food-seed-0290':
       'food-seed-0288', // Low Fat Curd / Dahi (Low Oil / Diet version)
   'food-seed-0292': 'food-seed-0291', // Low Fat Paneer (Double Paneer)
   'food-seed-0293': 'food-seed-0291', // Low Fat Paneer (Low Oil / Diet version)
+  'food-seed-0305':
+      'food-seed-0303', // Masala Dosa (With extra cheese / butter)
   'food-seed-0307': 'food-seed-0306', // Masala Lassi (Sweet) (Double Paneer)
   'food-seed-0308':
       'food-seed-0306', // Masala Lassi (Sweet) (Low Oil / Diet version)
   'food-seed-0314': 'food-seed-0315', // Matar Paneer
+  'food-seed-0316': 'food-seed-0315', // Mattar Paneer (Double Paneer)
+  'food-seed-0320':
+      'food-seed-0318', // Medu Vada with Sambar (2 Vadas) (With extra cheese / butter)
   'food-seed-0339': 'food-seed-0336', // Mixed Veg Sabji
+  'food-seed-0355':
+      'food-seed-0353', // Mutton Biryani (Extra Chicken/Meat pieces)
+  'food-seed-0358':
+      'food-seed-0356', // Mutton Rogan Josh (Extra Chicken/Meat pieces)
+  'food-seed-0371':
+      'food-seed-0369', // Onion Pakora (4-5 pieces) (With extra cheese / butter)
+  'food-seed-0376': 'food-seed-0375', // Palak Paneer (Double Paneer)
+  'food-seed-0382': 'food-seed-0381', // Paneer Bhurji (Double Paneer)
+  'food-seed-0385': 'food-seed-0384', // Paneer Butter Masala (Double Paneer)
+  'food-seed-0388': 'food-seed-0387', // Paneer Lababdar (Double Paneer)
   'food-seed-0390': 'food-seed-0315', // Paneer Mattar
-  'food-seed-0391': 'food-seed-0315', // Paneer Mattar (Dhaba Style)
+  'food-seed-0391': 'food-seed-0315', // Paneer Mattar (Dhaba Style (High oil))
+  'food-seed-0395':
+      'food-seed-0393', // Paneer Pakora (3 pieces) (With extra cheese / butter)
+  'food-seed-0405': 'food-seed-0404', // Paneer Tikka (5 pcs) (Double Paneer)
+  'food-seed-0409':
+      'food-seed-0407', // Pani Puri / Golgappa (6 pieces) (With extra cheese / butter)
+  'food-seed-0415':
+      'food-seed-0413', // Pav Bhaji (2 Pavs) (With extra cheese / butter)
   'food-seed-0417':
       'food-seed-0416', // Plain Curd / Dahi (Cow Milk) (Double Paneer)
   'food-seed-0418':
       'food-seed-0416', // Plain Curd / Dahi (Cow Milk) (Low Oil / Diet version)
+  'food-seed-0421':
+      'food-seed-0419', // Plain Dosa with Chutney (With extra cheese / butter)
   'food-seed-0440': 'food-seed-0261', // Punjabi Kadhi Pakora
   'food-seed-0448': 'food-seed-0449', // Rajma Masala (Kidney Beans)
+  'food-seed-0455': 'food-seed-0453', // Rava Dosa (With extra cheese / butter)
+  'food-seed-0479':
+      'food-seed-0477', // Samosa (1 piece) (With extra cheese / butter)
+  'food-seed-0487': 'food-seed-0486', // Shahi Paneer (Double Paneer)
   'food-seed-0492': 'food-seed-0473', // South Indian Sambhar
   'food-seed-0500': 'food-seed-0497', // Sprouted Moong Salad / Sabji
+  'food-seed-0516':
+      'food-seed-0514', // Tandoori Chicken (Half) (Extra Chicken/Meat pieces)
   'food-seed-0530': 'food-seed-0529', // Toned Milk (1 Glass) (Double Paneer)
   'food-seed-0531':
       'food-seed-0529', // Toned Milk (1 Glass) (Low Oil / Diet version)
   'food-seed-0536': 'food-seed-0537', // Torai (Ridge Gourd) Curry
+  'food-seed-0549':
+      'food-seed-0547', // Vada Pav (1 piece) (With extra cheese / butter)
+  'food-seed-0552':
+      'food-seed-0550', // Veg Hakka Noodles (With extra cheese / butter)
   'food-seed-0570': 'food-seed-0532', // Yellow Dal Tadka
 };
 

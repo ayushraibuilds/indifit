@@ -1,0 +1,159 @@
+# Retirements made before packs existed (2026-10-03): merged duplicates and
+# nonsense dairy variants. They used to live only in kRetiredCatalogueFoods
+# (lib/core/fixtures/food_identity_manifest.dart); packs now carry them.
+version: 2
+# Already live in the app, so part of today's data (validate.py --baseline).
+already_applied: true
+retire:
+  - id: food-seed-0013
+    name: "Aloo Gobi Dry Sabji"
+    replaced_by: food-seed-0010  # Aloo Gobbi (Dry Sabji)
+    reason: "Merged on 2026-10-03 (kRetiredCatalogueFoods)."
+  - id: food-seed-0017
+    name: "Aloo Methi Dry"
+    replaced_by: food-seed-0014  # Aloo Methi
+    reason: "Merged on 2026-10-03 (kRetiredCatalogueFoods)."
+  - id: food-seed-0021
+    name: "Aloo Palak Dry"
+    replaced_by: food-seed-0018  # Aloo Palak
+    reason: "Merged on 2026-10-03 (kRetiredCatalogueFoods)."
+  - id: food-seed-0034
+    name: "Amul Fresh Paneer (Raw) (Double Paneer)"
+    replaced_by: food-seed-0033  # Amul Fresh Paneer (Raw)
+    reason: "Merged on 2026-10-03 (kRetiredCatalogueFoods)."
+  - id: food-seed-0035
+    name: "Amul Fresh Paneer (Raw) (Low Oil / Diet version)"
+    replaced_by: food-seed-0033  # Amul Fresh Paneer (Raw)
+    reason: "Merged on 2026-10-03 (kRetiredCatalogueFoods)."
+  - id: food-seed-0079
+    name: "Bhindi Masala (Okra Fry)"
+    replaced_by: food-seed-0080  # Bhindi Masala (Okra)
+    reason: "Merged on 2026-10-03 (kRetiredCatalogueFoods)."
+  - id: food-seed-0112
+    name: "Buttermilk / Chaas (Plain) (Double Paneer)"
+    replaced_by: food-seed-0111  # Buttermilk / Chaas (Plain)
+    reason: "Merged on 2026-10-03 (kRetiredCatalogueFoods)."
+  - id: food-seed-0113
+    name: "Buttermilk / Chaas (Plain) (Low Oil / Diet version)"
+    replaced_by: food-seed-0111  # Buttermilk / Chaas (Plain)
+    reason: "Merged on 2026-10-03 (kRetiredCatalogueFoods)."
+  - id: food-seed-0126
+    name: "Chana Masala (Chickpea Curry)"
+    replaced_by: food-seed-0142  # Chole Masala (Chickpea Curry)
+    reason: "Merged on 2026-10-03 (kRetiredCatalogueFoods)."
+  - id: food-seed-0168
+    name: "Double Toned Milk (1 Glass) (Double Paneer)"
+    replaced_by: food-seed-0167  # Double Toned Milk (1 Glass)
+    reason: "Merged on 2026-10-03 (kRetiredCatalogueFoods)."
+  - id: food-seed-0169
+    name: "Double Toned Milk (1 Glass) (Low Oil / Diet version)"
+    replaced_by: food-seed-0167  # Double Toned Milk (1 Glass)
+    reason: "Merged on 2026-10-03 (kRetiredCatalogueFoods)."
+  - id: food-seed-0177
+    name: "Dum Aloo Punjabi"
+    replaced_by: food-seed-0174  # Dum Aloo
+    reason: "Merged on 2026-10-03 (kRetiredCatalogueFoods)."
+  - id: food-seed-0202
+    name: "French Beans Poriyal"
+    replaced_by: food-seed-0056  # Beans Poriyal
+    reason: "Merged on 2026-10-03 (kRetiredCatalogueFoods)."
+  - id: food-seed-0205
+    name: "Full Cream Milk (1 Glass) (Double Paneer)"
+    replaced_by: food-seed-0204  # Full Cream Milk (1 Glass)
+    reason: "Merged on 2026-10-03 (kRetiredCatalogueFoods)."
+  - id: food-seed-0206
+    name: "Full Cream Milk (1 Glass) (Low Oil / Diet version)"
+    replaced_by: food-seed-0204  # Full Cream Milk (1 Glass)
+    reason: "Merged on 2026-10-03 (kRetiredCatalogueFoods)."
+  - id: food-seed-0230
+    name: "Greek Yogurt (Plain) (Double Paneer)"
+    replaced_by: food-seed-0229  # Greek Yogurt (Plain)
+    reason: "Merged on 2026-10-03 (kRetiredCatalogueFoods)."
+  - id: food-seed-0231
+    name: "Greek Yogurt (Plain) (Low Oil / Diet version)"
+    replaced_by: food-seed-0229  # Greek Yogurt (Plain)
+    reason: "Merged on 2026-10-03 (kRetiredCatalogueFoods)."
+  - id: food-seed-0254
+    name: "Kacha Kela (Raw Banana) Fry"
+    replaced_by: food-seed-0456  # Raw Banana Stir Fry
+    reason: "Merged on 2026-10-03 (kRetiredCatalogueFoods)."
+  - id: food-seed-0289
+    name: "Low Fat Curd / Dahi (Double Paneer)"
+    replaced_by: food-seed-0288  # Low Fat Curd / Dahi
+    reason: "Merged on 2026-10-03 (kRetiredCatalogueFoods)."
+  - id: food-seed-0290
+    name: "Low Fat Curd / Dahi (Low Oil / Diet version)"
+    replaced_by: food-seed-0288  # Low Fat Curd / Dahi
+    reason: "Merged on 2026-10-03 (kRetiredCatalogueFoods)."
+  - id: food-seed-0292
+    name: "Low Fat Paneer (Double Paneer)"
+    replaced_by: food-seed-0291  # Low Fat Paneer
+    reason: "Merged on 2026-10-03 (kRetiredCatalogueFoods)."
+  - id: food-seed-0293
+    name: "Low Fat Paneer (Low Oil / Diet version)"
+    replaced_by: food-seed-0291  # Low Fat Paneer
+    reason: "Merged on 2026-10-03 (kRetiredCatalogueFoods)."
+  - id: food-seed-0307
+    name: "Masala Lassi (Sweet) (Double Paneer)"
+    replaced_by: food-seed-0306  # Masala Lassi (Sweet)
+    reason: "Merged on 2026-10-03 (kRetiredCatalogueFoods)."
+  - id: food-seed-0308
+    name: "Masala Lassi (Sweet) (Low Oil / Diet version)"
+    replaced_by: food-seed-0306  # Masala Lassi (Sweet)
+    reason: "Merged on 2026-10-03 (kRetiredCatalogueFoods)."
+  - id: food-seed-0314
+    name: "Matar Paneer"
+    replaced_by: food-seed-0315  # Mattar Paneer
+    reason: "Merged on 2026-10-03 (kRetiredCatalogueFoods)."
+  - id: food-seed-0339
+    name: "Mixed Veg Sabji"
+    replaced_by: food-seed-0336  # Mix Vegetable Sabji
+    reason: "Merged on 2026-10-03 (kRetiredCatalogueFoods)."
+  - id: food-seed-0390
+    name: "Paneer Mattar"
+    replaced_by: food-seed-0315  # Mattar Paneer
+    reason: "Merged on 2026-10-03 (kRetiredCatalogueFoods)."
+  - id: food-seed-0391
+    name: "Paneer Mattar (Dhaba Style (High oil))"
+    replaced_by: food-seed-0315  # Mattar Paneer
+    reason: "Merged on 2026-10-03 (kRetiredCatalogueFoods)."
+  - id: food-seed-0417
+    name: "Plain Curd / Dahi (Cow Milk) (Double Paneer)"
+    replaced_by: food-seed-0416  # Plain Curd / Dahi (Cow Milk)
+    reason: "Merged on 2026-10-03 (kRetiredCatalogueFoods)."
+  - id: food-seed-0418
+    name: "Plain Curd / Dahi (Cow Milk) (Low Oil / Diet version)"
+    replaced_by: food-seed-0416  # Plain Curd / Dahi (Cow Milk)
+    reason: "Merged on 2026-10-03 (kRetiredCatalogueFoods)."
+  - id: food-seed-0440
+    name: "Punjabi Kadhi Pakora"
+    replaced_by: food-seed-0261  # Kadhi Pakora
+    reason: "Merged on 2026-10-03 (kRetiredCatalogueFoods)."
+  - id: food-seed-0448
+    name: "Rajma Masala (Kidney Beans)"
+    replaced_by: food-seed-0449  # Rajma Masala (Red Kidney Beans)
+    reason: "Merged on 2026-10-03 (kRetiredCatalogueFoods)."
+  - id: food-seed-0492
+    name: "South Indian Sambhar"
+    replaced_by: food-seed-0473  # Sambar
+    reason: "Merged on 2026-10-03 (kRetiredCatalogueFoods)."
+  - id: food-seed-0500
+    name: "Sprouted Moong Salad / Sabji"
+    replaced_by: food-seed-0497  # Sprouted Moong Salad
+    reason: "Merged on 2026-10-03 (kRetiredCatalogueFoods)."
+  - id: food-seed-0530
+    name: "Toned Milk (1 Glass) (Double Paneer)"
+    replaced_by: food-seed-0529  # Toned Milk (1 Glass)
+    reason: "Merged on 2026-10-03 (kRetiredCatalogueFoods)."
+  - id: food-seed-0531
+    name: "Toned Milk (1 Glass) (Low Oil / Diet version)"
+    replaced_by: food-seed-0529  # Toned Milk (1 Glass)
+    reason: "Merged on 2026-10-03 (kRetiredCatalogueFoods)."
+  - id: food-seed-0536
+    name: "Torai (Ridge Gourd) Curry"
+    replaced_by: food-seed-0537  # Torai Ki Sabji (Ridge Gourd)
+    reason: "Merged on 2026-10-03 (kRetiredCatalogueFoods)."
+  - id: food-seed-0570
+    name: "Yellow Dal Tadka"
+    replaced_by: food-seed-0532  # Toor Dal / Yellow Dal Tadka
+    reason: "Merged on 2026-10-03 (kRetiredCatalogueFoods)."

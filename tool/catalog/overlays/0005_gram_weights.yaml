@@ -1,0 +1,34 @@
+# Gram weights per serving (CAT-4 data, option (a): no invented numbers).
+#
+# A serving gets a gram weight only when it can be derived from data already
+# in the repo. Each rule records its derivation in `basis`; every serving it
+# applies to carries the rule's `id` in the pack (`grams_basis`). Every other unit gets no
+# gram weight, and the app declines to convert those foods to grams rather
+# than guess. Values stay labelled "IndiFit estimate".
+version: 2
+rules:
+  - id: stated-grams
+    unit: g
+    grams_per_unit: 1
+    basis: "Serving stated in grams in the catalogue row."
+  - id: app-katori-150g
+    unit: katori
+    grams_per_unit: 150
+    basis: "The app's katori, 150 g (lib/core/catalog/food_catalog_service.dart, ServingOption 'katori'; lib/features/food_log/widgets/food_portion_bottom_sheet.dart '1 Katori (150g)')."
+    # 150 g is a katori of a cooked dish. A katori of a dry snack weighs far
+    # less, and the repo has no weight for it, so these get none.
+    exclude:
+      - id: food-seed-0460
+        name: "Roasted Chana (with skin)"
+        reason: "Dry snack. Its own 25 g row (90 kcal) puts 180 kcal far below 150 g, so 150 g would be wrong; no stated weight exists."
+      - id: food-seed-0461
+        name: "Roasted Chana (with skin) (Double healthy bowl)"
+        reason: "Same dry snack as food-seed-0460."
+  - id: app-bowl-300g
+    unit: bowl
+    grams_per_unit: 300
+    basis: "The app's serving bowl, 300 g (lib/core/catalog/food_catalog_service.dart, ServingOption 'serving_bowl')."
+# No rule, so no gram weight: the row states no grams and the app has no
+# fixed weight for the unit. Pieces get grams only where the row states them
+# (none do today).
+not_converted: [piece, glass, cup, plate, serving, thali, tiffin]

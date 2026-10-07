@@ -39,8 +39,10 @@ jobs:
           fi
           changed="$(git diff --name-only "origin/$BASE_REF...HEAD")"
           echo "$changed"
-          # Docs and the backend (which has its own job) don't need Flutter.
-          if echo "$changed" | grep -qvE '^(docs/|doc/|backend/)|\.md$'; then
+          # Docs and the backend (which has its own job) don't need Flutter,
+          # except the synonyms the catalogue packs are built from (CAT-5).
+          if echo "$changed" | grep -qvE '^(docs/|doc/|backend/)|\.md$' ||
+            echo "$changed" | grep -qx 'backend/data/indian_synonyms.json'; then
             echo "flutter=true" >> "$GITHUB_OUTPUT"
           else
             echo "flutter=false" >> "$GITHUB_OUTPUT"
@@ -96,6 +98,17 @@ jobs:
           name: indifit-code-graph
           retention-days: 14
           path: docs/architecture/code-graph.json
+
+      - name: Setup Python (catalogue pipeline)
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Validate Catalogue Packs (CAT-5)
+        run: |
+          python -m pip install pyyaml==6.0.*
+          python tool/catalog/validate.py
+          python -m unittest discover -s tool/catalog/tests
 
       - name: Verify Generated Code
         run: dart run build_runner build --delete-conflicting-outputs && dart format lib/data/database/app_database.g.dart && git diff --exit-code
