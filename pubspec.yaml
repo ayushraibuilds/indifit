@@ -94,6 +94,7 @@ flutter:
     - assets/data/
     - assets/data/regional/
     - assets/data/meal_plans/
+    - assets/catalog/
     - assets/third_party/asset_manifest.json
     - assets/generated/repdb/
 

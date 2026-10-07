@@ -1,17 +1,20 @@
-import '../../../core/typed_quantities.dart';
-
-/// Defines an individual dish item within an Indian meal archetype preset.
+/// One dish in a preset: an exact catalogue food and an amount counted in
+/// that food's own unit (2 rotis are 2 pieces, dal is 1 katori, curd 100 g).
+///
+/// Presets never search by text: "egg" once matched Baingan Bharta
+/// (eggplant) and "curd" a whole Home Thali (audit C-03).
 class ThaliPresetItemDefinition {
-  final String searchQuery;
+  /// The food's stable source reference, `asset:base:<lower-case name>`.
+  final String foodSourceRef;
   final String displayName;
-  final Quantity defaultQuantity;
-  final String? measureId;
+
+  /// How many of the food's own units to add.
+  final double amount;
 
   const ThaliPresetItemDefinition({
-    required this.searchQuery,
+    required this.foodSourceRef,
     required this.displayName,
-    required this.defaultQuantity,
-    this.measureId,
+    required this.amount,
   });
 }
 
@@ -32,127 +35,109 @@ class ThaliPresetDefinition {
 
 /// Canonical Indian Thali archetype presets.
 ///
-/// If any constituent food is absent from the user's local database / regional pack,
-/// the loader gracefully skips that item and alerts the user without crashing.
+/// If a food is missing or retired, the loader skips that item and tells
+/// the user which one, without crashing.
 abstract final class ThaliPresets {
-  static final ThaliPresetDefinition northIndianClassic = ThaliPresetDefinition(
+  static const _roti = ThaliPresetItemDefinition(
+    foodSourceRef: 'asset:base:whole wheat roti / chapati',
+    displayName: 'Whole Wheat Roti',
+    amount: 2,
+  );
+  static const _dal = ThaliPresetItemDefinition(
+    foodSourceRef: 'asset:base:toor dal / yellow dal tadka',
+    displayName: 'Toor Dal Tadka',
+    amount: 1,
+  );
+  static const _rice = ThaliPresetItemDefinition(
+    foodSourceRef: 'asset:base:basmati white rice (cooked)',
+    displayName: 'Basmati Rice',
+    amount: 1,
+  );
+  static const _curd = ThaliPresetItemDefinition(
+    foodSourceRef: 'asset:base:plain curd / dahi (cow milk)',
+    displayName: 'Plain Curd',
+    amount: 100,
+  );
+  static const _salad = ThaliPresetItemDefinition(
+    foodSourceRef: 'asset:base:cucumber tomato salad (kachumber)',
+    displayName: 'Kachumber Salad',
+    amount: 1,
+  );
+
+  static const ThaliPresetDefinition northIndianClassic = ThaliPresetDefinition(
     id: 'north_indian_classic',
     name: 'North Indian Classic',
     description: 'Roti, Dal Tadka, Sabzi, Rice & Curd',
     items: [
+      _roti,
+      _dal,
       ThaliPresetItemDefinition(
-        searchQuery: 'roti',
-        displayName: 'Roti (Whole Wheat)',
-        defaultQuantity: Quantity.fromNum(amount: 2, unit: QuantityUnit.piece),
+        foodSourceRef: 'asset:base:mix vegetable sabji',
+        displayName: 'Mix Vegetable Sabji',
+        amount: 1,
       ),
-      ThaliPresetItemDefinition(
-        searchQuery: 'dal',
-        displayName: 'Dal Tadka',
-        defaultQuantity: Quantity.fromNum(amount: 150, unit: QuantityUnit.gram),
-      ),
-      ThaliPresetItemDefinition(
-        searchQuery: 'sabzi',
-        displayName: 'Mixed Veg Sabzi',
-        defaultQuantity: Quantity.fromNum(amount: 150, unit: QuantityUnit.gram),
-      ),
-      ThaliPresetItemDefinition(
-        searchQuery: 'rice',
-        displayName: 'Steamed Rice',
-        defaultQuantity: Quantity.fromNum(amount: 150, unit: QuantityUnit.gram),
-      ),
-      ThaliPresetItemDefinition(
-        searchQuery: 'curd',
-        displayName: 'Curd / Dahi',
-        defaultQuantity: Quantity.fromNum(amount: 100, unit: QuantityUnit.gram),
-      ),
+      _rice,
+      _curd,
     ],
   );
 
-  static final ThaliPresetDefinition southIndianMeals = ThaliPresetDefinition(
+  static const ThaliPresetDefinition southIndianMeals = ThaliPresetDefinition(
     id: 'south_indian_meals',
     name: 'South Indian Meals',
     description: 'Rice, Sambar, Poriyal & Curd',
     items: [
+      _rice,
       ThaliPresetItemDefinition(
-        searchQuery: 'rice',
-        displayName: 'Steamed Rice',
-        defaultQuantity: Quantity.fromNum(amount: 200, unit: QuantityUnit.gram),
+        foodSourceRef: 'asset:base:sambar',
+        displayName: 'Sambar',
+        amount: 1,
       ),
       ThaliPresetItemDefinition(
-        searchQuery: 'sambar',
-        displayName: 'Vegetable Sambar',
-        defaultQuantity: Quantity.fromNum(amount: 150, unit: QuantityUnit.gram),
+        foodSourceRef: 'asset:base:beans poriyal',
+        displayName: 'Beans Poriyal',
+        amount: 1,
       ),
-      ThaliPresetItemDefinition(
-        searchQuery: 'poriyal',
-        displayName: 'Poriyal / Thoran',
-        defaultQuantity: Quantity.fromNum(amount: 100, unit: QuantityUnit.gram),
-      ),
-      ThaliPresetItemDefinition(
-        searchQuery: 'curd',
-        displayName: 'Curd / Dahi',
-        defaultQuantity: Quantity.fromNum(amount: 100, unit: QuantityUnit.gram),
-      ),
+      _curd,
     ],
   );
 
-  static final ThaliPresetDefinition highProteinVeg = ThaliPresetDefinition(
+  static const ThaliPresetDefinition highProteinVeg = ThaliPresetDefinition(
     id: 'high_protein_veg',
     name: 'High Protein Veg',
     description: 'Roti, Paneer Bhurji, Dal & Salad',
     items: [
+      _roti,
       ThaliPresetItemDefinition(
-        searchQuery: 'roti',
-        displayName: 'Roti (Whole Wheat)',
-        defaultQuantity: Quantity.fromNum(amount: 2, unit: QuantityUnit.piece),
-      ),
-      ThaliPresetItemDefinition(
-        searchQuery: 'paneer',
+        foodSourceRef: 'asset:base:paneer bhurji',
         displayName: 'Paneer Bhurji',
-        defaultQuantity: Quantity.fromNum(amount: 150, unit: QuantityUnit.gram),
+        amount: 1,
       ),
-      ThaliPresetItemDefinition(
-        searchQuery: 'dal',
-        displayName: 'Yellow Dal',
-        defaultQuantity: Quantity.fromNum(amount: 150, unit: QuantityUnit.gram),
-      ),
-      ThaliPresetItemDefinition(
-        searchQuery: 'salad',
-        displayName: 'Cucumber Salad',
-        defaultQuantity: Quantity.fromNum(amount: 100, unit: QuantityUnit.gram),
-      ),
+      _dal,
+      _salad,
     ],
   );
 
-  static final ThaliPresetDefinition highProteinNonVeg = ThaliPresetDefinition(
+  static const ThaliPresetDefinition highProteinNonVeg = ThaliPresetDefinition(
     id: 'high_protein_non_veg',
     name: 'High Protein Non-Veg',
     description: 'Rice, Chicken Curry, Boiled Eggs & Salad',
     items: [
+      _rice,
       ThaliPresetItemDefinition(
-        searchQuery: 'rice',
-        displayName: 'Steamed Rice',
-        defaultQuantity: Quantity.fromNum(amount: 150, unit: QuantityUnit.gram),
-      ),
-      ThaliPresetItemDefinition(
-        searchQuery: 'chicken',
+        foodSourceRef: 'asset:base:chicken curry (north indian style)',
         displayName: 'Chicken Curry',
-        defaultQuantity: Quantity.fromNum(amount: 150, unit: QuantityUnit.gram),
+        amount: 1,
       ),
       ThaliPresetItemDefinition(
-        searchQuery: 'egg',
-        displayName: 'Boiled Egg',
-        defaultQuantity: Quantity.fromNum(amount: 2, unit: QuantityUnit.piece),
+        foodSourceRef: 'asset:base:boiled eggs (2 pieces)',
+        displayName: 'Boiled Eggs',
+        amount: 2,
       ),
-      ThaliPresetItemDefinition(
-        searchQuery: 'salad',
-        displayName: 'Green Salad',
-        defaultQuantity: Quantity.fromNum(amount: 100, unit: QuantityUnit.gram),
-      ),
+      _salad,
     ],
   );
 
-  static final List<ThaliPresetDefinition> all = [
+  static const List<ThaliPresetDefinition> all = [
     northIndianClassic,
     southIndianMeals,
     highProteinVeg,

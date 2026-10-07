@@ -15,10 +15,10 @@ Update this table in every PR that touches the catalogue. IDs are referenced fro
 
 | ID | Work item | Kind | PR | Depends on | Status |
 |---|---|---|---|---|---|
-| CAT-1 | Pack format v1 spec + schema v24 (`catalog_state`) | Code | A | — | Not started |
-| CAT-2 | Pack importer (validate → one transaction → canonical tables) | Code | A | CAT-1 | Not started |
-| CAT-3 | Bundled pack v1 from today's catalogue; single nutrition-fact read path (fixes C-01) | Code | A | CAT-2 | Not started |
-| CAT-4 | Servings with gram weights + household conversions in packs | Code + data | A (format), E (data) | CAT-1 | Not started |
+| CAT-1 | Pack format v1 spec + schema v24 (`catalog_state`) | Code | A | — | In progress (PR-A) |
+| CAT-2 | Pack importer (validate → one transaction → canonical tables) | Code | A | CAT-1 | In progress (PR-A) |
+| CAT-3 | Bundled pack v1 from today's catalogue; single nutrition-fact read path (fixes C-01) | Code | A | CAT-2 | In progress (PR-A) |
+| CAT-4 | Servings with gram weights + household conversions in packs | Code + data | A (format), E (data) | CAT-1 | Format in progress (PR-A); gram-weight data waits for E |
 | CAT-5 | Pack build pipeline `tool/catalog/` + validator + CI job | Code | E | CAT-1 | Not started |
 | CAT-6 | Curated overlay v2: C-04 measure fixes, C-09 retirements, honest count | Data | E | CAT-5 | Not started |
 | CAT-7 | Update service: manifest check, download, verify, import; Settings → Food database | Code | H | CAT-2 | Not started |

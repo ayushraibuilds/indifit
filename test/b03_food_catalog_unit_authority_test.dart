@@ -10,6 +10,9 @@ void main() {
   late AppDatabase database;
   late NutritionFoodCatalogRepository catalog;
 
+  // Legacy ids 1–573 are bundled catalogue rows whose facts come from the
+  // catalogue pack, never from this adapter. These fixtures use ids outside
+  // that range, like custom and regional foods, which the adapter still owns.
   setUp(() {
     database = AppDatabase.memory();
     catalog = NutritionFoodCatalogRepository(
@@ -27,7 +30,7 @@ void main() {
     () async {
       for (final food in const [
         FoodItem(
-          id: 101,
+          id: 90101,
           name: 'Poha (Flattened Rice)',
           calories: 230,
           proteinG: 3.8,
@@ -39,7 +42,7 @@ void main() {
           isCustom: false,
         ),
         FoodItem(
-          id: 102,
+          id: 90102,
           name: 'Basmati White Rice (Cooked)',
           calories: 130,
           proteinG: 2.7,
@@ -51,7 +54,7 @@ void main() {
           isCustom: false,
         ),
         FoodItem(
-          id: 103,
+          id: 90103,
           name: 'Toned Milk',
           calories: 120,
           proteinG: 6.8,
@@ -63,7 +66,7 @@ void main() {
           isCustom: false,
         ),
         FoodItem(
-          id: 104,
+          id: 90104,
           name: 'Whole Wheat Roti / Chapati',
           calories: 120,
           proteinG: 4,
@@ -96,7 +99,7 @@ void main() {
     () async {
       final mass = await catalog.ensureLegacyFood(
         const FoodItem(
-          id: 201,
+          id: 90201,
           name: 'Paneer cubes',
           calories: 300,
           proteinG: 24,
@@ -110,7 +113,7 @@ void main() {
       );
       final volume = await catalog.ensureLegacyFood(
         const FoodItem(
-          id: 202,
+          id: 90202,
           name: 'Measured milk',
           calories: 150,
           proteinG: 7.5,
@@ -161,7 +164,7 @@ void main() {
   test(
     'existing serving adaptation is superseded when a mass basis appears',
     () async {
-      const id = 301;
+      const id = 90301;
       await catalog.ensureLegacyFood(
         const FoodItem(
           id: id,

@@ -583,6 +583,15 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
                   hasItems: items.isNotEmpty,
                   onLogThali: () => _handleLogThali(),
                   onSaveTemplate: _handleSaveTemplate,
+                  failureMessage:
+                      state.status == NutritionThaliStatus.failure &&
+                          state.preview == null
+                      ? state.errorMessage
+                      : null,
+                  onLogWithoutCalories: () {
+                    controller.acknowledgeUnknownEnergy(true);
+                    _handleLogThali();
+                  },
                 ),
               ],
             ),

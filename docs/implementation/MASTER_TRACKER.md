@@ -1,7 +1,7 @@
 # IndiFit Implementation Tracker
 
 Last updated: 2026-10-06 (final launch audit; nutrition catalogue packs and training premium plan decided)
-Current schema: v23 (v24 planned with CAT-1)
+Current schema: v23 on `main`; v24 (`catalog_state`, bundled food pack v1) in PR-A
 Current backup format: v10
 Current focus: **V1 launch readiness**. Read [LAUNCH_ROADMAP_FINAL.md § 0](LAUNCH_ROADMAP_FINAL.md) first (fixed clocks, hard rules, no calendar dates). Work from [LAUNCH_ROADMAP_FINAL.md](LAUNCH_ROADMAP_FINAL.md) (fix batches PR-A…T, plans P0-1…P1-13, owner tasks, decisions). Evidence is in [FINAL_LAUNCH_AUDIT_2026-10-05.md](../audit/FINAL_LAUNCH_AUDIT_2026-10-05.md). Nutrition-data work is tracked in [NUTRITION_CATALOGUE_PACKS_PLAN.md](NUTRITION_CATALOGUE_PACKS_PLAN.md) § 0 (CAT-1…CAT-13); training and progress polish in [TRAINING_PROGRESS_PREMIUM_PLAN.md](TRAINING_PROGRESS_PREMIUM_PLAN.md) § 0 (TP-1…TP-14). The earlier plans ([P0](P0_REMEDIATION_PLAN.md), [P1](P1_REMEDIATION_PLAN.md), [audit 2026-10-01](../audit/INDEPENDENT_AUDIT_2026-10-01.md)) are kept for history.
 

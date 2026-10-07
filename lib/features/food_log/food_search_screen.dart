@@ -39,6 +39,7 @@ import 'meal_presentation_registry.dart';
 import 'repeat_meal.dart';
 import 'saved_meals_screen.dart';
 import 'saved_recipe_log_screen.dart';
+import 'thali/thali_route.dart';
 import 'widgets/food_portion_bottom_sheet.dart';
 import 'widgets/food_search_widgets.dart';
 import 'widgets/quick_add_macros_sheet.dart';
@@ -1580,7 +1581,12 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       onPhotoMeal: isAiAllowed
           ? () => context.push(_aiToolLocation('/food/photo'))
           : null,
-      onOpenThali: () => context.push('/food/thali'),
+      onOpenThali: () => context.push(
+        thaliRouteLocation(
+          mealType: _activeMealType,
+          date: widget.selectedDate,
+        ),
+      ),
       onQuickAddMacros: () async {
         final added = await QuickAddMacrosSheet.show(
           context,

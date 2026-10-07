@@ -52,12 +52,12 @@ void main() {
     expect(foreignKeys.read<int>('foreign_keys'), 1);
     expect(
       byType.map((key, value) => MapEntry(key, value.length)),
-      <String, int>{'index': 85, 'table': 92, 'trigger': 73},
+      <String, int>{'index': 85, 'table': 93, 'trigger': 73},
       reason: 'Names by type: ${jsonEncode(byType)}',
     );
     expect(
       digest,
-      '15102e07f7ccfd4b40c04dd3d1479a54ff7f59dc71a2d8c12a3aae93e67e636c',
+      '10add7bf4fc66cfbdd6fbf8d2dc9e9d9c4993741afcc642c990b18ee8e13c673',
       reason: 'Names by type: ${jsonEncode(byType)}',
     );
   });
