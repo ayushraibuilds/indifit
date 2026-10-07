@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/di/providers.dart';
 import '../../core/presentation/consumer_copy.dart';
 import '../../core/services/indifit_haptics.dart';
+import '../../core/services/rest_alert_permission_service.dart';
 import '../../core/theme/indifit_icons.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/indi_fit_bottom_sheet.dart';
@@ -30,6 +31,7 @@ import 'widgets/b02_player_view_models.dart';
 import 'widgets/b07_exercise_context.dart';
 import 'widgets/plate_calculator_sheet.dart';
 import 'widgets/r07c_workout_presentation.dart';
+import 'widgets/rest_alert_prompt_sheet.dart';
 import 'workout_execution_context.dart';
 import 'workout_execution_route.dart';
 import 'workout_execution_shell.dart';
@@ -101,6 +103,10 @@ class _B02StrengthPlayerScreenState
           ref.read(b02PreviousPerformanceRepositoryProvider).resolve(query),
     );
     WidgetsBinding.instance.addObserver(this);
+    RestAlertPermissionService.instance.registerPresenter(
+      _showRestAlertPrompt,
+      owner: this,
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         final provider = b02StrengthExecutionScreenControllerProvider(
@@ -115,9 +121,15 @@ class _B02StrengthPlayerScreenState
     });
   }
 
+  Future<bool> _showRestAlertPrompt(RestAlertPrompt prompt) async {
+    if (!mounted) return false;
+    return RestAlertPromptSheet.show(context, prompt);
+  }
+
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    RestAlertPermissionService.instance.unregisterPresenter(owner: this);
     _previousLookup.invalidate();
     for (final controller in _repControllers.values) {
       controller.dispose();
@@ -372,6 +384,9 @@ class _B02StrengthPlayerScreenState
       currentExerciseSlot: null,
       restSlot: hasOpenRest
           ? _buildRestCard(provider, ui, launch, cursorSlot ?? selected)
+          : null,
+      stickyRestSlot: hasOpenRest
+          ? _buildStickyRestBar(provider, ui, launch)
           : null,
       setLoggingSlot: setLogging,
       primaryActionSlot: showPendingEditor ? primaryAction : null,
@@ -923,10 +938,18 @@ class _B02StrengthPlayerScreenState
         : (seconds) => ref
               .read(provider.notifier)
               .beginRest(nextSlot, selectedSeconds: seconds),
+  );
+
+  Widget _buildStickyRestBar(
+    dynamic provider,
+    B02StrengthExecutionUiState ui,
+    B02StrengthExecutionLaunch launch,
+  ) => StickyRestBar(
+    state: launch.state,
     onExtend: ui.isBusy
         ? null
         : (periodId) =>
-              ref.read(provider.notifier).adjustRest(periodId, seconds: 15),
+              ref.read(provider.notifier).adjustRest(periodId, seconds: 30),
     onDecrease: ui.isBusy
         ? null
         : (periodId) =>

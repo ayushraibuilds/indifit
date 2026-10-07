@@ -83,6 +83,8 @@ abstract final class AppPreferenceKeys {
   static const prefWeeklyProgressMinute = 'pref_weekly_progress_minute';
   static const lastScheduledTimezoneId = 'last_scheduled_timezone_id';
   static const lastUtcOffsetMinutes = 'last_utc_offset_minutes';
+  static const restAlertPermissionAsked = 'rest_alert_permission_asked';
+  static const restAlertPreciseOffered = 'rest_alert_precise_offered';
 
   // --- Health Integration ---
   static const healthIntegrationEnabled = 'health_integration_enabled';

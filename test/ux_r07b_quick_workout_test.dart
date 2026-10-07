@@ -531,14 +531,10 @@ void main() {
     for (var pump = 0; pump < 5; pump++) {
       await tester.pump(const Duration(milliseconds: 20));
     }
-    await tester.scrollUntilVisible(
-      find.text('−15 sec'),
-      180,
-      scrollable: find.byType(Scrollable).first,
-    );
-    expect(find.text('−15 sec'), findsOneWidget);
-    expect(find.text('+15 sec'), findsOneWidget);
-    expect(find.text('Skip'), findsOneWidget);
+    // The rest controls are pinned under the header, so no scrolling.
+    expect(find.text('−15').hitTestable(), findsOneWidget);
+    expect(find.text('+30').hitTestable(), findsOneWidget);
+    expect(find.text('Skip').hitTestable(), findsOneWidget);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();

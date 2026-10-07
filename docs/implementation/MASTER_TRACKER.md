@@ -33,6 +33,7 @@ Batches B01–B05 and the post-v1 and R07/R08 tracks are merged into `main`. The
 | iOS entitlements and privacy manifest; Organizer validation | Entitlements per configuration and `PrivacyInfo.xcprivacy` are present; validation needs the Apple Developer Program |
 | Live Activity works on device or isn't claimed | Not claimed in v1: there is no widget-extension target, so PR-B removes `NSSupportsLiveActivities` (audit SC-08). The lock-screen rest timer comes later as TP-14 (PR-S). |
 | Backend: current model, key in header, no error leakage, bounded memory, trusted proxy hops | Done |
+| Rest alerts (PR-D) | In PR-D: the first rest explains rest alerts once, then asks for notification permission (iOS and Android 13+; R-02); without Android exact alarms the rest alert is scheduled inexactly instead of not at all, with a one-time "Allow precise rest alerts" offer (R-03); a rest bar under the player header shows time left, −15 / +30 and Skip, and the ring digits no longer touch the stroke (UX-05). **Owner:** check the lock-screen alert on an iPhone and on Android 14+ with and without "Alarms & reminders" |
 
 ## Quality baseline (2026-10-03)
 
