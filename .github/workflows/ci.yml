@@ -11,8 +11,52 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Decides which jobs a pull request needs. Pushes to main run everything.
+  # Jobs skipped by an `if` report "Skipped", which still satisfies a
+  # required status check.
+  changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      flutter: ${{ steps.filter.outputs.flutter }}
+      native: ${{ steps.filter.outputs.native }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Classify Changed Files
+        id: filter
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "flutter=true" >> "$GITHUB_OUTPUT"
+            echo "native=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          changed="$(git diff --name-only "origin/$BASE_REF...HEAD")"
+          echo "$changed"
+          # Docs and the backend (which has its own job) don't need Flutter.
+          if echo "$changed" | grep -qvE '^(docs/|doc/|backend/)|\.md$'; then
+            echo "flutter=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "flutter=false" >> "$GITHUB_OUTPUT"
+          fi
+          # Release builds only run on PRs that change native code,
+          # dependencies or CI. Every push to main still builds both.
+          if echo "$changed" | grep -qE '^(ios/|android/|pubspec\.(yaml|lock)$|\.github/workflows/)'; then
+            echo "native=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "native=false" >> "$GITHUB_OUTPUT"
+          fi
+
   static:
     name: Static Analysis & Boundaries
+    needs: [changes]
+    if: needs.changes.outputs.flutter == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -41,16 +85,31 @@ jobs:
       - name: Check Code Style & Analysis
         run: flutter analyze
 
+      # The graph is generated, not committed, so it never conflicts between
+      # PRs. --ci fails on empty catch blocks in P0 paths.
       - name: Verify Code Graph & Architecture Boundaries
-        run: python3 tool/generate_code_graph.py
+        run: python3 tool/generate_code_graph.py --ci
+
+      - name: Retain Code Graph
+        uses: actions/upload-artifact@v4
+        with:
+          name: indifit-code-graph
+          retention-days: 14
+          path: docs/architecture/code-graph.json
 
       - name: Verify Generated Code
         run: dart run build_runner build --delete-conflicting-outputs && dart format lib/data/database/app_database.g.dart && git diff --exit-code
 
   unit_widget:
-    name: Unit & Widget Tests
+    name: Unit & Widget Tests (shard ${{ matrix.shard }})
+    needs: [changes]
+    if: needs.changes.outputs.flutter == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3]
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -72,12 +131,32 @@ jobs:
         run: flutter pub get
 
       - name: Run Unit & Widget Tests (Excluding Goldens)
-        run: flutter test --exclude-tags golden --timeout 2m --reporter github
+        run: flutter test --exclude-tags golden --timeout 2m --reporter github --total-shards 4 --shard-index ${{ matrix.shard }}
+
+  # One stable check name for branch protection, whatever the shard count.
+  unit_widget_result:
+    name: Unit & Widget Tests
+    needs: [changes, unit_widget]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check Shard Results
+        run: |
+          result="${{ needs.unit_widget.result }}"
+          echo "Shards: $result"
+          [ "$result" = "success" ] || [ "$result" = "skipped" ]
 
   goldens:
-    name: Golden Tests (Linux)
+    name: Golden Tests (Linux, shard ${{ matrix.shard }})
+    needs: [changes]
+    if: needs.changes.outputs.flutter == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1]
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -99,12 +178,26 @@ jobs:
         run: flutter pub get
 
       - name: Run Golden Tests
-        run: flutter test --tags golden --timeout 2m --reporter github
+        run: flutter test --tags golden --timeout 2m --reporter github --total-shards 2 --shard-index ${{ matrix.shard }}
+
+  goldens_result:
+    name: Golden Tests (Linux)
+    needs: [changes, goldens]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check Shard Results
+        run: |
+          result="${{ needs.goldens.result }}"
+          echo "Shards: $result"
+          [ "$result" = "success" ] || [ "$result" = "skipped" ]
 
   android_release:
     name: Android Release Build
     runs-on: ubuntu-latest
-    needs: [static]
+    needs: [changes]
+    if: needs.changes.outputs.native == 'true'
     timeout-minutes: 30
     steps:
       - name: Checkout Code
@@ -115,6 +208,7 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: '17'
+          cache: gradle
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -139,16 +233,23 @@ jobs:
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
         run: flutter build apk --release --dart-define=SENTRY_DSN="$SENTRY_DSN"
 
+      # Pull requests build the APK only; pushes to main also build the
+      # bundle and check both are signed with the same key.
       - name: Build Release App Bundle
+        if: github.event_name != 'pull_request'
         env:
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
         run: flutter build appbundle --release --dart-define=SENTRY_DSN="$SENTRY_DSN"
 
       - name: Verify Android Release Artifacts
         run: |
+          aab_args=()
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            aab_args=(--android-aab build/app/outputs/bundle/release/app-release.aab)
+          fi
           bash tool/verify_r09_artifacts.sh \
             --android-apk build/app/outputs/flutter-apk/app-release.apk \
-            --android-aab build/app/outputs/bundle/release/app-release.aab \
+            "${aab_args[@]}" \
             --allow-ci-signing \
             --evidence build/release-evidence/android-ci.txt
 
@@ -157,7 +258,7 @@ jobs:
         with:
           name: indifit-android-release-evidence
           retention-days: 14
-          if-no-files-found: error
+          if-no-files-found: warn
           path: |
             build/app/outputs/flutter-apk/app-release.apk
             build/app/outputs/bundle/release/app-release.aab
@@ -166,7 +267,8 @@ jobs:
   ios_release:
     name: iOS Release Build
     runs-on: macos-15
-    needs: [static]
+    needs: [changes]
+    if: needs.changes.outputs.native == 'true'
     timeout-minutes: 30
     steps:
       - name: Checkout Code
