@@ -348,6 +348,12 @@ Workout energy may be shown later only when an approved health or wearable
 authority provides it. A future PR product must be a newly specified canonical
 event system; the removed inference code is not its foundation.
 
+> **Amended 2026-10-06 (Ayush):** factual best-ever sets move into v1 as a derived read model, not a stored event system.
+> - Their only input is logged B02 working sets. They make no estimate and don't reuse the inference code.
+> - Spec: [TRAINING_PROGRESS_PREMIUM_PLAN.md](../implementation/TRAINING_PROGRESS_PREMIUM_PLAN.md) § 4.
+> - The "Canonical PR events" row in § 6 stays for a later stored event, e.g. for sync or sharing.
+> - Training also gets a weekly goal instead of a daily streak (same plan, § 5).
+
 ## 8. Engineering evolution after V1.1
 
 These tracks support product work but should remain separate from behavior
