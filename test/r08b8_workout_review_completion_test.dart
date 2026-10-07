@@ -172,6 +172,13 @@ void main() {
         find.byType(Scaffold),
         matchesGoldenFile('goldens/r08b8_partial_saved_summary_dark.png'),
       );
+
+      // The weekly goal line watches Drift streams on the real database.
+      // Give their zero-duration cleanup timer one frame after disposal
+      // instead of leaving a pending timer in the widget binding.
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 1));
     },
   );
 
