@@ -25,6 +25,14 @@ final coreRoutes = <RouteBase>[
     builder: (context, state) => const HealthSyncHubScreen(),
   ),
   GoRoute(
+    path: tipJarRoutePath,
+    builder: (context, state) => const TipJarScreen(),
+  ),
+  GoRoute(
+    path: tipThanksRoutePath,
+    builder: (context, state) => const TipThanksScreen(),
+  ),
+  GoRoute(
     path: '/progress',
     builder: (context, state) => const MainNavigationScaffold(initialIndex: 3),
   ),

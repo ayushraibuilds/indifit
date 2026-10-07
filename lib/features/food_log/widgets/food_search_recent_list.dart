@@ -315,7 +315,7 @@ class FoodSearchRecentList extends StatelessWidget {
           FoodSearchNavigationCard(
             icon: Icons.document_scanner_rounded,
             title: 'Scan nutrition label',
-            detail: 'Extract dual-basis facts directly from packaging.',
+            detail: 'Save a packaged food from its printed nutrition label.',
             onTap: onScanNutritionLabel!,
           ),
         if (onDescribeMeal != null)

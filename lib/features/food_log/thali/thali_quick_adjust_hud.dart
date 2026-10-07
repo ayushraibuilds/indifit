@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../../core/nutrition_thali.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
-import '../../../core/typed_quantities.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
+import 'thali_quantity_label.dart';
 
 /// Docked quick adjustment heads-up-display (HUD) rendered when a dish
 /// (katori or staple) is selected on the circular Thali plate.
@@ -26,22 +26,6 @@ class ThaliQuickAdjustHud extends StatelessWidget {
     required this.onReplace,
     required this.onClose,
   });
-
-  String _formatQuantity(Quantity quantity) {
-    final amount = quantity.amount.toString();
-    final unit = switch (quantity.unit) {
-      QuantityUnit.gram => 'g',
-      QuantityUnit.milligram => 'mg',
-      QuantityUnit.kilogram => 'kg',
-      QuantityUnit.millilitre => 'ml',
-      QuantityUnit.litre => 'L',
-      QuantityUnit.piece => 'pc',
-      QuantityUnit.serving => 'srv',
-      QuantityUnit.householdReference => item.measureId ?? 'measure',
-      _ => quantity.unit.name,
-    };
-    return '$amount $unit';
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -148,53 +132,58 @@ class ThaliQuickAdjustHud extends StatelessWidget {
           Row(
             children: [
               // Stepper controls
-              Container(
-                decoration: BoxDecoration(
-                  color: colors.surfaceSubtle,
-                  borderRadius: B05Radii.largeRadius,
-                  border: Border.all(color: colors.border),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    B05TouchTarget(
-                      minWidth: B05Layout.minTouchTarget,
-                      minHeight: B05Layout.minTouchTarget,
-                      child: IconButton(
-                        key: const Key('thali_quick_hud_decrement'),
-                        padding: EdgeInsets.zero,
-                        visualDensity: VisualDensity.compact,
-                        icon: const Icon(Icons.remove_rounded, size: 18),
-                        color: colors.textPrimary,
-                        onPressed: onDecrement,
-                        tooltip: 'Decrease portion',
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      child: Text(
-                        _formatQuantity(item.quantity),
-                        style: TextStyle(
+              Flexible(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: colors.surfaceSubtle,
+                    borderRadius: B05Radii.largeRadius,
+                    border: Border.all(color: colors.border),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      B05TouchTarget(
+                        minWidth: B05Layout.minTouchTarget,
+                        minHeight: B05Layout.minTouchTarget,
+                        child: IconButton(
+                          key: const Key('thali_quick_hud_decrement'),
+                          padding: EdgeInsets.zero,
+                          visualDensity: VisualDensity.compact,
+                          icon: const Icon(Icons.remove_rounded, size: 18),
                           color: colors.textPrimary,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
+                          onPressed: onDecrement,
+                          tooltip: 'Decrease portion',
                         ),
                       ),
-                    ),
-                    B05TouchTarget(
-                      minWidth: B05Layout.minTouchTarget,
-                      minHeight: B05Layout.minTouchTarget,
-                      child: IconButton(
-                        key: const Key('thali_quick_hud_increment'),
-                        padding: EdgeInsets.zero,
-                        visualDensity: VisualDensity.compact,
-                        icon: const Icon(Icons.add_rounded, size: 18),
-                        color: colors.textPrimary,
-                        onPressed: onIncrement,
-                        tooltip: 'Increase portion',
+                      Flexible(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: Text(
+                            thaliQuantityLabel(item.quantity),
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: colors.textPrimary,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                  ],
+                      B05TouchTarget(
+                        minWidth: B05Layout.minTouchTarget,
+                        minHeight: B05Layout.minTouchTarget,
+                        child: IconButton(
+                          key: const Key('thali_quick_hud_increment'),
+                          padding: EdgeInsets.zero,
+                          visualDensity: VisualDensity.compact,
+                          icon: const Icon(Icons.add_rounded, size: 18),
+                          color: colors.textPrimary,
+                          onPressed: onIncrement,
+                          tooltip: 'Increase portion',
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               const Spacer(),

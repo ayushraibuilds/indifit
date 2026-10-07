@@ -115,7 +115,13 @@ void main() {
         addTearDown(controller.dispose);
         await controller.initialize();
 
-        // Database only has 'Roti' and 'Dal', but northIndianClassic has Roti, Dal, Sabzi, Rice, Curd
+        // A retired food is skipped, never swapped for a lookalike.
+        await (harness.db.update(harness.db.nutritionFoods)..where(
+              (food) => food.sourceRef.equals('asset:base:mix vegetable sabji'),
+            ))
+            .write(
+              const NutritionFoodsCompanion(lifecycle: Value('deprecated')),
+            );
         await controller.loadPreset(
           presetName: ThaliPresets.northIndianClassic.name,
           items: ThaliPresets.northIndianClassic.items,
@@ -123,14 +129,18 @@ void main() {
 
         expect(controller.state.draft, isNotNull);
         expect(controller.state.draft!.name, 'North Indian Classic');
-        // 4 items found: Roti, Dal, Rice, Curd; Mixed Veg Sabzi is missing
-        expect(controller.state.draft!.items.length, 4);
+        expect(controller.state.draft!.items.map((i) => i.displayLabel), [
+          'Whole Wheat Roti / Chapati',
+          'Toor Dal / Yellow Dal Tadka',
+          'Basmati White Rice (Cooked)',
+          'Plain Curd / Dahi (Cow Milk)',
+        ]);
         expect(controller.state.userNotice, isNotNull);
         expect(
           controller.state.userNotice,
           contains('Missing from food library'),
         );
-        expect(controller.state.userNotice, contains('Mixed Veg Sabzi'));
+        expect(controller.state.userNotice, contains('Mix Vegetable Sabji'));
 
         // Preview should have computed for the present items
         expect(controller.state.preview, isNotNull);

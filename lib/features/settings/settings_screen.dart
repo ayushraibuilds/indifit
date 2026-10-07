@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../core/config/app_links.dart';
 import '../../core/di/health_provider.dart';
 import '../../core/di/theme_provider.dart';
 import '../../core/di/user_profile_provider.dart';
@@ -18,6 +20,7 @@ import '../education/learn_screen.dart';
 import '../equipment/equipment_profiles_screen.dart';
 import '../media/b05_playlist_launcher.dart';
 import '../profile/profile_screen.dart';
+import '../support/tip_jar_screen.dart';
 import 'about_credits_screen.dart';
 import 'data_management_sub_screen.dart';
 import 'diary_structure_screen.dart';
@@ -40,6 +43,7 @@ class SettingsScreen extends ConsumerWidget {
     final themeMode = ref.watch(themeModeProvider);
     final units = ref.watch(unitPreferenceProvider);
     final healthSummary = ref.watch(healthStateProvider).summary;
+    final appVersion = ref.watch(appVersionLabelProvider).value;
     final playlistAvailable = ref
         .watch(b05PlaylistProviderRegistryProvider)
         .providers
@@ -236,8 +240,36 @@ class SettingsScreen extends ConsumerWidget {
                   ],
                 ),
                 _SettingsSection(
+                  title: 'Support',
+                  children: [
+                    _SettingsRow(
+                      icon: Icons.volunteer_activism_outlined,
+                      title: 'Support IndiFit',
+                      summary: 'Leave an optional tip',
+                      onTap: () => context.push(tipJarRoutePath),
+                    ),
+                  ],
+                ),
+                _SettingsSection(
                   title: 'About',
                   children: [
+                    _SettingsRow(
+                      icon: Icons.privacy_tip_outlined,
+                      title: 'Privacy policy',
+                      summary: 'What stays on your phone and what is sent',
+                      onTap: () => _openLink(context, AppLinks.privacyPolicy),
+                    ),
+                    _SettingsRow(
+                      icon: Icons.mail_outline_rounded,
+                      title: 'Contact support',
+                      summary: AppLinks.supportEmail,
+                      onTap: () => _openLink(
+                        context,
+                        AppLinks.supportEmailUri(
+                          appVersion: ref.read(appVersionLabelProvider).value,
+                        ),
+                      ),
+                    ),
                     _SettingsRow(
                       icon: Icons.info_outline_rounded,
                       title: 'About & credits',
@@ -246,6 +278,16 @@ class SettingsScreen extends ConsumerWidget {
                     ),
                   ],
                 ),
+                if (appVersion != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: B05Layout.space12),
+                    child: Text(
+                      'Version $appVersion',
+                      key: const Key('settings_app_version'),
+                      textAlign: TextAlign.center,
+                      style: B05Typography.caption(context),
+                    ),
+                  ),
                 const SizedBox(height: B05Layout.space24),
                 const _MedicalDisclaimerCard(),
               ],
@@ -279,6 +321,15 @@ class SettingsScreen extends ConsumerWidget {
 
   static void _push(BuildContext context, Widget screen) {
     Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen));
+  }
+
+  static Future<void> _openLink(BuildContext context, Uri uri) async {
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    if (await AppLinks.open(uri)) return;
+    final fallback = uri.scheme == 'mailto'
+        ? 'No email app found. Write to ${AppLinks.supportEmail}.'
+        : 'Couldn\'t open the link. Visit ${uri.host}${uri.path}.';
+    messenger?.showSnackBar(SnackBar(content: Text(fallback)));
   }
 
   static Future<void> _showThemePicker(

@@ -17,7 +17,7 @@ void main() {
   // /workout-history/:sessionId, and /plan-library before
   // /plan-library/:programId), which are preserved within each feature family.
   const declaredPaths = <String>[
-    // Core routes (8)
+    // Core routes (10)
     '/',
     '/onboarding',
     '/settings',
@@ -25,6 +25,8 @@ void main() {
     '/settings/profile',
     '/learn',
     '/health-hub',
+    '/settings/support',
+    '/settings/support/thanks',
     '/progress',
     // Nutrition routes (13)
     '/food',
@@ -71,7 +73,7 @@ void main() {
     '/achievements',
   ];
 
-  test('root router exposes the canonical 48-path contract in order', () {
+  test('root router exposes the canonical 50-path contract in order', () {
     final container = ProviderContainer(
       overrides: [onboardingCompletedProvider.overrideWith((ref) => true)],
     );

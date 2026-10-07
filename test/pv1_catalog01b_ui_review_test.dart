@@ -282,7 +282,10 @@ void main() {
         );
 
         // Verify balanced badge
-        expect(find.text('Balanced macros (4-4-9 verified)'), findsOneWidget);
+        expect(
+          find.text('Calories match the protein, carbs and fat'),
+          findsOneWidget,
+        );
         expect(find.byIcon(Icons.check_circle_outline), findsOneWidget);
 
         // Verify log button label

@@ -583,6 +583,15 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
                   hasItems: items.isNotEmpty,
                   onLogThali: () => _handleLogThali(),
                   onSaveTemplate: _handleSaveTemplate,
+                  failureMessage:
+                      state.status == NutritionThaliStatus.failure &&
+                          state.preview == null
+                      ? state.errorMessage
+                      : null,
+                  onLogWithoutCalories: () {
+                    controller.acknowledgeUnknownEnergy(true);
+                    _handleLogThali();
+                  },
                 ),
               ],
             ),
@@ -624,7 +633,7 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Select a preset archetype above or add individual dishes like roti, dal, sabzi, or rice.',
+              'Pick a quick start above, or add dishes like roti, dal, sabzi or rice.',
               textAlign: TextAlign.center,
               style: TextStyle(color: colors.textSecondary, fontSize: 14),
             ),

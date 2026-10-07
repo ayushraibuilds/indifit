@@ -66,6 +66,7 @@ dependencies:
   firebase_ai: ^4.0.0
   firebase_remote_config: ^6.7.0
   image: ^4.8.0
+  in_app_purchase: ^3.3.1
 
 dev_dependencies:
   flutter_test:
@@ -93,6 +94,7 @@ flutter:
     - assets/data/
     - assets/data/regional/
     - assets/data/meal_plans/
+    - assets/catalog/
     - assets/third_party/asset_manifest.json
     - assets/generated/repdb/
 

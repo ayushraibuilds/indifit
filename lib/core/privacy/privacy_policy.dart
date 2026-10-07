@@ -23,8 +23,9 @@ class PrivacyPolicy {
   /// offline-only mode is not active.
   bool get isAiAllowed => connectedAiEnabled && !isOfflineOnly;
 
-  /// Ephemeral image processing (e.g. nutrition label OCR) is permitted when
-  /// connected AI is allowed. Images are processed ephemerally and never retained.
+  /// Sending a photo to the AI tools (meal photo, nutrition label) is
+  /// permitted when connected AI is allowed. IndiFit doesn't keep the photo;
+  /// Google may keep it briefly for abuse monitoring (Gemini API terms).
   bool get isImageUploadAllowed => isAiAllowed;
 
   /// Third-party Open Food Facts lookups are permitted only when offline-only mode is disabled.

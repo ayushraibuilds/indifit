@@ -77,7 +77,7 @@ class _PhotoMealScreenState extends ConsumerState<PhotoMealScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Photo Meal Estimator'),
+        title: const Text('Meal photo (Beta)'),
         actions: [
           if (state.status == PhotoMealStatus.ready ||
               state.status == PhotoMealStatus.failure)
@@ -131,7 +131,7 @@ class _PhotoMealScreenState extends ConsumerState<PhotoMealScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'AI Meal Decomposition',
+                      'How it works',
                       style: B05Typography.title(context),
                     ),
                   ),
@@ -139,7 +139,7 @@ class _PhotoMealScreenState extends ConsumerState<PhotoMealScreen> {
               ),
               const SizedBox(height: B05Layout.space12),
               Text(
-                'Take a photo of your thali, plate, or bowl. The AI decomposes your meal into discrete Indian portions (rotis, katoris of dal/curry, rice bowls) for review before logging.',
+                'Take a photo of your thali, plate or bowl. The AI suggests the foods and portions it sees, like rotis, katoris of dal or curry, and rice, for you to review before logging.',
                 style: B05Typography.body(context),
               ),
               const SizedBox(height: B05Layout.space16),
@@ -159,7 +159,7 @@ class _PhotoMealScreenState extends ConsumerState<PhotoMealScreen> {
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        'Review-only contract: Estimates carry ±30% variance. You verify all portions before any entry is committed to your diary.',
+                        'Beta: photo estimates can be off. Nothing is added to your diary until you check every portion.',
                         style: TextStyle(
                           fontSize: 12,
                           color: context.b05Colors.info.indicator,
@@ -314,7 +314,7 @@ class _PhotoMealScreenState extends ConsumerState<PhotoMealScreen> {
           ),
           const SizedBox(height: B05Layout.space16),
         ],
-        // ±30% Review Disclaimer
+        // Review reminder. No accuracy figure: the photo eval hasn't run (SC-05).
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
@@ -336,7 +336,7 @@ class _PhotoMealScreenState extends ConsumerState<PhotoMealScreen> {
                 child: Text(
                   state.result?.fallbackReason != null
                       ? 'Offline fallback active. Review quantities before saving.'
-                      : 'AI estimate carries ±30% variance. Review & adjust quantities below before logging.',
+                      : 'These are AI estimates. Check and adjust the amounts below before logging.',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
