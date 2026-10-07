@@ -78,6 +78,42 @@ void main() {
       expect(await _state(catalogue.db), after);
     });
 
+    test('v2 links variants to their base dish; v1, which states none, '
+        'leaves the links alone', () async {
+      final idOf = {
+        for (final food in (_bundledJson()['foods'] as List).cast<Map>())
+          food['display_name'] as String: food['id'] as String,
+      };
+      Future<String?> parentOf(String name) async =>
+          (await catalogue.db
+                  .customSelect(
+                    'SELECT variant_of_food_id AS parent FROM nutrition_foods '
+                    'WHERE id = ?',
+                    variables: [Variable.withString(idOf[name]!)],
+                  )
+                  .getSingle())
+              .read<String?>('parent');
+
+      // The identity manifest calls this a dish, not a variant.
+      const mini = 'Masala Dosa (Mini size)';
+      await catalogue.db.customStatement(
+        'UPDATE nutrition_foods SET variant_of_food_id = NULL '
+        "WHERE id = '${idOf[mini]}'",
+      );
+
+      await importer.apply(
+        _builtPack(catalogue, '1.json.gz'),
+        source: 'bundled',
+      );
+      expect(await parentOf(mini), isNull);
+
+      await importer.apply(
+        _builtPack(catalogue, '2.json.gz'),
+        source: 'bundled',
+      );
+      expect(await parentOf(mini), idOf['Masala Dosa']);
+    });
+
     test(
       'the delta from v1 gives the same catalogue as the full pack',
       () async {
@@ -208,6 +244,25 @@ void main() {
         ]),
       );
       expect(_kcal(serving), '170');
+    });
+
+    test('every food links to the base dish the pack states', () async {
+      final pack = _bundledJson();
+      final stated = {
+        for (final food in (pack['foods'] as List).cast<Map>())
+          food['id'] as String: food['variant_of'] as String?,
+      };
+      final rows = await catalogue.db
+          .customSelect(
+            'SELECT id, variant_of_food_id AS parent FROM nutrition_foods',
+          )
+          .get();
+      final linked = {
+        for (final row in rows)
+          if (stated.containsKey(row.read<String>('id')))
+            row.read<String>('id'): row.read<String?>('parent'),
+      };
+      expect(linked, stated);
     });
 
     test('kRetiredCatalogueFoods is the bundled pack\'s retire list', () {
