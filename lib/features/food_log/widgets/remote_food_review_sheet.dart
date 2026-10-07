@@ -382,7 +382,7 @@ class _RemoteFoodReviewSheetState extends State<RemoteFoodReviewSheet> {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      'Balanced macros (4-4-9 verified)',
+                      'Calories match the protein, carbs and fat',
                       style: B05Typography.caption(
                         context,
                       ).copyWith(color: Colors.green[isDark ? 300 : 700]),

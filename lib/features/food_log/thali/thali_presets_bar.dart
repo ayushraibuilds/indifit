@@ -18,7 +18,7 @@ class ThaliPresetsBar extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Text(
-            'QUICK MEAL ARCHETYPES',
+            'QUICK START',
             style: TextStyle(
               color: colors.textDisabled,
               fontSize: 11,

@@ -104,6 +104,79 @@ void main() {
     expect(find.text('What is your main goal?'), findsNothing);
   });
 
+  testWidgets('editing weight, then closing the keyboard, stays on About '
+      '(audit R-01)', (tester) async {
+    await _pumpOnboarding(tester);
+    await tester.tap(find.text('Next Step'));
+    await tester.pumpAndSettle();
+
+    final weight = find.ancestor(
+      of: find.text('Current weight'),
+      matching: find.byType(TextField),
+    );
+    await tester.ensureVisible(weight.first);
+    await tester.tap(weight.first);
+    tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+    await tester.pumpAndSettle();
+    await tester.enterText(weight.first, '69.5');
+    await tester.pumpAndSettle();
+
+    // The keyboard goes away (Done, or a tap outside).
+    FocusManager.instance.primaryFocus?.unfocus();
+    tester.view.viewInsets = FakeViewPadding.zero;
+    await tester.pumpAndSettle();
+
+    expect(find.text('A bit about you'), findsOneWidget);
+    expect(find.text('What is your main goal?'), findsNothing);
+    expect(find.text('2 of 5'), findsOneWidget);
+  });
+
+  testWidgets('step 1 has no Back arrow; step 2 does (audit UX-21)', (
+    tester,
+  ) async {
+    await _pumpOnboarding(tester);
+    expect(find.byTooltip('Back'), findsNothing);
+    expect(find.bySemanticsLabel(RegExp('^Back')), findsNothing);
+
+    await tester.tap(find.text('Next Step'));
+    await tester.pumpAndSettle();
+    expect(find.bySemanticsLabel(RegExp('^Back')), findsOneWidget);
+  });
+
+  testWidgets('number fields get Next and Done above the keyboard '
+      '(audit UX-12)', (tester) async {
+    await _pumpOnboarding(tester);
+    await tester.tap(find.text('Next Step'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('onboarding_keyboard_bar')), findsNothing);
+
+    final age = find.ancestor(
+      of: find.text('Age'),
+      matching: find.byType(TextField),
+    );
+    await tester.ensureVisible(age.first);
+    await tester.tap(age.first);
+    tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('onboarding_keyboard_bar')), findsOneWidget);
+
+    // Next walks age → height → weight; the last field offers only Done.
+    await tester.tap(find.byKey(const Key('onboarding_keyboard_next')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('onboarding_keyboard_next')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('onboarding_keyboard_next')), findsNothing);
+
+    await tester.tap(find.byKey(const Key('onboarding_keyboard_done')));
+    await tester.pumpAndSettle();
+    expect(
+      FocusManager.instance.primaryFocus?.context?.widget,
+      isNot(isA<EditableText>()),
+    );
+    expect(find.byKey(const Key('onboarding_keyboard_bar')), findsNothing);
+    expect(find.text('A bit about you'), findsOneWidget);
+  });
+
   testWidgets('ConsumerTaskScaffold keeps its body when the keyboard opens', (
     tester,
   ) async {

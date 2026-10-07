@@ -124,7 +124,7 @@ class _CloudBackupCardState extends ConsumerState<CloudBackupCard> {
       builder: (ctx) => AlertDialog(
         title: const Text('Restore cloud backup?'),
         content: Text(
-          'Restoring the snapshot from $dateStr will replace your current data on this device. Existing data is not merged.\n\nAre you sure you want to proceed?',
+          'Restoring the backup from $dateStr will replace your current data on this device. Existing data is not merged.\n\nAre you sure you want to proceed?',
           style: const TextStyle(height: 1.4),
         ),
         actions: [
@@ -163,7 +163,7 @@ class _CloudBackupCardState extends ConsumerState<CloudBackupCard> {
       builder: (ctx) => AlertDialog(
         title: const Text('Delete all cloud backups?'),
         content: const Text(
-          'This will permanently delete all your cloud backup snapshots from the remote server. Your local data on this device will not be deleted.',
+          'This will permanently delete all your cloud backups from the server. Your local data on this device will not be deleted.',
           style: TextStyle(height: 1.4),
         ),
         actions: [
@@ -220,7 +220,7 @@ class _CloudBackupCardState extends ConsumerState<CloudBackupCard> {
         Text('Encrypted cloud backup', style: B05Typography.title(context)),
         const SizedBox(height: B05Layout.space4),
         Text(
-          'Back up your fitness records and settings securely to IndiFit Cloud using end-to-end encryption. Snapshots are unreadable by anyone without your credentials.',
+          'Back up your fitness records and settings securely to IndiFit Cloud using end-to-end encryption. Backups are unreadable by anyone without your credentials.',
           style: B05Typography.body(context),
         ),
         const SizedBox(height: B05Layout.space12),
@@ -291,14 +291,14 @@ class _CloudBackupCardState extends ConsumerState<CloudBackupCard> {
                   ? Icons.hourglass_empty_rounded
                   : Icons.cloud_upload_rounded,
               label: _isBackingUp ? 'Backing up...' : 'Back up now',
-              hint: 'Create an encrypted cloud backup snapshot now.',
+              hint: 'Create an encrypted cloud backup now.',
               onPressed: _isBackingUp ? null : _handleBackUpNow,
             ),
             B05ActionButton(
               emphasis: B05ActionEmphasis.secondary,
               icon: Icons.history_rounded,
               label: 'Cloud history',
-              hint: 'View stored cloud snapshots and restore.',
+              hint: 'View stored cloud backups and restore.',
               onPressed: _handleViewHistory,
             ),
           ],

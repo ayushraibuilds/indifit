@@ -290,10 +290,19 @@ class NutritionCanonicalSnapshotReadModel
   String? get mealGroupId => snapshot.mealGroupId;
 
   @override
-  String get displayLabel =>
-      snapshot.items.length == 1 && snapshot.items.single.displayLabel != null
-      ? snapshot.items.single.displayLabel!
-      : 'Canonical nutrition snapshot';
+  String get displayLabel {
+    final items = snapshot.items;
+    if (items.length == 1 && items.single.displayLabel != null) {
+      return items.single.displayLabel!;
+    }
+    final kind = snapshot.thaliId != null
+        ? 'Thali'
+        : snapshot.recipeVersionId != null
+        ? 'Recipe'
+        : 'Meal';
+    if (items.isEmpty) return kind;
+    return '$kind (${items.length} ${items.length == 1 ? 'item' : 'items'})';
+  }
 
   @override
   NutrientCompleteness get completeness => snapshot.completeness;

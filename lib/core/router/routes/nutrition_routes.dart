@@ -67,7 +67,9 @@ final nutritionRoutes = <RouteBase>[
           : null;
       final queryDate = parseFoodRouteDate(state.uri.queryParameters['date']);
       return ThaliBuilderScreen(
-        mealCategory: state.uri.queryParameters['meal'] ?? 'lunch',
+        mealCategory:
+            state.uri.queryParameters['meal'] ??
+            MealPresentationRegistry.forLocalTime(DateTime.now()).stableId,
         initialThaliId: state.uri.queryParameters['thaliId'],
         selectedDate: extraDate ?? queryDate,
       );

@@ -181,9 +181,15 @@ class TodayNutritionMetricPresentation {
 
   String get comparisonLabel {
     if (!isAvailable) return 'Not available';
-    final suffix = isIncomplete ? ' (partial)' : '';
-    if (!hasTarget) return '$value $unit$suffix';
-    return '$value / ${_formatNumber(targetValue!)} $unit$suffix';
+    return '$valueLabel${isIncomplete ? ' (partial)' : ''}';
+  }
+
+  /// The value as shown on the card. "Partial" is an info icon next to it,
+  /// not words in the value; [comparisonLabel] keeps it for screen readers.
+  String get valueLabel {
+    if (!isAvailable) return 'Not available';
+    if (!hasTarget) return '$value $unit';
+    return '$value / ${_formatNumber(targetValue!)} $unit';
   }
 
   factory TodayNutritionMetricPresentation.fromFact({

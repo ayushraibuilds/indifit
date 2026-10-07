@@ -31,6 +31,7 @@ import '../../features/settings/nutrition_constraint_review_screen.dart';
 import '../../features/settings/nutrition_constraints_screen.dart';
 import '../../features/settings/nutrition_targets_hub_screen.dart';
 import '../../features/settings/settings_screen.dart';
+import '../../features/support/tip_jar_screen.dart';
 import '../../features/training/plan_library_screen.dart';
 import '../../features/training/workout_history_screen.dart';
 import '../../features/workout_player/b02_strength_player_screen.dart';

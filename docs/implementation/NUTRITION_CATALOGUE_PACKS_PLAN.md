@@ -15,16 +15,16 @@ Update this table in every PR that touches the catalogue. IDs are referenced fro
 
 | ID | Work item | Kind | PR | Depends on | Status |
 |---|---|---|---|---|---|
-| CAT-1 | Pack format v1 spec + schema v24 (`catalog_state`) | Code | A | — | Not started |
-| CAT-2 | Pack importer (validate → one transaction → canonical tables) | Code | A | CAT-1 | Not started |
-| CAT-3 | Bundled pack v1 from today's catalogue; single nutrition-fact read path (fixes C-01) | Code | A | CAT-2 | Not started |
-| CAT-4 | Servings with gram weights + household conversions in packs | Code + data | A (format), E (data) | CAT-1 | Not started |
+| CAT-1 | Pack format v1 spec + schema v24 (`catalog_state`) | Code | A | — | In progress (PR-A) |
+| CAT-2 | Pack importer (validate → one transaction → canonical tables) | Code | A | CAT-1 | In progress (PR-A) |
+| CAT-3 | Bundled pack v1 from today's catalogue; single nutrition-fact read path (fixes C-01) | Code | A | CAT-2 | In progress (PR-A) |
+| CAT-4 | Servings with gram weights + household conversions in packs | Code + data | A (format), E (data) | CAT-1 | Format in progress (PR-A); gram-weight data waits for E |
 | CAT-5 | Pack build pipeline `tool/catalog/` + validator + CI job | Code | E | CAT-1 | Not started |
 | CAT-6 | Curated overlay v2: C-04 measure fixes, C-09 retirements, honest count | Data | E | CAT-5 | Not started |
 | CAT-7 | Update service: manifest check, download, verify, import; Settings → Food database | Code | H | CAT-2 | Not started |
 | CAT-8 | Hosting: publish packs on Firebase Hosting | Owner | — | CAT-5 | Not started |
 | CAT-9 | Local full-text search (FTS5) over names + aliases; retire the legacy search path | Code | I | CAT-3 | Not started |
-| CAT-10 | Licences: INDB permission request; attribution screen | Owner + code | — / B | — | **Waiting on Ayush** |
+| CAT-10 | Licences: INDB permission request; attribution screen | Owner + code | — / B | — | **Waiting on Ayush** (INDB email). Code: About & credits names Open Food Facts (ODbL) and labels catalogue values "IndiFit estimates" (PR-B); CC0/OGL credits join when that data ships (CAT-11). |
 | CAT-11 | Import INDB recipes (if CAT-10 = yes) **or** build dishes from CC0/OGL ingredient data | Data | J | CAT-5, CAT-10 | Not started |
 | CAT-12 | AI portion conversions use pack gram weights (C-06) | Code | F | CAT-4 | Not started |
 | CAT-13 | Opt-in "couldn't find it" feedback (local queue, sent only with consent) | Code | K | CAT-7 | Not started (Next) |

@@ -337,7 +337,7 @@ class CompletionEvidence extends StatelessWidget {
                           R07CMetricTile(label: 'Reps', value: '$knownReps'),
                         if (hasVolume)
                           R07CMetricTile(
-                            label: 'External volume',
+                            label: 'Total lifted',
                             value: '${r07cFormatNumber(volume)} kg',
                           ),
                       ];

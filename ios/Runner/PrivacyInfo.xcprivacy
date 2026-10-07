@@ -22,7 +22,7 @@
     </dict>
     <!-- AI meal tools, only after the user consents (builds with
          INDIFIT_CONNECTED_AI=true): typed meal descriptions and
-         nutrition-label photos go to Google Gemini through Firebase, which
+         meal and nutrition-label photos go to Google Gemini through Firebase, which
          may keep them for abuse monitoring. See doc/store_listing_copy.md
          section 5. -->
     <dict>
@@ -34,6 +34,31 @@
     </dict>
     <dict>
       <key>NSPrivacyCollectedDataType</key><string>NSPrivacyCollectedDataTypePhotosorVideos</string>
+      <key>NSPrivacyCollectedDataTypeLinked</key><false/>
+      <key>NSPrivacyCollectedDataTypeTracking</key><false/>
+      <key>NSPrivacyCollectedDataTypePurposes</key>
+      <array><string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string></array>
+    </dict>
+    <!-- Firebase App Check, Remote Config and Installations (used by the AI
+         meal tools and their kill switch) send an installation identifier,
+         usage data and diagnostics. Firebase's App Store data-collection
+         guide lists these; audit S-02. -->
+    <dict>
+      <key>NSPrivacyCollectedDataType</key><string>NSPrivacyCollectedDataTypeDeviceID</string>
+      <key>NSPrivacyCollectedDataTypeLinked</key><false/>
+      <key>NSPrivacyCollectedDataTypeTracking</key><false/>
+      <key>NSPrivacyCollectedDataTypePurposes</key>
+      <array><string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string></array>
+    </dict>
+    <dict>
+      <key>NSPrivacyCollectedDataType</key><string>NSPrivacyCollectedDataTypeProductInteraction</string>
+      <key>NSPrivacyCollectedDataTypeLinked</key><false/>
+      <key>NSPrivacyCollectedDataTypeTracking</key><false/>
+      <key>NSPrivacyCollectedDataTypePurposes</key>
+      <array><string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string></array>
+    </dict>
+    <dict>
+      <key>NSPrivacyCollectedDataType</key><string>NSPrivacyCollectedDataTypeOtherDiagnosticData</string>
       <key>NSPrivacyCollectedDataTypeLinked</key><false/>
       <key>NSPrivacyCollectedDataTypeTracking</key><false/>
       <key>NSPrivacyCollectedDataTypePurposes</key>

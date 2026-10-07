@@ -10,6 +10,14 @@ class ThaliNutritionSummaryBar extends StatelessWidget {
   final VoidCallback onLogThali;
   final VoidCallback onSaveTemplate;
 
+  /// Why the totals couldn't be worked out, shown instead of a spinner
+  /// that never ends (audit R-04).
+  final String? failureMessage;
+
+  /// Logs the plate although some calories are unknown. Offered only when
+  /// the user would otherwise be stuck.
+  final VoidCallback? onLogWithoutCalories;
+
   const ThaliNutritionSummaryBar({
     super.key,
     this.preview,
@@ -17,6 +25,8 @@ class ThaliNutritionSummaryBar extends StatelessWidget {
     required this.hasItems,
     required this.onLogThali,
     required this.onSaveTemplate,
+    this.failureMessage,
+    this.onLogWithoutCalories,
   });
 
   @override
@@ -30,6 +40,9 @@ class ThaliNutritionSummaryBar extends StatelessWidget {
     final fiber = (facts?['fibre'] ?? facts?['fiber'])?.point?.value.asDouble;
 
     final isPartial = preview?.isPartial ?? false;
+    final failed = hasItems && preview == null && failureMessage != null;
+    final unknownEnergy = preview?.itemsWithUnknownEnergy ?? const [];
+    final canLog = hasItems && !isLoading && !failed && unknownEnergy.isEmpty;
 
     return Container(
       decoration: BoxDecoration(
@@ -53,7 +66,22 @@ class ThaliNutritionSummaryBar extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (isPartial)
+          if (unknownEnergy.isNotEmpty)
+            _NoticeBanner(
+              key: const Key('thali_unknown_energy_notice'),
+              message:
+                  'Calories unknown for '
+                  '${unknownEnergy.map((item) => item.displayLabel).join(', ')}. '
+                  'Change the amount, or log it without calories.',
+              actionLabel: 'Log without calories',
+              onAction: isLoading ? null : onLogWithoutCalories,
+            )
+          else if (failed)
+            _NoticeBanner(
+              key: const Key('thali_calculation_failed_notice'),
+              message: "Couldn't calculate this plate: $failureMessage",
+            )
+          else if (isPartial)
             Container(
               margin: const EdgeInsets.only(bottom: 8),
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -106,6 +134,8 @@ class ThaliNutritionSummaryBar extends StatelessWidget {
                       key: const Key('thali_summary_calories'),
                       energy != null
                           ? '${isPartial ? '~' : ''}${energy.round()} kcal'
+                          : failed || unknownEnergy.isNotEmpty
+                          ? '— kcal'
                           : (hasItems ? 'Calculating...' : '0 kcal'),
                       style: TextStyle(
                         color: colors.textPrimary,
@@ -116,46 +146,53 @@ class ThaliNutritionSummaryBar extends StatelessWidget {
                   ],
                 ),
               ),
-              // Macros Row
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _MacroBadge(
-                    label: 'P',
-                    value: protein != null
-                        ? '${isPartial ? '~' : ''}${(protein * 10).round() / 10}g'
-                        : (hasItems ? '...' : '0g'),
-                    color: colors.action,
-                    textColor: colors.textPrimary,
+              // Macros: four badges (with fibre) don't fit a 390 pt phone,
+              // so they scale down rather than squeezing the totals.
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerRight,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _MacroBadge(
+                        label: 'P',
+                        value: protein != null
+                            ? '${isPartial ? '~' : ''}${(protein * 10).round() / 10}g'
+                            : (hasItems ? '...' : '0g'),
+                        color: colors.action,
+                        textColor: colors.textPrimary,
+                      ),
+                      const SizedBox(width: 8),
+                      _MacroBadge(
+                        label: 'C',
+                        value: carbs != null
+                            ? '${isPartial ? '~' : ''}${(carbs * 10).round() / 10}g'
+                            : (hasItems ? '...' : '0g'),
+                        color: colors.warning.indicator,
+                        textColor: colors.textPrimary,
+                      ),
+                      const SizedBox(width: 8),
+                      _MacroBadge(
+                        label: 'F',
+                        value: fat != null
+                            ? '${isPartial ? '~' : ''}${(fat * 10).round() / 10}g'
+                            : (hasItems ? '...' : '0g'),
+                        color: colors.info.indicator,
+                        textColor: colors.textPrimary,
+                      ),
+                      if (fiber != null) ...[
+                        const SizedBox(width: 8),
+                        _MacroBadge(
+                          label: 'Fb',
+                          value: '${(fiber * 10).round() / 10}g',
+                          color: colors.dinner.indicator,
+                          textColor: colors.textPrimary,
+                        ),
+                      ],
+                    ],
                   ),
-                  const SizedBox(width: 8),
-                  _MacroBadge(
-                    label: 'C',
-                    value: carbs != null
-                        ? '${isPartial ? '~' : ''}${(carbs * 10).round() / 10}g'
-                        : (hasItems ? '...' : '0g'),
-                    color: colors.warning.indicator,
-                    textColor: colors.textPrimary,
-                  ),
-                  const SizedBox(width: 8),
-                  _MacroBadge(
-                    label: 'F',
-                    value: fat != null
-                        ? '${isPartial ? '~' : ''}${(fat * 10).round() / 10}g'
-                        : (hasItems ? '...' : '0g'),
-                    color: colors.info.indicator,
-                    textColor: colors.textPrimary,
-                  ),
-                  if (fiber != null) ...[
-                    const SizedBox(width: 8),
-                    _MacroBadge(
-                      label: 'Fb',
-                      value: '${(fiber * 10).round() / 10}g',
-                      color: colors.dinner.indicator,
-                      textColor: colors.textPrimary,
-                    ),
-                  ],
-                ],
+                ),
               ),
             ],
           ),
@@ -181,7 +218,7 @@ class ThaliNutritionSummaryBar extends StatelessWidget {
               Expanded(
                 child: ElevatedButton.icon(
                   key: const Key('thali_log_meal_button'),
-                  onPressed: hasItems && !isLoading ? onLogThali : null,
+                  onPressed: canLog ? onLogThali : null,
                   icon: isLoading
                       ? SizedBox(
                           width: 18,
@@ -211,6 +248,57 @@ class ThaliNutritionSummaryBar extends StatelessWidget {
               ),
             ],
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _NoticeBanner extends StatelessWidget {
+  final String message;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+
+  const _NoticeBanner({
+    super.key,
+    required this.message,
+    this.actionLabel,
+    this.onAction,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.b05Colors;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: colors.warning.container,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+          color: colors.warning.indicator.withValues(alpha: 0.4),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.error_outline_rounded,
+            size: 16,
+            color: colors.warning.foreground,
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              message,
+              style: TextStyle(fontSize: 12, color: colors.warning.foreground),
+            ),
+          ),
+          if (actionLabel != null)
+            TextButton(
+              key: const Key('thali_log_without_calories_button'),
+              onPressed: onAction,
+              child: Text(actionLabel!),
+            ),
         ],
       ),
     );

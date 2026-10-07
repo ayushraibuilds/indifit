@@ -39,6 +39,9 @@ class NutritionThaliState {
   final String query;
   final bool dirty;
   final bool partialAcknowledged;
+
+  /// The user chose "Log without calories" for this exact preview.
+  final bool unknownEnergyAcknowledged;
   final Set<String> acknowledgedConstraintIds;
   final NutritionConsumptionSnapshot? savedSnapshot;
   final String? errorCode;
@@ -56,6 +59,7 @@ class NutritionThaliState {
     this.query = '',
     this.dirty = false,
     this.partialAcknowledged = false,
+    this.unknownEnergyAcknowledged = false,
     this.acknowledgedConstraintIds = const {},
     this.savedSnapshot,
     this.errorCode,
@@ -74,6 +78,7 @@ class NutritionThaliState {
     String? query,
     bool? dirty,
     bool? partialAcknowledged,
+    bool? unknownEnergyAcknowledged,
     Set<String>? acknowledgedConstraintIds,
     Object? savedSnapshot = _nutritionThaliUnset,
     Object? errorCode = _nutritionThaliUnset,
@@ -94,6 +99,8 @@ class NutritionThaliState {
     query: query ?? this.query,
     dirty: dirty ?? this.dirty,
     partialAcknowledged: partialAcknowledged ?? this.partialAcknowledged,
+    unknownEnergyAcknowledged:
+        unknownEnergyAcknowledged ?? this.unknownEnergyAcknowledged,
     acknowledgedConstraintIds: acknowledgedConstraintIds == null
         ? this.acknowledgedConstraintIds
         : Set.unmodifiable(acknowledgedConstraintIds),
@@ -260,14 +267,18 @@ class NutritionThaliController extends StateNotifier<NutritionThaliState> {
   void addFood(NutritionThaliFoodOption option, {Quantity? quantity}) {
     final draft = state.draft;
     if (draft == null) return;
+    final amount =
+        quantity ??
+        option.defaultQuantity ??
+        Quantity.fromNum(amount: 100, unit: QuantityUnit.gram);
     final item = NutritionThaliItem(
       id: 'thali-item-v1-${_uuid.v4()}',
       position: draft.items.length,
       source: NutritionThaliItemSource.food,
       foodId: option.id,
       recipeVersionId: null,
-      quantity:
-          quantity ?? Quantity.fromNum(amount: 100, unit: QuantityUnit.gram),
+      quantity: amount,
+      measureId: _measureIdOf(amount),
       displayLabel: option.displayName,
     );
     _setDraft(
@@ -374,7 +385,7 @@ class NutritionThaliController extends StateNotifier<NutritionThaliState> {
     }
   }
 
-  void incrementQuantity(String itemId, {double step = 1.0}) {
+  void incrementQuantity(String itemId, {double? step}) {
     final draft = state.draft;
     if (draft == null) return;
     NutritionThaliItem? item;
@@ -386,7 +397,7 @@ class NutritionThaliController extends StateNotifier<NutritionThaliState> {
     }
     if (item == null) return;
     final currentAmount = item.quantity.amount.asDouble;
-    final newAmount = currentAmount + step;
+    final newAmount = currentAmount + (step ?? _stepFor(item.quantity));
     setQuantity(
       itemId,
       Quantity(
@@ -398,7 +409,7 @@ class NutritionThaliController extends StateNotifier<NutritionThaliState> {
     );
   }
 
-  void decrementQuantity(String itemId, {double step = 1.0, double min = 0.5}) {
+  void decrementQuantity(String itemId, {double? step, double? min}) {
     final draft = state.draft;
     if (draft == null) return;
     NutritionThaliItem? item;
@@ -410,8 +421,10 @@ class NutritionThaliController extends StateNotifier<NutritionThaliState> {
     }
     if (item == null) return;
     final currentAmount = item.quantity.amount.asDouble;
-    if (currentAmount <= min) return;
-    final newAmount = (currentAmount - step).clamp(min, double.infinity);
+    final unitStep = step ?? _stepFor(item.quantity);
+    final floor = min ?? unitStep;
+    if (currentAmount <= floor) return;
+    final newAmount = (currentAmount - unitStep).clamp(floor, double.infinity);
     setQuantity(
       itemId,
       Quantity(
@@ -421,6 +434,10 @@ class NutritionThaliController extends StateNotifier<NutritionThaliState> {
       ),
       measureId: item.measureId,
     );
+  }
+
+  void acknowledgeUnknownEnergy(bool acknowledged) {
+    state = state.copyWith(unknownEnergyAcknowledged: acknowledged);
   }
 
   void acknowledgePartial(bool acknowledged) {
@@ -579,6 +596,7 @@ class NutritionThaliController extends StateNotifier<NutritionThaliState> {
         localDate: context.localDate,
         timezoneId: context.timezoneId,
         allowPartial: allowPartial || state.partialAcknowledged,
+        allowUnknownEnergy: state.unknownEnergyAcknowledged,
         acknowledgement: _acknowledgement,
       );
       state = state.copyWith(
@@ -682,44 +700,27 @@ class NutritionThaliController extends StateNotifier<NutritionThaliState> {
       final addedItems = <NutritionThaliItem>[];
       final missingNames = <String>[];
 
-      for (var i = 0; i < items.length; i++) {
-        final def = items[i];
-        final searchResults = await repository.searchFoods(
-          query: def.searchQuery,
-        );
-        NutritionThaliFoodOption? match;
-        if (searchResults.isNotEmpty) {
-          final exact = searchResults.where(
-            (food) =>
-                food.displayName.toLowerCase() == def.searchQuery.toLowerCase(),
-          );
-          if (exact.isNotEmpty) {
-            match = exact.first;
-          } else {
-            match = searchResults.firstWhere(
-              (food) => food.displayName.toLowerCase().contains(
-                def.searchQuery.toLowerCase(),
-              ),
-              orElse: () => searchResults.first,
-            );
-          }
-        }
-        if (match != null) {
-          addedItems.add(
-            NutritionThaliItem(
-              id: 'thali-item-v1-${_uuid.v4()}',
-              position: addedItems.length,
-              source: NutritionThaliItemSource.food,
-              foodId: match.id,
-              recipeVersionId: null,
-              quantity: def.defaultQuantity,
-              measureId: def.measureId,
-              displayLabel: match.displayName,
-            ),
-          );
-        } else {
+      for (final def in items) {
+        final food = await repository.findFoodBySourceRef(def.foodSourceRef);
+        final quantity = food == null
+            ? null
+            : await repository.ownUnitQuantity(food.id, def.amount);
+        if (food == null || quantity == null) {
           missingNames.add(def.displayName);
+          continue;
         }
+        addedItems.add(
+          NutritionThaliItem(
+            id: 'thali-item-v1-${_uuid.v4()}',
+            position: addedItems.length,
+            source: NutritionThaliItemSource.food,
+            foodId: food.id,
+            recipeVersionId: null,
+            quantity: quantity,
+            measureId: _measureIdOf(quantity),
+            displayLabel: food.displayName,
+          ),
+        );
       }
 
       final currentDraft = state.draft ?? repository.newDraft(userId: userId);
@@ -747,6 +748,20 @@ class NutritionThaliController extends StateNotifier<NutritionThaliState> {
       _fail(error, action: _NutritionThaliRetryAction.none);
     }
   }
+
+  /// Grams and millilitres move in 10s; rotis, katoris and servings in ½s.
+  static double _stepFor(Quantity quantity) =>
+      quantity.dimension == QuantityDimension.mass ||
+          quantity.dimension == QuantityDimension.volume
+      ? 10
+      : 0.5;
+
+  /// A household amount names its vessel; the item keeps that id so the
+  /// thali can resolve it (a bare household quantity can't be calculated).
+  static String? _measureIdOf(Quantity quantity) =>
+      quantity.unit == QuantityUnit.householdReference
+      ? quantity.context.householdMeasure?.measureType
+      : null;
 
   void clearNotice() {
     state = state.copyWith(userNotice: null);
@@ -820,6 +835,10 @@ class NutritionThaliController extends StateNotifier<NutritionThaliState> {
       status: preserveStatus ? state.status : NutritionThaliStatus.ready,
       draft: draft,
       dirty: dirty,
+      // A changed plate needs a fresh decision about unknown calories.
+      unknownEnergyAcknowledged: clearPreview
+          ? false
+          : state.unknownEnergyAcknowledged,
       preview: clearPreview ? null : state.preview,
       savedSnapshot: clearPreview ? null : state.savedSnapshot,
       errorCode: null,
