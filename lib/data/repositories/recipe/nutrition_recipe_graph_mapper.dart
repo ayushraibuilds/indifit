@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../core/typed_quantities.dart';
+import '../../catalog/catalog_pack.dart';
 import '../../database/app_database.dart';
 import '../nutrition_recipe_repository.dart';
 import 'nutrition_recipe_validator.dart';
@@ -40,6 +41,7 @@ class NutritionRecipeGraphMapper {
             recipeVersionId: sourceVersion.id,
             calculationRuleVersion: sourceVersion.calcRuleVersion,
             measureId: row.measureId,
+            foodId: row.foodId,
           )!,
           position: row.position,
           preparationId: row.preparationId,
@@ -58,9 +60,15 @@ class NutritionRecipeGraphMapper {
     String? recipeVersionId,
     String? calculationRuleVersion,
     String? measureId,
+    String? foodId,
   }) {
     if (value == null || stableUnit == null) return null;
     final unit = quantityUnitFromDatabase(stableUnit);
+    if (unit == QuantityUnit.serving && foodId != null) {
+      // An ingredient's serving is one serving of its food, the same
+      // definition its per-serving facts use (CAT-3, audit C-07).
+      return CatalogueServing.quantity(foodId, value.toString());
+    }
     if (unit == QuantityUnit.serving) {
       return Quantity.serving(
         amount: value.toString(),
@@ -171,6 +179,7 @@ class NutritionRecipeGraphMapper {
               recipeVersionId: version.id,
               calculationRuleVersion: version.calcRuleVersion,
               measureId: row.measureId,
+              foodId: row.foodId,
             )!,
             measureId: row.measureId,
             lower: row.lower == null

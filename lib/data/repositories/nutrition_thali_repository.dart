@@ -11,6 +11,7 @@ import '../../core/nutrition_consumption_snapshots.dart';
 import '../../core/nutrition_household_measures.dart';
 import '../../core/nutrition_thali.dart';
 import '../../core/typed_quantities.dart';
+import '../catalog/catalogue_quantity_resolver.dart';
 import '../database/app_database.dart' as database;
 import 'nutrition_constraint_repository.dart';
 import 'nutrition_consumption_repository.dart';
@@ -40,6 +41,7 @@ class NutritionThaliRepository {
   final Uuid _uuid;
   final DateTime Function() _nowUtc;
   final NutritionThaliFailureInjector? _failureInjector;
+  final CatalogueQuantityResolver _catalogueQuantities;
 
   NutritionThaliRepository({
     required database.AppDatabase db,
@@ -61,7 +63,8 @@ class NutritionThaliRepository {
        _consumption = consumption,
        _uuid = uuid ?? const Uuid(),
        _nowUtc = nowUtc ?? (() => DateTime.now().toUtc()),
-       _failureInjector = failureInjector;
+       _failureInjector = failureInjector,
+       _catalogueQuantities = CatalogueQuantityResolver(db);
 
   Future<List<NutritionThaliFoodOption>> searchFoods({
     String query = '',
@@ -122,18 +125,57 @@ class NutritionThaliRepository {
             final byName = left.displayName.compareTo(right.displayName);
             return byName == 0 ? left.id.compareTo(right.id) : byName;
           });
-    final limitedRows = rows.take(limit);
+    final limitedRows = rows.take(limit).toList(growable: false);
+    final measures = await _catalogueQuantities.measuresFor(
+      limitedRows.map((row) => row.id),
+    );
     return List.unmodifiable([
-      for (final row in limitedRows)
-        NutritionThaliFoodOption(
-          id: row.id,
-          displayName: row.displayName,
-          kind: row.kind,
-          sourceType: row.sourceType,
-          region: row.region,
-        ),
+      for (final row in limitedRows) _foodOption(row, measures[row.id]),
     ]);
   }
+
+  /// The active food whose source reference is [sourceRef] (presets name
+  /// foods this way), or null when it is missing or retired.
+  Future<NutritionThaliFoodOption?> findFoodBySourceRef(
+    String sourceRef,
+  ) async {
+    final row =
+        await (_db.select(_db.nutritionFoods)
+              ..where(
+                (food) =>
+                    food.sourceRef.equals(sourceRef) &
+                    food.lifecycle.equals('active'),
+              )
+              ..limit(1))
+            .getSingleOrNull();
+    if (row == null) return null;
+    return _foodOption(row, await _catalogueQuantities.measureFor(row.id));
+  }
+
+  /// [amount] of the food's own unit: 2 → "2 pieces" for roti, "2 katori"
+  /// for dal, "2 g" for a food counted in grams.
+  Future<Quantity?> ownUnitQuantity(String foodId, double amount) async {
+    final measure = await _catalogueQuantities.measureFor(foodId);
+    if (measure == null) return null;
+    final value = QuantityAmount.fromNum(amount);
+    final unit = measure.unit;
+    if (unit != null) return measure.householdQuantity(unit, value);
+    final own = measure.defaultQuantity;
+    return Quantity(amount: value, unit: own.unit, context: own.context);
+  }
+
+  NutritionThaliFoodOption _foodOption(
+    database.NutritionFood row,
+    CatalogueFoodMeasure? measure,
+  ) => NutritionThaliFoodOption(
+    id: row.id,
+    displayName: row.displayName,
+    kind: row.kind,
+    sourceType: row.sourceType,
+    region: row.region,
+    defaultQuantity: measure?.defaultQuantity,
+    acceptsGrams: measure == null || measure.acceptsGrams,
+  );
 
   Future<List<NutritionThaliRecipeOption>> searchRecipes({
     required String userId,
@@ -507,6 +549,7 @@ class NutritionThaliRepository {
     required String localDate,
     required String timezoneId,
     bool allowPartial = false,
+    bool allowUnknownEnergy = false,
     NutritionConstraintAcknowledgement? acknowledgement,
     String? supersedesSnapshotId,
     String? correctionId,
@@ -524,6 +567,15 @@ class NutritionThaliRepository {
       commandId: commandId,
     );
     if (existing != null) return existing;
+    final unknownEnergy = preview.itemsWithUnknownEnergy;
+    if (unknownEnergy.isNotEmpty && !allowUnknownEnergy) {
+      final names = unknownEnergy.map((item) => item.displayLabel).join(', ');
+      throw NutritionThaliValidationError(
+        'thali_nutrition_unknown',
+        'Calories for $names are unknown. Change the amount, or log the '
+            'thali without calories.',
+      );
+    }
     if (preview.isPartial || preview.isUnknown || preview.hasUnresolvedInputs) {
       if (!allowPartial) {
         throw const NutritionThaliValidationError(
@@ -750,6 +802,41 @@ class NutritionThaliRepository {
     NutritionThaliItem item,
   ) async {
     NutritionQuantityService.validatePositiveConsumedQuantity(item.quantity);
+    final foodId = item.foodId;
+    if (item.source == NutritionThaliItemSource.food && foodId != null) {
+      // A food is measured in its own unit (2 pieces, 1 katori, 100 g). The
+      // pack's serving conversions turn that into the basis of its facts.
+      // Only vessels of a per-100-mL food still resolve through volume.
+      final measure = await _catalogueQuantities.measureFor(foodId);
+      final viaVolume =
+          item.quantity.unit == QuantityUnit.householdReference &&
+          (measure == null || measure.isPerMillilitre);
+      if (measure != null && !viaVolume) {
+        final Quantity calculationQuantity;
+        try {
+          calculationQuantity = measure.toFactBasis(item.quantity);
+        } on CatalogueQuantityError catch (error) {
+          throw NutritionThaliValidationError(
+            error.code,
+            error.message,
+            cause: error,
+          );
+        }
+        final converted = !identical(calculationQuantity, item.quantity);
+        return NutritionThaliResolvedQuantity(
+          original: item.quantity,
+          calculationQuantity: calculationQuantity,
+          measureId: item.measureId,
+          evidence: converted
+              ? {
+                  'resolution': 'catalogue_serving',
+                  'food_basis': measure.basis,
+                  if (measure.unit != null) 'food_unit': measure.unit,
+                }
+              : {'resolution': 'not_required'},
+        );
+      }
+    }
     if (item.quantity.unit != QuantityUnit.householdReference) {
       return NutritionThaliResolvedQuantity(
         original: item.quantity,
