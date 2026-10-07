@@ -44,6 +44,10 @@ class _B02StrengthSummaryScreenState
   late final String _completionCommandId;
   var _isFinalizing = false;
   var _hasCelebratedMilestones = false;
+
+  /// Whether an achievement sheet opens over the saved summary; null until
+  /// known. The summary's own celebration waits for it (one burst at most).
+  bool? _achievementSheetWillOpen;
   B02StrengthExecutionLaunch? _completionLaunch;
   CompletionKind? _pendingCompletionKind;
   String? _pendingCompletionReason;
@@ -96,6 +100,8 @@ class _B02StrengthSummaryScreenState
           sessionId: ui.completedSessionId,
           completionKind: ui.completedCompletionKind ?? CompletionKind.full,
           onDone: () => goToTrainingTab(context),
+          allowCelebration: true,
+          achievementSheetWillOpen: _achievementSheetWillOpen,
         ),
       );
     }
@@ -271,6 +277,12 @@ class _B02StrengthSummaryScreenState
     }
   }
 
+  void _setAchievementSheetWillOpen(bool willOpen) {
+    if (mounted && _achievementSheetWillOpen == null) {
+      setState(() => _achievementSheetWillOpen = willOpen);
+    }
+  }
+
   Future<void> _checkAndShowAchievements() async {
     if (!mounted) return;
     try {
@@ -284,6 +296,7 @@ class _B02StrengthSummaryScreenState
             statsRepository: statsRepo,
             prefs: prefs,
           );
+      _setAchievementSheetWillOpen(uncelebrated.isNotEmpty);
       if (uncelebrated.isEmpty || !mounted) return;
 
       // Mark celebrated right before presentation: fails closed toward silence
@@ -301,6 +314,7 @@ class _B02StrengthSummaryScreenState
         achievements: uncelebrated,
       );
     } catch (e) {
+      _setAchievementSheetWillOpen(false);
       // Non-blocking: failures in achievement presentation never break recap.
       AppLogger.warning(
         'Failed to evaluate or present milestone celebration: $e',

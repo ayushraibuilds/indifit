@@ -154,12 +154,18 @@ void main() {
         ),
       );
       await tester.pump();
+      // Let the summary numbers finish counting up (TP-7).
+      await tester.pump(const Duration(milliseconds: 400));
 
       expect(find.text('Workout partially completed'), findsOneWidget);
       expect(find.text('Workout complete'), findsNothing);
       expect(find.text('Persisted strength'), findsOneWidget);
       expect(find.text('Replacement strength'), findsOneWidget);
-      expect(find.textContaining('20 min 34 sec'), findsOneWidget);
+      expect(find.text('20 min 34 sec'), findsOneWidget);
+      expect(
+        find.text('480 kg lifted · 1 set · 20 min 34 sec'),
+        findsOneWidget,
+      );
       expect(find.text('480 kg'), findsOneWidget);
       expect(find.text('Stale draft exercise'), findsNothing);
       expect(find.textContaining('RPE 8'), findsOneWidget);
