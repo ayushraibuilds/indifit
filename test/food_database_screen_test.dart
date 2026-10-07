@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/config/app_preferences_keys.dart';
 import 'package:indifit/core/di/core_providers.dart';
 import 'package:indifit/core/theme/app_theme.dart';
+import 'package:indifit/data/catalog/catalog_pack.dart';
 import 'package:indifit/data/catalog/catalog_update_service.dart';
 import 'package:indifit/features/settings/food_data_credits.dart';
 import 'package:indifit/features/settings/food_database_providers.dart';
@@ -68,13 +69,13 @@ void main() {
     await pumpScreen(tester);
 
     expect(find.text('Food database'), findsOneWidget);
-    expect(find.text('Version 1'), findsOneWidget);
+    expect(find.text('Version $kBundledCatalogPackVersion'), findsOneWidget);
     expect(
       find.textContaining('Came with the app · installed'),
       findsOneWidget,
     );
     expect(
-      find.text('535 foods, including 254 size and preparation variants'),
+      find.text('498 foods, including 244 size and preparation variants'),
       findsOneWidget,
     );
     expect(find.text('Not checked for updates yet'), findsOneWidget);
