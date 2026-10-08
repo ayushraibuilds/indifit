@@ -602,7 +602,7 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
                           }
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: context.b05Colors.action,
+                          backgroundColor: context.b05Colors.actionFill,
                           foregroundColor: context.b05Colors.onAction,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),

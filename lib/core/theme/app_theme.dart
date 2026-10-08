@@ -14,7 +14,9 @@ class AppTheme {
 
       colorScheme: ColorScheme.dark(
         primary: colors.action,
-        onPrimary: colors.onAction,
+        // Material controls filled with the bright dark-mode green (checkbox,
+        // switch thumb) need dark ink; filled buttons use actionFill instead.
+        onPrimary: const Color(0xFF04281E),
         surface: colors.section,
         onSurface: colors.textPrimary,
         error: colors.danger.indicator,
@@ -238,7 +240,7 @@ class AppTheme {
   static FilledButtonThemeData _filledButtonTheme(B05SemanticColors colors) =>
       FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          backgroundColor: colors.action,
+          backgroundColor: colors.actionFill,
           foregroundColor: colors.onAction,
           disabledBackgroundColor: colors.disabled,
           disabledForegroundColor: colors.textDisabled,

@@ -1,5 +1,7 @@
 import 'dart:math' as math;
 
+import 'package:intl/intl.dart';
+
 enum Gender { male, female, other }
 
 enum ActivityLevel {
@@ -40,9 +42,13 @@ class MacroTargets {
        minProteinG = minProteinG ?? proteinG,
        maxProteinG = maxProteinG ?? proteinG;
 
-  String get calorieRangeLabel => '$minCalories–$maxCalories kcal';
+  String get calorieRangeLabel =>
+      '${_grouped(minCalories)}–${_grouped(maxCalories)} kcal';
   String get proteinRangeLabel =>
-      '${minProteinG.round()}–${maxProteinG.round()}g';
+      '${minProteinG.round()}–${maxProteinG.round()} g';
+
+  static String _grouped(num value) =>
+      NumberFormat.decimalPattern().format(value.round());
 }
 
 class TdeeCalculator {

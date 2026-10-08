@@ -2,6 +2,7 @@ import '../../core/nutrients.dart';
 import '../../core/nutrition_legacy_read_models.dart';
 import '../../core/presentation/consumer_copy.dart';
 import '../../core/presentation/consumer_count_label.dart';
+import '../../core/presentation/consumer_date_label.dart';
 import '../../core/presentation/consumer_number_label.dart';
 import '../../data/database/app_database.dart';
 import '../../data/models/b02_progress_read_models.dart';
@@ -951,8 +952,7 @@ TodayFocusPresentation todayFocusPresentation({
       state: TodayPresentationState.ready,
       title:
           'Next: ${ConsumerCopy.label(next.template.name, fallback: 'Workout')}',
-      detail:
-          'Your next planned workout is ${next.occurrence.effectiveLocalDate}.',
+      detail: _nextWorkoutDetail(next.occurrence.effectiveLocalDate),
       actionLabel: 'View workout plan',
       action: TodayNextAction.openWorkoutPlan,
       workout: next,
@@ -1003,4 +1003,12 @@ String _workoutStatus(Object? value) {
     'cancelled' || 'canceled' => 'Cancelled',
     _ => ConsumerCopy.state(key),
   };
+}
+
+/// "Planned for tomorrow." / "Planned for Mon, Oct 12." Never the raw
+/// yyyy-MM-dd local date.
+String _nextWorkoutDetail(String localDate) {
+  final day = ConsumerDateLabel.day(localDate);
+  final relative = const {'Today', 'Tomorrow', 'Yesterday'}.contains(day);
+  return 'Planned for ${relative ? day.toLowerCase() : day}.';
 }

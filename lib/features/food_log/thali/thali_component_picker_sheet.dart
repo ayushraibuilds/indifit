@@ -524,7 +524,7 @@ class _ThaliComponentPickerSheetState extends State<ThaliComponentPickerSheet> {
                     : 'Add to Plate',
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: colors.action,
+                backgroundColor: colors.actionFill,
                 foregroundColor: colors.onAction,
                 padding: const EdgeInsets.symmetric(vertical: 10),
               ),

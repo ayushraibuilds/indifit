@@ -75,7 +75,8 @@ class ProgressWeightSectionState extends State<ProgressWeightSection> {
       onPressed: widget.onLogWeight,
     );
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      // Stretch so the weight card is as wide as the other Progress cards.
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         LayoutBuilder(
           builder: (context, constraints) {

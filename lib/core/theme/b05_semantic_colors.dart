@@ -57,6 +57,7 @@ class B05SemanticColors extends ThemeExtension<B05SemanticColors> {
     required this.focus,
     required this.disabled,
     required this.action,
+    required this.actionFill,
     required this.onAction,
     required this.success,
     required this.warning,
@@ -100,7 +101,15 @@ class B05SemanticColors extends ThemeExtension<B05SemanticColors> {
   final Color border;
   final Color focus;
   final Color disabled;
+
+  /// Brand green for text, icons, outlines and selected labels. It meets
+  /// 4.5:1 on every surface in both themes.
   final Color action;
+
+  /// Brand green for filled controls that carry [onAction] text, such as
+  /// primary buttons. In dark mode it is deeper than [action] so white text
+  /// on it stays readable.
+  final Color actionFill;
   final Color onAction;
 
   final B05ColorRole success;
@@ -135,7 +144,8 @@ class B05SemanticColors extends ThemeExtension<B05SemanticColors> {
     border: Color(0x66FFFFFF),
     focus: Color(0xFF5EEAD4),
     disabled: Color(0xFF334155),
-    action: Color(0xFF087F5B),
+    action: Color(0xFF34D399),
+    actionFill: Color(0xFF087F5B),
     onAction: Color(0xFFFFFFFF),
     success: B05ColorRole(
       foreground: Color(0xFF6EE7B7),
@@ -217,6 +227,7 @@ class B05SemanticColors extends ThemeExtension<B05SemanticColors> {
     focus: Color(0xFF0F766E),
     disabled: Color(0xFFE2E8F0),
     action: Color(0xFF0F766E),
+    actionFill: Color(0xFF0F766E),
     onAction: Color(0xFFFFFFFF),
     success: B05ColorRole(
       foreground: Color(0xFF065F46),
@@ -326,6 +337,7 @@ class B05SemanticColors extends ThemeExtension<B05SemanticColors> {
     Color? focus,
     Color? disabled,
     Color? action,
+    Color? actionFill,
     Color? onAction,
     B05ColorRole? success,
     B05ColorRole? warning,
@@ -358,6 +370,7 @@ class B05SemanticColors extends ThemeExtension<B05SemanticColors> {
       focus: focus ?? this.focus,
       disabled: disabled ?? this.disabled,
       action: action ?? this.action,
+      actionFill: actionFill ?? this.actionFill,
       onAction: onAction ?? this.onAction,
       success: success ?? this.success,
       warning: warning ?? this.warning,
@@ -407,6 +420,7 @@ class B05SemanticColors extends ThemeExtension<B05SemanticColors> {
       focus: Color.lerp(focus, other.focus, t)!,
       disabled: Color.lerp(disabled, other.disabled, t)!,
       action: Color.lerp(action, other.action, t)!,
+      actionFill: Color.lerp(actionFill, other.actionFill, t)!,
       onAction: Color.lerp(onAction, other.onAction, t)!,
       success: success.lerp(other.success, t),
       warning: warning.lerp(other.warning, t),

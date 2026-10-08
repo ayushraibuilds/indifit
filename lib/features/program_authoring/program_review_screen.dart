@@ -458,7 +458,7 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
                             : 'Try again',
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: context.b05Colors.action,
+                        backgroundColor: context.b05Colors.actionFill,
                         foregroundColor: context.b05Colors.onAction,
                         textStyle: TextStyle(
                           fontFamily: 'Outfit',

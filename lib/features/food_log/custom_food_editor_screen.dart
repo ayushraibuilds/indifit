@@ -291,7 +291,7 @@ class _CustomFoodEditorScreenState
                     child: ElevatedButton(
                       onPressed: _saving ? null : _saveCustomFood,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: context.b05Colors.action,
+                        backgroundColor: context.b05Colors.actionFill,
                         foregroundColor: context.b05Colors.onAction,
                         minimumSize: const Size.fromHeight(50),
                         shape: RoundedRectangleBorder(

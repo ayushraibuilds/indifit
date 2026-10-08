@@ -545,7 +545,7 @@ class _QuickAddMacrosSheetState extends ConsumerState<QuickAddMacrosSheet> {
             ElevatedButton(
               onPressed: _saving ? null : _submit,
               style: ElevatedButton.styleFrom(
-                backgroundColor: context.b05Colors.action,
+                backgroundColor: context.b05Colors.actionFill,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(

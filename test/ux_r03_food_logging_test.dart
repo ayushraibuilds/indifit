@@ -69,7 +69,7 @@ void main() {
       );
       await _pumpFood(tester);
 
-      expect(find.text('Add breakfast'), findsOneWidget);
+      expect(find.text('Log breakfast'), findsOneWidget);
       expect(find.text('Search foods'), findsOneWidget);
       expect(
         tester
@@ -210,7 +210,7 @@ void main() {
     await _pumpFood(tester);
 
     expect(find.text('Log breakfast'), findsNothing);
-    expect(find.text('Add breakfast'), findsNothing);
+    expect(find.text('Log breakfast'), findsNothing);
     expect(find.text('Search foods'), findsNothing);
     expect(find.text('Add food'), findsWidgets);
     expect(find.byType(TextField), findsNothing);
@@ -246,16 +246,16 @@ void main() {
     await _pumpFood(tester);
 
     expect(find.text('Food'), findsOneWidget);
-    expect(find.text('Add lunch'), findsNothing);
+    expect(find.text('Log lunch'), findsNothing);
     await tester.tap(find.bySemanticsLabel('Add Lunch'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Add lunch'), findsOneWidget);
+    expect(find.text('Log lunch'), findsOneWidget);
     expect(find.byType(BackButton), findsOneWidget);
     await tester.tap(find.byType(BackButton));
     await tester.pumpAndSettle();
 
-    expect(find.text('Add lunch'), findsNothing);
+    expect(find.text('Log lunch'), findsNothing);
     expect(find.text('Add food'), findsWidgets);
     expect(find.text('Search foods'), findsNothing);
   });
@@ -334,7 +334,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.pump(const Duration(milliseconds: 500));
 
-    expect(find.text('Add lunch'), findsNothing);
+    expect(find.text('Log lunch'), findsNothing);
     expect(find.text('Add food'), findsWidgets);
     expect(find.text('Search foods'), findsNothing);
     expect(coordinator.lastPreviewQuantity, isNotNull);

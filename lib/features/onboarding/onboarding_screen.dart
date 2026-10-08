@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/config/app_preferences_keys.dart';
 import '../../core/di/providers.dart';
+import '../../core/presentation/consumer_number_label.dart';
 import '../../core/presentation/diet_preference_presentation.dart';
 import '../../core/presentation/secondary_presentation.dart';
 import '../../core/presentation/today_onboarding_handoff.dart';
@@ -1109,25 +1110,30 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     children: [
                       _buildPayoffMetric(
                         label: 'Calories',
-                        value: '${macros.calories} kcal',
+                        value:
+                            '${ConsumerNumberLabel.rounded(macros.calories.toDouble())} kcal',
                         subvalue: 'Target zone: ${macros.calorieRangeLabel}',
                       ),
                       _buildPayoffMetric(
                         label: 'Protein',
-                        value: '${macros.proteinG} g',
+                        value:
+                            '${ConsumerNumberLabel.rounded(macros.proteinG.toDouble())} g',
                         subvalue: 'Range: ${macros.proteinRangeLabel}',
                       ),
                       _buildPayoffMetric(
                         label: 'Carbs',
-                        value: '${macros.carbsG} g',
+                        value:
+                            '${ConsumerNumberLabel.rounded(macros.carbsG.toDouble())} g',
                       ),
                       _buildPayoffMetric(
                         label: 'Fat',
-                        value: '${macros.fatG} g',
+                        value:
+                            '${ConsumerNumberLabel.rounded(macros.fatG.toDouble())} g',
                       ),
                       _buildPayoffMetric(
                         label: 'Water',
-                        value: '${HydrationRepository.defaultDailyGoalMl} ml',
+                        value:
+                            '${ConsumerNumberLabel.rounded(HydrationRepository.defaultDailyGoalMl.toDouble())} ml',
                       ),
                     ],
                   ),

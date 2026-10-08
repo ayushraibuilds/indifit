@@ -504,6 +504,12 @@ String formatWeight(double kilograms, String units) => formatDisplayedWeight(
   units,
 );
 
+/// Total lifted, rounded and grouped: "1,440 kg", matching the workout
+/// summary. Single weights keep one decimal via [formatWeight].
+String formatTotalLifted(double kilograms, String units) =>
+    '${formatVolume(UnitPreferencePresentation.weightForDisplay(kilograms, units))} '
+    '${UnitPreferencePresentation.weightSymbol(units)}';
+
 String formatDisplayedWeight(double value, String units) =>
     '${value.toStringAsFixed(1)} ${UnitPreferencePresentation.weightSymbol(units)}';
 

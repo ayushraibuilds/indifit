@@ -369,11 +369,19 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       for (final food in _onlineResults)
         NutritionFoodSearchCandidate.remote(food),
     ];
-    _rankedSearchResults = NutritionFoodSearchRanking.rank(
+    final ranked = NutritionFoodSearchRanking.rank(
       query: query,
       candidates: candidates,
       history: _searchHistory(),
     );
+    // Online matches arrive after the on-device ones. Keep them below, so the
+    // rows already on screen never move under the user's finger.
+    bool isRemote(NutritionFoodSearchResult result) =>
+        result.candidate.source == NutritionFoodSearchSource.remote;
+    _rankedSearchResults = [
+      ...ranked.where((result) => !isRemote(result)),
+      ...ranked.where(isRemote),
+    ];
   }
 
   NutritionFoodSearchHistory _searchHistory() {
@@ -1440,17 +1448,8 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Add to ${_mealTitle(mealType)}',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                Text(
-                  'Add ${_mealLabel(mealType)}',
-                  style: B05Typography.caption(context),
-                ),
-                const SizedBox(height: 14),
+                // The app bar already names the meal and the date.
+                const SizedBox(height: 4),
                 FoodSearchBar(
                   controller: _searchController,
                   focusNode: _searchFocusNode,
@@ -2225,12 +2224,6 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     return presentation.isKnown ? presentation.label.toLowerCase() : 'meal';
   }
 
-  String _mealTitle(String? value) {
-    if (value == null || value.trim().isEmpty) return 'Meal';
-    final presentation = MealPresentationRegistry.forStableId(value);
-    return presentation.isKnown ? presentation.label : 'Meal';
-  }
-
   String _quantityUnitLabel(Quantity quantity, {NutritionFoodOption? option}) =>
       quantity.unit == QuantityUnit.householdReference
       ? quantity.context.householdMeasure!.measureType
@@ -2633,7 +2626,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                 onConfirm();
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: context.b05Colors.action,
+                backgroundColor: context.b05Colors.actionFill,
                 foregroundColor: context.b05Colors.onAction,
               ),
               child: const Text('Allow'),

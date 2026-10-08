@@ -233,7 +233,7 @@ void main() {
             greaterThanOrEqualTo(4.5),
           );
           expect(
-            _contrast(colors.onAction, colors.action),
+            _contrast(colors.onAction, colors.actionFill),
             greaterThanOrEqualTo(4.5),
           );
           expect(

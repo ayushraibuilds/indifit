@@ -25,7 +25,7 @@ void main() {
     test('ThemeModeNotifier supports dynamic ThemeMode selection', () async {
       final notifier = ThemeModeNotifier();
 
-      expect(notifier.state, ThemeMode.system);
+      expect(notifier.state, ThemeMode.dark);
 
       await notifier.setThemeMode(ThemeMode.light);
       expect(notifier.state, ThemeMode.light);

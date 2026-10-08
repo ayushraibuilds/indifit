@@ -52,7 +52,7 @@ void main() {
       );
 
       // Verify metric display
-      expect(find.text('2485'), findsOneWidget);
+      expect(find.text('2,485'), findsOneWidget);
       expect(find.text('kcal/day'), findsOneWidget);
 
       // Verify confidence pill

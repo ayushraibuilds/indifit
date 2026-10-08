@@ -5,6 +5,7 @@ import '../../../core/nutrition_thali.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
 import 'thali_plate_layout.dart';
+import 'thali_quantity_label.dart';
 
 /// Interactive circular Indian Thali plate presenting dishes in traditional
 /// center staple (roti/rice) and perimeter bowls (katoris) with an outer macro ring.
@@ -332,8 +333,7 @@ class _CenterStaplePlatter extends StatelessWidget {
         stapleSlot.preview?.calculation.facts['energy']?.point?.value.asDouble;
     final energyStr = energy != null ? '${energy.round()} kcal' : null;
 
-    final quantityStr =
-        '${item.quantity.amount} ${item.quantity.unit.name == 'piece' ? 'pc' : item.quantity.unit.name}';
+    final quantityStr = thaliQuantityLabel(item.quantity);
 
     return B05TouchTarget(
       minWidth: B05Layout.minTouchTarget,
@@ -392,7 +392,9 @@ class _CenterStaplePlatter extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      item.displayLabel ?? stapleSlot.placement.categoryLabel,
+                      thaliPlateShortName(
+                        item.displayLabel ?? stapleSlot.placement.categoryLabel,
+                      ),
                       style: TextStyle(
                         color: colors.textPrimary,
                         fontSize: 11,
@@ -452,8 +454,7 @@ class _CenterStaplePlatter extends StatelessWidget {
     final energy =
         stapleSlot.preview?.calculation.facts['energy']?.point?.value.asDouble;
     final energyStr = energy != null ? '${energy.round()} kcal' : null;
-    final quantityStr =
-        '${item.quantity.amount} ${item.quantity.unit.name == 'piece' ? 'pc' : item.quantity.unit.name}';
+    final quantityStr = thaliQuantityLabel(item.quantity);
 
     return Semantics(
       button: true,
@@ -489,7 +490,10 @@ class _CenterStaplePlatter extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        item.displayLabel ?? stapleSlot.placement.categoryLabel,
+                        thaliPlateShortName(
+                          item.displayLabel ??
+                              stapleSlot.placement.categoryLabel,
+                        ),
                         style: TextStyle(
                           color: colors.textPrimary,
                           fontSize: 10,
@@ -519,6 +523,17 @@ class _CenterStaplePlatter extends StatelessWidget {
   }
 }
 
+/// The name shown inside a katori: the first of several names and without a
+/// parenthetical ("Toor Dal / Yellow Dal Tadka" → "Toor Dal"), so it stays
+/// legible instead of being scaled down to fit. The full name stays in the
+/// semantics label and the dish list.
+String thaliPlateShortName(String name) {
+  var short = name.split(' / ').first;
+  final paren = short.indexOf(' (');
+  if (paren > 0) short = short.substring(0, paren);
+  return short.trim().isEmpty ? name : short.trim();
+}
+
 /// Positioned wrapper for a perimeter katori slot.
 class _PositionedKatori extends StatelessWidget {
   final ThaliPlateSlot slot;
@@ -542,8 +557,11 @@ class _PositionedKatori extends StatelessWidget {
     final colors = context.b05Colors;
     final center = plateDiameter / 2;
     // Perimeter orbit radius: placed nicely between center staple and outer macro ring
-    final orbitRadius = plateDiameter * 0.355;
-    final katoriSize = (plateDiameter * 0.24).clamp(56.0, 76.0);
+    // Katoris sit in the ring between the centre staples (radius 0.19 D)
+    // and the inner rim (0.45 D): 0.32 D ± 0.125 D. Below a 192 pt plate the
+    // 48 pt touch-target minimum wins and they overlap the centre slightly.
+    final katoriSize = (plateDiameter * 0.25).clamp(48.0, 76.0);
+    final orbitRadius = plateDiameter * 0.32;
 
     final x = center + orbitRadius * math.cos(slot.angle) - (katoriSize / 2);
     final y = center + orbitRadius * math.sin(slot.angle) - (katoriSize / 2);
@@ -621,7 +639,9 @@ class _PositionedKatori extends StatelessWidget {
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 4),
                           child: Text(
-                            item.displayLabel ?? placement.categoryLabel,
+                            thaliPlateShortName(
+                              item.displayLabel ?? placement.categoryLabel,
+                            ),
                             style: TextStyle(
                               color: colors.textPrimary,
                               fontSize: 11,

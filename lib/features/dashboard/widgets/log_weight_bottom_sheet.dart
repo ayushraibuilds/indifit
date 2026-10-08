@@ -490,7 +490,7 @@ class _LogWeightBottomSheetState extends ConsumerState<LogWeightBottomSheet> {
             child: ElevatedButton(
               onPressed: _isSaveDisabled ? null : _save,
               style: ElevatedButton.styleFrom(
-                backgroundColor: colors.action,
+                backgroundColor: colors.actionFill,
                 foregroundColor: colors.onAction,
                 disabledBackgroundColor: colors.disabled,
                 disabledForegroundColor: colors.textDisabled,

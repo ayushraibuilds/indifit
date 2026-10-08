@@ -21,8 +21,8 @@ void main() {
         final prefs = await SharedPreferences.getInstance();
         final notifier = ThemeModeNotifier(prefs);
 
-        // Default when no key is set should be system mode
-        expect(notifier.state, equals(ThemeMode.system));
+        // Default when no key is set is dark, matching the launch screen.
+        expect(notifier.state, equals(ThemeMode.dark));
 
         // Set light mode
         await notifier.setThemeMode(ThemeMode.light);
@@ -37,6 +37,10 @@ void main() {
         await notifier.setThemeMode(ThemeMode.dark);
         expect(notifier.state, equals(ThemeMode.dark));
         expect(prefs.getString(ThemeModeNotifier.prefKey), equals('dark'));
+
+        // A saved System choice survives a restart; it is not the default.
+        await notifier.setThemeMode(ThemeMode.system);
+        expect(ThemeModeNotifier(prefs).state, equals(ThemeMode.system));
       },
     );
 

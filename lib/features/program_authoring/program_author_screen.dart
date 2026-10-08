@@ -2201,7 +2201,8 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
                                   icon: const Icon(Icons.rate_review_outlined),
                                   label: const Text('Review plan'),
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: context.b05Colors.action,
+                                    backgroundColor:
+                                        context.b05Colors.actionFill,
                                     foregroundColor: context.b05Colors.onAction,
                                   ),
                                 ),

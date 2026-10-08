@@ -237,7 +237,7 @@ class ThaliNutritionSummaryBar extends StatelessWidget {
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: colors.action,
+                    backgroundColor: colors.actionFill,
                     foregroundColor: colors.onAction,
                     disabledBackgroundColor: colors.surface,
                     disabledForegroundColor: colors.textDisabled,

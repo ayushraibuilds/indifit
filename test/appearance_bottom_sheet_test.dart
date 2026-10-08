@@ -97,10 +97,11 @@ void main() {
         ),
       );
 
-      expect(find.byIcon(Icons.dark_mode_outlined), findsOneWidget);
+      // Dark is the first-run default, so the toggle offers light mode.
+      expect(find.byIcon(Icons.light_mode_outlined), findsOneWidget);
       expect(find.byIcon(Icons.tune_rounded), findsNothing);
 
-      await tester.tap(find.byIcon(Icons.dark_mode_outlined));
+      await tester.tap(find.byIcon(Icons.light_mode_outlined));
       await tester.pump();
 
       expect(appearanceOpened, isTrue);

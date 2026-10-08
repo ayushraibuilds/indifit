@@ -597,7 +597,7 @@ class _RemoteFoodReviewSheetState extends State<RemoteFoodReviewSheet> {
                         ? null
                         : () => _handleConfirm(logImmediately: true),
                     style: FilledButton.styleFrom(
-                      backgroundColor: context.b05Colors.action,
+                      backgroundColor: context.b05Colors.actionFill,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),

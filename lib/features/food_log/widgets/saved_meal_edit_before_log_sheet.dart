@@ -463,7 +463,7 @@ class _SavedMealEditBeforeLogSheetState
                         ? null
                         : _commitLog,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: context.b05Colors.action,
+                      backgroundColor: context.b05Colors.actionFill,
                       foregroundColor: context.b05Colors.onAction,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),

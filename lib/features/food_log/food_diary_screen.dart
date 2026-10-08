@@ -108,7 +108,8 @@ class _FoodDiaryScreenState extends ConsumerState<FoodDiaryScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Food diary', style: B05Typography.title(context)),
+        // Same title style as the Training and Progress tabs.
+        title: const Text('Food diary'),
       ),
       body: SafeArea(
         top: false,

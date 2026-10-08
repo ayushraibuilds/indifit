@@ -424,7 +424,7 @@ void main() {
       final btn = tester.widget<ElevatedButton>(find.byType(ElevatedButton));
       expect(
         btn.style?.backgroundColor?.resolve({}),
-        B05SemanticColors.dark.action,
+        B05SemanticColors.dark.actionFill,
       );
     });
 
