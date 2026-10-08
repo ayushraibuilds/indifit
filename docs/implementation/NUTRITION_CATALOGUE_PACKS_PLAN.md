@@ -27,7 +27,7 @@ Update this table in every PR that touches the catalogue. IDs are referenced fro
 | CAT-10 | Licences: INDB permission request; attribution screen | Owner + code | — / B | — | **Waiting on Ayush** (INDB email). Code: About & credits names Open Food Facts (ODbL) and labels catalogue values "IndiFit estimates" (PR-B); CC0/OGL credits join when that data ships (CAT-11). |
 | CAT-11 | Import INDB recipes (if CAT-10 = yes) **or** build dishes from CC0/OGL ingredient data | Data | J | CAT-5, CAT-10 | Not started |
 | CAT-12 | AI portion conversions use pack gram weights (C-06) | Code | F | CAT-4 | In progress (PR-F `fix/ai-portion-conversions`): the AI tools convert with the installed pack's measures. Bowl and plate = 2 katori; grams ↔ servings via gram weights; a katori of a per-100 g base dish = 150 g (variants ask); a user's calibrated conversion wins. "dal" → Toor Dal Tadka; size and oil variants leave the choice list when their dish is in it. No raw banana in the catalogue yet, so "banana" still can't resolve (CAT-11). Paid eval rerun is owner work. |
-| CAT-13 | Opt-in "couldn't find it" feedback (local queue, sent only with consent) | Code | K | CAT-7 | Not started (Next) |
+| CAT-13 | Opt-in "couldn't find it" feedback (local queue, sent only with consent) | Code | K | CAT-7 | In progress (PR-K `feat/missed-search-feedback`): "Can't find …? Add to my list" at the end of food search keeps the words on the phone (30 at most); Settings → Food database lists them with "Send to IndiFit", which opens the person's own mail app to `support@` with only those words, and "Clear list". No server, nothing sent automatically. |
 
 Status values: Not started · In progress (PR #) · Merged (PR #) · Blocked (reason).
 
