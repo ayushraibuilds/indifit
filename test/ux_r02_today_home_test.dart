@@ -19,6 +19,7 @@ import 'package:indifit/features/dashboard/dashboard_personalization_controller.
 import 'package:indifit/features/dashboard/today_consumer_presentation.dart';
 import 'package:indifit/features/dashboard/today_daily_action_surface.dart';
 import 'package:indifit/features/dashboard/today_surface_controller.dart';
+import 'package:indifit/features/food_log/usual_thali.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final _refreshSnapshotProvider = StateProvider<TodaySurfaceSnapshot>(
@@ -284,6 +285,7 @@ void main() {
         todaySurfaceSnapshotProvider.overrideWith(
           (ref, date) async => ref.watch(_refreshSnapshotProvider),
         ),
+        usualThaliProvider.overrideWith((ref) async => null),
       ],
     );
     addTearDown(container.dispose);
@@ -519,6 +521,9 @@ Widget _todayApp({
         (ref) => personalization,
       ),
       todaySurfaceSnapshotProvider.overrideWith((ref, date) async => snapshot),
+      // These goldens show the snapshot only; the usual-thali card would read
+      // the real diary.
+      usualThaliProvider.overrideWith((ref) async => null),
     ],
     child: _todaySurface(
       theme: theme,

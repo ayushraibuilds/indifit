@@ -121,7 +121,7 @@ Agents pull from the top. A queue item can go into a tester build during the clo
 | Group | Items | Notes |
 |---|---|---|
 | **v1 core** | A, B, C, G, D, L, M, N, T, then E, F, H | **All merged by 2026-10-07** (#61–#75, follow-ups #73, #74, #76). What gates the first tester build now is owner work (Step 0). |
-| **Next** | O player rows, Q specific reminders, I local search, K "couldn't find it" feedback, "usual thali" one-tap from Today, vessel calibration step | No fixed release number |
+| **Next** | O player rows, Q specific reminders, I local search, K "couldn't find it" feedback, "usual thali" one-tap from Today (in progress, `feat/usual-thali-today`), vessel calibration step | No fixed release number |
 | **Plus-gated** | P progress visuals (the TP-9 muscle map and heatmap ship behind the Plus switch; TP-10/11 are free), Plus entitlement and paywall (subscription + lifetime) | Start whenever you choose to launch Plus. Market § 6.4 gates are advice, not rules. |
 | **Needs something outside code** | J catalogue growth (the INDB reply, or the CC0/OGL path), S lock-screen rest timer (Apple Developer Program), R home widget (new native targets) | Start when the blocker clears |
 | **Maintainability** | Split `food_search_screen`; untrack `graphify-out` (566 files still tracked); delete the old v8/v9 backup exporters but keep their importers (1 Oct audit § 7); docs into one STATUS; remove `percent_indicator` (TP-11); rename `b0x_`/`r0x_`; move fixtures to `test/`; single live-workout owner (WS-D part 2) | Good filler between features; each in its own PR |
