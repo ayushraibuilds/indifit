@@ -74,7 +74,7 @@ class KatoriSizeChoice extends ConsumerWidget {
           ChoiceChip(
             key: Key('katori_size_${size.round()}'),
             avatar: Icon(Icons.rice_bowl_outlined, size: 12 + size / 25),
-            label: Text('${label(size)} · about ${size.round()} ml'),
+            label: Text('${label(size)} · ${size.round()} ml'),
             selected: current != null && selected == size,
             onSelected: (_) async {
               await saveMyKatori(ref, size);
