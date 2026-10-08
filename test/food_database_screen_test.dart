@@ -2,11 +2,13 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:indifit/core/config/app_links.dart';
 import 'package:indifit/core/config/app_preferences_keys.dart';
 import 'package:indifit/core/di/core_providers.dart';
 import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/data/catalog/catalog_pack.dart';
 import 'package:indifit/data/catalog/catalog_update_service.dart';
+import 'package:indifit/features/food_log/missed_food_searches.dart';
 import 'package:indifit/features/settings/food_data_credits.dart';
 import 'package:indifit/features/settings/food_database_providers.dart';
 import 'package:indifit/features/settings/food_database_screen.dart';
@@ -163,6 +165,67 @@ void main() {
     expect(FoodDatabaseCopy.bytes(900), '900 bytes');
     expect(FoodDatabaseCopy.bytes(41234), '42 KB');
     expect(FoodDatabaseCopy.bytes(1250000), '1.3 MB');
+  });
+
+  group('foods you couldn\'t find (CAT-13)', () {
+    final originalLauncher = AppLinks.launcher;
+    tearDown(() => AppLinks.launcher = originalLauncher);
+
+    testWidgets('lists the words, and Send opens mail with only them', (
+      tester,
+    ) async {
+      final opened = <Uri>[];
+      AppLinks.launcher = (uri) async {
+        opened.add(uri);
+        return true;
+      };
+      await pumpScreen(
+        tester,
+        prefs: {MissedFoodSearches.key: '["kathal sabzi","ragi dosa"]'},
+      );
+
+      expect(find.text('Foods you couldn\'t find'), findsOneWidget);
+      expect(find.text('• kathal sabzi'), findsOneWidget);
+      expect(find.text('• ragi dosa'), findsOneWidget);
+
+      await tester.ensureVisible(
+        find.byKey(const Key('food_database_send_missed')),
+      );
+      await tester.tap(find.byKey(const Key('food_database_send_missed')));
+      await settle(tester);
+
+      final mail = opened.single;
+      expect(mail.scheme, 'mailto');
+      expect(mail.path, AppLinks.supportEmail);
+      final body = Uri.decodeComponent(mail.query);
+      expect(body, contains('- kathal sabzi'));
+      expect(body, contains('- ragi dosa'));
+      expect(mail.query, isNot(contains('+')));
+    });
+
+    testWidgets('Clear list removes the words from the phone', (tester) async {
+      await pumpScreen(
+        tester,
+        prefs: {MissedFoodSearches.key: '["kathal sabzi"]'},
+      );
+      await tester.ensureVisible(
+        find.byKey(const Key('food_database_clear_missed')),
+      );
+      await tester.tap(find.byKey(const Key('food_database_clear_missed')));
+      await settle(tester);
+
+      expect(find.text('• kathal sabzi'), findsNothing);
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getString(MissedFoodSearches.key), isNull);
+    });
+
+    testWidgets('with nothing saved it explains where words come from', (
+      tester,
+    ) async {
+      await pumpScreen(tester);
+      expect(find.textContaining('Add to my list'), findsOneWidget);
+      expect(find.byKey(const Key('food_database_send_missed')), findsNothing);
+    });
   });
 }
 

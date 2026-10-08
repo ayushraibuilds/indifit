@@ -61,6 +61,13 @@ class FoodSearchResultsList extends StatelessWidget {
   searchResultItemBuilder;
   final VoidCallback onCreateCustomFood;
 
+  /// The search to offer as "couldn't find it" (CAT-13); null hides it.
+  final String? missedQuery;
+
+  /// True once [missedQuery] was added to the list.
+  final bool missedQuerySaved;
+  final VoidCallback? onAddMissedQuery;
+
   const FoodSearchResultsList({
     super.key,
     this.onlineSearchOff,
@@ -71,6 +78,9 @@ class FoodSearchResultsList extends StatelessWidget {
     required this.searchResults,
     required this.searchResultItemBuilder,
     required this.onCreateCustomFood,
+    this.missedQuery,
+    this.missedQuerySaved = false,
+    this.onAddMissedQuery,
   });
 
   @override
@@ -112,7 +122,59 @@ class FoodSearchResultsList extends StatelessWidget {
             (onlineSearchOff != null || !isOnlineSearchOffline) &&
             searchResults.isEmpty)
           FoodSearchNoResultsState(onCreateCustomFood: onCreateCustomFood),
+        if (!searchingOnline && missedQuery != null)
+          FoodSearchMissedQueryRow(
+            query: missedQuery!,
+            saved: missedQuerySaved,
+            onAdd: onAddMissedQuery,
+          ),
       ],
+    );
+  }
+}
+
+/// "Can't find "kathal sabzi"?" at the end of a search (CAT-13). Adds the
+/// words to a list on this phone; nothing is sent from here.
+class FoodSearchMissedQueryRow extends StatelessWidget {
+  const FoodSearchMissedQueryRow({
+    super.key,
+    required this.query,
+    required this.saved,
+    this.onAdd,
+  });
+
+  final String query;
+  final bool saved;
+  final VoidCallback? onAdd;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      key: const Key('food_search_missed_query'),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Can\'t find "$query"?', style: B05Typography.label(context)),
+          const SizedBox(height: 2),
+          Text(
+            saved
+                ? 'Added to your list. Send it from Settings → Food database '
+                      'when you\'re ready.'
+                : 'Add it to a list on this phone. You choose later whether '
+                      'to send the list to IndiFit.',
+            style: B05Typography.caption(context),
+          ),
+          if (!saved) ...[
+            const SizedBox(height: 4),
+            TextButton.icon(
+              onPressed: onAdd,
+              icon: const Icon(Icons.playlist_add_rounded),
+              label: const Text('Add to my list'),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }
