@@ -24,6 +24,7 @@ import '../../core/services/platform_storage_protection.dart';
 import '../../core/utils/app_logger.dart';
 import '../catalog/catalog_pack.dart';
 import '../catalog/catalog_pack_importer.dart';
+import '../catalog/catalog_search_index.dart';
 import '../models/b02_execution_models.dart';
 import 'b01_legacy_import_support.dart';
 import 'tables/achievement_tables.dart';
@@ -453,6 +454,7 @@ class AppDatabase extends _$AppDatabase {
     await _checkAndInvalidateFoodSearchCacheOnManifestChange();
     if (schemaVersionOverride == null) {
       await _ensureBundledCatalogPack();
+      await _ensureCatalogSearchIndex();
     }
   }
 }

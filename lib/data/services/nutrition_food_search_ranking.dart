@@ -166,6 +166,7 @@ class NutritionFoodSearchCandidate {
     required this.food,
     required this.option,
     required this.remote,
+    this.matchedTerms = const [],
   });
 
   factory NutritionFoodSearchCandidate.legacy(
@@ -173,6 +174,7 @@ class NutritionFoodSearchCandidate {
     String? canonicalIdentityId,
     String? presentationKind,
     String? variantOfFoodId,
+    List<String> matchedTerms = const [],
   }) {
     return NutritionFoodSearchCandidate._(
       source: NutritionFoodSearchSource.legacy,
@@ -191,6 +193,7 @@ class NutritionFoodSearchCandidate {
       food: food,
       option: null,
       remote: null,
+      matchedTerms: matchedTerms,
     );
   }
 
@@ -259,6 +262,10 @@ class NutritionFoodSearchCandidate {
   final NutritionFoodOption? option;
   final FoodApiResult? remote;
 
+  /// Words the on-device index matched besides the name: pack aliases and
+  /// corrected spellings (CAT-9). Searchable, never displayed.
+  final List<String> matchedTerms;
+
   /// Only canonical IDs and stable provider IDs are trusted for dedupe.
   String? get trustedIdentityKey {
     if (source == NutritionFoodSearchSource.remote) {
@@ -314,6 +321,8 @@ class NutritionFoodSearchCandidate {
       if (packageText.isNotEmpty && !name.contains(packageText)) packageText,
       if (categoryText.isNotEmpty && !name.contains(categoryText)) categoryText,
       if (regionText.isNotEmpty && !name.contains(regionText)) regionText,
+      for (final term in matchedTerms)
+        NutritionFoodSearchVocabulary.normalize(term),
     ].where((part) => part.isNotEmpty).join(' ');
   }
 

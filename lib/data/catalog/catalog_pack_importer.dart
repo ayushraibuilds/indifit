@@ -5,6 +5,7 @@ import 'package:drift/drift.dart';
 import '../../core/fixtures/food_identity_manifest.dart';
 import '../database/app_database.dart';
 import 'catalog_pack.dart';
+import 'catalog_search_index.dart';
 
 /// The rule version on every conversion row a pack writes. Re-applying a
 /// pack replaces these rows; user-owned conversions are never touched.
@@ -125,6 +126,14 @@ class CatalogPackImporter {
       await _db.customStatement(
         "DELETE FROM food_search_cache WHERE query_hash != '__manifest_version__'",
       );
+      // New names and aliases reach on-device search (CAT-9).
+      try {
+        final index = CatalogSearchIndex(_db);
+        await index.ensure();
+        await index.rebuild();
+      } catch (_) {
+        // Safe: search falls back to plain name matching until next open.
+      }
     }
     return result;
   }

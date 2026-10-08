@@ -169,7 +169,9 @@ void main() {
       },
     );
 
-    testWidgets('narrow phones show last time as its own line', (tester) async {
+    testWidgets('narrow phones show last time under each set too', (
+      tester,
+    ) async {
       final load = TextEditingController();
       final reps = TextEditingController();
       addTearDown(load.dispose);
@@ -184,10 +186,11 @@ void main() {
         previousSetLabels: previous.take(2).toList(),
       );
 
-      expect(find.text('Last time: 80 kg × 8'), findsOneWidget);
-      expect(find.text('Last time: 80 kg × 7'), findsOneWidget);
+      // One layout at every width (TP-8): no separate stacked mode.
+      expect(find.text('Last 80 kg × 8'), findsOneWidget);
+      expect(find.text('Last 80 kg × 7'), findsOneWidget);
       // Last session had two sets; set 3 has nothing to compare with.
-      expect(find.textContaining('Last time:'), findsNWidgets(2));
+      expect(find.textContaining('Last '), findsNWidgets(2));
       expect(tester.takeException(), isNull);
     });
   });
@@ -225,13 +228,16 @@ void main() {
       onDelete: deleted.add,
     );
 
-    expect(find.text('PLANNED'), findsOneWidget);
-    expect(find.text('ACTUAL'), findsOneWidget);
+    // Rows, not a table (TP-8): no column headers.
+    expect(find.text('PLANNED'), findsNothing);
+    expect(find.text('ACTUAL'), findsNothing);
     expect(find.text('Enter actuals'), findsOneWidget);
     expect(find.text('Planned input'), findsNothing);
-    // The cell is short ("reps" is implied by the column); the row's
-    // semantics keep the full wording.
-    expect(find.text('80 kg × 8–10 × RPE 8'), findsNWidgets(2));
+    // Each row names its set and target; the logged one adds the actual.
+    // The row's semantics keep the full wording.
+    expect(find.text('Set 1 · 80 kg × 8–10 × RPE 8'), findsOneWidget);
+    expect(find.text('Set 2 · 80 kg × 8–10 × RPE 8'), findsOneWidget);
+    expect(find.text('80 kg × 8 · RPE 8'), findsOneWidget);
     expect(
       find.bySemanticsLabel(RegExp('planned 80 kg × 8–10 reps × RPE 8')),
       findsNWidgets(2),

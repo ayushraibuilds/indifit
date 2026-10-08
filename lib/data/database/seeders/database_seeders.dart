@@ -262,6 +262,22 @@ extension DatabaseSeeders on AppDatabase {
     }
   }
 
+  /// Builds the on-device food search index when it's missing or empty
+  /// (CAT-9). A failure only costs alias and typo matching: the plain name
+  /// search keeps working.
+  Future<void> _ensureCatalogSearchIndex() async {
+    try {
+      await CatalogSearchIndex(this).ensure();
+    } catch (e, st) {
+      AppLogger.warning('Food search index unavailable: $e');
+      CrashReportingService.recordCrash(
+        e,
+        st,
+        reason: 'catalogue search index failed',
+      );
+    }
+  }
+
   Future<void> _seedV17NutrientRegistry(NutrientRegistry registry) async {
     final existing = await select(nutritionNutrientDefinitions).get();
     if (existing.isNotEmpty) return;
