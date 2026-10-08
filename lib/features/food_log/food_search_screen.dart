@@ -36,6 +36,7 @@ import 'food_diary_screen.dart';
 import 'food_log_surface.dart';
 import 'food_search_view_models.dart';
 import 'meal_presentation_registry.dart';
+import 'missed_food_searches.dart';
 import 'repeat_meal.dart';
 import 'saved_meals_screen.dart';
 import 'saved_recipe_log_screen.dart';
@@ -395,6 +396,17 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   }
 
   Map<int, List<String>> _pendingMatchedTerms = const {};
+
+  /// Searches added to the "couldn't find it" list this visit (CAT-13).
+  final Set<String> _savedMissedQueries = {};
+
+  Future<void> _addMissedQuery() async {
+    final query = _searchController.text.trim();
+    if (query.isEmpty) return;
+    final added = await ref.read(missedFoodSearchesProvider).add(query);
+    if (!mounted || !added) return;
+    setState(() => _savedMissedQueries.add(query.toLowerCase()));
+  }
 
   Future<List<FoodItem>> _loadLocalSearchResults(String query) async {
     final repository = ref.read(foodRepositoryProvider);
@@ -1648,6 +1660,13 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     onRetrySearch: () => _performSearch(_searchController.text),
     searchResults: _rankedSearchResults,
     searchResultItemBuilder: (context, result) => _buildRankedSearchRow(result),
+    missedQuery: _searchController.text.trim().length >= 2
+        ? _searchController.text.trim()
+        : null,
+    missedQuerySaved: _savedMissedQueries.contains(
+      _searchController.text.trim().toLowerCase(),
+    ),
+    onAddMissedQuery: _addMissedQuery,
     onCreateCustomFood: () async {
       final result = await Navigator.push<bool?>(
         context,
