@@ -29,6 +29,12 @@ class AboutCreditsScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: B05Layout.space12),
                 const _Credit(
+                  title: 'Phosphor Icons',
+                  detail:
+                      'Phosphor Icons copyright (c) 2020-2021 Phosphor Icons; MIT License. Used for the fat nutrient icon.',
+                ),
+                const SizedBox(height: B05Layout.space12),
+                const _Credit(
                   title: 'RepDB',
                   detail:
                       'Exercise data by RepDB (repdb.co). Approved exercise illustrations, when available, are used under the RepDB Free Tier License.',

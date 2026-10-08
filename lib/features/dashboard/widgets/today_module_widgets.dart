@@ -357,7 +357,7 @@ class TodayNextUpModule extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('NEXT UP', style: todayEyebrow(context)),
+                  Text('Next up', style: todayEyebrow(context)),
                   const SizedBox(height: B05Layout.space4),
                   Text(presentation.title, style: B05Typography.title(context)),
                   const SizedBox(height: B05Layout.space4),
@@ -703,7 +703,7 @@ class TodayActivityModule extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('ACTIVITY', style: todayEyebrow(context)),
+                  Text('Activity', style: todayEyebrow(context)),
                   const SizedBox(height: B05Layout.space4),
                   Text(
                     presentation.headline,
@@ -776,7 +776,7 @@ class TodayProgressModule extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('PROGRESS', style: todayEyebrow(context)),
+            Text('Progress', style: todayEyebrow(context)),
             const SizedBox(height: B05Layout.space4),
             Text(presentation.headline, style: B05Typography.title(context)),
             const SizedBox(height: B05Layout.space4),

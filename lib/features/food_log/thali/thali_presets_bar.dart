@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/b05_semantic_colors.dart';
+import '../../../core/widgets/b05_accessibility_primitives.dart';
 import 'thali_presets.dart';
 
 class ThaliPresetsBar extends StatelessWidget {
@@ -18,13 +19,8 @@ class ThaliPresetsBar extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Text(
-            'QUICK START',
-            style: TextStyle(
-              color: colors.textDisabled,
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.8,
-            ),
+            'Quick start',
+            style: B05Typography.sectionLabel(context),
           ),
         ),
         SizedBox(

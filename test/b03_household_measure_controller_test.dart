@@ -62,7 +62,7 @@ void main() {
       await tester.pump();
 
       expect(find.text('A quick note about measuring'), findsOneWidget);
-      expect(find.text('STANDARD MEASURES'), findsOneWidget);
+      expect(find.text('Standard measures'), findsOneWidget);
       expect(find.textContaining('mL'), findsWidgets);
       expect(
         find.bySemanticsLabel('Teaspoon, reviewed volume 5 mL'),

@@ -107,9 +107,7 @@ class FoodPortionBottomSheet extends ConsumerStatefulWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: context.b05Colors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      shape: B05Radii.shape(B05Radii.sheetTopRadius),
       builder: (sheetContext) {
         sheetRoute ??= ModalRoute.of(sheetContext);
         return FoodPortionBottomSheet(

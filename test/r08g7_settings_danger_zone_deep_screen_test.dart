@@ -128,7 +128,7 @@ void main() {
       // Check section headings
       expect(find.text('Backup'), findsOneWidget);
       expect(find.text('Privacy'), findsOneWidget);
-      expect(find.text('DANGER ZONE'), findsOneWidget);
+      expect(find.text('Danger zone'), findsOneWidget);
 
       // Check Danger Zone contents
       expect(find.text('Setup reset'), findsOneWidget);
@@ -303,9 +303,9 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
         await tester.pumpAndSettle();
 
-        expect(find.text('HEALTH CONNECTION'), findsOneWidget);
+        expect(find.text('Health connection'), findsOneWidget);
         expect(find.text('Connection status'), findsOneWidget);
-        expect(find.text('WHAT INDIFIT MAY USE'), findsOneWidget);
+        expect(find.text('What IndiFit may use'), findsOneWidget);
         expect(find.byType(Switch), findsWidgets);
         expect(find.text('Workout Export (Write)'), findsNothing);
         expect(find.text('Auto-sync on app open'), findsNothing);
@@ -368,7 +368,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
         await tester.pumpAndSettle();
 
-        expect(find.text('HEALTH CONNECTION'), findsOneWidget);
+        expect(find.text('Health connection'), findsOneWidget);
         expect(tester.takeException(), isNull);
       },
     );

@@ -221,12 +221,7 @@ class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
 
         // Recently unlocked horizontal carousel
         if (recentlyUnlocked.isNotEmpty) ...[
-          Text(
-            'RECENTLY UNLOCKED',
-            style: B05Typography.caption(
-              context,
-            ).copyWith(fontWeight: FontWeight.w700, letterSpacing: 0.5),
-          ),
+          Text('Recently unlocked', style: B05Typography.sectionLabel(context)),
           const SizedBox(height: B05Layout.space12),
           SizedBox(
             height: 100,
@@ -295,12 +290,7 @@ class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
           const SizedBox(height: B05Layout.space16),
         ],
 
-        Text(
-          'ALL BADGES',
-          style: B05Typography.caption(
-            context,
-          ).copyWith(fontWeight: FontWeight.w700, letterSpacing: 0.5),
-        ),
+        Text('All badges', style: B05Typography.sectionLabel(context)),
         const SizedBox(height: B05Layout.space12),
 
         LayoutBuilder(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/core/theme/b05_semantic_colors.dart';
+import 'package:indifit/core/theme/indifit_icons.dart';
 import 'package:indifit/features/dashboard/today_consumer_presentation.dart';
 import 'package:indifit/features/dashboard/widgets/today_nutrition_widgets.dart';
 
@@ -48,7 +49,7 @@ void main() {
     final under = await _barColour(tester, _fat(30));
     final colors = tester.element(find.byType(MacroRow)).b05Colors;
     expect(under, isNot(colors.danger.indicator));
-    expect(under, colors.info.indicator);
+    expect(under, colors.fat.indicator);
 
     final over = await _barColour(tester, _fat(75));
     expect(over, colors.danger.indicator);
@@ -62,6 +63,22 @@ void main() {
       };
       expect(roles.values, isNot(contains(colors.danger.indicator)));
       expect(roles.values.toSet(), hasLength(4), reason: 'each macro distinct');
+      // Fat is orange, not hydration blue.
+      expect(roles['fat'], isNot(colors.info.indicator));
     }
+  });
+
+  testWidgets('fat uses the half-filled drop, not the water drop', (
+    tester,
+  ) async {
+    await _barColour(tester, _fat(30));
+    final icon = tester.widget<IndiFitIcon>(
+      find.descendant(
+        of: find.byType(MacroRow),
+        matching: find.byType(IndiFitIcon),
+      ),
+    );
+    expect(icon.icon, IndiFitIcons.fat);
+    expect(icon.icon, isNot(IndiFitIcons.hydration));
   });
 }

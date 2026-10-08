@@ -230,7 +230,7 @@ void main() {
       expect(find.text('Connect health data'), findsOneWidget);
       expect(find.text('Disconnect'), findsNothing);
       expect(find.byType(Switch), findsNothing);
-      expect(find.text('WHAT INDIFIT MAY USE'), findsNothing);
+      expect(find.text('What IndiFit may use'), findsNothing);
       expect(find.textContaining('(Read)'), findsNothing);
       expect(find.textContaining('(Write)'), findsNothing);
       expect(tester.takeException(), isNull);
@@ -254,7 +254,7 @@ void main() {
           find.textContaining('Connect Apple Health to optionally use'),
           findsOneWidget,
         );
-        expect(find.text('WHAT INDIFIT MAY USE'), findsNothing);
+        expect(find.text('What IndiFit may use'), findsNothing);
         await expectLater(
           find.byType(HealthSyncHubScreen),
           matchesGoldenFile('goldens/phase5_health_disconnected_light.png'),
@@ -275,7 +275,7 @@ void main() {
       await _pumpScreen(tester, service);
 
       expect(find.text('Permission not granted'), findsOneWidget);
-      expect(find.text('WHAT INDIFIT MAY USE'), findsNothing);
+      expect(find.text('What IndiFit may use'), findsNothing);
       expect(find.byType(Switch), findsNothing);
     });
 
@@ -464,7 +464,7 @@ void main() {
           expect(find.text('Not supported on this platform'), findsOneWidget);
           expect(find.text('Connect health data'), findsNothing);
           expect(find.bySemanticsLabel('Refresh health data'), findsOneWidget);
-          expect(find.text('WHAT INDIFIT MAY USE'), findsNothing);
+          expect(find.text('What IndiFit may use'), findsNothing);
           expect(tester.takeException(), isNull);
         } finally {
           semanticsHandle.dispose();

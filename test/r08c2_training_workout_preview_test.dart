@@ -107,9 +107,9 @@ void main() {
       expect(find.text('Customize today'), findsOneWidget);
       expect(find.text('Quick workout'), findsNothing);
       expect(find.text('Show planned targets'), findsOneWidget);
-      expect(find.text('PLANNED STRUCTURE'), findsOneWidget);
-      expect(find.text('PLANNED EXERCISES'), findsOneWidget);
-      expect(find.text('PLANNED CHANGES'), findsOneWidget);
+      expect(find.text('Planned structure'), findsOneWidget);
+      expect(find.text('Planned exercises'), findsOneWidget);
+      expect(find.text('Planned changes'), findsOneWidget);
       expect(find.text('Planned set 1'), findsNothing);
 
       await tester.tap(find.text('Show planned targets'));
@@ -185,11 +185,11 @@ void main() {
       await tester.tap(find.text('Show planned targets'));
       await tester.pumpAndSettle();
       await tester.scrollUntilVisible(
-        find.text('PLANNED CHANGES'),
+        find.text('Planned changes'),
         240,
         scrollable: find.byType(Scrollable).first,
       );
-      expect(find.text('PLANNED CHANGES'), findsOneWidget);
+      expect(find.text('Planned changes'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 

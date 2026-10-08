@@ -86,7 +86,13 @@ class _B02LiveElapsedTextState extends State<B02LiveElapsedText> {
   @override
   Widget build(BuildContext context) {
     final seconds = _elapsedSeconds();
-    return Text(_formatElapsed(seconds), style: widget.style);
+    // Tabular figures keep the clock from shifting width every second.
+    return Text(
+      _formatElapsed(seconds),
+      style: (widget.style ?? const TextStyle()).copyWith(
+        fontFeatures: const [FontFeature.tabularFigures()],
+      ),
+    );
   }
 
   int _elapsedSeconds() {

@@ -126,6 +126,7 @@ class _FoodDiaryScreenState extends ConsumerState<FoodDiaryScreen> {
                 setState(() => _selectedDay = nextDay);
               },
             ),
+            const SizedBox(height: B05Layout.space12),
             LayoutBuilder(
               builder: (context, constraints) {
                 final primary = FoodDiaryPrimaryAddAction(

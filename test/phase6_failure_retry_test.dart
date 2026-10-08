@@ -212,7 +212,7 @@ void main() {
       await tester.pump();
 
       expect(find.text('Health'), findsWidgets);
-      expect(find.text('WHAT INDIFIT MAY USE'), findsOneWidget);
+      expect(find.text('What IndiFit may use'), findsOneWidget);
       expect(find.text('Steps'), findsOneWidget);
       expect(find.textContaining('(Read)'), findsNothing);
     });

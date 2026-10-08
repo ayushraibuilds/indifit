@@ -101,7 +101,7 @@ class _HouseholdMeasuresScreenState
           ),
         ),
         const SizedBox(height: 16),
-        Text('YOUR KATORI', style: B05Typography.label(context)),
+        Text('Your katori', style: B05Typography.sectionLabel(context)),
         const SizedBox(height: 4),
         Text(
           'Foods measured in katori follow your size: "1 katori" of dal is '
@@ -111,7 +111,7 @@ class _HouseholdMeasuresScreenState
         const SizedBox(height: 8),
         const KatoriSizeChoice(key: Key('household_my_katori')),
         const SizedBox(height: 16),
-        Text('STANDARD MEASURES', style: B05Typography.label(context)),
+        Text('Standard measures', style: B05Typography.sectionLabel(context)),
         const SizedBox(height: 8),
         Wrap(
           spacing: 8,
@@ -150,7 +150,7 @@ class _HouseholdMeasuresScreenState
           _MessageCard(message: state.message!, isError: true),
         ],
         const SizedBox(height: 24),
-        Text('YOUR MEASURES', style: B05Typography.label(context)),
+        Text('Your measures', style: B05Typography.sectionLabel(context)),
         const SizedBox(height: 8),
         if (state.vessels.isEmpty)
           const Text('Your measured cups and bowls will appear here.')

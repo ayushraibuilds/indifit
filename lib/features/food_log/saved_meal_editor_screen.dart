@@ -9,6 +9,7 @@ import '../../core/nutrition_household_measures.dart';
 import '../../core/nutrition_thali.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/typed_quantities.dart';
+import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/indi_fit_feedback.dart';
 import '../../data/repositories/nutrition_food_catalog_repository.dart';
 import '../../data/repositories/nutrition_thali_repository.dart';
@@ -546,7 +547,7 @@ class _SavedMealComponentPickerState extends State<_SavedMealComponentPicker> {
       height: MediaQuery.of(context).size.height * 0.75,
       decoration: BoxDecoration(
         color: context.b05Colors.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: B05Radii.sheetTopRadius,
       ),
       child: Column(
         children: [

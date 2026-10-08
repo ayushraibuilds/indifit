@@ -7,6 +7,7 @@ import '../../../core/nutrition_legacy_read_models.dart';
 import '../../../core/presentation/consumer_copy.dart';
 import '../../../core/presentation/consumer_number_label.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
+import '../../../core/theme/indifit_icons.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
 import '../../../data/repositories/nutrition_target_authority.dart';
 import '../../dashboard/today_consumer_presentation.dart';
@@ -295,43 +296,50 @@ class FoodDiarySummary extends StatelessWidget {
             ),
             if (fiberMetric != null && fiberMetric.isAvailable) ...[
               const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF14B8A6).withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: const Color(0xFF14B8A6).withValues(alpha: 0.2),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.eco_rounded,
-                      size: 16,
-                      color: Color(0xFF14B8A6),
+              Builder(
+                builder: (context) {
+                  final fibre = context.b05Colors.fibre;
+                  return DecoratedBox(
+                    decoration: ShapeDecoration(
+                      color: fibre.container,
+                      shape: B05Radii.shape(B05Radii.chipRadius),
                     ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Fiber',
-                      style: B05Typography.caption(context).copyWith(
-                        color: const Color(0xFF14B8A6),
-                        fontWeight: FontWeight.w600,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            IndiFitIcons.fibre,
+                            size: 16,
+                            color: fibre.indicator,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Fiber',
+                            style: B05Typography.caption(context).copyWith(
+                              color: fibre.foreground,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const Spacer(),
+                          Text(
+                            '${fiberMetric.value} ${fiberMetric.unit}',
+                            style: B05Typography.label(context).copyWith(
+                              color: fibre.foreground,
+                              fontWeight: FontWeight.w700,
+                              fontFeatures: const [
+                                FontFeature.tabularFigures(),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const Spacer(),
-                    Text(
-                      '${fiberMetric.value} ${fiberMetric.unit}',
-                      style: B05Typography.label(context).copyWith(
-                        color: const Color(0xFF14B8A6),
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
+                  );
+                },
               ),
             ],
             if (presentation.hasIncompleteNutrition) ...[

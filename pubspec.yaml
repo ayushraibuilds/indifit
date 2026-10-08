@@ -37,8 +37,9 @@ dependencies:
   mobile_scanner: ">=7.0.0 <7.4.0"
   dio: ^5.4.0
   fl_chart: ^0.67.0
-  percent_indicator: ^4.2.3
   flutter_animate: ^4.5.0
+  # Continuous (squircle) corners for B05 surfaces and the theme (V1).
+  figma_squircle: ^0.6.3
   uuid: ^4.3.3
   url_launcher: ^6.3.0
   vibration: ^3.2.0
@@ -109,6 +110,12 @@ flutter:
     - family: Outfit
       fonts:
         - asset: assets/fonts/Outfit-Variable.ttf
+    # Phosphor Icons duotone (MIT, Phosphor-MIT.txt), subset to the glyphs
+    # IndiFitIcons uses: U+E566/U+E567 drop-half. Re-subset from the
+    # phosphor_flutter package font with pyftsubset to add one.
+    - family: PhosphorDuotone
+      fonts:
+        - asset: assets/fonts/PhosphorDuotone-Subset.ttf
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

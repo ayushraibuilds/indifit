@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../widgets/b05_accessibility_primitives.dart';
 import 'app_colors_extension.dart';
 import 'b05_semantic_colors.dart';
 
@@ -29,9 +30,7 @@ class AppTheme {
       // Card Theme
       cardTheme: CardThemeData(
         color: colors.section,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12.0),
-        ),
+        shape: B05Radii.shape(B05Radii.cardRadius),
         margin: EdgeInsets.zero,
         elevation: 0,
       ),
@@ -62,15 +61,15 @@ class AppTheme {
           vertical: 14.0,
         ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12.0),
-          borderSide: BorderSide(color: colors.border),
+          borderRadius: B05Radii.controlRadius,
+          borderSide: BorderSide(color: colors.controlBorder),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12.0),
-          borderSide: BorderSide(color: colors.border),
+          borderRadius: B05Radii.controlRadius,
+          borderSide: BorderSide(color: colors.controlBorder),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12.0),
+          borderRadius: B05Radii.controlRadius,
           borderSide: BorderSide(color: colors.focus, width: 2),
         ),
       ),
@@ -95,9 +94,7 @@ class AppTheme {
       textTheme: _getTextTheme(Brightness.light),
       cardTheme: CardThemeData(
         color: colors.section,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12.0),
-        ),
+        shape: B05Radii.shape(B05Radii.cardRadius),
         margin: EdgeInsets.zero,
         elevation: 0,
       ),
@@ -125,15 +122,15 @@ class AppTheme {
           vertical: 14.0,
         ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12.0),
-          borderSide: BorderSide(color: colors.border),
+          borderRadius: B05Radii.controlRadius,
+          borderSide: BorderSide(color: colors.controlBorder),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12.0),
-          borderSide: BorderSide(color: colors.border),
+          borderRadius: B05Radii.controlRadius,
+          borderSide: BorderSide(color: colors.controlBorder),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12.0),
+          borderRadius: B05Radii.controlRadius,
           borderSide: BorderSide(color: colors.focus, width: 2),
         ),
       ),
@@ -219,16 +216,14 @@ class AppTheme {
         surfaceTintColor: Colors.transparent,
         modalBackgroundColor: colors.section,
         modalElevation: 8,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-        ),
+        shape: B05Radii.shape(B05Radii.sheetTopRadius),
       );
 
   static DialogThemeData _dialogTheme(B05SemanticColors colors) =>
       DialogThemeData(
         backgroundColor: colors.section,
         surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: B05Radii.shape(B05Radii.cardRadius),
         titleTextStyle: TextStyle(
           color: colors.textPrimary,
           fontSize: 20,
@@ -246,9 +241,7 @@ class AppTheme {
           disabledForegroundColor: colors.textDisabled,
           minimumSize: const Size(48, 48),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
+          shape: B05Radii.shape(B05Radii.controlRadius),
           textStyle: const TextStyle(fontWeight: FontWeight.w700),
         ),
       );
@@ -261,8 +254,8 @@ class AppTheme {
       disabledForegroundColor: colors.textDisabled,
       minimumSize: const Size(48, 48),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      side: BorderSide(color: colors.border),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      side: BorderSide(color: colors.controlBorder),
+      shape: B05Radii.shape(B05Radii.controlRadius),
       textStyle: const TextStyle(fontWeight: FontWeight.w700),
     ),
   );
@@ -273,7 +266,7 @@ class AppTheme {
           foregroundColor: colors.action,
           minimumSize: const Size(48, 48),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          shape: B05Radii.shape(B05Radii.chipRadius),
           textStyle: const TextStyle(fontWeight: FontWeight.w700),
         ),
       );
@@ -284,8 +277,8 @@ class AppTheme {
     disabledColor: colors.disabled,
     labelStyle: TextStyle(color: colors.textPrimary),
     secondaryLabelStyle: TextStyle(color: colors.action),
-    side: BorderSide(color: colors.border),
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+    side: BorderSide(color: colors.controlBorder),
+    shape: B05Radii.shape(B05Radii.chipRadius),
     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
   );
 
@@ -294,9 +287,9 @@ class AppTheme {
         behavior: SnackBarBehavior.floating,
         elevation: 6.0,
         backgroundColor: colors.section,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12.0),
-          side: BorderSide(color: colors.border),
+        shape: B05Radii.shape(
+          B05Radii.rowRadius,
+          side: BorderSide(color: colors.borderSubtle),
         ),
         contentTextStyle: TextStyle(
           color: colors.textPrimary,

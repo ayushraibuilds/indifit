@@ -1091,7 +1091,7 @@ class _DominantTrainingLandingBody extends StatelessWidget {
         ],
         if (showWeek) ...[
           const SizedBox(height: B05Layout.space16),
-          const _SectionLabel(label: 'THIS WEEK'),
+          const _SectionLabel(label: 'This week'),
           const SizedBox(height: B05Layout.space8),
           if (weeklyGoal != null) ...[
             TrainingWeekGoalSummary(
@@ -1118,13 +1118,13 @@ class _DominantTrainingLandingBody extends StatelessWidget {
         ],
         if (nextWorkout != null) ...[
           const SizedBox(height: B05Layout.space16),
-          const _SectionLabel(label: 'NEXT WORKOUT'),
+          const _SectionLabel(label: 'Next workout'),
           const SizedBox(height: B05Layout.space8),
           _NextTrainingContext(item: nextWorkout, onTap: onOpenCalendar),
         ],
         if (data.recentSessions.isNotEmpty) ...[
           const SizedBox(height: B05Layout.space16),
-          const _SectionLabel(label: 'RECENT'),
+          const _SectionLabel(label: 'Recent'),
           const SizedBox(height: B05Layout.space8),
           B05Surface(
             padding: EdgeInsets.zero,
@@ -1162,7 +1162,7 @@ class _DominantTrainingLandingBody extends StatelessWidget {
           ),
         ],
         const SizedBox(height: B05Layout.space16),
-        const _SectionLabel(label: 'MORE TRAINING'),
+        const _SectionLabel(label: 'More training'),
         const SizedBox(height: B05Layout.space8),
         _TrainingSecondaryNavigation(
           onOpenExercises: onOpenExercises,
@@ -1268,7 +1268,7 @@ class _DominantTrainingAction extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('WHAT TO DO NOW', style: _trainingEyebrow(context)),
+                      Text('What to do now', style: _trainingEyebrow(context)),
                       const SizedBox(height: B05Layout.space4),
                       Text(action.title, style: B05Typography.title(context)),
                       const SizedBox(height: B05Layout.space4),
@@ -1302,7 +1302,7 @@ class _TrainingPlanContext extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => B05Surface(
-    tone: B05SurfaceTone.inset,
+    tone: B05SurfaceTone.section,
     padding: const EdgeInsets.symmetric(
       horizontal: B05Layout.space12,
       vertical: B05Layout.space8,
@@ -1355,7 +1355,7 @@ class _NextTrainingContext extends StatelessWidget {
     hint: 'Open the training calendar.',
     onTap: onTap,
     child: B05Surface(
-      tone: B05SurfaceTone.inset,
+      tone: B05SurfaceTone.section,
       padding: EdgeInsets.zero,
       child: InkWell(
         onTap: onTap,
@@ -1506,9 +1506,8 @@ class _TrainingNavRow extends StatelessWidget {
 String recentWorkoutDuration(int seconds) =>
     seconds < 60 ? 'under 1 min' : '${seconds ~/ 60} min';
 
-TextStyle _trainingEyebrow(BuildContext context) => B05Typography.caption(
-  context,
-).copyWith(fontWeight: FontWeight.w700, letterSpacing: .8);
+TextStyle _trainingEyebrow(BuildContext context) =>
+    B05Typography.sectionLabel(context);
 
 class _TrainingWeekStrip extends StatelessWidget {
   const _TrainingWeekStrip({
@@ -1528,7 +1527,7 @@ class _TrainingWeekStrip extends StatelessWidget {
     final start = DateTime.parse('${weekStartLocalDate}T12:00:00Z');
     const labels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
     return B05Surface(
-      tone: B05SurfaceTone.inset,
+      tone: B05SurfaceTone.section,
       padding: const EdgeInsets.symmetric(
         horizontal: B05Layout.space8,
         vertical: B05Layout.space12,
@@ -1759,12 +1758,6 @@ class _SectionLabel extends StatelessWidget {
   final String label;
 
   @override
-  Widget build(BuildContext context) => Text(
-    label,
-    style: B05Typography.caption(context).copyWith(
-      fontWeight: FontWeight.w700,
-      letterSpacing: .8,
-      color: context.b05Colors.textSecondary,
-    ),
-  );
+  Widget build(BuildContext context) =>
+      Text(label, style: B05Typography.sectionLabel(context));
 }

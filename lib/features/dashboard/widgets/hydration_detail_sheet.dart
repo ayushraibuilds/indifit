@@ -284,7 +284,7 @@ class _HydrationDetailSheetState extends ConsumerState<HydrationDetailSheet> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('HYDRATION', style: todayEyebrow(context)),
+                    Text('Hydration', style: todayEyebrow(context)),
                     const SizedBox(height: B05Layout.space4),
                     Text(
                       DateFormat('EEEE, MMM d').format(widget.selectedDate),
@@ -386,7 +386,7 @@ class _HydrationDetailSheetState extends ConsumerState<HydrationDetailSheet> {
           const SizedBox(height: B05Layout.space16),
 
           // Quick Add Buttons
-          Text('QUICK ADD', style: todayEyebrow(context)),
+          Text('Quick add', style: todayEyebrow(context)),
           const SizedBox(height: B05Layout.space8),
           Wrap(
             spacing: B05Layout.space8,
@@ -418,7 +418,7 @@ class _HydrationDetailSheetState extends ConsumerState<HydrationDetailSheet> {
           const SizedBox(height: B05Layout.space16),
 
           // Custom Intake Form
-          Text('CUSTOM INTAKE', style: todayEyebrow(context)),
+          Text('Custom intake', style: todayEyebrow(context)),
           const SizedBox(height: B05Layout.space8),
           B05Surface(
             tone: B05SurfaceTone.inset,
@@ -520,7 +520,7 @@ class _HydrationDetailSheetState extends ConsumerState<HydrationDetailSheet> {
           const SizedBox(height: B05Layout.space16),
 
           // Intake Timeline
-          Text('LOGGED INTAKES', style: todayEyebrow(context)),
+          Text('Logged intakes', style: todayEyebrow(context)),
           const SizedBox(height: B05Layout.space8),
           if (daily.entries.isEmpty)
             Padding(
@@ -575,7 +575,7 @@ class _HydrationDetailSheetState extends ConsumerState<HydrationDetailSheet> {
           const SizedBox(height: B05Layout.space16),
 
           // Daily Goal Adjustment
-          Text('DAILY GOAL', style: todayEyebrow(context)),
+          Text('Daily goal', style: todayEyebrow(context)),
           const SizedBox(height: B05Layout.space8),
           B05Surface(
             tone: B05SurfaceTone.inset,
@@ -646,7 +646,7 @@ class _HydrationDetailSheetState extends ConsumerState<HydrationDetailSheet> {
           const SizedBox(height: B05Layout.space16),
 
           // Water Reminder Settings
-          Text('REMINDERS', style: todayEyebrow(context)),
+          Text('Reminders', style: todayEyebrow(context)),
           const SizedBox(height: B05Layout.space8),
           B05Surface(
             tone: B05SurfaceTone.inset,

@@ -29,11 +29,7 @@ class ThaliComponentPickerSheet extends StatefulWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: context.b05Colors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(B05Radii.large),
-        ),
-      ),
+      shape: B05Radii.shape(B05Radii.sheetTopRadius),
       builder: (context) => ThaliComponentPickerSheet(
         controller: controller,
         state: state,
@@ -279,12 +275,8 @@ class _ThaliComponentPickerSheetState extends State<ThaliComponentPickerSheet> {
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 4),
                           child: Text(
-                            'FOODS',
-                            style: TextStyle(
-                              color: colors.textDisabled,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                            ),
+                            'Foods',
+                            style: B05Typography.sectionLabel(context),
                           ),
                         ),
                         ...foodResults.map(
@@ -332,12 +324,8 @@ class _ThaliComponentPickerSheetState extends State<ThaliComponentPickerSheet> {
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 4),
                           child: Text(
-                            'SAVED RECIPES',
-                            style: TextStyle(
-                              color: colors.textDisabled,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                            ),
+                            'Saved recipes',
+                            style: B05Typography.sectionLabel(context),
                           ),
                         ),
                         ...recipeResults.map(

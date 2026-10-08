@@ -9,6 +9,7 @@ import '../../../core/nutrition_thali.dart';
 import '../../../core/presentation/consumer_copy.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
 import '../../../core/typed_quantities.dart';
+import '../../../core/widgets/b05_accessibility_primitives.dart';
 import '../../dashboard/today_surface_controller.dart';
 import '../saved_meal_presentation.dart';
 
@@ -231,7 +232,7 @@ class _SavedMealEditBeforeLogSheetState
           ),
           decoration: BoxDecoration(
             color: context.b05Colors.surface,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+            borderRadius: B05Radii.sheetTopRadius,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,

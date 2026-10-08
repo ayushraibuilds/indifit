@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:figma_squircle/figma_squircle.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -63,10 +64,96 @@ void main() {
       },
     );
 
-    test('the B05 radius scale is limited to 8, 10 and 12 pixels', () {
-      expect(B05Radii.small, 8);
-      expect(B05Radii.medium, 10);
-      expect(B05Radii.large, 12);
+    test('every colour role stays readable on every surface it sits on', () {
+      for (final colors in [B05SemanticColors.light, B05SemanticColors.dark]) {
+        final roles = <String, B05ColorRole>{
+          for (final status in B05SemanticStatus.values)
+            status.name: colors.status(status),
+          for (final meal in B05MealAccent.values) meal.name: colors.meal(meal),
+          for (final media in B05MediaState.values)
+            'media ${media.name}': colors.media(media),
+          for (final macro in B05Macro.values) macro.name: colors.macro(macro),
+        };
+        final surfaces = <String, Color>{
+          'page': colors.page,
+          'section': colors.section,
+          'raised': colors.raised,
+          'raisedEnd': colors.raisedEnd,
+          'inset': colors.inset,
+        };
+        for (final MapEntry(key: name, value: role) in roles.entries) {
+          for (final MapEntry(key: surfaceName, value: surface)
+              in surfaces.entries) {
+            expect(
+              _contrast(role.foreground, surface),
+              greaterThanOrEqualTo(4.5),
+              reason: '$name text on $surfaceName',
+            );
+          }
+          expect(
+            _contrast(role.foreground, role.container),
+            greaterThanOrEqualTo(4.5),
+            reason: '$name text on its container',
+          );
+          for (final surface in [colors.section, colors.raised]) {
+            expect(
+              _contrast(role.indicator, surface),
+              greaterThanOrEqualTo(3),
+              reason: '$name indicator',
+            );
+          }
+        }
+        for (final surface in [colors.raised, colors.raisedEnd]) {
+          expect(
+            _contrast(colors.textSecondary, surface),
+            greaterThanOrEqualTo(4.5),
+          );
+          expect(_contrast(colors.action, surface), greaterThanOrEqualTo(4.5));
+        }
+        // Inputs, outlined buttons and chips keep a 3:1 edge (WCAG 1.4.11);
+        // decorative edges use borderSubtle and carry no meaning alone.
+        for (final surface in [colors.page, colors.section, colors.inset]) {
+          expect(
+            _contrast(_over(colors.controlBorder, surface), surface),
+            greaterThanOrEqualTo(3),
+          );
+        }
+      }
+    });
+
+    test('macros never borrow red, hydration blue or each other', () {
+      for (final colors in [B05SemanticColors.light, B05SemanticColors.dark]) {
+        final indicators = [
+          for (final macro in B05Macro.values) colors.macro(macro).indicator,
+        ];
+        expect(indicators.toSet(), hasLength(B05Macro.values.length));
+        expect(indicators, isNot(contains(colors.danger.indicator)));
+        expect(indicators, isNot(contains(colors.info.indicator)));
+      }
+    });
+
+    test('the B05 radius scale uses named roles with continuous corners', () {
+      expect(B05Radii.chip, 12);
+      expect(B05Radii.control, 14);
+      expect(B05Radii.row, 16);
+      expect(B05Radii.card, 22);
+      expect(B05Radii.sheet, 28);
+      expect(B05Radii.cardRadius.topLeft.cornerSmoothing, B05Radii.smoothing);
+      // Earlier names resolve to the role scale for one release.
+      expect(B05Radii.small, B05Radii.chip);
+      expect(B05Radii.medium, B05Radii.control);
+      expect(B05Radii.large, B05Radii.row);
+    });
+
+    test('primitives and the theme never fall back to circular corners', () {
+      for (final path in [
+        'lib/core/widgets/b05_accessibility_primitives.dart',
+        'lib/core/theme/app_theme.dart',
+      ]) {
+        final source = File(path).readAsStringSync();
+        expect(source, isNot(contains('BorderRadius.circular')), reason: path);
+        expect(source, isNot(contains('RoundedRectangleBorder')), reason: path);
+      }
     });
 
     testWidgets(
@@ -294,10 +381,10 @@ void main() {
       final focusBorders = tester
           .widgetList<DecoratedBox>(find.byType(DecoratedBox))
           .map((box) => box.decoration)
-          .whereType<BoxDecoration>()
-          .map((decoration) => decoration.border)
-          .whereType<Border>()
-          .map((border) => border.top.color);
+          .whereType<ShapeDecoration>()
+          .map((decoration) => decoration.shape)
+          .whereType<SmoothRectangleBorder>()
+          .map((shape) => shape.side.color);
       expect(focusBorders, contains(B05SemanticColors.light.focus));
     });
 
@@ -359,6 +446,9 @@ Widget _app({required Widget child, MediaQueryData? mediaQuery}) {
     ),
   );
 }
+
+/// A translucent colour composited onto an opaque surface.
+Color _over(Color top, Color surface) => Color.alphaBlend(top, surface);
 
 double _contrast(Color first, Color second) {
   final lighter = first.computeLuminance() > second.computeLuminance()

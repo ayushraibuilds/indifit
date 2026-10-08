@@ -526,7 +526,7 @@ void main() {
         expect(find.text('Snacks'), findsOneWidget);
 
         // Available optional slots
-        expect(find.text('AVAILABLE OPTIONAL SLOTS'), findsOneWidget);
+        expect(find.text('Available optional slots'), findsOneWidget);
         expect(find.text('Morning snack'), findsOneWidget);
         expect(find.text('Pre-workout'), findsOneWidget);
       },
@@ -549,7 +549,7 @@ void main() {
 
       expect(find.text('ACTIVE SLOTS (3)'), findsOneWidget);
       // Snacks should now be in available slots
-      expect(find.text('AVAILABLE OPTIONAL SLOTS'), findsOneWidget);
+      expect(find.text('Available optional slots'), findsOneWidget);
     });
 
     testWidgets('tapping Add button adds an optional slot to active slots', (

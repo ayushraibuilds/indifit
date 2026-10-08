@@ -86,7 +86,7 @@ void main() {
       final semantics = tester.ensureSemantics();
       await pumpTraining(tester, status());
 
-      expect(find.text('THIS WEEK'), findsOneWidget);
+      expect(find.text('This week'), findsOneWidget);
       expect(find.text('2 of 3'), findsOneWidget);
       expect(find.text('workouts this week'), findsOneWidget);
       expect(find.text('4 weeks in a row'), findsOneWidget);

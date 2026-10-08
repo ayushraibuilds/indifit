@@ -92,7 +92,7 @@ class DiaryStructureScreen extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('PRESETS', style: B05Typography.label(context)),
+        Text('Presets', style: B05Typography.sectionLabel(context)),
         const SizedBox(height: B05Layout.space4),
         Text(
           'Apply a common structure or reset to default at any time.',
@@ -248,7 +248,10 @@ class DiaryStructureScreen extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('AVAILABLE OPTIONAL SLOTS', style: B05Typography.label(context)),
+        Text(
+          'Available optional slots',
+          style: B05Typography.sectionLabel(context),
+        ),
         const SizedBox(height: B05Layout.space4),
         Text(
           'Add extra snack or workout-timed slots to your diary.',

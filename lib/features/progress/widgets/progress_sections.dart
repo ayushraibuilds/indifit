@@ -1241,11 +1241,6 @@ class ProgressSectionHeading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      title,
-      style: B05Typography.caption(
-        context,
-      ).copyWith(fontWeight: FontWeight.w700, letterSpacing: .5),
-    );
+    return Text(title, style: B05Typography.sectionLabel(context));
   }
 }
