@@ -26,7 +26,7 @@ void main() {
     expect(find.text('Backup'), findsOneWidget);
     expect(find.text('Export'), findsOneWidget);
     expect(find.text('Privacy'), findsOneWidget);
-    expect(find.text('DANGER ZONE'), findsOneWidget);
+    expect(find.text('Danger zone'), findsOneWidget);
     expect(
       find.widgetWithText(FilledButton, 'Create and share backup'),
       findsOneWidget,

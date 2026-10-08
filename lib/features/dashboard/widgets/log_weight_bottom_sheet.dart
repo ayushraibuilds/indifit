@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../../core/theme/b05_semantic_colors.dart';
+import '../../../core/widgets/b05_accessibility_primitives.dart';
 import '../../../data/repositories/workout_repository.dart';
 import '../../settings/unit_preference.dart';
 
@@ -23,9 +25,7 @@ class LogWeightBottomSheet extends ConsumerStatefulWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: context.b05Colors.section,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      shape: B05Radii.shape(B05Radii.sheetTopRadius),
       builder: (context) => SafeArea(
         top: false,
         child: SingleChildScrollView(

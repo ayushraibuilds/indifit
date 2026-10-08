@@ -316,7 +316,7 @@ void main() {
 
       await tester.drag(find.byType(ListView), const Offset(0, -1200));
       await tester.pump();
-      expect(find.text('ALL BADGES'), findsOneWidget);
+      expect(find.text('All badges'), findsOneWidget);
       expect(find.text('First Sweat'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });

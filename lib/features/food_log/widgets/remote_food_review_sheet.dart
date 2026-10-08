@@ -51,9 +51,7 @@ class RemoteFoodReviewSheet extends StatefulWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      shape: B05Radii.shape(B05Radii.sheetTopRadius),
       builder: (_) => RemoteFoodReviewSheet(
         candidate: candidate,
         mealType: mealType,

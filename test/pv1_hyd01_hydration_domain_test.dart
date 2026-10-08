@@ -436,7 +436,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('HYDRATION'), findsOneWidget);
+      expect(find.text('Hydration'), findsOneWidget);
       expect(find.text('1500 / 2500 ml'), findsOneWidget);
       expect(find.text('1000 ml remaining (60%)'), findsOneWidget);
       expect(find.text('+250 ml'), findsOneWidget);
@@ -595,8 +595,8 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
 
         expect(find.byType(HydrationDetailSheet), findsOneWidget);
-        expect(find.text('QUICK ADD'), findsOneWidget);
-        expect(find.text('DAILY GOAL'), findsOneWidget);
+        expect(find.text('Quick add'), findsOneWidget);
+        expect(find.text('Daily goal'), findsOneWidget);
       },
     );
   });
@@ -760,11 +760,11 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.text('HYDRATION'), findsOneWidget);
-        expect(find.text('QUICK ADD'), findsOneWidget);
-        expect(find.text('CUSTOM INTAKE'), findsOneWidget);
-        expect(find.text('DAILY GOAL'), findsOneWidget);
-        expect(find.text('REMINDERS'), findsOneWidget);
+        expect(find.text('Hydration'), findsOneWidget);
+        expect(find.text('Quick add'), findsOneWidget);
+        expect(find.text('Custom intake'), findsOneWidget);
+        expect(find.text('Daily goal'), findsOneWidget);
+        expect(find.text('Reminders'), findsOneWidget);
         expect(find.text('Water reminder'), findsOneWidget);
       },
     );
@@ -1005,7 +1005,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);
-      expect(find.text('HYDRATION'), findsOneWidget);
+      expect(find.text('Hydration'), findsOneWidget);
     });
   });
 }

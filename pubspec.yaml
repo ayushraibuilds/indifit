@@ -37,8 +37,11 @@ dependencies:
   mobile_scanner: ">=7.0.0 <7.4.0"
   dio: ^5.4.0
   fl_chart: ^0.67.0
-  percent_indicator: ^4.2.3
   flutter_animate: ^4.5.0
+  # Continuous (squircle) corners for B05 surfaces and the theme (V1).
+  figma_squircle: ^0.6.3
+  # Icon gaps Material lacks, starting with the fat macro (DropHalf).
+  phosphor_flutter: ^2.1.0
   uuid: ^4.3.3
   url_launcher: ^6.3.0
   vibration: ^3.2.0

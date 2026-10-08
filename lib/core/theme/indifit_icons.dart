@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 /// A typed pair for navigation destinations that have selected and
 /// unselected Material treatments.
@@ -66,12 +67,18 @@ abstract final class IndiFitIcons {
   static const IconData equipment = Icons.fitness_center_outlined;
   static const IconData plateCalculator = Icons.calculate_outlined;
 
-  // Food concepts with a clear existing Material representation. Macro
-  // nutrient-specific glyphs are intentionally deferred rather than using a
-  // misleading generic symbol.
+  // Food concepts.
   static const IconData meal = Icons.restaurant_menu_rounded;
   static const IconData calories = Icons.local_fire_department_rounded;
   static const IconData hydration = Icons.water_drop_rounded;
+
+  // Macros. Fat is a half-filled drop from Phosphor so it never reads as
+  // water. Render with [PhosphorIcon], which draws the duotone layer and
+  // falls back to a plain glyph for Material icons.
+  static const IconData protein = Icons.egg_alt_rounded;
+  static const IconData carbs = Icons.grain_rounded;
+  static const IconData fat = PhosphorIconsDuotone.dropHalf;
+  static const IconData fibre = Icons.eco_rounded;
 
   // Progress.
   static const IconData trend = Icons.trending_up_rounded;

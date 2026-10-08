@@ -2,10 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../../core/di/providers.dart';
 import '../../../core/presentation/consumer_copy.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
+import '../../../core/theme/indifit_icons.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
 import '../today_consumer_presentation.dart';
 import '../today_presentation_types.dart';
@@ -64,7 +66,7 @@ class TodayNutritionHero extends StatelessWidget {
       container: true,
       label: 'Nutrition. ${presentation.headline}',
       child: B05Surface(
-        radius: B05SurfaceRadius.large,
+        tone: B05SurfaceTone.raised,
         padding: const EdgeInsets.all(B05Layout.space16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -310,16 +312,20 @@ class TodayMealIdeasActionState extends ConsumerState<TodayMealIdeasAction> {
   }
 }
 
-/// Macro hues. Red is reserved for "over target", so no macro uses it as
-/// its base colour.
-B05ColorRole todayMacroColorRole(B05SemanticColors colors, String nutrientId) =>
-    switch (nutrientId) {
-      'protein' => colors.success,
-      'carbohydrate' => colors.warning,
-      'fat' => colors.info,
-      'fibre' => colors.dinner,
-      _ => colors.unavailable,
-    };
+B05Macro? _todayMacro(String nutrientId) => switch (nutrientId) {
+  'protein' => B05Macro.protein,
+  'carbohydrate' => B05Macro.carbs,
+  'fat' => B05Macro.fat,
+  'fibre' => B05Macro.fibre,
+  _ => null,
+};
+
+/// Macro hues from the shared map. Red is reserved for "over target", so no
+/// macro uses it as its base colour.
+B05ColorRole todayMacroColorRole(B05SemanticColors colors, String nutrientId) {
+  final macro = _todayMacro(nutrientId);
+  return macro == null ? colors.unavailable : colors.macro(macro);
+}
 
 /// Keeps "some details are missing" one tap away instead of a standing
 /// line on the card; most Indian foods don't list every nutrient.
@@ -441,7 +447,7 @@ class CalorieRing extends StatelessWidget {
                         progressLow: lowValue,
                         progressHigh: value,
                         color: color,
-                        trackColor: colors.inset,
+                        trackColor: colors.borderSubtle,
                         range: metric.isRange,
                       ),
                     ),
@@ -589,12 +595,12 @@ class MacroRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final role = todayMacroColorRole(context.b05Colors, metric.nutrientId);
-    final icon = switch (metric.nutrientId) {
-      'protein' => Icons.egg_alt_rounded,
-      'carbohydrate' => Icons.grain_rounded,
-      'fat' => Icons.opacity_rounded,
-      'fibre' => Icons.eco_rounded,
-      _ => Icons.circle_outlined,
+    final icon = switch (_todayMacro(metric.nutrientId)) {
+      B05Macro.protein => IndiFitIcons.protein,
+      B05Macro.carbs => IndiFitIcons.carbs,
+      B05Macro.fat => IndiFitIcons.fat,
+      B05Macro.fibre => IndiFitIcons.fibre,
+      null => Icons.circle_outlined,
     };
     final compact = MediaQuery.textScalerOf(context).scale(1) > 1.35;
     final label =
@@ -603,7 +609,7 @@ class MacroRow extends StatelessWidget {
         '${metric.isIncomplete ? ', incomplete' : ''}';
     final header = Row(
       children: [
-        Icon(icon, size: B05Layout.iconSmall, color: role.indicator),
+        PhosphorIcon(icon, size: B05Layout.iconSmall, color: role.indicator),
         const SizedBox(width: B05Layout.space4),
         Expanded(
           child: Text(metric.label, style: B05Typography.label(context)),
@@ -674,6 +680,7 @@ extension on MacroRow {
             ? context.b05Colors.danger.indicator
             : context.b05Colors.textPrimary,
         fontWeight: FontWeight.w700,
+        fontFeatures: const [FontFeature.tabularFigures()],
       ),
     );
     if (!metric.isIncomplete) return value;
@@ -738,7 +745,7 @@ class MacroProgress extends StatelessWidget {
               color: metric.isOverTarget
                   ? context.b05Colors.danger.indicator
                   : color,
-              track: context.b05Colors.inset,
+              track: context.b05Colors.borderSubtle,
               isRange: metric.isRange,
             ),
           ),

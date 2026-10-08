@@ -300,11 +300,7 @@ Future<void> showAchievementCelebrationSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: context.b05Colors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(B05Radii.large),
-        ),
-      ),
+      shape: B05Radii.shape(B05Radii.sheetTopRadius),
       builder: (ctx) => AchievementCelebrationSheet(
         achievements: achievements,
         onDismiss: onDismiss,

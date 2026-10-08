@@ -742,7 +742,7 @@ class DataManagementSection extends ConsumerWidget {
         ),
         const SizedBox(height: B05Layout.space24),
 
-        _SectionHeader(title: 'DANGER ZONE'),
+        _SectionHeader(title: 'Danger zone'),
         B05Surface(
           tone: B05SurfaceTone.inset,
           showBorder: true,
@@ -913,14 +913,7 @@ class _SectionHeader extends StatelessWidget {
         left: B05Layout.space4,
         bottom: B05Layout.space8,
       ),
-      child: Text(
-        title,
-        style: B05Typography.caption(context).copyWith(
-          color: context.b05Colors.textSecondary,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 0.8,
-        ),
-      ),
+      child: Text(title, style: B05Typography.sectionLabel(context)),
     );
   }
 }

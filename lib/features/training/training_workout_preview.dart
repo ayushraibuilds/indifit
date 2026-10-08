@@ -455,7 +455,7 @@ class _TrainingWorkoutPreviewScreenState
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('FROM YOUR PLAN', style: _previewEyebrow(context)),
+                        Text('From your plan', style: _previewEyebrow(context)),
                         const SizedBox(height: B05Layout.space4),
                         Text(
                           '${item.block.name} · Week ${item.week.programWeekOrdinal + 1}',
@@ -504,13 +504,13 @@ class _TrainingWorkoutPreviewScreenState
             ],
             if (preview.groups.isNotEmpty) ...[
               const SizedBox(height: B05Layout.space16),
-              const _PreviewSectionLabel(label: 'PLANNED STRUCTURE'),
+              const _PreviewSectionLabel(label: 'Planned structure'),
               const SizedBox(height: B05Layout.space8),
               _PreviewGroups(groups: preview.groups),
             ],
             if (preview.exercises.isNotEmpty) ...[
               const SizedBox(height: B05Layout.space16),
-              const _PreviewSectionLabel(label: 'PLANNED EXERCISES'),
+              const _PreviewSectionLabel(label: 'Planned exercises'),
               const SizedBox(height: B05Layout.space8),
               _PreviewExerciseList(exercises: preview.exercises),
             ],
@@ -562,7 +562,7 @@ class _TrainingWorkoutPreviewScreenState
             ],
             if (preview.substitutions.isNotEmpty) ...[
               const SizedBox(height: B05Layout.space16),
-              const _PreviewSectionLabel(label: 'PLANNED CHANGES'),
+              const _PreviewSectionLabel(label: 'Planned changes'),
               const SizedBox(height: B05Layout.space8),
               B05Surface(
                 tone: B05SurfaceTone.inset,
@@ -713,9 +713,8 @@ class _PreviewSectionLabel extends StatelessWidget {
   );
 }
 
-TextStyle _previewEyebrow(BuildContext context) => B05Typography.caption(
-  context,
-).copyWith(fontWeight: FontWeight.w700, letterSpacing: .8);
+TextStyle _previewEyebrow(BuildContext context) =>
+    B05Typography.sectionLabel(context);
 
 String _activityLabel(String value) => switch (value) {
   'strength' => 'Strength',

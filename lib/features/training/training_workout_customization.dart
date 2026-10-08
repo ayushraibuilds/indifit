@@ -386,7 +386,7 @@ class _TrainingWorkoutCustomizationScreenState
                     ],
                   ),
                   const SizedBox(height: B05Layout.space12),
-                  Text('CUSTOMIZATION SCOPE', style: _eyebrow(context)),
+                  Text('Customization scope', style: _eyebrow(context)),
                   const SizedBox(height: B05Layout.space8),
                   _ScopeChoiceTile(
                     title: 'This workout only',
@@ -428,7 +428,7 @@ class _TrainingWorkoutCustomizationScreenState
             ),
           ),
           const SizedBox(height: B05Layout.space16),
-          Text('EXERCISES', style: _eyebrow(context)),
+          Text('Exercises', style: _eyebrow(context)),
           const SizedBox(height: B05Layout.space8),
           for (final exercise in _exercises) ...[
             _ExerciseCustomizationCard(
@@ -529,9 +529,8 @@ class _TrainingWorkoutCustomizationScreenState
     );
   }
 
-  TextStyle _eyebrow(BuildContext context) => B05Typography.caption(
-    context,
-  ).copyWith(fontWeight: FontWeight.w700, letterSpacing: .8);
+  TextStyle _eyebrow(BuildContext context) =>
+      B05Typography.sectionLabel(context);
 }
 
 class _ScopeChoiceTile extends StatelessWidget {

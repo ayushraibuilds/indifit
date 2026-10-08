@@ -44,9 +44,7 @@ class IndiFitBottomSheet extends StatelessWidget {
             surfaceTintColor: Colors.transparent,
             elevation: 8,
             clipBehavior: Clip.antiAlias,
-            shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-            ),
+            shape: B05Radii.shape(B05Radii.sheetTopRadius),
             child: SafeArea(
               top: true,
               bottom: true,

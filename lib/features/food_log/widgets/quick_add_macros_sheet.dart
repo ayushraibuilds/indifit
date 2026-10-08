@@ -296,7 +296,7 @@ class _QuickAddMacrosSheetState extends ConsumerState<QuickAddMacrosSheet> {
     return Container(
       decoration: BoxDecoration(
         color: context.b05Colors.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: B05Radii.sheetTopRadius,
       ),
       padding: EdgeInsets.fromLTRB(20, 16, 20, 16 + bottomInset),
       child: SingleChildScrollView(

@@ -233,7 +233,7 @@ void main() {
 
       expect(find.text('0 / 9 Unlocked'), findsOneWidget);
       expect(find.text('No Badges Unlocked Yet'), findsOneWidget);
-      expect(find.text('ALL BADGES'), findsOneWidget);
+      expect(find.text('All badges'), findsOneWidget);
       expect(find.byKey(const Key('recently_unlocked_carousel')), findsNothing);
     });
 
@@ -266,7 +266,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 700));
 
         expect(find.text('1 / 9 Unlocked'), findsOneWidget);
-        expect(find.text('RECENTLY UNLOCKED'), findsOneWidget);
+        expect(find.text('Recently unlocked'), findsOneWidget);
         expect(
           find.byKey(const Key('recently_unlocked_carousel')),
           findsOneWidget,

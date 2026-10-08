@@ -183,11 +183,7 @@ class AdaptiveTdeeCard extends StatelessWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: context.b05Colors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(B05Radii.large),
-        ),
-      ),
+      shape: B05Radii.shape(B05Radii.sheetTopRadius),
       builder: (ctx) {
         final colors = ctx.b05Colors;
         return SafeArea(

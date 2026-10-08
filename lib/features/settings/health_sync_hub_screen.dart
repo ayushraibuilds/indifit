@@ -204,7 +204,7 @@ class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
             style: B05Typography.body(context),
           ),
           const SizedBox(height: B05Layout.space20),
-          _buildSectionLabel(context, 'HEALTH CONNECTION'),
+          _buildSectionLabel(context, 'Health connection'),
           const SizedBox(height: B05Layout.space8),
           _buildConnectionSurface(
             context,
@@ -215,7 +215,7 @@ class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
           ),
           if (_canUseHealthData(connection)) ...[
             const SizedBox(height: B05Layout.space20),
-            _buildSectionLabel(context, 'WHAT INDIFIT MAY USE'),
+            _buildSectionLabel(context, 'What IndiFit may use'),
             const SizedBox(height: B05Layout.space8),
             _buildCategorySurface(
               context,
@@ -697,12 +697,7 @@ class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
   }
 
   static Widget _buildSectionLabel(BuildContext context, String label) {
-    return Text(
-      label,
-      style: B05Typography.caption(
-        context,
-      ).copyWith(fontWeight: FontWeight.w700, letterSpacing: .8),
-    );
+    return Text(label, style: B05Typography.sectionLabel(context));
   }
 }
 

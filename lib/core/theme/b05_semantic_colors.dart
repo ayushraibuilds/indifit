@@ -32,6 +32,8 @@ enum B05MealAccent { breakfast, lunch, dinner, snack }
 
 enum B05MediaState { available, unavailable, invalid }
 
+enum B05Macro { protein, carbs, fat, fibre }
+
 /// Semantic light and dark presentation tokens for B05-owned surfaces.
 ///
 /// Domain data must choose an explicit state; this extension only supplies its
@@ -54,6 +56,13 @@ class B05SemanticColors extends ThemeExtension<B05SemanticColors> {
     required this.textSecondary,
     required this.textDisabled,
     required this.border,
+    required this.borderSubtle,
+    required this.controlBorder,
+    required this.sectionHighlight,
+    required this.sectionShadow,
+    required this.raised,
+    required this.raisedEnd,
+    required this.raisedShadow,
     required this.focus,
     required this.disabled,
     required this.action,
@@ -71,6 +80,10 @@ class B05SemanticColors extends ThemeExtension<B05SemanticColors> {
     required this.mediaAvailable,
     required this.mediaUnavailable,
     required this.mediaInvalid,
+    required this.protein,
+    required this.carbs,
+    required this.fat,
+    required this.fibre,
   });
 
   final Color page;
@@ -98,7 +111,28 @@ class B05SemanticColors extends ThemeExtension<B05SemanticColors> {
   final Color textPrimary;
   final Color textSecondary;
   final Color textDisabled;
+
+  /// Dividers and general outlines.
   final Color border;
+
+  /// Decorative card edge, lighter than [border].
+  final Color borderSubtle;
+
+  /// Outline of inputs, outlined buttons and chips. It meets 3:1 against
+  /// the page, section and inset surfaces so the control can be found.
+  final Color controlBorder;
+
+  /// Hairline light along the top edge of a section (dark theme only).
+  final Color sectionHighlight;
+
+  /// Soft shadow under a section (light theme only).
+  final Color sectionShadow;
+
+  /// Hero surfaces: a top-to-bottom gradient from [raised] to [raisedEnd]
+  /// with a deeper [raisedShadow].
+  final Color raised;
+  final Color raisedEnd;
+  final Color raisedShadow;
   final Color focus;
   final Color disabled;
 
@@ -127,6 +161,13 @@ class B05SemanticColors extends ThemeExtension<B05SemanticColors> {
   final B05ColorRole mediaUnavailable;
   final B05ColorRole mediaInvalid;
 
+  /// Macro hues, shared by every screen that shows macros. Red is reserved
+  /// for "over target", and fat is orange so it never reads as hydration.
+  final B05ColorRole protein;
+  final B05ColorRole carbs;
+  final B05ColorRole fat;
+  final B05ColorRole fibre;
+
   static const dark = B05SemanticColors(
     page: Color(0xFF060A12),
     section: Color(0xFF0F172A),
@@ -142,6 +183,13 @@ class B05SemanticColors extends ThemeExtension<B05SemanticColors> {
     textSecondary: Color(0xFFCBD5E1),
     textDisabled: Color(0xFF94A3B8),
     border: Color(0x66FFFFFF),
+    borderSubtle: Color(0x24FFFFFF),
+    controlBorder: Color(0x66FFFFFF),
+    sectionHighlight: Color(0x0FFFFFFF),
+    sectionShadow: Color(0x00000000),
+    raised: Color(0xFF16213A),
+    raisedEnd: Color(0xFF111A2E),
+    raisedShadow: Color(0x59000000),
     focus: Color(0xFF5EEAD4),
     disabled: Color(0xFF334155),
     action: Color(0xFF34D399),
@@ -207,10 +255,30 @@ class B05SemanticColors extends ThemeExtension<B05SemanticColors> {
       container: Color(0xFF4C1117),
       indicator: Color(0xFFF87171),
     ),
+    protein: B05ColorRole(
+      foreground: Color(0xFF5EEAD4),
+      container: Color(0xFF073B37),
+      indicator: Color(0xFF2DD4BF),
+    ),
+    carbs: B05ColorRole(
+      foreground: Color(0xFFFCD34D),
+      container: Color(0xFF4A2600),
+      indicator: Color(0xFFFBBF24),
+    ),
+    fat: B05ColorRole(
+      foreground: Color(0xFFFDBA74),
+      container: Color(0xFF431407),
+      indicator: Color(0xFFFB923C),
+    ),
+    fibre: B05ColorRole(
+      foreground: Color(0xFFC4B5FD),
+      container: Color(0xFF2E1065),
+      indicator: Color(0xFFA78BFA),
+    ),
   );
 
   static const light = B05SemanticColors(
-    page: Color(0xFFF8FAFC),
+    page: Color(0xFFF6F8FA),
     section: Color(0xFFFFFFFF),
     inset: Color(0xFFF1F5F9),
     selected: Color(0xFFD1FAE5),
@@ -224,6 +292,13 @@ class B05SemanticColors extends ThemeExtension<B05SemanticColors> {
     textSecondary: Color(0xFF475569),
     textDisabled: Color(0xFF64748B),
     border: Color(0xFFCBD5E1),
+    borderSubtle: Color(0xFFE2E8F0),
+    controlBorder: Color(0xFF7D8BA0),
+    sectionHighlight: Color(0x00FFFFFF),
+    sectionShadow: Color(0x0F0F172A),
+    raised: Color(0xFFFFFFFF),
+    raisedEnd: Color(0xFFFFFFFF),
+    raisedShadow: Color(0x1A0F172A),
     focus: Color(0xFF0F766E),
     disabled: Color(0xFFE2E8F0),
     action: Color(0xFF0F766E),
@@ -272,7 +347,7 @@ class B05SemanticColors extends ThemeExtension<B05SemanticColors> {
     snack: B05ColorRole(
       foreground: Color(0xFF854D0E),
       container: Color(0xFFFEF9C3),
-      indicator: Color(0xFFCA8A04),
+      indicator: Color(0xFFA16207),
     ),
     mediaAvailable: B05ColorRole(
       foreground: Color(0xFF065F46),
@@ -288,6 +363,26 @@ class B05SemanticColors extends ThemeExtension<B05SemanticColors> {
       foreground: Color(0xFF991B1B),
       container: Color(0xFFFEE2E2),
       indicator: Color(0xFFDC2626),
+    ),
+    protein: B05ColorRole(
+      foreground: Color(0xFF0F766E),
+      container: Color(0xFFCCFBF1),
+      indicator: Color(0xFF0D9488),
+    ),
+    carbs: B05ColorRole(
+      foreground: Color(0xFFB45309),
+      container: Color(0xFFFEF3C7),
+      indicator: Color(0xFFD97706),
+    ),
+    fat: B05ColorRole(
+      foreground: Color(0xFFC2410C),
+      container: Color(0xFFFFEDD5),
+      indicator: Color(0xFFEA580C),
+    ),
+    fibre: B05ColorRole(
+      foreground: Color(0xFF6D28D9),
+      container: Color(0xFFEDE9FE),
+      indicator: Color(0xFF7C3AED),
     ),
   );
 
@@ -318,6 +413,15 @@ class B05SemanticColors extends ThemeExtension<B05SemanticColors> {
     };
   }
 
+  B05ColorRole macro(B05Macro macro) {
+    return switch (macro) {
+      B05Macro.protein => protein,
+      B05Macro.carbs => carbs,
+      B05Macro.fat => fat,
+      B05Macro.fibre => fibre,
+    };
+  }
+
   @override
   B05SemanticColors copyWith({
     Color? page,
@@ -334,6 +438,13 @@ class B05SemanticColors extends ThemeExtension<B05SemanticColors> {
     Color? textSecondary,
     Color? textDisabled,
     Color? border,
+    Color? borderSubtle,
+    Color? controlBorder,
+    Color? sectionHighlight,
+    Color? sectionShadow,
+    Color? raised,
+    Color? raisedEnd,
+    Color? raisedShadow,
     Color? focus,
     Color? disabled,
     Color? action,
@@ -351,6 +462,10 @@ class B05SemanticColors extends ThemeExtension<B05SemanticColors> {
     B05ColorRole? mediaAvailable,
     B05ColorRole? mediaUnavailable,
     B05ColorRole? mediaInvalid,
+    B05ColorRole? protein,
+    B05ColorRole? carbs,
+    B05ColorRole? fat,
+    B05ColorRole? fibre,
   }) {
     return B05SemanticColors(
       page: page ?? this.page,
@@ -367,6 +482,13 @@ class B05SemanticColors extends ThemeExtension<B05SemanticColors> {
       textSecondary: textSecondary ?? this.textSecondary,
       textDisabled: textDisabled ?? this.textDisabled,
       border: border ?? this.border,
+      borderSubtle: borderSubtle ?? this.borderSubtle,
+      controlBorder: controlBorder ?? this.controlBorder,
+      sectionHighlight: sectionHighlight ?? this.sectionHighlight,
+      sectionShadow: sectionShadow ?? this.sectionShadow,
+      raised: raised ?? this.raised,
+      raisedEnd: raisedEnd ?? this.raisedEnd,
+      raisedShadow: raisedShadow ?? this.raisedShadow,
       focus: focus ?? this.focus,
       disabled: disabled ?? this.disabled,
       action: action ?? this.action,
@@ -384,6 +506,10 @@ class B05SemanticColors extends ThemeExtension<B05SemanticColors> {
       mediaAvailable: mediaAvailable ?? this.mediaAvailable,
       mediaUnavailable: mediaUnavailable ?? this.mediaUnavailable,
       mediaInvalid: mediaInvalid ?? this.mediaInvalid,
+      protein: protein ?? this.protein,
+      carbs: carbs ?? this.carbs,
+      fat: fat ?? this.fat,
+      fibre: fibre ?? this.fibre,
     );
   }
 
@@ -417,6 +543,17 @@ class B05SemanticColors extends ThemeExtension<B05SemanticColors> {
       textSecondary: Color.lerp(textSecondary, other.textSecondary, t)!,
       textDisabled: Color.lerp(textDisabled, other.textDisabled, t)!,
       border: Color.lerp(border, other.border, t)!,
+      borderSubtle: Color.lerp(borderSubtle, other.borderSubtle, t)!,
+      controlBorder: Color.lerp(controlBorder, other.controlBorder, t)!,
+      sectionHighlight: Color.lerp(
+        sectionHighlight,
+        other.sectionHighlight,
+        t,
+      )!,
+      sectionShadow: Color.lerp(sectionShadow, other.sectionShadow, t)!,
+      raised: Color.lerp(raised, other.raised, t)!,
+      raisedEnd: Color.lerp(raisedEnd, other.raisedEnd, t)!,
+      raisedShadow: Color.lerp(raisedShadow, other.raisedShadow, t)!,
       focus: Color.lerp(focus, other.focus, t)!,
       disabled: Color.lerp(disabled, other.disabled, t)!,
       action: Color.lerp(action, other.action, t)!,
@@ -434,6 +571,10 @@ class B05SemanticColors extends ThemeExtension<B05SemanticColors> {
       mediaAvailable: mediaAvailable.lerp(other.mediaAvailable, t),
       mediaUnavailable: mediaUnavailable.lerp(other.mediaUnavailable, t),
       mediaInvalid: mediaInvalid.lerp(other.mediaInvalid, t),
+      protein: protein.lerp(other.protein, t),
+      carbs: carbs.lerp(other.carbs, t),
+      fat: fat.lerp(other.fat, t),
+      fibre: fibre.lerp(other.fibre, t),
     );
   }
 }

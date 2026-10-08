@@ -119,9 +119,8 @@ String handoffNumber(double value) => value == value.roundToDouble()
     ? NumberFormat.decimalPattern().format(value.toInt())
     : NumberFormat.decimalPattern().format(value);
 
-TextStyle todayEyebrow(BuildContext context) => B05Typography.caption(
-  context,
-).copyWith(fontWeight: FontWeight.w800, letterSpacing: 1.1);
+TextStyle todayEyebrow(BuildContext context) =>
+    B05Typography.sectionLabel(context);
 
 String formatTodayMetric(double value) {
   return ConsumerNumberLabel.rounded(value);

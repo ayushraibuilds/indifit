@@ -1,3 +1,4 @@
+import 'package:figma_squircle/figma_squircle.dart';
 import 'package:flutter/material.dart';
 
 import '../presentation/product_failure_presentation.dart';
@@ -22,29 +23,58 @@ abstract final class B05Layout {
 }
 
 /// The only corner-radius values used by B05 presentation primitives.
+///
+/// Corners are continuous (squircle) with [smoothing]. Roles: [chip] for
+/// chips and small tags, [control] for buttons and inputs, [row] for list
+/// rows and insets, [card] for sections, [sheet] for sheet and dialog tops.
 abstract final class B05Radii {
-  static const double small = 8;
-  static const double medium = 10;
-  static const double large = 12;
+  static const double chip = 12;
+  static const double control = 14;
+  static const double row = 16;
+  static const double card = 22;
+  static const double sheet = 28;
+  static const double pill = 999;
+  static const double smoothing = 0.6;
 
-  static const BorderRadius smallRadius = BorderRadius.all(
-    Radius.circular(small),
+  static const SmoothBorderRadius chipRadius = SmoothBorderRadius.all(
+    SmoothRadius(cornerRadius: chip, cornerSmoothing: smoothing),
   );
-  static const BorderRadius mediumRadius = BorderRadius.all(
-    Radius.circular(medium),
+  static const SmoothBorderRadius controlRadius = SmoothBorderRadius.all(
+    SmoothRadius(cornerRadius: control, cornerSmoothing: smoothing),
   );
-  static const BorderRadius largeRadius = BorderRadius.all(
-    Radius.circular(large),
+  static const SmoothBorderRadius rowRadius = SmoothBorderRadius.all(
+    SmoothRadius(cornerRadius: row, cornerSmoothing: smoothing),
   );
+  static const SmoothBorderRadius cardRadius = SmoothBorderRadius.all(
+    SmoothRadius(cornerRadius: card, cornerSmoothing: smoothing),
+  );
+  static const SmoothBorderRadius sheetTopRadius = SmoothBorderRadius.vertical(
+    top: SmoothRadius(cornerRadius: sheet, cornerSmoothing: smoothing),
+  );
+
+  /// Earlier names, kept for one release while call sites move to the roles
+  /// above. They now resolve to the role scale, not 8/10/12.
+  static const double small = chip;
+  static const double medium = control;
+  static const double large = row;
+  static const SmoothBorderRadius smallRadius = chipRadius;
+  static const SmoothBorderRadius mediumRadius = controlRadius;
+  static const SmoothBorderRadius largeRadius = rowRadius;
+
+  static SmoothRectangleBorder shape(
+    SmoothBorderRadius radius, {
+    BorderSide side = BorderSide.none,
+  }) => SmoothRectangleBorder(borderRadius: radius, side: side);
 }
 
-enum B05SurfaceRadius { small, medium, large }
+enum B05SurfaceRadius { small, medium, large, card }
 
-BorderRadius b05Radius(B05SurfaceRadius radius) {
+SmoothBorderRadius b05Radius(B05SurfaceRadius radius) {
   return switch (radius) {
-    B05SurfaceRadius.small => B05Radii.smallRadius,
-    B05SurfaceRadius.medium => B05Radii.mediumRadius,
-    B05SurfaceRadius.large => B05Radii.largeRadius,
+    B05SurfaceRadius.small => B05Radii.chipRadius,
+    B05SurfaceRadius.medium => B05Radii.controlRadius,
+    B05SurfaceRadius.large => B05Radii.rowRadius,
+    B05SurfaceRadius.card => B05Radii.cardRadius,
   };
 }
 
@@ -87,6 +117,29 @@ abstract final class B05Typography {
     return Theme.of(context).textTheme.displaySmall!.copyWith(
       color: context.b05Colors.textPrimary,
       fontWeight: FontWeight.w700,
+      fontFeatures: const [FontFeature.tabularFigures()],
+    );
+  }
+
+  /// Timers, counters, kcal and weights. Tabular figures keep digits from
+  /// shifting as values change.
+  static TextStyle number(BuildContext context, {double? size}) {
+    return Theme.of(context).textTheme.titleMedium!.copyWith(
+      color: context.b05Colors.textPrimary,
+      fontWeight: FontWeight.w700,
+      fontSize: size,
+      fontFeatures: const [FontFeature.tabularFigures()],
+    );
+  }
+
+  /// The one section-header style: sentence case, never ALL CAPS.
+  static TextStyle sectionLabel(BuildContext context) {
+    return Theme.of(context).textTheme.bodySmall!.copyWith(
+      color: context.b05Colors.textSecondary,
+      fontSize: 13,
+      fontWeight: FontWeight.w600,
+      letterSpacing: 0.2,
+      height: 1.3,
     );
   }
 }
@@ -96,15 +149,23 @@ abstract final class B05Typography {
 /// A section should normally be the only boundary around an information
 /// group. Insets, selected choices and interactive rows rely on tonal
 /// contrast instead of adding another card border.
-enum B05SurfaceTone { section, inset, selected, interactive }
+///
+/// [raised] is for the one hero card on a screen (Today nutrition, the
+/// workout summary, the thali plate panel).
+enum B05SurfaceTone { section, raised, inset, selected, interactive }
 
 /// A restrained semantic surface. It avoids a card-on-card visual hierarchy.
+///
+/// Depth comes from tone, not borders: sections get a top highlight in dark
+/// mode and a soft shadow in light mode; raised cards add a gradient and a
+/// deeper shadow. Sections default to [B05Radii.card], everything else to
+/// [B05Radii.row].
 class B05Surface extends StatelessWidget {
   const B05Surface({
     required this.child,
     super.key,
     this.padding = const EdgeInsets.all(B05Layout.space16),
-    this.radius = B05SurfaceRadius.medium,
+    this.radius,
     this.tone = B05SurfaceTone.section,
     this.subtle = false,
     this.showBorder = false,
@@ -112,32 +173,115 @@ class B05Surface extends StatelessWidget {
 
   final Widget child;
   final EdgeInsetsGeometry padding;
-  final B05SurfaceRadius radius;
+  final B05SurfaceRadius? radius;
   final B05SurfaceTone tone;
 
   /// Retained for earlier callers; new code should choose [tone].
   final bool subtle;
+
+  /// Adds a decorative [B05SemanticColors.borderSubtle] edge.
   final bool showBorder;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.b05Colors;
     final resolvedTone = subtle ? B05SurfaceTone.inset : tone;
-    final background = switch (resolvedTone) {
-      B05SurfaceTone.section => colors.section,
-      B05SurfaceTone.inset => colors.inset,
-      B05SurfaceTone.selected => colors.selected,
-      B05SurfaceTone.interactive => colors.interactive,
-    };
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: b05Radius(radius),
-        border: showBorder ? Border.all(color: colors.border) : null,
+    final elevated =
+        resolvedTone == B05SurfaceTone.section ||
+        resolvedTone == B05SurfaceTone.raised;
+    final shape = B05Radii.shape(
+      radius != null
+          ? b05Radius(radius!)
+          : elevated
+          ? B05Radii.cardRadius
+          : B05Radii.rowRadius,
+      side: showBorder
+          ? BorderSide(color: colors.borderSubtle)
+          : BorderSide.none,
+    );
+    final decoration = switch (resolvedTone) {
+      B05SurfaceTone.raised => ShapeDecoration(
+        shape: shape,
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [colors.raised, colors.raisedEnd],
+        ),
+        shadows: [
+          BoxShadow(
+            color: colors.raisedShadow,
+            blurRadius: 24,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
+      B05SurfaceTone.section => ShapeDecoration(
+        shape: shape,
+        color: colors.section,
+        shadows: colors.sectionShadow.a == 0
+            ? null
+            : [
+                BoxShadow(
+                  color: colors.sectionShadow,
+                  blurRadius: 2,
+                  offset: const Offset(0, 1),
+                ),
+              ],
+      ),
+      B05SurfaceTone.inset => ShapeDecoration(
+        shape: shape,
+        color: colors.inset,
+      ),
+      B05SurfaceTone.selected => ShapeDecoration(
+        shape: shape,
+        color: colors.selected,
+      ),
+      B05SurfaceTone.interactive => ShapeDecoration(
+        shape: shape,
+        color: colors.interactive,
+      ),
+    };
+    final content = DecoratedBox(
+      decoration: decoration,
       child: Padding(padding: padding, child: child),
     );
+    if (!elevated || colors.sectionHighlight.a == 0) return content;
+    return CustomPaint(
+      foregroundPainter: _B05TopHighlightPainter(
+        shape: shape,
+        color: colors.sectionHighlight,
+      ),
+      child: content,
+    );
   }
+}
+
+/// A one-pixel light along the top edge that fades out down the sides, so a
+/// dark section reads as lit from above rather than outlined.
+class _B05TopHighlightPainter extends CustomPainter {
+  const _B05TopHighlightPainter({required this.shape, required this.color});
+
+  final ShapeBorder shape;
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = (Offset.zero & size).deflate(0.5);
+    final fade = (B05Radii.card * 1.5).clamp(1.0, size.height);
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1
+      ..shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [color, color.withValues(alpha: 0)],
+      ).createShader(Rect.fromLTWH(0, 0, size.width, fade));
+    canvas.drawPath(shape.getOuterPath(rect), paint);
+  }
+
+  @override
+  bool shouldRepaint(_B05TopHighlightPainter oldDelegate) =>
+      oldDelegate.color != color || oldDelegate.shape != shape;
 }
 
 /// Gives B05 actions an explicit 48 px minimum target without changing their
@@ -195,11 +339,13 @@ class _B05FocusRingState extends State<B05FocusRing> {
         }
       },
       child: DecoratedBox(
-        decoration: BoxDecoration(
-          borderRadius: b05Radius(widget.radius),
-          border: Border.all(
-            color: _hasFocus ? colors.focus : Colors.transparent,
-            width: 2,
+        decoration: ShapeDecoration(
+          shape: B05Radii.shape(
+            b05Radius(widget.radius),
+            side: BorderSide(
+              color: _hasFocus ? colors.focus : Colors.transparent,
+              width: 2,
+            ),
           ),
         ),
         child: widget.child,
@@ -246,22 +392,22 @@ class B05ActionButton extends StatelessWidget {
         disabledForegroundColor: colors.textDisabled,
         minimumSize: B05Layout.minimumTouchTarget,
         padding: const EdgeInsets.symmetric(horizontal: B05Layout.space16),
-        shape: RoundedRectangleBorder(borderRadius: B05Radii.mediumRadius),
+        shape: B05Radii.shape(B05Radii.controlRadius),
       ),
       B05ActionEmphasis.secondary => OutlinedButton.styleFrom(
         foregroundColor: colors.action,
         disabledForegroundColor: colors.textDisabled,
         minimumSize: B05Layout.minimumTouchTarget,
         padding: const EdgeInsets.symmetric(horizontal: B05Layout.space16),
-        side: BorderSide(color: colors.border),
-        shape: RoundedRectangleBorder(borderRadius: B05Radii.mediumRadius),
+        side: BorderSide(color: colors.controlBorder),
+        shape: B05Radii.shape(B05Radii.controlRadius),
       ),
       B05ActionEmphasis.tertiary => TextButton.styleFrom(
         foregroundColor: colors.action,
         disabledForegroundColor: colors.textDisabled,
         minimumSize: B05Layout.minimumTouchTarget,
         padding: const EdgeInsets.symmetric(horizontal: B05Layout.space8),
-        shape: RoundedRectangleBorder(borderRadius: B05Radii.smallRadius),
+        shape: B05Radii.shape(B05Radii.chipRadius),
       ),
       B05ActionEmphasis.danger => FilledButton.styleFrom(
         backgroundColor: colors.danger.container,
@@ -270,7 +416,7 @@ class B05ActionButton extends StatelessWidget {
         disabledForegroundColor: colors.textDisabled,
         minimumSize: B05Layout.minimumTouchTarget,
         padding: const EdgeInsets.symmetric(horizontal: B05Layout.space16),
-        shape: RoundedRectangleBorder(borderRadius: B05Radii.mediumRadius),
+        shape: B05Radii.shape(B05Radii.controlRadius),
       ),
     };
     final button = B05TouchTarget(

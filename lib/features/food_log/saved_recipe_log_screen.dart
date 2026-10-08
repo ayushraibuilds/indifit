@@ -147,12 +147,8 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
             Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                'RECIPES IN PROGRESS',
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: context.b05Colors.action,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1.0,
-                ),
+                'Recipes in progress',
+                style: B05Typography.sectionLabel(context),
               ),
             ),
             const SizedBox(height: 6),
@@ -483,12 +479,7 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
           // Ingredients Breakdown Section
           Row(
             children: [
-              Text(
-                'INGREDIENTS',
-                style: B05Typography.caption(
-                  context,
-                ).copyWith(fontWeight: FontWeight.w700, letterSpacing: .6),
-              ),
+              Text('Ingredients', style: B05Typography.sectionLabel(context)),
               const SizedBox(width: 8),
               Text(
                 '(${version.ingredients.length})',

@@ -144,7 +144,7 @@ class TodayHydrationCard extends ConsumerWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('HYDRATION', style: todayEyebrow(context)),
+                          Text('Hydration', style: todayEyebrow(context)),
                           const SizedBox(height: B05Layout.space4),
                           Text(
                             '$totalFormatted / $goalFormatted ml',

@@ -96,7 +96,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // 1. Verify Danger Zone renders the erasure header and action
-      expect(find.text('DANGER ZONE'), findsOneWidget);
+      expect(find.text('Danger zone'), findsOneWidget);
       expect(find.text('Erase all data and reset'), findsOneWidget);
       final eraseButton = find.widgetWithText(FilledButton, 'Erase all data');
       expect(eraseButton, findsOneWidget);

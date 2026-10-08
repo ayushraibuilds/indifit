@@ -101,7 +101,7 @@ void main() {
         expect(find.text('Recipes'), findsOneWidget);
         expect(find.text('Palak Paneer'), findsOneWidget);
         expect(find.text('Spinach curry with cottage cheese'), findsOneWidget);
-        expect(find.text('RECIPES IN PROGRESS'), findsOneWidget);
+        expect(find.text('Recipes in progress'), findsOneWidget);
         expect(find.text('Oatmeal Bowl'), findsOneWidget);
         expect(
           find.textContaining('Finish this recipe before logging it'),
@@ -284,7 +284,7 @@ void main() {
         expect(find.text('High Protein Moong Dal'), findsOneWidget);
         expect(find.text('Comforting yellow lentil soup'), findsOneWidget);
         expect(find.text('Makes 4 servings'), findsOneWidget);
-        expect(find.text('INGREDIENTS'), findsOneWidget);
+        expect(find.text('Ingredients'), findsOneWidget);
         expect(find.text('(2)'), findsOneWidget);
         expect(find.text('Moong Dal'), findsOneWidget);
         expect(find.text('200 grams'), findsOneWidget);

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/nutrition_thali.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
+import '../../../core/widgets/b05_accessibility_primitives.dart';
 
 class ThaliNutritionSummaryBar extends StatelessWidget {
   final NutritionThaliPreview? preview;
@@ -121,13 +122,8 @@ class ThaliNutritionSummaryBar extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'TOTAL NUTRITION',
-                      style: TextStyle(
-                        color: colors.textDisabled,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.8,
-                      ),
+                      'Total nutrition',
+                      style: B05Typography.sectionLabel(context),
                     ),
                     const SizedBox(height: 2),
                     Text(
