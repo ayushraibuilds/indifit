@@ -114,6 +114,32 @@ abstract final class TrainingVsLastTime {
     );
   }
 
+  /// The top set of the most recent session in [history] that has a
+  /// comparable set, or null when none does. Used where there is no "today"
+  /// to compare with, such as a workout reminder.
+  static TrainingBestsSetFact? latestTopSet(
+    Iterable<TrainingBestsEntry> history,
+  ) {
+    final bySession = <int, List<TrainingBestsEntry>>{};
+    for (final entry in history) {
+      final id = entry.sessionId;
+      if (id == null) continue;
+      bySession.putIfAbsent(id, () => []).add(entry);
+    }
+    final sessions = bySession.entries.toList()
+      ..sort((a, b) {
+        final byTime = b.value.first.completedAt.compareTo(
+          a.value.first.completedAt,
+        );
+        return byTime != 0 ? byTime : b.key.compareTo(a.key);
+      });
+    for (final session in sessions) {
+      final top = _topSet(_facts(session.value));
+      if (top != null) return top;
+    }
+    return null;
+  }
+
   static List<TrainingBestsSetFact> _facts(
     Iterable<TrainingBestsEntry> entries,
   ) => [

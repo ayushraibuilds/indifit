@@ -14,6 +14,7 @@ import '../core/services/crash_reporting_service.dart';
 import '../core/services/notification_service.dart';
 import '../core/utils/app_logger.dart';
 import '../data/database/app_database.dart';
+import '../features/training/workout_reminder_content.dart';
 import 'app_orientation.dart';
 import 'indifit_app.dart';
 
@@ -83,6 +84,9 @@ Future<void> bootstrap() async {
   // Initialize the local notification plugin (timezone data + tap handling)
   // before first frame; it is cheap and required before any scheduling.
   await NotificationService.initialize();
+  // Workout reminders name the next session and last time's top set.
+  NotificationService.workoutReminderTextSource =
+      WorkoutReminderFactsReader.reminderText;
 
   // R07F-0: reminder rescheduling and the auto-backup check previously ran
   // (awaited) before runApp, delaying the first frame. They are deliberately

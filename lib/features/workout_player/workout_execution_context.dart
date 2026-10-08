@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import '../../data/repositories/b02_strength_execution_repository.dart';
 
 /// Typed presentation context for the shared workout execution experience.
@@ -88,6 +90,14 @@ final class PlannedWorkoutExecutionContext extends WorkoutExecutionContext {
 
   final String occurrenceId;
 
+  /// The session's own name ("Full Body A") from the frozen occurrence
+  /// snapshot (TP-8). The saved routine name stays "program — session"
+  /// for history; it only truncated to "Beginner — 3-Day Fu…" here.
+  @override
+  String get workoutTitle =>
+      plannedSessionName(launch.executionSnapshotJson) ??
+      launch.state.routineName;
+
   @override
   String get modeLabel => 'Planned workout';
 
@@ -118,4 +128,19 @@ final class QuickWorkoutExecutionContext extends WorkoutExecutionContext {
 
   @override
   String? get scheduledOccurrenceId => null;
+}
+
+/// The session template's name in a planned occurrence snapshot, or null
+/// when the snapshot doesn't carry one.
+String? plannedSessionName(String executionSnapshotJson) {
+  try {
+    final snapshot = jsonDecode(executionSnapshotJson);
+    if (snapshot is! Map) return null;
+    final template = snapshot['template'];
+    if (template is! Map) return null;
+    final name = template['name'];
+    return name is String && name.trim().isNotEmpty ? name.trim() : null;
+  } on FormatException {
+    return null;
+  }
 }
