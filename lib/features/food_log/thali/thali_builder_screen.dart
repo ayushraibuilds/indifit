@@ -10,6 +10,7 @@ import '../../../core/theme/b05_semantic_colors.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
 import '../../../core/widgets/indi_fit_feedback.dart';
 import '../../dashboard/today_surface_controller.dart';
+import '../katori_size_step.dart';
 import '../meal_presentation_registry.dart';
 import '../nutrition_thali_controller.dart';
 import 'circular_thali_plate.dart';
@@ -352,6 +353,9 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
                   ),
                 ),
                 Divider(color: colors.border, height: 1),
+                // Once: "Which katori looks like yours?"; the plate's
+                // nutrition is recalculated with the chosen size.
+                KatoriSizePromptCard(onChosen: (_) => controller.preview()),
                 // Presets Bar
                 ThaliPresetsBar(
                   onSelectPreset: (preset) {

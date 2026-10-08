@@ -3,6 +3,7 @@ import 'package:drift/drift.dart';
 import '../../core/typed_quantities.dart';
 import '../database/app_database.dart';
 import 'catalog_pack.dart';
+import 'katori_size.dart';
 
 class CatalogueQuantityError implements Exception {
   final String code;
@@ -32,6 +33,10 @@ class CatalogueFoodMeasure {
   final QuantityAmount? gramsPerServing;
   final QuantityAmount? millilitresPerServing;
 
+  /// The person's katori over the standard 150 ml one (1 when they haven't
+  /// said). Already applied to [unitsPerServing] for katori foods.
+  final double katoriScale;
+
   const CatalogueFoodMeasure({
     required this.foodId,
     required this.displayName,
@@ -40,6 +45,7 @@ class CatalogueFoodMeasure {
     required this.unitsPerServing,
     required this.gramsPerServing,
     required this.millilitresPerServing,
+    this.katoriScale = 1,
   });
 
   bool get isPerServing => basis == 'per_serving';
@@ -226,20 +232,43 @@ class CatalogueQuantityResolver {
             .get()) {
       (conversions[row.foodId] ??= []).add(row);
     }
+    // "1 katori" means the person's own katori once they've said how big
+    // it is: a 200 ml katori holds 200/150 of the catalogue's serving.
+    final myKatori = await readMyKatoriMillilitres(_db);
+    final katoriScale = myKatori == null
+        ? 1.0
+        : myKatori / kStandardKatoriMillilitres;
     final result = <String, CatalogueFoodMeasure>{};
     for (final id in ids) {
       final basis = bases[id];
       final food = foods[id];
       if (basis == null || food == null) continue;
-      QuantityAmount? factor(String target) {
+      NutritionQuantityConversion? conversion(String target) {
         final rows = conversions[id] ?? const [];
         // A user's own conversion (a calibrated katori) wins over the pack's.
-        final row =
-            rows
+        return rows
                 .where((r) => r.targetUnit == target && r.ownerScope == 'user')
                 .firstOrNull ??
             rows.where((r) => r.targetUnit == target).firstOrNull;
+      }
+
+      QuantityAmount? factor(String target) {
+        final row = conversion(target);
         return row == null ? null : QuantityAmount.fromNum(row.factor);
+      }
+
+      /// Katori per serving in the person's own katori. A per-food user
+      /// conversion is already theirs, so it isn't scaled again.
+      QuantityAmount? householdUnits(String household) {
+        final row = conversion(household);
+        if (row == null) return null;
+        if (household != 'katori' ||
+            row.ownerScope == 'user' ||
+            katoriScale == 1) {
+          return QuantityAmount.fromNum(row.factor);
+        }
+        final scaled = row.factor / katoriScale;
+        return QuantityAmount.fromNum((scaled * 10000).roundToDouble() / 10000);
       }
 
       final household = (conversions[id] ?? const [])
@@ -254,9 +283,10 @@ class CatalogueQuantityResolver {
         displayName: food.displayName,
         basis: basis,
         unit: household,
-        unitsPerServing: household == null ? null : factor(household),
+        unitsPerServing: household == null ? null : householdUnits(household),
         gramsPerServing: factor('gram'),
         millilitresPerServing: factor('millilitre'),
+        katoriScale: katoriScale,
       );
     }
     return result;
