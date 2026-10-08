@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../core/motion/indifit_motion.dart';
 import '../../../core/nutrients.dart';
 import '../../../core/nutrition_legacy_read_models.dart';
 import '../../../core/presentation/consumer_copy.dart';
@@ -232,28 +234,39 @@ class FoodDiarySummary extends StatelessWidget {
             LayoutBuilder(
               builder: (context, constraints) {
                 final itemWidth = (constraints.maxWidth - 12) / 2;
-                return Wrap(
-                  spacing: 12,
-                  runSpacing: 10,
-                  children: [
-                    SizedBox(
-                      width: itemWidth,
-                      child: FoodDiarySummaryMetric(
-                        label: 'Consumed',
-                        value: consumed,
-                      ),
-                    ),
-                    SizedBox(
-                      width: itemWidth,
-                      child: FoodDiarySummaryMetric(
-                        label: 'Remaining',
-                        value: remaining ?? (hasTarget ? '—' : 'Not available'),
-                        valueColor: remaining == null
-                            ? null
-                            : context.b05Colors.action,
-                      ),
-                    ),
-                  ],
+                // Consumed and Remaining count together after a log.
+                return IndiFitCountUp(
+                  value: calories?.pointValue ?? 0,
+                  builder: (context, kcal) {
+                    final remainingNow = _remainingLabel(calories, kcal: kcal);
+                    return Wrap(
+                      spacing: 12,
+                      runSpacing: 10,
+                      children: [
+                        SizedBox(
+                          width: itemWidth,
+                          child: FoodDiarySummaryMetric(
+                            label: 'Consumed',
+                            value: calories?.isAvailable == true
+                                ? '${calories!.valueAt(kcal)} ${calories.unit}'
+                                : consumed,
+                          ),
+                        ),
+                        SizedBox(
+                          width: itemWidth,
+                          child: FoodDiarySummaryMetric(
+                            label: 'Remaining',
+                            value:
+                                remainingNow ??
+                                (hasTarget ? '—' : 'Not available'),
+                            valueColor: remainingNow == null
+                                ? null
+                                : context.b05Colors.action,
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 );
               },
             ),
@@ -355,13 +368,16 @@ class FoodDiarySummary extends StatelessWidget {
     );
   }
 
-  String? _remainingLabel(TodayNutritionMetricPresentation? calories) {
+  String? _remainingLabel(
+    TodayNutritionMetricPresentation? calories, {
+    double? kcal,
+  }) {
     if (calories?.hasTarget != true ||
         calories?.pointValue == null ||
         calories!.isRange) {
       return null;
     }
-    final difference = calories.targetValue! - calories.pointValue!;
+    final difference = calories.targetValue! - (kcal ?? calories.pointValue!);
     if (difference >= 0) {
       return '${ConsumerNumberLabel.rounded(difference)} kcal';
     }
@@ -406,7 +422,10 @@ class FoodDiarySummaryMetric extends StatelessWidget {
         value,
         maxLines: 2,
         overflow: TextOverflow.ellipsis,
-        style: B05Typography.title(context).copyWith(color: valueColor),
+        style: B05Typography.title(context).copyWith(
+          color: valueColor,
+          fontFeatures: const [FontFeature.tabularFigures()],
+        ),
       ),
     ],
   );
@@ -514,11 +533,19 @@ class FoodDiaryMealRow extends StatelessWidget {
                       children: [
                         Text(label, style: B05Typography.label(context)),
                         const SizedBox(height: 2),
-                        Text(
-                          preview,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: B05Typography.caption(context),
+                        AnimatedSwitcher(
+                          duration: B05MotionPolicy.transitionDuration(context),
+                          layoutBuilder: (current, previous) => Stack(
+                            alignment: Alignment.centerLeft,
+                            children: [...previous, ?current],
+                          ),
+                          child: Text(
+                            preview,
+                            key: ValueKey(preview),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: B05Typography.caption(context),
+                          ),
                         ),
                       ],
                     ),

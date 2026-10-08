@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/motion/indifit_motion.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
 import '../../../core/theme/indifit_icons.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
@@ -530,7 +531,8 @@ class _SetRow extends StatelessWidget {
       children: [
         value,
         const SizedBox(height: 2),
-        B02NewBestChip(kind: kind),
+        // Pops in when the best set is saved.
+        IndiFitPop(child: B02NewBestChip(kind: kind)),
       ],
     );
   }

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/di/providers.dart';
+import '../../core/motion/indifit_motion.dart';
 import '../../core/presentation/consumer_copy.dart';
 import '../../core/services/indifit_haptics.dart';
 import '../../core/services/rest_alert_permission_service.dart';
@@ -98,6 +99,9 @@ class _B02StrengthPlayerScreenState
   final _bestsHistoryLoads = <String, Future<List<TrainingBestsEntry>?>>{};
   late final B02PreviousPerformanceLookupCoordinator _previousLookup;
   String? _selectedSlotId;
+
+  /// The exercise the set panel last showed, so a change slides the right way.
+  int _shownExerciseIndex = -1;
   bool _warmup = false;
   var _isSubmittingSet = false;
   var _isClosing = false;
@@ -270,6 +274,9 @@ class _B02StrengthPlayerScreenState
       orElse: () => slots.first,
     );
     _selectedSlotId ??= selected.id;
+    final exerciseIndex = slots.indexOf(selected);
+    final movingBack = exerciseIndex < _shownExerciseIndex;
+    _shownExerciseIndex = exerciseIndex;
     final workingSetCount = _workingSetCount(launch.state, selected);
     final hasOpenRest = _hasOpenRest(launch.state);
     final isQuick = execution is QuickWorkoutExecutionContext;
@@ -404,7 +411,15 @@ class _B02StrengthPlayerScreenState
       stickyRestSlot: hasOpenRest
           ? _buildStickyRestBar(provider, ui, launch)
           : null,
-      setLoggingSlot: setLogging,
+      setLoggingSlot: setLogging == null
+          ? null
+          : IndiFitSharedAxisSwitcher(
+              reverse: movingBack,
+              child: KeyedSubtree(
+                key: ValueKey<String>('b02-set-logging:${selected.id}'),
+                child: setLogging,
+              ),
+            ),
       primaryActionSlot: showPendingEditor ? primaryAction : null,
       primaryActionGap: 10,
       nextExerciseGap: hasOpenRest

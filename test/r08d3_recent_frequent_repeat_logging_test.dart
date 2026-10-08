@@ -9,6 +9,7 @@ import 'package:indifit/core/nutrition_calculation_service.dart';
 import 'package:indifit/core/nutrition_consumption_snapshots.dart';
 import 'package:indifit/core/nutrition_household_measures.dart';
 import 'package:indifit/core/raw_cooked_transformations.dart';
+import 'package:indifit/core/services/indifit_haptics.dart';
 import 'package:indifit/core/services/local_timezone_service.dart';
 import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/core/typed_quantities.dart';
@@ -670,12 +671,18 @@ void main() {
         );
         await _settleD3(tester);
 
+        final haptics = <IndiFitHapticType>[];
+        IndiFitHaptics.debugHandler = haptics.add;
+        addTearDown(() => IndiFitHaptics.debugHandler = null);
+
         // Tap the Fast Add button for Thick Dahi
         final addBtn = find.widgetWithText(TextButton, 'Add').first;
         expect(addBtn, findsOneWidget);
         await tester.tap(addBtn);
+        expect(haptics, isEmpty, reason: 'no haptic on tap, only after save');
         await _settleD3(tester);
         await _settleD3(tester);
+        expect(haptics, [IndiFitHapticType.confirmation]);
 
         // Check feedback
         expect(
@@ -685,6 +692,10 @@ void main() {
         await tester.pump(const Duration(seconds: 4));
         await tester.pump(const Duration(milliseconds: 300));
         expect(find.textContaining('Added Thick Dahi to snack'), findsNothing);
+        // The button's tick has turned back into Add.
+        expect(find.widgetWithText(TextButton, 'Added'), findsNothing);
+        expect(find.widgetWithText(TextButton, 'Add'), findsOneWidget);
+        expect(haptics, hasLength(1));
 
         expect(recorder.finalizeCalls, 1);
         expect(recorder.localDate, '2026-08-24');

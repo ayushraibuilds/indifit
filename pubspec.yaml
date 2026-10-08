@@ -38,6 +38,8 @@ dependencies:
   dio: ^5.4.0
   fl_chart: ^0.67.0
   flutter_animate: ^4.5.0
+  # 2.2.0, not 3.x: 3.0.0 needs Flutter 3.44 and CI pins 3.41.4.
+  animations: ^2.2.0
   # Continuous (squircle) corners for B05 surfaces and the theme (V1).
   figma_squircle: ^0.6.3
   uuid: ^4.3.3

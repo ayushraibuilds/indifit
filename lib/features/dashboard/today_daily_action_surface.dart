@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/di/health_provider.dart';
 import '../../core/di/theme_provider.dart';
+import '../../core/motion/indifit_motion.dart';
 import '../../core/nutrition_legacy_read_models.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
@@ -238,9 +239,14 @@ class TodayDailyActionSurface extends ConsumerWidget {
                     ),
                   ],
                   const SizedBox(height: B05Layout.space12),
-                  for (final item in layout)
-                    if (item.isVisible) ...[
-                      _module(
+                  // Modules rise in one after another on first view only.
+                  for (final (index, item)
+                      in layout.where((item) => item.isVisible).indexed) ...[
+                    IndiFitEnter(
+                      key: ValueKey('today-enter:${item.moduleId}'),
+                      enabled: index < IndiFitMotion.staggerLimit,
+                      delay: IndiFitMotion.staggerStep * index,
+                      child: _module(
                         context: context,
                         ref: ref,
                         item: item,
@@ -278,8 +284,9 @@ class TodayDailyActionSurface extends ConsumerWidget {
                           false,
                         ),
                       ),
-                      const SizedBox(height: B05Layout.space8),
-                    ],
+                    ),
+                    const SizedBox(height: B05Layout.space8),
+                  ],
                   if (!configuredLayout.any((item) => item.isVisible))
                     NoVisibleModules(onCustomize: onCustomize),
                 ],
