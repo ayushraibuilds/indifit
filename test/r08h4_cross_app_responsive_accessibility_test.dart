@@ -197,46 +197,46 @@ void main() {
         actualLoadBasis: B02LoadBasis.totalExternal,
       );
 
-      testWidgets(
-        'B02CompactSetTable switches to compact stacked mode at 320pt and 2.0x text scale',
-        (tester) async {
-          final loadController = TextEditingController(text: '80');
-          final repsController = TextEditingController(text: '8');
+      testWidgets('B02CompactSetTable rows fit at 320pt and 2.0x text scale', (
+        tester,
+      ) async {
+        final loadController = TextEditingController(text: '80');
+        final repsController = TextEditingController(text: '8');
 
-          await tester.pumpWidget(
-            _wrapResponsiveTest(
-              SingleChildScrollView(
-                child: B02CompactSetTable(
-                  slot: sampleSlot,
-                  loggedSets: [sampleSet],
-                  isBusy: false,
-                  isPlannedMode: true,
-                  currentSet: 1,
-                  loadController: loadController,
-                  repsController: repsController,
-                  rpe: 8,
-                  isWarmup: false,
-                  loadLabel: 'Weight (kg)',
-                  onRpeChanged: (_) {},
-                  onWarmupChanged: (_) {},
-                  onEdit: (_) {},
-                  onDelete: (_) {},
-                  moreContent: null,
-                  onAddSet: () {},
-                ),
+        await tester.pumpWidget(
+          _wrapResponsiveTest(
+            SingleChildScrollView(
+              child: B02CompactSetTable(
+                slot: sampleSlot,
+                loggedSets: [sampleSet],
+                isBusy: false,
+                isPlannedMode: true,
+                currentSet: 1,
+                loadController: loadController,
+                repsController: repsController,
+                rpe: 8,
+                isWarmup: false,
+                loadLabel: 'Weight (kg)',
+                onRpeChanged: (_) {},
+                onWarmupChanged: (_) {},
+                onEdit: (_) {},
+                onDelete: (_) {},
+                moreContent: null,
+                onAddSet: () {},
               ),
-              size: const Size(320, 640),
-              textScale: 2.0,
             ),
-          );
-          await tester.pumpAndSettle();
+            size: const Size(320, 640),
+            textScale: 2.0,
+          ),
+        );
+        await tester.pumpAndSettle();
 
-          expect(tester.takeException(), isNull);
-          // In compact mode, the header has 'SET / DETAILS'
-          expect(find.text('SET / DETAILS'), findsOneWidget);
-          expect(find.text('STATUS'), findsOneWidget);
-        },
-      );
+        expect(tester.takeException(), isNull);
+        // Plain rows at every size (TP-8): no column headers to squeeze.
+        expect(find.text('SET / DETAILS'), findsNothing);
+        expect(find.text('STATUS'), findsNothing);
+        expect(find.textContaining('Set 1'), findsOneWidget);
+      });
     });
 
     // -------------------------------------------------------------------------
