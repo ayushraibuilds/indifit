@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../../core/di/providers.dart';
 import '../../../core/presentation/consumer_copy.dart';
@@ -609,7 +608,7 @@ class MacroRow extends StatelessWidget {
         '${metric.isIncomplete ? ', incomplete' : ''}';
     final header = Row(
       children: [
-        PhosphorIcon(icon, size: B05Layout.iconSmall, color: role.indicator),
+        IndiFitIcon(icon, size: B05Layout.iconSmall, color: role.indicator),
         const SizedBox(width: B05Layout.space4),
         Expanded(
           child: Text(metric.label, style: B05Typography.label(context)),

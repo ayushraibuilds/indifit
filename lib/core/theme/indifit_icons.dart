@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 /// A typed pair for navigation destinations that have selected and
 /// unselected Material treatments.
@@ -72,16 +71,61 @@ abstract final class IndiFitIcons {
   static const IconData calories = Icons.local_fire_department_rounded;
   static const IconData hydration = Icons.water_drop_rounded;
 
-  // Macros. Fat is a half-filled drop from Phosphor so it never reads as
-  // water. Render with [PhosphorIcon], which draws the duotone layer and
-  // falls back to a plain glyph for Material icons.
+  // Macros. Fat is Phosphor's half-filled drop so it never reads as water.
+  // Render macro icons with [IndiFitIcon], which draws the duotone layer.
   static const IconData protein = Icons.egg_alt_rounded;
   static const IconData carbs = Icons.grain_rounded;
-  static const IconData fat = PhosphorIconsDuotone.dropHalf;
+  static const IconData fat = IndiFitDuotoneIconData(
+    0xe567,
+    secondary: IconData(0xe566, fontFamily: _phosphorDuotone),
+    fontFamily: _phosphorDuotone,
+  );
   static const IconData fibre = Icons.eco_rounded;
+
+  static const _phosphorDuotone = 'PhosphorDuotone';
 
   // Progress.
   static const IconData trend = Icons.trending_up_rounded;
   static const IconData bodyWeight = Icons.monitor_weight_outlined;
   static const IconData achievement = Icons.emoji_events_rounded;
+}
+
+/// A two-layer glyph: [secondary] is a filled shape drawn underneath the
+/// outline at low opacity.
+class IndiFitDuotoneIconData extends IconData {
+  const IndiFitDuotoneIconData(
+    super.codePoint, {
+    required this.secondary,
+    super.fontFamily,
+  });
+
+  final IconData secondary;
+}
+
+/// An [Icon] that also draws the fill layer of an [IndiFitDuotoneIconData].
+class IndiFitIcon extends StatelessWidget {
+  const IndiFitIcon(this.icon, {super.key, this.size, this.color});
+
+  final IconData icon;
+  final double? size;
+  final Color? color;
+
+  static const double secondaryOpacity = 0.2;
+
+  @override
+  Widget build(BuildContext context) {
+    final glyph = Icon(icon, size: size, color: color);
+    final duotone = icon;
+    if (duotone is! IndiFitDuotoneIconData) return glyph;
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        Opacity(
+          opacity: secondaryOpacity,
+          child: Icon(duotone.secondary, size: size, color: color),
+        ),
+        glyph,
+      ],
+    );
+  }
 }

@@ -5,7 +5,6 @@ import 'package:indifit/core/theme/b05_semantic_colors.dart';
 import 'package:indifit/core/theme/indifit_icons.dart';
 import 'package:indifit/features/dashboard/today_consumer_presentation.dart';
 import 'package:indifit/features/dashboard/widgets/today_nutrition_widgets.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 TodayNutritionMetricPresentation _fat(double grams, {double target = 60}) =>
     TodayNutritionMetricPresentation(
@@ -73,10 +72,10 @@ void main() {
     tester,
   ) async {
     await _barColour(tester, _fat(30));
-    final icon = tester.widget<PhosphorIcon>(
+    final icon = tester.widget<IndiFitIcon>(
       find.descendant(
         of: find.byType(MacroRow),
-        matching: find.byType(PhosphorIcon),
+        matching: find.byType(IndiFitIcon),
       ),
     );
     expect(icon.icon, IndiFitIcons.fat);
