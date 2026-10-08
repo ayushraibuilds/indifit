@@ -43,6 +43,15 @@ abstract final class DietPreferencePresentation {
       persistedAliases: {'veg'},
     ),
     DietPreferenceOption(
+      uiValue: 'eggetarian',
+      preferredPersistedValue: 'eggetarian',
+      label: 'Eggetarian (Vegetarian plus Eggs)',
+      shortLabel: 'Eggetarian',
+      description: 'Vegetarian, plus eggs',
+      icon: Icons.egg_outlined,
+      persistedAliases: {'eggetarian'},
+    ),
+    DietPreferenceOption(
       uiValue: 'non_veg',
       preferredPersistedValue: 'non-veg',
       label: 'Non-Vegetarian (Chicken, Eggs, Fish)',
@@ -59,6 +68,15 @@ abstract final class DietPreferencePresentation {
       description: '100% plant-based, no animal products',
       icon: Icons.spa,
       persistedAliases: {'vegan'},
+    ),
+    DietPreferenceOption(
+      uiValue: 'jain',
+      preferredPersistedValue: 'jain',
+      label: 'Jain (No Onion, Garlic or Roots)',
+      shortLabel: 'Jain',
+      description: 'Vegetarian, no onion, garlic or root vegetables',
+      icon: Icons.self_improvement,
+      persistedAliases: {'jain'},
     ),
   ];
 

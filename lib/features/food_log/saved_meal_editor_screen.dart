@@ -566,6 +566,7 @@ class _SavedMealComponentPickerState extends State<_SavedMealComponentPicker> {
                   ),
                 ),
                 IconButton(
+                  tooltip: 'Close',
                   icon: const Icon(Icons.close_rounded),
                   onPressed: () => Navigator.pop(context),
                 ),

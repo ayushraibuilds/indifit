@@ -507,6 +507,16 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       ),
     );
 
+    // Offline Mode: search only this phone. Calling the online search would
+    // just fail and show an outage the person chose themselves (audit UX-17).
+    if (!ref.read(privacyPolicyProvider).isNutritionOnlineAllowed) {
+      setState(() => _searchingOnline = false);
+      if (identical(_onlineSearchCancelToken, cancelToken)) {
+        _onlineSearchCancelToken = null;
+      }
+      return;
+    }
+
     try {
       final online = await ref
           .read(foodApiServiceProvider)
@@ -1569,6 +1579,13 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     ).toString();
   }
 
+  static String? _onlineSearchOffNotice(PrivacyPolicy policy) {
+    if (policy.isNutritionOnlineAllowed) return null;
+    return policy.isOfflineOnly
+        ? 'Offline Mode is on'
+        : 'Online food search is off';
+  }
+
   Widget _buildLandingState(DateTime logDate) {
     final policy = ref.watch(privacyPolicyProvider);
     final isAiAllowed = policy.isAiAllowed;
@@ -1624,6 +1641,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   }
 
   Widget _buildSearchResults() => FoodSearchResultsList(
+    onlineSearchOff: _onlineSearchOffNotice(ref.watch(privacyPolicyProvider)),
     isOnlineSearchOffline: _isOnlineSearchOffline,
     searchingOnline: _searchingOnline,
     onlineFailureMessage: _onlineFailureMessage,

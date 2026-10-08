@@ -398,6 +398,13 @@ class QuantityUnitDefinition {
 
   bool get supportsDeterministicConversion =>
       baseNumerator != null && baseDenominator != null;
+
+  /// [displayLabel] for [amount]: singular for exactly one ("1 piece",
+  /// "1 serving"), plural otherwise ("0.5 servings", "2 pieces"). Audit UX-18.
+  String labelFor(QuantityAmount amount) =>
+      amount.compareTo(QuantityAmount.one) == 0 && displayLabel.endsWith('s')
+      ? displayLabel.substring(0, displayLabel.length - 1)
+      : displayLabel;
 }
 
 /// Stable typed unit registry. Aliases are explicit parser vocabulary; they
@@ -1313,7 +1320,7 @@ class QuantityFormatter {
     final definition = QuantityUnitRegistry.definitionFor(targetUnit);
     final label = targetUnit == QuantityUnit.householdReference
         ? quantity.context.householdMeasure!.measureType
-        : definition.displayLabel;
+        : definition.labelFor(displayed.amount);
     return '${displayed.amount.format(decimalPlaces: decimalPlaces)} $label';
   }
 }

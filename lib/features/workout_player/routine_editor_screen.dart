@@ -732,6 +732,7 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen>
                                 setState(() => day.isRestDay = val),
                           ),
                           IconButton(
+                            tooltip: 'Remove day',
                             icon: Icon(
                               Icons.delete_outline,
                               color: colors.danger.indicator,
@@ -810,6 +811,7 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen>
                                   ),
                                 ),
                                 IconButton(
+                                  tooltip: 'Remove exercise',
                                   icon: Icon(
                                     Icons.close,
                                     size: 16,

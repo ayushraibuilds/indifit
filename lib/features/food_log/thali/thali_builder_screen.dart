@@ -52,6 +52,19 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
   ThaliViewMode _viewMode = ThaliViewMode.plate;
   String? _selectedItemId;
 
+  /// The failure already shown, so a rebuild doesn't show it again.
+  String? _shownError;
+
+  static const _noticeDuration = Duration(seconds: 4);
+
+  /// Replaces the notice on screen instead of queueing behind it, so notices
+  /// never stack up over the plate (UX-15).
+  void _showNotice(SnackBar snackBar) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(snackBar);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -175,11 +188,14 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
         final notice = state.userNotice!;
         controller.clearNotice();
         final fromUsual = notice.startsWith('Started from your usual');
-        ScaffoldMessenger.of(context).showSnackBar(
+        _showNotice(
           SnackBar(
             content: Text(notice),
             backgroundColor: colors.surface,
             behavior: SnackBarBehavior.floating,
+            // An action would keep it up until dismissed (UX-15).
+            persist: false,
+            duration: _noticeDuration,
             action: fromUsual
                 ? SnackBarAction(
                     label: 'Clear plate',
@@ -191,16 +207,23 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
       });
     }
 
-    // React to errors
-    if (state.status == NutritionThaliStatus.failure &&
-        state.errorMessage != null) {
+    // React to errors: once per error, and not when the summary bar already
+    // shows it in place of the totals. Every rebuild used to queue another.
+    final error = state.status == NutritionThaliStatus.failure
+        ? state.errorMessage
+        : null;
+    if (error == null) {
+      _shownError = null;
+    } else if (state.preview != null && error != _shownError) {
+      _shownError = error;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
+        _showNotice(
           SnackBar(
-            content: Text(state.errorMessage!),
+            content: Text(error),
             backgroundColor: colors.danger.foreground,
             behavior: SnackBarBehavior.floating,
+            duration: _noticeDuration,
           ),
         );
       });
@@ -311,6 +334,7 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
                         ),
                       ),
                       IconButton(
+                        tooltip: 'Rename thali',
                         icon: Icon(
                           Icons.edit_outlined,
                           size: 18,
@@ -576,24 +600,27 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
                           ],
                         ),
                 ),
-                // Sticky Bottom Summary Bar
-                ThaliNutritionSummaryBar(
-                  preview: state.preview,
-                  isLoading: isFinalizing,
-                  hasItems: items.isNotEmpty,
-                  onLogThali: () => _handleLogThali(),
-                  onSaveTemplate: _handleSaveTemplate,
-                  failureMessage:
-                      state.status == NutritionThaliStatus.failure &&
-                          state.preview == null
-                      ? state.errorMessage
-                      : null,
-                  onLogWithoutCalories: () {
-                    controller.acknowledgeUnknownEnergy(true);
-                    _handleLogThali();
-                  },
-                ),
               ],
+            ),
+      // In the bottom slot, floating notices sit above Log Thali instead of
+      // covering it (UX-15).
+      bottomNavigationBar: isLoading
+          ? null
+          : ThaliNutritionSummaryBar(
+              preview: state.preview,
+              isLoading: isFinalizing,
+              hasItems: items.isNotEmpty,
+              onLogThali: () => _handleLogThali(),
+              onSaveTemplate: _handleSaveTemplate,
+              failureMessage:
+                  state.status == NutritionThaliStatus.failure &&
+                      state.preview == null
+                  ? state.errorMessage
+                  : null,
+              onLogWithoutCalories: () {
+                controller.acknowledgeUnknownEnergy(true);
+                _handleLogThali();
+              },
             ),
     );
   }
