@@ -1,6 +1,6 @@
 # Premium redesign: tokens, motion and five signature moments
 
-**Status:** approved direction (Ayush, 2026-10-08) · **Owner:** Claude (code), Ayush (review, device feel checks) · **Last updated:** 2026-10-08 (V0 open as #86; plan written)
+**Status:** approved direction (Ayush, 2026-10-08) · **Owner:** Claude (code), Ayush (review, device feel checks) · **Last updated:** 2026-10-08 (V0 open as #86; open questions answered)
 
 Related:
 - [Visual review, 8 Oct](../audit/visual-review-2026-10-08/index.html) (artifact https://claude.ai/artifact/1zPcdBAuptLj8GV8SMHAVz): the findings, concepts and screenshots this plan builds on. F1–F8 and concepts A–G are referenced by ID below.
@@ -38,6 +38,12 @@ Update this table in every PR that touches the redesign. Status values: Not star
 3. **Medal and illustration art starts with Microsoft Fluent Emoji 3D (MIT).** Commission one consistent set once Plus revenue starts.
 4. **Import RepDB free-tier exercise images,** with attribution in About & credits.
 5. **The steel thali (V4) is the first signature moment** after V0–V2.
+
+**Decisions on the plan's open questions (Ayush, 2026-10-08, "go with your recommendations")**
+6. **Fat icon:** Phosphor `DropHalf` (duotone), via `phosphor_flutter` 2.1.0 (MIT). Water keeps Material `water_drop`. Phosphor becomes the source for any later icon gaps.
+7. **Light theme depth:** soft shadows instead of borders on sections (§ 4.2). Inputs and control outlines keep their 3:1 borders.
+8. **Thali tilt:** ships in V4 (not a separate V4b): gyroscope ±6°, only while the thali screen is visible, off under Reduce Motion.
+9. **Share card:** the workout only, no name or other personal data. A name option can come later if people ask.
 
 **Changes to earlier plans**
 - TRAINING_PROGRESS_PREMIUM_PLAN § 9 said Lottie and Rive were "not now". Superseded by decision 2 for V8 only.
@@ -129,7 +135,7 @@ One map used by Today, the diary, the thali, portion sheets and Progress:
 | Water | blue (hydration only) | blue | drop |
 
 - Orange keeps fat away from red ("over target") and from hydration blue. It sits next to amber, so fat and carbs also differ by icon and label.
-- **Open for Ayush (V1 review):** the fat icon. Candidates: Phosphor `Drop` duotone with a half fill, or a small "ghee/oil" glyph drawn in-house. Water keeps Material `water_drop`.
+- **Fat icon (decision 6):** Phosphor `DropHalf` duotone. Water keeps Material `water_drop`.
 - `breakfast` currently uses orange too (meal accent). Meal accents only tint the meal icon chip, so they don't collide in practice; the V1 golden review checks Today where both appear.
 
 ### 4.5 Housekeeping
@@ -203,7 +209,7 @@ All presets read `B05MotionPolicy.reduceMotion(context)` and return the final st
 - **Fill level:** quantity relative to the dish's default portion, clamped 0.35–1.0, so a half katori looks half full.
 - **Labels:** inside a katori only the kcal number (tabular). Names and quantities move to the dish list under the plate, which already exists. Semantics labels are unchanged.
 - **Motion:** an added dish drops in (spring, from −24 pt, 420 ms) with `IndiFitHaptics.selection()`; quantity changes animate the fill; removing fades out. Instant under Reduce Motion.
-- **Tilt (optional, V4b):** `sensors_plus` gyroscope, ±6°, only while the screen is visible, off under Reduce Motion.
+- **Tilt (decision 8):** `sensors_plus` gyroscope, ±6°, only while the screen is visible, off under Reduce Motion.
 
 ### 6.3 Tests and verification
 - Goldens: 320, 390 and 430 pt widths, dark and light, empty / classic / overflow.
@@ -251,7 +257,7 @@ All presets read `B05MotionPolicy.reduceMotion(context)` and return the final st
 
 ### 8.3 V6 Summary hero and share card (concept C)
 - Order: tick (pop) → workout name → one hero number "1,440 kg total lifted" (`countUp`) → one row of three stats (sets, reps, duration) → week-goal pill → "vs last time" lines → what you logged. Removes the repeated stat tiles.
-- Share: render the hero block at 1080 × 1920 via `RepaintBoundary` → PNG → `Share.shareXFiles`. Brand gradient, IndiFit mark, no personal data beyond the workout.
+- Share: render the hero block at 1080 × 1920 via `RepaintBoundary` → PNG → `Share.shareXFiles`. Brand gradient, IndiFit mark, the workout only: no name or other personal data (decision 9).
 - One celebration per workout (existing TP-6 rule).
 
 ### 8.4 V7 Medals (concept D)
@@ -288,9 +294,9 @@ Size budget for V4–V8 combined: +3 MB to the release IPA, measured in each PR.
 | `figma_squircle` | 0.6.3 (2025-03-08) | MIT, aloisdeniel.com | Dart ≥ 3.4 ✓ | V1 |
 | `animations` | **2.2.0** (3.0.0 needs Flutter 3.44) | BSD-3, flutter.dev | Flutter ≥ 3.35 ✓ | V2 |
 | `flutter_animate` | 4.5.2 (in pubspec) | BSD-3 | ✓ | V2 |
-| `sensors_plus` | 7.1.1 (2026-10-01) | BSD-3, fluttercommunity.dev, Flutter Favorite | Flutter ≥ 3.19 ✓ | V4b, V7 |
+| `sensors_plus` | 7.1.1 (2026-10-01) | BSD-3, fluttercommunity.dev, Flutter Favorite | Flutter ≥ 3.19 ✓ | V4, V7 |
 | `rive` | 0.14.11 (2026-08-03), fallback 0.13.20 | MIT, rive.app | Flutter ≥ 3.28 ✓; native download (§ 8.1) | V8 |
-| `phosphor_flutter` | 2.1.0 (2024-05-10) | MIT | ✓; only if the fat icon decision picks it | V1 |
+| `phosphor_flutter` | 2.1.0 (2024-05-10) | MIT | ✓ | V1 (fat icon, decision 6) |
 | `flutter_svg` | not needed: MuscleMap geometry is already Dart paths | — | — | — |
 | `percent_indicator` | remove | — | — | V1 |
 
@@ -312,7 +318,4 @@ Size budget for V4–V8 combined: +3 MB to the release IPA, measured in each PR.
 
 ## 12. Open questions for Ayush
 
-1. **Fat icon (V1):** Phosphor half-filled drop, or an in-house "oil/ghee" glyph?
-2. **Light theme depth (V1):** soft shadows instead of borders (proposed), or keep thin borders in light mode?
-3. **Thali tilt (V4b):** ship the gyroscope tilt, or keep the plate still?
-4. **Share card (V6):** include the user's name, or only the workout?
+None open. The four questions from the first draft (fat icon, light-theme depth, thali tilt, share card contents) were answered on 2026-10-08; see decisions 6–9 in § 1.
