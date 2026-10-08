@@ -622,7 +622,7 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen>
                         ? null
                         : () => _applyTemplate(tpl),
                     style: FilledButton.styleFrom(
-                      backgroundColor: colors.action,
+                      backgroundColor: colors.actionFill,
                       foregroundColor: colors.onAction,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
@@ -851,7 +851,7 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen>
             child: FilledButton.icon(
               onPressed: _savingManual ? null : _saveManualRoutine,
               style: FilledButton.styleFrom(
-                backgroundColor: context.b05Colors.action,
+                backgroundColor: context.b05Colors.actionFill,
                 foregroundColor: context.b05Colors.onAction,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(

@@ -579,7 +579,7 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
                     width: 58,
                     height: 72,
                     decoration: BoxDecoration(
-                      color: isSelected ? colors.action : colors.inset,
+                      color: isSelected ? colors.actionFill : colors.inset,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: isSelected ? Colors.transparent : colors.border,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/presentation/consumer_number_label.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
 import '../../../data/models/adaptive_tdee_models.dart';
@@ -36,7 +37,8 @@ class AdaptiveTdeeCard extends StatelessWidget {
         'Adaptive expenditure: $displayKcal kilocalories per day. $confidenceLabel. ${estimate.confidenceMessage}';
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      // Stretch so every card in a section is full width.
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const ProgressSectionHeading(title: 'Adaptive expenditure'),
         const SizedBox(height: B05Layout.space8),
@@ -61,7 +63,9 @@ class AdaptiveTdeeCard extends StatelessWidget {
                               textBaseline: TextBaseline.alphabetic,
                               children: [
                                 Text(
-                                  '$displayKcal',
+                                  ConsumerNumberLabel.rounded(
+                                    displayKcal.toDouble(),
+                                  ),
                                   style: B05Typography.metric(context),
                                 ),
                                 const SizedBox(width: B05Layout.space8),

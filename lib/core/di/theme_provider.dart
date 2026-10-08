@@ -13,13 +13,18 @@ class ThemeModeNotifier extends StateNotifier<ThemeMode> {
     : _prefs = prefs,
       super(_loadInitialMode(prefs));
 
+  /// Dark until the user picks a mode. It matches the dark launch screen, so a
+  /// cold start never flashes from navy to white.
+  static const ThemeMode defaultMode = ThemeMode.dark;
+
   static ThemeMode _loadInitialMode(SharedPreferences? prefs) {
-    if (prefs == null) return ThemeMode.system;
+    if (prefs == null) return defaultMode;
     final val = prefs.getString(prefKey);
     return switch (val) {
       'light' => ThemeMode.light,
       'dark' => ThemeMode.dark,
-      _ => ThemeMode.system,
+      'system' => ThemeMode.system,
+      _ => defaultMode,
     };
   }
 

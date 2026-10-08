@@ -24,11 +24,11 @@ class TrainingPeriodCard extends StatelessWidget {
     final prev = comparison.previous;
 
     final volumeText = cur.volumeIsTrustworthy && cur.totalVolumeKg > 0
-        ? formatWeight(cur.totalVolumeKg, units)
+        ? formatTotalLifted(cur.totalVolumeKg, units)
         : null;
 
     final prevVolumeText = prev.volumeIsTrustworthy && prev.totalVolumeKg > 0
-        ? formatWeight(prev.totalVolumeKg, units)
+        ? formatTotalLifted(prev.totalVolumeKg, units)
         : null;
 
     return B05Surface(

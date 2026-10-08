@@ -117,7 +117,8 @@ class ProgressHighlights extends StatelessWidget {
       container: true,
       label: 'Progress highlights',
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        // Stretch so every card in a section is full width.
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const ProgressSectionHeading(title: 'Highlights'),
           const SizedBox(height: B05Layout.space8),
@@ -335,7 +336,8 @@ class TrainingConsistencySection extends StatelessWidget {
         );
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      // Stretch so every card in a section is full width.
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const ProgressSectionHeading(title: 'Training consistency'),
         const SizedBox(height: B05Layout.space8),
@@ -463,7 +465,7 @@ class WeekCalendarStrip extends StatelessWidget {
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               color: isTrained
-                                  ? colors.action
+                                  ? colors.actionFill
                                   : colors.surfaceSubtle,
                               border: Border.all(
                                 color: isToday ? colors.action : colors.border,
@@ -513,7 +515,8 @@ class StrengthSection extends StatelessWidget {
 
     if (highlights.length > 1) {
       return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        // Stretch so every card in a section is full width.
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const ProgressSectionHeading(title: 'Strength'),
           const SizedBox(height: B05Layout.space8),
@@ -573,7 +576,8 @@ class StrengthSection extends StatelessWidget {
 
     final setFormatted = formatSet(highlight.heaviest);
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      // Stretch so every card in a section is full width.
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const ProgressSectionHeading(title: 'Strength'),
         const SizedBox(height: B05Layout.space8),
@@ -639,7 +643,8 @@ class StrengthEmptySection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      // Stretch so every card in a section is full width.
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const ProgressSectionHeading(title: 'Strength'),
         const SizedBox(height: B05Layout.space8),
@@ -683,7 +688,8 @@ class NutritionAdherenceSection extends StatelessWidget {
     );
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      // Stretch so every card in a section is full width.
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const ProgressSectionHeading(title: 'Nutrition adherence'),
         const SizedBox(height: B05Layout.space8),
@@ -1046,7 +1052,8 @@ class TrainingVolumeSection extends StatelessWidget {
     final semanticComparison = comparison == null ? '' : ' $comparison.';
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      // Stretch so every card in a section is full width.
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const ProgressSectionHeading(title: 'Loaded volume'),
         const SizedBox(height: B05Layout.space8),
@@ -1093,7 +1100,8 @@ class MuscleBalanceSection extends StatelessWidget {
                 second.workingSetUnits.compareTo(first.workingSetUnits),
           );
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      // Stretch so every card in a section is full width.
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const ProgressSectionHeading(title: 'Recent training emphasis'),
         const SizedBox(height: B05Layout.space8),
@@ -1159,7 +1167,8 @@ class MeasurementsSection extends StatelessWidget {
     final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
     final compactActions = textScale >= 1.5;
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      // Stretch so every card in a section is full width.
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const ProgressSectionHeading(title: 'Measurements'),
         const SizedBox(height: B05Layout.space8),

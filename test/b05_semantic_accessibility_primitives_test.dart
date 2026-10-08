@@ -38,9 +38,21 @@ void main() {
             greaterThanOrEqualTo(4.5),
           );
           expect(
-            _contrast(colors.onAction, colors.action),
+            _contrast(colors.onAction, colors.actionFill),
             greaterThanOrEqualTo(4.5),
           );
+          // The brand green is also used as text, icons and selected labels.
+          for (final surface in [
+            colors.page,
+            colors.section,
+            colors.inset,
+            colors.selected,
+          ]) {
+            expect(
+              _contrast(colors.action, surface),
+              greaterThanOrEqualTo(4.5),
+            );
+          }
           expect(colors.success.indicator, isNot(colors.warning.indicator));
           expect(colors.warning.indicator, isNot(colors.danger.indicator));
           expect(

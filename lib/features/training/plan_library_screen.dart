@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -6,6 +8,7 @@ import 'package:uuid/uuid.dart';
 import '../../core/di/providers.dart';
 import '../../core/presentation/consumer_date_label.dart';
 import '../../core/presentation/product_failure_presentation.dart';
+import '../../core/services/indifit_haptics.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/consumer_task_primitives.dart';
@@ -289,6 +292,12 @@ class _PlanOverviewScreenState extends ConsumerState<PlanOverviewScreen> {
   String? _activationCommandId;
   String? _workingVersionId;
 
+  /// True once this screen made the plan current. A bundled plan is activated
+  /// through a copy, so [PlanLibraryEntry.isActive] for the version shown here
+  /// stays false; without this the button would offer to switch the plan to
+  /// itself.
+  var _activatedHere = false;
+
   @override
   Widget build(BuildContext context) {
     if (widget.versionId case final versionId?) {
@@ -340,12 +349,14 @@ class _PlanOverviewScreenState extends ConsumerState<PlanOverviewScreen> {
     PlanLibraryEntry entry, {
     PlanOverviewSnapshot? overview,
   }) {
+    final isCurrentPlan = entry.isActive || _activatedHere;
     return _PlanDetailsBody(
       entry: entry,
       overview: overview,
+      isCurrentPlan: isCurrentPlan,
       isActivating: _isActivating,
       activationError: _activationError,
-      onUsePlan: entry.isReadyToUse && !entry.isActive
+      onUsePlan: entry.isReadyToUse && !isCurrentPlan
           ? () => _activatePlan(entry)
           : null,
       onEditPlan: () => context.push(
@@ -366,7 +377,10 @@ class _PlanOverviewScreenState extends ConsumerState<PlanOverviewScreen> {
   }
 
   Future<void> _activatePlan(PlanLibraryEntry entry) async {
-    if (_isActivating || entry.isActive || !entry.isReadyToUse) {
+    if (_isActivating ||
+        entry.isActive ||
+        _activatedHere ||
+        !entry.isReadyToUse) {
       return;
     }
     setState(() {
@@ -431,8 +445,10 @@ class _PlanOverviewScreenState extends ConsumerState<PlanOverviewScreen> {
       ref.invalidate(planLibrarySnapshotProvider);
       setState(() {
         _isActivating = false;
+        _activatedHere = true;
         _activationError = null;
       });
+      unawaited(IndiFitHaptics.confirmation());
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('This is now your current plan.')),
       );
@@ -572,6 +588,7 @@ class _PlanDetailsBody extends StatelessWidget {
   const _PlanDetailsBody({
     required this.entry,
     this.overview,
+    required this.isCurrentPlan,
     required this.isActivating,
     required this.activationError,
     required this.onUsePlan,
@@ -581,6 +598,7 @@ class _PlanDetailsBody extends StatelessWidget {
 
   final PlanLibraryEntry entry;
   final PlanOverviewSnapshot? overview;
+  final bool isCurrentPlan;
   final bool isActivating;
   final String? activationError;
   final VoidCallback? onUsePlan;
@@ -616,7 +634,7 @@ class _PlanDetailsBody extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: B05Layout.space8),
-                  if (entry.isActive)
+                  if (isCurrentPlan)
                     const _CurrentPlanBanner()
                   else if (entry.isDraft)
                     const _PlanStatusBanner(
@@ -644,7 +662,7 @@ class _PlanDetailsBody extends StatelessWidget {
                     ),
                     const SizedBox(height: B05Layout.space12),
                   ],
-                  if (entry.isActive)
+                  if (isCurrentPlan)
                     const _CurrentPlanAction()
                   else if (onUsePlan != null)
                     SizedBox(

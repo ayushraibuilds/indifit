@@ -143,7 +143,7 @@ void main() {
 
     expect(privacy.state.isOfflineOnly, isFalse);
     expect(privacy.state.isTelemetryEnabled, isFalse);
-    expect(theme.state, ThemeMode.system);
+    expect(theme.state, ThemeMode.dark);
     expect(const SettingsState().quietHoursEnabled, isTrue);
     expect(const SettingsState().quietHoursStart, 22);
     expect(const SettingsState().quietHoursEnd, 7);

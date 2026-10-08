@@ -191,7 +191,7 @@ class _SavedMealDetailScreenState extends State<SavedMealDetailScreen> {
                         : null,
                     style: FilledButton.styleFrom(
                       minimumSize: const Size(0, B05Layout.minTouchTarget),
-                      backgroundColor: colors.action,
+                      backgroundColor: colors.actionFill,
                       foregroundColor: colors.onAction,
                       shape: RoundedRectangleBorder(
                         borderRadius: B05Radii.mediumRadius,

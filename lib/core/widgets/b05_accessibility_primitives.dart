@@ -240,7 +240,7 @@ class B05ActionButton extends StatelessWidget {
     final colors = context.b05Colors;
     final style = switch (emphasis) {
       B05ActionEmphasis.primary => FilledButton.styleFrom(
-        backgroundColor: colors.action,
+        backgroundColor: colors.actionFill,
         disabledBackgroundColor: colors.disabled,
         foregroundColor: colors.onAction,
         disabledForegroundColor: colors.textDisabled,

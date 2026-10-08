@@ -288,7 +288,7 @@ class _EditFoodLogSheetState extends State<EditFoodLogSheet> {
                   FilledButton(
                     onPressed: _submit,
                     style: FilledButton.styleFrom(
-                      backgroundColor: context.b05Colors.action,
+                      backgroundColor: context.b05Colors.actionFill,
                       foregroundColor: context.b05Colors.onAction,
                       minimumSize: const Size.fromHeight(48),
                       shape: RoundedRectangleBorder(

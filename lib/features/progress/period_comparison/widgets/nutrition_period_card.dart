@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/presentation/consumer_number_label.dart';
+
 import '../../../../core/theme/b05_semantic_colors.dart';
 import '../../../../core/widgets/b05_accessibility_primitives.dart';
 import '../../../../data/models/progress_period_comparison_models.dart';
@@ -17,19 +19,19 @@ class NutritionPeriodCard extends StatelessWidget {
     final prev = comparison.previous;
 
     final curCalories = cur.averageCaloriesKcal != null
-        ? '${cur.averageCaloriesKcal!.round()} kcal'
+        ? '${ConsumerNumberLabel.rounded(cur.averageCaloriesKcal!)} kcal'
         : 'No logs';
 
     final prevCalories = prev.averageCaloriesKcal != null
-        ? '${prev.averageCaloriesKcal!.round()} kcal prior'
+        ? '${ConsumerNumberLabel.rounded(prev.averageCaloriesKcal!)} kcal prior'
         : 'No prior logs';
 
     final curProtein = cur.averageProteinG != null
-        ? '${cur.averageProteinG!.toStringAsFixed(1)}g'
+        ? '${cur.averageProteinG!.toStringAsFixed(1)} g'
         : '—';
 
     final prevProtein = prev.averageProteinG != null
-        ? '${prev.averageProteinG!.toStringAsFixed(1)}g prior'
+        ? '${prev.averageProteinG!.toStringAsFixed(1)} g prior'
         : '—';
 
     final evidence =

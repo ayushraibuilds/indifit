@@ -675,7 +675,7 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
               icon: const Icon(Icons.add_rounded),
               label: const Text('Add First Dish'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: colors.action,
+                backgroundColor: colors.actionFill,
                 foregroundColor: colors.onAction,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,
