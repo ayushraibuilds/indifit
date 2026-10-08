@@ -466,7 +466,14 @@ class PortionMapping {
     if (measure == null) return null;
     final base = option.baseQuantity;
     final aiUnit = MealItemResolver.normalize(unit);
-    final aiKatori = _katoriPerVessel[aiUnit];
+    // In standard katori. "Katori" is the person's own katori once they've
+    // said its size; the bowl and plate stay the app's fixed sizes.
+    final vessel = _katoriPerVessel[aiUnit];
+    final aiKatori = vessel == null
+        ? null
+        : aiUnit == 'katori'
+        ? measure.katoriScale
+        : vessel;
 
     if (base.unit == QuantityUnit.gram) {
       // Only a base dish: per-100 g variants are dry snacks or mini rice
@@ -491,7 +498,12 @@ class PortionMapping {
     } else if (foodUnit != null && unitsPerServing != null) {
       final foodKatori = _katoriPerVessel[foodUnit];
       if (aiKatori != null && foodKatori != null) {
-        servings = amount * aiKatori / foodKatori / unitsPerServing;
+        // The measure counts katori foods in the person's katori; back to
+        // standard katori so every vessel compares on one scale.
+        final standardUnits = foodUnit == 'katori'
+            ? unitsPerServing * measure.katoriScale
+            : unitsPerServing;
+        servings = amount * aiKatori / foodKatori / standardUnits;
       } else if (aiKind == _UnitKind.piece && foodUnit == 'piece') {
         servings = amount / unitsPerServing;
       } else if (aiKind == _UnitKind.household && aiUnit == foodUnit) {

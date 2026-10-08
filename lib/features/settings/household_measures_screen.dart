@@ -5,6 +5,7 @@ import '../../core/nutrition_household_measures.dart';
 import '../../core/presentation/secondary_presentation.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/consumer_task_primitives.dart';
+import '../food_log/katori_size_step.dart';
 import 'household_measures_controller.dart';
 
 class HouseholdMeasuresScreen extends ConsumerStatefulWidget {
@@ -99,6 +100,16 @@ class _HouseholdMeasuresScreenState
             ),
           ),
         ),
+        const SizedBox(height: 16),
+        Text('YOUR KATORI', style: B05Typography.label(context)),
+        const SizedBox(height: 4),
+        Text(
+          'Foods measured in katori follow your size: "1 katori" of dal is '
+          'your katori of dal. Sizes are approximate.',
+          style: B05Typography.body(context),
+        ),
+        const SizedBox(height: 8),
+        const KatoriSizeChoice(key: Key('household_my_katori')),
         const SizedBox(height: 16),
         Text('STANDARD MEASURES', style: B05Typography.label(context)),
         const SizedBox(height: 8),
