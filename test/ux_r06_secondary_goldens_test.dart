@@ -11,6 +11,7 @@ import 'package:indifit/data/repositories/nutrition_constraint_repository.dart';
 import 'package:indifit/data/repositories/nutrition_household_measure_repository.dart';
 import 'package:indifit/features/education/b05_education_content.dart';
 import 'package:indifit/features/education/learn_screen.dart';
+import 'package:indifit/features/food_log/katori_size_step.dart';
 import 'package:indifit/features/onboarding/onboarding_screen.dart';
 import 'package:indifit/features/profile/profile_screen.dart';
 import 'package:indifit/features/settings/household_measures_controller.dart';
@@ -110,7 +111,11 @@ void main() {
       fileName: 'ux_r06_household_measures_dark.png',
       theme: AppTheme.darkTheme,
       child: const HouseholdMeasuresScreen(),
-      extraOverrides: [_householdControllerOverride()],
+      extraOverrides: [
+        _householdControllerOverride(),
+        // Like the measures above, "Your katori" is faked: no size chosen.
+        myKatoriMillilitresProvider.overrideWith((ref) async => null),
+      ],
     );
   });
 
