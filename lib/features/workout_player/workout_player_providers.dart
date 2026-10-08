@@ -38,6 +38,21 @@ final b05ExerciseVisualRegistryProvider =
       }
     });
 
+/// The verified pictures for one exercise, or null (V5). Fresh clones and CI
+/// have no RepDB files, so this is null there.
+final b05ExerciseImagesProvider = FutureProvider.autoDispose
+    .family<B05ExerciseImages?, String>((ref, canonicalExerciseUuid) async {
+      final id = canonicalExerciseUuid.trim();
+      if (id.isEmpty) return null;
+      final registry = await ref.watch(
+        b05ExerciseVisualRegistryProvider.future,
+      );
+      return b05LoadExerciseImages(
+        registry: registry,
+        canonicalExerciseUuid: id,
+      );
+    });
+
 final b07ExerciseContextRepositoryProvider =
     Provider<B07ExerciseContextRepository>(
       (ref) => B07ExerciseContextRepository(ref.watch(databaseProvider)),

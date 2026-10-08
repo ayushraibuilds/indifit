@@ -1,3 +1,6 @@
+import 'dart:typed_data';
+
+import 'package:figma_squircle/figma_squircle.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -9,6 +12,7 @@ import '../../../core/widgets/indi_fit_bottom_sheet.dart';
 import '../../../data/models/b02_execution_models.dart';
 import '../../../data/repositories/b07_exercise_context_repository.dart';
 import '../../media/b05_exercise_visual_registry.dart';
+import '../../media/indifit_muscle_map.dart';
 import 'b02_execution_semantics.dart';
 
 /// Compact exercise context for the live execution surface.
@@ -23,12 +27,14 @@ class B07ExerciseContextPanel extends ConsumerWidget {
     super.key,
     this.visualRegistry,
     this.assetBundle,
+    this.muscleMapOnly = false,
   });
 
   final String canonicalExerciseId;
   final String exerciseNameSnapshot;
   final B05ExerciseVisualRegistry? visualRegistry;
   final AssetBundle? assetBundle;
+  final bool muscleMapOnly;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -50,6 +56,7 @@ class B07ExerciseContextPanel extends ConsumerWidget {
       visualRegistry: registry,
       assetBundle: assetBundle,
       isLoadingContext: result.isLoading,
+      muscleMapOnly: muscleMapOnly,
     );
   }
 }
@@ -65,6 +72,7 @@ class B07ExerciseContextCard extends StatelessWidget {
     super.key,
     this.assetBundle,
     this.isLoadingContext = false,
+    this.muscleMapOnly = false,
   });
 
   final String canonicalExerciseId;
@@ -73,6 +81,10 @@ class B07ExerciseContextCard extends StatelessWidget {
   final B05ExerciseVisualRegistry visualRegistry;
   final AssetBundle? assetBundle;
   final bool isLoadingContext;
+
+  /// The exercise pictures are already on screen (the player's hero), so
+  /// this card shows the muscle map in their place.
+  final bool muscleMapOnly;
 
   @override
   Widget build(BuildContext context) {
@@ -94,19 +106,22 @@ class B07ExerciseContextCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            B07ExerciseVisualRegion(
-              canonicalExerciseId: canonicalExerciseId,
-              exerciseNameSnapshot: name,
-              displayMuscles: displayMuscles == null
-                  ? null
-                  : ExerciseVisualMuscleFacts(
-                      primaryMuscle: displayMuscles.primary,
-                      secondaryMuscles: displayMuscles.secondary,
-                    ),
-              equipment: hasEquipment ? equipment : null,
-              registry: visualRegistry,
-              assetBundle: assetBundle,
-            ),
+            if (muscleMapOnly)
+              _B07MuscleMapStrip(displayMuscles: displayMuscles)
+            else
+              B07ExerciseVisualRegion(
+                canonicalExerciseId: canonicalExerciseId,
+                exerciseNameSnapshot: name,
+                displayMuscles: displayMuscles == null
+                    ? null
+                    : ExerciseVisualMuscleFacts(
+                        primaryMuscle: displayMuscles.primary,
+                        secondaryMuscles: displayMuscles.secondary,
+                      ),
+                equipment: hasEquipment ? equipment : null,
+                registry: visualRegistry,
+                assetBundle: assetBundle,
+              ),
             const SizedBox(height: B05Layout.space4),
             _B07MuscleAndEquipmentLine(
               displayMuscles: displayMuscles,
@@ -127,9 +142,10 @@ class B07ExerciseContextCard extends StatelessWidget {
 }
 
 /// Uses only the existing exact-UUID R08-0 registry and its established
-/// fallback chain. Start/Peak are shown only when the registry has both roles;
-/// no second frame is manufactured for MAIN-only or partial sets.
-class B07ExerciseVisualRegion extends StatelessWidget {
+/// fallback chain. Start/Peak are shown only when both frames load and pass
+/// their checksum; no second frame is manufactured for MAIN-only or partial
+/// sets, and missing files never show two identical fallbacks.
+class B07ExerciseVisualRegion extends StatefulWidget {
   const B07ExerciseVisualRegion({
     required this.canonicalExerciseId,
     required this.exerciseNameSnapshot,
@@ -148,10 +164,58 @@ class B07ExerciseVisualRegion extends StatelessWidget {
   final AssetBundle? assetBundle;
 
   @override
+  State<B07ExerciseVisualRegion> createState() =>
+      _B07ExerciseVisualRegionState();
+}
+
+class _B07ExerciseVisualRegionState extends State<B07ExerciseVisualRegion> {
+  late Future<B05ExerciseImages?> _images;
+
+  String get canonicalExerciseId => widget.canonicalExerciseId;
+  String get exerciseNameSnapshot => widget.exerciseNameSnapshot;
+  ExerciseVisualMuscleFacts? get displayMuscles => widget.displayMuscles;
+  String? get equipment => widget.equipment;
+  B05ExerciseVisualRegistry get registry => widget.registry;
+  AssetBundle? get assetBundle => widget.assetBundle;
+
+  @override
+  void initState() {
+    super.initState();
+    _images = _load();
+  }
+
+  @override
+  void didUpdateWidget(covariant B07ExerciseVisualRegion oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.canonicalExerciseId != widget.canonicalExerciseId ||
+        oldWidget.registry != widget.registry ||
+        oldWidget.assetBundle != widget.assetBundle) {
+      _images = _load();
+    }
+  }
+
+  Future<B05ExerciseImages?> _load() => b05LoadExerciseImages(
+    registry: widget.registry,
+    canonicalExerciseUuid: widget.canonicalExerciseId,
+    bundle: widget.assetBundle,
+  );
+
+  @override
   Widget build(BuildContext context) {
+    return FutureBuilder<B05ExerciseImages?>(
+      future: _images,
+      builder: (context, snapshot) {
+        // Keep the slot height while the files are checked.
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const SizedBox(height: 64);
+        }
+        return _region(context, hasStartPeak: snapshot.data?.isPair == true);
+      },
+    );
+  }
+
+  Widget _region(BuildContext context, {required bool hasStartPeak}) {
     final set = registry.lookup(canonicalExerciseId);
-    final hasStartPeak =
-        set?.mediaByRole['start'] != null && set?.mediaByRole['peak'] != null;
     final label = hasStartPeak
         ? 'Start and peak exercise illustrations for $exerciseNameSnapshot'
         : 'Exercise illustration for $exerciseNameSnapshot';
@@ -245,6 +309,43 @@ class B07ExerciseVisualRegion extends StatelessWidget {
     final width = MediaQuery.sizeOf(context).width;
     final logicalWidth = (width / 2).clamp(120.0, 360.0);
     return (logicalWidth * MediaQuery.devicePixelRatioOf(context)).round();
+  }
+}
+
+/// The muscle map at the compact visual's height. Empty when the muscles are
+/// unknown; the line below then says so.
+class _B07MuscleMapStrip extends StatelessWidget {
+  const _B07MuscleMapStrip({required this.displayMuscles});
+
+  final ExerciseDisplayMuscles? displayMuscles;
+
+  static const double height = 96;
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = displayMuscles?.primary;
+    final secondary = displayMuscles?.secondary ?? const <String>[];
+    if ((primary == null || primary.trim().isEmpty) && secondary.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    // The line below reads the muscles out; the map is decorative here.
+    return ExcludeSemantics(
+      child: SizedBox(
+        height: height,
+        child: Center(
+          child: SizedBox(
+            // The both-view geometry is about 1.15:1.
+            width: height * 1.15,
+            height: height,
+            child: IndiFitMuscleMap.exercise(
+              primaryMuscle: primary,
+              secondaryMuscles: secondary,
+              showTextEquivalent: false,
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -496,6 +597,140 @@ class B07NextExerciseContext extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// The exercise pictures at the top of the player (V5, concept G): start and
+/// peak side by side, large enough to read the movement. The player shows it
+/// only when approved images loaded. Folded, it is one "Show pictures" row.
+class B07ExerciseHero extends StatelessWidget {
+  const B07ExerciseHero({
+    required this.images,
+    required this.exerciseName,
+    required this.expanded,
+    required this.onExpandedChanged,
+    super.key,
+  });
+
+  final B05ExerciseImages images;
+  final String exerciseName;
+  final bool expanded;
+  final ValueChanged<bool> onExpandedChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!expanded) {
+      return Align(
+        alignment: Alignment.centerLeft,
+        child: TextButton.icon(
+          style: TextButton.styleFrom(
+            minimumSize: B05Layout.minimumTouchTarget,
+          ),
+          onPressed: () => onExpandedChanged(true),
+          icon: const Icon(Icons.image_outlined),
+          label: const Text('Show exercise pictures'),
+        ),
+      );
+    }
+    final pictures = images.isPair
+        ? Row(
+            children: [
+              Expanded(
+                child: _B07HeroTile(bytes: images.start!, label: 'Start'),
+              ),
+              const SizedBox(width: B05Layout.space8),
+              Expanded(
+                child: _B07HeroTile(bytes: images.peak!, label: 'Peak'),
+              ),
+            ],
+          )
+        : _B07HeroTile(bytes: images.single!, aspectRatio: 16 / 9);
+    return Semantics(
+      container: true,
+      image: true,
+      label: images.isPair
+          ? 'Start and peak pictures for $exerciseName'
+          : 'Picture of $exerciseName',
+      child: Stack(
+        children: [
+          ExcludeSemantics(child: pictures),
+          Positioned(
+            top: B05Layout.space4,
+            right: B05Layout.space4,
+            child: IconButton.filledTonal(
+              tooltip: 'Hide exercise pictures',
+              onPressed: () => onExpandedChanged(false),
+              icon: const Icon(Icons.expand_less_rounded),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _B07HeroTile extends StatelessWidget {
+  const _B07HeroTile({required this.bytes, this.label, this.aspectRatio = 1});
+
+  final Uint8List bytes;
+  final String? label;
+  final double aspectRatio;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final cacheWidth =
+            (constraints.maxWidth * MediaQuery.devicePixelRatioOf(context))
+                .round();
+        return ClipPath(
+          clipper: ShapeBorderClipper(
+            shape: SmoothRectangleBorder(borderRadius: B05Radii.rowRadius),
+          ),
+          child: AspectRatio(
+            aspectRatio: aspectRatio,
+            child: ColoredBox(
+              color: context.b05Colors.inset,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Image.memory(
+                    bytes,
+                    fit: BoxFit.contain,
+                    cacheWidth: cacheWidth > 0 ? cacheWidth : null,
+                    gaplessPlayback: true,
+                  ),
+                  if (label != null)
+                    Positioned(
+                      left: B05Layout.space8,
+                      bottom: B05Layout.space8,
+                      child: DecoratedBox(
+                        decoration: ShapeDecoration(
+                          color: Colors.black.withValues(alpha: 0.6),
+                          shape: const StadiumBorder(),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: B05Layout.space8,
+                            vertical: 2,
+                          ),
+                          child: Text(
+                            label!,
+                            style: B05Typography.caption(context).copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

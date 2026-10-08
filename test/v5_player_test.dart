@@ -1,7 +1,10 @@
 import 'dart:convert';
 
+import 'package:crypto/crypto.dart';
+
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/di/providers.dart';
@@ -14,11 +17,15 @@ import 'package:indifit/data/repositories/b02_strength_execution_repository.dart
 import 'package:indifit/data/repositories/b07_exercise_context_repository.dart';
 import 'package:indifit/data/repositories/calendar_repository.dart';
 import 'package:indifit/data/services/b02_strength_execution_draft_service.dart';
+import 'package:indifit/features/media/b05_exercise_visual_registry.dart';
+import 'package:indifit/features/media/indifit_muscle_map.dart';
 import 'package:indifit/features/workout_player/b02_strength_execution_controller.dart';
 import 'package:indifit/features/workout_player/b02_strength_player_screen.dart';
+import 'package:indifit/features/workout_player/widgets/b07_exercise_context.dart';
 
-/// V5 (PREMIUM_REDESIGN_PLAN § 7.1–7.2): the rest takeover and the player
-/// beats. Rest timing and intents are covered by the existing rest tests.
+/// V5 (PREMIUM_REDESIGN_PLAN § 7): the rest takeover, the player beats and
+/// the exercise pictures. Rest timing and intents are covered by the
+/// existing rest tests.
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -258,6 +265,198 @@ void main() {
     });
   });
 
+  group('exercise pictures', () {
+    final png = Uint8List.fromList(_png);
+
+    testWidgets('pictures lead the first set, the panel shows the muscles', (
+      tester,
+    ) async {
+      final launch = (await tester.runAsync(() => _launchPlanned(executions)))!;
+      await _pumpPlayer(
+        tester,
+        launch,
+        executions,
+        db,
+        pictures: B05ExerciseImages.pair(start: png, peak: png),
+      );
+
+      expect(find.byType(B07ExerciseHero), findsOneWidget);
+      expect(find.text('Start'), findsOneWidget);
+      expect(find.text('Peak'), findsOneWidget);
+      expect(find.byTooltip('Hide exercise pictures'), findsOneWidget);
+      final hero = tester.getRect(find.byType(B07ExerciseHero));
+      final table = tester.getRect(find.text('Sets'));
+      expect(hero.bottom, lessThan(table.top));
+      expect(hero.height, greaterThan(150));
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('pictures fold after the first set; a choice sticks', (
+      tester,
+    ) async {
+      final launch = (await tester.runAsync(() => _launchPlanned(executions)))!;
+      await _pumpPlayer(
+        tester,
+        launch,
+        executions,
+        db,
+        pictures: B05ExerciseImages.pair(start: png, peak: png),
+      );
+      await _logSet(tester, reps: '8');
+      await tester.scrollUntilVisible(
+        find.text('Show exercise pictures'),
+        -120,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.text('Start'), findsNothing);
+
+      await tester.tap(find.text('Show exercise pictures'));
+      await _settle(tester);
+      expect(find.text('Start'), findsOneWidget);
+
+      await _logSet(tester, reps: '8');
+      await tester.scrollUntilVisible(
+        find.byType(B07ExerciseHero),
+        -120,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.text('Start'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('no pictures: no hero, nothing moves', (tester) async {
+      final launch = (await tester.runAsync(() => _launchPlanned(executions)))!;
+      await _pumpPlayer(tester, launch, executions, db);
+      expect(find.byType(B07ExerciseHero), findsNothing);
+      expect(find.text('Show exercise pictures'), findsNothing);
+    });
+
+    testWidgets('a single still shows once, without pose labels', (
+      tester,
+    ) async {
+      var shown = true;
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.darkTheme,
+          home: Scaffold(
+            body: StatefulBuilder(
+              builder: (context, setState) => B07ExerciseHero(
+                images: B05ExerciseImages.single(png),
+                exerciseName: 'Plank',
+                expanded: shown,
+                onExpandedChanged: (value) => setState(() => shown = value),
+              ),
+            ),
+          ),
+        ),
+      );
+      expect(find.byType(Image), findsOneWidget);
+      expect(find.text('Start'), findsNothing);
+      expect(find.bySemanticsLabel('Picture of Plank'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Hide exercise pictures'));
+      await tester.pump();
+      expect(find.byType(Image), findsNothing);
+      expect(find.text('Show exercise pictures'), findsOneWidget);
+    });
+  });
+
+  group('b05LoadExerciseImages', () {
+    final checksum = 'sha256:${sha256.convert(_png)}';
+    B05ExerciseVisualRegistry registry(Set<String> roles) =>
+        B05ExerciseVisualRegistry.fromAssetSets([
+          B05ExerciseVisualAssetSet(
+            assetSetId: 'set',
+            canonicalExerciseUuids: const {'ex'},
+            mediaByRole: {
+              for (final role in roles)
+                role: B05ExerciseVisualAsset(
+                  mediaRole: role,
+                  localPath: '$role.webp',
+                  checksum: checksum,
+                ),
+            },
+            techniqueDisclosure: 'Movement only.',
+          ),
+        ]);
+
+    test('both frames load: a pair', () async {
+      final images = await b05LoadExerciseImages(
+        registry: registry({'start', 'peak'}),
+        canonicalExerciseUuid: 'ex',
+        bundle: _Bundle({'start.webp': _png, 'peak.webp': _png}),
+      );
+      expect(images?.isPair, isTrue);
+    });
+
+    test('one frame missing: the other as a single, never a pair', () async {
+      final images = await b05LoadExerciseImages(
+        registry: registry({'start', 'peak'}),
+        canonicalExerciseUuid: 'ex',
+        bundle: _Bundle({'start.webp': _png}),
+      );
+      expect(images?.isPair, isFalse);
+      expect(images?.single, isNotNull);
+    });
+
+    test('missing files, a bad checksum or no entry: null', () async {
+      expect(
+        await b05LoadExerciseImages(
+          registry: registry({'start', 'peak'}),
+          canonicalExerciseUuid: 'ex',
+          bundle: _Bundle({}),
+        ),
+        isNull,
+      );
+      expect(
+        await b05LoadExerciseImages(
+          registry: registry({'main'}),
+          canonicalExerciseUuid: 'ex',
+          bundle: _Bundle({
+            'main.webp': [1, 2, 3],
+          }),
+        ),
+        isNull,
+      );
+      expect(
+        await b05LoadExerciseImages(
+          registry: registry({'main'}),
+          canonicalExerciseUuid: 'other',
+          bundle: _Bundle({'main.webp': _png}),
+        ),
+        isNull,
+      );
+    });
+
+    testWidgets('missing pair files show one muscle map, not two poses', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.darkTheme,
+          home: Scaffold(
+            body: B07ExerciseVisualRegion(
+              canonicalExerciseId: 'ex',
+              exerciseNameSnapshot: 'Leg Press',
+              displayMuscles: const ExerciseVisualMuscleFacts(
+                primaryMuscle: 'Legs',
+              ),
+              registry: registry({'start', 'peak'}),
+              assetBundle: _Bundle({}),
+            ),
+          ),
+        ),
+      );
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 50)),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Start position'), findsNothing);
+      expect(find.text('Peak position'), findsNothing);
+      expect(find.byType(IndiFitMuscleMap), findsOneWidget);
+    });
+  });
+
   group('b02ExerciseDoneSummary', () {
     B02PerformedSet set(
       int ordinal, {
@@ -373,6 +572,7 @@ Future<void> _pumpPlayer(
   AppDatabase database, {
   double textScale = 1,
   bool reduceMotion = false,
+  B05ExerciseImages? pictures,
 }) async {
   tester.view.physicalSize = const Size(390, 844);
   tester.view.devicePixelRatio = 1;
@@ -399,6 +599,9 @@ Future<void> _pumpPlayer(
         ),
         b07ExerciseContextProvider.overrideWith(
           (ref, id) async => const B07ExerciseContextResult.unavailable(),
+        ),
+        b05ExerciseImagesProvider.overrideWith(
+          (ref, id) async => id == 'v5-leg-press' ? pictures : null,
         ),
       ],
       child: MaterialApp(
@@ -492,3 +695,24 @@ Future<B02StrengthExecutionLaunch> _launchPlanned(
   launch = launch.copyWith(state: state);
   return launch;
 }
+
+class _Bundle extends CachingAssetBundle {
+  _Bundle(this.values);
+
+  final Map<String, List<int>> values;
+
+  @override
+  Future<ByteData> load(String key) async {
+    final bytes = values[key];
+    if (bytes == null) throw FlutterError('Missing asset $key');
+    return ByteData.sublistView(Uint8List.fromList(bytes));
+  }
+}
+
+/// A 1×1 PNG.
+const _png = <int>[
+  137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 1, //
+  0, 0, 0, 1, 8, 4, 0, 0, 0, 181, 28, 12, 2, 0, 0, 0, 11, 73, 68, 65, 84, //
+  120, 218, 99, 100, 248, 15, 0, 1, 5, 1, 1, 39, 24, 227, 102, 0, 0, 0, 0, //
+  73, 69, 78, 68, 174, 66, 96, 130,
+];

@@ -116,6 +116,10 @@ class _B02StrengthPlayerScreenState
 
   /// Set while the "exercise done" beat shows, before the next exercise.
   _ExerciseDoneBeatData? _exerciseDone;
+
+  /// Exercise pictures open until the exercise's first working set; once
+  /// the user shows or hides them, that choice holds for the workout.
+  bool? _picturesPreference;
   bool _warmup = false;
   var _isSubmittingSet = false;
   var _isClosing = false;
@@ -312,6 +316,9 @@ class _B02StrengthPlayerScreenState
     final groupSafe = _groupIntegrity(launch.state, selected, slots).isValid;
     _loggedSetCounts[selected.id] = performedSets.length;
     final actualExerciseId = _actualExerciseId(launch.state, selected);
+    final pictures = ref
+        .watch(b05ExerciseImagesProvider(actualExerciseId ?? ''))
+        .valueOrNull;
     final nextSlot = B02ExecutionProgression.nextSlot(
       state: launch.state,
       slots: slots,
@@ -431,7 +438,16 @@ class _B02StrengthPlayerScreenState
                 _exerciseDone = null;
               }),
       ),
-      currentExerciseSlot: null,
+      currentExerciseSlot: pictures == null
+          ? null
+          : B07ExerciseHero(
+              key: ValueKey<String>('b07-hero:${actualExerciseId ?? ''}'),
+              images: pictures,
+              exerciseName: _actualExerciseName(launch.state, selected),
+              expanded: _picturesPreference ?? workingSetCount == 0,
+              onExpandedChanged: (value) =>
+                  setState(() => _picturesPreference = value),
+            ),
       stickyRestSlot: hasOpenRest
           ? _buildStickyRestBar(provider, ui, launch, restUpNext)
           : _restDoneVisible
@@ -487,6 +503,7 @@ class _B02StrengthPlayerScreenState
             key: ValueKey<String>('b07-context:${actualExerciseId ?? ''}'),
             canonicalExerciseId: actualExerciseId ?? '',
             exerciseNameSnapshot: _actualExerciseName(launch.state, selected),
+            muscleMapOnly: pictures != null,
           ),
           const SizedBox(height: 12),
           _buildNextExerciseSlot(

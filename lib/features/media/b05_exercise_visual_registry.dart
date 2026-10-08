@@ -150,6 +150,71 @@ class B05AssetBundleExerciseVisualRegistrySource {
   }
 }
 
+/// The bytes of an approved local illustration, or null when the file is
+/// missing or fails its checksum. Fresh clones and CI have no RepDB files
+/// (they are git-ignored; see tool/acquire_r08_repdb_assets.dart).
+Future<Uint8List?> b05LoadVerifiedExerciseAsset(
+  B05ExerciseVisualAsset asset, {
+  AssetBundle? bundle,
+}) async {
+  try {
+    final data = await (bundle ?? rootBundle).load(asset.localPath);
+    final bytes = Uint8List.fromList(
+      data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
+    );
+    final actual = 'sha256:${sha256.convert(bytes)}';
+    return actual.toLowerCase() == asset.checksum.toLowerCase() ? bytes : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+/// The verified illustrations for one exercise: a start/peak pair or a
+/// single still. A second frame is never manufactured.
+@immutable
+class B05ExerciseImages {
+  final Uint8List? start;
+  final Uint8List? peak;
+  final Uint8List? single;
+
+  const B05ExerciseImages.pair({
+    required Uint8List this.start,
+    required Uint8List this.peak,
+  }) : single = null;
+
+  const B05ExerciseImages.single(Uint8List this.single)
+    : start = null,
+      peak = null;
+
+  bool get isPair => start != null && peak != null;
+}
+
+/// Loads [canonicalExerciseUuid]'s images, or null when the registry has none
+/// or no file loads. A pair needs both frames; otherwise the main still, or
+/// whichever single frame loaded, is used.
+Future<B05ExerciseImages?> b05LoadExerciseImages({
+  required B05ExerciseVisualRegistry registry,
+  required String canonicalExerciseUuid,
+  AssetBundle? bundle,
+}) async {
+  final set = registry.lookup(canonicalExerciseUuid);
+  if (set == null) return null;
+  Future<Uint8List?> load(String role) async {
+    final asset = set.mediaByRole[role];
+    return asset == null
+        ? null
+        : b05LoadVerifiedExerciseAsset(asset, bundle: bundle);
+  }
+
+  final start = await load('start');
+  final peak = await load('peak');
+  if (start != null && peak != null) {
+    return B05ExerciseImages.pair(start: start, peak: peak);
+  }
+  final single = await load('main') ?? start ?? peak;
+  return single == null ? null : B05ExerciseImages.single(single);
+}
+
 @immutable
 class ExerciseVisualMuscleFacts {
   final String? primaryMuscle;
@@ -238,20 +303,7 @@ class _ExerciseVisualState extends State<ExerciseVisual> {
     final set = widget.registry.lookup(widget.canonicalExerciseUuid);
     final asset = set?.assetFor(widget.pose);
     if (asset == null) return null;
-    try {
-      final data = await (widget.assetBundle ?? rootBundle).load(
-        asset.localPath,
-      );
-      final bytes = Uint8List.fromList(
-        data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
-      );
-      final actual = 'sha256:${sha256.convert(bytes)}';
-      return actual.toLowerCase() == asset.checksum.toLowerCase()
-          ? bytes
-          : null;
-    } catch (_) {
-      return null;
-    }
+    return b05LoadVerifiedExerciseAsset(asset, bundle: widget.assetBundle);
   }
 
   @override
