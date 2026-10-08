@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/nutrients.dart';
@@ -12,6 +10,7 @@ import '../../../data/repositories/nutrition_target_authority.dart';
 import '../../dashboard/today_consumer_presentation.dart';
 import '../../dashboard/today_surface_controller.dart';
 import '../../settings/nutrition_targets_hub_screen.dart';
+import '../canonical_food_actions.dart';
 import '../food_log_surface.dart';
 import '../food_search_screen.dart';
 import '../meal_presentation_registry.dart';
@@ -85,28 +84,16 @@ class FoodMealDetailScreen extends ConsumerWidget {
             FoodLogEntriesPanel(
               date: selectedDate,
               mealType: mealType,
-              onCanonicalItemTap: (record, item) =>
-                  _openRecordActions(context, record, item),
+              // Run in place so the sheet and dialogs sit over this screen.
+              onCanonicalItemTap: (record, item) => runCanonicalFoodItemActions(
+                context: context,
+                ref: ref,
+                record: record,
+                item: item,
+                targetDate: selectedDate,
+              ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _openRecordActions(
-    BuildContext context,
-    NutritionHistoricalReadRecord record,
-    NutritionHistoricalReadItem item,
-  ) async {
-    await Navigator.of(context).push<bool>(
-      MaterialPageRoute(
-        builder: (_) => FoodSearchScreen(
-          mealType: mealType,
-          selectedDate: selectedDate,
-          returnToParentOnSave: true,
-          initialRecord: record,
-          initialRecordItem: item,
         ),
       ),
     );
