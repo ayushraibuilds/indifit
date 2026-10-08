@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/b05_semantic_colors.dart';
@@ -133,17 +134,22 @@ class ThaliMacroSplit {
 /// The plate: drop shadow, raised lip with the macro ring, lathe-turned
 /// well and a soft specular sweep.
 class SteelPlatePainter extends CustomPainter {
-  const SteelPlatePainter({
+  SteelPlatePainter({
     required this.tones,
     required this.colors,
     required this.split,
     this.partial = false,
-  });
+    this.tilt,
+  }) : super(repaint: tilt);
 
   final SteelTones tones;
   final B05SemanticColors colors;
   final ThaliMacroSplit split;
   final bool partial;
+
+  /// The plate's tilt in radians (x: left/right, y: towards/away). The
+  /// specular sweep slides the other way so the steel catches the light.
+  final ValueListenable<Offset>? tilt;
 
   /// Inner edge of the lip as a fraction of the radius.
   static const double wellFraction = 0.88;
@@ -223,28 +229,26 @@ class SteelPlatePainter extends CustomPainter {
     );
 
     // Specular sweep across the upper left of the well.
+    final lean = tilt?.value ?? Offset.zero;
+    final sweep = Rect.fromCenter(
+      center: c.translate(
+        -wellR * (0.35 + lean.dx * 4),
+        -wellR * (0.45 + lean.dy * 4),
+      ),
+      width: wellR * 1.3,
+      height: wellR * 0.7,
+    );
     canvas.save();
     canvas.clipPath(Path()..addOval(well));
     canvas.drawOval(
-      Rect.fromCenter(
-        center: c.translate(-wellR * 0.35, -wellR * 0.45),
-        width: wellR * 1.3,
-        height: wellR * 0.7,
-      ),
+      sweep,
       Paint()
-        ..shader =
-            RadialGradient(
-              colors: [
-                Colors.white.withValues(alpha: 0.32),
-                Colors.white.withValues(alpha: 0),
-              ],
-            ).createShader(
-              Rect.fromCenter(
-                center: c.translate(-wellR * 0.35, -wellR * 0.45),
-                width: wellR * 1.3,
-                height: wellR * 0.7,
-              ),
-            ),
+        ..shader = RadialGradient(
+          colors: [
+            Colors.white.withValues(alpha: 0.32),
+            Colors.white.withValues(alpha: 0),
+          ],
+        ).createShader(sweep),
     );
     canvas.restore();
 
@@ -315,7 +319,8 @@ class SteelPlatePainter extends CustomPainter {
       old.tones != tones ||
       old.colors != colors ||
       old.split != split ||
-      old.partial != partial;
+      old.partial != partial ||
+      old.tilt != tilt;
 }
 
 /// A steel katori seen from above, filled to [fill] (0.35–1.0) with the

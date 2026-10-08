@@ -1,23 +1,31 @@
+import 'dart:async';
+import 'dart:io';
 import 'dart:math' as math;
-import 'package:flutter/material.dart';
 
+import 'package:flutter/material.dart';
+import 'package:sensors_plus/sensors_plus.dart';
+
+import '../../../core/motion/indifit_motion.dart';
 import '../../../core/nutrition_thali.dart';
+import '../../../core/services/indifit_haptics.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
+import '../../../core/typed_quantities.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
+import 'steel_thali_art.dart';
 import 'thali_plate_layout.dart';
 import 'thali_quantity_label.dart';
 
-/// Interactive circular Indian Thali plate presenting dishes in traditional
-/// center staple (roti/rice) and perimeter bowls (katoris) with an outer macro ring.
-class CircularThaliPlate extends StatelessWidget {
-  final List<NutritionThaliItem> items;
-  final List<NutritionThaliItemPreview> previews;
-  final NutritionThaliPreview? preview;
-  final String? selectedItemId;
-  final ValueChanged<String?> onSelectItem;
-  final VoidCallback onAddDish;
-  final VoidCallback onViewAllDishes;
+/// A stream of plate tilt in radians, already smoothed and clamped.
+typedef ThaliTiltSource = Stream<Offset> Function();
 
+/// The steel thali: staples in the centre, katoris around them, the macro
+/// split on the rim and a P / C / F legend underneath (concept A).
+///
+/// Each dish keeps its key, semantics label and 48 pt target. Motion: a new
+/// dish drops in with a selection haptic, the others glide to their new
+/// places, fill levels and the rim animate, and the plate leans with the
+/// phone. All of it is still under Reduce Motion.
+class CircularThaliPlate extends StatefulWidget {
   const CircularThaliPlate({
     super.key,
     required this.items,
@@ -27,643 +35,587 @@ class CircularThaliPlate extends StatelessWidget {
     required this.onSelectItem,
     required this.onAddDish,
     required this.onViewAllDishes,
+    this.tiltSource,
   });
 
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.b05Colors;
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final availableWidth = constraints.maxWidth;
-        final availableHeight = constraints.maxHeight.isFinite
-            ? constraints.maxHeight
-            : availableWidth;
-        if (availableHeight < 140 || availableWidth < 140) {
-          return const SizedBox.shrink();
-        }
-        final maxDiameter = math.min(availableWidth - 24, availableHeight - 16);
-        if (maxDiameter < 140) {
-          return const SizedBox.shrink();
-        }
-        final plateDiameter = maxDiameter.clamp(140.0, 350.0);
-
-        final layout = ThaliPlateLayoutEngine.computeLayout(
-          items: items,
-          previews: previews,
-          colors: colors,
-          showAddSlot: true,
-        );
-
-        return Center(
-          child: SizedBox(
-            width: plateDiameter,
-            height: plateDiameter,
-            child: Stack(
-              alignment: Alignment.center,
-              clipBehavior: Clip.none,
-              children: [
-                // 1. RepaintBoundary Stainless Steel Plate Platter & Dynamic Macro Ring
-                Positioned.fill(
-                  child: RepaintBoundary(
-                    child: Semantics(
-                      label: preview?.isPartial == true
-                          ? 'Thali macro distribution ring with partial nutrition estimate'
-                          : 'Thali macro distribution ring',
-                      child: CustomPaint(
-                        painter: ThaliPlatePainter(
-                          colors: colors,
-                          preview: preview,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-
-                // 2. Center Platter Area (Staples / Rotis / Rice or Embossed Plate Center)
-                _CenterStaplePlatter(
-                  centerStaples: layout.centerStaples,
-                  selectedItemId: selectedItemId,
-                  plateDiameter: plateDiameter,
-                  onSelectItem: onSelectItem,
-                ),
-
-                // 3. Perimeter Katori Slots (Dishes, Add Slot, Overflow Slot)
-                ...layout.perimeterSlots.map((slot) {
-                  return _PositionedKatori(
-                    slot: slot,
-                    plateDiameter: plateDiameter,
-                    selectedItemId: selectedItemId,
-                    onSelectItem: onSelectItem,
-                    onAddDish: onAddDish,
-                    onViewAllDishes: onViewAllDishes,
-                  );
-                }),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-/// Custom painter for the stainless steel thali platter and outer dynamic macro distribution ring.
-class ThaliPlatePainter extends CustomPainter {
-  final B05SemanticColors colors;
+  final List<NutritionThaliItem> items;
+  final List<NutritionThaliItemPreview> previews;
   final NutritionThaliPreview? preview;
-
-  ThaliPlatePainter({required this.colors, this.preview});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width / 2;
-
-    // 1. Outer rim bevel & metallic platter base
-    final platterPaint = Paint()
-      ..shader = RadialGradient(
-        center: const Alignment(-0.2, -0.2),
-        radius: 0.9,
-        colors: [
-          colors.surface,
-          colors.border.withValues(alpha: 0.6),
-          colors.surface,
-          colors.border,
-        ],
-        stops: const [0.0, 0.7, 0.92, 1.0],
-      ).createShader(Rect.fromCircle(center: center, radius: radius));
-
-    canvas.drawCircle(center, radius - 2, platterPaint);
-
-    // Subtle metallic rim border
-    final rimPaint = Paint()
-      ..color = colors.border
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.0;
-    canvas.drawCircle(center, radius - 2, rimPaint);
-
-    // Inner bevel groove
-    final innerRimPaint = Paint()
-      ..color = colors.border.withValues(alpha: 0.4)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.0;
-    canvas.drawCircle(center, radius * 0.90, innerRimPaint);
-
-    // 2. Center staple divider circle
-    final centerDividerPaint = Paint()
-      ..color = colors.border.withValues(alpha: 0.3)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.0;
-    canvas.drawCircle(center, radius * 0.42, centerDividerPaint);
-
-    // 3. Dynamic Macro Distribution Ring around outer edge
-    _paintMacroRing(canvas, center, radius - 3);
-  }
-
-  void _paintMacroRing(Canvas canvas, Offset center, double ringRadius) {
-    const strokeWidth = 3.5;
-    final facts = preview?.aggregate.facts;
-    final protein = facts?['protein']?.point?.value.asDouble ?? 0.0;
-    final carbs = facts?['carbohydrate']?.point?.value.asDouble ?? 0.0;
-    final fat = facts?['fat']?.point?.value.asDouble ?? 0.0;
-    final isPartial = preview?.isPartial ?? false;
-
-    // Caloric energy contribution from macros (4 kcal/g P, 4 kcal/g C, 9 kcal/g F)
-    final pCal = protein * 4.0;
-    final cCal = carbs * 4.0;
-    final fCal = fat * 9.0;
-    final totalMacroCal = pCal + cCal + fCal;
-
-    final ringRect = Rect.fromCircle(center: center, radius: ringRadius);
-
-    if (totalMacroCal <= 0.0) {
-      // Neutral track when macros are unavailable or 0
-      final neutralPaint = Paint()
-        ..color = colors.border.withValues(alpha: 0.4)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = strokeWidth;
-      canvas.drawCircle(center, ringRadius, neutralPaint);
-      return;
-    }
-
-    final pFraction = pCal / totalMacroCal;
-    final cFraction = cCal / totalMacroCal;
-    final fFraction = fCal / totalMacroCal;
-
-    // Start at top (-pi / 2)
-    double currentAngle = -math.pi / 2;
-
-    void drawMacroArc(Color color, double fraction) {
-      if (fraction <= 0.001) return;
-      final sweepAngle = fraction * 2 * math.pi;
-      final paint = Paint()
-        ..color = color
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = strokeWidth
-        ..strokeCap = StrokeCap.round;
-
-      // Inset slightly by 0.02 rad so arcs have a crisp separator gap
-      const gap = 0.03;
-      if (sweepAngle > gap * 2) {
-        canvas.drawArc(
-          ringRect,
-          currentAngle + gap / 2,
-          sweepAngle - gap,
-          false,
-          paint,
-        );
-      } else {
-        canvas.drawArc(ringRect, currentAngle, sweepAngle, false, paint);
-      }
-      currentAngle += sweepAngle;
-    }
-
-    // 1. Protein arc (Action green)
-    drawMacroArc(colors.action, pFraction);
-
-    // 2. Carbs arc (Warning amber)
-    drawMacroArc(colors.warning.indicator, cFraction);
-
-    // 3. Fat arc (Info cyan)
-    drawMacroArc(colors.info.indicator, fFraction);
-
-    // If partial, draw an indicator dot / dash on the track
-    if (isPartial) {
-      final partialPaint = Paint()
-        ..color = colors.warning.indicator
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.5;
-      canvas.drawCircle(center, ringRadius - 4, partialPaint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant ThaliPlatePainter oldDelegate) {
-    if (oldDelegate.preview != preview) return true;
-    if (oldDelegate.colors != colors) return true;
-    return false;
-  }
-}
-
-/// Center platter component rendering staple items (roti stack, rice bowl) or empty placeholder.
-class _CenterStaplePlatter extends StatelessWidget {
-  final List<ThaliItemSlot> centerStaples;
-  final String? selectedItemId;
-  final double plateDiameter;
-  final ValueChanged<String?> onSelectItem;
-
-  const _CenterStaplePlatter({
-    required this.centerStaples,
-    required this.selectedItemId,
-    required this.plateDiameter,
-    required this.onSelectItem,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.b05Colors;
-    final centerDiameter = plateDiameter * 0.38;
-
-    if (centerStaples.isEmpty) {
-      // Elegant engraved platter centerpiece placeholder
-      return Semantics(
-        label: 'Center platter, empty',
-        child: Container(
-          width: centerDiameter,
-          height: centerDiameter,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: colors.surface.withValues(alpha: 0.3),
-            border: Border.all(
-              color: colors.border.withValues(alpha: 0.4),
-              width: 1,
-            ),
-          ),
-          child: Center(
-            child: Icon(
-              Icons.grain_rounded,
-              size: 28,
-              color: colors.textDisabled.withValues(alpha: 0.4),
-            ),
-          ),
-        ),
-      );
-    }
-
-    if (centerStaples.length >= 2) {
-      return Container(
-        width: centerDiameter,
-        height: centerDiameter,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: colors.surface,
-          border: Border.all(
-            color: colors.border.withValues(alpha: 0.6),
-            width: 1.5,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.15),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Column(
-          children: [
-            Expanded(
-              child: _buildHalfStaple(context, centerStaples[0], isTop: true),
-            ),
-            Container(height: 1.0, color: colors.border.withValues(alpha: 0.5)),
-            Expanded(
-              child: _buildHalfStaple(context, centerStaples[1], isTop: false),
-            ),
-          ],
-        ),
-      );
-    }
-
-    // Primary staple (e.g. roti or rice)
-    final stapleSlot = centerStaples.first;
-    final item = stapleSlot.item;
-    final isSelected = selectedItemId == item.id;
-    final energy =
-        stapleSlot.preview?.calculation.facts['energy']?.point?.value.asDouble;
-    final energyStr = energy != null ? '${energy.round()} kcal' : null;
-
-    final quantityStr = thaliQuantityLabel(item.quantity);
-
-    return B05TouchTarget(
-      minWidth: B05Layout.minTouchTarget,
-      minHeight: B05Layout.minTouchTarget,
-      child: Semantics(
-        button: true,
-        selected: isSelected,
-        label:
-            '${item.displayLabel ?? stapleSlot.placement.categoryLabel}, ${stapleSlot.placement.categoryLabel}, $quantityStr${energyStr != null ? ", $energyStr" : ""}',
-        child: GestureDetector(
-          key: Key('thali_plate_staple_${item.id}'),
-          onTap: () {
-            onSelectItem(isSelected ? null : item.id);
-          },
-          behavior: HitTestBehavior.opaque,
-          child: AnimatedContainer(
-            duration: B05MotionPolicy.transitionDuration(
-              context,
-              standard: const Duration(milliseconds: 180),
-            ),
-            width: centerDiameter,
-            height: centerDiameter,
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: colors.surface,
-              border: Border.all(
-                color: isSelected ? colors.action : stapleSlot.placement.tint,
-                width: isSelected ? 2.5 : 1.5,
-              ),
-              boxShadow: [
-                if (isSelected)
-                  BoxShadow(
-                    color: colors.action.withValues(alpha: 0.4),
-                    blurRadius: 8,
-                    spreadRadius: 1,
-                  ),
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.15),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Center(
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      stapleSlot.placement.icon,
-                      size: 22,
-                      color: stapleSlot.placement.tint,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      thaliPlateShortName(
-                        item.displayLabel ?? stapleSlot.placement.categoryLabel,
-                      ),
-                      style: TextStyle(
-                        color: colors.textPrimary,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
-                    ),
-                    Text(
-                      quantityStr,
-                      style: TextStyle(
-                        color: colors.textSecondary,
-                        fontSize: 9.5,
-                        fontWeight: FontWeight.w500,
-                      ),
-                      maxLines: 1,
-                    ),
-                    if (energyStr != null)
-                      Container(
-                        margin: const EdgeInsets.only(top: 2),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 4,
-                          vertical: 1,
-                        ),
-                        decoration: BoxDecoration(
-                          color: colors.surfaceSubtle,
-                          borderRadius: B05Radii.smallRadius,
-                        ),
-                        child: Text(
-                          energyStr,
-                          style: TextStyle(
-                            color: colors.action,
-                            fontSize: 8.5,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHalfStaple(
-    BuildContext context,
-    ThaliItemSlot stapleSlot, {
-    required bool isTop,
-  }) {
-    final colors = context.b05Colors;
-    final item = stapleSlot.item;
-    final isSelected = selectedItemId == item.id;
-    final energy =
-        stapleSlot.preview?.calculation.facts['energy']?.point?.value.asDouble;
-    final energyStr = energy != null ? '${energy.round()} kcal' : null;
-    final quantityStr = thaliQuantityLabel(item.quantity);
-
-    return Semantics(
-      button: true,
-      selected: isSelected,
-      label:
-          '${item.displayLabel ?? stapleSlot.placement.categoryLabel}, ${stapleSlot.placement.categoryLabel}, $quantityStr${energyStr != null ? ", $energyStr" : ""}',
-      child: GestureDetector(
-        key: Key('thali_plate_staple_${item.id}'),
-        onTap: () => onSelectItem(isSelected ? null : item.id),
-        behavior: HitTestBehavior.opaque,
-        child: Container(
-          color: isSelected
-              ? colors.action.withValues(alpha: 0.18)
-              : Colors.transparent,
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-          child: Center(
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    stapleSlot.placement.icon,
-                    size: 16,
-                    color: isSelected
-                        ? colors.action
-                        : stapleSlot.placement.tint,
-                  ),
-                  const SizedBox(width: 4),
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        thaliPlateShortName(
-                          item.displayLabel ??
-                              stapleSlot.placement.categoryLabel,
-                        ),
-                        style: TextStyle(
-                          color: colors.textPrimary,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      Text(
-                        '$quantityStr${energyStr != null ? " · $energyStr" : ""}',
-                        style: TextStyle(
-                          color: colors.textSecondary,
-                          fontSize: 8.5,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        maxLines: 1,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// The name shown inside a katori: the first of several names and without a
-/// parenthetical ("Toor Dal / Yellow Dal Tadka" → "Toor Dal"), so it stays
-/// legible instead of being scaled down to fit. The full name stays in the
-/// semantics label and the dish list.
-String thaliPlateShortName(String name) {
-  var short = name.split(' / ').first;
-  final paren = short.indexOf(' (');
-  if (paren > 0) short = short.substring(0, paren);
-  return short.trim().isEmpty ? name : short.trim();
-}
-
-/// Positioned wrapper for a perimeter katori slot.
-class _PositionedKatori extends StatelessWidget {
-  final ThaliPlateSlot slot;
-  final double plateDiameter;
   final String? selectedItemId;
   final ValueChanged<String?> onSelectItem;
   final VoidCallback onAddDish;
   final VoidCallback onViewAllDishes;
 
-  const _PositionedKatori({
+  /// Defaults to the phone's accelerometer; tests pass their own or none.
+  final ThaliTiltSource? tiltSource;
+
+  /// The furthest the plate leans either way: 6°.
+  static const double maxTilt = 6 * math.pi / 180;
+
+  @override
+  State<CircularThaliPlate> createState() => _CircularThaliPlateState();
+}
+
+class _CircularThaliPlateState extends State<CircularThaliPlate>
+    with WidgetsBindingObserver {
+  final _tilt = ValueNotifier<Offset>(Offset.zero);
+  StreamSubscription<Offset>? _tiltSubscription;
+  var _built = false;
+  var _resumed = true;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _syncTilt();
+  }
+
+  @override
+  void didUpdateWidget(CircularThaliPlate oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final before = {for (final item in oldWidget.items) item.id};
+    if (widget.items.any((item) => !before.contains(item.id))) {
+      unawaited(IndiFitHaptics.selection());
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    _resumed = state == AppLifecycleState.resumed;
+    _syncTilt();
+  }
+
+  /// Listen only while the plate is on screen, the app is in front and
+  /// motion is allowed.
+  void _syncTilt() {
+    final route = ModalRoute.of(context);
+    final wanted =
+        _resumed &&
+        (route?.isCurrent ?? true) &&
+        !B05MotionPolicy.reduceMotion(context);
+    if (wanted && _tiltSubscription == null) {
+      final source = widget.tiltSource ?? thaliAccelerometerTilt;
+      _tiltSubscription = source().listen(
+        (value) => _tilt.value = value,
+        // No sensor (simulator, tests): the plate simply stays level.
+        onError: (Object _) => _stopTilt(),
+        cancelOnError: true,
+      );
+    } else if (!wanted) {
+      _stopTilt();
+    }
+  }
+
+  void _stopTilt() {
+    unawaited(_tiltSubscription?.cancel());
+    _tiltSubscription = null;
+    _tilt.value = Offset.zero;
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    unawaited(_tiltSubscription?.cancel());
+    _tilt.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.b05Colors;
+    final animateEntry = _built;
+    _built = true;
+    // Its own layer: the tilt repaints at frame rate without touching the
+    // rest of the screen.
+    return RepaintBoundary(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth;
+          final height = constraints.maxHeight.isFinite
+              ? constraints.maxHeight
+              : width + _legendHeight;
+          // When height is tight the legend gives way before the plate does.
+          var showLegend = true;
+          var diameter = math.min(
+            math.min(width - 32, height - _legendHeight - 8),
+            340.0,
+          );
+          if (diameter < 140) {
+            showLegend = false;
+            diameter = math.min(math.min(width - 32, height - 8), 340.0);
+          }
+          if (diameter < 140) return const SizedBox.shrink();
+
+          final layout = ThaliPlateLayoutEngine.computeLayout(
+            items: widget.items,
+            previews: widget.previews,
+            colors: colors,
+            showAddSlot: true,
+          );
+          final grams = _macroGrams(widget.preview);
+
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ValueListenableBuilder<Offset>(
+                valueListenable: _tilt,
+                builder: (context, tilt, child) => Transform(
+                  alignment: Alignment.center,
+                  transform: Matrix4.identity()
+                    ..setEntry(3, 2, 0.0012)
+                    ..rotateX(-tilt.dy)
+                    ..rotateY(tilt.dx),
+                  child: child,
+                ),
+                child: SizedBox.square(
+                  dimension: diameter,
+                  child: _PlateBody(
+                    diameter: diameter,
+                    layout: layout,
+                    preview: widget.preview,
+                    split: grams.split,
+                    tilt: _tilt,
+                    selectedItemId: widget.selectedItemId,
+                    animateEntry: animateEntry,
+                    onSelectItem: widget.onSelectItem,
+                    onAddDish: widget.onAddDish,
+                    onViewAllDishes: widget.onViewAllDishes,
+                  ),
+                ),
+              ),
+              if (showLegend) ...[
+                const SizedBox(height: 8),
+                SizedBox(
+                  height: _legendHeight,
+                  child: grams.split.isEmpty
+                      ? null
+                      : _MacroLegend(
+                          protein: grams.protein,
+                          carbs: grams.carbs,
+                          fat: grams.fat,
+                        ),
+                ),
+              ],
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  static const double _legendHeight = 24;
+}
+
+({double protein, double carbs, double fat, ThaliMacroSplit split}) _macroGrams(
+  NutritionThaliPreview? preview,
+) {
+  final facts = preview?.aggregate.facts;
+  final protein = facts?['protein']?.point?.value.asDouble ?? 0.0;
+  final carbs = facts?['carbohydrate']?.point?.value.asDouble ?? 0.0;
+  final fat = facts?['fat']?.point?.value.asDouble ?? 0.0;
+  return (
+    protein: protein,
+    carbs: carbs,
+    fat: fat,
+    split: ThaliMacroSplit.fromGrams(protein: protein, carbs: carbs, fat: fat),
+  );
+}
+
+/// Tilt from gravity: a low-passed lean relative to how the phone was held
+/// when the plate opened, clamped to [CircularThaliPlate.maxTilt]. Gravity
+/// gives an absolute angle, so the plate never drifts the way integrated
+/// gyroscope rates would.
+Stream<Offset> thaliAccelerometerTilt() {
+  // Phones only. Widget tests have no sensor plugin, and the plugin reports
+  // that through the global error handler rather than the stream.
+  if (!(Platform.isIOS || Platform.isAndroid) ||
+      Platform.environment.containsKey('FLUTTER_TEST')) {
+    return const Stream.empty();
+  }
+  Offset? baseline;
+  var smoothed = Offset.zero;
+  const max = CircularThaliPlate.maxTilt;
+  return accelerometerEventStream(
+    samplingPeriod: SensorInterval.uiInterval,
+  ).map((event) {
+    double angle(double g) => math.asin((g / 9.81).clamp(-1.0, 1.0));
+    final raw = Offset(angle(event.x), angle(event.y));
+    baseline ??= raw;
+    final lean = raw - baseline!;
+    smoothed = Offset.lerp(smoothed, lean, 0.15)!;
+    return Offset(
+      (smoothed.dx * 0.5).clamp(-max, max),
+      (-smoothed.dy * 0.5).clamp(-max, max),
+    );
+  });
+}
+
+/// How full a katori looks: one katori, serving or piece fills it, and
+/// grams or millilitres count against a 150 ml katori. Clamped to
+/// 0.35–1.0 so a small portion still reads as food.
+double thaliKatoriFill(Quantity quantity) {
+  final amount = quantity.amount.asDouble;
+  final level = switch (quantity.unit) {
+    QuantityUnit.householdReference ||
+    QuantityUnit.serving ||
+    QuantityUnit.piece => amount,
+    QuantityUnit.gram || QuantityUnit.millilitre => amount / 150,
+    QuantityUnit.kilogram || QuantityUnit.litre => amount * 1000 / 150,
+    QuantityUnit.milligram => amount / 150000,
+    QuantityUnit.unknown || QuantityUnit.legacy => 1.0,
+  };
+  return level.clamp(0.35, 1.0);
+}
+
+class _PlateBody extends StatelessWidget {
+  const _PlateBody({
+    required this.diameter,
+    required this.layout,
+    required this.preview,
+    required this.split,
+    required this.tilt,
+    required this.selectedItemId,
+    required this.animateEntry,
+    required this.onSelectItem,
+    required this.onAddDish,
+    required this.onViewAllDishes,
+  });
+
+  final double diameter;
+  final ({
+    List<ThaliItemSlot> centerStaples,
+    List<ThaliPlateSlot> perimeterSlots,
+  })
+  layout;
+  final NutritionThaliPreview? preview;
+  final ThaliMacroSplit split;
+  final ValueNotifier<Offset> tilt;
+  final String? selectedItemId;
+  final bool animateEntry;
+  final ValueChanged<String?> onSelectItem;
+  final VoidCallback onAddDish;
+  final VoidCallback onViewAllDishes;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.b05Colors;
+    final tones = SteelTones.of(context);
+    final katori = (diameter * 0.25).clamp(48.0, 76.0);
+    final orbit = diameter * 0.32;
+    final centre = diameter * 0.36;
+    final glide = B05MotionPolicy.transitionDuration(context);
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Positioned.fill(
+          child: RepaintBoundary(
+            child: Semantics(
+              label: preview?.isPartial == true
+                  ? 'Thali macro distribution ring with partial nutrition estimate'
+                  : 'Thali macro distribution ring',
+              child: TweenAnimationBuilder<ThaliMacroSplit>(
+                tween: _SplitTween(end: split),
+                duration: B05MotionPolicy.transitionDuration(
+                  context,
+                  standard: B05MotionPolicy.completionDuration,
+                ),
+                curve: B05MotionPolicy.standardCurve,
+                builder: (context, value, _) => CustomPaint(
+                  painter: SteelPlatePainter(
+                    tones: tones,
+                    colors: colors,
+                    split: value,
+                    partial: preview?.isPartial ?? false,
+                    tilt: tilt,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          left: (diameter - centre) / 2,
+          top: (diameter - centre) / 2,
+          width: centre,
+          height: centre,
+          child: _CentreStaples(
+            staples: layout.centerStaples,
+            tones: tones,
+            selectedItemId: selectedItemId,
+            onSelectItem: onSelectItem,
+          ),
+        ),
+        for (final slot in layout.perimeterSlots)
+          AnimatedPositioned(
+            key: ValueKey(_slotKey(slot)),
+            duration: glide,
+            curve: B05MotionPolicy.standardCurve,
+            left: diameter / 2 + orbit * math.cos(slot.angle) - katori / 2,
+            top: diameter / 2 + orbit * math.sin(slot.angle) - katori / 2,
+            width: katori,
+            height: katori,
+            child: _DropIn(
+              enabled: animateEntry && slot is ThaliItemSlot,
+              child: _PerimeterSlot(
+                slot: slot,
+                tones: tones,
+                size: katori,
+                selectedItemId: selectedItemId,
+                onSelectItem: onSelectItem,
+                onAddDish: onAddDish,
+                onViewAllDishes: onViewAllDishes,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  static String _slotKey(ThaliPlateSlot slot) => switch (slot) {
+    ThaliItemSlot(:final item) => 'katori:${item.id}',
+    ThaliAddSlot() => 'katori:add',
+    ThaliOverflowSlot() => 'katori:overflow',
+  };
+}
+
+class _SplitTween extends Tween<ThaliMacroSplit> {
+  _SplitTween({required ThaliMacroSplit end}) : super(end: end);
+
+  @override
+  ThaliMacroSplit lerp(double t) =>
+      ThaliMacroSplit.lerp(begin ?? end!, end!, t);
+}
+
+/// A new dish falls into place from 24 pt above with a little bounce.
+class _DropIn extends StatefulWidget {
+  const _DropIn({required this.enabled, required this.child});
+
+  final bool enabled;
+  final Widget child;
+
+  static const duration = Duration(milliseconds: 420);
+
+  @override
+  State<_DropIn> createState() => _DropInState();
+}
+
+class _DropInState extends State<_DropIn> with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: _DropIn.duration,
+  );
+  late final Animation<double> _fall = CurvedAnimation(
+    parent: _controller,
+    curve: IndiFitMotion.springCurve(_DropIn.duration),
+  );
+  var _started = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_started) return;
+    _started = true;
+    if (widget.enabled && !B05MotionPolicy.reduceMotion(context)) {
+      _controller.forward();
+    } else {
+      _controller.value = 1;
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _fall,
+      child: widget.child,
+      builder: (context, child) => Opacity(
+        // Fades in over the first third while it falls.
+        opacity: math.min(1.0, _controller.value / 0.3),
+        alwaysIncludeSemantics: true,
+        child: Transform.translate(
+          offset: Offset(0, -24 * (1 - _fall.value)),
+          child: child,
+        ),
+      ),
+    );
+  }
+}
+
+class _CentreStaples extends StatelessWidget {
+  const _CentreStaples({
+    required this.staples,
+    required this.tones,
+    required this.selectedItemId,
+    required this.onSelectItem,
+  });
+
+  final List<ThaliItemSlot> staples;
+  final SteelTones tones;
+  final String? selectedItemId;
+  final ValueChanged<String?> onSelectItem;
+
+  @override
+  Widget build(BuildContext context) {
+    if (staples.isEmpty) {
+      return Semantics(
+        label: 'Center platter, empty',
+        child: const SizedBox.expand(),
+      );
+    }
+    if (staples.length == 1) {
+      return _Staple(
+        slot: staples.single,
+        tones: tones,
+        selected: selectedItemId == staples.single.item.id,
+        onSelectItem: onSelectItem,
+      );
+    }
+    return Row(
+      children: [
+        for (final slot in staples.take(2))
+          Expanded(
+            child: Center(
+              child: AspectRatio(
+                aspectRatio: 1,
+                child: _Staple(
+                  slot: slot,
+                  tones: tones,
+                  selected: selectedItemId == slot.item.id,
+                  onSelectItem: onSelectItem,
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _Staple extends StatelessWidget {
+  const _Staple({
     required this.slot,
-    required this.plateDiameter,
+    required this.tones,
+    required this.selected,
+    required this.onSelectItem,
+  });
+
+  final ThaliItemSlot slot;
+  final SteelTones tones;
+  final bool selected;
+  final ValueChanged<String?> onSelectItem;
+
+  @override
+  Widget build(BuildContext context) {
+    final item = slot.item;
+    final energy = _energy(slot.preview);
+    final energyStr = energy != null ? '${energy.round()} kcal' : null;
+    final quantityStr = thaliQuantityLabel(item.quantity);
+    final pieces = item.quantity.unit == QuantityUnit.piece
+        ? item.quantity.amount.asDouble.ceil()
+        : 1;
+    final painter = slot.placement.category == ThaliDishCategory.stapleRice
+        ? RiceMoundPainter(tones: tones)
+        : RotiStackPainter(tones: tones, pieces: pieces);
+    return B05TouchTarget(
+      child: Semantics(
+        button: true,
+        selected: selected,
+        label:
+            '${item.displayLabel ?? slot.placement.categoryLabel}, ${slot.placement.categoryLabel}, $quantityStr${energyStr != null ? ", $energyStr" : ""}',
+        child: GestureDetector(
+          key: Key('thali_plate_staple_${item.id}'),
+          onTap: () => onSelectItem(selected ? null : item.id),
+          behavior: HitTestBehavior.opaque,
+          child: ExcludeSemantics(
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Positioned.fill(child: CustomPaint(painter: painter)),
+                if (selected) const Positioned.fill(child: _SelectedRing()),
+                if (energy != null)
+                  Positioned(bottom: 2, child: _KcalChip(kcal: energy)),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PerimeterSlot extends StatelessWidget {
+  const _PerimeterSlot({
+    required this.slot,
+    required this.tones,
+    required this.size,
     required this.selectedItemId,
     required this.onSelectItem,
     required this.onAddDish,
     required this.onViewAllDishes,
   });
 
+  final ThaliPlateSlot slot;
+  final SteelTones tones;
+  final double size;
+  final String? selectedItemId;
+  final ValueChanged<String?> onSelectItem;
+  final VoidCallback onAddDish;
+  final VoidCallback onViewAllDishes;
+
   @override
   Widget build(BuildContext context) {
     final colors = context.b05Colors;
-    final center = plateDiameter / 2;
-    // Perimeter orbit radius: placed nicely between center staple and outer macro ring
-    // Katoris sit in the ring between the centre staples (radius 0.19 D)
-    // and the inner rim (0.45 D): 0.32 D ± 0.125 D. Below a 192 pt plate the
-    // 48 pt touch-target minimum wins and they overlap the centre slightly.
-    final katoriSize = (plateDiameter * 0.25).clamp(48.0, 76.0);
-    final orbitRadius = plateDiameter * 0.32;
-
-    final x = center + orbitRadius * math.cos(slot.angle) - (katoriSize / 2);
-    final y = center + orbitRadius * math.sin(slot.angle) - (katoriSize / 2);
-
-    return Positioned(
-      left: x,
-      top: y,
-      width: katoriSize,
-      height: katoriSize,
-      child: _buildSlotContent(context, colors, katoriSize),
-    );
-  }
-
-  Widget _buildSlotContent(
-    BuildContext context,
-    B05SemanticColors colors,
-    double size,
-  ) {
     switch (slot) {
       case ThaliItemSlot(:final item, :final preview, :final placement):
-        final isSelected = selectedItemId == item.id;
-        final energy =
-            preview?.calculation.facts['energy']?.point?.value.asDouble;
+        final selected = selectedItemId == item.id;
+        final energy = _energy(preview);
         final energyStr = energy != null ? '${energy.round()}' : null;
-
         return B05TouchTarget(
-          minWidth: B05Layout.minTouchTarget,
-          minHeight: B05Layout.minTouchTarget,
           child: Semantics(
             button: true,
-            selected: isSelected,
+            selected: selected,
             label:
                 '${item.displayLabel ?? placement.categoryLabel}, ${placement.categoryLabel}${energyStr != null ? ", $energyStr calories" : ""}',
             child: GestureDetector(
               key: Key('thali_plate_katori_${item.id}'),
-              onTap: () {
-                onSelectItem(isSelected ? null : item.id);
-              },
+              onTap: () => onSelectItem(selected ? null : item.id),
               behavior: HitTestBehavior.opaque,
-              child: AnimatedContainer(
-                duration: B05MotionPolicy.transitionDuration(
-                  context,
-                  standard: const Duration(milliseconds: 180),
-                ),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: colors.surface,
-                  border: Border.all(
-                    color: isSelected ? colors.action : placement.tint,
-                    width: isSelected ? 2.5 : 1.5,
-                  ),
-                  boxShadow: [
-                    if (isSelected)
-                      BoxShadow(
-                        color: colors.action.withValues(alpha: 0.45),
-                        blurRadius: 8,
-                        spreadRadius: 1,
-                      ),
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.2),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Center(
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(placement.icon, size: 18, color: placement.tint),
-                        const SizedBox(height: 2),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
-                          child: Text(
-                            thaliPlateShortName(
-                              item.displayLabel ?? placement.categoryLabel,
-                            ),
-                            style: TextStyle(
-                              color: colors.textPrimary,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.center,
+              child: ExcludeSemantics(
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Positioned.fill(
+                      child: TweenAnimationBuilder<double>(
+                        tween: Tween(end: thaliKatoriFill(item.quantity)),
+                        duration: B05MotionPolicy.transitionDuration(context),
+                        curve: B05MotionPolicy.standardCurve,
+                        builder: (context, fill, _) => CustomPaint(
+                          painter: SteelKatoriPainter(
+                            tones: tones,
+                            category: placement.category,
+                            fill: fill,
+                            selectedColor: selected ? colors.action : null,
                           ),
                         ),
-                        if (energyStr != null)
-                          Text(
-                            '$energyStr kcal',
-                            style: TextStyle(
-                              color: colors.textSecondary,
-                              fontSize: 9.5,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                      ],
+                      ),
                     ),
-                  ),
+                    if (energy != null)
+                      Positioned(
+                        bottom: size * 0.06,
+                        child: _KcalChip(kcal: energy),
+                      ),
+                  ],
                 ),
               ),
             ),
@@ -672,8 +624,6 @@ class _PositionedKatori extends StatelessWidget {
 
       case ThaliAddSlot():
         return B05TouchTarget(
-          minWidth: B05Layout.minTouchTarget,
-          minHeight: B05Layout.minTouchTarget,
           child: Semantics(
             button: true,
             label: 'Add dish to platter',
@@ -681,29 +631,10 @@ class _PositionedKatori extends StatelessWidget {
               key: const Key('thali_plate_add_slot'),
               onTap: onAddDish,
               behavior: HitTestBehavior.opaque,
-              child: Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: colors.surface.withValues(alpha: 0.4),
-                  border: Border.all(
-                    color: colors.action.withValues(alpha: 0.6),
-                    width: 1.5,
-                    style: BorderStyle.solid,
-                  ),
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.add_rounded, size: 20, color: colors.action),
-                    Text(
-                      'Add',
-                      style: TextStyle(
-                        color: colors.action,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
+              child: ExcludeSemantics(
+                child: _EmptyBowl(
+                  tones: tones,
+                  child: Icon(Icons.add_rounded, color: colors.action),
                 ),
               ),
             ),
@@ -712,8 +643,6 @@ class _PositionedKatori extends StatelessWidget {
 
       case ThaliOverflowSlot(:final overflowCount):
         return B05TouchTarget(
-          minWidth: B05Layout.minTouchTarget,
-          minHeight: B05Layout.minTouchTarget,
           child: Semantics(
             button: true,
             label: 'View all $overflowCount more dishes in list',
@@ -721,39 +650,16 @@ class _PositionedKatori extends StatelessWidget {
               key: const Key('thali_plate_overflow_slot'),
               onTap: onViewAllDishes,
               behavior: HitTestBehavior.opaque,
-              child: Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: colors.surfaceSubtle,
-                  border: Border.all(color: colors.border, width: 1.5),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.15),
-                      blurRadius: 4,
-                      offset: const Offset(0, 1),
+              child: ExcludeSemantics(
+                child: _EmptyBowl(
+                  tones: tones,
+                  child: Text(
+                    '+$overflowCount',
+                    style: B05Typography.label(context).copyWith(
+                      color: Colors.white,
+                      fontFeatures: const [FontFeature.tabularFigures()],
                     ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      '+$overflowCount',
-                      style: TextStyle(
-                        color: colors.textPrimary,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      'more',
-                      style: TextStyle(
-                        color: colors.textSecondary,
-                        fontSize: 8.5,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -761,4 +667,129 @@ class _PositionedKatori extends StatelessWidget {
         );
     }
   }
+}
+
+class _EmptyBowl extends StatelessWidget {
+  const _EmptyBowl({required this.tones, required this.child});
+
+  final SteelTones tones;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        Positioned.fill(
+          child: CustomPaint(
+            painter: SteelKatoriPainter(tones: tones, category: null, fill: 0),
+          ),
+        ),
+        child,
+      ],
+    );
+  }
+}
+
+class _SelectedRing extends StatelessWidget {
+  const _SelectedRing();
+
+  @override
+  Widget build(BuildContext context) => DecoratedBox(
+    decoration: BoxDecoration(
+      shape: BoxShape.circle,
+      border: Border.all(color: context.b05Colors.action, width: 2.5),
+    ),
+  );
+}
+
+/// The kcal number on a dish: white on a dark pill so it reads over any
+/// food colour in both themes.
+class _KcalChip extends StatelessWidget {
+  const _KcalChip({required this.kcal});
+
+  final double kcal;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: ShapeDecoration(
+        color: Colors.black.withValues(alpha: 0.62),
+        shape: const StadiumBorder(),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+        child: Text(
+          '${kcal.round()}',
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 10.5,
+            fontWeight: FontWeight.w700,
+            fontFeatures: [FontFeature.tabularFigures()],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Names each rim colour with its grams, so colour is never the only cue.
+class _MacroLegend extends StatelessWidget {
+  const _MacroLegend({
+    required this.protein,
+    required this.carbs,
+    required this.fat,
+  });
+
+  final double protein;
+  final double carbs;
+  final double fat;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.b05Colors;
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final (label, grams, role) in [
+            ('Protein', protein, colors.protein),
+            ('Carbs', carbs, colors.carbs),
+            ('Fat', fat, colors.fat),
+          ]) ...[
+            Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(
+                color: role.indicator,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              '$label ${grams.round()} g',
+              style: B05Typography.caption(
+                context,
+              ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+            ),
+            if (label != 'Fat') const SizedBox(width: 14),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+double? _energy(NutritionThaliItemPreview? preview) =>
+    preview?.calculation.facts['energy']?.point?.value.asDouble;
+
+/// The name shown for a dish in short form: the first of several names and
+/// without a parenthetical ("Toor Dal / Yellow Dal Tadka" → "Toor Dal"). The
+/// full name stays in the semantics label and the dish list.
+String thaliPlateShortName(String name) {
+  var short = name.split(' / ').first;
+  final paren = short.indexOf(' (');
+  if (paren > 0) short = short.substring(0, paren);
+  return short.trim().isEmpty ? name : short.trim();
 }
