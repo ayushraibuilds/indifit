@@ -16,6 +16,10 @@ abstract final class AppLinks {
   static final Uri privacyPolicy = Uri.parse('https://indifit.app/privacy');
   static const String supportEmail = 'support@indifit.app';
 
+  /// IndiFit's page in the iOS Settings app (camera and photo access).
+  /// Android has no URL for it, so callers offer this on iOS only.
+  static final Uri iosAppSettings = Uri.parse('app-settings:');
+
   /// Replaced in tests. Opens outside the app so the policy page and the mail
   /// app keep their own back navigation.
   @visibleForTesting

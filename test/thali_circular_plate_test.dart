@@ -27,8 +27,11 @@ import 'package:indifit/data/repositories/nutrition_thali_repository.dart';
 import 'package:indifit/features/food_log/nutrition_thali_controller.dart';
 import 'package:indifit/features/food_log/thali/circular_thali_plate.dart';
 import 'package:indifit/features/food_log/thali/thali_builder_screen.dart';
+import 'package:indifit/features/food_log/thali/thali_nutrition_summary_bar.dart';
 import 'package:indifit/features/food_log/thali/thali_plate_layout.dart';
 import 'package:indifit/features/food_log/thali/thali_quick_adjust_hud.dart';
+
+const _frameStep = Duration(milliseconds: 250);
 
 class _TestHarness {
   final AppDatabase db;
@@ -776,6 +779,109 @@ void main() {
         );
         await tester.pump(const Duration(milliseconds: 200));
         expect(find.byType(CircularThaliPlate), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'notices replace each other above Log Thali, errors show once',
+      (tester) async {
+        tester.view.physicalSize = const Size(390, 844);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        // Snackbars need frames to time out and animate away.
+        Future<void> pumpFor(Duration total) async {
+          for (var t = Duration.zero; t < total; t += _frameStep) {
+            await tester.pump(_frameStep);
+          }
+        }
+
+        final harness = await _TestHarness.create(tester: tester);
+        addTearDown(() async {
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.pump();
+          unawaited(harness.close());
+        });
+
+        final controller = NutritionThaliController(
+          repository: Future.value(harness.repository),
+          userId: harness.userId,
+          mealCategory: 'lunch',
+        );
+        await tester.runAsync(controller.initialize);
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              databaseProvider.overrideWithValue(harness.db),
+              localTimezoneServiceProvider.overrideWithValue(
+                LocalTimezoneService(read: () async => 'Asia/Kolkata'),
+              ),
+              nutritionThaliRepositoryProvider.overrideWith(
+                (ref) async => harness.repository,
+              ),
+              nutritionThaliControllerProvider(
+                'lunch',
+              ).overrideWith((ref) => controller),
+            ],
+            child: MaterialApp(
+              theme: AppTheme.darkTheme,
+              home: const ThaliBuilderScreen(mealCategory: 'lunch'),
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 100)),
+        );
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.tap(
+          find.byKey(const Key('thali_preset_north_indian_classic')),
+        );
+        await tester.pump();
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 200)),
+        );
+        await tester.pump(const Duration(seconds: 6));
+        expect(controller.state.preview, isNotNull);
+        expect(find.byType(SnackBar), findsNothing);
+
+        // A second notice replaces the first rather than queueing behind it.
+        controller.state = controller.state.copyWith(
+          userNotice: 'First notice',
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+        controller.state = controller.state.copyWith(
+          userNotice: 'Second notice',
+        );
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
+        expect(find.text('First notice'), findsNothing);
+        expect(find.text('Second notice'), findsOneWidget);
+
+        // It floats above the summary bar, so Log Thali stays reachable.
+        final snackRect = tester.getRect(find.byType(SnackBar));
+        final barRect = tester.getRect(find.byType(ThaliNutritionSummaryBar));
+        expect(snackRect.bottom, lessThanOrEqualTo(barRect.top));
+
+        await pumpFor(const Duration(seconds: 7));
+        expect(find.byType(SnackBar), findsNothing);
+
+        // Rebuilds during one failure don't queue the same error again.
+        controller.state = controller.state.copyWith(
+          status: NutritionThaliStatus.failure,
+          errorMessage: 'Could not save this thali.',
+        );
+        await tester.pump();
+        for (var i = 0; i < 3; i++) {
+          controller.state = controller.state.copyWith(dirty: i.isEven);
+          await tester.pump(const Duration(milliseconds: 200));
+        }
+        expect(find.text('Could not save this thali.'), findsOneWidget);
+        await pumpFor(const Duration(seconds: 12));
+        expect(find.text('Could not save this thali.'), findsNothing);
       },
     );
 

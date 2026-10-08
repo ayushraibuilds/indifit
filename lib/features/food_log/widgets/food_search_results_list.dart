@@ -49,6 +49,9 @@ class FoodSearchNoResultsState extends StatelessWidget {
 ///
 /// Encapsulates ranked search results, offline status warning, online searching spinner, and no results state.
 class FoodSearchResultsList extends StatelessWidget {
+  /// Why online search was skipped (e.g. "Offline Mode is on"), or null when
+  /// online search is allowed. Only this phone's foods are shown then.
+  final String? onlineSearchOff;
   final bool isOnlineSearchOffline;
   final bool searchingOnline;
   final String? onlineFailureMessage;
@@ -67,6 +70,7 @@ class FoodSearchResultsList extends StatelessWidget {
 
   const FoodSearchResultsList({
     super.key,
+    this.onlineSearchOff,
     required this.isOnlineSearchOffline,
     required this.searchingOnline,
     this.onlineFailureMessage,
@@ -85,7 +89,14 @@ class FoodSearchResultsList extends StatelessWidget {
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       padding: const EdgeInsets.only(bottom: 24),
       children: [
-        if (isOnlineSearchOffline)
+        if (onlineSearchOff != null)
+          ConsumerStatusRow(
+            label: onlineSearchOff!,
+            detail: searchResults.isNotEmpty
+                ? 'Showing foods on this phone.'
+                : 'No foods on this phone match. Packaged foods need online search.',
+          )
+        else if (isOnlineSearchOffline)
           ConsumerStatusRow(
             label: searchResults.isNotEmpty
                 ? 'Showing matching foods'
@@ -107,7 +118,9 @@ class FoodSearchResultsList extends StatelessWidget {
             detail: 'Matching foods are ready to use.',
             loading: true,
           ),
-        if (!searchingOnline && !isOnlineSearchOffline && searchResults.isEmpty)
+        if (!searchingOnline &&
+            (onlineSearchOff != null || !isOnlineSearchOffline) &&
+            searchResults.isEmpty)
           FoodSearchNoResultsState(onCreateCustomFood: onCreateCustomFood),
         if (!searchingOnline && missedQuery != null)
           FoodSearchMissedQueryRow(

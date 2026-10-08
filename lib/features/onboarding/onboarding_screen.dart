@@ -46,7 +46,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       'moderate'; // 'sedentary', 'light', 'moderate', 'active'
   String _goal = 'maintain'; // 'lose', 'maintain', 'gain'
   double _targetWeight = 70.0;
-  String _dietPreference = 'veg'; // 'veg', 'non-veg', 'vegan'
+  String _dietPreference = 'veg'; // a DietPreferencePresentation value
 
   // Input controllers
   final TextEditingController _nameController = TextEditingController();
@@ -1342,49 +1342,30 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   Widget _buildDietPage() {
+    final selected = DietPreferencePresentation.uiValueFor(_dietPreference);
     return OnboardingPageContainer(
       title: 'How do you like to eat?',
+      // The diet choice only picks the foods search suggests first (UX-16).
       subtitle:
-          'Configures dietary badges and AI meal suggestions. Your calorie and macro targets are calculated from your body metrics.',
+          'IndiFit suggests foods that fit when you search. Your calorie and macro targets come from your body details.',
       child: Column(
         children: [
-          OnboardingSelectionCard(
-            title: 'Vegetarian',
-            subtitle: 'Pure veg, dairy products allowed',
-            icon: Icons.eco,
-            selected:
-                DietPreferencePresentation.uiValueFor(_dietPreference) == 'veg',
-            onTap: () => _selectOnboardingChoice(
-              () => _dietPreference =
-                  DietPreferencePresentation.normalizeForOnboarding('veg'),
+          for (final (index, option)
+              in DietPreferencePresentation.options.indexed) ...[
+            if (index > 0) const SizedBox(height: 12),
+            OnboardingSelectionCard(
+              title: option.shortLabel,
+              subtitle: option.description,
+              icon: option.icon,
+              selected: selected == option.uiValue,
+              onTap: () => _selectOnboardingChoice(
+                () => _dietPreference =
+                    DietPreferencePresentation.normalizeForOnboarding(
+                      option.preferredPersistedValue,
+                    ),
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          OnboardingSelectionCard(
-            title: 'Non-Vegetarian',
-            subtitle: 'Chicken, fish, eggs, meat included',
-            icon: Icons.restaurant,
-            selected:
-                DietPreferencePresentation.uiValueFor(_dietPreference) ==
-                'non_veg',
-            onTap: () => _selectOnboardingChoice(
-              () => _dietPreference =
-                  DietPreferencePresentation.normalizeForOnboarding('non_veg'),
-            ),
-          ),
-          const SizedBox(height: 12),
-          OnboardingSelectionCard(
-            title: 'Vegan',
-            subtitle: '100% plant-based, no animal products',
-            icon: Icons.spa,
-            selected:
-                DietPreferencePresentation.uiValueFor(_dietPreference) ==
-                'vegan',
-            onTap: () => _selectOnboardingChoice(
-              () => _dietPreference =
-                  DietPreferencePresentation.normalizeForOnboarding('vegan'),
-            ),
-          ),
+          ],
         ],
       ),
     );
