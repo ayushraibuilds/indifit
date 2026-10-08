@@ -557,13 +557,11 @@ class _PositionedKatori extends StatelessWidget {
     final colors = context.b05Colors;
     final center = plateDiameter / 2;
     // Perimeter orbit radius: placed nicely between center staple and outer macro ring
-    final katoriSize = (plateDiameter * 0.24).clamp(56.0, 76.0);
-    // Keep every katori inside the inner rim, even when the minimum katori
-    // size is large relative to a small plate.
-    final orbitRadius = math.min(
-      plateDiameter * 0.355,
-      plateDiameter / 2 * 0.9 - katoriSize / 2,
-    );
+    // Katoris sit in the ring between the centre staples (radius 0.19 D)
+    // and the inner rim (0.45 D): 0.32 D ± 0.125 D. Below a 192 pt plate the
+    // 48 pt touch-target minimum wins and they overlap the centre slightly.
+    final katoriSize = (plateDiameter * 0.25).clamp(48.0, 76.0);
+    final orbitRadius = plateDiameter * 0.32;
 
     final x = center + orbitRadius * math.cos(slot.angle) - (katoriSize / 2);
     final y = center + orbitRadius * math.sin(slot.angle) - (katoriSize / 2);
