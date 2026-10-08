@@ -25,6 +25,27 @@ import 'rest_presence_service.dart';
 /// All configurable via SharedPreferences toggles in Settings screen.
 enum NotificationPermissionStatus { granted, denied, unavailable }
 
+/// Workout reminder text built from the user's own data (TP-12).
+class WorkoutReminderText {
+  const WorkoutReminderText({required this.body, this.weekGoalNudge});
+
+  /// The weekly workout reminder's body.
+  final String body;
+
+  /// A one-off line for this evening ("1 more workout to hit this week's
+  /// goal."), or null when it shouldn't be sent today.
+  final String? weekGoalNudge;
+}
+
+/// Builds [WorkoutReminderText]. The training feature provides it at boot,
+/// since core services can't read feature code.
+typedef WorkoutReminderTextSource =
+    Future<WorkoutReminderText?> Function(
+      AppDatabase db,
+      SharedPreferences prefs, {
+      required bool trainedToday,
+    });
+
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
@@ -43,6 +64,10 @@ class NotificationService {
   static const int _idWater = 301;
   static const int _idEveningNudge = 400;
   static const int _idWeeklyReport = 500;
+  static const int _idWeekGoalNudge = 600;
+
+  /// Set at boot (`bootstrap.dart`). Null keeps the plain workout text.
+  static WorkoutReminderTextSource? workoutReminderTextSource;
 
   // SharedPreferences keys
   static const String prefRemindWorkout = AppPreferenceKeys.prefRemindWorkout;
@@ -282,6 +307,7 @@ class NotificationService {
     await _plugin.cancel(_idWater);
     await _plugin.cancel(_idEveningNudge);
     await _plugin.cancel(_idWeeklyReport);
+    await _plugin.cancel(_idWeekGoalNudge);
 
     final prefs = preferences ?? await SharedPreferences.getInstance();
 
@@ -414,6 +440,11 @@ class NotificationService {
     }
 
     if (workoutEnabled) {
+      final text = await _workoutReminderText(
+        db,
+        prefs,
+        trainedToday: hasWorkoutToday,
+      );
       await _scheduleWorkoutReminder(
         workoutDays,
         workoutHour,
@@ -422,7 +453,19 @@ class NotificationService {
         quietHoursStart,
         quietHoursEnd,
         skipToday: hasWorkoutToday,
+        body: text?.body,
       );
+      final nudge = text?.weekGoalNudge;
+      if (nudge != null) {
+        await _scheduleWeekGoalNudgeToday(
+          nudge,
+          dailyLoggingHour,
+          dailyLoggingMinute,
+          quietHoursEnabled,
+          quietHoursStart,
+          quietHoursEnd,
+        );
+      }
     }
     if (mealsEnabled) {
       await _scheduleMealReminders(
@@ -497,6 +540,72 @@ class NotificationService {
     );
   }
 
+  static Future<WorkoutReminderText?> _workoutReminderText(
+    AppDatabase? db,
+    SharedPreferences prefs, {
+    required bool trainedToday,
+  }) async {
+    final source = workoutReminderTextSource;
+    if (db == null || source == null) return null;
+    try {
+      return await source(db, prefs, trainedToday: trainedToday);
+    } catch (e, st) {
+      // Fall back to the plain text rather than skip the reminder.
+      AppLogger.warning('Workout reminder text unavailable: $e');
+      CrashReportingService.recordCrash(
+        e,
+        st,
+        reason: 'workout reminder text failed',
+      );
+      return null;
+    }
+  }
+
+  /// Today only, at the evening logging time: a repeating reminder would
+  /// keep a week-goal count that is only true this evening.
+  static Future<void> _scheduleWeekGoalNudgeToday(
+    String body,
+    int hour,
+    int minute,
+    bool quietHoursEnabled,
+    int quietStart,
+    int quietEnd,
+  ) async {
+    final now = tz.TZDateTime.now(tz.local);
+    final scheduled = tz.TZDateTime(
+      tz.local,
+      now.year,
+      now.month,
+      now.day,
+      hour,
+      minute,
+    );
+    if (!scheduled.isAfter(now)) return;
+    if (quietHoursEnabled &&
+        isInQuietHours(hour, minute, quietStart, quietEnd)) {
+      return;
+    }
+    await _plugin.zonedSchedule(
+      _idWeekGoalNudge,
+      'This week\'s goal',
+      body,
+      scheduled,
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          _workoutChannelId,
+          'Workout Reminders',
+          importance: Importance.defaultImportance,
+          priority: Priority.defaultPriority,
+        ),
+        iOS: DarwinNotificationDetails(),
+      ),
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+      payload: 'workout',
+    );
+  }
+
   /// Workout reminders on the selected local weekdays and time.
   static Future<void> _scheduleWorkoutReminder(
     List<int> days,
@@ -506,6 +615,7 @@ class NotificationService {
     int quietStart,
     int quietEnd, {
     bool skipToday = false,
+    String? body,
   }) async {
     for (final day in days) {
       await _scheduleWeeklyNotification(
@@ -516,7 +626,7 @@ class NotificationService {
         hour: hour,
         minute: minute,
         title: '🏋️ Time to Train!',
-        body: 'Open IndiFit when you are ready to start your workout.',
+        body: body ?? 'Open IndiFit when you are ready to start your workout.',
         payload: 'workout',
         quietHoursEnabled: quietHoursEnabled,
         quietHoursStart: quietStart,

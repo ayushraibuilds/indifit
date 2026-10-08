@@ -491,9 +491,9 @@ void main() {
       await tester.pump(const Duration(milliseconds: 20));
 
       expect(previous.queries.single.canonicalExerciseId, 'exercise-a');
-      // Last session's set 1 shows on today's set 1 row (compact layout on
-      // this narrow viewport), not as a separate card below the fold.
-      expect(find.text('Last time: 80 kg × 8'), findsOneWidget);
+      // Last session's set 1 shows under today's set 1 row (TP-8), not as
+      // a separate card below the fold.
+      expect(find.text('Last 80 kg × 8'), findsOneWidget);
       expect(find.text('80 kg × 8 reps'), findsNothing);
       expect(find.text('Recommended'), findsNothing);
       await tester.drag(find.byType(Scrollable).first, const Offset(0, 2000));

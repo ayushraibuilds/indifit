@@ -8,6 +8,7 @@ import 'package:uuid/uuid.dart';
 import '../../core/di/providers.dart';
 import '../../core/nutrition_legacy_corrections.dart';
 import '../../core/utils/app_logger.dart';
+import '../catalog/catalog_search_index.dart';
 import '../database/app_database.dart';
 
 final foodRepositoryProvider = Provider<FoodRepository>((ref) {
@@ -95,6 +96,35 @@ class FoodRepository {
       for (final row in rows)
         if (!retiredIds.contains(row.id)) row,
     ];
+  }
+
+  /// Catalogue foods found by the on-device full-text index (CAT-9), as the
+  /// `food_items` rows the food screen lists, with the extra words each one
+  /// matched (aliases, corrected spellings). Empty if the index is missing.
+  Future<({List<FoodItem> items, Map<int, List<String>> matchedTerms})>
+  searchCatalogueIndex(String query) async {
+    final List<CatalogSearchHit> hits;
+    try {
+      hits = await CatalogSearchIndex(_db).search(query);
+    } catch (e) {
+      AppLogger.warning('Food search index query failed: $e');
+      return (
+        items: const <FoodItem>[],
+        matchedTerms: const <int, List<String>>{},
+      );
+    }
+    final terms = <int, List<String>>{
+      for (final hit in hits) ?hit.legacyFoodItemId: hit.matchedTerms,
+    };
+    if (terms.isEmpty) {
+      return (items: const <FoodItem>[], matchedTerms: terms);
+    }
+    final rows = await (_db.select(
+      _db.foodItems,
+    )..where((table) => table.id.isIn(terms.keys))).get();
+    final order = {for (final (i, id) in terms.keys.indexed) id: i};
+    rows.sort((a, b) => order[a.id]!.compareTo(order[b.id]!));
+    return (items: rows, matchedTerms: terms);
   }
 
   /// Reads only explicit, reviewed B03 identity metadata for search rows.

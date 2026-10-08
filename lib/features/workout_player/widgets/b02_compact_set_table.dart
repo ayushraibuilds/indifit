@@ -242,7 +242,6 @@ class B02CompactSetTable extends StatelessWidget {
   Widget build(BuildContext context) {
     final rows = _rows();
     final nextRow = rows.where((row) => !row.isLogged).firstOrNull;
-    final showTarget = rows.any((row) => row.plannedLabel != null);
     return B05Surface(
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
       child: Column(
@@ -271,12 +270,9 @@ class B02CompactSetTable extends StatelessWidget {
           ],
           const SizedBox(height: 10),
           if (rows.isNotEmpty) ...[
-            _TableHeader(showTarget: showTarget),
-            const SizedBox(height: 4),
             for (final row in rows) ...[
               _SetRow(
                 row: row,
-                showTarget: showTarget,
                 isBusy: isBusy,
                 onEdit: onEdit,
                 onDelete: onDelete,
@@ -380,52 +376,12 @@ class B02CompactSetTable extends StatelessWidget {
       : null;
 }
 
-/// Wide enough for a two-digit set number; the rest goes to PLANNED.
-const double _setColumnWidth = 32;
-
-class _TableHeader extends StatelessWidget {
-  const _TableHeader({required this.showTarget});
-
-  final bool showTarget;
-
-  @override
-  Widget build(BuildContext context) {
-    final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
-    final compact = MediaQuery.sizeOf(context).width < 380 || textScale >= 1.3;
-    return Semantics(
-      header: true,
-      child: compact ? _buildCompact(context) : _buildWide(context),
-    );
-  }
-
-  Widget _buildCompact(BuildContext context) {
-    return Row(
-      children: [
-        const Expanded(child: Text('SET / DETAILS')),
-        const Text('STATUS'),
-      ],
-    );
-  }
-
-  Widget _buildWide(BuildContext context) {
-    return Row(
-      children: [
-        const SizedBox(width: _setColumnWidth, child: Text('SET')),
-        if (showTarget) const Expanded(flex: 4, child: Text('PLANNED')),
-        const Expanded(flex: 3, child: Text('ACTUAL')),
-        SizedBox(
-          width: B05Layout.minTouchTarget * 2,
-          child: const Text('STATUS'),
-        ),
-      ],
-    );
-  }
-}
-
+/// One set as a plain row (TP-8): "Set 2 · 8–12 reps", a faint "Last 60 kg ×
+/// 8" under it while it's to come, and "✓ 60 kg × 8" once logged. No column
+/// headers: each row says what it is.
 class _SetRow extends StatelessWidget {
   const _SetRow({
     required this.row,
-    required this.showTarget,
     required this.isBusy,
     required this.onEdit,
     required this.onDelete,
@@ -434,7 +390,6 @@ class _SetRow extends StatelessWidget {
   });
 
   final B02CompactSetRow row;
-  final bool showTarget;
   final bool isBusy;
   final ValueChanged<B02PerformedSet>? onEdit;
   final ValueChanged<B02PerformedSet>? onDelete;
@@ -447,119 +402,61 @@ class _SetRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final compact = _isCompact(context);
+    final previous = row.previousLabel;
     return Semantics(
       container: true,
       label: _semanticLabel(),
-      child: compact ? _buildCompact(context) : _buildWide(context),
-    );
-  }
-
-  Widget _buildWide(BuildContext context) {
-    final actual = row.isLogged ? row.actualLabel ?? 'No actual value' : '—';
-    final previous = row.previousLabel;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          SizedBox(
-            width: _setColumnWidth,
-            child: Text(
-              '${row.displayNumber}',
-              style: B05Typography.label(context),
-            ),
-          ),
-          if (showTarget)
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
             Expanded(
-              flex: 4,
-              child: _valueWithDetails(
-                context,
-                row.plannedCellLabel ?? 'No target',
-                row.plannedDetailsLabel,
-              ),
-            ),
-          Expanded(
-            flex: 3,
-            child: !row.isLogged && previous != null
-                ? _previousHint(context, 'Last $previous')
-                : _withBest(
-                    _logged(
-                      context,
-                      _valueWithDetails(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(_title(), style: B05Typography.label(context)),
+                  if (!row.isLogged && row.plannedDetailsLabel != null)
+                    Text(
+                      'Details: ${row.plannedDetailsLabel}',
+                      style: B05Typography.caption(context),
+                    ),
+                  if (row.isLogged) ...[
+                    const SizedBox(height: 2),
+                    _withBest(
+                      _logged(
                         context,
-                        actual,
-                        row.actualDetailsLabel,
+                        _valueWithDetails(
+                          context,
+                          row.actualLabel ?? 'No actual value',
+                          row.actualDetailsLabel,
+                        ),
                       ),
                     ),
-                  ),
-          ),
-          SizedBox(
-            width: B05Layout.minTouchTarget * 2,
-            child: row.isLogged ? _actions(context) : _pendingStatus(context),
-          ),
-        ],
+                  ] else if (previous != null)
+                    Text(
+                      'Last $previous',
+                      style: B05Typography.caption(context),
+                    ),
+                ],
+              ),
+            ),
+            if (row.isLogged) _actions(context) else _pendingStatus(context),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildCompact(BuildContext context) {
-    final actual = row.isLogged ? row.actualLabel ?? 'No actual value' : '—';
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 7),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Text(
-                  'Set ${row.displayNumber}${row.isExtra ? ' · Extra' : ''}',
-                  style: B05Typography.label(context),
-                ),
-              ),
-              if (row.isLogged)
-                Text(_statusLabel(), style: B05Typography.caption(context))
-              else
-                _pendingStatus(context),
-            ],
-          ),
-          if (showTarget) ...[
-            const SizedBox(height: 2),
-            _valueWithDetails(
-              context,
-              'Planned: ${row.plannedLabel ?? 'No target'}',
-              row.plannedDetailsLabel,
-              style: B05Typography.caption(context),
-            ),
-          ],
-          if (!row.isLogged && row.previousLabel != null) ...[
-            const SizedBox(height: 2),
-            _previousHint(context, 'Last time: ${row.previousLabel}'),
-          ],
-          const SizedBox(height: 2),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: _withBest(
-                  _logged(
-                    context,
-                    _valueWithDetails(
-                      context,
-                      'Actual: $actual',
-                      row.actualDetailsLabel,
-                    ),
-                  ),
-                ),
-              ),
-              if (row.isLogged) _actions(context),
-            ],
-          ),
-        ],
-      ),
-    );
+  /// "Set 2 · 8–12 reps", "Set 1 · Warm-up", "Set 5 · Extra".
+  String _title() {
+    final parts = <String>[
+      'Set ${row.displayNumber}',
+      if (row.role == B02SetRole.warmup) 'Warm-up',
+      if (row.isExtra) 'Extra',
+      ?row.plannedCellLabel,
+    ];
+    return parts.join(' · ');
   }
 
   Widget _actions(BuildContext context) {
@@ -638,10 +535,6 @@ class _SetRow extends StatelessWidget {
     );
   }
 
-  Widget _previousHint(BuildContext context, String text) {
-    return Text(text, style: B05Typography.caption(context));
-  }
-
   Widget _valueWithDetails(
     BuildContext context,
     String value,
@@ -677,11 +570,6 @@ class _SetRow extends StatelessWidget {
         'actual details ${row.actualDetailsLabel}',
     ];
     return parts.join(', ');
-  }
-
-  bool _isCompact(BuildContext context) {
-    final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
-    return MediaQuery.sizeOf(context).width < 380 || textScale >= 1.3;
   }
 }
 
