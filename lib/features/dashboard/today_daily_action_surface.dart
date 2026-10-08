@@ -23,6 +23,7 @@ import 'widgets/today_helpers.dart';
 import 'widgets/today_hydration_card.dart';
 import 'widgets/today_module_widgets.dart';
 import 'widgets/today_nutrition_widgets.dart';
+import 'widgets/today_usual_thali_card.dart';
 
 export 'today_presentation_types.dart';
 export 'widgets/appearance_bottom_sheet.dart';
@@ -381,14 +382,21 @@ class TodayDailyActionSurface extends ConsumerWidget {
       );
     }
     return switch (item.moduleId) {
-      'today.meals' => TodayNutritionHero(
-        presentation: nutrition,
-        onLogFood: () => onLogMeal(''),
-        onOpenFoodGuidance: onOpenFoodGuidance,
-        dateRelation: relation,
-        selectedDate: selectedDate,
-        onOpenTargetSetup: onOpenNutritionTargets ?? onOpenSettings,
-        onRetry: onRetry,
+      'today.meals' => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          TodayNutritionHero(
+            presentation: nutrition,
+            onLogFood: () => onLogMeal(''),
+            onOpenFoodGuidance: onOpenFoodGuidance,
+            dateRelation: relation,
+            selectedDate: selectedDate,
+            onOpenTargetSetup: onOpenNutritionTargets ?? onOpenSettings,
+            onRetry: onRetry,
+          ),
+          // One tap for the plate logged most (only on today's date).
+          if (relation == TodayDateRelation.today) const TodayUsualThaliCard(),
+        ],
       ),
       'today.hydration' => TodayHydrationCard(
         hydrationRead: hydration,

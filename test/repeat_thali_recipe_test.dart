@@ -1,4 +1,6 @@
 import 'package:drift/drift.dart' hide isNotNull, isNull;
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/nutrients.dart';
 import 'package:indifit/core/nutrition_calculation_service.dart';
@@ -20,7 +22,10 @@ import 'package:indifit/data/repositories/nutrition_recipe_log_coordinator.dart'
 import 'package:indifit/data/repositories/nutrition_recipe_repository.dart';
 import 'package:indifit/data/repositories/nutrition_thali_repository.dart';
 import 'package:indifit/data/repositories/nutrition_transformation_repository.dart';
+import 'package:indifit/features/dashboard/widgets/today_usual_thali_card.dart';
+import 'package:indifit/features/food_log/food_log_surface.dart';
 import 'package:indifit/features/food_log/repeat_meal.dart';
+import 'package:indifit/features/food_log/usual_thali.dart';
 
 const _user = 'repeat-user';
 const _tz = 'Asia/Kolkata';
@@ -97,6 +102,116 @@ void main() {
       '1 changed since yesterday and was not repeated',
     );
     expect(await h.loggedOn('2026-10-05'), isEmpty);
+  });
+
+  group('usual thali on Today', () {
+    Future<List<NutritionCanonicalSnapshotReadModel>> history() async => [
+      for (final snapshot in await h.consumption.listAllForUser(userId: _user))
+        NutritionCanonicalSnapshotReadModel(snapshot),
+    ];
+
+    test('a plate logged twice is the usual one, and logs again', () async {
+      final yesterday = await h.logThaliYesterday();
+      await h.repeat(
+        planRepeat([NutritionCanonicalSnapshotReadModel(yesterday)]),
+      );
+
+      final usual = UsualThaliFinder.find(await history())!;
+      expect(usual.timesLogged, 2);
+      expect(usual.itemLabels, ['Rice', 'Dal']);
+      // The newest log is the one repeated.
+      expect(usual.record.localDate, '2026-10-05');
+
+      final outcome = await h.repeat(
+        planRepeat([usual.record]),
+        localDate: '2026-10-06',
+      );
+      expect(outcome.thalis, 1);
+      expect(await h.loggedOn('2026-10-06'), hasLength(1));
+    });
+
+    testWidgets('Today offers it for the meal at this time of day', (
+      tester,
+    ) async {
+      final usual = (await tester.runAsync(() async {
+        final yesterday = await h.logThaliYesterday();
+        await h.repeat(
+          planRepeat([NutritionCanonicalSnapshotReadModel(yesterday)]),
+        );
+        return UsualThaliFinder.find(await history());
+      }))!;
+
+      Future<void> pump(List<NutritionHistoricalReadRecord> today) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            // A new scope each time, so the overrides apply afresh.
+            key: UniqueKey(),
+            overrides: [
+              usualThaliProvider.overrideWith((ref) async => usual),
+              canonicalFoodRecordsForDayProvider.overrideWith(
+                (ref, day) async => today,
+              ),
+            ],
+            child: MaterialApp(
+              home: Scaffold(
+                body: TodayUsualThaliCard(
+                  now: () => DateTime(2026, 10, 6, 13, 10),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+      }
+
+      await pump(const []);
+      expect(find.textContaining('Your usual thali'), findsOneWidget);
+      expect(find.text('Rice, Dal'), findsOneWidget);
+      expect(find.text('Log to lunch'), findsOneWidget);
+
+      // Already in today's lunch: nothing to offer.
+      await pump([usual.record]);
+      expect(find.byKey(const Key('today_usual_thali')), findsNothing);
+    });
+
+    test('a plate logged once is not usual yet', () async {
+      await h.logThaliYesterday();
+      expect(UsualThaliFinder.find(await history()), isNull);
+    });
+
+    test(
+      'separately built thalis with the same plate count together',
+      () async {
+        Future<void> logRiceOnly(String day, String command) async {
+          final draft = await h.thalis.saveDraft(
+            h.thalis.newDraft(
+              userId: _user,
+              name: 'Rice only $command',
+              items: [h._item('item-rice-$command', 'food-rice', 0, 'Rice')],
+            ),
+          );
+          await h.thalis.finalize(
+            preview: await h.thalis.preview(draft: draft),
+            mealCategory: 'dinner',
+            loggedAt: DateTime.parse('${day}T14:00:00Z'),
+            commandId: command,
+            localDate: day,
+            timezoneId: _tz,
+            allowPartial: true,
+          );
+        }
+
+        await h.logThaliYesterday(); // rice and dal, once
+        await logRiceOnly('2026-10-02', 'a');
+        await logRiceOnly('2026-10-03', 'b');
+
+        final usual = UsualThaliFinder.find(await history())!;
+        expect(usual.timesLogged, 2);
+        expect(usual.itemLabels, ['Rice']);
+        expect(usual.record.localDate, '2026-10-03');
+      },
+    );
   });
 
   test('a recipe logged yesterday is repeated with the same amount', () async {
