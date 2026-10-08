@@ -30,6 +30,7 @@ import 'quick_workout_screen.dart';
 import 'widgets/b02_compact_set_table.dart';
 import 'widgets/b02_execution_advanced_controls.dart';
 import 'widgets/b02_execution_semantics.dart';
+import 'widgets/b02_player_beats.dart';
 import 'widgets/b02_player_cards.dart';
 import 'widgets/b02_player_view_models.dart';
 import 'widgets/b07_exercise_context.dart';
@@ -40,6 +41,7 @@ import 'workout_execution_context.dart';
 import 'workout_execution_route.dart';
 import 'workout_execution_shell.dart';
 
+export 'widgets/b02_player_beats.dart';
 export 'widgets/b02_player_cards.dart';
 export 'widgets/b02_player_view_models.dart';
 
@@ -102,6 +104,18 @@ class _B02StrengthPlayerScreenState
 
   /// The exercise the set panel last showed, so a change slides the right way.
   int _shownExerciseIndex = -1;
+
+  /// The rest takeover opens for each new rest and folds into the bar when
+  /// the set list is touched or scrolled (V5).
+  String? _lastSeenRestId;
+  var _restExpanded = false;
+
+  /// Set while the "Rest done" beat shows, after a rest ran out.
+  String? _restDoneUpNext;
+  var _restDoneVisible = false;
+
+  /// Set while the "exercise done" beat shows, before the next exercise.
+  _ExerciseDoneBeatData? _exerciseDone;
   bool _warmup = false;
   var _isSubmittingSet = false;
   var _isClosing = false;
@@ -279,7 +293,17 @@ class _B02StrengthPlayerScreenState
     _shownExerciseIndex = exerciseIndex;
     final workingSetCount = _workingSetCount(launch.state, selected);
     final hasOpenRest = _hasOpenRest(launch.state);
+    final openRest = b02OpenRestPeriod(launch.state);
+    if (openRest != null && openRest.id != _lastSeenRestId) {
+      _lastSeenRestId = openRest.id;
+      _restExpanded = true;
+      _restDoneVisible = false;
+    }
     final isQuick = execution is QuickWorkoutExecutionContext;
+    final restUpNext = _restUpNext(launch.state, cursorSlot, isQuick: isQuick);
+    final exerciseDone = _exerciseDone?.slotId == selected.id
+        ? _exerciseDone
+        : null;
     final exerciseComplete =
         !isQuick && workingSetCount >= selected.plannedSets;
     final hasExtraSetReady = _extraSetReady.contains(selected.id);
@@ -402,16 +426,39 @@ class _B02StrengthPlayerScreenState
         selectedId: selected.id,
         onSelected: ui.isBusy
             ? null
-            : (value) => setState(() => _selectedSlotId = value),
+            : (value) => setState(() {
+                _selectedSlotId = value;
+                _exerciseDone = null;
+              }),
       ),
       currentExerciseSlot: null,
-      restSlot: hasOpenRest
-          ? _buildRestCard(provider, ui, launch, cursorSlot ?? selected)
-          : null,
       stickyRestSlot: hasOpenRest
-          ? _buildStickyRestBar(provider, ui, launch)
+          ? _buildStickyRestBar(provider, ui, launch, restUpNext)
+          : _restDoneVisible
+          ? RestDoneBeat(
+              upNextTitle: _restDoneUpNext,
+              onDone: () {
+                if (mounted) setState(() => _restDoneVisible = false);
+              },
+            )
           : null,
-      setLoggingSlot: setLogging == null
+      onContentInteraction: () {
+        if (_restExpanded && _hasOpenRest(launch.state)) {
+          setState(() => _restExpanded = false);
+        }
+      },
+      setLoggingSlot: exerciseDone != null
+          ? IndiFitSharedAxisSwitcher(
+              reverse: false,
+              child: ExerciseDoneBeat(
+                key: ValueKey<String>('b02-exercise-done:${selected.id}'),
+                exerciseName: exerciseDone.exerciseName,
+                summary: exerciseDone.summary,
+                newBest: exerciseDone.newBest,
+                onDone: () => _finishExerciseDoneBeat(provider),
+              ),
+            )
+          : setLogging == null
           ? null
           : IndiFitSharedAxisSwitcher(
               reverse: movingBack,
@@ -420,7 +467,9 @@ class _B02StrengthPlayerScreenState
                 child: setLogging,
               ),
             ),
-      primaryActionSlot: showPendingEditor ? primaryAction : null,
+      primaryActionSlot: showPendingEditor && exerciseDone == null
+          ? primaryAction
+          : null,
       primaryActionGap: 10,
       nextExerciseGap: hasOpenRest
           ? 12
@@ -1061,30 +1110,17 @@ class _B02StrengthPlayerScreenState
     return '$name · Round ${(slot.roundOrdinal ?? 0) + 1} · Member ${(slot.memberOrdinal ?? 0) + 1}';
   }
 
-  Widget _buildRestCard(
-    dynamic provider,
-    B02StrengthExecutionUiState ui,
-    B02StrengthExecutionLaunch launch,
-    B02StrengthExecutionSlot nextSlot,
-  ) => RestCard(
-    slot: nextSlot,
-    state: launch.state,
-    onBegin: ui.isBusy
-        ? null
-        : () => ref.read(provider.notifier).beginRest(nextSlot),
-    onCustom: ui.isBusy
-        ? null
-        : (seconds) => ref
-              .read(provider.notifier)
-              .beginRest(nextSlot, selectedSeconds: seconds),
-  );
-
   Widget _buildStickyRestBar(
     dynamic provider,
     B02StrengthExecutionUiState ui,
     B02StrengthExecutionLaunch launch,
+    B02RestUpNext? upNext,
   ) => StickyRestBar(
     state: launch.state,
+    expanded: _restExpanded,
+    upNext: upNext,
+    onExpand: () => setState(() => _restExpanded = true),
+    onCollapse: () => setState(() => _restExpanded = false),
     onExtend: ui.isBusy
         ? null
         : (periodId) =>
@@ -1096,8 +1132,117 @@ class _B02StrengthPlayerScreenState
     onSkip: ui.isBusy
         ? null
         : (periodId) => ref.read(provider.notifier).skipRest(periodId),
-    onElapsed: (periodId) => ref.read(provider.notifier).completeRest(periodId),
+    onElapsed: (periodId) async {
+      final completed = await ref
+          .read(provider.notifier)
+          .completeRest(periodId);
+      if (completed && mounted && !B05MotionPolicy.reduceMotion(context)) {
+        setState(() {
+          _restDoneUpNext = upNext?.title;
+          _restDoneVisible = true;
+        });
+      }
+      return completed;
+    },
   );
+
+  /// "Leg Press · Set 2 of 3" and "60 kg × 8" for the rest takeover. The
+  /// detail is read from the pending set fields when they exist, so it is
+  /// what "Log set" would save; otherwise from the plan's target.
+  B02RestUpNext? _restUpNext(
+    B02ExecutionDraftState state,
+    B02StrengthExecutionSlot? next, {
+    required bool isQuick,
+  }) {
+    if (next == null) return null;
+    final name = _actualExerciseName(state, next);
+    final setNumber = _workingSetCount(state, next) + 1;
+    final title = !isQuick && next.plannedSets > 0
+        ? '$name · Set $setNumber of ${next.plannedSets}'
+        : '$name · Set $setNumber';
+    final reps = int.tryParse(_repControllers[next.id]?.text.trim() ?? '');
+    final load = double.tryParse(_loadControllers[next.id]?.text.trim() ?? '');
+    final loadLabel = r07cFormatLoad(
+      load != null && load > 0 ? load : null,
+      next.targetLoadBasis,
+    );
+    final String? detail;
+    if (reps != null && reps > 0) {
+      detail = loadLabel.isEmpty
+          ? '$reps ${reps == 1 ? 'rep' : 'reps'}'
+          : '$loadLabel × $reps';
+    } else if (loadLabel.isNotEmpty) {
+      detail = loadLabel;
+    } else {
+      detail = r07cFormatTarget(
+        loadKg: next.targetLoadKg,
+        loadBasis: next.targetLoadBasis,
+        minReps: next.targetRepsMin,
+        maxReps: next.targetRepsMax,
+        rpe: next.targetRpe,
+      );
+    }
+    return B02RestUpNext(title: title, detail: detail);
+  }
+
+  /// The beat for the exercise whose last planned set was just saved, or
+  /// null when no beat applies (warm-ups, quick workouts, extra sets, the
+  /// last exercise, Reduce Motion).
+  _ExerciseDoneBeatData? _exerciseDoneBeatFor({
+    required dynamic provider,
+    required B02StrengthExecutionUiState saved,
+    required B02StrengthExecutionSlot slot,
+    required B02StrengthExecutionSlot cursor,
+    required int setsBefore,
+    required bool wasWarmup,
+  }) {
+    final launch = saved.launch;
+    if (launch == null ||
+        wasWarmup ||
+        cursor.id == slot.id ||
+        slot.plannedSets <= 0 ||
+        _executionFor(launch) is QuickWorkoutExecutionContext ||
+        B05MotionPolicy.reduceMotion(context)) {
+      return null;
+    }
+    final setsAfter = _workingSetCount(launch.state, slot);
+    if (setsBefore >= slot.plannedSets || setsAfter < slot.plannedSets) {
+      return null;
+    }
+    final performed = _performedSets(launch.state, slot);
+    final bests = _bestsView(
+      provider,
+      launch.state,
+      slot,
+      _actualExerciseId(launch.state, slot),
+    );
+    return _ExerciseDoneBeatData(
+      slotId: slot.id,
+      nextSlotId: cursor.id,
+      exerciseName: _actualExerciseName(launch.state, slot),
+      summary: b02ExerciseDoneSummary(performed),
+      newBest: performed.any((set) => bests.kindsBySetId.containsKey(set.id)),
+    );
+  }
+
+  void _finishExerciseDoneBeat(dynamic provider) {
+    final beat = _exerciseDone;
+    if (beat == null || !mounted) return;
+    final current = ref.read(provider) as B02StrengthExecutionUiState;
+    final launch = current.launch;
+    final cursor = launch == null
+        ? null
+        : B02ExecutionProgression.cursorSlot(
+            state: launch.state,
+            slots: current.slots,
+          );
+    setState(() {
+      _exerciseDone = null;
+      if (_selectedSlotId == beat.slotId) {
+        _selectedSlotId = cursor?.id ?? beat.nextSlotId;
+      }
+    });
+  }
 
   Future<void> _record(dynamic provider, B02StrengthExecutionSlot slot) async {
     if (_isSubmittingSet) return;
@@ -1156,7 +1301,20 @@ class _B02StrengthPlayerScreenState
                 state: cursorLaunch.state,
                 slots: afterSave.slots,
               );
-        if (mounted && cursor != null) {
+        final beat = cursor == null
+            ? null
+            : _exerciseDoneBeatFor(
+                provider: provider,
+                saved: afterSave,
+                slot: slot,
+                cursor: cursor,
+                setsBefore: currentSet - 1,
+                wasWarmup: roleWasWarmup,
+              );
+        if (mounted && beat != null) {
+          // The selection moves on when the beat ends (or is tapped).
+          setState(() => _exerciseDone = beat);
+        } else if (mounted && cursor != null) {
           setState(() => _selectedSlotId = cursor.id);
         }
         final currentLaunch = launchForProvider(provider);
@@ -1915,3 +2073,19 @@ class _B02StrengthPlayerScreenState
 /// not "60.0".
 String _editableLoad(double? loadKg) =>
     loadKg == null ? '' : r07cFormatNumber(loadKg);
+
+class _ExerciseDoneBeatData {
+  final String slotId;
+  final String nextSlotId;
+  final String exerciseName;
+  final String? summary;
+  final bool newBest;
+
+  const _ExerciseDoneBeatData({
+    required this.slotId,
+    required this.nextSlotId,
+    required this.exerciseName,
+    required this.summary,
+    required this.newBest,
+  });
+}
