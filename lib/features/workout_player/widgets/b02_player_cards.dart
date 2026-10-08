@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:figma_squircle/figma_squircle.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/presentation/consumer_copy.dart';
@@ -882,6 +883,20 @@ class _StickyRestBarState extends State<StickyRestBar> {
       label: 'Rest in progress',
       child: Material(
         color: theme.colorScheme.surfaceContainerHighest,
+        // Rounded at the bottom so it reads as a panel over the set list.
+        shape: const SmoothRectangleBorder(
+          borderRadius: SmoothBorderRadius.only(
+            bottomLeft: SmoothRadius(
+              cornerRadius: B05Radii.card,
+              cornerSmoothing: B05Radii.smoothing,
+            ),
+            bottomRight: SmoothRadius(
+              cornerRadius: B05Radii.card,
+              cornerSmoothing: B05Radii.smoothing,
+            ),
+          ),
+        ),
+        clipBehavior: Clip.antiAlias,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 4, 8, 16),
           child: Column(
@@ -924,8 +939,10 @@ class _StickyRestBarState extends State<StickyRestBar> {
                                   value: progress,
                                   strokeWidth: 10,
                                   strokeCap: StrokeCap.round,
-                                  backgroundColor:
-                                      theme.colorScheme.surfaceContainerLow,
+                                  // A faint track keeps the ring's shape as the time runs down.
+                                  backgroundColor: colors.action.withValues(
+                                    alpha: 0.18,
+                                  ),
                                 ),
                               ),
                             ),

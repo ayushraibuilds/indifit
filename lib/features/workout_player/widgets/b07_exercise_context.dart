@@ -658,8 +658,13 @@ class B07ExerciseHero extends StatelessWidget {
           Positioned(
             top: B05Layout.space4,
             right: B05Layout.space4,
-            child: IconButton.filledTonal(
+            // Quiet, like the pose labels, so it does not cover the art.
+            child: IconButton(
               tooltip: 'Hide exercise pictures',
+              style: IconButton.styleFrom(
+                backgroundColor: Colors.black.withValues(alpha: 0.45),
+                foregroundColor: Colors.white,
+              ),
               onPressed: () => onExpandedChanged(false),
               icon: const Icon(Icons.expand_less_rounded),
             ),
