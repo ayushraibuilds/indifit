@@ -389,21 +389,16 @@ void main() {
         ),
       );
 
-      // Verify header
+      // The story image: name, one hero number, then sets, reps, duration.
       expect(find.text('Push Routine'), findsOneWidget);
-      expect(find.text('40m 0s'), findsOneWidget);
-
-      // Verify metric chips
-      expect(find.text('Exercises'), findsOneWidget);
-      expect(find.text('1'), findsNWidgets(2)); // Exercises: 1, Sets: 1
-      expect(find.text('Sets'), findsOneWidget);
-      expect(find.text('Reps'), findsOneWidget);
+      expect(find.text('1,850.5 kg'), findsOneWidget);
+      expect(find.text('total lifted'), findsOneWidget);
+      expect(find.text('set'), findsOneWidget);
       expect(find.text('10'), findsOneWidget);
-      expect(find.text('Volume'), findsOneWidget);
-      expect(find.text('1850.5 kg'), findsOneWidget);
+      expect(find.text('reps'), findsOneWidget);
+      expect(find.text('40:00'), findsOneWidget);
 
-      // Honest sparse state when no comparison was fetched: neutral notice, no fake milestone.
-      expect(find.text('No previous workout compared'), findsOneWidget);
+      // No fake milestone when nothing was compared.
       expect(find.text('First time logging this routine'), findsNothing);
 
       // Verify privacy switch toggle
@@ -415,13 +410,15 @@ void main() {
       await tester.tap(switchFinder);
       await tester.pumpAndSettle();
 
-      // Verify volume chip hidden when privacy mode is active
-      expect(find.text('Volume'), findsNothing);
+      // Without weights the reps become the hero; no kilograms anywhere.
+      expect(find.textContaining('kg'), findsNothing);
+      expect(find.text('10'), findsOneWidget);
 
       // Verify share button presence
       final shareButton = find.byKey(const Key('workout_share_button'));
       expect(shareButton, findsOneWidget);
-      expect(find.text('Share workout recap'), findsOneWidget);
+      expect(find.text('Share image'), findsOneWidget);
+      expect(find.text('Share as text'), findsOneWidget);
     });
 
     testWidgets(

@@ -12,6 +12,9 @@ individually.
 
 - `indifit_app_icon_master.png`: opaque 1024 × 1024 store/legacy master.
 - `indifit_adaptive_foreground.png`: transparent 1024 × 1024 foreground master.
+- `indifit_mark.png`: 192 × 192 crop of the adaptive foreground, bundled in
+  the app for the workout share image (V6). Regenerate with
+  `sips --cropToHeightWidth 720 720 --cropOffset 137 152` then `sips -Z 192`.
 
 Generation prompt summary: a premium, centered geometric IndiFit emblem that
 combines balanced strength bars with a rising leaf/energy form, using large
