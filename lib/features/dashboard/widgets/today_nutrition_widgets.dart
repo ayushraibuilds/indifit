@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,7 +20,10 @@ import 'today_module_widgets.dart';
 ///
 /// Extracted verbatim from `today_daily_action_surface.dart`; unchanged.
 
-class TodayNutritionHero extends StatelessWidget {
+/// The Today nutrition card. It remembers the last totals it showed, so when
+/// a log lands it can say what was added ("+230 kcal · Poha", V3) while the
+/// ring and numbers count up from the old values.
+class TodayNutritionHero extends StatefulWidget {
   const TodayNutritionHero({
     required this.presentation,
     required this.onLogFood,
@@ -38,6 +42,231 @@ class TodayNutritionHero extends StatelessWidget {
   final DateTime selectedDate;
   final VoidCallback onOpenTargetSetup;
   final VoidCallback onRetry;
+
+  @override
+  State<TodayNutritionHero> createState() => _TodayNutritionHeroState();
+}
+
+class _TodayNutritionHeroState extends State<TodayNutritionHero> {
+  // The last ready totals, kept across loading states so a refresh after a
+  // log still compares against what the user saw.
+  DateTime? _seenDate;
+  Set<String>? _seenIds;
+  double? _seenKcal;
+
+  String? _chipLabel;
+  var _chipSerial = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _remember(widget);
+  }
+
+  @override
+  void didUpdateWidget(covariant TodayNutritionHero oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final chip = todayLoggedChipLabel(
+      previousDate: _seenDate,
+      previousIds: _seenIds,
+      previousKcal: _seenKcal,
+      date: widget.selectedDate,
+      presentation: widget.presentation,
+    );
+    if (chip != null && !B05MotionPolicy.reduceMotion(context)) {
+      _chipLabel = chip;
+      _chipSerial++;
+    }
+    _remember(widget);
+  }
+
+  void _remember(TodayNutritionHero hero) {
+    final presentation = hero.presentation;
+    if (presentation.state == TodayPresentationState.loading ||
+        presentation.state == TodayPresentationState.unavailable) {
+      return;
+    }
+    _seenDate = hero.selectedDate;
+    _seenIds = {for (final record in presentation.loggedRecords) record.$1};
+    _seenKcal = presentation.calories?.pointValue;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final label = _chipLabel;
+    return _TodayNutritionHeroBody(
+      presentation: widget.presentation,
+      onLogFood: widget.onLogFood,
+      onOpenFoodGuidance: widget.onOpenFoodGuidance,
+      dateRelation: widget.dateRelation,
+      selectedDate: widget.selectedDate,
+      onOpenTargetSetup: widget.onOpenTargetSetup,
+      onRetry: widget.onRetry,
+      ringOverlay: label == null
+          ? null
+          : TodayLoggedChip(
+              key: ValueKey<int>(_chipSerial),
+              label: label,
+              onDone: () {
+                if (mounted) setState(() => _chipLabel = null);
+              },
+            ),
+    );
+  }
+}
+
+/// "+230 kcal · Poha" when the only change since [previousIds] is new records
+/// on the same day and the calorie total went up; several new records read
+/// "+640 kcal · 4 foods". Null otherwise (first view, another day, edits,
+/// deletes, unknown totals), so the chip never claims more than it knows.
+@visibleForTesting
+String? todayLoggedChipLabel({
+  required DateTime? previousDate,
+  required Set<String>? previousIds,
+  required double? previousKcal,
+  required DateTime date,
+  required TodayNutritionPresentation presentation,
+}) {
+  if (previousDate == null ||
+      previousIds == null ||
+      previousKcal == null ||
+      !DateUtils.isSameDay(previousDate, date)) {
+    return null;
+  }
+  if (presentation.state == TodayPresentationState.loading ||
+      presentation.state == TodayPresentationState.unavailable) {
+    return null;
+  }
+  final kcal = presentation.calories?.pointValue;
+  if (kcal == null || presentation.calories?.isAvailable != true) return null;
+  final ids = {for (final record in presentation.loggedRecords) record.$1};
+  if (!ids.containsAll(previousIds)) return null;
+  final added = [
+    for (final record in presentation.loggedRecords)
+      if (!previousIds.contains(record.$1)) record,
+  ];
+  final delta = kcal - previousKcal;
+  if (added.isEmpty || delta.round() <= 0) return null;
+  final what = added.length == 1
+      ? added.single.$2.trim()
+      : '${added.length} foods';
+  final amount = '+${formatTodayMetric(delta)} kcal';
+  return what.isEmpty ? amount : '$amount · $what';
+}
+
+/// Floats up above the ring once, holds, then fades and calls [onDone].
+class TodayLoggedChip extends StatefulWidget {
+  const TodayLoggedChip({required this.label, required this.onDone, super.key});
+
+  static const Duration duration = Duration(milliseconds: 1800);
+
+  final String label;
+  final VoidCallback onDone;
+
+  @override
+  State<TodayLoggedChip> createState() => _TodayLoggedChipState();
+}
+
+class _TodayLoggedChipState extends State<TodayLoggedChip>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: TodayLoggedChip.duration,
+  );
+  late final Animation<double> _opacity = TweenSequence<double>([
+    TweenSequenceItem(
+      tween: Tween(
+        begin: 0.0,
+        end: 1.0,
+      ).chain(CurveTween(curve: B05MotionPolicy.standardCurve)),
+      weight: 15,
+    ),
+    TweenSequenceItem(tween: ConstantTween(1.0), weight: 65),
+    TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.0), weight: 20),
+  ]).animate(_controller);
+  late final Animation<Offset> _rise =
+      Tween(begin: const Offset(0, 0.6), end: Offset.zero).animate(
+        CurvedAnimation(
+          parent: _controller,
+          curve: const Interval(0, 0.25, curve: Curves.easeOutCubic),
+        ),
+      );
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.forward().whenComplete(() {
+      if (mounted) widget.onDone();
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.b05Colors;
+    return Semantics(
+      liveRegion: true,
+      label: 'Added ${widget.label.replaceFirst('+', '')}',
+      child: ExcludeSemantics(
+        child: IgnorePointer(
+          child: SlideTransition(
+            position: _rise,
+            child: FadeTransition(
+              opacity: _opacity,
+              child: DecoratedBox(
+                decoration: ShapeDecoration(
+                  color: colors.success.container,
+                  shape: const StadiumBorder(),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: B05Layout.space12,
+                    vertical: B05Layout.space4,
+                  ),
+                  child: Text(
+                    widget.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: B05Typography.label(context).copyWith(
+                      color: colors.success.foreground,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TodayNutritionHeroBody extends StatelessWidget {
+  const _TodayNutritionHeroBody({
+    required this.presentation,
+    required this.onLogFood,
+    required this.onOpenFoodGuidance,
+    required this.dateRelation,
+    required this.selectedDate,
+    required this.onOpenTargetSetup,
+    required this.onRetry,
+    this.ringOverlay,
+  });
+
+  final TodayNutritionPresentation presentation;
+  final VoidCallback onLogFood;
+  final VoidCallback? onOpenFoodGuidance;
+  final TodayDateRelation dateRelation;
+  final DateTime selectedDate;
+  final VoidCallback onOpenTargetSetup;
+  final VoidCallback onRetry;
+  final Widget? ringOverlay;
 
   @override
   Widget build(BuildContext context) {
@@ -86,11 +315,28 @@ class TodayNutritionHero extends StatelessWidget {
                 final compact =
                     constraints.maxWidth < B05Layout.compactBreakpoint ||
                     MediaQuery.textScalerOf(context).scale(1) > 1.35;
-                final ring = CalorieRing(
+                final calorieRing = CalorieRing(
                   calories: presentation.calories,
                   hasTarget: presentation.hasAcceptedCalorieTarget,
                   incomplete: presentation.hasIncompleteNutrition,
                   noConsumption: presentation.isNoConsumptionKnown,
+                );
+                final overlay = ringOverlay;
+                // One structure with or without the chip, so the ring keeps
+                // its count-up state when the chip comes and goes.
+                final ring = Stack(
+                  clipBehavior: Clip.none,
+                  alignment: Alignment.topCenter,
+                  children: [
+                    calorieRing,
+                    // A little wider than the ring; long names ellipsize.
+                    Positioned(
+                      top: -B05Layout.space12,
+                      left: -B05Layout.space24,
+                      right: -B05Layout.space24,
+                      child: Center(child: overlay ?? const SizedBox.shrink()),
+                    ),
+                  ],
                 );
                 final macros = MacroComparison(metrics: presentation.macros);
                 return compact
@@ -447,6 +693,9 @@ class CalorieRing extends StatelessWidget {
                         progressLow: lowValue,
                         progressHigh: value,
                         color: color,
+                        // Green into teal; over the target stays solid red.
+                        endColor: isOver ? null : colors.protein.indicator,
+                        glow: !isOver,
                         trackColor: colors.borderSubtle,
                         range: metric.isRange,
                       ),
@@ -510,6 +759,9 @@ class CalorieRing extends StatelessWidget {
   }
 }
 
+/// The calorie arc (V3, concept E): a gradient from [color] to [endColor]
+/// with a soft glow under it. Over the target it is a solid [color] (red)
+/// with no glow, as before.
 class CalorieRingPainter extends CustomPainter {
   const CalorieRingPainter({
     required this.progressLow,
@@ -517,48 +769,95 @@ class CalorieRingPainter extends CustomPainter {
     required this.color,
     required this.trackColor,
     required this.range,
+    this.endColor,
+    this.glow = false,
   });
+
+  static const double stroke = 14;
+  static const double glowSigma = 6;
+  static const double glowAlpha = 0.3;
 
   final double progressLow;
   final double progressHigh;
   final Color color;
+  final Color? endColor;
   final Color trackColor;
   final bool range;
+  final bool glow;
+
+  static const double _start = -math.pi / 2;
+  static const double _full = math.pi * 2;
 
   @override
   void paint(Canvas canvas, Size size) {
-    const stroke = 11.0;
     final center = size.center(Offset.zero);
-    final radius = (size.shortestSide - stroke) / 2;
+    // Leave room for the glow so it is not clipped at the edge.
+    final inset = stroke / 2 + (glow ? glowSigma / 2 : 0);
+    final radius = size.shortestSide / 2 - inset;
     final rect = Rect.fromCircle(center: center, radius: radius);
     final track = Paint()
       ..color = trackColor
       ..style = PaintingStyle.stroke
       ..strokeWidth = stroke
       ..strokeCap = StrokeCap.round;
-    canvas.drawArc(rect, -1.5708, 6.28318, false, track);
+    canvas.drawArc(rect, _start, _full, false, track);
     if (progressHigh <= 0) return;
-    final base = Paint()
-      ..color = range ? color.withValues(alpha: .48) : color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = stroke
-      ..strokeCap = StrokeCap.round;
-    if (progressLow > 0) {
-      canvas.drawArc(rect, -1.5708, 6.28318 * progressLow, false, base);
-    }
-    final remaining = progressHigh - progressLow;
-    if (remaining > 0) {
-      final high = Paint()
-        ..color = color
+
+    final sweep = _full * progressHigh.clamp(0.0, 1.0);
+    Paint arcPaint({double alpha = 1, bool blurred = false}) {
+      final paint = Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = stroke
         ..strokeCap = StrokeCap.round;
+      final end = endColor;
+      if (end == null) {
+        paint.color = color.withValues(alpha: color.a * alpha);
+      } else {
+        // The gradient spans the drawn arc, so a short arc still shows both
+        // colours. Alphas are baked in so the glow and range parts fade.
+        paint.shader = SweepGradient(
+          startAngle: 0,
+          endAngle: sweep,
+          colors: [
+            color.withValues(alpha: color.a * alpha),
+            end.withValues(alpha: end.a * alpha),
+          ],
+          transform: const GradientRotation(_start),
+        ).createShader(rect);
+      }
+      if (blurred) {
+        paint.maskFilter = const MaskFilter.blur(BlurStyle.normal, glowSigma);
+      }
+      return paint;
+    }
+
+    if (glow) {
       canvas.drawArc(
         rect,
-        -1.5708 + 6.28318 * progressLow,
-        6.28318 * remaining,
+        _start,
+        sweep,
         false,
-        high,
+        arcPaint(alpha: glowAlpha, blurred: true),
+      );
+    }
+    final low = progressLow.clamp(0.0, progressHigh);
+    if (low > 0) {
+      canvas.drawArc(
+        rect,
+        _start,
+        _full * low,
+        false,
+        arcPaint(alpha: range ? .48 : 1),
+      );
+    }
+    final remaining = progressHigh - low;
+    if (remaining > 0) {
+      canvas.drawArc(
+        rect,
+        _start + _full * low,
+        _full * remaining,
+        false,
+        arcPaint(),
       );
     }
   }
@@ -568,8 +867,10 @@ class CalorieRingPainter extends CustomPainter {
       oldDelegate.progressLow != progressLow ||
       oldDelegate.progressHigh != progressHigh ||
       oldDelegate.color != color ||
+      oldDelegate.endColor != endColor ||
       oldDelegate.trackColor != trackColor ||
-      oldDelegate.range != range;
+      oldDelegate.range != range ||
+      oldDelegate.glow != glow;
 }
 
 class MacroComparison extends StatelessWidget {
