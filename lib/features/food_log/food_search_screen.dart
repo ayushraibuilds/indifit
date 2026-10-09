@@ -31,6 +31,7 @@ import '../../data/repositories/nutrition_food_catalog_repository.dart';
 import '../../data/services/nutrition_food_search_ranking.dart';
 import '../dashboard/today_surface_controller.dart';
 import 'barcode_scanner_screen.dart';
+import 'canonical_food_actions.dart';
 import 'canonical_food_delete.dart';
 import 'custom_food_editor_screen.dart';
 import 'diary_structure_controller.dart';
@@ -61,8 +62,6 @@ class FoodSearchScreen extends ConsumerStatefulWidget {
   final String? mealType; // "breakfast", "lunch", "dinner", "snack"
   final DateTime? selectedDate;
   final bool returnToParentOnSave;
-  final NutritionHistoricalReadRecord? initialRecord;
-  final NutritionHistoricalReadItem? initialRecordItem;
   final bool initialMultiSelect;
 
   const FoodSearchScreen({
@@ -70,8 +69,6 @@ class FoodSearchScreen extends ConsumerStatefulWidget {
     required this.mealType,
     this.selectedDate,
     this.returnToParentOnSave = true,
-    this.initialRecord,
-    this.initialRecordItem,
     this.initialMultiSelect = false,
   });
 
@@ -114,7 +111,6 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   /// Option ids whose Add button shows the tick after a saved fast add.
   final Map<String, Timer> _fastAddSucceeded = {};
   bool _committingSelection = false;
-  bool _openedInitialRecord = false;
   late bool _isMultiSelect;
 
   void _toggleMultiSelectMode() {
@@ -140,22 +136,6 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     _isMultiSelect = widget.initialMultiSelect;
     _searchController.addListener(_onSearchChanged);
     if (_activeMealType != null) _loadRecentFoods();
-    if (widget.initialRecord != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!_openedInitialRecord && mounted && widget.initialRecord != null) {
-          _openedInitialRecord = true;
-          unawaited(() async {
-            await _showCanonicalActionMenu(
-              widget.initialRecord!,
-              widget.initialRecordItem,
-            );
-            if (mounted && widget.initialRecord != null) {
-              Navigator.of(context).pop(true);
-            }
-          }());
-        }
-      });
-    }
   }
 
   Future<String?> _chooseMealContext() async {
@@ -1142,19 +1122,6 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     NutritionHistoricalReadItem? correctionItem,
     Future<void> Function(Quantity quantity)? onQuantityPicked,
   }) async {
-    final categoryId = FoodCategoryTaxonomy.resolveCategoryId(
-      name: option.displayName,
-    );
-    final categoryServingOptions =
-        FoodCategoryTaxonomy.servingOptionsForCategory(
-          categoryId: categoryId,
-          servingSize: option.baseQuantity.amount.asDouble,
-          servingUnit:
-              option.servingUnitLabel ??
-              option.baseQuantity.unit.toString().split('.').last,
-          isStuffedParatha: isStuffedParathaName(option.displayName),
-        );
-
     await FoodPortionBottomSheet.show(
       context,
       ref: ref,
@@ -1168,8 +1135,6 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       ensureMealContext: _ensureMealContext,
       returnToParentOnSave: widget.returnToParentOnSave,
       onRetryRecentFoods: _retryRecentFoods,
-      categoryId: categoryId,
-      categoryServingOptions: categoryServingOptions,
     );
   }
 
@@ -2220,38 +2185,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     );
     final option = await catalog.getOption(item.foodId!);
     if (option == null || !mounted) return;
-    final action = await showModalBottomSheet<CanonicalFoodAction>(
-      context: context,
-      builder: (sheetContext) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(B05Layout.space16),
-          child: B05ActionGroup(
-            children: [
-              B05ActionButton(
-                label: 'Edit amount',
-                icon: Icons.edit_outlined,
-                onPressed: () =>
-                    Navigator.of(sheetContext).pop(CanonicalFoodAction.edit),
-              ),
-              B05ActionButton(
-                label: 'Copy food',
-                icon: Icons.copy_outlined,
-                emphasis: B05ActionEmphasis.secondary,
-                onPressed: () =>
-                    Navigator.of(sheetContext).pop(CanonicalFoodAction.copy),
-              ),
-              B05ActionButton(
-                label: 'Delete food',
-                icon: Icons.delete_outline_rounded,
-                emphasis: B05ActionEmphasis.danger,
-                onPressed: () =>
-                    Navigator.of(sheetContext).pop(CanonicalFoodAction.delete),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+    final action = await showCanonicalFoodActionSheet(context);
     if (!mounted) return;
     switch (action) {
       case CanonicalFoodAction.edit:
