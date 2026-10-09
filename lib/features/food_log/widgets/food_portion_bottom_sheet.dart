@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../core/catalog/food_catalog_models.dart';
+import '../../../core/catalog/food_category_taxonomy.dart';
 import '../../../core/di/providers.dart';
 import '../../../core/nutrition_household_measures.dart';
 import '../../../core/nutrition_legacy_read_models.dart';
@@ -80,6 +81,21 @@ class FoodPortionBottomSheet extends ConsumerStatefulWidget {
     String? categoryId,
     List<ServingOption>? categoryServingOptions,
   }) async {
+    // Every caller wants the same category-derived serving chips, so derive
+    // them here unless a caller supplies its own.
+    final resolvedCategoryId =
+        categoryId ??
+        FoodCategoryTaxonomy.resolveCategoryId(name: option.displayName);
+    final resolvedServingOptions =
+        categoryServingOptions ??
+        FoodCategoryTaxonomy.servingOptionsForCategory(
+          categoryId: resolvedCategoryId,
+          servingSize: option.baseQuantity.amount.asDouble,
+          servingUnit:
+              option.servingUnitLabel ??
+              option.baseQuantity.unit.toString().split('.').last,
+          isStuffedParatha: isStuffedParathaName(option.displayName),
+        );
     final isCorrection = correctionRecord != null && correctionItem != null;
     final resolvedMealType =
         mealType ?? correctionRecord?.mealCategory ?? await ensureMealContext();
@@ -121,8 +137,8 @@ class FoodPortionBottomSheet extends ConsumerStatefulWidget {
           coordinator: coordinator,
           transformations: transformations,
           initialPreview: initialPreview,
-          categoryId: categoryId,
-          categoryServingOptions: categoryServingOptions,
+          categoryId: resolvedCategoryId,
+          categoryServingOptions: resolvedServingOptions,
         );
       },
     );
