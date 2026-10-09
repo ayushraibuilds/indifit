@@ -1,0 +1,795 @@
+<title>IndiFit Visual Review</title>
+<meta name="description" content="Design review of IndiFit main @ 1c08e23: defects to fix first, the premium direction, signature-moment concepts, libraries and a build order.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a review dossier. Narrative column (~68ch) with phone evidence beside each finding;
+   concept mock-ups sit in dark "app" plates that keep IndiFit's own dark tokens in both page themes. */
+:root {
+  /* page palette, dark-first (IndiFit's strongest look) */
+  --bg: #080C13;
+  --surface: #0F1622;
+  --surface-2: #141D2B;
+  --line: #223047;
+  --fg: #ECF1F6;
+  --muted: #9FB0C3;
+  --accent: #34D399;
+  --warn: #FBBF24;
+  --bad: #F87171;
+  --chip-bg: #13261F;
+
+  /* the app's own dark tokens, fixed in both themes (they depict app screens) */
+  --app-bg: #060A12;
+  --app-section: #0F172A;
+  --app-inset: #162033;
+  --app-selected: #103B31;
+  --app-fg: #F1F5F9;
+  --app-muted: #94A3B8;
+  --app-line: #25324A;
+  --app-green: #34D399;
+  --app-green-ink: #087F5B;
+  --m-protein: #2DD4BF;
+  --m-carbs: #FBBF24;
+  --m-fat: #FB7185;
+  --m-fibre: #A78BFA;
+
+  --font-display: "Outfit", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", "Helvetica Neue", Arial, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #F6F8FA; --surface: #FFFFFF; --surface-2: #EEF2F6; --line: #D5DEE8;
+    --fg: #0E1726; --muted: #4A5A6E; --accent: #0F766E; --warn: #B45309; --bad: #B91C1C;
+    --chip-bg: #E3F3EC;
+    color-scheme: light;
+  }
+}
+:root[data-theme="light"] {
+  --bg: #F6F8FA; --surface: #FFFFFF; --surface-2: #EEF2F6; --line: #D5DEE8;
+  --fg: #0E1726; --muted: #4A5A6E; --accent: #0F766E; --warn: #B45309; --bad: #B91C1C;
+  --chip-bg: #E3F3EC;
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+.wrap { max-width: 1080px; margin-inline: auto; padding-inline: 20px; padding-block: 40px 80px; }
+.prose { max-width: 68ch; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(2.3rem, 6vw, 3.6rem); font-weight: 700; letter-spacing: -0.025em; line-height: 1.02; }
+h2 { font-size: clamp(1.5rem, 3.4vw, 2rem); font-weight: 650; letter-spacing: -0.015em; line-height: 1.15; }
+h3 { font-size: 1.2rem; font-weight: 600; letter-spacing: -0.005em; line-height: 1.3; }
+p { margin: 0; }
+a { color: var(--accent); text-underline-offset: 3px; }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
+code, .mono { font-family: var(--font-mono); font-size: 0.86em; }
+code { background: var(--surface-2); padding: 0.1em 0.35em; border-radius: 5px; }
+.eyebrow { font-family: var(--font-mono); font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.muted { color: var(--muted); }
+.small { font-size: 0.88rem; }
+
+/* header */
+.top { display: grid; gap: 18px; padding-bottom: 28px; border-bottom: 1px solid var(--line); }
+.top .lede { font-size: 1.12rem; line-height: 1.6; max-width: 64ch; }
+.meta { display: flex; flex-wrap: wrap; gap: 8px; }
+.tag { font-family: var(--font-mono); font-size: 0.78rem; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); background: var(--surface); }
+.toc { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 0.92rem; }
+.toc a { color: var(--fg); text-decoration: none; border-bottom: 1px solid var(--line); }
+.toc a:hover { border-color: var(--accent); }
+
+section { padding-top: 56px; display: grid; gap: 22px; }
+.section-head { display: grid; gap: 10px; }
+
+/* scorecard */
+.table-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+table { width: 100%; border-collapse: collapse; font-size: 0.94rem; min-width: 620px; }
+th, td { text-align: left; padding: 12px 16px; vertical-align: top; border-bottom: 1px solid var(--line); }
+tr:last-child td { border-bottom: none; }
+th { font-family: var(--font-mono); font-weight: 500; font-size: 0.75rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); background: var(--surface-2); }
+td:first-child { font-weight: 600; white-space: nowrap; }
+.rate { display: inline-block; font-family: var(--font-mono); font-size: 0.74rem; padding: 2px 9px; border-radius: 999px; border: 1px solid currentColor; white-space: nowrap; }
+.rate.solid { color: var(--accent); }
+.rate.plain { color: var(--warn); }
+.rate.weak { color: var(--bad); }
+
+/* screenshot strip */
+.strip { display: flex; gap: 14px; overflow-x: auto; padding-bottom: 10px; scroll-snap-type: x proximity; }
+.strip figure { margin: 0; flex: 0 0 148px; scroll-snap-align: start; display: grid; gap: 6px; }
+.shot { width: 100%; height: auto; border-radius: 18px; border: 1px solid var(--line); display: block; background: var(--surface-2); }
+figcaption { font-size: 0.8rem; color: var(--muted); line-height: 1.35; }
+
+/* drift figures */
+.drift { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.drift div { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; display: grid; gap: 2px; }
+.drift b { font-family: var(--font-display); font-size: 1.7rem; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+.drift span { font-size: 0.84rem; color: var(--muted); line-height: 1.35; }
+@media (max-width: 720px) { .drift { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* findings */
+.findings { display: grid; }
+.finding { display: grid; grid-template-columns: minmax(0, 1fr) 132px; gap: 20px; padding-block: 20px; border-top: 1px solid var(--line); }
+.finding:last-child { border-bottom: 1px solid var(--line); }
+.finding .body { display: grid; gap: 8px; min-width: 0; }
+.finding .head { display: flex; flex-wrap: wrap; gap: 10px; align-items: baseline; }
+.id { font-family: var(--font-mono); font-size: 0.8rem; color: var(--accent); }
+.size { font-family: var(--font-mono); font-size: 0.72rem; color: var(--muted); border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; }
+.finding p b { font-weight: 600; }
+.finding .thumb img { width: 132px; }
+@media (max-width: 600px) {
+  .finding { grid-template-columns: 1fr; }
+  .finding .thumb img { width: 150px; }
+}
+
+/* app plates (always dark, they depict the app) */
+.plate {
+  background: var(--app-bg);
+  color: var(--app-fg);
+  border-radius: 22px;
+  border: 1px solid var(--app-line);
+  padding: 22px;
+  font-family: var(--font-display);
+}
+.contrast { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
+.contrast .col { display: grid; gap: 14px; align-content: start; }
+.contrast .label { font-family: var(--font-mono); font-size: 0.74rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--app-muted); }
+.demo-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.ratio { font-family: var(--font-mono); font-size: 0.74rem; color: var(--app-muted); }
+.ratio.fail { color: #FCA5A5; }
+.ratio.pass { color: #6EE7B7; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 7px 13px; border-radius: 10px; font-weight: 500; font-size: 0.92rem; }
+.chip.now { background: var(--app-selected); color: var(--app-green-ink); border: 1px solid var(--app-green-ink); }
+.chip.new { background: var(--app-selected); color: var(--app-green); border: 1px solid var(--app-green); }
+.obtn { display: inline-flex; align-items: center; justify-content: center; padding: 9px 16px; border-radius: 12px; font-weight: 600; font-size: 0.92rem; background: var(--app-section); }
+.obtn.now { color: var(--app-green-ink); border: 1px solid var(--app-line); }
+.obtn.new { color: var(--app-green); border: 1px solid var(--app-line); }
+.tlink { font-weight: 600; font-size: 0.92rem; }
+.tlink.now { color: var(--app-green-ink); }
+.tlink.new { color: var(--app-green); }
+@media (max-width: 620px) { .contrast { grid-template-columns: 1fr; } }
+
+/* principles */
+.principles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 36px; }
+.principles div { padding-block: 16px; border-top: 1px solid var(--line); display: grid; gap: 6px; min-width: 0; }
+@media (max-width: 680px) { .principles { grid-template-columns: 1fr; } }
+
+/* moments */
+.moment { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 28px; padding: 26px; background: var(--surface); border: 1px solid var(--line); border-radius: 20px; align-items: start; }
+.moment .text { display: grid; gap: 12px; min-width: 0; }
+.moment .text p { max-width: 62ch; }
+.moment .text p b { font-weight: 600; }
+.visuals { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; justify-content: center; }
+.visuals .before { width: 120px; display: grid; gap: 6px; }
+.phone { width: 270px; max-width: 100%; border-radius: 34px; padding: 18px 16px 22px; background: var(--app-bg); color: var(--app-fg); border: 1px solid var(--app-line); box-shadow: 0 24px 50px rgba(0, 0, 0, 0.35); font-family: var(--font-display); display: grid; gap: 14px; justify-items: center; }
+.phone .bar { width: 100%; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; color: var(--app-muted); }
+.phone .bar b { color: var(--app-fg); font-weight: 600; font-size: 0.98rem; }
+.replay { font: 500 0.8rem var(--font-mono); color: var(--app-muted); background: transparent; border: 1px solid var(--app-line); border-radius: 999px; padding: 4px 12px; cursor: pointer; }
+.replay:hover { color: var(--app-fg); }
+.example { font: 400 0.7rem var(--font-mono); color: var(--app-muted); letter-spacing: 0.04em; }
+@media (max-width: 820px) { .moment { grid-template-columns: 1fr; } }
+
+/* thali concept */
+.thali-stage { perspective: 700px; width: 240px; height: 230px; display: grid; place-items: center; }
+.thali { position: relative; width: 224px; height: 224px; transform: rotateX(28deg); transform-style: preserve-3d; }
+.thali .rim { position: absolute; inset: -7px; border-radius: 50%;
+  background: conic-gradient(from -90deg, var(--m-protein) 0 15%, var(--m-carbs) 15% 76%, var(--m-fat) 76% 96%, #2a3547 96% 100%);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 4px));
+          mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 4px)); }
+.thali .steel { position: absolute; inset: 0; border-radius: 50%;
+  background:
+    radial-gradient(circle at 34% 26%, rgba(255,255,255,0.85) 0 6%, rgba(255,255,255,0) 22%),
+    radial-gradient(circle at 50% 50%, #c7ced6 0 58%, #aab3bd 66%, #e6eaee 71%, #8f99a4 80%, #cfd5db 92%, #7c8792 100%);
+  box-shadow: 0 22px 26px rgba(0,0,0,0.55), inset 0 -6px 14px rgba(0,0,0,0.25); }
+.k { position: absolute; border-radius: 50%; box-shadow: 0 7px 9px rgba(0,0,0,0.38);
+  background: radial-gradient(circle at 38% 30%, #f3f5f7, #b4bcc5 55%, #848e99 100%); }
+.k::after { content: ""; position: absolute; inset: 6px; border-radius: 50%; }
+.k.dal { left: 30px; top: 50px; width: 62px; height: 62px; }
+.k.dal::after { background: radial-gradient(circle at 42% 38%, #ffd86b, #e2a92b 55%, #b77b12 100%); }
+.k.sabzi { left: 81px; top: 20px; width: 62px; height: 62px; }
+.k.sabzi::after { background:
+  radial-gradient(circle at 30% 40%, #f08a3c 0 7%, transparent 8%),
+  radial-gradient(circle at 62% 58%, #f4d35e 0 6%, transparent 7%),
+  radial-gradient(circle at 55% 30%, #a3c94f 0 9%, transparent 10%),
+  radial-gradient(circle at 45% 45%, #87a83f, #56781f 70%, #3f5c14 100%); }
+.k.curd { left: 132px; top: 50px; width: 62px; height: 62px; }
+.k.curd::after { background: radial-gradient(circle at 40% 35%, #ffffff, #efe8da 60%, #d6ccb8 100%); }
+.rice { position: absolute; left: 44px; top: 118px; width: 74px; height: 66px; border-radius: 50% 50% 46% 46%;
+  background:
+    repeating-radial-gradient(circle at 40% 40%, rgba(0,0,0,0.04) 0 2px, transparent 2px 4px),
+    radial-gradient(circle at 45% 35%, #ffffff, #f2ede2 60%, #d8d0bf 100%);
+  box-shadow: 0 6px 8px rgba(0,0,0,0.3); }
+.roti { position: absolute; width: 66px; height: 66px; border-radius: 50%;
+  background:
+    radial-gradient(circle at 30% 35%, #7a4a1f 0 4%, transparent 5%),
+    radial-gradient(circle at 64% 60%, #7a4a1f 0 5%, transparent 6%),
+    radial-gradient(circle at 55% 28%, #8a5523 0 3%, transparent 4%),
+    radial-gradient(circle at 45% 45%, #e3b072, #c98f4c 65%, #a8702f 100%);
+  box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+.roti.r1 { left: 120px; top: 120px; }
+.roti.r2 { left: 128px; top: 114px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+.legend span { font: 500 0.72rem var(--font-display); padding: 3px 9px; border-radius: 999px; background: var(--app-inset); color: var(--app-fg); }
+.macros { display: flex; gap: 14px; font-size: 0.76rem; color: var(--app-muted); }
+.macros i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; vertical-align: 1px; }
+.kcal { font-size: 1.9rem; font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; line-height: 1; }
+.drop .k, .drop .rice, .drop .roti { animation: drop 620ms cubic-bezier(.2,1.4,.4,1) backwards; }
+.drop .k.sabzi { animation-delay: 90ms; } .drop .k.curd { animation-delay: 180ms; }
+.drop .rice { animation-delay: 270ms; } .drop .roti.r1 { animation-delay: 360ms; } .drop .roti.r2 { animation-delay: 430ms; }
+@keyframes drop { from { transform: translateY(-46px) scale(1.12); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* rest concept */
+.ring-wrap { position: relative; width: 210px; height: 210px; }
+.ring-wrap svg { width: 210px; height: 210px; transform: rotate(-90deg); }
+.ring-wrap .center { position: absolute; inset: 0; display: grid; place-items: center; align-content: center; gap: 2px; }
+.timer { font-size: 3.4rem; font-weight: 700; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; line-height: 1; }
+.rest-label { font-size: 0.8rem; color: var(--app-muted); letter-spacing: 0.04em; }
+#restArc { transition: stroke-dashoffset 900ms linear; }
+.next { width: 100%; background: var(--app-section); border-radius: 16px; padding: 12px 14px; display: grid; gap: 2px; }
+.next small { font-size: 0.72rem; color: var(--app-muted); letter-spacing: 0.06em; text-transform: uppercase; }
+.next b { font-weight: 600; font-size: 0.98rem; }
+.rest-actions { display: grid; grid-template-columns: 1fr 1fr 1.3fr; gap: 8px; width: 100%; }
+.rest-actions span { text-align: center; padding: 11px 0; border-radius: 14px; background: var(--app-inset); font-weight: 600; font-size: 0.95rem; }
+.rest-actions span.skip { background: var(--app-green-ink); color: #fff; }
+
+/* summary concept */
+.sum-hero { width: 100%; border-radius: 20px; padding: 18px 16px 16px; display: grid; gap: 4px; justify-items: center; text-align: center;
+  background: radial-gradient(120% 90% at 50% 0%, #11624a 0%, #0b3a30 45%, var(--app-section) 100%); }
+.sum-hero .tick { width: 34px; height: 34px; border-radius: 50%; background: var(--app-green); color: #052e22; display: grid; place-items: center; font-weight: 800; font-size: 1.1rem; }
+.sum-hero .w { font-size: 0.82rem; color: #a7f3d0; }
+.big { font-size: 3rem; font-weight: 800; letter-spacing: -0.035em; font-variant-numeric: tabular-nums; line-height: 1; }
+.big small { font-size: 1.1rem; font-weight: 600; margin-left: 3px; letter-spacing: 0; }
+.trio { display: grid; grid-template-columns: repeat(3, 1fr); width: 100%; gap: 6px; }
+.trio div { background: var(--app-section); border-radius: 12px; padding: 9px 4px; text-align: center; display: grid; }
+.trio b { font-size: 1.15rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.trio span { font-size: 0.7rem; color: var(--app-muted); }
+.pillrow { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+.pill { font-size: 0.74rem; padding: 4px 10px; border-radius: 999px; background: var(--app-selected); color: #a7f3d0; }
+.vs { width: 100%; background: var(--app-section); border-radius: 14px; padding: 10px 12px; display: flex; justify-content: space-between; font-size: 0.85rem; }
+.vs em { font-style: normal; color: var(--app-green); font-weight: 600; }
+
+/* medal concept */
+.medal-stage { perspective: 700px; width: 220px; height: 220px; display: grid; place-items: center; cursor: grab; touch-action: none; }
+.medal { --rx: 10deg; --ry: -22deg; --sx: 30%; position: relative; width: 160px; height: 160px; transform-style: preserve-3d; transform: rotateX(var(--rx)) rotateY(var(--ry)); transition: transform 120ms ease-out; }
+.medal .edge { position: absolute; inset: 0; border-radius: 50%; transform: translateZ(-7px);
+  background: conic-gradient(#5c3413, #c88a4a, #6b3c16, #e8b27a, #5c3413, #b9773a, #5c3413); filter: brightness(0.8); }
+.medal .face { position: absolute; inset: 0; border-radius: 50%; transform: translateZ(0);
+  background: conic-gradient(from 200deg, #8a5426, #f2c690, #a8682f, #ffe1b3, #9a5b26, #e9b47c, #8a5426);
+  box-shadow: inset 0 0 0 9px rgba(0,0,0,0.18), inset 0 0 0 11px rgba(255,236,206,0.45), 0 18px 30px rgba(0,0,0,0.45); }
+.medal .inner { position: absolute; inset: 22px; border-radius: 50%; transform: translateZ(8px);
+  background: radial-gradient(circle at 38% 30%, #f6d2a3, #c4874a 60%, #8f5523 100%);
+  box-shadow: inset 0 3px 6px rgba(255,255,255,0.4), inset 0 -4px 8px rgba(0,0,0,0.35); display: grid; place-items: center; }
+.medal .inner svg { width: 64px; height: 64px; transform: translateZ(14px); filter: drop-shadow(0 3px 2px rgba(0,0,0,0.35)); }
+.medal .sheen { position: absolute; inset: 0; border-radius: 50%; transform: translateZ(16px); pointer-events: none; mix-blend-mode: screen;
+  background: linear-gradient(115deg, transparent calc(var(--sx) - 18%), rgba(255,255,255,0.55) var(--sx), rgba(180,255,240,0.25) calc(var(--sx) + 8%), transparent calc(var(--sx) + 22%)); }
+.locked { display: flex; gap: 10px; }
+.locked span { width: 42px; height: 42px; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #3a4558, #1f2837); box-shadow: inset 0 0 0 4px rgba(255,255,255,0.05); }
+.badge-name { text-align: center; display: grid; gap: 2px; }
+.badge-name b { font-size: 1.1rem; font-weight: 700; }
+.badge-name span { font-size: 0.78rem; color: var(--app-muted); }
+
+/* today ring concept */
+.tring { position: relative; width: 200px; height: 200px; }
+.tring svg { width: 200px; height: 200px; transform: rotate(-90deg); overflow: visible; }
+.tring .center { position: absolute; inset: 0; display: grid; place-items: center; align-content: center; gap: 0; text-align: center; }
+.tring .center b { font-size: 2.3rem; font-weight: 700; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; line-height: 1.05; }
+.tring .center span { font-size: 0.76rem; color: var(--app-muted); }
+.float-chip { font-size: 0.78rem; font-weight: 600; padding: 5px 11px; border-radius: 999px; background: var(--app-selected); color: #a7f3d0; }
+.macro-row { display: grid; grid-template-columns: repeat(3, 1fr); width: 100%; gap: 8px; }
+.macro-row div { display: grid; gap: 5px; font-size: 0.74rem; color: var(--app-muted); }
+.macro-row b { color: var(--app-fg); font-size: 0.88rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.bar-track { height: 6px; border-radius: 999px; background: var(--app-inset); overflow: hidden; }
+.bar-track i { display: block; height: 100%; border-radius: 999px; }
+
+/* libraries */
+.verdict { font-family: var(--font-mono); font-size: 0.74rem; white-space: nowrap; }
+.v-adopt { color: var(--accent); }
+.v-use { color: var(--warn); }
+.v-avoid { color: var(--bad); }
+
+/* build order */
+.order { display: grid; gap: 0; counter-reset: none; }
+.step { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: 16px; padding-block: 16px; border-top: 1px solid var(--line); align-items: baseline; }
+.step:last-child { border-bottom: 1px solid var(--line); }
+.step .code { font-family: var(--font-mono); font-size: 0.95rem; color: var(--accent); }
+.step .what { display: grid; gap: 4px; min-width: 0; }
+.step .what b { font-family: var(--font-display); font-weight: 600; font-size: 1.05rem; }
+.step .when { font-family: var(--font-mono); font-size: 0.74rem; color: var(--muted); text-align: right; white-space: nowrap; }
+@media (max-width: 600px) { .step { grid-template-columns: 48px minmax(0, 1fr); } .step .when { grid-column: 2; text-align: left; } }
+
+.decisions { display: grid; gap: 0; }
+.decision { padding-block: 16px; border-top: 1px solid var(--line); display: grid; gap: 6px; }
+.decision:last-child { border-bottom: 1px solid var(--line); }
+.decision .rec { font-size: 0.92rem; color: var(--muted); }
+.decision .rec b { color: var(--accent); font-weight: 600; }
+
+footer { padding-top: 56px; display: grid; gap: 8px; font-size: 0.88rem; color: var(--muted); max-width: 72ch; }
+
+@media (prefers-reduced-motion: reduce) {
+  .drop .k, .drop .rice, .drop .roti { animation: none; }
+  #restArc, .medal { transition: none; }
+}
+</style>
+
+<div class="wrap">
+
+<header class="top">
+  <p class="eyebrow">Design review · 8 October 2026</p>
+  <h1>IndiFit Visual Review</h1>
+  <p class="lede">The bones are good: one typeface, a semantic token system, a motion policy that honours Reduce Motion, and haptics that fire only after a save. What holds IndiFit back from feeling premium is that almost every screen is built from the same flat bordered box, the brand green fails as a text colour in dark mode, and the moments that should feel like a reward (seeing your target, building a thali, finishing a workout, unlocking a badge) look like forms. Fix contrast and consistency first. Then put the effort into five signature moments instead of decorating every screen.</p>
+  <div class="meta">
+    <span class="tag">main @ 1c08e23 (includes #78–#85)</span>
+    <span class="tag">iPhone 17 simulator · iOS 26.5</span>
+    <span class="tag">49 screens · light and dark</span>
+    <span class="tag">fresh install, real logging</span>
+  </div>
+  <nav class="toc" aria-label="Sections">
+    <a href="#verdict">Where it stands</a>
+    <a href="#fix">Fix first</a>
+    <a href="#direction">Direction</a>
+    <a href="#moments">Signature moments</a>
+    <a href="#libraries">Libraries and assets</a>
+    <a href="#order">Build order</a>
+    <a href="#decisions">Your decisions</a>
+  </nav>
+</header>
+
+<section id="verdict">
+  <div class="section-head">
+    <p class="eyebrow">Where it stands</p>
+    <h2>Screen by screen</h2>
+    <p class="prose muted">I installed a clean build, onboarded, logged poha, built a thali, adopted the Beginner 3-Day plan, logged three sets of leg press, finished the workout and walked Progress, Badges and Settings. Dark mode already reads more premium than light.</p>
+  </div>
+  <div class="table-scroll">
+    <table>
+      <thead><tr><th>Area</th><th>Now</th><th>What it looks like today</th><th>Biggest lever</th></tr></thead>
+      <tbody>
+        <tr><td>Onboarding</td><td><span class="rate plain">plain</span></td><td>Clean form steps. The payoff (2,546 kcal, 112 g protein) sits below the fold of step 5, behind a recap of answers.</td><td>Target reveal with a ring fill; ruler pickers for height and weight</td></tr>
+        <tr><td>Today</td><td><span class="rate solid">solid</span></td><td>Clear ring and macro bars. Thin grey ring; the setup card takes half the first screen with three buttons.</td><td>Ring with depth; "+230 kcal" feedback after a log</td></tr>
+        <tr><td>Food search, diary</td><td><span class="rate solid">solid</span></td><td>Fast and readable. No veg marks, no imagery; the list jumps when online matches arrive.</td><td>Veg / non-veg marks; Add morphs into a tick</td></tr>
+        <tr><td>Thali builder</td><td><span class="rate weak">weak</span></td><td>A plate exists, but labels are 8.5–11 pt and spill out of the katoris, and a raw unit name leaks.</td><td>A 2.5D steel thali: the signature screen</td></tr>
+        <tr><td>Training home</td><td><span class="rate plain">plain</span></td><td>Good structure. "Quick workout" is unreadable green on green; headers switch to ALL CAPS here only.</td><td>Plan cover art; contrast fix</td></tr>
+        <tr><td>Workout player</td><td><span class="rate plain">plain</span></td><td>Logic is solid. Rest is a thin strip; exercise visuals are two 24 px figures; exercise 1 → 2 has no "done" beat.</td><td>Rest takeover; real exercise images</td></tr>
+        <tr><td>Summary, badges</td><td><span class="rate plain">plain</span></td><td>Repeats 1,440 kg, 3 sets and the duration twice; five tiles with one orphan. Badges are Material icons in circles.</td><td>One hero number and a share card; 3D medals</td></tr>
+        <tr><td>Progress</td><td><span class="rate weak">weak</span></td><td>Numbers in boxes, mixed formats ("1440.0 kg", "3.8g"), cards of different widths, no charts.</td><td>One stat component; real charts</td></tr>
+        <tr><td>Settings</td><td><span class="rate solid">solid</span></td><td>Tidy grouped list.</td><td>Profile header with name and plan</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="strip" aria-label="Screens captured during the walkthrough">
+    <figure><img class="shot" src="shots/01_first.jpg" alt="Onboarding step 1, goal choice" loading="lazy"><figcaption>Onboarding 1 of 5</figcaption></figure>
+    <figure><img class="shot" src="shots/05_onb_payoff.jpg" alt="Onboarding step 5, recap above the fold" loading="lazy"><figcaption>Step 5: target is below the fold</figcaption></figure>
+    <figure><img class="shot" src="shots/17_today_with_food.jpg" alt="Today in light mode with the setup card" loading="lazy"><figcaption>Today, light</figcaption></figure>
+    <figure><img class="shot" src="shots/18_today_dark.jpg" alt="Today in dark mode" loading="lazy"><figcaption>Today, dark</figcaption></figure>
+    <figure><img class="shot" src="shots/10_search_poha.jpg" alt="Food search results for poha" loading="lazy"><figcaption>Search</figcaption></figure>
+    <figure><img class="shot" src="shots/42_food_tab.jpg" alt="Food diary tab" loading="lazy"><figcaption>Food diary</figcaption></figure>
+    <figure><img class="shot" src="shots/46_thali_filled.jpg" alt="Thali builder with North Indian Classic" loading="lazy"><figcaption>Thali builder</figcaption></figure>
+    <figure><img class="shot" src="shots/19_training_dark.jpg" alt="Training tab" loading="lazy"><figcaption>Training</figcaption></figure>
+    <figure><img class="shot" src="shots/29_player.jpg" alt="Workout player, leg press" loading="lazy"><figcaption>Player</figcaption></figure>
+    <figure><img class="shot" src="shots/32_rest_running.jpg" alt="Rest timer strip" loading="lazy"><figcaption>Rest</figcaption></figure>
+    <figure><img class="shot" src="shots/38_summary.jpg" alt="Workout summary" loading="lazy"><figcaption>Summary</figcaption></figure>
+    <figure><img class="shot" src="shots/49_badges.jpg" alt="Achievements and badges" loading="lazy"><figcaption>Badges</figcaption></figure>
+    <figure><img class="shot" src="shots/40_progress_2.jpg" alt="Progress tab" loading="lazy"><figcaption>Progress</figcaption></figure>
+    <figure><img class="shot" src="shots/43_settings.jpg" alt="Settings" loading="lazy"><figcaption>Settings</figcaption></figure>
+  </div>
+</section>
+
+<section id="fix">
+  <div class="section-head">
+    <p class="eyebrow">Fix first</p>
+    <h2>Defects that undercut everything else</h2>
+    <p class="prose muted">No amount of animation makes an app feel premium while its buttons are hard to read. These are small, and most are one token or one function call.</p>
+  </div>
+
+  <div class="plate contrast" aria-label="Contrast before and after">
+    <div class="col">
+      <span class="label">Now · action green #087F5B as text</span>
+      <div class="demo-row"><span class="chip now">✓ All equipment</span><span class="ratio fail">2.48 : 1</span></div>
+      <div class="demo-row"><span class="obtn now">⚡ Quick workout</span><span class="ratio fail">3.57 : 1</span></div>
+      <div class="demo-row"><span class="tlink now">View workout history</span><span class="ratio fail">3.96 : 1</span></div>
+    </div>
+    <div class="col">
+      <span class="label">Proposed · actionForeground #34D399</span>
+      <div class="demo-row"><span class="chip new">✓ All equipment</span><span class="ratio pass">6.46 : 1</span></div>
+      <div class="demo-row"><span class="obtn new">⚡ Quick workout</span><span class="ratio pass">9.29 : 1</span></div>
+      <div class="demo-row"><span class="tlink new">View workout history</span><span class="ratio pass">10.31 : 1</span></div>
+    </div>
+  </div>
+
+  <div class="findings">
+    <div class="finding">
+      <div class="body">
+        <div class="head"><span class="id">F1</span><h3>Brand green fails as text in dark mode</h3><span class="size">S</span></div>
+        <p>Dark <code>action</code> (#087F5B) is used for text, outlined buttons and selected chip labels. It measures 2.48:1 on <code>selected</code>, 3.57:1 on cards and 3.96:1 on the page; AA needs 4.5:1. Light mode passes (4.83:1).</p>
+        <p><b>Where:</b> plan filters, calendar Day/Week/Month and selected day, player exercise chips, "Quick workout", "Finish partially…", "View workout history", Progress "This Week", the date pill, "Set size", "Customize a copy".</p>
+        <p><b>Fix:</b> add an <code>actionForeground</code> token (dark #34D399, light #0F766E) to <code>B05SemanticColors</code> and use it for text, outlined and chip-label roles in <code>app_theme.dart</code>. Keep #087F5B for filled buttons, where white text measures 5.0:1. Refresh goldens.</p>
+      </div>
+      <div class="thumb"><img class="shot" src="shots/20_plan_library.jpg" alt="Plan library with unreadable selected filter chips" loading="lazy"></div>
+    </div>
+    <div class="finding">
+      <div class="body">
+        <div class="head"><span class="id">F2</span><h3>The thali plate leaks an internal unit and overflows</h3><span class="size">S</span></div>
+        <p>Under the rice it reads "1 householdReference · 130 kcal". <code>circular_thali_plate.dart</code> lines 336 and 456 print <code>quantity.unit.name</code> instead of calling the existing <code>thaliQuantityLabel()</code>. Plate text is hard-coded at 8.5–11 pt, spills out of the katoris, and the "Add" katori overlaps the rim.</p>
+        <p><b>Fix:</b> use <code>thaliQuantityLabel()</code>; move names to a legend under the plate (see the concept below).</p>
+      </div>
+      <div class="thumb"><img class="shot" src="shots/46_thali_plate_zoom.jpg" alt="Close-up of the thali plate with overflowing labels" loading="lazy"></div>
+    </div>
+    <div class="finding">
+      <div class="body">
+        <div class="head"><span class="id">F3</span><h3>Dark launch screen, then a light app</h3><span class="size">XS</span></div>
+        <p>The launch storyboard is navy (#060A12). With the phone in light mode the app opens light, so every cold start flashes dark to white.</p>
+        <p><b>Fix:</b> give the storyboard a named colour with Any and Dark appearances, or make dark the first-run default (decision 1).</p>
+      </div>
+      <div class="thumb"><img class="shot" src="shots/01_first.jpg" alt="First screen in light mode" loading="lazy"></div>
+    </div>
+    <div class="finding">
+      <div class="body">
+        <div class="head"><span class="id">F4</span><h3>"Use this plan" is silent, then offers to switch to itself</h3><span class="size">S</span></div>
+        <p>Audit item R-08 is still present. The first tap adopts the plan with no visible change; the second asks "Switch from Beginner — 3-Day Full Body to Beginner — 3-Day Full Body?"</p>
+        <p><b>Fix:</b> a confirmation, return to Training, and a "Current plan" state on the overview.</p>
+      </div>
+      <div class="thumb"><img class="shot" src="shots/19_training_dark.jpg" alt="Training tab" loading="lazy"></div>
+    </div>
+    <div class="finding">
+      <div class="body">
+        <div class="head"><span class="id">F5</span><h3>Search results move under your finger</h3><span class="size">S</span></div>
+        <p>When the online "Continental Paneer" match arrived, it was inserted at the top and every row shifted down. My tap on "Add" for Paneer Bhurji missed.</p>
+        <p><b>Fix:</b> keep local results in place and append online matches below a "More matches" divider.</p>
+      </div>
+      <div class="thumb"><img class="shot" src="shots/11_poha_added.jpg" alt="Search results with snackbar" loading="lazy"></div>
+    </div>
+    <div class="finding">
+      <div class="body">
+        <div class="head"><span class="id">F6</span><h3>The same number, formatted three ways</h3><span class="size">S</span></div>
+        <p>"1,440 kg" on the summary, "1440.0 kg" in Progress; "2,546 kcal" and "2543 kcal/day"; "3.8 g" and "3.8g"; onboarding shows "112.0 g" and "365.4 g".</p>
+        <p><b>Fix:</b> route every user-facing number through <code>consumer_number_label.dart</code>; add a lint-style test for raw <code>toStringAsFixed</code> in widgets.</p>
+      </div>
+      <div class="thumb"><img class="shot" src="shots/40_progress_2.jpg" alt="Progress with 1440.0 kg" loading="lazy"></div>
+    </div>
+    <div class="finding">
+      <div class="body">
+        <div class="head"><span class="id">F7</span><h3>Headers that repeat or disagree</h3><span class="size">S</span></div>
+        <p>Log food stacks "Log breakfast · Today" over "Add to Breakfast · Add breakfast". The Food tab uses a small title while Training and Progress use large ones. Training uses ALL CAPS section labels; Today and Food use title case. In Progress, cards are different widths.</p>
+        <p><b>Fix:</b> one page-title style per tab, one section-header style, full-width cards.</p>
+      </div>
+      <div class="thumb"><img class="shot" src="shots/41_progress_3.jpg" alt="Progress cards of uneven width" loading="lazy"></div>
+    </div>
+    <div class="finding">
+      <div class="body">
+        <div class="head"><span class="id">F8</span><h3>Fat looks like water</h3><span class="size">XS</span></div>
+        <p>Fat uses a blue water-drop icon, the same symbol and colour as Hydration a few rows below. Your Reference Guide § 10 assigns fat red or coral.</p>
+        <p><b>Fix:</b> fixed macro colours app-wide (see Direction).</p>
+      </div>
+      <div class="thumb"><img class="shot" src="shots/18_today_dark.jpg" alt="Today macros with blue fat" loading="lazy"></div>
+    </div>
+  </div>
+
+  <div class="drift" aria-label="Design system drift in lib/">
+    <div><b>189</b><span>hard-coded font sizes in 55 files</span></div>
+    <div><b>12</b><span>different corner radii in use</span></div>
+    <div><b>44</b><span>colour literals outside the theme</span></div>
+    <div><b>1</b><span>file uses flutter_animate, though it is a dependency</span></div>
+  </div>
+</section>
+
+<section id="direction">
+  <div class="section-head">
+    <p class="eyebrow">Direction</p>
+    <h2>What premium means for IndiFit</h2>
+    <p class="prose muted">These follow your Reference Guide § 10 (premium, athletic, calm during workouts, not monochrome) and make it concrete.</p>
+  </div>
+  <div class="principles">
+    <div><h3>Dark first, with depth</h3><p class="muted">Dark is already the stronger look. Replace "border on everything" with three surface levels: page, section with a faint top highlight, and raised with a soft gradient and shadow.</p></div>
+    <div><h3>Continuous corners, larger radii</h3><p class="muted">Today's 8/10/12 px rounded rectangles read as Material defaults. Squircles at 16 (rows), 22 (cards) and 28 (sheets) read as iOS-native and expensive.</p></div>
+    <div><h3>Numbers are the hero</h3><p class="muted">One big number per screen, in Outfit with tabular figures so timers and counters don't jitter. Everything else steps down.</p></div>
+    <div><h3>Colour means one thing</h3><p class="muted">Protein teal, carbs amber, fat coral, fibre violet, water blue, everywhere. Brand green is for actions and success only.</p></div>
+    <div><h3>One reward moment per flow</h3><p class="muted">Spring physics, not linear fades. Every animation pairs with a haptic you already have and is skipped under Reduce Motion, which <code>B05MotionPolicy</code> already supports.</p></div>
+    <div><h3>Specifically Indian</h3><p class="muted">Steel thali and katori, FSSAI veg and non-veg marks on foods, Hinglish-friendly copy. Competitors cannot copy this, so it is where the visual budget should go first.</p></div>
+  </div>
+</section>
+
+<section id="moments">
+  <div class="section-head">
+    <p class="eyebrow">Signature moments</p>
+    <h2>Five places to spend the effort</h2>
+    <p class="prose muted">Each concept below is drawn in HTML to show the direction. All of them can be built in Flutter with CustomPainter, built-in fragment shaders and pre-rendered art. None needs a 3D engine; "3D" here means depth, light and tilt.</p>
+  </div>
+
+  <article class="moment">
+    <div class="text">
+      <p class="eyebrow">A · Thali builder</p>
+      <h3>A steel thali you fill</h3>
+      <p><b>Now:</b> a small plate of identical dark circles with 8.5 pt labels that overflow.</p>
+      <p><b>Concept:</b> a top-down steel thali seen at a slight angle. Each katori fills with the dish's colour (dal yellow, sabzi green, curd white), rice sits as a mound and rotis stack. The rim is a macro ring that grows as you add. New dishes drop in on a spring with a light haptic. Names move to a legend under the plate, so text keeps the user's text size.</p>
+      <p><b>Build with:</b> <code>CustomPainter</code> plus one fragment shader for brushed steel; optional <code>sensors_plus</code> tilt. Food colours come from each dish's category, so no per-dish art is needed.</p>
+    </div>
+    <div class="visuals">
+      <div class="phone" id="thaliPhone">
+        <div class="bar"><span>‹</span><b>Lunch thali</b><button class="replay" type="button" id="replayThali">Replay</button></div>
+        <div class="thali-stage">
+          <div class="thali" id="thali">
+            <div class="rim"></div>
+            <div class="steel"></div>
+            <div class="k dal"></div><div class="k sabzi"></div><div class="k curd"></div>
+            <div class="rice"></div>
+            <div class="roti r1"></div><div class="roti r2"></div>
+          </div>
+        </div>
+        <div class="kcal">640 <span style="font-size:1rem;font-weight:500;color:var(--app-muted)">kcal</span></div>
+        <div class="macros"><span><i style="background:var(--m-protein)"></i>22 g</span><span><i style="background:var(--m-carbs)"></i>105 g</span><span><i style="background:var(--m-fat)"></i>15 g</span></div>
+        <div class="legend"><span>Toor dal · 1 katori</span><span>Mix veg sabzi</span><span>Dahi</span><span>Rice · 1 katori</span><span>2 roti</span></div>
+        <span class="example">North Indian Classic preset</span>
+      </div>
+      <div class="before"><img class="shot" src="shots/46_thali_filled.jpg" alt="Current thali builder" loading="lazy"><figcaption>Now</figcaption></div>
+    </div>
+  </article>
+
+  <article class="moment">
+    <div class="text">
+      <p class="eyebrow">B · Workout player</p>
+      <h3>Rest that feels like rest</h3>
+      <p><b>Now:</b> a thin strip with "Rest 1:17" and three small buttons, above a dense set table.</p>
+      <p><b>Concept:</b> after "Log set", the strip expands into a calm takeover: a large ring counting down, what comes next ("Set 2 · 60 kg × 8"), and −15 / +30 / Skip as thumb-sized targets. Scrolling or tapping the set table collapses it back to the strip. At zero it pulses once with the existing <code>restEnd()</code> haptic. The lock-screen Live Activity (TP-14) uses the same ring.</p>
+      <p><b>Also:</b> a one-second "Leg Press done · 3 × 8 · 60 kg" beat between exercises, and real exercise images in the player (section G below).</p>
+    </div>
+    <div class="visuals">
+      <div class="phone">
+        <div class="bar"><span>✕</span><b>Full Body C</b><span>2 / 5</span></div>
+        <div class="ring-wrap">
+          <svg viewBox="0 0 210 210" aria-hidden="true">
+            <defs><linearGradient id="restGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6EE7B7"/><stop offset="1" stop-color="#14B8A6"/></linearGradient></defs>
+            <circle cx="105" cy="105" r="92" fill="none" stroke="#162033" stroke-width="12"/>
+            <circle id="restArc" cx="105" cy="105" r="92" fill="none" stroke="url(#restGrad)" stroke-width="12" stroke-linecap="round" stroke-dasharray="578.05" stroke-dashoffset="74"/>
+          </svg>
+          <div class="center"><span class="rest-label">REST</span><span class="timer" id="restTime">1:17</span><span class="rest-label">of 1:30</span></div>
+        </div>
+        <div class="next"><small>Up next</small><b>Leg Press · Set 2 of 3</b><span style="font-size:.85rem;color:var(--app-muted)">60 kg × 8 · same as set 1</span></div>
+        <div class="rest-actions"><span>−15</span><span>+30</span><span class="skip">Skip</span></div>
+      </div>
+      <div class="before"><img class="shot" src="shots/32_rest_running.jpg" alt="Current rest strip" loading="lazy"><figcaption>Now</figcaption></div>
+    </div>
+  </article>
+
+  <article class="moment">
+    <div class="text">
+      <p class="eyebrow">C · Workout summary</p>
+      <h3>One hero number, then the story</h3>
+      <p><b>Now:</b> a small tick, a title, a line of stats, then five tiles that repeat the same stats, one of them alone on its row.</p>
+      <p><b>Concept:</b> the total lifted counts up once, three supporting stats sit in one row, the week goal is a pill, and "vs last time" gives one line per exercise. The same layout renders as a 1080 × 1920 share card with the IndiFit mark, which turns every finished workout into an Instagram story.</p>
+      <p><b>Build with:</b> <code>flutter_animate</code> (already a dependency) for the count-up; <code>RepaintBoundary</code> to image plus <code>share_plus</code> (already a dependency) for the card.</p>
+    </div>
+    <div class="visuals">
+      <div class="phone">
+        <div class="bar"><span>‹</span><b>Workout saved</b><button class="replay" type="button" id="replaySum">Replay</button></div>
+        <div class="sum-hero">
+          <div class="tick">✓</div>
+          <span class="w">Full Body C · Thu 8 Oct</span>
+          <div class="big"><span id="sumNum">1,440</span><small>kg</small></div>
+          <span class="w">total lifted</span>
+        </div>
+        <div class="trio"><div><b>3</b><span>sets</span></div><div><b>24</b><span>reps</span></div><div><b>1:22</b><span>duration</span></div></div>
+        <div class="pillrow"><span class="pill">✓ Week goal · 1 of 1</span><span class="pill">2 badges</span></div>
+        <div class="vs"><span>Leg Press</span><em>Baseline set</em></div>
+      </div>
+      <div class="before"><img class="shot" src="shots/38_summary.jpg" alt="Current workout summary" loading="lazy"><figcaption>Now</figcaption></div>
+    </div>
+  </article>
+
+  <article class="moment">
+    <div class="text">
+      <p class="eyebrow">D · Badges</p>
+      <h3>Medals with weight</h3>
+      <p><b>Now:</b> a Material icon inside a tinted circle, in the unlock sheet and on the badges grid.</p>
+      <p><b>Concept:</b> each badge is a pre-rendered 3D medal (bronze, silver, gold tiers). It tilts with the phone, a light sheen crosses it on unlock, and locked badges are matte silhouettes. Drag the medal here to see the tilt.</p>
+      <p><b>Build with:</b> 9 medal images at @3x WebP, <code>sensors_plus</code> for tilt, and a small <code>FragmentProgram</code> shader for the sheen. Art can start from Microsoft's Fluent Emoji 3D set (MIT) or be commissioned as one consistent set (decision 3).</p>
+    </div>
+    <div class="visuals">
+      <div class="phone">
+        <div class="bar"><span></span><b>Milestone reached</b><span></span></div>
+        <div class="medal-stage" id="medalStage" aria-label="Bronze medal concept, drag to tilt">
+          <div class="medal" id="medal">
+            <div class="edge"></div>
+            <div class="face"></div>
+            <div class="inner">
+              <svg viewBox="0 0 64 64" aria-hidden="true"><g fill="#5a3010"><rect x="8" y="24" width="7" height="16" rx="2"/><rect x="15" y="20" width="6" height="24" rx="2"/><rect x="43" y="20" width="6" height="24" rx="2"/><rect x="49" y="24" width="7" height="16" rx="2"/><rect x="21" y="29" width="22" height="6" rx="2"/></g></svg>
+            </div>
+            <div class="sheen"></div>
+          </div>
+        </div>
+        <div class="badge-name"><b>First Sweat</b><span>Your first workout · 8 Oct 2026</span></div>
+        <div class="locked" aria-label="Locked badges"><span></span><span></span><span></span><span></span></div>
+      </div>
+      <div class="before"><img class="shot" src="shots/37_summary_a.jpg" alt="Current milestone sheet" loading="lazy"><figcaption>Now</figcaption></div>
+    </div>
+  </article>
+
+  <article class="moment">
+    <div class="text">
+      <p class="eyebrow">E · Today</p>
+      <h3>A ring with depth, and proof that the log landed</h3>
+      <p><b>Now:</b> a thin ring on a grey track; logging food gives a snackbar on another screen and nothing on Today.</p>
+      <p><b>Concept:</b> a gradient arc with a soft glow, animating from the old value to the new one when you come back from logging, plus a "+230 kcal · Poha" chip that floats up once. Macro bars use the fixed macro colours.</p>
+      <p><b>Build with:</b> <code>CustomPainter</code> with a <code>SweepGradient</code>, <code>TweenAnimationBuilder</code> (already used in 6 files).</p>
+    </div>
+    <div class="visuals">
+      <div class="phone">
+        <div class="bar"><b>Good afternoon</b><span>Thu 8 Oct</span></div>
+        <span class="float-chip">+230 kcal · Poha</span>
+        <div class="tring">
+          <svg viewBox="0 0 200 200" aria-hidden="true">
+            <defs>
+              <linearGradient id="todayGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#34D399"/><stop offset="1" stop-color="#2DD4BF"/></linearGradient>
+              <filter id="glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+            </defs>
+            <circle cx="100" cy="100" r="84" fill="none" stroke="#162033" stroke-width="14"/>
+            <circle cx="100" cy="100" r="84" fill="none" stroke="url(#todayGrad)" stroke-width="14" stroke-linecap="round" stroke-dasharray="527.79" stroke-dashoffset="233.4" filter="url(#glow)"/>
+          </svg>
+          <div class="center"><b>1,420</b><span>of 2,546 kcal</span><span style="color:var(--app-fg);font-weight:600">1,126 left</span></div>
+        </div>
+        <div class="macro-row">
+          <div><span>Protein</span><b>62 / 112 g</b><div class="bar-track"><i style="width:55%;background:var(--m-protein)"></i></div></div>
+          <div><span>Carbs</span><b>180 / 365 g</b><div class="bar-track"><i style="width:49%;background:var(--m-carbs)"></i></div></div>
+          <div><span>Fat</span><b>41 / 71 g</b><div class="bar-track"><i style="width:58%;background:var(--m-fat)"></i></div></div>
+        </div>
+        <span class="example">Example day, not your data</span>
+      </div>
+      <div class="before"><img class="shot" src="shots/18_today_dark.jpg" alt="Current Today screen" loading="lazy"><figcaption>Now</figcaption></div>
+    </div>
+  </article>
+
+  <article class="moment">
+    <div class="text">
+      <p class="eyebrow">F · Onboarding · G · Exercise visuals</p>
+      <h3>First impression, and seeing the movement</h3>
+      <p><b>Onboarding now:</b> the first screen is a form question; the target appears only after scrolling step 5. <b>Concept:</b> a short welcome with the animated IndiFit mark, ruler pickers with haptic ticks for height and weight (replacing ± steppers), a 1.5-second "Building your targets" beat, then the ring fills to 2,546 kcal and 112 g protein above the fold.</p>
+      <p><b>Exercise visuals now:</b> start and peak figures about 24 px tall at the bottom of the player. Your R08 asset research already licence-checked two sources: RepDB free-tier images (commercial in-app use allowed with attribution, pinned but not approved) and MuscleMap body geometry (MIT). <b>Concept:</b> a large exercise image at the top of the player and library rows, plus a body map highlighting primary and secondary muscles. The same map later powers the Plus "muscles this week" view (TP-9).</p>
+    </div>
+    <div class="visuals">
+      <div class="before"><img class="shot" src="shots/06_onb_payoff_target.jpg" alt="Onboarding target tiles after scrolling" loading="lazy"><figcaption>Target, after scrolling</figcaption></div>
+      <div class="before"><img class="shot" src="shots/29_player.jpg" alt="Player with tiny exercise figures" loading="lazy"><figcaption>Player figures</figcaption></div>
+    </div>
+  </article>
+</section>
+
+<section id="libraries">
+  <div class="section-head">
+    <p class="eyebrow">Libraries and assets</p>
+    <h2>What to add, what to use more, what to skip</h2>
+    <p class="prose muted">Licences are as published by each project; confirm each one in <code>assets/third_party/asset_manifest.json</code> and About &amp; credits when it is imported.</p>
+  </div>
+  <div class="table-scroll">
+    <table>
+      <thead><tr><th>Package or asset</th><th>Job</th><th>Licence</th><th>Verdict</th></tr></thead>
+      <tbody>
+        <tr><td>animations</td><td>Card-to-screen container transforms; shared-axis between exercises</td><td>BSD-3 (Flutter team)</td><td><span class="verdict v-adopt">Adopt · already TP-10</span></td></tr>
+        <tr><td>flutter_animate</td><td>Entrances, stagger, count-ups, shimmer</td><td>MIT</td><td><span class="verdict v-use">Have it · make it the standard</span></td></tr>
+        <tr><td>rive</td><td>Animated logo, onboarding hero, badge unlock, empty states (interactive state machines)</td><td>MIT runtime</td><td><span class="verdict v-adopt">Adopt one of Rive or Lottie</span></td></tr>
+        <tr><td>lottie</td><td>Same jobs, from After Effects; huge free library</td><td>MIT runtime; each animation has its own licence</td><td><span class="verdict v-use">Alternative to Rive</span></td></tr>
+        <tr><td>figma_squircle</td><td>Continuous (iOS-style) corners</td><td>MIT</td><td><span class="verdict v-adopt">Adopt</span></td></tr>
+        <tr><td>sensors_plus</td><td>Gyroscope tilt for medals and the thali</td><td>BSD-3</td><td><span class="verdict v-adopt">Adopt</span></td></tr>
+        <tr><td>Fragment shaders</td><td>Brushed steel, medal sheen, soft aurora backgrounds</td><td>Flutter SDK (Impeller)</td><td><span class="verdict v-adopt">Use · no dependency</span></td></tr>
+        <tr><td>flutter_svg</td><td>MuscleMap paths, illustrations</td><td>MIT</td><td><span class="verdict v-adopt">Adopt with MuscleMap</span></td></tr>
+        <tr><td>phosphor_flutter</td><td>Duotone icon set with food, body and macro glyphs</td><td>MIT</td><td><span class="verdict v-adopt">Adopt · already a pinned candidate</span></td></tr>
+        <tr><td>RepDB free tier</td><td>Exercise images</td><td>RepDB Free Tier Licence 1.0, attribution</td><td><span class="verdict v-adopt">Approve import</span></td></tr>
+        <tr><td>MuscleMap</td><td>Body and muscle vector geometry</td><td>MIT</td><td><span class="verdict v-adopt">Port to Flutter</span></td></tr>
+        <tr><td>Fluent Emoji 3D</td><td>3D-style food, medal and fire art to start with</td><td>MIT (Microsoft)</td><td><span class="verdict v-use">Free starting point</span></td></tr>
+        <tr><td>home_widget, live_activities</td><td>Home widget, lock-screen rest timer</td><td>—</td><td><span class="verdict v-use">Already planned · TP-13, TP-14</span></td></tr>
+        <tr><td>percent_indicator</td><td>Unused</td><td>—</td><td><span class="verdict v-avoid">Remove · TP-11</span></td></tr>
+        <tr><td>Real-time 3D (flutter_scene, model_viewer_plus, flutter_cube)</td><td>Rendering 3D models live</td><td>—</td><td><span class="verdict v-avoid">Skip for v1</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="prose muted small">Why skip real-time 3D: flutter_scene depends on Flutter GPU, which is still experimental; model_viewer_plus runs a WebView; flutter_cube is unmaintained. Each costs app size, battery and accessibility. Pre-rendered art with tilt and a shader looks the same to users at a fraction of the cost.</p>
+</section>
+
+<section id="order">
+  <div class="section-head">
+    <p class="eyebrow">Build order</p>
+    <h2>Order and gates</h2>
+    <p class="prose muted">One PR per step, CI green, goldens refreshed, a Reduce Motion test for anything that animates, and a feel check by you on a real iPhone (the simulator can't judge haptics or 120 Hz motion). Feature freeze applies about 3 days before a store build. My recommendation: V0 before the closed test, V1–V3 if they land before the freeze, the rest from the ready queue.</p>
+  </div>
+  <div class="order">
+    <div class="step"><span class="code">V0</span><div class="what"><b>Contrast and correctness</b><span class="muted small">F1–F8: actionForeground token, thali label and legend, launch colour, "Use this plan" feedback, stable search list, number formats, headers, macro colours.</span></div><span class="when">S · ready now</span></div>
+    <div class="step"><span class="code">V1</span><div class="what"><b>Tokens 2.0</b><span class="muted small">Squircle radius scale, three surface levels, tabular figures, text roles replacing hard-coded sizes on touched screens, macro colour map, one section-header style, remove percent_indicator.</span></div><span class="when">M · after V0</span></div>
+    <div class="step"><span class="code">V2</span><div class="what"><b>Motion kit</b><span class="muted small">animations transitions, flutter_animate presets (enter, stagger, count-up, success morph), Add → tick in search, haptic pairing, Reduce Motion tests.</span></div><span class="when">M · after V1</span></div>
+    <div class="step"><span class="code">V3</span><div class="what"><b>Today ring and log feedback</b><span class="muted small">Concept E.</span></div><span class="when">S–M · after V2</span></div>
+    <div class="step"><span class="code">V4</span><div class="what"><b>Steel thali</b><span class="muted small">Concept A. The screen only IndiFit has.</span></div><span class="when">L · after V1</span></div>
+    <div class="step"><span class="code">V5</span><div class="what"><b>Player: rest takeover, exercise beat, exercise visuals</b><span class="muted small">Concept B and G. Visuals need the RepDB approval and a credits update.</span></div><span class="when">L · after V2</span></div>
+    <div class="step"><span class="code">V6</span><div class="what"><b>Summary hero and share card</b><span class="muted small">Concept C.</span></div><span class="when">M · after V2</span></div>
+    <div class="step"><span class="code">V7</span><div class="what"><b>3D medals</b><span class="muted small">Concept D. Needs the art decision.</span></div><span class="when">M + art</span></div>
+    <div class="step"><span class="code">V8</span><div class="what"><b>Onboarding reveal</b><span class="muted small">Concept F: animated mark, ruler pickers, target reveal. Needs the Rive or Lottie decision.</span></div><span class="when">M · after V2</span></div>
+  </div>
+</section>
+
+<section id="decisions">
+  <div class="section-head">
+    <p class="eyebrow">Your decisions</p>
+    <h2>Five calls before I build past V0</h2>
+  </div>
+  <div class="decisions">
+    <div class="decision"><h3>1. Default theme</h3><p class="rec">Dark on first run, or follow the system? <b>Recommend dark first</b>, with the light theme kept as an option. It matches the launch screen and the brand.</p></div>
+    <div class="decision"><h3>2. Animation tool</h3><p class="rec">Rive or Lottie. <b>Recommend Rive</b>: interactive state machines and smaller files. Lottie wins only if you want to buy ready-made animations.</p></div>
+    <div class="decision"><h3>3. Medal and illustration art</h3><p class="rec">Start free with Fluent Emoji 3D (MIT), or commission one consistent set (9 medals plus an onboarding hero). <b>Recommend starting free</b> and commissioning once Plus revenue starts.</p></div>
+    <div class="decision"><h3>4. Exercise images</h3><p class="rec">Approve importing RepDB free-tier images with attribution in About &amp; credits? <b>Recommend yes</b>; it is the single biggest visual gain in Training.</p></div>
+    <div class="decision"><h3>5. First signature moment after V0–V2</h3><p class="rec"><b>Recommend the steel thali (V4)</b>; it is what makes IndiFit look like nothing else. The rest takeover (V5) is a close second because lifters see it 15+ times a session.</p></div>
+  </div>
+</section>
+
+<footer>
+  <p>Checked on main @ 1c08e23 in a scratch worktree, debug build on the iPhone 17 simulator (iOS 26.5), fresh install, 8 October 2026. Contrast ratios are WCAG 2.1 relative-luminance values computed from the colour tokens in <code>b05_semantic_colors.dart</code>. Counts come from a grep of <code>lib/</code>.</p>
+  <p>Not covered: real-device haptics and frame rate, Android, Dynamic Type at the largest sizes, and the AI flows (they need an App Check token). The "This food is unavailable" toast when tapping a pack food's row is the bug open PR #77 fixes.</p>
+</footer>
+
+</div>
+
+<script>
+(function () {
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // A · replay the thali drop
+  var thali = document.getElementById('thali');
+  document.getElementById('replayThali').addEventListener('click', function () {
+    if (reduce) return;
+    thali.classList.remove('drop');
+    void thali.offsetWidth;
+    thali.classList.add('drop');
+  });
+
+  // B · rest countdown loop (90 s rest, starts at 1:17)
+  var arc = document.getElementById('restArc');
+  var label = document.getElementById('restTime');
+  var total = 90, left = 77, circ = 578.05;
+  function paintRest() {
+    var m = Math.floor(left / 60), s = left % 60;
+    label.textContent = m + ':' + (s < 10 ? '0' : '') + s;
+    arc.setAttribute('stroke-dashoffset', String(circ * (1 - left / total)));
+  }
+  paintRest();
+  if (!reduce) {
+    setInterval(function () { left = left <= 0 ? total : left - 1; paintRest(); }, 1000);
+  }
+
+  // C · count-up on replay
+  var num = document.getElementById('sumNum');
+  document.getElementById('replaySum').addEventListener('click', function () {
+    if (reduce) { num.textContent = '1,440'; return; }
+    var start = null, target = 1440, dur = 1100;
+    function step(t) {
+      if (start === null) start = t;
+      var p = Math.min(1, (t - start) / dur);
+      var e = 1 - Math.pow(1 - p, 3);
+      num.textContent = Math.round(target * e).toLocaleString('en-IN');
+      if (p < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  });
+
+  // D · medal tilt follows the pointer
+  var stage = document.getElementById('medalStage');
+  var medal = document.getElementById('medal');
+  function tilt(ev) {
+    if (reduce) return;
+    var r = stage.getBoundingClientRect();
+    var x = (ev.clientX - r.left) / r.width - 0.5;
+    var y = (ev.clientY - r.top) / r.height - 0.5;
+    medal.style.setProperty('--ry', (x * 50) + 'deg');
+    medal.style.setProperty('--rx', (-y * 40) + 'deg');
+    medal.style.setProperty('--sx', (30 + x * 80) + '%');
+  }
+  stage.addEventListener('pointermove', tilt);
+  stage.addEventListener('pointerleave', function () {
+    medal.style.setProperty('--ry', '-22deg');
+    medal.style.setProperty('--rx', '10deg');
+    medal.style.setProperty('--sx', '30%');
+  });
+})();
+</script>
