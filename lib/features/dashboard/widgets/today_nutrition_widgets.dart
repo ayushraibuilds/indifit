@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/di/providers.dart';
+import '../../../core/motion/indifit_motion.dart';
 import '../../../core/presentation/consumer_copy.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
 import '../../../core/theme/indifit_icons.dart';
@@ -462,11 +463,14 @@ class CalorieRing extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           FittedBox(
-                            child: Text(
-                              metric.value,
-                              style: B05Typography.metric(
-                                context,
-                              ).copyWith(fontSize: 31, letterSpacing: -1),
+                            child: IndiFitCountUp(
+                              value: metric.pointValue ?? 0,
+                              builder: (context, kcal) => Text(
+                                metric.valueAt(kcal),
+                                style: B05Typography.metric(
+                                  context,
+                                ).copyWith(fontSize: 31, letterSpacing: -1),
+                              ),
                             ),
                           ),
                           const SizedBox(height: 2),
@@ -669,17 +673,20 @@ extension on MacroRow {
         ],
       );
     }
-    final value = Text(
-      metric.valueLabel,
-      maxLines: 2,
-      overflow: TextOverflow.ellipsis,
-      textAlign: align,
-      style: B05Typography.caption(context).copyWith(
-        color: metric.isOverTarget
-            ? context.b05Colors.danger.indicator
-            : context.b05Colors.textPrimary,
-        fontWeight: FontWeight.w700,
-        fontFeatures: const [FontFeature.tabularFigures()],
+    final value = IndiFitCountUp(
+      value: metric.pointValue ?? 0,
+      builder: (context, point) => Text(
+        metric.valueLabelAt(point),
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        textAlign: align,
+        style: B05Typography.caption(context).copyWith(
+          color: metric.isOverTarget
+              ? context.b05Colors.danger.indicator
+              : context.b05Colors.textPrimary,
+          fontWeight: FontWeight.w700,
+          fontFeatures: const [FontFeature.tabularFigures()],
+        ),
       ),
     );
     if (!metric.isIncomplete) return value;

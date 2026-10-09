@@ -193,6 +193,27 @@ class TodayNutritionMetricPresentation {
     return '$value / ${_formatNumber(targetValue!)} $unit';
   }
 
+  /// Whether [value] is a plain logged number that can count up between
+  /// updates. Ranges, partial ("120+") and missing values show as they are.
+  bool get countsUp {
+    final point = pointValue;
+    return isAvailable &&
+        !isRange &&
+        point != null &&
+        value == _formatNumber(point);
+  }
+
+  /// [value] with [point] in its place, for frames of a count-up.
+  String valueAt(double point) => countsUp ? _formatNumber(point) : value;
+
+  /// [valueLabel] with [point] in place of the logged value.
+  String valueLabelAt(double point) {
+    if (!countsUp) return valueLabel;
+    final shown = _formatNumber(point);
+    if (!hasTarget) return '$shown $unit';
+    return '$shown / ${_formatNumber(targetValue!)} $unit';
+  }
+
   factory TodayNutritionMetricPresentation.fromFact({
     required String nutrientId,
     required String label,

@@ -10,12 +10,14 @@ import 'package:uuid/uuid.dart';
 import '../../core/catalog/food_catalog_models.dart';
 import '../../core/catalog/food_category_taxonomy.dart';
 import '../../core/di/providers.dart';
+import '../../core/motion/indifit_motion.dart';
 import '../../core/nutrients.dart';
 import '../../core/nutrition_household_measures.dart';
 import '../../core/nutrition_legacy_read_models.dart';
 import '../../core/presentation/consumer_copy.dart';
 import '../../core/presentation/consumer_date_label.dart';
 import '../../core/privacy/privacy_policy.dart';
+import '../../core/services/indifit_haptics.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/typed_quantities.dart';
 import '../../core/utils/app_logger.dart';
@@ -108,6 +110,9 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   final Map<String, Quantity> _selectedQuantities = {};
   final Set<String> _selectionLoading = {};
   final Set<String> _fastAddInFlight = {};
+
+  /// Option ids whose Add button shows the tick after a saved fast add.
+  final Map<String, Timer> _fastAddSucceeded = {};
   bool _committingSelection = false;
   bool _openedInitialRecord = false;
   late bool _isMultiSelect;
@@ -323,6 +328,10 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       timer.cancel();
     }
     _recentTimeouts.clear();
+    for (final timer in _fastAddSucceeded.values) {
+      timer.cancel();
+    }
+    _fastAddSucceeded.clear();
     _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     _searchFocusNode.dispose();
@@ -824,6 +833,20 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     await _openProviderLogDialog(result);
   }
 
+  /// The saved fast add's feedback: one haptic, and the button's tick for
+  /// [IndiFitMotion.successHold]. Call only after the log is saved.
+  void _showFastAddSucceeded(String optionId) {
+    unawaited(IndiFitHaptics.confirmation());
+    _fastAddSucceeded.remove(optionId)?.cancel();
+    setState(() {
+      _fastAddSucceeded[optionId] = Timer(IndiFitMotion.successHold, () {
+        if (_fastAddSucceeded.remove(optionId) != null && mounted) {
+          setState(() {});
+        }
+      });
+    });
+  }
+
   Future<void> _addOptionFast(NutritionFoodOption option) async {
     // UI taps generate distinct command IDs. Guard before the first await so
     // a physical double tap cannot turn into two valid canonical commands.
@@ -856,6 +879,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       );
       if (!mounted) return;
       _invalidateNutritionReads();
+      _showFastAddSucceeded(option.id);
       final undo = FoodAddUndoToken(
         snapshotId: snapshot.id,
         localDate: dateContext.localDate,
@@ -937,6 +961,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       );
       if (!mounted) return;
       _invalidateNutritionReads();
+      _showFastAddSucceeded(option.id);
       final undo = FoodAddUndoToken(
         snapshotId: snapshot.id,
         localDate: dateContext.localDate,
@@ -1933,6 +1958,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     return _buildFastAddAction(
       foodName: _consumerFoodName(option.displayName),
       isAdding: isAdding,
+      added: _fastAddSucceeded.containsKey(option.id),
       onPressed: isAdding ? null : () => unawaited(_addRecentFast(recent)),
     );
   }
@@ -1942,6 +1968,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     return _buildFastAddAction(
       foodName: _consumerFoodName(option.displayName),
       isAdding: isAdding,
+      added: _fastAddSucceeded.containsKey(option.id),
       onPressed: isAdding ? null : () => unawaited(_addOptionFast(option)),
     );
   }
@@ -1950,12 +1977,15 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     required String foodName,
     required VoidCallback? onPressed,
     bool isAdding = false,
+    bool added = false,
     bool unavailable = false,
   }) {
     final label = unavailable
         ? '$foodName unavailable for logging'
         : isAdding
         ? 'Adding $foodName'
+        : added
+        ? 'Added $foodName'
         : 'Add $foodName';
     // A disabled nested button must still consume its own hit area. Otherwise
     // a second physical tap falls through to the result-row tap target and
@@ -1970,16 +2000,24 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         child: ExcludeSemantics(
           child: TextButton.icon(
             onPressed: onPressed,
-            icon: Icon(
-              isAdding ? Icons.hourglass_top_rounded : Icons.add_rounded,
-              size: 18,
+            icon: IndiFitSuccessMorph(
+              success: added && !isAdding,
+              successChild: const Icon(Icons.check_rounded, size: 18),
+              child: Icon(
+                isAdding ? Icons.hourglass_top_rounded : Icons.add_rounded,
+                size: 18,
+              ),
             ),
-            label: Text(
-              unavailable
-                  ? 'Unavailable'
-                  : isAdding
-                  ? 'Adding…'
-                  : 'Add',
+            label: IndiFitSuccessMorph(
+              success: added && !isAdding && !unavailable,
+              successChild: const Text('Added'),
+              child: Text(
+                unavailable
+                    ? 'Unavailable'
+                    : isAdding
+                    ? 'Adding…'
+                    : 'Add',
+              ),
             ),
           ),
         ),
