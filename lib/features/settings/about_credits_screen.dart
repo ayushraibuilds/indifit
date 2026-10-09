@@ -23,6 +23,12 @@ class AboutCreditsScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: B05Layout.space20),
                 const _Credit(
+                  title: 'Fluent Emoji',
+                  detail:
+                      'Microsoft Fluent Emoji copyright (c) Microsoft Corporation; MIT License. Used for achievement badge art.',
+                ),
+                const SizedBox(height: B05Layout.space12),
+                const _Credit(
                   title: 'MuscleMap',
                   detail:
                       'MuscleMap copyright (c) 2026 Melih Colpan; MIT License. Used for body and muscle map geometry.',
