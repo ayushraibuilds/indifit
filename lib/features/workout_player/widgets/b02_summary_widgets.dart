@@ -315,7 +315,7 @@ class CompletionEvidence extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
               child: Column(
                 children: [
-                  WorkoutSummaryHeadline(
+                  WorkoutSummaryHero(
                     isPartial: isPartial,
                     routineName: routineName,
                     savedLine: detailsUnavailable
@@ -323,14 +323,20 @@ class CompletionEvidence extends StatelessWidget {
                         : 'Your workout is saved to history.',
                     totalLiftedKg: hasVolume ? volume : 0,
                     setCount: setCount,
+                    repCount: knownReps,
                     durationLabel: durationSeconds > 0
                         ? formatB02WorkoutDuration(durationSeconds)
                         : null,
                   ),
                   const SizedBox(height: 20),
-                  // Order (plan § 6): the one moment (new bests, or the week
-                  // goal), vs last time, this week, then the numbers and
-                  // what was logged.
+                  // Order (premium plan § 8.3): the hero above, the week
+                  // goal pill, the one moment (new bests, or the week goal),
+                  // vs last time, then what was logged.
+                  if (weeklyGoal case final goal?)
+                    WorkoutWeekGoalLine(
+                      goal: goal,
+                      bestsSessionId: bestsSessionId,
+                    ),
                   if (savedSessionId != null || bestsSessionId != null)
                     WorkoutPayoffMoment(
                       sessionId: savedSessionId,
@@ -341,50 +347,6 @@ class CompletionEvidence extends StatelessWidget {
                     ),
                   if (bestsSessionId != null)
                     WorkoutVsLastTimeBlock(sessionId: bestsSessionId),
-                  if (weeklyGoal case final goal?)
-                    WorkoutWeekGoalLine(
-                      goal: goal,
-                      bestsSessionId: bestsSessionId,
-                    ),
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      final metrics = <Widget>[
-                        if (durationSeconds > 0)
-                          R07CMetricTile(
-                            label: 'Duration',
-                            value: formatB02WorkoutDuration(durationSeconds),
-                          ),
-                        R07CMetricTile(
-                          label: 'Exercises',
-                          value: '${exercises.length}',
-                        ),
-                        R07CMetricTile(label: 'Sets', value: '$setCount'),
-                        if (knownReps > 0)
-                          R07CMetricTile(label: 'Reps', value: '$knownReps'),
-                        if (hasVolume)
-                          R07CMetricTile(
-                            label: 'Total lifted',
-                            value: formatKgLifted(volume),
-                            valueChild: CountUpText(
-                              key: const ValueKey(
-                                'workout_summary_total_lifted',
-                              ),
-                              value: volume,
-                              format: formatKgLifted,
-                            ),
-                          ),
-                      ];
-                      final width = (constraints.maxWidth - 8) / 2;
-                      return Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          for (final metric in metrics)
-                            SizedBox(width: width, child: metric),
-                        ],
-                      );
-                    },
-                  ),
                   if (exercises.isNotEmpty) ...[
                     const SizedBox(height: 24),
                     Align(
