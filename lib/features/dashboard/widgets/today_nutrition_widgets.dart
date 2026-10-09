@@ -329,11 +329,12 @@ class _TodayNutritionHeroBody extends StatelessWidget {
                   alignment: Alignment.topCenter,
                   children: [
                     calorieRing,
-                    // A little wider than the ring; long names ellipsize.
+                    // Above the arc's start, a little wider than the ring;
+                    // long names ellipsize.
                     Positioned(
-                      top: -B05Layout.space12,
-                      left: -B05Layout.space24,
-                      right: -B05Layout.space24,
+                      top: -B05Layout.space20,
+                      left: -B05Layout.space32,
+                      right: -B05Layout.space32,
                       child: Center(child: overlay ?? const SizedBox.shrink()),
                     ),
                   ],
