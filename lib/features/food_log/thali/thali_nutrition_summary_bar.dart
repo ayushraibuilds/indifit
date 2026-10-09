@@ -156,8 +156,7 @@ class ThaliNutritionSummaryBar extends StatelessWidget {
                         value: protein != null
                             ? '${isPartial ? '~' : ''}${(protein * 10).round() / 10}g'
                             : (hasItems ? '...' : '0g'),
-                        color: colors.action,
-                        textColor: colors.textPrimary,
+                        role: colors.protein,
                       ),
                       const SizedBox(width: 8),
                       _MacroBadge(
@@ -165,8 +164,7 @@ class ThaliNutritionSummaryBar extends StatelessWidget {
                         value: carbs != null
                             ? '${isPartial ? '~' : ''}${(carbs * 10).round() / 10}g'
                             : (hasItems ? '...' : '0g'),
-                        color: colors.warning.indicator,
-                        textColor: colors.textPrimary,
+                        role: colors.carbs,
                       ),
                       const SizedBox(width: 8),
                       _MacroBadge(
@@ -174,16 +172,14 @@ class ThaliNutritionSummaryBar extends StatelessWidget {
                         value: fat != null
                             ? '${isPartial ? '~' : ''}${(fat * 10).round() / 10}g'
                             : (hasItems ? '...' : '0g'),
-                        color: colors.info.indicator,
-                        textColor: colors.textPrimary,
+                        role: colors.fat,
                       ),
                       if (fiber != null) ...[
                         const SizedBox(width: 8),
                         _MacroBadge(
                           label: 'Fb',
                           value: '${(fiber * 10).round() / 10}g',
-                          color: colors.dinner.indicator,
-                          textColor: colors.textPrimary,
+                          role: colors.fibre,
                         ),
                       ],
                     ],
@@ -304,24 +300,24 @@ class _NoticeBanner extends StatelessWidget {
 class _MacroBadge extends StatelessWidget {
   final String label;
   final String value;
-  final Color color;
-  final Color textColor;
+  final B05ColorRole role;
 
   const _MacroBadge({
     required this.label,
     required this.value,
-    required this.color,
-    required this.textColor,
+    required this.role,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
+      decoration: ShapeDecoration(
+        color: role.container,
+        shape: B05Radii.shape(
+          B05Radii.chipRadius,
+          side: BorderSide(color: role.indicator.withValues(alpha: 0.4)),
+        ),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -331,7 +327,7 @@ class _MacroBadge extends StatelessWidget {
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.bold,
-              color: color,
+              color: role.foreground,
             ),
           ),
           Text(
@@ -339,7 +335,8 @@ class _MacroBadge extends StatelessWidget {
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w600,
-              color: textColor,
+              color: context.b05Colors.textPrimary,
+              fontFeatures: const [FontFeature.tabularFigures()],
             ),
           ),
         ],

@@ -420,12 +420,9 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
                                 children: [
                                   Expanded(
                                     child: Text(
-                                      'PLATE COMPONENTS (${items.length})',
-                                      style: TextStyle(
-                                        color: colors.textDisabled,
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w600,
-                                        letterSpacing: 0.8,
+                                      'Plate components (${items.length})',
+                                      style: B05Typography.sectionLabel(
+                                        context,
                                       ),
                                       overflow: TextOverflow.ellipsis,
                                     ),
@@ -518,62 +515,37 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
                                 ],
                               ),
                             ),
-                            if (_viewMode == ThaliViewMode.plate) ...[
-                              Flexible(
-                                flex: _selectedItemId != null ? 3 : 5,
-                                child: CircularThaliPlate(
-                                  items: items,
-                                  previews: previewItems,
-                                  preview: state.preview,
-                                  selectedItemId: _selectedItemId,
-                                  onSelectItem: (id) =>
-                                      setState(() => _selectedItemId = id),
-                                  onAddDish: () =>
-                                      _openComponentPicker(controller, state),
-                                  onViewAllDishes: () => setState(
-                                    () => _viewMode = ThaliViewMode.list,
-                                  ),
-                                ),
-                              ),
-                              if (_selectedItemId != null) ...[
-                                () {
-                                  final selectedItem = items
-                                      .where((i) => i.id == _selectedItemId)
-                                      .firstOrNull;
-                                  if (selectedItem == null) {
-                                    return const SizedBox.shrink();
-                                  }
-                                  final selectedItemPreview = previewItems
-                                      .where(
-                                        (p) => p.item.id == selectedItem.id,
-                                      )
-                                      .firstOrNull;
-                                  return ThaliQuickAdjustHud(
-                                    item: selectedItem,
-                                    preview: selectedItemPreview,
-                                    onIncrement: () => controller
-                                        .incrementQuantity(selectedItem.id),
-                                    onDecrement: () => controller
-                                        .decrementQuantity(selectedItem.id),
-                                    onRemove: () {
-                                      controller.removeItem(selectedItem.id);
-                                      setState(() => _selectedItemId = null);
-                                    },
-                                    onReplace: () => _openComponentPicker(
-                                      controller,
-                                      state,
-                                      replacingItemId: selectedItem.id,
-                                    ),
-                                    onClose: () =>
-                                        setState(() => _selectedItemId = null),
-                                  );
-                                }(),
-                              ],
-                            ],
                             Expanded(
-                              flex: 4,
+                              // In plate view the plate heads the list, so it
+                              // gets its full width and the dishes scroll
+                              // underneath.
                               child: ReorderableListView.builder(
                                 key: const Key('thali_items_list'),
+                                header: _viewMode == ThaliViewMode.plate
+                                    ? Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          CircularThaliPlate(
+                                            items: items,
+                                            previews: previewItems,
+                                            preview: state.preview,
+                                            selectedItemId: _selectedItemId,
+                                            onSelectItem: (id) => setState(
+                                              () => _selectedItemId = id,
+                                            ),
+                                            onAddDish: () =>
+                                                _openComponentPicker(
+                                                  controller,
+                                                  state,
+                                                ),
+                                            onViewAllDishes: () => setState(
+                                              () => _viewMode =
+                                                  ThaliViewMode.list,
+                                            ),
+                                          ),
+                                        ],
+                                      )
+                                    : null,
                                 padding: const EdgeInsets.only(bottom: 16),
                                 itemCount: items.length,
                                 onReorder: controller.reorderItem,
@@ -601,6 +573,39 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
                                 },
                               ),
                             ),
+                            // Pinned under the list so it is always in view.
+                            if (_viewMode == ThaliViewMode.plate &&
+                                _selectedItemId != null)
+                              () {
+                                final selectedItem = items
+                                    .where((i) => i.id == _selectedItemId)
+                                    .firstOrNull;
+                                if (selectedItem == null) {
+                                  return const SizedBox.shrink();
+                                }
+                                final selectedItemPreview = previewItems
+                                    .where((p) => p.item.id == selectedItem.id)
+                                    .firstOrNull;
+                                return ThaliQuickAdjustHud(
+                                  item: selectedItem,
+                                  preview: selectedItemPreview,
+                                  onIncrement: () => controller
+                                      .incrementQuantity(selectedItem.id),
+                                  onDecrement: () => controller
+                                      .decrementQuantity(selectedItem.id),
+                                  onRemove: () {
+                                    controller.removeItem(selectedItem.id);
+                                    setState(() => _selectedItemId = null);
+                                  },
+                                  onReplace: () => _openComponentPicker(
+                                    controller,
+                                    state,
+                                    replacingItemId: selectedItem.id,
+                                  ),
+                                  onClose: () =>
+                                      setState(() => _selectedItemId = null),
+                                );
+                              }(),
                           ],
                         ),
                 ),
