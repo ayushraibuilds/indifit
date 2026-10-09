@@ -1,6 +1,6 @@
 # Premium redesign: tokens, motion and five signature moments
 
-**Status:** approved direction (Ayush, 2026-10-08) · **Owner:** Claude (code), Ayush (review, device feel checks) · **Last updated:** 2026-10-08 (V0 open as #86; open questions answered)
+**Status:** approved direction (Ayush, 2026-10-08) · **Owner:** Claude (code), Ayush (review, device feel checks) · **Last updated:** 2026-10-09 (V0–V2 merged; V3–V6 in progress in parallel)
 
 Related:
 - [Visual review, 8 Oct](../audit/visual-review-2026-10-08/index.html) (artifact https://claude.ai/artifact/1zPcdBAuptLj8GV8SMHAVz): the findings, concepts and screenshots this plan builds on. F1–F8 and concepts A–G are referenced by ID below.
@@ -16,17 +16,17 @@ Update this table in every PR that touches the redesign. Status values: Not star
 
 | ID | Work item | Concept / finding | Depends on | Gate before merge | Status |
 |---|---|---|---|---|---|
-| V0 | Contrast and correctness: `actionFill`, thali labels, dark default, current-plan state, stable search, number formats, headers | F1–F7 | — | Goldens refreshed | In progress (#86) |
-| V1 | Tokens 2.0: radii and squircles, three surface levels, tabular figures, text roles, one section-header style, macro colour map, remove `percent_indicator` | F7, F8, TP-11 | V0 | Contrast tests extended; goldens | Not started |
-| V2 | Motion kit: `animations`, `IndiFitMotion` presets, Add → tick, count-ups, container and shared-axis transitions | TP-10 | V1 | Reduce Motion and haptic tests; device feel check | Not started |
-| V4 | Steel thali: shaded plate, filled katoris, legend, drop-in | A | V1, V2 | Prototype screenshots approved; device feel check | Not started |
-| V5 | Player: rest takeover, exercise-done beat, exercise images, muscle map | B, G | V2; RepDB import (§ 9) | Credits updated; device feel check | Not started |
-| V3 | Today ring with depth and log feedback | E | V2 | Goldens | Not started |
-| V6 | Summary hero and share card | C | V2 | Share card checked in Instagram/WhatsApp | Not started |
+| V0 | Contrast and correctness: `actionFill`, thali labels, dark default, current-plan state, stable search, number formats, headers | F1–F7 | — | Goldens refreshed | Merged (#86) |
+| V1 | Tokens 2.0: radii and squircles, three surface levels, tabular figures, text roles, one section-header style, macro colour map, remove `percent_indicator` | F7, F8, TP-11 | V0 | Contrast tests extended; goldens | Merged (#88) |
+| V2 | Motion kit: `animations`, `IndiFitMotion` presets, Add → tick, count-ups, container and shared-axis transitions | TP-10 | V1 | Reduce Motion and haptic tests; device feel check | Merged (#89) |
+| V4 | Steel thali: shaded plate, filled katoris, legend, drop-in | A | V1, V2 | Prototype screenshots approved; device feel check | In progress (`feat/v4-steel-thali`) |
+| V5 | Player: rest takeover, exercise-done beat, exercise images, muscle map | B, G | V2; RepDB import (§ 9) | Credits updated; device feel check | In progress (`feat/v5-player-rest-visuals`) |
+| V3 | Today ring with depth and log feedback | E | V2 | Goldens | In progress (`feat/v3-today-ring`) |
+| V6 | Summary hero and share card | C | V2 | Share card checked in Instagram/WhatsApp | In progress (`feat/v6-summary-share`) |
 | V7 | Medals: 3D badge art, tilt, sheen | D | V1, V2 | Art licence in manifest | Not started |
 | V8 | Onboarding: animated mark, ruler pickers, target reveal | F | V2; Rive spike (§ 8.1) | IPA size check | Not started |
 
-**Order:** V0 → V1 → V2 → V4 → V5 → V3 → V6 → V7 → V8 (decision 5: the thali comes first after V0–V2). V3 and V6 are small and can move earlier if a slot opens. Nothing here has a date; only the store-build freeze applies.
+**Order:** V0 → V1 → V2 → V4 → V5 → V3 → V6 → V7 → V8 (decision 5: the thali comes first after V0–V2). V3 and V6 are small and can move earlier if a slot opens. Nothing here has a date; only the store-build freeze applies. As of 2026-10-09, V3–V6 are being built in parallel on separate branches rather than strictly in this order.
 
 ---
 
@@ -40,7 +40,7 @@ Update this table in every PR that touches the redesign. Status values: Not star
 5. **The steel thali (V4) is the first signature moment** after V0–V2.
 
 **Decisions on the plan's open questions (Ayush, 2026-10-08, "go with your recommendations")**
-6. **Fat icon:** Phosphor `DropHalf` (duotone), via `phosphor_flutter` 2.1.0 (MIT). Water keeps Material `water_drop`. Phosphor becomes the source for any later icon gaps.
+6. **Fat icon:** Phosphor `DropHalf` (duotone). V1 vendored the two glyphs (MIT) instead of adding `phosphor_flutter` (`e735667`). Water keeps Material `water_drop`. Phosphor becomes the source for any later icon gaps.
 7. **Light theme depth:** soft shadows instead of borders on sections (§ 4.2). Inputs and control outlines keep their 3:1 borders.
 8. **Thali tilt:** ships in V4 (not a separate V4b): gyroscope ±6°, only while the thali screen is visible, off under Reduce Motion.
 9. **Share card:** the workout only, no name or other personal data. A name option can come later if people ask.
@@ -296,7 +296,7 @@ Size budget for V4–V8 combined: +3 MB to the release IPA, measured in each PR.
 | `flutter_animate` | 4.5.2 (in pubspec) | BSD-3 | ✓ | V2 |
 | `sensors_plus` | 7.1.1 (2026-10-01) | BSD-3, fluttercommunity.dev, Flutter Favorite | Flutter ≥ 3.19 ✓ | V4, V7 |
 | `rive` | 0.14.11 (2026-08-03), fallback 0.13.20 | MIT, rive.app | Flutter ≥ 3.28 ✓; native download (§ 8.1) | V8 |
-| `phosphor_flutter` | 2.1.0 (2024-05-10) | MIT | ✓ | V1 (fat icon, decision 6) |
+| `phosphor_flutter` | not added: V1 vendored the `DropHalf` glyphs (MIT) | — | — | — |
 | `flutter_svg` | not needed: MuscleMap geometry is already Dart paths | — | — | — |
 | `percent_indicator` | remove | — | — | V1 |
 
