@@ -7,7 +7,7 @@ final coreRoutes = <RouteBase>[
   ),
   GoRoute(
     path: '/onboarding',
-    builder: (context, state) => const OnboardingScreen(),
+    builder: (context, state) => const OnboardingScreen(showWelcome: true),
   ),
   GoRoute(
     path: '/settings',
