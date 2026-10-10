@@ -125,7 +125,11 @@ void main() {
       final tilt = _FakeTilt();
       await tester.pumpWidget(
         _wrap(
-          BadgeMedal(achievement: _achievement(), tilt: true, tiltSource: tilt),
+          BadgeMedal(
+            achievement: _achievement(),
+            tilt: true,
+            tiltSource: tilt.call,
+          ),
         ),
       );
       expect(tilt.listened, isTrue);
@@ -146,7 +150,7 @@ void main() {
           BadgeMedal(
             achievement: _achievement(unlocked: false),
             tilt: true,
-            tiltSource: locked,
+            tiltSource: locked.call,
           ),
         ),
       );
@@ -159,7 +163,7 @@ void main() {
             key: const Key('reduced'),
             achievement: _achievement(),
             tilt: true,
-            tiltSource: reduced,
+            tiltSource: reduced.call,
           ),
           reduceMotion: true,
         ),
