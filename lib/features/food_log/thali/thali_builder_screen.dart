@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -265,14 +266,14 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
           IconButton(
             key: const Key('thali_clear_button'),
             icon: Icon(Icons.refresh_rounded, color: colors.textSecondary),
-            tooltip: 'Reset Plate',
+            tooltip: 'Reset plate',
             onPressed: () {
               showDialog<bool>(
                 context: context,
                 builder: (ctx) => AlertDialog(
                   backgroundColor: colors.surface,
                   title: Text(
-                    'Reset Thali?',
+                    'Reset thali?',
                     style: TextStyle(color: colors.textPrimary),
                   ),
                   content: Text(
@@ -305,61 +306,102 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
           ),
         ],
       ),
-      body: isLoading
+      // The full-screen spinner is for the first open only: a preset or a
+      // reset keeps the plate on screen with a thin progress line.
+      body: isLoading && draft == null
           ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                // Thali Name Header
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          key: const Key('thali_name_input'),
-                          controller: _nameController,
-                          focusNode: _nameFocusNode,
-                          style: TextStyle(
-                            color: colors.textPrimary,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          decoration: InputDecoration(
-                            hintText: 'Thali Name (e.g. Sunday Lunch Thali)',
-                            hintStyle: TextStyle(color: colors.textDisabled),
-                            border: InputBorder.none,
-                            isDense: true,
-                            contentPadding: EdgeInsets.zero,
-                          ),
-                          onChanged: controller.setName,
+          : _buildBody(
+              controller: controller,
+              state: state,
+              items: items,
+              previewItems: previewItems,
+              isLoading: isLoading,
+              nameRow: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        key: const Key('thali_name_input'),
+                        controller: _nameController,
+                        focusNode: _nameFocusNode,
+                        style: TextStyle(
+                          color: colors.textPrimary,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
                         ),
-                      ),
-                      IconButton(
-                        tooltip: 'Rename thali',
-                        icon: Icon(
-                          Icons.edit_outlined,
-                          size: 18,
-                          color: colors.textDisabled,
+                        decoration: InputDecoration(
+                          hintText: 'Thali Name (e.g. Sunday Lunch Thali)',
+                          hintStyle: TextStyle(color: colors.textDisabled),
+                          border: InputBorder.none,
+                          isDense: true,
+                          contentPadding: EdgeInsets.zero,
                         ),
-                        onPressed: () {
-                          _nameFocusNode.requestFocus();
-                          _nameController.selection = TextSelection(
-                            baseOffset: 0,
-                            extentOffset: _nameController.text.length,
-                          );
-                        },
+                        onChanged: controller.setName,
                       ),
-                    ],
-                  ),
+                    ),
+                    IconButton(
+                      tooltip: 'Rename thali',
+                      icon: Icon(
+                        Icons.edit_outlined,
+                        size: 18,
+                        color: colors.textDisabled,
+                      ),
+                      onPressed: () {
+                        _nameFocusNode.requestFocus();
+                        _nameController.selection = TextSelection(
+                          baseOffset: 0,
+                          extentOffset: _nameController.text.length,
+                        );
+                      },
+                    ),
+                  ],
                 ),
-                Divider(color: colors.border, height: 1),
-                // Once: "Which katori looks like yours?"; the plate's
-                // nutrition is recalculated with the chosen size.
-                KatoriSizePromptCard(onChosen: (_) => controller.preview()),
-                // Presets Bar
-                ThaliPresetsBar(
-                  onSelectPreset: (preset) {
-                    if (items.isEmpty) {
+              ),
+              // Once: "Which katori looks like yours?"; the plate's
+              // nutrition is recalculated with the chosen size.
+              // It appears once its stored answer is read; growing in
+              // place keeps the plate below from jumping.
+              katoriPrompt: _GrowIn(
+                child: KatoriSizePromptCard(
+                  onChosen: (_) => controller.preview(),
+                ),
+              ),
+              presets: ThaliPresetsBar(
+                onSelectPreset: (preset) {
+                  if (items.isEmpty) {
+                    setState(() {
+                      _selectedItemId = null;
+                    });
+                    controller.loadPreset(
+                      presetName: preset.name,
+                      items: preset.items,
+                      presetId: preset.id,
+                    );
+                    return;
+                  }
+                  showDialog<bool>(
+                    context: context,
+                    builder: (dialogContext) => AlertDialog(
+                      title: const Text('Replace plate items?'),
+                      content: Text(
+                        'Applying "${preset.name}" will replace your current thali items.',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () =>
+                              Navigator.of(dialogContext).pop(false),
+                          child: const Text('Cancel'),
+                        ),
+                        FilledButton(
+                          onPressed: () =>
+                              Navigator.of(dialogContext).pop(true),
+                          child: const Text('Replace'),
+                        ),
+                      ],
+                    ),
+                  ).then((confirmed) {
+                    if (confirmed == true && mounted) {
                       setState(() {
                         _selectedItemId = null;
                       });
@@ -368,252 +410,101 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
                         items: preset.items,
                         presetId: preset.id,
                       );
-                      return;
                     }
-                    showDialog<bool>(
-                      context: context,
-                      builder: (dialogContext) => AlertDialog(
-                        title: const Text('Replace plate items?'),
-                        content: Text(
-                          'Applying "${preset.name}" will replace your current thali items.',
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () =>
-                                Navigator.of(dialogContext).pop(false),
-                            child: const Text('Cancel'),
+                  });
+                },
+              ),
+              plateComponents: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 6,
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Plate components (${items.length})',
+                        style: B05Typography.sectionLabel(context),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Container(
+                      height: 32,
+                      margin: const EdgeInsets.only(right: 8),
+                      decoration: BoxDecoration(
+                        color: colors.surfaceSubtle,
+                        borderRadius: B05Radii.smallRadius,
+                        border: Border.all(color: colors.border),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          B05TouchTarget(
+                            minWidth: B05Layout.minTouchTarget,
+                            minHeight: B05Layout.minTouchTarget,
+                            child: IconButton(
+                              key: const Key('thali_view_mode_plate'),
+                              padding: EdgeInsets.zero,
+                              icon: Icon(
+                                Icons.pie_chart_outline_rounded,
+                                size: 18,
+                                color: _viewMode == ThaliViewMode.plate
+                                    ? colors.action
+                                    : colors.textDisabled,
+                              ),
+                              tooltip: 'Plate view',
+                              onPressed: () {
+                                if (_viewMode != ThaliViewMode.plate) {
+                                  setState(
+                                    () => _viewMode = ThaliViewMode.plate,
+                                  );
+                                }
+                              },
+                            ),
                           ),
-                          FilledButton(
-                            onPressed: () =>
-                                Navigator.of(dialogContext).pop(true),
-                            child: const Text('Replace'),
+                          B05TouchTarget(
+                            minWidth: B05Layout.minTouchTarget,
+                            minHeight: B05Layout.minTouchTarget,
+                            child: IconButton(
+                              key: const Key('thali_view_mode_list'),
+                              padding: EdgeInsets.zero,
+                              icon: Icon(
+                                Icons.view_list_rounded,
+                                size: 18,
+                                color: _viewMode == ThaliViewMode.list
+                                    ? colors.action
+                                    : colors.textDisabled,
+                              ),
+                              tooltip: 'List view',
+                              onPressed: () {
+                                if (_viewMode != ThaliViewMode.list) {
+                                  setState(
+                                    () => _viewMode = ThaliViewMode.list,
+                                  );
+                                }
+                              },
+                            ),
                           ),
                         ],
                       ),
-                    ).then((confirmed) {
-                      if (confirmed == true && mounted) {
-                        setState(() {
-                          _selectedItemId = null;
-                        });
-                        controller.loadPreset(
-                          presetName: preset.name,
-                          items: preset.items,
-                          presetId: preset.id,
-                        );
-                      }
-                    });
-                  },
+                    ),
+                    TextButton.icon(
+                      key: const Key('thali_add_item_button_header'),
+                      onPressed: () => _openComponentPicker(controller, state),
+                      icon: const Icon(Icons.add, size: 16),
+                      label: const Text('Add dish'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: colors.action,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 8),
-                // Items List / Empty State
-                Expanded(
-                  child: items.isEmpty
-                      ? _buildEmptyPlateState(controller, state)
-                      : Column(
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 6,
-                              ),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      'Plate components (${items.length})',
-                                      style: B05Typography.sectionLabel(
-                                        context,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  Container(
-                                    height: 32,
-                                    margin: const EdgeInsets.only(right: 8),
-                                    decoration: BoxDecoration(
-                                      color: colors.surfaceSubtle,
-                                      borderRadius: B05Radii.smallRadius,
-                                      border: Border.all(color: colors.border),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        B05TouchTarget(
-                                          minWidth: B05Layout.minTouchTarget,
-                                          minHeight: B05Layout.minTouchTarget,
-                                          child: IconButton(
-                                            key: const Key(
-                                              'thali_view_mode_plate',
-                                            ),
-                                            padding: EdgeInsets.zero,
-                                            icon: Icon(
-                                              Icons.pie_chart_outline_rounded,
-                                              size: 18,
-                                              color:
-                                                  _viewMode ==
-                                                      ThaliViewMode.plate
-                                                  ? colors.action
-                                                  : colors.textDisabled,
-                                            ),
-                                            tooltip: 'Plate View',
-                                            onPressed: () {
-                                              if (_viewMode !=
-                                                  ThaliViewMode.plate) {
-                                                setState(
-                                                  () => _viewMode =
-                                                      ThaliViewMode.plate,
-                                                );
-                                              }
-                                            },
-                                          ),
-                                        ),
-                                        B05TouchTarget(
-                                          minWidth: B05Layout.minTouchTarget,
-                                          minHeight: B05Layout.minTouchTarget,
-                                          child: IconButton(
-                                            key: const Key(
-                                              'thali_view_mode_list',
-                                            ),
-                                            padding: EdgeInsets.zero,
-                                            icon: Icon(
-                                              Icons.view_list_rounded,
-                                              size: 18,
-                                              color:
-                                                  _viewMode ==
-                                                      ThaliViewMode.list
-                                                  ? colors.action
-                                                  : colors.textDisabled,
-                                            ),
-                                            tooltip: 'List View',
-                                            onPressed: () {
-                                              if (_viewMode !=
-                                                  ThaliViewMode.list) {
-                                                setState(
-                                                  () => _viewMode =
-                                                      ThaliViewMode.list,
-                                                );
-                                              }
-                                            },
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  TextButton.icon(
-                                    key: const Key(
-                                      'thali_add_item_button_header',
-                                    ),
-                                    onPressed: () =>
-                                        _openComponentPicker(controller, state),
-                                    icon: const Icon(Icons.add, size: 16),
-                                    label: const Text('Add Dish'),
-                                    style: TextButton.styleFrom(
-                                      foregroundColor: colors.action,
-                                      visualDensity: VisualDensity.compact,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Expanded(
-                              // In plate view the plate heads the list, so it
-                              // gets its full width and the dishes scroll
-                              // underneath.
-                              child: ReorderableListView.builder(
-                                key: const Key('thali_items_list'),
-                                header: _viewMode == ThaliViewMode.plate
-                                    ? Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          CircularThaliPlate(
-                                            items: items,
-                                            previews: previewItems,
-                                            preview: state.preview,
-                                            selectedItemId: _selectedItemId,
-                                            onSelectItem: (id) => setState(
-                                              () => _selectedItemId = id,
-                                            ),
-                                            onAddDish: () =>
-                                                _openComponentPicker(
-                                                  controller,
-                                                  state,
-                                                ),
-                                            onViewAllDishes: () => setState(
-                                              () => _viewMode =
-                                                  ThaliViewMode.list,
-                                            ),
-                                          ),
-                                        ],
-                                      )
-                                    : null,
-                                padding: const EdgeInsets.only(bottom: 16),
-                                itemCount: items.length,
-                                onReorder: controller.reorderItem,
-                                itemBuilder: (context, index) {
-                                  final item = items[index];
-                                  final itemPreview = previewItems
-                                      .where((p) => p.item.id == item.id)
-                                      .firstOrNull;
-                                  return ThaliItemCard(
-                                    key: ValueKey(item.id),
-                                    item: item,
-                                    preview: itemPreview,
-                                    index: index,
-                                    onIncrement: () =>
-                                        controller.incrementQuantity(item.id),
-                                    onDecrement: () =>
-                                        controller.decrementQuantity(item.id),
-                                    onDelete: () {
-                                      if (_selectedItemId == item.id) {
-                                        _selectedItemId = null;
-                                      }
-                                      controller.removeItem(item.id);
-                                    },
-                                  );
-                                },
-                              ),
-                            ),
-                            // Pinned under the list so it is always in view.
-                            if (_viewMode == ThaliViewMode.plate &&
-                                _selectedItemId != null)
-                              () {
-                                final selectedItem = items
-                                    .where((i) => i.id == _selectedItemId)
-                                    .firstOrNull;
-                                if (selectedItem == null) {
-                                  return const SizedBox.shrink();
-                                }
-                                final selectedItemPreview = previewItems
-                                    .where((p) => p.item.id == selectedItem.id)
-                                    .firstOrNull;
-                                return ThaliQuickAdjustHud(
-                                  item: selectedItem,
-                                  preview: selectedItemPreview,
-                                  onIncrement: () => controller
-                                      .incrementQuantity(selectedItem.id),
-                                  onDecrement: () => controller
-                                      .decrementQuantity(selectedItem.id),
-                                  onRemove: () {
-                                    controller.removeItem(selectedItem.id);
-                                    setState(() => _selectedItemId = null);
-                                  },
-                                  onReplace: () => _openComponentPicker(
-                                    controller,
-                                    state,
-                                    replacingItemId: selectedItem.id,
-                                  ),
-                                  onClose: () =>
-                                      setState(() => _selectedItemId = null),
-                                );
-                              }(),
-                          ],
-                        ),
-                ),
-              ],
+              ),
             ),
       // In the bottom slot, floating notices sit above Log Thali instead of
       // covering it (UX-15).
-      bottomNavigationBar: isLoading
+      bottomNavigationBar: isLoading && draft == null
           ? null
           : ThaliNutritionSummaryBar(
               preview: state.preview,
@@ -634,63 +525,227 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
     );
   }
 
+  /// The plate, the dish list and the quick-adjust panel. Only the katori
+  /// question and the plate/list row sit above the plate; the name and the
+  /// quick starts follow it. All of it scrolls, and only the totals bar is
+  /// pinned, so the whole plate and its legend are on screen when it opens.
+  /// An empty plate leads with the quick starts, the usual way to begin.
+  Widget _buildBody({
+    required NutritionThaliController controller,
+    required NutritionThaliState state,
+    required List<NutritionThaliItem> items,
+    required List<NutritionThaliItemPreview> previewItems,
+    required bool isLoading,
+    required Widget nameRow,
+    required Widget katoriPrompt,
+    required Widget presets,
+    required Widget plateComponents,
+  }) {
+    final selectedItem = _viewMode == ThaliViewMode.plate
+        ? items.where((i) => i.id == _selectedItemId).firstOrNull
+        : null;
+    return Column(
+      children: [
+        if (isLoading) const LinearProgressIndicator(minHeight: 2),
+        Expanded(
+          child: LayoutBuilder(
+            builder: (context, viewport) => _buildScroll(
+              controller: controller,
+              state: state,
+              items: items,
+              previewItems: previewItems,
+              nameRow: nameRow,
+              katoriPrompt: katoriPrompt,
+              presets: presets,
+              plateComponents: plateComponents,
+              // Room for the plate and legend once the row above it (and
+              // the katori question, when it shows) take their share.
+              plateMaxHeight: math.max(
+                viewport.maxHeight - _aboveThePlate,
+                _minPlateHeight,
+              ),
+            ),
+          ),
+        ),
+        // Pinned under the list so it is always in view.
+        if (selectedItem != null)
+          ThaliQuickAdjustHud(
+            item: selectedItem,
+            preview: previewItems
+                .where((p) => p.item.id == selectedItem.id)
+                .firstOrNull,
+            onIncrement: () => controller.incrementQuantity(selectedItem.id),
+            onDecrement: () => controller.decrementQuantity(selectedItem.id),
+            onRemove: () {
+              controller.removeItem(selectedItem.id);
+              setState(() => _selectedItemId = null);
+            },
+            onReplace: () => _openComponentPicker(
+              controller,
+              state,
+              replacingItemId: selectedItem.id,
+            ),
+            onClose: () => setState(() => _selectedItemId = null),
+          ),
+      ],
+    );
+  }
+
+  /// The plate/list row plus the katori question, roughly. The plate sizes
+  /// itself to the rest so it is whole on screen when the builder opens.
+  static const _aboveThePlate = 112.0;
+
+  /// Below this the kcal pills crowd the katoris, so a small phone (SE)
+  /// scrolls a little rather than shrinking the plate further.
+  static const _minPlateHeight = 300.0;
+
+  Widget _buildScroll({
+    required NutritionThaliController controller,
+    required NutritionThaliState state,
+    required List<NutritionThaliItem> items,
+    required List<NutritionThaliItemPreview> previewItems,
+    required Widget nameRow,
+    required Widget katoriPrompt,
+    required Widget presets,
+    required Widget plateComponents,
+    required double plateMaxHeight,
+  }) {
+    return items.isEmpty
+        ? ListView(
+            padding: const EdgeInsets.only(bottom: 16),
+            children: [
+              nameRow,
+              katoriPrompt,
+              presets,
+              _buildEmptyPlateState(controller, state),
+            ],
+          )
+        : ReorderableListView.builder(
+            key: const Key('thali_items_list'),
+            header: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                katoriPrompt,
+                plateComponents,
+                if (_viewMode == ThaliViewMode.plate)
+                  ConstrainedBox(
+                    constraints: BoxConstraints(maxHeight: plateMaxHeight),
+                    child: CircularThaliPlate(
+                      items: items,
+                      previews: previewItems,
+                      preview: state.preview,
+                      selectedItemId: _selectedItemId,
+                      onSelectItem: (id) =>
+                          setState(() => _selectedItemId = id),
+                      onAddDish: () => _openComponentPicker(controller, state),
+                      onViewAllDishes: () =>
+                          setState(() => _viewMode = ThaliViewMode.list),
+                    ),
+                  ),
+                nameRow,
+                presets,
+                const SizedBox(height: 8),
+              ],
+            ),
+            padding: const EdgeInsets.only(bottom: 16),
+            itemCount: items.length,
+            onReorder: controller.reorderItem,
+            itemBuilder: (context, index) {
+              final item = items[index];
+              final itemPreview = previewItems
+                  .where((p) => p.item.id == item.id)
+                  .firstOrNull;
+              return ThaliItemCard(
+                key: ValueKey(item.id),
+                item: item,
+                preview: itemPreview,
+                index: index,
+                onIncrement: () => controller.incrementQuantity(item.id),
+                onDecrement: () => controller.decrementQuantity(item.id),
+                onDelete: () {
+                  if (_selectedItemId == item.id) {
+                    _selectedItemId = null;
+                  }
+                  controller.removeItem(item.id);
+                },
+              );
+            },
+          );
+  }
+
+  /// The empty steel plate itself, with its add slot, instead of an icon:
+  /// the screen looks like a thali from the first frame.
   Widget _buildEmptyPlateState(
     NutritionThaliController controller,
     NutritionThaliState state,
   ) {
     final colors = context.b05Colors;
-    return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: colors.action.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.rice_bowl_rounded,
-                size: 40,
-                color: colors.action,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Your Thali Plate is Empty',
-              style: TextStyle(
-                color: colors.textPrimary,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Pick a quick start above, or add dishes like roti, dal, sabzi or rice.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: colors.textSecondary, fontSize: 14),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        B05Layout.space16,
+        B05Layout.space8,
+        B05Layout.space16,
+        0,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          CircularThaliPlate(
+            items: const [],
+            previews: const [],
+            preview: null,
+            selectedItemId: null,
+            onSelectItem: (_) {},
+            onAddDish: () => _openComponentPicker(controller, state),
+            onViewAllDishes: () {},
+          ),
+          const SizedBox(height: B05Layout.space8),
+          Text(
+            'Your plate is empty',
+            textAlign: TextAlign.center,
+            style: B05Typography.title(context),
+          ),
+          const SizedBox(height: B05Layout.space4),
+          Text(
+            'Pick a quick start above, or add dishes like roti, dal, sabzi or rice.',
+            textAlign: TextAlign.center,
+            style: B05Typography.body(
+              context,
+            ).copyWith(color: colors.textSecondary),
+          ),
+          const SizedBox(height: B05Layout.space16),
+          Center(
+            child: FilledButton.icon(
               key: const Key('thali_add_item_empty_button'),
               onPressed: () => _openComponentPicker(controller, state),
               icon: const Icon(Icons.add_rounded),
-              label: const Text('Add First Dish'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: colors.actionFill,
-                foregroundColor: colors.onAction,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
-                ),
-              ),
+              label: const Text('Add first dish'),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
+    );
+  }
+}
+
+/// Grows into place when its child appears, instead of pushing what is
+/// below in one jump. Plain under Reduce Motion (a zero-length AnimatedSize
+/// re-dirties itself during layout).
+class _GrowIn extends StatelessWidget {
+  const _GrowIn({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final duration = B05MotionPolicy.transitionDuration(context);
+    if (duration == Duration.zero) return child;
+    return AnimatedSize(
+      duration: duration,
+      curve: B05MotionPolicy.standardCurve,
+      alignment: Alignment.topCenter,
+      child: child,
     );
   }
 }
