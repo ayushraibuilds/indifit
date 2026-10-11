@@ -9,7 +9,9 @@ import '../../../data/models/b02_muscle_volume_models.dart';
 import '../progress_dashboard_models.dart';
 import '../r08f4_training_volume_presentation.dart';
 import 'progress_formatters.dart';
+import 'progress_stat.dart';
 import 'progress_view_models.dart';
+import 'weekly_volume_chart.dart';
 
 /// Progress section widgets (PV1-ENG-05A first pass).
 ///
@@ -227,20 +229,10 @@ class ProgressHighlightTile extends StatelessWidget {
             ],
           ),
           const SizedBox(height: B05Layout.space8),
-          Text(
+          ProgressStat.split(
             highlight.value,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: B05Typography.title(
-              context,
-            ).copyWith(fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: B05Layout.space4),
-          Text(
-            highlight.detail,
-            maxLines: 3,
-            overflow: TextOverflow.ellipsis,
-            style: B05Typography.caption(context),
+            size: ProgressStatSize.compact,
+            detail: highlight.detail,
           ),
         ],
       ),
@@ -349,10 +341,9 @@ class TrainingConsistencySection extends StatelessWidget {
               Semantics(
                 label: semanticsLabel,
                 child: ExcludeSemantics(
-                  child: Text(
-                    headingText,
-                    style: B05Typography.metric(context),
-                  ),
+                  child: goal != null
+                      ? ProgressStat(value: headingText)
+                      : ProgressStat.split(headingText),
                 ),
               ),
               const SizedBox(height: 2),
@@ -780,13 +771,12 @@ class NutritionHeadline extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        ProgressStat.split(
           hasCalorieAverage
               ? '${formatVolume(summary.averageCaloriesKcal!)} kcal'
               : hasProteinAverage
               ? '${formatNumber(summary.averageProteinG!)} g protein'
               : '${completeDays.length} complete logged days',
-          style: B05Typography.metric(context),
         ),
         if (hasCalorieAverage) ...[
           const SizedBox(height: 2),
@@ -1043,13 +1033,21 @@ class TrainingVolumeSection extends StatelessWidget {
       useRecent: summary.useRecent,
     );
     final subtitle = R08F4TrainingVolumePresentation.formatVolumeSubtitle(
-      units: units,
       useRecent: summary.useRecent,
     );
     final comparison = R08F4TrainingVolumePresentation.formatVolumeComparison(
       summary,
     );
     final semanticComparison = comparison == null ? '' : ' $comparison.';
+    final change = R08F4TrainingVolumePresentation.formatVolumeChangePercent(
+      summary,
+    );
+    final weeks = R08F4TrainingVolumePresentation.weeklyVolume(
+      allWorkouts: snapshot.workouts ?? const <ProgressWorkoutRecord>[],
+      todayLocalDate: snapshot.todayLocalDate,
+      timezoneId: snapshot.timezoneId,
+      units: units,
+    );
 
     return Column(
       // Stretch so every card in a section is full width.
@@ -1059,24 +1057,44 @@ class TrainingVolumeSection extends StatelessWidget {
         const SizedBox(height: B05Layout.space8),
         B05Surface(
           padding: const EdgeInsets.all(B05Layout.space20),
-          child: Semantics(
-            label: '$semanticLabel$semanticComparison',
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  R08F4TrainingVolumePresentation.formatVolume(
-                    summary.displayVolume,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Semantics(
+                label: '$semanticLabel$semanticComparison',
+                child: ExcludeSemantics(
+                  child: ProgressStat(
+                    value: R08F4TrainingVolumePresentation.formatVolume(
+                      summary.displayVolume,
+                    ),
+                    unit: summary.unitSymbol,
+                    detail: subtitle,
+                    delta: change == null
+                        ? null
+                        : ProgressStatDelta(
+                            text: change,
+                            trend: change == 'Same'
+                                ? ProgressTrend.flat
+                                : change.startsWith('+')
+                                ? ProgressTrend.up
+                                : ProgressTrend.down,
+                          ),
                   ),
-                  style: B05Typography.metric(context),
                 ),
-                Text(subtitle, style: B05Typography.body(context)),
-                if (comparison != null) ...[
-                  const SizedBox(height: 4),
-                  Text(comparison, style: B05Typography.caption(context)),
-                ],
+              ),
+              if (comparison != null) ...[
+                const SizedBox(height: B05Layout.space4),
+                Text(comparison, style: B05Typography.caption(context)),
               ],
-            ),
+              if (WeeklyVolumeChart.canShow(weeks)) ...[
+                const SizedBox(height: B05Layout.space20),
+                WeeklyVolumeChart(
+                  key: const ValueKey('progress_weekly_volume_chart'),
+                  weeks: weeks,
+                  unitSymbol: summary.unitSymbol,
+                ),
+              ],
+            ],
           ),
         ),
       ],

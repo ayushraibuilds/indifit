@@ -25,8 +25,9 @@ Update this table in every PR that touches the redesign. Status values: Not star
 | V6 | Summary hero and share card | C | V2 | Share card checked in Instagram/WhatsApp | Merged (#94) |
 | V7 | Medals: 3D badge art, tilt, sheen | D | V1, V2 | Art licence in manifest | Merged (#95) |
 | V8 | Onboarding: animated mark, ruler pickers, target reveal | F | V2 | IPA size check (no new assets or packages) | Merged (#96, #97) |
+| V9 | Progress: one stat component, weekly volume chart (§ 13.1) | 11 Oct review, decision 3 | V1, V2 | Goldens | In progress (this PR) |
 
-**Order:** V0 → V1 → V2 → V4 → V5 → V3 → V6 → V7 → V8 (decision 5: the thali comes first after V0–V2). V3 and V6 are small and can move earlier if a slot opens. Nothing here has a date; only the store-build freeze applies.
+**Order:** V0 → V1 → V2 → V4 → V5 → V3 → V6 → V7 → V8, then V9 after the 11 Oct review fixes (decision 5: the thali comes first after V0–V2). V3 and V6 are small and can move earlier if a slot opens. Nothing here has a date; only the store-build freeze applies.
 
 ---
 
@@ -335,7 +336,17 @@ All of V0–V8 is merged. The [redesign review](../audit/redesign-review-2026-10
 | M-2 | The medal sheet covered the summary hero | Unlocks wait in a "2 badges unlocked" row that opens the sheet (decision, 11 Oct) | Merged (#94) |
 | M-3 | The exercise-done beat sat under the rest takeover | The takeover opens when the beat ends | Merged (#92) |
 | M-4 | The alert permission sheet covered the first takeover | A row inside the rest timer; asked again later if left unanswered (decision, 11 Oct) | Merged (#92) |
-| M-5 | The whole thali never fit on screen | Only the plate/list row and katori question sit above the plate; the plate sizes to the screen; no full-screen spinner on a preset | In progress (this PR) |
-| O-1 – O-4 | Number and date formats, Title Case, card widths, player details | Consistency sweep | Not started (thali labels done in M-5) |
-| V9 | Progress: one stat component and a weekly volume chart (decision, 11 Oct) | — | Not started |
+| M-5 | The whole thali never fit on screen | Only the plate/list row and katori question sit above the plate; the plate sizes to the screen; no full-screen spinner on a preset | Merged (#98) |
+| O-1 – O-4 | Number and date formats, Title Case, card widths, player details | Consistency sweep | Merged (#99, #100) |
+| V9 | Progress: one stat component and a weekly volume chart (decision, 11 Oct) | `ProgressStat` everywhere a number leads; 8-week loaded-volume bars (§ 13.1) | In progress (this PR) |
+
+### 13.1 V9: Progress
+
+**Goal.** Progress read as numbers in boxes, each card in its own style. V9 gives it one number style and its first training chart. TP-9 (muscle heatmap) stays in the training plan.
+
+**Stat component.** `ProgressStat` (`lib/features/progress/widgets/progress_stat.dart`): a tabular value, a smaller unit on the same baseline, an optional change chip and a detail line, in two sizes (hero for a section's lead number, compact for tiles and three-up columns). Value and unit are one `Text.rich`, so the plain text ("70.0 kg") is unchanged for screen readers and tests. `ProgressStatDelta` is the one change chip: the sign carries the direction, up is the success colour, down and flat stay neutral, and body weight is always neutral. Used by Highlights, Training consistency, Weight, Nutrition, Loaded volume and the three period-comparison cards (which also lose their own badge widgets, a hard-coded blue and "Rate of Change").
+
+**Weekly volume chart.** Inside Loaded volume, under the four-week total and its "+12%" chip: eight Monday-start weeks of trustworthy loaded volume, oldest on the left. The current week is selected; tapping a bar selects that week with a selection haptic, and the line below reads "Week of 20 Jul · 4,000 kg · 1 workout". Empty weeks keep a stub. Shown only with two or more weeks of volume. Each bar is a selectable button for screen readers. No grow-in: bars only animate between values, and not under Reduce Motion.
+
+**Gates.** V9 tests (`test/v9_progress_test.dart`): buckets, units, the 2-week rule, change copy, stat split, selection and haptic, semantics, Reduce Motion, 320 pt at 2× text. Full suite and analyze clean; goldens refreshed and a sample reviewed.
 
