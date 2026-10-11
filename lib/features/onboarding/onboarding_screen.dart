@@ -21,9 +21,14 @@ import 'b05_adaptive_onboarding.dart';
 import 'widgets/onboarding_ruler_picker.dart';
 import 'widgets/onboarding_step_widgets.dart';
 import 'widgets/onboarding_target_reveal.dart';
+import 'widgets/onboarding_welcome.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
-  const OnboardingScreen({super.key});
+  const OnboardingScreen({this.showWelcome = false, super.key});
+
+  /// Opens a fresh setup on the animated welcome screen. A restored draft
+  /// always goes straight back to its step.
+  final bool showWelcome;
 
   @override
   ConsumerState<OnboardingScreen> createState() => _OnboardingScreenState();
@@ -80,6 +85,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   var _isCompleting = false;
   var _isSkipping = false;
   var _showingPayoff = false;
+  var _showingWelcome = false;
 
   /// The target reveal plays the first time step 5 opens; coming back to
   /// it shows the settled ring.
@@ -213,6 +219,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         _draftLoading = false;
         _draftLoaded = true;
         _draftError = null;
+        _showingWelcome = widget.showWelcome && draft == null;
       });
     } catch (_) {
       if (!mounted) return;
@@ -637,6 +644,25 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     if (!_draftLoaded) return _buildDraftRestoreState();
+    return AnimatedSwitcher(
+      duration: B05MotionPolicy.transitionDuration(
+        context,
+        standard: B05MotionPolicy.completionDuration,
+      ),
+      switchInCurve: B05MotionPolicy.standardCurve,
+      child: _showingWelcome
+          ? OnboardingWelcome(
+              key: const ValueKey('welcome'),
+              onStart: () => setState(() => _showingWelcome = false),
+            )
+          : KeyedSubtree(
+              key: const ValueKey('steps'),
+              child: _buildSteps(context),
+            ),
+    );
+  }
+
+  Widget _buildSteps(BuildContext context) {
     final colors = context.b05Colors;
     return ConsumerTaskScaffold(
       scrollable: false,

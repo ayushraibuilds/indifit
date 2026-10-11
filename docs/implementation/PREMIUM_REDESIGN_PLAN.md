@@ -24,7 +24,7 @@ Update this table in every PR that touches the redesign. Status values: Not star
 | V3 | Today ring with depth and log feedback | E | V2 | Goldens | Not started |
 | V6 | Summary hero and share card | C | V2 | Share card checked in Instagram/WhatsApp | Not started |
 | V7 | Medals: 3D badge art, tilt, sheen | D | V1, V2 | Art licence in manifest | Merged (#95) |
-| V8 | Onboarding: animated mark, ruler pickers, target reveal | F | V2 | IPA size check (no new assets or packages) | In progress (#96 rulers, reveal, no Skip on step 5; #97 welcome) |
+| V8 | Onboarding: animated mark, ruler pickers, target reveal | F | V2 | IPA size check (no new assets or packages) | In progress (#96 rulers, reveal, no Skip on step 5; #97 welcome (this PR)) |
 
 **Order:** V0 → V1 → V2 → V4 → V5 → V3 → V6 → V7 → V8 (decision 5: the thali comes first after V0–V2). V3 and V6 are small and can move earlier if a slot opens. Nothing here has a date; only the store-build freeze applies.
 
@@ -34,7 +34,7 @@ Update this table in every PR that touches the redesign. Status values: Not star
 
 **Decisions (Ayush, 2026-10-08, "yes to all")**
 1. **Dark is the first-run theme.** Light stays as an option. Shipped in V0 (`ThemeModeNotifier.defaultMode`).
-2. **Rive, not Lottie,** for the few hero animations (V8, optionally V7).
+2. **Rive, not Lottie,** for the few hero animations (V8, optionally V7). *Superseded for V8 (2026-10-11):* the welcome mark is drawn in code (§ 8.1), so the app takes no Rive dependency for now.
 3. **Medal and illustration art starts with Microsoft Fluent Emoji 3D (MIT).** Commission one consistent set once Plus revenue starts.
 4. **Import RepDB free-tier exercise images,** with attribution in About & credits.
 5. **The steel thali (V4) is the first signature moment** after V0–V2.
@@ -245,10 +245,9 @@ All presets read `B05MotionPolicy.reduceMotion(context)` and return the final st
 
 ## 8. V3, V6, V7, V8
 
-### 8.1 V8 first: Rive spike (before any V8 design work)
-- `rive` 0.14.x uses `rive_native`, which downloads prebuilt native libraries during `flutter build`. Check, in a throwaway branch: CI build time and cache, offline build behaviour, and the release IPA size increase.
-- If any of these is a problem, fall back to `rive: 0.13.20` (Dart renderer, 2024-12-02) for the one logo animation.
-- Record the result in this section before V8 starts.
+### 8.1 V8 welcome mark: drawn in code, not Rive (2026-10-11)
+- The mark is the app icon traced into paths (`IndiFitMarkPainter`, 1024-unit icon space) and animated with one `AnimationController`. No `.riv` file needed authoring in the Rive editor, and the app takes no new package, asset, native download or IPA size.
+- The Rive spike is therefore not needed. If a later hero animation needs Rive, the original checks still apply: `rive` 0.14.x downloads `rive_native` libraries during `flutter build` (CI time, offline builds, IPA size), with `rive: 0.13.20` as the fallback.
 
 ### 8.2 V3 Today ring (concept E)
 - `CalorieRingPainter`: `SweepGradient` arc (#34D399 → #2DD4BF), soft glow (blurred duplicate arc at 30 %), 14 pt stroke, track `inset`.
@@ -269,12 +268,12 @@ All presets read `B05MotionPolicy.reduceMotion(context)` and return the final st
 - Size: nine 256 × 256 PNGs, 312 KB.
 
 ### 8.5 V8 Onboarding (concept F)
-- Welcome screen before step 1: animated IndiFit mark (Rive, < 50 KB file), one line of value, "Get started".
+- Welcome screen before step 1: animated IndiFit mark (drawn in code, § 8.1), one line of value, "Get started".
 - Height and weight: horizontal ruler pickers (custom `ListWheelScrollView`-based, 1 cm / 0.5 kg ticks) with `selection()` haptic per tick; typing stays available for accessibility.
 - Step 5: a 1.5 s "Building your targets" beat, then the calorie ring fills to the target and protein/carbs/fat appear above the fold; the recap of answers moves below.
 - Drop "Skip for now" on step 5.
 - **Built so far (`feat/v8-onboarding`):** `OnboardingRulerPicker` (`lib/features/onboarding/widgets/onboarding_ruler_picker.dart`) under the height and weight fields, replacing their ± steppers; it is a custom-painted ruler driven by horizontal drag rather than a `ListWheelScrollView`, with a slider for screen readers, arrow keys, and the text field kept for typing. Age keeps its steppers. `OnboardingTargetReveal` (`onboarding_target_reveal.dart`) puts the ring and macros at the top of step 5 and the recap below; it plays once per session, and under Reduce Motion it is final on the first frame. Skip is hidden on step 5.
-- **Still open:** the welcome screen. It waits on the in-house `.riv` logo animation (decision 2: Rive stays) and the § 8.1 spike.
+- **Welcome screen (`feat/v8-welcome-intro`):** `OnboardingWelcome` (`onboarding_welcome.dart`), shown only on the first-run `/onboarding` route when no draft is restored. In 2.6 s the two strength bars slide in from opposite sides, the centre leaf grows out of them and the side leaves unfold, a ring pulses once and a light sweep crosses the mark; the wordmark, value line and "Get started" rise in after it. Tapping anywhere jumps to the end; under Reduce Motion the finished frame shows at once. Settings and Profile still open setup without it.
 
 ---
 
@@ -285,7 +284,7 @@ All presets read `B05MotionPolicy.reduceMotion(context)` and return the final st
 | RepDB free tier (exercise WebP) | RepDB Free Tier Licence 1.0, commercial in-app use with attribution (licence file already in `LICENSES/`, pinned in `asset_manifest.json`, status "not approved") | Change status to approved; import only mapped exercises; add attribution to About & credits; record per-file provenance |
 | Fluent Emoji 3D | MIT (repo `microsoft/fluentui-emoji`, checked 2026-10-08) | Add source entry, licence text, per-file list |
 | MuscleMap geometry | MIT, already ported (`indifit_muscle_map_geometry.g.dart`) | None |
-| Rive logo animation | Made in-house in the Rive editor | Source `.riv` checked in under `assets/rive/` |
+| Welcome mark | In-house; traced from `assets/branding/indifit_app_icon_master.png` | None (paths in code) |
 
 Size budget for V4–V8 combined: +3 MB to the release IPA, measured in each PR.
 
@@ -299,7 +298,7 @@ Size budget for V4–V8 combined: +3 MB to the release IPA, measured in each PR.
 | `animations` | **2.2.0** (3.0.0 needs Flutter 3.44) | BSD-3, flutter.dev | Flutter ≥ 3.35 ✓ | V2 |
 | `flutter_animate` | 4.5.2 (in pubspec) | BSD-3 | ✓ | V2 |
 | `sensors_plus` | 7.1.1 (2026-10-01) | BSD-3, fluttercommunity.dev, Flutter Favorite | Flutter ≥ 3.19 ✓ | V4, V7 |
-| `rive` | 0.14.11 (2026-08-03), fallback 0.13.20 | MIT, rive.app | Flutter ≥ 3.28 ✓; native download (§ 8.1) | V8 |
+| `rive` | not used for now (§ 8.1); 0.14.11, fallback 0.13.20 | MIT, rive.app | Flutter ≥ 3.28 ✓; native download | — |
 | `phosphor_flutter` | 2.1.0 (2024-05-10) | MIT | ✓ | V1 (fat icon, decision 6) |
 | `flutter_svg` | not needed: MuscleMap geometry is already Dart paths | — | — | — |
 | `percent_indicator` | remove | — | — | V1 |
