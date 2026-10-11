@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../config/app_preferences_keys.dart';
@@ -17,14 +18,16 @@ enum RestAlertPrompt {
   preciseAlarms,
 }
 
-/// Shows the explanation for [prompt] and returns true when the user chose
-/// to continue. Registered by the workout player, which owns a context.
+/// Shows the ask for [prompt] and returns true when the user chose to
+/// continue, false for "Not now", and null when it went away unanswered (the
+/// rest ended first). Registered by the workout player, which owns a context.
 typedef RestAlertPromptPresenter =
-    Future<bool> Function(RestAlertPrompt prompt);
+    Future<bool?> Function(RestAlertPrompt prompt);
 
 /// Asks for rest-alert permissions once, on the first rest, instead of only
-/// from the Settings reminder toggles (audit R-02). Each ask is stored so it
-/// never repeats, whatever the user answers.
+/// from the Settings reminder toggles (audit R-02). An answer is stored so it
+/// never repeats, whatever it was; an ask left unanswered comes back on a
+/// later rest.
 class RestAlertPermissionService {
   RestAlertPermissionService({
     Future<bool> Function()? requestNotifications,
@@ -50,6 +53,11 @@ class RestAlertPermissionService {
   /// Process-wide default used by the production workout providers.
   static RestAlertPermissionService get instance =>
       _instance ??= RestAlertPermissionService();
+
+  /// Replaces [instance] in tests; null restores the default.
+  @visibleForTesting
+  static set debugInstance(RestAlertPermissionService? value) =>
+      _instance = value;
 
   final Future<bool> Function() _requestNotifications;
   final Future<bool> Function() _notificationsGranted;
@@ -87,23 +95,24 @@ class RestAlertPermissionService {
     try {
       final prefs = await _preferences();
       if (prefs.getBool(AppPreferenceKeys.restAlertPermissionAsked) != true) {
-        await prefs.setBool(AppPreferenceKeys.restAlertPermissionAsked, true);
         // Already allowed from Settings: nothing to ask.
         if (!await _notificationsGranted()) {
-          if (await presenter(RestAlertPrompt.notifications)) {
-            await _requestNotifications();
-          }
+          final answer = await presenter(RestAlertPrompt.notifications);
+          if (answer == null) return;
+          await prefs.setBool(AppPreferenceKeys.restAlertPermissionAsked, true);
+          if (answer) await _requestNotifications();
           return;
         }
+        await prefs.setBool(AppPreferenceKeys.restAlertPermissionAsked, true);
       }
 
       if (prefs.getBool(AppPreferenceKeys.restAlertPreciseOffered) != true) {
         // Null means not Android, or the OS doesn't gate exact alarms.
         if (await _canScheduleExactAlarms() != false) return;
+        final answer = await presenter(RestAlertPrompt.preciseAlarms);
+        if (answer == null) return;
         await prefs.setBool(AppPreferenceKeys.restAlertPreciseOffered, true);
-        if (await presenter(RestAlertPrompt.preciseAlarms)) {
-          await _openExactAlarmSettings();
-        }
+        if (answer) await _openExactAlarmSettings();
       }
     } catch (error) {
       AppLogger.warning(

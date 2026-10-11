@@ -1,13 +1,13 @@
 import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
-
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/di/providers.dart';
+import 'package:indifit/core/services/rest_alert_permission_service.dart';
 import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/models/b02_execution_models.dart';
@@ -22,6 +22,7 @@ import 'package:indifit/features/media/indifit_muscle_map.dart';
 import 'package:indifit/features/workout_player/b02_strength_execution_controller.dart';
 import 'package:indifit/features/workout_player/b02_strength_player_screen.dart';
 import 'package:indifit/features/workout_player/widgets/b07_exercise_context.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// V5 (PREMIUM_REDESIGN_PLAN § 7): the rest takeover, the player beats and
 /// the exercise pictures. Rest timing and intents are covered by the
@@ -93,6 +94,44 @@ void main() {
         );
         expect(size.height, greaterThanOrEqualTo(56), reason: label);
       }
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('the first rest asks for alerts in a row, not a sheet', (
+      tester,
+    ) async {
+      SharedPreferences.setMockInitialValues({});
+      var requests = 0;
+      final service = RestAlertPermissionService(
+        requestNotifications: () async {
+          requests++;
+          return true;
+        },
+        notificationsGranted: () async => false,
+        canScheduleExactAlarms: () async => null,
+        openExactAlarmSettings: () async {},
+      );
+      RestAlertPermissionService.debugInstance = service;
+      addTearDown(() => RestAlertPermissionService.debugInstance = null);
+      final launch = (await tester.runAsync(() => _launchPlanned(executions)))!;
+      await _pumpPlayer(tester, launch, executions, db, restAlerts: service);
+
+      await _logSet(tester, reps: '8');
+      await _settle(tester);
+
+      expect(find.bySemanticsLabel('Rest in progress'), findsOneWidget);
+      expect(find.byType(BottomSheet), findsNothing);
+      final row = find.byKey(const Key('rest_alert_row'));
+      expect(
+        find.descendant(of: find.byType(StickyRestBar), matching: row),
+        findsOneWidget,
+      );
+      expect(requests, 0, reason: 'no system prompt until asked');
+
+      await tester.tap(find.text('Allow'));
+      await _settle(tester);
+      expect(requests, 1);
+      expect(row, findsNothing);
       expect(tester.takeException(), isNull);
     });
 
@@ -212,11 +251,14 @@ void main() {
       expect(find.text('Leg Press done'), findsOneWidget);
       expect(find.text('3 × 8 · 60 kg'), findsOneWidget);
       expect(find.text('Log set'), findsNothing);
+      // The beat plays alone; the rest timer waits for it.
+      expect(find.byType(StickyRestBar), findsNothing);
 
       await tester.pump(B02PlayerBeats.exerciseDone + _frame);
       await _settle(tester);
       expect(find.text('Leg Press done'), findsNothing);
       expect(find.text('Set 1 · 40 kg × 10–12'), findsOneWidget);
+      expect(find.bySemanticsLabel('Rest in progress'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
@@ -573,6 +615,7 @@ Future<void> _pumpPlayer(
   double textScale = 1,
   bool reduceMotion = false,
   B05ExerciseImages? pictures,
+  RestAlertPermissionService? restAlerts,
 }) async {
   tester.view.physicalSize = const Size(390, 844);
   tester.view.devicePixelRatio = 1;
@@ -585,6 +628,7 @@ Future<void> _pumpPlayer(
   final controller = B02StrengthExecutionController(
     StrengthExecutionCompatibilityAdapter(executions),
     initialLaunch: launch,
+    restAlerts: restAlerts,
   );
   await tester.runAsync(controller.loadSlots);
   final theme = AppTheme.darkTheme;

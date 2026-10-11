@@ -692,6 +692,9 @@ class StickyRestBar extends StatefulWidget {
   final VoidCallback? onCollapse;
   final B02RestUpNext? upNext;
 
+  /// Shown under the timer in both layouts, e.g. the one-time rest-alert ask.
+  final Widget? footer;
+
   const StickyRestBar({
     super.key,
     required this.state,
@@ -703,6 +706,7 @@ class StickyRestBar extends StatefulWidget {
     this.onExpand,
     this.onCollapse,
     this.upNext,
+    this.footer,
   });
 
   @override
@@ -751,9 +755,23 @@ class _StickyRestBarState extends State<StickyRestBar> {
       final progress = selected == 0
           ? 0.0
           : (remainingSeconds / selected).clamp(0.0, 1.0);
-      content = widget.expanded && b02RestTakeoverFits(context)
+      final timer = widget.expanded && b02RestTakeoverFits(context)
           ? _takeover(context, period, remaining, selected, progress)
           : _bar(context, period, remaining, progress);
+      final footer = widget.footer;
+      content = footer == null
+          ? timer
+          : Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                timer,
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                  child: footer,
+                ),
+              ],
+            );
     }
     final duration = B05MotionPolicy.transitionDuration(context);
     // AnimatedSize with a zero duration re-dirties itself during layout.

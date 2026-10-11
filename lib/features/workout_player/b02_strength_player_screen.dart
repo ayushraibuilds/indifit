@@ -36,7 +36,7 @@ import 'widgets/b02_player_view_models.dart';
 import 'widgets/b07_exercise_context.dart';
 import 'widgets/plate_calculator_sheet.dart';
 import 'widgets/r07c_workout_presentation.dart';
-import 'widgets/rest_alert_prompt_sheet.dart';
+import 'widgets/rest_alert_ask_row.dart';
 import 'workout_execution_context.dart';
 import 'workout_execution_route.dart';
 import 'workout_execution_shell.dart';
@@ -151,14 +151,30 @@ class _B02StrengthPlayerScreenState
     });
   }
 
-  Future<bool> _showRestAlertPrompt(RestAlertPrompt prompt) async {
-    if (!mounted) return false;
-    return RestAlertPromptSheet.show(context, prompt);
+  /// The rest-alert ask waiting in the rest timer, if any. It is a row in
+  /// the timer, not a sheet over it; it goes away unanswered (null) when the
+  /// rest ends, and the service asks again on a later rest.
+  ({RestAlertPrompt prompt, Completer<bool?> answer})? _restAlertAsk;
+
+  Future<bool?> _showRestAlertPrompt(RestAlertPrompt prompt) {
+    if (!mounted) return Future.value();
+    _answerRestAlert(null);
+    final answer = Completer<bool?>();
+    setState(() => _restAlertAsk = (prompt: prompt, answer: answer));
+    return answer.future;
+  }
+
+  void _answerRestAlert(bool? value) {
+    final ask = _restAlertAsk;
+    if (ask == null) return;
+    _restAlertAsk = null;
+    if (!ask.answer.isCompleted) ask.answer.complete(value);
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _answerRestAlert(null);
     RestAlertPermissionService.instance.unregisterPresenter(owner: this);
     _previousLookup.invalidate();
     for (final controller in _repControllers.values) {
@@ -298,6 +314,8 @@ class _B02StrengthPlayerScreenState
     final workingSetCount = _workingSetCount(launch.state, selected);
     final hasOpenRest = _hasOpenRest(launch.state);
     final openRest = b02OpenRestPeriod(launch.state);
+    // An ask nobody answered before the rest ended waits for a later rest.
+    if (!hasOpenRest) _answerRestAlert(null);
     if (openRest != null && openRest.id != _lastSeenRestId) {
       _lastSeenRestId = openRest.id;
       _restExpanded = true;
@@ -448,7 +466,11 @@ class _B02StrengthPlayerScreenState
               onExpandedChanged: (value) =>
                   setState(() => _picturesPreference = value),
             ),
-      stickyRestSlot: hasOpenRest
+      // The exercise-done beat plays alone: the rest takeover for the next
+      // exercise opens once it ends (the rest clock runs meanwhile).
+      stickyRestSlot: exerciseDone != null
+          ? null
+          : hasOpenRest
           ? _buildStickyRestBar(provider, ui, launch, restUpNext)
           : _restDoneVisible
           ? RestDoneBeat(
@@ -1136,6 +1158,14 @@ class _B02StrengthPlayerScreenState
     state: launch.state,
     expanded: _restExpanded,
     upNext: upNext,
+    footer: switch (_restAlertAsk) {
+      (:final prompt, answer: _) => RestAlertAskRow(
+        prompt: prompt,
+        onAllow: () => setState(() => _answerRestAlert(true)),
+        onDismiss: () => setState(() => _answerRestAlert(false)),
+      ),
+      null => null,
+    },
     onExpand: () => setState(() => _restExpanded = true),
     onCollapse: () => setState(() => _restExpanded = false),
     onExtend: ui.isBusy
