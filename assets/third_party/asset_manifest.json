@@ -430,6 +430,56 @@
       ],
       "intended_indifit_usage": "Future optional semantic icon source; not currently adopted.",
       "open_questions": []
+    },
+    {
+      "source_key": "fluent_emoji_3d",
+      "name": "Microsoft Fluent Emoji (3D)",
+      "repository": "https://github.com/microsoft/fluentui-emoji",
+      "immutable_commit": "1ffb34c752ecf5d402f04cfb4b392c77f57c54bc",
+      "tag": null,
+      "pin_status": "pinned",
+      "acquisition_date_utc": "2026-10-09T00:00:00Z",
+      "usage_classification": "production_candidate",
+      "approval_status": "approved_badge_art",
+      "source_code_license": {
+        "scope": "repository source",
+        "name": "MIT License",
+        "version": "MIT",
+        "status": "verified",
+        "license_file": "LICENSES/FluentEmoji-MIT.txt",
+        "license_sha256": "sha256:c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383",
+        "notes": "The same MIT licence covers the emoji artwork in the repository."
+      },
+      "content_licenses": [
+        {
+          "scope": "3D emoji PNG artwork",
+          "name": "MIT License",
+          "version": "MIT",
+          "status": "verified",
+          "license_file": "LICENSES/FluentEmoji-MIT.txt",
+          "license_sha256": "sha256:c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383",
+          "notes": "Nine 256 x 256 PNGs, exact upstream bytes, listed with checksums in assets/badges/SOURCE.md."
+        }
+      ],
+      "attribution": {
+        "required": true,
+        "text": "Badge art from Microsoft Fluent Emoji (MIT)",
+        "url": "https://github.com/microsoft/fluentui-emoji"
+      },
+      "permitted_use": [
+        "Commercial in-app use, modification and redistribution under MIT with the notice retained."
+      ],
+      "prohibited_use": [
+        "Shipping the art without the MIT notice."
+      ],
+      "redistribution_constraints": [
+        "Keep LICENSES/FluentEmoji-MIT.txt with the art."
+      ],
+      "modification_constraints": [
+        "None beyond keeping the notice; locked badges are greyed at render time, not in the files."
+      ],
+      "intended_indifit_usage": "Achievement badge art (V7), shown at 85 pt or smaller.",
+      "open_questions": []
     }
   ],
   "assets": [

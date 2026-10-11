@@ -1,12 +1,17 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:intl/intl.dart' hide TextDirection;
+import '../../../core/motion/indifit_motion.dart';
 import '../../../core/services/achievement_service.dart';
+import '../../../core/services/indifit_haptics.dart';
 import '../../../core/services/modal_queue_coordinator.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
 import '../../../core/widgets/confetti_overlay.dart';
 import '../../progress/achievements_screen.dart';
+import '../../progress/widgets/badge_medal.dart';
 
 /// Non-blocking bottom sheet presented after workout completion when one or
 /// more milestones were unlocked during the session.
@@ -38,6 +43,8 @@ class _AchievementCelebrationSheetState
     // Announce to screen readers
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || widget.achievements.isEmpty) return;
+      // The unlocks are already saved; one haptic pairs with the sheen.
+      unawaited(IndiFitHaptics.success());
       final titles = widget.achievements.map((a) => a.title).join(', ');
       final message = widget.achievements.length == 1
           ? 'Milestone unlocked: $titles!'
@@ -203,18 +210,14 @@ class _AchievementCelebrationSheetState
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Badge Icon
-          Container(
-            padding: const EdgeInsets.all(B05Layout.space16),
-            decoration: BoxDecoration(
-              color: achievement.color.withValues(alpha: 0.15),
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: achievement.color.withValues(alpha: 0.3),
-                width: 2,
-              ),
+          // Badge art: pops in, sweeps a sheen once, leans with the phone.
+          IndiFitPop(
+            child: BadgeMedal(
+              achievement: achievement,
+              size: 72,
+              tilt: true,
+              sheen: true,
             ),
-            child: Icon(achievement.icon, size: 40, color: achievement.color),
           ),
           const SizedBox(height: B05Layout.space12),
 

@@ -40,6 +40,8 @@ dependencies:
   flutter_animate: ^4.5.0
   # 2.2.0, not 3.x: 3.0.0 needs Flutter 3.44 and CI pins 3.41.4.
   animations: ^2.2.0
+  # Thali (V4) and badge (V7) tilt: art leans with the phone, only while visible.
+  sensors_plus: ^7.1.1
   # Continuous (squircle) corners for B05 surfaces and the theme (V1).
   figma_squircle: ^0.6.3
   uuid: ^4.3.3
@@ -105,6 +107,7 @@ flutter:
     - assets/catalog/
     - assets/third_party/asset_manifest.json
     - assets/generated/repdb/
+    - assets/badges/
 
   # Offline-first typography: Outfit is bundled as a variable font so the app
   # never fetches fonts over the network at runtime.
