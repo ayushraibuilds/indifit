@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/di/providers.dart';
+import '../../../core/services/achievement_service.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
 import '../../../data/models/b02_execution_models.dart';
 import '../../../data/repositories/b02_execution_compatibility_read_repository.dart';
@@ -40,7 +41,7 @@ class B02WorkoutCompletionSuccess extends ConsumerWidget {
     this.completionKind = CompletionKind.full,
     required this.onDone,
     this.allowCelebration = false,
-    this.achievementSheetWillOpen = false,
+    this.unlocks = const [],
   });
 
   final B02StrengthExecutionLaunch launch;
@@ -51,9 +52,9 @@ class B02WorkoutCompletionSuccess extends ConsumerWidget {
   /// True only on the summary shown right after saving, never from history.
   final bool allowCelebration;
 
-  /// Whether an achievement sheet opens over this summary. Null while that
-  /// is still being worked out; the celebration waits for it.
-  final bool? achievementSheetWillOpen;
+  /// Badges this workout unlocked, shown as a row that opens the medal
+  /// sheet. They never open over the summary by themselves.
+  final List<Achievement> unlocks;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -65,13 +66,9 @@ class B02WorkoutCompletionSuccess extends ConsumerWidget {
       // missing value simply leaves the line out.
       final weeklyGoalRead = ref.watch(weeklyTrainingGoalStatusProvider);
       final weeklyGoal = weeklyGoalRead.valueOrNull;
-      final sheetWillOpen = achievementSheetWillOpen;
       // Decide on the one celebration only once everything it depends on
       // is known.
-      final celebrate =
-          allowCelebration &&
-          !weeklyGoalRead.isLoading &&
-          sheetWillOpen != null;
+      final celebrate = allowCelebration && !weeklyGoalRead.isLoading;
       return detail.when(
         loading: () => SavedDetailsLoading(
           onDone: onDone,
@@ -88,7 +85,7 @@ class B02WorkoutCompletionSuccess extends ConsumerWidget {
           weeklyGoal: weeklyGoal,
           sessionId: savedSessionId,
           celebrate: celebrate,
-          achievementSheetWillOpen: sheetWillOpen ?? false,
+          unlocks: unlocks,
         ),
         data: (history) => CompletionEvidence(
           // A null read is treated like unavailable persisted detail rather
@@ -101,7 +98,7 @@ class B02WorkoutCompletionSuccess extends ConsumerWidget {
           weeklyGoal: weeklyGoal,
           sessionId: savedSessionId,
           celebrate: celebrate,
-          achievementSheetWillOpen: sheetWillOpen ?? false,
+          unlocks: unlocks,
         ),
       );
     }
@@ -240,7 +237,7 @@ class CompletionEvidence extends StatelessWidget {
     this.weeklyGoal,
     this.sessionId,
     this.celebrate = false,
-    this.achievementSheetWillOpen = false,
+    this.unlocks = const [],
   });
 
   final B02StrengthExecutionLaunch? launch;
@@ -261,7 +258,9 @@ class CompletionEvidence extends StatelessWidget {
 
   /// Celebrate the summary's moment, once per saved workout (TP-6).
   final bool celebrate;
-  final bool achievementSheetWillOpen;
+
+  /// Badges unlocked by this workout (see [WorkoutUnlocksRow]).
+  final List<Achievement> unlocks;
 
   @override
   Widget build(BuildContext context) {
@@ -337,13 +336,13 @@ class CompletionEvidence extends StatelessWidget {
                       goal: goal,
                       bestsSessionId: bestsSessionId,
                     ),
+                  WorkoutUnlocksRow(unlocks: unlocks),
                   if (savedSessionId != null || bestsSessionId != null)
                     WorkoutPayoffMoment(
                       sessionId: savedSessionId,
                       bestsSessionId: bestsSessionId,
                       weeklyGoal: weeklyGoal,
                       celebrate: celebrate,
-                      achievementSheetWillOpen: achievementSheetWillOpen,
                     ),
                   if (bestsSessionId != null)
                     WorkoutVsLastTimeBlock(sessionId: bestsSessionId),

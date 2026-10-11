@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/di/core_providers.dart';
 import '../../../core/motion/indifit_motion.dart';
+import '../../../core/services/achievement_service.dart';
 import '../../../core/services/indifit_haptics.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
 import '../../../core/utils/app_logger.dart';
@@ -14,7 +15,9 @@ import '../../../core/widgets/b05_accessibility_primitives.dart';
 import '../../../core/widgets/confetti_overlay.dart';
 import '../../progress/training_bests_providers.dart';
 import '../../progress/training_vs_last_time.dart';
+import '../../progress/widgets/badge_medal.dart';
 import '../workout_celebration_store.dart';
+import 'achievement_celebration_sheet.dart';
 import 'r07c_workout_presentation.dart';
 import 'training_bests_summary.dart';
 
@@ -288,8 +291,7 @@ bool weekGoalJustMet(WeeklyTrainingGoalStatus? goal) =>
 /// workout: a confetti burst (none with reduce motion) and
 /// [IndiFitHaptics.success]. The session is marked in
 /// [WorkoutCelebrationStore] first, so reopening the summary never repeats
-/// it. When [achievementSheetWillOpen] is true the sheet is the burst and
-/// this block stays still.
+/// it.
 class WorkoutPayoffMoment extends ConsumerStatefulWidget {
   const WorkoutPayoffMoment({
     super.key,
@@ -297,7 +299,6 @@ class WorkoutPayoffMoment extends ConsumerStatefulWidget {
     required this.bestsSessionId,
     required this.weeklyGoal,
     this.celebrate = false,
-    this.achievementSheetWillOpen = false,
   });
 
   /// The saved session the celebration flag is kept for.
@@ -309,7 +310,6 @@ class WorkoutPayoffMoment extends ConsumerStatefulWidget {
 
   final WeeklyTrainingGoalStatus? weeklyGoal;
   final bool celebrate;
-  final bool achievementSheetWillOpen;
 
   @override
   ConsumerState<WorkoutPayoffMoment> createState() =>
@@ -368,7 +368,7 @@ class _WorkoutPayoffMomentState extends ConsumerState<WorkoutPayoffMoment> {
       // than repeating it.
       await WorkoutCelebrationStore.markCelebrated(prefs, sessionId);
       if (!mounted) return;
-      if (!widget.achievementSheetWillOpen) setState(() => _burst = true);
+      setState(() => _burst = true);
       unawaited(IndiFitHaptics.success());
     } catch (error) {
       // Presentation only: the summary stays correct without the moment.
@@ -548,6 +548,83 @@ class WorkoutVsLastTimeBlock extends ConsumerWidget {
               ),
             ],
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// "2 badges unlocked" under the week goal. Unlocks wait here instead of
+/// opening over the summary, so the hero number plays first; a tap opens the
+/// medal sheet. It enters after the hero's count-up.
+class WorkoutUnlocksRow extends StatelessWidget {
+  const WorkoutUnlocksRow({super.key, required this.unlocks});
+
+  final List<Achievement> unlocks;
+
+  static const enterDelay = Duration(milliseconds: 600);
+
+  @override
+  Widget build(BuildContext context) {
+    if (unlocks.isEmpty) return const SizedBox.shrink();
+    final colors = context.b05Colors;
+    final title = unlocks.length == 1
+        ? '${unlocks.single.title} unlocked'
+        : '${unlocks.length} badges unlocked';
+    final names = unlocks.map((a) => a.title).join(', ');
+    return Padding(
+      padding: const EdgeInsets.only(bottom: B05Layout.space16),
+      child: IndiFitEnter(
+        delay: enterDelay,
+        child: Semantics(
+          button: true,
+          label: '$title: $names. Opens the badges.',
+          excludeSemantics: true,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              key: const ValueKey('workout_summary_unlocks'),
+              borderRadius: b05Radius(B05SurfaceRadius.large),
+              onTap: () => showAchievementCelebrationSheet(
+                context,
+                achievements: unlocks,
+              ),
+              child: B05Surface(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: B05Layout.space16,
+                  vertical: B05Layout.space12,
+                ),
+                child: Row(
+                  children: [
+                    for (final achievement in unlocks.take(3))
+                      Padding(
+                        padding: const EdgeInsets.only(right: B05Layout.space4),
+                        child: BadgeMedal(achievement: achievement, size: 40),
+                      ),
+                    const SizedBox(width: B05Layout.space8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(title, style: B05Typography.title(context)),
+                          Text(
+                            'Tap to see your badges',
+                            style: B05Typography.caption(
+                              context,
+                            ).copyWith(color: colors.textSecondary),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      color: colors.textSecondary,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );

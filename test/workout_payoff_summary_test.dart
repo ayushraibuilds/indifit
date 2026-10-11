@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/di/core_providers.dart';
 import 'package:indifit/core/di/providers.dart';
+import 'package:indifit/core/services/achievement_service.dart';
 import 'package:indifit/core/services/indifit_haptics.dart';
 import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/core/theme/b05_semantic_colors.dart';
@@ -234,7 +235,7 @@ void main() {
       WidgetTester tester,
       int sessionId, {
       required WeeklyTrainingGoalStatus goal,
-      bool? sheetWillOpen = false,
+      List<Achievement> unlocks = const [],
       bool reduceMotion = false,
     }) async {
       tester.view.physicalSize = const Size(390, 1800);
@@ -257,7 +258,7 @@ void main() {
                   sessionId: sessionId,
                   onDone: () {},
                   allowCelebration: true,
-                  achievementSheetWillOpen: sheetWillOpen,
+                  unlocks: unlocks,
                 ),
               ),
             ),
@@ -392,42 +393,53 @@ void main() {
       await unmount(tester);
     });
 
-    testWidgets('an achievement sheet takes the burst; the block stays still', (
+    testWidgets('unlocks wait in a row; the summary keeps its burst', (
       tester,
     ) async {
       final session = await seed(tester, const [(62.5, 8)]);
+      const firstSweat = Achievement(
+        id: 'first_workout',
+        title: 'First Sweat',
+        description: 'Complete your 1st workout session.',
+        icon: Icons.fitness_center_rounded,
+        color: Color(0xFFCD7F32),
+        currentProgress: 1,
+        maxProgress: 1,
+        isUnlocked: true,
+        evidence: '1 of 1 workout logged',
+      );
       await pumpSummary(
         tester,
         session,
         goal: _goal(completed: 2),
-        sheetWillOpen: true,
+        unlocks: const [firstSweat],
       );
       await tester.pumpAndSettle();
 
+      // Nothing opens over the hero; the summary's own moment still plays.
+      expect(find.byType(BottomSheet), findsNothing);
       expect(
         find.byKey(const ValueKey('workout_summary_new_bests')),
         findsOneWidget,
       );
-      expect(find.byType(ConfettiOverlay), findsNothing);
+      expect(haptics, [IndiFitHapticType.success]);
       expect(WorkoutCelebrationStore.hasCelebrated(prefs, session), isTrue);
-      await unmount(tester);
-    });
 
-    testWidgets('waits while it is unknown whether a sheet will open', (
-      tester,
-    ) async {
-      final session = await seed(tester, const [(62.5, 8)]);
-      await pumpSummary(
-        tester,
-        session,
-        goal: _goal(completed: 2),
-        sheetWillOpen: null,
+      final row = find.byKey(const ValueKey('workout_summary_unlocks'));
+      expect(row, findsOneWidget);
+      expect(find.text('First Sweat unlocked'), findsOneWidget);
+      expect(
+        tester.getTopLeft(row).dy,
+        greaterThan(
+          tester
+              .getTopLeft(find.byKey(const Key('workout_summary_week_goal')))
+              .dy,
+        ),
       );
-      await tester.pumpAndSettle();
 
-      expect(find.byType(ConfettiOverlay), findsNothing);
-      expect(haptics, isEmpty);
-      expect(WorkoutCelebrationStore.hasCelebrated(prefs, session), isFalse);
+      await tester.tap(row);
+      await tester.pumpAndSettle();
+      expect(find.byType(BottomSheet), findsOneWidget);
       await unmount(tester);
     });
 
