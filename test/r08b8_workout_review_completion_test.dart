@@ -161,7 +161,7 @@ void main() {
       expect(find.text('Workout complete'), findsNothing);
       expect(find.text('Persisted strength'), findsOneWidget);
       expect(find.text('Replacement strength'), findsOneWidget);
-      expect(find.text('20 min 34 sec'), findsOneWidget);
+      expect(find.text('20:34'), findsOneWidget);
       // V6: the hero number and one stats row replace the one-line recap.
       expect(
         find.byKey(const ValueKey('workout_summary_stats_row')),

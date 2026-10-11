@@ -135,7 +135,7 @@ void main() {
 
       expect(find.text('Workout complete'), findsOneWidget);
       expect(find.text('Completion press'), findsOneWidget);
-      expect(find.text('1 min 30 sec'), findsOneWidget);
+      expect(find.text('1:30'), findsOneWidget);
       expect(
         find.byKey(const ValueKey('workout_summary_stats_row')),
         findsOneWidget,

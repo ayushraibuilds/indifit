@@ -750,7 +750,7 @@ class _NutritionTargetsHubScreenState
             Text(
               read.localDate == user.localDate
                   ? 'Today’s target'
-                  : 'Target for ${ConsumerDateLabel.day(read.localDate, today: _civilDate(user.localDate))}',
+                  : 'Target for ${ConsumerDateLabel.inSentence(read.localDate, today: _civilDate(user.localDate))}',
               style: B05Typography.title(context),
             ),
             const SizedBox(height: B05Layout.space16),
@@ -1222,7 +1222,7 @@ class _NutritionTargetsHubScreenState
           '${_nutritionStrategyLabel(version.goalType)} · ${_goalSourceLabel(version)}',
         ),
         subtitle: Text(
-          'From ${ConsumerDateLabel.day(version.effectiveFromLocalDate, today: _civilDate(user.localDate))}${values.isEmpty ? '' : ' · ${values.join(' · ')}'}',
+          'From ${ConsumerDateLabel.inSentence(version.effectiveFromLocalDate, today: _civilDate(user.localDate))}${values.isEmpty ? '' : ' · ${values.join(' · ')}'}',
         ),
         trailing: const Icon(Icons.chevron_right_rounded),
       ),
@@ -1444,9 +1444,9 @@ class _NutritionTargetsHubScreenState
   ) {
     final end = value.effectiveToLocalDate;
     if (end == null) {
-      return 'In effect from ${ConsumerDateLabel.day(value.effectiveFromLocalDate, today: _civilDate(today))}';
+      return 'In effect from ${ConsumerDateLabel.inSentence(value.effectiveFromLocalDate, today: _civilDate(today))}';
     }
-    return 'In effect from ${ConsumerDateLabel.day(value.effectiveFromLocalDate, today: _civilDate(today))} through ${ConsumerDateLabel.day(end, today: _civilDate(today))}';
+    return 'In effect from ${ConsumerDateLabel.inSentence(value.effectiveFromLocalDate, today: _civilDate(today))} through ${ConsumerDateLabel.inSentence(end, today: _civilDate(today))}';
   }
 
   static DateTime _civilDate(String date) {

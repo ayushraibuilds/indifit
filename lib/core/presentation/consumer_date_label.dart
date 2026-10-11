@@ -14,7 +14,28 @@ abstract final class ConsumerDateLabel {
     if (difference == 0) return 'Today';
     if (difference == -1) return 'Yesterday';
     if (difference == 1) return 'Tomorrow';
-    return DateFormat('EEE, MMM d').format(date);
+    return DateFormat('EEE, d MMM').format(date);
+  }
+
+  /// [day] for the middle of a sentence: "Rescheduled to tomorrow",
+  /// "Moved to Wed, 14 Oct".
+  static String inSentence(String localDate, {DateTime? today}) {
+    final label = day(localDate, today: today);
+    return switch (label) {
+      'Today' ||
+      'Yesterday' ||
+      'Tomorrow' ||
+      'Selected day' => label.toLowerCase(),
+      _ => label,
+    };
+  }
+
+  /// "today", "tomorrow" or "on Wed, 14 Oct", for "Next: Full Body B ...".
+  static String onDay(String localDate, {DateTime? today}) {
+    final label = inSentence(localDate, today: today);
+    return label == 'today' || label == 'tomorrow' || label == 'yesterday'
+        ? label
+        : 'on $label';
   }
 
   static String range(
@@ -26,8 +47,8 @@ abstract final class ConsumerDateLabel {
     final end = _parse(endLocalDate);
     if (start == null || end == null) return 'Selected period';
     if (_sameDay(start, end)) return day(startLocalDate, today: today);
-    return '${DateFormat('MMM d').format(start)} – '
-        '${DateFormat('MMM d, y').format(end)}';
+    return '${DateFormat('d MMM').format(start)} – '
+        '${DateFormat('d MMM y').format(end)}';
   }
 
   static String dateTime(DateTime value, {DateTime? today}) {

@@ -54,7 +54,7 @@ class _OccurrenceActionsSheetState
           builder: (dialogContext) => AlertDialog(
             title: const Text('Start outside scheduled date?'),
             content: Text(
-              'This workout is scheduled for ${ConsumerDateLabel.day(item.occurrence.effectiveLocalDate)}. Starting it will not change your plan.',
+              'This workout is scheduled for ${ConsumerDateLabel.inSentence(item.occurrence.effectiveLocalDate)}. Starting it will not change your plan.',
             ),
             actions: [
               TextButton(
@@ -157,7 +157,7 @@ class _OccurrenceActionsSheetState
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Rescheduled to ${ConsumerDateLabel.day(newDateStr)}.',
+              'Rescheduled to ${ConsumerDateLabel.inSentence(newDateStr)}.',
             ),
           ),
         );
@@ -434,7 +434,7 @@ class _OccurrenceActionsSheetState
     final scheduledDateLabel = ConsumerDateLabel.day(occ.originalLocalDate);
     final dateLabel = occ.originalLocalDate == occ.effectiveLocalDate
         ? 'Scheduled for $scheduledDateLabel'
-        : 'Moved to ${ConsumerDateLabel.day(occ.effectiveLocalDate)}';
+        : 'Moved to ${ConsumerDateLabel.inSentence(occ.effectiveLocalDate)}';
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(B05Layout.space16),

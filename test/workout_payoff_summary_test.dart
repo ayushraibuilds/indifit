@@ -67,7 +67,7 @@ void main() {
       expect(find.text('Workout complete'), findsOneWidget);
       expect(find.text('1,280 kg'), findsOneWidget);
       expect(find.text('Total lifted'), findsOneWidget);
-      for (final text in ['2', 'Sets', '16', 'Reps', '45 min', 'Duration']) {
+      for (final text in ['2', 'Sets', '16', 'Reps', '45:00', 'Duration']) {
         expect(find.text(text), findsOneWidget, reason: text);
       }
       expect(find.textContaining('kg lifted'), findsNothing);
@@ -112,7 +112,7 @@ void main() {
       // Reps are the hero, so the row is sets and duration only.
       expect(find.text('Reps'), findsOneWidget);
       expect(find.text('Sets'), findsOneWidget);
-      expect(find.text('45 min'), findsOneWidget);
+      expect(find.text('45:00'), findsOneWidget);
       expect(find.textContaining(' kg'), findsNothing);
       expect(find.text('Total lifted'), findsNothing);
     });
@@ -458,7 +458,7 @@ void main() {
       expect(haptics, [IndiFitHapticType.success]);
       expect(WorkoutCelebrationStore.hasCelebrated(prefs, session), isTrue);
       expect(find.text('500 kg'), findsOneWidget);
-      expect(find.text('10 min'), findsOneWidget);
+      expect(find.text('10:00'), findsOneWidget);
       expect(tester.hasRunningAnimations, isFalse);
       await unmount(tester);
     });

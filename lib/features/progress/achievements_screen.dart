@@ -71,7 +71,7 @@ class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Achievements & Badges'), elevation: 0),
+      appBar: AppBar(title: const Text('Badges'), elevation: 0),
       body: _buildBody(),
     );
   }
@@ -205,7 +205,7 @@ class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
                 ),
                 const SizedBox(height: B05Layout.space12),
                 Text(
-                  'No Badges Unlocked Yet',
+                  'No badges unlocked yet',
                   style: B05Typography.title(context),
                 ),
                 const SizedBox(height: B05Layout.space4),

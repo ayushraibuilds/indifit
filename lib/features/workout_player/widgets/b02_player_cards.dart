@@ -308,13 +308,12 @@ class R07CExecutionHeader extends StatelessWidget {
                   Flexible(
                     child: Semantics(
                       label: '${executionContext.modeLabel}, $exercisePosition',
+                      // Sentence case, like every other section label (V1).
                       child: Text(
-                        position.toUpperCase(),
-                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                          color: colors.action,
-                          letterSpacing: 0.6,
-                          fontWeight: FontWeight.w700,
-                        ),
+                        position,
+                        style: B05Typography.sectionLabel(
+                          context,
+                        ).copyWith(color: colors.action),
                       ),
                     ),
                   ),

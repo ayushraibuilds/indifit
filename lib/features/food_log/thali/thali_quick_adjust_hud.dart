@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/nutrition_thali.dart';
+import '../../../core/presentation/consumer_number_label.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
 import 'thali_quantity_label.dart';
@@ -38,9 +39,9 @@ class ThaliQuickAdjustHud extends StatelessWidget {
     final fat = preview?.calculation.facts['fat']?.point?.value.asDouble;
 
     final energyStr = energy != null ? '${energy.round()} kcal' : '-- kcal';
-    final pStr = protein != null ? '${(protein * 10).round() / 10}g' : '--';
-    final cStr = carbs != null ? '${(carbs * 10).round() / 10}g' : '--';
-    final fStr = fat != null ? '${(fat * 10).round() / 10}g' : '--';
+    final pStr = protein != null ? ConsumerNumberLabel.grams(protein) : '--';
+    final cStr = carbs != null ? ConsumerNumberLabel.grams(carbs) : '--';
+    final fStr = fat != null ? ConsumerNumberLabel.grams(fat) : '--';
 
     return Container(
       key: const Key('thali_quick_hud'),
@@ -96,7 +97,7 @@ class ThaliQuickAdjustHud extends StatelessWidget {
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'P: $pStr  C: $cStr  F: $fStr',
+                            'Protein $pStr · Carbs $cStr · Fat $fStr',
                             style: TextStyle(
                               color: colors.textSecondary,
                               fontSize: 11,

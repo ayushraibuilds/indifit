@@ -311,7 +311,7 @@ void main() {
 
         expect(find.text('Workout complete'), findsOneWidget);
         expect(find.text('Upper Body Power'), findsOneWidget);
-        expect(find.text('45 min'), findsOneWidget); // 2700s = 45 min
+        expect(find.text('45:00'), findsOneWidget); // 2700 s, clock form
         expect(find.text('Duration'), findsOneWidget);
         expect(find.text('2'), findsOneWidget); // 2 sets
         expect(find.text('Sets'), findsOneWidget);

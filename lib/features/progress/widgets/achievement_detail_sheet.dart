@@ -136,7 +136,7 @@ class AchievementDetailSheet extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Tier Progression',
+                              'Tier progression',
                               style: B05Typography.label(context).copyWith(
                                 fontWeight: FontWeight.w700,
                                 color: colors.textPrimary,

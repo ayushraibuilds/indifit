@@ -415,7 +415,7 @@ void main() {
 
       await tester.tap(find.byTooltip('Previous day'));
       await _pumpForAsyncState(tester);
-      expect(find.text('Target for Yesterday'), findsOneWidget);
+      expect(find.text('Target for yesterday'), findsOneWidget);
       expect(
         find.textContaining('Earlier targets are read-only here.'),
         findsOneWidget,
@@ -426,7 +426,7 @@ void main() {
       await _pumpForAsyncState(tester);
       await tester.tap(find.byTooltip('Next day'));
       await _pumpForAsyncState(tester);
-      expect(find.text('Target for Tomorrow'), findsOneWidget);
+      expect(find.text('Target for tomorrow'), findsOneWidget);
       expect(
         find.textContaining(
           'Today’s saved target continues to apply unless another target takes effect later.',

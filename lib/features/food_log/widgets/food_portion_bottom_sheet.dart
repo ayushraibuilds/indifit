@@ -868,19 +868,17 @@ class _FoodPortionBottomSheetState
                   ),
                   (
                     'Protein',
-                    value('protein', 'g'),
-                    context.b05Colors.meal(B05MealAccent.breakfast).indicator,
+                    value('protein', ' g'),
+                    // The app-wide macro colours (fat is never a meal's
+                    // violet or orange); foreground passes AA as text.
+                    context.b05Colors.protein.foreground,
                   ),
                   (
                     'Carbs',
-                    value('carbohydrate', 'g'),
-                    context.b05Colors.meal(B05MealAccent.lunch).indicator,
+                    value('carbohydrate', ' g'),
+                    context.b05Colors.carbs.foreground,
                   ),
-                  (
-                    'Fat',
-                    value('fat', 'g'),
-                    context.b05Colors.meal(B05MealAccent.dinner).indicator,
-                  ),
+                  ('Fat', value('fat', ' g'), context.b05Colors.fat.foreground),
                 ];
                 return LayoutBuilder(
                   builder: (context, constraints) {

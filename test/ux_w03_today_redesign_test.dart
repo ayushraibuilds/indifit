@@ -134,7 +134,7 @@ void main() {
     expect(presentation.state, TodayPresentationState.ready);
     expect(presentation.headline, '2 sessions completed');
     expect(presentation.detail, 'Latest: Strength session');
-    expect(presentation.supporting, contains('Aug 1'));
+    expect(presentation.supporting, contains('1 Aug'));
   });
 
   test(

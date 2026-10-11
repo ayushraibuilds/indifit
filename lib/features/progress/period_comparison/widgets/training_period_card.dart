@@ -58,7 +58,7 @@ class TrainingPeriodCard extends StatelessWidget {
                   const SizedBox(width: B05Layout.space8),
                   Expanded(
                     child: Text(
-                      'Training Activity',
+                      'Training activity',
                       style: B05Typography.title(
                         context,
                       ).copyWith(fontSize: 16, fontWeight: FontWeight.w700),
@@ -82,14 +82,14 @@ class TrainingPeriodCard extends StatelessWidget {
                   ),
                   Expanded(
                     child: _MetricColumn(
-                      label: 'Training Days',
+                      label: 'Training days',
                       currentValue: '${cur.trainingDayCount}',
                       previousValue: '${prev.trainingDayCount} prior',
                     ),
                   ),
                   Expanded(
                     child: _MetricColumn(
-                      label: 'Working Sets',
+                      label: 'Working sets',
                       currentValue: '${cur.workingSetsCount}',
                       previousValue: '${prev.workingSetsCount} prior',
                     ),
@@ -107,7 +107,7 @@ class TrainingPeriodCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Total Volume',
+                            'Total volume',
                             style: B05Typography.caption(
                               context,
                             ).copyWith(color: colors.textSecondary),

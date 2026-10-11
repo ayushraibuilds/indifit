@@ -193,6 +193,13 @@ class FoodCategoryTaxonomy {
         break;
     }
 
-    return options;
+    // A food whose own serving is already a household measure (say
+    // "katori") would otherwise show that chip twice. The first, the food's
+    // own default, wins.
+    final seen = <String>{};
+    return [
+      for (final option in options)
+        if (seen.add(option.unitName)) option,
+    ];
   }
 }

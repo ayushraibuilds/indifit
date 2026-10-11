@@ -28,8 +28,8 @@ class PeriodComparisonSelector extends StatelessWidget {
           children: [
             Expanded(
               child: _RangeSegmentButton(
-                label: 'This Week',
-                sublabel: 'vs Last Week',
+                label: 'This week',
+                sublabel: 'vs last week',
                 isSelected: selectedRange == PeriodComparisonRange.week,
                 onTap: () => onRangeChanged(PeriodComparisonRange.week),
               ),
@@ -37,8 +37,8 @@ class PeriodComparisonSelector extends StatelessWidget {
             const SizedBox(width: B05Layout.space8),
             Expanded(
               child: _RangeSegmentButton(
-                label: 'Last 4 Weeks',
-                sublabel: 'vs Prior 4 Weeks',
+                label: 'Last 4 weeks',
+                sublabel: 'vs prior 4 weeks',
                 isSelected: selectedRange == PeriodComparisonRange.fourWeeks,
                 onTap: () => onRangeChanged(PeriodComparisonRange.fourWeeks),
               ),
