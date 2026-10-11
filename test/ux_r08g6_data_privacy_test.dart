@@ -170,6 +170,7 @@ void main() {
     expect(find.text('Open Food Facts'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('Open-source licenses'), 200);
     expect(find.text('IndiFit food catalogue'), findsOneWidget);
+    expect(find.text('Fluent Emoji'), findsOneWidget);
     expect(find.text('Open-source licenses'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
