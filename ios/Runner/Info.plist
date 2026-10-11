@@ -37,7 +37,7 @@
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>IndiFit writes weight logs you save to Apple Health when you allow Body Weight.</string>
 	<key>NSMotionUsageDescription</key>
-	<string>IndiFit uses your phone's tilt only to angle the thali plate on screen. Motion data is not stored or shared.</string>
+	<string>IndiFit uses your phone's tilt only to angle the thali plate and badges on screen. Motion data is not stored or shared.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

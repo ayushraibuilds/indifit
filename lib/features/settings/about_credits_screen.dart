@@ -49,6 +49,12 @@ class AboutCreditsScreen extends StatelessWidget {
                   title: FoodDataCredits.catalogueTitle,
                   detail: FoodDataCredits.catalogue,
                 ),
+                const SizedBox(height: B05Layout.space12),
+                const _Credit(
+                  title: 'Fluent Emoji',
+                  detail:
+                      'Microsoft Fluent Emoji copyright (c) Microsoft Corporation; MIT License. Used for achievement badge art.',
+                ),
                 const SizedBox(height: B05Layout.space20),
                 B05ActionButton(
                   emphasis: B05ActionEmphasis.secondary,

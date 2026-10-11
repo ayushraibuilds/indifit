@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/config/app_preferences_keys.dart';
 import '../../core/di/providers.dart';
-import '../../core/presentation/consumer_number_label.dart';
 import '../../core/presentation/diet_preference_presentation.dart';
 import '../../core/presentation/secondary_presentation.dart';
 import '../../core/presentation/today_onboarding_handoff.dart';
@@ -19,7 +18,9 @@ import '../../core/widgets/consumer_task_primitives.dart';
 import '../../data/repositories/hydration_repository.dart';
 import '../../data/repositories/workout_repository.dart';
 import 'b05_adaptive_onboarding.dart';
+import 'widgets/onboarding_ruler_picker.dart';
 import 'widgets/onboarding_step_widgets.dart';
+import 'widgets/onboarding_target_reveal.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -79,6 +80,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   var _isCompleting = false;
   var _isSkipping = false;
   var _showingPayoff = false;
+
+  /// The target reveal plays the first time step 5 opens; coming back to
+  /// it shows the settled ring.
+  var _targetRevealPlayed = false;
+  var _animateTargetReveal = false;
   String? _completionError;
   String? _skipError;
   double? _lastKeyboardInset;
@@ -430,6 +436,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       setState(() {
         _showingPayoff = true;
         _completionError = null;
+        _animateTargetReveal = !_targetRevealPlayed;
+        _targetRevealPlayed = true;
       });
       unawaited(_saveDraftLogged());
     } else {
@@ -705,6 +713,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     ),
                   ],
                 );
+
+                // Step 5 is the review: finishing is the only way forward
+                // (PREMIUM_REDESIGN_PLAN § 8.5).
+                if (_showingPayoff) return progressRow;
 
                 if (shouldStack) {
                   return Column(
@@ -985,30 +997,16 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     suffix: 'kg',
                     icon: Icons.scale,
                     errorText: _weightError,
-                    onStepDown: () {
-                      final current =
-                          double.tryParse(_weightController.text) ?? 70.0;
-                      if (current > 25.0) {
-                        final next = current - 0.5;
-                        _weightController.text = next.truncateToDouble() == next
-                            ? next.toInt().toString()
-                            : next.toStringAsFixed(1);
-                        _validateWeight();
-                        unawaited(_saveDraftLogged());
-                      }
-                    },
-                    onStepUp: () {
-                      final current =
-                          double.tryParse(_weightController.text) ?? 70.0;
-                      if (current < 350.0) {
-                        final next = current + 0.5;
-                        _weightController.text = next.truncateToDouble() == next
-                            ? next.toInt().toString()
-                            : next.toStringAsFixed(1);
-                        _validateWeight();
-                        unawaited(_saveDraftLogged());
-                      }
-                    },
+                    below: OnboardingRulerPicker(
+                      controller: _weightController,
+                      label: 'Current weight',
+                      unit: 'kg',
+                      min: 25,
+                      max: 350,
+                      step: 0.5,
+                      majorEvery: 10,
+                      onChanged: (_) => unawaited(_saveDraftLogged()),
+                    ),
                     onChanged: (_) => unawaited(_saveDraftLogged()),
                     onEditingComplete: _dismissInputFocus,
                     textInputAction: TextInputAction.done,
@@ -1034,24 +1032,23 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          B05Surface(
-            tone: B05SurfaceTone.selected,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Personalized for you',
-                  style: B05Typography.title(context),
-                ),
-                const SizedBox(height: B05Layout.space4),
-                Text(
-                  'These choices will shape your starting profile and daily target.',
-                  style: B05Typography.body(context),
-                ),
-              ],
-            ),
+          OnboardingTargetReveal(
+            calories: macros.calories,
+            calorieRangeLabel: macros.calorieRangeLabel,
+            proteinG: macros.proteinG,
+            carbsG: macros.carbsG,
+            fatG: macros.fatG,
+            waterMl: HydrationRepository.defaultDailyGoalMl,
+            animate: _animateTargetReveal,
           ),
-          const SizedBox(height: B05Layout.space16),
+          const SizedBox(height: B05Layout.space20),
+          Text('Personalized for you', style: B05Typography.title(context)),
+          const SizedBox(height: B05Layout.space4),
+          Text(
+            'These choices shape your starting profile and daily target.',
+            style: B05Typography.body(context),
+          ),
+          const SizedBox(height: B05Layout.space12),
           _buildPayoffFact(
             label: 'Profile details',
             value:
@@ -1083,63 +1080,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             icon: Icons.restaurant_menu_rounded,
             page: 3,
             hint: 'Change your food preference.',
-          ),
-          const SizedBox(height: B05Layout.space16),
-          B05Surface(
-            tone: B05SurfaceTone.inset,
-            child: Semantics(
-              container: true,
-              label:
-                  'Starting daily target: ${macros.calories} kilocalories, ${macros.proteinG} grams protein, ${macros.carbsG} grams carbohydrates, ${macros.fatG} grams fat, ${HydrationRepository.defaultDailyGoalMl} milliliters water.',
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Starting daily target',
-                    style: B05Typography.title(context),
-                  ),
-                  const SizedBox(height: B05Layout.space4),
-                  Text(
-                    'Saved when you finish. You can edit it later in Settings › Goal & targets.',
-                    style: B05Typography.body(context),
-                  ),
-                  const SizedBox(height: B05Layout.space12),
-                  Wrap(
-                    spacing: B05Layout.space8,
-                    runSpacing: B05Layout.space8,
-                    children: [
-                      _buildPayoffMetric(
-                        label: 'Calories',
-                        value:
-                            '${ConsumerNumberLabel.rounded(macros.calories.toDouble())} kcal',
-                        subvalue: 'Target zone: ${macros.calorieRangeLabel}',
-                      ),
-                      _buildPayoffMetric(
-                        label: 'Protein',
-                        value:
-                            '${ConsumerNumberLabel.rounded(macros.proteinG.toDouble())} g',
-                        subvalue: 'Range: ${macros.proteinRangeLabel}',
-                      ),
-                      _buildPayoffMetric(
-                        label: 'Carbs',
-                        value:
-                            '${ConsumerNumberLabel.rounded(macros.carbsG.toDouble())} g',
-                      ),
-                      _buildPayoffMetric(
-                        label: 'Fat',
-                        value:
-                            '${ConsumerNumberLabel.rounded(macros.fatG.toDouble())} g',
-                      ),
-                      _buildPayoffMetric(
-                        label: 'Water',
-                        value:
-                            '${ConsumerNumberLabel.rounded(HydrationRepository.defaultDailyGoalMl.toDouble())} ml',
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
           ),
         ],
       ),
@@ -1204,44 +1144,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               ],
             );
           },
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPayoffMetric({
-    required String label,
-    required String value,
-    String? subvalue,
-  }) {
-    final colors = context.b05Colors;
-    return Semantics(
-      container: true,
-      label: subvalue != null ? '$label: $value ($subvalue)' : '$label: $value',
-      child: B05Surface(
-        tone: B05SurfaceTone.section,
-        padding: const EdgeInsets.symmetric(
-          horizontal: B05Layout.space12,
-          vertical: B05Layout.space8,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(label, style: B05Typography.caption(context)),
-            const SizedBox(height: B05Layout.space4),
-            Text(value, style: B05Typography.label(context)),
-            if (subvalue != null) ...[
-              const SizedBox(height: 2),
-              Text(
-                subvalue,
-                style: TextStyle(
-                  color: colors.textSecondary,
-                  fontSize: 10.5,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ],
         ),
       ),
     );

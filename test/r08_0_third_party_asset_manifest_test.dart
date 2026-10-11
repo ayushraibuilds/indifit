@@ -26,7 +26,7 @@ void main() {
   test('checked-in provenance manifest exposes approved RepDB asset sets', () {
     final manifest = B05ThirdPartyAssetManifest.fromJson(baseJson);
 
-    expect(manifest.sources, hasLength(8));
+    expect(manifest.sources, hasLength(9));
     expect(manifest.assets, hasLength(59));
     expect(manifest.visualAssetSets, hasLength(30));
     expect(
@@ -283,6 +283,7 @@ const _licenseFiles = {
   'LICENSES/RepDB-LICENSE-CODE-MIT.txt',
   'LICENSES/RepDB-LICENSE-DATA-v1.0.md',
   'LICENSES/MuscleMap-MIT.txt',
+  'LICENSES/FluentEmoji-MIT.txt',
 };
 
 Map<String, List<int>> _readLicenseBytes() {
