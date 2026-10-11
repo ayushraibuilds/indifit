@@ -163,7 +163,7 @@ void main() {
       await tester.tap(find.byTooltip('Previous day'));
       await _pumpForAsyncState(tester);
 
-      expect(find.text('Target for Yesterday'), findsOneWidget);
+      expect(find.text('Target for yesterday'), findsOneWidget);
       expect(find.text('2,100 kcal'), findsOneWidget);
       expect(find.text('2100 kcal'), findsNothing);
       expect(
@@ -178,7 +178,7 @@ void main() {
       await tester.tap(find.byTooltip('Next day'));
       await _pumpForAsyncState(tester);
 
-      expect(find.text('Target for Tomorrow'), findsOneWidget);
+      expect(find.text('Target for tomorrow'), findsOneWidget);
       expect(
         find.textContaining(
           'Today’s saved target continues to apply unless another target takes effect later',

@@ -747,7 +747,7 @@ class _PlanScheduleAndHistory extends ConsumerWidget {
         .length;
     final progressMessage = occurrences.isEmpty
         ? 'This plan has no scheduled workouts yet.'
-        : '$completedCount completed, $partialCount partially completed of ${occurrences.length} scheduled workouts.${nextOccurrence == null ? '' : ' Next: ${nextOccurrence.template.name} on ${ConsumerDateLabel.day(nextOccurrence.occurrence.effectiveLocalDate)}.'}';
+        : '$completedCount completed, $partialCount partially completed of ${occurrences.length} scheduled workouts.${nextOccurrence == null ? '' : ' Next: ${nextOccurrence.template.name} ${ConsumerDateLabel.onDay(nextOccurrence.occurrence.effectiveLocalDate)}.'}';
     final historyByOccurrence = {
       for (final item in overview.history)
         if (item.scheduledOccurrenceId != null)
@@ -761,12 +761,15 @@ class _PlanScheduleAndHistory extends ConsumerWidget {
       children: [
         Text('Plan progress', style: B05Typography.title(context)),
         const SizedBox(height: B05Layout.space8),
-        B05Surface(
-          tone: B05SurfaceTone.inset,
-          child: Semantics(
-            container: true,
-            label: progressMessage,
-            child: Text(progressMessage, style: B05Typography.body(context)),
+        SizedBox(
+          width: double.infinity,
+          child: B05Surface(
+            tone: B05SurfaceTone.inset,
+            child: Semantics(
+              container: true,
+              label: progressMessage,
+              child: Text(progressMessage, style: B05Typography.body(context)),
+            ),
           ),
         ),
         if (occurrences.isNotEmpty) ...[
@@ -1248,9 +1251,13 @@ class _PlanOverviewEmpty extends StatelessWidget {
   final String message;
 
   @override
-  Widget build(BuildContext context) => B05Surface(
-    tone: B05SurfaceTone.inset,
-    child: Text(message, style: B05Typography.body(context)),
+  // Full width, like the cards around it (review O-2).
+  Widget build(BuildContext context) => SizedBox(
+    width: double.infinity,
+    child: B05Surface(
+      tone: B05SurfaceTone.inset,
+      child: Text(message, style: B05Typography.body(context)),
+    ),
   );
 }
 
@@ -1609,32 +1616,39 @@ class _PlanMetadataPanel extends StatelessWidget {
   final PlanLibraryEntry entry;
 
   @override
-  Widget build(BuildContext context) => B05Surface(
-    tone: B05SurfaceTone.inset,
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('At a glance', style: B05Typography.title(context)),
-        const SizedBox(height: B05Layout.space12),
-        Wrap(
-          spacing: B05Layout.space24,
-          runSpacing: B05Layout.space12,
-          children: [
-            _DetailFact(label: 'Length', value: entry.metadata.durationLabel),
-            _DetailFact(label: 'Schedule', value: entry.metadata.scheduleLabel),
-            _DetailFact(
-              label: 'Exercises',
-              value:
-                  '${entry.metadata.exerciseCount} ${_pluralize('exercise', entry.metadata.exerciseCount)}',
-            ),
-            if (entry.starterPlan case final starter?) ...[
-              _DetailFact(label: 'Setting', value: starter.environment.label),
-              _DetailFact(label: 'Level', value: starter.experience.label),
-              _DetailFact(label: 'Equipment', value: starter.equipment),
+  // Full width, like the cards around it (review O-2).
+  Widget build(BuildContext context) => SizedBox(
+    width: double.infinity,
+    child: B05Surface(
+      tone: B05SurfaceTone.inset,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('At a glance', style: B05Typography.title(context)),
+          const SizedBox(height: B05Layout.space12),
+          Wrap(
+            spacing: B05Layout.space24,
+            runSpacing: B05Layout.space12,
+            children: [
+              _DetailFact(label: 'Length', value: entry.metadata.durationLabel),
+              _DetailFact(
+                label: 'Schedule',
+                value: entry.metadata.scheduleLabel,
+              ),
+              _DetailFact(
+                label: 'Exercises',
+                value:
+                    '${entry.metadata.exerciseCount} ${_pluralize('exercise', entry.metadata.exerciseCount)}',
+              ),
+              if (entry.starterPlan case final starter?) ...[
+                _DetailFact(label: 'Setting', value: starter.environment.label),
+                _DetailFact(label: 'Level', value: starter.experience.label),
+                _DetailFact(label: 'Equipment', value: starter.equipment),
+              ],
             ],
-          ],
-        ),
-      ],
+          ),
+        ],
+      ),
     ),
   );
 }
@@ -1821,40 +1835,44 @@ class _PlanLibraryFilters extends StatelessWidget {
   final ValueChanged<StarterPlanExperience?> onExperienceChanged;
 
   @override
-  Widget build(BuildContext context) => B05Surface(
-    tone: B05SurfaceTone.inset,
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Browse plans', style: B05Typography.title(context)),
-        const SizedBox(height: B05Layout.space8),
-        _PlanFilterRow<StarterPlanEnvironment>(
-          semanticLabel: 'Training setting filter',
-          selected: environment,
-          allLabel: 'All equipment',
-          values: StarterPlanEnvironment.values,
-          labelFor: (value) => value.label,
-          onChanged: onEnvironmentChanged,
-        ),
-        const SizedBox(height: B05Layout.space8),
-        _PlanFilterRow<int>(
-          semanticLabel: 'Training days filter',
-          selected: dayFilter,
-          allLabel: 'All days',
-          values: const [3, 4, 5],
-          labelFor: (value) => value == 5 ? '5+ days' : '$value days',
-          onChanged: onDayChanged,
-        ),
-        const SizedBox(height: B05Layout.space8),
-        _PlanFilterRow<StarterPlanExperience>(
-          semanticLabel: 'Experience filter',
-          selected: experience,
-          allLabel: 'All levels',
-          values: StarterPlanExperience.values,
-          labelFor: (value) => value.label,
-          onChanged: onExperienceChanged,
-        ),
-      ],
+  // Full width, like the cards around it (review O-2).
+  Widget build(BuildContext context) => SizedBox(
+    width: double.infinity,
+    child: B05Surface(
+      tone: B05SurfaceTone.inset,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Browse plans', style: B05Typography.title(context)),
+          const SizedBox(height: B05Layout.space8),
+          _PlanFilterRow<StarterPlanEnvironment>(
+            semanticLabel: 'Training setting filter',
+            selected: environment,
+            allLabel: 'All equipment',
+            values: StarterPlanEnvironment.values,
+            labelFor: (value) => value.label,
+            onChanged: onEnvironmentChanged,
+          ),
+          const SizedBox(height: B05Layout.space8),
+          _PlanFilterRow<int>(
+            semanticLabel: 'Training days filter',
+            selected: dayFilter,
+            allLabel: 'All days',
+            values: const [3, 4, 5],
+            labelFor: (value) => value == 5 ? '5+ days' : '$value days',
+            onChanged: onDayChanged,
+          ),
+          const SizedBox(height: B05Layout.space8),
+          _PlanFilterRow<StarterPlanExperience>(
+            semanticLabel: 'Experience filter',
+            selected: experience,
+            allLabel: 'All levels',
+            values: StarterPlanExperience.values,
+            labelFor: (value) => value.label,
+            onChanged: onExperienceChanged,
+          ),
+        ],
+      ),
     ),
   );
 }

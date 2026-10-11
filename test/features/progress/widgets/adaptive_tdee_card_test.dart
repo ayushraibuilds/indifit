@@ -56,7 +56,7 @@ void main() {
       expect(find.text('kcal/day'), findsOneWidget);
 
       // Verify confidence pill
-      expect(find.text('High Confidence'), findsOneWidget);
+      expect(find.text('High confidence'), findsOneWidget);
       expect(
         find.text('High confidence (18/21 food days, 15 weigh-ins).'),
         findsOneWidget,

@@ -67,7 +67,7 @@ void main() {
 
       expect(find.text('Quick workout'), findsOneWidget);
       expect(find.text('QUICK WORKOUT'), findsNothing);
-      expect(find.text('EXERCISE 1 OF 1'), findsOneWidget);
+      expect(find.text('Exercise 1 of 1'), findsOneWidget);
       expect(find.byTooltip('Workout options'), findsOneWidget);
       expect(find.byTooltip('Exercise actions'), findsOneWidget);
       expect(find.text('0:00'), findsOneWidget);

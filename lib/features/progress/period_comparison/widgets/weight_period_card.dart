@@ -68,7 +68,7 @@ class WeightPeriodCard extends StatelessWidget {
                   const SizedBox(width: B05Layout.space8),
                   Expanded(
                     child: Text(
-                      'Body Weight Trend',
+                      'Body weight trend',
                       style: B05Typography.title(
                         context,
                       ).copyWith(fontSize: 16, fontWeight: FontWeight.w700),
@@ -103,7 +103,7 @@ class WeightPeriodCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Latest Weight',
+                          'Latest weight',
                           style: B05Typography.caption(
                             context,
                           ).copyWith(color: colors.textSecondary, fontSize: 11),

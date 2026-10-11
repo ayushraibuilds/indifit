@@ -232,7 +232,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 700));
 
       expect(find.text('0 / 9 Unlocked'), findsOneWidget);
-      expect(find.text('No Badges Unlocked Yet'), findsOneWidget);
+      expect(find.text('No badges unlocked yet'), findsOneWidget);
       expect(find.text('All badges'), findsOneWidget);
       expect(find.byKey(const Key('recently_unlocked_carousel')), findsNothing);
     });
@@ -360,7 +360,7 @@ void main() {
 
         expect(find.text('All 9 Badges Unlocked!'), findsOneWidget);
         expect(find.textContaining('Incredible dedication!'), findsOneWidget);
-        expect(find.text('No Badges Unlocked Yet'), findsNothing);
+        expect(find.text('No badges unlocked yet'), findsNothing);
       },
     );
 

@@ -298,7 +298,7 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
                   children: [
                     Text(
                       DateFormat(
-                        'MMM d, y',
+                        'd MMM y',
                       ).format(_dateInHistoryTimezone(record.date)),
                       style: B05Typography.label(context),
                     ),
@@ -339,7 +339,7 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
   );
 
   String _formatBestDate(DateTime instant) =>
-      DateFormat('MMM d, y').format(_dateInHistoryTimezone(instant));
+      DateFormat('d MMM y').format(_dateInHistoryTimezone(instant));
 
   static String _statusLabel(String status, [String? completionKind]) {
     if (completionKind == 'partial') return 'Partially complete';
@@ -359,7 +359,7 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
       final basis = summary.trendBasis!;
       final values = [
         for (final point in points)
-          '${DateFormat('MMM d').format(_dateInHistoryTimezone(point.completedAt))}: ${R08F3StrengthPerformancePresentation.formatTrendLoad(point)}${point.isPartial ? ' (partial session)' : ''}',
+          '${DateFormat('d MMM').format(_dateInHistoryTimezone(point.completedAt))}: ${R08F3StrengthPerformancePresentation.formatTrendLoad(point)}${point.isPartial ? ' (partial session)' : ''}',
       ];
       return B05Surface(
         tone: B05SurfaceTone.inset,
@@ -489,7 +489,7 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
                 padding: const EdgeInsets.only(top: 6),
                 child: Text(
                   DateFormat(
-                    'MMM d',
+                    'd MMM',
                   ).format(_dateInHistoryTimezone(points[index].completedAt)),
                   style: B05Typography.caption(context),
                 ),
@@ -511,7 +511,7 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
           getTooltipItems: (spots) => [
             for (final spot in spots)
               LineTooltipItem(
-                '${DateFormat('MMM d').format(_dateInHistoryTimezone(points[spot.spotIndex].completedAt))}\n${R08F3StrengthPerformancePresentation.formatTrendLoad(points[spot.spotIndex])}',
+                '${DateFormat('d MMM').format(_dateInHistoryTimezone(points[spot.spotIndex].completedAt))}\n${R08F3StrengthPerformancePresentation.formatTrendLoad(points[spot.spotIndex])}',
                 TextStyle(
                   color: colors.textPrimary,
                   fontWeight: FontWeight.w700,

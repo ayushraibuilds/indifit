@@ -42,7 +42,7 @@ class PeriodComparisonSection extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Period Comparison',
+                  'Period comparison',
                   style: B05Typography.title(
                     context,
                   ).copyWith(fontWeight: FontWeight.w800),

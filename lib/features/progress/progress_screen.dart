@@ -428,7 +428,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     return Semantics(
       container: true,
       button: true,
-      label: 'Milestones & Badges. View all unlocked achievements.',
+      label: 'Badges. View your unlocked badges.',
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -458,10 +458,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Milestones & Badges',
-                        style: B05Typography.title(context),
-                      ),
+                      Text('Badges', style: B05Typography.title(context)),
                       const SizedBox(height: 2),
                       Text(
                         'Track your personal records, streaks, and unlocked badges.',

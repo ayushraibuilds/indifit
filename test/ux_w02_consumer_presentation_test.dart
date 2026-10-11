@@ -48,7 +48,7 @@ void main() {
     );
     expect(
       ConsumerDateLabel.range('2026-08-01', '2026-08-08'),
-      'Aug 1 – Aug 8, 2026',
+      '1 Aug – 8 Aug 2026',
     );
     expect(
       ConsumerDateLabel.day('2026-08-08', today: DateTime(2026, 8, 9)),
