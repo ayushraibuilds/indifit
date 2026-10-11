@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/di/providers.dart';
@@ -238,51 +239,59 @@ void main() {
     }
   });
 
-  testWidgets('steppers and height converter adjust inputs accurately', (
-    tester,
-  ) async {
-    final database = await _pumpOnboarding(tester);
-    addTearDown(database.close);
+  testWidgets(
+    'steppers, rulers and height converter adjust inputs accurately',
+    (tester) async {
+      final database = await _pumpOnboarding(tester);
+      addTearDown(database.close);
 
-    final ageField = _field('Age');
-    final weightField = _field('Current weight');
+      final ageField = _field('Age');
+      final weightField = _field('Current weight');
 
-    // Default age is 25
-    expect(tester.widget<TextField>(ageField).controller!.text, '25');
-    // Tap increase age stepper
-    await tester.tap(find.bySemanticsLabel('Increase Age'));
-    await tester.pump();
-    expect(tester.widget<TextField>(ageField).controller!.text, '26');
+      // Default age is 25
+      expect(tester.widget<TextField>(ageField).controller!.text, '25');
+      // Tap increase age stepper
+      await tester.tap(find.bySemanticsLabel('Increase Age'));
+      await tester.pump();
+      expect(tester.widget<TextField>(ageField).controller!.text, '26');
 
-    // Tap decrease age stepper
-    await tester.tap(find.bySemanticsLabel('Decrease Age'));
-    await tester.pump();
-    expect(tester.widget<TextField>(ageField).controller!.text, '25');
+      // Tap decrease age stepper
+      await tester.tap(find.bySemanticsLabel('Decrease Age'));
+      await tester.pump();
+      expect(tester.widget<TextField>(ageField).controller!.text, '25');
 
-    // Default weight is 70
-    expect(tester.widget<TextField>(weightField).controller!.text, '70');
-    // Tap increase weight stepper
-    final increaseWeight = find.bySemanticsLabel('Increase Current weight');
-    await tester.ensureVisible(increaseWeight);
-    await tester.tap(increaseWeight);
-    await tester.pump();
-    expect(tester.widget<TextField>(weightField).controller!.text, '70.5');
+      // Default weight is 70
+      expect(tester.widget<TextField>(weightField).controller!.text, '70');
+      // Weight moves on the ruler (V8): one step up is 0.5 kg.
+      final semantics = tester.ensureSemantics();
+      final weightRuler = find.byKey(
+        const Key('onboarding_ruler_Current weight'),
+      );
+      await tester.ensureVisible(weightRuler);
+      tester.semantics.performAction(
+        find.semantics.byLabel('Current weight ruler'),
+        SemanticsAction.increase,
+      );
+      await tester.pump();
+      expect(tester.widget<TextField>(weightField).controller!.text, '70.5');
+      semantics.dispose();
 
-    // Toggle height to ft/in
-    expect(find.text('ft/in'), findsOneWidget);
-    await tester.tap(find.text('ft/in'));
-    await tester.pumpAndSettle();
+      // Toggle height to ft/in
+      expect(find.text('ft/in'), findsOneWidget);
+      await tester.tap(find.text('ft/in'));
+      await tester.pumpAndSettle();
 
-    // Now in ft/in mode, should show ft and in labels and cm toggle
-    expect(find.text('cm'), findsOneWidget);
-    expect(find.text('ft'), findsOneWidget);
-    expect(find.text('in'), findsOneWidget);
+      // Now in ft/in mode, should show ft and in labels and cm toggle
+      expect(find.text('cm'), findsOneWidget);
+      expect(find.text('ft'), findsOneWidget);
+      expect(find.text('in'), findsOneWidget);
 
-    // Toggle back to cm
-    await tester.tap(find.text('cm'));
-    await tester.pumpAndSettle();
-    expect(find.text('ft/in'), findsOneWidget);
-  });
+      // Toggle back to cm
+      await tester.tap(find.text('cm'));
+      await tester.pumpAndSettle();
+      expect(find.text('ft/in'), findsOneWidget);
+    },
+  );
 }
 
 Finder _field(String label) {

@@ -7,6 +7,7 @@ import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../data/repositories/progress_statistics_repository.dart';
 import 'streak_provider.dart';
 import 'widgets/achievement_detail_sheet.dart';
+import 'widgets/badge_medal.dart';
 
 class AchievementsScreen extends ConsumerStatefulWidget {
   const AchievementsScreen({super.key});
@@ -252,11 +253,7 @@ class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        CircleAvatar(
-                          radius: 22,
-                          backgroundColor: item.color.withValues(alpha: 0.2),
-                          child: Icon(item.icon, color: item.color, size: 22),
-                        ),
+                        BadgeMedal(achievement: item, size: 48),
                         const SizedBox(width: B05Layout.space12),
                         Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -346,19 +343,7 @@ class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
                           Stack(
                             alignment: Alignment.center,
                             children: [
-                              CircleAvatar(
-                                radius: 24,
-                                backgroundColor: item.isUnlocked
-                                    ? item.color.withValues(alpha: 0.2)
-                                    : colors.border.withValues(alpha: 0.4),
-                                child: Icon(
-                                  item.icon,
-                                  color: item.isUnlocked
-                                      ? item.color
-                                      : colors.textDisabled,
-                                  size: 24,
-                                ),
-                              ),
+                              BadgeMedal(achievement: item, size: 56),
                               if (item.isUnlocked)
                                 Positioned(
                                   right: 0,

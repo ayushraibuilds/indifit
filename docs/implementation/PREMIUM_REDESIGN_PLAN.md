@@ -23,8 +23,8 @@ Update this table in every PR that touches the redesign. Status values: Not star
 | V5 | Player: rest takeover, exercise-done beat, exercise images, muscle map | B, G | V2; RepDB import (§ 9) | Credits updated; device feel check | Not started |
 | V3 | Today ring with depth and log feedback | E | V2 | Goldens | Not started |
 | V6 | Summary hero and share card | C | V2 | Share card checked in Instagram/WhatsApp | Not started |
-| V7 | Medals: 3D badge art, tilt, sheen | D | V1, V2 | Art licence in manifest | Not started |
-| V8 | Onboarding: animated mark, ruler pickers, target reveal | F | V2; Rive spike (§ 8.1) | IPA size check | Not started |
+| V7 | Medals: 3D badge art, tilt, sheen | D | V1, V2 | Art licence in manifest | Merged (#95) |
+| V8 | Onboarding: animated mark, ruler pickers, target reveal | F | V2 | IPA size check (no new assets or packages) | In progress (#96 rulers, reveal, no Skip on step 5; #97 welcome) |
 
 **Order:** V0 → V1 → V2 → V4 → V5 → V3 → V6 → V7 → V8 (decision 5: the thali comes first after V0–V2). V3 and V6 are small and can move earlier if a slot opens. Nothing here has a date; only the store-build freeze applies.
 
@@ -262,15 +262,19 @@ All presets read `B05MotionPolicy.reduceMotion(context)` and return the final st
 
 ### 8.4 V7 Medals (concept D)
 - Art: Fluent Emoji 3D PNGs are 256 × 256 (verified), sharp up to about 85 pt at @3x. Use them for the badge grid and the unlock sheet at ≤ 85 pt. Larger hero medals wait for commissioned art.
-- Suggested mapping (confirm in the PR): First Sweat → Sports medal; Iron Lifter → 1st place medal; consistency badges → Fire; nutrition badges → Pot of food / Curry rice.
-- Tilt with `sensors_plus` (±10°) and a sheen `FragmentShader` on unlock only. Locked badges: matte desaturated silhouette of the same art.
-- Licence: add the files and MIT notice to `assets/third_party/asset_manifest.json` and About & credits.
+- Mapping as built (one picture per badge; the volume chain climbs bronze → silver → gold): First Sweat → Sports medal; Consistency Master → Fire; Iron Discipline → Trophy; Iron Lifter → 3rd place medal; Heavy Mover → 2nd place medal; Titan Legend → 1st place medal; Nutrition Tracker → Green salad; Macro Master → Pot of food; Thali Connoisseur → Curry rice. Files and checksums: `assets/badges/SOURCE.md`.
+- `BadgeMedal` (`lib/features/progress/widgets/badge_medal.dart`): grid 56 pt, carousel 48 pt, unlock sheet 72 pt, detail sheet 85 pt.
+- Tilt with `sensors_plus` (±10°, gravity-based like V4, `lib/core/motion/device_tilt.dart`) on the unlock and detail sheets, only for unlocked badges while the route is current. The sheen plays once on the unlock sheet. It is a `ShaderMask` gradient sweep rather than a `FragmentShader`: same look at badge size, nothing to compile and no load failure path. Locked badges: matte desaturated silhouette of the same art (colour matrix at render time, no extra files). One `success()` haptic when the unlock sheet opens (the unlocks are already saved).
+- Licence: source `fluent_emoji_3d` in `assets/third_party/asset_manifest.json`, `LICENSES/FluentEmoji-MIT.txt`, and About & credits. The art is not under a managed production root, because the manifest's asset schema is exercise-specific; `test/v7_badge_medal_test.dart` checks the checksums instead.
+- Size: nine 256 × 256 PNGs, 312 KB.
 
 ### 8.5 V8 Onboarding (concept F)
 - Welcome screen before step 1: animated IndiFit mark (Rive, < 50 KB file), one line of value, "Get started".
 - Height and weight: horizontal ruler pickers (custom `ListWheelScrollView`-based, 1 cm / 0.5 kg ticks) with `selection()` haptic per tick; typing stays available for accessibility.
 - Step 5: a 1.5 s "Building your targets" beat, then the calorie ring fills to the target and protein/carbs/fat appear above the fold; the recap of answers moves below.
 - Drop "Skip for now" on step 5.
+- **Built so far (`feat/v8-onboarding`):** `OnboardingRulerPicker` (`lib/features/onboarding/widgets/onboarding_ruler_picker.dart`) under the height and weight fields, replacing their ± steppers; it is a custom-painted ruler driven by horizontal drag rather than a `ListWheelScrollView`, with a slider for screen readers, arrow keys, and the text field kept for typing. Age keeps its steppers. `OnboardingTargetReveal` (`onboarding_target_reveal.dart`) puts the ring and macros at the top of step 5 and the recap below; it plays once per session, and under Reduce Motion it is final on the first frame. Skip is hidden on step 5.
+- **Still open:** the welcome screen. It waits on the in-house `.riv` logo animation (decision 2: Rive stays) and the § 8.1 spike.
 
 ---
 
