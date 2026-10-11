@@ -16,7 +16,6 @@ import '../../data/repositories/b02_strength_execution_repository.dart';
 import '../../data/repositories/calendar_repository.dart';
 import '../../data/repositories/progress_statistics_repository.dart';
 import 'b02_strength_execution_controller.dart';
-import 'widgets/achievement_celebration_sheet.dart';
 import 'widgets/b02_summary_widgets.dart';
 import 'workout_execution_context.dart';
 
@@ -45,9 +44,9 @@ class _B02StrengthSummaryScreenState
   var _isFinalizing = false;
   var _hasCelebratedMilestones = false;
 
-  /// Whether an achievement sheet opens over the saved summary; null until
-  /// known. The summary's own celebration waits for it (one burst at most).
-  bool? _achievementSheetWillOpen;
+  /// Badges this workout unlocked. They wait in a row on the summary rather
+  /// than opening over it, so the hero number is seen first.
+  List<Achievement> _unlocks = const [];
   B02StrengthExecutionLaunch? _completionLaunch;
   CompletionKind? _pendingCompletionKind;
   String? _pendingCompletionReason;
@@ -74,7 +73,7 @@ class _B02StrengthSummaryScreenState
       if (!_hasCelebratedMilestones) {
         _hasCelebratedMilestones = true;
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          _checkAndShowAchievements();
+          _loadUnlocks();
         });
       }
       final completionLaunch = _completionLaunch ?? widget.launch;
@@ -101,7 +100,7 @@ class _B02StrengthSummaryScreenState
           completionKind: ui.completedCompletionKind ?? CompletionKind.full,
           onDone: () => goToTrainingTab(context),
           allowCelebration: true,
-          achievementSheetWillOpen: _achievementSheetWillOpen,
+          unlocks: _unlocks,
         ),
       );
     }
@@ -277,13 +276,7 @@ class _B02StrengthSummaryScreenState
     }
   }
 
-  void _setAchievementSheetWillOpen(bool willOpen) {
-    if (mounted && _achievementSheetWillOpen == null) {
-      setState(() => _achievementSheetWillOpen = willOpen);
-    }
-  }
-
-  Future<void> _checkAndShowAchievements() async {
+  Future<void> _loadUnlocks() async {
     if (!mounted) return;
     try {
       final statsRepo = ref.read(progressStatisticsRepositoryProvider);
@@ -296,28 +289,19 @@ class _B02StrengthSummaryScreenState
             statsRepository: statsRepo,
             prefs: prefs,
           );
-      _setAchievementSheetWillOpen(uncelebrated.isNotEmpty);
       if (uncelebrated.isEmpty || !mounted) return;
 
-      // Mark celebrated right before presentation: fails closed toward silence
-      // (a process kill between mark and sheet mount swallows the celebration,
-      // preventing annoying duplicate fanfare), while kills before this point
-      // leave the unlock pending celebration.
+      // Marked once they are on the summary: the row is how they are
+      // announced, so the next workout does not announce them again.
       await AchievementService.markCelebrated(
         prefs,
         uncelebrated.map((a) => a.id),
       );
-
-      if (!mounted) return;
-      await showAchievementCelebrationSheet(
-        context,
-        achievements: uncelebrated,
-      );
+      if (mounted) setState(() => _unlocks = uncelebrated);
     } catch (e) {
-      _setAchievementSheetWillOpen(false);
       // Non-blocking: failures in achievement presentation never break recap.
       AppLogger.warning(
-        'Failed to evaluate or present milestone celebration: $e',
+        'Failed to evaluate milestone unlocks: $e',
         'B02StrengthSummaryScreen',
       );
     }

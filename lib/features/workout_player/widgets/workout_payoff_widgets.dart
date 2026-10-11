@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/di/core_providers.dart';
+import '../../../core/motion/indifit_motion.dart';
+import '../../../core/services/achievement_service.dart';
 import '../../../core/services/indifit_haptics.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
 import '../../../core/utils/app_logger.dart';
@@ -13,7 +15,9 @@ import '../../../core/widgets/b05_accessibility_primitives.dart';
 import '../../../core/widgets/confetti_overlay.dart';
 import '../../progress/training_bests_providers.dart';
 import '../../progress/training_vs_last_time.dart';
+import '../../progress/widgets/badge_medal.dart';
 import '../workout_celebration_store.dart';
+import 'achievement_celebration_sheet.dart';
 import 'r07c_workout_presentation.dart';
 import 'training_bests_summary.dart';
 
@@ -68,25 +72,32 @@ class CountUpText extends StatelessWidget {
   }
 }
 
-/// "Workout complete", the routine name, and one line of numbers:
-/// "1,440 kg lifted · 3 sets · 2 min 48 sec". The brand-colour check
-/// scales in once.
-class WorkoutSummaryHeadline extends StatelessWidget {
-  const WorkoutSummaryHeadline({
+/// The summary hero (V6, PREMIUM_REDESIGN_PLAN § 8.3): the tick pops in,
+/// then the status and routine name, one hero number that counts up
+/// ("1,440 kg" total lifted, or the reps for a bodyweight workout) and one
+/// row of three stats. Each fact is shown once.
+class WorkoutSummaryHero extends StatelessWidget {
+  const WorkoutSummaryHero({
     super.key,
     required this.isPartial,
     required this.routineName,
     required this.savedLine,
     required this.totalLiftedKg,
     required this.setCount,
+    required this.repCount,
     required this.durationLabel,
   });
 
   final bool isPartial;
   final String routineName;
   final String savedLine;
+
+  /// 0 when nothing with an external load was logged.
   final double totalLiftedKg;
   final int setCount;
+
+  /// 0 when no reps are known.
+  final int repCount;
 
   /// Null when the duration is unknown.
   final String? durationLabel;
@@ -95,22 +106,18 @@ class WorkoutSummaryHeadline extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = context.b05Colors;
-    String stats(double kg) => [
-      if (totalLiftedKg > 0) '${formatKgLifted(kg)} lifted',
-      if (setCount > 0) '$setCount ${setCount == 1 ? 'set' : 'sets'}',
-      ?durationLabel,
-    ].join(' · ');
+    final hero = workoutSummaryHeroNumber(
+      totalLiftedKg: totalLiftedKg,
+      repCount: repCount,
+    );
+    final stats = workoutSummaryStats(
+      setCount: setCount,
+      repCount: hero?.isReps == true ? 0 : repCount,
+      durationLabel: durationLabel,
+    );
     return Column(
       children: [
-        TweenAnimationBuilder<double>(
-          tween: Tween(begin: 0.6, end: 1),
-          duration: B05MotionPolicy.transitionDuration(
-            context,
-            standard: B05MotionPolicy.completionDuration,
-          ),
-          curve: B05MotionPolicy.standardCurve,
-          builder: (context, scale, child) =>
-              Transform.scale(scale: scale, child: child),
+        IndiFitPop(
           child: Icon(
             isPartial
                 ? Icons.check_circle_outline_rounded
@@ -120,31 +127,154 @@ class WorkoutSummaryHeadline extends StatelessWidget {
             size: 56,
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: B05Layout.space12),
         Text(
           isPartial ? 'Workout partially completed' : 'Workout complete',
           textAlign: TextAlign.center,
-          style: theme.textTheme.headlineSmall,
+          style: B05Typography.sectionLabel(context),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: B05Layout.space4),
         Text(
           routineName,
           textAlign: TextAlign.center,
-          style: theme.textTheme.titleMedium,
+          style: B05Typography.pageTitle(context),
         ),
-        if (stats(totalLiftedKg).isNotEmpty) ...[
-          const SizedBox(height: 8),
+        if (hero != null) ...[
+          const SizedBox(height: B05Layout.space20),
           CountUpText(
-            key: const ValueKey('workout_summary_headline_stats'),
-            value: totalLiftedKg,
-            format: stats,
+            key: const ValueKey('workout_summary_hero_number'),
+            value: hero.value,
+            format: hero.format,
             textAlign: TextAlign.center,
-            style: theme.textTheme.titleSmall,
+            style: B05Typography.metric(
+              context,
+            ).copyWith(color: colors.action, fontSize: 44, height: 1.1),
+          ),
+          Text(
+            hero.label,
+            textAlign: TextAlign.center,
+            style: B05Typography.body(context),
           ),
         ],
-        const SizedBox(height: 8),
-        Text(savedLine, textAlign: TextAlign.center),
+        if (stats.isNotEmpty) ...[
+          const SizedBox(height: B05Layout.space20),
+          WorkoutSummaryStatsRow(stats: stats),
+        ],
+        const SizedBox(height: B05Layout.space12),
+        Text(
+          savedLine,
+          textAlign: TextAlign.center,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: colors.textSecondary,
+          ),
+        ),
       ],
+    );
+  }
+}
+
+/// The hero number: kilograms lifted when any external load was logged,
+/// otherwise the reps. Null when neither is known.
+({double value, String Function(double) format, String label, bool isReps})?
+workoutSummaryHeroNumber({
+  required double totalLiftedKg,
+  required int repCount,
+}) {
+  if (totalLiftedKg > 0) {
+    return (
+      value: totalLiftedKg,
+      format: formatKgLifted,
+      label: 'Total lifted',
+      isReps: false,
+    );
+  }
+  if (repCount > 0) {
+    return (
+      value: repCount.toDouble(),
+      format: (value) => '${value.round()}',
+      label: repCount == 1 ? 'Rep' : 'Reps',
+      isReps: true,
+    );
+  }
+  return null;
+}
+
+/// Sets, reps and duration, leaving out what is unknown.
+List<({String value, String label})> workoutSummaryStats({
+  required int setCount,
+  required int repCount,
+  required String? durationLabel,
+}) => [
+  if (setCount > 0) (value: '$setCount', label: setCount == 1 ? 'Set' : 'Sets'),
+  if (repCount > 0) (value: '$repCount', label: repCount == 1 ? 'Rep' : 'Reps'),
+  if (durationLabel != null) (value: durationLabel, label: 'Duration'),
+];
+
+/// One row of up to three stats with tabular figures. Stacks at large text
+/// sizes so nothing truncates.
+class WorkoutSummaryStatsRow extends StatelessWidget {
+  const WorkoutSummaryStatsRow({super.key, required this.stats});
+
+  final List<({String value, String label})> stats;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.b05Colors;
+    final stacked = MediaQuery.textScalerOf(context).scale(1) > 1.3;
+    Widget stat(({String value, String label}) stat) => Semantics(
+      container: true,
+      label: '${stat.value} ${stat.label.toLowerCase()}',
+      child: ExcludeSemantics(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              stat.value,
+              textAlign: TextAlign.center,
+              style: B05Typography.number(context, size: 20),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              stat.label,
+              textAlign: TextAlign.center,
+              style: B05Typography.caption(context),
+            ),
+          ],
+        ),
+      ),
+    );
+    return B05Surface(
+      key: const ValueKey('workout_summary_stats_row'),
+      tone: B05SurfaceTone.inset,
+      padding: const EdgeInsets.symmetric(
+        horizontal: B05Layout.space8,
+        vertical: B05Layout.space12,
+      ),
+      child: stacked
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (var i = 0; i < stats.length; i++) ...[
+                  if (i > 0) const SizedBox(height: B05Layout.space12),
+                  stat(stats[i]),
+                ],
+              ],
+            )
+          : IntrinsicHeight(
+              child: Row(
+                children: [
+                  for (var i = 0; i < stats.length; i++) ...[
+                    if (i > 0)
+                      VerticalDivider(
+                        width: 1,
+                        thickness: 1,
+                        color: colors.borderSubtle,
+                      ),
+                    Expanded(child: stat(stats[i])),
+                  ],
+                ],
+              ),
+            ),
     );
   }
 }
@@ -161,8 +291,7 @@ bool weekGoalJustMet(WeeklyTrainingGoalStatus? goal) =>
 /// workout: a confetti burst (none with reduce motion) and
 /// [IndiFitHaptics.success]. The session is marked in
 /// [WorkoutCelebrationStore] first, so reopening the summary never repeats
-/// it. When [achievementSheetWillOpen] is true the sheet is the burst and
-/// this block stays still.
+/// it.
 class WorkoutPayoffMoment extends ConsumerStatefulWidget {
   const WorkoutPayoffMoment({
     super.key,
@@ -170,7 +299,6 @@ class WorkoutPayoffMoment extends ConsumerStatefulWidget {
     required this.bestsSessionId,
     required this.weeklyGoal,
     this.celebrate = false,
-    this.achievementSheetWillOpen = false,
   });
 
   /// The saved session the celebration flag is kept for.
@@ -182,7 +310,6 @@ class WorkoutPayoffMoment extends ConsumerStatefulWidget {
 
   final WeeklyTrainingGoalStatus? weeklyGoal;
   final bool celebrate;
-  final bool achievementSheetWillOpen;
 
   @override
   ConsumerState<WorkoutPayoffMoment> createState() =>
@@ -241,7 +368,7 @@ class _WorkoutPayoffMomentState extends ConsumerState<WorkoutPayoffMoment> {
       // than repeating it.
       await WorkoutCelebrationStore.markCelebrated(prefs, sessionId);
       if (!mounted) return;
-      if (!widget.achievementSheetWillOpen) setState(() => _burst = true);
+      setState(() => _burst = true);
       unawaited(IndiFitHaptics.success());
     } catch (error) {
       // Presentation only: the summary stays correct without the moment.
@@ -327,11 +454,56 @@ class WorkoutWeekGoalLine extends ConsumerWidget {
     }
     return Padding(
       padding: const EdgeInsets.only(bottom: B05Layout.space16),
-      child: Text(
-        WeeklyTrainingGoalCopy.summary(goal),
-        key: const Key('workout_summary_week_goal'),
-        textAlign: TextAlign.center,
-        style: Theme.of(context).textTheme.titleSmall,
+      child: WorkoutWeekGoalPill(goal: goal),
+    );
+  }
+}
+
+/// "2 of 3 workouts this week" as a pill; "Week goal done · …" gets the
+/// success colour and a tick.
+class WorkoutWeekGoalPill extends StatelessWidget {
+  const WorkoutWeekGoalPill({super.key, required this.goal});
+
+  final WeeklyTrainingGoalStatus goal;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.b05Colors;
+    final met = goal.isMet;
+    final tone = met ? colors.success : null;
+    return Center(
+      child: DecoratedBox(
+        decoration: ShapeDecoration(
+          color: tone?.container ?? colors.surfaceSubtle,
+          shape: const StadiumBorder(),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: B05Layout.space12,
+            vertical: B05Layout.space8,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                met ? Icons.check_rounded : Icons.calendar_today_rounded,
+                size: 16,
+                color: tone?.indicator ?? colors.textSecondary,
+              ),
+              const SizedBox(width: B05Layout.space8),
+              Flexible(
+                child: Text(
+                  WeeklyTrainingGoalCopy.summary(goal),
+                  key: const Key('workout_summary_week_goal'),
+                  textAlign: TextAlign.center,
+                  style: B05Typography.label(
+                    context,
+                  ).copyWith(color: tone?.foreground ?? colors.textPrimary),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -376,6 +548,83 @@ class WorkoutVsLastTimeBlock extends ConsumerWidget {
               ),
             ],
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// "2 badges unlocked" under the week goal. Unlocks wait here instead of
+/// opening over the summary, so the hero number plays first; a tap opens the
+/// medal sheet. It enters after the hero's count-up.
+class WorkoutUnlocksRow extends StatelessWidget {
+  const WorkoutUnlocksRow({super.key, required this.unlocks});
+
+  final List<Achievement> unlocks;
+
+  static const enterDelay = Duration(milliseconds: 600);
+
+  @override
+  Widget build(BuildContext context) {
+    if (unlocks.isEmpty) return const SizedBox.shrink();
+    final colors = context.b05Colors;
+    final title = unlocks.length == 1
+        ? '${unlocks.single.title} unlocked'
+        : '${unlocks.length} badges unlocked';
+    final names = unlocks.map((a) => a.title).join(', ');
+    return Padding(
+      padding: const EdgeInsets.only(bottom: B05Layout.space16),
+      child: IndiFitEnter(
+        delay: enterDelay,
+        child: Semantics(
+          button: true,
+          label: '$title: $names. Opens the badges.',
+          excludeSemantics: true,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              key: const ValueKey('workout_summary_unlocks'),
+              borderRadius: b05Radius(B05SurfaceRadius.large),
+              onTap: () => showAchievementCelebrationSheet(
+                context,
+                achievements: unlocks,
+              ),
+              child: B05Surface(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: B05Layout.space16,
+                  vertical: B05Layout.space12,
+                ),
+                child: Row(
+                  children: [
+                    for (final achievement in unlocks.take(3))
+                      Padding(
+                        padding: const EdgeInsets.only(right: B05Layout.space4),
+                        child: BadgeMedal(achievement: achievement, size: 40),
+                      ),
+                    const SizedBox(width: B05Layout.space8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(title, style: B05Typography.title(context)),
+                          Text(
+                            'Tap to see your badges',
+                            style: B05Typography.caption(
+                              context,
+                            ).copyWith(color: colors.textSecondary),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      color: colors.textSecondary,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );

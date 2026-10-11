@@ -107,6 +107,7 @@ flutter:
     - assets/catalog/
     - assets/third_party/asset_manifest.json
     - assets/generated/repdb/
+    - assets/branding/indifit_mark.png
     - assets/badges/
 
   # Offline-first typography: Outfit is bundled as a variable font so the app

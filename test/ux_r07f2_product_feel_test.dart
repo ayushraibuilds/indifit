@@ -313,8 +313,6 @@ void main() {
         expect(find.text('Upper Body Power'), findsOneWidget);
         expect(find.text('45 min'), findsOneWidget); // 2700s = 45 min
         expect(find.text('Duration'), findsOneWidget);
-        expect(find.text('1'), findsOneWidget); // 1 exercise
-        expect(find.text('Exercises'), findsOneWidget);
         expect(find.text('2'), findsOneWidget); // 2 sets
         expect(find.text('Sets'), findsOneWidget);
         expect(find.text('16'), findsOneWidget); // 8 + 8 reps
@@ -322,7 +320,6 @@ void main() {
         expect(find.text('1,280 kg'), findsOneWidget); // 80*8 + 80*8 = 1280
         expect(find.text('Total lifted'), findsOneWidget);
         expect(find.text('External volume'), findsNothing);
-        expect(find.text('1,280 kg lifted · 2 sets · 45 min'), findsOneWidget);
 
         // Verify strict absence of unearned PR / gamification copy
         expect(find.textContaining('PERSONAL RECORD'), findsNothing);

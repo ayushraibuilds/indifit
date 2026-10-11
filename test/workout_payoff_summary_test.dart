@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/di/core_providers.dart';
 import 'package:indifit/core/di/providers.dart';
+import 'package:indifit/core/services/achievement_service.dart';
 import 'package:indifit/core/services/indifit_haptics.dart';
 import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/core/theme/b05_semantic_colors.dart';
@@ -57,14 +58,19 @@ void main() {
       );
     }
 
-    testWidgets('one line of numbers: kg lifted, sets, duration', (
+    testWidgets('one hero number, then sets, reps and duration once', (
       tester,
     ) async {
       await pumpDraft(tester, [_set('a', 80, 8), _set('b', 80, 8, ordinal: 1)]);
       await tester.pumpAndSettle();
 
       expect(find.text('Workout complete'), findsOneWidget);
-      expect(find.text('1,280 kg lifted · 2 sets · 45 min'), findsOneWidget);
+      expect(find.text('1,280 kg'), findsOneWidget);
+      expect(find.text('Total lifted'), findsOneWidget);
+      for (final text in ['2', 'Sets', '16', 'Reps', '45 min', 'Duration']) {
+        expect(find.text(text), findsOneWidget, reason: text);
+      }
+      expect(find.textContaining('kg lifted'), findsNothing);
     });
 
     testWidgets('partial, one set and no duration', (tester) async {
@@ -77,11 +83,13 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Workout partially completed'), findsOneWidget);
-      expect(find.text('480 kg lifted · 1 set'), findsOneWidget);
+      expect(find.text('480 kg'), findsOneWidget);
+      expect(find.text('Set'), findsOneWidget);
+      expect(find.text('Duration'), findsNothing);
       expect(find.byIcon(Icons.check_circle_outline_rounded), findsOneWidget);
     });
 
-    testWidgets('bodyweight only: no kg lifted and no Total lifted tile', (
+    testWidgets('bodyweight only: reps are the hero, no kg anywhere', (
       tester,
     ) async {
       await pumpDraft(tester, [
@@ -90,8 +98,22 @@ void main() {
       ]);
       await tester.pumpAndSettle();
 
-      expect(find.text('2 sets · 45 min'), findsOneWidget);
-      expect(find.textContaining('kg lifted'), findsNothing);
+      expect(
+        tester
+            .widget<Text>(
+              find.descendant(
+                of: find.byKey(const ValueKey('workout_summary_hero_number')),
+                matching: find.byType(Text),
+              ),
+            )
+            .data,
+        '22',
+      );
+      // Reps are the hero, so the row is sets and duration only.
+      expect(find.text('Reps'), findsOneWidget);
+      expect(find.text('Sets'), findsOneWidget);
+      expect(find.text('45 min'), findsOneWidget);
+      expect(find.textContaining(' kg'), findsNothing);
       expect(find.text('Total lifted'), findsNothing);
     });
 
@@ -111,12 +133,10 @@ void main() {
       await pumpDraft(tester, [_set('a', 80, 8), _set('b', 80, 8, ordinal: 1)]);
 
       expect(find.text('0 kg'), findsOneWidget);
-      expect(find.text('0 kg lifted · 2 sets · 45 min'), findsOneWidget);
       expect(tester.hasRunningAnimations, isTrue);
 
       await tester.pump(const Duration(milliseconds: 400));
       expect(find.text('1,280 kg'), findsOneWidget);
-      expect(find.text('1,280 kg lifted · 2 sets · 45 min'), findsOneWidget);
     });
 
     testWidgets('reduce motion shows the final numbers on the first frame', (
@@ -128,7 +148,6 @@ void main() {
       ], reduceMotion: true);
 
       expect(find.text('1,280 kg'), findsOneWidget);
-      expect(find.text('1,280 kg lifted · 2 sets · 45 min'), findsOneWidget);
       expect(find.text('0 kg'), findsNothing);
       expect(tester.hasRunningAnimations, isFalse);
     });
@@ -216,7 +235,7 @@ void main() {
       WidgetTester tester,
       int sessionId, {
       required WeeklyTrainingGoalStatus goal,
-      bool? sheetWillOpen = false,
+      List<Achievement> unlocks = const [],
       bool reduceMotion = false,
     }) async {
       tester.view.physicalSize = const Size(390, 1800);
@@ -239,7 +258,7 @@ void main() {
                   sessionId: sessionId,
                   onDone: () {},
                   allowCelebration: true,
-                  achievementSheetWillOpen: sheetWillOpen,
+                  unlocks: unlocks,
                 ),
               ),
             ),
@@ -267,11 +286,11 @@ void main() {
       double top(Finder finder) => tester.getTopLeft(finder).dy;
       final order = [
         find.text('Workout complete'),
-        find.byKey(const ValueKey('workout_summary_headline_stats')),
+        find.byKey(const ValueKey('workout_summary_hero_number')),
+        find.byKey(const ValueKey('workout_summary_stats_row')),
+        find.byKey(const Key('workout_summary_week_goal')),
         find.byKey(const ValueKey('workout_summary_new_bests')),
         find.byKey(const ValueKey('workout_summary_vs_last_time')),
-        find.byKey(const Key('workout_summary_week_goal')),
-        find.text('Total lifted'),
         find.text('What you logged'),
       ];
       for (final finder in order) {
@@ -374,42 +393,53 @@ void main() {
       await unmount(tester);
     });
 
-    testWidgets('an achievement sheet takes the burst; the block stays still', (
+    testWidgets('unlocks wait in a row; the summary keeps its burst', (
       tester,
     ) async {
       final session = await seed(tester, const [(62.5, 8)]);
+      const firstSweat = Achievement(
+        id: 'first_workout',
+        title: 'First Sweat',
+        description: 'Complete your 1st workout session.',
+        icon: Icons.fitness_center_rounded,
+        color: Color(0xFFCD7F32),
+        currentProgress: 1,
+        maxProgress: 1,
+        isUnlocked: true,
+        evidence: '1 of 1 workout logged',
+      );
       await pumpSummary(
         tester,
         session,
         goal: _goal(completed: 2),
-        sheetWillOpen: true,
+        unlocks: const [firstSweat],
       );
       await tester.pumpAndSettle();
 
+      // Nothing opens over the hero; the summary's own moment still plays.
+      expect(find.byType(BottomSheet), findsNothing);
       expect(
         find.byKey(const ValueKey('workout_summary_new_bests')),
         findsOneWidget,
       );
-      expect(find.byType(ConfettiOverlay), findsNothing);
+      expect(haptics, [IndiFitHapticType.success]);
       expect(WorkoutCelebrationStore.hasCelebrated(prefs, session), isTrue);
-      await unmount(tester);
-    });
 
-    testWidgets('waits while it is unknown whether a sheet will open', (
-      tester,
-    ) async {
-      final session = await seed(tester, const [(62.5, 8)]);
-      await pumpSummary(
-        tester,
-        session,
-        goal: _goal(completed: 2),
-        sheetWillOpen: null,
+      final row = find.byKey(const ValueKey('workout_summary_unlocks'));
+      expect(row, findsOneWidget);
+      expect(find.text('First Sweat unlocked'), findsOneWidget);
+      expect(
+        tester.getTopLeft(row).dy,
+        greaterThan(
+          tester
+              .getTopLeft(find.byKey(const Key('workout_summary_week_goal')))
+              .dy,
+        ),
       );
-      await tester.pumpAndSettle();
 
-      expect(find.byType(ConfettiOverlay), findsNothing);
-      expect(haptics, isEmpty);
-      expect(WorkoutCelebrationStore.hasCelebrated(prefs, session), isFalse);
+      await tester.tap(row);
+      await tester.pumpAndSettle();
+      expect(find.byType(BottomSheet), findsOneWidget);
       await unmount(tester);
     });
 
@@ -428,7 +458,7 @@ void main() {
       expect(haptics, [IndiFitHapticType.success]);
       expect(WorkoutCelebrationStore.hasCelebrated(prefs, session), isTrue);
       expect(find.text('500 kg'), findsOneWidget);
-      expect(find.text('500 kg lifted · 1 set · 10 min'), findsOneWidget);
+      expect(find.text('10 min'), findsOneWidget);
       expect(tester.hasRunningAnimations, isFalse);
       await unmount(tester);
     });
