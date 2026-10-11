@@ -270,7 +270,7 @@ void main() {
       ))!;
       await _pumpPlayer(tester, launch, executions, db, AppTheme.darkTheme);
 
-      expect(find.text('REST'), findsOneWidget);
+      expect(find.text('Rest'), findsOneWidget);
       expect(find.text('−15'), findsOneWidget);
       expect(find.text('+30'), findsOneWidget);
       expect(find.text('Skip'), findsOneWidget);
