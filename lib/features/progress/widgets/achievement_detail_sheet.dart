@@ -3,6 +3,7 @@ import 'package:intl/intl.dart' hide TextDirection;
 import '../../../core/services/achievement_service.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
+import 'badge_medal.dart';
 
 class AchievementDetailSheet extends StatelessWidget {
   final Achievement achievement;
@@ -43,22 +44,11 @@ class AchievementDetailSheet extends StatelessWidget {
               ),
               const SizedBox(height: B05Layout.space20),
 
-              // Vector icon in colored tier circle
-              Container(
-                padding: const EdgeInsets.all(B05Layout.space20),
-                decoration: BoxDecoration(
-                  color: achievement.color.withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: achievement.color.withValues(alpha: 0.4),
-                    width: 2,
-                  ),
-                ),
-                child: Icon(
-                  achievement.icon,
-                  size: 48,
-                  color: achievement.color,
-                ),
+              // Badge art; unlocked badges lean with the phone.
+              BadgeMedal(
+                achievement: achievement,
+                size: BadgeMedal.maxSize,
+                tilt: true,
               ),
               const SizedBox(height: B05Layout.space16),
 
