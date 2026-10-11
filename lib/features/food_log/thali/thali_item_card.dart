@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/nutrition_thali.dart';
+import '../../../core/presentation/consumer_number_label.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
 import 'thali_quantity_label.dart';
 
@@ -35,7 +36,10 @@ class ThaliItemCard extends StatelessWidget {
 
     final caloriesStr = energyVal != null ? '${energyVal.round()} kcal' : null;
     final macrosStr = (proteinVal != null && carbsVal != null && fatVal != null)
-        ? 'P: ${(proteinVal * 10).round() / 10}g  C: ${(carbsVal * 10).round() / 10}g  F: ${(fatVal * 10).round() / 10}g'
+        // The plate legend's words and "6 g" format, not "P: 6.0g".
+        ? 'Protein ${ConsumerNumberLabel.grams(proteinVal)} · '
+              'Carbs ${ConsumerNumberLabel.grams(carbsVal)} · '
+              'Fat ${ConsumerNumberLabel.grams(fatVal)}'
         : null;
 
     return Container(

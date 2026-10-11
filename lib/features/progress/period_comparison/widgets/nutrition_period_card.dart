@@ -68,7 +68,7 @@ class NutritionPeriodCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Nutrition Adherence',
+                          'Nutrition adherence',
                           style: B05Typography.title(
                             context,
                           ).copyWith(fontSize: 16, fontWeight: FontWeight.w700),
@@ -89,21 +89,21 @@ class NutritionPeriodCard extends StatelessWidget {
                 children: [
                   Expanded(
                     child: _NutritionMetricColumn(
-                      label: 'Daily Avg Calories',
+                      label: 'Daily avg calories',
                       currentValue: curCalories,
                       previousValue: prevCalories,
                     ),
                   ),
                   Expanded(
                     child: _NutritionMetricColumn(
-                      label: 'Daily Avg Protein',
+                      label: 'Daily avg protein',
                       currentValue: curProtein,
                       previousValue: prevProtein,
                     ),
                   ),
                   Expanded(
                     child: _NutritionMetricColumn(
-                      label: 'Logged Days',
+                      label: 'Logged days',
                       currentValue:
                           '${cur.loggedDaysCount}/${cur.daysInPeriod}',
                       previousValue:

@@ -223,11 +223,11 @@ void main() {
       findsOneWidget,
     );
     expect(
-      find.bySemanticsLabel('Heaviest: 62.5 kg × 8, Aug 8, 2026'),
+      find.bySemanticsLabel('Heaviest: 62.5 kg × 8, 8 Aug 2026'),
       findsOneWidget,
     );
     expect(
-      find.bySemanticsLabel('Most reps: 60 kg × 10, Aug 1, 2026'),
+      find.bySemanticsLabel('Most reps: 60 kg × 10, 1 Aug 2026'),
       findsOneWidget,
     );
     // The card replaces the header's heaviest line rather than repeating it.
@@ -319,9 +319,9 @@ void main() {
         80,
         90,
       ]);
-      expect(find.textContaining('Aug 1: 80 kg × 5 reps'), findsOneWidget);
+      expect(find.textContaining('1 Aug: 80 kg × 5 reps'), findsOneWidget);
       expect(
-        find.textContaining('Aug 8: 90 kg × 5 reps (partial session)'),
+        find.textContaining('8 Aug: 90 kg × 5 reps (partial session)'),
         findsOneWidget,
       );
       expect(find.text('Partially complete'), findsOneWidget);
@@ -382,8 +382,8 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    expect(find.textContaining('Aug 2: 80 kg × 5 reps'), findsOneWidget);
-    expect(find.textContaining('Aug 9: 82 kg × 5 reps'), findsOneWidget);
+    expect(find.textContaining('2 Aug: 80 kg × 5 reps'), findsOneWidget);
+    expect(find.textContaining('9 Aug: 82 kg × 5 reps'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

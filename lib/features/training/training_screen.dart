@@ -475,7 +475,7 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
           builder: (dialogContext) => AlertDialog(
             title: const Text('Start outside scheduled date?'),
             content: Text(
-              'This workout is scheduled for ${ConsumerDateLabel.day(item.occurrence.effectiveLocalDate)}. Starting it will not change your plan.',
+              'This workout is scheduled for ${ConsumerDateLabel.inSentence(item.occurrence.effectiveLocalDate)}. Starting it will not change your plan.',
             ),
             actions: [
               TextButton(

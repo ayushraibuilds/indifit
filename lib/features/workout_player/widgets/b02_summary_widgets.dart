@@ -323,8 +323,10 @@ class CompletionEvidence extends StatelessWidget {
                     totalLiftedKg: hasVolume ? volume : 0,
                     setCount: setCount,
                     repCount: knownReps,
+                    // Clock form, like the share card: "1:46" fits one
+                    // stat column where "1 min 46 sec" wrapped.
                     durationLabel: durationSeconds > 0
-                        ? formatB02WorkoutDuration(durationSeconds)
+                        ? formatStoryDuration(durationSeconds)
                         : null,
                   ),
                   const SizedBox(height: 20),

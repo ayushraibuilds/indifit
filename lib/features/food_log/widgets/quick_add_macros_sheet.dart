@@ -373,7 +373,7 @@ class _QuickAddMacrosSheetState extends ConsumerState<QuickAddMacrosSheet> {
                         ),
                       ),
                       child: Text(
-                        DateFormat('MMM d').format(_selectedDate),
+                        DateFormat('d MMM').format(_selectedDate),
                         style: B05Typography.body(context),
                       ),
                     ),

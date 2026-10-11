@@ -40,7 +40,7 @@ class PeriodComparisonDrilldownSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.b05Colors;
     final rangeLabel = snapshot.range == PeriodComparisonRange.week
-        ? 'Weekly Period Breakdown'
+        ? 'Weekly period breakdown'
         : '4-Week Cycle Breakdown';
 
     final startCurrent = _formatLocalDate(
@@ -83,7 +83,7 @@ class PeriodComparisonDrilldownSheet extends StatelessWidget {
               // Strength Exercises Comparison
               if (snapshot.strengthComparisons.isNotEmpty) ...[
                 Text(
-                  'Top Trained Exercises',
+                  'Top trained exercises',
                   style: B05Typography.body(
                     context,
                   ).copyWith(fontWeight: FontWeight.w700),
@@ -96,7 +96,7 @@ class PeriodComparisonDrilldownSheet extends StatelessWidget {
 
               // Training Summary
               Text(
-                'Training Details',
+                'Training details',
                 style: B05Typography.body(
                   context,
                 ).copyWith(fontWeight: FontWeight.w700),
@@ -105,28 +105,28 @@ class PeriodComparisonDrilldownSheet extends StatelessWidget {
               _DetailGrid(
                 items: [
                   _GridItem(
-                    label: 'Full Sessions',
+                    label: 'Full sessions',
                     current:
                         '${snapshot.trainingComparison.current.fullSessionCount}',
                     previous:
                         '${snapshot.trainingComparison.previous.fullSessionCount}',
                   ),
                   _GridItem(
-                    label: 'Partial Sessions',
+                    label: 'Partial sessions',
                     current:
                         '${snapshot.trainingComparison.current.partialSessionCount}',
                     previous:
                         '${snapshot.trainingComparison.previous.partialSessionCount}',
                   ),
                   _GridItem(
-                    label: 'Total Sets',
+                    label: 'Total sets',
                     current:
                         '${snapshot.trainingComparison.current.workingSetsCount}',
                     previous:
                         '${snapshot.trainingComparison.previous.workingSetsCount}',
                   ),
                   _GridItem(
-                    label: 'Total Time',
+                    label: 'Total time',
                     current: _formatDuration(
                       snapshot.trainingComparison.current.totalDurationSeconds,
                     ),
@@ -141,7 +141,7 @@ class PeriodComparisonDrilldownSheet extends StatelessWidget {
               // Nutrition Summary if available
               if (snapshot.nutritionComparison != null) ...[
                 Text(
-                  'Nutrition Details',
+                  'Nutrition details',
                   style: B05Typography.body(
                     context,
                   ).copyWith(fontWeight: FontWeight.w700),
@@ -150,14 +150,14 @@ class PeriodComparisonDrilldownSheet extends StatelessWidget {
                 _DetailGrid(
                   items: [
                     _GridItem(
-                      label: 'Logged Days',
+                      label: 'Logged days',
                       current:
                           '${snapshot.nutritionComparison!.current.loggedDaysCount} / ${snapshot.nutritionComparison!.current.daysInPeriod}',
                       previous:
                           '${snapshot.nutritionComparison!.previous.loggedDaysCount} / ${snapshot.nutritionComparison!.previous.daysInPeriod}',
                     ),
                     _GridItem(
-                      label: 'Target Met Days',
+                      label: 'Target met days',
                       current:
                           '${snapshot.nutritionComparison!.current.proteinTargetMetDaysCount}',
                       previous:

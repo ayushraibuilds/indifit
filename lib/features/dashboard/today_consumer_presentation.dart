@@ -1035,10 +1035,7 @@ String _workoutStatus(Object? value) {
   };
 }
 
-/// "Planned for tomorrow." / "Planned for Mon, Oct 12." Never the raw
+/// "Planned for tomorrow." / "Planned for Mon, 12 Oct." Never the raw
 /// yyyy-MM-dd local date.
-String _nextWorkoutDetail(String localDate) {
-  final day = ConsumerDateLabel.day(localDate);
-  final relative = const {'Today', 'Tomorrow', 'Yesterday'}.contains(day);
-  return 'Planned for ${relative ? day.toLowerCase() : day}.';
-}
+String _nextWorkoutDetail(String localDate) =>
+    'Planned for ${ConsumerDateLabel.inSentence(localDate)}.';

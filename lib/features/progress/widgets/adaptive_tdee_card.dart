@@ -28,8 +28,8 @@ class AdaptiveTdeeCard extends StatelessWidget {
     final int displayKcal = estimate.currentTdeeKcal.round();
 
     final (confidenceLabel, confidenceRole) = switch (estimate.confidence) {
-      AdaptiveTdeeConfidence.high => ('High Confidence', colors.success),
-      AdaptiveTdeeConfidence.moderate => ('Moderate Confidence', colors.info),
+      AdaptiveTdeeConfidence.high => ('High confidence', colors.success),
+      AdaptiveTdeeConfidence.moderate => ('Moderate confidence', colors.info),
       AdaptiveTdeeConfidence.calibrating => ('Calibrating', colors.warning),
     };
 

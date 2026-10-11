@@ -287,7 +287,7 @@ class _HydrationDetailSheetState extends ConsumerState<HydrationDetailSheet> {
                     Text('Hydration', style: todayEyebrow(context)),
                     const SizedBox(height: B05Layout.space4),
                     Text(
-                      DateFormat('EEEE, MMM d').format(widget.selectedDate),
+                      DateFormat('EEEE, d MMMM').format(widget.selectedDate),
                       style: B05Typography.title(context),
                       overflow: TextOverflow.ellipsis,
                     ),
