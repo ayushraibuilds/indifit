@@ -1120,7 +1120,13 @@ class _DominantTrainingLandingBody extends StatelessWidget {
           const SizedBox(height: B05Layout.space16),
           const _SectionLabel(label: 'Next workout'),
           const SizedBox(height: B05Layout.space8),
-          _NextTrainingContext(item: nextWorkout, onTap: onOpenCalendar),
+          // Opens the calendar on that workout's day, not on today.
+          _NextTrainingContext(
+            item: nextWorkout,
+            onTap: () => context.push(
+              '/calendar?date=${nextWorkout.occurrence.effectiveLocalDate}',
+            ),
+          ),
         ],
         if (data.recentSessions.isNotEmpty) ...[
           const SizedBox(height: B05Layout.space16),

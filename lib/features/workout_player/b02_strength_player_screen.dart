@@ -509,11 +509,8 @@ class _B02StrengthPlayerScreenState
           ? primaryAction
           : null,
       primaryActionGap: 10,
-      nextExerciseGap: hasOpenRest
-          ? 12
-          : isQuick
-          ? 10
-          : 0,
+      // Planned workouts had no gap, so the exercise card touched Log set.
+      nextExerciseGap: 12,
       nextExerciseSlot: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

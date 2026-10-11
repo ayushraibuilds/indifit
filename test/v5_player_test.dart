@@ -561,12 +561,21 @@ void main() {
 const _frame = Duration(milliseconds: 16);
 
 Future<void> _logSet(WidgetTester tester, {required String reps}) async {
+  // Find the reps field by its label, and fill it before scrolling to Log
+  // set: at large text sizes the scroll can take the fields out of the
+  // list's build range, and a field index then points at the wrong one.
+  final repsField = find.widgetWithText(TextFormField, 'Reps');
+  await tester.scrollUntilVisible(
+    repsField,
+    120,
+    scrollable: find.byType(Scrollable).first,
+  );
+  await tester.enterText(repsField, reps);
   await tester.scrollUntilVisible(
     find.text('Log set'),
     120,
     scrollable: find.byType(Scrollable).first,
   );
-  await tester.enterText(find.byType(TextFormField).at(1), reps);
   await tester.ensureVisible(find.text('Log set'));
   await tester.pump();
   await tester.tap(find.text('Log set'));

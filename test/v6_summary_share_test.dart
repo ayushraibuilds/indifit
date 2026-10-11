@@ -233,4 +233,33 @@ void main() {
       expect(find.text('reps'), findsOneWidget);
     });
   });
+
+  test('story card lists up to four exercises; weights follow the switch', () {
+    ExerciseRecapSummary e(String name, {int min = 8, int max = 8}) =>
+        ExerciseRecapSummary(
+          exerciseName: name,
+          setsCount: 3,
+          topWeightKg: 60,
+          minReps: min,
+          maxReps: max,
+        );
+    final five = [
+      e('Leg Press'),
+      e('Bench', min: 8, max: 10),
+      e('Row'),
+      e('Curl'),
+      e('Plank'),
+    ];
+    expect(storyExerciseLines(five, includeWeights: true), [
+      'Leg Press · 3 × 8 · 60 kg',
+      'Bench · 3 × 8–10 · 60 kg',
+      'Row · 3 × 8 · 60 kg',
+      'Curl · 3 × 8 · 60 kg',
+      '+1 more',
+    ]);
+    expect(
+      storyExerciseLines(five, includeWeights: false).join(),
+      isNot(contains('kg')),
+    );
+  });
 }

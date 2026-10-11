@@ -489,8 +489,10 @@ class _SetRow extends StatelessWidget {
     if (complete != null) {
       return Align(
         alignment: Alignment.centerLeft,
+        // An empty circle to fill, not a tick: a tick read as "done" before
+        // the set was logged (review O-3).
         child: B05IconAction(
-          icon: Icons.check_circle_outline_rounded,
+          icon: Icons.radio_button_unchecked_rounded,
           label: 'Log set ${row.displayNumber}',
           hint: 'Log this set with the weight and reps below',
           onPressed: isBusy ? null : complete,
