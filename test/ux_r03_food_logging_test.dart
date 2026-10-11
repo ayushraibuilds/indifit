@@ -260,6 +260,65 @@ void main() {
     expect(find.text('Search foods'), findsNothing);
   });
 
+  testWidgets('another tab from a pushed Food scaffold returns to the root', (
+    tester,
+  ) async {
+    // Today's "Log food" pushes /food, a second scaffold. Picking another tab
+    // there must not open a second copy of that tab: it pops to the root and
+    // switches there, so Today keeps its state and its log feedback.
+    _setViewport(tester, const Size(390, 844));
+    final database = AppDatabase.memory();
+    late ProviderContainer container;
+    addTearDown(() async {
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+      container.dispose();
+      tester.view.reset();
+      await closeWidgetTestDatabase(tester, database);
+    });
+
+    await tester.pumpWidget(
+      _foodApp(
+        database: database,
+        repository: _TestFoodRepository(database),
+        mealType: null,
+        selectedDate: DateTime(2026, 8, 9),
+        home: const MainNavigationScaffold(initialIndex: 2),
+      ),
+    );
+    container = ProviderScope.containerOf(
+      tester.element(find.byType(MainNavigationScaffold)),
+    );
+    await _pumpFood(tester);
+
+    unawaited(
+      Navigator.of(tester.element(find.byType(MainNavigationScaffold))).push(
+        MaterialPageRoute<void>(
+          builder: (_) => const MainNavigationScaffold(initialIndex: 2),
+        ),
+      ),
+    );
+    await _pumpFood(tester);
+    expect(
+      find.byType(MainNavigationScaffold, skipOffstage: false),
+      findsNWidgets(2),
+    );
+
+    await tester.tap(find.text('Progress').last);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+
+    expect(
+      find.byType(MainNavigationScaffold, skipOffstage: false),
+      findsOneWidget,
+    );
+    expect(
+      tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex,
+      3,
+    );
+    expect(mainTabRequests.value, isNull);
+  });
+
   testWidgets('Food Home save returns from Add Lunch to the refreshed root', (
     tester,
   ) async {

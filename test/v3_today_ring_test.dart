@@ -254,5 +254,47 @@ void main() {
       expect(find.byType(TodayLoggedChip), findsNothing);
       await tester.pumpAndSettle();
     });
+    testWidgets('waits while Today is a hidden tab, then plays once shown', (
+      tester,
+    ) async {
+      var done = 0;
+      Widget app({required bool visible}) => MaterialApp(
+        theme: AppTheme.darkTheme,
+        home: Scaffold(
+          body: TickerMode(
+            enabled: visible,
+            child: Center(
+              child: TodayLoggedChip(
+                label: '+230 kcal · Poha',
+                onDone: () => done++,
+              ),
+            ),
+          ),
+        ),
+      );
+      double opacity() => tester
+          .widget<FadeTransition>(
+            find.descendant(
+              of: find.byType(TodayLoggedChip),
+              matching: find.byType(FadeTransition),
+            ),
+          )
+          .opacity
+          .value;
+
+      // Logged from the Food tab: the chip exists but its clock has not run.
+      await tester.pumpWidget(app(visible: false));
+      await tester.pump(TodayLoggedChip.duration * 2);
+      expect(done, 0);
+      expect(opacity(), 0);
+
+      // Back on Today: it plays from the start.
+      await tester.pumpWidget(app(visible: true));
+      await tester.pump();
+      await tester.pump(TodayLoggedChip.duration * 0.5);
+      expect(opacity(), 1);
+      await tester.pump(TodayLoggedChip.duration);
+      expect(done, 1);
+    });
   });
 }

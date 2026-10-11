@@ -192,9 +192,15 @@ class _TodayLoggedChipState extends State<TodayLoggedChip>
         ),
       );
 
+  var _started = false;
+
+  // Starts only once Today is on screen: a log made from the Food tab or a
+  // pushed route plays when the person comes back, not while they are away.
   @override
-  void initState() {
-    super.initState();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_started || !TickerMode.valuesOf(context).enabled) return;
+    _started = true;
     _controller.forward().whenComplete(() {
       if (mounted) widget.onDone();
     });

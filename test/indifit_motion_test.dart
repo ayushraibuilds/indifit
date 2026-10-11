@@ -113,6 +113,42 @@ void main() {
       expect(tester.binding.transientCallbackCount, 0, reason: 'no ticker');
     });
 
+    testWidgets('a change while hidden holds, then counts up when shown', (
+      tester,
+    ) async {
+      Widget app({required double value, required bool shown}) => _app(
+        TickerMode(
+          enabled: shown,
+          child: IndiFitCountUp(
+            value: value,
+            builder: (context, v) => Text('kcal ${v.round()}'),
+          ),
+        ),
+      );
+
+      await tester.pumpWidget(app(value: 100, shown: false));
+      // Logged from another tab: Today stays on the old value.
+      await tester.pumpWidget(app(value: 500, shown: false));
+      await tester.pump(IndiFitMotion.countUpDuration * 2);
+      expect(find.text('kcal 100'), findsOneWidget);
+
+      // Back on Today: it counts from 100 to 500 where it can be seen.
+      await tester.pumpWidget(app(value: 500, shown: true));
+      await tester.pump(IndiFitMotion.countUpDuration ~/ 3);
+      final shown = int.parse(
+        tester
+            .widgetList<Text>(find.textContaining('kcal '))
+            .single
+            .data!
+            .split(' ')
+            .last,
+      );
+      expect(shown, greaterThan(100));
+      expect(shown, lessThan(500));
+      await tester.pumpAndSettle();
+      expect(find.text('kcal 500'), findsOneWidget);
+    });
+
     testWidgets('Reduce Motion jumps straight to the new value', (
       tester,
     ) async {

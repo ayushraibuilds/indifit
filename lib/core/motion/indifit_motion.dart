@@ -133,7 +133,9 @@ class _IndiFitEnterState extends State<IndiFitEnter>
 
 /// Shows [value] through [builder] and tweens from the previous value when it
 /// changes. The first build shows the value as is, so a screen never counts
-/// up from zero when it opens. Use tabular figures in the builder.
+/// up from zero when it opens. A change that arrives while the widget's
+/// tickers are off (a hidden tab, a covered route) holds the old value and
+/// counts up once it is shown. Use tabular figures in the builder.
 class IndiFitCountUp extends StatefulWidget {
   const IndiFitCountUp({required this.value, required this.builder, super.key});
 
@@ -157,8 +159,18 @@ class _IndiFitCountUpState extends State<IndiFitCountUp>
   );
   late double _from = widget.value;
   late double _to = widget.value;
+  var _waitingToBeShown = false;
 
   double get _current => _from + (_to - _from) * _progress.value;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_waitingToBeShown && TickerMode.valuesOf(context).enabled) {
+      _waitingToBeShown = false;
+      _controller.forward(from: 0);
+    }
+  }
 
   @override
   void didUpdateWidget(IndiFitCountUp oldWidget) {
@@ -166,12 +178,20 @@ class _IndiFitCountUpState extends State<IndiFitCountUp>
     if (widget.value == _to) return;
     if (B05MotionPolicy.reduceMotion(context)) {
       _from = _to = widget.value;
+      _waitingToBeShown = false;
       _controller.value = 1;
       return;
     }
     _from = _current;
     _to = widget.value;
-    _controller.forward(from: 0);
+    if (TickerMode.valuesOf(context).enabled) {
+      _controller.forward(from: 0);
+    } else {
+      // A muted ticker still stamps its start time, so it would jump to the
+      // end when shown. Wait and start then.
+      _controller.value = 0;
+      _waitingToBeShown = true;
+    }
   }
 
   @override
@@ -184,8 +204,10 @@ class _IndiFitCountUpState extends State<IndiFitCountUp>
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: _progress,
-      builder: (context, _) =>
-          widget.builder(context, _controller.isAnimating ? _current : _to),
+      builder: (context, _) => widget.builder(
+        context,
+        _waitingToBeShown || _controller.isAnimating ? _current : _to,
+      ),
     );
   }
 }
