@@ -890,32 +890,36 @@ class _PlanAnalyticsSummaryCards extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: _MetricCard(
-                title: 'Adherence',
-                value: adherenceLabel,
-                subtitle: compositeLabel,
+        // Equal heights so the three cards line up top and bottom.
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: _MetricCard(
+                  title: 'Adherence',
+                  value: adherenceLabel,
+                  subtitle: compositeLabel,
+                ),
               ),
-            ),
-            const SizedBox(width: B05Layout.space8),
-            Expanded(
-              child: _MetricCard(
-                title: 'Volume',
-                value: volumeLabel,
-                subtitle: volumeSubtitle,
+              const SizedBox(width: B05Layout.space8),
+              Expanded(
+                child: _MetricCard(
+                  title: 'Volume',
+                  value: volumeLabel,
+                  subtitle: volumeSubtitle,
+                ),
               ),
-            ),
-            const SizedBox(width: B05Layout.space8),
-            Expanded(
-              child: _MetricCard(
-                title: 'Time',
-                value: durationLabel,
-                subtitle: durationSubtitle,
+              const SizedBox(width: B05Layout.space8),
+              Expanded(
+                child: _MetricCard(
+                  title: 'Time',
+                  value: durationLabel,
+                  subtitle: durationSubtitle,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
         const SizedBox(height: B05Layout.space12),
         Wrap(
@@ -1819,7 +1823,7 @@ class _PlanLibraryFilters extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Browse plans', style: B05Typography.title(context)),
+          Text('Filter plans', style: B05Typography.title(context)),
           const SizedBox(height: B05Layout.space8),
           _PlanFilterRow<StarterPlanEnvironment>(
             semanticLabel: 'Training setting filter',
