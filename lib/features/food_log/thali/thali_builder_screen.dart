@@ -594,7 +594,10 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
   /// The plate/list row plus the katori question, roughly. The plate sizes
   /// itself to the rest so it is whole on screen when the builder opens.
   static const _aboveThePlate = 112.0;
-  static const _minPlateHeight = 220.0;
+
+  /// Below this the kcal pills crowd the katoris, so a small phone (SE)
+  /// scrolls a little rather than shrinking the plate further.
+  static const _minPlateHeight = 300.0;
 
   Widget _buildScroll({
     required NutritionThaliController controller,
