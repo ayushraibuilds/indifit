@@ -6,6 +6,13 @@ import '../progress/progress_screen.dart';
 import '../training/training_screen.dart';
 import 'dashboard_screen.dart';
 
+/// A tab the root scaffold should show, asked for by a scaffold pushed on top
+/// of it (for example `/food` from Today's "Log food"). Tapping another tab
+/// there returns to the root instead of opening a second copy of that tab, so
+/// Today keeps its state and plays its log feedback where it can be seen.
+@visibleForTesting
+final mainTabRequests = ValueNotifier<int?>(null);
+
 class MainNavigationScaffold extends StatefulWidget {
   const MainNavigationScaffold({
     super.key,
@@ -40,6 +47,40 @@ class _MainNavigationScaffoldState extends State<MainNavigationScaffold> {
       growable: false,
     );
     _activateScreen(_currentIndex);
+    mainTabRequests.addListener(_onTabRequest);
+  }
+
+  @override
+  void dispose() {
+    mainTabRequests.removeListener(_onTabRequest);
+    super.dispose();
+  }
+
+  bool get _isRoot => ModalRoute.of(context)?.isFirst ?? true;
+
+  void _onTabRequest() {
+    final index = mainTabRequests.value;
+    if (index == null || !mounted || !_isRoot) return;
+    mainTabRequests.value = null;
+    _selectTab(index);
+  }
+
+  void _selectTab(int index) {
+    if (index != 2) FocusManager.instance.primaryFocus?.unfocus();
+    ScaffoldMessenger.maybeOf(context)?.clearSnackBars();
+    setState(() {
+      _currentIndex = index;
+      _activateScreen(index);
+    });
+  }
+
+  void _onDestinationSelected(int index) {
+    if (index != _currentIndex && !_isRoot) {
+      mainTabRequests.value = index;
+      Navigator.of(context).popUntil((route) => route.isFirst);
+      return;
+    }
+    _selectTab(index);
   }
 
   @override
@@ -75,17 +116,18 @@ class _MainNavigationScaffoldState extends State<MainNavigationScaffold> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(index: _currentIndex, children: _screens),
+      // Hidden tabs keep their state but not their clocks: an animation that
+      // starts there (Today's log chip and count-up) waits until it is shown.
+      body: IndexedStack(
+        index: _currentIndex,
+        children: [
+          for (var i = 0; i < _screenCount; i++)
+            TickerMode(enabled: i == _currentIndex, child: _screens[i]),
+        ],
+      ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
-        onDestinationSelected: (index) {
-          if (index != 2) FocusManager.instance.primaryFocus?.unfocus();
-          ScaffoldMessenger.maybeOf(context)?.clearSnackBars();
-          setState(() {
-            _currentIndex = index;
-            _activateScreen(index);
-          });
-        },
+        onDestinationSelected: _onDestinationSelected,
         animationDuration: B05MotionPolicy.transitionDuration(
           context,
           standard: const Duration(milliseconds: 220),

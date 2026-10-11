@@ -329,6 +329,10 @@ class TodayNutritionPresentation {
   final bool hasIncompleteNutrition;
   final bool isNoConsumptionKnown;
 
+  /// The day's log records as (stable id, label), so Today can say what was
+  /// just added ("+230 kcal · Poha") after a log.
+  final List<(String, String)> loggedRecords;
+
   const TodayNutritionPresentation({
     required this.state,
     required this.headline,
@@ -340,6 +344,7 @@ class TodayNutritionPresentation {
     this.targetUnavailable = false,
     this.hasIncompleteNutrition = false,
     this.isNoConsumptionKnown = false,
+    this.loggedRecords = const [],
   });
 
   factory TodayNutritionPresentation.from(
@@ -451,6 +456,10 @@ class TodayNutritionPresentation {
       targetUnavailable: targetUnavailable,
       hasIncompleteNutrition: incomplete,
       isNoConsumptionKnown: noConsumption,
+      loggedRecords: [
+        for (final record in daily.records)
+          (record.stableId, record.displayLabel),
+      ],
     );
   }
 
