@@ -5,7 +5,8 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
-final _iconButton = RegExp(r'\bIconButton(?:\.\w+)?\(');
+// Named constructors count; `IconButton.styleFrom(` is a style, not a button.
+final _iconButton = RegExp(r'\bIconButton(?:\.(?!styleFrom\b)\w+)?\(');
 
 /// "path:line" for each IconButton in [source] without a `tooltip:`.
 List<String> untooltippedIconButtons(String path, String source) {
@@ -56,6 +57,12 @@ final b = IconButton.outlined(
   onPressed: () {},
 );
 final c = IconButton.filled(icon: Icon(Icons.close), onPressed: close);
+final d = IconButton(
+  tooltip: 'Hide',
+  style: IconButton.styleFrom(backgroundColor: Colors.black),
+  icon: const Icon(Icons.expand_less),
+  onPressed: hide,
+);
 ''';
     expect(untooltippedIconButtons('x.dart', source), [
       'x.dart:1',

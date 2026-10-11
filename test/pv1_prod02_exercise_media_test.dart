@@ -177,6 +177,11 @@ void main() {
               b05ExerciseVisualRegistryProvider.overrideWith(
                 (ref) async => registry,
               ),
+              // The disclosure describes the pictures, so it shows only
+              // when they load.
+              b05ExerciseImagesProvider.overrideWith(
+                (ref, id) async => _pairPictures,
+              ),
             ],
             child: MaterialApp(
               theme: AppTheme.darkTheme,
@@ -254,6 +259,11 @@ void main() {
             overrides: [
               b05ExerciseVisualRegistryProvider.overrideWith(
                 (ref) async => registry,
+              ),
+              // The disclosure describes the pictures, so it shows only
+              // when they load.
+              b05ExerciseImagesProvider.overrideWith(
+                (ref, id) async => _singlePicture,
               ),
             ],
             child: MaterialApp(
@@ -454,3 +464,10 @@ class _SimpleWorkoutRepo implements WorkoutRepository {
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
+
+// A 1 × 1 transparent PNG, so the sheet has real image bytes to show.
+final _pixel = base64Decode(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+);
+final _pairPictures = B05ExerciseImages.pair(start: _pixel, peak: _pixel);
+final _singlePicture = B05ExerciseImages.single(_pixel);
