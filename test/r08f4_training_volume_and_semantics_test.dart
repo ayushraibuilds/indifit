@@ -332,11 +332,8 @@ void main() {
         '2,205',
       );
       expect(
-        R08F4TrainingVolumePresentation.formatVolumeSubtitle(
-          units: UnitPreferenceNotifier.imperial,
-          useRecent: true,
-        ),
-        'lb loaded in the last 4 weeks',
+        R08F4TrainingVolumePresentation.formatVolumeSubtitle(useRecent: true),
+        'Loaded in the last 4 weeks',
       );
       expect(
         R08F4TrainingVolumePresentation.formatVolumeSemantics(
@@ -441,11 +438,8 @@ void main() {
 
       expect(volume.useRecent, isFalse);
       expect(
-        R08F4TrainingVolumePresentation.formatVolumeSubtitle(
-          units: 'kg',
-          useRecent: false,
-        ),
-        'kg loaded across recorded strength sessions',
+        R08F4TrainingVolumePresentation.formatVolumeSubtitle(useRecent: false),
+        'Loaded across recorded strength sessions',
       );
       expect(
         R08F4TrainingVolumePresentation.formatVolumeSemantics(
@@ -564,8 +558,8 @@ void main() {
           findsOneWidget,
         );
         expect(find.text('Loaded volume'), findsOneWidget);
-        expect(find.text('4,500'), findsOneWidget);
-        expect(find.text('kg loaded in the last 4 weeks'), findsOneWidget);
+        expect(find.text('4,500 kg'), findsOneWidget);
+        expect(find.text('Loaded in the last 4 weeks'), findsOneWidget);
         expect(tester.takeException(), isNull);
       },
     );
@@ -671,8 +665,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('5,000'), findsOneWidget);
-      expect(find.text('5,000 kg loaded in the last 4 weeks'), findsNothing);
+      expect(find.text('5,000 kg'), findsOneWidget);
+      expect(find.text('+150%'), findsOneWidget);
       expect(
         find.text('3,000 kg more than the previous 4 weeks'),
         findsOneWidget,

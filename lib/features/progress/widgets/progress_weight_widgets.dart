@@ -9,6 +9,7 @@ import '../../../core/widgets/b05_accessibility_primitives.dart';
 import '../progress_dashboard_models.dart';
 import 'progress_formatters.dart';
 import 'progress_sections.dart';
+import 'progress_stat.dart';
 import 'progress_view_models.dart';
 
 /// Progress weight widgets (PV1-ENG-05A first pass).
@@ -110,9 +111,8 @@ class ProgressWeightSectionState extends State<ProgressWeightSection> {
               Semantics(
                 label: weightSemantics(measurements, widget.units),
                 child: ExcludeSemantics(
-                  child: Text(
+                  child: ProgressStat.split(
                     formatWeight(latest.weightKg!, widget.units),
-                    style: B05Typography.metric(context),
                   ),
                 ),
               ),

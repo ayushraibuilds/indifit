@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/presentation/consumer_number_label.dart';
-
 import '../../../../core/theme/b05_semantic_colors.dart';
 import '../../../../core/widgets/b05_accessibility_primitives.dart';
 import '../../../../data/models/progress_period_comparison_models.dart';
+import '../../widgets/progress_stat.dart';
 
 class NutritionPeriodCard extends StatelessWidget {
   const NutritionPeriodCard({super.key, required this.comparison, this.onTap});
@@ -86,28 +86,31 @@ class NutritionPeriodCard extends StatelessWidget {
               ),
               const SizedBox(height: B05Layout.space12),
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
-                    child: _NutritionMetricColumn(
+                    child: ProgressStat.split(
+                      curCalories,
                       label: 'Daily avg calories',
-                      currentValue: curCalories,
-                      previousValue: prevCalories,
+                      detail: prevCalories,
+                      size: ProgressStatSize.compact,
                     ),
                   ),
                   Expanded(
-                    child: _NutritionMetricColumn(
+                    child: ProgressStat.split(
+                      curProtein,
                       label: 'Daily avg protein',
-                      currentValue: curProtein,
-                      previousValue: prevProtein,
+                      detail: prevProtein,
+                      size: ProgressStatSize.compact,
                     ),
                   ),
                   Expanded(
-                    child: _NutritionMetricColumn(
+                    child: ProgressStat.split(
+                      '${cur.loggedDaysCount}/${cur.daysInPeriod}',
                       label: 'Logged days',
-                      currentValue:
-                          '${cur.loggedDaysCount}/${cur.daysInPeriod}',
-                      previousValue:
+                      detail:
                           '${prev.loggedDaysCount}/${prev.daysInPeriod} prior',
+                      size: ProgressStatSize.compact,
                     ),
                   ),
                 ],
@@ -116,49 +119,6 @@ class NutritionPeriodCard extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _NutritionMetricColumn extends StatelessWidget {
-  const _NutritionMetricColumn({
-    required this.label,
-    required this.currentValue,
-    required this.previousValue,
-  });
-
-  final String label;
-  final String currentValue;
-  final String previousValue;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.b05Colors;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: B05Typography.caption(
-            context,
-          ).copyWith(color: colors.textSecondary, fontSize: 11),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          currentValue,
-          style: B05Typography.body(
-            context,
-          ).copyWith(fontWeight: FontWeight.w800, fontSize: 15),
-        ),
-        const SizedBox(height: 1),
-        Text(
-          previousValue,
-          style: B05Typography.caption(
-            context,
-          ).copyWith(color: colors.textSecondary, fontSize: 11),
-        ),
-      ],
     );
   }
 }

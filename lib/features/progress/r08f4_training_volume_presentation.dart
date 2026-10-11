@@ -102,6 +102,69 @@ abstract final class R08F4TrainingVolumePresentation {
     );
   }
 
+  /// Loaded volume per Monday-start week, oldest first, ending with the
+  /// current week. Weeks without trustworthy volume are kept as zero so the
+  /// chart shows gaps instead of closing them.
+  static List<R08F4WeeklyVolume> weeklyVolume({
+    required Iterable<ProgressWorkoutRecord> allWorkouts,
+    required String todayLocalDate,
+    required String timezoneId,
+    required String units,
+    int weeks = 8,
+  }) {
+    final dates = LocalScheduleDateService();
+    final currentWeekStart = dates.addCalendarDays(
+      todayLocalDate,
+      timezoneId,
+      DateTime.monday - dates.weekday(todayLocalDate, timezoneId),
+    );
+    final starts = [
+      for (var i = weeks - 1; i >= 0; i--)
+        dates.addCalendarDays(currentWeekStart, timezoneId, -7 * i),
+    ];
+    final totals = List<double>.filled(weeks, 0);
+    final sessions = List<int>.filled(weeks, 0);
+    for (final w in allWorkouts) {
+      if (!w.isCanonicalStrength ||
+          !w.volumeIsTrustworthy ||
+          w.totalVolumeKg <= 0 ||
+          w.localDate.compareTo(starts.first) < 0 ||
+          w.localDate.compareTo(todayLocalDate) > 0) {
+        continue;
+      }
+      final index = starts.lastIndexWhere(
+        (start) => w.localDate.compareTo(start) >= 0,
+      );
+      totals[index] += w.totalVolumeKg;
+      sessions[index]++;
+    }
+    return [
+      for (var i = 0; i < weeks; i++)
+        R08F4WeeklyVolume(
+          weekStartLocalDate: starts[i],
+          volumeKg: totals[i],
+          displayVolume: UnitPreferencePresentation.weightForDisplay(
+            totals[i],
+            units,
+          ),
+          sessionCount: sessions[i],
+          isCurrentWeek: i == weeks - 1,
+        ),
+    ];
+  }
+
+  /// "+12%" against the previous four weeks, or null when there is no
+  /// comparable period. Rounds toward a whole percent; under 1 % reads "Same".
+  static String? formatVolumeChangePercent(R08F4VolumeSummary summary) {
+    if (!summary.hasComparablePreviousPeriod) return null;
+    final previous = summary.previousPeriodVolumeKg!;
+    if (previous <= 0) return null;
+    final percent = ((summary.totalVolumeKg - previous) / previous * 100)
+        .round();
+    if (percent == 0) return 'Same';
+    return '${percent > 0 ? '+' : '−'}${percent.abs()}%';
+  }
+
   // --- Copy Formatting ---
 
   static String formatThisWeekHeading(int sessionCount) {
@@ -165,15 +228,10 @@ abstract final class R08F4TrainingVolumePresentation {
   static String formatVolume(double value) =>
       NumberFormat.decimalPattern().format(value.round());
 
-  static String formatVolumeSubtitle({
-    required String units,
-    required bool useRecent,
-  }) {
-    final symbol = UnitPreferencePresentation.weightSymbol(units);
-    return useRecent
-        ? '$symbol loaded in the last 4 weeks'
-        : '$symbol loaded across recorded strength sessions';
-  }
+  /// The line under the volume figure; the unit sits beside the figure.
+  static String formatVolumeSubtitle({required bool useRecent}) => useRecent
+      ? 'Loaded in the last 4 weeks'
+      : 'Loaded across recorded strength sessions';
 
   static String formatVolumeSemantics({
     required double displayVolume,
@@ -240,4 +298,21 @@ class R08F4VolumeSummary {
       previousPeriodVolumeKg != null &&
       previousPeriodDisplayVolume != null &&
       previousPeriodContributingSessionCount > 0;
+}
+
+class R08F4WeeklyVolume {
+  const R08F4WeeklyVolume({
+    required this.weekStartLocalDate,
+    required this.volumeKg,
+    required this.displayVolume,
+    required this.sessionCount,
+    required this.isCurrentWeek,
+  });
+
+  /// The Monday that starts the week, as a local civil date.
+  final String weekStartLocalDate;
+  final double volumeKg;
+  final double displayVolume;
+  final int sessionCount;
+  final bool isCurrentWeek;
 }

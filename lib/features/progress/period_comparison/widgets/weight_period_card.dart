@@ -4,6 +4,7 @@ import '../../../../core/theme/b05_semantic_colors.dart';
 import '../../../../core/widgets/b05_accessibility_primitives.dart';
 import '../../../../data/models/progress_period_comparison_models.dart';
 import '../../widgets/progress_formatters.dart';
+import '../../widgets/progress_stat.dart';
 
 class WeightPeriodCard extends StatelessWidget {
   const WeightPeriodCard({
@@ -56,13 +57,13 @@ class WeightPeriodCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
-                      color: Colors.blueAccent.withValues(alpha: 0.12),
+                      color: colors.action.withValues(alpha: 0.12),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.monitor_weight_outlined,
                       size: B05Layout.iconMedium,
-                      color: Colors.blueAccent,
+                      color: colors.action,
                     ),
                   ),
                   const SizedBox(width: B05Layout.space8),
@@ -74,86 +75,37 @@ class WeightPeriodCard extends StatelessWidget {
                       ).copyWith(fontSize: 16, fontWeight: FontWeight.w700),
                     ),
                   ),
-                  if (deltaText != null)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colors.inset,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        deltaText,
-                        style: TextStyle(
-                          color: colors.textPrimary,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 12,
-                        ),
-                      ),
+                  if (delta != null)
+                    ProgressStatDelta(
+                      text: deltaText!,
+                      trend: delta == 0
+                          ? ProgressTrend.flat
+                          : delta > 0
+                          ? ProgressTrend.up
+                          : ProgressTrend.down,
+                      neutral: true,
                     ),
                 ],
               ),
               const SizedBox(height: B05Layout.space12),
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Latest weight',
-                          style: B05Typography.caption(
-                            context,
-                          ).copyWith(color: colors.textSecondary, fontSize: 11),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          curLatest,
-                          style: B05Typography.body(
-                            context,
-                          ).copyWith(fontWeight: FontWeight.w800, fontSize: 16),
-                        ),
-                        const SizedBox(height: 1),
-                        Text(
-                          'vs $prevLatest',
-                          style: B05Typography.caption(
-                            context,
-                          ).copyWith(color: colors.textSecondary, fontSize: 11),
-                        ),
-                      ],
+                    child: ProgressStat.split(
+                      curLatest,
+                      label: 'Latest weight',
+                      detail: 'vs $prevLatest',
+                      size: ProgressStatSize.compact,
                     ),
                   ),
                   if (rateText != null)
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Rate of Change',
-                            style: B05Typography.caption(context).copyWith(
-                              color: colors.textSecondary,
-                              fontSize: 11,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            rateText,
-                            style: B05Typography.body(context).copyWith(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 14,
-                            ),
-                          ),
-                          const SizedBox(height: 1),
-                          Text(
-                            'civil week average',
-                            style: B05Typography.caption(context).copyWith(
-                              color: colors.textSecondary,
-                              fontSize: 11,
-                            ),
-                          ),
-                        ],
+                      child: ProgressStat.split(
+                        rateText,
+                        label: 'Rate of change',
+                        detail: 'Average per week',
+                        size: ProgressStatSize.compact,
                       ),
                     ),
                 ],
