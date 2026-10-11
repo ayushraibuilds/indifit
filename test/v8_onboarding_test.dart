@@ -3,6 +3,7 @@ import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:indifit/core/config/app_preferences_keys.dart';
 import 'package:indifit/core/di/providers.dart';
 import 'package:indifit/core/services/indifit_haptics.dart';
 import 'package:indifit/core/theme/b05_semantic_colors.dart';
@@ -10,6 +11,7 @@ import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/features/onboarding/onboarding_screen.dart';
 import 'package:indifit/features/onboarding/widgets/onboarding_ruler_picker.dart';
 import 'package:indifit/features/onboarding/widgets/onboarding_target_reveal.dart';
+import 'package:indifit/features/onboarding/widgets/onboarding_welcome.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -311,6 +313,148 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump();
       await database.close();
+    });
+  });
+
+  group('welcome', () {
+    late AppDatabase database;
+
+    setUp(() => database = AppDatabase.memory());
+
+    Future<void> pumpOnboarding(
+      WidgetTester tester, {
+      bool showWelcome = true,
+      Map<String, Object> prefs = const {},
+      bool reduceMotion = false,
+      double width = 390,
+      double textScale = 1,
+    }) async {
+      SharedPreferences.setMockInitialValues(prefs);
+      addTearDown(tester.view.reset);
+      tester.view.physicalSize = Size(width, 844);
+      tester.view.devicePixelRatio = 1;
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [databaseProvider.overrideWithValue(database)],
+          child: MaterialApp(
+            theme: ThemeData.dark().copyWith(
+              extensions: const [B05SemanticColors.dark],
+            ),
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                disableAnimations: reduceMotion,
+                textScaler: TextScaler.linear(textScale),
+              ),
+              child: child!,
+            ),
+            home: OnboardingScreen(showWelcome: showWelcome),
+          ),
+        ),
+      );
+      // The draft restore.
+      await tester.pump();
+      await tester.pump();
+    }
+
+    Future<void> tearDownApp(WidgetTester tester) async {
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+      await database.close();
+    }
+
+    IndiFitMarkPainter mark(WidgetTester tester) =>
+        tester
+                .widget<CustomPaint>(
+                  find.byKey(const Key('onboarding_welcome_mark')),
+                )
+                .painter!
+            as IndiFitMarkPainter;
+
+    bool settled(IndiFitMarkPainter p) => [
+      p.bottomBar,
+      p.topBar,
+      p.centreLeaf,
+      p.leftLeaf,
+      p.rightLeaf,
+    ].every((v) => v == 1);
+
+    testWidgets('a fresh setup opens on the welcome, the mark assembles, '
+        'and Get started goes to step 1', (tester) async {
+      await pumpOnboarding(tester);
+      expect(find.byKey(const Key('onboarding_welcome')), findsOneWidget);
+      expect(find.text('Skip for now'), findsNothing);
+      expect(find.text('1 of 5'), findsNothing);
+      expect(mark(tester).leftLeaf, 0);
+
+      await tester.pump(OnboardingWelcome.duration * 0.5);
+      final mid = mark(tester);
+      expect(mid.bottomBar, 1);
+      expect(mid.rightLeaf, lessThan(1));
+
+      await tester.pumpAndSettle();
+      expect(settled(mark(tester)), isTrue);
+      expect(find.bySemanticsLabel('IndiFit logo'), findsOneWidget);
+
+      await tester.tap(find.text('Get started'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('onboarding_welcome')), findsNothing);
+      expect(find.text('1 of 5'), findsOneWidget);
+      expect(find.text('Skip for now'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await tearDownApp(tester);
+    });
+
+    testWidgets('tapping the screen jumps to the end', (tester) async {
+      await pumpOnboarding(tester);
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(settled(mark(tester)), isFalse);
+      await tester.tap(find.byKey(const Key('onboarding_welcome_mark')));
+      await tester.pump();
+      expect(settled(mark(tester)), isTrue);
+      expect(tester.hasRunningAnimations, isFalse);
+      await tearDownApp(tester);
+    });
+
+    testWidgets('Reduce Motion shows the finished mark on the first frame', (
+      tester,
+    ) async {
+      await pumpOnboarding(tester, reduceMotion: true);
+      expect(settled(mark(tester)), isTrue);
+      expect(tester.hasRunningAnimations, isFalse);
+      await tester.tap(find.text('Get started'));
+      await tester.pump();
+      expect(find.text('1 of 5'), findsOneWidget);
+      await tearDownApp(tester);
+    });
+
+    testWidgets('a restored draft goes straight back to its step', (
+      tester,
+    ) async {
+      await pumpOnboarding(
+        tester,
+        prefs: {AppPreferenceKeys.onboardingDraftPage: 1},
+      );
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('onboarding_welcome')), findsNothing);
+      expect(find.text('2 of 5'), findsOneWidget);
+      await tearDownApp(tester);
+    });
+
+    testWidgets('setup opened from elsewhere skips the welcome', (
+      tester,
+    ) async {
+      await pumpOnboarding(tester, showWelcome: false);
+      expect(find.byKey(const Key('onboarding_welcome')), findsNothing);
+      expect(find.text('1 of 5'), findsOneWidget);
+      await tearDownApp(tester);
+    });
+
+    testWidgets('lays out at 320 pt and 2x text', (tester) async {
+      await pumpOnboarding(tester, width: 320, textScale: 2);
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(find.text('Get started'), findsOneWidget);
+      await tearDownApp(tester);
     });
   });
 }
