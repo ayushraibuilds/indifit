@@ -1,7 +1,7 @@
 import 'dart:async';
 
+import 'package:figma_squircle/figma_squircle.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../core/presentation/consumer_copy.dart';
 import '../../../core/services/indifit_haptics.dart';
@@ -665,33 +665,56 @@ bool b02RestPeriodBelongsToSlot(
       period.id.startsWith('rest:${slot.id}:');
 }
 
-/// The rest card in the scrolling list. While a rest is open it shows the
-/// ring and the next set; the controls live in [StickyRestBar], which stays
-/// on screen under the header (audit UX-05).
-class RestCard extends StatefulWidget {
-  final B02StrengthExecutionSlot slot;
-  final B02ExecutionDraftState state;
-  final VoidCallback? onBegin;
-  final ValueChanged<int>? onCustom;
+/// What the next set is, shown in the rest takeover: "Leg Press · Set 2 of
+/// 3" and "60 kg × 8". [detail] comes from the pending set fields, so it is
+/// exactly what "Log set" would save.
+@immutable
+class B02RestUpNext {
+  final String title;
+  final String? detail;
 
-  const RestCard({
+  const B02RestUpNext({required this.title, this.detail});
+}
+
+/// The rest timer, pinned under the player header while a rest is open
+/// (audit UX-05). Expanded, it is the rest takeover: a large ring, what comes
+/// next, and −15 / +30 / Skip as thumb-sized targets (V5). Collapsed, it is a
+/// one-line bar; tapping the time expands it again. It also owns ending the
+/// rest when the countdown reaches zero, in either state.
+class StickyRestBar extends StatefulWidget {
+  final B02ExecutionDraftState state;
+  final ValueChanged<String>? onDecrease;
+  final ValueChanged<String>? onExtend;
+  final ValueChanged<String>? onSkip;
+  final Future<bool> Function(String) onElapsed;
+  final bool expanded;
+  final VoidCallback? onExpand;
+  final VoidCallback? onCollapse;
+  final B02RestUpNext? upNext;
+
+  const StickyRestBar({
     super.key,
-    required this.slot,
     required this.state,
-    required this.onBegin,
-    required this.onCustom,
+    required this.onDecrease,
+    required this.onExtend,
+    required this.onSkip,
+    required this.onElapsed,
+    this.expanded = false,
+    this.onExpand,
+    this.onCollapse,
+    this.upNext,
   });
 
   @override
-  State<RestCard> createState() => _RestCardState();
+  State<StickyRestBar> createState() => _StickyRestBarState();
 }
 
-class _RestCardState extends State<RestCard> {
-  static const _ringSize = 112.0;
-  static const _ringStroke = 5.0;
+class _StickyRestBarState extends State<StickyRestBar> {
+  static const _takeoverTarget = 56.0;
 
   late DateTime _now;
   Timer? _ticker;
+  var _finishingElapsedRest = false;
 
   @override
   void initState() {
@@ -701,7 +724,7 @@ class _RestCardState extends State<RestCard> {
   }
 
   @override
-  void didUpdateWidget(covariant RestCard oldWidget) {
+  void didUpdateWidget(covariant StickyRestBar oldWidget) {
     super.didUpdateWidget(oldWidget);
     // Rebuilds and restored route instances repaint from the durable start
     // timestamp immediately; they never carry a decremented local counter.
@@ -718,255 +741,56 @@ class _RestCardState extends State<RestCard> {
   @override
   Widget build(BuildContext context) {
     final period = b02OpenRestPeriod(widget.state);
-    final remaining = period == null
-        ? null
-        : b02RestRemainingLabel(period, _now);
-    final remainingSeconds = period == null
-        ? null
-        : b02RestRemainingSeconds(period, _now);
-    return Semantics(
-      container: true,
-      label: period == null ? 'Rest controls' : 'Rest in progress',
-      child: Card(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(Icons.timer_outlined, color: context.b05Colors.action),
-                  const SizedBox(width: 8),
-                  Text('REST', style: Theme.of(context).textTheme.labelLarge),
-                ],
-              ),
-              const SizedBox(height: 8),
-              if (period == null) ...[
-                Text(
-                  'Ready when you are',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  widget.slot.groupType == null
-                      ? 'Take a breather before your next set.'
-                      : 'Rest before the next exercise in this group.',
-                ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    FilledButton(
-                      onPressed: widget.onBegin,
-                      child: const Text('Start rest'),
-                    ),
-                    for (final sec in const [30, 60, 90, 120])
-                      ActionChip(
-                        label: Text('${sec}s'),
-                        onPressed: widget.onCustom == null
-                            ? null
-                            : () {
-                                unawaited(IndiFitHaptics.selection());
-                                widget.onCustom?.call(sec);
-                              },
-                      ),
-                    OutlinedButton(
-                      onPressed: widget.onCustom == null
-                          ? null
-                          : () async {
-                              final controller = TextEditingController();
-                              final value = await showDialog<int>(
-                                context: context,
-                                builder: (context) => AlertDialog(
-                                  title: const Text('Custom rest'),
-                                  content: TextField(
-                                    controller: controller,
-                                    autofocus: true,
-                                    keyboardType: TextInputType.number,
-                                    decoration: const InputDecoration(
-                                      labelText: 'Seconds',
-                                    ),
-                                  ),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () => context.pop(),
-                                      child: const Text('Cancel'),
-                                    ),
-                                    FilledButton(
-                                      onPressed: () => context.pop(
-                                        int.tryParse(controller.text),
-                                      ),
-                                      child: const Text('Start'),
-                                    ),
-                                  ],
-                                ),
-                              );
-                              controller.dispose();
-                              if (value != null && value >= 0) {
-                                widget.onCustom?.call(value);
-                              }
-                            },
-                      child: const Text('Custom'),
-                    ),
-                  ],
-                ),
-              ] else ...[
-                Center(
-                  child: SizedBox.square(
-                    dimension: _ringSize,
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        SizedBox.expand(
-                          child: CircularProgressIndicator(
-                            value:
-                                period.selectedSeconds == null ||
-                                    period.selectedSeconds == 0
-                                ? 0
-                                : (remainingSeconds! / period.selectedSeconds!)
-                                      .clamp(0.0, 1.0),
-                            strokeWidth: _ringStroke,
-                            backgroundColor: Theme.of(
-                              context,
-                            ).colorScheme.surfaceContainerLow,
-                          ),
-                        ),
-                        // Keep the digits inside the stroke: inset by the
-                        // stroke plus a margin, and shrink rather than clip
-                        // at large text sizes.
-                        Padding(
-                          padding: const EdgeInsets.all(_ringStroke + 14),
-                          child: Semantics(
-                            label: 'Rest remaining $remaining',
-                            liveRegion: false,
-                            child: ExcludeSemantics(
-                              child: FittedBox(
-                                fit: BoxFit.scaleDown,
-                                child: Text(
-                                  remaining!,
-                                  style: Theme.of(context).textTheme.titleLarge
-                                      ?.copyWith(
-                                        fontFeatures: const [
-                                          FontFeature.tabularFigures(),
-                                        ],
-                                      ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                if (_hasUsefulTarget(widget.slot))
-                  Center(
-                    child: Text(
-                      'Next set: ${widget.slot.targetRepsMin ?? '—'}${widget.slot.targetRepsMax == null || widget.slot.targetRepsMax == widget.slot.targetRepsMin ? '' : '–${widget.slot.targetRepsMax}'} reps',
-                    ),
-                  ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  bool _hasUsefulTarget(B02StrengthExecutionSlot slot) {
-    return r07cHasUsefulTarget(
-      loadKg: slot.targetLoadKg,
-      loadBasis: slot.targetLoadBasis,
-      minReps: slot.targetRepsMin,
-      maxReps: slot.targetRepsMax,
-      rpe: slot.targetRpe,
-    );
-  }
-
-  // Repaints the ring only. Ending the rest belongs to [StickyRestBar],
-  // which is always built while this card can scroll out of view.
-  void _syncTicker() {
-    final period = b02OpenRestPeriod(widget.state);
-    if (period != null && _ticker == null) {
-      _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
-        if (!mounted) return;
-        if (b02OpenRestPeriod(widget.state) == null) {
-          _syncTicker();
-          return;
-        }
-        setState(() => _now = DateTime.now().toUtc());
-      });
-    } else if (period == null) {
-      _ticker?.cancel();
-      _ticker = null;
+    final Widget content;
+    if (period == null) {
+      content = const SizedBox(width: double.infinity);
+    } else {
+      final remaining = b02RestRemainingLabel(period, _now);
+      final remainingSeconds = b02RestRemainingSeconds(period, _now);
+      final selected = period.selectedSeconds ?? 0;
+      final progress = selected == 0
+          ? 0.0
+          : (remainingSeconds / selected).clamp(0.0, 1.0);
+      content = widget.expanded && b02RestTakeoverFits(context)
+          ? _takeover(context, period, remaining, selected, progress)
+          : _bar(context, period, remaining, progress);
     }
-  }
-}
-
-/// Rest time left, −15 / +30 and Skip, pinned under the player header while a
-/// rest is open, so the countdown stays visible while you log (audit UX-05).
-/// It also owns ending the rest when the countdown reaches zero.
-class StickyRestBar extends StatefulWidget {
-  final B02ExecutionDraftState state;
-  final ValueChanged<String>? onDecrease;
-  final ValueChanged<String>? onExtend;
-  final ValueChanged<String>? onSkip;
-  final Future<bool> Function(String) onElapsed;
-
-  const StickyRestBar({
-    super.key,
-    required this.state,
-    required this.onDecrease,
-    required this.onExtend,
-    required this.onSkip,
-    required this.onElapsed,
-  });
-
-  @override
-  State<StickyRestBar> createState() => _StickyRestBarState();
-}
-
-class _StickyRestBarState extends State<StickyRestBar> {
-  late DateTime _now;
-  Timer? _ticker;
-  var _finishingElapsedRest = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _now = DateTime.now().toUtc();
-    _syncTicker();
+    final duration = B05MotionPolicy.transitionDuration(context);
+    // AnimatedSize with a zero duration re-dirties itself during layout.
+    if (duration == Duration.zero) return content;
+    return AnimatedSize(
+      duration: duration,
+      curve: B05MotionPolicy.standardCurve,
+      alignment: Alignment.topCenter,
+      child: content,
+    );
   }
 
-  @override
-  void didUpdateWidget(covariant StickyRestBar oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    _now = DateTime.now().toUtc();
-    _syncTicker();
-  }
-
-  @override
-  void dispose() {
-    _ticker?.cancel();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final period = b02OpenRestPeriod(widget.state);
-    if (period == null) return const SizedBox.shrink();
+  Widget _bar(
+    BuildContext context,
+    B02RestPeriod period,
+    String remaining,
+    double progress,
+  ) {
     final theme = Theme.of(context);
-    final remaining = b02RestRemainingLabel(period, _now);
-    final remainingSeconds = b02RestRemainingSeconds(period, _now);
-    final selected = period.selectedSeconds ?? 0;
     final buttonStyle = OutlinedButton.styleFrom(
       minimumSize: const Size(48, 40),
       padding: const EdgeInsets.symmetric(horizontal: 12),
       visualDensity: VisualDensity.compact,
+    );
+    final time = Wrap(
+      spacing: 8,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        Icon(Icons.timer_outlined, color: context.b05Colors.action, size: 20),
+        Text('Rest', style: theme.textTheme.labelLarge),
+        Semantics(
+          label: 'Rest remaining $remaining',
+          child: ExcludeSemantics(
+            child: Text(remaining, style: B05Typography.number(context)),
+          ),
+        ),
+      ],
     );
     return Semantics(
       container: true,
@@ -985,80 +809,35 @@ class _StickyRestBarState extends State<StickyRestBar> {
                 spacing: 8,
                 runSpacing: 4,
                 children: [
-                  Wrap(
-                    spacing: 8,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.timer_outlined,
-                        color: context.b05Colors.action,
-                        size: 20,
-                      ),
-                      Text('Rest', style: theme.textTheme.labelLarge),
-                      Semantics(
-                        label: 'Rest remaining $remaining',
-                        child: ExcludeSemantics(
-                          child: Text(
-                            remaining,
-                            style: theme.textTheme.titleLarge?.copyWith(
-                              fontFeatures: const [
-                                FontFeature.tabularFigures(),
-                              ],
-                            ),
-                          ),
+                  if (widget.onExpand == null)
+                    time
+                  else
+                    Semantics(
+                      button: true,
+                      onTapHint: 'Show the rest timer',
+                      child: InkWell(
+                        onTap: widget.onExpand,
+                        borderRadius: BorderRadius.circular(8),
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(minHeight: 40),
+                          child: time,
                         ),
                       ),
-                    ],
-                  ),
+                    ),
                   Wrap(
                     spacing: 6,
                     runSpacing: 4,
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
-                      Semantics(
-                        button: true,
-                        label: 'Decrease rest by 15 seconds',
-                        child: OutlinedButton(
-                          style: buttonStyle,
-                          onPressed: widget.onDecrease == null
-                              ? null
-                              : () {
-                                  unawaited(IndiFitHaptics.selection());
-                                  widget.onDecrease?.call(period.id);
-                                },
-                          child: const Text('−15'),
+                      _decreaseButton(period, buttonStyle),
+                      _extendButton(period, buttonStyle),
+                      _skipButton(
+                        period,
+                        TextButton.styleFrom(
+                          minimumSize: const Size(48, 40),
+                          visualDensity: VisualDensity.compact,
                         ),
-                      ),
-                      Semantics(
-                        button: true,
-                        label: 'Increase rest by 30 seconds',
-                        child: OutlinedButton(
-                          style: buttonStyle,
-                          onPressed: widget.onExtend == null
-                              ? null
-                              : () {
-                                  unawaited(IndiFitHaptics.selection());
-                                  widget.onExtend?.call(period.id);
-                                },
-                          child: const Text('+30'),
-                        ),
-                      ),
-                      Semantics(
-                        button: true,
-                        label: 'Skip rest',
-                        child: TextButton(
-                          style: TextButton.styleFrom(
-                            minimumSize: const Size(48, 40),
-                            visualDensity: VisualDensity.compact,
-                          ),
-                          onPressed: widget.onSkip == null
-                              ? null
-                              : () {
-                                  unawaited(IndiFitHaptics.selection());
-                                  widget.onSkip?.call(period.id);
-                                },
-                          child: const Text('Skip'),
-                        ),
+                        filled: false,
                       ),
                     ],
                   ),
@@ -1068,15 +847,263 @@ class _StickyRestBarState extends State<StickyRestBar> {
             ExcludeSemantics(
               child: LinearProgressIndicator(
                 minHeight: 3,
-                value: selected == 0
-                    ? 0
-                    : (remainingSeconds / selected).clamp(0.0, 1.0),
+                value: progress,
                 backgroundColor: theme.colorScheme.surfaceContainerLow,
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _takeover(
+    BuildContext context,
+    B02RestPeriod period,
+    String remaining,
+    int selectedSeconds,
+    double progress,
+  ) {
+    final theme = Theme.of(context);
+    final colors = context.b05Colors;
+    // The takeover sits above the set list, so it never takes more than
+    // about a quarter of the screen for the ring.
+    final ringSize = (MediaQuery.sizeOf(context).height * 0.24).clamp(
+      140.0,
+      200.0,
+    );
+    final upNext = widget.upNext;
+    final outlined = OutlinedButton.styleFrom(
+      minimumSize: const Size(_takeoverTarget, _takeoverTarget),
+      textStyle: B05Typography.number(context),
+    );
+    return Semantics(
+      container: true,
+      explicitChildNodes: true,
+      label: 'Rest in progress',
+      child: Material(
+        color: theme.colorScheme.surfaceContainerHighest,
+        // Rounded at the bottom so it reads as a panel over the set list.
+        shape: const SmoothRectangleBorder(
+          borderRadius: SmoothBorderRadius.only(
+            bottomLeft: SmoothRadius(
+              cornerRadius: B05Radii.card,
+              cornerSmoothing: B05Radii.smoothing,
+            ),
+            bottomRight: SmoothRadius(
+              cornerRadius: B05Radii.card,
+              cornerSmoothing: B05Radii.smoothing,
+            ),
+          ),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 4, 8, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.timer_outlined, color: colors.action, size: 20),
+                  const SizedBox(width: 8),
+                  // The container label already says this is a rest.
+                  Expanded(
+                    child: ExcludeSemantics(
+                      child: Text('Rest', style: theme.textTheme.labelLarge),
+                    ),
+                  ),
+                  if (widget.onCollapse != null)
+                    IconButton(
+                      tooltip: 'Hide rest timer',
+                      onPressed: widget.onCollapse,
+                      icon: const Icon(Icons.keyboard_arrow_up_rounded),
+                    ),
+                ],
+              ),
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Center(
+                      child: SizedBox.square(
+                        dimension: ringSize,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            SizedBox.expand(
+                              child: ExcludeSemantics(
+                                child: CircularProgressIndicator(
+                                  value: progress,
+                                  strokeWidth: 10,
+                                  strokeCap: StrokeCap.round,
+                                  // A faint track keeps the ring's shape as the time runs down.
+                                  backgroundColor: colors.action.withValues(
+                                    alpha: 0.18,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            // Keep the digits inside the stroke, and shrink
+                            // rather than clip at large text sizes.
+                            Padding(
+                              padding: const EdgeInsets.all(28),
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Semantics(
+                                      label: 'Rest remaining $remaining',
+                                      child: ExcludeSemantics(
+                                        child: Text(
+                                          remaining,
+                                          style: B05Typography.number(
+                                            context,
+                                            size: 52,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    if (selectedSeconds > 0)
+                                      Text(
+                                        'of ${b02FormatRestSeconds(selectedSeconds)}',
+                                        style: B05Typography.caption(context)
+                                            .copyWith(
+                                              fontFeatures: const [
+                                                FontFeature.tabularFigures(),
+                                              ],
+                                            ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    if (upNext != null) ...[
+                      const SizedBox(height: 12),
+                      Semantics(
+                        container: true,
+                        label: [
+                          'Up next',
+                          upNext.title,
+                          ?upNext.detail,
+                        ].join(', '),
+                        child: ExcludeSemantics(
+                          child: Column(
+                            children: [
+                              Text(
+                                'Up next',
+                                style: B05Typography.sectionLabel(context),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                upNext.title,
+                                textAlign: TextAlign.center,
+                                style: B05Typography.label(context),
+                              ),
+                              if (upNext.detail != null)
+                                Text(
+                                  upNext.detail!,
+                                  textAlign: TextAlign.center,
+                                  style: B05Typography.number(context),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(child: _decreaseButton(period, outlined)),
+                        const SizedBox(width: 8),
+                        Expanded(child: _extendButton(period, outlined)),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _skipButton(
+                            period,
+                            FilledButton.styleFrom(
+                              minimumSize: const Size(
+                                _takeoverTarget,
+                                _takeoverTarget,
+                              ),
+                            ),
+                            filled: true,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _decreaseButton(B02RestPeriod period, ButtonStyle style) => Semantics(
+    button: true,
+    label: 'Decrease rest by 15 seconds',
+    child: OutlinedButton(
+      style: style,
+      onPressed: widget.onDecrease == null
+          ? null
+          : () {
+              unawaited(IndiFitHaptics.selection());
+              widget.onDecrease?.call(period.id);
+            },
+      child: const Text('−15'),
+    ),
+  );
+
+  Widget _extendButton(B02RestPeriod period, ButtonStyle style) => Semantics(
+    button: true,
+    label: 'Increase rest by 30 seconds',
+    child: OutlinedButton(
+      style: style,
+      onPressed: widget.onExtend == null
+          ? null
+          : () {
+              unawaited(IndiFitHaptics.selection());
+              widget.onExtend?.call(period.id);
+            },
+      child: const Text('+30'),
+    ),
+  );
+
+  Widget _skipButton(
+    B02RestPeriod period,
+    ButtonStyle style, {
+    required bool filled,
+  }) {
+    final onPressed = widget.onSkip == null
+        ? null
+        : () {
+            unawaited(IndiFitHaptics.selection());
+            widget.onSkip?.call(period.id);
+          };
+    return Semantics(
+      button: true,
+      label: 'Skip rest',
+      child: filled
+          ? FilledButton(
+              style: style,
+              onPressed: onPressed,
+              child: const Text('Skip'),
+            )
+          : TextButton(
+              style: style,
+              onPressed: onPressed,
+              child: const Text('Skip'),
+            ),
     );
   }
 
@@ -1138,10 +1165,21 @@ B02RestPeriod? b02OpenRestPeriod(B02ExecutionDraftState state) {
   return open.isEmpty ? null : open.last;
 }
 
-String b02RestRemainingLabel(B02RestPeriod period, DateTime now) {
-  final remaining = b02RestRemainingSeconds(period, now);
-  final minutes = remaining ~/ 60;
-  final seconds = remaining % 60;
+String b02RestRemainingLabel(B02RestPeriod period, DateTime now) =>
+    b02FormatRestSeconds(b02RestRemainingSeconds(period, now));
+
+/// Whether the expanded rest takeover fits. On short screens and at large
+/// text sizes the player keeps the compact bar, which wraps its controls,
+/// so the set list stays reachable.
+bool b02RestTakeoverFits(BuildContext context) {
+  final media = MediaQuery.of(context);
+  return media.size.height >= 600 && media.textScaler.scale(16) <= 16 * 1.35;
+}
+
+/// "1:30" for 90 seconds.
+String b02FormatRestSeconds(int totalSeconds) {
+  final minutes = totalSeconds ~/ 60;
+  final seconds = totalSeconds % 60;
   return '$minutes:${seconds.toString().padLeft(2, '0')}';
 }
 

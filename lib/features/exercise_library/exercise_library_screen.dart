@@ -446,21 +446,21 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
             vertical: B05Layout.space4,
           ),
           leading: Container(
-            width: 44,
-            height: 44,
+            width: 56,
+            height: 56,
             decoration: BoxDecoration(
               color: context.b05Colors.inset,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(B05Radii.chip),
               border: Border.all(color: context.b05Colors.border),
             ),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(7),
+              borderRadius: BorderRadius.circular(B05Radii.chip - 1),
               child: ExerciseVisual(
                 canonicalExerciseUuid: ex.stableId ?? '',
                 registry: registry,
-                cacheWidth: (44.0 * MediaQuery.devicePixelRatioOf(context))
+                cacheWidth: (56.0 * MediaQuery.devicePixelRatioOf(context))
                     .round()
-                    .clamp(88, 264),
+                    .clamp(112, 336),
                 displayMuscles: ExerciseVisualMuscleFacts(
                   primaryMuscle: displayMuscles.primary,
                   secondaryMuscles: displayMuscles.secondary,
