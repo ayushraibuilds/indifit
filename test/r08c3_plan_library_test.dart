@@ -297,11 +297,12 @@ void main() {
 
       expect(copyRepo.copiedSourceVersionId, sourceEntry.version.id);
       expect(activation.activatedCommand?.programVersionId, 'copied-version');
-      expect(find.text('This is now your current plan.'), findsOneWidget);
       // The overview shows the bundled version while its copy is now active:
       // it must still read as current, not offer to switch the plan to itself.
+      // One confirmation: the banner (review O-4).
       expect(find.text('Use this plan'), findsNothing);
-      expect(find.text('This is your current plan'), findsOneWidget);
+      expect(find.text('Current plan'), findsOneWidget);
+      expect(find.byType(SnackBar), findsNothing);
     },
   );
 

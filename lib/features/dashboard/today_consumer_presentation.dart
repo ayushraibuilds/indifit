@@ -980,8 +980,8 @@ TodayFocusPresentation todayFocusPresentation({
   if (next != null && dateRelation == TodayDateRelation.today) {
     return TodayFocusPresentation(
       state: TodayPresentationState.ready,
-      title:
-          'Next: ${ConsumerCopy.label(next.template.name, fallback: 'Workout')}',
+      // The card's eyebrow already says "Next up".
+      title: ConsumerCopy.label(next.template.name, fallback: 'Workout'),
       detail: _nextWorkoutDetail(next.occurrence.effectiveLocalDate),
       actionLabel: 'View workout plan',
       action: TodayNextAction.openWorkoutPlan,

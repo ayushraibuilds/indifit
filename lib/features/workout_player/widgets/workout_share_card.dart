@@ -7,6 +7,7 @@ import 'package:flutter/rendering.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 import 'package:share_plus/share_plus.dart';
 
+import '../../../core/presentation/consumer_number_label.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
 import '../../../core/utils/app_logger.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
@@ -356,7 +357,25 @@ class WorkoutStoryCard extends StatelessWidget {
                         ],
                       ),
                     ],
-                    const Spacer(flex: 4),
+                    // What was done, so the lower card is not empty
+                    // (review O-4). Weights follow "Include weights".
+                    if (recap.exercises.isNotEmpty) ...[
+                      const SizedBox(height: 28),
+                      for (final line in storyExerciseLines(
+                        recap.exercises,
+                        includeWeights: includeWeights,
+                      ))
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 6),
+                          child: Text(
+                            line,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontSize: 15, height: 1.3),
+                          ),
+                        ),
+                    ],
+                    const Spacer(flex: 3),
                     const Text(
                       'Tracked with IndiFit',
                       style: TextStyle(fontSize: 13, color: _muted),
@@ -380,4 +399,27 @@ String formatStoryDuration(int seconds) {
   return hours > 0
       ? '$hours:${minutes.toString().padLeft(2, '0')}:$rest'
       : '$minutes:$rest';
+}
+
+/// "Leg Press · 3 × 8 · 60 kg" for up to four exercises, then "+2 more".
+@visibleForTesting
+List<String> storyExerciseLines(
+  List<ExerciseRecapSummary> exercises, {
+  required bool includeWeights,
+}) {
+  const shown = 4;
+  String line(ExerciseRecapSummary e) {
+    final reps = e.minReps == e.maxReps
+        ? '${e.maxReps}'
+        : '${e.minReps}–${e.maxReps}';
+    final load = includeWeights && e.topWeightKg > 0
+        ? ' · ${ConsumerNumberLabel.rounded(e.topWeightKg)} kg'
+        : '';
+    return '${e.exerciseName} · ${e.setsCount} × $reps$load';
+  }
+
+  return [
+    for (final e in exercises.take(shown)) line(e),
+    if (exercises.length > shown) '+${exercises.length - shown} more',
+  ];
 }

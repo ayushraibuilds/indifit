@@ -705,6 +705,18 @@ class _B07HeroTile extends StatelessWidget {
                     fit: BoxFit.contain,
                     cacheWidth: cacheWidth > 0 ? cacheWidth : null,
                     gaplessPlayback: true,
+                    // Fades in over the tile once decoded, instead of the
+                    // tile flashing empty and the picture popping in.
+                    frameBuilder: (context, child, frame, sync) => sync
+                        ? child
+                        : AnimatedOpacity(
+                            opacity: frame == null ? 0 : 1,
+                            duration: B05MotionPolicy.transitionDuration(
+                              context,
+                            ),
+                            curve: B05MotionPolicy.standardCurve,
+                            child: child,
+                          ),
                   ),
                   if (label != null)
                     Positioned(

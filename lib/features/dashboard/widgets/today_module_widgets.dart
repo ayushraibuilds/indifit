@@ -501,10 +501,12 @@ class TodayMealRow extends StatelessWidget {
       maxLines: 2,
       overflow: TextOverflow.ellipsis,
       textAlign: TextAlign.end,
+      // Meal accents tint only the meal icon; breakfast orange next to the
+      // fat bar read as a macro (review O-4).
       style: B05Typography.label(context).copyWith(
         color: meal.nutritionIncomplete
             ? context.b05Colors.unavailable.indicator
-            : role.indicator,
+            : context.b05Colors.textPrimary,
       ),
     );
     return Semantics(

@@ -300,7 +300,12 @@ class _PlanOverviewScreenState extends ConsumerState<PlanOverviewScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.versionId case final versionId?) {
+    if (widget.versionId case final requestedId?) {
+      // A bundled plan is activated through a copy. Once that has happened
+      // here, show the copy: it is the one with the schedule (review O-4).
+      final versionId = _activatedHere
+          ? (_workingVersionId ?? requestedId)
+          : requestedId;
       final overview = ref.watch(planOverviewSnapshotProvider(versionId));
       return Scaffold(
         appBar: AppBar(title: const Text('Plan overview')),
@@ -448,10 +453,9 @@ class _PlanOverviewScreenState extends ConsumerState<PlanOverviewScreen> {
         _activatedHere = true;
         _activationError = null;
       });
+      // The "Current plan" banner at the top is the confirmation; a
+      // snackbar and a second pill said the same thing (review O-4).
       unawaited(IndiFitHaptics.confirmation());
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('This is now your current plan.')),
-      );
     } catch (error) {
       if (!mounted) return;
       final failure = ProductFailurePresentation.fromError(
@@ -662,8 +666,9 @@ class _PlanDetailsBody extends StatelessWidget {
                     ),
                     const SizedBox(height: B05Layout.space12),
                   ],
+                  // The current plan has no action; its banner says so.
                   if (isCurrentPlan)
-                    const _CurrentPlanAction()
+                    const SizedBox.shrink()
                   else if (onUsePlan != null)
                     SizedBox(
                       width: double.infinity,
@@ -1708,35 +1713,6 @@ class _CurrentPlanBanner extends StatelessWidget {
     icon: Icons.check_circle_outline_rounded,
     title: 'Current plan',
     message: 'Training uses this plan for your scheduled workouts.',
-  );
-}
-
-class _CurrentPlanAction extends StatelessWidget {
-  const _CurrentPlanAction();
-
-  @override
-  Widget build(BuildContext context) => Semantics(
-    container: true,
-    label: 'Current plan. No change needed.',
-    child: B05Surface(
-      tone: B05SurfaceTone.selected,
-      padding: const EdgeInsets.symmetric(
-        horizontal: B05Layout.space16,
-        vertical: B05Layout.space12,
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.check_circle_rounded, color: context.b05Colors.action),
-          const SizedBox(width: B05Layout.space8),
-          Expanded(
-            child: Text(
-              'This is your current plan',
-              style: B05Typography.label(context),
-            ),
-          ),
-        ],
-      ),
-    ),
   );
 }
 
