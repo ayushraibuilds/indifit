@@ -755,23 +755,9 @@ class _StickyRestBarState extends State<StickyRestBar> {
       final progress = selected == 0
           ? 0.0
           : (remainingSeconds / selected).clamp(0.0, 1.0);
-      final timer = widget.expanded && b02RestTakeoverFits(context)
+      content = widget.expanded && b02RestTakeoverFits(context)
           ? _takeover(context, period, remaining, selected, progress)
           : _bar(context, period, remaining, progress);
-      final footer = widget.footer;
-      content = footer == null
-          ? timer
-          : Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                timer,
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                  child: footer,
-                ),
-              ],
-            );
     }
     final duration = B05MotionPolicy.transitionDuration(context);
     // AnimatedSize with a zero duration re-dirties itself during layout.
@@ -862,6 +848,11 @@ class _StickyRestBarState extends State<StickyRestBar> {
                 ],
               ),
             ),
+            if (widget.footer case final footer?)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                child: footer,
+              ),
             ExcludeSemantics(
               child: LinearProgressIndicator(
                 minHeight: 3,
@@ -1057,6 +1048,10 @@ class _StickyRestBarState extends State<StickyRestBar> {
                         ),
                       ],
                     ),
+                    if (widget.footer case final footer?) ...[
+                      const SizedBox(height: 12),
+                      footer,
+                    ],
                   ],
                 ),
               ),
