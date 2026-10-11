@@ -180,7 +180,8 @@ void main() {
       () => executions.readDraft(launch.draftId),
     ))!;
     expect(saved.state.performedExercises.single.sets, hasLength(1));
-    expect(find.text('REST'), findsOneWidget);
+    // Logging a set opens the rest takeover.
+    expect(find.bySemanticsLabel('Rest in progress'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -269,7 +270,7 @@ void main() {
       ))!;
       await _pumpPlayer(tester, launch, executions, db, AppTheme.darkTheme);
 
-      expect(find.text('REST'), findsOneWidget);
+      expect(find.text('Rest'), findsOneWidget);
       expect(find.text('−15'), findsOneWidget);
       expect(find.text('+30'), findsOneWidget);
       expect(find.text('Skip'), findsOneWidget);

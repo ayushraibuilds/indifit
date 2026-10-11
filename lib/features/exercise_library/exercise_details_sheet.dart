@@ -9,6 +9,7 @@ import '../../core/widgets/indi_fit_bottom_sheet.dart';
 import '../../data/database/app_database.dart';
 import '../education/b05_education_content.dart';
 import '../media/b05_exercise_visual_registry.dart';
+import '../media/indifit_muscle_map.dart';
 import '../workout_player/widgets/plate_calculator_sheet.dart';
 import 'exercise_history_screen.dart';
 
@@ -39,12 +40,15 @@ class _ExerciseDetailsSheetState extends ConsumerState<ExerciseDetailsSheet> {
         ref.watch(b05ExerciseVisualRegistryProvider).valueOrNull ??
         const B05ExerciseVisualRegistry.empty();
     final set = registry.lookup(exercise.stableId ?? '');
-    final hasStartPeak =
-        set != null &&
-        set.mediaByRole['start'] != null &&
-        set.mediaByRole['peak'] != null;
+    // Decide from the files that actually loaded: with them missing, a
+    // Start/Peak toggle would flip between two identical muscle maps.
+    final pictures = ref
+        .watch(b05ExerciseImagesProvider(exercise.stableId ?? ''))
+        .valueOrNull;
+    final hasStartPeak = pictures?.isPair == true;
+    final visualHeight = pictures == null ? 110.0 : 200.0;
     final dpr = MediaQuery.devicePixelRatioOf(context);
-    final detailCacheWidth = (110.0 * 1.5 * dpr).round().clamp(220, 720);
+    final detailCacheWidth = (visualHeight * 1.5 * dpr).round().clamp(220, 720);
     final displayMuscles = ExerciseDisplayMuscles.fromMuscleGroups(
       exercise.muscleGroups,
     );
@@ -111,7 +115,7 @@ class _ExerciseDetailsSheetState extends ConsumerState<ExerciseDetailsSheet> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 SizedBox(
-                  height: 110,
+                  height: visualHeight,
                   width: double.infinity,
                   child: Center(
                     child: ExerciseVisual(
@@ -163,7 +167,7 @@ class _ExerciseDetailsSheetState extends ConsumerState<ExerciseDetailsSheet> {
                     ),
                   ),
                 ],
-                if (set != null) ...[
+                if (pictures != null && set != null) ...[
                   const SizedBox(height: B05Layout.space8),
                   Semantics(
                     label: 'Technique disclosure',
@@ -201,6 +205,22 @@ class _ExerciseDetailsSheetState extends ConsumerState<ExerciseDetailsSheet> {
                 ),
             ],
           ),
+          // With the pictures above, the muscle map has its own place.
+          if (pictures != null &&
+              (displayMuscles.hasPrimary ||
+                  displayMuscles.secondary.isNotEmpty)) ...[
+            const SizedBox(height: B05Layout.space12),
+            Center(
+              child: SizedBox(
+                width: 160 * 1.15,
+                child: IndiFitMuscleMap.exercise(
+                  primaryMuscle: displayMuscles.primary,
+                  secondaryMuscles: displayMuscles.secondary,
+                  showTextEquivalent: false,
+                ),
+              ),
+            ),
+          ],
           if (_familyFor(exercise) case final family?) ...[
             const SizedBox(height: B05Layout.space16),
             Text(

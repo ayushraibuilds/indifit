@@ -189,13 +189,17 @@ void main() {
       expect(activeRest.selectedSeconds, 120);
       expect(activeRest.endedAtUtc, isNull);
 
-      await tester.scrollUntilVisible(
-        find.bySemanticsLabel('Rest in progress'),
-        400,
-        scrollable: find.byType(Scrollable).first,
+      // At 1.8x text the rest timer stays a compact bar above the set
+      // list, so no scrolling.
+      expect(find.bySemanticsLabel('Rest in progress'), findsNothing);
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is Semantics &&
+              (widget.properties.label ?? '').startsWith('Rest remaining '),
+        ),
+        findsOneWidget,
       );
-      expect(find.bySemanticsLabel('Rest in progress'), findsOneWidget);
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
       expect(find.text('−15'), findsOneWidget);
       expect(find.text('+30'), findsOneWidget);
       expect(find.text('Skip'), findsOneWidget);

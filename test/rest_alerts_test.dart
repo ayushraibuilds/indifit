@@ -133,6 +133,38 @@ void main() {
       expect(requests, 0);
     });
 
+    test('an ask left unanswered comes back on a later rest', () async {
+      final answers = <bool?>[null, true];
+      final service =
+          RestAlertPermissionService(
+            requestNotifications: () async {
+              requests++;
+              return true;
+            },
+            notificationsGranted: () async => false,
+            canScheduleExactAlarms: () async => null,
+            openExactAlarmSettings: () async {},
+          )..registerPresenter((prompt) async {
+            prompts.add(prompt);
+            return answers.removeAt(0);
+          });
+
+      // The rest ended before the row in the timer was answered.
+      await restOnce(service);
+      expect(requests, 0);
+
+      await restOnce(service, draftId: 2);
+      expect(prompts, [
+        RestAlertPrompt.notifications,
+        RestAlertPrompt.notifications,
+      ]);
+      expect(requests, 1);
+
+      // Answered now, so never again.
+      await restOnce(service, draftId: 3);
+      expect(prompts, hasLength(2));
+    });
+
     test(
       'without exact alarms, offers precise alerts once on a later rest',
       () async {

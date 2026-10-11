@@ -177,6 +177,11 @@ void main() {
               b05ExerciseVisualRegistryProvider.overrideWith(
                 (ref) async => registry,
               ),
+              // The disclosure describes the pictures, so it shows only
+              // when they load.
+              b05ExerciseImagesProvider.overrideWith(
+                (ref, id) async => _pairPictures,
+              ),
             ],
             child: MaterialApp(
               theme: AppTheme.darkTheme,
@@ -254,6 +259,11 @@ void main() {
             overrides: [
               b05ExerciseVisualRegistryProvider.overrideWith(
                 (ref) async => registry,
+              ),
+              // The disclosure describes the pictures, so it shows only
+              // when they load.
+              b05ExerciseImagesProvider.overrideWith(
+                (ref, id) async => _singlePicture,
               ),
             ],
             child: MaterialApp(
@@ -349,7 +359,7 @@ void main() {
           await tester.pumpAndSettle();
         }
 
-        // DPR = 1.0 -> (44 * 1.0).round().clamp(88, 264) = 88
+        // DPR = 1.0 -> (56 * 1.0).round().clamp(112, 336) = 112
         await pumpWithDpr(1.0);
         final visualsDpr1 = tester.widgetList<ExerciseVisual>(
           find.byType(ExerciseVisual),
@@ -357,10 +367,10 @@ void main() {
         expect(visualsDpr1, isNotEmpty);
         for (final visual in visualsDpr1) {
           expect(visual.decorative, isTrue);
-          expect(visual.cacheWidth, 88);
+          expect(visual.cacheWidth, 112);
         }
 
-        // DPR = 3.0 -> (44 * 3.0).round().clamp(88, 264) = 132
+        // DPR = 3.0 -> (56 * 3.0).round().clamp(112, 336) = 168
         await pumpWithDpr(3.0);
         final visualsDpr3 = tester.widgetList<ExerciseVisual>(
           find.byType(ExerciseVisual),
@@ -368,10 +378,10 @@ void main() {
         expect(visualsDpr3, isNotEmpty);
         for (final visual in visualsDpr3) {
           expect(visual.decorative, isTrue);
-          expect(visual.cacheWidth, 132);
+          expect(visual.cacheWidth, 168);
         }
 
-        // DPR = 8.0 -> (44 * 8.0).round().clamp(88, 264) = 264 (clamped)
+        // DPR = 8.0 -> (56 * 8.0).round().clamp(112, 336) = 336 (clamped)
         await pumpWithDpr(8.0);
         final visualsDpr8 = tester.widgetList<ExerciseVisual>(
           find.byType(ExerciseVisual),
@@ -379,7 +389,7 @@ void main() {
         expect(visualsDpr8, isNotEmpty);
         for (final visual in visualsDpr8) {
           expect(visual.decorative, isTrue);
-          expect(visual.cacheWidth, 264);
+          expect(visual.cacheWidth, 336);
         }
       },
     );
@@ -394,6 +404,8 @@ void main() {
                 b05ExerciseVisualRegistryProvider.overrideWith(
                   (ref) async => registry,
                 ),
+                // No local RepDB files, as in CI: the 110 pt banner.
+                b05ExerciseImagesProvider.overrideWith((ref, id) async => null),
               ],
               child: MaterialApp(
                 theme: AppTheme.darkTheme,
@@ -452,3 +464,10 @@ class _SimpleWorkoutRepo implements WorkoutRepository {
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
+
+// A 1 × 1 transparent PNG, so the sheet has real image bytes to show.
+final _pixel = base64Decode(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+);
+final _pairPictures = B05ExerciseImages.pair(start: _pixel, peak: _pixel);
+final _singlePicture = B05ExerciseImages.single(_pixel);

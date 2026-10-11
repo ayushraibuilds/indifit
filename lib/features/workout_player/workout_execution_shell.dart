@@ -25,6 +25,7 @@ class WorkoutExecutionShell extends StatelessWidget {
     this.onClose,
     this.onReview,
     this.onDiscard,
+    this.onContentInteraction,
     this.isBusy = false,
     this.primaryActionGap = 10,
     this.nextExerciseGap = 12,
@@ -53,6 +54,10 @@ class WorkoutExecutionShell extends StatelessWidget {
   final VoidCallback? onClose;
   final VoidCallback? onReview;
   final VoidCallback? onDiscard;
+
+  /// Called when the user touches or drags the scrolling slots, so the
+  /// player can fold the rest takeover back into its bar.
+  final VoidCallback? onContentInteraction;
   final bool isBusy;
   final double primaryActionGap;
   final double nextExerciseGap;
@@ -135,7 +140,7 @@ class WorkoutExecutionShell extends StatelessWidget {
         ),
     ];
 
-    final list = ListView(
+    Widget list = ListView(
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
       children: [
@@ -145,13 +150,29 @@ class WorkoutExecutionShell extends StatelessWidget {
         ],
       ],
     );
+    final onInteraction = onContentInteraction;
+    if (onInteraction != null) {
+      list = Listener(
+        onPointerDown: (_) => onInteraction(),
+        child: NotificationListener<UserScrollNotification>(
+          onNotification: (_) {
+            onInteraction();
+            return false;
+          },
+          child: list,
+        ),
+      );
+    }
     final sticky = stickyRestSlot;
-    if (sticky == null) return SafeArea(child: list);
+    // One structure whether or not the sticky slot is shown, so the list
+    // keeps its scroll position and focused field when a rest starts or ends.
     return SafeArea(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _slot(sticky, label: 'Rest timer'),
+          sticky == null
+              ? const SizedBox.shrink()
+              : _slot(sticky, label: 'Rest timer'),
           Expanded(child: list),
         ],
       ),
