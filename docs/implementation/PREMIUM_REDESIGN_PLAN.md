@@ -23,8 +23,8 @@ Update this table in every PR that touches the redesign. Status values: Not star
 | V5 | Player: rest takeover, exercise-done beat, exercise images, muscle map | B, G | V2; RepDB import (§ 9) | Credits updated; device feel check | Not started |
 | V3 | Today ring with depth and log feedback | E | V2 | Goldens | Not started |
 | V6 | Summary hero and share card | C | V2 | Share card checked in Instagram/WhatsApp | Not started |
-| V7 | Medals: 3D badge art, tilt, sheen | D | V1, V2 | Art licence in manifest | In progress (`feat/v7-medals`) |
-| V8 | Onboarding: animated mark, ruler pickers, target reveal | F | V2; Rive spike (§ 8.1) | IPA size check | Not started |
+| V7 | Medals: 3D badge art, tilt, sheen | D | V1, V2 | Art licence in manifest | Merged (#95) |
+| V8 | Onboarding: animated mark, ruler pickers, target reveal | F | V2 | IPA size check (no new assets or packages) | In progress (#96 rulers, reveal, no Skip on step 5; #97 welcome) |
 
 **Order:** V0 → V1 → V2 → V4 → V5 → V3 → V6 → V7 → V8 (decision 5: the thali comes first after V0–V2). V3 and V6 are small and can move earlier if a slot opens. Nothing here has a date; only the store-build freeze applies.
 
@@ -273,6 +273,8 @@ All presets read `B05MotionPolicy.reduceMotion(context)` and return the final st
 - Height and weight: horizontal ruler pickers (custom `ListWheelScrollView`-based, 1 cm / 0.5 kg ticks) with `selection()` haptic per tick; typing stays available for accessibility.
 - Step 5: a 1.5 s "Building your targets" beat, then the calorie ring fills to the target and protein/carbs/fat appear above the fold; the recap of answers moves below.
 - Drop "Skip for now" on step 5.
+- **Built so far (`feat/v8-onboarding`):** `OnboardingRulerPicker` (`lib/features/onboarding/widgets/onboarding_ruler_picker.dart`) under the height and weight fields, replacing their ± steppers; it is a custom-painted ruler driven by horizontal drag rather than a `ListWheelScrollView`, with a slider for screen readers, arrow keys, and the text field kept for typing. Age keeps its steppers. `OnboardingTargetReveal` (`onboarding_target_reveal.dart`) puts the ring and macros at the top of step 5 and the recap below; it plays once per session, and under Reduce Motion it is final on the first frame. Skip is hidden on step 5.
+- **Still open:** the welcome screen. It waits on the in-house `.riv` logo animation (decision 2: Rive stays) and the § 8.1 spike.
 
 ---
 

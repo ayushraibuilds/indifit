@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/b05_semantic_colors.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
+import 'onboarding_ruler_picker.dart';
 
 class OnboardingPageContainer extends StatelessWidget {
   final String title;
@@ -262,6 +263,9 @@ class OnboardingNumberInputField extends StatelessWidget {
   final Widget? trailing;
   final Widget? subtitle;
 
+  /// Shown under the field, for example an [OnboardingRulerPicker].
+  final Widget? below;
+
   const OnboardingNumberInputField({
     super.key,
     required this.controller,
@@ -277,6 +281,7 @@ class OnboardingNumberInputField extends StatelessWidget {
     this.onStepUp,
     this.trailing,
     this.subtitle,
+    this.below,
   });
 
   @override
@@ -421,6 +426,10 @@ class OnboardingNumberInputField extends StatelessWidget {
             padding: const EdgeInsets.only(left: B05Layout.space12),
             child: subtitle!,
           ),
+        ],
+        if (below != null) ...[
+          const SizedBox(height: B05Layout.space8),
+          below!,
         ],
         if (hasError) ...[
           const SizedBox(height: B05Layout.space4),
@@ -571,33 +580,22 @@ class _OnboardingHeightInputFieldState
     widget.onChanged?.call('$rounded');
   }
 
-  void _stepCm(int delta) {
-    final current = double.tryParse(widget.controller.text) ?? 170.0;
-    final next = (current + delta).clamp(80.0, 250.0).round();
-    widget.controller.text = '$next';
-    _syncFtInFromCm(next.toDouble());
-    widget.onChanged?.call('$next');
-    setState(() {});
-  }
-
-  void _stepInches(int delta) {
-    final ft = int.tryParse(_ftController.text) ?? 5;
-    var inVal = (int.tryParse(_inController.text) ?? 7) + delta;
-    var newFt = ft;
-    if (inVal >= 12) {
-      newFt += inVal ~/ 12;
-      inVal = inVal % 12;
-    } else if (inVal < 0) {
-      newFt -= 1;
-      inVal = 11;
-    }
-    if (newFt < 2) newFt = 2;
-    if (newFt > 8) newFt = 8;
-    _ftController.text = '$newFt';
-    _inController.text = '$inVal';
-    _syncCmFromFtIn();
-    setState(() {});
-  }
+  /// The ruler always works in centimetres; feet and inches follow it.
+  Widget _ruler() => OnboardingRulerPicker(
+    controller: widget.controller,
+    label: 'Height',
+    unit: 'cm',
+    min: 80,
+    max: 250,
+    step: 1,
+    majorEvery: 10,
+    onChanged: (value) {
+      final parsed = double.tryParse(value);
+      if (parsed != null) _syncFtInFromCm(parsed);
+      widget.onChanged?.call(value);
+      setState(() {});
+    },
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -648,8 +646,7 @@ class _OnboardingHeightInputFieldState
           ).copyWith(color: colors.textSecondary),
         ),
         trailing: unitToggle,
-        onStepDown: () => _stepCm(-1),
-        onStepUp: () => _stepCm(1),
+        below: _ruler(),
         onChanged: (val) {
           final parsed = double.tryParse(val);
           if (parsed != null) _syncFtInFromCm(parsed);
@@ -738,44 +735,13 @@ class _OnboardingHeightInputFieldState
                 ),
                 Text('in', style: B05Typography.label(context)),
                 const Spacer(),
-                if (!stackControls) ...[
-                  _StepperButton(
-                    icon: Icons.remove_rounded,
-                    label: 'Decrease height',
-                    onPressed: () => _stepInches(-1),
-                  ),
-                  const SizedBox(width: B05Layout.space4),
-                  _StepperButton(
-                    icon: Icons.add_rounded,
-                    label: 'Increase height',
-                    onPressed: () => _stepInches(1),
-                  ),
-                  const SizedBox(width: B05Layout.space8),
-                ],
                 unitToggle,
               ],
             ),
           ),
         ),
-        if (stackControls) ...[
-          const SizedBox(height: B05Layout.space4),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              _StepperButton(
-                icon: Icons.remove_rounded,
-                label: 'Decrease height',
-                onPressed: () => _stepInches(-1),
-              ),
-              const SizedBox(width: B05Layout.space4),
-              _StepperButton(
-                icon: Icons.add_rounded,
-                label: 'Increase height',
-                onPressed: () => _stepInches(1),
-              ),
-            ],
-          ),
-        ],
+        const SizedBox(height: B05Layout.space8),
+        _ruler(),
         const SizedBox(height: B05Layout.space4),
         Padding(
           padding: const EdgeInsets.only(left: B05Layout.space12),
