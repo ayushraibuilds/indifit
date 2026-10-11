@@ -140,6 +140,9 @@ abstract final class ThaliDishClassifier {
     if (_matchesAny(text, [
       'sabzi',
       'subzi',
+      'sabji',
+      'subji',
+      'mix veg',
       'bhindi',
       'palak',
       'gobi',

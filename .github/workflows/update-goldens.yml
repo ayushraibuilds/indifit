@@ -49,7 +49,9 @@ jobs:
 
       - name: Push Review Branch
         run: |
-          if git diff --quiet -- test/goldens; then
+          # status, not diff: a new golden file is untracked, and diff
+          # ignores untracked files.
+          if [ -z "$(git status --porcelain -- test/goldens)" ]; then
             echo "Goldens already match; nothing to push."
             exit 0
           fi

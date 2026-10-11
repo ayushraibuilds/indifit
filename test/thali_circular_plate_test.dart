@@ -304,6 +304,19 @@ void main() {
       }
     });
 
+    test('recognises common spellings of sabzi', () {
+      for (final label in ['Mix Vegetable Sabji', 'Aloo Subji', 'Mix Veg']) {
+        expect(
+          ThaliDishClassifier.classify(
+            displayLabel: label,
+            colors: colors,
+          ).category,
+          ThaliDishCategory.sabzi,
+          reason: label,
+        );
+      }
+    });
+
     test('classifies curds and raitas into perimeter curd category', () {
       for (final label in ['Boondi Raita', 'Fresh Dahi', 'Chaas', 'Curd']) {
         final placement = ThaliDishClassifier.classify(
@@ -655,6 +668,8 @@ void main() {
       },
     );
   });
+
+  _steelGoldens();
 
   group('4. ThaliBuilderScreen Dual-View Integration', () {
     testWidgets(
@@ -1027,5 +1042,169 @@ void main() {
       // HUD is dismissed
       expect(find.byKey(const Key('thali_quick_hud')), findsNothing);
     });
+  });
+}
+
+/// Steel thali goldens (PREMIUM_REDESIGN_PLAN § 6.3): the classic preset
+/// through the real builder at three phone widths, and the empty and
+/// overflow plates, each in dark and light. Images come from CI's Linux
+/// renderer (update-goldens.yml).
+Future<void> _goldenClassic(
+  WidgetTester tester, {
+  required ThemeData theme,
+  required Size size,
+  required String file,
+}) async {
+  tester.view.physicalSize = size;
+  tester.view.devicePixelRatio = 1.0;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
+
+  final harness = await _TestHarness.create(tester: tester);
+  addTearDown(() async {
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+    unawaited(harness.close());
+  });
+  final controller = NutritionThaliController(
+    repository: Future.value(harness.repository),
+    userId: harness.userId,
+    mealCategory: 'lunch',
+  );
+  await tester.runAsync(controller.initialize);
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        databaseProvider.overrideWithValue(harness.db),
+        localTimezoneServiceProvider.overrideWithValue(
+          LocalTimezoneService(read: () async => 'Asia/Kolkata'),
+        ),
+        nutritionThaliRepositoryProvider.overrideWith(
+          (ref) async => harness.repository,
+        ),
+        nutritionThaliControllerProvider(
+          'lunch',
+        ).overrideWith((ref) => controller),
+      ],
+      child: MediaQuery(
+        data: MediaQueryData(size: size, disableAnimations: true),
+        child: MaterialApp(
+          theme: theme,
+          home: const ThaliBuilderScreen(mealCategory: 'lunch'),
+        ),
+      ),
+    ),
+  );
+  await tester.pump();
+  await tester.runAsync(
+    () => Future<void>.delayed(const Duration(milliseconds: 100)),
+  );
+  await tester.pump(const Duration(milliseconds: 300));
+  await tester.tap(find.byKey(const Key('thali_preset_north_indian_classic')));
+  await tester.pump();
+  await tester.runAsync(
+    () => Future<void>.delayed(const Duration(milliseconds: 200)),
+  );
+  await tester.pump(const Duration(milliseconds: 600));
+  await expectLater(find.byType(CircularThaliPlate), matchesGoldenFile(file));
+}
+
+Future<void> _goldenPlate(
+  WidgetTester tester, {
+  required ThemeData theme,
+  required List<NutritionThaliItem> items,
+  required String file,
+}) async {
+  tester.view.physicalSize = const Size(390, 440);
+  tester.view.devicePixelRatio = 1.0;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
+  await tester.pumpWidget(
+    MediaQuery(
+      data: const MediaQueryData(size: Size(390, 440), disableAnimations: true),
+      child: MaterialApp(
+        theme: theme,
+        home: Scaffold(
+          body: Center(
+            child: SizedBox(
+              width: 390,
+              height: 420,
+              child: CircularThaliPlate(
+                items: items,
+                previews: const [],
+                onSelectItem: (_) {},
+                onAddDish: () {},
+                onViewAllDishes: () {},
+              ),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+  await tester.pump();
+  await expectLater(find.byType(CircularThaliPlate), matchesGoldenFile(file));
+}
+
+void _steelGoldens() {
+  group('5. Steel thali goldens', () {
+    for (final (name, theme) in [
+      ('dark', AppTheme.darkTheme),
+      ('light', AppTheme.lightTheme),
+    ]) {
+      for (final (width, height) in [
+        (320.0, 700.0),
+        (390.0, 844.0),
+        (430.0, 932.0),
+      ]) {
+        testWidgets(
+          'classic thali, $name, ${width.round()} pt',
+          tags: const ['golden'],
+          (tester) => _goldenClassic(
+            tester,
+            theme: theme,
+            size: Size(width, height),
+            file: 'goldens/thali_steel_classic_${name}_${width.round()}.png',
+          ),
+        );
+      }
+      testWidgets(
+        'empty plate, $name',
+        tags: const ['golden'],
+        (tester) => _goldenPlate(
+          tester,
+          theme: theme,
+          items: const [],
+          file: 'goldens/thali_steel_empty_$name.png',
+        ),
+      );
+      testWidgets(
+        'overflowing plate, $name',
+        tags: const ['golden'],
+        (tester) => _goldenPlate(
+          tester,
+          theme: theme,
+          items: [
+            _buildItem(id: 'rice', displayLabel: 'Steamed Rice'),
+            for (final (index, label) in [
+              'Dal Tadka',
+              'Aloo Gobi',
+              'Paneer Butter Masala',
+              'Curd',
+              'Gulab Jamun',
+              'Green Salad',
+              'Papad',
+              'Pickle',
+            ].indexed)
+              _buildItem(
+                id: 'dish_$index',
+                displayLabel: label,
+                position: index + 1,
+              ),
+          ],
+          file: 'goldens/thali_steel_overflow_$name.png',
+        ),
+      );
+    }
   });
 }

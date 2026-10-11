@@ -132,35 +132,39 @@ class ThaliQuickAdjustHud extends StatelessWidget {
           Row(
             children: [
               // Stepper controls
+              // The amount shows in full ("1 katori"); on a very narrow
+              // screen the whole stepper scales down instead of truncating.
               Flexible(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: colors.surfaceSubtle,
-                    borderRadius: B05Radii.largeRadius,
-                    border: Border.all(color: colors.border),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      B05TouchTarget(
-                        minWidth: B05Layout.minTouchTarget,
-                        minHeight: B05Layout.minTouchTarget,
-                        child: IconButton(
-                          key: const Key('thali_quick_hud_decrement'),
-                          padding: EdgeInsets.zero,
-                          visualDensity: VisualDensity.compact,
-                          icon: const Icon(Icons.remove_rounded, size: 18),
-                          color: colors.textPrimary,
-                          onPressed: onDecrement,
-                          tooltip: 'Decrease portion',
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: colors.surfaceSubtle,
+                      borderRadius: B05Radii.largeRadius,
+                      border: Border.all(color: colors.border),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        B05TouchTarget(
+                          minWidth: B05Layout.minTouchTarget,
+                          minHeight: B05Layout.minTouchTarget,
+                          child: IconButton(
+                            key: const Key('thali_quick_hud_decrement'),
+                            padding: EdgeInsets.zero,
+                            visualDensity: VisualDensity.compact,
+                            icon: const Icon(Icons.remove_rounded, size: 18),
+                            color: colors.textPrimary,
+                            onPressed: onDecrement,
+                            tooltip: 'Decrease portion',
+                          ),
                         ),
-                      ),
-                      Flexible(
-                        child: Padding(
+                        Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 4),
                           child: Text(
                             thaliQuantityLabel(item.quantity),
-                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
                             style: TextStyle(
                               color: colors.textPrimary,
                               fontSize: 12,
@@ -168,21 +172,21 @@ class ThaliQuickAdjustHud extends StatelessWidget {
                             ),
                           ),
                         ),
-                      ),
-                      B05TouchTarget(
-                        minWidth: B05Layout.minTouchTarget,
-                        minHeight: B05Layout.minTouchTarget,
-                        child: IconButton(
-                          key: const Key('thali_quick_hud_increment'),
-                          padding: EdgeInsets.zero,
-                          visualDensity: VisualDensity.compact,
-                          icon: const Icon(Icons.add_rounded, size: 18),
-                          color: colors.textPrimary,
-                          onPressed: onIncrement,
-                          tooltip: 'Increase portion',
+                        B05TouchTarget(
+                          minWidth: B05Layout.minTouchTarget,
+                          minHeight: B05Layout.minTouchTarget,
+                          child: IconButton(
+                            key: const Key('thali_quick_hud_increment'),
+                            padding: EdgeInsets.zero,
+                            visualDensity: VisualDensity.compact,
+                            icon: const Icon(Icons.add_rounded, size: 18),
+                            color: colors.textPrimary,
+                            onPressed: onIncrement,
+                            tooltip: 'Increase portion',
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),

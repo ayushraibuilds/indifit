@@ -591,8 +591,9 @@ void main() {
 
         // Should now have items in list
         expect(find.byKey(const Key('thali_items_list')), findsOneWidget);
-        expect(find.textContaining('Roti'), findsAtLeast(1));
-        expect(find.textContaining('Dal'), findsAtLeast(1));
+        // The plate heads the list; its dishes are named in their labels.
+        expect(find.bySemanticsLabel(RegExp('Roti')), findsAtLeast(1));
+        expect(find.bySemanticsLabel(RegExp('Dal')), findsAtLeast(1));
 
         // Summary bar should display live calories
         expect(find.byKey(const Key('thali_summary_calories')), findsOneWidget);
