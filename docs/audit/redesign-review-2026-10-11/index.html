@@ -1,0 +1,381 @@
+<title>IndiFit Redesign Review</title>
+<meta name="description" content="Review of the V0–V8 premium redesign against the 8 Oct visual review and the redesign plan, checked on one combined build in the iPhone 17 simulator.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: the 8 Oct review's dossier, reused so the two read as a pair.
+   Narrative column (~68ch), screenshot evidence beside each finding, one scorecard table up top. */
+:root {
+  --bg: #080C13;
+  --surface: #0F1622;
+  --surface-2: #141D2B;
+  --line: #223047;
+  --fg: #ECF1F6;
+  --muted: #9FB0C3;
+  --accent: #34D399;
+  --warn: #FBBF24;
+  --bad: #F87171;
+  --chip-bg: #13261F;
+
+  --font-display: "Outfit", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", "Helvetica Neue", Arial, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #F6F8FA; --surface: #FFFFFF; --surface-2: #EEF2F6; --line: #D5DEE8;
+    --fg: #0E1726; --muted: #4A5A6E; --accent: #0F766E; --warn: #B45309; --bad: #B91C1C;
+    --chip-bg: #E3F3EC;
+    color-scheme: light;
+  }
+}
+:root[data-theme="light"] {
+  --bg: #F6F8FA; --surface: #FFFFFF; --surface-2: #EEF2F6; --line: #D5DEE8;
+  --fg: #0E1726; --muted: #4A5A6E; --accent: #0F766E; --warn: #B45309; --bad: #B91C1C;
+  --chip-bg: #E3F3EC;
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 1rem; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+.wrap { max-width: 1080px; margin-inline: auto; padding-inline: 20px; padding-block: 40px 80px; }
+.prose { max-width: 68ch; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(2.3rem, 6vw, 3.4rem); font-weight: 700; letter-spacing: -0.025em; line-height: 1.04; }
+h2 { font-size: clamp(1.5rem, 3.4vw, 2rem); font-weight: 650; letter-spacing: -0.015em; line-height: 1.15; }
+h3 { font-size: 1.15rem; font-weight: 600; line-height: 1.3; }
+p { margin: 0; }
+ul, ol { margin: 0; padding-left: 1.2em; display: grid; gap: 6px; }
+a { color: var(--accent); text-underline-offset: 3px; }
+a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
+code { font-family: var(--font-mono); font-size: 0.86em; background: var(--surface-2); padding: 0.1em 0.35em; border-radius: 5px; }
+.eyebrow { font-family: var(--font-mono); font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.muted { color: var(--muted); }
+.small { font-size: 0.88rem; }
+
+.top { display: grid; gap: 18px; padding-bottom: 28px; border-bottom: 1px solid var(--line); }
+.top .lede { font-size: 1.12rem; max-width: 66ch; }
+.meta { display: flex; flex-wrap: wrap; gap: 8px; }
+.tag { font-family: var(--font-mono); font-size: 0.78rem; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); background: var(--surface); }
+.toc { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 0.92rem; }
+.toc a { color: var(--fg); text-decoration: none; border-bottom: 1px solid var(--line); }
+.toc a:hover { border-color: var(--accent); }
+section { padding-top: 56px; display: grid; gap: 22px; }
+.section-head { display: grid; gap: 10px; }
+
+/* verdict tiles */
+.verdict { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.verdict div { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; display: grid; gap: 6px; align-content: start; min-width: 0; }
+.verdict b { font-family: var(--font-display); font-size: 1.05rem; font-weight: 600; }
+.verdict .k { font-family: var(--font-mono); font-size: 0.74rem; letter-spacing: 0.06em; text-transform: uppercase; }
+.verdict .good .k { color: var(--accent); } .verdict .mid .k { color: var(--warn); } .verdict .miss .k { color: var(--bad); }
+@media (max-width: 760px) { .verdict { grid-template-columns: 1fr; } }
+
+/* scorecard */
+.table-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+table { width: 100%; border-collapse: collapse; font-size: 0.92rem; min-width: 760px; }
+th, td { text-align: left; padding: 12px 14px; vertical-align: top; border-bottom: 1px solid var(--line); }
+tr:last-child td { border-bottom: none; }
+th { font-family: var(--font-mono); font-weight: 500; font-size: 0.74rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); background: var(--surface-2); }
+td:first-child { font-weight: 600; white-space: nowrap; font-family: var(--font-mono); }
+.rate { display: inline-block; font-family: var(--font-mono); font-size: 0.72rem; padding: 2px 9px; border-radius: 999px; border: 1px solid currentColor; white-space: nowrap; }
+.rate.yes { color: var(--accent); } .rate.part { color: var(--warn); } .rate.no { color: var(--bad); }
+
+/* screenshot strip */
+.strip { display: flex; gap: 14px; overflow-x: auto; padding-bottom: 10px; scroll-snap-type: x proximity; }
+.strip figure { margin: 0; flex: 0 0 160px; scroll-snap-align: start; display: grid; gap: 6px; align-content: start; }
+.shot { width: 100%; height: auto; border-radius: 18px; border: 1px solid var(--line); display: block; background: var(--surface-2); }
+figcaption { font-size: 0.8rem; color: var(--muted); line-height: 1.35; }
+.wide { margin: 0; display: grid; gap: 8px; }
+.wide .scroll { overflow-x: auto; }
+.wide img { display: block; max-width: none; width: 1100px; border-radius: 12px; border: 1px solid var(--line); }
+
+/* findings */
+.findings { display: grid; }
+.finding { display: grid; grid-template-columns: minmax(0, 1fr) 150px; gap: 22px; padding-block: 22px; border-top: 1px solid var(--line); }
+.finding:last-child { border-bottom: 1px solid var(--line); }
+.finding .body { display: grid; gap: 8px; min-width: 0; }
+.finding .head { display: flex; flex-wrap: wrap; gap: 10px; align-items: baseline; }
+.id { font-family: var(--font-mono); font-size: 0.8rem; color: var(--accent); }
+.sev { font-family: var(--font-mono); font-size: 0.72rem; border: 1px solid currentColor; border-radius: 6px; padding: 1px 6px; }
+.sev.high { color: var(--bad); } .sev.med { color: var(--warn); } .sev.low { color: var(--muted); }
+.finding p b { font-weight: 600; }
+.finding .thumb { display: grid; gap: 8px; align-content: start; }
+@media (max-width: 600px) { .finding { grid-template-columns: 1fr; } .finding .thumb { width: 170px; } }
+
+/* principle check */
+.principles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 36px; }
+.principles div { padding-block: 16px; border-top: 1px solid var(--line); display: grid; gap: 6px; min-width: 0; }
+.principles h3 { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+@media (max-width: 680px) { .principles { grid-template-columns: 1fr; } }
+
+/* order list */
+.steps { display: grid; gap: 0; counter-reset: s; list-style: none; padding: 0; }
+.steps li { counter-increment: s; display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 14px; padding-block: 16px; border-top: 1px solid var(--line); }
+.steps li::before { content: counter(s); font-family: var(--font-display); font-weight: 700; font-size: 1.6rem; color: var(--accent); line-height: 1.1; font-variant-numeric: tabular-nums; }
+.steps li > div { display: grid; gap: 6px; min-width: 0; }
+.decisions { display: grid; gap: 12px; }
+.decision { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; display: grid; gap: 6px; }
+.decision b { font-family: var(--font-display); font-weight: 600; font-size: 1.02rem; }
+.foot { padding-top: 56px; font-size: 0.86rem; color: var(--muted); max-width: 80ch; display: grid; gap: 8px; }
+</style>
+
+<div class="wrap">
+
+<header class="top">
+  <p class="eyebrow">Design review · 11 October 2026</p>
+  <h1>IndiFit Redesign Review</h1>
+  <p class="lede">The redesign delivered what the 8 Oct review asked for, screen by screen. The steel thali, rest takeover, 3D medals and onboarding reveal look right, and the contrast and token work makes every tab feel like one app. Where it falls short of the feel is <b>timing</b>. Most reward moments either play while you can't see them or fight another moment for the same second. Four of the six open PRs are also not ready to merge (red CI or conflicts).</p>
+  <div class="meta">
+    <span class="tag">main d34aa31 + #91 #92 #93 #94 #96 #97</span>
+    <span class="tag">iPhone 17 simulator · iOS 26.5 · debug</span>
+    <span class="tag">fresh install, dark and light</span>
+    <span class="tag">RepDB pictures present</span>
+  </div>
+  <nav class="toc" aria-label="Sections">
+    <a href="#verdict">Verdict</a>
+    <a href="#scorecard">Scorecard</a>
+    <a href="#moments">Moments that miss</a>
+    <a href="#findings">Other findings</a>
+    <a href="#principles">Against the direction</a>
+    <a href="#merge">Merge readiness</a>
+    <a href="#next">What to do next</a>
+  </nav>
+</header>
+
+<section id="verdict">
+  <div class="section-head">
+    <p class="eyebrow">Verdict</p>
+    <h2>Right look, wrong timing</h2>
+  </div>
+  <div class="verdict">
+    <div class="good"><span class="k">Lands</span><b>Look and system</b><p class="small">Readable brand green, squircles, depth instead of borders, one macro colour map across Today, thali, onboarding and summary. Dark-first feels premium. Light mode holds up with soft shadows.</p></div>
+    <div class="good"><span class="k">Lands</span><b>Four signature screens</b><p class="small">Steel thali art, rest takeover, Fluent 3D medals, and the welcome → ruler → target reveal. Each matches its concept closely.</p></div>
+    <div class="miss"><span class="k">Misses</span><b>One reward per flow</b><p class="small">The Today chip plays off-screen. The medal sheet covers the summary hero. The exercise-done beat sits under the rest takeover. A permission sheet covers the first takeover.</p></div>
+  </div>
+  <div class="strip" aria-label="Screens that land">
+    <figure><img class="shot" src="shots/01_welcome.jpg" alt="Welcome screen with the IndiFit mark" loading="lazy"><figcaption>V8 welcome, settled</figcaption></figure>
+    <figure><img class="shot" src="shots/04_step2_ruler.jpg" alt="Onboarding step 2 with ruler pickers" loading="lazy"><figcaption>V8 rulers, 170 → 176 cm by drag</figcaption></figure>
+    <figure><img class="shot" src="shots/07_step5_settled.jpg" alt="Step 5 target reveal" loading="lazy"><figcaption>V8 reveal: target and macros above the fold</figcaption></figure>
+    <figure><img class="shot" src="shots/14_today_logged.jpg" alt="Today dark with gradient ring" loading="lazy"><figcaption>V3 ring: gradient and glow</figcaption></figure>
+    <figure><img class="shot" src="shots/19_plate_zoom.jpg" alt="Steel thali close-up" loading="lazy"><figcaption>V4 steel thali</figcaption></figure>
+    <figure><img class="shot" src="shots/33_rest_clear.jpg" alt="Rest takeover" loading="lazy"><figcaption>V5 rest takeover</figcaption></figure>
+    <figure><img class="shot" src="shots/42_summary_full.jpg" alt="Workout summary hero" loading="lazy"><figcaption>V6 summary hero</figcaption></figure>
+    <figure><img class="shot" src="shots/43_share.jpg" alt="Share card preview" loading="lazy"><figcaption>V6 share card</figcaption></figure>
+    <figure><img class="shot" src="shots/47_badges.jpg" alt="Badges grid with 3D art" loading="lazy"><figcaption>V7 badge grid</figcaption></figure>
+    <figure><img class="shot" src="shots/48_appearance.jpg" alt="Today in light mode" loading="lazy"><figcaption>Light theme, Today</figcaption></figure>
+  </div>
+</section>
+
+<section id="scorecard">
+  <div class="section-head">
+    <p class="eyebrow">Scorecard</p>
+    <h2>Each step against its spec</h2>
+    <p class="prose muted">"Spec" is the plan in <code>PREMIUM_REDESIGN_PLAN.md</code>. "Feel" is whether the screen gives the impression the concept was drawn for.</p>
+  </div>
+  <div class="table-scroll">
+    <table>
+      <thead><tr><th>Step</th><th>State</th><th>Spec</th><th>Feel</th><th>What's left</th></tr></thead>
+      <tbody>
+        <tr><td>V0</td><td>Merged #86</td><td><span class="rate part">mostly</span></td><td><span class="rate yes">yes</span></td><td>F1 green, F2 thali labels, F3 dark first-run, F5 stable search and F8 fat colour are fixed. F4 now confirms three times. F6 and F7 are only partly done (see O-1, O-2).</td></tr>
+        <tr><td>V1</td><td>Merged #88</td><td><span class="rate yes">yes</span></td><td><span class="rate yes">yes</span></td><td>Tokens, squircles, surfaces and macro map are in. The Food diary's macro row and the thali summary badges don't use the macro roles yet. <code>B05Typography.number</code> has only 8 call sites.</td></tr>
+        <tr><td>V2</td><td>Merged #89</td><td><span class="rate yes">yes</span></td><td><span class="rate yes">yes</span></td><td>Add → "Adding…" → "✓ Added" → Add works, and the diary counts up. The rest takeover snaps in rather than easing in.</td></tr>
+        <tr><td>V3</td><td>Open #93 · goldens red</td><td><span class="rate yes">yes</span></td><td><span class="rate no">no</span></td><td>The ring is right. The "+230 kcal" chip and count-up play while Today is hidden, so you never see them on the usual path (M-1).</td></tr>
+        <tr><td>V4</td><td>Open #91 · CI green, conflicts with V7</td><td><span class="rate part">mostly</span></td><td><span class="rate part">partly</span></td><td>The plate art is the best screen in the app. You can never see the whole plate on an iPhone 17 (M-5). Preset load blanks the screen behind a spinner, and the katori banner shifts the layout.</td></tr>
+        <tr><td>V5</td><td>Open #92 · unit + goldens red</td><td><span class="rate yes">yes</span></td><td><span class="rate part">partly</span></td><td>The takeover, fold and pictures work. The beat is hidden under the takeover (M-3). The permission sheet covers the first takeover (M-4).</td></tr>
+        <tr><td>V6</td><td>Open #94 · goldens red</td><td><span class="rate yes">yes</span></td><td><span class="rate part">partly</span></td><td>Hero and share card are right. The medal sheet covers the hero within a second (M-2). The duration wraps to "1 min 46 / sec".</td></tr>
+        <tr><td>V7</td><td>Merged #95</td><td><span class="rate yes">yes</span></td><td><span class="rate yes">yes</span></td><td>Art, silhouettes and sheet all look right. Grid cards are about 300 pt tall, so 9 badges fill 4–5 screens.</td></tr>
+        <tr><td>V8</td><td>Open #96 green · #97 conflicting</td><td><span class="rate yes">yes</span></td><td><span class="rate yes">yes</span></td><td>"Target zone 2,004–2,254 kcal" shows during the "Building your targets" beat, so the answer appears before the reveal. Step 1 still says "Welcome to IndiFit" right after the welcome screen.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="moments">
+  <div class="section-head">
+    <p class="eyebrow">Moments that miss</p>
+    <h2>Five reward moments, and when you actually see them</h2>
+    <p class="prose">The direction's rule was "one reward moment per flow". Each moment works when tested alone. Together, in a real session, they cancel each other out.</p>
+  </div>
+  <div class="findings">
+    <article class="finding">
+      <div class="body">
+        <div class="head"><span class="id">M-1</span><h3>The Today log chip plays off-screen</h3><span class="sev high">high</span></div>
+        <p>Today lives in an <code>IndexedStack</code> (<code>main_navigation_scaffold.dart:78</code>). <code>TodayNutritionHero.didUpdateWidget</code> starts the chip and the ring count-up as soon as the record stream changes, and that happens while you're on the Food tab. On the normal path (Today → Log food → Food tab → Add → back to Today), both animations finish before you return. I logged poha three times and never saw a chip. The ring was already at 690.</p>
+        <p><b>Fix:</b> queue the chip and the previous totals, and play them when Today is the visible tab and route (tab index plus <code>TickerMode</code> or a route-aware check). Add a test that logs while Today is hidden and then switches tabs.</p>
+      </div>
+      <div class="thumb"><img class="shot" src="shots/14_today_logged.jpg" alt="Today after returning, already settled at 690" loading="lazy"><figcaption>Back on Today: settled, no chip</figcaption></div>
+    </article>
+    <article class="finding">
+      <div class="body">
+        <div class="head"><span class="id">M-2</span><h3>The medal sheet covers the summary hero</h3><span class="sev high">high</span></div>
+        <p>After "Complete workout", the summary's tick and hero number start, and within about a second "2 Milestones Reached!" slides up over them with confetti. The recording catches the hero at 1,159 kg mid count-up, then it's behind the sheet. V6 and V7 are both good. Played together, neither lands. On a first workout this happens every time, because First Sweat always unlocks.</p>
+        <p><b>Fix:</b> let the summary finish first (tick → count-up → pill). Then show unlocks as a row on the summary that opens the sheet on tap, or open the sheet only after a pause. Either way, one celebration per workout (TP-6).</p>
+      </div>
+      <div class="thumb"><img class="shot" src="shots/40_summary.jpg" alt="Milestone sheet over the summary" loading="lazy"><figcaption>Hero behind the sheet</figcaption></div>
+    </article>
+    <article class="finding">
+      <div class="body">
+        <div class="head"><span class="id">M-3</span><h3>The exercise-done beat sits under the rest takeover</h3><span class="sev med">medium</span></div>
+        <p>When the last Leg Press set is logged, the rest takeover opens for the next exercise ("Up next: Incline Dumbbell Bench Press") at the same time. "Leg Press done · 3 × 8 · 60 kg" shows as a small card below it, with Leg Press's old set rows still behind. The timer holds at 1:30 for about 1.5 s, and the "Up next" line flips from "8–12 reps" to "8 reps".</p>
+        <p><b>Fix:</b> sequence them. Play the beat first, alone (1 s, tap to skip), then open the takeover. Or put "Leg Press done" in the takeover header for its first second.</p>
+      </div>
+      <div class="thumb"><img class="shot" src="shots/37_beat.jpg" alt="Leg Press done card under the rest takeover" loading="lazy"><figcaption>Beat under the takeover</figcaption></div>
+    </article>
+    <article class="finding">
+      <div class="body">
+        <div class="head"><span class="id">M-4</span><h3>The alert permission sheet covers the first rest takeover</h3><span class="sev med">medium</span></div>
+        <p>The first time you log a set, "Get an alert when rest ends" slides up over the new takeover. The first impression of the screen you see 15+ times a session is half a ring behind a permission request.</p>
+        <p><b>Fix:</b> ask from the takeover itself (a small "Alert me when rest ends" row), or ask after the first rest ends, when the value is obvious.</p>
+      </div>
+      <div class="thumb"><img class="shot" src="shots/32_rest.jpg" alt="Permission sheet over the takeover" loading="lazy"><figcaption>First rest, first set</figcaption></div>
+    </article>
+    <article class="finding">
+      <div class="body">
+        <div class="head"><span class="id">M-5</span><h3>You never see the whole thali</h3><span class="sev high">high</span></div>
+        <p>The name field, katori banner, quick-start chips and the plate/list toggle stay pinned at the top (about 350 pt). The partial-data notice, totals and Log Thali stay pinned at the bottom. That leaves about 300 pt of scroll for a 340 pt plate. Either the top or the bottom katori is always cut off, and the legend is only visible once the plate is half gone. The signature screen never shows itself whole.</p>
+        <p>Also on this screen: loading a preset blanks the whole screen behind a spinner for about 3 s (debug build). The katori banner then appears late and pushes the plate down about 40 pt. The empty state is an icon card, not the empty steel plate. The macro badges read "~22.1g", "~104.5g".</p>
+        <p><b>Fix:</b> make name, banner and quick start part of the scroll view so they scroll away. Keep only the totals bar pinned. Check that the plate and legend fit on first open at 390 pt and 430 pt widths.</p>
+      </div>
+      <div class="thumb"><img class="shot" src="shots/17_thali_classic.jpg" alt="Thali with the bottom cut off" loading="lazy"><img class="shot" src="shots/18_thali_scrolled.jpg" alt="Thali scrolled, top cut off" loading="lazy"><figcaption>Top or bottom, never both</figcaption></div>
+    </article>
+  </div>
+  <figure class="wide">
+    <div class="scroll"><img src="shots/07_reveal_strip.jpg" alt="Twelve frames of the onboarding reveal from step 4 to the settled ring" loading="lazy"></div>
+    <figcaption>For contrast, the one moment that plays alone: V8's reveal from step 4 to the settled ring (frames from a screen recording). This is the standard the other four should meet.</figcaption>
+  </figure>
+</section>
+
+<section id="findings">
+  <div class="section-head">
+    <p class="eyebrow">Other findings</p>
+    <h2>Consistency left over from V0</h2>
+  </div>
+  <div class="findings">
+    <article class="finding">
+      <div class="body">
+        <div class="head"><span class="id">O-1</span><h3>Numbers and dates still come in several formats (F6)</h3><span class="sev med">medium</span></div>
+        <ul>
+          <li>Duration: "1 min 46 sec" on the summary, "1:46" on the share card.</li>
+          <li>Grams: "~22.1g" on thali badges and "P: 6.0g C: 36.0g F: 1.0g" in thali dish rows. Elsewhere it's "22 g".</li>
+          <li>Dates: "Wed, Oct 14" (Training next workout, Today "Planned for…") vs "Sun, 11 Oct" and "Sun 11 Oct" elsewhere.</li>
+          <li>"scheduled for Tomorrow." with a capital T, in the start-early dialog.</li>
+        </ul>
+        <p class="small muted">89 <code>toStringAsFixed</code> calls remain in widget and screen files. The lint-style test that V0 proposed would catch these.</p>
+      </div>
+      <div class="thumb"><img class="shot" src="shots/42_summary_full.jpg" alt="Duration wrapping" loading="lazy"><figcaption>"1 min 46 / sec"</figcaption></div>
+    </article>
+    <article class="finding">
+      <div class="body">
+        <div class="head"><span class="id">O-2</span><h3>Headers and card widths (F7)</h3><span class="sev med">medium</span></div>
+        <ul>
+          <li>Progress is still in Title Case: "Period Comparison", "Training Activity", "Daily Avg Calories", "Total Volume".</li>
+          <li>The thali uses Title Case buttons and copy: "Add First Dish", "Save Template", "Log Thali", "Your Thali Plate is Empty".</li>
+          <li>The player still shows "EXERCISE 1 OF 5" in ALL CAPS (<code>b02_player_cards.dart:312</code>).</li>
+          <li>Plan Library's "Browse plans" card and Plan overview's "At a glance", "Plan progress" and "Workouts from this plan" shrink to their content instead of spanning the width.</li>
+          <li>"Milestones &amp; Badges" on Progress opens a screen called "Achievements &amp; Badges".</li>
+        </ul>
+      </div>
+      <div class="thumb"><img class="shot" src="shots/24_plan.jpg" alt="Plan overview with narrow cards" loading="lazy"><figcaption>Cards of different widths</figcaption></div>
+    </article>
+    <article class="finding">
+      <div class="body">
+        <div class="head"><span class="id">O-3</span><h3>Player details</h3><span class="sev low">low</span></div>
+        <ul>
+          <li>The current set shows a check-circle before it's logged ("Set 1 · 8–12 reps ✓"), which reads as done.</li>
+          <li>The next exercise's pictures flash as empty grey "Start / Peak" tiles before the WebPs decode.</li>
+          <li>The muscle map figures are about 50 pt tall, and the context card touches the Log set button with no gap.</li>
+          <li>Log set is below the fold on the first set because the pictures take the top of the screen.</li>
+        </ul>
+      </div>
+      <div class="thumb"><img class="shot" src="shots/30_player.jpg" alt="Player with pictures" loading="lazy"><figcaption>Set 1 already ticked</figcaption></div>
+    </article>
+    <article class="finding">
+      <div class="body">
+        <div class="head"><span class="id">O-4</span><h3>Smaller copy and flow issues</h3><span class="sev low">low</span></div>
+        <ul>
+          <li>"Use this plan" now confirms three ways at once: a top banner, an inline "This is your current plan" pill and a snackbar. "This plan has no scheduled workouts yet" stays stale underneath.</li>
+          <li>Training's "Next workout · Full Body A · Tomorrow" opens the Calendar on today's Rest Day, not on tomorrow's workout.</li>
+          <li>After "Log food" on Today, the Food and Training tabs show a back chevron at their root.</li>
+          <li>The share card's lower 40 % is empty. The concept carried the week pill and a "vs last time" line there.</li>
+          <li>Today light: "Next up" over "Next: Full Body B", with the icon alone in a left column.</li>
+          <li>Breakfast's kcal shows in orange, the same orange as fat, two rows below the fat bar (the plan flagged this risk).</li>
+        </ul>
+      </div>
+      <div class="thumb"><img class="shot" src="shots/27_next.jpg" alt="Calendar showing rest day" loading="lazy"><figcaption>Tapped tomorrow's workout</figcaption></div>
+    </article>
+  </div>
+</section>
+
+<section id="principles">
+  <div class="section-head">
+    <p class="eyebrow">Against the direction</p>
+    <h2>The six principles from 8 Oct</h2>
+  </div>
+  <div class="principles">
+    <div><h3>Dark first, with depth <span class="rate yes">met</span></h3><p class="small">Dark is the first-run theme, sections have a top highlight, and hero cards are raised. Light uses shadows, as decided.</p></div>
+    <div><h3>Continuous corners <span class="rate yes">met</span></h3><p class="small">Squircles on surfaces, sheets and buttons. 119 direct <code>BorderRadius.circular</code> sites remain to migrate as files are touched, which the plan allows.</p></div>
+    <div><h3>Numbers are the hero <span class="rate part">mostly</span></h3><p class="small">Today ring, onboarding target, rest timer and summary hero all lead with one big tabular number. Progress is still numbers in boxes, and formats still vary (O-1).</p></div>
+    <div><h3>Colour means one thing <span class="rate part">mostly</span></h3><p class="small">Protein teal, carbs amber, fat orange with the half-drop, fibre violet, everywhere they're coloured. The Food diary macro row and thali badges don't use the map. Breakfast orange sits next to fat orange.</p></div>
+    <div><h3>One reward moment per flow <span class="rate no">not met</span></h3><p class="small">The moments exist but overlap or play unseen (M-1 to M-4). This is the main gap between what was built and the feel we were after.</p></div>
+    <div><h3>Specifically Indian <span class="rate part">mostly</span></h3><p class="small">The steel thali carries this, and the welcome tagline names Indian meals. FSSAI veg and non-veg marks on foods, from the same review, weren't planned and aren't there.</p></div>
+  </div>
+  <p class="prose muted small">Outside the plan but rated weak or plain on 8 Oct and still unchanged: Progress (no charts, mixed card styles), the Today setup card (half the first screen, three buttons), plan cover art, and the Settings profile header.</p>
+</section>
+
+<section id="merge">
+  <div class="section-head">
+    <p class="eyebrow">Merge readiness</p>
+    <h2>Four of six open PRs aren't ready</h2>
+  </div>
+  <div class="table-scroll">
+    <table>
+      <thead><tr><th>PR</th><th>CI</th><th>Blocker</th></tr></thead>
+      <tbody>
+        <tr><td>#91 V4</td><td><span class="rate yes">green</span></td><td>Conflicts with main since V7 merged: <code>Info.plist</code> motion string and a <code>pubspec.yaml</code> comment. Take main's wording ("thali plate and badges").</td></tr>
+        <tr><td>#92 V5</td><td><span class="rate no">red</span></td><td><code>icon_button_tooltip_test</code> flags <code>b07_exercise_context.dart:664</code>. That's a false positive: its regex matches <code>IconButton.styleFrom(</code> as a button. Fix the regex to skip <code>styleFrom</code>. Two <code>pv1_prod02</code> tests fail (technique disclosure missing from the details sheet). Goldens were never refreshed (a golden test looks for "REST").</td></tr>
+        <tr><td>#93 V3</td><td><span class="rate no">goldens</span></td><td>Run <code>update-goldens.yml</code>. Fix M-1 first, since it changes the hero.</td></tr>
+        <tr><td>#94 V6</td><td><span class="rate no">goldens</span></td><td>Run <code>update-goldens.yml</code> after M-2.</td></tr>
+        <tr><td>#96 V8</td><td><span class="rate yes">green</span></td><td>None. Its description still says the welcome needs a Rive file; #97 replaced that.</td></tr>
+        <tr><td>#97 V8</td><td><span class="rate part">none run</span></td><td>Conflicts with its base on <code>PREMIUM_REDESIGN_PLAN.md</code> (tracker rows for V7/V8).</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="prose small"><b>Combined build:</b> all six merge into main with only those two comment conflicts. <code>flutter analyze</code> is clean. The full suite (<code>--exclude-tags golden</code>, RepDB files removed to match CI): <span id="suite">3,012 passed, 3 failed</span>. All three are in V5's area: the tooltip false positive above, and two <code>pv1_prod02_exercise_media_test</code> cases that expect the technique disclosure in the exercise details sheet, which V5's sheet no longer shows. They fail with or without the picture files, so #92's "2,957 passed" doesn't reproduce here.</p>
+  <p class="prose small muted">The tracker in the plan doc on main still lists V0 "In progress (#86)" and V1–V6 "Not started". Update it in the next PR that touches the plan.</p>
+</section>
+
+<section id="next">
+  <div class="section-head">
+    <p class="eyebrow">What to do next</p>
+    <h2>Order and gates</h2>
+  </div>
+  <ol class="steps">
+    <li><div><h3>Choreograph the moments</h3><p class="small">M-1 to M-4 in one PR on top of the combined branch, because they cross V3, V5, V6 and V7. Gate: a recording of one real session (log food, return to Today, three sets, finish) where each moment plays once, alone and in view.</p></div></li>
+    <li><div><h3>Give the thali its screen</h3><p class="small">M-5 in #91: scrollable header, plate and legend visible on open, banner reserved from the first frame, no full-screen spinner on preset. Gate: simulator shots at 320, 390 and 430 pt showing the whole plate.</p></div></li>
+    <li><div><h3>Make the PRs mergeable</h3><p class="small">Tooltip-test regex, the #91 and #97 conflicts, golden refresh on #92–#94, tracker update. Gate: CI green on all six.</p></div></li>
+    <li><div><h3>Consistency sweep</h3><p class="small">O-1 to O-4: one duration and date formatter, sentence case on Progress, thali and player, full-width cards, the current-set icon, picture placeholders. Add the <code>toStringAsFixed</code> lint test from V0.</p></div></li>
+    <li><div><h3>Feel check on a real iPhone</h3><p class="small">Haptics, 120 Hz, thali and medal tilt, and frame rate on preset load can't be judged on the simulator. This is your gate before merging V4 and V5.</p></div></li>
+  </ol>
+</section>
+
+<section id="decisions">
+  <div class="section-head">
+    <p class="eyebrow">Your decisions</p>
+    <h2>Decided, 11 Oct</h2>
+  </div>
+  <div class="decisions">
+    <div class="decision"><b>1. End of workout: the summary hero leads</b><p class="small">Tick, count-up and week pill play first. Unlocks show as a "2 badges unlocked" row on the summary that opens the medal sheet on tap. No automatic sheet.</p></div>
+    <div class="decision"><b>2. Rest alerts: asked from inside the takeover</b><p class="small">A quiet "Alert me when rest ends" row in the takeover on the first rest. The system prompt appears only when it's tapped.</p></div>
+    <div class="decision"><b>3. Progress gets a short V9</b><p class="small">One stat component and a weekly volume chart, after the five steps above. TP-9 (muscle heatmap) stays in the training plan.</p></div>
+  </div>
+</section>
+
+<footer class="foot">
+  <p>Checked on a scratch branch that merges main (d34aa31) with #91, #92, #93, #94 and #97 (which includes #96). Debug build on the iPhone 17 simulator (iOS 26.5), fresh install, dark then light. Motion was checked from screen recordings, decimated to frames. Code facts come from the merged tree.</p>
+  <p>Not covered: real-device haptics, 120 Hz and tilt; Dynamic Type at large sizes; the thali and player in light mode; Settings; Android; Reduce Motion on device (the PRs carry tests for it).</p>
+</footer>
+
+</div>

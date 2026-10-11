@@ -572,7 +572,7 @@ void main() {
         // Header
         expect(find.text('Lunch Thali'), findsOneWidget);
         // Empty plate state
-        expect(find.text('Your Thali Plate is Empty'), findsOneWidget);
+        expect(find.text('Your plate is empty'), findsOneWidget);
         // Archetype presets
         expect(
           find.byKey(const Key('thali_preset_north_indian_classic')),

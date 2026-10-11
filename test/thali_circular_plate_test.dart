@@ -224,6 +224,7 @@ NutritionThaliItem _buildItem({
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  group('plate fits the screen', _plateFitsTests);
 
   const colors = B05SemanticColors.dark;
 
@@ -722,7 +723,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
 
         // Initial empty state
-        expect(find.text('Your Thali Plate is Empty'), findsOneWidget);
+        expect(find.text('Your plate is empty'), findsOneWidget);
         expect(
           find.byKey(const Key('thali_add_item_empty_button')),
           findsOneWidget,
@@ -1045,6 +1046,43 @@ void main() {
   });
 }
 
+// Review M-5: the whole plate and its legend are on screen when the preset
+// opens, above the pinned totals bar, on common iPhone sizes.
+void _plateFitsTests() {
+  for (final (name, size, padding) in [
+    (
+      '390 pt',
+      const Size(390, 844),
+      const EdgeInsets.only(top: 47, bottom: 34),
+    ),
+    (
+      '402 pt',
+      const Size(402, 874),
+      const EdgeInsets.only(top: 62, bottom: 34),
+    ),
+    (
+      '430 pt',
+      const Size(430, 932),
+      const EdgeInsets.only(top: 59, bottom: 34),
+    ),
+  ]) {
+    testWidgets('the whole plate fits on open, $name', (tester) async {
+      await _pumpClassic(
+        tester,
+        theme: AppTheme.darkTheme,
+        size: size,
+        padding: padding,
+      );
+      final plate = tester.getRect(find.byType(CircularThaliPlate));
+      final totals = tester.getRect(find.byType(ThaliNutritionSummaryBar));
+      expect(plate.top, greaterThanOrEqualTo(0));
+      expect(plate.bottom, lessThanOrEqualTo(totals.top), reason: '$plate');
+      expect(find.textContaining('Protein'), findsWidgets);
+      expect(tester.takeException(), isNull);
+    });
+  }
+}
+
 /// Steel thali goldens (PREMIUM_REDESIGN_PLAN § 6.3): the classic preset
 /// through the real builder at three phone widths, and the empty and
 /// overflow plates, each in dark and light. Images come from CI's Linux
@@ -1054,6 +1092,18 @@ Future<void> _goldenClassic(
   required ThemeData theme,
   required Size size,
   required String file,
+}) async {
+  await _pumpClassic(tester, theme: theme, size: size);
+  await expectLater(find.byType(CircularThaliPlate), matchesGoldenFile(file));
+}
+
+/// The real builder with the North Indian Classic preset loaded. [padding]
+/// stands in for the status bar and home indicator.
+Future<void> _pumpClassic(
+  WidgetTester tester, {
+  required ThemeData theme,
+  required Size size,
+  EdgeInsets padding = EdgeInsets.zero,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1.0;
@@ -1087,7 +1137,12 @@ Future<void> _goldenClassic(
         ).overrideWith((ref) => controller),
       ],
       child: MediaQuery(
-        data: MediaQueryData(size: size, disableAnimations: true),
+        data: MediaQueryData(
+          size: size,
+          padding: padding,
+          viewPadding: padding,
+          disableAnimations: true,
+        ),
         child: MaterialApp(
           theme: theme,
           home: const ThaliBuilderScreen(mealCategory: 'lunch'),
@@ -1106,7 +1161,6 @@ Future<void> _goldenClassic(
     () => Future<void>.delayed(const Duration(milliseconds: 200)),
   );
   await tester.pump(const Duration(milliseconds: 600));
-  await expectLater(find.byType(CircularThaliPlate), matchesGoldenFile(file));
 }
 
 Future<void> _goldenPlate(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/nutrition_thali.dart';
+import '../../../core/presentation/consumer_number_label.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
 
@@ -154,31 +155,31 @@ class ThaliNutritionSummaryBar extends StatelessWidget {
                       _MacroBadge(
                         label: 'P',
                         value: protein != null
-                            ? '${isPartial ? '~' : ''}${(protein * 10).round() / 10}g'
-                            : (hasItems ? '...' : '0g'),
+                            ? '${isPartial ? '~' : ''}${ConsumerNumberLabel.grams(protein)}'
+                            : (hasItems ? '...' : '0 g'),
                         role: colors.protein,
                       ),
                       const SizedBox(width: 8),
                       _MacroBadge(
                         label: 'C',
                         value: carbs != null
-                            ? '${isPartial ? '~' : ''}${(carbs * 10).round() / 10}g'
-                            : (hasItems ? '...' : '0g'),
+                            ? '${isPartial ? '~' : ''}${ConsumerNumberLabel.grams(carbs)}'
+                            : (hasItems ? '...' : '0 g'),
                         role: colors.carbs,
                       ),
                       const SizedBox(width: 8),
                       _MacroBadge(
                         label: 'F',
                         value: fat != null
-                            ? '${isPartial ? '~' : ''}${(fat * 10).round() / 10}g'
-                            : (hasItems ? '...' : '0g'),
+                            ? '${isPartial ? '~' : ''}${ConsumerNumberLabel.grams(fat)}'
+                            : (hasItems ? '...' : '0 g'),
                         role: colors.fat,
                       ),
                       if (fiber != null) ...[
                         const SizedBox(width: 8),
                         _MacroBadge(
                           label: 'Fb',
-                          value: '${(fiber * 10).round() / 10}g',
+                          value: ConsumerNumberLabel.grams(fiber),
                           role: colors.fibre,
                         ),
                       ],
@@ -196,7 +197,7 @@ class ThaliNutritionSummaryBar extends StatelessWidget {
                 key: const Key('thali_save_template_button'),
                 onPressed: hasItems && !isLoading ? onSaveTemplate : null,
                 icon: const Icon(Icons.bookmark_border_rounded, size: 18),
-                label: const Text('Save Template'),
+                label: const Text('Save template'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: colors.textSecondary,
                   side: BorderSide(color: colors.border),
@@ -225,7 +226,7 @@ class ThaliNutritionSummaryBar extends StatelessWidget {
                           size: 20,
                         ),
                   label: Text(
-                    isLoading ? 'Logging...' : 'Log Thali',
+                    isLoading ? 'Logging...' : 'Log thali',
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                   style: ElevatedButton.styleFrom(

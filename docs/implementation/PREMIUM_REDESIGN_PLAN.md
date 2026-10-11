@@ -1,6 +1,6 @@
 # Premium redesign: tokens, motion and five signature moments
 
-**Status:** approved direction (Ayush, 2026-10-08) · **Owner:** Claude (code), Ayush (review, device feel checks) · **Last updated:** 2026-10-08 (V0 open as #86; open questions answered)
+**Status:** approved direction (Ayush, 2026-10-08) · **Owner:** Claude (code), Ayush (review, device feel checks) · **Last updated:** 2026-10-11 (V0–V8 merged; review fixes M-1 to M-5 in § 13)
 
 Related:
 - [Visual review, 8 Oct](../audit/visual-review-2026-10-08/index.html) (artifact https://claude.ai/artifact/1zPcdBAuptLj8GV8SMHAVz): the findings, concepts and screenshots this plan builds on. F1–F8 and concepts A–G are referenced by ID below.
@@ -16,15 +16,15 @@ Update this table in every PR that touches the redesign. Status values: Not star
 
 | ID | Work item | Concept / finding | Depends on | Gate before merge | Status |
 |---|---|---|---|---|---|
-| V0 | Contrast and correctness: `actionFill`, thali labels, dark default, current-plan state, stable search, number formats, headers | F1–F7 | — | Goldens refreshed | In progress (#86) |
-| V1 | Tokens 2.0: radii and squircles, three surface levels, tabular figures, text roles, one section-header style, macro colour map, remove `percent_indicator` | F7, F8, TP-11 | V0 | Contrast tests extended; goldens | Not started |
-| V2 | Motion kit: `animations`, `IndiFitMotion` presets, Add → tick, count-ups, container and shared-axis transitions | TP-10 | V1 | Reduce Motion and haptic tests; device feel check | Not started |
-| V4 | Steel thali: shaded plate, filled katoris, legend, drop-in | A | V1, V2 | Prototype screenshots approved; device feel check | Not started |
-| V5 | Player: rest takeover, exercise-done beat, exercise images, muscle map | B, G | V2; RepDB import (§ 9) | Credits updated; device feel check | Not started |
-| V3 | Today ring with depth and log feedback | E | V2 | Goldens | Not started |
-| V6 | Summary hero and share card | C | V2 | Share card checked in Instagram/WhatsApp | Not started |
+| V0 | Contrast and correctness: `actionFill`, thali labels, dark default, current-plan state, stable search, number formats, headers | F1–F7 | — | Goldens refreshed | Merged (#86) |
+| V1 | Tokens 2.0: radii and squircles, three surface levels, tabular figures, text roles, one section-header style, macro colour map, remove `percent_indicator` | F7, F8, TP-11 | V0 | Contrast tests extended; goldens | Merged (#88) |
+| V2 | Motion kit: `animations`, `IndiFitMotion` presets, Add → tick, count-ups, container and shared-axis transitions | TP-10 | V1 | Reduce Motion and haptic tests; device feel check | Merged (#89) |
+| V4 | Steel thali: shaded plate, filled katoris, legend, drop-in | A | V1, V2 | Prototype screenshots approved; device feel check | Merged (#91); whole plate on screen in M-5 (§ 13) |
+| V5 | Player: rest takeover, exercise-done beat, exercise images, muscle map | B, G | V2; RepDB import (§ 9) | Credits updated; device feel check | Merged (#92) |
+| V3 | Today ring with depth and log feedback | E | V2 | Goldens | Merged (#93) |
+| V6 | Summary hero and share card | C | V2 | Share card checked in Instagram/WhatsApp | Merged (#94) |
 | V7 | Medals: 3D badge art, tilt, sheen | D | V1, V2 | Art licence in manifest | Merged (#95) |
-| V8 | Onboarding: animated mark, ruler pickers, target reveal | F | V2 | IPA size check (no new assets or packages) | In progress (#96 rulers, reveal, no Skip on step 5; #97 welcome (this PR)) |
+| V8 | Onboarding: animated mark, ruler pickers, target reveal | F | V2 | IPA size check (no new assets or packages) | Merged (#96, #97) |
 
 **Order:** V0 → V1 → V2 → V4 → V5 → V3 → V6 → V7 → V8 (decision 5: the thali comes first after V0–V2). V3 and V6 are small and can move earlier if a slot opens. Nothing here has a date; only the store-build freeze applies.
 
@@ -322,3 +322,20 @@ Size budget for V4–V8 combined: +3 MB to the release IPA, measured in each PR.
 ## 12. Open questions for Ayush
 
 None open. The four questions from the first draft (fat icon, light-theme depth, thali tilt, share card contents) were answered on 2026-10-08; see decisions 6–9 in § 1.
+
+---
+
+## 13. After the build: the 11 Oct review
+
+All of V0–V8 is merged. The [redesign review](../audit/redesign-review-2026-10-11/index.html) (artifact https://claude.ai/artifact/2Bhtimg9fXFfvvvmRqFphP) checked the combined build on the simulator. The look matched the plan; the timing did not: reward moments played off-screen or on top of each other.
+
+| ID | Finding | Fix | Status |
+|---|---|---|---|
+| M-1 | Today's log chip and count-up played while Today was hidden (a second tab scaffold pushed by `/food`) | Pushed scaffolds return to the root tab; hidden tabs mute tickers and the count-up and chip wait to be shown | Merged (#93) |
+| M-2 | The medal sheet covered the summary hero | Unlocks wait in a "2 badges unlocked" row that opens the sheet (decision, 11 Oct) | Merged (#94) |
+| M-3 | The exercise-done beat sat under the rest takeover | The takeover opens when the beat ends | Merged (#92) |
+| M-4 | The alert permission sheet covered the first takeover | A row inside the rest timer; asked again later if left unanswered (decision, 11 Oct) | Merged (#92) |
+| M-5 | The whole thali never fit on screen | Only the plate/list row and katori question sit above the plate; the plate sizes to the screen; no full-screen spinner on a preset | In progress (this PR) |
+| O-1 – O-4 | Number and date formats, Title Case, card widths, player details | Consistency sweep | Not started (thali labels done in M-5) |
+| V9 | Progress: one stat component and a weekly volume chart (decision, 11 Oct) | — | Not started |
+
