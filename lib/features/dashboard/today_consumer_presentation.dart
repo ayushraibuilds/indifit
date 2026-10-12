@@ -509,7 +509,7 @@ class TodayNutritionPresentation {
       return TodayMealPresentation(
         mealType: mealType,
         label: label,
-        detail: 'Tap + to add',
+        detail: 'Nothing yet',
         calorieLabel: '—',
         logged: false,
         nutritionIncomplete: false,

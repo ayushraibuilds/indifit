@@ -137,7 +137,7 @@ void main() {
       // Full ring module: center metric, macro ring rows, no target math.
       expect(find.text('650'), findsOneWidget);
       expect(find.text('kcal logged'), findsOneWidget);
-      expect(find.text('Calories logged'), findsOneWidget);
+      expect(find.text('No target set'), findsOneWidget);
       expect(find.text('No daily target for this date'), findsNothing);
       expect(find.text('Remaining'), findsNothing);
 
@@ -418,7 +418,7 @@ void main() {
       // Ring center still reports the known calories.
       expect(find.text('300'), findsOneWidget);
       expect(find.text('kcal logged'), findsOneWidget);
-      expect(find.text('Calories logged'), findsOneWidget);
+      expect(find.text('No target set'), findsOneWidget);
       // Missing macros read as a quiet dash, never a zero, and stay
       // announced as unavailable.
       expect(

@@ -218,9 +218,7 @@ class _QuickAddMacrosSheetState extends ConsumerState<QuickAddMacrosSheet> {
 
       final consumptionId = 'quick-add-consumption::${const Uuid().v4()}';
       final commandId = 'quick-add-command::${const Uuid().v4()}';
-      final itemLabel = description.isNotEmpty
-          ? description
-          : 'Quick Add (${calories.round()} kcal)';
+      final itemLabel = description.isNotEmpty ? description : 'Quick add';
       final foodId = 'food::quick_add::$consumptionId';
 
       final db = ref.read(databaseProvider);

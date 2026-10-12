@@ -147,8 +147,13 @@ String? todayLoggedChipLabel({
   ];
   final delta = kcal - previousKcal;
   if (added.isEmpty || delta.round() <= 0) return null;
+  // Older quick adds were named "Quick Add (260 kcal)", which repeats the
+  // amount already in the chip.
   final what = added.length == 1
-      ? added.single.$2.trim()
+      ? added.single.$2
+            .replaceFirst(RegExp(r'\s*\(\s*[\d,.]+\s*kcal\s*\)\s*$'), '')
+            .replaceFirst(RegExp('^Quick Add\$'), 'Quick add')
+            .trim()
       : '${added.length} foods';
   final amount = '+${formatTodayMetric(delta)} kcal';
   return what.isEmpty ? amount : '$amount · $what';
@@ -376,7 +381,7 @@ class _TodayNutritionHeroBody extends StatelessWidget {
                   onOpenFoodGuidance: onOpenFoodGuidance,
                 ),
                 B05ActionButton(
-                  label: 'Set a target',
+                  label: 'View targets',
                   emphasis: B05ActionEmphasis.tertiary,
                   hint: 'Opens Goal & targets for this date.',
                   onPressed: onOpenTargetSetup,
@@ -473,7 +478,7 @@ class TodaySparseNutritionModule extends StatelessWidget {
                   onOpenFoodGuidance: onOpenFoodGuidance,
                 ),
                 B05ActionButton(
-                  label: 'Set a target',
+                  label: 'View targets',
                   emphasis: B05ActionEmphasis.tertiary,
                   hint: 'Open Goal & targets for this date.',
                   onPressed: onOpenTargetSetup,
@@ -625,7 +630,7 @@ class CalorieRing extends StatelessWidget {
               : '${formatTodayMetric(metric.targetValue! - (metric.pointValue ?? 0))} left'
         : noConsumption
         ? 'No meals yet'
-        : 'Calories logged';
+        : 'No target set';
     final statusColor = isOver
         ? colors.danger.indicator
         : incomplete && !metric.isAvailable

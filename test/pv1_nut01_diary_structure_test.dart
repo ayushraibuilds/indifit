@@ -479,7 +479,7 @@ void main() {
           (m) => m.mealType == 'dinner',
         );
         expect(dinner.logged, isFalse);
-        expect(dinner.detail, 'Tap + to add');
+        expect(dinner.detail, 'Nothing yet');
       },
     );
   });
