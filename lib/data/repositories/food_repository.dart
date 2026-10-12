@@ -127,6 +127,22 @@ class FoodRepository {
     return (items: rows, matchedTerms: terms);
   }
 
+  /// Catalogue foods the index found that have no legacy `food_items` row:
+  /// pack foods added after the legacy seed, such as the USDA staples of
+  /// pack 3. The food screen lists them as catalogue options.
+  Future<List<CatalogSearchHit>> searchCatalogueOnlyFoods(String query) async {
+    try {
+      final hits = await CatalogSearchIndex(_db).search(query);
+      return [
+        for (final hit in hits)
+          if (hit.legacyFoodItemId == null) hit,
+      ];
+    } catch (e) {
+      AppLogger.warning('Food search index query failed: $e');
+      return const [];
+    }
+  }
+
   /// Reads only explicit, reviewed B03 identity metadata for search rows.
   /// Missing or unresolved mappings fail open and remain independent results.
   Future<Map<int, FoodSearchPresentationAuthority>>

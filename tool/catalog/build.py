@@ -31,6 +31,7 @@ import sys
 from pathlib import Path
 
 import yaml
+from collections import Counter
 
 ROOT = Path(__file__).resolve().parents[2]
 CATALOG = ROOT / "tool/catalog"
@@ -44,9 +45,27 @@ SPOTCHECK = CATALOG / "spotcheck_50.csv"
 SPOTCHECK_SEED = 20261007
 
 FORMAT = 1
-LATEST = 2
+LATEST = 3
 MIN_APP_BUILD = 1
 SOURCE_ID = "indifit-catalogue-v1"
+
+# Pack 3 adds foods computed from USDA FoodData Central SR Legacy (public
+# domain): sources/usda-staples-v1/ (12 Oct 2026 staples review).
+STAPLES = CATALOG / "sources/usda-staples-v1/foods.csv"
+STAPLES_VERSION = 3
+STAPLES_SOURCE = {
+    "id": "usda-staples-v1",
+    "licence": "CC0-1.0",
+    "attribution": "USDA FoodData Central, SR Legacy",
+    "review": "unreviewed",
+}
+STAPLES_FACTS = {
+    "kcal": "energy",
+    "protein_g": "protein",
+    "carbs_g": "carbohydrate",
+    "fat_g": "fat",
+    "fibre_g": "fibre",
+}
 
 GRAM_UNITS = {"g": 1.0, "gram": 1.0, "grams": 1.0, "kg": 1000.0}
 MILLILITRE_UNITS = {"ml": 1.0, "millilitre": 1.0, "l": 1000.0, "litre": 1000.0}
@@ -345,11 +364,84 @@ def build_catalogue(version, rows=None, overlay_dir=OVERLAYS, apply_fixes=True):
     return foods, retirements
 
 
+def _alias_key(text):
+    return re.sub(r"\s+", " ", re.sub(r"[^\w\s]", " ", text.lower())).strip()
+
+
+def staple_foods(existing, path=STAPLES):
+    """Pack foods for the USDA staples source (pack 3 on).
+
+    Each serving's grams are the weight the source recipe states for that food
+    ("1 piece (25 g)"), marked `grams_basis: source-stated`. Aliases that name
+    another food, or that two staples share, are dropped: an alias names
+    exactly one food.
+    """
+    rows = list(csv.DictReader(Path(path).open(encoding="utf-8")))
+    taken = Counter()
+    for food in existing:
+        taken[_alias_key(food["display_name"])] += 2
+        for alias in food.get("aliases") or []:
+            taken[_alias_key(alias["text"])] += 2
+    for row in rows:
+        taken[_alias_key(row["name"])] += 2
+        for text in filter(None, row["aliases"].split("|")):
+            taken[_alias_key(text)] += 1
+    foods = []
+    for row in rows:
+        values = {
+            key: _round(float(row[column])) for column, key in STAPLES_FACTS.items()
+        }
+        serving = {
+            "id": "default",
+            "default": True,
+            "unit": row["serving_unit"],
+            "amount": _number(float(row["serving_amount"])),
+            "grams": _number(float(row["serving_grams"])) if row["serving_grams"] else None,
+        }
+        if serving["grams"] is not None and serving["unit"] != "g":
+            serving["grams_basis"] = "source-stated"
+        aliases = []
+        if row["name_hindi"].strip():
+            aliases.append({"text": row["name_hindi"].strip(), "locale": "hi"})
+        for text in filter(None, row["aliases"].split("|")):
+            if taken[_alias_key(text)] == 1:
+                aliases.append({"text": text, "locale": "hi-Latn"})
+        foods.append(
+            {
+                "id": row["id"],
+                "display_name": row["name"],
+                "kind": "canonical",
+                "variant_of": None,
+                "variant_label": None,
+                "tags": [],
+                "lifecycle": "active",
+                "source_ref": f"usda-staples-v1:{row['name'].lower()}",
+                "category": row["category"],
+                "source_id": STAPLES_SOURCE["id"],
+                "facts": {"basis": row["basis"], "values": values},
+                "servings": [serving],
+                "aliases": aliases,
+            }
+        )
+    return foods
+
+
 def build_pack(version, rows=None, overlay_dir=OVERLAYS, apply_fixes=True):
     rows = load_source_rows() if rows is None else rows
     if version == 1:
         return build_pack_v1(rows)
     foods, retirements = build_catalogue(version, rows, overlay_dir, apply_fixes)
+    sources = [
+        {
+            "id": SOURCE_ID,
+            "licence": "proprietary",
+            "attribution": None,
+            "review": "unreviewed",
+        }
+    ]
+    if version >= STAPLES_VERSION:
+        foods = sorted(foods + staple_foods(foods), key=lambda food: food["id"])
+        sources.append(dict(STAPLES_SOURCE))
     return {
         "format": FORMAT,
         "version": version,
@@ -357,14 +449,7 @@ def build_pack(version, rows=None, overlay_dir=OVERLAYS, apply_fixes=True):
         "kind": "full",
         "min_app_build": MIN_APP_BUILD,
         "registry_version": _registry_version(),
-        "sources": [
-            {
-                "id": SOURCE_ID,
-                "licence": "proprietary",
-                "attribution": None,
-                "review": "unreviewed",
-            }
-        ],
+        "sources": sources,
         "foods": foods,
         "retire": retirements,
     }
@@ -424,7 +509,14 @@ def spotcheck_csv(pack, count=50, seed=SPOTCHECK_SEED):
     The values are IndiFit estimates; the empty columns are for the reviewer.
     """
     retired = {entry["id"] for entry in pack["retire"]}
-    active = [food for food in pack["foods"] if food["id"] not in retired]
+    # The sample is of IndiFit's own estimates; sourced foods (USDA staples)
+    # carry their reference already, and keeping them out keeps the sample
+    # a reviewer may be working through unchanged.
+    active = [
+        food
+        for food in pack["foods"]
+        if food["id"] not in retired and food["source_id"] == SOURCE_ID
+    ]
     sample = sorted(random.Random(seed).sample(active, count), key=lambda f: f["id"])
     buffer = io.StringIO()
     writer = csv.writer(buffer, lineterminator="\n")

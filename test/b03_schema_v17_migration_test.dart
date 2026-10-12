@@ -357,7 +357,7 @@ void main() {
         expect(db.schemaVersion, kCurrentSchemaVersion);
         final after = await B03LogicalSnapshot.capture(db);
         before.assertLogicallyEquals(after);
-        expect(await db.select(db.nutritionFoods).get(), hasLength(598));
+        expect(await db.select(db.nutritionFoods).get(), hasLength(722));
         // The 15 manifest aliases; the bundled pack adds its own (CAT-6).
         final aliases = await db.select(db.nutritionFoodAliases).get();
         expect(

@@ -135,6 +135,48 @@ class BuiltPacksTest(unittest.TestCase):
         self.assertEqual(owners[("arhar dal / yellow dal tadka", "hi-Latn")], "Toor Dal / Yellow Dal Tadka")
         self.assertEqual(owners[("whole wheat phulka / chapati", "hi-Latn")], "Whole Wheat Roti / Chapati")
 
+    def test_pack_3_adds_the_usda_staples_and_changes_nothing_else(self):
+        v2 = {food["id"]: food for food in self.packs[2]["foods"]}
+        v3 = {food["id"]: food for food in self.packs[3]["foods"]}
+        self.assertEqual({k: v for k, v in v3.items() if k in v2}, v2)
+        staples = [food for food in v3.values() if food["id"] not in v2]
+        self.assertEqual(len(staples), 124)
+        self.assertTrue(all(f["source_id"] == "usda-staples-v1" for f in staples))
+        self.assertTrue(all(f["id"].startswith("food-usda-") for f in staples))
+        self.assertEqual(self.packs[3]["retire"], self.packs[2]["retire"])
+        source = {s["id"]: s for s in self.packs[3]["sources"]}["usda-staples-v1"]
+        self.assertEqual(source["licence"], "CC0-1.0")
+
+    def test_the_delta_on_pack_2_equals_pack_3(self):
+        delta = build.decode(self.outputs[build.PACKS / "v3/3-from-2.json.gz"])
+        self.assertEqual(delta["base"], 2)
+        self.assertEqual(validate.check_delta(self.packs[2], delta, self.packs[3]), [])
+
+    def test_staple_servings_state_their_grams(self):
+        foods = {food["display_name"]: food for food in self.packs[3]["foods"]}
+
+        def serving(name):
+            s = foods[name]["servings"][0]
+            return s["amount"], s["unit"], s.get("grams"), s.get("grams_basis")
+
+        self.assertEqual(serving("Banana"), (1, "piece", 118, "source-stated"))
+        self.assertEqual(serving("Khichdi"), (1, "serving", 200, "source-stated"))
+        self.assertEqual(serving("Kheer"), (1, "katori", 150, "source-stated"))
+        self.assertEqual(serving("Tea with Milk and Sugar"), (150, "ml", None, None))
+        self.assertEqual(foods["Banana"]["facts"]["basis"], "per_100_grams")
+        self.assertEqual(foods["Banana"]["facts"]["values"]["energy"], 89.0)
+
+    def test_staple_aliases_name_one_food(self):
+        owners = {}
+        for food in self.packs[3]["foods"]:
+            for alias in food["aliases"]:
+                key = (alias["text"].lower(), alias["locale"])
+                self.assertNotIn(key, owners)
+                owners[key] = food["display_name"]
+        self.assertEqual(owners[("केला", "hi")], "Banana")
+        self.assertEqual(owners[("kela", "hi-Latn")], "Banana")
+        self.assertNotIn(("laddu", "hi-Latn"), owners)  # two ladoos share it
+
     def test_spotcheck_has_50_active_foods(self):
         rows = self.outputs[build.SPOTCHECK].decode().strip().split("\n")
         self.assertEqual(len(rows), 51)

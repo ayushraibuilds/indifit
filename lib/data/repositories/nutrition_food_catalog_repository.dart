@@ -66,6 +66,24 @@ class NutritionFoodOption {
       );
 
   bool get hasNumericFacts => facts.values.any((fact) => fact.hasNumericValue);
+
+  /// What logging starts at: the catalogue's own serving weight for a food
+  /// whose facts are per 100 g or 100 ml ("Banana": 118 g, one piece), else
+  /// the base quantity the facts are stated for.
+  Quantity get defaultLoggingQuantity {
+    final m = measure;
+    if (m != null) {
+      final grams = m.gramsPerServing;
+      if (m.basis == 'per_100_grams' && grams != null) {
+        return Quantity(amount: grams, unit: QuantityUnit.gram);
+      }
+      final millilitres = m.millilitresPerServing;
+      if (m.isPerMillilitre && millilitres != null) {
+        return Quantity(amount: millilitres, unit: QuantityUnit.millilitre);
+      }
+    }
+    return baseQuantity;
+  }
 }
 
 /// Owns the small amount of source adaptation required before a food can

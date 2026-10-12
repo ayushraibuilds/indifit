@@ -125,6 +125,11 @@ void main() {
           _builtPack(catalogue, '2-from-1.json.gz'),
           source: 'download',
         );
+        // Pack 3 (USDA staples) is a delta on 2; the fresh install is 3.
+        await importer.apply(
+          _builtPack(catalogue, '3-from-2.json.gz'),
+          source: 'download',
+        );
         final viaDelta = await _state(catalogue.db);
 
         final fresh = await RealCatalogue.open();

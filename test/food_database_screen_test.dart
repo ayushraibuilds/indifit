@@ -77,7 +77,7 @@ void main() {
       findsOneWidget,
     );
     expect(
-      find.text('498 foods, including 255 size and preparation variants'),
+      find.text('622 foods, including 255 size and preparation variants'),
       findsOneWidget,
     );
     expect(find.text('Not checked for updates yet'), findsOneWidget);
@@ -86,6 +86,7 @@ void main() {
     expect(find.text('Off: updates wait for Wi-Fi.'), findsOneWidget);
     expect(find.text('Sources and attributions'), findsOneWidget);
     expect(find.text(FoodDataCredits.catalogue), findsOneWidget);
+    expect(find.text(FoodDataCredits.usda), findsOneWidget);
     expect(find.text(FoodDataCredits.openFoodFacts), findsOneWidget);
     expect(tester.takeException(), isNull);
   });

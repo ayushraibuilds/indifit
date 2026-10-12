@@ -39,7 +39,7 @@ void main() {
       final state = await catalogue.db.select(catalogue.db.catalogState).get();
       expect(state.single.version, kBundledCatalogPackVersion);
       expect(state.single.source, 'bundled');
-      expect(state.single.foodCount, 573);
+      expect(state.single.foodCount, 697);
     });
 
     test('2 roti servings in a thali give 170 kcal', () async {
@@ -335,7 +335,12 @@ void main() {
     test('a delta on the wrong base is rejected and changes nothing', () async {
       final before = await _factCount(catalogue.db);
       final delta = pack(
-        _packJson(version: 4, base: 3, kind: 'delta', energy: 90),
+        _packJson(
+          version: kBundledCatalogPackVersion + 2,
+          base: kBundledCatalogPackVersion + 1,
+          kind: 'delta',
+          energy: 90,
+        ),
       );
       await expectLater(
         importer.apply(delta, source: 'download'),
@@ -364,7 +369,13 @@ void main() {
           ),
         );
         final delta = pack(
-          _packJson(version: 3, base: 2, kind: 'delta', energy: 90, id: roti),
+          _packJson(
+            version: kBundledCatalogPackVersion + 1,
+            base: kBundledCatalogPackVersion,
+            kind: 'delta',
+            energy: 90,
+            id: roti,
+          ),
         );
         final result = await importer.apply(delta, source: 'download');
         expect(result.applied, isTrue);
@@ -397,7 +408,13 @@ void main() {
         nutrientIds: [...nutrientIds, 'not_a_nutrient'],
       );
       final delta = pack(
-        _packJson(version: 3, base: 2, kind: 'delta', energy: 90, id: roti),
+        _packJson(
+          version: kBundledCatalogPackVersion + 1,
+          base: kBundledCatalogPackVersion,
+          kind: 'delta',
+          energy: 90,
+          id: roti,
+        ),
       );
       await expectLater(
         broken.apply(delta, source: 'download'),
@@ -418,10 +435,16 @@ void main() {
 
     test('a retirement deprecates the food without deleting it', () async {
       final roti = await catalogue.foodId(_roti);
-      final json = _packJson(version: 3, base: 2, kind: 'delta', energy: 85)
-        ..['retire'] = [
-          {'id': roti, 'replaced_by': null},
-        ];
+      final json =
+          _packJson(
+              version: kBundledCatalogPackVersion + 1,
+              base: kBundledCatalogPackVersion,
+              kind: 'delta',
+              energy: 85,
+            )
+            ..['retire'] = [
+              {'id': roti, 'replaced_by': null},
+            ];
       await importer.apply(pack(json), source: 'download');
       final row = await (catalogue.db.select(
         catalogue.db.nutritionFoods,

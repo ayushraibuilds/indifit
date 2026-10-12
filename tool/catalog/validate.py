@@ -191,7 +191,10 @@ def check_pack(pack, previous=None, retired_names=(), gram_rules=None, nutrient_
                     )
                 )
             rule = rules.get(unit)
-            if grams is not None and unit not in METRIC_UNITS:
+            # A food-specific weight its source states ("1 puri, 25 g") needs
+            # no unit-wide rule; only shared measures like katori do.
+            stated = serving.get("grams_basis") == "source-stated"
+            if grams is not None and unit not in METRIC_UNITS and not stated:
                 expected = None if rule is None else serving["amount"] * rule["grams_per_unit"]
                 if expected is None or abs(grams - expected) > 0.01 * expected:
                     out.append(

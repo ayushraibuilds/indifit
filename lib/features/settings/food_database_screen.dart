@@ -154,6 +154,11 @@ class _FoodDatabaseScreenState extends ConsumerState<FoodDatabaseScreen> {
         ),
         const SizedBox(height: B05Layout.space12),
         const _Credit(
+          title: FoodDataCredits.usdaTitle,
+          detail: FoodDataCredits.usda,
+        ),
+        const SizedBox(height: B05Layout.space12),
+        const _Credit(
           title: FoodDataCredits.openFoodFactsTitle,
           detail: FoodDataCredits.openFoodFacts,
         ),
