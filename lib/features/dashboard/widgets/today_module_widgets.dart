@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/presentation/consumer_copy.dart';
@@ -908,15 +909,20 @@ class TodayModuleSkeleton extends StatelessWidget {
     label: label,
     child: B05Surface(
       padding: const EdgeInsets.all(B05Layout.space16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
-          LoadingLine(widthFactor: .35, height: 14),
-          SizedBox(height: B05Layout.space12),
-          LoadingLine(widthFactor: .82, height: 20),
-          SizedBox(height: B05Layout.space8),
-          LoadingLine(widthFactor: .58, height: 14),
-        ],
+      // Full width: the surface shrink-wraps its child, so the 0.82 line
+      // used to size the whole card.
+      child: SizedBox(
+        width: double.infinity,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: const [
+            LoadingLine(widthFactor: .35, height: 14),
+            SizedBox(height: B05Layout.space12),
+            LoadingLine(widthFactor: .82, height: 20),
+            SizedBox(height: B05Layout.space8),
+            LoadingLine(widthFactor: .58, height: 14),
+          ],
+        ),
       ),
     ),
   );
@@ -933,16 +939,27 @@ class LoadingLine extends StatelessWidget {
   final double height;
 
   @override
-  Widget build(BuildContext context) => FractionallySizedBox(
-    widthFactor: widthFactor,
-    child: DecoratedBox(
+  Widget build(BuildContext context) {
+    final colors = context.b05Colors;
+    final line = DecoratedBox(
       decoration: BoxDecoration(
-        color: context.b05Colors.inset,
+        color: colors.inset,
         borderRadius: B05Radii.smallRadius,
       ),
       child: SizedBox(height: height),
-    ),
-  );
+    );
+    // Same shimmer as SkeletonBox/SkeletonCard so the cards read as loading.
+    return FractionallySizedBox(
+      widthFactor: widthFactor,
+      child: B05MotionPolicy.reduceMotion(context)
+          ? line
+          : line
+                .animate(
+                  onPlay: (controller) => controller.repeat(reverse: true),
+                )
+                .shimmer(duration: 1200.ms, color: colors.interactive),
+    );
+  }
 }
 
 class TodayUnavailableModule extends StatelessWidget {
