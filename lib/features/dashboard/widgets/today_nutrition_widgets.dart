@@ -306,15 +306,7 @@ class _TodayNutritionHeroBody extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text('Nutrition', style: B05Typography.title(context)),
-                ),
-                if (presentation.hasIncompleteNutrition)
-                  const NutritionIncompleteInfo(),
-              ],
-            ),
+            Text('Nutrition', style: B05Typography.title(context)),
             const SizedBox(height: B05Layout.space12),
             LayoutBuilder(
               builder: (context, constraints) {
@@ -582,36 +574,6 @@ B05ColorRole todayMacroColorRole(B05SemanticColors colors, String nutrientId) {
 
 /// Keeps "some details are missing" one tap away instead of a standing
 /// line on the card; most Indian foods don't list every nutrient.
-class NutritionIncompleteInfo extends StatelessWidget {
-  const NutritionIncompleteInfo({super.key});
-
-  static const explanation =
-      'Some foods you logged don’t list every nutrient. Totals include '
-      'what is known; missing values are left out, not counted as zero.';
-
-  @override
-  Widget build(BuildContext context) => IconButton(
-    tooltip: ConsumerCopy.nutritionDetailsIncomplete,
-    icon: Icon(
-      Icons.info_outline_rounded,
-      color: context.b05Colors.unavailable.indicator,
-    ),
-    onPressed: () => showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text(ConsumerCopy.nutritionDetailsIncomplete),
-        content: const Text(explanation),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    ),
-  );
-}
-
 class CalorieRing extends StatelessWidget {
   const CalorieRing({
     super.key,
@@ -894,6 +856,15 @@ class MacroComparison extends StatelessWidget {
         if (index < metrics.length - 1)
           const SizedBox(height: B05Layout.space12),
       ],
+      // One line instead of an "i" on the header and every row.
+      if (metrics.any((metric) => metric.isIncomplete)) ...[
+        const SizedBox(height: B05Layout.space12),
+        Text(
+          key: const ValueKey('macros_partial_note'),
+          'Partial: some foods list no macros',
+          style: B05Typography.caption(context),
+        ),
+      ],
     ],
   );
 }
@@ -1004,30 +975,7 @@ extension on MacroRow {
         ),
       ),
     );
-    if (!metric.isIncomplete) return value;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      mainAxisAlignment: align == TextAlign.end
-          ? MainAxisAlignment.end
-          : MainAxisAlignment.start,
-      children: [
-        Flexible(child: value),
-        const SizedBox(width: B05Layout.space4),
-        Tooltip(
-          key: ValueKey('macro_partial_${metric.nutrientId}'),
-          message:
-              'Partial: some foods you logged don’t list '
-              '${metric.label.toLowerCase()}, so this total is lower than '
-              'what you ate.',
-          triggerMode: TooltipTriggerMode.tap,
-          child: Icon(
-            Icons.info_outline_rounded,
-            size: B05Layout.iconSmall,
-            color: context.b05Colors.unavailable.indicator,
-          ),
-        ),
-      ],
-    );
+    return value;
   }
 }
 

@@ -154,7 +154,7 @@ void main() {
     expect(painter(tester).progressHigh, 1.0);
   });
 
-  testWidgets('a partial macro shows its value and an info icon, not '
+  testWidgets('a partial macro shows its value without an info icon, not '
       '"(partial)"', (tester) async {
     const partial = TodayNutritionMetricPresentation(
       nutrientId: 'protein',
@@ -178,8 +178,20 @@ void main() {
     );
     expect(find.text('45 / 150 g'), findsOneWidget);
     expect(find.textContaining('(partial)'), findsNothing);
-    expect(find.byKey(const ValueKey('macro_partial_protein')), findsOneWidget);
+    expect(find.byIcon(Icons.info_outline_rounded), findsNothing);
     expect(find.bySemanticsLabel(RegExp('incomplete')), findsOneWidget);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.lightTheme,
+        home: const Scaffold(
+          body: MacroComparison(metrics: [partial, partial]),
+        ),
+      ),
+    );
+    // One note for the whole list, not an icon per row.
+    expect(find.byKey(const ValueKey('macros_partial_note')), findsOneWidget);
+    expect(find.byIcon(Icons.info_outline_rounded), findsNothing);
   });
 
   testWidgets(
