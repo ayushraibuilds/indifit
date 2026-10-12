@@ -337,7 +337,10 @@ class _TodayNutritionHeroBody extends StatelessWidget {
                     ),
                   ],
                 );
-                final macros = MacroComparison(metrics: presentation.macros);
+                final macros = MacroComparison(
+                  metrics: presentation.macros,
+                  showPartialNote: presentation.hasIncompleteNutrition,
+                );
                 return compact
                     ? Column(
                         children: [
@@ -373,7 +376,7 @@ class _TodayNutritionHeroBody extends StatelessWidget {
                   onOpenFoodGuidance: onOpenFoodGuidance,
                 ),
                 B05ActionButton(
-                  label: 'View targets',
+                  label: 'Set a target',
                   emphasis: B05ActionEmphasis.tertiary,
                   hint: 'Opens Goal & targets for this date.',
                   onPressed: onOpenTargetSetup,
@@ -843,9 +846,16 @@ class CalorieRingPainter extends CustomPainter {
 }
 
 class MacroComparison extends StatelessWidget {
-  const MacroComparison({super.key, required this.metrics});
+  const MacroComparison({
+    super.key,
+    required this.metrics,
+    this.showPartialNote = false,
+  });
 
   final List<TodayNutritionMetricPresentation> metrics;
+
+  /// Some logged food lists no macros (a quick add, say).
+  final bool showPartialNote;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -857,7 +867,7 @@ class MacroComparison extends StatelessWidget {
           const SizedBox(height: B05Layout.space12),
       ],
       // One line instead of an "i" on the header and every row.
-      if (metrics.any((metric) => metric.isIncomplete)) ...[
+      if (showPartialNote || metrics.any((metric) => metric.isIncomplete)) ...[
         const SizedBox(height: B05Layout.space12),
         Text(
           key: const ValueKey('macros_partial_note'),
@@ -933,31 +943,11 @@ class MacroRow extends StatelessWidget {
 }
 
 extension on MacroRow {
-  /// Unknown values read as a quiet "—" with the reason a tap away; the
-  /// row's semantics label still says "Not available".
+  /// Unknown values read as a quiet "—"; the hero's single partial note
+  /// gives the reason, and the row's semantics label says "Not available".
   Widget _value(BuildContext context, TextAlign align) {
     if (!metric.isAvailable) {
-      return Row(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: align == TextAlign.end
-            ? MainAxisAlignment.end
-            : MainAxisAlignment.start,
-        children: [
-          Text('—', style: B05Typography.caption(context)),
-          const SizedBox(width: B05Layout.space4),
-          Tooltip(
-            message:
-                '${metric.label} isn’t listed for the foods you logged, so '
-                'no total is shown.',
-            triggerMode: TooltipTriggerMode.tap,
-            child: Icon(
-              Icons.info_outline_rounded,
-              size: B05Layout.iconSmall,
-              color: context.b05Colors.unavailable.indicator,
-            ),
-          ),
-        ],
-      );
+      return Text('—', style: B05Typography.caption(context));
     }
     final value = IndiFitCountUp(
       value: metric.pointValue ?? 0,

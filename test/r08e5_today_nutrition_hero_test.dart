@@ -404,10 +404,14 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      // One concise notice, behind an info icon by the card title (P1 H5).
+      // One concise note under the macros, no info icons (T-7).
+      expect(find.byKey(const ValueKey('macros_partial_note')), findsOneWidget);
       expect(
-        find.byTooltip('Some nutrition details are incomplete'),
-        findsOneWidget,
+        find.descendant(
+          of: find.byType(MacroRow),
+          matching: find.byIcon(Icons.info_outline_rounded),
+        ),
+        findsNothing,
       );
       expect(find.text('Some nutrition details are incomplete'), findsNothing);
       expect(find.text('No daily target for this date'), findsNothing);
@@ -435,12 +439,6 @@ void main() {
       for (final macro in ['Protein', 'Carbs', 'Fat', 'Fiber']) {
         expect(macroLabels, contains(startsWith('$macro: Not available')));
       }
-
-      await tester.tap(find.byTooltip('Some nutrition details are incomplete'));
-      await tester.pumpAndSettle();
-      expect(find.textContaining('not counted as zero'), findsOneWidget);
-      await tester.tap(find.text('OK'));
-      await tester.pumpAndSettle();
 
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump();
