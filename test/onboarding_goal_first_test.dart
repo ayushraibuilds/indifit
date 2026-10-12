@@ -56,13 +56,13 @@ void main() {
     expect(find.text('What is your main goal?'), findsOneWidget);
     expect(find.text('A bit about you'), findsNothing);
 
-    await tester.tap(find.text('Next Step'));
+    await tester.tap(find.text('Next step'));
     await tester.pumpAndSettle();
     expect(find.text('2 of 5'), findsOneWidget);
     expect(find.text('A bit about you'), findsOneWidget);
 
     // The About checks still apply on About: sex is required.
-    await tester.tap(find.text('Next Step'));
+    await tester.tap(find.text('Next step'));
     await tester.pump();
     expect(find.text('Choose an option above to continue.'), findsOneWidget);
     expect(find.text('A bit about you'), findsOneWidget);
@@ -93,7 +93,7 @@ void main() {
     tester,
   ) async {
     await _pumpOnboarding(tester);
-    await tester.tap(find.text('Next Step'));
+    await tester.tap(find.text('Next step'));
     await tester.pumpAndSettle();
     expect(find.text('A bit about you'), findsOneWidget);
 
@@ -107,7 +107,7 @@ void main() {
   testWidgets('editing weight, then closing the keyboard, stays on About '
       '(audit R-01)', (tester) async {
     await _pumpOnboarding(tester);
-    await tester.tap(find.text('Next Step'));
+    await tester.tap(find.text('Next step'));
     await tester.pumpAndSettle();
 
     final weight = find.ancestor(
@@ -138,7 +138,7 @@ void main() {
     expect(find.byTooltip('Back'), findsNothing);
     expect(find.bySemanticsLabel(RegExp('^Back')), findsNothing);
 
-    await tester.tap(find.text('Next Step'));
+    await tester.tap(find.text('Next step'));
     await tester.pumpAndSettle();
     expect(find.bySemanticsLabel(RegExp('^Back')), findsOneWidget);
   });
@@ -146,7 +146,7 @@ void main() {
   testWidgets('number fields get Next and Done above the keyboard '
       '(audit UX-12)', (tester) async {
     await _pumpOnboarding(tester);
-    await tester.tap(find.text('Next Step'));
+    await tester.tap(find.text('Next step'));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('onboarding_keyboard_bar')), findsNothing);
 

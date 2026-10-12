@@ -22,6 +22,7 @@ abstract final class AppPreferenceKeys {
   static const onboardingSkipped = 'onboarding_skipped';
   static const todayOnboardingHandoffPending =
       'today_onboarding_handoff_pending';
+  static const todayFinishSetupDismissed = 'today_finish_setup_dismissed';
 
   // --- Hydration ---
   static const waterLogged = 'water_logged';

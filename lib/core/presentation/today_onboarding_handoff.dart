@@ -20,6 +20,28 @@ final todayOnboardingHandoffPendingProvider = FutureProvider.autoDispose<bool>((
   return p.getBool(todayOnboardingHandoffPendingKey) ?? false;
 });
 
+/// True after setup was skipped, until the user finishes setup or dismisses
+/// the Today prompt.
+final todayFinishSetupPromptProvider = FutureProvider.autoDispose<bool>((
+  ref,
+) async {
+  SharedPreferences? prefs = sharedPreferencesOrNull(
+    () => ref.watch(sharedPreferencesProvider),
+  );
+  final p = prefs ?? await SharedPreferences.getInstance();
+  return (p.getBool(AppPreferenceKeys.onboardingSkipped) ?? false) &&
+      !(p.getBool(AppPreferenceKeys.todayFinishSetupDismissed) ?? false);
+});
+
+Future<void> dismissTodayFinishSetup(
+  WidgetRef ref, [
+  SharedPreferences? preferences,
+]) async {
+  final prefs = preferences ?? await SharedPreferences.getInstance();
+  await prefs.setBool(AppPreferenceKeys.todayFinishSetupDismissed, true);
+  ref.invalidate(todayFinishSetupPromptProvider);
+}
+
 Future<void> markTodayOnboardingHandoffPending([
   SharedPreferences? preferences,
 ]) async {

@@ -13,6 +13,7 @@ import '../../data/models/b04_goal_models.dart';
 import '../../data/repositories/nutrition_target_authority.dart';
 import '../coaching/b04_production_surface_controller.dart';
 import '../coaching/b04_production_surface_widgets.dart';
+import '../onboarding/onboarding_screen.dart';
 
 /// Single consumer destination for the relationship between the canonical
 /// goal, date-scoped nutrition targets, and optional coaching.
@@ -79,16 +80,20 @@ class _NutritionTargetsHubScreenState
           loading: true,
         ),
       ),
-      error: (_, _) => _shell(
-        context,
-        ConsumerStatusRow(
-          label: 'Nutrition targets unavailable',
-          detail:
-              'Your target could not be loaded. Your saved values have not changed.',
-          error: true,
-          onRetry: () => ref.invalidate(b04ProductionUserContextProvider),
-        ),
-      ),
+      error: (error, _) =>
+          error is B04ProductionSurfaceError &&
+              error.code == 'profile_unavailable'
+          ? _shell(context, _setupState(context))
+          : _shell(
+              context,
+              ConsumerStatusRow(
+                label: 'Nutrition targets unavailable',
+                detail:
+                    'Your target could not be loaded. Your saved values have not changed.',
+                error: true,
+                onRetry: () => ref.invalidate(b04ProductionUserContextProvider),
+              ),
+            ),
       data: (user) => _buildForUser(context, user),
     );
   }
@@ -578,6 +583,27 @@ class _NutritionTargetsHubScreenState
       context,
     ).showSnackBar(SnackBar(content: Text(message)));
   }
+
+  /// Setup was skipped, so there is no profile to build a target from yet.
+  /// This is a next step, not an error.
+  Widget _setupState(BuildContext context) => ProductEmptyState(
+    key: const ValueKey('targets_setup_state'),
+    icon: Icons.track_changes_outlined,
+    title: 'Set up your targets',
+    message:
+        'Answer a few questions about your goal and body, and IndiFit works '
+        'out your daily calories and protein. It takes about two minutes.',
+    actionLabel: 'Start setup',
+    actionIcon: Icons.arrow_forward_rounded,
+    action: () async {
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => const OnboardingScreen(openedFromApp: true),
+        ),
+      );
+      if (mounted) ref.invalidate(b04ProductionUserContextProvider);
+    },
+  );
 
   Widget _shell(BuildContext context, Widget body) {
     return Scaffold(

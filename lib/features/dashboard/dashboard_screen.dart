@@ -25,6 +25,7 @@ import '../../data/repositories/workout_repository.dart';
 import '../activity/b02_activity_controller.dart';
 import '../calendar/workout_contextual_launcher.dart';
 import '../coaching/b04_production_surface_widgets.dart';
+import '../onboarding/onboarding_screen.dart';
 import '../progress/achievements_screen.dart';
 import '../settings/nutrition_targets_hub_screen.dart';
 import '../workout_player/b02_strength_execution_controller.dart';
@@ -453,6 +454,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         onStartWorkout: _startTodayWorkout,
         onResumeWorkout: _resumeTodayWorkout,
         onOpenFoodGuidance: _openFoodGuidance,
+        onFinishSetup: () => Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => const OnboardingScreen(openedFromApp: true),
+          ),
+        ),
         onOpenNutritionTargets: () {
           Navigator.of(context).push(
             MaterialPageRoute(

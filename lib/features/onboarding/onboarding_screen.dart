@@ -24,11 +24,20 @@ import 'widgets/onboarding_target_reveal.dart';
 import 'widgets/onboarding_welcome.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
-  const OnboardingScreen({this.showWelcome = false, super.key});
+  const OnboardingScreen({
+    this.showWelcome = false,
+    this.openedFromApp = false,
+    super.key,
+  });
 
   /// Opens a fresh setup on the animated welcome screen. A restored draft
   /// always goes straight back to its step.
   final bool showWelcome;
+
+  /// Setup reopened from inside the app (Today, Profile, Goal & targets)
+  /// after a skip: a close button returns to where the user was, keeping
+  /// the answers, and there is no Skip or first-launch welcome.
+  final bool openedFromApp;
 
   @override
   ConsumerState<OnboardingScreen> createState() => _OnboardingScreenState();
@@ -525,6 +534,18 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     }
   }
 
+  /// Leaves setup opened from the app. The draft is already saved as the
+  /// user goes, so reopening setup resumes at the same step.
+  Future<void> _closeSetup() async {
+    _dismissInputFocus();
+    try {
+      await _draftWrite;
+    } catch (_) {
+      // Safe: a failed draft save was already logged; leaving still works.
+    }
+    if (mounted) await Navigator.of(context).maybePop();
+  }
+
   Future<void> _completeOnboardingOnce() async {
     // Parse final text controllers
     _age = int.tryParse(_ageController.text) ?? 25;
@@ -631,14 +652,24 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
     // Notify router that onboarding is now complete
     ref.read(onboardingCompletedProvider.notifier).state = true;
+    // Today can stay mounted under a setup opened from the app; refresh
+    // both of its setup cards.
+    ref
+      ..invalidate(todayFinishSetupPromptProvider)
+      ..invalidate(todayOnboardingHandoffPendingProvider);
 
     // Clear onboarding draft keys after the existing owners have accepted the
     // profile. The save queue was awaited by _completeOnboarding.
     await _draftStore.clearProfileDraft();
 
-    if (mounted) {
-      context.go('/');
+    if (!mounted) return;
+    final router = GoRouter.of(context);
+    if (widget.openedFromApp) {
+      // Opened over Today (already at '/'), going to '/' is a no-op, so
+      // close the pushed setup and anything under it first.
+      Navigator.of(context).popUntil((route) => route.isFirst);
     }
+    router.go('/');
   }
 
   @override
@@ -742,6 +773,24 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
                 // Step 5 is the review: finishing is the only way forward
                 // (PREMIUM_REDESIGN_PLAN § 8.5).
+                // Reopened from the app, Close takes Skip's place on every
+                // step and returns to where the user was.
+                if (widget.openedFromApp) {
+                  return Row(
+                    children: [
+                      Expanded(child: progressRow),
+                      const SizedBox(width: B05Layout.space8),
+                      B05IconAction(
+                        key: const ValueKey('onboarding_close'),
+                        icon: Icons.close_rounded,
+                        label: 'Close',
+                        hint: 'Leave setup. Your answers are kept.',
+                        onPressed: _closeSetup,
+                      ),
+                    ],
+                  );
+                }
+
                 if (_showingPayoff) return progressRow;
 
                 if (shouldStack) {
@@ -828,7 +877,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             ? 'Finish setup'
             : _currentPage == _totalPages - 1
             ? 'Review setup'
-            : 'Next Step',
+            : 'Next step',
         onPressed: _isCompleting ? null : _nextPage,
       ),
       hidePrimaryActionWhenKeyboardVisible: true,
@@ -1209,7 +1258,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           ),
           const SizedBox(height: 12),
           OnboardingSelectionCard(
-            title: 'Lightly Active',
+            title: 'Lightly active',
             subtitle: 'Light workouts 1-3 days/week',
             icon: Icons.directions_walk,
             selected: _activityLevel == 'light',
@@ -1218,7 +1267,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           ),
           const SizedBox(height: 12),
           OnboardingSelectionCard(
-            title: 'Moderately Active',
+            title: 'Moderately active',
             subtitle: 'Moderate gym training 3-5 days/week',
             icon: Icons.fitness_center,
             selected: _activityLevel == 'moderate',
@@ -1227,7 +1276,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           ),
           const SizedBox(height: 12),
           OnboardingSelectionCard(
-            title: 'Very Active',
+            title: 'Very active',
             subtitle: 'Heavy exercise/sports 6-7 days/week',
             icon: Icons.bolt,
             selected: _activityLevel == 'active',
@@ -1242,9 +1291,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   Widget _buildGoalPage() {
     return OnboardingPageContainer(
       title: 'What is your main goal?',
-      subtitle:
-          'Welcome to IndiFit. Your calorie and protein targets are shaped '
-          'around this goal, and you can change it later.',
+      subtitle: widget.openedFromApp
+          ? 'Your calorie and protein targets are shaped around this goal, '
+                'and you can change it later.'
+          : 'Welcome to IndiFit. Your calorie and protein targets are shaped '
+                'around this goal, and you can change it later.',
       child: Column(
         children: [
           OnboardingSelectionCard(
