@@ -6,7 +6,6 @@ import 'package:indifit/core/nutrients.dart';
 import 'package:indifit/core/nutrition_legacy_read_models.dart';
 import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/core/typed_quantities.dart';
-import 'package:indifit/core/widgets/b05_accessibility_primitives.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/models/b02_execution_models.dart';
 import 'package:indifit/data/models/b02_progress_read_models.dart';
@@ -210,12 +209,13 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
-    // Header order: appearance toggle, then settings, then the date pager.
-    // Only check focus on the toggle so the test doesn't flip the theme.
+    // Header order: appearance toggle, then settings, then the date line,
+    // then the week strip. Only check focus on the toggle so the test doesn't
+    // flip the theme.
     await tester.sendKeyEvent(LogicalKeyboardKey.tab);
     final firstFocus = FocusManager.instance.primaryFocus?.context;
     expect(
-      firstFocus?.findAncestorWidgetOfExactType<B05IconAction>()?.label,
+      firstFocus?.findAncestorWidgetOfExactType<TodayHeaderIconButton>()?.label,
       'Switch to dark mode',
     );
 
@@ -223,9 +223,16 @@ void main() {
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);
     expect(settingsCalls, 1);
 
+    // Past the date line to "Back to today" (this fixture views yesterday).
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
     await tester.sendKeyEvent(LogicalKeyboardKey.tab);
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);
-    expect(changedDate, DateTime(2026, 8, 6));
+    expect(changedDate, DateTime(2026, 8, 8));
+
+    // Then the first day of the week strip.
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    expect(changedDate, DateTime(2026, 8, 2));
   });
 
   testWidgets('Today dark golden benchmark', tags: const ['golden'], (

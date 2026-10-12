@@ -8,7 +8,7 @@ import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/repositories/workout_repository.dart';
 import 'package:indifit/features/coaching/b04_production_surface_controller.dart';
-import 'package:indifit/features/dashboard/widgets/today_module_widgets.dart';
+import 'package:indifit/features/dashboard/widgets/today_header_widgets.dart';
 import 'package:indifit/features/onboarding/onboarding_screen.dart';
 import 'package:indifit/features/profile/profile_screen.dart';
 import 'package:indifit/features/settings/nutrition_targets_hub_screen.dart';
@@ -214,7 +214,7 @@ void main() {
     Widget card() => app(
       Scaffold(
         body: Builder(
-          builder: (context) => TodayFinishSetupCard(
+          builder: (context) => TodayFinishSetupBanner(
             onFinishSetup: () => ScaffoldMessenger.of(
               context,
             ).showSnackBar(const SnackBar(content: Text('opened'))),
@@ -227,8 +227,8 @@ void main() {
       await tester.pumpWidget(card());
       await settle(tester);
 
-      expect(find.text('Finish setting up'), findsOneWidget);
-      await tester.tap(find.text('Finish setup'));
+      expect(find.text('Finish setup for daily targets'), findsOneWidget);
+      await tester.tap(find.text('Finish'));
       await settle(tester);
       expect(find.text('opened'), findsOneWidget);
     });
@@ -237,9 +237,9 @@ void main() {
       await tester.pumpWidget(card());
       await settle(tester);
 
-      await tester.tap(find.text('Not now'));
+      await tester.tap(find.byIcon(Icons.close_rounded));
       await settle(tester);
-      expect(find.text('Finish setting up'), findsNothing);
+      expect(find.text('Finish setup for daily targets'), findsNothing);
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getBool(AppPreferenceKeys.todayFinishSetupDismissed), true);
     });
@@ -250,7 +250,7 @@ void main() {
       });
       await tester.pumpWidget(card());
       await settle(tester);
-      expect(find.text('Finish setting up'), findsNothing);
+      expect(find.text('Finish setup for daily targets'), findsNothing);
     });
   });
 

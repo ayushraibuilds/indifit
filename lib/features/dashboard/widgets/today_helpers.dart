@@ -25,12 +25,12 @@ TodayDateRelation todayDateRelation(DateTime selectedDate, DateTime now) {
 }
 
 /// Returns the visible context for the selected civil date without changing
-/// the date authority. The short relative word makes historical and future
-/// browsing obvious while the full date keeps the context unambiguous.
+/// the date authority. Today is just the date (the week strip marks it); the
+/// short relative word makes historical and future browsing obvious.
 String todayDateContextLabel(DateTime selectedDate, DateTime now) {
   final formatted = DateFormat('EEEE, d MMMM').format(selectedDate);
   return switch (todayDateRelation(selectedDate, now)) {
-    TodayDateRelation.today => 'Today · $formatted',
+    TodayDateRelation.today => formatted,
     TodayDateRelation.past => 'Past day · $formatted',
     TodayDateRelation.future => 'Upcoming · $formatted',
   };

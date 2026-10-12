@@ -8,7 +8,7 @@ import 'package:indifit/data/models/b02_execution_models.dart';
 import 'package:indifit/data/models/progress_dashboard_models.dart';
 import 'package:indifit/data/repositories/b02_strength_execution_repository.dart';
 import 'package:indifit/data/repositories/weekly_training_goal_repository.dart';
-import 'package:indifit/features/dashboard/widgets/today_module_widgets.dart';
+import 'package:indifit/features/dashboard/widgets/today_header_widgets.dart';
 import 'package:indifit/features/progress/widgets/progress_sections.dart';
 import 'package:indifit/features/training/training_screen.dart';
 import 'package:indifit/features/training/weekly_training_goal_providers.dart';
@@ -75,7 +75,7 @@ void main() {
   }
 
   void expectNoDailyStreak() {
-    expect(find.byType(StreakChip), findsNothing);
+    expect(find.byType(TodayStreakChip), findsNothing);
     expect(find.textContaining(RegExp('streak|days logged')), findsNothing);
   }
 

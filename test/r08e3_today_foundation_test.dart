@@ -58,7 +58,7 @@ void main() {
 
     expect(
       todayDateContextLabel(DateTime(2026, 8, 9), now),
-      'Today · Sunday, 9 August',
+      'Sunday, 9 August',
     );
     expect(
       todayDateContextLabel(DateTime(2026, 8, 8), now),
