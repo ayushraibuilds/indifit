@@ -107,7 +107,15 @@ void main() {
           .cast<Map>()
           .where((food) => !retired.contains(food['id']))
           .toList();
-      final dishes = active.where((food) => food['variant_of'] == null).length;
+      final ownDishes = active.where(
+        (food) => food['source_id'] == 'indifit-catalogue-v1',
+      );
+      final dishes = ownDishes
+          .where((food) => food['variant_of'] == null)
+          .length;
+      final staples = active
+          .where((food) => food['source_id'] == 'usda-staples-v1')
+          .length;
       final regional = Directory('assets/data/regional')
           .listSync()
           .whereType<File>()
@@ -116,14 +124,17 @@ void main() {
       expect(
         readme,
         contains(
-          '$dishes distinct Indian dishes (${active.length} entries '
-          'counting their size and oil variants)',
+          '$dishes distinct Indian dishes (${ownDishes.length} entries '
+          'counting their size and oil variants), $staples everyday foods',
         ),
       );
       expect(readme, contains('$regional optional regional-pack entries'));
       expect(
         listing,
-        contains('$dishes Indian dishes built in, with size and oil variants'),
+        contains(
+          '$dishes Indian dishes built in, with size and oil variants, '
+          '$staples everyday foods',
+        ),
       );
       expect(listing, contains('$regional more in optional regional packs'));
       expect(privacy, contains('Open Food Facts'));

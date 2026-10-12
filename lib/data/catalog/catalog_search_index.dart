@@ -12,6 +12,7 @@ class CatalogSearchHit {
     required this.foodId,
     required this.legacyFoodItemId,
     required this.matchedTerms,
+    this.aliases = '',
   });
 
   final String foodId;
@@ -23,6 +24,9 @@ class CatalogSearchHit {
   /// dal" for Toor Dal), and any typed word the index corrected ("chapti"
   /// for Chapati). The screen's ranking reads these so it keeps the hit.
   final List<String> matchedTerms;
+
+  /// The food's indexed aliases as one normalised string ("kela केला").
+  final String aliases;
 }
 
 /// On-device full-text search over the catalogue (CAT-9).
@@ -153,6 +157,7 @@ class CatalogSearchIndex {
                 row.read<String>('aliases'),
               ...typed,
             ],
+            aliases: row.read<String?>('aliases') ?? '',
           ),
     ];
   }

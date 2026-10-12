@@ -108,7 +108,7 @@ class FoodPortionBottomSheet extends ConsumerStatefulWidget {
     final transformations = await coordinator.transformationsFor(option);
     if (!context.mounted) return null;
 
-    final baseQuantity = initialQuantity ?? option.baseQuantity;
+    final baseQuantity = initialQuantity ?? option.defaultLoggingQuantity;
     final initialPreview = await coordinator.preview(
       option: option,
       quantity: baseQuantity,
@@ -204,7 +204,8 @@ class _FoodPortionBottomSheetState
   void initState() {
     super.initState();
     _selectedMealType = widget.initialMealType;
-    _selectedQuantity = widget.initialQuantity ?? widget.option.baseQuantity;
+    _selectedQuantity =
+        widget.initialQuantity ?? widget.option.defaultLoggingQuantity;
     _compatibleUnits = <QuantityUnit>[
       ...switch (_selectedQuantity.dimension) {
         QuantityDimension.mass => const [

@@ -44,6 +44,18 @@ class NutritionFoodSearchVocabulary {
       'food-seed-0288', // Low Fat Curd / Dahi
     },
     'dahi': {'food-seed-0416', 'food-seed-0288'},
+    // Pack 3 (USDA staples): the plain food before dishes that contain it.
+    'bread': {'food-usda-0050'}, // White Bread
+    'cheese': {'food-usda-0097'}, // Cheese Slice
+    'egg': {
+      'food-seed-0089', // Boiled Eggs (2 pieces)
+      'food-usda-0084', // Whole Egg (Boiled)
+    },
+    'chai': {
+      'food-seed-0300', // Masala Chai (with milk & sugar)
+      'food-usda-0100', // Tea with Milk and Sugar
+    },
+    'tea': {'food-usda-0100', 'food-seed-0300'},
   };
 
   /// Hindi words for the primary concepts above.
@@ -215,7 +227,11 @@ class NutritionFoodSearchCandidate {
     );
   }
 
-  factory NutritionFoodSearchCandidate.canonical(NutritionFoodOption option) {
+  factory NutritionFoodSearchCandidate.canonical(
+    NutritionFoodOption option, {
+    List<String> matchedTerms = const [],
+    List<String> alternateNames = const [],
+  }) {
     return NutritionFoodSearchCandidate._(
       source: NutritionFoodSearchSource.canonical,
       id: option.id,
@@ -234,6 +250,8 @@ class NutritionFoodSearchCandidate {
       food: null,
       option: option,
       remote: null,
+      matchedTerms: matchedTerms,
+      alternateNames: alternateNames,
     );
   }
 

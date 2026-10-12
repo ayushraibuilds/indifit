@@ -24,6 +24,7 @@ import '../../core/utils/app_logger.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/indi_fit_feedback.dart';
 import '../../core/widgets/skeleton_loader.dart';
+import '../../data/catalog/catalog_search_index.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/food_api_service.dart';
 import '../../data/repositories/food_repository.dart';
@@ -84,6 +85,10 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   List<FoodItem> _localResults = [];
   Map<int, FoodSearchPresentationAuthority> _localSearchAuthority = const {};
   List<NutritionFoodOption> _canonicalResults = [];
+
+  /// Catalogue foods with no legacy row (pack 3's USDA staples), with the
+  /// index hit that found each.
+  List<(NutritionFoodOption, CatalogSearchHit)> _catalogueOnlyResults = [];
 
   /// Aliases and corrected spellings the on-device index matched, by
   /// `food_items` id, so the ranking keeps those results (CAT-9).
@@ -330,6 +335,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       _localResults = [];
       _localSearchAuthority = const {};
       _canonicalResults = [];
+      _catalogueOnlyResults = [];
       _onlineResults = [];
       _rankedSearchResults = [];
       _searching = query.trim().isNotEmpty;
@@ -355,6 +361,12 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         ),
       for (final option in _canonicalResults)
         NutritionFoodSearchCandidate.canonical(option),
+      for (final (option, hit) in _catalogueOnlyResults)
+        NutritionFoodSearchCandidate.canonical(
+          option,
+          matchedTerms: hit.matchedTerms,
+          alternateNames: [if (hit.aliases.isNotEmpty) hit.aliases],
+        ),
       for (final food in _onlineResults)
         NutritionFoodSearchCandidate.remote(food),
     ];
@@ -477,6 +489,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         _localResults = [];
         _localSearchAuthority = const {};
         _canonicalResults = [];
+        _catalogueOnlyResults = [];
         _onlineResults = [];
         _searching = false;
         _searchingOnline = false;
@@ -497,6 +510,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       _rankedSearchResults = [];
     });
     unawaited(_loadCustomSearchResults(query, generation));
+    unawaited(_loadCatalogueOnlyResults(query, generation));
 
     final local = await _loadLocalSearchResults(query);
     if (!mounted || generation != _searchGeneration) return;
@@ -558,6 +572,30 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       if (identical(_onlineSearchCancelToken, cancelToken)) {
         _onlineSearchCancelToken = null;
       }
+    }
+  }
+
+  Future<void> _loadCatalogueOnlyResults(String query, int generation) async {
+    try {
+      final hits = await ref
+          .read(foodRepositoryProvider)
+          .searchCatalogueOnlyFoods(query);
+      if (hits.isEmpty) return;
+      final catalog = await ref.read(
+        nutritionFoodCatalogRepositoryProvider.future,
+      );
+      final found = <(NutritionFoodOption, CatalogSearchHit)>[];
+      for (final hit in hits) {
+        final option = await catalog.getOption(hit.foodId);
+        if (option != null) found.add((option, hit));
+      }
+      if (!mounted || generation != _searchGeneration) return;
+      setState(() {
+        _catalogueOnlyResults = found;
+        _rebuildSearchRanking(query);
+      });
+    } catch (_) {
+      // Safe: The legacy name search still answers without these rows.
     }
   }
 
@@ -1150,7 +1188,8 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       } else {
         _selectedKeys.add(key);
         _selectedOptions[key] = option;
-        _selectedQuantities[key] = initialQuantity ?? option.baseQuantity;
+        _selectedQuantities[key] =
+            initialQuantity ?? option.defaultLoggingQuantity;
       }
     });
   }
@@ -1183,7 +1222,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         _selectionLoading.remove(key);
         _selectedKeys.add(option.id);
         _selectedOptions[option.id] = option;
-        _selectedQuantities[option.id] = option.baseQuantity;
+        _selectedQuantities[option.id] = option.defaultLoggingQuantity;
       });
     } catch (_) {
       if (mounted) {
