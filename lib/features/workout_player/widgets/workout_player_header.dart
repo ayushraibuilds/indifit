@@ -113,6 +113,7 @@ class WorkoutPlayerHeader extends StatelessWidget {
               return Padding(
                 padding: const EdgeInsets.only(right: 8.0),
                 child: ChoiceChip(
+                  showCheckmark: false,
                   label: Text(
                     exercises[idx].exerciseName,
                     style: TextStyle(

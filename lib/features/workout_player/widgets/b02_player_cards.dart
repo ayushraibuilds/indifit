@@ -404,6 +404,8 @@ class R07CExerciseStrip extends StatelessWidget {
             '${complete ? 'Completed ' : ''}$name, exercise ${index + 1} of ${slots.length}',
         onTap: onSelected == null ? null : () => onSelected!(slot.id),
         child: ChoiceChip(
+          // The avatar tick means a finished set; no Material tick on select.
+          showCheckmark: false,
           selected: selected,
           onSelected: onSelected == null ? null : (_) => onSelected!(slot.id),
           avatar: complete ? const Icon(Icons.check_rounded, size: 16) : null,

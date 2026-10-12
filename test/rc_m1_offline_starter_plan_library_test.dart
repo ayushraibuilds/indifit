@@ -220,7 +220,8 @@ void main() {
 
     expect(find.text('Recommended for you'), findsOneWidget);
     expect(find.text('Dumbbell Full Body — 3 Day'), findsOneWidget);
-    expect(find.text('Browse plans'), findsWidgets);
+    expect(find.text('Browse plans'), findsOneWidget);
+    expect(find.text('Filter plans'), findsOneWidget);
   });
 
   testWidgets('preview reveals canonical structure without activation', (
