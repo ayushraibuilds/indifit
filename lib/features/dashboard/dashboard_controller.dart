@@ -46,6 +46,11 @@ class DashboardState {
     return newlyUnlockedAchievementIds.map((id) => titleMap[id] ?? id).toList();
   }
 
+  static DateTime _today() {
+    final now = DateTime.now();
+    return DateTime(now.year, now.month, now.day);
+  }
+
   DashboardState({
     DateTime? selectedDate,
     this.currentWeight = 74.5,
@@ -63,7 +68,9 @@ class DashboardState {
     List<String>? newlyUnlockedAchievementIds,
     List<String>? newlyUnlockedAchievementTitles,
     this.streakMilestone,
-  }) : selectedDate = selectedDate ?? DateTime.now(),
+  }) : // Date only: the time of day made the same day a different key for the
+       // date providers and the "Today" label on first paint.
+       selectedDate = selectedDate ?? _today(),
        newlyUnlockedAchievementIds =
            newlyUnlockedAchievementIds ??
            (newlyUnlockedAchievementTitles ?? const []);

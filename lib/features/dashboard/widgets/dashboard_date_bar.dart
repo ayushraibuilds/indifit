@@ -133,7 +133,9 @@ class DashboardDateBar extends StatelessWidget {
   DateTime _day(DateTime value) => DateTime(value.year, value.month, value.day);
 
   String _compactDateLabel(DateTime value, DateTime todayDay) =>
-      value == todayDay ? 'Today' : DateFormat('EEE, d MMM').format(value);
+      _day(value) == todayDay
+      ? 'Today'
+      : DateFormat('EEE, d MMM').format(value);
 
   String _spokenDate(DateTime value) =>
       DateFormat('EEEE, d MMMM y').format(_day(value));
