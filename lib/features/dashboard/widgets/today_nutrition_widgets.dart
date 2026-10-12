@@ -922,10 +922,17 @@ class MacroRow extends StatelessWidget {
       children: [
         IndiFitIcon(icon, size: B05Layout.iconSmall, color: role.indicator),
         const SizedBox(width: B05Layout.space4),
-        Expanded(
-          child: Text(metric.label, style: B05Typography.label(context)),
-        ),
-        if (!compact) Flexible(child: _value(context, TextAlign.end)),
+        // The label keeps its natural width; the value takes the rest and
+        // sits flush right. A loose Flexible beside an Expanded split the
+        // row 50/50 and left the value starting at the card's midline.
+        Text(metric.label, style: B05Typography.label(context)),
+        if (!compact)
+          Expanded(
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: _value(context, TextAlign.end),
+            ),
+          ),
       ],
     );
     return Semantics(

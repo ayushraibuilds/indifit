@@ -610,7 +610,8 @@ class TodayMealRow extends StatelessWidget {
                       const SizedBox(width: B05Layout.space8),
                       Expanded(child: summary),
                       const SizedBox(width: B05Layout.space8),
-                      Flexible(child: calories),
+                      // Fixed column so every meal's + sits at the same x.
+                      SizedBox(width: _kMealCalorieColumn, child: calories),
                       const SizedBox(width: B05Layout.space4),
                       B05IconAction(
                         icon: Icons.add_circle_outline_rounded,
@@ -626,6 +627,8 @@ class TodayMealRow extends StatelessWidget {
     );
   }
 }
+
+const double _kMealCalorieColumn = 72;
 
 class MealIcon extends StatelessWidget {
   const MealIcon({super.key, required this.icon, required this.color});
