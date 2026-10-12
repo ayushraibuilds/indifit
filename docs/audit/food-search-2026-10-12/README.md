@@ -13,9 +13,11 @@ are not reviewed. Before import, each row needs:
 
 1. The kcal and macros checked against IFCT 2017 (or USDA where IFCT has no entry),
    and the serving weight confirmed.
-2. A decision on the category names that do not exist yet: Fruits, Nuts & Seeds,
-   Sweets & Desserts, Breakfast Cereals, Rice & Rice Dishes, Western & Fast Food,
-   Packaged Snacks, Supplements.
+2. The new category names are in the app (`FoodCategoryTaxonomy.catalogueCategories`):
+   Fruits (1 fruit, katori), Nuts & Seeds (handful, tbsp), Breakfast Cereals (bowl),
+   Supplements (scoop); Sweets & Desserts, Rice & Rice Dishes, Western & Fast Food
+   and Packaged Snacks reuse the sweet, rice and snack serving groups. Catalogue
+   foods carry no category today, so names also place foods in the new groups.
 3. Brand words (Maggi, Parle-G, Kurkure, Lays, Haldiram's, Bournvita) kept as
    search aliases only, never in the food's name.
 

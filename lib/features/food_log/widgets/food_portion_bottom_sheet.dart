@@ -332,6 +332,10 @@ class _FoodPortionBottomSheetState
       'tablespoon' => '1 Tbsp (15g)',
       'teaspoon' => '1 Tsp (5g)',
       'plate' => '1 Plate (150g)',
+      'fruit_piece' => '1 Fruit (120g)',
+      'handful' => '1 Handful (30g)',
+      'cereal_bowl' => '1 Bowl (40g)',
+      'scoop' => '1 Scoop (30g)',
       '100g' => '100g',
       _ => '${option.unitName} (${option.gramWeight.round()}g)',
     };

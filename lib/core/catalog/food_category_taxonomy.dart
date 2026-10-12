@@ -14,7 +14,42 @@ class FoodCategoryTaxonomy {
   static const String snackStreet = 'snack_street';
   static const String sweetDessert = 'sweet_dessert';
   static const String oilFat = 'oil_fat';
+  // Added with the 12 Oct staples draft (fruit, nuts, cereal, supplements).
+  static const String fruit = 'fruit';
+  static const String nutSeed = 'nut_seed';
+  static const String breakfastCereal = 'breakfast_cereal';
+  static const String supplement = 'supplement';
   static const String general = 'general';
+
+  /// Catalogue category names → taxonomy ids for the categories the staples
+  /// draft adds. Checked before name keywords: the category is the better
+  /// evidence when a food has one.
+  static const Map<String, String> catalogueCategories = {
+    'fruits': fruit,
+    'nuts & seeds': nutSeed,
+    'breakfast cereals': breakfastCereal,
+    'supplements': supplement,
+    'sweets & desserts': sweetDessert,
+    'rice & rice dishes': stapleRice,
+    'western & fast food': snackStreet,
+    'packaged snacks': snackStreet,
+  };
+
+  static final RegExp _fruitName = RegExp(
+    r'^(banana|apple|mango|orange|papaya|watermelon|guava|pomegranate|'
+    r'grapes?|pineapple|chikoo|sapota|pear|muskmelon|strawberr(y|ies)|kiwi|'
+    r'dates|raisins?|amla|jamun)\b',
+  );
+  static final RegExp _nutSeedName = RegExp(
+    r'\b(almonds?|cashews?|walnuts?|peanuts?|pistachios?|makhana|chia|flax|'
+    r'(pumpkin|sunflower) seeds?)\b',
+  );
+  static final RegExp _cerealName = RegExp(
+    r'\b(corn ?flakes|muesli|granola|rolled oats|oats \(dry\)|oats porridge)',
+  );
+  static final RegExp _supplementName = RegExp(
+    r'\b(whey|protein powder|mass gainer)\b',
+  );
 
   /// Resolves canonical category ID from dish name and optional raw category text.
   /// Deprecated in favor of server-provided category_id from the backend search proxy.
@@ -24,6 +59,10 @@ class FoodCategoryTaxonomy {
   )
   static String resolveCategoryId({required String name, String? rawCategory}) {
     final lower = name.toLowerCase();
+    final listed = catalogueCategories[rawCategory?.trim().toLowerCase()];
+    if (listed != null) return listed;
+    if (_supplementName.hasMatch(lower)) return supplement;
+    if (_cerealName.hasMatch(lower)) return breakfastCereal;
     if (lower.contains('biryani') ||
         lower.contains('pulao') ||
         lower.contains('rice') ||
@@ -78,6 +117,12 @@ class FoodCategoryTaxonomy {
         lower.contains('gulab jamun') ||
         lower.contains('jalebi')) {
       return sweetDessert;
+    }
+    // After drinks and sweets ("Mango Lassi", "Gulab Jamun"), and only for
+    // names that start with the fruit ("Raw Banana Stir Fry" is a sabzi).
+    if (!lower.contains('chips') && _fruitName.hasMatch(lower)) return fruit;
+    if (!lower.contains('chikki') && _nutSeedName.hasMatch(lower)) {
+      return nutSeed;
     }
 
     if (rawCategory != null && rawCategory.isNotEmpty) {
@@ -186,6 +231,30 @@ class FoodCategoryTaxonomy {
       case sweetDessert:
         options.add(const ServingOption(unitName: 'piece', gramWeight: 40.0));
         options.add(const ServingOption(unitName: 'katori', gramWeight: 100.0));
+        break;
+
+      case fruit:
+        options.add(
+          const ServingOption(unitName: 'fruit_piece', gramWeight: 120.0),
+        );
+        options.add(const ServingOption(unitName: 'katori', gramWeight: 150.0));
+        break;
+
+      case nutSeed:
+        options.add(const ServingOption(unitName: 'handful', gramWeight: 30.0));
+        options.add(
+          const ServingOption(unitName: 'tablespoon', gramWeight: 15.0),
+        );
+        break;
+
+      case breakfastCereal:
+        options.add(
+          const ServingOption(unitName: 'cereal_bowl', gramWeight: 40.0),
+        );
+        break;
+
+      case supplement:
+        options.add(const ServingOption(unitName: 'scoop', gramWeight: 30.0));
         break;
 
       case general:
