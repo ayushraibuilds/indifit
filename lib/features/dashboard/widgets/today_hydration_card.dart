@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/di/providers.dart';
+import '../../../core/presentation/consumer_number_label.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
 import '../../../core/widgets/skeleton_loader.dart';
@@ -101,14 +102,17 @@ class TodayHydrationCard extends ConsumerWidget {
         );
 
     final colors = context.b05Colors;
-    final totalFormatted = model.totalMl.toString();
-    final goalFormatted = model.goalMl.toString();
-    final percent = model.progressPercent;
+    final totalFormatted = ConsumerNumberLabel.rounded(
+      model.totalMl.toDouble(),
+    );
+    final goalFormatted = ConsumerNumberLabel.rounded(model.goalMl.toDouble());
     final ratio = model.clampedProgressRatio;
 
+    // Remaining or met, not remaining plus a percentage.
     final progressText = model.isGoalMet
-        ? 'Goal met! ($percent%)'
-        : '${model.remainingMl} ml remaining ($percent%)';
+        ? 'Goal met!'
+        : '${ConsumerNumberLabel.rounded(model.remainingMl.toDouble())} ml '
+              'remaining';
 
     return Semantics(
       container: true,
