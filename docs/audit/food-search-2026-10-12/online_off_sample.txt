@@ -1,0 +1,46 @@
+mutton curry | 20 hits 812ms | Mutton Curry [Mehran] Nonekcal/100g ; Mutton Curry with Rice [Island Delight] 137kcal/100g ; Curried mutton rice [] 137kcal/100g
+uttapam | 1 hits 546ms | Uttapam mix 500 g [MTR] 351kcal/100g
+pongal | 2 hits 548ms | Pongal [] 125kcal/100g ; Pongal [MTR] Nonekcal/100g
+appam | 3 hits 517ms | Brahmins appam powder [] Nonekcal/100g ; Dev masala kuzhal appam [] Nonekcal/100g ; KITCHEN TREASURES Appam Idiyappm [] Nonekcal/100g
+curd rice | 20 hits 546ms | Cow Milk Dahi Low Fat [SARDA Farms] 50kcal/100g ; Bevanda di riso alla vaniglia [Rice&Rice] 55kcal/100g ; Dessert di riso e caramello [Rice & Rice] 138kcal/100g
+thepla | 4 hits 513ms | Methi Thepla [Deep] Nonekcal/100g ; Methi thepla [] 346.9kcal/100g ; Methi thepla [Bhagwati's] 375kcal/100g
+misal pav | 20 hits 522ms | Pav [Mr Bakewell] 300kcal/100g ; Pav Bhaji [Taj Mahal] 128kcal/100g ; SUHANA MISAL MASALA [] Nonekcal/100g
+sabudana khichdi | 18 hits 581ms | SABUDANA [] 485.71428571429kcal/100g ; Sabudana [Laxmi] 350kcal/100g ; Sabudana [Shri Varalakshm] 351kcal/100g
+khichdi | 6 hits 576ms | Millet Khichdi [] 38.181818181818kcal/100g ; Gujarati Khichdi [Fortune] 362.1kcal/100g ; Fortune khichdi [] Nonekcal/100g
+litti chokha | 1 hits 515ms | Litty bites [] 500kcal/100g
+machher jhol | 0 hits 553ms | 
+luchi | 0 hits 555ms | 
+momos | 20 hits 518ms | Momos [Tenz] 213kcal/100g ; Momos [Prasuma] Nonekcal/100g ; Momos [Felfel] 213kcal/100g
+gulab jamun | 20 hits 509ms | Gulab Jamun [] 313kcal/100g ; Gulab Jamun [] 250kcal/100g ; Gulab Jamun [] 400kcal/100g
+jalebi | 2 hits 550ms | Jalebi [] 440kcal/100g ; Jalebii [Jalebi] 23.600000381469727kcal/100g
+rasgulla | 8 hits 549ms | Rasgulla [Royal] 241.7kcal/100g ; Rasgulla [Haldiram's] 250kcal/100g ; rasgulla [bikaji] 313kcal/100g
+ladoo | 15 hits 587ms | Motichur ladoo [] 321.42857142857kcal/100g ; Besan Ladoo [] 500kcal/100g ; Peanut ladoo [Gulab] 620kcal/100g
+kheer | 5 hits 482ms | Kheer Mix [] 128kcal/100g ; Pista Kheer [Royal] 239kcal/100g ; Dessert kheer Mix [] Nonekcal/100g
+halwa | 20 hits 551ms | حلاوة طحينية فاخرة مغطاة بالفستق [السعر 14 ريال] Nonekcal/100g ; حلاوة طحينية فاخرة سادة ( النخلة) [Halwani bros] Nonekcal/100g ; Star, Halwa [] Nonekcal/100g
+barfi | 3 hits 498ms | White barfi [] 500kcal/100g ; Kesar Rasbari Barfi [Bikano] Nonekcal/100g ; Peanut Barfi Chikki [Arcot Mani Mark] 509kcal/100g
+apple | 20 hits 574ms | Chaussons aux pommes U x2 [] 251kcal/100g ; Chausson aux pommes [Hyper U] 347kcal/100g ; Pommes bicolores Joburn [Côté Marché] Nonekcal/100g
+mango | 20 hits 563ms | Albi Mangosaft [Albi] 53kcal/100g ; Mango Nektar [Kaufland] 51kcal/100g ; Fruchtstern Mango-Nektar [Frucht Stern] 53kcal/100g
+watermelon | 20 hits 762ms | Natural Jumbo raisins & cashews [Marks&Spencer,s] Nonekcal/100g ; Watermelon [] Nonekcal/100g ; Watermelon [] 31kcal/100g
+dates | 20 hits 595ms | Sun Dates Fresh Iranian Dates [sun dates] 83kcal/100g ; Organic Dates [Sun Dates] Nonekcal/100g ; Saudi Dates [Al Mufeed] 1830kcal/100g
+whey protein | 20 hits 596ms | Whey protein pro [Whey protein] 363kcal/100g ; Whey protein banana [Designer Whey p] 390kcal/100g ; Impact Whey Protein MyProtein [Myprotein] 410kcal/100g
+almonds | 20 hits 550ms | Almonds [Blue Diamond Al] 571.42857142857kcal/100g ; Whole almonds [Whole Almonds] 580kcal/100g ; Almonds [Blue Diamond Al] 607kcal/100g
+sattu | 4 hits 552ms | Organic Sattu-500g [24 Mantra Organ] 340kcal/100g ; Adya Chana Sattu [Adya] Nonekcal/100g ; Ganesh Chana Sattu-200g [] Nonekcal/100g
+tofu | 20 hits 530ms | Tofu [Tofu] 43.2kcal/100g ; Tofu [Heiwa tofu] 114.0350877193kcal/100g ; Extra Firm Tofu [Ota Tofu] 82.352941176471kcal/100g
+maggi | 20 hits 836ms | Maggie [Maggi,Nestle] Nonekcal/100g ; ? [maggi] Nonekcal/100g ; Maggi [Maggi] 84kcal/100g
+parle g | 20 hits 536ms | Parle G [Parle-G] 454kcal/100g ; Parle-G Original Gluco Biscuits [Parle-G] Nonekcal/100g ; Parle-G Kismi Dal Chini Cinnamon Biscu [Parle-G,Parle] Nonekcal/100g
+amul butter | 20 hits 511ms | amul butter [] Nonekcal/100g ; amul butter [] Nonekcal/100g ; amul butter [] Nonekcal/100g
+britannia bread | 20 hits 548ms | britannia bread [Britannia] Nonekcal/100g ; BRITANNIA [] Nonekcal/100g ; BRITANNIA [] Nonekcal/100g
+haldiram bhujia | 20 hits 528ms | Haldiram's bhujia [Haldiram's] Nonekcal/100g ; Haldiram's BHUJIA [Haldiram's] Nonekcal/100g ; Haldirams Bhujia [Haldirams] 580.8kcal/100g
+kurkure | 20 hits 517ms | kurkure [kurkure] Nonekcal/100g ; Green chutney style [PepsiCo,Kurkure] 561kcal/100g ; Kurkure Hyderabadi Hungama [Kurkure] Nonekcal/100g
+lays | 20 hits 532ms | Lays [Lays] Nonekcal/100g ; Lays [Lays] Nonekcal/100g ; lays [lays] Nonekcal/100g
+pizza | 20 hits 568ms | 3x Steinofen-Pizza Salami [Pizza 'Ah] 243kcal/100g ; Classic American Pepperoni Pizza [Pizza Express] 256kcal/100g ; Onion & Pepper Pizza [Cape Cod Cafe P] 259kcal/100g
+burger | 20 hits 536ms | Burger King Impossible Whopper (Vegan) [Burger King] Nonekcal/100g ; Vegan Spicy Bean Burgers [Vemondo] 201kcal/100g ; Burger [Not Burger] 269kcal/100g
+sandwich | 20 hits 570ms | Sandwich thon crudite [Sandwich] 190kcal/100g ; Sandwich [LM Sandwich] 216kcal/100g ; Mega Smoked Ham & Cheese Sandwiches [Market Sandwich] 184kcal/100g
+french fries | 20 hits 572ms | French Fries Salt & Vinegar [French Fries] 524kcal/100g ; Crispy French Fries [McCain] 148kcal/100g ; French fries [Four Seasons Go] 280kcal/100g
+cornflakes | 20 hits 504ms | TELMA COCOMAN CORNFLAKES SNACK [Telma] 470kcal/100g ; CORN FLAKES [Cornflakes] 378kcal/100g ; Cornflakes Chiwda (fried Indian snack) [LaxmiNarayan] 602.72kcal/100g
+muesli | 20 hits 545ms | Muesli [True Elements] 425.4kcal/100g ; Muesli [LifeForce Origi] 401kcal/100g ; Strawberry Cassis (wenig Zucker) [My Muesli] 387kcal/100g
+rajma chawal | 20 hits 588ms | Rajma Chawal [] 402.29885057471kcal/100g ; Daawat Cuppa Rice Rajma Chawal [Daawat] 284.8275862069kcal/100g ; Kadhi Chawal [] 412.5kcal/100g
+1 bowl dal | 20 hits 555ms | BUDDHA BOWL [Delhaize] 127kcal/100g ; Buddha Bowl poulet [Chef Select] 135kcal/100g ; Veggie buddha bowl [Foodmaker] 122kcal/100g
+रोटी | 0 hits 536ms | 
+दाल | 0 hits 559ms | 
+पनीर | 0 hits 492ms | 

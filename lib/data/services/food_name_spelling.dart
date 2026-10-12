@@ -6,6 +6,15 @@ const Map<String, String> _spellingFolds = {
   'sabjee': 'sabji',
   'subzi': 'sabji',
   'subji': 'sabji',
+  'chappati': 'chapati',
+  'chapatti': 'chapati',
+  'chappathi': 'chapati',
+  'chapathi': 'chapati',
+  'panir': 'paneer',
+  'paner': 'paneer',
+  'laddu': 'ladoo',
+  'laddoo': 'ladoo',
+  'ladu': 'ladoo',
 };
 
 final RegExp _spellingFoldPattern = RegExp(

@@ -39,6 +39,19 @@ class NutritionFoodSearchVocabulary {
       'food-seed-0543', // Urad Dal Plain
       'food-seed-0570', // Yellow Dal Tadka
     },
+    'curd': {
+      'food-seed-0416', // Plain Curd / Dahi (Cow Milk)
+      'food-seed-0288', // Low Fat Curd / Dahi
+    },
+    'dahi': {'food-seed-0416', 'food-seed-0288'},
+  };
+
+  /// Hindi words for the primary concepts above.
+  static const Map<String, String> _hindiConcepts = {
+    'रोटी': 'roti',
+    'चपाती': 'chapati',
+    'दाल': 'dal',
+    'दही': 'dahi',
   };
 
   static String normalize(String value) {
@@ -90,9 +103,10 @@ class NutritionFoodSearchVocabulary {
     required String? canonicalFoodId,
   }) {
     if (canonicalFoodId == null) return false;
-    return _primaryConceptCanonicalIds[normalize(query)]?.contains(
-          canonicalFoodId,
-        ) ??
+    final key = foldFoodSpellings(normalize(query));
+    return (_primaryConceptCanonicalIds[key] ??
+                _primaryConceptCanonicalIds[_hindiConcepts[key]])
+            ?.contains(canonicalFoodId) ??
         false;
   }
 
@@ -167,6 +181,7 @@ class NutritionFoodSearchCandidate {
     required this.option,
     required this.remote,
     this.matchedTerms = const [],
+    this.alternateNames = const [],
   });
 
   factory NutritionFoodSearchCandidate.legacy(
@@ -194,6 +209,9 @@ class NutritionFoodSearchCandidate {
       option: null,
       remote: null,
       matchedTerms: matchedTerms,
+      alternateNames: [
+        if (food.nameHindi?.trim().isNotEmpty ?? false) food.nameHindi!.trim(),
+      ],
     );
   }
 
@@ -258,6 +276,10 @@ class NutritionFoodSearchCandidate {
   final bool hasNumericFacts;
   final String? providerId;
   final String? packageQuantity;
+
+  /// Other names that count as the food's name, not just metadata: the
+  /// Hindi name, so "रोटी" finds "गेहूं की रोटी".
+  final List<String> alternateNames;
   final FoodItem? food;
   final NutritionFoodOption? option;
   final FoodApiResult? remote;
@@ -409,6 +431,9 @@ class NutritionFoodSearchRanking {
   static const int _exact = 1000;
   static const int _aliasExact = 950;
   static const int _prefix = 820;
+  // The query starts a later word ("egg" in "Roasted eggplant"): weaker
+  // than a whole-word match ("Boiled Eggs").
+  static const int _innerPrefix = 640;
   static const int _token = 680;
   static const int _substring = 220;
   static const int _metadataToken = 120;
@@ -479,33 +504,34 @@ class NutritionFoodSearchRanking {
     String normalizedQuery,
     List<String> queryVariants,
   ) {
-    final displayName = NutritionFoodSearchVocabulary.normalize(
-      candidate.displayName,
-    );
     final searchableText = candidate.searchableText;
     if (searchableText.isEmpty) return const _Evaluation.none();
-    final displayTokens = _tokens(displayName);
     final searchableTokens = _tokens(searchableText);
     final originalTokens = _tokens(normalizedQuery);
     var best = const _Evaluation.none();
-    for (final variant in queryVariants) {
-      final variantTokens = _tokens(variant);
-      final alias = variant != normalizedQuery;
-      final evaluation = _evaluateVariant(
-        candidate,
-        displayName,
-        displayTokens,
-        searchableText,
-        searchableTokens,
-        normalizedQuery,
-        variant,
-        variantTokens,
-        originalTokens,
-        alias,
-      );
-      if (evaluation.rank > best.rank ||
-          evaluation.lexicalScore > best.lexicalScore) {
-        best = evaluation;
+    for (final name in [candidate.displayName, ...candidate.alternateNames]) {
+      final displayName = NutritionFoodSearchVocabulary.normalize(name);
+      if (displayName.isEmpty) continue;
+      final displayTokens = _tokens(displayName);
+      for (final variant in queryVariants) {
+        final variantTokens = _tokens(variant);
+        final alias = variant != normalizedQuery;
+        final evaluation = _evaluateVariant(
+          candidate,
+          displayName,
+          displayTokens,
+          searchableText,
+          searchableTokens,
+          normalizedQuery,
+          variant,
+          variantTokens,
+          originalTokens,
+          alias,
+        );
+        if (evaluation.rank > best.rank ||
+            evaluation.lexicalScore > best.lexicalScore) {
+          best = evaluation;
+        }
       }
     }
     return best;
@@ -535,11 +561,11 @@ class NutritionFoodSearchRanking {
       );
     }
     if (displayName.startsWith('$variant ')) {
+      // A name that only starts with an alias ("Dahi Papdi Chaat" for
+      // "curd") is a prefix match, not an exact one.
       return _Evaluation(
-        match: alias
-            ? NutritionFoodSearchMatch.aliasExact
-            : NutritionFoodSearchMatch.prefix,
-        lexicalScore: alias ? _aliasExact - 30 : _prefix,
+        match: NutritionFoodSearchMatch.prefix,
+        lexicalScore: alias ? _prefix - 30 : _prefix,
       );
     }
     final allDisplayTokensMatch =
@@ -580,9 +606,14 @@ class NutritionFoodSearchRanking {
 
     if (variantTokens.length == 1 &&
         displayTokens.any((token) => token.startsWith(variant))) {
+      final startsName = displayTokens.first.startsWith(variant);
       return _Evaluation(
         match: NutritionFoodSearchMatch.prefix,
-        lexicalScore: alias ? _prefix - 30 : _prefix,
+        lexicalScore: !startsName
+            ? _innerPrefix
+            : alias
+            ? _prefix - 30
+            : _prefix,
       );
     }
     if (displayName.contains(variant)) {

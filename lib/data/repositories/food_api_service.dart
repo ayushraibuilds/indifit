@@ -29,6 +29,15 @@ const String kOpenFoodFactsUserAgent = 'IndiFit/1.0.0 (privacy@indifit.app)';
 const String kOpenFoodFactsSearchUrl =
     'https://search.openfoodfacts.org/search';
 
+/// Open Food Facts holds products from every country, so a generic word
+/// ("apple", "halwa") mostly finds European products. Indian products are
+/// asked for first; the global index only tops them up.
+const String kOpenFoodFactsIndiaFilter = 'countries_tags:"en:india"';
+
+/// Fewer Indian products with calories than this, and the global index is
+/// searched too.
+const int kOpenFoodFactsIndiaMinimum = 5;
+
 final foodApiServiceProvider = Provider<FoodApiService>((ref) {
   final dio = ref.watch(dioProvider);
   final policy = ref.watch(privacyPolicyProvider);
@@ -375,8 +384,7 @@ class FoodApiService {
     final offDio = _openFoodFactsDio;
     final Map<dynamic, dynamic>? data;
     if (_baseUrl.isEmpty) {
-      data = await _postSearch(
-        kOpenFoodFactsSearchUrl,
+      data = await _searchOpenFoodFacts(
         offDio ?? _dio,
         query: trimmed,
         language: language,
@@ -398,8 +406,7 @@ class FoodApiService {
         );
       } on DioException catch (error) {
         if (offDio == null || !_isBackendUnavailable(error)) rethrow;
-        backendData = await _postSearch(
-          kOpenFoodFactsSearchUrl,
+        backendData = await _searchOpenFoodFacts(
           offDio,
           query: trimmed,
           language: language,
@@ -429,7 +436,9 @@ class FoodApiService {
               Map<String, dynamic>.from(raw),
             ),
           )
-          .where((r) => r.name.isNotEmpty)
+          // A product without calories cannot be logged; listing it only
+          // pushes loggable ones down.
+          .where((r) => r.name.isNotEmpty && r.calories != null)
           .toList();
     }
 
@@ -468,6 +477,61 @@ class FoodApiService {
 
     return results;
   }
+
+  /// Searches Open Food Facts for Indian products first, then tops up from
+  /// the global index when fewer than [kOpenFoodFactsIndiaMinimum] of them
+  /// have calories. Indian hits keep their place ahead of global ones.
+  Future<Map<dynamic, dynamic>?> _searchOpenFoodFacts(
+    Dio dio, {
+    required String query,
+    required String language,
+    required int page,
+    required int limit,
+    CancelToken? cancelToken,
+  }) async {
+    final india = _offHits(
+      await _postSearch(
+        kOpenFoodFactsSearchUrl,
+        dio,
+        query: '$query $kOpenFoodFactsIndiaFilter',
+        language: language,
+        page: page,
+        limit: limit,
+        cancelToken: cancelToken,
+      ),
+    );
+    final usable = india.where((hit) {
+      final nutriments = hit['nutriments'];
+      return nutriments is Map &&
+          (nutriments['energy-kcal_100g'] ?? nutriments['energy-kcal']) != null;
+    }).length;
+    if (usable >= kOpenFoodFactsIndiaMinimum) return {'hits': india};
+    final global = _offHits(
+      await _postSearch(
+        kOpenFoodFactsSearchUrl,
+        dio,
+        query: query,
+        language: language,
+        page: page,
+        limit: limit,
+        cancelToken: cancelToken,
+      ),
+    );
+    final seen = {for (final hit in india) hit['code']?.toString()};
+    return {
+      'hits': [
+        ...india,
+        for (final hit in global)
+          if (hit['code'] == null || !seen.contains(hit['code'].toString()))
+            hit,
+      ],
+    };
+  }
+
+  static List<Map<dynamic, dynamic>> _offHits(Map<dynamic, dynamic>? data) =>
+      data != null && data['hits'] is List
+      ? (data['hits'] as List).whereType<Map>().toList()
+      : const [];
 
   /// POSTs one search to [url] and returns the response body, or null for a
   /// non-200 or non-JSON reply. Open Food Facts and the backend take different
