@@ -1,0 +1,126 @@
+name,name_hindi,category,quantity,serving,kcal,protein_g,carbs_g,fat_g,fibre_g,aliases
+Banana,केला,Fruits,1,medium (118 g),105,1.3,27,0.4,3.1,kela
+Apple,सेब,Fruits,1,medium (182 g),95,0.5,25,0.3,4.4,seb
+Mango,आम,Fruits,1,cup sliced (165 g),99,1.4,25,0.6,2.6,aam
+Orange,संतरा,Fruits,1,medium (131 g),62,1.2,15,0.2,3.1,santra
+Papaya,पपीता,Fruits,1,cup (145 g),62,0.7,16,0.4,2.5,papita
+Watermelon,तरबूज,Fruits,1,cup (152 g),46,0.9,11.5,0.2,0.6,tarbooz
+Guava,अमरूद,Fruits,1,medium (55 g),37,1.4,7.9,0.5,3.0,amrood
+Pomegranate,अनार,Fruits,0.5,cup arils (87 g),72,1.5,16,1.0,3.5,anar
+Grapes,अंगूर,Fruits,1,cup (151 g),104,1.1,27,0.2,1.4,angoor
+Pineapple,अनानास,Fruits,1,cup (165 g),82,0.9,22,0.2,2.3,ananas
+Chikoo,चीकू,Fruits,1,medium (100 g),83,0.4,20,1.1,5.3,sapota
+Pear,नाशपाती,Fruits,1,medium (178 g),101,0.6,27,0.2,5.5,nashpati
+Muskmelon,खरबूजा,Fruits,1,cup (160 g),54,1.3,13,0.3,1.4,kharbuja
+Strawberries,स्ट्रॉबेरी,Fruits,1,cup (152 g),49,1.0,12,0.5,3.0,strawberry
+Kiwi,कीवी,Fruits,1,medium (69 g),42,0.8,10,0.4,2.1,
+Dates,खजूर,Fruits,3,pieces (24 g),67,0.6,18,0.1,1.9,khajoor
+Raisins,किशमिश,Fruits,1,tbsp (10 g),30,0.3,8,0.0,0.4,kishmish
+Amla,आंवला,Fruits,1,medium (30 g),13,0.3,3,0.0,1.3,indian gooseberry
+Jamun,जामुन,Fruits,10,pieces (50 g),31,0.4,7,0.1,0.3,java plum
+Almonds,बादाम,Nuts & Seeds,10,pieces (12 g),70,2.5,2.6,6.0,1.5,badam
+Cashews,काजू,Nuts & Seeds,10,pieces (15 g),83,2.7,4.5,6.6,0.5,kaju
+Walnuts,अखरोट,Nuts & Seeds,2,whole (14 g),92,2.1,1.9,9.2,1.0,akhrot
+Peanuts (Roasted),मूंगफली,Nuts & Seeds,1,handful (30 g),170,7.7,4.8,14.5,2.4,"moongphali,groundnut"
+Pistachios,पिस्ता,Nuts & Seeds,15,pieces (12 g),68,2.4,3.4,5.4,1.3,pista
+Makhana (Roasted),मखाना,Nuts & Seeds,1,cup (32 g),112,3.0,22,0.3,2.0,"fox nuts,lotus seeds"
+Peanut Butter,पीनट बटर,Nuts & Seeds,1,tbsp (16 g),94,3.6,3.4,8.0,0.8,
+Chia Seeds,चिया बीज,Nuts & Seeds,1,tbsp (12 g),58,2.0,5.0,3.7,4.1,
+Flax Seeds,अलसी,Nuts & Seeds,1,tbsp (10 g),53,1.8,2.9,4.2,2.7,alsi
+Pumpkin Seeds,कद्दू के बीज,Nuts & Seeds,1,tbsp (9 g),51,2.7,1.3,4.4,0.6,
+Sunflower Seeds,सूरजमुखी के बीज,Nuts & Seeds,1,tbsp (9 g),52,1.9,1.8,4.6,0.8,
+"Coconut (Fresh, Grated)",नारियल,Nuts & Seeds,2,tbsp (15 g),53,0.5,2.3,5.0,1.4,nariyal
+Gulab Jamun,गुलाब जामुन,Sweets & Desserts,1,piece (40 g),150,2.0,23,6.0,0.2,
+Jalebi,जलेबी,Sweets & Desserts,2,pieces (50 g),200,1.5,30,8.0,0.3,
+Rasgulla,रसगुल्ला,Sweets & Desserts,1,piece (40 g),106,1.6,22,1.3,0.0,rosogolla
+Rasmalai,रसमलाई,Sweets & Desserts,1,piece (60 g),150,5.0,18,7.0,0.0,
+Besan Ladoo,बेसन लड्डू,Sweets & Desserts,1,piece (40 g),190,4.0,20,11,1.5,laddu
+Motichoor Ladoo,मोतीचूर लड्डू,Sweets & Desserts,1,piece (40 g),175,2.0,24,8.0,0.5,laddu
+Kaju Katli,काजू कतली,Sweets & Desserts,1,piece (15 g),65,1.5,7.0,3.5,0.2,kaju barfi
+Milk Barfi,बर्फी,Sweets & Desserts,1,piece (30 g),125,3.0,16,5.5,0.0,barfi
+Kheer,खीर,Sweets & Desserts,1,katori (150 g),210,6.0,28,8.0,0.3,"rice pudding,payasam"
+Gajar Halwa,गाजर का हलवा,Sweets & Desserts,1,katori (125 g),290,5.0,36,14,2.5,carrot halwa
+Suji Halwa,सूजी का हलवा,Sweets & Desserts,1,katori (100 g),300,4.0,40,14,1.0,"sheera,rava kesari"
+Peda,पेड़ा,Sweets & Desserts,1,piece (25 g),95,2.5,13,3.5,0.0,
+Sandesh,संदेश,Sweets & Desserts,1,piece (40 g),120,5.0,16,4.0,0.0,
+Shrikhand,श्रीखंड,Sweets & Desserts,1,katori (100 g),260,6.0,38,9.0,0.0,
+Mysore Pak,मैसूर पाक,Sweets & Desserts,1,piece (30 g),160,1.5,14,11,0.5,
+Vanilla Ice Cream,आइसक्रीम,Sweets & Desserts,1,scoop (66 g),137,2.3,16,7.3,0.5,ice cream
+Dark Chocolate,डार्क चॉकलेट,Sweets & Desserts,1,small bar (20 g),120,1.6,9.0,8.6,2.2,
+Milk Chocolate,चॉकलेट,Sweets & Desserts,1,small bar (20 g),107,1.5,11.5,6.0,0.4,chocolate
+White Bread,ब्रेड,Grains & Breads,1,slice (25 g),67,2.0,12.7,0.8,0.6,bread
+Brown Bread (Whole Wheat),ब्राउन ब्रेड,Grains & Breads,1,slice (28 g),69,3.6,12,0.9,1.9,atta bread
+Multigrain Bread,मल्टीग्रेन ब्रेड,Grains & Breads,1,slice (28 g),69,3.5,11.5,1.1,1.9,
+Pav,पाव,Grains & Breads,1,piece (40 g),110,3.5,21,1.5,1.0,"ladi pav,bun"
+Bread Butter Toast,ब्रेड बटर,Grains & Breads,1,slice (30 g),102,2.0,13,4.5,0.6,toast
+Rusk,रस्क,Grains & Breads,1,piece (10 g),41,1.2,7.3,0.8,0.3,toast biscuit
+Puri,पूरी,Grains & Breads,1,piece (25 g),95,1.8,11,5.0,0.6,poori
+Thepla,थेपला,Grains & Breads,1,piece (40 g),130,3.0,18,5.0,2.5,methi thepla
+Luchi,लुचि,Grains & Breads,1,piece (25 g),100,1.8,12,5.0,0.4,
+Litti,लिट्टी,Grains & Breads,1,piece (80 g),230,7.0,32,8.0,5.0,litti chokha
+Appam,अप्पम,Grains & Breads,1,piece (60 g),120,2.0,24,1.0,0.5,
+Uttapam,उत्तपम,Grains & Breads,1,piece (150 g),220,6.0,36,5.0,2.5,uthappam
+Puttu,पुट्टु,Grains & Breads,1,cup (150 g),220,5.0,45,1.0,3.0,
+Cornflakes,कॉर्नफ्लेक्स,Breakfast Cereals,1,bowl dry (30 g),113,2.2,25,0.1,0.9,corn flakes
+Muesli,मुसली,Breakfast Cereals,1,bowl dry (45 g),170,4.5,30,3.5,3.5,
+Oats (Dry),ओट्स,Breakfast Cereals,1,serving (40 g),152,5.3,27,2.7,4.0,rolled oats
+Oats Porridge with Milk,दूध वाले ओट्स,Breakfast Cereals,1,bowl (250 g),230,9.0,35,6.0,4.0,"oatmeal,daliya oats"
+Granola,ग्रेनोला,Breakfast Cereals,1,serving (30 g),140,3.0,19,6.0,2.0,
+Veg Sandwich,वेज सैंडविच,Snacks & Street Food,1,sandwich (150 g),240,7.0,32,9.0,3.0,sandwich
+Cheese Sandwich,चीज़ सैंडविच,Snacks & Street Food,1,sandwich (130 g),300,12,30,14,2.0,
+Bread Omelette,ब्रेड ऑमलेट,Snacks & Street Food,1,serving (150 g),250,12,22,13,1.0,
+Khichdi,खिचड़ी,Rice & Rice Dishes,1,katori (200 g),250,9.0,38,6.0,4.0,moong dal khichdi
+Curd Rice,दही चावल,Rice & Rice Dishes,1,katori (200 g),260,7.0,40,7.0,1.0,"thayir sadam,dahi chawal"
+Lemon Rice,नींबू चावल,Rice & Rice Dishes,1,katori (160 g),250,4.0,40,8.0,1.5,chitranna
+Veg Fried Rice,वेज फ्राइड राइस,Rice & Rice Dishes,1,plate (250 g),400,8.0,62,12,3.0,fried rice
+Chicken Fried Rice,चिकन फ्राइड राइस,Rice & Rice Dishes,1,plate (250 g),450,18,58,15,2.0,
+Ven Pongal,पोंगल,Rice & Rice Dishes,1,katori (200 g),280,8.0,40,9.0,2.0,pongal
+Bisi Bele Bath,बिसी बेले भात,Rice & Rice Dishes,1,katori (200 g),300,9.0,45,9.0,5.0,
+Sabudana Khichdi,साबूदाना खिचड़ी,Rice & Rice Dishes,1,katori (150 g),330,3.5,52,12,1.5,sago khichdi
+Rajma Chawal,राजमा चावल,Rice & Rice Dishes,1,plate (300 g),420,14,70,8.0,10,rajma rice
+Dal Chawal,दाल चावल,Rice & Rice Dishes,1,plate (300 g),380,13,66,6.0,6.0,dal rice
+Chicken Breast (Cooked),चिकन ब्रेस्ट,Non-Veg,1,serving (100 g),165,31,0.0,3.6,0.0,grilled chicken breast
+Chicken Thigh (Cooked),चिकन थाई,Non-Veg,1,serving (100 g),209,26,0.0,10.9,0.0,
+Egg White (Boiled),अंडे की सफेदी,Non-Veg,1,egg white (33 g),17,3.6,0.2,0.1,0.0,egg whites
+Whole Egg (Boiled),उबला अंडा,Non-Veg,1,egg (50 g),78,6.3,0.6,5.3,0.0,"anda,boiled egg"
+Fish Fillet (Cooked),मछली,Non-Veg,1,serving (100 g),130,22,0.0,4.5,0.0,"fish,rohu"
+Machher Jhol,माछेर झोल,Non-Veg,1,katori (150 g),200,18,6.0,11,1.0,bengali fish curry
+Prawns (Cooked),झींगा,Non-Veg,1,serving (100 g),99,24,0.2,0.3,0.0,"shrimp,jhinga"
+Mutton Curry,मटन करी,Non-Veg,1,katori (150 g),290,22,6.0,19,1.0,"goat curry,mutton masala"
+Chicken Shawarma Roll,चिकन शावरमा,Non-Veg,1,roll (250 g),500,28,48,22,3.0,shawarma
+Chicken Momos,चिकन मोमोज़,Snacks & Street Food,6,pieces (200 g),300,16,36,9.0,1.5,momos
+Veg Momos,वेज मोमोज़,Snacks & Street Food,6,pieces (180 g),250,7.0,40,6.0,2.5,momos
+Tofu,टोफू,Pulses & Legumes,1,serving (100 g),76,8.0,1.9,4.8,0.3,
+Soya Chunks (Dry),सोया चंक्स,Pulses & Legumes,1,serving (30 g),104,15.6,9.9,0.2,3.9,"nutrela,soya badi"
+Moong Sprouts,अंकुरित मूंग,Pulses & Legumes,1,cup (104 g),31,3.0,6.0,0.2,1.9,sprouts
+Sattu,सत्तू,Pulses & Legumes,2,tbsp (30 g),120,6.5,19,2.0,5.0,chana sattu
+Whey Protein,व्हे प्रोटीन,Supplements,1,scoop (30 g),120,24,3.0,1.5,0.0,protein powder
+Cheese Slice,चीज़ स्लाइस,Paneer & Dairy,1,slice (20 g),62,3.8,1.2,4.8,0.0,cheese
+Butter,मक्खन,Paneer & Dairy,1,tsp (5 g),36,0.0,0.0,4.1,0.0,"makhan,amul butter"
+Mozzarella Cheese,मोज़रेला,Paneer & Dairy,1,serving (28 g),85,6.3,0.6,6.3,0.0,pizza cheese
+Tea with Milk and Sugar,चाय,Beverages,1,cup (150 ml),80,2.0,12,2.5,0.0,"chai,doodh chai"
+Coffee with Milk and Sugar,कॉफी,Beverages,1,cup (150 ml),90,3.0,12,3.0,0.0,coffee
+Cold Coffee,कोल्ड कॉफी,Beverages,1,glass (250 ml),200,6.0,28,7.0,0.0,
+Badam Milk,बादाम दूध,Beverages,1,glass (200 ml),180,7.0,24,6.0,0.5,
+Orange Juice (Fresh),संतरे का जूस,Beverages,1,glass (200 ml),90,1.4,21,0.4,0.4,
+Cola,कोल्ड ड्रिंक,Beverages,1,can (330 ml),139,0.0,35,0.0,0.0,"coke,pepsi,soft drink"
+Pizza (Margherita),पिज़्ज़ा,Western & Fast Food,1,slice (107 g),285,12,36,10,2.5,pizza
+Veg Burger,वेज बर्गर,Western & Fast Food,1,burger (150 g),330,10,45,12,3.0,"burger,aloo tikki burger"
+Chicken Burger,चिकन बर्गर,Western & Fast Food,1,burger (170 g),410,22,40,18,2.0,burger
+French Fries,फ्रेंच फ्राइज़,Western & Fast Food,1,medium (117 g),365,4.0,48,17,4.4,fries
+Pasta (Red Sauce),पास्ता,Western & Fast Food,1,plate (250 g),330,11,58,6.0,4.0,"pasta,arrabbiata"
+Pasta (White Sauce),व्हाइट सॉस पास्ता,Western & Fast Food,1,plate (250 g),450,13,52,21,3.0,alfredo
+Masala Noodles (Instant),मैगी,Western & Fast Food,1,pack cooked (70 g dry),315,7.0,43,13,2.0,"maggi,instant noodles"
+Veg Spring Roll,स्प्रिंग रोल,Western & Fast Food,1,piece (60 g),150,3.0,18,7.0,1.2,
+Veg Frankie,वेज फ्रैंकी,Western & Fast Food,1,roll (200 g),380,9.0,48,16,4.0,kathi roll
+Popcorn (Salted),पॉपकॉर्न,Snacks & Street Food,2,cups (16 g),62,2.0,12,0.8,2.4,
+Kachori,कचौरी,Snacks & Street Food,1,piece (60 g),250,5.0,26,14,2.0,khasta kachori
+Glucose Biscuits,ग्लूकोज़ बिस्किट,Packaged Snacks,4,biscuits (25 g),114,1.7,19,3.4,0.3,"parle g,parle-g"
+Marie Biscuits,मैरी बिस्किट,Packaged Snacks,4,biscuits (25 g),110,2.0,19,2.8,0.5,marie gold
+Aloo Bhujia,आलू भुजिया,Packaged Snacks,1,serving (30 g),165,3.0,12,12,1.5,"haldiram bhujia,bhujia sev"
+Potato Chips (Salted),चिप्स,Packaged Snacks,1,small pack (25 g),134,1.6,13,8.6,1.0,"lays,chips"
+Corn Puffs (Masala),कुरकुरे,Packaged Snacks,1,small pack (25 g),135,1.5,15,8.0,0.5,kurkure
+Namkeen Mixture,नमकीन,Packaged Snacks,1,serving (30 g),160,4.0,15,9.0,2.0,"chiwda,mixture"
+Banana Chips,केले के चिप्स,Packaged Snacks,1,serving (30 g),155,0.7,17,10,2.0,
+Peanut Chikki,मूंगफली चिक्की,Packaged Snacks,1,piece (25 g),125,3.5,15,6.0,1.0,chikki
+Malted Milk Drink Powder,बॉर्नविटा,Beverages,1,serving (20 g),77,1.4,16,0.4,0.6,"bournvita,horlicks"

@@ -262,9 +262,16 @@ void main() {
         final results = await service.searchOnline('parle-g');
 
         expect(app.requests, isEmpty);
-        expect(off.requests.single.uri.host, 'search.openfoodfacts.org');
-        expect(off.requests.single.method, 'POST');
-        expect((off.requests.single.data as Map)['q'], 'parle-g');
+        // Indian products first; one hit is too few, so the global index
+        // tops it up and the duplicate is dropped.
+        expect(off.requests, hasLength(2));
+        expect(off.requests.first.uri.host, 'search.openfoodfacts.org');
+        expect(off.requests.first.method, 'POST');
+        expect(
+          (off.requests.first.data as Map)['q'],
+          'parle-g $kOpenFoodFactsIndiaFilter',
+        );
+        expect((off.requests.last.data as Map)['q'], 'parle-g');
         expect(results.single.name, 'Parle G');
         expect(results.single.brand, 'Parle-G, Parle');
         expect(results.single.calories, 454);
@@ -327,6 +334,66 @@ void main() {
     );
   });
 
+  group('Open Food Facts search favours Indian products', () {
+    Map<String, Object?> hit(String code, String name, {num? kcal}) => {
+      'code': code,
+      'product_name': name,
+      'nutriments': {'energy-kcal_100g': ?kcal},
+    };
+
+    FoodApiService service(_RecordingAdapter off) =>
+        FoodApiService(Dio(), null, null, '', Dio()..httpClientAdapter = off);
+
+    test('enough Indian products: one request, no global search', () async {
+      final off = _RecordingAdapter(
+        (_) => _json({
+          'hits': [
+            for (var i = 0; i < kOpenFoodFactsIndiaMinimum; i++)
+              hit('in$i', 'Gulab Jamun $i', kcal: 300 + i),
+          ],
+        }),
+      );
+
+      final results = await service(off).searchOnline('gulab jamun');
+
+      expect(off.requests, hasLength(1));
+      expect(results, hasLength(kOpenFoodFactsIndiaMinimum));
+    });
+
+    test('Indian products stay ahead of global ones', () async {
+      final off = _RecordingAdapter((options) {
+        final q = (options.data as Map)['q'] as String;
+        return _json({
+          'hits': q.contains(kOpenFoodFactsIndiaFilter)
+              ? [hit('in1', 'Paper Boat Apple Drink', kcal: 55)]
+              : [
+                  hit('fr1', 'Chaussons aux pommes', kcal: 251),
+                  hit('in1', 'Paper Boat Apple Drink', kcal: 55),
+                ],
+        });
+      });
+
+      final results = await service(off).searchOnline('apple');
+
+      expect(results.map((r) => r.name), [
+        'Paper Boat Apple Drink',
+        'Chaussons aux pommes',
+      ]);
+    });
+
+    test('products without calories are dropped', () async {
+      final off = _RecordingAdapter(
+        (_) => _json({
+          'hits': [hit('a', 'Amul Butter', kcal: 722), hit('b', 'amul butter')],
+        }),
+      );
+
+      final results = await service(off).searchOnline('amul butter');
+
+      expect(results.map((r) => r.name), ['Amul Butter']);
+    });
+  });
+
   group('FoodApiService backend fallback', () {
     test(
       'an unreachable backend falls back to Open Food Facts for search',
@@ -349,7 +416,7 @@ void main() {
         final results = await service.searchOnline('parle-g');
 
         expect(app.requests.single.uri.path, '/api/food/search');
-        expect(off.requests.single.uri.host, 'search.openfoodfacts.org');
+        expect(off.requests.first.uri.host, 'search.openfoodfacts.org');
         expect(results.single.name, 'Parle G');
       },
     );

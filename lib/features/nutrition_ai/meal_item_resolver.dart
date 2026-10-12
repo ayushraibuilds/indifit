@@ -75,7 +75,6 @@ class MealItemResolver {
   static const Map<String, String> genericDefaults = {
     'roti': _chapati,
     'chapati': _chapati,
-    'chapatti': _chapati,
     'phulka': _chapati,
     'rice': _rice,
     'chawal': _rice,

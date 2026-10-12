@@ -166,7 +166,11 @@ class CatalogSearchIndex {
     final budget = token.length >= 7 ? 2 : 1;
     return {
       for (final term in await _vocabularyTerms())
-        if ((term.length - token.length).abs() <= budget &&
+        // Like the ranking's fuzzy match: a different first letter is a
+        // different food ("laddu" is not "kaddu"), not a typo.
+        if (term.isNotEmpty &&
+            term.codeUnitAt(0) == token.codeUnitAt(0) &&
+            (term.length - token.length).abs() <= budget &&
             _editDistance(token, term, budget) <= budget)
           term,
     };

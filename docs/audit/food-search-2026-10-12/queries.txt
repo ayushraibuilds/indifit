@@ -1,0 +1,145 @@
+# category|query|expected (substring a sensible top-3 result should contain; blank = judge by eye)
+staple|roti|roti
+staple|chapati|chapati
+staple|chappati|chapati
+staple|phulka|roti
+staple|paratha|paratha
+staple|aloo paratha|aloo paratha
+staple|naan|naan
+staple|butter naan|naan
+staple|rice|rice
+staple|chawal|rice
+staple|jeera rice|jeera
+staple|brown rice|brown rice
+staple|dal|dal
+staple|daal|dal
+staple|dal tadka|tadka
+staple|dal makhani|makhani
+staple|moong dal|moong
+staple|toor dal|toor
+staple|rajma|rajma
+staple|chole|chole
+staple|chana masala|chana
+staple|kadhi|kadhi
+staple|sambar|sambar
+staple|rasam|rasam
+curry|paneer|paneer
+curry|panir|paneer
+curry|paneer butter masala|paneer
+curry|palak paneer|palak paneer
+curry|shahi paneer|paneer
+curry|matar paneer|matar
+curry|aloo gobi|aloo gobi
+curry|bhindi|bhindi
+curry|baingan bharta|baingan
+curry|mix veg|mix
+nonveg|chicken curry|chicken curry
+nonveg|butter chicken|butter chicken
+nonveg|chicken tikka|chicken tikka
+nonveg|tandoori chicken|tandoori
+nonveg|chicken breast|chicken breast
+nonveg|chiken|chicken
+nonveg|chicken biryani|biryani
+nonveg|biriyani|biryani
+nonveg|mutton curry|mutton
+nonveg|fish curry|fish
+nonveg|egg curry|egg curry
+nonveg|boiled egg|boiled egg
+nonveg|omelette|omelette
+nonveg|anda bhurji|bhurji
+nonveg|egg|egg
+south|idli|idli
+south|dosa|dosa
+south|masala dosa|masala dosa
+south|dosai|dosa
+south|uttapam|uttapam
+south|upma|upma
+south|medu vada|vada
+south|pongal|pongal
+south|appam|appam
+south|curd rice|curd rice
+west|poha|poha
+west|dhokla|dhokla
+west|thepla|thepla
+west|misal pav|misal
+west|vada pav|vada pav
+west|pav bhaji|pav bhaji
+west|sabudana khichdi|sabudana
+west|khichdi|khichdi
+east|litti chokha|litti
+east|machher jhol|fish
+east|luchi|luchi
+street|samosa|samosa
+street|pani puri|puri
+street|golgappa|pani puri
+street|bhel puri|bhel
+street|pakora|pakora
+street|pakoda|pakora
+street|kachori|kachori
+street|aloo tikki|tikki
+street|momos|momo
+sweet|gulab jamun|gulab jamun
+sweet|jalebi|jalebi
+sweet|rasgulla|rasgulla
+sweet|ladoo|ladoo
+sweet|laddu|ladoo
+sweet|kheer|kheer
+sweet|halwa|halwa
+sweet|barfi|barfi
+drink|chai|tea
+drink|masala chai|chai
+drink|tea|tea
+drink|coffee|coffee
+drink|filter coffee|coffee
+drink|lassi|lassi
+drink|buttermilk|buttermilk
+drink|chaas|buttermilk
+drink|nimbu pani|lemon
+drink|coconut water|coconut water
+drink|milk|milk
+dairy|curd|curd
+dairy|dahi|curd
+dairy|raita|raita
+dairy|ghee|ghee
+dairy|butter|butter
+dairy|greek yogurt|yogurt
+dairy|cheese|cheese
+fruit|banana|banana
+fruit|apple|apple
+fruit|mango|mango
+fruit|papaya|papaya
+fruit|watermelon|watermelon
+fruit|dates|dates
+fitness|oats|oats
+fitness|peanut butter|peanut butter
+fitness|whey protein|whey
+fitness|soya chunks|soya
+fitness|sprouts|sprouts
+fitness|almonds|almond
+fitness|makhana|makhana
+fitness|sattu|sattu
+fitness|tofu|tofu
+fitness|quinoa|quinoa
+packaged|maggi|maggi
+packaged|parle g|parle
+packaged|amul butter|butter
+packaged|britannia bread|bread
+packaged|bread|bread
+packaged|haldiram bhujia|bhujia
+packaged|kurkure|kurkure
+packaged|lays|chips
+western|pizza|pizza
+western|burger|burger
+western|pasta|pasta
+western|sandwich|sandwich
+western|french fries|fries
+western|cornflakes|corn
+western|muesli|muesli
+mixed|dal chawal|dal
+mixed|rajma chawal|rajma
+mixed|2 roti|roti
+mixed|1 bowl dal|dal
+mixed|roti sabzi|roti
+hindi|रोटी|roti
+hindi|दाल|dal
+hindi|पनीर|paneer

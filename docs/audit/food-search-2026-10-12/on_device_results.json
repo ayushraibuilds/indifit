@@ -1,0 +1,3382 @@
+[
+ {
+  "category": "staple",
+  "query": "roti",
+  "expect": "roti",
+  "count": 40,
+  "ms": 18,
+  "top": [
+   {
+    "name": "Whole Wheat Roti / Chapati",
+    "match": "token",
+    "kcal": 85,
+    "serving": "1.0 piece"
+   },
+   {
+    "name": "Bajra Roti (Millet)",
+    "match": "token",
+    "kcal": 115,
+    "serving": "1.0 piece"
+   },
+   {
+    "name": "Butter Roti / Chapati",
+    "match": "token",
+    "kcal": 110,
+    "serving": "1.0 piece"
+   },
+   {
+    "name": "Jowar Roti (Sorghum)",
+    "match": "token",
+    "kcal": 110,
+    "serving": "1.0 piece"
+   },
+   {
+    "name": "Missi Roti (Gram flour)",
+    "match": "token",
+    "kcal": 145,
+    "serving": "1.0 piece"
+   }
+  ]
+ },
+ {
+  "category": "staple",
+  "query": "chapati",
+  "expect": "chapati",
+  "count": 40,
+  "ms": 7,
+  "top": [
+   {
+    "name": "Whole Wheat Roti / Chapati",
+    "match": "token",
+    "kcal": 85,
+    "serving": "1.0 piece"
+   },
+   {
+    "name": "Butter Roti / Chapati",
+    "match": "token",
+    "kcal": 110,
+    "serving": "1.0 piece"
+   },
+   {
+    "name": "Bajra Roti (Millet)",
+    "match": "token",
+    "kcal": 115,
+    "serving": "1.0 piece"
+   },
+   {
+    "name": "Jowar Roti (Sorghum)",
+    "match": "token",
+    "kcal": 110,
+    "serving": "1.0 piece"
+   },
+   {
+    "name": "Missi Roti (Gram flour)",
+    "match": "token",
+    "kcal": 145,
+    "serving": "1.0 piece"
+   }
+  ]
+ },
+ {
+  "category": "staple",
+  "query": "chappati",
+  "expect": "chapati",
+  "count": 18,
+  "ms": 6,
+  "top": [
+   {
+    "name": "Butter Roti / Chapati",
+    "match": "fuzzy",
+    "kcal": 110,
+    "serving": "1.0 piece"
+   },
+   {
+    "name": "Whole Wheat Roti / Chapati",
+    "match": "fuzzy",
+    "kcal": 85,
+    "serving": "1.0 piece"
+   },
+   {
+    "name": "Bajra Roti (Millet)",
+    "match": "token",
+    "kcal": 115,
+    "serving": "1.0 piece"
+   },
+   {
+    "name": "Home Thali (Veg) — 2 Roti + Dal + Sabji + Curd",
+    "match": "token",
+    "kcal": 520,
+    "serving": "1.0 thali"
+   },
+   {
+    "name": "Jowar Roti (Sorghum)",
+    "match": "token",
+    "kcal": 110,
+    "serving": "1.0 piece"
+   }
+  ]
+ },
+ {
+  "category": "staple",
+  "query": "phulka",
+  "expect": "roti",
+  "count": 10,
+  "ms": 2,
+  "top": [
+   {
+    "name": "Bajra Roti (Millet)",
+    "match": "token",
+    "kcal": 115,
+    "serving": "1.0 piece"
+   },
+   {
+    "name": "Butter Roti / Chapati",
+    "match": "token",
+    "kcal": 110,
+    "serving": "1.0 piece"
+   },
+   {
+    "name": "Home Thali (Veg) — 2 Roti + Dal + Sabji + Curd",
+    "match": "token",
+    "kcal": 520,
+    "serving": "1.0 thali"
+   },
+   {
+    "name": "Jowar Roti (Sorghum)",
+    "match": "token",
+    "kcal": 110,
+    "serving": "1.0 piece"
+   },
+   {
+    "name": "Missi Roti (Gram flour)",
+    "match": "token",
+    "kcal": 145,
+    "serving": "1.0 piece"
+   }
+  ]
+ },
+ {
+  "category": "staple",
+  "query": "paratha",
+  "expect": "paratha",
+  "count": 35,
+  "ms": 4,
+  "top": [
+   {
+    "name": "Aloo Paratha",
+    "match": "token",
+    "kcal": 290,
+    "serving": "1.0 piece"
+   },
+   {
+    "name": "Gobi Paratha",
+    "match": "token",
+    "kcal": 240,
+    "serving": "1.0 piece"
+   },
+   {
+    "name": "Lachha Paratha",
+    "match": "token",
+    "kcal": 260,
+    "serving": "1.0 piece"
+   },
+   {
+    "name": "Methi Paratha",
+    "match": "token",
+    "kcal": 220,
+    "serving": "1.0 piece"
+   },
+   {
+    "name": "Mooli Paratha",
+    "match": "token",
+    "kcal": 230,
+    "serving": "1.0 piece"
+   }
+  ]
+ },
+ {
+  "category": "staple",
+  "query": "aloo paratha",
+  "expect": "aloo paratha",
+  "count": 5,
+  "ms": 4,
+  "top": [
+   {
+    "name": "Aloo Paratha",
+    "match": "exact",
+    "kcal": 290,
+    "serving": "1.0 piece"
+   },
+   {
+    "name": "Aloo Paratha (Double)",
+    "match": "prefix",
+    "kcal": 580,
+    "serving": "1.0 piece"
+   },
+   {
+    "name": "Aloo Paratha (Jumbo / Large)",
+    "match": "prefix",
+    "kcal": 435,
+    "serving": "1.0 piece"
+   },
+   {
+    "name": "Aloo Paratha (Mini)",
+    "match": "prefix",
+    "kcal": 174,
+    "serving": "1.0 piece"
+   },
+   {
+    "name": "Aloo Paratha (Premium ghee / extra oil)",
+    "match": "prefix",
+    "kcal": 362,
+    "serving": "1.0 piece"
+   }
+  ]
+ },
+ {
+  "category": "staple",
+  "query": "naan",
+  "expect": "naan",
+  "count": 20,
+  "ms": 3,
+  "top": [
+   {
+    "name": "Butter Naan",
+    "match": "token",
+    "kcal": 310,
+    "serving": "1.0 piece"
+   },
+   {
+    "name": "Garlic Butter Naan",
+    "match": "token",
+    "kcal": 330,
+    "serving": "1.0 piece"
+   },
+   {
+    "name": "Garlic Naan",
+    "match": "token",
+    "kcal": 280,
+    "serving": "1.0 piece"
+   },
+   {
+    "name": "Plain Naan",
+    "match": "token",
+    "kcal": 260,
+    "serving": "1.0 piece"
+   },
+   {
+    "name": "Butter Naan (Double)",
+    "match": "token",
+    "kcal": 620,
+    "serving": "1.0 piece"
+   }
+  ]
+ },
+ {
+  "category": "staple",
+  "query": "butter naan",
+  "expect": "naan",
+  "count": 10,
+  "ms": 3,
+  "top": [
+   {
+    "name": "Butter Naan",
+    "match": "exact",
+    "kcal": 310,
+    "serving": "1.0 piece"
+   },
+   {
+    "name": "Garlic Butter Naan",
+    "match": "token",
+    "kcal": 330,
+    "serving": "1.0 piece"
+   },
+   {
+    "name": "Butter Naan (Double)",
+    "match": "prefix",
+    "kcal": 620,
+    "serving": "1.0 piece"
+   },
+   {
+    "name": "Butter Naan (Jumbo / Large)",
+    "match": "prefix",
+    "kcal": 465,
+    "serving": "1.0 piece"
+   },
+   {
+    "name": "Butter Naan (Mini)",
+    "match": "prefix",
+    "kcal": 186,
+    "serving": "1.0 piece"
+   }
+  ]
+ },
+ {
+  "category": "staple",
+  "query": "rice",
+  "expect": "rice",
+  "count": 23,
+  "ms": 3,
+  "top": [
+   {
+    "name": "Basmati White Rice (Cooked)",
+    "match": "token",
+    "kcal": 130,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Brown Rice (Cooked)",
+    "match": "token",
+    "kcal": 111,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Jeera Rice",
+    "match": "token",
+    "kcal": 145,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Poha (Flattened Rice)",
+    "match": "token",
+    "kcal": 230,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Saffron Rice / Pulao",
+    "match": "token",
+    "kcal": 160,
+    "serving": "1.0 katori"
+   }
+  ]
+ },
+ {
+  "category": "staple",
+  "query": "chawal",
+  "expect": "rice",
+  "count": 5,
+  "ms": 3,
+  "top": [
+   {
+    "name": "Basmati White Rice (Cooked)",
+    "match": "token",
+    "kcal": 130,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Brown Rice (Cooked)",
+    "match": "token",
+    "kcal": 111,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Jeera Rice",
+    "match": "token",
+    "kcal": 145,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Poha (Flattened Rice)",
+    "match": "token",
+    "kcal": 230,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Saffron Rice / Pulao",
+    "match": "token",
+    "kcal": 160,
+    "serving": "1.0 katori"
+   }
+  ]
+ },
+ {
+  "category": "staple",
+  "query": "jeera rice",
+  "expect": "jeera",
+  "count": 5,
+  "ms": 1,
+  "top": [
+   {
+    "name": "Jeera Rice",
+    "match": "exact",
+    "kcal": 145,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Jeera Rice (Double)",
+    "match": "prefix",
+    "kcal": 290,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Jeera Rice (Jumbo / Large)",
+    "match": "prefix",
+    "kcal": 218,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Jeera Rice (Mini)",
+    "match": "prefix",
+    "kcal": 87,
+    "serving": "60.0 katori"
+   },
+   {
+    "name": "Jeera Rice (Premium ghee / extra oil)",
+    "match": "prefix",
+    "kcal": 181,
+    "serving": "1.0 katori"
+   }
+  ]
+ },
+ {
+  "category": "staple",
+  "query": "brown rice",
+  "expect": "brown rice",
+  "count": 5,
+  "ms": 1,
+  "top": [
+   {
+    "name": "Brown Rice (Cooked)",
+    "match": "prefix",
+    "kcal": 111,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Brown Rice (Cooked) (Double)",
+    "match": "prefix",
+    "kcal": 222,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Brown Rice (Cooked) (Jumbo / Large)",
+    "match": "prefix",
+    "kcal": 166,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Brown Rice (Cooked) (Mini)",
+    "match": "prefix",
+    "kcal": 67,
+    "serving": "60.0 katori"
+   },
+   {
+    "name": "Brown Rice (Cooked) (Premium ghee / extra oil)",
+    "match": "prefix",
+    "kcal": 139,
+    "serving": "1.0 katori"
+   }
+  ]
+ },
+ {
+  "category": "staple",
+  "query": "dal",
+  "expect": "dal",
+  "count": 40,
+  "ms": 2,
+  "top": [
+   {
+    "name": "Dal Fry (Chana & Toor)",
+    "match": "prefix",
+    "kcal": 165,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Dal Makhani",
+    "match": "prefix",
+    "kcal": 280,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Masoor Dal / Red Lentil Soup",
+    "match": "token",
+    "kcal": 115,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Moong Dal Chilka (Cooked)",
+    "match": "token",
+    "kcal": 120,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Toor Dal / Yellow Dal Tadka",
+    "match": "token",
+    "kcal": 140,
+    "serving": "1.0 katori"
+   }
+  ]
+ },
+ {
+  "category": "staple",
+  "query": "daal",
+  "expect": "dal",
+  "count": 34,
+  "ms": 4,
+  "top": [
+   {
+    "name": "Chana Dal Palak (Spinach & Gram dal)",
+    "match": "token",
+    "kcal": 135,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Dal Fry (Chana & Toor)",
+    "match": "token",
+    "kcal": 165,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Dal Makhani",
+    "match": "token",
+    "kcal": 280,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Double Toned Milk (1 Glass)",
+    "match": "token",
+    "kcal": 90,
+    "serving": "1.0 glass"
+   },
+   {
+    "name": "Full Cream Milk (1 Glass)",
+    "match": "token",
+    "kcal": 150,
+    "serving": "1.0 glass"
+   }
+  ]
+ },
+ {
+  "category": "staple",
+  "query": "dal tadka",
+  "expect": "tadka",
+  "count": 4,
+  "ms": 3,
+  "top": [
+   {
+    "name": "Toor Dal / Yellow Dal Tadka",
+    "match": "token",
+    "kcal": 140,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Toor Dal / Yellow Dal Tadka (Double serving)",
+    "match": "token",
+    "kcal": 280,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Toor Dal / Yellow Dal Tadka (Extra Butter / Ghee)",
+    "match": "token",
+    "kcal": 182,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Toor Dal / Yellow Dal Tadka (Half plate)",
+    "match": "token",
+    "kcal": 70,
+    "serving": "0.5 katori"
+   }
+  ]
+ },
+ {
+  "category": "staple",
+  "query": "dal makhani",
+  "expect": "makhani",
+  "count": 4,
+  "ms": 3,
+  "top": [
+   {
+    "name": "Dal Makhani",
+    "match": "exact",
+    "kcal": 280,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Dal Makhani (Double serving)",
+    "match": "prefix",
+    "kcal": 560,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Dal Makhani (Extra Butter / Ghee)",
+    "match": "prefix",
+    "kcal": 364,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Dal Makhani (Half plate)",
+    "match": "prefix",
+    "kcal": 140,
+    "serving": "0.5 katori"
+   }
+  ]
+ },
+ {
+  "category": "staple",
+  "query": "moong dal",
+  "expect": "moong",
+  "count": 4,
+  "ms": 2,
+  "top": [
+   {
+    "name": "Moong Dal Chilka (Cooked)",
+    "match": "prefix",
+    "kcal": 120,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Moong Dal Chilka (Cooked) (Double serving)",
+    "match": "prefix",
+    "kcal": 240,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Moong Dal Chilka (Cooked) (Extra Butter / Ghee)",
+    "match": "prefix",
+    "kcal": 156,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Moong Dal Chilka (Cooked) (Half plate)",
+    "match": "prefix",
+    "kcal": 60,
+    "serving": "0.5 katori"
+   }
+  ]
+ },
+ {
+  "category": "staple",
+  "query": "toor dal",
+  "expect": "toor",
+  "count": 8,
+  "ms": 2,
+  "top": [
+   {
+    "name": "Toor Dal / Yellow Dal Tadka",
+    "match": "prefix",
+    "kcal": 140,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Dal Fry (Chana & Toor)",
+    "match": "token",
+    "kcal": 165,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Toor Dal / Yellow Dal Tadka (Double serving)",
+    "match": "prefix",
+    "kcal": 280,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Toor Dal / Yellow Dal Tadka (Extra Butter / Ghee)",
+    "match": "prefix",
+    "kcal": 182,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Toor Dal / Yellow Dal Tadka (Half plate)",
+    "match": "prefix",
+    "kcal": 70,
+    "serving": "0.5 katori"
+   }
+  ]
+ },
+ {
+  "category": "staple",
+  "query": "rajma",
+  "expect": "rajma",
+  "count": 4,
+  "ms": 2,
+  "top": [
+   {
+    "name": "Rajma Masala (Red Kidney Beans)",
+    "match": "prefix",
+    "kcal": 210,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Rajma Masala (Red Kidney Beans) (Double serving)",
+    "match": "prefix",
+    "kcal": 420,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Rajma Masala (Red Kidney Beans) (Extra Butter / Ghee)",
+    "match": "prefix",
+    "kcal": 273,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Rajma Masala (Red Kidney Beans) (Half plate)",
+    "match": "prefix",
+    "kcal": 105,
+    "serving": "0.5 katori"
+   }
+  ]
+ },
+ {
+  "category": "staple",
+  "query": "chole",
+  "expect": "chole",
+  "count": 4,
+  "ms": 1,
+  "top": [
+   {
+    "name": "Chole Masala (Chickpea Curry)",
+    "match": "prefix",
+    "kcal": 240,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Chole Masala (Chickpea Curry) (Double serving)",
+    "match": "prefix",
+    "kcal": 480,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Chole Masala (Chickpea Curry) (Extra Butter / Ghee)",
+    "match": "prefix",
+    "kcal": 312,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Chole Masala (Chickpea Curry) (Half plate)",
+    "match": "prefix",
+    "kcal": 120,
+    "serving": "0.5 katori"
+   }
+  ]
+ },
+ {
+  "category": "staple",
+  "query": "chana masala",
+  "expect": "chana",
+  "count": 13,
+  "ms": 3,
+  "top": [
+   {
+    "name": "Chana Masala (Black Chickpeas)",
+    "match": "prefix",
+    "kcal": 180,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Chana Masala Dry (Sookha Chana)",
+    "match": "prefix",
+    "kcal": 190,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Chana Masala (Black Chickpeas) (Double serving)",
+    "match": "prefix",
+    "kcal": 360,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Chana Masala (Black Chickpeas) (Extra Butter / Ghee)",
+    "match": "prefix",
+    "kcal": 234,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Chana Masala (Black Chickpeas) (Half plate)",
+    "match": "prefix",
+    "kcal": 90,
+    "serving": "0.5 katori"
+   }
+  ]
+ },
+ {
+  "category": "staple",
+  "query": "kadhi",
+  "expect": "kadhi",
+  "count": 7,
+  "ms": 2,
+  "top": [
+   {
+    "name": "Kadhi Pakora",
+    "match": "prefix",
+    "kcal": 220,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Gujarati Kadhi",
+    "match": "token",
+    "kcal": 120,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Kadhi Pakora (Double serving)",
+    "match": "prefix",
+    "kcal": 440,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Kadhi Pakora (Extra Butter / Ghee)",
+    "match": "prefix",
+    "kcal": 286,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Kadhi Pakora (Half plate)",
+    "match": "prefix",
+    "kcal": 110,
+    "serving": "0.5 katori"
+   }
+  ]
+ },
+ {
+  "category": "staple",
+  "query": "sambar",
+  "expect": "sambar",
+  "count": 13,
+  "ms": 2,
+  "top": [
+   {
+    "name": "Sambar",
+    "match": "exact",
+    "kcal": 85,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Drumstick Sambar Veg Side",
+    "match": "token",
+    "kcal": 80,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Idli with Sambar (2 Idlis)",
+    "match": "token",
+    "kcal": 230,
+    "serving": "1.0 serving"
+   },
+   {
+    "name": "Medu Vada with Sambar (2 Vadas)",
+    "match": "token",
+    "kcal": 340,
+    "serving": "1.0 serving"
+   },
+   {
+    "name": "Sambar (Double serving)",
+    "match": "prefix",
+    "kcal": 170,
+    "serving": "1.0 katori"
+   }
+  ]
+ },
+ {
+  "category": "staple",
+  "query": "rasam",
+  "expect": "rasam",
+  "count": 1,
+  "ms": 2,
+  "top": [
+   {
+    "name": "Tomato Rasam",
+    "match": "token",
+    "kcal": 65,
+    "serving": "1.0 katori"
+   }
+  ]
+ },
+ {
+  "category": "curry",
+  "query": "paneer",
+  "expect": "paneer",
+  "count": 39,
+  "ms": 4,
+  "top": [
+   {
+    "name": "Paneer Bhurji",
+    "match": "prefix",
+    "kcal": 290,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Paneer Butter Masala",
+    "match": "prefix",
+    "kcal": 360,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Paneer Lababdar",
+    "match": "prefix",
+    "kcal": 340,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Paneer Pakora (3 pieces)",
+    "match": "prefix",
+    "kcal": 240,
+    "serving": "1.0 serving"
+   },
+   {
+    "name": "Paneer Paratha",
+    "match": "prefix",
+    "kcal": 340,
+    "serving": "1.0 piece"
+   }
+  ]
+ },
+ {
+  "category": "curry",
+  "query": "panir",
+  "expect": "paneer",
+  "count": 8,
+  "ms": 3,
+  "top": [
+   {
+    "name": "Nimbu Pani (Lemonade with sugar)",
+    "match": "fuzzy",
+    "kcal": 60,
+    "serving": "1.0 glass"
+   },
+   {
+    "name": "Nimbu Pani (Lemonade with sugar) (Large cup / Tall Glass)",
+    "match": "fuzzy",
+    "kcal": 90,
+    "serving": "1.0 glass"
+   },
+   {
+    "name": "Nimbu Pani (Lemonade with sugar) (Medium cup / Glass)",
+    "match": "fuzzy",
+    "kcal": 60,
+    "serving": "1.0 glass"
+   },
+   {
+    "name": "Nimbu Pani (Salted / Sugar-Free)",
+    "match": "fuzzy",
+    "kcal": 8,
+    "serving": "1.0 glass"
+   },
+   {
+    "name": "Nimbu Pani (Salted / Sugar-Free) (Large cup / Tall Glass)",
+    "match": "fuzzy",
+    "kcal": 12,
+    "serving": "1.0 glass"
+   }
+  ]
+ },
+ {
+  "category": "curry",
+  "query": "paneer butter masala",
+  "expect": "paneer",
+  "count": 2,
+  "ms": 4,
+  "top": [
+   {
+    "name": "Paneer Butter Masala",
+    "match": "exact",
+    "kcal": 360,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Paneer Butter Masala (Low Oil / Diet version)",
+    "match": "prefix",
+    "kcal": 270,
+    "serving": "1.0 katori"
+   }
+  ]
+ },
+ {
+  "category": "curry",
+  "query": "palak paneer",
+  "expect": "palak paneer",
+  "count": 2,
+  "ms": 2,
+  "top": [
+   {
+    "name": "Palak Paneer",
+    "match": "exact",
+    "kcal": 240,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Palak Paneer (Low Oil / Diet version)",
+    "match": "prefix",
+    "kcal": 180,
+    "serving": "1.0 katori"
+   }
+  ]
+ },
+ {
+  "category": "curry",
+  "query": "shahi paneer",
+  "expect": "paneer",
+  "count": 2,
+  "ms": 2,
+  "top": [
+   {
+    "name": "Shahi Paneer",
+    "match": "exact",
+    "kcal": 380,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Shahi Paneer (Low Oil / Diet version)",
+    "match": "prefix",
+    "kcal": 285,
+    "serving": "1.0 katori"
+   }
+  ]
+ },
+ {
+  "category": "curry",
+  "query": "matar paneer",
+  "expect": "matar",
+  "count": 3,
+  "ms": 2,
+  "top": [
+   {
+    "name": "Mattar Paneer",
+    "match": "fuzzy",
+    "kcal": 270,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Mattar Paneer (Low Oil / Diet version)",
+    "match": "fuzzy",
+    "kcal": 202,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Paneer Mattar (Low Oil cooking)",
+    "match": "fuzzy",
+    "kcal": 154,
+    "serving": "1.0 katori"
+   }
+  ]
+ },
+ {
+  "category": "curry",
+  "query": "aloo gobi",
+  "expect": "aloo gobi",
+  "count": 3,
+  "ms": 3,
+  "top": [
+   {
+    "name": "Aloo Gobbi (Dry Sabji)",
+    "match": "aliasExact",
+    "kcal": 130,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Aloo Gobbi (Dry Sabji) (Dhaba Style (High oil))",
+    "match": "aliasExact",
+    "kcal": 182,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Aloo Gobbi (Dry Sabji) (Low Oil cooking)",
+    "match": "aliasExact",
+    "kcal": 91,
+    "serving": "1.0 katori"
+   }
+  ]
+ },
+ {
+  "category": "curry",
+  "query": "bhindi",
+  "expect": "bhindi",
+  "count": 9,
+  "ms": 2,
+  "top": [
+   {
+    "name": "Bhindi Do Pyaza",
+    "match": "prefix",
+    "kcal": 125,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Bhindi Masala (Okra)",
+    "match": "prefix",
+    "kcal": 110,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Bharwa Bhindi",
+    "match": "token",
+    "kcal": 140,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Bhindi Do Pyaza (Dhaba Style (High oil))",
+    "match": "prefix",
+    "kcal": 175,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Bhindi Do Pyaza (Low Oil cooking)",
+    "match": "prefix",
+    "kcal": 88,
+    "serving": "1.0 katori"
+   }
+  ]
+ },
+ {
+  "category": "curry",
+  "query": "baingan bharta",
+  "expect": "baingan",
+  "count": 3,
+  "ms": 1,
+  "top": [
+   {
+    "name": "Baingan Bharta (Roasted eggplant)",
+    "match": "prefix",
+    "kcal": 105,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Baingan Bharta (Roasted eggplant) (Dhaba Style (High oil))",
+    "match": "prefix",
+    "kcal": 147,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Baingan Bharta (Roasted eggplant) (Low Oil cooking)",
+    "match": "prefix",
+    "kcal": 74,
+    "serving": "1.0 katori"
+   }
+  ]
+ },
+ {
+  "category": "curry",
+  "query": "mix veg",
+  "expect": "mix",
+  "count": 13,
+  "ms": 1,
+  "top": [
+   {
+    "name": "Mix Veg Curry (Gravy)",
+    "match": "prefix",
+    "kcal": 155,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Mix Veg Korma (Coconut South)",
+    "match": "prefix",
+    "kcal": 190,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Mix Veg Curry (Gravy) (Dhaba Style (High oil))",
+    "match": "prefix",
+    "kcal": 217,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Mix Veg Curry (Gravy) (Low Oil cooking)",
+    "match": "prefix",
+    "kcal": 108,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Avial (Kerala Mixed Veg)",
+    "match": "fuzzy",
+    "kcal": 160,
+    "serving": "1.0 katori"
+   }
+  ]
+ },
+ {
+  "category": "nonveg",
+  "query": "chicken curry",
+  "expect": "chicken curry",
+  "count": 6,
+  "ms": 2,
+  "top": [
+   {
+    "name": "Chicken Curry (North Indian style)",
+    "match": "prefix",
+    "kcal": 230,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Chicken Curry (North Indian style) (Diet prep (Low oil / breast only))",
+    "match": "prefix",
+    "kcal": 184,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Chole Masala (Chickpea Curry)",
+    "match": "fuzzy",
+    "kcal": 240,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Chole Masala (Chickpea Curry) (Double serving)",
+    "match": "fuzzy",
+    "kcal": 480,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Chole Masala (Chickpea Curry) (Extra Butter / Ghee)",
+    "match": "fuzzy",
+    "kcal": 312,
+    "serving": "1.0 katori"
+   }
+  ]
+ },
+ {
+  "category": "nonveg",
+  "query": "butter chicken",
+  "expect": "butter chicken",
+  "count": 5,
+  "ms": 3,
+  "top": [
+   {
+    "name": "Butter Chicken (Murgh Makhani)",
+    "match": "prefix",
+    "kcal": 390,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Butter Chicken (Murgh Makhani) (Diet prep (Low oil / breast only))",
+    "match": "prefix",
+    "kcal": 312,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Chana Masala (Black Chickpeas) (Extra Butter / Ghee)",
+    "match": "fuzzy",
+    "kcal": 234,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Chole Masala (Chickpea Curry) (Extra Butter / Ghee)",
+    "match": "fuzzy",
+    "kcal": 312,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Moong Dal Chilka (Cooked) (Extra Butter / Ghee)",
+    "match": "fuzzy",
+    "kcal": 156,
+    "serving": "1.0 katori"
+   }
+  ]
+ },
+ {
+  "category": "nonveg",
+  "query": "chicken tikka",
+  "expect": "chicken tikka",
+  "count": 2,
+  "ms": 3,
+  "top": [
+   {
+    "name": "Chicken Tikka (6 pcs)",
+    "match": "prefix",
+    "kcal": 210,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Chicken Tikka (6 pcs) (Diet prep (Low oil / breast only))",
+    "match": "prefix",
+    "kcal": 168,
+    "serving": "1.0 katori"
+   }
+  ]
+ },
+ {
+  "category": "nonveg",
+  "query": "tandoori chicken",
+  "expect": "tandoori",
+  "count": 2,
+  "ms": 2,
+  "top": [
+   {
+    "name": "Tandoori Chicken (Half)",
+    "match": "prefix",
+    "kcal": 320,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Tandoori Chicken (Half) (Diet prep (Low oil / breast only))",
+    "match": "prefix",
+    "kcal": 256,
+    "serving": "1.0 katori"
+   }
+  ]
+ },
+ {
+  "category": "nonveg",
+  "query": "chicken breast",
+  "expect": "chicken breast",
+  "count": 6,
+  "ms": 3,
+  "top": [
+   {
+    "name": "Butter Chicken (Murgh Makhani) (Diet prep (Low oil / breast only))",
+    "match": "token",
+    "kcal": 312,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Chicken Biryani (Hyderabadi) (Diet prep (Low oil / breast only))",
+    "match": "token",
+    "kcal": 384,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Chicken Curry (North Indian style) (Diet prep (Low oil / breast only))",
+    "match": "token",
+    "kcal": 184,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Chicken Korma (Diet prep (Low oil / breast only))",
+    "match": "token",
+    "kcal": 272,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Chicken Tikka (6 pcs) (Diet prep (Low oil / breast only))",
+    "match": "token",
+    "kcal": 168,
+    "serving": "1.0 katori"
+   }
+  ]
+ },
+ {
+  "category": "nonveg",
+  "query": "chiken",
+  "expect": "chicken",
+  "count": 12,
+  "ms": 2,
+  "top": [
+   {
+    "name": "Butter Chicken (Murgh Makhani)",
+    "match": "fuzzy",
+    "kcal": 390,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Butter Chicken (Murgh Makhani) (Diet prep (Low oil / breast only))",
+    "match": "fuzzy",
+    "kcal": 312,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Chicken Biryani (Hyderabadi)",
+    "match": "fuzzy",
+    "kcal": 480,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Chicken Biryani (Hyderabadi) (Diet prep (Low oil / breast only))",
+    "match": "fuzzy",
+    "kcal": 384,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Chicken Curry (North Indian style)",
+    "match": "fuzzy",
+    "kcal": 230,
+    "serving": "1.0 katori"
+   }
+  ]
+ },
+ {
+  "category": "nonveg",
+  "query": "chicken biryani",
+  "expect": "biryani",
+  "count": 2,
+  "ms": 2,
+  "top": [
+   {
+    "name": "Chicken Biryani (Hyderabadi)",
+    "match": "prefix",
+    "kcal": 480,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Chicken Biryani (Hyderabadi) (Diet prep (Low oil / breast only))",
+    "match": "prefix",
+    "kcal": 384,
+    "serving": "1.0 katori"
+   }
+  ]
+ },
+ {
+  "category": "nonveg",
+  "query": "biriyani",
+  "expect": "biryani",
+  "count": 4,
+  "ms": 1,
+  "top": [
+   {
+    "name": "Chicken Biryani (Hyderabadi)",
+    "match": "fuzzy",
+    "kcal": 480,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Chicken Biryani (Hyderabadi) (Diet prep (Low oil / breast only))",
+    "match": "fuzzy",
+    "kcal": 384,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Mutton Biryani",
+    "match": "fuzzy",
+    "kcal": 540,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Mutton Biryani (Diet prep (Low oil / breast only))",
+    "match": "fuzzy",
+    "kcal": 432,
+    "serving": "1.0 katori"
+   }
+  ]
+ },
+ {
+  "category": "nonveg",
+  "query": "mutton curry",
+  "expect": "mutton",
+  "count": 0,
+  "ms": 1,
+  "top": []
+ },
+ {
+  "category": "nonveg",
+  "query": "fish curry",
+  "expect": "fish",
+  "count": 2,
+  "ms": 1,
+  "top": [
+   {
+    "name": "Fish Curry (Bengali style)",
+    "match": "prefix",
+    "kcal": 190,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Fish Curry (Bengali style) (Diet prep (Low oil / breast only))",
+    "match": "prefix",
+    "kcal": 152,
+    "serving": "1.0 katori"
+   }
+  ]
+ },
+ {
+  "category": "nonveg",
+  "query": "egg curry",
+  "expect": "egg curry",
+  "count": 2,
+  "ms": 2,
+  "top": [
+   {
+    "name": "Egg Curry (2 Eggs)",
+    "match": "prefix",
+    "kcal": 240,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Egg Curry (2 Eggs) (Diet prep (Low oil / breast only))",
+    "match": "prefix",
+    "kcal": 192,
+    "serving": "1.0 katori"
+   }
+  ]
+ },
+ {
+  "category": "nonveg",
+  "query": "boiled egg",
+  "expect": "boiled egg",
+  "count": 2,
+  "ms": 2,
+  "top": [
+   {
+    "name": "Boiled Eggs (2 pieces)",
+    "match": "substring",
+    "kcal": 155,
+    "serving": "2.0 piece"
+   },
+   {
+    "name": "Boiled Eggs (2 pieces) (Diet prep (Low oil / breast only))",
+    "match": "substring",
+    "kcal": 124,
+    "serving": "2.0 piece"
+   }
+  ]
+ },
+ {
+  "category": "nonveg",
+  "query": "omelette",
+  "expect": "omelette",
+  "count": 2,
+  "ms": 2,
+  "top": [
+   {
+    "name": "Egg White Omelette (3 Eggs)",
+    "match": "token",
+    "kcal": 90,
+    "serving": "1.0 piece"
+   },
+   {
+    "name": "Egg White Omelette (3 Eggs) (Diet prep (Low oil / breast only))",
+    "match": "token",
+    "kcal": 72,
+    "serving": "1.0 piece"
+   }
+  ]
+ },
+ {
+  "category": "nonveg",
+  "query": "anda bhurji",
+  "expect": "bhurji",
+  "count": 2,
+  "ms": 2,
+  "top": [
+   {
+    "name": "Egg Bhurji (2 Eggs)",
+    "match": "token",
+    "kcal": 190,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Egg Bhurji (2 Eggs) (Diet prep (Low oil / breast only))",
+    "match": "token",
+    "kcal": 152,
+    "serving": "1.0 katori"
+   }
+  ]
+ },
+ {
+  "category": "nonveg",
+  "query": "egg",
+  "expect": "egg",
+  "count": 18,
+  "ms": 2,
+  "top": [
+   {
+    "name": "Baingan Bharta (Roasted eggplant)",
+    "match": "prefix",
+    "kcal": 105,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Boiled Eggs (2 pieces)",
+    "match": "prefix",
+    "kcal": 155,
+    "serving": "2.0 piece"
+   },
+   {
+    "name": "Boiled Eggs (2 pieces) (Diet prep (Low oil / breast only))",
+    "match": "prefix",
+    "kcal": 124,
+    "serving": "2.0 piece"
+   },
+   {
+    "name": "Egg Bhurji (2 Eggs)",
+    "match": "prefix",
+    "kcal": 190,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Egg Bhurji (2 Eggs) (Diet prep (Low oil / breast only))",
+    "match": "prefix",
+    "kcal": 152,
+    "serving": "1.0 katori"
+   }
+  ]
+ },
+ {
+  "category": "south",
+  "query": "idli",
+  "expect": "idli",
+  "count": 2,
+  "ms": 1,
+  "top": [
+   {
+    "name": "Idli with Sambar (2 Idlis)",
+    "match": "prefix",
+    "kcal": 230,
+    "serving": "1.0 serving"
+   },
+   {
+    "name": "Idli with Sambar (2 Idlis) (Mini size)",
+    "match": "prefix",
+    "kcal": 138,
+    "serving": "1.0 serving"
+   }
+  ]
+ },
+ {
+  "category": "south",
+  "query": "dosa",
+  "expect": "dosa",
+  "count": 6,
+  "ms": 2,
+  "top": [
+   {
+    "name": "Masala Dosa",
+    "match": "token",
+    "kcal": 350,
+    "serving": "1.0 piece"
+   },
+   {
+    "name": "Plain Dosa with Chutney",
+    "match": "token",
+    "kcal": 210,
+    "serving": "1.0 piece"
+   },
+   {
+    "name": "Rava Dosa",
+    "match": "token",
+    "kcal": 280,
+    "serving": "1.0 piece"
+   },
+   {
+    "name": "Masala Dosa (Mini size)",
+    "match": "token",
+    "kcal": 210,
+    "serving": "1.0 piece"
+   },
+   {
+    "name": "Plain Dosa with Chutney (Mini size)",
+    "match": "token",
+    "kcal": 126,
+    "serving": "1.0 piece"
+   }
+  ]
+ },
+ {
+  "category": "south",
+  "query": "masala dosa",
+  "expect": "masala dosa",
+  "count": 2,
+  "ms": 3,
+  "top": [
+   {
+    "name": "Masala Dosa",
+    "match": "exact",
+    "kcal": 350,
+    "serving": "1.0 piece"
+   },
+   {
+    "name": "Masala Dosa (Mini size)",
+    "match": "prefix",
+    "kcal": 210,
+    "serving": "1.0 piece"
+   }
+  ]
+ },
+ {
+  "category": "south",
+  "query": "dosai",
+  "expect": "dosa",
+  "count": 6,
+  "ms": 2,
+  "top": [
+   {
+    "name": "Masala Dosa",
+    "match": "fuzzy",
+    "kcal": 350,
+    "serving": "1.0 piece"
+   },
+   {
+    "name": "Plain Dosa with Chutney",
+    "match": "fuzzy",
+    "kcal": 210,
+    "serving": "1.0 piece"
+   },
+   {
+    "name": "Rava Dosa",
+    "match": "fuzzy",
+    "kcal": 280,
+    "serving": "1.0 piece"
+   },
+   {
+    "name": "Masala Dosa (Mini size)",
+    "match": "fuzzy",
+    "kcal": 210,
+    "serving": "1.0 piece"
+   },
+   {
+    "name": "Plain Dosa with Chutney (Mini size)",
+    "match": "fuzzy",
+    "kcal": 126,
+    "serving": "1.0 piece"
+   }
+  ]
+ },
+ {
+  "category": "south",
+  "query": "uttapam",
+  "expect": "uttapam",
+  "count": 0,
+  "ms": 3,
+  "top": []
+ },
+ {
+  "category": "south",
+  "query": "upma",
+  "expect": "upma",
+  "count": 6,
+  "ms": 1,
+  "top": [
+   {
+    "name": "Oats Upma",
+    "match": "token",
+    "kcal": 190,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Suji Upma",
+    "match": "token",
+    "kcal": 210,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Oats Upma (Double healthy bowl)",
+    "match": "token",
+    "kcal": 380,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Oats Upma (Small side bowl)",
+    "match": "token",
+    "kcal": 95,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Suji Upma (Double healthy bowl)",
+    "match": "token",
+    "kcal": 420,
+    "serving": "1.0 katori"
+   }
+  ]
+ },
+ {
+  "category": "south",
+  "query": "medu vada",
+  "expect": "vada",
+  "count": 2,
+  "ms": 1,
+  "top": [
+   {
+    "name": "Medu Vada with Sambar (2 Vadas)",
+    "match": "prefix",
+    "kcal": 340,
+    "serving": "1.0 serving"
+   },
+   {
+    "name": "Medu Vada with Sambar (2 Vadas) (Mini size)",
+    "match": "prefix",
+    "kcal": 204,
+    "serving": "1.0 serving"
+   }
+  ]
+ },
+ {
+  "category": "south",
+  "query": "pongal",
+  "expect": "pongal",
+  "count": 0,
+  "ms": 1,
+  "top": []
+ },
+ {
+  "category": "south",
+  "query": "appam",
+  "expect": "appam",
+  "count": 0,
+  "ms": 1,
+  "top": []
+ },
+ {
+  "category": "south",
+  "query": "curd rice",
+  "expect": "curd rice",
+  "count": 0,
+  "ms": 2,
+  "top": []
+ },
+ {
+  "category": "west",
+  "query": "poha",
+  "expect": "poha",
+  "count": 3,
+  "ms": 2,
+  "top": [
+   {
+    "name": "Poha (Flattened Rice)",
+    "match": "prefix",
+    "kcal": 230,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Poha (Flattened Rice) (Double healthy bowl)",
+    "match": "prefix",
+    "kcal": 460,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Poha (Flattened Rice) (Small side bowl)",
+    "match": "prefix",
+    "kcal": 115,
+    "serving": "1.0 katori"
+   }
+  ]
+ },
+ {
+  "category": "west",
+  "query": "dhokla",
+  "expect": "dhokla",
+  "count": 2,
+  "ms": 1,
+  "top": [
+   {
+    "name": "Dhokla (2 pieces)",
+    "match": "prefix",
+    "kcal": 150,
+    "serving": "1.0 serving"
+   },
+   {
+    "name": "Dhokla (2 pieces) (Mini size)",
+    "match": "prefix",
+    "kcal": 90,
+    "serving": "1.0 serving"
+   }
+  ]
+ },
+ {
+  "category": "west",
+  "query": "thepla",
+  "expect": "thepla",
+  "count": 0,
+  "ms": 1,
+  "top": []
+ },
+ {
+  "category": "west",
+  "query": "misal pav",
+  "expect": "misal",
+  "count": 0,
+  "ms": 1,
+  "top": []
+ },
+ {
+  "category": "west",
+  "query": "vada pav",
+  "expect": "vada pav",
+  "count": 2,
+  "ms": 1,
+  "top": [
+   {
+    "name": "Vada Pav (1 piece)",
+    "match": "prefix",
+    "kcal": 290,
+    "serving": "1.0 piece"
+   },
+   {
+    "name": "Vada Pav (1 piece) (Mini size)",
+    "match": "prefix",
+    "kcal": 174,
+    "serving": "1.0 piece"
+   }
+  ]
+ },
+ {
+  "category": "west",
+  "query": "pav bhaji",
+  "expect": "pav bhaji",
+  "count": 2,
+  "ms": 1,
+  "top": [
+   {
+    "name": "Pav Bhaji (2 Pavs)",
+    "match": "prefix",
+    "kcal": 420,
+    "serving": "1.0 plate"
+   },
+   {
+    "name": "Pav Bhaji (2 Pavs) (Mini size)",
+    "match": "prefix",
+    "kcal": 252,
+    "serving": "1.0 plate"
+   }
+  ]
+ },
+ {
+  "category": "west",
+  "query": "sabudana khichdi",
+  "expect": "sabudana",
+  "count": 0,
+  "ms": 5,
+  "top": []
+ },
+ {
+  "category": "west",
+  "query": "khichdi",
+  "expect": "khichdi",
+  "count": 0,
+  "ms": 1,
+  "top": []
+ },
+ {
+  "category": "east",
+  "query": "litti chokha",
+  "expect": "litti",
+  "count": 0,
+  "ms": 1,
+  "top": []
+ },
+ {
+  "category": "east",
+  "query": "machher jhol",
+  "expect": "fish",
+  "count": 0,
+  "ms": 1,
+  "top": []
+ },
+ {
+  "category": "east",
+  "query": "luchi",
+  "expect": "luchi",
+  "count": 0,
+  "ms": 1,
+  "top": []
+ },
+ {
+  "category": "street",
+  "query": "samosa",
+  "expect": "samosa",
+  "count": 2,
+  "ms": 2,
+  "top": [
+   {
+    "name": "Samosa (1 piece)",
+    "match": "prefix",
+    "kcal": 260,
+    "serving": "1.0 piece"
+   },
+   {
+    "name": "Samosa (1 piece) (Mini size)",
+    "match": "prefix",
+    "kcal": 156,
+    "serving": "1.0 piece"
+   }
+  ]
+ },
+ {
+  "category": "street",
+  "query": "pani puri",
+  "expect": "puri",
+  "count": 8,
+  "ms": 3,
+  "top": [
+   {
+    "name": "Pani Puri / Golgappa (6 pieces)",
+    "match": "prefix",
+    "kcal": 180,
+    "serving": "1.0 serving"
+   },
+   {
+    "name": "Pani Puri / Golgappa (6 pieces) (Mini size)",
+    "match": "prefix",
+    "kcal": 108,
+    "serving": "1.0 serving"
+   },
+   {
+    "name": "Nimbu Pani (Lemonade with sugar)",
+    "match": "fuzzy",
+    "kcal": 60,
+    "serving": "1.0 glass"
+   },
+   {
+    "name": "Nimbu Pani (Lemonade with sugar) (Large cup / Tall Glass)",
+    "match": "fuzzy",
+    "kcal": 90,
+    "serving": "1.0 glass"
+   },
+   {
+    "name": "Nimbu Pani (Lemonade with sugar) (Medium cup / Glass)",
+    "match": "fuzzy",
+    "kcal": 60,
+    "serving": "1.0 glass"
+   }
+  ]
+ },
+ {
+  "category": "street",
+  "query": "golgappa",
+  "expect": "pani puri",
+  "count": 2,
+  "ms": 1,
+  "top": [
+   {
+    "name": "Pani Puri / Golgappa (6 pieces)",
+    "match": "token",
+    "kcal": 180,
+    "serving": "1.0 serving"
+   },
+   {
+    "name": "Pani Puri / Golgappa (6 pieces) (Mini size)",
+    "match": "token",
+    "kcal": 108,
+    "serving": "1.0 serving"
+   }
+  ]
+ },
+ {
+  "category": "street",
+  "query": "bhel puri",
+  "expect": "bhel",
+  "count": 2,
+  "ms": 2,
+  "top": [
+   {
+    "name": "Bhel Puri",
+    "match": "exact",
+    "kcal": 220,
+    "serving": "1.0 plate"
+   },
+   {
+    "name": "Bhel Puri (Mini size)",
+    "match": "prefix",
+    "kcal": 132,
+    "serving": "1.0 plate"
+   }
+  ]
+ },
+ {
+  "category": "street",
+  "query": "pakora",
+  "expect": "pakora",
+  "count": 8,
+  "ms": 1,
+  "top": [
+   {
+    "name": "Kadhi Pakora",
+    "match": "token",
+    "kcal": 220,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Onion Pakora (4-5 pieces)",
+    "match": "token",
+    "kcal": 210,
+    "serving": "1.0 serving"
+   },
+   {
+    "name": "Paneer Pakora (3 pieces)",
+    "match": "token",
+    "kcal": 240,
+    "serving": "1.0 serving"
+   },
+   {
+    "name": "Kadhi Pakora (Double serving)",
+    "match": "token",
+    "kcal": 440,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Kadhi Pakora (Extra Butter / Ghee)",
+    "match": "token",
+    "kcal": 286,
+    "serving": "1.0 katori"
+   }
+  ]
+ },
+ {
+  "category": "street",
+  "query": "pakoda",
+  "expect": "pakora",
+  "count": 8,
+  "ms": 2,
+  "top": [
+   {
+    "name": "Kadhi Pakora",
+    "match": "fuzzy",
+    "kcal": 220,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Onion Pakora (4-5 pieces)",
+    "match": "fuzzy",
+    "kcal": 210,
+    "serving": "1.0 serving"
+   },
+   {
+    "name": "Paneer Pakora (3 pieces)",
+    "match": "fuzzy",
+    "kcal": 240,
+    "serving": "1.0 serving"
+   },
+   {
+    "name": "Kadhi Pakora (Double serving)",
+    "match": "fuzzy",
+    "kcal": 440,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Kadhi Pakora (Extra Butter / Ghee)",
+    "match": "fuzzy",
+    "kcal": 286,
+    "serving": "1.0 katori"
+   }
+  ]
+ },
+ {
+  "category": "street",
+  "query": "kachori",
+  "expect": "kachori",
+  "count": 3,
+  "ms": 2,
+  "top": [
+   {
+    "name": "Achari Aloo",
+    "match": "token",
+    "kcal": 175,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Achari Aloo (Dhaba Style (High oil))",
+    "match": "token",
+    "kcal": 245,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Achari Aloo (Low Oil cooking)",
+    "match": "token",
+    "kcal": 122,
+    "serving": "1.0 katori"
+   }
+  ]
+ },
+ {
+  "category": "street",
+  "query": "aloo tikki",
+  "expect": "tikki",
+  "count": 2,
+  "ms": 2,
+  "top": [
+   {
+    "name": "Aloo Tikki (1 piece)",
+    "match": "prefix",
+    "kcal": 140,
+    "serving": "1.0 piece"
+   },
+   {
+    "name": "Aloo Tikki (1 piece) (Mini size)",
+    "match": "prefix",
+    "kcal": 84,
+    "serving": "1.0 piece"
+   }
+  ]
+ },
+ {
+  "category": "street",
+  "query": "momos",
+  "expect": "momo",
+  "count": 0,
+  "ms": 1,
+  "top": []
+ },
+ {
+  "category": "sweet",
+  "query": "gulab jamun",
+  "expect": "gulab jamun",
+  "count": 0,
+  "ms": 1,
+  "top": []
+ },
+ {
+  "category": "sweet",
+  "query": "jalebi",
+  "expect": "jalebi",
+  "count": 0,
+  "ms": 1,
+  "top": []
+ },
+ {
+  "category": "sweet",
+  "query": "rasgulla",
+  "expect": "rasgulla",
+  "count": 0,
+  "ms": 1,
+  "top": []
+ },
+ {
+  "category": "sweet",
+  "query": "ladoo",
+  "expect": "ladoo",
+  "count": 0,
+  "ms": 2,
+  "top": []
+ },
+ {
+  "category": "sweet",
+  "query": "laddu",
+  "expect": "ladoo",
+  "count": 3,
+  "ms": 3,
+  "top": [
+   {
+    "name": "Kaddu Ki Sabji (Pumpkin)",
+    "match": "token",
+    "kcal": 85,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Kaddu Ki Sabji (Pumpkin) (Dhaba Style (High oil))",
+    "match": "token",
+    "kcal": 119,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Kaddu Ki Sabji (Pumpkin) (Low Oil cooking)",
+    "match": "token",
+    "kcal": 59,
+    "serving": "1.0 katori"
+   }
+  ]
+ },
+ {
+  "category": "sweet",
+  "query": "kheer",
+  "expect": "kheer",
+  "count": 0,
+  "ms": 1,
+  "top": []
+ },
+ {
+  "category": "sweet",
+  "query": "halwa",
+  "expect": "halwa",
+  "count": 0,
+  "ms": 1,
+  "top": []
+ },
+ {
+  "category": "sweet",
+  "query": "barfi",
+  "expect": "barfi",
+  "count": 0,
+  "ms": 1,
+  "top": []
+ },
+ {
+  "category": "drink",
+  "query": "chai",
+  "expect": "tea",
+  "count": 6,
+  "ms": 2,
+  "top": [
+   {
+    "name": "Masala Chai (Sugar Free)",
+    "match": "token",
+    "kcal": 35,
+    "serving": "1.0 cup"
+   },
+   {
+    "name": "Masala Chai (Sugar Free) (Large cup / Tall Glass)",
+    "match": "token",
+    "kcal": 52,
+    "serving": "1.0 cup"
+   },
+   {
+    "name": "Masala Chai (Sugar Free) (Medium cup / Glass)",
+    "match": "token",
+    "kcal": 35,
+    "serving": "1.0 cup"
+   },
+   {
+    "name": "Masala Chai (with milk & sugar)",
+    "match": "token",
+    "kcal": 75,
+    "serving": "1.0 cup"
+   },
+   {
+    "name": "Masala Chai (with milk & sugar) (Large cup / Tall Glass)",
+    "match": "token",
+    "kcal": 112,
+    "serving": "1.0 cup"
+   }
+  ]
+ },
+ {
+  "category": "drink",
+  "query": "masala chai",
+  "expect": "chai",
+  "count": 13,
+  "ms": 3,
+  "top": [
+   {
+    "name": "Masala Chai (Sugar Free)",
+    "match": "prefix",
+    "kcal": 35,
+    "serving": "1.0 cup"
+   },
+   {
+    "name": "Masala Chai (Sugar Free) (Large cup / Tall Glass)",
+    "match": "prefix",
+    "kcal": 52,
+    "serving": "1.0 cup"
+   },
+   {
+    "name": "Masala Chai (Sugar Free) (Medium cup / Glass)",
+    "match": "prefix",
+    "kcal": 35,
+    "serving": "1.0 cup"
+   },
+   {
+    "name": "Masala Chai (with milk & sugar)",
+    "match": "prefix",
+    "kcal": 75,
+    "serving": "1.0 cup"
+   },
+   {
+    "name": "Masala Chai (with milk & sugar) (Large cup / Tall Glass)",
+    "match": "prefix",
+    "kcal": 112,
+    "serving": "1.0 cup"
+   }
+  ]
+ },
+ {
+  "category": "drink",
+  "query": "tea",
+  "expect": "tea",
+  "count": 3,
+  "ms": 0,
+  "top": [
+   {
+    "name": "Green Tea",
+    "match": "token",
+    "kcal": 2,
+    "serving": "1.0 cup"
+   },
+   {
+    "name": "Green Tea (Large cup / Tall Glass)",
+    "match": "token",
+    "kcal": 3,
+    "serving": "1.0 cup"
+   },
+   {
+    "name": "Green Tea (Medium cup / Glass)",
+    "match": "token",
+    "kcal": 2,
+    "serving": "1.0 cup"
+   }
+  ]
+ },
+ {
+  "category": "drink",
+  "query": "coffee",
+  "expect": "coffee",
+  "count": 6,
+  "ms": 1,
+  "top": [
+   {
+    "name": "Black Coffee (No sugar)",
+    "match": "token",
+    "kcal": 2,
+    "serving": "1.0 cup"
+   },
+   {
+    "name": "Black Coffee (No sugar) (Large cup / Tall Glass)",
+    "match": "token",
+    "kcal": 3,
+    "serving": "1.0 cup"
+   },
+   {
+    "name": "Black Coffee (No sugar) (Medium cup / Glass)",
+    "match": "token",
+    "kcal": 2,
+    "serving": "1.0 cup"
+   },
+   {
+    "name": "Filter Coffee (with sugar)",
+    "match": "token",
+    "kcal": 90,
+    "serving": "1.0 cup"
+   },
+   {
+    "name": "Filter Coffee (with sugar) (Large cup / Tall Glass)",
+    "match": "token",
+    "kcal": 135,
+    "serving": "1.0 cup"
+   }
+  ]
+ },
+ {
+  "category": "drink",
+  "query": "filter coffee",
+  "expect": "coffee",
+  "count": 3,
+  "ms": 1,
+  "top": [
+   {
+    "name": "Filter Coffee (with sugar)",
+    "match": "prefix",
+    "kcal": 90,
+    "serving": "1.0 cup"
+   },
+   {
+    "name": "Filter Coffee (with sugar) (Large cup / Tall Glass)",
+    "match": "prefix",
+    "kcal": 135,
+    "serving": "1.0 cup"
+   },
+   {
+    "name": "Filter Coffee (with sugar) (Medium cup / Glass)",
+    "match": "prefix",
+    "kcal": 90,
+    "serving": "1.0 cup"
+   }
+  ]
+ },
+ {
+  "category": "drink",
+  "query": "lassi",
+  "expect": "lassi",
+  "count": 1,
+  "ms": 2,
+  "top": [
+   {
+    "name": "Masala Lassi (Sweet)",
+    "match": "token",
+    "kcal": 180,
+    "serving": "1.0 glass"
+   }
+  ]
+ },
+ {
+  "category": "drink",
+  "query": "buttermilk",
+  "expect": "buttermilk",
+  "count": 1,
+  "ms": 2,
+  "top": [
+   {
+    "name": "Buttermilk / Chaas (Plain)",
+    "match": "prefix",
+    "kcal": 35,
+    "serving": "1.0 glass"
+   }
+  ]
+ },
+ {
+  "category": "drink",
+  "query": "chaas",
+  "expect": "buttermilk",
+  "count": 3,
+  "ms": 2,
+  "top": [
+   {
+    "name": "Buttermilk / Chaas (Plain)",
+    "match": "token",
+    "kcal": 35,
+    "serving": "1.0 glass"
+   },
+   {
+    "name": "Dahi Papdi Chaat (Light)",
+    "match": "fuzzy",
+    "kcal": 210,
+    "serving": "1.0 plate"
+   },
+   {
+    "name": "Fruit Chaat",
+    "match": "fuzzy",
+    "kcal": 120,
+    "serving": "1.0 katori"
+   }
+  ]
+ },
+ {
+  "category": "drink",
+  "query": "nimbu pani",
+  "expect": "lemon",
+  "count": 6,
+  "ms": 1,
+  "top": [
+   {
+    "name": "Nimbu Pani (Lemonade with sugar)",
+    "match": "prefix",
+    "kcal": 60,
+    "serving": "1.0 glass"
+   },
+   {
+    "name": "Nimbu Pani (Lemonade with sugar) (Large cup / Tall Glass)",
+    "match": "prefix",
+    "kcal": 90,
+    "serving": "1.0 glass"
+   },
+   {
+    "name": "Nimbu Pani (Lemonade with sugar) (Medium cup / Glass)",
+    "match": "prefix",
+    "kcal": 60,
+    "serving": "1.0 glass"
+   },
+   {
+    "name": "Nimbu Pani (Salted / Sugar-Free)",
+    "match": "prefix",
+    "kcal": 8,
+    "serving": "1.0 glass"
+   },
+   {
+    "name": "Nimbu Pani (Salted / Sugar-Free) (Large cup / Tall Glass)",
+    "match": "prefix",
+    "kcal": 12,
+    "serving": "1.0 glass"
+   }
+  ]
+ },
+ {
+  "category": "drink",
+  "query": "coconut water",
+  "expect": "coconut water",
+  "count": 3,
+  "ms": 1,
+  "top": [
+   {
+    "name": "Coconut Water",
+    "match": "exact",
+    "kcal": 40,
+    "serving": "1.0 glass"
+   },
+   {
+    "name": "Coconut Water (Large cup / Tall Glass)",
+    "match": "prefix",
+    "kcal": 60,
+    "serving": "1.0 glass"
+   },
+   {
+    "name": "Coconut Water (Medium cup / Glass)",
+    "match": "prefix",
+    "kcal": 40,
+    "serving": "1.0 glass"
+   }
+  ]
+ },
+ {
+  "category": "drink",
+  "query": "milk",
+  "expect": "milk",
+  "count": 8,
+  "ms": 2,
+  "top": [
+   {
+    "name": "Double Toned Milk (1 Glass)",
+    "match": "token",
+    "kcal": 90,
+    "serving": "1.0 glass"
+   },
+   {
+    "name": "Full Cream Milk (1 Glass)",
+    "match": "token",
+    "kcal": 150,
+    "serving": "1.0 glass"
+   },
+   {
+    "name": "Masala Chai (with milk & sugar)",
+    "match": "token",
+    "kcal": 75,
+    "serving": "1.0 cup"
+   },
+   {
+    "name": "Masala Chai (with milk & sugar) (Large cup / Tall Glass)",
+    "match": "token",
+    "kcal": 112,
+    "serving": "1.0 cup"
+   },
+   {
+    "name": "Masala Chai (with milk & sugar) (Medium cup / Glass)",
+    "match": "token",
+    "kcal": 75,
+    "serving": "1.0 cup"
+   }
+  ]
+ },
+ {
+  "category": "dairy",
+  "query": "curd",
+  "expect": "curd",
+  "count": 5,
+  "ms": 2,
+  "top": [
+   {
+    "name": "Dahi Papdi Chaat (Light)",
+    "match": "aliasExact",
+    "kcal": 210,
+    "serving": "1.0 plate"
+   },
+   {
+    "name": "Home Thali (Veg) — 2 Roti + Dal + Sabji + Curd",
+    "match": "token",
+    "kcal": 520,
+    "serving": "1.0 thali"
+   },
+   {
+    "name": "Low Fat Curd / Dahi",
+    "match": "token",
+    "kcal": 43,
+    "serving": "100.0 g"
+   },
+   {
+    "name": "Plain Curd / Dahi (Cow Milk)",
+    "match": "token",
+    "kcal": 60,
+    "serving": "100.0 g"
+   },
+   {
+    "name": "Greek Yogurt (Plain)",
+    "match": "token",
+    "kcal": 95,
+    "serving": "100.0 g"
+   }
+  ]
+ },
+ {
+  "category": "dairy",
+  "query": "dahi",
+  "expect": "curd",
+  "count": 5,
+  "ms": 2,
+  "top": [
+   {
+    "name": "Dahi Papdi Chaat (Light)",
+    "match": "prefix",
+    "kcal": 210,
+    "serving": "1.0 plate"
+   },
+   {
+    "name": "Low Fat Curd / Dahi",
+    "match": "token",
+    "kcal": 43,
+    "serving": "100.0 g"
+   },
+   {
+    "name": "Plain Curd / Dahi (Cow Milk)",
+    "match": "token",
+    "kcal": 60,
+    "serving": "100.0 g"
+   },
+   {
+    "name": "Home Thali (Veg) — 2 Roti + Dal + Sabji + Curd",
+    "match": "token",
+    "kcal": 520,
+    "serving": "1.0 thali"
+   },
+   {
+    "name": "Greek Yogurt (Plain)",
+    "match": "token",
+    "kcal": 95,
+    "serving": "100.0 g"
+   }
+  ]
+ },
+ {
+  "category": "dairy",
+  "query": "raita",
+  "expect": "raita",
+  "count": 1,
+  "ms": 4,
+  "top": [
+   {
+    "name": "Raita (Cucumber)",
+    "match": "prefix",
+    "kcal": 70,
+    "serving": "1.0 katori"
+   }
+  ]
+ },
+ {
+  "category": "dairy",
+  "query": "ghee",
+  "expect": "ghee",
+  "count": 40,
+  "ms": 4,
+  "top": [
+   {
+    "name": "Aloo Paratha (Premium ghee / extra oil)",
+    "match": "token",
+    "kcal": 362,
+    "serving": "1.0 piece"
+   },
+   {
+    "name": "Bajra Roti (Millet) (Premium ghee / extra oil)",
+    "match": "token",
+    "kcal": 144,
+    "serving": "1.0 piece"
+   },
+   {
+    "name": "Basmati White Rice (Cooked) (Premium ghee / extra oil)",
+    "match": "token",
+    "kcal": 162,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Bhatura (Premium ghee / extra oil)",
+    "match": "token",
+    "kcal": 275,
+    "serving": "1.0 piece"
+   },
+   {
+    "name": "Brown Rice (Cooked) (Premium ghee / extra oil)",
+    "match": "token",
+    "kcal": 139,
+    "serving": "1.0 katori"
+   }
+  ]
+ },
+ {
+  "category": "dairy",
+  "query": "butter",
+  "expect": "butter",
+  "count": 37,
+  "ms": 4,
+  "top": [
+   {
+    "name": "Butter Chicken (Murgh Makhani)",
+    "match": "prefix",
+    "kcal": 390,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Butter Chicken (Murgh Makhani) (Diet prep (Low oil / breast only))",
+    "match": "prefix",
+    "kcal": 312,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Butter Naan",
+    "match": "prefix",
+    "kcal": 310,
+    "serving": "1.0 piece"
+   },
+   {
+    "name": "Butter Roti / Chapati",
+    "match": "prefix",
+    "kcal": 110,
+    "serving": "1.0 piece"
+   },
+   {
+    "name": "Buttermilk / Chaas (Plain)",
+    "match": "prefix",
+    "kcal": 35,
+    "serving": "1.0 glass"
+   }
+  ]
+ },
+ {
+  "category": "dairy",
+  "query": "greek yogurt",
+  "expect": "yogurt",
+  "count": 1,
+  "ms": 2,
+  "top": [
+   {
+    "name": "Greek Yogurt (Plain)",
+    "match": "prefix",
+    "kcal": 95,
+    "serving": "100.0 g"
+   }
+  ]
+ },
+ {
+  "category": "dairy",
+  "query": "cheese",
+  "expect": "cheese",
+  "count": 15,
+  "ms": 2,
+  "top": [
+   {
+    "name": "Amul Fresh Paneer (Raw)",
+    "match": "token",
+    "kcal": 265,
+    "serving": "100.0 g"
+   },
+   {
+    "name": "Grilled Paneer Salad Bowl",
+    "match": "token",
+    "kcal": 280,
+    "serving": "1.0 bowl"
+   },
+   {
+    "name": "Kadai Paneer",
+    "match": "token",
+    "kcal": 310,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Low Fat Paneer",
+    "match": "token",
+    "kcal": 160,
+    "serving": "100.0 g"
+   },
+   {
+    "name": "Mattar Paneer",
+    "match": "token",
+    "kcal": 270,
+    "serving": "1.0 katori"
+   }
+  ]
+ },
+ {
+  "category": "fruit",
+  "query": "banana",
+  "expect": "banana",
+  "count": 3,
+  "ms": 1,
+  "top": [
+   {
+    "name": "Raw Banana Stir Fry",
+    "match": "token",
+    "kcal": 150,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Raw Banana Stir Fry (Dhaba Style (High oil))",
+    "match": "token",
+    "kcal": 210,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Raw Banana Stir Fry (Low Oil cooking)",
+    "match": "token",
+    "kcal": 105,
+    "serving": "1.0 katori"
+   }
+  ]
+ },
+ {
+  "category": "fruit",
+  "query": "apple",
+  "expect": "apple",
+  "count": 0,
+  "ms": 1,
+  "top": []
+ },
+ {
+  "category": "fruit",
+  "query": "mango",
+  "expect": "mango",
+  "count": 0,
+  "ms": 1,
+  "top": []
+ },
+ {
+  "category": "fruit",
+  "query": "papaya",
+  "expect": "papaya",
+  "count": 1,
+  "ms": 1,
+  "top": [
+   {
+    "name": "Raw Papaya Sambharo",
+    "match": "token",
+    "kcal": 85,
+    "serving": "1.0 katori"
+   }
+  ]
+ },
+ {
+  "category": "fruit",
+  "query": "watermelon",
+  "expect": "watermelon",
+  "count": 0,
+  "ms": 1,
+  "top": []
+ },
+ {
+  "category": "fruit",
+  "query": "dates",
+  "expect": "dates",
+  "count": 0,
+  "ms": 1,
+  "top": []
+ },
+ {
+  "category": "fitness",
+  "query": "oats",
+  "expect": "oats",
+  "count": 4,
+  "ms": 1,
+  "top": [
+   {
+    "name": "Oats Upma",
+    "match": "prefix",
+    "kcal": 190,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Masala Oats",
+    "match": "token",
+    "kcal": 220,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Oats Upma (Double healthy bowl)",
+    "match": "prefix",
+    "kcal": 380,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Oats Upma (Small side bowl)",
+    "match": "prefix",
+    "kcal": 95,
+    "serving": "1.0 katori"
+   }
+  ]
+ },
+ {
+  "category": "fitness",
+  "query": "peanut butter",
+  "expect": "peanut butter",
+  "count": 1,
+  "ms": 2,
+  "top": [
+   {
+    "name": "Lobia Masala (Black Eyed Peas) (Extra Butter / Ghee)",
+    "match": "fuzzy",
+    "kcal": 247,
+    "serving": "1.0 katori"
+   }
+  ]
+ },
+ {
+  "category": "fitness",
+  "query": "whey protein",
+  "expect": "whey",
+  "count": 0,
+  "ms": 1,
+  "top": []
+ },
+ {
+  "category": "fitness",
+  "query": "soya chunks",
+  "expect": "soya",
+  "count": 3,
+  "ms": 1,
+  "top": [
+   {
+    "name": "Soybean Chunks Curry",
+    "match": "fuzzy",
+    "kcal": 200,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Soybean Chunks Curry (Dhaba Style (High oil))",
+    "match": "fuzzy",
+    "kcal": 280,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Soybean Chunks Curry (Low Oil cooking)",
+    "match": "fuzzy",
+    "kcal": 140,
+    "serving": "1.0 katori"
+   }
+  ]
+ },
+ {
+  "category": "fitness",
+  "query": "sprouts",
+  "expect": "sprouts",
+  "count": 4,
+  "ms": 1,
+  "top": [
+   {
+    "name": "Sprouted Chana Salad",
+    "match": "fuzzy",
+    "kcal": 160,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Sprouted Moong Salad",
+    "match": "fuzzy",
+    "kcal": 120,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Sprouted Moong Salad (Double healthy bowl)",
+    "match": "fuzzy",
+    "kcal": 240,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Sprouted Moong Salad (Small side bowl)",
+    "match": "fuzzy",
+    "kcal": 60,
+    "serving": "1.0 katori"
+   }
+  ]
+ },
+ {
+  "category": "fitness",
+  "query": "almonds",
+  "expect": "almond",
+  "count": 0,
+  "ms": 1,
+  "top": []
+ },
+ {
+  "category": "fitness",
+  "query": "makhana",
+  "expect": "makhana",
+  "count": 11,
+  "ms": 2,
+  "top": [
+   {
+    "name": "Butter Chicken (Murgh Makhani)",
+    "match": "fuzzy",
+    "kcal": 390,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Butter Chicken (Murgh Makhani) (Diet prep (Low oil / breast only))",
+    "match": "fuzzy",
+    "kcal": 312,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Dal Makhani",
+    "match": "fuzzy",
+    "kcal": 280,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Butter Naan",
+    "match": "token",
+    "kcal": 310,
+    "serving": "1.0 piece"
+   },
+   {
+    "name": "Butter Roti / Chapati",
+    "match": "token",
+    "kcal": 110,
+    "serving": "1.0 piece"
+   }
+  ]
+ },
+ {
+  "category": "fitness",
+  "query": "sattu",
+  "expect": "sattu",
+  "count": 0,
+  "ms": 1,
+  "top": []
+ },
+ {
+  "category": "fitness",
+  "query": "tofu",
+  "expect": "tofu",
+  "count": 0,
+  "ms": 1,
+  "top": []
+ },
+ {
+  "category": "fitness",
+  "query": "quinoa",
+  "expect": "quinoa",
+  "count": 1,
+  "ms": 1,
+  "top": [
+   {
+    "name": "Quinoa Veg Bowl",
+    "match": "prefix",
+    "kcal": 300,
+    "serving": "1.0 bowl"
+   }
+  ]
+ },
+ {
+  "category": "packaged",
+  "query": "maggi",
+  "expect": "maggi",
+  "count": 0,
+  "ms": 1,
+  "top": []
+ },
+ {
+  "category": "packaged",
+  "query": "parle g",
+  "expect": "parle",
+  "count": 0,
+  "ms": 2,
+  "top": []
+ },
+ {
+  "category": "packaged",
+  "query": "amul butter",
+  "expect": "butter",
+  "count": 0,
+  "ms": 1,
+  "top": []
+ },
+ {
+  "category": "packaged",
+  "query": "britannia bread",
+  "expect": "bread",
+  "count": 0,
+  "ms": 1,
+  "top": []
+ },
+ {
+  "category": "packaged",
+  "query": "bread",
+  "expect": "bread",
+  "count": 40,
+  "ms": 8,
+  "top": [
+   {
+    "name": "Aloo Paratha",
+    "match": "token",
+    "kcal": 290,
+    "serving": "1.0 piece"
+   },
+   {
+    "name": "Bajra Roti (Millet)",
+    "match": "token",
+    "kcal": 115,
+    "serving": "1.0 piece"
+   },
+   {
+    "name": "Basmati White Rice (Cooked)",
+    "match": "token",
+    "kcal": 130,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Bhatura",
+    "match": "token",
+    "kcal": 220,
+    "serving": "1.0 piece"
+   },
+   {
+    "name": "Brown Rice (Cooked)",
+    "match": "token",
+    "kcal": 111,
+    "serving": "1.0 katori"
+   }
+  ]
+ },
+ {
+  "category": "packaged",
+  "query": "haldiram bhujia",
+  "expect": "bhujia",
+  "count": 0,
+  "ms": 2,
+  "top": []
+ },
+ {
+  "category": "packaged",
+  "query": "kurkure",
+  "expect": "kurkure",
+  "count": 0,
+  "ms": 1,
+  "top": []
+ },
+ {
+  "category": "packaged",
+  "query": "lays",
+  "expect": "chips",
+  "count": 0,
+  "ms": 1,
+  "top": []
+ },
+ {
+  "category": "western",
+  "query": "pizza",
+  "expect": "pizza",
+  "count": 0,
+  "ms": 1,
+  "top": []
+ },
+ {
+  "category": "western",
+  "query": "burger",
+  "expect": "burger",
+  "count": 0,
+  "ms": 1,
+  "top": []
+ },
+ {
+  "category": "western",
+  "query": "pasta",
+  "expect": "pasta",
+  "count": 6,
+  "ms": 1,
+  "top": [
+   {
+    "name": "Patta Gobhi Sabji (Cabbage)",
+    "match": "fuzzy",
+    "kcal": 95,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Cabbage Poriyal (South Indian)",
+    "match": "token",
+    "kcal": 95,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Cabbage Thoran",
+    "match": "token",
+    "kcal": 100,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Patta Gobhi Sabji (Cabbage) (Dhaba Style (High oil))",
+    "match": "fuzzy",
+    "kcal": 133,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Patta Gobhi Sabji (Cabbage) (Low Oil cooking)",
+    "match": "fuzzy",
+    "kcal": 66,
+    "serving": "1.0 katori"
+   }
+  ]
+ },
+ {
+  "category": "western",
+  "query": "sandwich",
+  "expect": "sandwich",
+  "count": 0,
+  "ms": 1,
+  "top": []
+ },
+ {
+  "category": "western",
+  "query": "french fries",
+  "expect": "fries",
+  "count": 0,
+  "ms": 1,
+  "top": []
+ },
+ {
+  "category": "western",
+  "query": "cornflakes",
+  "expect": "corn",
+  "count": 0,
+  "ms": 1,
+  "top": []
+ },
+ {
+  "category": "western",
+  "query": "muesli",
+  "expect": "muesli",
+  "count": 0,
+  "ms": 1,
+  "top": []
+ },
+ {
+  "category": "mixed",
+  "query": "dal chawal",
+  "expect": "dal",
+  "count": 8,
+  "ms": 2,
+  "top": [
+   {
+    "name": "Chana Dal Palak (Spinach & Gram dal)",
+    "match": "fuzzy",
+    "kcal": 135,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Dal Fry (Chana & Toor)",
+    "match": "fuzzy",
+    "kcal": 165,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Lauki Chana Dal Sabji",
+    "match": "fuzzy",
+    "kcal": 150,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Chana Dal Palak (Spinach & Gram dal) (Dhaba Style (High oil))",
+    "match": "fuzzy",
+    "kcal": 189,
+    "serving": "1.0 katori"
+   },
+   {
+    "name": "Chana Dal Palak (Spinach & Gram dal) (Low Oil cooking)",
+    "match": "fuzzy",
+    "kcal": 94,
+    "serving": "1.0 katori"
+   }
+  ]
+ },
+ {
+  "category": "mixed",
+  "query": "rajma chawal",
+  "expect": "rajma",
+  "count": 0,
+  "ms": 1,
+  "top": []
+ },
+ {
+  "category": "mixed",
+  "query": "2 roti",
+  "expect": "roti",
+  "count": 1,
+  "ms": 1,
+  "top": [
+   {
+    "name": "Home Thali (Veg) — 2 Roti + Dal + Sabji + Curd",
+    "match": "token",
+    "kcal": 520,
+    "serving": "1.0 thali"
+   }
+  ]
+ },
+ {
+  "category": "mixed",
+  "query": "1 bowl dal",
+  "expect": "dal",
+  "count": 0,
+  "ms": 0,
+  "top": []
+ },
+ {
+  "category": "mixed",
+  "query": "roti sabzi",
+  "expect": "roti",
+  "count": 1,
+  "ms": 3,
+  "top": [
+   {
+    "name": "Home Thali (Veg) — 2 Roti + Dal + Sabji + Curd",
+    "match": "token",
+    "kcal": 520,
+    "serving": "1.0 thali"
+   }
+  ]
+ },
+ {
+  "category": "hindi",
+  "query": "रोटी",
+  "expect": "roti",
+  "count": 0,
+  "ms": 6,
+  "top": []
+ },
+ {
+  "category": "hindi",
+  "query": "दाल",
+  "expect": "dal",
+  "count": 0,
+  "ms": 1,
+  "top": []
+ },
+ {
+  "category": "hindi",
+  "query": "पनीर",
+  "expect": "paneer",
+  "count": 0,
+  "ms": 3,
+  "top": []
+ }
+]
