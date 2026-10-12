@@ -1,0 +1,128 @@
+{
+ "Kiwi": {
+  "fdc": 168153,
+  "desc": "Kiwifruit, green, raw",
+  "kcal": 61.0,
+  "protein_g": 1.14,
+  "fat_g": 0.52,
+  "carbs_g": 11.7,
+  "fibre_g": 3.0
+ },
+ "Chia Seeds": {
+  "fdc": 170554,
+  "desc": "Seeds, chia seeds, dried",
+  "kcal": 486,
+  "protein_g": 16.5,
+  "fat_g": 30.7,
+  "carbs_g": 7.7,
+  "fibre_g": 34.4
+ },
+ "Pumpkin Seeds": {
+  "fdc": 170556,
+  "desc": "Seeds, pumpkin and squash seed kernels, dried",
+  "kcal": 559,
+  "protein_g": 30.2,
+  "fat_g": 49.0,
+  "carbs_g": 4.7,
+  "fibre_g": 6.0
+ },
+ "Butter": {
+  "fdc": 173410,
+  "desc": "Butter, salted",
+  "kcal": 717,
+  "protein_g": 0.85,
+  "fat_g": 81.1,
+  "carbs_g": 0.06,
+  "fibre_g": 0
+ },
+ "Mozzarella Cheese": {
+  "fdc": 170845,
+  "desc": "Cheese, mozzarella, whole milk",
+  "kcal": 299,
+  "protein_g": 22.2,
+  "fat_g": 22.1,
+  "carbs_g": 2.4,
+  "fibre_g": 0
+ },
+ "Tofu": {
+  "fdc": 172475,
+  "desc": "Tofu, raw, firm, prepared with calcium sulfate",
+  "kcal": 144,
+  "protein_g": 17.3,
+  "fat_g": 8.72,
+  "carbs_g": 0.48,
+  "fibre_g": 2.3
+ },
+ "Popcorn (Salted)": {
+  "fdc": 167549,
+  "desc": "Snacks, popcorn, oil-popped, microwave, regular flavor, no trans fat",
+  "kcal": 583,
+  "protein_g": 7.29,
+  "fat_g": 43.6,
+  "carbs_g": 37.0,
+  "fibre_g": 8.1
+ },
+ "Multigrain Bread": {
+  "fdc": 168013,
+  "desc": "Bread, multi-grain (includes whole-grain)",
+  "kcal": 265,
+  "protein_g": 13.4,
+  "fat_g": 4.23,
+  "carbs_g": 35.9,
+  "fibre_g": 7.4
+ },
+ "_sugar": {
+  "fdc": 169655,
+  "desc": "Sugars, granulated",
+  "kcal": 387,
+  "protein_g": 0.0,
+  "fat_g": 0.0,
+  "carbs_g": 100,
+  "fibre_g": 0
+ },
+ "_cream": {
+  "fdc": 170859,
+  "desc": "Cream, fluid, heavy whipping",
+  "kcal": 340,
+  "protein_g": 2.84,
+  "fat_g": 36.1,
+  "carbs_g": 2.84,
+  "fibre_g": 0
+ },
+ "_mayonnaise": {
+  "fdc": 171009,
+  "desc": "Salad dressing, mayonnaise, regular",
+  "kcal": 680,
+  "protein_g": 0.96,
+  "fat_g": 74.8,
+  "carbs_g": 0.57,
+  "fibre_g": 0
+ },
+ "_sago": {
+  "fdc": null,
+  "desc": "Tapioca, pearl, dry (USDA SR Legacy)",
+  "kcal": 358,
+  "protein_g": 0.19,
+  "fat_g": 0.02,
+  "carbs_g": 87.8,
+  "fibre_g": 0.9
+ },
+ "_ketchup": {
+  "fdc": null,
+  "desc": "Catsup (USDA SR Legacy)",
+  "kcal": 101,
+  "protein_g": 1.04,
+  "fat_g": 0.1,
+  "carbs_g": 27.1,
+  "fibre_g": 0.3
+ },
+ "_cornflour": {
+  "fdc": null,
+  "desc": "Cornstarch (USDA SR Legacy)",
+  "kcal": 381,
+  "protein_g": 0.26,
+  "fat_g": 0.05,
+  "carbs_g": 90.4,
+  "fibre_g": 0.9
+ }
+}
