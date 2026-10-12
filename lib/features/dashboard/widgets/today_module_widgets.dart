@@ -533,13 +533,9 @@ class TodayMealRow extends StatelessWidget {
             : context.b05Colors.snack;
       }(),
     };
-    final icon = switch (meal.mealType) {
-      'breakfast' => Icons.wb_sunny_outlined,
-      'lunch' => Icons.wb_sunny_rounded,
-      'dinner' => Icons.nightlight_round,
-      'snack' => Icons.cookie_outlined,
-      _ => MealPresentationRegistry.forStableId(meal.mealType).icon,
-    };
+    // One source for meal icons so Today, the Food diary and the meal
+    // picker agree (Today hard-coded a different lunch icon).
+    final icon = MealPresentationRegistry.forStableId(meal.mealType).icon;
     final compact = MediaQuery.textScalerOf(context).scale(1) > 1.35;
     void showDetails() {
       unawaited(
