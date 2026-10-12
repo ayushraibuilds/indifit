@@ -33,9 +33,7 @@ Future<List<String>> _search(FoodRepository repository, String query) async {
       }
     }
   }
-  final authority = await repository.readSearchPresentationAuthority(
-    byId.keys,
-  );
+  final authority = await repository.readSearchPresentationAuthority(byId.keys);
   return [
     for (final result in NutritionFoodSearchRanking.rank(
       query: query,
