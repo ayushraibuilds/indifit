@@ -204,7 +204,10 @@ void main() {
       expect(prefs.containsKey('protein_goal'), isFalse);
       expect(prefs.containsKey('carbs_goal'), isFalse);
       expect(prefs.containsKey('fat_goal'), isFalse);
-      expect(await store.readProfileDraft(), isNull);
+      // The draft is kept so finishing setup later resumes at step 4.
+      final draft = await store.readProfileDraft();
+      expect(draft, isNotNull);
+      expect(draft!.age, '25');
     },
   );
 

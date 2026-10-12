@@ -26,7 +26,7 @@ void main() {
     await _moveToReview(
       tester,
       goal: 'Build muscle',
-      activity: 'Very Active',
+      activity: 'Very active',
       diet: 'Vegan',
     );
 
@@ -60,10 +60,10 @@ void main() {
     await tester.pump(const Duration(milliseconds: 250));
 
     await _tapVisible(tester, 'Maintain');
-    await _tapVisible(tester, 'Next Step');
+    await _tapVisible(tester, 'Next step');
     await _tapVisible(tester, 'Male');
-    await _tapVisible(tester, 'Next Step');
-    await _tapVisible(tester, 'Next Step');
+    await _tapVisible(tester, 'Next step');
+    await _tapVisible(tester, 'Next step');
 
     expect(find.text('How do you like to eat?'), findsOneWidget);
     expect(find.textContaining('AI meal suggestions'), findsNothing);
@@ -121,7 +121,7 @@ void main() {
 
       // The goal comes first, then the body fields.
       await _tapVisible(tester, 'Build muscle');
-      await _tapVisible(tester, 'Next Step');
+      await _tapVisible(tester, 'Next step');
       await tester.enterText(find.byType(TextField).at(0), 'Maya');
       await tester.enterText(find.byType(TextField).at(1), '31');
       await tester.enterText(find.byType(TextField).at(2), '165');
@@ -130,7 +130,7 @@ void main() {
         tester,
         sex: 'Female',
         goal: null,
-        activity: 'Very Active',
+        activity: 'Very active',
         diet: 'Non-Vegetarian',
       );
 
@@ -422,17 +422,17 @@ Future<void> _moveToReview(
 
   /// Null when the test already answered the goal step.
   String? goal = 'Maintain',
-  String activity = 'Moderately Active',
+  String activity = 'Moderately active',
   String diet = 'Vegetarian',
 }) async {
   if (goal != null) {
     await _tapVisible(tester, goal);
-    await _tapVisible(tester, 'Next Step');
+    await _tapVisible(tester, 'Next step');
   }
   await _tapVisible(tester, sex);
-  await _tapVisible(tester, 'Next Step');
+  await _tapVisible(tester, 'Next step');
   await _tapVisible(tester, activity);
-  await _tapVisible(tester, 'Next Step');
+  await _tapVisible(tester, 'Next step');
   await _tapVisible(tester, diet);
   await _tapVisible(tester, 'Review setup');
 }

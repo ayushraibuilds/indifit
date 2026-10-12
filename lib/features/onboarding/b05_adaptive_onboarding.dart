@@ -410,12 +410,15 @@ class B05OnboardingDraftStore {
 
   /// Marks profile setup as intentionally deferred without creating a
   /// profile, target, eligibility, or adaptive recommendation from defaults.
+  /// The draft is kept, so finishing setup later resumes where the user
+  /// left off.
   Future<void> markProfileOnboardingSkipped() async {
     final prefs = await _getPrefs();
     await prefs.setBool(AppPreferenceKeys.onboardingCompleted, true);
     await prefs.setBool(AppPreferenceKeys.onboardingSkipped, true);
+    // A new skip brings the Today "Finish setup" prompt back.
+    await prefs.remove(AppPreferenceKeys.todayFinishSetupDismissed);
     await clearTodayOnboardingHandoff(prefs);
-    await clearProfileDraft();
   }
 
   Future<B05RoutineWizardDraft?> readRoutineDraft() async {

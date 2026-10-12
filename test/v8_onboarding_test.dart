@@ -275,10 +275,10 @@ void main() {
         await tester.pumpAndSettle();
       }
 
-      await tap('Next Step');
+      await tap('Next step');
       await tap('Male');
-      await tap('Next Step');
-      await tap('Next Step');
+      await tap('Next step');
+      await tap('Next step');
       await tap('Review setup');
     }
 

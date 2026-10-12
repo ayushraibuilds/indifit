@@ -444,7 +444,7 @@ void main() {
     );
     await tester.pump(const Duration(milliseconds: 250));
     // The goal comes first; these checks are about the body fields.
-    await tester.tap(find.text('Next Step'));
+    await tester.tap(find.text('Next step'));
     await tester.pumpAndSettle();
 
     expect(find.text('A bit about you'), findsOneWidget);
@@ -452,7 +452,7 @@ void main() {
     await tester.enterText(find.byType(TextField).first, 'Priya');
     expect(FocusManager.instance.primaryFocus, isNotNull);
 
-    await tester.tap(find.text('Next Step'));
+    await tester.tap(find.text('Next step'));
     await tester.pump();
     final focusedEditable = find.byType(EditableText).evaluate().where((
       element,
@@ -485,7 +485,7 @@ void main() {
     );
     await tester.pump(const Duration(milliseconds: 250));
     // The goal comes first; these checks are about the body fields.
-    await tester.tap(find.text('Next Step'));
+    await tester.tap(find.text('Next step'));
     await tester.pumpAndSettle();
 
     await tester.tap(find.byType(TextField).first);
@@ -511,7 +511,7 @@ void main() {
     });
     expect(focusedEditable, isEmpty);
 
-    await tester.tap(find.text('Next Step'));
+    await tester.tap(find.text('Next step'));
     await tester.pumpAndSettle();
     expect(find.text('How do you move most days?'), findsOneWidget);
     expect(tester.takeException(), isNull);

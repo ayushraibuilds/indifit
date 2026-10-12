@@ -188,6 +188,63 @@ class StreakChip extends StatelessWidget {
   }
 }
 
+/// After a skipped setup: one card on Today that leads back into setup, so
+/// targets are a tap away instead of buried in Settings. "Not now" hides it;
+/// setup stays reachable from Goal & targets and Personal details.
+class TodayFinishSetupCard extends ConsumerWidget {
+  const TodayFinishSetupCard({super.key, required this.onFinishSetup});
+
+  final VoidCallback onFinishSetup;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final show = ref.watch(todayFinishSetupPromptProvider);
+    if (show.valueOrNull != true) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: B05Layout.space8),
+      child: Semantics(
+        container: true,
+        label:
+            'Finish setting up. Get daily calorie and protein targets in about two minutes.',
+        child: B05Surface(
+          key: const ValueKey('today_finish_setup'),
+          tone: B05SurfaceTone.selected,
+          padding: const EdgeInsets.all(B05Layout.space12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Finish setting up', style: B05Typography.title(context)),
+              const SizedBox(height: B05Layout.space4),
+              Text(
+                'Get daily calorie and protein targets in about two minutes.',
+                style: B05Typography.body(context),
+              ),
+              const SizedBox(height: B05Layout.space12),
+              B05ActionGroup(
+                children: [
+                  B05ActionButton(
+                    label: 'Finish setup',
+                    icon: Icons.arrow_forward_rounded,
+                    hint: 'Continue setup where you left off.',
+                    onPressed: onFinishSetup,
+                  ),
+                  B05ActionButton(
+                    label: 'Not now',
+                    emphasis: B05ActionEmphasis.tertiary,
+                    hint:
+                        'Hide this card. Setup stays in Settings, Goal & targets.',
+                    onPressed: () => unawaited(dismissTodayFinishSetup(ref)),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class TodayOnboardingHandoff extends ConsumerWidget {
   const TodayOnboardingHandoff({
     super.key,

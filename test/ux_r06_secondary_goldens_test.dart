@@ -219,16 +219,16 @@ Future<void> _expectGolden(
 
 Future<void> _moveToAbout(WidgetTester tester) async {
   await tester.tap(find.text('Maintain'));
-  await tester.tap(find.text('Next Step'));
+  await tester.tap(find.text('Next step'));
   await tester.pumpAndSettle();
 }
 
 Future<void> _moveToNutrition(WidgetTester tester) async {
   await _moveToAbout(tester);
   await tester.tap(find.text('Male'));
-  await tester.tap(find.text('Next Step'));
+  await tester.tap(find.text('Next step'));
   await tester.pumpAndSettle();
-  await tester.tap(find.text('Next Step'));
+  await tester.tap(find.text('Next step'));
   await tester.pumpAndSettle();
 }
 

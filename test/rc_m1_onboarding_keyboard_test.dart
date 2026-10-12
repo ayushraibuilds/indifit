@@ -52,7 +52,7 @@ void main() {
       await tester.tap(name);
       await tester.pump();
       expect(tester.widget<Opacity>(find.byType(Opacity)).opacity, 0);
-      expect(find.bySemanticsLabel('Next Step'), findsOneWidget);
+      expect(find.bySemanticsLabel('Next step'), findsOneWidget);
 
       await tester.testTextInput.receiveAction(TextInputAction.next);
       await tester.pump();
@@ -85,7 +85,7 @@ void main() {
       tester.view.viewInsets = const FakeViewPadding();
       await tester.pump(const Duration(milliseconds: 250));
       expect(find.byType(Opacity), findsNothing);
-      expect(find.text('Next Step'), findsOneWidget);
+      expect(find.text('Next step'), findsOneWidget);
       expect(find.text('A bit about you'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
@@ -147,7 +147,7 @@ void main() {
     expect(find.text('What is your main goal?'), findsNothing);
 
     await _tapVisible(tester, 'Male');
-    await _tapVisible(tester, 'Next Step');
+    await _tapVisible(tester, 'Next step');
     await tester.pumpAndSettle();
     expect(find.text('How do you move most days?'), findsOneWidget);
     expect(find.text('A bit about you'), findsNothing);
@@ -169,7 +169,7 @@ void main() {
       await tester.pump();
       expect(find.text('Enter age between 10 and 120.'), findsOneWidget);
 
-      await tester.tap(find.text('Next Step'));
+      await tester.tap(find.text('Next step'));
       await tester.pump();
       expect(find.text('A bit about you'), findsOneWidget);
       expect(find.text('What is your main goal?'), findsNothing);
@@ -188,7 +188,7 @@ void main() {
       await tester.enterText(weight, '62');
       await tester.pump();
       await _tapVisible(tester, 'Male');
-      await _tapVisible(tester, 'Next Step');
+      await _tapVisible(tester, 'Next step');
       await tester.pumpAndSettle();
       final back = find.byTooltip('Back');
       await tester.ensureVisible(back);
@@ -233,7 +233,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 250));
         expect(find.text('What is your main goal?'), findsOneWidget);
         expect(find.text('Skip for now'), findsOneWidget);
-        expect(find.text('Next Step'), findsOneWidget);
+        expect(find.text('Next step'), findsOneWidget);
         expect(tester.takeException(), isNull);
       }
     }
@@ -342,7 +342,7 @@ Future<AppDatabase> _pumpOnboarding(
   );
   await tester.pump(const Duration(milliseconds: 250));
   // The goal comes first; these tests cover the body fields after it.
-  await tester.tap(find.text('Next Step'));
+  await tester.tap(find.text('Next step'));
   await tester.pumpAndSettle();
   return database;
 }

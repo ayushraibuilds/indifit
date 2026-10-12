@@ -289,15 +289,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     if (!profile.hasProfile) {
       return Scaffold(
         appBar: AppBar(title: const Text('Profile')),
-        body: ProductEmptyState(
-          icon: Icons.person_add_alt_1_outlined,
-          title: 'Complete your profile when you’re ready',
-          message:
-              'Add your details to personalize goals and recommendations. Basic logging remains available without them.',
-          actionLabel: 'Complete profile',
-          actionIcon: Icons.arrow_forward_rounded,
-          action: () => Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+        body: Padding(
+          padding: const EdgeInsets.all(B05Layout.space16),
+          child: ProductEmptyState(
+            icon: Icons.person_add_alt_1_outlined,
+            title: 'Complete your profile when you’re ready',
+            message:
+                'Add your details to personalize goals and recommendations. Basic logging remains available without them.',
+            actionLabel: 'Complete profile',
+            actionIcon: Icons.arrow_forward_rounded,
+            action: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const OnboardingScreen(openedFromApp: true),
+              ),
+            ),
           ),
         ),
       );

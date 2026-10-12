@@ -339,7 +339,7 @@ All of V0–V8 is merged. The [redesign review](../audit/redesign-review-2026-10
 | M-5 | The whole thali never fit on screen | Only the plate/list row and katori question sit above the plate; the plate sizes to the screen; no full-screen spinner on a preset | Merged (#98) |
 | O-1 – O-4 | Number and date formats, Title Case, card widths, player details | Consistency sweep | Merged (#99, #100) |
 | V9 | Progress: one stat component and a weekly volume chart (decision, 11 Oct) | `ProgressStat` everywhere a number leads; 8-week loaded-volume bars (§ 13.1) | Merged (#101) |
-| L-1 – L-3 | Duplicate "Browse plans" heading; Material tick on the selected player chip; plan "Time" card out of line | Filter card reads "Filter plans"; player chips set `showCheckmark: false`; metric cards share one height | In progress (this PR) |
+| L-1 – L-3 | Duplicate "Browse plans" heading; Material tick on the selected player chip; plan "Time" card out of line | Filter card reads "Filter plans"; player chips set `showCheckmark: false`; metric cards share one height | Merged (#102) |
 
 ### 13.1 V9: Progress
 

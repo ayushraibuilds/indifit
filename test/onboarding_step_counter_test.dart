@@ -36,7 +36,7 @@ void main() {
 
         // The goal comes first; the body fields are step 2.
         expect(find.text('1 of 5'), findsOneWidget);
-        await tester.tap(find.text('Next Step'));
+        await tester.tap(find.text('Next step'));
         await tester.pumpAndSettle();
         expect(find.text('2 of 5'), findsOneWidget);
 
@@ -75,18 +75,18 @@ void main() {
         // Step 1 of 5: Goal
         expect(find.text('1 of 5'), findsOneWidget);
         await tapVisible('Maintain');
-        await tapVisible('Next Step');
+        await tapVisible('Next step');
 
         // Step 2 of 5: About you. Select sex (age/height/weight already
         // have defaults).
         expect(find.text('2 of 5'), findsOneWidget);
         await tapVisible('Male');
-        await tapVisible('Next Step');
+        await tapVisible('Next step');
 
         // Step 3 of 5: Activity
         expect(find.text('3 of 5'), findsOneWidget);
-        await tapVisible('Moderately Active');
-        await tapVisible('Next Step');
+        await tapVisible('Moderately active');
+        await tapVisible('Next step');
 
         // Step 4 of 5: Diet
         expect(find.text('4 of 5'), findsOneWidget);

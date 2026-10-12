@@ -51,6 +51,7 @@ class TodayDailyActionSurface extends ConsumerWidget {
     this.onResumeWorkout,
     this.onOpenFoodGuidance,
     this.onOpenNutritionTargets,
+    this.onFinishSetup,
   });
 
   final DateTime selectedDate;
@@ -71,6 +72,9 @@ class TodayDailyActionSurface extends ConsumerWidget {
   final Future<void> Function(WorkoutDraft draft)? onResumeWorkout;
   final VoidCallback? onOpenFoodGuidance;
   final VoidCallback? onOpenNutritionTargets;
+
+  /// Reopens a skipped setup; the "Finish setup" card shows only with it.
+  final VoidCallback? onFinishSetup;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -238,6 +242,9 @@ class TodayDailyActionSurface extends ConsumerWidget {
                       onLogFood: () => _openMeal(''),
                     ),
                   ],
+                  if (relation == TodayDateRelation.today &&
+                      onFinishSetup != null)
+                    TodayFinishSetupCard(onFinishSetup: onFinishSetup!),
                   const SizedBox(height: B05Layout.space12),
                   // Modules rise in one after another on first view only.
                   for (final (index, item)

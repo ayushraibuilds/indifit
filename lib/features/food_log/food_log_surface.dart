@@ -192,7 +192,7 @@ class FoodLogEntriesPanel extends ConsumerWidget {
       return const B05StatusMessage(
         status: B05SemanticStatus.info,
         label: 'No food logged for this day',
-        value: 'Use Search foods above to add a meal.',
+        value: 'Tap Add food to log what you ate.',
       );
     }
     return Column(
