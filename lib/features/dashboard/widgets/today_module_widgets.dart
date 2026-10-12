@@ -105,10 +105,18 @@ class TodayHeaderState extends State<TodayHeader> with WidgetsBindingObserver {
                 ),
                 const SizedBox(height: B05Layout.space4),
                 Text(dateContext, style: B05Typography.body(context)),
-                if (widget.streakCount > 0) ...[
-                  const SizedBox(height: B05Layout.space8),
-                  StreakChip(count: widget.streakCount),
-                ],
+                // The chip's line is always reserved: the streak loads after
+                // the cards, and adding the chip then pushed the page down.
+                const SizedBox(height: B05Layout.space8),
+                Visibility(
+                  visible: widget.streakCount > 0,
+                  maintainSize: true,
+                  maintainAnimation: true,
+                  maintainState: true,
+                  child: StreakChip(
+                    count: widget.streakCount > 0 ? widget.streakCount : 1,
+                  ),
+                ),
               ],
             ),
           ),
