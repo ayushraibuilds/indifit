@@ -1,0 +1,408 @@
+{
+ "Makhana (Roasted)": {
+  "query": "phool makhana",
+  "n": 10,
+  "median_kcal": 472.5,
+  "product": "Roasted Makhana (['Granos'])",
+  "code": "0712179202535",
+  "per100": {
+   "kcal": 480.0,
+   "protein_g": 8.0,
+   "carbs_g": 67.0,
+   "fat_g": 20.0,
+   "fibre_g": 2.0
+  }
+ },
+ "Peanut Butter": {
+  "query": "peanut butter",
+  "n": 38,
+  "median_kcal": 636.4,
+  "product": "Dr. Oetker Funfoods Peanut Butter (['Dr. Oetker', 'Funfoods'])",
+  "code": "8906002008544",
+  "per100": {
+   "kcal": 636.4,
+   "protein_g": 25.6,
+   "carbs_g": 20.3,
+   "fat_g": 50.3,
+   "fibre_g": 0.0
+  }
+ },
+ "Dark Chocolate": {
+  "query": "dark chocolate",
+  "n": 32,
+  "median_kcal": 534.95,
+  "product": "The Whole Truth Almond Raisin Dark Chocolate (['The Whole Truth'])",
+  "code": "8906143890497",
+  "per100": {
+   "kcal": 547.9,
+   "protein_g": 7.9,
+   "carbs_g": 52.0,
+   "fat_g": 34.3,
+   "fibre_g": 8.2
+  }
+ },
+ "Milk Chocolate": {
+  "query": "dairy milk chocolate",
+  "n": 15,
+  "median_kcal": 532.0,
+  "product": "Dairy Milk Chocolate (['Cadbury'])",
+  "code": "7622202398735",
+  "per100": {
+   "kcal": 532.0,
+   "protein_g": 7.8,
+   "carbs_g": 60.4,
+   "fat_g": 29.2,
+   "fibre_g": 0.0
+  }
+ },
+ "Vanilla Ice Cream": {
+  "query": "vanilla ice cream",
+  "n": 6,
+  "median_kcal": 215.5,
+  "product": "Vanilla ice cream (['Amul'])",
+  "code": "8901262173490",
+  "per100": {
+   "kcal": 215.0,
+   "protein_g": 3.7,
+   "carbs_g": 20.8,
+   "fat_g": 13.0,
+   "fibre_g": 0.0
+  }
+ },
+ "White Bread": {
+  "query": "white bread",
+  "n": 10,
+  "median_kcal": 253.65,
+  "product": "white bread ([\"Bakeman's Soft bread\"])",
+  "code": "8908007728113",
+  "per100": {
+   "kcal": 252.3,
+   "protein_g": 7.2,
+   "carbs_g": 53.9,
+   "fat_g": 0.85,
+   "fibre_g": 0.0
+  }
+ },
+ "Brown Bread (Whole Wheat)": {
+  "query": "brown bread",
+  "n": 14,
+  "median_kcal": 249.70499999999998,
+  "product": "Kitty Brown Bread (['Kitty'])",
+  "code": "8902027006169",
+  "per100": {
+   "kcal": 248.41,
+   "protein_g": 10.2,
+   "carbs_g": 46.3,
+   "fat_g": 2.49,
+   "fibre_g": 6.35
+  }
+ },
+ "Multigrain Bread": {
+  "query": "multigrain bread",
+  "n": 3,
+  "median_kcal": 331.0,
+  "product": "Multigrain Bread (['Mr Bakewell'])",
+  "code": "8908014814007",
+  "per100": {
+   "kcal": 331.0,
+   "protein_g": 3.5,
+   "carbs_g": 68.0,
+   "fat_g": 5.0,
+   "fibre_g": 0.0
+  }
+ },
+ "Pav": {
+  "query": "pav",
+  "n": 6,
+  "median_kcal": 261.5,
+  "product": "Wow Pav (['Modern'])",
+  "code": "8904043553085",
+  "per100": {
+   "kcal": 261.0,
+   "protein_g": 9.5,
+   "carbs_g": 48.9,
+   "fat_g": 2.98,
+   "fibre_g": 0.0
+  }
+ },
+ "Rusk": {
+  "query": "rusk",
+  "n": 6,
+  "median_kcal": 436.5,
+  "product": "Toastea premium rusk (['Britannia'])",
+  "code": "8901063325609",
+  "per100": {
+   "kcal": 433.0,
+   "protein_g": 9.0,
+   "carbs_g": 80.7,
+   "fat_g": 8.3,
+   "fibre_g": 0.0
+  }
+ },
+ "Cornflakes": {
+  "query": "corn flakes",
+  "n": 8,
+  "median_kcal": 379.5,
+  "product": "Corn Flakes Original ([\"Kellogg's\"])",
+  "code": "8901499008183",
+  "per100": {
+   "kcal": 380.0,
+   "protein_g": 6.6666666666667,
+   "carbs_g": 87.0,
+   "fat_g": 1.0,
+   "fibre_g": 2.6666666666667
+  }
+ },
+ "Muesli": {
+  "query": "muesli",
+  "n": 23,
+  "median_kcal": 418.0,
+  "product": "Muesli+ (Fruits + Nuts & Seeds) (['Yoga Bar'])",
+  "code": "8908005144649",
+  "per100": {
+   "kcal": 418.0,
+   "protein_g": 13.0,
+   "carbs_g": 70.0,
+   "fat_g": 9.5,
+   "fibre_g": 7.4
+  }
+ },
+ "Oats (Dry)": {
+  "query": "rolled oats",
+  "n": 28,
+  "median_kcal": 398.0,
+  "product": "White Oats (['Bagrry\u2019s'])",
+  "code": "8902710100150",
+  "per100": {
+   "kcal": 397.0,
+   "protein_g": 14.3,
+   "carbs_g": 66.0,
+   "fat_g": 8.57,
+   "fibre_g": 10.3
+  }
+ },
+ "Granola": {
+  "query": "granola",
+  "n": 10,
+  "median_kcal": 454.2,
+  "product": "Granola (['Sante'])",
+  "code": "8904041744133",
+  "per100": {
+   "kcal": 457.0,
+   "protein_g": 8.80000019073486,
+   "carbs_g": 66.0,
+   "fat_g": 16.0,
+   "fibre_g": 6.90000009536743
+  }
+ },
+ "Soya Chunks (Dry)": {
+  "query": "soya chunks",
+  "n": 20,
+  "median_kcal": 328.5,
+  "product": "Soya Chunks (['Saffola'])",
+  "code": "8901088072267",
+  "per100": {
+   "kcal": 312.0,
+   "protein_g": 53.0,
+   "carbs_g": 30.2,
+   "fat_g": 1.0,
+   "fibre_g": 15.5
+  }
+ },
+ "Whey Protein": {
+  "query": "whey protein",
+  "n": 47,
+  "median_kcal": 383.0,
+  "product": "Whey Protein (['Amul'])",
+  "code": "8901262110266",
+  "per100": {
+   "kcal": 383.0,
+   "protein_g": 74.0,
+   "carbs_g": 10.6,
+   "fat_g": 5.0,
+   "fibre_g": 0.0
+  }
+ },
+ "Cheese Slice": {
+  "query": "cheese slices",
+  "n": 5,
+  "median_kcal": 311.0,
+  "product": "Cheese slices (['Amul'])",
+  "code": "8901262020015",
+  "per100": {
+   "kcal": 311.0,
+   "protein_g": 20.0,
+   "carbs_g": 1.5,
+   "fat_g": 25.0,
+   "fibre_g": 0.0
+  }
+ },
+ "Cola": {
+  "query": "cola",
+  "n": 20,
+  "median_kcal": 42.5,
+  "product": "Thums Up  (Coca-Cola) (['Coca-Cola'])",
+  "code": "8901764042300",
+  "per100": {
+   "kcal": 42.0,
+   "protein_g": 0.0,
+   "carbs_g": 10.6,
+   "fat_g": 0.0,
+   "fibre_g": 0.0
+  }
+ },
+ "Masala Noodles (Instant)": {
+  "query": "masala noodles",
+  "n": 16,
+  "median_kcal": 438.5,
+  "product": "Masala noodles (['Snactac'])",
+  "code": "8904132912847",
+  "per100": {
+   "kcal": 445.0,
+   "protein_g": 10.6,
+   "carbs_g": 64.8,
+   "fat_g": 15.9,
+   "fibre_g": 0.0
+  }
+ },
+ "Popcorn (Salted)": {
+  "query": "salted popcorn",
+  "n": 5,
+  "median_kcal": 521.0,
+  "product": "act-2 popcorn tomato chilli 59g (None)",
+  "code": "8901512542106",
+  "per100": {
+   "kcal": 521.0,
+   "protein_g": 9.0,
+   "carbs_g": 56.0,
+   "fat_g": 28.9,
+   "fibre_g": 0.0
+  }
+ },
+ "Glucose Biscuits": {
+  "query": "glucose biscuits",
+  "n": 4,
+  "median_kcal": 451.5,
+  "product": "Glucose Biscuits (['Sunfeast'])",
+  "code": "8901725113520",
+  "per100": {
+   "kcal": 449.0,
+   "protein_g": 8.3,
+   "carbs_g": 75.0,
+   "fat_g": 12.9,
+   "fibre_g": 0.0
+  }
+ },
+ "Marie Biscuits": {
+  "query": "marie biscuits",
+  "n": 15,
+  "median_kcal": 445.0,
+  "product": "Marie Light (['Sunfeast'])",
+  "code": "8901725114961",
+  "per100": {
+   "kcal": 445.0,
+   "protein_g": 9.1,
+   "carbs_g": 77.4,
+   "fat_g": 11.0,
+   "fibre_g": 0.0
+  }
+ },
+ "Aloo Bhujia": {
+  "query": "aloo bhujia",
+  "n": 17,
+  "median_kcal": 580.8,
+  "product": "Haldirams Bhujia (['Haldirams'])",
+  "code": "8904063200945",
+  "per100": {
+   "kcal": 580.8,
+   "protein_g": 13.9,
+   "carbs_g": 39.5,
+   "fat_g": 40.8,
+   "fibre_g": 0.0
+  }
+ },
+ "Potato Chips (Salted)": {
+  "query": "salted potato chips",
+  "n": 16,
+  "median_kcal": 543.5,
+  "product": "potato chips (['Maxvita'])",
+  "code": "8908003763057",
+  "per100": {
+   "kcal": 543.0,
+   "protein_g": 7.6,
+   "carbs_g": 51.7,
+   "fat_g": 34.4,
+   "fibre_g": 0.0
+  }
+ },
+ "Corn Puffs (Masala)": {
+  "query": "kurkure",
+  "n": 10,
+  "median_kcal": 558.0,
+  "product": "Green chutney style (['PepsiCo', 'Kurkure'])",
+  "code": "8901491103084",
+  "per100": {
+   "kcal": 561.0,
+   "protein_g": 5.9,
+   "carbs_g": 56.3,
+   "fat_g": 34.7,
+   "fibre_g": 0.0
+  }
+ },
+ "Namkeen Mixture": {
+  "query": "namkeen mixture",
+  "n": 18,
+  "median_kcal": 535.45,
+  "product": "all time mixture (['bikano'])",
+  "code": "8901414016415",
+  "per100": {
+   "kcal": 537.9,
+   "protein_g": 13.0,
+   "carbs_g": 46.5,
+   "fat_g": 33.1,
+   "fibre_g": 0.0
+  }
+ },
+ "Banana Chips": {
+  "query": "banana chips",
+  "n": 9,
+  "median_kcal": 518.65,
+  "product": "Kerala Banana Chips (['Beyond Snacks'])",
+  "code": "0793591862460",
+  "per100": {
+   "kcal": 518.65,
+   "protein_g": 6.84,
+   "carbs_g": 60.97,
+   "fat_g": 27.49,
+   "fibre_g": 6.88
+  }
+ },
+ "Peanut Chikki": {
+  "query": "chikki",
+  "n": 10,
+  "median_kcal": 525.75,
+  "product": "Peanut Chikki Bar ([\"Haldiram's\"])",
+  "code": "8904063200082",
+  "per100": {
+   "kcal": 521.5,
+   "protein_g": 15.5,
+   "carbs_g": 53.0,
+   "fat_g": 27.5,
+   "fibre_g": 0.0
+  }
+ },
+ "Malted Milk Drink Powder": {
+  "query": "malt drink powder",
+  "n": 10,
+  "median_kcal": 377.0,
+  "product": "Classic Malt (['Horlicks'])",
+  "code": "8901030807237",
+  "per100": {
+   "kcal": 377.0,
+   "protein_g": 11.0,
+   "carbs_g": 79.0,
+   "fat_g": 2.0,
+   "fibre_g": 0.0
+  }
+ }
+}

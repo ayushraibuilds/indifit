@@ -25,19 +25,50 @@ What changed and why:
 - Nuts and seeds kept their energy within 15%; their carbs fell for the same
   reason.
 
-Still to do before import:
+## Recipe calculations (12 Oct)
 
-- 97 rows have no IFCT entry: cooked dishes, sweets, breads, cereals, packaged
-  foods, cooked meats and drinks. They need a recipe calculation from IFCT
-  ingredients (with cooking yields) or the pack label. Until then they are
-  estimates.
-- Jamun is unmatched: IFCT's "Black berry" and "Jambu fruit" names are unclear.
-- Kiwi is not in IFCT; its row is a USDA estimate.
-- Cooked chicken breast is a USDA value (31 g protein, 3.6 g fat per 100 g).
-  IFCT's raw Indian chicken breast has 21.8 g protein and 9 g fat per 100 g, so
-  a recipe calculation from IFCT may land well above the draft's fat.
-- The app's nutrient registry does not say whether "carbohydrate" means total
-  or available. The catalogue should say so, and use one throughout.
+The 98 rows without an IFCT entry now have values from one of three sources,
+named in each row's `source` and `status`:
+
+| Status | Rows | How |
+|---|---|---|
+| calculated (IFCT recipe) | 62 | Raw IFCT 2017 ingredients for a batch, the cooked batch weight and any frying oil absorbed, scaled to the serving. Recipe and assumptions are in `source`. |
+| label (Indian pack) | 27 | The Indian product on Open Food Facts nearest the median energy of its group, after dropping labels whose energy does not match their macros. Product and barcode in `source`. |
+| USDA (not in IFCT 2017) | 8 | USDA SR Legacy, carbohydrate converted to available (total minus fibre): kiwi, chia, pumpkin seeds, butter, mozzarella, firm tofu, popcorn, multigrain bread. |
+
+Ingredients IFCT lacks come from USDA: sugar, cream, mayonnaise, sago, ketchup,
+cornflour. Curd is taken as the cow milk it sets from; chhena as IFCT paneer;
+hung curd as curd strained to half its weight. Oils and ghee are 9 kcal per g.
+Spices under 2 g a serving are left out.
+
+`method/recipes.py` reproduces the numbers (`python3 recipes.py <dir with
+IFCT comp.csv> staples_draft.csv`), with `labels.json` and `usda.json` as its
+inputs. The IFCT table itself is not copied here: get `compositions/index.csv` from
+github.com/ifct2017/compositions.
+
+Largest changes from the first draft, and why:
+
+- Cooked chicken breast 165 → 224 kcal per 100 g: IFCT's raw Indian broiler breast
+  has 9% fat, against USDA's 3.6%.
+- Moong sprouts 31 → 117 kcal a cup: the draft used watery Chinese bean sprouts;
+  Indian sprouts are 40 g dry moong grown to about 104 g.
+- Tofu 76 → 144: firm tofu, not silken.
+- Badam milk, oats porridge and kheer rose 40–50%: the draft under-counted
+  whole milk and sugar.
+- Chicken momos and shawarma rose by a third: Indian chicken thigh is fatty and
+  shawarma carries 20 g of mayonnaise.
+
+Still open before import:
+
+- Recipes are typical home or street versions. A reviewer should confirm the
+  portions (for example 8 g of flour per momo wrapper, 15% oil in fries).
+- Jamun uses IFCT E013 "Black berry", which lists jamun's local names but the
+  Latin name Rubus sp. It is marked low confidence.
+- Makhana (Roasted) is a packaged, oil-roasted product (154 kcal a cup). Plain
+  dry-roasted makhana would be about a third lower and has no Indian source here.
+- Chikoo keeps IFCT's published energy (73 kcal a serving) though its macros add
+  up to about 90 kcal; IFCT's figure stands.
+- The catalogue should state that carbohydrate means available carbohydrate.
 
 ## Staples draft: how to read it
 
