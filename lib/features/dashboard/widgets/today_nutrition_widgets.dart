@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/di/providers.dart';
+import '../../../core/motion/device_tilt.dart';
 import '../../../core/motion/indifit_motion.dart';
 import '../../../core/presentation/consumer_copy.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
@@ -528,7 +530,11 @@ B05ColorRole todayMacroColorRole(B05SemanticColors colors, String nutrientId) {
 /// the number at 42 pt. Over the target the green lap stays full and the
 /// extra draws as a coral second lap; only the "N over" text is red.
 /// Tapping it opens Goal & targets when [onTap] is set.
-class CalorieRing extends StatelessWidget {
+///
+/// With the phone tilting (T5) the gloss line slides one way and the glow
+/// behind it the other, up to ±3°. Still under Reduce Motion, off screen and
+/// in tests.
+class CalorieRing extends StatefulWidget {
   const CalorieRing({
     super.key,
     required this.calories,
@@ -536,6 +542,7 @@ class CalorieRing extends StatelessWidget {
     required this.incomplete,
     required this.noConsumption,
     this.onTap,
+    this.tiltSource,
   });
 
   final TodayNutritionMetricPresentation? calories;
@@ -544,11 +551,87 @@ class CalorieRing extends StatelessWidget {
   final bool noConsumption;
   final VoidCallback? onTap;
 
+  /// A stream of the phone's lean in radians; the sensor when null.
+  final Stream<Offset> Function()? tiltSource;
+
   static const double diameter = 176;
   static const double largeTextDiameter = 196;
 
+  /// The furthest the light moves either way: 3°.
+  static const double maxTilt = 3 * math.pi / 180;
+
+  @override
+  State<CalorieRing> createState() => _CalorieRingState();
+}
+
+class _CalorieRingState extends State<CalorieRing> with WidgetsBindingObserver {
+  final _tilt = ValueNotifier<Offset>(Offset.zero);
+  StreamSubscription<Offset>? _tiltSubscription;
+  var _resumed = true;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _syncTilt();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    _resumed = state == AppLifecycleState.resumed;
+    _syncTilt();
+  }
+
+  /// Listen only while the ring can be seen (Today is the current tab and
+  /// route, the app is in front) and motion is allowed.
+  void _syncTilt() {
+    final route = ModalRoute.of(context);
+    final wanted =
+        _resumed &&
+        (route?.isCurrent ?? true) &&
+        TickerMode.valuesOf(context).enabled &&
+        !B05MotionPolicy.reduceMotion(context);
+    if (wanted && _tiltSubscription == null) {
+      final source =
+          widget.tiltSource ??
+          () => deviceTiltStream(maxRadians: CalorieRing.maxTilt);
+      _tiltSubscription = source().listen(
+        (value) => _tilt.value = value,
+        // No sensor (simulator, tests): the light stays put.
+        onError: (Object _) => _stopTilt(),
+        cancelOnError: true,
+      );
+    } else if (!wanted) {
+      _stopTilt();
+    }
+  }
+
+  void _stopTilt() {
+    unawaited(_tiltSubscription?.cancel());
+    _tiltSubscription = null;
+    _tilt.value = Offset.zero;
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    unawaited(_tiltSubscription?.cancel());
+    _tilt.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final calories = widget.calories;
+    final hasTarget = widget.hasTarget;
+    final incomplete = widget.incomplete;
+    final noConsumption = widget.noConsumption;
+    final onTap = widget.onTap;
     final metric = calories;
     final largeText = MediaQuery.textScalerOf(context).scale(1) > 1.35;
     final diameter = largeText
@@ -647,6 +730,7 @@ class CalorieRing extends StatelessWidget {
                     trackColor: colors.borderSubtle,
                     range: metric.isRange,
                     dark: dark,
+                    tilt: _tilt,
                   ),
                 ),
               ),
@@ -750,7 +834,8 @@ class CalorieRingPainter extends CustomPainter {
     this.overflow = 0,
     this.overflowColor = const Color(0xFFFF8A65),
     this.dark = true,
-  });
+    this.tilt,
+  }) : super(repaint: tilt);
 
   static const double stroke = 14;
   static const double glowSigma = 6;
@@ -765,6 +850,15 @@ class CalorieRingPainter extends CustomPainter {
   final Color trackColor;
   final bool range;
   final bool dark;
+
+  /// How far the phone leans (radians, ±[CalorieRing.maxTilt]); null or zero
+  /// keeps the light still.
+  final ValueListenable<Offset>? tilt;
+
+  /// Pixels the gloss line slides at full tilt, and the glow slides the
+  /// other way, so the light seems to sit above the glass.
+  static const double glossShift = 3;
+  static const double glowShift = 4;
 
   static const double _start = -math.pi / 2;
   static const double _full = math.pi * 2;
@@ -839,6 +933,10 @@ class CalorieRingPainter extends CustomPainter {
     }
 
     final shadow = dark ? const Color(0x8C000000) : const Color(0x400F172A);
+    final lean = (tilt?.value ?? Offset.zero) / CalorieRing.maxTilt;
+    final glowOffset = Offset(-lean.dx, -lean.dy) * glowShift;
+    canvas.save();
+    canvas.translate(glowOffset.dx, glowOffset.dy);
     canvas.drawArc(
       rect,
       _start,
@@ -846,6 +944,7 @@ class CalorieRingPainter extends CustomPainter {
       false,
       arcPaint(alpha: glowAlpha, blurred: true),
     );
+    canvas.restore();
     if (overflow <= 0) _tipShadow(canvas, center, radius, high, shadow);
     final low = progressLow.clamp(0.0, high);
     if (low > 0) {
@@ -871,7 +970,10 @@ class CalorieRingPainter extends CustomPainter {
     final glossSweep = sweep - _full * .01;
     if (glossSweep > 0) {
       canvas.drawArc(
-        Rect.fromCircle(center: center, radius: radius + stroke / 2 - 3),
+        Rect.fromCircle(
+          center: center + lean * glossShift,
+          radius: radius + stroke / 2 - 3,
+        ),
         _start,
         glossSweep,
         false,
@@ -943,6 +1045,7 @@ class CalorieRingPainter extends CustomPainter {
       oldDelegate.color != color ||
       oldDelegate.endColor != endColor ||
       oldDelegate.overflowColor != overflowColor ||
+      oldDelegate.tilt != tilt ||
       oldDelegate.trackColor != trackColor ||
       oldDelegate.range != range ||
       oldDelegate.dark != dark;
