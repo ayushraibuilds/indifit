@@ -19,6 +19,7 @@ import 'package:indifit/features/dashboard/dashboard_personalization_controller.
 import 'package:indifit/features/dashboard/today_consumer_presentation.dart';
 import 'package:indifit/features/dashboard/today_daily_action_surface.dart';
 import 'package:indifit/features/dashboard/today_surface_controller.dart';
+import 'package:indifit/features/dashboard/today_week_controller.dart';
 import 'package:indifit/features/food_log/usual_thali.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -519,6 +520,8 @@ Widget _todayApp({
   return ProviderScope(
     key: key,
     overrides: [
+      // Week rings stay empty; the real read would open the device database.
+      todayWeekDaysProvider.overrideWith((ref, end) async => const {}),
       dashboardPersonalizationControllerProvider.overrideWith(
         (ref) => personalization,
       ),
