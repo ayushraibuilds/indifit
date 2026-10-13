@@ -251,6 +251,8 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
     expect(find.byType(TodayDailyActionSurface), findsOneWidget);
+    await _decodeImages(tester);
+
     await expectLater(
       find.byType(TodayDailyActionSurface),
       matchesGoldenFile('goldens/ux_w03_today_dark.png'),
@@ -274,6 +276,8 @@ void main() {
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
+    await _decodeImages(tester);
+
     await expectLater(
       find.byType(TodayDailyActionSurface),
       matchesGoldenFile('goldens/ux_w03_today_light.png'),
@@ -476,4 +480,14 @@ class _TestRecord implements NutritionHistoricalReadRecord {
   List<NutritionCompatibilityIssue> get issues => const [];
   @override
   bool get isLegacy => false;
+}
+
+/// Asset images decode off the frame clock; wait for them so the streak
+/// flame is always in the golden, not only when decoding wins the race.
+Future<void> _decodeImages(WidgetTester tester) async {
+  for (final element in find.byType(Image).evaluate().toList()) {
+    final image = (element.widget as Image).image;
+    await tester.runAsync(() => precacheImage(image, element));
+  }
+  await tester.pump();
 }
