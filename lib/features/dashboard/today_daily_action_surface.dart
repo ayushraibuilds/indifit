@@ -19,7 +19,7 @@ import 'dashboard_personalization_controller.dart';
 import 'today_consumer_presentation.dart';
 import 'today_presentation_types.dart';
 import 'today_surface_controller.dart';
-import 'widgets/dashboard_date_bar.dart';
+import 'widgets/today_header_widgets.dart';
 import 'widgets/today_helpers.dart';
 import 'widgets/today_hydration_card.dart';
 import 'widgets/today_module_widgets.dart';
@@ -28,6 +28,7 @@ import 'widgets/today_usual_thali_card.dart';
 
 export 'today_presentation_types.dart';
 export 'widgets/appearance_bottom_sheet.dart';
+export 'widgets/today_header_widgets.dart';
 export 'widgets/today_helpers.dart';
 export 'widgets/today_hydration_card.dart';
 export 'widgets/today_module_widgets.dart';
@@ -38,6 +39,7 @@ class TodayDailyActionSurface extends ConsumerWidget {
     required this.selectedDate,
     required this.userName,
     required this.streakCount,
+    this.streakLoaded = true,
     required this.onDateChanged,
     required this.onRefresh,
     required this.onOpenSettings,
@@ -52,11 +54,13 @@ class TodayDailyActionSurface extends ConsumerWidget {
     this.onOpenFoodGuidance,
     this.onOpenNutritionTargets,
     this.onFinishSetup,
+    this.onChooseTrainingPlan,
   });
 
   final DateTime selectedDate;
   final String userName;
   final int streakCount;
+  final bool streakLoaded;
   final ValueChanged<DateTime> onDateChanged;
   final Future<void> Function() onRefresh;
   final VoidCallback onOpenSettings;
@@ -75,6 +79,10 @@ class TodayDailyActionSurface extends ConsumerWidget {
 
   /// Reopens a skipped setup; the "Finish setup" card shows only with it.
   final VoidCallback? onFinishSetup;
+
+  /// Opens the plan library from the training row when there is no plan.
+  /// Without it the row opens the workout plan.
+  final VoidCallback? onChooseTrainingPlan;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -157,6 +165,17 @@ class TodayDailyActionSurface extends ConsumerWidget {
     // future date that range can include present-day records, which must not
     // be presented as evidence for that future Today context.
     final evidenceDateSupported = relation != TodayDateRelation.future;
+    final workoutModuleVisible = configuredLayout.any(
+      (item) => item.moduleId == 'today.workout' && item.isVisible,
+    );
+    final showTrainingRow = todayShowsTrainingRow(
+      relation: relation,
+      workout: workout,
+      nextUpVisible: nextUpVisible,
+      workoutModuleVisible: workoutModuleVisible,
+    );
+    final hasTrainingPlan =
+        snapshot?.calendar.value?.activeProgramVersionId != null;
     final layout = [
       for (final item in configuredLayout)
         if (_shouldRenderTodayModule(
@@ -178,7 +197,8 @@ class TodayDailyActionSurface extends ConsumerWidget {
     // being cut by a hard line at the safe-area edge.
     final topInset = MediaQuery.paddingOf(context).top;
     final page = context.b05Colors.page;
-    return ColoredBox(
+    // Transparent Material so ink responses work wherever Today is hosted.
+    return Material(
       color: page,
       child: Stack(
         children: [
@@ -206,9 +226,11 @@ class TodayDailyActionSurface extends ConsumerWidget {
                         TodayHeader(
                           userName: userName,
                           streakCount: streakCount,
+                          streakLoaded: streakLoaded,
                           selectedDate: selectedDate,
                           referenceNow: now,
                           onOpenSettings: onOpenSettings,
+                          onDateChanged: onDateChanged,
                           onOpenAppearance: () {
                             final isDark =
                                 Theme.of(context).brightness == Brightness.dark;
@@ -219,8 +241,8 @@ class TodayDailyActionSurface extends ConsumerWidget {
                                 );
                           },
                         ),
-                        const SizedBox(height: B05Layout.space8),
-                        DashboardDateBar(
+                        const SizedBox(height: B05Layout.space12),
+                        TodayWeekStrip(
                           selectedDate: selectedDate,
                           today: referenceNow,
                           onDateChanged: onDateChanged,
@@ -244,22 +266,21 @@ class TodayDailyActionSurface extends ConsumerWidget {
                               onRetry: personalizationController.retry,
                             ),
                           ),
+                        // Setup and targets notices are one line each, so the
+                        // ring and macros stay above the fold with one showing.
                         if (relation == TodayDateRelation.today &&
                             nutrition.state != TodayPresentationState.loading &&
                             nutrition.state !=
                                 TodayPresentationState.unavailable &&
-                            nutrition.hasAcceptedCalorieTarget) ...[
-                          const SizedBox(height: B05Layout.space8),
-                          TodayOnboardingHandoff(
+                            nutrition.hasAcceptedCalorieTarget)
+                          TodayTargetsReadyBanner(
                             presentation: nutrition,
                             onReviewTargets:
                                 onOpenNutritionTargets ?? onOpenSettings,
-                            onLogFood: () => _openMeal(''),
                           ),
-                        ],
                         if (relation == TodayDateRelation.today &&
                             onFinishSetup != null)
-                          TodayFinishSetupCard(onFinishSetup: onFinishSetup!),
+                          TodayFinishSetupBanner(onFinishSetup: onFinishSetup!),
                         const SizedBox(height: B05Layout.space12),
                         // Modules rise in one after another on first view only.
                         for (final (index, item)
@@ -313,6 +334,15 @@ class TodayDailyActionSurface extends ConsumerWidget {
                         ],
                         if (!configuredLayout.any((item) => item.isVisible))
                           NoVisibleModules(onCustomize: onCustomize),
+                        // Training stays on Today without a plan: one quiet
+                        // row at the bottom, not a card near the top.
+                        if (showTrainingRow)
+                          TodayTrainingRow(
+                            hasPlan: hasTrainingPlan,
+                            onTap: hasTrainingPlan
+                                ? onOpenWorkoutPlan
+                                : onChooseTrainingPlan ?? onOpenWorkoutPlan,
+                          ),
                       ],
                     ),
                   ),

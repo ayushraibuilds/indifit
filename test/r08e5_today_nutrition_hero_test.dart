@@ -228,16 +228,24 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
-    expect(find.text('Your starting targets are ready'), findsOneWidget);
-    expect(find.text('2,000 kcal · 150 g protein'), findsOneWidget);
-    expect(find.text('Review targets'), findsOneWidget);
+    // T1: one line with the calorie target; protein stays in the label.
+    expect(find.text('Targets ready · 2,000 kcal'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel(
+        'Your starting targets are ready. 2,000 kcal · 150 g protein.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Review'), findsOneWidget);
     expect(find.text('Log food'), findsWidgets);
 
-    await tester.tap(find.text('Dismiss'));
+    await tester.tap(
+      find.bySemanticsLabel('Dismiss this starting-target message.'),
+    );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
-    expect(find.text('Your starting targets are ready'), findsNothing);
+    expect(find.text('Targets ready · 2,000 kcal'), findsNothing);
     expect(
       (await SharedPreferences.getInstance()).getBool(
         todayOnboardingHandoffPendingKey,

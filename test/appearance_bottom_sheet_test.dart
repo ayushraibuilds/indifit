@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/di/theme_provider.dart';
 import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/features/dashboard/widgets/appearance_bottom_sheet.dart';
-import 'package:indifit/features/dashboard/widgets/today_module_widgets.dart';
+import 'package:indifit/features/dashboard/widgets/today_header_widgets.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

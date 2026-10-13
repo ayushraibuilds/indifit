@@ -6,7 +6,6 @@ import 'package:indifit/core/nutrients.dart';
 import 'package:indifit/core/nutrition_legacy_read_models.dart';
 import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/core/typed_quantities.dart';
-import 'package:indifit/core/widgets/b05_accessibility_primitives.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/models/b02_execution_models.dart';
 import 'package:indifit/data/models/b02_progress_read_models.dart';
@@ -17,6 +16,7 @@ import 'package:indifit/features/dashboard/dashboard_personalization_controller.
 import 'package:indifit/features/dashboard/today_consumer_presentation.dart';
 import 'package:indifit/features/dashboard/today_daily_action_surface.dart';
 import 'package:indifit/features/dashboard/today_surface_controller.dart';
+import 'package:indifit/features/dashboard/today_week_controller.dart';
 import 'package:indifit/features/nutrition/current_food_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -210,12 +210,13 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
-    // Header order: appearance toggle, then settings, then the date pager.
-    // Only check focus on the toggle so the test doesn't flip the theme.
+    // Header order: appearance toggle, then settings, then the date line,
+    // then the week strip. Only check focus on the toggle so the test doesn't
+    // flip the theme.
     await tester.sendKeyEvent(LogicalKeyboardKey.tab);
     final firstFocus = FocusManager.instance.primaryFocus?.context;
     expect(
-      firstFocus?.findAncestorWidgetOfExactType<B05IconAction>()?.label,
+      firstFocus?.findAncestorWidgetOfExactType<TodayHeaderIconButton>()?.label,
       'Switch to dark mode',
     );
 
@@ -223,9 +224,16 @@ void main() {
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);
     expect(settingsCalls, 1);
 
+    // Past the date line to "Back to today" (this fixture views yesterday).
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
     await tester.sendKeyEvent(LogicalKeyboardKey.tab);
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);
-    expect(changedDate, DateTime(2026, 8, 6));
+    expect(changedDate, DateTime(2026, 8, 8));
+
+    // Then the first day of the week strip.
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    expect(changedDate, DateTime(2026, 8, 2));
   });
 
   testWidgets('Today dark golden benchmark', tags: const ['golden'], (
@@ -244,6 +252,8 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
     expect(find.byType(TodayDailyActionSurface), findsOneWidget);
+    await _decodeImages(tester);
+
     await expectLater(
       find.byType(TodayDailyActionSurface),
       matchesGoldenFile('goldens/ux_w03_today_dark.png'),
@@ -267,6 +277,8 @@ void main() {
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
+    await _decodeImages(tester);
+
     await expectLater(
       find.byType(TodayDailyActionSurface),
       matchesGoldenFile('goldens/ux_w03_today_light.png'),
@@ -313,6 +325,8 @@ Widget _todayApp({
 }) {
   return ProviderScope(
     overrides: [
+      // Week rings stay empty; the real read would open the device database.
+      todayWeekDaysProvider.overrideWith((ref, end) async => const {}),
       dashboardPersonalizationControllerProvider.overrideWith(
         (ref) => personalization,
       ),
@@ -469,4 +483,14 @@ class _TestRecord implements NutritionHistoricalReadRecord {
   List<NutritionCompatibilityIssue> get issues => const [];
   @override
   bool get isLegacy => false;
+}
+
+/// Asset images decode off the frame clock; wait for them so the streak
+/// flame is always in the golden, not only when decoding wins the race.
+Future<void> _decodeImages(WidgetTester tester) async {
+  for (final element in find.byType(Image).evaluate().toList()) {
+    final image = (element.widget as Image).image;
+    await tester.runAsync(() => precacheImage(image, element));
+  }
+  await tester.pump();
 }

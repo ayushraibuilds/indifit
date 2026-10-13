@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
 
-/// Compact date navigation for Today. It uses civil-day comparisons and only
+/// Compact date navigation for the Food diary. It uses civil-day comparisons and only
 /// presents the selected date; timezone semantics remain in the read model.
 class DashboardDateBar extends StatelessWidget {
   final DateTime selectedDate;

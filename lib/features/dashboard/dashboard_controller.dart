@@ -21,6 +21,10 @@ class DashboardState {
   final DateTime selectedDate;
   final double currentWeight;
   final int streakCount;
+
+  /// False until the first streak read lands, so Today can keep the chip's
+  /// place without showing a "0" that turns into the real count.
+  final bool streakLoaded;
   final int streakFreezesCount;
   final List<double> weightHistory;
   final int calorieGoal;
@@ -55,6 +59,7 @@ class DashboardState {
     DateTime? selectedDate,
     this.currentWeight = 74.5,
     this.streakCount = 0,
+    this.streakLoaded = false,
     this.streakFreezesCount = 1,
     this.weightHistory = const [],
     this.calorieGoal = 2000,
@@ -79,6 +84,7 @@ class DashboardState {
     DateTime? selectedDate,
     double? currentWeight,
     int? streakCount,
+    bool? streakLoaded,
     int? streakFreezesCount,
     List<double>? weightHistory,
     int? calorieGoal,
@@ -97,6 +103,7 @@ class DashboardState {
       selectedDate: selectedDate ?? this.selectedDate,
       currentWeight: currentWeight ?? this.currentWeight,
       streakCount: streakCount ?? this.streakCount,
+      streakLoaded: streakLoaded ?? this.streakLoaded,
       streakFreezesCount: streakFreezesCount ?? this.streakFreezesCount,
       weightHistory: weightHistory ?? this.weightHistory,
       calorieGoal: calorieGoal ?? this.calorieGoal,
@@ -241,7 +248,11 @@ class DashboardController extends StateNotifier<DashboardState> {
     final streak = await streaks.currentStreak();
     final freezes = await streaks.freezeCount();
     if (!mounted) return;
-    state = state.copyWith(streakCount: streak, streakFreezesCount: freezes);
+    state = state.copyWith(
+      streakCount: streak,
+      streakLoaded: true,
+      streakFreezesCount: freezes,
+    );
   }
 
   Future<String> purchaseStreakFreeze() async {

@@ -440,6 +440,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         selectedDate: state.selectedDate,
         userName: userName == null || userName.isEmpty ? 'there' : userName,
         streakCount: state.streakCount,
+        streakLoaded: state.streakLoaded,
         onDateChanged: (date) {
           ref
               .read(dashboardControllerProvider.notifier)
@@ -449,6 +450,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         onOpenSettings: () => context.push('/settings'),
         onCustomize: _openCustomization,
         onOpenWorkoutPlan: () => context.push('/calendar'),
+        onChooseTrainingPlan: () => context.push('/plan-library'),
         onLogMeal: () => unawaited(_openFoodForMeal('')),
         onLogMealForMeal: _openFoodForMeal,
         onStartWorkout: _startTodayWorkout,
