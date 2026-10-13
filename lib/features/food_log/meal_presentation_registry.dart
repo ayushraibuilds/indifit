@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/presentation/ui_art.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../data/models/meal_category_definitions.dart';
 
@@ -12,6 +13,7 @@ class FoodMealPresentation {
     required this.label,
     required this.icon,
     required this.accent,
+    this.art,
   });
 
   final FoodMealCategory category;
@@ -19,6 +21,10 @@ class FoodMealPresentation {
   final String label;
   final IconData icon;
   final B05MealAccent? accent;
+
+  /// Fluent Emoji 3D art for the slot (assets/ui_icons/SOURCE.md), shown in
+  /// [MealIconChip]; slots without art draw [icon].
+  final String? art;
 
   bool get isKnown => category != FoodMealCategory.unknown;
 }
@@ -33,6 +39,7 @@ abstract final class MealPresentationRegistry {
     label: 'Breakfast',
     icon: Icons.wb_sunny_outlined,
     accent: B05MealAccent.breakfast,
+    art: UiArt.mealBreakfast,
   );
   static const FoodMealPresentation morningSnack = FoodMealPresentation(
     category: FoodMealCategory.morningSnack,
@@ -40,6 +47,7 @@ abstract final class MealPresentationRegistry {
     label: 'Morning snack',
     icon: Icons.coffee_outlined,
     accent: B05MealAccent.snack,
+    art: UiArt.mealSnack,
   );
   static const FoodMealPresentation lunch = FoodMealPresentation(
     category: FoodMealCategory.lunch,
@@ -47,6 +55,7 @@ abstract final class MealPresentationRegistry {
     label: 'Lunch',
     icon: Icons.wb_twilight_rounded,
     accent: B05MealAccent.lunch,
+    art: UiArt.mealLunch,
   );
   static const FoodMealPresentation afternoonSnack = FoodMealPresentation(
     category: FoodMealCategory.afternoonSnack,
@@ -54,6 +63,7 @@ abstract final class MealPresentationRegistry {
     label: 'Afternoon snack',
     icon: Icons.cookie_outlined,
     accent: B05MealAccent.snack,
+    art: UiArt.mealSnack,
   );
   static const FoodMealPresentation eveningSnack = FoodMealPresentation(
     category: FoodMealCategory.eveningSnack,
@@ -61,6 +71,7 @@ abstract final class MealPresentationRegistry {
     label: 'Evening snack',
     icon: Icons.cookie_outlined,
     accent: B05MealAccent.snack,
+    art: UiArt.mealSnack,
   );
   static const FoodMealPresentation dinner = FoodMealPresentation(
     category: FoodMealCategory.dinner,
@@ -68,6 +79,7 @@ abstract final class MealPresentationRegistry {
     label: 'Dinner',
     icon: Icons.nightlight_round,
     accent: B05MealAccent.dinner,
+    art: UiArt.mealDinner,
   );
   static const FoodMealPresentation preWorkout = FoodMealPresentation(
     category: FoodMealCategory.preWorkout,
@@ -89,6 +101,7 @@ abstract final class MealPresentationRegistry {
     label: 'Snacks',
     icon: Icons.cookie_outlined,
     accent: B05MealAccent.snack,
+    art: UiArt.mealSnack,
   );
   static const FoodMealPresentation lateSnack = FoodMealPresentation(
     category: FoodMealCategory.lateSnack,
@@ -96,6 +109,7 @@ abstract final class MealPresentationRegistry {
     label: 'Late snack',
     icon: Icons.bedtime_outlined,
     accent: B05MealAccent.snack,
+    art: UiArt.mealSnack,
   );
   static const FoodMealPresentation unknown = FoodMealPresentation(
     category: FoodMealCategory.unknown,

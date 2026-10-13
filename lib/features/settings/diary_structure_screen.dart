@@ -5,6 +5,7 @@ import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../food_log/diary_structure_controller.dart';
 import '../food_log/meal_presentation_registry.dart';
+import '../food_log/widgets/meal_icon_chip.dart';
 
 /// Settings screen for configuring daily meal and snack slots.
 ///
@@ -191,20 +192,7 @@ class DiaryStructureScreen extends ConsumerWidget {
                 ),
               ),
               child: ListTile(
-                leading: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: mealColors.container,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: Icon(
-                      slot.icon,
-                      color: mealColors.indicator,
-                      size: 20,
-                    ),
-                  ),
-                ),
+                leading: MealIconChip(presentation: slot, color: mealColors),
                 title: Text(slot.label, style: B05Typography.title(context)),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -278,20 +266,7 @@ class DiaryStructureScreen extends ConsumerWidget {
                   ),
                 ),
                 child: ListTile(
-                  leading: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: mealColors.container,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(8),
-                      child: Icon(
-                        slot.icon,
-                        color: mealColors.indicator,
-                        size: 20,
-                      ),
-                    ),
-                  ),
+                  leading: MealIconChip(presentation: slot, color: mealColors),
                   title: Text(slot.label, style: B05Typography.title(context)),
                   trailing: TextButton.icon(
                     onPressed: () => controller.addSlot(slot.stableId),

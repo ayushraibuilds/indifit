@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/nutrients.dart';
 import 'package:indifit/core/nutrition_legacy_read_models.dart';
+import 'package:indifit/core/presentation/ui_art.dart';
 import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/data/models/b04_goal_models.dart';
 import 'package:indifit/data/repositories/nutrition_target_authority.dart';
@@ -10,6 +11,7 @@ import 'package:indifit/features/dashboard/today_surface_controller.dart';
 import 'package:indifit/features/dashboard/widgets/dashboard_date_bar.dart';
 import 'package:indifit/features/food_log/food_log_surface.dart';
 import 'package:indifit/features/food_log/food_search_screen.dart';
+import 'package:indifit/features/food_log/widgets/meal_icon_chip.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -176,27 +178,21 @@ void main() {
 
     final sheet = find.byType(BottomSheet);
     expect(sheet, findsOneWidget);
+    // Each meal shows its Fluent 3D art (T4): the same registry as Today.
+    final arts = tester
+        .widgetList<MealIconChip>(
+          find.descendant(of: sheet, matching: find.byType(MealIconChip)),
+        )
+        .map((chip) => chip.presentation.art)
+        .toList();
     expect(
-      find.descendant(
-        of: sheet,
-        matching: find.byIcon(Icons.wb_sunny_outlined),
-      ),
-      findsOneWidget,
-    );
-    expect(
-      find.descendant(
-        of: sheet,
-        matching: find.byIcon(Icons.wb_twilight_rounded),
-      ),
-      findsOneWidget,
-    );
-    expect(
-      find.descendant(of: sheet, matching: find.byIcon(Icons.nightlight_round)),
-      findsOneWidget,
-    );
-    expect(
-      find.descendant(of: sheet, matching: find.byIcon(Icons.cookie_outlined)),
-      findsOneWidget,
+      arts,
+      containsAll([
+        UiArt.mealBreakfast,
+        UiArt.mealLunch,
+        UiArt.mealDinner,
+        UiArt.mealSnack,
+      ]),
     );
   });
 

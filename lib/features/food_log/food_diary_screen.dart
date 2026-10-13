@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import 'package:uuid/uuid.dart';
 
 import '../../core/di/providers.dart';
@@ -26,6 +25,7 @@ import 'repeat_meal.dart';
 import 'saved_meals_screen.dart';
 import 'saved_recipe_log_screen.dart';
 import 'thali/thali_builder_screen.dart';
+import 'widgets/meal_icon_chip.dart';
 import 'widgets/quick_add_macros_sheet.dart';
 
 /// Food diary screen (PV1-ENG-05D first pass).
@@ -343,23 +343,7 @@ class _FoodDiaryScreenState extends ConsumerState<FoodDiaryScreen> {
             for (final item in items)
               ListTile(
                 title: Text(item.label),
-                leading: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: sheetContext.b05Colors
-                        .meal(item.accent ?? B05MealAccent.snack)
-                        .container,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: Icon(
-                      item.icon,
-                      color: sheetContext.b05Colors
-                          .meal(item.accent ?? B05MealAccent.snack)
-                          .indicator,
-                    ),
-                  ),
-                ),
+                leading: MealIconChip(presentation: item),
                 onTap: () => Navigator.of(sheetContext).pop(item.stableId),
               ),
             const SizedBox(height: 8),

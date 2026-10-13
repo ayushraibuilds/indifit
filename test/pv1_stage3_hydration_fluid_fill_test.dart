@@ -200,12 +200,13 @@ void main() {
         );
         await tester.pump();
 
-        // Under disableAnimations, B05MotionContent switches to the reduced motion fallback
-        expect(find.byType(LinearProgressIndicator), findsOneWidget);
-        final lpi = tester.widget<LinearProgressIndicator>(
-          find.byType(LinearProgressIndicator),
+        // Under disableAnimations, B05MotionContent switches to the reduced
+        // motion fallback: the glass shows a still level, no waves (T4).
+        expect(find.byType(HydrationFluidFillIndicator), findsNothing);
+        final level = tester.widget<FractionallySizedBox>(
+          find.byKey(const Key('hydration_glass_still_level')),
         );
-        expect(lpi.value, closeTo(0.6, 0.01));
+        expect(level.heightFactor, closeTo(0.6, 0.01));
       },
     );
 

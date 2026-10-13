@@ -17,6 +17,7 @@ import '../canonical_food_actions.dart';
 import '../food_log_surface.dart';
 import '../food_search_screen.dart';
 import '../meal_presentation_registry.dart';
+import 'meal_icon_chip.dart';
 
 /// Food diary widgets (PV1-ENG-05D first pass).
 ///
@@ -499,19 +500,9 @@ class FoodDiaryMealRow extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 6),
               child: Row(
                 children: [
-                  DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: accent.container,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(8),
-                      child: Icon(
-                        foodMealPresentationFor(type).icon,
-                        size: 18,
-                        color: accent.indicator,
-                      ),
-                    ),
+                  MealIconChip(
+                    presentation: foodMealPresentationFor(type),
+                    color: accent,
                   ),
                   const SizedBox(width: 10),
                   Expanded(

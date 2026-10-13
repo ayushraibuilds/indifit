@@ -10,6 +10,7 @@ import '../../data/database/app_database.dart';
 import 'food_contextual_action_controller.dart';
 import 'meal_presentation_registry.dart';
 import 'widgets/edit_food_log_sheet.dart';
+import 'widgets/meal_icon_chip.dart';
 
 /// A B05 contextual food row. The swipe opens the same action menu exposed by
 /// the accessible buttons; Dismissible never removes the row by itself.
@@ -248,20 +249,7 @@ class _FoodContextualActionsState extends ConsumerState<FoodContextualActions> {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: role.container,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(B05Layout.space8),
-                        child: Icon(
-                          presentation.icon,
-                          color: role.indicator,
-                          size: B05Layout.iconMedium,
-                        ),
-                      ),
-                    ),
+                    MealIconChip(presentation: presentation, color: role),
                     const SizedBox(width: B05Layout.space12),
                     Expanded(
                       child: Column(
