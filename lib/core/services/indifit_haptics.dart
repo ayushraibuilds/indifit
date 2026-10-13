@@ -15,6 +15,10 @@ abstract final class IndiFitHaptics {
   static Future<void> selection() =>
       _trigger(IndiFitHapticType.selection, HapticFeedback.selectionClick);
 
+  /// One light tap when logged food lands on Today (the meal row washes).
+  static Future<void> light() =>
+      _trigger(IndiFitHapticType.light, HapticFeedback.lightImpact);
+
   /// Medium tactile confirmation feedback for verified completion actions:
   /// successful set completion, fast food logging, saved meal re-log,
   /// workout finish or plan finish. A rest ending uses [restEnd].
@@ -61,4 +65,11 @@ abstract final class IndiFitHaptics {
 }
 
 /// Category of haptic feedback emitted by IndiFit.
-enum IndiFitHapticType { selection, confirmation, warning, success, restEnd }
+enum IndiFitHapticType {
+  selection,
+  light,
+  confirmation,
+  warning,
+  success,
+  restEnd,
+}

@@ -4,6 +4,7 @@ import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/core/theme/b05_semantic_colors.dart';
 import 'package:indifit/features/dashboard/today_consumer_presentation.dart';
 import 'package:indifit/features/dashboard/today_presentation_types.dart';
+import 'package:indifit/features/dashboard/widgets/today_motion.dart';
 import 'package:indifit/features/dashboard/widgets/today_nutrition_widgets.dart';
 
 /// V3 (PREMIUM_REDESIGN_PLAN § 8.2): the Today ring's gradient and glow, and
@@ -184,14 +185,20 @@ void main() {
             data: MediaQueryData(disableAnimations: reduceMotion),
             child: Scaffold(
               body: SingleChildScrollView(
-                child: TodayNutritionHero(
-                  presentation: presentation,
-                  onLogFood: () {},
-                  onOpenFoodGuidance: null,
-                  dateRelation: TodayDateRelation.past,
-                  selectedDate: date ?? day,
-                  onOpenTargetSetup: () {},
-                  onRetry: () {},
+                // T3: Today's day content decides where the chip plays.
+                child: TodayDayContent(
+                  date: date ?? day,
+                  ready: presentation.state != TodayPresentationState.loading,
+                  nutrition: presentation,
+                  child: TodayNutritionHero(
+                    presentation: presentation,
+                    onLogFood: () {},
+                    onOpenFoodGuidance: null,
+                    dateRelation: TodayDateRelation.past,
+                    selectedDate: date ?? day,
+                    onOpenTargetSetup: () {},
+                    onRetry: () {},
+                  ),
                 ),
               ),
             ),

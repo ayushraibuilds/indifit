@@ -133,14 +133,31 @@ class _IndiFitEnterState extends State<IndiFitEnter>
 
 /// Shows [value] through [builder] and tweens from the previous value when it
 /// changes. The first build shows the value as is, so a screen never counts
-/// up from zero when it opens. A change that arrives while the widget's
-/// tickers are off (a hidden tab, a covered route) holds the old value and
-/// counts up once it is shown. Use tabular figures in the builder.
+/// up from zero when it opens, unless [begin] asks for an entrance. A change
+/// that arrives while the widget's tickers are off (a hidden tab, a covered
+/// route) holds the old value and counts up once it is shown. Use tabular
+/// figures in the builder.
 class IndiFitCountUp extends StatefulWidget {
-  const IndiFitCountUp({required this.value, required this.builder, super.key});
+  const IndiFitCountUp({
+    required this.value,
+    required this.builder,
+    super.key,
+    this.begin,
+    this.delay = Duration.zero,
+    this.duration = IndiFitMotion.countUpDuration,
+  });
 
   final double value;
   final Widget Function(BuildContext context, double value) builder;
+
+  /// Counts up from this value on the first build (an entrance), after
+  /// [delay]. Null shows [value] as is. Ignored under Reduce Motion.
+  final double? begin;
+
+  /// Only for the entrance; later changes start at once.
+  final Duration delay;
+
+  final Duration duration;
 
   @override
   State<IndiFitCountUp> createState() => _IndiFitCountUpState();
@@ -150,15 +167,16 @@ class _IndiFitCountUpState extends State<IndiFitCountUp>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(
     vsync: this,
-    duration: IndiFitMotion.countUpDuration,
+    duration: widget.duration,
     value: 1,
   );
-  late final Animation<double> _progress = CurvedAnimation(
+  late final CurvedAnimation _progress = CurvedAnimation(
     parent: _controller,
     curve: B05MotionPolicy.standardCurve,
   );
   late double _from = widget.value;
   late double _to = widget.value;
+  var _initialized = false;
   var _waitingToBeShown = false;
 
   double get _current => _from + (_to - _from) * _progress.value;
@@ -166,6 +184,24 @@ class _IndiFitCountUpState extends State<IndiFitCountUp>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    if (!_initialized) {
+      _initialized = true;
+      final begin = widget.begin;
+      if (begin != null &&
+          begin != widget.value &&
+          !B05MotionPolicy.reduceMotion(context)) {
+        _from = begin;
+        final total = widget.delay + widget.duration;
+        _controller.duration = total;
+        _progress.curve = Interval(
+          widget.delay.inMicroseconds / total.inMicroseconds,
+          1,
+          curve: B05MotionPolicy.standardCurve,
+        );
+        _controller.value = 0;
+        _waitingToBeShown = true;
+      }
+    }
     if (_waitingToBeShown && TickerMode.valuesOf(context).enabled) {
       _waitingToBeShown = false;
       _controller.forward(from: 0);
@@ -184,6 +220,8 @@ class _IndiFitCountUpState extends State<IndiFitCountUp>
     }
     _from = _current;
     _to = widget.value;
+    _controller.duration = widget.duration;
+    _progress.curve = B05MotionPolicy.standardCurve;
     if (TickerMode.valuesOf(context).enabled) {
       _controller.forward(from: 0);
     } else {
@@ -196,6 +234,7 @@ class _IndiFitCountUpState extends State<IndiFitCountUp>
 
   @override
   void dispose() {
+    _progress.dispose();
     _controller.dispose();
     super.dispose();
   }

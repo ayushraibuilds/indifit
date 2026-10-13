@@ -43,6 +43,7 @@ class HydrationFluidFillIndicator extends StatefulWidget {
     this.successContainerColor,
     this.showPercentageBadge = false,
     this.repeatInTests = false,
+    this.fillDuration = const Duration(milliseconds: 600),
   });
 
   /// The raw progress ratio (e.g. 0.6 for 60%, 1.2 for 120%).
@@ -78,6 +79,16 @@ class HydrationFluidFillIndicator extends StatefulWidget {
   /// Defaults to false so [WidgetTester.pumpAndSettle] can settle gracefully.
   final bool repeatInTests;
 
+  /// How long the level takes to reach a new value.
+  final Duration fillDuration;
+
+  /// The wave sloshes after a change and settles, then stops this long after
+  /// the last one (T3): calmer, and no ticker running while nothing changes.
+  static const Duration settleDuration = Duration(seconds: 2);
+
+  /// One ripple around the glass when the goal is met.
+  static const Duration rippleDuration = Duration(milliseconds: 700);
+
   @override
   State<HydrationFluidFillIndicator> createState() =>
       _HydrationFluidFillIndicatorState();
@@ -85,8 +96,16 @@ class HydrationFluidFillIndicator extends StatefulWidget {
 
 class _HydrationFluidFillIndicatorState
     extends State<HydrationFluidFillIndicator>
-    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   late final AnimationController _waveController;
+  late final AnimationController _settle = AnimationController(
+    vsync: this,
+    duration: HydrationFluidFillIndicator.settleDuration,
+  );
+  late final AnimationController _ripple = AnimationController(
+    vsync: this,
+    duration: HydrationFluidFillIndicator.rippleDuration,
+  );
 
   static const _bubbles = [
     HydrationBubbleSpec(
@@ -123,6 +142,15 @@ class _HydrationFluidFillIndicatorState
       vsync: this,
       duration: const Duration(milliseconds: 2400),
     );
+    _settle.addStatusListener((status) {
+      if (status == AnimationStatus.completed) _waveController.stop();
+    });
+    _wake();
+  }
+
+  /// Sloshes again and settles over [HydrationFluidFillIndicator.settleDuration].
+  void _wake() {
+    _settle.forward(from: 0);
     _startAnimationIfAllowed();
   }
 
@@ -134,7 +162,7 @@ class _HydrationFluidFillIndicatorState
       if (_waveController.isAnimating) {
         _waveController.stop();
       }
-    } else if (state == AppLifecycleState.resumed) {
+    } else if (state == AppLifecycleState.resumed && _settle.isAnimating) {
       _startAnimationIfAllowed();
     }
   }
@@ -155,15 +183,19 @@ class _HydrationFluidFillIndicatorState
   @override
   void didUpdateWidget(covariant HydrationFluidFillIndicator oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (!oldWidget.isGoalMet && widget.isGoalMet) {
+      _ripple.forward(from: 0);
+    }
     if (oldWidget.progress != widget.progress ||
         oldWidget.isGoalMet != widget.isGoalMet) {
       final isTest = WidgetsBinding.instance.runtimeType.toString().contains(
         'Test',
       );
       if (isTest && !widget.repeatInTests) {
+        _settle.forward(from: 0);
         _waveController.forward(from: 0.0);
       } else {
-        _startAnimationIfAllowed();
+        _wake();
       }
     }
   }
@@ -171,6 +203,8 @@ class _HydrationFluidFillIndicatorState
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _ripple.dispose();
+    _settle.dispose();
     _waveController.dispose();
     super.dispose();
   }
@@ -188,7 +222,7 @@ class _HydrationFluidFillIndicatorState
       tween: Tween<double>(end: clampedLevel),
       duration: B05MotionPolicy.transitionDuration(
         context,
-        standard: const Duration(milliseconds: 600),
+        standard: widget.fillDuration,
       ),
       curve: Curves.easeOutCubic,
       builder: (context, animatedLevel, _) {
@@ -231,11 +265,19 @@ class _HydrationFluidFillIndicatorState
                     child: ExcludeSemantics(
                       child: RepaintBoundary(
                         child: AnimatedBuilder(
-                          animation: _waveController,
+                          animation: Listenable.merge([
+                            _waveController,
+                            _settle,
+                            _ripple,
+                          ]),
                           builder: (context, _) {
                             return CustomPaint(
                               painter: HydrationWavePainter(
                                 phase: _waveController.value,
+                                activity:
+                                    1 -
+                                    Curves.easeInOut.transform(_settle.value),
+                                ripple: _ripple.isAnimating ? _ripple.value : 0,
                                 level: animatedLevel,
                                 waveColor: activeIndicator,
                                 secondaryWaveColor: secondaryColor,
@@ -297,9 +339,18 @@ class HydrationWavePainter extends CustomPainter {
     required this.isGoalMet,
     required this.isOverflow,
     required this.bubbles,
+    this.activity = 1,
+    this.ripple = 0,
   });
 
   final double phase;
+
+  /// 1 just after a change, easing to 0 as the water settles: scales the
+  /// wave towards a calm surface and fades the bubbles.
+  final double activity;
+
+  /// Progress (0–1) of the goal ripple; 0 draws none.
+  final double ripple;
   final double level;
   final Color waveColor;
   final Color secondaryWaveColor;
@@ -334,7 +385,8 @@ class HydrationWavePainter extends CustomPainter {
       // Dampen wave amplitude near 0% and 100% to prevent hard clipping
       final edgeDampening = math.sin(clampedLevel * math.pi);
       final maxAmplitude = math.min(size.height * 0.12, 4.0);
-      final amplitude = maxAmplitude * edgeDampening;
+      final amplitude =
+          maxAmplitude * edgeDampening * (0.3 + 0.7 * activity.clamp(0, 1));
 
       // --- Background Secondary Wave ---
       const f2 = 1.15;
@@ -371,7 +423,10 @@ class HydrationWavePainter extends CustomPainter {
               bubble.radius,
               size.width - bubble.radius,
             );
-            final alpha = (math.sin(p * math.pi) * 0.40).clamp(0.0, 1.0);
+            final alpha = (math.sin(p * math.pi) * 0.40 * activity).clamp(
+              0.0,
+              1.0,
+            );
             bubblePaint.color = crestHighlightColor.withValues(alpha: alpha);
             canvas.drawCircle(
               Offset(bubbleX, bubbleY),
@@ -439,11 +494,25 @@ class HydrationWavePainter extends CustomPainter {
         ..strokeWidth = 1.0;
       canvas.drawRRect(rrect, borderPaint);
     }
+
+    // 4. One ripple outwards when the goal is met.
+    if (ripple > 0 && ripple < 1) {
+      final eased = Curves.easeOutCubic.transform(ripple);
+      canvas.drawRRect(
+        rrect.inflate(1 + 7 * eased),
+        Paint()
+          ..color = waveColor.withValues(alpha: 0.55 * (1 - ripple))
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2 * (1 - eased) + 0.5,
+      );
+    }
   }
 
   @override
   bool shouldRepaint(covariant HydrationWavePainter oldDelegate) {
     return oldDelegate.phase != phase ||
+        oldDelegate.activity != activity ||
+        oldDelegate.ripple != ripple ||
         oldDelegate.level != level ||
         oldDelegate.waveColor != waveColor ||
         oldDelegate.secondaryWaveColor != secondaryWaveColor ||

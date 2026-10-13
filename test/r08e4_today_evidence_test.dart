@@ -225,7 +225,8 @@ void main() {
       ),
     );
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 100));
+    // Past the placeholders' fade-out (T3).
+    await tester.pump(const Duration(milliseconds: 400));
 
     expect(find.text('Plan ahead'), findsOneWidget);
     expect(find.text('Recent activity'), findsNothing);

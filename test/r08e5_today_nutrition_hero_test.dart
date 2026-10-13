@@ -7,6 +7,7 @@ import 'package:indifit/core/di/providers.dart';
 import 'package:indifit/core/nutrients.dart';
 import 'package:indifit/core/nutrition_legacy_read_models.dart';
 import 'package:indifit/core/presentation/today_onboarding_handoff.dart';
+import 'package:indifit/core/services/indifit_haptics.dart';
 import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/core/typed_quantities.dart';
 import 'package:indifit/data/database/app_database.dart';
@@ -68,7 +69,8 @@ void main() {
         ),
       );
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
+      // Past the launch count-up (T3).
+      await tester.pump(const Duration(seconds: 1));
 
       // Calorie ring details
       expect(find.text('1,500'), findsOneWidget);
@@ -128,7 +130,8 @@ void main() {
         ),
       );
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
+      // Past the launch count-up (T3).
+      await tester.pump(const Duration(seconds: 1));
 
       expect(
         find.byKey(const ValueKey('today-sparse-nutrition')),
@@ -178,7 +181,8 @@ void main() {
         ),
       );
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
+      // Past the launch count-up (T3).
+      await tester.pump(const Duration(seconds: 1));
 
       expect(
         find.byKey(const ValueKey('today-sparse-nutrition')),
@@ -226,7 +230,8 @@ void main() {
       ),
     );
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 100));
+    // Past the launch count-up (T3).
+    await tester.pump(const Duration(seconds: 1));
 
     // T1: one line with the calorie target; protein stays in the label.
     expect(find.text('Targets ready · 2,000 kcal'), findsOneWidget);
@@ -243,7 +248,8 @@ void main() {
       find.bySemanticsLabel('Dismiss this starting-target message.'),
     );
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 100));
+    // Past the launch count-up (T3).
+    await tester.pump(const Duration(seconds: 1));
 
     expect(find.text('Targets ready · 2,000 kcal'), findsNothing);
     expect(
@@ -288,7 +294,8 @@ void main() {
         ),
       );
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
+      // Past the launch count-up (T3).
+      await tester.pump(const Duration(seconds: 1));
 
       expect(find.text('1,800'), findsOneWidget);
       expect(find.text('of 2,000 kcal'), findsOneWidget);
@@ -331,7 +338,8 @@ void main() {
         ),
       );
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
+      // Past the launch count-up (T3).
+      await tester.pump(const Duration(seconds: 1));
 
       expect(find.text('0'), findsOneWidget);
       expect(find.text('of 2,200 kcal'), findsOneWidget);
@@ -380,7 +388,8 @@ void main() {
         ),
       );
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
+      // Past the launch count-up (T3).
+      await tester.pump(const Duration(seconds: 1));
 
       expect(find.text('2,350'), findsOneWidget);
       expect(find.text('of 2,000 kcal'), findsOneWidget);
@@ -410,7 +419,8 @@ void main() {
         ),
       );
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
+      // Past the launch count-up (T3).
+      await tester.pump(const Duration(seconds: 1));
 
       // One concise note under the macros, no info icons (T-7).
       expect(find.byKey(const ValueKey('macros_partial_note')), findsOneWidget);
@@ -490,7 +500,8 @@ void main() {
       ),
     );
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 100));
+    // Past the launch count-up (T3).
+    await tester.pump(const Duration(seconds: 1));
 
     expect(find.text('Nutrition unavailable'), findsOneWidget);
     expect(
@@ -502,7 +513,8 @@ void main() {
     final initialReads = readCount;
     await tester.tap(find.text('Try again').first);
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 100));
+    // Past the launch count-up (T3).
+    await tester.pump(const Duration(seconds: 1));
     expect(readCount, greaterThan(initialReads));
 
     await tester.pumpWidget(const SizedBox.shrink());
@@ -548,7 +560,8 @@ void main() {
         ),
       );
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
+      // Past the launch count-up (T3).
+      await tester.pump(const Duration(seconds: 1));
 
       await tester.tap(find.text('Log food'));
       await tester.pump();
@@ -610,7 +623,8 @@ void main() {
         ),
       );
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
+      // Past the launch count-up (T3).
+      await tester.pump(const Duration(seconds: 1));
 
       expect(find.byKey(const Key('today_calorie_ring')), findsOneWidget);
       expect(find.text('1,750'), findsOneWidget);
@@ -621,6 +635,61 @@ void main() {
       await tester.pump();
     },
   );
+
+  // T3: swipe the nutrition card to change day, never past today; every day
+  // change gives one selection tick.
+  testWidgets('swiping the hero changes the day with a selection tick', (
+    tester,
+  ) async {
+    final selectedDate = DateTime(2026, 8, 10);
+    final changes = <DateTime>[];
+    final haptics = <IndiFitHapticType>[];
+    IndiFitHaptics.debugHandler = haptics.add;
+    addTearDown(() => IndiFitHaptics.debugHandler = null);
+    await tester.pumpWidget(
+      _buildApp(
+        database: database,
+        selectedDate: selectedDate,
+        now: selectedDate,
+        onDateChanged: changes.add,
+        snapshot: _createSnapshot(
+          selectedDate: selectedDate,
+          nutrition: _createNutritionDaily(
+            localDate: '2026-08-10',
+            energyKcal: 1500,
+            proteinG: 120,
+            carbsG: 180,
+            fatG: 50,
+            fiberG: 25,
+          ),
+          targets: _createTargetsForDate(
+            localDate: '2026-08-10',
+            calorieKcal: 2000,
+            proteinG: 150,
+            carbsG: 200,
+            fatG: 65,
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    final hero = find.byKey(const ValueKey('today-hero-swipe'));
+    // Towards tomorrow from today: nothing.
+    await tester.fling(hero, const Offset(-300, 0), 1200);
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(changes, isEmpty);
+    expect(haptics, isEmpty);
+
+    await tester.fling(hero, const Offset(300, 0), 1200);
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(changes, [DateTime(2026, 8, 9)]);
+    expect(haptics, [IndiFitHapticType.selection]);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+  });
 }
 
 // -----------------------------------------------------------------------------
@@ -639,6 +708,7 @@ Widget _buildApp({
   VoidCallback? onOpenFoodGuidance,
   VoidCallback? onOpenNutritionTargets,
   Future<void> Function()? onRefresh,
+  ValueChanged<DateTime>? onDateChanged,
 }) {
   return ProviderScope(
     overrides: [
@@ -679,7 +749,7 @@ Widget _buildApp({
           now: now ?? selectedDate,
           userName: 'Maya',
           streakCount: 5,
-          onDateChanged: (_) {},
+          onDateChanged: onDateChanged ?? (_) {},
           onRefresh: onRefresh ?? () async {},
           onOpenSettings: () {},
           onCustomize: () {},
