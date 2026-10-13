@@ -63,6 +63,13 @@ void main() {
       );
     });
 
+    test('a quick add drops the repeated amount from its name', () {
+      expect(
+        label(nutrition(1450, [('a', 'Dal'), ('b', 'Quick Add (260 kcal)')])),
+        '+260 kcal · Quick add',
+      );
+    });
+
     test('several new records count the foods', () {
       expect(
         label(nutrition(1830, [('a', 'Dal'), ('b', 'Rice'), ('c', 'Roti')])),

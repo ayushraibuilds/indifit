@@ -437,8 +437,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Hydration'), findsOneWidget);
-      expect(find.text('1500 / 2500 ml'), findsOneWidget);
-      expect(find.text('1000 ml remaining (60%)'), findsOneWidget);
+      expect(find.text('1,500 / 2,500 ml'), findsOneWidget);
+      expect(find.text('1,000 ml remaining'), findsOneWidget);
       expect(find.text('+250 ml'), findsOneWidget);
       expect(find.text('+500 ml'), findsOneWidget);
 
@@ -551,7 +551,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);
-      expect(find.text('Goal met! (120%)'), findsOneWidget);
+      expect(find.text('Goal met!'), findsOneWidget);
     });
 
     testWidgets(

@@ -174,133 +174,172 @@ class TodayDailyActionSurface extends ConsumerWidget {
           item,
     ];
 
+    // Content scrolls under the status bar and fades out there, instead of
+    // being cut by a hard line at the safe-area edge.
+    final topInset = MediaQuery.paddingOf(context).top;
+    final page = context.b05Colors.page;
     return ColoredBox(
-      color: context.b05Colors.page,
-      child: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: onRefresh,
-          child: FocusTraversalGroup(
-            policy: WidgetOrderTraversalPolicy(),
-            child: SingleChildScrollView(
-              physics: const ClampingScrollPhysics(
-                parent: AlwaysScrollableScrollPhysics(),
-              ),
-              padding: const EdgeInsets.fromLTRB(
-                B05Layout.space16,
-                B05Layout.space12,
-                B05Layout.space16,
-                B05Layout.space24,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  TodayHeader(
-                    userName: userName,
-                    streakCount: streakCount,
-                    selectedDate: selectedDate,
-                    referenceNow: now,
-                    onOpenSettings: onOpenSettings,
-                    onOpenAppearance: () {
-                      final isDark =
-                          Theme.of(context).brightness == Brightness.dark;
-                      ref
-                          .read(themeModeProvider.notifier)
-                          .setThemeMode(
-                            isDark ? ThemeMode.light : ThemeMode.dark,
-                          );
-                    },
-                  ),
-                  const SizedBox(height: B05Layout.space8),
-                  DashboardDateBar(
-                    selectedDate: selectedDate,
-                    today: referenceNow,
-                    onDateChanged: onDateChanged,
-                  ),
-                  if (personalization.status ==
-                      DashboardPersonalizationStatus.saving)
-                    const Padding(
-                      padding: EdgeInsets.only(top: B05Layout.space8),
-                      child: TodayInlineProgress(label: 'Saving Today layout'),
+      color: page,
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: SafeArea(
+              top: false,
+              child: RefreshIndicator(
+                edgeOffset: topInset,
+                onRefresh: onRefresh,
+                child: FocusTraversalGroup(
+                  policy: WidgetOrderTraversalPolicy(),
+                  child: SingleChildScrollView(
+                    physics: const ClampingScrollPhysics(
+                      parent: AlwaysScrollableScrollPhysics(),
                     ),
-                  if (personalization.status ==
-                      DashboardPersonalizationStatus.error)
-                    Padding(
-                      padding: const EdgeInsets.only(top: B05Layout.space8),
-                      child: TodayRetry(
-                        title: 'Your layout could not be saved',
-                        onRetry: personalizationController.retry,
-                      ),
+                    padding: EdgeInsets.fromLTRB(
+                      B05Layout.space16,
+                      topInset + B05Layout.space12,
+                      B05Layout.space16,
+                      B05Layout.space24,
                     ),
-                  if (relation == TodayDateRelation.today &&
-                      nutrition.state != TodayPresentationState.loading &&
-                      nutrition.state != TodayPresentationState.unavailable &&
-                      nutrition.hasAcceptedCalorieTarget) ...[
-                    const SizedBox(height: B05Layout.space8),
-                    TodayOnboardingHandoff(
-                      presentation: nutrition,
-                      onReviewTargets: onOpenNutritionTargets ?? onOpenSettings,
-                      onLogFood: () => _openMeal(''),
-                    ),
-                  ],
-                  if (relation == TodayDateRelation.today &&
-                      onFinishSetup != null)
-                    TodayFinishSetupCard(onFinishSetup: onFinishSetup!),
-                  const SizedBox(height: B05Layout.space12),
-                  // Modules rise in one after another on first view only.
-                  for (final (index, item)
-                      in layout.where((item) => item.isVisible).indexed) ...[
-                    IndiFitEnter(
-                      key: ValueKey('today-enter:${item.moduleId}'),
-                      enabled: index < IndiFitMotion.staggerLimit,
-                      delay: IndiFitMotion.staggerStep * index,
-                      child: _module(
-                        context: context,
-                        ref: ref,
-                        item: item,
-                        relation: relation,
-                        nutrition: nutrition,
-                        hydration:
-                            snapshot?.hydration ??
-                            (unavailable
-                                ? const TodayDomainRead<
-                                    HydrationDailyReadModel
-                                  >.unavailable('Hydration unavailable')
-                                : const TodayDomainRead<
-                                    HydrationDailyReadModel
-                                  >.loading()),
-                        nextUp: nextUp,
-                        workout: workout,
-                        activity: activity,
-                        progress: progress,
-                        hideWorkoutDuplicate:
-                            nextUpVisible &&
-                            (nextUp.action == TodayNextAction.resumeWorkout ||
-                                nextUp.action == TodayNextAction.startWorkout ||
-                                nextUp.action ==
-                                    TodayNextAction.openWorkoutPlan),
-                        onRetry: () => ref.invalidate(
-                          todaySurfaceSnapshotProvider(selectedDate),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        TodayHeader(
+                          userName: userName,
+                          streakCount: streakCount,
+                          selectedDate: selectedDate,
+                          referenceNow: now,
+                          onOpenSettings: onOpenSettings,
+                          onOpenAppearance: () {
+                            final isDark =
+                                Theme.of(context).brightness == Brightness.dark;
+                            ref
+                                .read(themeModeProvider.notifier)
+                                .setThemeMode(
+                                  isDark ? ThemeMode.light : ThemeMode.dark,
+                                );
+                          },
                         ),
-                        onLogMeal: _openMeal,
-                        onStartWorkout: _startWorkout,
-                        onResumeWorkout: _resumeWorkout,
-                        onOpenFoodGuidance: onOpenFoodGuidance,
-                        selectedDate: selectedDate,
-                        onExpand: () => personalizationController.setCollapsed(
-                          item.moduleId,
-                          false,
+                        const SizedBox(height: B05Layout.space8),
+                        DashboardDateBar(
+                          selectedDate: selectedDate,
+                          today: referenceNow,
+                          onDateChanged: onDateChanged,
                         ),
-                      ),
+                        if (personalization.status ==
+                            DashboardPersonalizationStatus.saving)
+                          const Padding(
+                            padding: EdgeInsets.only(top: B05Layout.space8),
+                            child: TodayInlineProgress(
+                              label: 'Saving Today layout',
+                            ),
+                          ),
+                        if (personalization.status ==
+                            DashboardPersonalizationStatus.error)
+                          Padding(
+                            padding: const EdgeInsets.only(
+                              top: B05Layout.space8,
+                            ),
+                            child: TodayRetry(
+                              title: 'Your layout could not be saved',
+                              onRetry: personalizationController.retry,
+                            ),
+                          ),
+                        if (relation == TodayDateRelation.today &&
+                            nutrition.state != TodayPresentationState.loading &&
+                            nutrition.state !=
+                                TodayPresentationState.unavailable &&
+                            nutrition.hasAcceptedCalorieTarget) ...[
+                          const SizedBox(height: B05Layout.space8),
+                          TodayOnboardingHandoff(
+                            presentation: nutrition,
+                            onReviewTargets:
+                                onOpenNutritionTargets ?? onOpenSettings,
+                            onLogFood: () => _openMeal(''),
+                          ),
+                        ],
+                        if (relation == TodayDateRelation.today &&
+                            onFinishSetup != null)
+                          TodayFinishSetupCard(onFinishSetup: onFinishSetup!),
+                        const SizedBox(height: B05Layout.space12),
+                        // Modules rise in one after another on first view only.
+                        for (final (index, item)
+                            in layout
+                                .where((item) => item.isVisible)
+                                .indexed) ...[
+                          IndiFitEnter(
+                            key: ValueKey('today-enter:${item.moduleId}'),
+                            enabled: index < IndiFitMotion.staggerLimit,
+                            delay: IndiFitMotion.staggerStep * index,
+                            child: _module(
+                              context: context,
+                              ref: ref,
+                              item: item,
+                              relation: relation,
+                              nutrition: nutrition,
+                              hydration:
+                                  snapshot?.hydration ??
+                                  (unavailable
+                                      ? const TodayDomainRead<
+                                          HydrationDailyReadModel
+                                        >.unavailable('Hydration unavailable')
+                                      : const TodayDomainRead<
+                                          HydrationDailyReadModel
+                                        >.loading()),
+                              nextUp: nextUp,
+                              workout: workout,
+                              activity: activity,
+                              progress: progress,
+                              hideWorkoutDuplicate:
+                                  nextUpVisible &&
+                                  (nextUp.action ==
+                                          TodayNextAction.resumeWorkout ||
+                                      nextUp.action ==
+                                          TodayNextAction.startWorkout ||
+                                      nextUp.action ==
+                                          TodayNextAction.openWorkoutPlan),
+                              onRetry: () => ref.invalidate(
+                                todaySurfaceSnapshotProvider(selectedDate),
+                              ),
+                              onLogMeal: _openMeal,
+                              onStartWorkout: _startWorkout,
+                              onResumeWorkout: _resumeWorkout,
+                              onOpenFoodGuidance: onOpenFoodGuidance,
+                              selectedDate: selectedDate,
+                              onExpand: () => personalizationController
+                                  .setCollapsed(item.moduleId, false),
+                            ),
+                          ),
+                          const SizedBox(height: B05Layout.space8),
+                        ],
+                        if (!configuredLayout.any((item) => item.isVisible))
+                          NoVisibleModules(onCustomize: onCustomize),
+                      ],
                     ),
-                    const SizedBox(height: B05Layout.space8),
-                  ],
-                  if (!configuredLayout.any((item) => item.isVisible))
-                    NoVisibleModules(onCustomize: onCustomize),
-                ],
+                  ),
+                ),
               ),
             ),
           ),
-        ),
+          if (topInset > 0)
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              height: topInset + B05Layout.space24,
+              child: IgnorePointer(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [page, page.withValues(alpha: 0)],
+                      stops: [topInset / (topInset + B05Layout.space24), 1],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

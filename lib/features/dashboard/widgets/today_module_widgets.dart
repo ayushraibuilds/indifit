@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/presentation/consumer_copy.dart';
@@ -105,10 +106,18 @@ class TodayHeaderState extends State<TodayHeader> with WidgetsBindingObserver {
                 ),
                 const SizedBox(height: B05Layout.space4),
                 Text(dateContext, style: B05Typography.body(context)),
-                if (widget.streakCount > 0) ...[
-                  const SizedBox(height: B05Layout.space8),
-                  StreakChip(count: widget.streakCount),
-                ],
+                // The chip's line is always reserved: the streak loads after
+                // the cards, and adding the chip then pushed the page down.
+                const SizedBox(height: B05Layout.space8),
+                Visibility(
+                  visible: widget.streakCount > 0,
+                  maintainSize: true,
+                  maintainAnimation: true,
+                  maintainState: true,
+                  child: StreakChip(
+                    count: widget.streakCount > 0 ? widget.streakCount : 1,
+                  ),
+                ),
               ],
             ),
           ),
@@ -524,13 +533,9 @@ class TodayMealRow extends StatelessWidget {
             : context.b05Colors.snack;
       }(),
     };
-    final icon = switch (meal.mealType) {
-      'breakfast' => Icons.wb_sunny_outlined,
-      'lunch' => Icons.wb_sunny_rounded,
-      'dinner' => Icons.nightlight_round,
-      'snack' => Icons.cookie_outlined,
-      _ => MealPresentationRegistry.forStableId(meal.mealType).icon,
-    };
+    // One source for meal icons so Today, the Food diary and the meal
+    // picker agree (Today hard-coded a different lunch icon).
+    final icon = MealPresentationRegistry.forStableId(meal.mealType).icon;
     final compact = MediaQuery.textScalerOf(context).scale(1) > 1.35;
     void showDetails() {
       unawaited(
@@ -610,7 +615,8 @@ class TodayMealRow extends StatelessWidget {
                       const SizedBox(width: B05Layout.space8),
                       Expanded(child: summary),
                       const SizedBox(width: B05Layout.space8),
-                      Flexible(child: calories),
+                      // Fixed column so every meal's + sits at the same x.
+                      SizedBox(width: _kMealCalorieColumn, child: calories),
                       const SizedBox(width: B05Layout.space4),
                       B05IconAction(
                         icon: Icons.add_circle_outline_rounded,
@@ -626,6 +632,8 @@ class TodayMealRow extends StatelessWidget {
     );
   }
 }
+
+const double _kMealCalorieColumn = 72;
 
 class MealIcon extends StatelessWidget {
   const MealIcon({super.key, required this.icon, required this.color});
@@ -897,15 +905,20 @@ class TodayModuleSkeleton extends StatelessWidget {
     label: label,
     child: B05Surface(
       padding: const EdgeInsets.all(B05Layout.space16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
-          LoadingLine(widthFactor: .35, height: 14),
-          SizedBox(height: B05Layout.space12),
-          LoadingLine(widthFactor: .82, height: 20),
-          SizedBox(height: B05Layout.space8),
-          LoadingLine(widthFactor: .58, height: 14),
-        ],
+      // Full width: the surface shrink-wraps its child, so the 0.82 line
+      // used to size the whole card.
+      child: SizedBox(
+        width: double.infinity,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: const [
+            LoadingLine(widthFactor: .35, height: 14),
+            SizedBox(height: B05Layout.space12),
+            LoadingLine(widthFactor: .82, height: 20),
+            SizedBox(height: B05Layout.space8),
+            LoadingLine(widthFactor: .58, height: 14),
+          ],
+        ),
       ),
     ),
   );
@@ -922,16 +935,27 @@ class LoadingLine extends StatelessWidget {
   final double height;
 
   @override
-  Widget build(BuildContext context) => FractionallySizedBox(
-    widthFactor: widthFactor,
-    child: DecoratedBox(
+  Widget build(BuildContext context) {
+    final colors = context.b05Colors;
+    final line = DecoratedBox(
       decoration: BoxDecoration(
-        color: context.b05Colors.inset,
+        color: colors.inset,
         borderRadius: B05Radii.smallRadius,
       ),
       child: SizedBox(height: height),
-    ),
-  );
+    );
+    // Same shimmer as SkeletonBox/SkeletonCard so the cards read as loading.
+    return FractionallySizedBox(
+      widthFactor: widthFactor,
+      child: B05MotionPolicy.reduceMotion(context)
+          ? line
+          : line
+                .animate(
+                  onPlay: (controller) => controller.repeat(reverse: true),
+                )
+                .shimmer(duration: 1200.ms, color: colors.interactive),
+    );
+  }
 }
 
 class TodayUnavailableModule extends StatelessWidget {
