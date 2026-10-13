@@ -14,6 +14,7 @@ import '../../dashboard/today_surface_controller.dart';
 import '../katori_size_step.dart';
 import '../meal_presentation_registry.dart';
 import '../nutrition_thali_controller.dart';
+import '../widgets/meal_icon_chip.dart';
 import 'circular_thali_plate.dart';
 import 'thali_component_picker_sheet.dart';
 import 'thali_item_card.dart';
@@ -250,7 +251,7 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(mealPresentation.icon, size: 20, color: colors.action),
+            MealIconChip(presentation: mealPresentation, size: 32),
             const SizedBox(width: 8),
             Text(
               '${mealPresentation.label} Thali',

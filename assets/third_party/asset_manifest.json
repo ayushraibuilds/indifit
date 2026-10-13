@@ -440,7 +440,7 @@
       "pin_status": "pinned",
       "acquisition_date_utc": "2026-10-09T00:00:00Z",
       "usage_classification": "production_candidate",
-      "approval_status": "approved_badge_art",
+      "approval_status": "approved_badge_and_ui_art",
       "source_code_license": {
         "scope": "repository source",
         "name": "MIT License",
@@ -458,12 +458,12 @@
           "status": "verified",
           "license_file": "LICENSES/FluentEmoji-MIT.txt",
           "license_sha256": "sha256:c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383",
-          "notes": "Nine 256 x 256 PNGs, exact upstream bytes, listed with checksums in assets/badges/SOURCE.md."
+          "notes": "Fourteen 256 x 256 PNGs, exact upstream bytes: nine badges (assets/badges/SOURCE.md) and five UI icons (assets/ui_icons/SOURCE.md), each listed with a checksum."
         }
       ],
       "attribution": {
         "required": true,
-        "text": "Badge art from Microsoft Fluent Emoji (MIT)",
+        "text": "Badge and UI art from Microsoft Fluent Emoji (MIT)",
         "url": "https://github.com/microsoft/fluentui-emoji"
       },
       "permitted_use": [
@@ -478,7 +478,7 @@
       "modification_constraints": [
         "None beyond keeping the notice; locked badges are greyed at render time, not in the files."
       ],
-      "intended_indifit_usage": "Achievement badge art (V7), shown at 85 pt or smaller.",
+      "intended_indifit_usage": "Achievement badge art (V7) and UI icons (T4: meal slots, water), shown at 85 pt or smaller.",
       "open_questions": []
     }
   ],

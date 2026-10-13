@@ -47,6 +47,7 @@ import 'saved_recipe_log_screen.dart';
 import 'thali/thali_route.dart';
 import 'widgets/food_portion_bottom_sheet.dart';
 import 'widgets/food_search_widgets.dart';
+import 'widgets/meal_icon_chip.dart';
 import 'widgets/quick_add_macros_sheet.dart';
 import 'widgets/remote_food_review_sheet.dart';
 
@@ -163,23 +164,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
               const SizedBox(height: 8),
               for (final meal in ref.read(diaryMealSlotsProvider))
                 ListTile(
-                  leading: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: sheetContext.b05Colors
-                          .meal(meal.accent!)
-                          .container,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(8),
-                      child: Icon(
-                        meal.icon,
-                        color: sheetContext.b05Colors
-                            .meal(meal.accent!)
-                            .indicator,
-                      ),
-                    ),
-                  ),
+                  leading: MealIconChip(presentation: meal),
                   title: Text(meal.label),
                   onTap: () => Navigator.of(sheetContext).pop(meal.stableId),
                 ),

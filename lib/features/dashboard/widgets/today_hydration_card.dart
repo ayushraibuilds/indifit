@@ -6,15 +6,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/di/providers.dart';
 import '../../../core/motion/indifit_motion.dart';
 import '../../../core/presentation/consumer_number_label.dart';
+import '../../../core/presentation/ui_art.dart';
 import '../../../core/services/indifit_haptics.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
+import '../../../core/widgets/art_chip.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
 import '../../../core/widgets/skeleton_loader.dart';
 import '../../../data/models/hydration_models.dart';
 import '../../../data/repositories/hydration_repository.dart';
 import '../today_surface_controller.dart';
 import 'hydration_detail_sheet.dart';
-import 'hydration_fluid_fill.dart';
+import 'hydration_glass.dart';
 import 'today_helpers.dart';
 import 'today_module_widgets.dart';
 
@@ -108,11 +110,11 @@ class TodayHydrationCard extends ConsumerWidget {
         );
 
     final colors = context.b05Colors;
+    final largeText = MediaQuery.textScalerOf(context).scale(1) > 1.35;
     final totalFormatted = ConsumerNumberLabel.rounded(
       model.totalMl.toDouble(),
     );
     final goalFormatted = ConsumerNumberLabel.rounded(model.goalMl.toDouble());
-    final ratio = model.clampedProgressRatio;
 
     // Remaining or met, not remaining plus a percentage.
     final progressText = model.isGoalMet
@@ -144,20 +146,42 @@ class TodayHydrationCard extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Icon(
-                      Icons.water_drop_rounded,
-                      color: colors.info.indicator,
-                      size: 24,
+                    HydrationGlass(
+                      progress: model.rawProgressRatio,
+                      isGoalMet: model.isGoalMet,
+                      fillDuration: _fillDuration,
+                      // A narrower glass leaves the figures room at large text.
+                      width: largeText ? 36 : 52,
+                      height: largeText ? 60 : 76,
                     ),
-                    const SizedBox(width: B05Layout.space12),
+                    SizedBox(
+                      width: largeText ? B05Layout.space12 : B05Layout.space16,
+                    ),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Hydration', style: todayEyebrow(context)),
-                          const SizedBox(height: B05Layout.space4),
+                          Row(
+                            children: [
+                              ArtChip(
+                                color: colors.info,
+                                art: UiArt.water,
+                                fallbackIcon: Icons.water_drop_rounded,
+                                size: 28,
+                              ),
+                              const SizedBox(width: B05Layout.space8),
+                              Flexible(
+                                child: Text(
+                                  'Hydration',
+                                  style: todayEyebrow(context),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: B05Layout.space8),
                           IndiFitCountUp(
                             value: model.totalMl.toDouble(),
                             duration: _fillDuration,
@@ -192,31 +216,6 @@ class TodayHydrationCard extends ConsumerWidget {
                       size: 20,
                     ),
                   ],
-                ),
-                const SizedBox(height: B05Layout.space12),
-                B05MotionContent(
-                  animatedChild: HydrationFluidFillIndicator(
-                    progress: model.rawProgressRatio,
-                    isGoalMet: model.isGoalMet,
-                    fillDuration: _fillDuration,
-                    height: 32,
-                    borderRadius: B05Radii.smallRadius,
-                  ),
-                  reducedMotionChild: ClipRRect(
-                    borderRadius: B05Radii.smallRadius,
-                    child: LinearProgressIndicator(
-                      value: ratio,
-                      minHeight: 8,
-                      backgroundColor: colors.info.container.withValues(
-                        alpha: 0.3,
-                      ),
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        model.isGoalMet
-                            ? colors.success.indicator
-                            : colors.info.indicator,
-                      ),
-                    ),
-                  ),
                 ),
                 const SizedBox(height: B05Layout.space12),
                 Wrap(

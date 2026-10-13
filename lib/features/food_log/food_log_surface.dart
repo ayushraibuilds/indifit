@@ -20,6 +20,7 @@ import '../../data/repositories/nutrition_target_authority.dart';
 import '../dashboard/today_surface_controller.dart';
 import 'food_contextual_actions.dart';
 import 'meal_presentation_registry.dart';
+import 'widgets/meal_icon_chip.dart';
 
 DateTime _civilDay(DateTime value) =>
     DateTime(value.year, value.month, value.day);
@@ -363,16 +364,7 @@ class _CanonicalFoodRow extends ConsumerWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: role.container,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(B05Layout.space8),
-                    child: Icon(presentation.icon, color: role.indicator),
-                  ),
-                ),
+                MealIconChip(presentation: presentation, color: role),
                 const SizedBox(width: B05Layout.space12),
                 Expanded(
                   child: Column(

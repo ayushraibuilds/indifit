@@ -11,6 +11,7 @@ import '../../../data/database/app_database.dart';
 import '../../../data/repositories/calendar_read_repository.dart';
 import '../../food_log/food_search_screen.dart';
 import '../../food_log/meal_presentation_registry.dart';
+import '../../food_log/widgets/meal_icon_chip.dart';
 import '../today_consumer_presentation.dart';
 import '../today_presentation_types.dart';
 import 'today_helpers.dart';
@@ -210,9 +211,9 @@ class TodayMealRow extends StatelessWidget {
             : context.b05Colors.snack;
       }(),
     };
-    // One source for meal icons so Today, the Food diary and the meal
-    // picker agree (Today hard-coded a different lunch icon).
-    final icon = MealPresentationRegistry.forStableId(meal.mealType).icon;
+    // One source for meal marks so Today, the Food diary and the meal picker
+    // agree (Today hard-coded a different lunch icon).
+    final presentation = MealPresentationRegistry.forStableId(meal.mealType);
     final compact = MediaQuery.textScalerOf(context).scale(1) > 1.35;
     void showDetails() {
       unawaited(
@@ -296,7 +297,10 @@ class TodayMealRow extends StatelessWidget {
                       children: [
                         Row(
                           children: [
-                            MealIcon(icon: icon, color: role),
+                            MealIconChip(
+                              presentation: presentation,
+                              color: role,
+                            ),
                             const SizedBox(width: B05Layout.space8),
                             Expanded(child: summary),
                             B05IconAction(
@@ -309,7 +313,7 @@ class TodayMealRow extends StatelessWidget {
                         ),
                         Padding(
                           padding: const EdgeInsets.only(
-                            left: B05Layout.space32 + B05Layout.space8,
+                            left: 40 + B05Layout.space8,
                             top: B05Layout.space4,
                           ),
                           child: calories,
@@ -318,7 +322,7 @@ class TodayMealRow extends StatelessWidget {
                     )
                   : Row(
                       children: [
-                        MealIcon(icon: icon, color: role),
+                        MealIconChip(presentation: presentation, color: role),
                         const SizedBox(width: B05Layout.space8),
                         Expanded(child: summary),
                         const SizedBox(width: B05Layout.space8),
@@ -445,22 +449,6 @@ class _TodayMealRowWashState extends State<TodayMealRowWash>
       ],
     );
   }
-}
-
-class MealIcon extends StatelessWidget {
-  const MealIcon({super.key, required this.icon, required this.color});
-
-  final IconData icon;
-  final B05ColorRole color;
-
-  @override
-  Widget build(BuildContext context) => DecoratedBox(
-    decoration: BoxDecoration(color: color.container, shape: BoxShape.circle),
-    child: Padding(
-      padding: const EdgeInsets.all(B05Layout.space8),
-      child: Icon(icon, size: B05Layout.iconSmall, color: color.indicator),
-    ),
-  );
 }
 
 class TodayWorkoutModule extends StatelessWidget {

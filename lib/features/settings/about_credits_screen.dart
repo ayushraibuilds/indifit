@@ -58,7 +58,7 @@ class AboutCreditsScreen extends StatelessWidget {
                 const _Credit(
                   title: 'Fluent Emoji',
                   detail:
-                      'Microsoft Fluent Emoji copyright (c) Microsoft Corporation; MIT License. Used for achievement badge art.',
+                      'Microsoft Fluent Emoji copyright (c) Microsoft Corporation; MIT License. Used for achievement badges, meal and water icons, and the streak flame.',
                 ),
                 const SizedBox(height: B05Layout.space20),
                 B05ActionButton(
