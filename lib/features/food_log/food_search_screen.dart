@@ -480,7 +480,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
 
   Future<void> _performSearch(String text) async {
     if (!mounted) return;
-    final query = text.trim();
+    final query = NutritionFoodSearchVocabulary.stripLeadingMeasure(text);
     final generation = ++_searchGeneration;
     _onlineSearchCancelToken?.cancel('New food search started');
     if (query.isEmpty) {
