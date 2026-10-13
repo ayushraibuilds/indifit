@@ -1,0 +1,8 @@
+# Search names added in pack 4 after the 12 Oct launch check: a brand-led
+# query ("britannia bread") finds the generic food. Brand names are search
+# aliases only; no brand values are in the pack.
+version: 4
+extra_aliases_locale: hi-Latn
+extra_aliases:
+  food-usda-0050:  # White Bread
+    - britannia bread

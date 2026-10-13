@@ -66,6 +66,23 @@ class NutritionFoodSearchVocabulary {
     'दही': 'dahi',
   };
 
+  static final RegExp _leadingMeasure = RegExp(
+    r'^(?:\d+(?:\.\d+)?(?:\s*/\s*\d+)?|half|quarter|one|two|three|four|five)'
+    r'\s*(?:bowls?|katoris?|cups?|glass(?:es)?|plates?|pieces?|pcs?|slices?|'
+    r'spoons?|tbsp|tsp|servings?|scoops?|handfuls?|bottles?|packets?|ladles?)'
+    r'\b\s*(?:of\s+)?',
+    caseSensitive: false,
+  );
+
+  /// "1 bowl dal" -> "dal": drops an amount and household unit typed before
+  /// the food. Left alone when nothing would remain, and a bare number
+  /// ("7 up", "5 star") is never an amount.
+  static String stripLeadingMeasure(String query) {
+    final text = query.trim();
+    final rest = text.replaceFirst(_leadingMeasure, '').trim();
+    return rest.isEmpty ? text : rest;
+  }
+
   static String normalize(String value) {
     // Preserve letters and digits, including non-Latin food names and
     // meaningful package numbers, while making punctuation a token boundary.

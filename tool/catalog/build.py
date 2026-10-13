@@ -45,7 +45,7 @@ SPOTCHECK = CATALOG / "spotcheck_50.csv"
 SPOTCHECK_SEED = 20261007
 
 FORMAT = 1
-LATEST = 3
+LATEST = 4
 MIN_APP_BUILD = 1
 SOURCE_ID = "indifit-catalogue-v1"
 
@@ -53,6 +53,7 @@ SOURCE_ID = "indifit-catalogue-v1"
 # domain): sources/usda-staples-v1/ (12 Oct 2026 staples review).
 STAPLES = CATALOG / "sources/usda-staples-v1/foods.csv"
 STAPLES_VERSION = 3
+DEDUPE_ALIASES_VERSION = 4
 STAPLES_SOURCE = {
     "id": "usda-staples-v1",
     "licence": "CC0-1.0",
@@ -368,15 +369,21 @@ def _alias_key(text):
     return re.sub(r"\s+", " ", re.sub(r"[^\w\s]", " ", text.lower())).strip()
 
 
-def staple_foods(existing, path=STAPLES):
+def staple_foods(existing, path=STAPLES, version=STAPLES_VERSION):
     """Pack foods for the USDA staples source (pack 3 on).
 
     Each serving's grams are the weight the source recipe states for that food
     ("1 piece (25 g)"), marked `grams_basis: source-stated`. Aliases that name
     another food, or that two staples share, are dropped: an alias names
-    exactly one food.
+    exactly one food. From pack 4, two spellings of one name on the same food
+    ("parle g|parle-g") count once, so they no longer cancel each other out.
     """
     rows = list(csv.DictReader(Path(path).open(encoding="utf-8")))
+    per_row = lambda row: (
+        {_alias_key(t): t for t in filter(None, row["aliases"].split("|"))}.values()
+        if version >= DEDUPE_ALIASES_VERSION
+        else filter(None, row["aliases"].split("|"))
+    )
     taken = Counter()
     for food in existing:
         taken[_alias_key(food["display_name"])] += 2
@@ -384,7 +391,7 @@ def staple_foods(existing, path=STAPLES):
             taken[_alias_key(alias["text"])] += 2
     for row in rows:
         taken[_alias_key(row["name"])] += 2
-        for text in filter(None, row["aliases"].split("|")):
+        for text in per_row(row):
             taken[_alias_key(text)] += 1
     foods = []
     for row in rows:
@@ -403,7 +410,7 @@ def staple_foods(existing, path=STAPLES):
         aliases = []
         if row["name_hindi"].strip():
             aliases.append({"text": row["name_hindi"].strip(), "locale": "hi"})
-        for text in filter(None, row["aliases"].split("|")):
+        for text in per_row(row):
             if taken[_alias_key(text)] == 1:
                 aliases.append({"text": text, "locale": "hi-Latn"})
         foods.append(
@@ -440,8 +447,19 @@ def build_pack(version, rows=None, overlay_dir=OVERLAYS, apply_fixes=True):
         }
     ]
     if version >= STAPLES_VERSION:
-        foods = sorted(foods + staple_foods(foods), key=lambda food: food["id"])
+        foods = sorted(
+            foods + staple_foods(foods, version=version), key=lambda food: food["id"]
+        )
         sources.append(dict(STAPLES_SOURCE))
+        by_id = {food["id"]: food for food in foods}
+        for name, data in load_overlays(version, overlay_dir):
+            for food_id, texts in (data.get("extra_aliases") or {}).items():
+                if food_id not in by_id:
+                    raise BuildError(f"{name}: unknown id {food_id}")
+                for text in texts:
+                    by_id[food_id]["aliases"].append(
+                        {"text": text, "locale": data["extra_aliases_locale"]}
+                    )
     return {
         "format": FORMAT,
         "version": version,
