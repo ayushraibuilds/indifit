@@ -17,23 +17,28 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   test(
-    'production registry uses exact UUIDs and excludes all five rejected families',
+    'production registry uses exact UUIDs and excludes the two rejected families',
     () {
       final registry = B05ExerciseVisualRegistry.fromProvenance(
         B05ThirdPartyAssetManifest.fromJson(_manifestJson()),
       );
 
-      expect(registry.bindingCount, 120);
-      expect(registry.assetSetCount, 30);
+      expect(registry.bindingCount, 132);
+      expect(registry.assetSetCount, 33);
       for (final name in [
         'decline hammer strength press',
-        'seated leg curl',
         'standing calf raise',
-        'walking lunges',
-        'hanging leg raise',
       ]) {
         final uuid = ExerciseCatalogManifest.goldenCatalogUuids[name]!;
         expect(registry.lookup(uuid), isNull, reason: name);
+      }
+      for (final name in [
+        'lying leg curl',
+        'walking lunges',
+        'hanging knee raise',
+      ]) {
+        final uuid = ExerciseCatalogManifest.goldenCatalogUuids[name]!;
+        expect(registry.lookup(uuid), isNotNull, reason: name);
       }
       expect(
         registry.lookup(
@@ -72,13 +77,13 @@ void main() {
       final manifest = await source.load();
 
       expect(manifest, isNotNull);
-      expect(manifest!.assets, hasLength(59));
-      expect(manifest.visualAssetSets, hasLength(30));
+      expect(manifest!.assets, hasLength(65));
+      expect(manifest.visualAssetSets, hasLength(33));
       expect(
         manifest.visualAssetSets
             .expand((set) => set.canonicalExerciseUuids)
             .toSet(),
-        hasLength(120),
+        hasLength(132),
       );
       B05MediaManifestValidator(
         manifest.visualAssetSets

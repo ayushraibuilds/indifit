@@ -225,15 +225,24 @@ void _validate(String projectRoot) {
     'RepDB source is not pinned to the approved immutable revision',
   );
   _require(
-    manifest.assets.length == 59,
-    'production manifest file count is not 59',
+    manifest.assets.length == 65,
+    'production manifest file count is not 65',
   );
   _require(
-    manifest.visualAssetSets.length == 30,
-    'production manifest set count is not 30',
+    manifest.visualAssetSets.length == 33,
+    'production manifest set count is not 33',
   );
 
-  final approvedRepDbIds = approvedRows.map((row) => row['repdb_id']!).toSet();
+  // FAM-17/19/35 were rejected in the original review and later approved by
+  // addendum records (`<record>-A1`); see R08_0_2_ADDENDUM_A1.md.
+  const addendumFamilyIds = {'FAM-17', 'FAM-19', 'FAM-35'};
+  final addendumRows = rejectedRows
+      .where((row) => addendumFamilyIds.contains(row['family_id']))
+      .toList();
+  final approvedRepDbIds = {
+    ...approvedRows.map((row) => row['repdb_id']!),
+    ...addendumRows.map((row) => row['repdb_id']!),
+  };
   _require(
     _sameSet(
       manifest.assets.map((asset) => asset.sourceAssetId).toSet(),
@@ -302,13 +311,21 @@ void _validate(String projectRoot) {
       manifest.visualAssetSets
           .expand((set) => set.canonicalExerciseUuids)
           .toSet(),
-      approvedUuids,
+      {
+        ...approvedUuids,
+        for (final row in addendumRows)
+          ..._split(
+            mappingByFamily[row['family_id']]!['canonical_uuid_bindings'],
+          ),
+      },
     ),
-    'production UUID provenance is not the approved 120-UUID set',
+    'production UUID provenance is not the approved 132-UUID set',
   );
   _require(approvedUuids.length == 120, 'approved UUID coverage is not 120');
 
-  for (final rejection in rejectedRows) {
+  for (final rejection in rejectedRows.where(
+    (row) => !addendumFamilyIds.contains(row['family_id']),
+  )) {
     final familyId = rejection['family_id']!;
     final mapping = mappingByFamily[familyId]!;
     final canonicalUuids = _split(mapping['canonical_uuid_bindings']).toSet();

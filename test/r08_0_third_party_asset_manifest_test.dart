@@ -27,13 +27,13 @@ void main() {
     final manifest = B05ThirdPartyAssetManifest.fromJson(baseJson);
 
     expect(manifest.sources, hasLength(9));
-    expect(manifest.assets, hasLength(59));
-    expect(manifest.visualAssetSets, hasLength(30));
+    expect(manifest.assets, hasLength(65));
+    expect(manifest.visualAssetSets, hasLength(33));
     expect(
       manifest.visualAssetSets
           .expand((set) => set.canonicalExerciseUuids)
           .toSet(),
-      hasLength(120),
+      hasLength(132),
     );
     expect(
       manifest.sources

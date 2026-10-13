@@ -10,21 +10,21 @@ import '../tool/src/r08_repdb_asset_pipeline.dart';
 
 void main() {
   test(
-    'approved manifest derives 30 sets, 120 UUID bindings, and 59 files',
+    'approved manifest derives 33 sets, 132 UUID bindings, and 65 files',
     () {
       final manifest = _productionManifest();
       final plan = R08RepDbAcquisitionPlan.fromManifest(manifest);
 
       expect(plan.source.immutableCommit, kR08RepDbPinnedCommit);
-      expect(plan.expectedAssetSetCount, 30);
-      expect(plan.expectedFileCount, 59);
+      expect(plan.expectedAssetSetCount, 33);
+      expect(plan.expectedFileCount, 65);
       expect(
         plan.items.expand((item) => item.asset.canonicalExerciseUuids).toSet(),
-        hasLength(120),
+        hasLength(132),
       );
       expect(
         plan.items.any((item) => item.asset.sourceAssetId == 'leg-curl'),
-        isFalse,
+        isTrue,
       );
       expect(
         plan.items.any(
@@ -34,13 +34,13 @@ void main() {
       );
       expect(
         plan.items.any((item) => item.asset.sourceAssetId == 'db-lunge'),
-        isFalse,
+        isTrue,
       );
       expect(
         plan.items.any(
           (item) => item.asset.sourceAssetId == 'hanging-leg-raise',
         ),
-        isFalse,
+        isTrue,
       );
       expect(
         plan.items.every(

@@ -70,12 +70,12 @@ void main() {
 
   group('PV1-PROD-02: Provenance Manifest & Legal Distribution Contract', () {
     test(
-      'manifest has exactly 59 assets, 30 sets, 120 bindings, and pinned commit',
+      'manifest has exactly 65 assets, 33 sets, 132 bindings, and pinned commit',
       () {
-        expect(provenanceManifest.assets, hasLength(59));
-        expect(provenanceManifest.visualAssetSets, hasLength(30));
-        expect(registry.assetSetCount, 30);
-        expect(registry.bindingCount, 120);
+        expect(provenanceManifest.assets, hasLength(65));
+        expect(provenanceManifest.visualAssetSets, hasLength(33));
+        expect(registry.assetSetCount, 33);
+        expect(registry.bindingCount, 132);
 
         expect(
           provenanceManifest.sources.first.immutableCommit,
@@ -85,14 +85,11 @@ void main() {
     );
 
     test(
-      'excludes all 5 rejected families and keeps plank as single MAIN role',
+      'excludes the 2 rejected families and keeps plank as single MAIN role',
       () {
         const rejectedFamilies = [
           'decline hammer strength press',
-          'seated leg curl',
           'standing calf raise',
-          'walking lunges',
-          'hanging leg raise',
         ];
 
         for (final name in rejectedFamilies) {
