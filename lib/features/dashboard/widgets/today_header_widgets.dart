@@ -713,9 +713,12 @@ class TodayBanner extends StatelessWidget {
     return Semantics(
       container: true,
       label: semanticLabel,
+      // Light: a white card with a soft shadow, no border (the mint
+      // container was the loudest thing on the light page).
       child: B05Surface(
         tone: B05SurfaceTone.section,
-        showBorder: true,
+        showBorder: Theme.of(context).brightness == Brightness.dark,
+        lift: true,
         radius: B05SurfaceRadius.large,
         padding: const EdgeInsets.fromLTRB(B05Layout.space12, 0, 0, 0),
         child: Row(
@@ -905,6 +908,7 @@ class TodayTrainingRow extends StatelessWidget {
         child: B05Surface(
           key: const ValueKey('today-training-row'),
           tone: B05SurfaceTone.section,
+          lift: true,
           padding: EdgeInsets.zero,
           radius: B05SurfaceRadius.large,
           child: Material(

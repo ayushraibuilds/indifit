@@ -150,6 +150,7 @@ class TodayMealsModule extends StatelessWidget {
       container: true,
       label: 'Meals',
       child: B05Surface(
+        lift: true,
         padding: const EdgeInsets.all(B05Layout.space16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -352,6 +353,7 @@ class TodayWorkoutModule extends StatelessWidget {
     final startable =
         canStart && presentation.canStart && presentation.occurrence != null;
     return B05Surface(
+      lift: true,
       padding: const EdgeInsets.all(B05Layout.space16),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -509,6 +511,7 @@ class TodayProgressModule extends StatelessWidget {
       container: true,
       label: 'Progress. ${presentation.headline}. ${presentation.detail}',
       child: B05Surface(
+        lift: true,
         padding: const EdgeInsets.all(B05Layout.space16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -574,6 +577,7 @@ class TodayModuleSkeleton extends StatelessWidget {
     liveRegion: true,
     label: label,
     child: B05Surface(
+      lift: true,
       padding: const EdgeInsets.all(B05Layout.space16),
       // Full width: the surface shrink-wraps its child, so the 0.82 line
       // used to size the whole card.
@@ -737,6 +741,7 @@ class NoVisibleModules extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => B05Surface(
+    lift: true,
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

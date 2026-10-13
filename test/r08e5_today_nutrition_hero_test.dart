@@ -83,7 +83,7 @@ void main() {
       expect(find.text('Fat'), findsOneWidget);
       expect(find.text('50 / 65 g'), findsOneWidget);
       expect(find.text('Fiber'), findsOneWidget);
-      expect(find.text('25 g'), findsOneWidget);
+      expect(find.text('25 g · no target'), findsOneWidget);
 
       // Semantics check
       expect(
@@ -94,7 +94,7 @@ void main() {
       // Action buttons
       expect(find.text('Log food'), findsOneWidget);
       expect(find.text('What can I eat?'), findsNothing);
-      expect(find.text('View targets'), findsOneWidget);
+      expect(find.text('Targets'), findsOneWidget);
       expect(find.text('Set a target'), findsNothing);
 
       await tester.pumpWidget(const SizedBox.shrink());
@@ -153,7 +153,7 @@ void main() {
       expect(find.text('Log food'), findsOneWidget);
       expect(find.text('What can I eat?'), findsNothing);
       expect(find.text('Set a target'), findsNothing);
-      expect(find.text('View targets'), findsOneWidget);
+      expect(find.text('Targets'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump();
@@ -295,7 +295,7 @@ void main() {
       expect(find.text('200 left'), findsOneWidget);
 
       expect(find.text('Log food'), findsOneWidget);
-      expect(find.text('View targets'), findsOneWidget);
+      expect(find.text('Targets'), findsOneWidget);
       // Gated out on past date
       expect(find.text('What can I eat?'), findsNothing);
 
@@ -338,7 +338,7 @@ void main() {
       expect(find.text('2,200 left'), findsOneWidget);
 
       expect(find.text('Log food'), findsOneWidget);
-      expect(find.text('View targets'), findsOneWidget);
+      expect(find.text('Targets'), findsOneWidget);
       // Gated out on future date
       expect(find.text('What can I eat?'), findsNothing);
 
@@ -416,7 +416,7 @@ void main() {
       expect(find.byKey(const ValueKey('macros_partial_note')), findsOneWidget);
       expect(
         find.descendant(
-          of: find.byType(MacroRow),
+          of: find.byType(MacroTile),
           matching: find.byIcon(Icons.info_outline_rounded),
         ),
         findsNothing,
@@ -430,14 +430,17 @@ void main() {
       // Missing macros read as a quiet dash, never a zero, and stay
       // announced as unavailable.
       expect(
-        find.descendant(of: find.byType(MacroRow), matching: find.text('—')),
+        find.descendant(
+          of: find.byType(MacroComparison),
+          matching: find.text('—'),
+        ),
         findsNWidgets(4),
       );
       expect(find.text('0 g'), findsNothing);
       final macroLabels = tester
           .widgetList<Semantics>(
             find.descendant(
-              of: find.byType(MacroRow),
+              of: find.byType(MacroComparison),
               matching: find.byType(Semantics),
             ),
           )
@@ -553,7 +556,7 @@ void main() {
 
       expect(find.text('What can I eat?'), findsNothing);
 
-      await tester.tap(find.text('View targets'));
+      await tester.tap(find.text('Targets'));
       await tester.pump();
       expect(targetsCalled, isTrue);
 
@@ -609,7 +612,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('Nutrition'), findsOneWidget);
+      expect(find.byKey(const Key('today_calorie_ring')), findsOneWidget);
       expect(find.text('1,750'), findsOneWidget);
       expect(find.text('Log food'), findsOneWidget);
       expect(tester.takeException(), isNull);

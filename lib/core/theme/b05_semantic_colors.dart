@@ -84,6 +84,8 @@ class B05SemanticColors extends ThemeExtension<B05SemanticColors> {
     required this.carbs,
     required this.fat,
     required this.fibre,
+    required this.overflow,
+    required this.overflowText,
   });
 
   final Color page;
@@ -162,11 +164,20 @@ class B05SemanticColors extends ThemeExtension<B05SemanticColors> {
   final B05ColorRole mediaInvalid;
 
   /// Macro hues, shared by every screen that shows macros. Red is reserved
-  /// for "over target", and fat is orange so it never reads as hydration.
+  /// for "over target"; fat is pink (T2 test, 13 Oct) so it sits apart from
+  /// carbs amber, the red and blue water.
   final B05ColorRole protein;
   final B05ColorRole carbs;
   final B05ColorRole fat;
   final B05ColorRole fibre;
+
+  /// Coral for the part of a ring past its target (the calorie overflow
+  /// lap). Warmer than [danger], which stays on the "N over" text.
+  final Color overflow;
+
+  /// [overflow] for text such as an over-target macro value; deeper in
+  /// light so it keeps 4.5:1 on a tinted tile.
+  final Color overflowText;
 
   static const dark = B05SemanticColors(
     page: Color(0xFF060A12),
@@ -266,15 +277,17 @@ class B05SemanticColors extends ThemeExtension<B05SemanticColors> {
       indicator: Color(0xFFFBBF24),
     ),
     fat: B05ColorRole(
-      foreground: Color(0xFFFDBA74),
-      container: Color(0xFF431407),
-      indicator: Color(0xFFFB923C),
+      foreground: Color(0xFFF9A8D4),
+      container: Color(0xFF500724),
+      indicator: Color(0xFFF472B6),
     ),
     fibre: B05ColorRole(
       foreground: Color(0xFFC4B5FD),
       container: Color(0xFF2E1065),
       indicator: Color(0xFFA78BFA),
     ),
+    overflow: Color(0xFFFF8A65),
+    overflowText: Color(0xFFFF8A65),
   );
 
   static const light = B05SemanticColors(
@@ -298,7 +311,7 @@ class B05SemanticColors extends ThemeExtension<B05SemanticColors> {
     sectionShadow: Color(0x0F0F172A),
     raised: Color(0xFFFFFFFF),
     raisedEnd: Color(0xFFFFFFFF),
-    raisedShadow: Color(0x1A0F172A),
+    raisedShadow: Color(0x170F172A),
     focus: Color(0xFF0F766E),
     disabled: Color(0xFFE2E8F0),
     action: Color(0xFF0F766E),
@@ -375,15 +388,17 @@ class B05SemanticColors extends ThemeExtension<B05SemanticColors> {
       indicator: Color(0xFFD97706),
     ),
     fat: B05ColorRole(
-      foreground: Color(0xFFC2410C),
-      container: Color(0xFFFFEDD5),
-      indicator: Color(0xFFEA580C),
+      foreground: Color(0xFFBE185D),
+      container: Color(0xFFFCE7F3),
+      indicator: Color(0xFFDB2777),
     ),
     fibre: B05ColorRole(
       foreground: Color(0xFF6D28D9),
       container: Color(0xFFEDE9FE),
       indicator: Color(0xFF7C3AED),
     ),
+    overflow: Color(0xFFF25F4C),
+    overflowText: Color(0xFFC93A28),
   );
 
   B05ColorRole status(B05SemanticStatus status) {
@@ -466,6 +481,8 @@ class B05SemanticColors extends ThemeExtension<B05SemanticColors> {
     B05ColorRole? carbs,
     B05ColorRole? fat,
     B05ColorRole? fibre,
+    Color? overflow,
+    Color? overflowText,
   }) {
     return B05SemanticColors(
       page: page ?? this.page,
@@ -510,6 +527,8 @@ class B05SemanticColors extends ThemeExtension<B05SemanticColors> {
       carbs: carbs ?? this.carbs,
       fat: fat ?? this.fat,
       fibre: fibre ?? this.fibre,
+      overflow: overflow ?? this.overflow,
+      overflowText: overflowText ?? this.overflowText,
     );
   }
 
@@ -575,6 +594,8 @@ class B05SemanticColors extends ThemeExtension<B05SemanticColors> {
       carbs: carbs.lerp(other.carbs, t),
       fat: fat.lerp(other.fat, t),
       fibre: fibre.lerp(other.fibre, t),
+      overflow: Color.lerp(overflow, other.overflow, t)!,
+      overflowText: Color.lerp(overflowText, other.overflowText, t)!,
     );
   }
 }
