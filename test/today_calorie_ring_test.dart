@@ -114,8 +114,10 @@ void main() {
     expect(find.text('1,228 left'), findsOneWidget);
   });
 
-  testWidgets('the ring turns red only above the target', (tester) async {
-    Future<Color> ringColor(double eaten) async {
+  testWidgets('the ring adds a coral lap only above the target', (
+    tester,
+  ) async {
+    Future<double> ringOverflow(double eaten) async {
       await tester.pumpWidget(
         MaterialApp(
           theme: AppTheme.lightTheme,
@@ -145,12 +147,11 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      return painter(tester).color;
+      return painter(tester).overflow;
     }
 
-    final under = await ringColor(1450);
-    final over = await ringColor(2300);
-    expect(under, isNot(over));
+    expect(await ringOverflow(1450), 0);
+    expect(await ringOverflow(2300), closeTo(0.15, 0.001));
     expect(painter(tester).progressHigh, 1.0);
   });
 
@@ -173,7 +174,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: AppTheme.lightTheme,
-        home: const Scaffold(body: MacroRow(metric: partial)),
+        home: const Scaffold(body: MacroTile(metric: partial)),
       ),
     );
     expect(find.text('45 / 150 g'), findsOneWidget);
@@ -224,7 +225,7 @@ void main() {
       expect(find.byType(TodayNutritionHero), findsOneWidget);
       expect(find.byKey(const Key('today_calorie_ring')), findsOneWidget);
       expect(find.text('1450'), findsOneWidget);
-      expect(find.text('Nutrition'), findsOneWidget);
+      expect(find.byKey(const Key('today_calorie_ring')), findsOneWidget);
       expect(find.text('Log food'), findsOneWidget);
     },
   );

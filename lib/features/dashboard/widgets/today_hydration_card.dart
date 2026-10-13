@@ -129,8 +129,10 @@ class TodayHydrationCard extends ConsumerWidget {
                 selectedDate,
                 initialData: model,
               ),
+          // Section tone: inset is lighter than a section in dark, which made
+          // water look more raised than Meals. Inset is for wells in a card.
           child: B05Surface(
-            tone: B05SurfaceTone.inset,
+            lift: true,
             padding: const EdgeInsets.all(B05Layout.space16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

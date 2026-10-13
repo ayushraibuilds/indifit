@@ -29,7 +29,7 @@ Future<Color> _barColour(
   await tester.pumpWidget(
     MaterialApp(
       theme: AppTheme.lightTheme,
-      home: Scaffold(body: MacroRow(metric: metric)),
+      home: Scaffold(body: MacroTile(metric: metric)),
     ),
   );
   await tester.pumpAndSettle();
@@ -47,7 +47,7 @@ Future<Color> _barColour(
 void main() {
   testWidgets('P1 H5 Fat is not red unless it is over target', (tester) async {
     final under = await _barColour(tester, _fat(30));
-    final colors = tester.element(find.byType(MacroRow)).b05Colors;
+    final colors = tester.element(find.byType(MacroTile)).b05Colors;
     expect(under, isNot(colors.danger.indicator));
     expect(under, colors.fat.indicator);
 
@@ -63,7 +63,7 @@ void main() {
       };
       expect(roles.values, isNot(contains(colors.danger.indicator)));
       expect(roles.values.toSet(), hasLength(4), reason: 'each macro distinct');
-      // Fat is orange, not hydration blue.
+      // Fat is pink (T2), not hydration blue.
       expect(roles['fat'], isNot(colors.info.indicator));
     }
   });
@@ -74,7 +74,7 @@ void main() {
     await _barColour(tester, _fat(30));
     final icon = tester.widget<IndiFitIcon>(
       find.descendant(
-        of: find.byType(MacroRow),
+        of: find.byType(MacroTile),
         matching: find.byType(IndiFitIcon),
       ),
     );

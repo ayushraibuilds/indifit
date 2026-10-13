@@ -169,6 +169,7 @@ class B05Surface extends StatelessWidget {
     this.tone = B05SurfaceTone.section,
     this.subtle = false,
     this.showBorder = false,
+    this.lift = false,
   });
 
   final Widget child;
@@ -181,6 +182,11 @@ class B05Surface extends StatelessWidget {
 
   /// Adds a decorative [B05SemanticColors.borderSubtle] edge.
   final bool showBorder;
+
+  /// Adds a soft ambient shadow under a section where the theme has a
+  /// section shadow (light), so white cards lift off the grey page without
+  /// a border. Dark keeps the top highlight only.
+  final bool lift;
 
   @override
   Widget build(BuildContext context) {
@@ -226,6 +232,12 @@ class B05Surface extends StatelessWidget {
                   blurRadius: 2,
                   offset: const Offset(0, 1),
                 ),
+                if (lift)
+                  BoxShadow(
+                    color: colors.sectionShadow,
+                    blurRadius: 18,
+                    offset: const Offset(0, 6),
+                  ),
               ],
       ),
       B05SurfaceTone.inset => ShapeDecoration(

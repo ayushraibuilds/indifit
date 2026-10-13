@@ -153,17 +153,20 @@ void main() {
       final colors = tester.element(find.byType(CalorieRing)).b05Colors;
       expect(ring.color, colors.success.indicator);
       expect(ring.endColor, colors.protein.indicator);
-      expect(ring.glow, isTrue);
+      expect(ring.overflow, 0);
       expect(CalorieRingPainter.stroke, 14);
     });
 
-    testWidgets('over target: solid red, no glow', (tester) async {
+    // T2: the green lap stays full and the extra is a coral second lap;
+    // red is left for the "N over" text.
+    testWidgets('over target: full green lap plus a coral lap', (tester) async {
       await pumpRing(tester, 2300);
       final ring = painter(tester);
       final colors = tester.element(find.byType(CalorieRing)).b05Colors;
-      expect(ring.color, colors.danger.indicator);
-      expect(ring.endColor, isNull);
-      expect(ring.glow, isFalse);
+      expect(ring.color, colors.success.indicator);
+      expect(ring.progressHigh, 1.0);
+      expect(ring.overflow, closeTo(0.15, 0.001));
+      expect(ring.overflowColor, colors.overflow);
     });
   });
 
