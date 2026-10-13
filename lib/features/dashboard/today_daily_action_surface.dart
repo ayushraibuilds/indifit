@@ -5,8 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/di/health_provider.dart';
 import '../../core/di/theme_provider.dart';
-import '../../core/motion/indifit_motion.dart';
 import '../../core/nutrition_legacy_read_models.dart';
+import '../../core/services/indifit_haptics.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../data/database/app_database.dart';
@@ -23,6 +23,7 @@ import 'widgets/today_header_widgets.dart';
 import 'widgets/today_helpers.dart';
 import 'widgets/today_hydration_card.dart';
 import 'widgets/today_module_widgets.dart';
+import 'widgets/today_motion.dart';
 import 'widgets/today_nutrition_widgets.dart';
 import 'widgets/today_usual_thali_card.dart';
 
@@ -32,6 +33,7 @@ export 'widgets/today_header_widgets.dart';
 export 'widgets/today_helpers.dart';
 export 'widgets/today_hydration_card.dart';
 export 'widgets/today_module_widgets.dart';
+export 'widgets/today_motion.dart';
 export 'widgets/today_nutrition_widgets.dart';
 
 class TodayDailyActionSurface extends ConsumerWidget {
@@ -230,7 +232,8 @@ class TodayDailyActionSurface extends ConsumerWidget {
                           selectedDate: selectedDate,
                           referenceNow: now,
                           onOpenSettings: onOpenSettings,
-                          onDateChanged: onDateChanged,
+                          onDateChanged: changeDay,
+                          contentReady: !loading,
                           onOpenAppearance: () {
                             final isDark =
                                 Theme.of(context).brightness == Brightness.dark;
@@ -245,7 +248,7 @@ class TodayDailyActionSurface extends ConsumerWidget {
                         TodayWeekStrip(
                           selectedDate: selectedDate,
                           today: referenceNow,
-                          onDateChanged: onDateChanged,
+                          onDateChanged: changeDay,
                         ),
                         if (personalization.status ==
                             DashboardPersonalizationStatus.saving)
@@ -266,83 +269,106 @@ class TodayDailyActionSurface extends ConsumerWidget {
                               onRetry: personalizationController.retry,
                             ),
                           ),
-                        // Setup and targets notices are one line each, so the
-                        // ring and macros stay above the fold with one showing.
-                        if (relation == TodayDateRelation.today &&
-                            nutrition.state != TodayPresentationState.loading &&
-                            nutrition.state !=
-                                TodayPresentationState.unavailable &&
-                            nutrition.hasAcceptedCalorieTarget)
-                          TodayTargetsReadyBanner(
-                            presentation: nutrition,
-                            onReviewTargets:
-                                onOpenNutritionTargets ?? onOpenSettings,
+                        // Everything for the day slides when the day changes
+                        // and holds the moments of a log (T3).
+                        TodayDayContent(
+                          date: selectedDate,
+                          ready: !loading,
+                          nutrition: nutrition,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Setup and targets notices are one line each, so the
+                              // ring and macros stay above the fold with one showing.
+                              if (relation == TodayDateRelation.today &&
+                                  nutrition.state !=
+                                      TodayPresentationState.loading &&
+                                  nutrition.state !=
+                                      TodayPresentationState.unavailable &&
+                                  nutrition.hasAcceptedCalorieTarget)
+                                TodayTargetsReadyBanner(
+                                  presentation: nutrition,
+                                  onReviewTargets:
+                                      onOpenNutritionTargets ?? onOpenSettings,
+                                ),
+                              if (relation == TodayDateRelation.today &&
+                                  onFinishSetup != null)
+                                TodayFinishSetupBanner(
+                                  onFinishSetup: onFinishSetup!,
+                                ),
+                              const SizedBox(height: B05Layout.space12),
+                              // Modules rise in one after another, once, when the
+                              // first loaded content lands (never on placeholders).
+                              for (final (index, item)
+                                  in layout
+                                      .where((item) => item.isVisible)
+                                      .indexed) ...[
+                                TodayEnter(
+                                  key: ValueKey('today-enter:${item.moduleId}'),
+                                  index: index,
+                                  child: _module(
+                                    context: context,
+                                    ref: ref,
+                                    item: item,
+                                    relation: relation,
+                                    nutrition: nutrition,
+                                    hydration:
+                                        snapshot?.hydration ??
+                                        (unavailable
+                                            ? const TodayDomainRead<
+                                                HydrationDailyReadModel
+                                              >.unavailable(
+                                                'Hydration unavailable',
+                                              )
+                                            : const TodayDomainRead<
+                                                HydrationDailyReadModel
+                                              >.loading()),
+                                    nextUp: nextUp,
+                                    workout: workout,
+                                    activity: activity,
+                                    progress: progress,
+                                    hideWorkoutDuplicate:
+                                        nextUpVisible &&
+                                        (nextUp.action ==
+                                                TodayNextAction.resumeWorkout ||
+                                            nextUp.action ==
+                                                TodayNextAction.startWorkout ||
+                                            nextUp.action ==
+                                                TodayNextAction
+                                                    .openWorkoutPlan),
+                                    onRetry: () => ref.invalidate(
+                                      todaySurfaceSnapshotProvider(
+                                        selectedDate,
+                                      ),
+                                    ),
+                                    onLogMeal: _openMeal,
+                                    onStartWorkout: _startWorkout,
+                                    onResumeWorkout: _resumeWorkout,
+                                    onOpenFoodGuidance: onOpenFoodGuidance,
+                                    selectedDate: selectedDate,
+                                    onExpand: () => personalizationController
+                                        .setCollapsed(item.moduleId, false),
+                                  ),
+                                ),
+                                const SizedBox(height: B05Layout.space8),
+                              ],
+                              if (!configuredLayout.any(
+                                (item) => item.isVisible,
+                              ))
+                                NoVisibleModules(onCustomize: onCustomize),
+                              // Training stays on Today without a plan: one quiet
+                              // row at the bottom, not a card near the top.
+                              if (showTrainingRow)
+                                TodayTrainingRow(
+                                  hasPlan: hasTrainingPlan,
+                                  onTap: hasTrainingPlan
+                                      ? onOpenWorkoutPlan
+                                      : onChooseTrainingPlan ??
+                                            onOpenWorkoutPlan,
+                                ),
+                            ],
                           ),
-                        if (relation == TodayDateRelation.today &&
-                            onFinishSetup != null)
-                          TodayFinishSetupBanner(onFinishSetup: onFinishSetup!),
-                        const SizedBox(height: B05Layout.space12),
-                        // Modules rise in one after another on first view only.
-                        for (final (index, item)
-                            in layout
-                                .where((item) => item.isVisible)
-                                .indexed) ...[
-                          IndiFitEnter(
-                            key: ValueKey('today-enter:${item.moduleId}'),
-                            enabled: index < IndiFitMotion.staggerLimit,
-                            delay: IndiFitMotion.staggerStep * index,
-                            child: _module(
-                              context: context,
-                              ref: ref,
-                              item: item,
-                              relation: relation,
-                              nutrition: nutrition,
-                              hydration:
-                                  snapshot?.hydration ??
-                                  (unavailable
-                                      ? const TodayDomainRead<
-                                          HydrationDailyReadModel
-                                        >.unavailable('Hydration unavailable')
-                                      : const TodayDomainRead<
-                                          HydrationDailyReadModel
-                                        >.loading()),
-                              nextUp: nextUp,
-                              workout: workout,
-                              activity: activity,
-                              progress: progress,
-                              hideWorkoutDuplicate:
-                                  nextUpVisible &&
-                                  (nextUp.action ==
-                                          TodayNextAction.resumeWorkout ||
-                                      nextUp.action ==
-                                          TodayNextAction.startWorkout ||
-                                      nextUp.action ==
-                                          TodayNextAction.openWorkoutPlan),
-                              onRetry: () => ref.invalidate(
-                                todaySurfaceSnapshotProvider(selectedDate),
-                              ),
-                              onLogMeal: _openMeal,
-                              onStartWorkout: _startWorkout,
-                              onResumeWorkout: _resumeWorkout,
-                              onOpenFoodGuidance: onOpenFoodGuidance,
-                              selectedDate: selectedDate,
-                              onExpand: () => personalizationController
-                                  .setCollapsed(item.moduleId, false),
-                            ),
-                          ),
-                          const SizedBox(height: B05Layout.space8),
-                        ],
-                        if (!configuredLayout.any((item) => item.isVisible))
-                          NoVisibleModules(onCustomize: onCustomize),
-                        // Training stays on Today without a plan: one quiet
-                        // row at the bottom, not a card near the top.
-                        if (showTrainingRow)
-                          TodayTrainingRow(
-                            hasPlan: hasTrainingPlan,
-                            onTap: hasTrainingPlan
-                                ? onOpenWorkoutPlan
-                                : onChooseTrainingPlan ?? onOpenWorkoutPlan,
-                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -411,6 +437,16 @@ class TodayDailyActionSurface extends ConsumerWidget {
     };
   }
 
+  static const double _swipeVelocity = 300;
+
+  /// Every day change (strip, picker, swipe) gives one selection tick.
+  void changeDay(DateTime date) {
+    if (!DateUtils.isSameDay(date, selectedDate)) {
+      unawaited(IndiFitHaptics.selection());
+    }
+    onDateChanged(date);
+  }
+
   void _openMeal(String mealType) {
     final callback = onLogMealForMeal;
     if (callback == null) {
@@ -468,14 +504,35 @@ class TodayDailyActionSurface extends ConsumerWidget {
       'today.meals' => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          TodayNutritionHero(
-            presentation: nutrition,
-            onLogFood: () => onLogMeal(''),
-            onOpenFoodGuidance: onOpenFoodGuidance,
-            dateRelation: relation,
-            selectedDate: selectedDate,
-            onOpenTargetSetup: onOpenNutritionTargets ?? onOpenSettings,
-            onRetry: onRetry,
+          // Swipe the card for the day before or after (up to today).
+          GestureDetector(
+            key: const ValueKey('today-hero-swipe'),
+            behavior: HitTestBehavior.translucent,
+            onHorizontalDragEnd: (details) {
+              final velocity = details.primaryVelocity ?? 0;
+              if (velocity.abs() < _swipeVelocity) return;
+              final day = DateTime(
+                selectedDate.year,
+                selectedDate.month,
+                selectedDate.day + (velocity < 0 ? 1 : -1),
+              );
+              final reference = now ?? DateTime.now();
+              if (day.isAfter(
+                DateTime(reference.year, reference.month, reference.day),
+              )) {
+                return;
+              }
+              changeDay(day);
+            },
+            child: TodayNutritionHero(
+              presentation: nutrition,
+              onLogFood: () => onLogMeal(''),
+              onOpenFoodGuidance: onOpenFoodGuidance,
+              dateRelation: relation,
+              selectedDate: selectedDate,
+              onOpenTargetSetup: onOpenNutritionTargets ?? onOpenSettings,
+              onRetry: onRetry,
+            ),
           ),
           // One tap for the plate logged most (only on today's date).
           if (relation == TodayDateRelation.today) const TodayUsualThaliCard(),

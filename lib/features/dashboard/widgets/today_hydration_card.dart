@@ -1,8 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/di/providers.dart';
+import '../../../core/motion/indifit_motion.dart';
 import '../../../core/presentation/consumer_number_label.dart';
+import '../../../core/services/indifit_haptics.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
 import '../../../core/widgets/skeleton_loader.dart';
@@ -13,6 +17,8 @@ import 'hydration_detail_sheet.dart';
 import 'hydration_fluid_fill.dart';
 import 'today_helpers.dart';
 import 'today_module_widgets.dart';
+
+const Duration _fillDuration = Duration(milliseconds: 500);
 
 class TodayHydrationCard extends ConsumerWidget {
   const TodayHydrationCard({
@@ -57,14 +63,14 @@ class TodayHydrationCard extends ConsumerWidget {
         containerType: containerType,
       );
       ref.read(todayHydrationRevisionProvider.notifier).state++;
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Added $amountMl ml water'),
-            duration: const Duration(seconds: 2),
-          ),
-        );
+      // No snackbar (T3): the ml counts up and the fill settles. A tick for
+      // the log, and a success when this glass meets the goal.
+      final goal =
+          hydrationRead.value?.goalMl ?? HydrationRepository.defaultDailyGoalMl;
+      if (currentTotal < goal && currentTotal + amountMl >= goal) {
+        unawaited(IndiFitHaptics.success());
+      } else {
+        unawaited(IndiFitHaptics.selection());
       }
     } catch (_) {
       if (context.mounted) {
@@ -152,9 +158,18 @@ class TodayHydrationCard extends ConsumerWidget {
                         children: [
                           Text('Hydration', style: todayEyebrow(context)),
                           const SizedBox(height: B05Layout.space4),
-                          Text(
-                            '$totalFormatted / $goalFormatted ml',
-                            style: B05Typography.title(context),
+                          IndiFitCountUp(
+                            value: model.totalMl.toDouble(),
+                            duration: _fillDuration,
+                            builder: (context, ml) => Text(
+                              '${ConsumerNumberLabel.rounded(ml)} / '
+                              '$goalFormatted ml',
+                              style: B05Typography.title(context).copyWith(
+                                fontFeatures: const [
+                                  FontFeature.tabularFigures(),
+                                ],
+                              ),
+                            ),
                           ),
                           const SizedBox(height: B05Layout.space4),
                           Text(
@@ -183,6 +198,7 @@ class TodayHydrationCard extends ConsumerWidget {
                   animatedChild: HydrationFluidFillIndicator(
                     progress: model.rawProgressRatio,
                     isGoalMet: model.isGoalMet,
+                    fillDuration: _fillDuration,
                     height: 32,
                     borderRadius: B05Radii.smallRadius,
                   ),

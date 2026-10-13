@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/motion/indifit_motion.dart';
 import '../../../core/presentation/consumer_number_label.dart';
 import '../../../core/presentation/daypart_greeting.dart';
 import '../../../core/presentation/today_onboarding_handoff.dart';
@@ -15,6 +16,7 @@ import '../today_presentation_types.dart';
 import '../today_week_controller.dart';
 import 'appearance_bottom_sheet.dart';
 import 'today_helpers.dart';
+import 'today_motion.dart';
 
 /// Today's top block (T1): greeting and a quiet date on the left; the streak,
 /// the theme toggle and settings in one row on the right. Every piece keeps
@@ -30,6 +32,7 @@ class TodayHeader extends StatefulWidget {
     this.streakLoaded = true,
     this.onDateChanged,
     this.onOpenAppearance,
+    this.contentReady,
   });
 
   final String userName;
@@ -42,6 +45,10 @@ class TodayHeader extends StatefulWidget {
   /// The date line opens a date picker for days outside the week strip.
   final ValueChanged<DateTime>? onDateChanged;
   final VoidCallback? onOpenAppearance;
+
+  /// Whether Today's first content has loaded. Set, the streak flame pops in
+  /// once, after the ring's sweep (T3); null shows it as is.
+  final bool? contentReady;
 
   @override
   State<TodayHeader> createState() => TodayHeaderState();
@@ -128,6 +135,7 @@ class TodayHeaderState extends State<TodayHeader> with WidgetsBindingObserver {
           TodayStreakChip(
             count: widget.streakCount,
             loaded: widget.streakLoaded,
+            popReady: widget.contentReady,
           ),
           TodayHeaderIconButton(
             icon: isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
@@ -340,12 +348,21 @@ class TodayHeaderIconButton extends StatelessWidget {
 /// The chip keeps one width for 1–2 digits and is laid out (invisible) before
 /// the streak read lands, so nothing next to it moves.
 class TodayStreakChip extends StatelessWidget {
-  const TodayStreakChip({super.key, required this.count, this.loaded = true});
+  const TodayStreakChip({
+    super.key,
+    required this.count,
+    this.loaded = true,
+    this.popReady,
+  });
 
   static const String fireAsset = 'assets/badges/streak_7.png';
 
   final int count;
   final bool loaded;
+
+  /// Set, the flame stays hidden until this is true, then pops in once
+  /// (Today's launch, last after the ring). Null shows it as is.
+  final bool? popReady;
 
   @override
   Widget build(BuildContext context) {
@@ -371,6 +388,9 @@ class TodayStreakChip extends StatelessWidget {
         opacity: 0.45,
         child: ColorFiltered(colorFilter: _greyscale, child: flame),
       );
+    }
+    if (popReady case final ready?) {
+      flame = _TodayFlamePop(ready: ready && loaded, child: flame);
     }
     final numberStyle = B05Typography.number(context, size: 14);
     final chip = ConstrainedBox(
@@ -427,6 +447,72 @@ class TodayStreakChip extends StatelessWidget {
     0.2126, 0.7152, 0.0722, 0, 0, //
     0, 0, 0, 1, 0, //
   ]);
+}
+
+/// Hidden until [ready], then springs in from nothing after
+/// [TodayMotionTiming.flameDelay], once.
+class _TodayFlamePop extends StatefulWidget {
+  const _TodayFlamePop({required this.ready, required this.child});
+
+  final bool ready;
+  final Widget child;
+
+  @override
+  State<_TodayFlamePop> createState() => _TodayFlamePopState();
+}
+
+class _TodayFlamePopState extends State<_TodayFlamePop>
+    with SingleTickerProviderStateMixin {
+  static final Duration _total =
+      TodayMotionTiming.flameDelay + IndiFitMotion.popDuration;
+
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: _total,
+  );
+  late final Animation<double> _scale = CurvedAnimation(
+    parent: _controller,
+    curve: Interval(
+      TodayMotionTiming.flameDelay.inMicroseconds / _total.inMicroseconds,
+      1,
+      curve: IndiFitMotion.springCurve(IndiFitMotion.popDuration),
+    ),
+  );
+  var _started = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _maybeStart();
+  }
+
+  @override
+  void didUpdateWidget(covariant _TodayFlamePop oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _maybeStart();
+  }
+
+  void _maybeStart() {
+    if (_started || !widget.ready) return;
+    if (B05MotionPolicy.reduceMotion(context)) {
+      _started = true;
+      _controller.value = 1;
+      return;
+    }
+    if (!TickerMode.valuesOf(context).enabled) return;
+    _started = true;
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) =>
+      ScaleTransition(scale: _scale, child: widget.child);
 }
 
 /// The last seven days with a mini calorie ring each, in place of the old

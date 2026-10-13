@@ -491,11 +491,12 @@ void main() {
           await Future<void>.delayed(const Duration(milliseconds: 50));
         });
 
-        // Pump animation frame to show SnackBar
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        expect(find.text('Added 250 ml water'), findsOneWidget);
+        // T3: no snackbar; the card's ml counts up instead.
+        expect(find.text('Added 250 ml water'), findsNothing);
+        expect(find.byType(SnackBar), findsNothing);
 
         // Verify repository state
         final daily = (await tester.runAsync(

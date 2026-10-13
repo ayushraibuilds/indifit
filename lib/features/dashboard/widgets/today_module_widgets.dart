@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
+import '../../../core/motion/indifit_motion.dart';
 import '../../../core/presentation/consumer_copy.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
@@ -13,6 +14,8 @@ import '../../food_log/meal_presentation_registry.dart';
 import '../today_consumer_presentation.dart';
 import '../today_presentation_types.dart';
 import 'today_helpers.dart';
+import 'today_motion.dart';
+import 'today_nutrition_widgets.dart';
 
 /// Today module widgets (PV1-ENG-05B first pass).
 ///
@@ -159,6 +162,9 @@ class TodayMealsModule extends StatelessWidget {
             const SizedBox(height: B05Layout.space8),
             for (var index = 0; index < meals.length; index++) ...[
               TodayMealRow(
+                key: TodayMotion.maybeOf(
+                  context,
+                )?.rowKey(meals[index].mealType),
                 meal: meals[index],
                 onAdd: () => onLogMeal(meals[index].mealType),
                 selectedDate: selectedDate,
@@ -229,74 +235,105 @@ class TodayMealRow extends StatelessWidget {
         Text(meal.detail, style: B05Typography.caption(context)),
       ],
     );
-    final calories = Text(
-      meal.calorieLabel,
+    // Meal accents tint only the meal icon; breakfast orange next to the
+    // fat bar read as a macro (review O-4).
+    final caloriesStyle = B05Typography.label(context).copyWith(
+      color: meal.nutritionIncomplete
+          ? context.b05Colors.unavailable.indicator
+          : context.b05Colors.textPrimary,
+      fontFeatures: const [FontFeature.tabularFigures()],
+    );
+    Text caloriesText(String text) => Text(
+      text,
       maxLines: 2,
       overflow: TextOverflow.ellipsis,
       textAlign: TextAlign.end,
-      // Meal accents tint only the meal icon; breakfast orange next to the
-      // fat bar read as a macro (review O-4).
-      style: B05Typography.label(context).copyWith(
-        color: meal.nutritionIncomplete
-            ? context.b05Colors.unavailable.indicator
-            : context.b05Colors.textPrimary,
-      ),
+      style: caloriesStyle,
     );
+    final kcal = meal.kcal ?? (meal.logged ? null : 0.0);
+    // A log counts the row's kcal up from what it showed (T3).
+    final calories = kcal == null
+        ? caloriesText(meal.calorieLabel)
+        : IndiFitCountUp(
+            value: kcal,
+            builder: (context, value) => caloriesText(
+              meal.logged || value > 0
+                  ? '${formatTodayMetric(value)} kcal'
+                  : meal.calorieLabel,
+            ),
+          );
+    final motion = TodayMotion.maybeOf(context);
+    final moment = motion?.moment?.mealType == meal.mealType
+        ? motion!.moment
+        : null;
+    final chipLabel = motion?.chipPlace == TodayChipPlace.row
+        ? moment?.chipLabel
+        : null;
     return Semantics(
       container: true,
       button: true,
       label: '${meal.label}. ${meal.detail}. ${meal.calorieLabel}',
       hint: 'Double tap to inspect this meal.',
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: B05Radii.smallRadius,
-          onTap: showDetails,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: B05Layout.space4),
-            child: compact
-                ? Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          MealIcon(icon: icon, color: role),
-                          const SizedBox(width: B05Layout.space8),
-                          Expanded(child: summary),
-                          B05IconAction(
-                            icon: Icons.add_circle_outline_rounded,
-                            label: 'Add ${meal.label}',
-                            hint: 'Log food to ${meal.label.toLowerCase()}.',
-                            onPressed: onAdd,
-                          ),
-                        ],
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.only(
-                          left: B05Layout.space32 + B05Layout.space8,
-                          top: B05Layout.space4,
+      child: TodayMealRowWash(
+        serial: moment?.serial,
+        chip: chipLabel == null
+            ? null
+            : TodayLoggedChip(
+                key: ValueKey<int>(moment!.serial),
+                label: chipLabel,
+                onDone: motion!.onChipDone,
+              ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: B05Radii.smallRadius,
+            onTap: showDetails,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: B05Layout.space4),
+              child: compact
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            MealIcon(icon: icon, color: role),
+                            const SizedBox(width: B05Layout.space8),
+                            Expanded(child: summary),
+                            B05IconAction(
+                              icon: Icons.add_circle_outline_rounded,
+                              label: 'Add ${meal.label}',
+                              hint: 'Log food to ${meal.label.toLowerCase()}.',
+                              onPressed: onAdd,
+                            ),
+                          ],
                         ),
-                        child: calories,
-                      ),
-                    ],
-                  )
-                : Row(
-                    children: [
-                      MealIcon(icon: icon, color: role),
-                      const SizedBox(width: B05Layout.space8),
-                      Expanded(child: summary),
-                      const SizedBox(width: B05Layout.space8),
-                      // Fixed column so every meal's + sits at the same x.
-                      SizedBox(width: _kMealCalorieColumn, child: calories),
-                      const SizedBox(width: B05Layout.space4),
-                      B05IconAction(
-                        icon: Icons.add_circle_outline_rounded,
-                        label: 'Add ${meal.label}',
-                        hint: 'Log food to ${meal.label.toLowerCase()}.',
-                        onPressed: onAdd,
-                      ),
-                    ],
-                  ),
+                        Padding(
+                          padding: const EdgeInsets.only(
+                            left: B05Layout.space32 + B05Layout.space8,
+                            top: B05Layout.space4,
+                          ),
+                          child: calories,
+                        ),
+                      ],
+                    )
+                  : Row(
+                      children: [
+                        MealIcon(icon: icon, color: role),
+                        const SizedBox(width: B05Layout.space8),
+                        Expanded(child: summary),
+                        const SizedBox(width: B05Layout.space8),
+                        // Fixed column so every meal's + sits at the same x.
+                        SizedBox(width: _kMealCalorieColumn, child: calories),
+                        const SizedBox(width: B05Layout.space4),
+                        B05IconAction(
+                          icon: Icons.add_circle_outline_rounded,
+                          label: 'Add ${meal.label}',
+                          hint: 'Log food to ${meal.label.toLowerCase()}.',
+                          onPressed: onAdd,
+                        ),
+                      ],
+                    ),
+            ),
           ),
         ),
       ),
@@ -305,6 +342,110 @@ class TodayMealRow extends StatelessWidget {
 }
 
 const double _kMealCalorieColumn = 72;
+
+/// A green wash behind a meal row whose food just changed, once per
+/// [serial], with the "+kcal" [chip] rising from the row's kcal (T3).
+class TodayMealRowWash extends StatefulWidget {
+  const TodayMealRowWash({
+    super.key,
+    required this.serial,
+    required this.child,
+    this.chip,
+  });
+
+  final int? serial;
+  final Widget child;
+  final Widget? chip;
+
+  @override
+  State<TodayMealRowWash> createState() => _TodayMealRowWashState();
+}
+
+class _TodayMealRowWashState extends State<TodayMealRowWash>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: TodayMotionTiming.wash,
+  );
+  late final Animation<double> _wash = TweenSequence<double>([
+    TweenSequenceItem(
+      tween: Tween(
+        begin: 0.0,
+        end: 1.0,
+      ).chain(CurveTween(curve: B05MotionPolicy.standardCurve)),
+      weight: 20,
+    ),
+    TweenSequenceItem(tween: ConstantTween(1.0), weight: 25),
+    TweenSequenceItem(
+      tween: Tween(
+        begin: 1.0,
+        end: 0.0,
+      ).chain(CurveTween(curve: Curves.easeInOut)),
+      weight: 55,
+    ),
+  ]).animate(_controller);
+  int? _played;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _maybePlay();
+  }
+
+  @override
+  void didUpdateWidget(covariant TodayMealRowWash oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _maybePlay();
+  }
+
+  void _maybePlay() {
+    final serial = widget.serial;
+    if (serial == null || serial == _played) return;
+    if (!TickerMode.valuesOf(context).enabled) return;
+    _played = serial;
+    if (B05MotionPolicy.reduceMotion(context)) return;
+    _controller.forward(from: 0);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final wash = context.b05Colors.success.container;
+    final chip = widget.chip;
+    // One structure with or without the chip, so the row keeps its
+    // count-up state when the chip comes and goes.
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Positioned.fill(
+          child: IgnorePointer(
+            child: AnimatedBuilder(
+              animation: _wash,
+              builder: (context, _) => DecoratedBox(
+                decoration: BoxDecoration(
+                  color: wash.withValues(alpha: wash.a * .9 * _wash.value),
+                  borderRadius: B05Radii.smallRadius,
+                ),
+              ),
+            ),
+          ),
+        ),
+        widget.child,
+        Positioned(
+          top: -B05Layout.space16,
+          // Over the kcal column, clear of the + button.
+          right: B05Layout.minTouchTarget + B05Layout.space4,
+          child: chip ?? const SizedBox.shrink(),
+        ),
+      ],
+    );
+  }
+}
 
 class MealIcon extends StatelessWidget {
   const MealIcon({super.key, required this.icon, required this.color});

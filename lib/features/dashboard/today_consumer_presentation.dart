@@ -300,6 +300,10 @@ class TodayMealPresentation {
   final String label;
   final String detail;
   final String calorieLabel;
+
+  /// The meal's calories when they are one known number, so the row can
+  /// count up; null for ranges and unknown totals.
+  final double? kcal;
   final bool logged;
   final bool nutritionIncomplete;
   final int itemCount;
@@ -310,6 +314,7 @@ class TodayMealPresentation {
     required this.label,
     required this.detail,
     required this.calorieLabel,
+    this.kcal,
     required this.logged,
     required this.nutritionIncomplete,
     required this.itemCount,
@@ -530,6 +535,7 @@ class TodayNutritionPresentation {
           ? '${ConsumerCountLabel.format(records.length, 'meal')} logged'
           : ConsumerCountLabel.format(itemCount, 'item'),
       calorieLabel: calories.label,
+      kcal: calories.kcal,
       logged: true,
       nutritionIncomplete: calories.incomplete,
       itemCount: itemCount,
@@ -540,9 +546,14 @@ class TodayNutritionPresentation {
 
 class _MealCalories {
   final String label;
+  final double? kcal;
   final bool incomplete;
 
-  const _MealCalories({required this.label, required this.incomplete});
+  const _MealCalories({
+    required this.label,
+    required this.incomplete,
+    this.kcal,
+  });
 }
 
 _MealCalories _mealCalories(List<NutritionHistoricalReadRecord> records) {
@@ -583,6 +594,7 @@ _MealCalories _mealCalories(List<NutritionHistoricalReadRecord> records) {
   );
   return _MealCalories(
     label: '${_formatNumber(total)} kcal',
+    kcal: total,
     incomplete: available.any((fact) => fact.coverageIncomplete),
   );
 }

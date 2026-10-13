@@ -15,15 +15,17 @@ import '../today_presentation_types.dart';
 import '../today_surface_controller.dart';
 import 'today_helpers.dart';
 import 'today_module_widgets.dart';
+import 'today_motion.dart';
 
 /// Today nutrition widgets (PV1-ENG-05B first pass).
 ///
 /// Extracted verbatim from `today_daily_action_surface.dart`; unchanged.
 
-/// The Today nutrition card. It remembers the last totals it showed, so when
-/// a log lands it can say what was added ("+230 kcal · Poha", V3) while the
-/// ring and numbers count up from the old values.
-class TodayNutritionHero extends StatefulWidget {
+/// The Today nutrition card. A log that lands while it is on screen shows
+/// what was added ("+230 kcal · Poha", V3) above the ring, while the ring and
+/// numbers count up from the old values; [TodayDayContent] decides whether
+/// the chip plays here, at the meal row, or not at all (T3).
+class TodayNutritionHero extends StatelessWidget {
   const TodayNutritionHero({
     required this.presentation,
     required this.onLogFood,
@@ -44,72 +46,25 @@ class TodayNutritionHero extends StatefulWidget {
   final VoidCallback onRetry;
 
   @override
-  State<TodayNutritionHero> createState() => _TodayNutritionHeroState();
-}
-
-class _TodayNutritionHeroState extends State<TodayNutritionHero> {
-  // The last ready totals, kept across loading states so a refresh after a
-  // log still compares against what the user saw.
-  DateTime? _seenDate;
-  Set<String>? _seenIds;
-  double? _seenKcal;
-
-  String? _chipLabel;
-  var _chipSerial = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _remember(widget);
-  }
-
-  @override
-  void didUpdateWidget(covariant TodayNutritionHero oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    final chip = todayLoggedChipLabel(
-      previousDate: _seenDate,
-      previousIds: _seenIds,
-      previousKcal: _seenKcal,
-      date: widget.selectedDate,
-      presentation: widget.presentation,
-    );
-    if (chip != null && !B05MotionPolicy.reduceMotion(context)) {
-      _chipLabel = chip;
-      _chipSerial++;
-    }
-    _remember(widget);
-  }
-
-  void _remember(TodayNutritionHero hero) {
-    final presentation = hero.presentation;
-    if (presentation.state == TodayPresentationState.loading ||
-        presentation.state == TodayPresentationState.unavailable) {
-      return;
-    }
-    _seenDate = hero.selectedDate;
-    _seenIds = {for (final record in presentation.loggedRecords) record.$1};
-    _seenKcal = presentation.calories?.pointValue;
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final label = _chipLabel;
+    final motion = TodayMotion.maybeOf(context);
+    final moment = motion?.moment;
+    final label = moment?.chipLabel;
     return _TodayNutritionHeroBody(
-      presentation: widget.presentation,
-      onLogFood: widget.onLogFood,
-      onOpenFoodGuidance: widget.onOpenFoodGuidance,
-      dateRelation: widget.dateRelation,
-      selectedDate: widget.selectedDate,
-      onOpenTargetSetup: widget.onOpenTargetSetup,
-      onRetry: widget.onRetry,
-      ringOverlay: label == null
+      presentation: presentation,
+      onLogFood: onLogFood,
+      onOpenFoodGuidance: onOpenFoodGuidance,
+      dateRelation: dateRelation,
+      selectedDate: selectedDate,
+      onOpenTargetSetup: onOpenTargetSetup,
+      onRetry: onRetry,
+      ringKey: motion?.ringKey,
+      ringOverlay: label == null || motion?.chipPlace != TodayChipPlace.ring
           ? null
           : TodayLoggedChip(
-              key: ValueKey<int>(_chipSerial),
+              key: ValueKey<int>(moment!.serial),
               label: label,
-              onDone: () {
-                if (mounted) setState(() => _chipLabel = null);
-              },
+              onDone: motion!.onChipDone,
             ),
     );
   }
@@ -119,7 +74,6 @@ class _TodayNutritionHeroState extends State<TodayNutritionHero> {
 /// on the same day and the calorie total went up; several new records read
 /// "+640 kcal · 4 foods". Null otherwise (first view, another day, edits,
 /// deletes, unknown totals), so the chip never claims more than it knows.
-@visibleForTesting
 String? todayLoggedChipLabel({
   required DateTime? previousDate,
   required Set<String>? previousIds,
@@ -163,7 +117,7 @@ String? todayLoggedChipLabel({
 class TodayLoggedChip extends StatefulWidget {
   const TodayLoggedChip({required this.label, required this.onDone, super.key});
 
-  static const Duration duration = Duration(milliseconds: 1800);
+  static const Duration duration = Duration(milliseconds: 1600);
 
   final String label;
   final VoidCallback onDone;
@@ -267,6 +221,7 @@ class _TodayNutritionHeroBody extends StatelessWidget {
     required this.selectedDate,
     required this.onOpenTargetSetup,
     required this.onRetry,
+    this.ringKey,
     this.ringOverlay,
   });
 
@@ -277,6 +232,7 @@ class _TodayNutritionHeroBody extends StatelessWidget {
   final DateTime selectedDate;
   final VoidCallback onOpenTargetSetup;
   final VoidCallback onRetry;
+  final GlobalKey? ringKey;
   final Widget? ringOverlay;
 
   @override
@@ -313,6 +269,7 @@ class _TodayNutritionHeroBody extends StatelessWidget {
     // One structure with or without the chip, so the ring keeps its
     // count-up state when the chip comes and goes.
     final ring = Stack(
+      key: ringKey,
       clipBehavior: Clip.none,
       alignment: Alignment.topCenter,
       children: [
@@ -605,17 +562,29 @@ class CalorieRing extends StatelessWidget {
     }
     final colors = context.b05Colors;
     final dark = Theme.of(context).brightness == Brightness.dark;
-    final isOver = metric.isOverTarget;
     final high = hasTarget
         ? metric.upperProgress ?? metric.progress ?? 0.0
         : 0.0;
     final low = hasTarget ? metric.lowerProgress ?? high : 0.0;
-    // Past the target the tween runs on into a second lap (capped at one),
-    // so the sweep passes 12 o'clock before the coral starts.
-    final overflow = hasTarget && isOver && !metric.isRange
-        ? (metric.pointValue! / metric.targetValue! - 1).clamp(0.0, 1.0)
-        : 0.0;
-    final total = high + overflow;
+    final target = metric.targetValue;
+    final point = metric.pointValue;
+    // One clock for the arc, the number and the status (T3): the sweep runs
+    // to 100 % in green, past 12 o'clock into the coral lap, and "N over"
+    // fades in as it crosses the top, not on the first frame.
+    final pointTarget = hasTarget && !metric.isRange && point != null;
+    (double, double, double) arcAt(double kcal) {
+      if (!hasTarget) return (0, 0, 0);
+      if (pointTarget) {
+        final ratio = kcal / target!;
+        final green = ratio.clamp(0.0, 1.0);
+        return (green, green, (ratio - 1).clamp(0.0, 1.0));
+      }
+      final share = point == null || point <= 0
+          ? 1.0
+          : (kcal / point).clamp(0.0, 1.0);
+      return (low * share, high * share, 0);
+    }
+
     // Track plus the gap to the number; the label column stays inside it.
     final inset = CalorieRingPainter.stroke + B05Layout.space12;
     final targetText = metric.hasTarget
@@ -623,39 +592,39 @@ class CalorieRing extends StatelessWidget {
         : metric.isAvailable
         ? 'kcal logged'
         : 'Nutrition incomplete';
-    final status = !metric.isAvailable
+    String statusAt(double kcal) => !metric.isAvailable
         ? '—'
         : metric.isRange
         ? '${metric.value} kcal range'
         : metric.hasTarget
-        ? isOver
-              ? '${formatTodayMetric(metric.pointValue! - metric.targetValue!)} over'
-              : '${formatTodayMetric(metric.targetValue! - (metric.pointValue ?? 0))} left'
+        ? kcal > metric.targetValue!
+              ? '${formatTodayMetric(kcal - metric.targetValue!)} over'
+              : '${formatTodayMetric(metric.targetValue! - kcal)} left'
         : noConsumption
         ? 'No meals yet'
         : 'No target set';
-    final statusColor = isOver
-        ? colors.danger.indicator
-        : incomplete && !metric.isAvailable
-        ? colors.unavailable.indicator
-        : colors.textSecondary;
+    final status = statusAt(point ?? 0);
     final semantics = metric.isAvailable
         ? metric.hasTarget
               ? 'Calories ${metric.value} of ${formatTodayMetric(metric.targetValue!)} kilocalories. $status.'
               : 'Calories ${metric.value} kilocalories logged. No target set.'
         : 'Calories are incomplete. No total is shown.';
     final tabular = const [FontFeature.tabularFigures()];
+    // Launch: the ring sweeps from 0 with the count-up, once.
+    final entrance = TodayMotion.maybeOf(context)?.entrance ?? false;
 
-    final ring = TweenAnimationBuilder<double>(
-      tween: Tween<double>(end: total),
-      duration: B05MotionPolicy.transitionDuration(
-        context,
-        standard: B05MotionPolicy.standardDuration,
-      ),
-      curve: B05MotionPolicy.standardCurve,
-      builder: (context, value, _) {
-        final green = math.min(value, high);
-        final lowValue = high == 0 ? 0.0 : low * (green / high);
+    final ring = IndiFitCountUp(
+      value: point ?? 0,
+      begin: entrance ? 0 : null,
+      duration: TodayMotionTiming.ring,
+      builder: (context, kcal) {
+        final (lowValue, green, overflow) = arcAt(kcal);
+        final over = pointTarget && kcal > target!;
+        final statusColor = over
+            ? colors.danger.indicator
+            : incomplete && !metric.isAvailable
+            ? colors.unavailable.indicator
+            : colors.textSecondary;
         return SizedBox(
           width: diameter,
           height: diameter,
@@ -671,7 +640,7 @@ class CalorieRing extends StatelessWidget {
                   painter: CalorieRingPainter(
                     progressLow: lowValue,
                     progressHigh: green,
-                    overflow: math.max(0.0, value - high),
+                    overflow: overflow,
                     color: colors.success.indicator,
                     endColor: colors.protein.indicator,
                     overflowColor: colors.overflow,
@@ -688,17 +657,14 @@ class CalorieRing extends StatelessWidget {
                   children: [
                     FittedBox(
                       fit: BoxFit.scaleDown,
-                      child: IndiFitCountUp(
-                        value: metric.pointValue ?? 0,
-                        builder: (context, kcal) => Text(
-                          metric.valueAt(kcal),
-                          maxLines: 1,
-                          style: B05Typography.metric(context).copyWith(
-                            fontSize: 42,
-                            height: 1,
-                            letterSpacing: -1.5,
-                            fontFeatures: tabular,
-                          ),
+                      child: Text(
+                        metric.valueAt(kcal),
+                        maxLines: 1,
+                        style: B05Typography.metric(context).copyWith(
+                          fontSize: 42,
+                          height: 1,
+                          letterSpacing: -1.5,
+                          fontFeatures: tabular,
                         ),
                       ),
                     ),
@@ -715,16 +681,23 @@ class CalorieRing extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 2),
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        status,
-                        maxLines: 1,
-                        textAlign: TextAlign.center,
-                        style: B05Typography.caption(context).copyWith(
-                          color: statusColor,
-                          fontWeight: FontWeight.w700,
-                          fontFeatures: tabular,
+                    AnimatedSwitcher(
+                      duration: B05MotionPolicy.transitionDuration(
+                        context,
+                        standard: B05MotionPolicy.fastDuration,
+                      ),
+                      child: FittedBox(
+                        key: ValueKey<bool>(over),
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          statusAt(kcal),
+                          maxLines: 1,
+                          textAlign: TextAlign.center,
+                          style: B05Typography.caption(context).copyWith(
+                            color: statusColor,
+                            fontWeight: FontWeight.w700,
+                            fontFeatures: tabular,
+                          ),
                         ),
                       ),
                     ),
@@ -1013,7 +986,7 @@ class MacroComparison extends StatelessWidget {
                   children: [
                     for (var index = 0; index < tiles.length; index++) ...[
                       if (index > 0) const SizedBox(height: B05Layout.space8),
-                      MacroTile(metric: tiles[index]),
+                      MacroTile(metric: tiles[index], order: index),
                     ],
                   ],
                 )
@@ -1024,7 +997,11 @@ class MacroComparison extends StatelessWidget {
                       for (var index = 0; index < tiles.length; index++) ...[
                         if (index > 0) const SizedBox(width: B05Layout.space8),
                         Expanded(
-                          child: MacroTile(metric: tiles[index], fill: true),
+                          child: MacroTile(
+                            metric: tiles[index],
+                            fill: true,
+                            order: index,
+                          ),
                         ),
                       ],
                     ],
@@ -1100,20 +1077,37 @@ class _QuietMacroLine extends StatelessWidget {
 /// One macro: icon and name, "120 / 150 g" with the target small, and a
 /// 4 pt bar. Tinted with the macro's own hue; over its target the value
 /// and bar turn coral, as the calorie overflow lap does. Red stays on the
-/// ring's "N over" text.
+/// ring's "N over" text. On launch the bars fill one after another; when a
+/// log brings the macro to its target the bar end flashes and a check pops,
+/// once per macro per day (T3).
 class MacroTile extends StatelessWidget {
-  const MacroTile({super.key, required this.metric, this.fill = false});
+  const MacroTile({
+    super.key,
+    required this.metric,
+    this.fill = false,
+    this.order = 0,
+  });
 
   final TodayNutritionMetricPresentation metric;
 
   /// In a row of tiles of equal height: push the bar to the bottom.
   final bool fill;
 
+  /// Position among the tiles, for the launch fill.
+  final int order;
+
   @override
   Widget build(BuildContext context) {
     final colors = context.b05Colors;
     final role = todayMacroColorRole(colors, metric.nutrientId);
     final dark = Theme.of(context).brightness == Brightness.dark;
+    final motion = TodayMotion.maybeOf(context);
+    final entrance = motion?.entrance ?? false;
+    final moment = motion?.moment;
+    final hitSerial =
+        moment != null && moment.macros.contains(metric.nutrientId)
+        ? moment.serial
+        : null;
     final icon = switch (_todayMacro(metric.nutrientId)) {
       B05Macro.protein => IndiFitIcons.protein,
       B05Macro.carbs => IndiFitIcons.carbs,
@@ -1125,43 +1119,67 @@ class MacroTile extends StatelessWidget {
         '${metric.label}: ${metric.comparisonLabel}'
         '${metric.estimated ? ', estimated' : ''}'
         '${metric.isIncomplete ? ', incomplete' : ''}';
+    final delay =
+        TodayMotionTiming.barsStart + TodayMotionTiming.barStep * order;
     return Semantics(
       label: label,
       child: ExcludeSemantics(
-        child: DecoratedBox(
-          decoration: ShapeDecoration(
-            color: role.indicator.withValues(alpha: dark ? .10 : .08),
-            shape: B05Radii.shape(B05Radii.rowRadius),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(10, 9, 10, 10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
+        child: _MacroHit(
+          serial: hitSerial,
+          builder: (context, hit) => DecoratedBox(
+            decoration: ShapeDecoration(
+              color: role.indicator.withValues(alpha: dark ? .10 : .08),
+              shape: B05Radii.shape(B05Radii.rowRadius),
+            ),
+            child: Stack(
+              clipBehavior: Clip.none,
               children: [
-                Row(
-                  children: [
-                    IndiFitIcon(icon, size: 14, color: role.indicator),
-                    const SizedBox(width: 5),
-                    Flexible(
-                      child: Text(
-                        metric.label,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: B05Typography.caption(context),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(10, 9, 10, 10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        children: [
+                          IndiFitIcon(icon, size: 14, color: role.indicator),
+                          const SizedBox(width: 5),
+                          Flexible(
+                            child: Text(
+                              metric.label,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: B05Typography.caption(context),
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: B05Layout.space4),
+                      _value(context, entrance: entrance, delay: delay),
+                      if (metric.estimated && !metric.isIncomplete)
+                        Text(
+                          'Estimated',
+                          style: B05Typography.caption(context),
+                        ),
+                      if (metric.hasTarget && metric.progress != null) ...[
+                        if (fill) const Spacer(),
+                        const SizedBox(height: 6),
+                        MacroProgress(
+                          metric: metric,
+                          color: role.indicator,
+                          entranceDelay: entrance ? delay : null,
+                          flash: hit,
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
-                const SizedBox(height: B05Layout.space4),
-                _value(context),
-                if (metric.estimated && !metric.isIncomplete)
-                  Text('Estimated', style: B05Typography.caption(context)),
-                if (metric.hasTarget && metric.progress != null) ...[
-                  if (fill) const Spacer(),
-                  const SizedBox(height: 6),
-                  MacroProgress(metric: metric, color: role.indicator),
-                ],
+                if (hit != null)
+                  Positioned(
+                    top: 7,
+                    right: 7,
+                    child: _MacroHitCheck(progress: hit, color: role.indicator),
+                  ),
               ],
             ),
           ),
@@ -1172,7 +1190,11 @@ class MacroTile extends StatelessWidget {
 
   /// Unknown values read as a quiet "—"; the hero's single partial note
   /// gives the reason, and the tile's semantics label says "Not available".
-  Widget _value(BuildContext context) {
+  Widget _value(
+    BuildContext context, {
+    required bool entrance,
+    required Duration delay,
+  }) {
     final colors = context.b05Colors;
     final big = B05Typography.number(context, size: 17).copyWith(
       height: 1.2,
@@ -1188,6 +1210,9 @@ class MacroTile extends StatelessWidget {
     );
     return IndiFitCountUp(
       value: metric.pointValue ?? 0,
+      begin: entrance ? 0 : null,
+      delay: delay,
+      duration: TodayMotionTiming.bar,
       builder: (context, point) {
         // "120 / 150 g" → "120" large, " / 150 g" small.
         final text = metric.valueLabelAt(point);
@@ -1214,11 +1239,113 @@ class MacroTile extends StatelessWidget {
   }
 }
 
+/// Plays [TodayMotionTiming.macroHit] once for each new [serial] while it
+/// is on screen; [builder] gets its progress (0–1), or null when idle.
+class _MacroHit extends StatefulWidget {
+  const _MacroHit({required this.serial, required this.builder});
+
+  final int? serial;
+  final Widget Function(BuildContext context, double? progress) builder;
+
+  @override
+  State<_MacroHit> createState() => _MacroHitState();
+}
+
+class _MacroHitState extends State<_MacroHit>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: TodayMotionTiming.macroHit,
+  );
+  int? _played;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _maybePlay();
+  }
+
+  @override
+  void didUpdateWidget(covariant _MacroHit oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _maybePlay();
+  }
+
+  void _maybePlay() {
+    final serial = widget.serial;
+    if (serial == null || serial == _played) return;
+    if (!TickerMode.valuesOf(context).enabled) return;
+    _played = serial;
+    if (B05MotionPolicy.reduceMotion(context)) return;
+    _controller.forward(from: 0);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AnimatedBuilder(
+    animation: _controller,
+    builder: (context, _) => widget.builder(
+      context,
+      _controller.isAnimating ? _controller.value : null,
+    ),
+  );
+}
+
+/// The small check that pops in at the tile corner and fades out.
+class _MacroHitCheck extends StatelessWidget {
+  const _MacroHitCheck({required this.progress, required this.color});
+
+  final double progress;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final pop = IndiFitMotion.springCurve(
+      IndiFitMotion.popDuration,
+    ).transform((progress * 900 / 220).clamp(0.0, 1.0));
+    final fade = 1 - ((progress - .75) / .25).clamp(0.0, 1.0);
+    return Opacity(
+      opacity: fade,
+      child: Transform.scale(
+        scale: pop,
+        child: DecoratedBox(
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          child: Padding(
+            padding: const EdgeInsets.all(2),
+            child: Icon(
+              Icons.check_rounded,
+              size: 12,
+              color: context.b05Colors.page,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class MacroProgress extends StatelessWidget {
-  const MacroProgress({super.key, required this.metric, required this.color});
+  const MacroProgress({
+    super.key,
+    required this.metric,
+    required this.color,
+    this.entranceDelay,
+    this.flash,
+  });
 
   final TodayNutritionMetricPresentation metric;
   final Color color;
+
+  /// Fills from empty after this delay (launch); null shows the bar as is.
+  final Duration? entranceDelay;
+
+  /// Progress of a target-hit flash at the bar end (0–1), or null.
+  final double? flash;
 
   @override
   Widget build(BuildContext context) {
@@ -1228,27 +1355,31 @@ class MacroProgress extends StatelessWidget {
     if (!metric.hasTarget || metric.progress == null) {
       return const SizedBox.shrink();
     }
-    return TweenAnimationBuilder<double>(
-      tween: Tween<double>(end: metric.upperProgress ?? metric.progress!),
-      duration: B05MotionPolicy.transitionDuration(
-        context,
-        standard: B05MotionPolicy.standardDuration,
-      ),
-      curve: B05MotionPolicy.standardCurve,
-      builder: (context, value, _) {
-        final high = metric.upperProgress ?? value;
-        final low = metric.lowerProgress ?? high;
-        final displayedLow = high == 0 ? 0.0 : low * (value / high);
+    final end = metric.upperProgress ?? metric.progress!;
+    final flashShare = TodayMotionTiming.macroFlashShare;
+    final f = flash;
+    final glow = f == null || f >= flashShare
+        ? 0.0
+        : math.sin(f / flashShare * math.pi);
+    return IndiFitCountUp(
+      value: end,
+      begin: entranceDelay == null ? null : 0,
+      delay: entranceDelay ?? Duration.zero,
+      duration: TodayMotionTiming.bar,
+      builder: (context, value) {
+        final low = metric.lowerProgress ?? end;
+        final displayedLow = end == 0 ? 0.0 : low * (value / end);
         return SizedBox(
           height: 4,
           width: double.infinity,
           child: CustomPaint(
             painter: RangeBarPainter(
-              low: displayedLow,
+              low: displayedLow.clamp(0.0, value),
               high: value,
               color: metric.isOverTarget ? context.b05Colors.overflow : color,
               track: context.b05Colors.borderSubtle,
               isRange: metric.isRange,
+              glow: glow,
             ),
           ),
         );
@@ -1264,6 +1395,7 @@ class RangeBarPainter extends CustomPainter {
     required this.color,
     required this.track,
     required this.isRange,
+    this.glow = 0,
   });
 
   final double low;
@@ -1271,6 +1403,9 @@ class RangeBarPainter extends CustomPainter {
   final Color color;
   final Color track;
   final bool isRange;
+
+  /// 0–1: a soft flash at the bar end when the target is reached.
+  final double glow;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -1303,10 +1438,26 @@ class RangeBarPainter extends CustomPainter {
         Paint()..color = color,
       );
     }
+    if (glow > 0 && high > 0) {
+      final tip = Offset(size.width * high - size.height / 2, size.height / 2);
+      canvas.drawCircle(
+        tip,
+        size.height * (1 + 1.5 * glow),
+        Paint()
+          ..color = color.withValues(alpha: .55 * glow)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3),
+      );
+      canvas.drawCircle(
+        tip,
+        size.height * .75,
+        Paint()..color = Color.lerp(color, const Color(0xFFFFFFFF), .6 * glow)!,
+      );
+    }
   }
 
   @override
   bool shouldRepaint(covariant RangeBarPainter oldDelegate) =>
+      oldDelegate.glow != glow ||
       oldDelegate.low != low ||
       oldDelegate.high != high ||
       oldDelegate.color != color ||
