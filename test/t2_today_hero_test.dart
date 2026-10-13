@@ -210,6 +210,20 @@ void main() {
     expect(ring.overflowColor, isNot(colors.danger.indicator));
     final over = tester.widget<Text>(find.text('399 over'));
     expect(over.style!.color, colors.danger.indicator);
+    // Carbs (410 / 365 g) is over too: coral, not red.
+    final carbs =
+        tester
+                .widget<CustomPaint>(
+                  find.descendant(
+                    of: find.byType(MacroTile).at(1),
+                    matching: find.byWidgetPredicate(
+                      (w) => w is CustomPaint && w.painter is RangeBarPainter,
+                    ),
+                  ),
+                )
+                .painter!
+            as RangeBarPainter;
+    expect(carbs.color, colors.overflow);
   });
 
   testWidgets('under target and ranges draw no overflow lap', (tester) async {

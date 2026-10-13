@@ -85,6 +85,7 @@ class B05SemanticColors extends ThemeExtension<B05SemanticColors> {
     required this.fat,
     required this.fibre,
     required this.overflow,
+    required this.overflowText,
   });
 
   final Color page;
@@ -173,6 +174,10 @@ class B05SemanticColors extends ThemeExtension<B05SemanticColors> {
   /// Coral for the part of a ring past its target (the calorie overflow
   /// lap). Warmer than [danger], which stays on the "N over" text.
   final Color overflow;
+
+  /// [overflow] for text such as an over-target macro value; deeper in
+  /// light so it keeps 4.5:1 on a tinted tile.
+  final Color overflowText;
 
   static const dark = B05SemanticColors(
     page: Color(0xFF060A12),
@@ -282,6 +287,7 @@ class B05SemanticColors extends ThemeExtension<B05SemanticColors> {
       indicator: Color(0xFFA78BFA),
     ),
     overflow: Color(0xFFFF8A65),
+    overflowText: Color(0xFFFF8A65),
   );
 
   static const light = B05SemanticColors(
@@ -392,6 +398,7 @@ class B05SemanticColors extends ThemeExtension<B05SemanticColors> {
       indicator: Color(0xFF7C3AED),
     ),
     overflow: Color(0xFFF25F4C),
+    overflowText: Color(0xFFC93A28),
   );
 
   B05ColorRole status(B05SemanticStatus status) {
@@ -475,6 +482,7 @@ class B05SemanticColors extends ThemeExtension<B05SemanticColors> {
     B05ColorRole? fat,
     B05ColorRole? fibre,
     Color? overflow,
+    Color? overflowText,
   }) {
     return B05SemanticColors(
       page: page ?? this.page,
@@ -520,6 +528,7 @@ class B05SemanticColors extends ThemeExtension<B05SemanticColors> {
       fat: fat ?? this.fat,
       fibre: fibre ?? this.fibre,
       overflow: overflow ?? this.overflow,
+      overflowText: overflowText ?? this.overflowText,
     );
   }
 
@@ -586,6 +595,7 @@ class B05SemanticColors extends ThemeExtension<B05SemanticColors> {
       fat: fat.lerp(other.fat, t),
       fibre: fibre.lerp(other.fibre, t),
       overflow: Color.lerp(overflow, other.overflow, t)!,
+      overflowText: Color.lerp(overflowText, other.overflowText, t)!,
     );
   }
 }

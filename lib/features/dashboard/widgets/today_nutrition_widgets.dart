@@ -1098,8 +1098,9 @@ class _QuietMacroLine extends StatelessWidget {
 }
 
 /// One macro: icon and name, "120 / 150 g" with the target small, and a
-/// 4 pt bar. Tinted with the macro's own hue, never red; only an
-/// over-target value and bar turn red.
+/// 4 pt bar. Tinted with the macro's own hue; over its target the value
+/// and bar turn coral, as the calorie overflow lap does. Red stays on the
+/// ring's "N over" text.
 class MacroTile extends StatelessWidget {
   const MacroTile({super.key, required this.metric, this.fill = false});
 
@@ -1176,7 +1177,7 @@ class MacroTile extends StatelessWidget {
     final big = B05Typography.number(context, size: 17).copyWith(
       height: 1.2,
       letterSpacing: -0.2,
-      color: metric.isOverTarget ? colors.danger.indicator : colors.textPrimary,
+      color: metric.isOverTarget ? colors.overflowText : colors.textPrimary,
     );
     if (!metric.isAvailable) {
       return Text('—', style: big.copyWith(color: colors.textSecondary));
@@ -1245,9 +1246,7 @@ class MacroProgress extends StatelessWidget {
             painter: RangeBarPainter(
               low: displayedLow,
               high: value,
-              color: metric.isOverTarget
-                  ? context.b05Colors.danger.indicator
-                  : color,
+              color: metric.isOverTarget ? context.b05Colors.overflow : color,
               track: context.b05Colors.borderSubtle,
               isRange: metric.isRange,
             ),

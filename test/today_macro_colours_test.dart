@@ -45,14 +45,16 @@ Future<Color> _barColour(
 }
 
 void main() {
-  testWidgets('P1 H5 Fat is not red unless it is over target', (tester) async {
+  testWidgets('P1 H5 Fat is never red; over target it turns coral', (
+    tester,
+  ) async {
     final under = await _barColour(tester, _fat(30));
     final colors = tester.element(find.byType(MacroTile)).b05Colors;
     expect(under, isNot(colors.danger.indicator));
     expect(under, colors.fat.indicator);
 
     final over = await _barColour(tester, _fat(75));
-    expect(over, colors.danger.indicator);
+    expect(over, colors.overflow);
   });
 
   test('no macro uses the over-target red as its base colour', () {
