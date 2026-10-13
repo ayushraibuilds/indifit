@@ -306,6 +306,15 @@ class TodayDailyActionSurface extends ConsumerWidget {
                                 TodayEnter(
                                   key: ValueKey('today-enter:${item.moduleId}'),
                                   index: index,
+                                  placeholder: _isPlaceholder(
+                                    item: item,
+                                    loading: loading,
+                                    nutrition: nutrition,
+                                    nextUp: nextUp,
+                                    workout: workout,
+                                    activity: activity,
+                                    progress: progress,
+                                  ),
                                   child: _module(
                                     context: context,
                                     ref: ref,
@@ -438,6 +447,32 @@ class TodayDailyActionSurface extends ConsumerWidget {
   }
 
   static const double _swipeVelocity = 300;
+
+  /// Whether [item] shows a loading placeholder now; only those fade out
+  /// over the first loaded content.
+  bool _isPlaceholder({
+    required DashboardModuleLayoutItem item,
+    required bool loading,
+    required TodayNutritionPresentation nutrition,
+    required TodayFocusPresentation nextUp,
+    required TodayWorkoutPresentation workout,
+    required TodayActivityPresentation activity,
+    required TodayProgressPresentation progress,
+  }) {
+    if (!loading || (item.isCollapsed && item.descriptor.collapsible)) {
+      return false;
+    }
+    const pending = TodayPresentationState.loading;
+    return switch (item.moduleId) {
+      'today.meals' || 'today.meal_rows' => nutrition.state == pending,
+      'today.hydration' => true,
+      'today.next_action' => nextUp.state == pending,
+      'today.workout' => workout.state == pending,
+      'today.activity' => activity.state == pending,
+      'today.progress' => progress.state == pending,
+      _ => false,
+    };
+  }
 
   /// Every day change (strip, picker, swipe) gives one selection tick.
   void changeDay(DateTime date) {

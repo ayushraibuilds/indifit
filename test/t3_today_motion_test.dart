@@ -133,6 +133,7 @@ void main() {
                       TodayEnter(
                         key: const ValueKey('enter-hero'),
                         index: 0,
+                        placeholder: !ready,
                         child: TodayNutritionHero(
                           presentation: presentation,
                           onLogFood: () {},
@@ -147,6 +148,7 @@ void main() {
                       TodayEnter(
                         key: const ValueKey('enter-meals'),
                         index: 1,
+                        placeholder: !ready,
                         child: TodayMealsModule(
                           meals: presentation.meals,
                           loading: !ready,
@@ -195,10 +197,34 @@ void main() {
       await pump(tester, first);
       await tester.pump(const Duration(milliseconds: 16));
       expect(enterOpacity(tester, 'enter-hero'), lessThan(1));
+      // The placeholders fade out over it: no empty frame in between.
+      final fading = find.ancestor(
+        of: find.byType(TodayModuleSkeleton).first,
+        matching: find.byType(FadeTransition),
+      );
+      expect(fading, findsWidgets);
+      expect(
+        tester.widget<FadeTransition>(fading.first).opacity.value,
+        greaterThan(0.5),
+      );
+      expect(
+        tester
+            .widget<Visibility>(
+              find
+                  .ancestor(
+                    of: find.byType(TodayModuleSkeleton).first,
+                    matching: find.byType(Visibility),
+                  )
+                  .first,
+            )
+            .visible,
+        isTrue,
+      );
       // The ring counts up from 0 and the bars wait their turn.
       expect(find.text('1,190'), findsNothing);
       await tester.pumpAndSettle();
       expect(find.text('1,190'), findsOneWidget);
+      expect(find.byType(TodayModuleSkeleton), findsNothing);
       expect(enterOpacity(tester, 'enter-hero'), 1);
       expect(haptics, isEmpty);
 
@@ -215,6 +241,7 @@ void main() {
       await pump(tester, first, reduceMotion: true);
       await tester.pump();
       expect(enterOpacity(tester, 'enter-hero'), 1);
+      expect(find.byType(TodayModuleSkeleton), findsNothing);
       expect(find.text('1,190'), findsOneWidget);
     });
   });

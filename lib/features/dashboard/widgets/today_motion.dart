@@ -76,6 +76,7 @@ class TodayMotion extends InheritedWidget {
     super.key,
     this.moment,
     this.chipPlace,
+    this.placeholderLayer = false,
   });
 
   /// True while the first loaded content mounts. Read it once, when a
@@ -89,6 +90,9 @@ class TodayMotion extends InheritedWidget {
   final GlobalKey Function(String mealType) rowKey;
   final VoidCallback onChipDone;
 
+  /// The fading copy of the loading layout: only placeholders show in it.
+  final bool placeholderLayer;
+
   static TodayMotion? maybeOf(BuildContext context) =>
       context.dependOnInheritedWidgetOfExactType<TodayMotion>();
 
@@ -98,21 +102,41 @@ class TodayMotion extends InheritedWidget {
 }
 
 /// Wraps a Today module in the entrance stagger; it plays only on the first
-/// loaded content.
+/// loaded content. Mark modules that show a loading [placeholder]: only
+/// they fade out over that content, so real cards never ghost.
 class TodayEnter extends StatelessWidget {
-  const TodayEnter({required this.index, required this.child, super.key});
+  const TodayEnter({
+    required this.index,
+    required this.child,
+    super.key,
+    this.placeholder = false,
+  });
 
   final int index;
   final Widget child;
+  final bool placeholder;
 
   @override
-  Widget build(BuildContext context) => IndiFitEnter(
-    enabled:
-        (TodayMotion.maybeOf(context)?.entrance ?? false) &&
-        index < IndiFitMotion.staggerLimit,
-    delay: IndiFitMotion.staggerStep * index,
-    child: child,
-  );
+  Widget build(BuildContext context) {
+    final motion = TodayMotion.maybeOf(context);
+    if (motion?.placeholderLayer ?? false) {
+      // Same size as in the loading layout, so the placeholders fade out
+      // exactly where they were.
+      return Visibility(
+        visible: placeholder,
+        maintainSize: true,
+        maintainAnimation: true,
+        maintainState: true,
+        child: child,
+      );
+    }
+    return IndiFitEnter(
+      enabled:
+          (motion?.entrance ?? false) && index < IndiFitMotion.staggerLimit,
+      delay: IndiFitMotion.staggerStep * index,
+      child: child,
+    );
+  }
 }
 
 class TodayDayContent extends StatefulWidget {
@@ -135,7 +159,14 @@ class TodayDayContent extends StatefulWidget {
   State<TodayDayContent> createState() => TodayDayContentState();
 }
 
-class TodayDayContentState extends State<TodayDayContent> {
+class TodayDayContentState extends State<TodayDayContent>
+    with SingleTickerProviderStateMixin {
+  // The placeholders fade out over the first loaded content, so launch never
+  // shows an empty page between the two.
+  late final AnimationController _fade;
+  Widget? _fadingOut;
+  late final _TodayDayKeys _fadeKeys = _TodayDayKeys(widget.date);
+
   // Entrance.
   var _entrancePending = true;
   var _generation = 0;
@@ -157,6 +188,10 @@ class TodayDayContentState extends State<TodayDayContent> {
   @override
   void initState() {
     super.initState();
+    _fade = AnimationController(
+      vsync: this,
+      duration: B05MotionPolicy.standardDuration,
+    )..addStatusListener(_fadeStatus);
     _remember();
   }
 
@@ -167,8 +202,28 @@ class TodayDayContentState extends State<TodayDayContent> {
   }
 
   @override
+  void dispose() {
+    _fade.dispose();
+    super.dispose();
+  }
+
+  void _fadeStatus(AnimationStatus status) {
+    if (status == AnimationStatus.completed && mounted) {
+      setState(() => _fadingOut = null);
+    }
+  }
+
+  @override
   void didUpdateWidget(covariant TodayDayContent oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (!oldWidget.ready &&
+        widget.ready &&
+        _held == null &&
+        !B05MotionPolicy.reduceMotion(context) &&
+        TickerMode.valuesOf(context).enabled) {
+      _fadingOut = oldWidget.child;
+      _fade.forward(from: 0);
+    }
     if (!DateUtils.isSameDay(oldWidget.date, widget.date)) {
       _reverse = widget.date.isBefore(oldWidget.date);
       _keys = _TodayDayKeys(widget.date);
@@ -296,7 +351,7 @@ class TodayDayContentState extends State<TodayDayContent> {
       // The last day stays until the next one has loaded, so a day change
       // slides between two loaded days instead of through placeholders.
       final held = _held;
-      if (held != null) return _switcher(held);
+      if (held != null) return _loaded(held);
       return TodayMotion(
         entrance: false,
         ringKey: _keys.ring,
@@ -326,7 +381,46 @@ class TodayDayContentState extends State<TodayDayContent> {
       ),
     );
     _held = child;
-    return _switcher(child);
+    return _loaded(child);
+  }
+
+  // One structure from the first loaded build on, with or without the
+  // fading placeholders, so the day content never remounts.
+  Widget _loaded(Widget child) {
+    final fadingOut = _fadingOut;
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        _switcher(child),
+        if (fadingOut != null)
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: IgnorePointer(
+              child: ExcludeSemantics(
+                child: FadeTransition(
+                  opacity: ReverseAnimation(
+                    CurvedAnimation(
+                      parent: _fade,
+                      curve: B05MotionPolicy.standardCurve,
+                    ),
+                  ),
+                  child: TodayMotion(
+                    entrance: false,
+                    // Its own keys: the loaded day owns the real ones.
+                    ringKey: _fadeKeys.ring,
+                    rowKey: _fadeKeys.row,
+                    onChipDone: () {},
+                    placeholderLayer: true,
+                    child: fadingOut,
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
   }
 
   // A new generation (after placeholders) shows its first day without a
