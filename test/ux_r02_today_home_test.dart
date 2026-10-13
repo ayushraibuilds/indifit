@@ -19,6 +19,7 @@ import 'package:indifit/features/dashboard/dashboard_personalization_controller.
 import 'package:indifit/features/dashboard/today_consumer_presentation.dart';
 import 'package:indifit/features/dashboard/today_daily_action_surface.dart';
 import 'package:indifit/features/dashboard/today_surface_controller.dart';
+import 'package:indifit/features/dashboard/today_week_controller.dart';
 import 'package:indifit/features/food_log/usual_thali.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -490,6 +491,8 @@ Future<void> _goldenToday(
     ),
   );
   await _settleToday(tester);
+  await _decodeImages(tester);
+
   await expectLater(
     find.byType(TodayDailyActionSurface),
     matchesGoldenFile(file),
@@ -517,6 +520,8 @@ Widget _todayApp({
   return ProviderScope(
     key: key,
     overrides: [
+      // Week rings stay empty; the real read would open the device database.
+      todayWeekDaysProvider.overrideWith((ref, end) async => const {}),
       dashboardPersonalizationControllerProvider.overrideWith(
         (ref) => personalization,
       ),
@@ -956,4 +961,14 @@ CalendarOccurrenceReadItem _scheduledWorkout({String status = 'planned'}) {
     isDeload: false,
     isNextRequired: true,
   );
+}
+
+/// Asset images decode off the frame clock; wait for them so the streak
+/// flame is always in the golden, not only when decoding wins the race.
+Future<void> _decodeImages(WidgetTester tester) async {
+  for (final element in find.byType(Image).evaluate().toList()) {
+    final image = (element.widget as Image).image;
+    await tester.runAsync(() => precacheImage(image, element));
+  }
+  await tester.pump();
 }

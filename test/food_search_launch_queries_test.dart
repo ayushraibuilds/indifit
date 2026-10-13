@@ -15,6 +15,7 @@ Future<List<String>> _search(
   String query, {
   RealCatalogue? catalogue,
 }) async {
+  query = NutritionFoodSearchVocabulary.stripLeadingMeasure(query);
   final byId = <int, FoodItem>{};
   var matched = <int, List<String>>{};
   for (final variant in NutritionFoodSearchVocabulary.expand(query)) {
@@ -69,6 +70,21 @@ Future<List<String>> _search(
 
 void main() {
   initializeIndiFitTestHarness();
+
+  test('stripLeadingMeasure drops an amount and unit, nothing else', () {
+    String strip(String q) =>
+        NutritionFoodSearchVocabulary.stripLeadingMeasure(q);
+    expect(strip('1 bowl dal'), 'dal');
+    expect(strip('2 cups of rice'), 'rice');
+    expect(strip('1/2 katori curd'), 'curd');
+    expect(strip('Half plate poha'), 'poha');
+    expect(strip('3 pieces roti'), 'roti');
+    expect(strip('dal'), 'dal');
+    expect(strip('7 up'), '7 up');
+    expect(strip('5 star'), '5 star');
+    expect(strip('2 cups'), '2 cups');
+    expect(strip('100g paneer'), '100g paneer');
+  });
 
   late RealCatalogue catalogue;
   late FoodRepository repository;
@@ -126,6 +142,13 @@ void main() {
     'maggi': 'Masala Noodles',
     'cheese': 'Cheese Slice',
     'chai': 'Masala Chai (with milk',
+    // Pack 4: names the first check missed, and amounts typed before the food.
+    'parle g': 'Glucose Biscuits',
+    'parle-g': 'Glucose Biscuits',
+    'britannia bread': 'White Bread',
+    '1 bowl dal': 'Dal',
+    '2 cups rice': 'Rice',
+    '1 glass milk': 'Milk',
   };
 
   for (final MapEntry(key: query, value: expected) in firstResult.entries) {
