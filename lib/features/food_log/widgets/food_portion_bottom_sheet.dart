@@ -9,6 +9,7 @@ import 'package:uuid/uuid.dart';
 import '../../../core/catalog/food_catalog_models.dart';
 import '../../../core/catalog/food_category_taxonomy.dart';
 import '../../../core/di/providers.dart';
+import '../../../core/nutrition_consumption_snapshots.dart';
 import '../../../core/nutrition_household_measures.dart';
 import '../../../core/nutrition_legacy_read_models.dart';
 import '../../../core/presentation/consumer_copy.dart';
@@ -21,10 +22,27 @@ import '../../../data/repositories/nutrition_food_logging_coordinator.dart';
 import '../../dashboard/today_surface_controller.dart';
 import '../diary_structure_controller.dart';
 import '../food_search_view_models.dart';
+import '../log_confirmation.dart';
 import '../meal_presentation_registry.dart';
 import 'food_search_widgets.dart';
 import 'household_portion_visual.dart';
 import 'portion_steps.dart';
+
+/// What the portion sheet returns after logging a new entry.
+class FoodPortionLogged {
+  const FoodPortionLogged({
+    required this.mealType,
+    required this.snapshot,
+    this.amount,
+  });
+
+  final String mealType;
+  final NutritionConsumptionSnapshot snapshot;
+
+  /// The amount as picked ("1 katori (150 g)"), when the food has a
+  /// household unit.
+  final String? amount;
+}
 
 /// Portion, unit, and preparation review bottom sheet for canonical food logging.
 ///
@@ -149,17 +167,26 @@ class FoodPortionBottomSheet extends ConsumerStatefulWidget {
     if (isSaved && context.mounted) {
       if (savedResult is String) {
         committedMealType = savedResult;
+      } else if (savedResult is FoodPortionLogged) {
+        committedMealType = savedResult.mealType;
       }
       final finalMealType = committedMealType ?? resolvedMealType;
       onCommitted?.call(finalMealType, isCorrection);
       if (onQuantityPicked != null) return true;
 
-      showIndiFitSuccessFeedback(
-        context,
-        isCorrection
-            ? '✓ Food entry updated in ${_formatMealLabel(finalMealType)}'
-            : '✓ Food added to ${_formatMealLabel(finalMealType)}',
-      );
+      if (savedResult is FoodPortionLogged) {
+        showLoggedFoodUndo(
+          context,
+          savedResult.snapshot,
+          amount: savedResult.amount,
+          name: option.displayName,
+        );
+      } else {
+        showIndiFitSuccessFeedback(
+          context,
+          '✓ ${option.displayName} updated in ${loggedMealLabel(finalMealType)}',
+        );
+      }
       if (returnToParentOnSave) {
         if (context.mounted) Navigator.of(context).pop(true);
       } else {
@@ -174,12 +201,6 @@ class FoodPortionBottomSheet extends ConsumerStatefulWidget {
   @override
   ConsumerState<FoodPortionBottomSheet> createState() =>
       _FoodPortionBottomSheetState();
-
-  static String _formatMealLabel(String? value) {
-    if (value == null || value.trim().isEmpty) return 'meal';
-    final presentation = MealPresentationRegistry.forStableId(value);
-    return presentation.isKnown ? presentation.label.toLowerCase() : 'meal';
-  }
 }
 
 class _FoodPortionBottomSheetState
@@ -512,6 +533,7 @@ class _FoodPortionBottomSheetState
       final localDate =
           selectedLocalDate ?? dates.localDateFor(loggedAt, timezoneId);
 
+      NutritionConsumptionSnapshot? logged;
       if (_isCorrection) {
         final canonicalRecord =
             widget.correctionRecord is NutritionCanonicalSnapshotReadModel
@@ -536,7 +558,7 @@ class _FoodPortionBottomSheetState
           replacement: preview,
         );
       } else {
-        await widget.coordinator.finalize(
+        logged = await widget.coordinator.finalize(
           userId: kLocalNutritionUserScopeId,
           preview: preview,
           mealCategory: _selectedMealType,
@@ -555,7 +577,18 @@ class _FoodPortionBottomSheetState
         // Safe: haptics are optional and unsupported on some devices.
       }
 
-      if (mounted) Navigator.of(context).pop(_selectedMealType);
+      if (!mounted) return;
+      Navigator.of(context).pop(
+        logged == null
+            ? _selectedMealType
+            : FoodPortionLogged(
+                mealType: _selectedMealType,
+                snapshot: logged,
+                amount: widget.option.measure?.pickedAmountLabel(
+                  _selectedQuantity,
+                ),
+              ),
+      );
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

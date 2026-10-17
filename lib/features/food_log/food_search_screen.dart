@@ -39,6 +39,7 @@ import 'diary_structure_controller.dart';
 import 'food_diary_screen.dart';
 import 'food_log_surface.dart';
 import 'food_search_view_models.dart';
+import 'log_confirmation.dart';
 import 'meal_presentation_registry.dart';
 import 'missed_food_searches.dart';
 import 'repeat_meal.dart';
@@ -890,8 +891,11 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       );
       showIndiFitUndoFeedback(
         context,
-        message:
-            'Added ${option.displayName} to ${_mealLabel(selectedMealType)}',
+        message: loggedConfirmationMessage(
+          snapshot,
+          name: option.displayName,
+          amount: option.measure?.pickedAmountLabel(option.baseQuantity),
+        ),
         duration: const Duration(seconds: 4),
         onUndo: () => unawaited(_undoLastCanonicalAdd(undo)),
       );
@@ -972,8 +976,11 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       );
       showIndiFitUndoFeedback(
         context,
-        message:
-            'Added ${option.displayName} to ${_mealLabel(selectedMealType)}',
+        message: loggedConfirmationMessage(
+          snapshot,
+          name: option.displayName,
+          amount: option.measure?.pickedAmountLabel(quantity),
+        ),
         duration: const Duration(seconds: 4),
         onUndo: () => unawaited(_undoLastCanonicalAdd(undo)),
       );

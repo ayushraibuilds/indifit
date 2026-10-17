@@ -515,7 +515,8 @@ class TodayNutritionPresentation {
         mealType: mealType,
         label: label,
         detail: 'Nothing yet',
-        calorieLabel: '—',
+        // Blank, not "—": a dash beside the add button reads as minus.
+        calorieLabel: '',
         logged: false,
         nutritionIncomplete: false,
         itemCount: 0,
@@ -531,9 +532,12 @@ class TodayNutritionPresentation {
     return TodayMealPresentation(
       mealType: mealType,
       label: label,
+      // What was eaten, not a count: "Poha", "Roti, Toor Dal +3" (UR-17).
       detail: itemCount == 0
           ? '${ConsumerCountLabel.format(records.length, 'meal')} logged'
-          : ConsumerCountLabel.format(itemCount, 'item'),
+          : itemCount <= 2
+          ? itemLabels.join(', ')
+          : '${itemLabels.take(2).join(', ')} +${itemCount - 2}',
       calorieLabel: calories.label,
       kcal: calories.kcal,
       logged: true,

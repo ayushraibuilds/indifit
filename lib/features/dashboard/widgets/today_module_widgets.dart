@@ -233,7 +233,12 @@ class TodayMealRow extends StatelessWidget {
       children: [
         Text(meal.label, style: B05Typography.label(context)),
         const SizedBox(height: 2),
-        Text(meal.detail, style: B05Typography.caption(context)),
+        Text(
+          meal.detail,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: B05Typography.caption(context),
+        ),
       ],
     );
     // Meal accents tint only the meal icon; breakfast orange next to the
@@ -273,7 +278,11 @@ class TodayMealRow extends StatelessWidget {
     return Semantics(
       container: true,
       button: true,
-      label: '${meal.label}. ${meal.detail}. ${meal.calorieLabel}',
+      label: [
+        meal.label,
+        meal.detail,
+        if (meal.calorieLabel.isNotEmpty) meal.calorieLabel,
+      ].join('. '),
       hint: 'Double tap to inspect this meal.',
       child: TodayMealRowWash(
         serial: moment?.serial,

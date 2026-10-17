@@ -686,12 +686,15 @@ void main() {
 
         // Check feedback
         expect(
-          find.textContaining('Added Thick Dahi to snack'),
+          find.textContaining(RegExp(r'^Added .*Thick Dahi.* to Snacks$')),
           findsOneWidget,
         );
         await tester.pump(const Duration(seconds: 4));
         await tester.pump(const Duration(milliseconds: 300));
-        expect(find.textContaining('Added Thick Dahi to snack'), findsNothing);
+        expect(
+          find.textContaining(RegExp(r'^Added .*Thick Dahi.* to Snacks$')),
+          findsNothing,
+        );
         // The button's tick has turned back into Add.
         expect(find.widgetWithText(TextButton, 'Added'), findsNothing);
         expect(find.widgetWithText(TextButton, 'Add'), findsOneWidget);
