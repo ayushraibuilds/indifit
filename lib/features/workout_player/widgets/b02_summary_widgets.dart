@@ -961,15 +961,20 @@ class B02SummaryBody extends StatelessWidget {
               : 'These completed sets and planned targets will be saved with this workout.',
         ),
         const SizedBox(height: 16),
-        FilledButton(
-          onPressed: hasLoggedSetsWithReps ? onFull : null,
-          child: const Text('Complete workout'),
-        ),
-        const SizedBox(height: 10),
-        OutlinedButton(
-          onPressed: hasLoggedSetsWithReps ? onPartial : null,
-          child: const Text('Finish partially…'),
-        ),
+        // One primary action (UR-21): finished workouts complete; anything
+        // missing saves as partial straight away, with no second dialog.
+        if (b02HasIncompleteExercises(launch.state)) ...[
+          FilledButton(
+            onPressed: hasLoggedSetsWithReps ? onPartial : null,
+            child: Text(b02SaveWorkoutLabel(launch.state, ui.slots)),
+          ),
+          const SizedBox(height: 10),
+          OutlinedButton(onPressed: onBack, child: const Text('Keep training')),
+        ] else
+          FilledButton(
+            onPressed: hasLoggedSetsWithReps ? onFull : null,
+            child: const Text('Complete workout'),
+          ),
       ],
     );
   }
@@ -982,4 +987,60 @@ class B02SummaryBody extends StatelessWidget {
     };
     return group.label?.trim().isNotEmpty == true ? group.label!.trim() : type;
   }
+}
+
+/// True when any exercise, or any grouped round, is not completed. A
+/// workout like this is saved as partial.
+bool b02HasIncompleteExercises(B02ExecutionDraftState state) {
+  if (state.performedExercises.any((e) => e.status != 'completed')) {
+    return true;
+  }
+  for (final group in state.groups) {
+    final groupExercises = state.performedExercises.where(
+      (e) => e.performedExerciseGroupId == group.id,
+    );
+    final expected = group.roundCount * group.members.length;
+    if (groupExercises.length < expected ||
+        groupExercises.any((e) => e.status != 'completed')) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/// Logged working sets against planned ones, counting no more than each
+/// slot plans. Planned is zero when nothing was planned (Quick workout).
+({int done, int planned}) b02WorkingSetProgress(
+  B02ExecutionDraftState state,
+  List<B02StrengthExecutionSlot> slots,
+) {
+  var done = 0;
+  var planned = 0;
+  for (final slot in slots) {
+    if (slot.plannedSets <= 0) continue;
+    final logged = state.performedExercises
+        .where(
+          (exercise) =>
+              exercise.id == 'performed:${slot.id}' ||
+              (exercise.sourceExercisePrescriptionId == slot.prescriptionId &&
+                  exercise.groupRoundOrdinal == slot.roundOrdinal &&
+                  exercise.groupMemberOrdinal == slot.memberOrdinal),
+        )
+        .expand((exercise) => exercise.sets)
+        .where((set) => set.role == B02SetRole.working)
+        .length;
+    planned += slot.plannedSets;
+    done += logged < slot.plannedSets ? logged : slot.plannedSets;
+  }
+  return (done: done, planned: planned);
+}
+
+/// "Save workout (2 of 15 sets)", or "Save workout" with no plan to count.
+String b02SaveWorkoutLabel(
+  B02ExecutionDraftState state,
+  List<B02StrengthExecutionSlot> slots,
+) {
+  final progress = b02WorkingSetProgress(state, slots);
+  if (progress.planned == 0) return 'Save workout';
+  return 'Save workout (${progress.done} of ${progress.planned} sets)';
 }

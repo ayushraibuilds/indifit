@@ -16,6 +16,7 @@ import 'package:indifit/features/workout_player/workout_execution_context.dart';
 import 'support/indifit_test_harness.dart';
 
 void main() {
+  _saveLabelTests();
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late AppDatabase db;
@@ -461,18 +462,15 @@ void main() {
       find.text('Log at least one set with completed reps before saving.'),
       findsOneWidget,
     );
-    final completeButton = tester.widget<FilledButton>(
-      find.widgetWithText(FilledButton, 'Complete workout'),
+    final saveButton = tester.widget<FilledButton>(
+      find.widgetWithText(FilledButton, 'Save workout'),
     );
-    expect(completeButton.onPressed, isNull);
-    final partialButton = tester.widget<OutlinedButton>(
-      find.widgetWithText(OutlinedButton, 'Finish partially…'),
-    );
-    expect(partialButton.onPressed, isNull);
+    expect(saveButton.onPressed, isNull);
+    expect(find.text('Complete workout'), findsNothing);
   });
 
   testWidgets(
-    'incomplete workout prompt allows partial completion on full complete tap',
+    'an incomplete workout offers one Save action and no second dialog',
     (tester) async {
       final partialExercise = B02PerformedExerciseDraft(
         id: 'partial-exercise',
@@ -525,21 +523,67 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('Complete workout'), findsOneWidget);
-      await tester.tap(find.text('Complete workout'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Incomplete workout'), findsOneWidget);
+      expect(find.text('Complete workout'), findsNothing);
+      expect(find.text('Finish partially…'), findsNothing);
+      expect(find.text('Save workout'), findsOneWidget);
       expect(
-        find.text(
-          'Some exercises or sets were not completed. Would you like to finish and save this as a partial workout?',
-        ),
+        find.widgetWithText(OutlinedButton, 'Keep training'),
         findsOneWidget,
       );
-      expect(find.text('Keep training'), findsOneWidget);
-      expect(find.text('Save as partial'), findsOneWidget);
+      await tester.tap(find.text('Save workout'));
+      await tester.pump();
+
+      expect(find.text('Incomplete workout'), findsNothing);
+      expect(find.text('Finish partially?'), findsNothing);
+      expect(find.byType(AlertDialog), findsNothing);
     },
   );
+}
+
+void _saveLabelTests() {
+  group('UR-21 save label', () {
+    B02ExecutionDraftState state(List<B02PerformedExerciseDraft> performed) =>
+        B02ExecutionDraftState(
+          snapshotId: 'label-snapshot',
+          snapshotVersion: 1,
+          activityType: B02ActivityType.strength,
+          routineName: 'Label workout',
+          elapsedSeconds: 10,
+          currentExerciseOrdinal: 0,
+          currentSetOrdinal: 0,
+          performedExercises: performed,
+        );
+
+    test('counts logged sets against planned ones', () {
+      final slots = [_slot('a', 3), _slot('b', 4), _slot('c', 8)];
+      final draft = state([
+        _performed('a', 1, 'partial'),
+        // Extra sets never count past the plan.
+        _performed('b', 0, 'partial', ordinal: 1),
+      ]);
+      expect(b02HasIncompleteExercises(draft), isTrue);
+      expect(b02SaveWorkoutLabel(draft, slots), 'Save workout (1 of 15 sets)');
+      final over = state([
+        _performed('a', 5, 'partial'),
+        _performed('b', 1, 'partial', ordinal: 1),
+      ]);
+      expect(b02SaveWorkoutLabel(over, slots), 'Save workout (4 of 15 sets)');
+    });
+
+    test('a workout with nothing planned says Save workout', () {
+      expect(
+        b02SaveWorkoutLabel(state([_performed('a', 1, 'partial')]), const []),
+        'Save workout',
+      );
+    });
+
+    test('all completed exercises are complete', () {
+      expect(
+        b02HasIncompleteExercises(state([_performed('a', 3, 'completed')])),
+        isFalse,
+      );
+    });
+  });
 }
 
 B02StrengthExecutionLaunch _launch({
@@ -690,3 +734,46 @@ Future<void> _insertExercise(AppDatabase db, String id, String name) => db
         commonMistakes: '',
       ),
     );
+
+B02StrengthExecutionSlot _slot(String id, int plannedSets) =>
+    B02StrengthExecutionSlot(
+      id: id,
+      groupId: null,
+      groupType: null,
+      groupLabel: null,
+      groupOrdinal: null,
+      roundOrdinal: null,
+      memberOrdinal: null,
+      prescriptionId: 'prescription-$id',
+      exerciseId: 'exercise-$id',
+      exerciseNameSnapshot: 'Exercise $id',
+      plannedSets: plannedSets,
+      targetRepsMin: 8,
+      targetRepsMax: 10,
+      targetRpe: null,
+      targetLoadKg: null,
+      targetLoadBasis: null,
+    );
+
+B02PerformedExerciseDraft _performed(
+  String slotId,
+  int sets,
+  String status, {
+  int ordinal = 0,
+}) => B02PerformedExerciseDraft(
+  id: 'performed:$slotId',
+  ordinal: ordinal,
+  actualExerciseId: 'exercise-$slotId',
+  actualExerciseNameSnapshot: 'Exercise $slotId',
+  status: status,
+  sets: [
+    for (var i = 0; i < sets; i++)
+      B02PerformedSet(
+        id: '$slotId-set-$i',
+        performedExerciseId: 'performed:$slotId',
+        ordinal: i,
+        role: B02SetRole.working,
+        actualReps: 8,
+      ),
+  ],
+);

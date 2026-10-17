@@ -11,11 +11,13 @@ import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/repositories/calendar_read_repository.dart';
 import 'package:indifit/data/repositories/calendar_repository.dart';
 import 'package:indifit/data/repositories/equipment_preference_repository.dart';
+import 'package:indifit/data/repositories/offline_starter_plan_catalog.dart';
 import 'package:indifit/data/repositories/plan_library_read_repository.dart';
 import 'package:indifit/data/repositories/program_activation_coordinator.dart';
 import 'package:indifit/data/repositories/program_repository.dart';
 import 'package:indifit/data/repositories/workout_execution_compatibility_adapter.dart';
 import 'package:indifit/features/training/plan_library_screen.dart';
+import 'package:indifit/features/training/plan_recommendation.dart';
 import 'package:path/path.dart' as p;
 
 import 'support/indifit_test_harness.dart';
@@ -170,26 +172,24 @@ void main() {
     expect(find.text('Beginner — 3-Day Full Body'), findsOneWidget);
     expect(find.text('Bodyweight Basics'), findsOneWidget);
 
-    await tester.tap(find.widgetWithText(ChoiceChip, 'Gym'));
-    await tester.pump();
+    // UR-45: one chip row; choices live in the Filters sheet.
+    expect(find.byKey(const ValueKey('plan_library_filters')), findsOneWidget);
+    await _applyFilters(tester, ['Gym']);
     expect(find.text('Beginner — 3-Day Full Body'), findsOneWidget);
     expect(find.text('5-Day Hypertrophy Split'), findsOneWidget);
     expect(find.text('Bodyweight Basics'), findsNothing);
+    expect(find.text('Filters · 1'), findsOneWidget);
 
-    await tester.tap(find.widgetWithText(ChoiceChip, 'Home'));
-    await tester.pump();
+    await _applyFilters(tester, ['Home']);
     expect(find.text('Bodyweight Basics'), findsOneWidget);
     expect(find.text('Dumbbell Full Body — 3 Day'), findsOneWidget);
     expect(find.text('4-Day Upper / Lower'), findsNothing);
 
-    await tester.tap(find.widgetWithText(ChoiceChip, 'Limited equipment'));
-    await tester.pump();
+    await _applyFilters(tester, ['Limited equipment']);
     expect(find.text('Minimal Equipment — 3 Day'), findsOneWidget);
     expect(find.text('Bodyweight Basics'), findsNothing);
 
-    await tester.tap(find.widgetWithText(ChoiceChip, 'All equipment'));
-    await tester.tap(find.widgetWithText(ChoiceChip, '4 days'));
-    await tester.pump();
+    await _applyFilters(tester, ['All equipment', '4 days']);
     expect(find.text('4-Day Upper / Lower'), findsOneWidget);
     expect(find.text('Beginner — 3-Day Full Body'), findsNothing);
     expect(tester.takeException(), isNull);
@@ -220,8 +220,82 @@ void main() {
 
     expect(find.text('Recommended for you'), findsOneWidget);
     expect(find.text('Dumbbell Full Body — 3 Day'), findsOneWidget);
-    expect(find.text('Browse plans'), findsOneWidget);
-    expect(find.text('Filter plans'), findsOneWidget);
+    expect(find.text('More plans'), findsOneWidget);
+    expect(find.text('Browse plans'), findsNothing);
+    expect(find.text('Filters'), findsOneWidget);
+    expect(find.text('Filter plans'), findsNothing);
+  });
+
+  group('UR-45 recommended for you', () {
+    late PlanLibrarySnapshot snapshot;
+
+    setUp(() async {
+      snapshot = await PlanLibraryReadRepository(db, programs: programs).read();
+    });
+
+    String? top(PlanRecommendationInputs inputs) => rankRecommendedPlans(
+      snapshot.entries,
+      inputs,
+    ).firstOrNull?.starterPlan?.id;
+
+    test('ranks on goal, training days and equipment', () {
+      expect(
+        top(
+          const PlanRecommendationInputs(
+            goal: 'maintain',
+            equipmentAccess: 'full_gym',
+            trainingDaysPerWeek: 3,
+          ),
+        ),
+        'beginner-full-body-3-day',
+      );
+      expect(
+        top(
+          const PlanRecommendationInputs(
+            goal: 'gain',
+            equipmentAccess: 'full_gym',
+            trainingDaysPerWeek: 4,
+          ),
+        ),
+        'upper-lower-4-day',
+      );
+      expect(
+        top(
+          const PlanRecommendationInputs(
+            goal: 'gain',
+            equipmentAccess: 'full_gym',
+            trainingDaysPerWeek: 6,
+          ),
+        ),
+        'push-pull-legs-6-day',
+      );
+      expect(
+        top(
+          const PlanRecommendationInputs(
+            goal: 'lose',
+            equipmentAccess: 'bodyweight',
+            trainingDaysPerWeek: 3,
+          ),
+        ),
+        'bodyweight-basics-3-day',
+      );
+    });
+
+    test('never recommends equipment the user lacks', () {
+      final ranked = rankRecommendedPlans(
+        snapshot.entries,
+        const PlanRecommendationInputs(
+          goal: 'gain',
+          equipmentAccess: 'dumbbells',
+          trainingDaysPerWeek: 5,
+        ),
+      );
+      expect(ranked, isNotEmpty);
+      expect(
+        ranked.map((entry) => entry.starterPlan!.environment),
+        everyElement(isNot(StarterPlanEnvironment.gym)),
+      );
+    });
   });
 
   testWidgets('preview reveals canonical structure without activation', (
@@ -245,6 +319,13 @@ void main() {
     expect(find.text('Use this plan'), findsOneWidget);
     expect(find.text('Full gym'), findsOneWidget);
     expect(find.text('Plan structure'), findsOneWidget);
+    // UR-23: no empty history before the plan has any.
+    expect(find.text('Plan progress'), findsNothing);
+    expect(find.text('Workouts from this plan'), findsNothing);
+    // UR-22: per-session load, computed from the plan.
+    expect(find.text('Workload'), findsOneWidget);
+    expect(find.text(entry.metadata.workloadLabel), findsOneWidget);
+    expect(entry.metadata.workloadLabel, contains(' a session · '));
     expect(find.text('Leg Press'), findsNothing);
     await tester.tap(find.byType(ExpansionTile).first);
     await tester.pump();
@@ -564,4 +645,15 @@ class _StaticProfileNotifier extends UserProfileNotifier {
 
   @override
   Future<void> loadProfile() => Future<void>.value();
+}
+
+Future<void> _applyFilters(WidgetTester tester, List<String> choices) async {
+  await tester.tap(find.byKey(const ValueKey('plan_library_filters')));
+  await tester.pumpAndSettle();
+  for (final choice in choices) {
+    await tester.tap(find.widgetWithText(ChoiceChip, choice));
+    await tester.pump();
+  }
+  await tester.tap(find.byKey(const ValueKey('plan_library_filters_apply')));
+  await tester.pumpAndSettle();
 }
