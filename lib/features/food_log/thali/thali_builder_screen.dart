@@ -13,6 +13,7 @@ import '../../../core/widgets/b05_accessibility_primitives.dart';
 import '../../../core/widgets/indi_fit_feedback.dart';
 import '../../dashboard/today_surface_controller.dart';
 import '../canonical_food_actions.dart';
+import '../diary_structure_controller.dart';
 import '../katori_size_step.dart';
 import '../meal_presentation_registry.dart';
 import '../nutrition_thali_controller.dart';
@@ -54,7 +55,51 @@ class ThaliBuilderScreen extends ConsumerStatefulWidget {
   ConsumerState<ThaliBuilderScreen> createState() => _ThaliBuilderScreenState();
 }
 
+/// The meals the thali builder offers under "Change meal" (UR-27).
+Future<String?> chooseThaliMeal(
+  BuildContext context,
+  List<FoodMealPresentation> slots,
+  String current,
+) => showModalBottomSheet<String>(
+  context: context,
+  builder: (sheetContext) => SafeArea(
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (final slot
+            in slots.isEmpty ? MealPresentationRegistry.values : slots)
+          ListTile(
+            leading: MealIconChip(presentation: slot),
+            title: Text(slot.label),
+            selected: slot.stableId == current,
+            onTap: () => Navigator.of(sheetContext).pop(slot.stableId),
+          ),
+      ],
+    ),
+  ),
+);
+
 class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
+  /// One tap to build this thali for another meal (UR-27). The plate's
+  /// draft belongs to its meal, so the builder reopens for the new one.
+  Future<void> _changeMeal() async {
+    final meal = await chooseThaliMeal(
+      context,
+      ref.read(diaryMealSlotsProvider),
+      widget.mealCategory,
+    );
+    if (meal == null || meal == widget.mealCategory || !mounted) return;
+    await Navigator.of(context).pushReplacement<dynamic, dynamic>(
+      MaterialPageRoute(
+        builder: (_) => ThaliBuilderScreen(
+          mealCategory: meal,
+          initialThaliId: widget.initialThaliId,
+          selectedDate: widget.selectedDate,
+        ),
+      ),
+    );
+  }
+
   final TextEditingController _nameController = TextEditingController();
   final FocusNode _nameFocusNode = FocusNode();
   bool _initialized = false;
@@ -277,17 +322,27 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
           children: [
             MealIconChip(presentation: mealPresentation, size: 32),
             const SizedBox(width: 8),
-            Text(
-              '${mealPresentation.label} Thali',
-              style: TextStyle(
-                color: colors.textPrimary,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+            Flexible(
+              child: Text(
+                '${mealPresentation.label} Thali',
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: colors.textPrimary,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ],
         ),
         actions: [
+          if (widget.replacesSnapshot == null)
+            IconButton(
+              key: const Key('thali_change_meal'),
+              icon: Icon(Icons.swap_horiz_rounded, color: colors.textSecondary),
+              tooltip: 'Change meal',
+              onPressed: _changeMeal,
+            ),
           IconButton(
             key: const Key('thali_clear_button'),
             icon: Icon(Icons.refresh_rounded, color: colors.textSecondary),

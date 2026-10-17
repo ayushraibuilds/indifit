@@ -34,10 +34,19 @@ import 'widgets/quick_add_macros_sheet.dart';
 /// Extracted verbatim from `food_search_screen.dart`; unchanged.
 
 class FoodDiaryScreen extends ConsumerStatefulWidget {
-  const FoodDiaryScreen({super.key, required this.selectedDate, this.today});
+  const FoodDiaryScreen({
+    super.key,
+    required this.selectedDate,
+    this.today,
+    this.now,
+  });
 
   final DateTime selectedDate;
   final DateTime? today;
+
+  /// The local time that picks the meal for "Add food" and the thali
+  /// builder (UR-27); the clock when null.
+  final DateTime Function()? now;
 
   @override
   ConsumerState<FoodDiaryScreen> createState() => _FoodDiaryScreenState();
@@ -354,15 +363,18 @@ class _FoodDiaryScreenState extends ConsumerState<FoodDiaryScreen> {
     );
   }
 
-  Future<void> _openMealPicker(BuildContext context) async {
-    final meal = await _chooseMeal(context);
-    if (meal == null || !context.mounted) return;
-    await _openMealAdd(context, meal);
-  }
+  /// The meal for now, as the Today hero picks it (UR-27). The screen it
+  /// opens offers one tap to change it.
+  String _mealForNow() => MealPresentationRegistry.forLocalTimeIn(
+    (widget.now ?? DateTime.now)(),
+    ref.read(diaryMealSlotsProvider),
+  ).stableId;
+
+  Future<void> _openMealPicker(BuildContext context) =>
+      _openMealAdd(context, _mealForNow());
 
   Future<void> _openThaliBuilder(BuildContext context) async {
-    final meal = await _chooseMeal(context);
-    if (meal == null || !context.mounted) return;
+    final meal = _mealForNow();
     await Navigator.of(context).push<dynamic>(
       MaterialPageRoute(
         builder: (_) =>

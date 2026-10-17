@@ -41,6 +41,7 @@ import 'diary_structure_controller.dart';
 import 'food_diary_screen.dart';
 import 'food_log_surface.dart';
 import 'food_search_view_models.dart';
+import 'food_staple_suggestions.dart';
 import 'log_confirmation.dart';
 import 'meal_presentation_registry.dart';
 import 'missed_food_searches.dart';
@@ -133,8 +134,11 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     });
   }
 
+  /// A meal chosen with "Change" (UR-27), over [FoodSearchScreen.mealType].
+  String? _mealOverride;
+
   String? get _activeMealType {
-    final value = widget.mealType?.trim().toLowerCase();
+    final value = (_mealOverride ?? widget.mealType)?.trim().toLowerCase();
     if (value == null || value.isEmpty) return null;
     return value == 'snacks' ? 'snack' : value;
   }
@@ -177,6 +181,15 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       ),
     );
     return selected;
+  }
+
+  /// One tap to log to another meal than the one picked for the time of
+  /// day (UR-27).
+  Future<void> _changeMeal() async {
+    final selected = await _chooseMealContext();
+    if (selected == null || !mounted || selected == _activeMealType) return;
+    setState(() => _mealOverride = selected);
+    await _loadRecentFoods();
   }
 
   Future<String?> _ensureMealContext() async {
@@ -808,7 +821,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       await RemoteFoodReviewSheet.show(
         context: context,
         candidate: candidate,
-        mealType: widget.mealType ?? 'snack',
+        mealType: _activeMealType ?? 'snack',
         selectedDate: widget.selectedDate ?? DateTime.now(),
         onConfirm:
             ({
@@ -1505,11 +1518,30 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                   : 'Log ${_mealLabel(mealType)}',
               style: B05Typography.title(context),
             ),
-            Text(
-              _isMultiSelect
-                  ? '${_selectedOptions.length} selected · $dateStr'
-                  : dateStr,
-              style: B05Typography.caption(context),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(
+                  child: Text(
+                    _isMultiSelect
+                        ? '${_selectedOptions.length} selected · $dateStr'
+                        : dateStr,
+                    style: B05Typography.caption(context),
+                  ),
+                ),
+                if (!_isMultiSelect)
+                  TextButton(
+                    key: const ValueKey('food_search_change_meal'),
+                    onPressed: _changeMeal,
+                    style: TextButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      minimumSize: const Size(48, 32),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: const Text('Change meal'),
+                  ),
+              ],
             ),
           ],
         ),
@@ -1542,7 +1574,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                 FoodSearchBar(
                   controller: _searchController,
                   focusNode: _searchFocusNode,
-                  autofocus: widget.mealType != null,
+                  autofocus: _activeMealType != null,
                   onClear: () => _searchController.clear(),
                   onTapOutside: (_) => FocusScope.of(context).unfocus(),
                 ),
@@ -1568,42 +1600,13 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   }
 
   List<String> _getStapleSuggestions() {
-    String diet = 'veg';
+    String? diet;
     try {
-      diet = ref.watch(userProfileProvider).dietPreference.toLowerCase();
+      diet = ref.watch(userProfileProvider).dietPreference;
     } catch (_) {
       // Safe: suggestions only; without a profile they default to veg.
     }
-    switch (diet) {
-      case 'non-veg':
-      case 'non_veg':
-      case 'non-vegetarian':
-        return const [
-          'Roti',
-          'Dal',
-          'Rice',
-          'Chicken',
-          'Eggs',
-          'Paneer',
-          'Whey',
-        ];
-      case 'vegan':
-        return const [
-          'Roti',
-          'Dal',
-          'Rice',
-          'Tofu',
-          'Soya',
-          'Chana',
-          'Peanut Butter',
-        ];
-      case 'eggetarian':
-        return const ['Roti', 'Dal', 'Rice', 'Eggs', 'Paneer', 'Chai', 'Whey'];
-      case 'veg':
-      case 'vegetarian':
-      default:
-        return const ['Roti', 'Dal', 'Rice', 'Paneer', 'Curd', 'Chai', 'Whey'];
-    }
+    return foodStapleSuggestions(mealType: _activeMealType, diet: diet);
   }
 
   Widget _buildStapleChips() {
@@ -1667,10 +1670,11 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   );
 
   /// An AI tool's route, carrying this screen's meal and date.
-  String _aiToolLocation(String path) {
+  String _aiToolLocation(String path, {String? text}) {
     final date = widget.selectedDate;
     final query = {
-      if (widget.mealType != null) 'mealType': widget.mealType!,
+      if (text != null && text.isNotEmpty) 'text': text,
+      'mealType': ?_activeMealType,
       if (date != null) 'date': date.toIso8601String().split('T').first,
     };
     return Uri(
@@ -1767,6 +1771,23 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         await _performSearch(_searchController.text);
       }
     },
+    onQuickAdd: () async {
+      final added = await QuickAddMacrosSheet.show(
+        context,
+        initialMealType: _activeMealType ?? 'lunch',
+        targetDate: widget.selectedDate ?? DateTime.now(),
+        initialDescription: _searchController.text.trim(),
+      );
+      if (added != null && mounted) _invalidateNutritionReads();
+    },
+    onDescribe: ref.watch(privacyPolicyProvider).isAiAllowed
+        ? () => context.push(
+            _aiToolLocation(
+              '/food/describe',
+              text: _searchController.text.trim(),
+            ),
+          )
+        : null,
   );
 
   Widget _buildRankedSearchRow(NutritionFoodSearchResult result) {
@@ -2191,7 +2212,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       await RemoteFoodReviewSheet.show(
         context: context,
         candidate: effectiveCandidate,
-        mealType: widget.mealType ?? 'snack',
+        mealType: _activeMealType ?? 'snack',
         selectedDate: widget.selectedDate ?? DateTime.now(),
         onConfirm:
             ({

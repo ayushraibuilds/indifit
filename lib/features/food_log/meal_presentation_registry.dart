@@ -151,6 +151,32 @@ abstract final class MealPresentationRegistry {
     return dinner;
   }
 
+  /// [forLocalTime] among the diary's [slots] (UR-27): the slot itself when
+  /// the diary has it, else a slot of the same kind ("Evening snack" for a
+  /// snack), else the first slot.
+  static FoodMealPresentation forLocalTimeIn(
+    DateTime localTime,
+    List<FoodMealPresentation> slots,
+  ) {
+    final preferred = forLocalTime(localTime);
+    if (slots.isEmpty) return preferred;
+    for (final slot in slots) {
+      if (slot.stableId == preferred.stableId) return slot;
+    }
+    if (preferred.stableId == snack.stableId) {
+      final hour = localTime.hour;
+      final kinds = hour < 12
+          ? const ['morning_snack', 'evening_snack']
+          : const ['evening_snack', 'morning_snack'];
+      for (final kind in kinds) {
+        for (final slot in slots) {
+          if (slot.stableId == kind) return slot;
+        }
+      }
+    }
+    return slots.first;
+  }
+
   static FoodMealPresentation forStableId(String? rawId) {
     var id = rawId?.trim().toLowerCase();
     if (id == 'snacks') id = 'snack';

@@ -62,6 +62,9 @@ void main() {
       await tester.pump();
 
       expect(find.text('A quick note about measuring'), findsOneWidget);
+      expect(find.text('Your glass'), findsOneWidget);
+      // Below the katori and glass choices.
+      await tester.scrollUntilVisible(find.text('Standard measures'), 200);
       expect(find.text('Standard measures'), findsOneWidget);
       expect(find.textContaining('mL'), findsWidgets);
       expect(

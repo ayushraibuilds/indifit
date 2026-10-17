@@ -24,6 +24,8 @@ import '../../../data/services/food_dish_groups.dart';
 import '../../dashboard/today_surface_controller.dart';
 import '../diary_structure_controller.dart';
 import '../food_search_view_models.dart';
+import '../katori_size_step.dart';
+import '../liquid_servings.dart';
 import '../log_confirmation.dart';
 import '../meal_presentation_registry.dart';
 import 'food_search_widgets.dart';
@@ -409,6 +411,30 @@ class _FoodPortionBottomSheetState
     quantity: _selectedQuantity,
     servingUnitLabel: _option.servingUnitLabel,
     servingOptions: _servingOptions ?? const [],
+  );
+
+  /// Cup, glass and ml for a drink (UR-09), instead of grams or a katori.
+  Widget _liquidChipRow(List<LiquidServingChip> chips) => Padding(
+    padding: const EdgeInsets.only(bottom: 8),
+    child: Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        for (final chip in chips)
+          ChoiceChip(
+            key: ValueKey('liquid-chip-${chip.label}'),
+            avatar: const Icon(Icons.local_drink_outlined, size: 16),
+            label: Text(chip.label),
+            selected:
+                chip.quantity.unit == _selectedQuantity.unit &&
+                (chip.quantity.amount.asDouble -
+                            _selectedQuantity.amount.asDouble)
+                        .abs() <
+                    0.001,
+            onSelected: (_) => _setQuantity(chip.quantity),
+          ),
+      ],
+    ),
   );
 
   /// One row of size or oil chips. A variant changes one thing, so the chip
@@ -856,7 +882,16 @@ class _FoodPortionBottomSheetState
                 if (row.isNotEmpty) _dishChipRow(row),
               const SizedBox(height: 4),
             ],
-            if (_servingOptions != null && _servingOptions!.isNotEmpty) ...[
+            if (liquidServingChips(
+                  _option,
+                  myGlassMillilitres: ref
+                      .watch(myGlassMillilitresProvider)
+                      .valueOrNull,
+                )
+                case final liquids?) ...[
+              _liquidChipRow(liquids),
+            ] else if (_servingOptions != null &&
+                _servingOptions!.isNotEmpty) ...[
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(

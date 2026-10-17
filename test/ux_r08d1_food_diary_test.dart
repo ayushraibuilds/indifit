@@ -173,7 +173,9 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
-    await tester.tap(find.byKey(const ValueKey('food_diary_primary_add')));
+    // "Add food" goes straight to the meal for now (UR-27); Quick add
+    // still asks which meal.
+    await tester.tap(find.byKey(const ValueKey('food_diary_quick_add')));
     await tester.pumpAndSettle();
 
     final sheet = find.byType(BottomSheet);
