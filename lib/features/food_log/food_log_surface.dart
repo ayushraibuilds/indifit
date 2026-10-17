@@ -18,6 +18,7 @@ import '../../data/database/app_database.dart';
 import '../../data/repositories/food_repository.dart';
 import '../../data/repositories/nutrition_target_authority.dart';
 import '../dashboard/today_surface_controller.dart';
+import 'canonical_food_actions.dart';
 import 'food_contextual_actions.dart';
 import 'meal_presentation_registry.dart';
 import 'widgets/meal_icon_chip.dart';
@@ -159,12 +160,15 @@ class FoodLogEntriesPanel extends ConsumerWidget {
               _normalizeMealType(item.mealType) == normalizedMealType,
         )
         .toList(growable: false);
+    final hidden = ref.watch(pendingRecordDeletesProvider);
     final canonicalItems =
         (canonical.valueOrNull ?? const <NutritionHistoricalReadRecord>[])
             .where(
               (item) =>
-                  normalizedMealType == null ||
-                  _normalizeMealType(item.mealCategory) == normalizedMealType,
+                  !hidden.contains(item.stableId) &&
+                  (normalizedMealType == null ||
+                      _normalizeMealType(item.mealCategory) ==
+                          normalizedMealType),
             )
             .toList(growable: false);
     if (logs.hasError && (!includeCanonical || canonical.hasError)) {
@@ -205,8 +209,24 @@ class FoodLogEntriesPanel extends ConsumerWidget {
           _CanonicalFoodRows(
             records: canonicalItems,
             date: date,
-            onRecordTap: onCanonicalRecordTap,
-            onItemTap: onCanonicalItemTap,
+            // One entry point for logged-record actions (UR-51).
+            onRecordTap:
+                onCanonicalRecordTap ??
+                (record) => runLoggedRecordActions(
+                  context: context,
+                  ref: ref,
+                  record: record,
+                  targetDate: date,
+                ),
+            onItemTap:
+                onCanonicalItemTap ??
+                (record, item) => runLoggedRecordActions(
+                  context: context,
+                  ref: ref,
+                  record: record,
+                  item: item,
+                  targetDate: date,
+                ),
           ),
         if (legacyItems.isNotEmpty)
           ConstrainedBox(
@@ -409,14 +429,9 @@ class _CanonicalFoodRow extends ConsumerWidget {
     final canonical = record is NutritionCanonicalSnapshotReadModel
         ? record as NutritionCanonicalSnapshotReadModel
         : null;
-    final isDirectOrQuickAdd =
-        canonical != null &&
-        (canonical.snapshot.sourceType == 'direct_food' ||
-            canonical.snapshot.sourceType == 'quick_add');
-    if (!isDirectOrQuickAdd) return rowContent;
+    if (canonical == null) return rowContent;
 
-    final snapshotId = canonical.snapshot.id;
-
+    // Every logged record can be swiped away, with the same Undo (UR-11).
     return Dismissible(
       key: ValueKey(
         'dismissible_${record.stableId}_${item?.stableId ?? 'single'}',
@@ -434,73 +449,91 @@ class _CanonicalFoodRow extends ConsumerWidget {
           color: context.b05Colors.danger.indicator,
         ),
       ),
-      onDismissed: (_) {
-        bool undone = false;
-        // Captured now: the row's context is gone by the time the delete runs.
-        final messenger = ScaffoldMessenger.maybeOf(context);
-        final timer = Timer(const Duration(seconds: 5), () async {
-          if (!undone) {
-            try {
-              final repository = await ref.read(
-                nutritionConsumptionRepositoryProvider.future,
-              );
-              await repository.retractConsumption(
-                userId: kLocalNutritionUserScopeId,
-                snapshotId: snapshotId,
-                expectedLocalDate: record.localDate,
-                expectedMealCategory: record.mealCategory,
-                commandId:
-                    'swipe-delete::$snapshotId::${DateTime.now().microsecondsSinceEpoch}',
-              );
-              if (date != null) {
-                ref.invalidate(foodDiaryReadModelProvider(_civilDay(date!)));
-                ref.invalidate(
-                  canonicalFoodRecordsForDayProvider(_civilDay(date!)),
-                );
-              }
-              ref.read(todayNutritionRevisionProvider.notifier).state++;
-            } catch (error, stackTrace) {
-              // The row is already gone from the list; bring it back and say
-              // so instead of letting it reappear later without a word.
-              AppLogger.error('Swipe delete failed', error, stackTrace);
-              if (date != null) {
-                ref.invalidate(foodDiaryReadModelProvider(_civilDay(date!)));
-                ref.invalidate(
-                  canonicalFoodRecordsForDayProvider(_civilDay(date!)),
-                );
-              }
-              ref.read(todayNutritionRevisionProvider.notifier).state++;
-              messenger?.showSnackBar(
-                SnackBar(
-                  content: Text(
-                    "Couldn't remove $displayName. It's still in your log.",
-                  ),
-                ),
-              );
-            }
-          }
-        });
-
-        showIndiFitUndoFeedback(
-          context,
-          message: '$displayName removed.',
-          duration: const Duration(seconds: 5),
-          onUndo: () {
-            undone = true;
-            timer.cancel();
-            if (date != null) {
-              ref.invalidate(foodDiaryReadModelProvider(_civilDay(date!)));
-              ref.invalidate(
-                canonicalFoodRecordsForDayProvider(_civilDay(date!)),
-              );
-            }
-            ref.read(todayNutritionRevisionProvider.notifier).state++;
-          },
-        );
-      },
+      onDismissed: (_) => deleteLoggedRecordWithUndo(
+        context: context,
+        record: record,
+        label: displayName,
+        date: date,
+      ),
       child: rowContent,
     );
   }
+}
+
+/// Records waiting out their Undo window: hidden from the list until the
+/// delete runs or is undone.
+final pendingRecordDeletesProvider = StateProvider<Set<String>>(
+  (ref) => const {},
+);
+
+/// Removes [record] after a 5-second Undo window. The row disappears at once;
+/// the retraction runs only if the user doesn't undo. Used by swipe and by the
+/// record actions sheet, for every record type (UR-11).
+void deleteLoggedRecordWithUndo({
+  required BuildContext context,
+  required NutritionHistoricalReadRecord record,
+  required String label,
+  DateTime? date,
+}) {
+  final snapshotId = record.stableId;
+  var undone = false;
+  // The row (and its ref) is gone before the timer fires, so work through
+  // the scope's container.
+  final container = ProviderScope.containerOf(context, listen: false);
+  final pending = container.read(pendingRecordDeletesProvider.notifier);
+  void unhide() => pending.state = {...pending.state}..remove(snapshotId);
+  // Captured now: the row's context is gone by the time the delete runs.
+  final messenger = ScaffoldMessenger.maybeOf(context);
+  void refresh() {
+    if (date != null) {
+      container.invalidate(foodDiaryReadModelProvider(_civilDay(date)));
+      container.invalidate(canonicalFoodRecordsForDayProvider(_civilDay(date)));
+    }
+    container.read(todayNutritionRevisionProvider.notifier).state++;
+  }
+
+  final timer = Timer(const Duration(seconds: 5), () async {
+    if (undone) return;
+    try {
+      final repository = await container.read(
+        nutritionConsumptionRepositoryProvider.future,
+      );
+      await repository.retractConsumption(
+        userId: kLocalNutritionUserScopeId,
+        snapshotId: snapshotId,
+        expectedLocalDate: record.localDate,
+        expectedMealCategory: record.mealCategory,
+        commandId:
+            'swipe-delete::$snapshotId::${DateTime.now().microsecondsSinceEpoch}',
+      );
+      refresh();
+      unhide();
+    } catch (error, stackTrace) {
+      // The row is already gone from the list; bring it back and say
+      // so instead of letting it reappear later without a word.
+      AppLogger.error('Swipe delete failed', error, stackTrace);
+      refresh();
+      unhide();
+      messenger?.showSnackBar(
+        SnackBar(
+          content: Text("Couldn't remove $label. It's still in your log."),
+        ),
+      );
+    }
+  });
+  pending.state = {...pending.state, snapshotId};
+
+  showIndiFitUndoFeedback(
+    context,
+    message: '$label removed.',
+    duration: const Duration(seconds: 5),
+    onUndo: () {
+      undone = true;
+      timer.cancel();
+      unhide();
+      refresh();
+    },
+  );
 }
 
 String? _historicalQuantityLabel(NutritionHistoricalQuantity quantity) {

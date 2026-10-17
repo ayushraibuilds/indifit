@@ -676,6 +676,25 @@ class NutritionThaliController extends StateNotifier<NutritionThaliState> {
     }
   }
 
+  /// Starts the plate from one logged recipe, for editing that log (UR-11).
+  Future<void> startFromRecipe({
+    required String recipeVersionId,
+    required String name,
+  }) async {
+    if (state.draft == null) await initialize();
+    final draft = state.draft;
+    if (draft == null || draft.items.isNotEmpty) return;
+    addRecipe(
+      NutritionThaliRecipeOption(
+        recipeId: recipeVersionId,
+        recipeName: name,
+        recipeVersionId: recipeVersionId,
+        versionNumber: 1,
+        versionUpdatedAtUtc: DateTime.now().toUtc(),
+      ),
+    );
+  }
+
   /// Empties the plate, e.g. after it was pre-filled from "your usual".
   void clearItems() {
     final draft = state.draft;

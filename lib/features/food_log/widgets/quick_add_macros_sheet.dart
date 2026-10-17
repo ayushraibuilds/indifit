@@ -19,6 +19,7 @@ import '../../../core/widgets/b05_accessibility_primitives.dart';
 import '../../../data/database/app_database.dart'
     hide NutritionConsumptionSnapshot;
 import '../../dashboard/today_surface_controller.dart';
+import '../canonical_food_actions.dart';
 import '../food_log_surface.dart';
 import '../meal_presentation_registry.dart';
 
@@ -34,17 +35,28 @@ import '../meal_presentation_registry.dart';
 class QuickAddMacrosSheet extends ConsumerStatefulWidget {
   final String initialMealType;
   final DateTime targetDate;
+  final String? initialDescription;
+  final double? initialCalories;
+
+  /// A logged entry being edited: saving replaces it (UR-11).
+  final NutritionConsumptionSnapshot? replacesSnapshot;
 
   const QuickAddMacrosSheet({
     super.key,
     required this.initialMealType,
     required this.targetDate,
+    this.initialDescription,
+    this.initialCalories,
+    this.replacesSnapshot,
   });
 
   static Future<NutritionConsumptionSnapshot?> show(
     BuildContext context, {
     String initialMealType = 'lunch',
     DateTime? targetDate,
+    String? initialDescription,
+    double? initialCalories,
+    NutritionConsumptionSnapshot? replacesSnapshot,
   }) {
     return showModalBottomSheet<NutritionConsumptionSnapshot>(
       context: context,
@@ -53,6 +65,9 @@ class QuickAddMacrosSheet extends ConsumerStatefulWidget {
       builder: (sheetContext) => QuickAddMacrosSheet(
         initialMealType: initialMealType,
         targetDate: targetDate ?? DateTime.now(),
+        initialDescription: initialDescription,
+        initialCalories: initialCalories,
+        replacesSnapshot: replacesSnapshot,
       ),
     );
   }
@@ -81,6 +96,13 @@ class _QuickAddMacrosSheetState extends ConsumerState<QuickAddMacrosSheet> {
     super.initState();
     _mealCategory = widget.initialMealType;
     _selectedDate = widget.targetDate;
+    _descriptionController.text = widget.initialDescription ?? '';
+    final calories = widget.initialCalories;
+    if (calories != null) {
+      _caloriesController.text = calories == calories.roundToDouble()
+          ? calories.toStringAsFixed(0)
+          : calories.toStringAsFixed(1);
+    }
   }
 
   @override
@@ -270,6 +292,9 @@ class _QuickAddMacrosSheetState extends ConsumerState<QuickAddMacrosSheet> {
           evidence: {'quick_add': true},
         ),
       );
+
+      final replaced = widget.replacesSnapshot;
+      if (replaced != null) await retractReplacedRecord(ref, replaced);
 
       // Invalidate nutrition state
       ref.invalidate(todayNutritionRevisionProvider);

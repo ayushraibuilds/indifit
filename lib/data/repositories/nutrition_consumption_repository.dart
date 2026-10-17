@@ -333,12 +333,12 @@ class NutritionConsumptionRepository {
         'The logged food to delete no longer exists.',
       );
     }
-    if ((predecessor.sourceType != 'direct_food' &&
-            predecessor.sourceType != 'quick_add') ||
-        predecessor.isRetraction) {
+    // Any logged record can be deleted: thali, recipe and AI estimate too
+    // (UR-11). A retraction itself cannot.
+    if (predecessor.isRetraction) {
       throw const NutritionConsumptionValidationError(
         'unsupported_retraction_source',
-        'Only an active direct-food or quick-add snapshot can be deleted here.',
+        'Only an active logged record can be deleted.',
       );
     }
     if (predecessor.localDate != normalizedDate ||
@@ -398,6 +398,8 @@ class NutritionConsumptionRepository {
         mealCategory: predecessor.mealCategory,
         mealGroupId: predecessor.mealGroupId,
         sourceType: predecessor.sourceType,
+        recipeVersionId: predecessor.recipeVersionId,
+        thaliId: predecessor.thaliId,
         localDate: predecessor.localDate,
         timezoneId: predecessor.timezoneId,
         calculatorVersion: predecessor.calculatorVersion,
@@ -626,8 +628,7 @@ class NutritionConsumptionRepository {
     }
     final retraction = request.evidence['retraction'];
     if (retraction != null &&
-        (request.sourceType != 'direct_food' ||
-            retraction is! Map ||
+        (retraction is! Map ||
             retraction['contract_version'] !=
                 kNutritionConsumptionRetractionContractVersion ||
             retraction['predecessor_snapshot_id'] !=
