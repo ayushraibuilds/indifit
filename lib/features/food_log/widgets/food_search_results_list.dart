@@ -68,6 +68,10 @@ class FoodSearchResultsList extends StatelessWidget {
   final bool missedQuerySaved;
   final VoidCallback? onAddMissedQuery;
 
+  /// The words searched instead when the whole search matched nothing
+  /// ("fried rice" for "egg fried rice"); null when it matched as typed.
+  final String? relaxedQuery;
+
   const FoodSearchResultsList({
     super.key,
     this.onlineSearchOff,
@@ -81,6 +85,7 @@ class FoodSearchResultsList extends StatelessWidget {
     this.missedQuery,
     this.missedQuerySaved = false,
     this.onAddMissedQuery,
+    this.relaxedQuery,
   });
 
   @override
@@ -107,15 +112,20 @@ class FoodSearchResultsList extends StatelessWidget {
             error: searchResults.isEmpty,
             onRetry: onRetrySearch,
           ),
+        if (relaxedQuery != null && searchResults.isNotEmpty)
+          ConsumerStatusRow(
+            label: 'No exact match',
+            detail: 'Showing results for “$relaxedQuery”.',
+          ),
         if (searchResults.isNotEmpty) ...[
           const FoodSearchSectionHeader(title: 'Search results'),
           for (final result in searchResults)
             searchResultItemBuilder(context, result),
         ],
         if (searchingOnline)
+          // One plain statement, not "searching" next to "ready" (UR-32).
           const ConsumerStatusRow(
-            label: 'Searching for more matches',
-            detail: 'Matching foods are ready to use.',
+            label: 'Checking packaged foods online…',
             loading: true,
           ),
         if (!searchingOnline &&

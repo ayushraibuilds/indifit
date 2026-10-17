@@ -2,6 +2,7 @@ import '../database/app_database.dart';
 import '../repositories/food_api_service.dart';
 import '../repositories/nutrition_food_catalog_repository.dart';
 import 'food_name_spelling.dart';
+import 'food_query_amount.dart';
 
 /// Retrieval vocabulary used by food search. These terms are intentionally
 /// separate from B03 identity aliases: they help a query find a candidate but
@@ -20,7 +21,140 @@ class NutritionFoodSearchVocabulary {
     // The catalogue's "Aloo Gobbi (Dry Sabji)" carries a typo in its
     // identity key, so searches for the usual spelling must reach it.
     'gobi': ['gobbi'],
+    // Short forms, regional names and both spellings the catalogue uses
+    // (UR-03). Retrieval only: each finds the other's foods.
+    'veg': ['vegetable'],
+    'vegetable': ['veg'],
+    'rava': ['suji'],
+    'suji': ['rava'],
+    'semolina': ['suji'],
+    'puri': ['poori'],
+    'poori': ['puri'],
+    'bhatura': ['bhature'],
+    'bhature': ['bhatura'],
+    'bhakri': ['roti'],
+    'phulka': ['roti'],
+    'mudde': ['roti'],
+    'prawn': ['shrimp'],
+    'shrimp': ['prawn'],
+    'jhinga': ['prawn'],
+    'momo': ['momos'],
+    'momos': ['momo'],
+    'chilla': ['chilka', 'cheela'],
+    'cheela': ['chilka', 'chilla'],
+    'chilka': ['chilla', 'cheela'],
+    'fry': ['do pyaza'],
+    'chawal': ['rice'],
+    'rice': ['chawal'],
+    'anda': ['egg'],
+    'aloo': ['potato'],
+    'potato': ['aloo'],
+    'matar': ['mattar', 'peas'],
+    'mattar': ['matar'],
+    'bhindi': ['okra'],
+    'okra': ['bhindi'],
+    'baingan': ['brinjal', 'eggplant'],
+    'brinjal': ['baingan'],
+    'lauki': ['bottle gourd'],
+    'karela': ['bitter gourd'],
+    'yogurt': ['curd'],
+    'yoghurt': ['curd'],
+    'dosai': ['dosa'],
+    'idly': ['idli'],
   };
+
+  /// Plain base foods and the head noun they are (UR-04): "Toned Milk" is
+  /// what someone typing "milk" means. Names are matched without their
+  /// bracketed detail, so variants inherit the alias (and their penalty).
+  static const Map<String, List<String>> _plainBaseNames = {
+    'toned milk': ['milk'],
+    'double toned milk': ['milk'],
+    'full cream milk': ['milk'],
+    'skimmed milk': ['milk'],
+    'cow milk': ['milk'],
+    'buffalo milk': ['milk'],
+    'whole milk': ['milk'],
+    'basmati white rice': ['rice', 'chawal'],
+    'white rice': ['rice', 'chawal'],
+    'steamed rice': ['rice', 'chawal'],
+    'plain rice': ['rice', 'chawal'],
+    'plain curd dahi': ['curd', 'dahi'],
+    'plain dosa with chutney': ['dosa'],
+    'amul fresh paneer': ['paneer'],
+  };
+
+  /// Head-noun aliases of [displayName] when it is a plain base food.
+  static List<String> baseAliasesFor(String displayName) =>
+      _plainBaseNames[normalize(_withoutBrackets(displayName))] ?? const [];
+
+  static String _withoutBrackets(String name) {
+    var text = name;
+    for (var i = 0; i < 3 && text.contains('('); i++) {
+      text = text.replaceAll(RegExp(r'\([^()]*\)'), ' ');
+    }
+    return text;
+  }
+
+  static const Set<String> _fillerWords = {'ki', 'ka', 'ke', 'with', 'and'};
+
+  /// A name's words without its bracketed detail and filler words: "Lauki
+  /// Ki Sabji (Bottle Gourd)" -> "lauki sabji".
+  static String coreName(String displayName) =>
+      _core(foldFoodSpellings(normalize(_withoutBrackets(displayName))));
+
+  static String coreQuery(String normalizedQuery) =>
+      _core(foldFoodSpellings(normalizedQuery));
+
+  static String _core(String text) => text
+      .split(' ')
+      .where((token) => token.isNotEmpty && !_fillerWords.contains(token))
+      .join(' ');
+
+  static const Set<String> _dessertWords = {
+    'barfi',
+    'burfi',
+    'chocolate',
+    'halwa',
+    'kheer',
+    'ladoo',
+    'jamun',
+    'rasgulla',
+    'rasmalai',
+    'peda',
+    'cake',
+    'pastry',
+    'kulfi',
+    'payasam',
+    'mithai',
+    'katli',
+    'jalebi',
+    'shrikhand',
+    'sandesh',
+    'brownie',
+    'cookie',
+    'cookies',
+    'candy',
+    'dessert',
+    'custard',
+    'pudding',
+    'icecream',
+    'sweets',
+  };
+
+  static bool _hasDessertWord(String normalized) {
+    final tokens = foldFoodSpellings(normalized).split(' ');
+    if (tokens.any(_dessertWords.contains)) return true;
+    return normalized.contains('ice cream');
+  }
+
+  /// A sweet or dessert, by name or category: pushed below plain foods
+  /// when the search names no sweet (UR-04: "milk" isn't Milk Barfi).
+  static bool isDessert({required String displayName, String? category}) =>
+      _hasDessertWord(normalize(displayName)) ||
+      _hasDessertWord(normalize(category ?? ''));
+
+  static bool queryWantsDessert(String query) =>
+      _hasDessertWord(normalize(query));
 
   /// Reviewed search-only defaults for generic consumer concepts.
   ///
@@ -66,21 +200,13 @@ class NutritionFoodSearchVocabulary {
     'दही': 'dahi',
   };
 
-  static final RegExp _leadingMeasure = RegExp(
-    r'^(?:\d+(?:\.\d+)?(?:\s*/\s*\d+)?|half|quarter|one|two|three|four|five)'
-    r'\s*(?:bowls?|katoris?|cups?|glass(?:es)?|plates?|pieces?|pcs?|slices?|'
-    r'spoons?|tbsp|tsp|servings?|scoops?|handfuls?|bottles?|packets?|ladles?)'
-    r'\b\s*(?:of\s+)?',
-    caseSensitive: false,
-  );
-
-  /// "1 bowl dal" -> "dal": drops an amount and household unit typed before
-  /// the food. Left alone when nothing would remain, and a bare number
-  /// ("7 up", "5 star") is never an amount.
+  /// "1 bowl dal" -> "dal", "chawal 1 plate" -> "chawal", "100g paneer" ->
+  /// "paneer": drops an amount and unit typed with the food. Left alone when
+  /// nothing would remain. A bare number ("3 roti", "7 up") is kept here;
+  /// the search decides whether it is an amount ([FoodQueryParser]).
   static String stripLeadingMeasure(String query) {
-    final text = query.trim();
-    final rest = text.replaceFirst(_leadingMeasure, '').trim();
-    return rest.isEmpty ? text : rest;
+    final parsed = FoodQueryParser.parse(query);
+    return parsed.bareNumber ? parsed.original : parsed.food;
   }
 
   static String normalize(String value) {
@@ -240,6 +366,7 @@ class NutritionFoodSearchCandidate {
       matchedTerms: matchedTerms,
       alternateNames: [
         if (food.nameHindi?.trim().isNotEmpty ?? false) food.nameHindi!.trim(),
+        ...NutritionFoodSearchVocabulary.baseAliasesFor(food.name),
       ],
     );
   }
@@ -268,7 +395,10 @@ class NutritionFoodSearchCandidate {
       option: option,
       remote: null,
       matchedTerms: matchedTerms,
-      alternateNames: alternateNames,
+      alternateNames: [
+        ...alternateNames,
+        ...NutritionFoodSearchVocabulary.baseAliasesFor(option.displayName),
+      ],
     );
   }
 
@@ -484,6 +614,7 @@ class NutritionFoodSearchRanking {
   static const int _primaryConceptBoost = 220;
   static const int _primaryConceptCategoryBoost = 80;
   static const int _servingVariantPenalty = 180;
+  static const int _unaskedDessertPenalty = 200;
   // A generic provider exact match must not displace a reviewed/local food
   // whose name contains the requested common food (for example the bundled
   // "Whole Wheat Roti / Chapati" entry for a `roti` query). Explicit brand or
@@ -567,6 +698,23 @@ class NutritionFoodSearchRanking {
             evaluation.lexicalScore > best.lexicalScore) {
           best = evaluation;
         }
+      }
+    }
+    // The name is the query apart from filler words and bracketed detail
+    // ("Lauki Ki Sabji (Bottle Gourd)" for "lauki sabji"): nearly exact.
+    if (best.rank < NutritionFoodSearchMatch.aliasExact.index) {
+      final core = NutritionFoodSearchVocabulary.coreName(
+        candidate.displayName,
+      );
+      if (core.isNotEmpty &&
+          queryVariants.any(
+            (variant) =>
+                NutritionFoodSearchVocabulary.coreQuery(variant) == core,
+          )) {
+        best = const _Evaluation(
+          match: NutritionFoodSearchMatch.aliasExact,
+          lexicalScore: _aliasExact,
+        );
       }
     }
     return best;
@@ -734,6 +882,15 @@ class NutritionFoodSearchRanking {
     }
     if (candidate.isExplicitPresentationVariant) {
       score -= _servingVariantPenalty;
+    }
+    if (evaluation.match != NutritionFoodSearchMatch.exact &&
+        evaluation.match != NutritionFoodSearchMatch.aliasExact &&
+        !NutritionFoodSearchVocabulary.queryWantsDessert(normalizedQuery) &&
+        NutritionFoodSearchVocabulary.isDessert(
+          displayName: candidate.displayName,
+          category: candidate.category,
+        )) {
+      score -= _unaskedDessertPenalty;
     }
     if (candidate.source != NutritionFoodSearchSource.remote &&
         evaluation.match.index >= NutritionFoodSearchMatch.token.index) {

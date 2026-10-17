@@ -593,7 +593,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 800));
     await tester.pump();
     expect(find.text('Offline roti'), findsOneWidget);
-    expect(find.text('Searching for more matches'), findsOneWidget);
+    expect(find.text('Checking packaged foods online…'), findsOneWidget);
     online.completer.complete(const []);
     await tester.pump(const Duration(milliseconds: 500));
     expect(find.text('Offline roti'), findsOneWidget);
