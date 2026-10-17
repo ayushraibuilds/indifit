@@ -552,17 +552,30 @@ class FoodDiaryMealRow extends StatelessWidget {
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
+                    // The chips log at once, so say that they repeat (UR-15).
+                    Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: Text(
+                        'Again?',
+                        style: B05Typography.caption(context),
+                      ),
+                    ),
                     for (final item in eatAgainItems!)
                       Padding(
                         padding: const EdgeInsets.only(right: 6),
-                        child: ActionChip(
-                          visualDensity: VisualDensity.compact,
-                          avatar: const Icon(Icons.add, size: 14),
-                          label: Text(
-                            item.option.displayName,
-                            style: const TextStyle(fontSize: 11),
+                        child: Tooltip(
+                          message: 'Log ${item.option.displayName} again',
+                          child: ActionChip(
+                            visualDensity: VisualDensity.compact,
+                            avatar: const Icon(Icons.add, size: 14),
+                            label: Text(
+                              item.quantityLabel.isEmpty
+                                  ? item.option.displayName
+                                  : '${item.quantityLabel} ${item.option.displayName}',
+                              style: const TextStyle(fontSize: 11),
+                            ),
+                            onPressed: () => onFastAdd?.call(item),
                           ),
-                          onPressed: () => onFastAdd?.call(item),
                         ),
                       ),
                   ],

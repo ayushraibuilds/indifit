@@ -14,6 +14,7 @@ import '../../core/typed_quantities.dart';
 import '../../core/utils/app_logger.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/indi_fit_feedback.dart';
+import '../../data/catalog/catalogue_quantity_resolver.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/food_repository.dart';
 import '../../data/repositories/nutrition_target_authority.dart';
@@ -342,12 +343,20 @@ class _CanonicalFoodRow extends ConsumerWidget {
     final displayName = item?.displayLabel?.trim().isNotEmpty == true
         ? item!.displayLabel!
         : record.displayLabel;
+    // The amount as picked: "1 katori (150 g)", not "1 serving" (UR-16).
+    String? amountOf(NutritionHistoricalReadItem entry) {
+      final typed = entry.quantity.quantity;
+      final foodId = entry.foodId;
+      final measure = typed == null || foodId == null
+          ? null
+          : ref.watch(loggedFoodMeasureProvider(foodId)).valueOrNull;
+      return measure?.pickedAmountLabel(typed!) ??
+          _historicalQuantityLabel(entry.quantity);
+    }
+
     final serving = item == null
-        ? record.items
-              .map((entry) => _historicalQuantityLabel(entry.quantity))
-              .where((value) => value != null)
-              .join(' · ')
-        : _historicalQuantityLabel(item!.quantity) ?? '';
+        ? record.items.map(amountOf).whereType<String>().join(' · ')
+        : amountOf(item!) ?? '';
     final actionTap = item != null
         ? onItemTap == null
               ? null
@@ -459,6 +468,14 @@ class _CanonicalFoodRow extends ConsumerWidget {
     );
   }
 }
+
+/// How a logged food is measured, for showing the amount as it was picked.
+final loggedFoodMeasureProvider = FutureProvider.autoDispose
+    .family<CatalogueFoodMeasure?, String>(
+      (ref, foodId) => CatalogueQuantityResolver(
+        ref.watch(databaseProvider),
+      ).measureFor(foodId),
+    );
 
 /// Records waiting out their Undo window: hidden from the list until the
 /// delete runs or is undone.

@@ -309,7 +309,10 @@ class LoggedRecords {
 }
 
 /// The provider overrides that point the food screens at [c].
-List<Override> loggedRecordsOverrides(RealCatalogue c) {
+List<Override> loggedRecordsOverrides(
+  RealCatalogue c, {
+  bool realRecents = false,
+}) {
   final readModels = NutritionReadModelRepository(
     db: c.db,
     registry: c.registry,
@@ -334,7 +337,8 @@ List<Override> loggedRecordsOverrides(RealCatalogue c) {
     nutritionFoodLoggingCoordinatorProvider.overrideWith(
       (ref) async => LoggedRecords.coordinatorFor(c),
     ),
-    canonicalRecentFoodsProvider.overrideWith((ref) async => const []),
+    if (!realRecents)
+      canonicalRecentFoodsProvider.overrideWith((ref) async => const []),
   ];
 }
 

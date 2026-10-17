@@ -96,6 +96,51 @@ class CatalogueFoodMeasure {
     );
   }
 
+  /// [quantity] in the words the user picked it in: "1 katori (150 g)",
+  /// "2 pieces (100 g)" (UR-16). Null when this food has no household unit
+  /// or [quantity] isn't a whole or half count of it; callers then show the
+  /// quantity as stored.
+  String? pickedAmountLabel(Quantity quantity) {
+    final household = unit;
+    final units = unitsPerServing;
+    if (household == null || units == null) return null;
+    final QuantityAmount? servings;
+    try {
+      servings = _servings(quantity);
+    } on QuantityError {
+      return null;
+    }
+    if (servings == null) return null;
+    final count = servings.multiply(units);
+    final halves = count.asDouble * 2;
+    if (count.asDouble <= 0 || (halves - halves.round()).abs() > 0.001) {
+      return null;
+    }
+    final countLabel = QuantityFormatter.format(
+      householdQuantity(household, QuantityAmount.fromNum(halves.round() / 2)),
+      decimalPlaces: halves.round().isEven ? 0 : 1,
+    );
+    final grams = gramsPerServing;
+    final millilitres = millilitresPerServing;
+    final metric = grams != null
+        ? QuantityFormatter.format(
+            Quantity(amount: servings.multiply(grams), unit: QuantityUnit.gram),
+            decimalPlaces: 0,
+          )
+        : millilitres != null
+        ? QuantityFormatter.format(
+            Quantity(
+              amount: servings.multiply(millilitres),
+              unit: QuantityUnit.millilitre,
+            ),
+            decimalPlaces: 0,
+          )
+        : null;
+    return metric == null || household == 'serving'
+        ? countLabel
+        : '$countLabel ($metric)';
+  }
+
   /// [quantity] expressed in the basis of this food's facts, or a
   /// [CatalogueQuantityError] when it can't be converted honestly.
   Quantity toFactBasis(Quantity quantity) {

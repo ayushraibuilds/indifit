@@ -20,6 +20,7 @@ import '../dashboard/widgets/dashboard_date_bar.dart';
 import 'diary_structure_controller.dart';
 import 'food_log_surface.dart';
 import 'food_search_screen.dart';
+import 'log_confirmation.dart';
 import 'meal_presentation_registry.dart';
 import 'repeat_meal.dart';
 import 'saved_meals_screen.dart';
@@ -433,7 +434,7 @@ class _FoodDiaryScreenState extends ConsumerState<FoodDiaryScreen> {
           ? DateTime.now().toUtc()
           : dates.instantForLocalDate(localDate, timezoneId);
 
-      await coordinator.finalize(
+      final snapshot = await coordinator.finalize(
         userId: kLocalNutritionUserScopeId,
         preview: preview,
         mealCategory: mealType,
@@ -445,9 +446,13 @@ class _FoodDiaryScreenState extends ConsumerState<FoodDiaryScreen> {
       );
       if (!mounted) return;
       _refreshDiaryReads();
-      showIndiFitSuccessFeedback(
+      // One tap logs it again, so say what and offer Undo (UR-15).
+      showLoggedFoodUndo(
         context,
-        'Logged ${option.displayName} to ${foodDiaryMealTitle(mealType)}',
+        snapshot,
+        amount: option.measure?.pickedAmountLabel(quantity),
+        name: option.displayName,
+        again: true,
       );
     } catch (_) {
       if (mounted) {

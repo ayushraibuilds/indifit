@@ -102,7 +102,8 @@ final canonicalRecentFoodsProvider =
                 ? item.quantity.quantity
                 : null;
             final quantityLabel = historicalQuantity != null
-                ? QuantityFormatter.format(historicalQuantity)
+                ? option.measure?.pickedAmountLabel(historicalQuantity) ??
+                      QuantityFormatter.format(historicalQuantity)
                 : (item.quantity.storedAmount != null &&
                       item.quantity.storedUnit.isNotEmpty)
                 ? QuantityFormatter.formatStored(
