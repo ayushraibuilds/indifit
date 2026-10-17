@@ -105,8 +105,11 @@ final canonicalRecentFoodsProvider =
                 ? QuantityFormatter.format(historicalQuantity)
                 : (item.quantity.storedAmount != null &&
                       item.quantity.storedUnit.isNotEmpty)
-                ? '${item.quantity.storedAmount} ${item.quantity.storedUnit}'
-                : '${option.baseQuantity.amount} ${option.baseQuantity.unit.name}';
+                ? QuantityFormatter.formatStored(
+                    '${item.quantity.storedAmount}',
+                    item.quantity.storedUnit,
+                  )
+                : QuantityFormatter.format(option.baseQuantity);
             result.add(
               CanonicalRecentFood(
                 option: option,

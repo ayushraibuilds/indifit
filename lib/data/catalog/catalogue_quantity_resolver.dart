@@ -177,14 +177,9 @@ const Set<String> kCatalogueVesselUnits = {
 
 String catalogueMeasureId(String key) => 'household_measure_${key}_v1';
 
-/// The household key inside a measure id (`household_measure_katori_v1` →
-/// `katori`). Roti and chapati measures count pieces.
-String? catalogueMeasureKey(String? measureId) {
-  if (measureId == null) return null;
-  final match = RegExp(r'^household_measure_(.+)_v\d+$').firstMatch(measureId);
-  final key = match?.group(1) ?? measureId;
-  return key == 'roti' || key == 'chapati' ? 'piece' : key;
-}
+/// The household key inside a measure id; see [householdMeasureKey].
+String? catalogueMeasureKey(String? measureId) =>
+    householdMeasureKey(measureId);
 
 /// Reads [CatalogueFoodMeasure]s from the canonical tables (CAT-4).
 class CatalogueQuantityResolver {

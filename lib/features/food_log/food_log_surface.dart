@@ -509,7 +509,10 @@ String? _historicalQuantityLabel(NutritionHistoricalQuantity quantity) {
   if (quantity.storedAmount == null || quantity.storedUnit.trim().isEmpty) {
     return null;
   }
-  return '${quantity.storedAmount} ${quantity.storedUnit}';
+  return QuantityFormatter.formatStored(
+    '${quantity.storedAmount}',
+    quantity.storedUnit,
+  );
 }
 
 String _factLabel(NutrientFact? fact, String unit, int precision) {

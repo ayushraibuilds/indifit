@@ -1,24 +1,13 @@
 import '../../../core/typed_quantities.dart';
-import '../../../data/catalog/catalogue_quantity_resolver.dart';
 
 /// The unit a thali amount is counted in, in plain words: "piece",
 /// "katori", "g", "serving". Never an internal measure id.
-String thaliUnitLabel(Quantity quantity, {double? amount}) {
-  final plural = amount != null && amount != 1;
-  return switch (quantity.unit) {
-    QuantityUnit.gram => 'g',
-    QuantityUnit.milligram => 'mg',
-    QuantityUnit.kilogram => 'kg',
-    QuantityUnit.millilitre => 'ml',
-    QuantityUnit.litre => 'L',
-    QuantityUnit.piece => plural ? 'pieces' : 'piece',
-    QuantityUnit.serving => plural ? 'servings' : 'serving',
-    QuantityUnit.householdReference =>
-      catalogueMeasureKey(quantity.context.householdMeasure?.measureType) ??
-          'measure',
-    _ => quantity.unit.name,
-  };
-}
+String thaliUnitLabel(Quantity quantity, {double? amount}) =>
+    QuantityFormatter.unitLabel(
+      quantity.unit,
+      amount: amount == null ? null : QuantityAmount.fromNum(amount),
+      householdMeasure: quantity.context.householdMeasure,
+    );
 
 /// "2 pieces", "1 katori", "150 g".
 String thaliQuantityLabel(Quantity quantity) {
