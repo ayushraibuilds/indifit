@@ -113,6 +113,8 @@ class FoodPortionBottomSheet extends ConsumerStatefulWidget {
     bool returnToParentOnSave = false,
     Future<void> Function()? onRetryRecentFoods,
     void Function(String selectedMealType, bool isCorrection)? onCommitted,
+    void Function(FoodPortionLogged logged, String name)? onLogged,
+    void Function(String snapshotId)? onUndone,
     String? categoryId,
     List<ServingOption>? categoryServingOptions,
   }) async {
@@ -188,11 +190,14 @@ class FoodPortionBottomSheet extends ConsumerStatefulWidget {
       if (onQuantityPicked != null) return true;
 
       if (savedResult is FoodPortionLogged) {
+        final name = savedResult.foodName ?? option.displayName;
+        onLogged?.call(savedResult, name);
         showLoggedFoodUndo(
           context,
           savedResult.snapshot,
           amount: savedResult.amount,
-          name: savedResult.foodName ?? option.displayName,
+          name: name,
+          onUndone: onUndone,
         );
       } else {
         showIndiFitSuccessFeedback(

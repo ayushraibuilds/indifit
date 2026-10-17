@@ -168,6 +168,11 @@ void main() {
       await tester.runAsync(() => savedSnapshot);
       await _pumpLiveSurface(tester, cycles: 20);
 
+      // Search stays open with the meal bar (UR-13); Done returns.
+      expect(find.byType(FoodSearchScreen), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('food_search_meal_bar_done')));
+      await _pumpLiveSurface(tester, cycles: 20);
+
       expect(find.byType(FoodSearchScreen), findsNothing);
       expect(find.text('Breakfast entries: 1'), findsOneWidget);
       final day = await tester.runAsync(() async {
