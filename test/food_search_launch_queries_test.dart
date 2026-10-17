@@ -83,7 +83,9 @@ void main() {
     expect(strip('7 up'), '7 up');
     expect(strip('5 star'), '5 star');
     expect(strip('2 cups'), '2 cups');
-    expect(strip('100g paneer'), '100g paneer');
+    expect(strip('100g paneer'), 'paneer');
+    expect(strip('chawal 1 plate'), 'chawal');
+    expect(strip('3 roti'), '3 roti');
   });
 
   late RealCatalogue catalogue;

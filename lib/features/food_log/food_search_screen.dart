@@ -29,6 +29,8 @@ import '../../data/database/app_database.dart';
 import '../../data/repositories/food_api_service.dart';
 import '../../data/repositories/food_repository.dart';
 import '../../data/repositories/nutrition_food_catalog_repository.dart';
+import '../../data/services/food_query_amount.dart';
+import '../../data/services/food_search_pipeline.dart';
 import '../../data/services/nutrition_food_search_ranking.dart';
 import '../dashboard/today_surface_controller.dart';
 import 'barcode_scanner_screen.dart';
@@ -403,44 +405,47 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     setState(() => _savedMissedQueries.add(query.toLowerCase()));
   }
 
-  Future<List<FoodItem>> _loadLocalSearchResults(String query) async {
-    final repository = ref.read(foodRepositoryProvider);
-    _pendingMatchedTerms = const {};
-    final byId = <int, FoodItem>{};
-    final normalized = NutritionFoodSearchVocabulary.normalize(query);
-    final variants = NutritionFoodSearchVocabulary.expand(query);
-    for (final variant in variants) {
-      try {
-        for (final item in await repository.searchFoodLocal(variant)) {
-          byId[item.id] = item;
-        }
-      } catch (_) {
-        // Safe: A single retrieval-vocabulary expansion must not block the others.
-      }
-    }
+  /// The on-device search shared with the search tests (UR-52).
+  FoodSearchPipeline _searchPipeline() => FoodSearchPipeline(
+    ref.read(foodRepositoryProvider),
+    optionFor: (foodId) async => (await ref.read(
+      nutritionFoodCatalogRepositoryProvider.future,
+    )).getOption(foodId),
+  );
+
+  /// What the current search resolved to: the words searched, and the
+  /// amount typed with them ("3 roti"), which pre-fills logging (UR-02).
+  ResolvedFoodSearch? _resolvedSearch;
+
+  /// [option] at the amount typed with the search, when one was typed and
+  /// it fits the food.
+  Quantity? _typedQuantityFor(NutritionFoodOption option) =>
+      _resolvedSearch?.amount?.quantityFor(option);
+
+  Future<ResolvedFoodSearch?> _relaxedSearch(ResolvedFoodSearch search) async {
     try {
-      final indexed = await repository.searchCatalogueIndex(query);
-      for (final item in indexed.items) {
-        byId[item.id] = item;
-      }
-      _pendingMatchedTerms = indexed.matchedTerms;
+      final pipeline = _searchPipeline();
+      if ((await pipeline.rank(search.query)).isNotEmpty) return null;
+      final query = await pipeline.dropOneWord(search.query);
+      return query == null
+          ? null
+          : ResolvedFoodSearch(
+              typed: search.typed,
+              query: query,
+              amount: search.amount,
+              relaxed: true,
+            );
     } catch (_) {
-      // Safe: The name search above still answers without the index.
+      // Safe: the search as typed still runs, with no results.
+      return null;
     }
-    if (normalized.length >= 4) {
-      final firstToken = normalized.split(' ').first;
-      if (firstToken.length >= 3) {
-        final prefix = firstToken.substring(0, 3);
-        try {
-          for (final item in await repository.searchFoodLocal(prefix)) {
-            byId[item.id] = item;
-          }
-        } catch (_) {
-          // Safe: The provider path remains available if prefix retrieval fails.
-        }
-      }
-    }
-    return byId.values.toList(growable: false);
+  }
+
+  Future<List<FoodItem>> _loadLocalSearchResults(String query) async {
+    _pendingMatchedTerms = const {};
+    final hits = await _searchPipeline().legacyHits(query);
+    _pendingMatchedTerms = hits.matchedTerms;
+    return hits.items;
   }
 
   Future<void> _loadLocalSearchAuthority({
@@ -464,11 +469,35 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     });
   }
 
-  Future<void> _performSearch(String text) async {
+  Future<void> _performSearch(
+    String text, {
+    ResolvedFoodSearch? resolvedAs,
+  }) async {
     if (!mounted) return;
-    final query = NutritionFoodSearchVocabulary.stripLeadingMeasure(text);
     final generation = ++_searchGeneration;
     _onlineSearchCancelToken?.cancel('New food search started');
+    ResolvedFoodSearch resolved;
+    final parsed = FoodQueryParser.parse(text);
+    if (resolvedAs != null) {
+      resolved = resolvedAs;
+    } else if (text.trim().isEmpty || !parsed.bareNumber) {
+      resolved = ResolvedFoodSearch(
+        typed: text,
+        query: parsed.food,
+        amount: parsed.amount,
+      );
+    } else {
+      // "3 roti" or "7 up": the catalogue decides whether 3 is an amount.
+      try {
+        resolved = await _searchPipeline().resolve(text);
+      } catch (_) {
+        // Safe: search the words as typed.
+        resolved = ResolvedFoodSearch(typed: text, query: text.trim());
+      }
+      if (!mounted || generation != _searchGeneration) return;
+    }
+    _resolvedSearch = resolved.query.isEmpty ? null : resolved;
+    final query = resolved.query;
     if (query.isEmpty) {
       _onlineSearchCancelToken = null;
       setState(() {
@@ -500,6 +529,25 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
 
     final local = await _loadLocalSearchResults(query);
     if (!mounted || generation != _searchGeneration) return;
+    // Nothing on this phone matches the whole search: try it with one word
+    // dropped, and say so (UR-03). Checked alongside the rest of the search
+    // so local and online results never wait on it.
+    if (!resolved.relaxed &&
+        NutritionFoodSearchRanking.rank(
+          query: query,
+          candidates: [
+            for (final food in local) NutritionFoodSearchCandidate.legacy(food),
+          ],
+          limit: 1,
+        ).isEmpty) {
+      unawaited(() async {
+        final relaxed = await _relaxedSearch(resolved);
+        if (relaxed == null || !mounted || generation != _searchGeneration) {
+          return;
+        }
+        await _performSearch(text, resolvedAs: relaxed);
+      }());
+    }
     setState(() {
       _localResults = local;
       _localMatchedTerms = _pendingMatchedTerms;
@@ -563,18 +611,8 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
 
   Future<void> _loadCatalogueOnlyResults(String query, int generation) async {
     try {
-      final hits = await ref
-          .read(foodRepositoryProvider)
-          .searchCatalogueOnlyFoods(query);
-      if (hits.isEmpty) return;
-      final catalog = await ref.read(
-        nutritionFoodCatalogRepositoryProvider.future,
-      );
-      final found = <(NutritionFoodOption, CatalogSearchHit)>[];
-      for (final hit in hits) {
-        final option = await catalog.getOption(hit.foodId);
-        if (option != null) found.add((option, hit));
-      }
+      final found = await _searchPipeline().catalogueOnly(query);
+      if (found.isEmpty) return;
       if (!mounted || generation != _searchGeneration) return;
       setState(() {
         _catalogueOnlyResults = found;
@@ -643,7 +681,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         nutritionFoodCatalogRepositoryProvider.future,
       );
       final option = await catalog.ensureLegacyFood(food);
-      await _showLogDialog(option);
+      await _showLogDialog(option, initialQuantity: _typedQuantityFor(option));
     } catch (error, stackTrace) {
       AppLogger.error(
         'Food search: could not open a food for logging',
@@ -859,16 +897,23 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     try {
       final selectedMealType = await _ensureMealContext();
       if (selectedMealType == null || !mounted) return;
-      if (!_hasSafeDefaultServing(option)) {
+      // "+ 3 pieces" logs the amount typed with the search (UR-02). An
+      // amount that doesn't fit this food opens the portion sheet instead
+      // of quietly logging something else.
+      final typedAmount = _resolvedSearch?.amount;
+      final typed = typedAmount == null ? null : _typedQuantityFor(option);
+      if ((typedAmount != null && typed == null) ||
+          (typed == null && !_hasSafeDefaultServing(option))) {
         await _showLogDialog(option, mealType: selectedMealType);
         return;
       }
+      final quantity = typed ?? option.baseQuantity;
       final coordinator = await ref.read(
         nutritionFoodLoggingCoordinatorProvider.future,
       );
       final preview = await coordinator.preview(
         option: option,
-        quantity: option.baseQuantity,
+        quantity: quantity,
       );
       final dateContext = await _dateContext();
       final snapshot = await coordinator.finalize(
@@ -894,7 +939,11 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         message: loggedConfirmationMessage(
           snapshot,
           name: option.displayName,
-          amount: option.measure?.pickedAmountLabel(option.baseQuantity),
+          amount:
+              option.measure?.pickedAmountLabel(quantity) ??
+              typedAmount?.label(
+                servingUnit: option.servingUnitLabel?.trim().split(' ').last,
+              ),
         ),
         duration: const Duration(seconds: 4),
         onUndo: () => unawaited(_undoLastCanonicalAdd(undo)),
@@ -1702,6 +1751,9 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       _searchController.text.trim().toLowerCase(),
     ),
     onAddMissedQuery: _addMissedQuery,
+    relaxedQuery: _resolvedSearch?.relaxed == true
+        ? _resolvedSearch!.query
+        : null,
     onCreateCustomFood: () async {
       final result = await Navigator.push<bool?>(
         context,
@@ -1845,7 +1897,12 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
             if (_isMultiSelect) {
               _toggleCanonicalSelection(option);
             } else {
-              unawaited(_showLogDialog(option));
+              unawaited(
+                _showLogDialog(
+                  option,
+                  initialQuantity: _typedQuantityFor(option),
+                ),
+              );
             }
           },
         ),
@@ -1963,6 +2020,9 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     final isAdding = _fastAddInFlight.contains(option.id);
     return _buildFastAddAction(
       foodName: _consumerFoodName(option.displayName),
+      amountLabel: _resolvedSearch?.amount?.label(
+        servingUnit: option.measure?.unit,
+      ),
       isAdding: isAdding,
       added: _fastAddSucceeded.containsKey(option.id),
       onPressed: isAdding ? null : () => unawaited(_addOptionFast(option)),
@@ -1972,6 +2032,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   Widget _buildFastAddAction({
     required String foodName,
     required VoidCallback? onPressed,
+    String? amountLabel,
     bool isAdding = false,
     bool added = false,
     bool unavailable = false,
@@ -1982,7 +2043,9 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         ? 'Adding $foodName'
         : added
         ? 'Added $foodName'
-        : 'Add $foodName';
+        : amountLabel == null
+        ? 'Add $foodName'
+        : 'Add $amountLabel $foodName';
     // A disabled nested button must still consume its own hit area. Otherwise
     // a second physical tap falls through to the result-row tap target and
     // unexpectedly opens the quantity sheet.
@@ -2012,7 +2075,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                     ? 'Unavailable'
                     : isAdding
                     ? 'Adding…'
-                    : 'Add',
+                    : amountLabel ?? 'Add',
               ),
             ),
           ),
@@ -2367,6 +2430,11 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                     : null)
               : _buildFastAddAction(
                   foodName: displayName,
+                  amountLabel: recent
+                      ? null
+                      : _resolvedSearch?.amount?.label(
+                          servingUnit: food.servingUnit,
+                        ),
                   onPressed: () => unawaited(_openLegacyFastAdd(food)),
                 ),
           onTap: () {
@@ -2480,7 +2548,8 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   String? _localServingLabel(FoodItem food) {
     final unit = _consumerMetadata(food.servingUnit);
     if (unit == null || food.servingSize <= 0) return null;
-    return '${_numberLabel(food.servingSize)} $unit';
+    // "Per 2 pieces", not "Per 2 piece" (UR-32).
+    return QuantityFormatter.formatStored(_numberLabel(food.servingSize), unit);
   }
 
   String? _providerServingLabel(FoodApiResult food) {
