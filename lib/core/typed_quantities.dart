@@ -1305,9 +1305,55 @@ class QuantityParser {
   }
 }
 
+/// The household key inside a measure id (`household_measure_katori_v1` →
+/// `katori`). Roti and chapati measures count pieces. Unknown ids that still
+/// look internal return null so callers never show them (UR-10).
+String? householdMeasureKey(String? measureId) {
+  if (measureId == null) return null;
+  final trimmed = measureId.trim();
+  if (trimmed.isEmpty) return null;
+  final match = RegExp(r'^household_measure_(.+)_v\d+$').firstMatch(trimmed);
+  final key = match?.group(1) ?? trimmed;
+  return key == 'roti' || key == 'chapati' ? 'piece' : key;
+}
+
+/// The one place that turns a quantity unit into words (UR-50): "g", "ml",
+/// "piece"/"pieces", "katori". Never an internal id.
 class QuantityFormatter {
   QuantityFormatter._();
 
+  static String _pluralise(String word, bool plural) =>
+      plural ? '${word}s' : word;
+
+  /// The unit words for [unit] at [amount] (null means one).
+  static String unitLabel(
+    QuantityUnit unit, {
+    QuantityAmount? amount,
+    HouseholdMeasureReference? householdMeasure,
+  }) {
+    final plural = amount != null && amount.compareTo(QuantityAmount.one) != 0;
+    return switch (unit) {
+      QuantityUnit.milligram => 'mg',
+      QuantityUnit.gram => 'g',
+      QuantityUnit.kilogram => 'kg',
+      QuantityUnit.millilitre => 'ml',
+      QuantityUnit.litre => 'L',
+      QuantityUnit.piece => _pluralise('piece', plural),
+      QuantityUnit.serving => _pluralise('serving', plural),
+      // Vessel names stay as said ("2 katori"); counted pieces pluralise.
+      QuantityUnit.householdReference => switch (householdMeasureKey(
+        householdMeasure?.measureType,
+      )) {
+        'piece' => _pluralise('piece', plural),
+        final key? => key,
+        null => 'measure',
+      },
+      QuantityUnit.unknown ||
+      QuantityUnit.legacy => _pluralise('serving', plural),
+    };
+  }
+
+  /// "1 katori", "2 pieces", "150 g".
   static String format(
     Quantity quantity, {
     QuantityUnit? displayUnit,
@@ -1317,11 +1363,42 @@ class QuantityFormatter {
     final displayed = targetUnit == quantity.unit
         ? quantity
         : quantity.convertTo(targetUnit);
-    final definition = QuantityUnitRegistry.definitionFor(targetUnit);
-    final label = targetUnit == QuantityUnit.householdReference
-        ? quantity.context.householdMeasure!.measureType
-        : definition.labelFor(displayed.amount);
+    final label = unitLabel(
+      targetUnit,
+      amount: displayed.amount,
+      householdMeasure: quantity.context.householdMeasure,
+    );
     return '${displayed.amount.format(decimalPlaces: decimalPlaces)} $label';
+  }
+
+  /// A stored amount and unit token from an older record: the unit may be a
+  /// stable id (`mass_gram`), a parser alias (`grams`) or a measure id.
+  static String formatStored(String amount, String storedUnit) {
+    final token = storedUnit.trim();
+    QuantityAmount? parsed;
+    try {
+      parsed = QuantityAmount.fromString(amount);
+    } on QuantityError {
+      parsed = null;
+    }
+    QuantityUnit? unit;
+    for (final definition in QuantityUnitRegistry.definitions) {
+      if (definition.stableId == token) unit = definition.unit;
+    }
+    if (unit == null) {
+      try {
+        unit = QuantityUnitRegistry.resolveToken(token).unit;
+      } on QuantityError {
+        unit = null;
+      }
+    }
+    final shown = parsed?.toString() ?? amount.trim();
+    if (unit != null && unit != QuantityUnit.householdReference) {
+      return '$shown ${unitLabel(unit, amount: parsed)}';
+    }
+    final key = householdMeasureKey(token);
+    final plural = parsed != null && parsed.compareTo(QuantityAmount.one) != 0;
+    return '$shown ${key == null || key == 'piece' ? _pluralise(key ?? 'serving', plural) : key}';
   }
 }
 

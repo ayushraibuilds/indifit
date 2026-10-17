@@ -2242,7 +2242,11 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
 
   String _quantityUnitLabel(Quantity quantity, {NutritionFoodOption? option}) =>
       quantity.unit == QuantityUnit.householdReference
-      ? quantity.context.householdMeasure!.measureType
+      ? QuantityFormatter.unitLabel(
+          quantity.unit,
+          amount: quantity.amount,
+          householdMeasure: quantity.context.householdMeasure,
+        )
       : quantity.unit == QuantityUnit.serving &&
             option?.servingUnitLabel?.trim().isNotEmpty == true
       ? option!.servingUnitLabel!.trim()
@@ -2262,9 +2266,11 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
           : '${quantity.amount} servings';
     }
     if (quantity.unit == QuantityUnit.householdReference) {
-      final measure = quantity.context.householdMeasure?.measureType.trim();
-      if (measure == null || measure.isEmpty) return null;
-      return '${quantity.amount} $measure';
+      final measure = householdMeasureKey(
+        quantity.context.householdMeasure?.measureType,
+      );
+      if (measure == null) return null;
+      return QuantityFormatter.format(quantity);
     }
     final symbol = quantity.definition.symbol.trim();
     if (symbol.isEmpty || symbol == '?') return null;

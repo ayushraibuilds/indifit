@@ -380,7 +380,11 @@ class _FoodPortionBottomSheetState
 
   String _quantityUnitLabel(Quantity quantity) =>
       quantity.unit == QuantityUnit.householdReference
-      ? quantity.context.householdMeasure!.measureType
+      ? QuantityFormatter.unitLabel(
+          quantity.unit,
+          amount: quantity.amount,
+          householdMeasure: quantity.context.householdMeasure,
+        )
       : quantity.unit == QuantityUnit.serving &&
             widget.option.servingUnitLabel?.trim().isNotEmpty == true
       ? widget.option.servingUnitLabel!.trim()

@@ -208,7 +208,7 @@ void main() {
         amount: '1.23456',
         unit: QuantityUnit.gram,
       );
-      expect(QuantityFormatter.format(grams, decimalPlaces: 2), '1.23 grams');
+      expect(QuantityFormatter.format(grams, decimalPlaces: 2), '1.23 g');
       expect(grams.amount.toString(), '1.23456');
       expect(
         QuantityFormatter.format(
@@ -216,7 +216,7 @@ void main() {
           displayUnit: QuantityUnit.kilogram,
           decimalPlaces: 6,
         ),
-        '0.001235 kilograms',
+        '0.001235 kg',
       );
     });
 
@@ -229,9 +229,9 @@ void main() {
       expect(format('1', QuantityUnit.piece), '1 piece');
       expect(format('1.0', QuantityUnit.piece), '1 piece');
       expect(format('2', QuantityUnit.piece), '2 pieces');
-      expect(format('1', QuantityUnit.gram), '1 gram');
-      expect(format('150', QuantityUnit.gram), '150 grams');
-      expect(format('0.5', QuantityUnit.millilitre), '0.5 millilitres');
+      expect(format('1', QuantityUnit.gram), '1 g');
+      expect(format('150', QuantityUnit.gram), '150 g');
+      expect(format('0.5', QuantityUnit.millilitre), '0.5 ml');
       expect(
         QuantityUnitRegistry.definitionFor(
           QuantityUnit.serving,

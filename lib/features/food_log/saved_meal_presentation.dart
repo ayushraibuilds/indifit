@@ -8,19 +8,17 @@ import '../../core/typed_quantities.dart';
 /// In particular, household references and servings are never turned into
 /// grams merely for presentation.
 String savedMealQuantityLabel(NutritionThaliItem item) {
-  final amount = item.quantity.amount.toString();
-  final unit = item.quantity.unit;
-  final definition = QuantityUnitRegistry.definitionFor(unit);
-
-  return switch (unit) {
-    QuantityUnit.piece =>
-      '$amount ${amount == '1' ? definition.symbol : 'pieces'}',
-    QuantityUnit.serving =>
-      '$amount ${amount == '1' ? definition.symbol : 'servings'}',
-    QuantityUnit.householdReference =>
-      '$amount ${item.quantity.context.householdMeasure?.measureType ?? item.measureId ?? definition.symbol}',
-    _ => '$amount ${definition.symbol}',
-  };
+  final quantity = item.quantity;
+  if (quantity.unit == QuantityUnit.householdReference &&
+      quantity.context.householdMeasure == null &&
+      item.measureId != null) {
+    return '${quantity.amount} ${QuantityFormatter.unitLabel(
+      quantity.unit,
+      amount: quantity.amount,
+      householdMeasure: HouseholdMeasureReference(measureType: item.measureId!),
+    )}';
+  }
+  return QuantityFormatter.format(quantity);
 }
 
 String savedMealItemKindLabel(NutritionThaliItem item) =>
