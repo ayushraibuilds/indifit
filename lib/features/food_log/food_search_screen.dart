@@ -353,7 +353,10 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         NutritionFoodSearchCandidate.canonical(
           option,
           matchedTerms: hit.matchedTerms,
-          alternateNames: [if (hit.aliases.isNotEmpty) hit.aliases],
+          alternateNames: [
+            ...hit.aliasNames,
+            if (hit.aliases.isNotEmpty) hit.aliasText,
+          ],
         ),
       for (final food in _onlineResults)
         NutritionFoodSearchCandidate.remote(food),

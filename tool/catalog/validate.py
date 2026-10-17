@@ -256,6 +256,41 @@ def check_delta(previous, delta, full):
     return out
 
 
+def check_legacy_servings(pack, rows):
+    """UR-08: the app shows legacy `food_items` rows with the pack's default
+    serving (CatalogPackImporter aligns them), keeping the row's kcal. So the
+    pack serving must hold exactly the row's kcal: "Poha (Double healthy
+    bowl)" is 2 katori at 460 kcal, "Roasted Chana (Small side bowl)" 25 g at
+    90 kcal, never "1 katori" or "25 katori".
+    """
+    out = []
+    by_id = {food["id"]: food for food in pack["foods"]}
+    for row in rows:
+        food = by_id.get(row["id"])
+        if food is None or food.get("lifecycle", "active") != "active":
+            continue
+        serving = next(s for s in food["servings"] if s.get("default"))
+        energy = food["facts"]["values"].get("energy", 0)
+        basis = food["facts"]["basis"]
+        if basis == "per_100_grams":
+            kcal = energy * (serving.get("grams") or 0) / 100
+        elif basis == "per_100_millilitres":
+            kcal = energy * serving["amount"] / 100 if serving["unit"] == "ml" else None
+        else:
+            kcal = energy
+        if kcal is None or abs(kcal - float(row["calories"])) > 0.5:
+            out.append(
+                Violation(
+                    "legacy-serving",
+                    food["id"],
+                    food["display_name"],
+                    f"{serving['amount']:g} {serving['unit']} holds "
+                    f"{'?' if kcal is None else f'{kcal:g}'} kcal; the app row says {row['calories']}",
+                )
+            )
+    return out
+
+
 def _gram_rules(version):
     rules = {}
     for _, data in build.load_overlays(version):
@@ -290,6 +325,7 @@ def validate_built():
         gram_rules=_gram_rules(build.LATEST),
         nutrient_ids=_nutrient_ids(),
     )
+    out += check_legacy_servings(latest, build.load_source_rows())
     if previous is not None:
         delta = build.decode(outputs[build.PACKS / f"v{build.LATEST}/{build.LATEST}-from-{build.LATEST - 1}.json.gz"])
         out += check_delta(previous, delta, latest)

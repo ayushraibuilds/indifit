@@ -89,9 +89,9 @@ void main() {
   });
 
   testWidgets('a relaxed search says what it searched', (tester) async {
-    await search(tester, 'egg fried rice');
+    await search(tester, 'cheese dosa');
     expect(find.text('No exact match'), findsOneWidget);
-    expect(find.text('Showing results for “fried rice”.'), findsOneWidget);
-    expect(find.textContaining('Fried Rice'), findsWidgets);
+    expect(find.text('Showing results for “dosa”.'), findsOneWidget);
+    expect(find.textContaining('Dosa'), findsWidgets);
   });
 }
