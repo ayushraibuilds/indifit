@@ -1,6 +1,7 @@
 import '../database/app_database.dart';
 import '../repositories/food_api_service.dart';
 import '../repositories/nutrition_food_catalog_repository.dart';
+import 'food_dish_groups.dart';
 import 'food_name_spelling.dart';
 import 'food_query_amount.dart';
 
@@ -381,7 +382,7 @@ class NutritionFoodSearchCandidate {
       id: option.id,
       canonicalIdentityId: option.id,
       presentationKind: null,
-      variantOfFoodId: null,
+      variantOfFoodId: option.variantOfFoodId,
       displayName: option.displayName,
       brand: _clean(option.brand),
       category: null,
@@ -628,6 +629,7 @@ class NutritionFoodSearchRanking {
     NutritionFoodSearchHistory history =
         const NutritionFoodSearchHistory.empty(),
     int limit = 40,
+    bool oneRowPerDish = false,
   }) {
     final normalizedQuery = NutritionFoodSearchVocabulary.normalize(query);
     if (normalizedQuery.isEmpty) return const [];
@@ -661,8 +663,12 @@ class NutritionFoodSearchRanking {
           !_remotePassesThreshold(result, normalizedQuery),
     );
     scored.sort(_compare);
-    if (scored.length <= limit) return List.unmodifiable(scored);
-    return List.unmodifiable(scored.take(limit));
+    // UR-05: size and oil variants become chips in the portion sheet.
+    final rows = oneRowPerDish
+        ? FoodDishGroups.collapse(normalizedQuery, scored)
+        : scored;
+    if (rows.length <= limit) return List.unmodifiable(rows);
+    return List.unmodifiable(rows.take(limit));
   }
 
   static _Evaluation _evaluate(

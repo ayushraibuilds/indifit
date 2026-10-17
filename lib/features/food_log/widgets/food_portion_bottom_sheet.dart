@@ -19,6 +19,8 @@ import '../../../core/widgets/b05_accessibility_primitives.dart';
 import '../../../core/widgets/indi_fit_feedback.dart';
 import '../../../data/repositories/nutrition_food_catalog_repository.dart';
 import '../../../data/repositories/nutrition_food_logging_coordinator.dart';
+import '../../../data/services/food_dish_group_loader.dart';
+import '../../../data/services/food_dish_groups.dart';
 import '../../dashboard/today_surface_controller.dart';
 import '../diary_structure_controller.dart';
 import '../food_search_view_models.dart';
@@ -34,10 +36,15 @@ class FoodPortionLogged {
     required this.mealType,
     required this.snapshot,
     this.amount,
+    this.foodName,
   });
 
   final String mealType;
   final NutritionConsumptionSnapshot snapshot;
+
+  /// The food logged, when a size or oil chip changed it from the one the
+  /// sheet opened with ("Poha (Flattened Rice) (Double healthy bowl)").
+  final String? foodName;
 
   /// The amount as picked ("1 katori (150 g)"), when the food has a
   /// household unit.
@@ -63,6 +70,12 @@ class FoodPortionBottomSheet extends ConsumerStatefulWidget {
   final String? categoryId;
   final List<ServingOption>? categoryServingOptions;
 
+  /// The dish's size and oil variants as chips (UR-05), when it has any.
+  final FoodDishGroup? dishGroup;
+
+  /// Look the dish group up after opening, when [dishGroup] isn't given.
+  final bool loadsDishGroup;
+
   const FoodPortionBottomSheet({
     super.key,
     required this.option,
@@ -74,6 +87,8 @@ class FoodPortionBottomSheet extends ConsumerStatefulWidget {
     this.onQuantityPicked,
     required this.coordinator,
     required this.transformations,
+    this.dishGroup,
+    this.loadsDishGroup = false,
     this.initialPreview,
     this.categoryId,
     this.categoryServingOptions,
@@ -106,14 +121,7 @@ class FoodPortionBottomSheet extends ConsumerStatefulWidget {
         FoodCategoryTaxonomy.resolveCategoryId(name: option.displayName);
     final resolvedServingOptions =
         categoryServingOptions ??
-        FoodCategoryTaxonomy.servingOptionsForCategory(
-          categoryId: resolvedCategoryId,
-          servingSize: option.baseQuantity.amount.asDouble,
-          servingUnit:
-              option.servingUnitLabel ??
-              option.baseQuantity.unit.toString().split('.').last,
-          isStuffedParatha: isStuffedParathaName(option.displayName),
-        );
+        servingOptionsFor(option, categoryId: resolvedCategoryId);
     final isCorrection = correctionRecord != null && correctionItem != null;
     final resolvedMealType =
         mealType ?? correctionRecord?.mealCategory ?? await ensureMealContext();
@@ -157,6 +165,9 @@ class FoodPortionBottomSheet extends ConsumerStatefulWidget {
           initialPreview: initialPreview,
           categoryId: resolvedCategoryId,
           categoryServingOptions: resolvedServingOptions,
+          // Not when correcting a log, nor when a caller takes the quantity
+          // back for the food it passed (a thali): a chip changes the food.
+          loadsDishGroup: !isCorrection && onQuantityPicked == null,
         );
       },
     );
@@ -179,7 +190,7 @@ class FoodPortionBottomSheet extends ConsumerStatefulWidget {
           context,
           savedResult.snapshot,
           amount: savedResult.amount,
-          name: option.displayName,
+          name: savedResult.foodName ?? option.displayName,
         );
       } else {
         showIndiFitSuccessFeedback(
@@ -197,6 +208,21 @@ class FoodPortionBottomSheet extends ConsumerStatefulWidget {
 
     return false;
   }
+
+  /// The category serving chips for [option].
+  static List<ServingOption> servingOptionsFor(
+    NutritionFoodOption option, {
+    String? categoryId,
+  }) => FoodCategoryTaxonomy.servingOptionsForCategory(
+    categoryId:
+        categoryId ??
+        FoodCategoryTaxonomy.resolveCategoryId(name: option.displayName),
+    servingSize: option.baseQuantity.amount.asDouble,
+    servingUnit:
+        option.servingUnitLabel ??
+        option.baseQuantity.unit.toString().split('.').last,
+    isStuffedParatha: isStuffedParathaName(option.displayName),
+  );
 
   @override
   ConsumerState<FoodPortionBottomSheet> createState() =>
@@ -218,6 +244,13 @@ class _FoodPortionBottomSheetState
   NutritionFoodLogPreview? _currentPreview;
   var _previewHasError = false;
 
+  /// The food being logged: the one the sheet opened with, or the variant
+  /// a size or oil chip chose (UR-05).
+  late NutritionFoodOption _option;
+  late List<dynamic> _transformations;
+  List<ServingOption>? _servingOptions;
+  FoodDishGroup? _dishGroup;
+
   bool get _isCorrection =>
       widget.correctionRecord != null && widget.correctionItem != null;
 
@@ -225,8 +258,23 @@ class _FoodPortionBottomSheetState
   void initState() {
     super.initState();
     _selectedMealType = widget.initialMealType;
+    _option = widget.option;
+    _transformations = widget.transformations;
+    _servingOptions = widget.categoryServingOptions;
+    _dishGroup = widget.dishGroup;
+    if (_dishGroup == null && widget.loadsDishGroup) {
+      unawaited(_loadDishGroup());
+    }
     _selectedQuantity =
-        widget.initialQuantity ?? widget.option.defaultLoggingQuantity;
+        widget.initialQuantity ?? _option.defaultLoggingQuantity;
+    _resetCompatibleUnits();
+    _currentPreview = widget.initialPreview;
+    _amountController = TextEditingController(
+      text: _selectedQuantity.amount.toString(),
+    );
+  }
+
+  void _resetCompatibleUnits() {
     _compatibleUnits = <QuantityUnit>[
       ...switch (_selectedQuantity.dimension) {
         QuantityDimension.mass => const [
@@ -237,16 +285,40 @@ class _FoodPortionBottomSheetState
           QuantityUnit.millilitre,
           QuantityUnit.litre,
         ],
-        _ => [widget.option.baseQuantity.unit],
+        _ => [_option.baseQuantity.unit],
       },
     ];
     if (!_compatibleUnits.contains(_selectedQuantity.unit)) {
       _compatibleUnits.insert(0, _selectedQuantity.unit);
     }
-    _currentPreview = widget.initialPreview;
-    _amountController = TextEditingController(
-      text: _selectedQuantity.amount.toString(),
-    );
+  }
+
+  Future<void> _loadDishGroup() async {
+    try {
+      final group = await FoodDishGroupLoader(
+        ref.read(databaseProvider),
+        await ref.read(nutritionFoodCatalogRepositoryProvider.future),
+      ).load(widget.option.id);
+      if (mounted && group != null) setState(() => _dishGroup = group);
+    } catch (_) {
+      // Safe: without its group the sheet logs the food as chosen.
+    }
+  }
+
+  /// A size or oil chip: log that variant from now on, at its own serving.
+  Future<void> _chooseVariant(NutritionFoodOption option) async {
+    if (option.id == _option.id || _isFinalizing) return;
+    final transformations = await widget.coordinator.transformationsFor(option);
+    if (!mounted) return;
+    setState(() {
+      _option = option;
+      _transformations = transformations;
+      _selectedTransformationId = null;
+      _servingOptions = FoodPortionBottomSheet.servingOptionsFor(option);
+      _selectedQuantity = option.defaultLoggingQuantity;
+      _resetCompatibleUnits();
+    });
+    _setQuantity(option.defaultLoggingQuantity);
   }
 
   @override
@@ -257,12 +329,12 @@ class _FoodPortionBottomSheetState
 
   void _updatePreview() {
     final currentGen = ++_previewGeneration;
-    final transformation = widget.transformations
+    final transformation = _transformations
         .where((item) => item.id == _selectedTransformationId)
         .firstOrNull;
     widget.coordinator
         .preview(
-          option: widget.option,
+          option: _option,
           quantity: _selectedQuantity,
           transformation: transformation,
         )
@@ -318,7 +390,7 @@ class _FoodPortionBottomSheetState
         ),
       );
     } else {
-      final baseGram = widget.option.baseQuantity.amount.asDouble;
+      final baseGram = _option.baseQuantity.amount.asDouble;
       final factor = baseGram > 0 ? opt.gramWeight / baseGram : 1.0;
       _setQuantity(
         Quantity.fromDecimal(
@@ -335,9 +407,40 @@ class _FoodPortionBottomSheetState
   /// The household picture of the current amount, when it has one.
   PortionVisualSpec? _portionVisual() => portionVisualSpecFor(
     quantity: _selectedQuantity,
-    servingUnitLabel: widget.option.servingUnitLabel,
-    servingOptions: widget.categoryServingOptions ?? const [],
+    servingUnitLabel: _option.servingUnitLabel,
+    servingOptions: _servingOptions ?? const [],
   );
+
+  /// One row of size or oil chips. A variant changes one thing, so the chip
+  /// on the other row shows the dish's default (Regular, Home).
+  Widget _dishChipRow(List<FoodDishChoice> row) {
+    final group = _dishGroup!;
+    final selection = group.selectionFor(_option.id);
+    final axis = row.first.chip.axis;
+    final selected = axis == DishVariantAxis.size
+        ? selection.size
+        : selection.oil;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Semantics(
+        container: true,
+        label: axis == DishVariantAxis.size ? 'Size' : 'Oil',
+        child: Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final choice in row)
+              ChoiceChip(
+                key: ValueKey('dish-chip-${choice.chip.label}'),
+                label: Text(choice.chip.label),
+                selected: identical(choice, selected),
+                onSelected: (_) => _chooseVariant(choice.option),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 
   String _formatServingOptionChipLabel(ServingOption option) {
     return switch (option.unitName) {
@@ -407,8 +510,8 @@ class _FoodPortionBottomSheetState
           householdMeasure: quantity.context.householdMeasure,
         )
       : quantity.unit == QuantityUnit.serving &&
-            widget.option.servingUnitLabel?.trim().isNotEmpty == true
-      ? widget.option.servingUnitLabel!.trim()
+            _option.servingUnitLabel?.trim().isNotEmpty == true
+      ? _option.servingUnitLabel!.trim()
       : quantity.definition.displayLabel;
 
   String _mealLabel(String? value) {
@@ -514,9 +617,9 @@ class _FoodPortionBottomSheetState
 
     try {
       final preview = await widget.coordinator.preview(
-        option: widget.option,
+        option: _option,
         quantity: _selectedQuantity,
-        transformation: widget.transformations
+        transformation: _transformations
             .where((item) => item.id == _selectedTransformationId)
             .firstOrNull,
       );
@@ -584,9 +687,10 @@ class _FoodPortionBottomSheetState
             : FoodPortionLogged(
                 mealType: _selectedMealType,
                 snapshot: logged,
-                amount: widget.option.measure?.pickedAmountLabel(
-                  _selectedQuantity,
-                ),
+                amount: _option.measure?.pickedAmountLabel(_selectedQuantity),
+                foodName: _option.id == widget.option.id
+                    ? null
+                    : _option.displayName,
               ),
       );
     } catch (error) {
@@ -695,10 +799,7 @@ class _FoodPortionBottomSheetState
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              widget.option.displayName,
-              style: B05Typography.title(context),
-            ),
+            Text(_option.displayName, style: B05Typography.title(context)),
             const SizedBox(height: 8),
             Semantics(
               liveRegion: true,
@@ -750,12 +851,16 @@ class _FoodPortionBottomSheetState
               const SizedBox(height: 12),
             ],
 
-            if (widget.categoryServingOptions != null &&
-                widget.categoryServingOptions!.isNotEmpty) ...[
+            if (_dishGroup case final group?) ...[
+              for (final row in [group.sizes, group.oils])
+                if (row.isNotEmpty) _dishChipRow(row),
+              const SizedBox(height: 4),
+            ],
+            if (_servingOptions != null && _servingOptions!.isNotEmpty) ...[
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
-                  children: widget.categoryServingOptions!.map((opt) {
+                  children: _servingOptions!.map((opt) {
                     final isSelected =
                         (_selectedQuantity.unit == QuantityUnit.gram &&
                         (_selectedQuantity.amount.asDouble - opt.gramWeight)
@@ -843,7 +948,7 @@ class _FoodPortionBottomSheetState
             ],
             Divider(color: context.b05Colors.border, height: 24),
 
-            if (widget.transformations.isNotEmpty) ...[
+            if (_transformations.isNotEmpty) ...[
               DropdownButtonFormField<String?>(
                 initialValue: _selectedTransformationId,
                 decoration: const InputDecoration(
@@ -855,7 +960,7 @@ class _FoodPortionBottomSheetState
                     value: null,
                     child: Text('No conversion'),
                   ),
-                  ...widget.transformations.map(
+                  ..._transformations.map(
                     (item) => DropdownMenuItem<String?>(
                       value: item.id,
                       child: Text(_transformationLabel(item)),
