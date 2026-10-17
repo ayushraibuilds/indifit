@@ -91,6 +91,7 @@ class CatalogPackImporter {
       final changed = await _writeFacts(pack, sources, now);
       await _writeConversions(pack, now);
       await _writeAliases(pack, now);
+      await _alignLegacyServings(pack);
       if (pack.retire.isNotEmpty) {
         await (_db.update(_db.nutritionFoods)..where(
               (food) => food.id.isIn(pack.retire.map((retired) => retired.id)),
@@ -297,6 +298,43 @@ class CatalogPackImporter {
       }
     }
     return true;
+  }
+
+  /// UR-08: a legacy `food_items` row shows its catalogue food's default
+  /// serving, so search says "2 katori · 460 kcal" for "Poha (Double healthy
+  /// bowl)", never "1 katori", and "25 g" for a small bowl of roasted chana,
+  /// never "25 katori". The row keeps its kcal: validate.py checks that the
+  /// pack serving holds exactly that kcal.
+  Future<void> _alignLegacyServings(CatalogPack pack) async {
+    final servings = <String, CatalogPackServing>{
+      for (final food in pack.foods)
+        for (final serving in food.servings)
+          if (serving.isDefault) food.id: serving,
+    };
+    if (servings.isEmpty) return;
+    final mappings =
+        await (_db.select(_db.nutritionLegacyFoodMappings)..where(
+              (mapping) =>
+                  mapping.foodId.isIn(servings.keys) &
+                  mapping.mappingStatus.equals('reviewed'),
+            ))
+            .get();
+    for (final mapping in mappings) {
+      final serving = servings[mapping.foodId]!;
+      await (_db.update(_db.foodItems)..where(
+            (item) =>
+                item.id.equals(mapping.legacyFoodItemId) &
+                item.isCustom.equals(false) &
+                (item.servingSize.equals(serving.amount).not() |
+                    item.servingUnit.equals(serving.unit).not()),
+          ))
+          .write(
+            FoodItemsCompanion(
+              servingSize: Value(serving.amount),
+              servingUnit: Value(serving.unit),
+            ),
+          );
+    }
   }
 
   Future<void> _writeAliases(CatalogPack pack, DateTime now) async {
