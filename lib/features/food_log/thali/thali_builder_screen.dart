@@ -6,11 +6,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/di/providers.dart';
+import '../../../core/nutrition_consumption_snapshots.dart';
 import '../../../core/nutrition_thali.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
 import '../../../core/widgets/indi_fit_feedback.dart';
 import '../../dashboard/today_surface_controller.dart';
+import '../canonical_food_actions.dart';
 import '../katori_size_step.dart';
 import '../meal_presentation_registry.dart';
 import '../nutrition_thali_controller.dart';
@@ -36,11 +38,16 @@ class ThaliBuilderScreen extends ConsumerStatefulWidget {
   final String? initialThaliId;
   final DateTime? selectedDate;
 
+  /// A logged thali or recipe being edited: the plate starts from it, and
+  /// logging replaces it (UR-11).
+  final NutritionConsumptionSnapshot? replacesSnapshot;
+
   const ThaliBuilderScreen({
     super.key,
     this.mealCategory = 'lunch',
     this.initialThaliId,
     this.selectedDate,
+    this.replacesSnapshot,
   });
 
   @override
@@ -79,6 +86,18 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
             )
             .loadDraft(widget.initialThaliId!);
       });
+    } else if (widget.replacesSnapshot?.recipeVersionId != null) {
+      final replaced = widget.replacesSnapshot!;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref
+            .read(
+              nutritionThaliControllerProvider(widget.mealCategory).notifier,
+            )
+            .startFromRecipe(
+              recipeVersionId: replaced.recipeVersionId!,
+              name: replaced.items.firstOrNull?.displayLabel ?? 'Recipe',
+            );
+      });
     }
   }
 
@@ -113,6 +132,10 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
       saveAsTemplate: saveAsTemplate,
     );
 
+    final replaced = widget.replacesSnapshot;
+    if (snapshot != null && replaced != null) {
+      await retractReplacedRecord(ref, replaced);
+    }
     if (snapshot != null && mounted) {
       ref.read(todayNutritionRevisionProvider.notifier).state++;
       showIndiFitSuccessFeedback(context, 'Thali logged successfully!');
@@ -174,6 +197,7 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
     // (P1 H9). Saved drafts and AI handoffs arrive with items, so they skip.
     if (!_triedUsual &&
         widget.initialThaliId == null &&
+        widget.replacesSnapshot == null &&
         state.status == NutritionThaliStatus.ready &&
         draft != null) {
       _triedUsual = true;

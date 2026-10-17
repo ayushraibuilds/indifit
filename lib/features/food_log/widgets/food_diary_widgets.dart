@@ -13,7 +13,6 @@ import '../../../data/repositories/nutrition_target_authority.dart';
 import '../../dashboard/today_consumer_presentation.dart';
 import '../../dashboard/today_surface_controller.dart';
 import '../../settings/nutrition_targets_hub_screen.dart';
-import '../canonical_food_actions.dart';
 import '../food_log_surface.dart';
 import '../food_search_screen.dart';
 import '../meal_presentation_registry.dart';
@@ -85,18 +84,9 @@ class FoodMealDetailScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 16),
-            FoodLogEntriesPanel(
-              date: selectedDate,
-              mealType: mealType,
-              // Run in place so the sheet and dialogs sit over this screen.
-              onCanonicalItemTap: (record, item) => runCanonicalFoodItemActions(
-                context: context,
-                ref: ref,
-                record: record,
-                item: item,
-                targetDate: selectedDate,
-              ),
-            ),
+            // Rows run their actions in place (runLoggedRecordActions), so
+            // the sheet and dialogs sit over this screen.
+            FoodLogEntriesPanel(date: selectedDate, mealType: mealType),
           ],
         ),
       ),

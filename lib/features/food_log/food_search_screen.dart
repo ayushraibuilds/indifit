@@ -2193,16 +2193,12 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
             )
             .firstOrNull;
     if (item == null || item.foodId == null) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'This logged item cannot be edited from this screen.',
-            ),
-          ),
-        );
-      }
-      return;
+      return runLoggedRecordActions(
+        context: context,
+        ref: ref,
+        record: record,
+        targetDate: widget.selectedDate ?? DateTime.now(),
+      );
     }
     final catalog = await ref.read(
       nutritionFoodCatalogRepositoryProvider.future,

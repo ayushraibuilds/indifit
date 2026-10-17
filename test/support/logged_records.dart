@@ -6,6 +6,7 @@ import 'package:indifit/core/nutrients.dart';
 import 'package:indifit/core/nutrition_calculation_service.dart';
 import 'package:indifit/core/nutrition_consumption_snapshots.dart';
 import 'package:indifit/core/nutrition_household_measures.dart';
+import 'package:indifit/core/nutrition_legacy_read_models.dart';
 import 'package:indifit/core/nutrition_thali.dart';
 import 'package:indifit/core/services/local_timezone_service.dart';
 import 'package:indifit/core/typed_quantities.dart';
@@ -17,6 +18,7 @@ import 'package:indifit/data/repositories/nutrition_recipe_log_coordinator.dart'
 import 'package:indifit/data/repositories/nutrition_recipe_repository.dart';
 import 'package:indifit/data/repositories/nutrition_transformation_repository.dart';
 import 'package:indifit/features/food_log/food_search_screen.dart';
+import 'package:indifit/features/food_log/repeat_meal.dart';
 
 import 'real_catalogue.dart';
 
@@ -163,6 +165,27 @@ class LoggedRecords {
     ]) {
       if (!wants(source)) continue;
       bySource[source] = await _absolute(c, source, label, meal, loggedAt);
+    }
+    if (wants('repeat') && bySource['thali'] != null) {
+      final outcome = await logRepeatPlan(
+        plan: planRepeat([
+          NutritionCanonicalSnapshotReadModel(bySource['thali']!),
+        ]),
+        foods: foods,
+        catalog: c.catalog,
+        thalis: c.thali,
+        recipes: c.recipeLogging,
+        userId: kLocalNutritionUserScopeId,
+        mealCategory: 'dinner',
+        loggedAtUtc: DateTime.utc(2026, 10, 8, 14),
+        localDate: loggedRecordsDate,
+        timezoneId: loggedRecordsTimezone,
+      );
+      expect(outcome.thalis, 1);
+      final dinner = (await c.consumption.listAllForUser(
+        userId: kLocalNutritionUserScopeId,
+      )).where((snapshot) => snapshot.mealCategory == 'dinner');
+      bySource['repeat'] = dinner.single;
     }
     return LoggedRecords._(c, foods, bySource);
   }
