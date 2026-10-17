@@ -41,6 +41,7 @@ final nutritionRoutes = <RouteBase>[
     builder: (context, state) => NaturalLanguageMealScreen(
       mealType: state.uri.queryParameters['mealType'],
       date: state.uri.queryParameters['date'],
+      initialText: state.uri.queryParameters['text'],
     ),
   ),
   GoRoute(

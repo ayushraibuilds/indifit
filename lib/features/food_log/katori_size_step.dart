@@ -20,18 +20,50 @@ const String kKatoriPromptDismissedKey = 'katori_size_prompt_dismissed_v1';
 /// vessel (created once) with a new calibration, so it's backed up with
 /// their other measures and every catalogue katori follows it.
 Future<void> saveMyKatori(WidgetRef ref, double millilitres) async {
+  await _saveMyVessel(
+    ref,
+    vesselType: kMyKatoriVesselType,
+    displayName: 'My katori',
+    millilitres: millilitres,
+  );
+  ref.invalidate(myKatoriMillilitresProvider);
+}
+
+/// The person's glass in millilitres, or null until they've chosen (UR-09).
+final myGlassMillilitresProvider = FutureProvider.autoDispose<double?>(
+  (ref) => readMyGlassMillilitres(ref.watch(databaseProvider)),
+);
+
+/// Saves [millilitres] as the person's glass, as [saveMyKatori] does for
+/// the katori: liquids then offer "My glass" at that size.
+Future<void> saveMyGlass(WidgetRef ref, double millilitres) async {
+  await _saveMyVessel(
+    ref,
+    vesselType: kMyGlassVesselType,
+    displayName: 'My glass',
+    millilitres: millilitres,
+  );
+  ref.invalidate(myGlassMillilitresProvider);
+}
+
+Future<void> _saveMyVessel(
+  WidgetRef ref, {
+  required String vesselType,
+  required String displayName,
+  required double millilitres,
+}) async {
   final repository = ref.read(nutritionHouseholdMeasureRepositoryProvider);
   const userId = kLocalNutritionUserScopeId;
   final vessels = await repository.listVessels(userId: userId);
   final existing = vessels
-      .where((vessel) => vessel.vesselType == kMyKatoriVesselType)
+      .where((vessel) => vessel.vesselType == vesselType)
       .lastOrNull;
   final vessel =
       existing ??
       await repository.createVessel(
         userId: userId,
-        displayName: 'My katori',
-        vesselType: kMyKatoriVesselType,
+        displayName: displayName,
+        vesselType: vesselType,
       );
   await repository.addCalibration(
     userId: userId,
@@ -45,7 +77,33 @@ Future<void> saveMyKatori(WidgetRef ref, double millilitres) async {
     confidence: 0.5,
     notes: 'Chosen from Small, Standard or Large',
   );
-  ref.invalidate(myKatoriMillilitresProvider);
+}
+
+/// Small · Standard · Large glass, with the current choice selected.
+class GlassSizeChoice extends ConsumerWidget {
+  const GlassSizeChoice({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final current = ref.watch(myGlassMillilitresProvider).valueOrNull;
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        for (final size in kGlassSizeChoicesMillilitres)
+          ChoiceChip(
+            key: Key('glass_size_${size.round()}'),
+            avatar: Icon(Icons.local_drink_outlined, size: 10 + size / 30),
+            label: Text(
+              '${KatoriSizeChoice.label(size, glass: true)} · '
+              '${size.round()} ml',
+            ),
+            selected: current == size,
+            onSelected: (_) => saveMyGlass(ref, size),
+          ),
+      ],
+    );
+  }
 }
 
 /// Small · Standard · Large, with the current choice selected.
@@ -55,12 +113,13 @@ class KatoriSizeChoice extends ConsumerWidget {
   /// After a size is saved, e.g. to recalculate an open thali.
   final ValueChanged<double>? onChosen;
 
-  static String label(double millilitres) => switch (millilitres) {
-    100 => 'Small',
-    150 => 'Standard',
-    200 => 'Large',
-    _ => '${millilitres.round()} ml',
-  };
+  static String label(double millilitres, {bool glass = false}) =>
+      switch ((glass, millilitres)) {
+        (false, 100) || (true, 200) => 'Small',
+        (false, 150) || (true, 250) => 'Standard',
+        (false, 200) || (true, 300) => 'Large',
+        _ => '${millilitres.round()} ml',
+      };
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

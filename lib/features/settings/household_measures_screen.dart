@@ -111,6 +111,16 @@ class _HouseholdMeasuresScreenState
         const SizedBox(height: 8),
         const KatoriSizeChoice(key: Key('household_my_katori')),
         const SizedBox(height: 16),
+        Text('Your glass', style: B05Typography.sectionLabel(context)),
+        const SizedBox(height: 4),
+        Text(
+          'Milk, chai, juice and shakes offer "My glass" at this size. '
+          'Most steel glasses hold 200–300 ml.',
+          style: B05Typography.body(context),
+        ),
+        const SizedBox(height: 8),
+        const GlassSizeChoice(key: Key('household_my_glass')),
+        const SizedBox(height: 16),
         Text('Standard measures', style: B05Typography.sectionLabel(context)),
         const SizedBox(height: 8),
         Wrap(
