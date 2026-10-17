@@ -173,6 +173,43 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('a rest day with a plan still offers the next workout now', (
+    tester,
+  ) async {
+    _setViewport(tester, const Size(390, 844));
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          trainingLandingSnapshotProvider.overrideWith(
+            (ref) async => TrainingLandingSnapshot(
+              localDate: '2026-08-10',
+              timezoneId: 'Asia/Kolkata',
+              todayWorkout: null,
+              upcoming: [
+                _calendarItem(
+                  name: 'Full Body A',
+                  localDate: '2026-08-12',
+                  status: 'planned',
+                  prescriptionCount: 5,
+                ),
+              ],
+              recentSessions: const [],
+              activeProgramName: 'Upper / Lower Strength',
+            ),
+          ),
+        ],
+        child: _app(AppTheme.lightTheme, const TrainingScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('No workout planned today'), findsNothing);
+    expect(find.text('Start Full Body A now'), findsOneWidget);
+    expect(find.textContaining('Rest day today'), findsOneWidget);
+    expect(find.text('Quick workout'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('Training fails closed when active workout state is unknown', (
     tester,
   ) async {

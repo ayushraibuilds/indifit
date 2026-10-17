@@ -61,7 +61,7 @@ class _WorkoutContextualActionsState
         builder: (context) => AlertDialog(
           title: const Text('Start outside scheduled date?'),
           content: Text(
-            'This workout is scheduled for ${ConsumerDateLabel.inSentence(_item.occurrence.effectiveLocalDate)}. Starting it will not move or skip any other workout.',
+            WorkoutContextualLauncher.outsideDateMessage(ref, _item),
           ),
           actions: [
             TextButton(

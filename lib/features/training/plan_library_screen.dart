@@ -26,6 +26,7 @@ import '../../data/repositories/program_activation_coordinator.dart';
 import '../../data/repositories/workout_repository.dart';
 import '../calendar/calendar_controller.dart';
 import '../settings/unit_preference.dart';
+import 'plan_start_sheet.dart';
 import 'training_workout_customization.dart';
 import 'training_workout_preview.dart';
 
@@ -415,6 +416,19 @@ class _PlanOverviewScreenState extends ConsumerState<PlanOverviewScreen> {
             timezoneId: timezoneId,
           );
       if (!mounted) return;
+      final choice = await showPlanStartSheet(
+        context,
+        planName: entry.program.name,
+        todayLocalDate: localDate,
+        timezoneId: timezoneId,
+        dates: dates,
+        planWeekdays: planLibraryFirstWeekWeekdays(entry),
+        sessionsPerWeek: entry.metadata.trainingDaysPerWeek,
+      );
+      if (choice == null || !mounted) {
+        if (mounted) setState(() => _isActivating = false);
+        return;
+      }
       if (current.activeProgramVersionId != null &&
           current.activeProgramVersionId != entry.version.id) {
         final shouldSwitch = await _confirmSwitch(
@@ -442,8 +456,9 @@ class _PlanOverviewScreenState extends ConsumerState<PlanOverviewScreen> {
             ActivateProgramVersionCommand(
               programVersionId: versionId,
               commandId: _activationCommandId!,
-              activationLocalDate: localDate,
+              activationLocalDate: choice.startLocalDate,
               timezoneId: timezoneId,
+              trainingWeekdays: choice.trainingWeekdays,
             ),
           );
       if (!mounted) return;
@@ -2129,3 +2144,18 @@ bool _matchesQuery(PlanLibraryEntry entry, String rawQuery) {
 }
 
 String _pluralize(String noun, int count) => count == 1 ? noun : '${noun}s';
+
+/// The weekdays of the plan's first week, the pattern the start sheet
+/// pre-selects.
+List<int> planLibraryFirstWeekWeekdays(PlanLibraryEntry entry) {
+  final weeks = [...entry.detail.weeks]
+    ..sort((a, b) => a.programWeekOrdinal.compareTo(b.programWeekOrdinal));
+  if (weeks.isEmpty) return const [];
+  final firstWeekId = weeks.first.id;
+  return entry.detail.sessionTemplates
+      .where((template) => template.programWeekId == firstWeekId)
+      .map((template) => template.plannedWeekday)
+      .toSet()
+      .toList()
+    ..sort();
+}
