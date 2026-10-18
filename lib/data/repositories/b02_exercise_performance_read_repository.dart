@@ -24,7 +24,29 @@ class B02ExercisePerformanceReadRepository {
         'A stable exercise ID is required.',
       );
     }
+    return _read(
+      (exercises, sessions) => exercises.actualExerciseId.equals(exerciseId),
+    );
+  }
 
+  /// Every saved strength exercise completed in [startUtc, endExclusiveUtc),
+  /// newest first (TF-4, TF-3).
+  Future<List<B02ExercisePerformanceRecord>> readCompletedBetween({
+    required DateTime startUtc,
+    required DateTime endExclusiveUtc,
+  }) => _read(
+    (exercises, sessions) =>
+        sessions.completedAt.isBiggerOrEqualValue(startUtc) &
+        sessions.completedAt.isSmallerThanValue(endExclusiveUtc),
+  );
+
+  Future<List<B02ExercisePerformanceRecord>> _read(
+    Expression<bool> Function(
+      $PerformedExercisesTable exercises,
+      $WorkoutSessionsTable sessions,
+    )
+    filter,
+  ) async {
     final sets = _database.performedSets;
     final exercises = _database.performedExercises;
     final sessions = _database.workoutSessions;
@@ -36,7 +58,7 @@ class B02ExercisePerformanceReadRepository {
                 ),
                 innerJoin(sessions, sessions.id.equalsExp(exercises.sessionId)),
               ])
-              ..where(exercises.actualExerciseId.equals(exerciseId))
+              ..where(filter(exercises, sessions))
               ..where(
                 sessions.activityType.equals(B02ActivityType.strength.dbValue),
               )
