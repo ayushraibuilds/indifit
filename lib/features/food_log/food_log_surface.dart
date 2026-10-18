@@ -4,25 +4,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/di/providers.dart';
-import '../../core/nutrients.dart';
 import '../../core/nutrition_household_measures.dart';
 import '../../core/nutrition_legacy_read_models.dart';
-import '../../core/presentation/consumer_copy.dart';
 import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/theme/b05_semantic_colors.dart';
-import '../../core/typed_quantities.dart';
 import '../../core/utils/app_logger.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/indi_fit_feedback.dart';
-import '../../data/catalog/catalogue_quantity_resolver.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/food_repository.dart';
 import '../../data/repositories/nutrition_target_authority.dart';
 import '../dashboard/today_surface_controller.dart';
 import 'canonical_food_actions.dart';
 import 'food_contextual_actions.dart';
-import 'meal_presentation_registry.dart';
-import 'widgets/meal_icon_chip.dart';
+import 'widgets/logged_food_row.dart';
+
+export 'widgets/logged_food_row.dart' show loggedFoodMeasureProvider;
 
 DateTime _civilDay(DateTime value) =>
     DateTime(value.year, value.month, value.day);
@@ -336,27 +333,9 @@ class _CanonicalFoodRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final presentation = foodMealPresentationFor(record.mealCategory);
-    final role = context.b05Colors.meal(
-      presentation.accent ?? B05MealAccent.snack,
-    );
     final displayName = item?.displayLabel?.trim().isNotEmpty == true
         ? item!.displayLabel!
         : record.displayLabel;
-    // The amount as picked: "1 katori (150 g)", not "1 serving" (UR-16).
-    String? amountOf(NutritionHistoricalReadItem entry) {
-      final typed = entry.quantity.quantity;
-      final foodId = entry.foodId;
-      final measure = typed == null || foodId == null
-          ? null
-          : ref.watch(loggedFoodMeasureProvider(foodId)).valueOrNull;
-      return measure?.pickedAmountLabel(typed!) ??
-          _historicalQuantityLabel(entry.quantity);
-    }
-
-    final serving = item == null
-        ? record.items.map(amountOf).whereType<String>().join(' · ')
-        : amountOf(item!) ?? '';
     final actionTap = item != null
         ? onItemTap == null
               ? null
@@ -364,75 +343,11 @@ class _CanonicalFoodRow extends ConsumerWidget {
         : onTap == null
         ? null
         : () => onTap!(record);
-    final energy = _factLabel(
-      item?.facts['energy'] ?? record.totals.facts['energy'],
-      'kcal',
-      0,
-    );
-    final protein = _factLabel(
-      item?.facts['protein'] ?? record.totals.facts['protein'],
-      'g protein',
-      1,
-    );
-    final hasMissingItemFacts =
-        item != null &&
-        (item!.facts['energy']?.isAvailable != true ||
-            item!.facts['protein']?.isAvailable != true);
-
-    final rowContent = Semantics(
-      container: true,
-      label: '${presentation.label}: $displayName',
-      value: '$energy, $protein',
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: actionTap,
-          borderRadius: B05Radii.smallRadius,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: B05Layout.space8),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                MealIconChip(presentation: presentation, color: role),
-                const SizedBox(width: B05Layout.space12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(displayName, style: B05Typography.label(context)),
-                      const SizedBox(height: B05Layout.space4),
-                      Text(
-                        [
-                          presentation.label,
-                          if (serving.isNotEmpty) serving,
-                          energy,
-                          protein,
-                        ].join(' · '),
-                        style: B05Typography.caption(context),
-                      ),
-                      if (hasMissingItemFacts ||
-                          (item == null &&
-                              record.completeness.state !=
-                                  NutrientCompletenessState.complete))
-                        Text(
-                          ConsumerCopy.nutritionDetailsIncomplete,
-                          style: B05Typography.caption(context),
-                        ),
-                    ],
-                  ),
-                ),
-                if (actionTap != null)
-                  B05IconAction(
-                    icon: Icons.more_horiz_rounded,
-                    label: 'Actions for $displayName',
-                    hint: 'Edit, copy, or delete this entry.',
-                    onPressed: actionTap,
-                  ),
-              ],
-            ),
-          ),
-        ),
-      ),
+    // The one logged-food row (UR-40).
+    final rowContent = LoggedFoodRow(
+      record: record,
+      item: item,
+      onActions: actionTap,
     );
 
     final canonical = record is NutritionCanonicalSnapshotReadModel
@@ -468,14 +383,6 @@ class _CanonicalFoodRow extends ConsumerWidget {
     );
   }
 }
-
-/// How a logged food is measured, for showing the amount as it was picked.
-final loggedFoodMeasureProvider = FutureProvider.autoDispose
-    .family<CatalogueFoodMeasure?, String>(
-      (ref, foodId) => CatalogueQuantityResolver(
-        ref.watch(databaseProvider),
-      ).measureFor(foodId),
-    );
 
 /// Records waiting out their Undo window: hidden from the list until the
 /// delete runs or is undone.
@@ -551,27 +458,6 @@ void deleteLoggedRecordWithUndo({
       refresh();
     },
   );
-}
-
-String? _historicalQuantityLabel(NutritionHistoricalQuantity quantity) {
-  final typed = quantity.quantity;
-  if (typed != null) return QuantityFormatter.format(typed);
-  if (quantity.storedAmount == null || quantity.storedUnit.trim().isEmpty) {
-    return null;
-  }
-  return QuantityFormatter.formatStored(
-    '${quantity.storedAmount}',
-    quantity.storedUnit,
-  );
-}
-
-String _factLabel(NutrientFact? fact, String unit, int precision) {
-  if (fact == null || !fact.isAvailable) return '—';
-  String format(NutrientAmount? amount) => amount == null
-      ? '—'
-      : '${amount.value.format(decimalPlaces: precision)} $unit';
-  if (fact.lower == null && fact.upper == null) return format(fact.point);
-  return '${format(fact.lower)}–${format(fact.upper)}';
 }
 
 String _localDateKey(DateTime value) =>

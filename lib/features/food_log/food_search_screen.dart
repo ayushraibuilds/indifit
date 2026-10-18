@@ -55,6 +55,7 @@ import 'thali/thali_route.dart';
 import 'widgets/food_portion_bottom_sheet.dart';
 import 'widgets/food_search_meal_bar.dart';
 import 'widgets/food_search_widgets.dart';
+import 'widgets/logged_food_row.dart';
 import 'widgets/meal_icon_chip.dart';
 import 'widgets/quick_add_macros_sheet.dart';
 import 'widgets/remote_food_review_sheet.dart';
@@ -2147,8 +2148,18 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                   ? 'Tap to deselect from multi-food add.'
                   : 'Tap to select for multi-food add.')
             : 'Tap Add to log $quantity, or open to adjust the amount.',
-        child: ListTile(
-          minVerticalPadding: 10,
+        // The one logged-food row (UR-40). The kcal for the amount isn't
+        // stored on a recent, so the catalogue facts stay on the quiet line
+        // with their basis.
+        child: LoggedFoodRowLayout(
+          horizontalPadding: 12,
+          mealType: recent.lastLoggedMealCategory ?? _activeMealType,
+          name: identityLabel,
+          amount: quantity,
+          note:
+              '${_lastLoggedLabel(recent.loggedAtUtc)}'
+              '${recent.frequencyCount > 1 ? ' · ${recent.frequencyCount} logged' : ''}'
+              ' · $nutrition',
           leading: _isMultiSelect
               ? Semantics(
                   label: 'Select $displayName for a multi-food add',
@@ -2161,35 +2172,6 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                   ),
                 )
               : null,
-          title: brand == null || brand.isEmpty
-              ? Text(
-                  displayName,
-                  style: B05Typography.label(context),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                )
-              : Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      displayName,
-                      style: B05Typography.label(context),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    Text(
-                      brand,
-                      style: B05Typography.caption(context),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-          subtitle: Text(
-            '$quantity · ${_lastLoggedLabel(recent.loggedAtUtc)}${recent.frequencyCount > 1 ? ' · ${recent.frequencyCount} logged' : ''} · $nutrition',
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
           trailing: _isMultiSelect
               ? (isSelected
                     ? IconButton(
