@@ -188,12 +188,16 @@ class _LoggedFoodRowLayoutState extends State<LoggedFoodRowLayout> {
                             : Icons.expand_more_rounded,
                         semanticLabel: _expanded ? 'Collapse' : 'Expand',
                       ),
-                    ?widget.trailing,
+                    // Large text makes an add button wide: it gets its own
+                    // line below instead.
+                    if (!compact) ?widget.trailing,
                   ],
                 ),
               ),
             ),
           ),
+          if (compact && widget.trailing != null)
+            Align(alignment: Alignment.centerRight, child: widget.trailing),
           if (expandable && _expanded)
             for (final part in widget.parts)
               Padding(

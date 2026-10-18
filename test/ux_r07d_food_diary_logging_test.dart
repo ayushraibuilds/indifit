@@ -672,7 +672,8 @@ void main() {
         (w) => w is Scrollable && w.axisDirection == AxisDirection.down,
       );
       expect(landingScroll, findsOneWidget);
-      await tester.drag(landingScroll, const Offset(0, -180));
+      // The logged-food row (UR-40) is taller at 2x text; scroll to it.
+      await tester.ensureVisible(fastAdd);
       await tester.pump();
       await tester.tap(fastAdd);
       await _settleR07D(tester);
