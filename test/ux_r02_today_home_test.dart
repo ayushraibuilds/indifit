@@ -296,6 +296,8 @@ void main() {
         canonicalFoodRecordsForDayProvider.overrideWith(
           (ref, day) async => const [],
         ),
+        // A fixed morning keeps the evening protein nudge off the goldens.
+        weighInClockProvider.overrideWithValue(() => DateTime(2026, 8, 9, 9)),
       ],
     );
     addTearDown(container.dispose);
@@ -544,6 +546,8 @@ Widget _todayApp({
       canonicalFoodRecordsForDayProvider.overrideWith(
         (ref, day) async => const [],
       ),
+      // A fixed morning keeps the evening protein nudge off the goldens.
+      weighInClockProvider.overrideWithValue(() => DateTime(2026, 8, 9, 9)),
     ],
     child: _todaySurface(
       theme: theme,

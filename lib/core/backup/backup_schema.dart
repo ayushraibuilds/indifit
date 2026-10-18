@@ -339,6 +339,7 @@ class BackupData {
         'pref_my_chai_cup_ml',
         'pref_my_roti',
         'pref_weigh_in_dismissed_date',
+        'pref_protein_nudge_dismissed_date',
       ];
       for (final key in keys) {
         final val = prefs.get(key);

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/di/providers.dart';
 import '../../core/nutrition_household_measures.dart';
 import '../../core/nutrition_legacy_read_models.dart';
+import '../../data/repositories/nutrition_read_model_repository.dart';
 import '../dashboard/today_surface_controller.dart';
 import 'meal_presentation_registry.dart';
 import 'repeat_meal.dart';
@@ -147,12 +148,21 @@ final usualMealProvider = FutureProvider.autoDispose.family<UsualMeal?, String>(
     final repository = await ref.watch(
       nutritionReadModelRepositoryProvider.future,
     );
-    final now = DateTime.now().toUtc();
-    final history = await repository.listHistory(
-      userId: kLocalNutritionUserScopeId,
-      fromUtc: now.subtract(UsualMealFinder.window),
-      toUtc: now,
-    );
-    return UsualMealFinder.find(history, slot: slot);
+    return readUsualMeal(repository, slot);
   },
 );
+
+/// The usual meal for [slot] over the last 14 days, read from [repository];
+/// also what the meal reminders name (UF-19).
+Future<UsualMeal?> readUsualMeal(
+  NutritionReadModelRepository repository,
+  String slot,
+) async {
+  final now = DateTime.now().toUtc();
+  final history = await repository.listHistory(
+    userId: kLocalNutritionUserScopeId,
+    fromUtc: now.subtract(UsualMealFinder.window),
+    toUtc: now,
+  );
+  return UsualMealFinder.find(history, slot: slot);
+}

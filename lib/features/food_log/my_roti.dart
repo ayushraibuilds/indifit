@@ -8,6 +8,7 @@ import '../../core/nutrition_consumption_snapshots.dart';
 import '../../core/nutrition_household_measures.dart';
 import '../../core/nutrition_legacy_read_models.dart';
 import '../../core/services/local_schedule_date_service.dart';
+import '../../core/typed_quantities.dart';
 import '../../data/repositories/nutrition_food_catalog_repository.dart';
 import 'widgets/food_diary_widgets.dart';
 
@@ -86,13 +87,15 @@ NutritionHistoricalReadItem? rotiInMeal(
   return null;
 }
 
-/// Logs one catalogue serving of [foodId] (one piece for a roti) into
+/// Logs one catalogue serving of [foodId] (one piece for a roti), or
+/// [quantity] when given, into
 /// [mealCategory] on [day]. Null when the food is no longer in the catalogue.
 Future<NutritionConsumptionSnapshot?> logOneCatalogueServing(
   WidgetRef ref, {
   required String foodId,
   required String mealCategory,
   required DateTime day,
+  Quantity? quantity,
 }) async {
   final NutritionFoodCatalogRepository catalog = await ref.read(
     nutritionFoodCatalogRepositoryProvider.future,
@@ -111,7 +114,7 @@ Future<NutritionConsumptionSnapshot?> logOneCatalogueServing(
     userId: kLocalNutritionUserScopeId,
     preview: await foods.preview(
       option: option,
-      quantity: option.defaultLoggingQuantity,
+      quantity: quantity ?? option.defaultLoggingQuantity,
     ),
     mealCategory: mealCategory,
     loggedAt: isToday
