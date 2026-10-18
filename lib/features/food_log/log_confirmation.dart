@@ -1,9 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/di/providers.dart';
+import '../../core/nutrients.dart';
 import '../../core/nutrition_consumption_snapshots.dart';
 import '../../core/nutrition_household_measures.dart';
+import '../../core/presentation/consumer_number_label.dart';
+import '../../core/services/indifit_haptics.dart';
 import '../../core/typed_quantities.dart';
 import '../../core/utils/app_logger.dart';
 import '../../core/widgets/indi_fit_feedback.dart';
@@ -11,6 +16,7 @@ import '../dashboard/today_surface_controller.dart';
 import 'food_log_surface.dart';
 import 'food_search_view_models.dart';
 import 'meal_presentation_registry.dart';
+import 'widgets/meal_icon_chip.dart';
 
 /// "Snacks", "Lunch": the meal as the app names it elsewhere.
 String loggedMealLabel(String? stableId) {
@@ -57,6 +63,107 @@ String loggedConfirmationMessage(
   return '$verb $what$kcal to ${loggedMealLabel(snapshot.mealCategory)}';
 }
 
+/// "1,846 kcal left · +8 g protein": the day after this log (TF-1).
+/// [dayKcal] is the day's total including this log; parts that can't be
+/// read are left out, and null when neither can.
+String? loggedDayChangeLine({
+  double? dayKcal,
+  int? calorieTargetKcal,
+  double? addedProteinG,
+}) {
+  final parts = <String>[
+    if (dayKcal != null && calorieTargetKcal != null)
+      calorieTargetKcal >= dayKcal
+          ? '${ConsumerNumberLabel.rounded(calorieTargetKcal - dayKcal)} kcal left'
+          : '${ConsumerNumberLabel.rounded(dayKcal - calorieTargetKcal)} kcal over',
+    if (addedProteinG != null && addedProteinG > 0)
+      '+${ConsumerNumberLabel.grams(addedProteinG)} protein',
+  ];
+  return parts.isEmpty ? null : parts.join(' · ');
+}
+
+double? _kcal(Iterable<NutrientFact?> facts) {
+  final list = facts.toList(growable: false);
+  if (list.isEmpty ||
+      list.any((fact) => fact?.isAvailable != true || fact!.point == null)) {
+    return null;
+  }
+  return list.fold<double>(0, (sum, fact) => sum + fact!.point!.value.asDouble);
+}
+
+/// Reads the day as the diary does: its records' energy and its target.
+Future<String?> _dayChangeAfter(
+  ProviderContainer container,
+  NutritionConsumptionSnapshot snapshot,
+) async {
+  final protein = snapshot.totals.facts['protein'];
+  final addedProteinG = protein?.isAvailable == true && protein!.point != null
+      ? protein.point!.value.asDouble
+      : null;
+  final day = DateTime.tryParse(snapshot.localDate ?? '');
+  if (day == null) return loggedDayChangeLine(addedProteinG: addedProteinG);
+  final provider = foodDiaryReadModelProvider(
+    DateTime(day.year, day.month, day.day),
+  );
+  // Keep the auto-dispose read alive until it resolves.
+  final keepAlive = container.listen(provider, (_, _) {});
+  try {
+    final diary = await container.read(provider.future);
+    return loggedDayChangeLine(
+      dayKcal: _kcal([
+        for (final record in diary.daily.records) record.totals.facts['energy'],
+      ]),
+      calorieTargetKcal: diary.targets.value?.calorieTargetKcal,
+      addedProteinG: addedProteinG,
+    );
+  } catch (error, stackTrace) {
+    AppLogger.error('Log confirmation day totals failed', error, stackTrace);
+    return loggedDayChangeLine(addedProteinG: addedProteinG);
+  } finally {
+    keepAlive.close();
+  }
+}
+
+/// The food-log confirmation card (TF-1, UR-42): the meal's art, what was
+/// added, the day's change after the write, Undo, and one light tap. Shows
+/// for 4 s above the tab bar or search's meal bar. Callers have already
+/// invalidated the day's reads.
+void showFoodLogConfirmation(
+  BuildContext context,
+  NutritionConsumptionSnapshot snapshot, {
+  required VoidCallback onUndo,
+  String? amount,
+  String? name,
+  bool again = false,
+  String? message,
+  bool haptic = true,
+}) {
+  final container = ProviderScope.containerOf(context, listen: false);
+  if (haptic) unawaited(IndiFitHaptics.light());
+  showIndiFitUndoFeedback(
+    context,
+    message:
+        message ??
+        loggedConfirmationMessage(
+          snapshot,
+          amount: amount,
+          name: name,
+          again: again,
+        ),
+    leading: ExcludeSemantics(
+      child: MealIconChip(
+        presentation: MealPresentationRegistry.forStableId(
+          snapshot.mealCategory,
+        ),
+        size: 36,
+      ),
+    ),
+    detail: _dayChangeAfter(container, snapshot),
+    duration: const Duration(seconds: 4),
+    onUndo: onUndo,
+  );
+}
+
 /// The one confirmation every add path shows: what was logged, its kcal and
 /// meal, with Undo that removes it again (UR-12, UR-15).
 void showLoggedFoodUndo(
@@ -69,15 +176,12 @@ void showLoggedFoodUndo(
 }) {
   final container = ProviderScope.containerOf(context, listen: false);
   final messenger = ScaffoldMessenger.maybeOf(context);
-  showIndiFitUndoFeedback(
+  showFoodLogConfirmation(
     context,
-    message: loggedConfirmationMessage(
-      snapshot,
-      amount: amount,
-      name: name,
-      again: again,
-    ),
-    duration: const Duration(seconds: 5),
+    snapshot,
+    amount: amount,
+    name: name,
+    again: again,
     onUndo: () async {
       try {
         final repository = await container.read(

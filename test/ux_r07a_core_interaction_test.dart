@@ -20,12 +20,26 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   // R07F-0: Outfit is bundled; no runtime font fetching configuration.
 
-  test('ordinary success feedback is compact and semantically concise', () {
+  testWidgets('ordinary success feedback is compact and semantically concise', (
+    tester,
+  ) async {
     final snackBar = indiFitSuccessSnackBar('✓ Workout logged');
-
     expect(snackBar.behavior, SnackBarBehavior.floating);
-    expect(snackBar.backgroundColor, isNull);
-    expect((snackBar.content as Text).data, '✓ Workout logged');
+    // TF-1: the card draws the surface; the SnackBar itself is clear.
+    expect(snackBar.backgroundColor, Colors.transparent);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.darkTheme,
+        home: Scaffold(body: Center(child: snackBar.content)),
+      ),
+    );
+    final card = find.byKey(const ValueKey('indifit_feedback_card'));
+    expect(
+      find.descendant(of: card, matching: find.byType(Text)),
+      findsOneWidget,
+    );
+    expect(find.text('✓ Workout logged'), findsOneWidget);
   });
 
   testWidgets(
@@ -42,7 +56,18 @@ void main() {
       await tester.pump();
       final snackBar = tester.widget<SnackBar>(find.byType(SnackBar));
       expect(snackBar.behavior, SnackBarBehavior.floating);
-      expect(snackBar.backgroundColor, B05SemanticColors.dark.section);
+      expect(snackBar.backgroundColor, Colors.transparent);
+      final card =
+          tester
+                  .widget<DecoratedBox>(
+                    find.byKey(const ValueKey('indifit_feedback_card')),
+                  )
+                  .decoration
+              as ShapeDecoration;
+      expect(card.gradient!.colors, [
+        B05SemanticColors.dark.raised,
+        B05SemanticColors.dark.raisedEnd,
+      ]);
       expect(find.text('Workout skipped.'), findsOneWidget);
       expect(find.text('Undo'), findsOneWidget);
 

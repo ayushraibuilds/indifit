@@ -1044,14 +1044,13 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
           label: '${amount ?? ''} ${option.displayName}'.trim(),
         ),
       );
-      showIndiFitUndoFeedback(
+      // The fast add's tick already gave this save its haptic.
+      showFoodLogConfirmation(
         context,
-        message: loggedConfirmationMessage(
-          snapshot,
-          name: option.displayName,
-          amount: amount,
-        ),
-        duration: const Duration(seconds: 4),
+        snapshot,
+        name: option.displayName,
+        amount: amount,
+        haptic: false,
         onUndo: () => unawaited(_undoLastCanonicalAdd(undo)),
       );
     } catch (_) {
@@ -1136,14 +1135,13 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
           label: '${amount ?? ''} ${option.displayName}'.trim(),
         ),
       );
-      showIndiFitUndoFeedback(
+      // The fast add's tick already gave this save its haptic.
+      showFoodLogConfirmation(
         context,
-        message: loggedConfirmationMessage(
-          snapshot,
-          name: option.displayName,
-          amount: amount,
-        ),
-        duration: const Duration(seconds: 4),
+        snapshot,
+        name: option.displayName,
+        amount: amount,
+        haptic: false,
         onUndo: () => unawaited(_undoLastCanonicalAdd(undo)),
       );
     } catch (_) {
@@ -1459,10 +1457,10 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         localDate: dateContext.localDate,
         mealCategory: mealType,
       );
-      showIndiFitUndoFeedback(
+      showFoodLogConfirmation(
         context,
+        snapshot,
         message: '${selected.length} foods added to ${_mealLabel(mealType)}',
-        duration: const Duration(seconds: 4),
         onUndo: () => unawaited(_undoLastCanonicalAdd(undo)),
       );
       if (widget.returnToParentOnSave && mounted) {
