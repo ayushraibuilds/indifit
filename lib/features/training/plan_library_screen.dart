@@ -35,7 +35,33 @@ import 'training_workout_preview.dart';
 /// Consumer destination for choosing among the canonical saved training plans.
 /// Training Home owns the entry point; this screen owns the library itself.
 class PlanLibraryScreen extends ConsumerStatefulWidget {
-  const PlanLibraryScreen({super.key});
+  const PlanLibraryScreen({
+    super.key,
+    this.initialEnvironment,
+    this.initialDays,
+    this.initialExperience,
+  });
+
+  /// Filters to open with, e.g. the finished plan's (UF-13).
+  final StarterPlanEnvironment? initialEnvironment;
+  final int? initialDays;
+  final StarterPlanExperience? initialExperience;
+
+  /// Reads `equipment`, `days` and `level` query values; unknown ones are
+  /// ignored.
+  factory PlanLibraryScreen.fromQuery(Map<String, String> query) {
+    T? byName<T extends Enum>(List<T> values, String? name) =>
+        values.where((value) => value.name == name).firstOrNull;
+    final days = int.tryParse(query['days'] ?? '');
+    return PlanLibraryScreen(
+      initialEnvironment: byName(
+        StarterPlanEnvironment.values,
+        query['equipment'],
+      ),
+      initialDays: days != null && days >= 3 && days <= 5 ? days : null,
+      initialExperience: byName(StarterPlanExperience.values, query['level']),
+    );
+  }
 
   @override
   ConsumerState<PlanLibraryScreen> createState() => _PlanLibraryScreenState();
@@ -44,9 +70,9 @@ class PlanLibraryScreen extends ConsumerStatefulWidget {
 class _PlanLibraryScreenState extends ConsumerState<PlanLibraryScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _query = '';
-  StarterPlanEnvironment? _environment;
-  int? _dayFilter;
-  StarterPlanExperience? _experience;
+  late StarterPlanEnvironment? _environment = widget.initialEnvironment;
+  late int? _dayFilter = widget.initialDays;
+  late StarterPlanExperience? _experience = widget.initialExperience;
 
   @override
   void dispose() {

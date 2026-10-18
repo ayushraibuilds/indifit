@@ -19,6 +19,7 @@ import '../../core/widgets/indi_fit_bottom_sheet.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/calendar_read_repository.dart';
 import '../../data/repositories/calendar_repository.dart';
+import '../../data/repositories/plan_next_block_repository.dart';
 import '../../data/repositories/program_lifecycle_repository.dart';
 import '../../data/repositories/training_next_action_resolver.dart';
 import '../../data/repositories/workout_repository.dart';
@@ -28,6 +29,7 @@ import '../calendar/workout_contextual_launcher.dart';
 import '../workout_player/b02_strength_execution_controller.dart';
 import '../workout_player/widgets/manual_log_sheet.dart';
 import '../workout_player/workout_execution_route.dart';
+import 'plan_finished_choices.dart';
 import 'training_plan_lifecycle_controller.dart';
 import 'training_week_goal_widgets.dart';
 import 'training_workout_customization.dart';
@@ -54,6 +56,7 @@ class TrainingLandingSnapshot {
     this.activeStrengthDraft,
     this.nextActionResolution,
     this.weeklyGoal,
+    this.finishedPlan,
   });
 
   final String localDate;
@@ -77,6 +80,9 @@ class TrainingLandingSnapshot {
   /// This week against its goal. Null when it couldn't be read, which hides
   /// the goal card rather than blocking Training.
   final WeeklyTrainingGoalStatus? weeklyGoal;
+
+  /// The active plan once its last workout is behind it (UF-13).
+  final FinishedPlanState? finishedPlan;
 
   bool get hasActiveDraft =>
       nextActionResolution?.hasActiveDraft ??
@@ -176,6 +182,14 @@ final trainingLandingSnapshotProvider =
       } on Object catch (error, stackTrace) {
         AppLogger.error('Training: weekly goal unavailable', error, stackTrace);
       }
+      FinishedPlanState? finishedPlan;
+      try {
+        finishedPlan = await ref
+            .read(planNextBlockRepositoryProvider)
+            .readFinished(todayLocalDate: localDate);
+      } on Object catch (error, stackTrace) {
+        AppLogger.error('Training: plan end unavailable', error, stackTrace);
+      }
       return TrainingLandingSnapshot(
         localDate: localDate,
         timezoneId: timezoneId,
@@ -191,6 +205,7 @@ final trainingLandingSnapshotProvider =
         activeStrengthDraft: resumableDraft,
         nextActionResolution: resolution,
         weeklyGoal: weeklyGoal,
+        finishedPlan: finishedPlan,
       );
     });
 
@@ -752,6 +767,7 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
           onOpenExercises: () => context.push('/exercises'),
           onOpenHistory: () => context.push('/workout-history'),
           onRetry: () => ref.invalidate(trainingLandingSnapshotProvider),
+          onPlanChanged: () => ref.invalidate(trainingLandingSnapshotProvider),
         ),
       ),
     );
@@ -1058,6 +1074,7 @@ class _DominantTrainingLandingBody extends StatelessWidget {
     required this.onOpenExercises,
     required this.onOpenHistory,
     required this.onRetry,
+    required this.onPlanChanged,
   });
 
   final TrainingLandingSnapshot data;
@@ -1072,10 +1089,19 @@ class _DominantTrainingLandingBody extends StatelessWidget {
   final VoidCallback onOpenExercises;
   final VoidCallback onOpenHistory;
   final VoidCallback onRetry;
+  final VoidCallback onPlanChanged;
 
   @override
   Widget build(BuildContext context) {
     final action = _trainingActionFor(data);
+    // A finished plan asks what comes next, unless a workout needs
+    // attention first.
+    final finished = switch (action.kind) {
+      _TrainingActionKind.resume ||
+      _TrainingActionKind.blocked ||
+      _TrainingActionKind.unavailable => null,
+      _ => data.finishedPlan,
+    };
     final activePlan =
         data.activeProgramName?.trim().isNotEmpty == true &&
         (data.nextActionResolution == null ||
@@ -1097,17 +1123,20 @@ class _DominantTrainingLandingBody extends StatelessWidget {
         B05Layout.space32,
       ),
       children: [
-        _DominantTrainingAction(
-          action: action,
-          isLaunching: isLaunching,
-          onStart: action.occurrence == null
-              ? null
-              : () => onStartWorkout(action.occurrence!),
-          onResume: action.draft == null ? null : onResumeDraft,
-          onChoosePlan: onOpenPlan,
-          onRetry: onRetry,
-          onQuickWorkout: onStartQuickWorkout,
-        ),
+        if (finished != null)
+          PlanFinishedChoices(finished: finished, onChanged: onPlanChanged)
+        else
+          _DominantTrainingAction(
+            action: action,
+            isLaunching: isLaunching,
+            onStart: action.occurrence == null
+                ? null
+                : () => onStartWorkout(action.occurrence!),
+            onResume: action.draft == null ? null : onResumeDraft,
+            onChoosePlan: onOpenPlan,
+            onRetry: onRetry,
+            onQuickWorkout: onStartQuickWorkout,
+          ),
         if (activePlan) ...[
           const SizedBox(height: B05Layout.space12),
           _TrainingPlanContext(

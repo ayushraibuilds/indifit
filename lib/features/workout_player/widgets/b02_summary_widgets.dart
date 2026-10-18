@@ -11,6 +11,7 @@ import '../../../data/repositories/b02_strength_execution_repository.dart';
 import '../../../data/repositories/calendar_repository.dart';
 import '../../progress/training_bests.dart';
 import '../../progress/training_bests_providers.dart';
+import '../../training/plan_finished_choices.dart';
 import '../../training/weekly_training_goal_providers.dart';
 import '../b02_strength_execution_controller.dart';
 import '../models/workout_completion_recap.dart';
@@ -69,6 +70,13 @@ class B02WorkoutCompletionSuccess extends ConsumerWidget {
       // Decide on the one celebration only once everything it depends on
       // is known.
       final celebrate = allowCelebration && !weeklyGoalRead.isLoading;
+      // Right after the plan's last workout, the summary says so too.
+      final finishedPlan = allowCelebration
+          ? ref.watch(finishedPlanProvider).valueOrNull
+          : null;
+      final planFinished = finishedPlan == null
+          ? null
+          : PlanFinishedChoices(finished: finishedPlan, onChanged: onDone);
       return detail.when(
         loading: () => SavedDetailsLoading(
           onDone: onDone,
@@ -86,6 +94,7 @@ class B02WorkoutCompletionSuccess extends ConsumerWidget {
           sessionId: savedSessionId,
           celebrate: celebrate,
           unlocks: unlocks,
+          planFinished: planFinished,
         ),
         data: (history) => CompletionEvidence(
           // A null read is treated like unavailable persisted detail rather
@@ -99,6 +108,7 @@ class B02WorkoutCompletionSuccess extends ConsumerWidget {
           sessionId: savedSessionId,
           celebrate: celebrate,
           unlocks: unlocks,
+          planFinished: planFinished,
         ),
       );
     }
@@ -238,6 +248,7 @@ class CompletionEvidence extends StatelessWidget {
     this.sessionId,
     this.celebrate = false,
     this.unlocks = const [],
+    this.planFinished,
   });
 
   final B02StrengthExecutionLaunch? launch;
@@ -258,6 +269,9 @@ class CompletionEvidence extends StatelessWidget {
 
   /// Celebrate the summary's moment, once per saved workout (TP-6).
   final bool celebrate;
+
+  /// "Plan finished" and its choices, after the plan's last workout.
+  final Widget? planFinished;
 
   /// Badges unlocked by this workout (see [WorkoutUnlocksRow]).
   final List<Achievement> unlocks;
@@ -338,6 +352,11 @@ class CompletionEvidence extends StatelessWidget {
                       goal: goal,
                       bestsSessionId: bestsSessionId,
                     ),
+                  if (planFinished case final finished?) ...[
+                    const SizedBox(height: 12),
+                    finished,
+                    const SizedBox(height: 12),
+                  ],
                   WorkoutUnlocksRow(unlocks: unlocks),
                   if (savedSessionId != null || bestsSessionId != null)
                     WorkoutPayoffMoment(
