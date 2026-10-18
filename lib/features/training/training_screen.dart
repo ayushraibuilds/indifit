@@ -167,6 +167,12 @@ final trainingLandingSnapshotProvider =
               timezoneId: timezoneId,
               planGoal: trainingPlanWeekGoal(currentWeekOccurrences),
             );
+        weeklyGoal = await withActivePlanPace(
+          weeklyGoal,
+          reader: ref.read(planScheduleReaderProvider),
+          activeProgramVersionId: calendar.activeProgramVersionId,
+          dates: dates,
+        );
       } on Object catch (error, stackTrace) {
         AppLogger.error('Training: weekly goal unavailable', error, stackTrace);
       }
@@ -475,7 +481,7 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
           builder: (dialogContext) => AlertDialog(
             title: const Text('Start outside scheduled date?'),
             content: Text(
-              'This workout is scheduled for ${ConsumerDateLabel.inSentence(item.occurrence.effectiveLocalDate)}. Starting it will not change your plan.',
+              WorkoutContextualLauncher.outsideDateMessage(ref, item),
             ),
             actions: [
               TextButton(
@@ -991,6 +997,27 @@ _TrainingActionModel _trainingActionFor(TrainingLandingSnapshot data) {
           : '$previous is saved in history. Choose what you want to do next.',
       primaryLabel: 'Choose a plan',
       primaryIcon: Icons.route_outlined,
+    );
+  }
+
+  // A rest day is never a dead end once a plan exists: the next workout can
+  // start now, which shifts the plan (see the start confirmation).
+  final next = data.upcoming.where(isActionableTrainingOccurrence).firstOrNull;
+  if (next != null) {
+    final count = next.prescriptions.length;
+    final countLabel = '$count ${count == 1 ? 'exercise' : 'exercises'}';
+    final nextDay = ConsumerDateLabel.onDay(
+      next.occurrence.effectiveLocalDate,
+      today: DateTime.parse(data.localDate),
+    );
+    return _TrainingActionModel(
+      kind: _TrainingActionKind.start,
+      title: next.template.name,
+      detail:
+          'Rest day today · Planned $nextDay · $countLabel · ${_trainingPlanContextLabel(next)}',
+      occurrence: next,
+      primaryLabel: 'Start ${next.template.name} now',
+      primaryIcon: Icons.play_arrow_rounded,
     );
   }
 

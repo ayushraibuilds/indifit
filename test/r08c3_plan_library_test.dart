@@ -293,7 +293,7 @@ void main() {
         ],
       );
       await tester.tap(find.text('Use this plan'));
-      await tester.pump();
+      await _confirmPlanStart(tester);
 
       expect(copyRepo.copiedSourceVersionId, sourceEntry.version.id);
       expect(activation.activatedCommand?.programVersionId, 'copied-version');
@@ -351,7 +351,7 @@ void main() {
         ],
       );
       await tester.tap(find.text('Use this plan'));
-      await tester.pump();
+      await _confirmPlanStart(tester);
       expect(find.text('Switch current plan?'), findsOneWidget);
       await tester.tap(find.text('Switch plan'));
       await tester.pump();
@@ -637,4 +637,14 @@ class _StaticWorkoutRepository extends WorkoutRepository {
 
   @override
   Future<WorkoutDraft?> getActiveDraft() async => draft;
+}
+
+/// "Use this plan" opens the start sheet; accept its defaults.
+Future<void> _confirmPlanStart(WidgetTester tester) async {
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 500));
+  expect(find.text('When do you want to start?'), findsOneWidget);
+  await tester.tap(find.byKey(const ValueKey('plan_start_confirm')));
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 500));
 }

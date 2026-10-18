@@ -9,7 +9,6 @@ import 'package:uuid/uuid.dart';
 import '../../core/di/providers.dart';
 import '../../core/navigation/app_navigation.dart';
 import '../../core/presentation/consumer_copy.dart';
-import '../../core/presentation/consumer_date_label.dart';
 import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/services/achievement_service.dart';
 import '../../core/services/crash_reporting_service.dart';
@@ -307,7 +306,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         builder: (context) => AlertDialog(
           title: const Text('Start outside scheduled date?'),
           content: Text(
-            'This workout is scheduled for ${ConsumerDateLabel.day(item.occurrence.effectiveLocalDate)}. Starting it will not move or skip any other workout.',
+            WorkoutContextualLauncher.outsideDateMessage(ref, item),
           ),
           actions: [
             TextButton(

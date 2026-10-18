@@ -2,8 +2,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/di/core_providers.dart';
+import '../../core/services/local_schedule_date_service.dart';
 import '../../core/utils/weekly_training_goal_calculator.dart';
 import '../../data/repositories/calendar_read_repository.dart';
+import '../../data/repositories/plan_schedule_reader.dart';
 import '../../data/repositories/weekly_training_goal_repository.dart';
 import '../../data/repositories/workout_repository.dart';
 import 'training_providers.dart';
@@ -23,6 +25,32 @@ final weeklyTrainingGoalRepositoryProvider =
             await SharedPreferences.getInstance(),
       );
     });
+
+final planScheduleReaderProvider = Provider<PlanScheduleReader>((ref) {
+  return PlanScheduleReader(
+    ref.watch(databaseProvider),
+    ref.watch(localScheduleDateServiceProvider),
+  );
+});
+
+/// Adds the active plan's full-week pace to [status] around the plan's
+/// start (see [WeeklyTrainingGoalCalculator.withPlanSchedule]).
+Future<WeeklyTrainingGoalStatus> withActivePlanPace(
+  WeeklyTrainingGoalStatus status, {
+  required PlanScheduleReader reader,
+  required String? activeProgramVersionId,
+  required LocalScheduleDateService dates,
+}) async {
+  if (activeProgramVersionId == null) return status;
+  final shape = await reader.read(activeProgramVersionId);
+  if (shape == null) return status;
+  return WeeklyTrainingGoalCalculator.withPlanSchedule(
+    status,
+    sessionsPerWeek: shape.sessionsPerWeek,
+    planFirstLocalDate: shape.firstLocalDate,
+    dates: dates,
+  );
+}
 
 /// The plan's goal for a week: its scheduled sessions, cancelled ones
 /// excluded. Null when the plan schedules nothing, so the user's goal applies.
@@ -78,7 +106,13 @@ final weeklyTrainingGoalStatusProvider =
                 (item) => item.occurrence.programVersionId == activeVersionId,
               ),
             );
-      return ref
+      final status = await ref
           .watch(weeklyTrainingGoalRepositoryProvider)
           .status(timezoneId: timezoneId, planGoal: planGoal);
+      return withActivePlanPace(
+        status,
+        reader: ref.watch(planScheduleReaderProvider),
+        activeProgramVersionId: activeVersionId,
+        dates: dates,
+      );
     });
