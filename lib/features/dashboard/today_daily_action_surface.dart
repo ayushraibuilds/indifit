@@ -22,6 +22,7 @@ import 'today_surface_controller.dart';
 import 'widgets/today_header_widgets.dart';
 import 'widgets/today_helpers.dart';
 import 'widgets/today_hydration_card.dart';
+import 'widgets/today_meal_quick_adds.dart';
 import 'widgets/today_module_widgets.dart';
 import 'widgets/today_motion.dart';
 import 'widgets/today_nutrition_widgets.dart';
@@ -594,6 +595,11 @@ class TodayDailyActionSurface extends ConsumerWidget {
         onLogMeal: onLogMeal,
         onRetry: onRetry,
         selectedDate: selectedDate,
+        quickAdds: (meal) => TodayMealQuickAdds(
+          mealType: meal.mealType,
+          selectedDate: selectedDate,
+          mealLogged: meal.logged,
+        ),
       ),
       // When visible, Next Up owns the single workout CTA for this state. The
       // independently customizable Workout module remains available whenever

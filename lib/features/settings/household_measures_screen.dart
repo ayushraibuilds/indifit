@@ -7,6 +7,7 @@ import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/consumer_task_primitives.dart';
 import '../food_log/katori_size_step.dart';
 import 'household_measures_controller.dart';
+import 'my_chai_setup_screen.dart';
 
 class HouseholdMeasuresScreen extends ConsumerStatefulWidget {
   const HouseholdMeasuresScreen({super.key});
@@ -120,6 +121,20 @@ class _HouseholdMeasuresScreenState
         ),
         const SizedBox(height: 8),
         const GlassSizeChoice(key: Key('household_my_glass')),
+        const SizedBox(height: 16),
+        Text('Your chai', style: B05Typography.sectionLabel(context)),
+        const SizedBox(height: 4),
+        const MyChaiEntry(key: Key('household_my_chai')),
+        const SizedBox(height: 16),
+        Text('Your roti', style: B05Typography.sectionLabel(context)),
+        const SizedBox(height: 4),
+        Text(
+          '"Roti" in search adds one of these in a tap. Each is a roti from '
+          'the food list.',
+          style: B05Typography.body(context),
+        ),
+        const SizedBox(height: 8),
+        const MyRotiChoice(key: Key('household_my_roti')),
         const SizedBox(height: 16),
         Text('Standard measures', style: B05Typography.sectionLabel(context)),
         const SizedBox(height: 8),

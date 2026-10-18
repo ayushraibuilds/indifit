@@ -92,6 +92,12 @@ void main() {
         final account = _TestAccountCapability();
         final health = _TestHealthService();
 
+        // Wave 4 preferences (My chai, My roti) are erased with the rest.
+        final wave4Prefs = await SharedPreferences.getInstance();
+        for (final key in _wave4PreferenceKeys) {
+          await wave4Prefs.setString(key, 'set');
+        }
+
         final service = DataErasureService(
           db: db,
           secretStore: secretStore,
@@ -181,6 +187,9 @@ void main() {
         expect(prefs.getBool('onboarding_completed'), isFalse);
         expect(prefs.getInt('water_goal'), isNull);
         expect(prefs.getString('health_last_sync_time'), isNull);
+        for (final key in _wave4PreferenceKeys) {
+          expect(prefs.get(key), isNull, reason: key);
+        }
 
         // 5. Secure storage cleared
         expect(await secretStore.read(), isNull);
@@ -597,3 +606,12 @@ Future<void> _populateExtensiveUserData(AppDatabase db) async {
         ),
       );
 }
+
+/// Preferences added in Wave 4 (habits); each must be erased.
+const _wave4PreferenceKeys = [
+  'pref_my_chai_milk',
+  'pref_my_chai_milk_share',
+  'pref_my_chai_sugar_tsp',
+  'pref_my_chai_cup_ml',
+  'pref_my_roti',
+];
