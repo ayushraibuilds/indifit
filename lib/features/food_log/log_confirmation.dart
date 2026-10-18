@@ -65,6 +65,7 @@ void showLoggedFoodUndo(
   String? amount,
   String? name,
   bool again = false,
+  void Function(String snapshotId)? onUndone,
 }) {
   final container = ProviderScope.containerOf(context, listen: false);
   final messenger = ScaffoldMessenger.maybeOf(context);
@@ -90,6 +91,7 @@ void showLoggedFoodUndo(
           commandId: 'log-undo::${snapshot.id}',
           reason: 'User undid a log.',
         );
+        onUndone?.call(snapshot.id);
       } catch (error, stackTrace) {
         AppLogger.error('Undo log failed', error, stackTrace);
         messenger?.showSnackBar(

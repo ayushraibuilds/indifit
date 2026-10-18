@@ -393,6 +393,13 @@ void main() {
     await tester.pumpAndSettle();
     await tester.pump(const Duration(milliseconds: 500));
 
+    // A save keeps search open for the next food (UR-13); back returns to
+    // the refreshed root.
+    expect(find.text('Log lunch'), findsOneWidget);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 500));
+
     expect(find.text('Log lunch'), findsNothing);
     expect(find.text('Add food'), findsWidgets);
     expect(find.text('Search foods'), findsNothing);
