@@ -523,8 +523,7 @@ void main() {
       theme: AppTheme.darkTheme,
       fileName: 'rc_m1_plan_library_gym_dark.png',
       prepare: (tester) async {
-        await tester.tap(find.widgetWithText(ChoiceChip, 'Gym'));
-        await tester.pump();
+        await _applyFilters(tester, ['Gym']);
       },
     );
   });
@@ -544,8 +543,7 @@ void main() {
       size: const Size(320, 568),
       fileName: 'rc_m1_plan_library_home_compact.png',
       prepare: (tester) async {
-        await tester.tap(find.widgetWithText(ChoiceChip, 'Home'));
-        await tester.pump();
+        await _applyFilters(tester, ['Home']);
       },
     );
   });

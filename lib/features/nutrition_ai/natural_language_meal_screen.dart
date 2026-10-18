@@ -18,7 +18,15 @@ class NaturalLanguageMealScreen extends ConsumerStatefulWidget {
   final String? mealType;
   final String? date;
 
-  const NaturalLanguageMealScreen({super.key, this.mealType, this.date});
+  /// Words to start from, such as a food search that found nothing (UR-33).
+  final String? initialText;
+
+  const NaturalLanguageMealScreen({
+    super.key,
+    this.mealType,
+    this.date,
+    this.initialText,
+  });
 
   @override
   ConsumerState<NaturalLanguageMealScreen> createState() =>
@@ -40,7 +48,7 @@ class _NaturalLanguageMealScreenState
   @override
   void initState() {
     super.initState();
-    _textController = TextEditingController();
+    _textController = TextEditingController(text: widget.initialText ?? '');
   }
 
   @override

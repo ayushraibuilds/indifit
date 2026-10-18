@@ -115,6 +115,7 @@ void main() {
         _householdControllerOverride(),
         // Like the measures above, "Your katori" is faked: no size chosen.
         myKatoriMillilitresProvider.overrideWith((ref) async => null),
+        myGlassMillilitresProvider.overrideWith((ref) async => null),
       ],
     );
   });

@@ -41,6 +41,7 @@ import 'diary_structure_controller.dart';
 import 'food_diary_screen.dart';
 import 'food_log_surface.dart';
 import 'food_search_view_models.dart';
+import 'food_staple_suggestions.dart';
 import 'log_confirmation.dart';
 import 'meal_presentation_registry.dart';
 import 'missed_food_searches.dart';
@@ -49,6 +50,7 @@ import 'saved_meals_screen.dart';
 import 'saved_recipe_log_screen.dart';
 import 'thali/thali_route.dart';
 import 'widgets/food_portion_bottom_sheet.dart';
+import 'widgets/food_search_meal_bar.dart';
 import 'widgets/food_search_widgets.dart';
 import 'widgets/meal_icon_chip.dart';
 import 'widgets/quick_add_macros_sheet.dart';
@@ -117,6 +119,68 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   final Set<String> _selectionLoading = {};
   final Set<String> _fastAddInFlight = {};
 
+  /// Foods logged during this visit (UR-13): search stays open after an
+  /// add, and the meal bar sums them.
+  final List<LoggedSearchItem> _sessionLogs = [];
+
+  void _rememberLog(LoggedSearchItem item) {
+    if (!mounted) return;
+    setState(() => _sessionLogs.add(item));
+  }
+
+  void _forgetLog(String snapshotId) {
+    if (!mounted) return;
+    setState(
+      () => _sessionLogs.removeWhere((item) => item.snapshot.id == snapshotId),
+    );
+  }
+
+  Future<void> _reviewSessionLogs() => showLoggedSearchItems(
+    context,
+    mealLabel: MealPresentationRegistry.forStableId(_activeMealType).label,
+    items: () => List.unmodifiable(_sessionLogs),
+    onUndo: (item) => _undoLastCanonicalAdd(
+      FoodAddUndoToken(
+        snapshotId: item.snapshot.id,
+        localDate: item.snapshot.localDate ?? '',
+        mealCategory: item.snapshot.mealCategory,
+      ),
+    ),
+  );
+
+  /// Done on the meal bar: back to where the person came from.
+  void _finishSession() {
+    if (widget.returnToParentOnSave && Navigator.of(context).canPop()) {
+      Navigator.of(context).pop(true);
+      return;
+    }
+    setState(_sessionLogs.clear);
+    _searchController.clear();
+  }
+
+  /// [_defaultAmountLabel] for a legacy row: its own household serving
+  /// ("2 katori" since UR-08). Metric servings open the portion sheet, so
+  /// they say nothing.
+  String? _legacyAmountLabel(FoodItem food) {
+    final unit = food.servingUnit.trim().toLowerCase();
+    if (const {'g', 'gm', 'gram', 'grams', 'ml', 'kg', 'l'}.contains(unit) ||
+        unit.isEmpty ||
+        food.servingSize <= 0) {
+      return null;
+    }
+    return FoodQueryAmount(food.servingSize).label(servingUnit: unit);
+  }
+
+  /// The amount the row's "+" logs (UR-14): "1 katori", "2 pieces". Null
+  /// when the "+" opens the portion sheet instead.
+  String? _defaultAmountLabel(NutritionFoodOption option) {
+    final measure = option.measure;
+    final units = measure?.unitsPerServing?.asDouble;
+    if (!_hasSafeDefaultServing(option) || measure?.unit == null) return null;
+    if (units == null || units <= 0) return null;
+    return FoodQueryAmount(units).label(servingUnit: measure!.unit);
+  }
+
   /// Option ids whose Add button shows the tick after a saved fast add.
   final Map<String, Timer> _fastAddSucceeded = {};
   bool _committingSelection = false;
@@ -133,8 +197,11 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     });
   }
 
+  /// A meal chosen with "Change" (UR-27), over [FoodSearchScreen.mealType].
+  String? _mealOverride;
+
   String? get _activeMealType {
-    final value = widget.mealType?.trim().toLowerCase();
+    final value = (_mealOverride ?? widget.mealType)?.trim().toLowerCase();
     if (value == null || value.isEmpty) return null;
     return value == 'snacks' ? 'snack' : value;
   }
@@ -177,6 +244,15 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       ),
     );
     return selected;
+  }
+
+  /// One tap to log to another meal than the one picked for the time of
+  /// day (UR-27).
+  Future<void> _changeMeal() async {
+    final selected = await _chooseMealContext();
+    if (selected == null || !mounted || selected == _activeMealType) return;
+    setState(() => _mealOverride = selected);
+    await _loadRecentFoods();
   }
 
   Future<String?> _ensureMealContext() async {
@@ -353,7 +429,10 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         NutritionFoodSearchCandidate.canonical(
           option,
           matchedTerms: hit.matchedTerms,
-          alternateNames: [if (hit.aliases.isNotEmpty) hit.aliases],
+          alternateNames: [
+            ...hit.aliasNames,
+            if (hit.aliases.isNotEmpty) hit.aliasText,
+          ],
         ),
       for (final food in _onlineResults)
         NutritionFoodSearchCandidate.remote(food),
@@ -362,6 +441,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       query: query,
       candidates: candidates,
       history: _searchHistory(),
+      oneRowPerDish: true,
     );
     // Online matches arrive after the on-device ones. Keep them below, so the
     // rows already on screen never move under the user's finger.
@@ -804,7 +884,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       await RemoteFoodReviewSheet.show(
         context: context,
         candidate: candidate,
-        mealType: widget.mealType ?? 'snack',
+        mealType: _activeMealType ?? 'snack',
         selectedDate: widget.selectedDate ?? DateTime.now(),
         onConfirm:
             ({
@@ -934,16 +1014,23 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         localDate: dateContext.localDate,
         mealCategory: selectedMealType,
       );
+      final amount =
+          option.measure?.pickedAmountLabel(quantity) ??
+          typedAmount?.label(
+            servingUnit: option.servingUnitLabel?.trim().split(' ').last,
+          );
+      _rememberLog(
+        LoggedSearchItem(
+          snapshot: snapshot,
+          label: '${amount ?? ''} ${option.displayName}'.trim(),
+        ),
+      );
       showIndiFitUndoFeedback(
         context,
         message: loggedConfirmationMessage(
           snapshot,
           name: option.displayName,
-          amount:
-              option.measure?.pickedAmountLabel(quantity) ??
-              typedAmount?.label(
-                servingUnit: option.servingUnitLabel?.trim().split(' ').last,
-              ),
+          amount: amount,
         ),
         duration: const Duration(seconds: 4),
         onUndo: () => unawaited(_undoLastCanonicalAdd(undo)),
@@ -1023,12 +1110,19 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         localDate: dateContext.localDate,
         mealCategory: selectedMealType,
       );
+      final amount = option.measure?.pickedAmountLabel(quantity);
+      _rememberLog(
+        LoggedSearchItem(
+          snapshot: snapshot,
+          label: '${amount ?? ''} ${option.displayName}'.trim(),
+        ),
+      );
       showIndiFitUndoFeedback(
         context,
         message: loggedConfirmationMessage(
           snapshot,
           name: option.displayName,
-          amount: option.measure?.pickedAmountLabel(quantity),
+          amount: amount,
         ),
         duration: const Duration(seconds: 4),
         onUndo: () => unawaited(_undoLastCanonicalAdd(undo)),
@@ -1059,6 +1153,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         expectedMealCategory: undo.mealCategory,
         commandId: 'food-undo-command::${undo.snapshotId}',
       );
+      _forgetLog(undo.snapshotId);
       if (!mounted) return;
       _invalidateNutritionReads();
       showIndiFitSuccessFeedback(
@@ -1212,8 +1307,18 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       correctionItem: correctionItem,
       onQuantityPicked: onQuantityPicked,
       ensureMealContext: _ensureMealContext,
-      returnToParentOnSave: widget.returnToParentOnSave,
+      // A new log stays in search with the meal bar (UR-13); a correction
+      // still returns.
+      returnToParentOnSave:
+          correctionRecord != null && widget.returnToParentOnSave,
       onRetryRecentFoods: _retryRecentFoods,
+      onLogged: (logged, name) => _rememberLog(
+        LoggedSearchItem(
+          snapshot: logged.snapshot,
+          label: '${logged.amount ?? ''} $name'.trim(),
+        ),
+      ),
+      onUndone: _forgetLog,
     );
   }
 
@@ -1501,11 +1606,29 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                   : 'Log ${_mealLabel(mealType)}',
               style: B05Typography.title(context),
             ),
-            Text(
-              _isMultiSelect
-                  ? '${_selectedOptions.length} selected · $dateStr'
-                  : dateStr,
-              style: B05Typography.caption(context),
+            // Wraps under the date on narrow screens and large text.
+            Wrap(
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Text(
+                  _isMultiSelect
+                      ? '${_selectedOptions.length} selected · $dateStr'
+                      : dateStr,
+                  style: B05Typography.caption(context),
+                ),
+                if (!_isMultiSelect)
+                  TextButton(
+                    key: const ValueKey('food_search_change_meal'),
+                    onPressed: _changeMeal,
+                    style: TextButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      minimumSize: const Size(48, 32),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: const Text('Change meal'),
+                  ),
+              ],
             ),
           ],
         ),
@@ -1524,6 +1647,18 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
           _buildMoreMenu(context),
         ],
       ),
+      // In the bottom slot, so confirmations float above it (UR-13).
+      bottomNavigationBar: _sessionLogs.isNotEmpty && !_isMultiSelect
+          ? Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: FoodSearchMealBar(
+                mealLabel: MealPresentationRegistry.forStableId(mealType).label,
+                items: _sessionLogs,
+                onReview: () => unawaited(_reviewSessionLogs()),
+                onDone: _finishSession,
+              ),
+            )
+          : null,
       body: SafeArea(
         top: false,
         child: Padding(
@@ -1538,7 +1673,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                 FoodSearchBar(
                   controller: _searchController,
                   focusNode: _searchFocusNode,
-                  autofocus: widget.mealType != null,
+                  autofocus: _activeMealType != null,
                   onClear: () => _searchController.clear(),
                   onTapOutside: (_) => FocusScope.of(context).unfocus(),
                 ),
@@ -1564,42 +1699,13 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   }
 
   List<String> _getStapleSuggestions() {
-    String diet = 'veg';
+    String? diet;
     try {
-      diet = ref.watch(userProfileProvider).dietPreference.toLowerCase();
+      diet = ref.watch(userProfileProvider).dietPreference;
     } catch (_) {
       // Safe: suggestions only; without a profile they default to veg.
     }
-    switch (diet) {
-      case 'non-veg':
-      case 'non_veg':
-      case 'non-vegetarian':
-        return const [
-          'Roti',
-          'Dal',
-          'Rice',
-          'Chicken',
-          'Eggs',
-          'Paneer',
-          'Whey',
-        ];
-      case 'vegan':
-        return const [
-          'Roti',
-          'Dal',
-          'Rice',
-          'Tofu',
-          'Soya',
-          'Chana',
-          'Peanut Butter',
-        ];
-      case 'eggetarian':
-        return const ['Roti', 'Dal', 'Rice', 'Eggs', 'Paneer', 'Chai', 'Whey'];
-      case 'veg':
-      case 'vegetarian':
-      default:
-        return const ['Roti', 'Dal', 'Rice', 'Paneer', 'Curd', 'Chai', 'Whey'];
-    }
+    return foodStapleSuggestions(mealType: _activeMealType, diet: diet);
   }
 
   Widget _buildStapleChips() {
@@ -1663,10 +1769,11 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   );
 
   /// An AI tool's route, carrying this screen's meal and date.
-  String _aiToolLocation(String path) {
+  String _aiToolLocation(String path, {String? text}) {
     final date = widget.selectedDate;
     final query = {
-      if (widget.mealType != null) 'mealType': widget.mealType!,
+      if (text != null && text.isNotEmpty) 'text': text,
+      'mealType': ?_activeMealType,
       if (date != null) 'date': date.toIso8601String().split('T').first,
     };
     return Uri(
@@ -1763,6 +1870,23 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         await _performSearch(_searchController.text);
       }
     },
+    onQuickAdd: () async {
+      final added = await QuickAddMacrosSheet.show(
+        context,
+        initialMealType: _activeMealType ?? 'lunch',
+        targetDate: widget.selectedDate ?? DateTime.now(),
+        initialDescription: _searchController.text.trim(),
+      );
+      if (added != null && mounted) _invalidateNutritionReads();
+    },
+    onDescribe: ref.watch(privacyPolicyProvider).isAiAllowed
+        ? () => context.push(
+            _aiToolLocation(
+              '/food/describe',
+              text: _searchController.text.trim(),
+            ),
+          )
+        : null,
   );
 
   Widget _buildRankedSearchRow(NutritionFoodSearchResult result) {
@@ -2020,9 +2144,9 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     final isAdding = _fastAddInFlight.contains(option.id);
     return _buildFastAddAction(
       foodName: _consumerFoodName(option.displayName),
-      amountLabel: _resolvedSearch?.amount?.label(
-        servingUnit: option.measure?.unit,
-      ),
+      amountLabel:
+          _resolvedSearch?.amount?.label(servingUnit: option.measure?.unit) ??
+          _defaultAmountLabel(option),
       isAdding: isAdding,
       added: _fastAddSucceeded.containsKey(option.id),
       onPressed: isAdding ? null : () => unawaited(_addOptionFast(option)),
@@ -2187,7 +2311,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       await RemoteFoodReviewSheet.show(
         context: context,
         candidate: effectiveCandidate,
-        mealType: widget.mealType ?? 'snack',
+        mealType: _activeMealType ?? 'snack',
         selectedDate: widget.selectedDate ?? DateTime.now(),
         onConfirm:
             ({
@@ -2433,8 +2557,9 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                   amountLabel: recent
                       ? null
                       : _resolvedSearch?.amount?.label(
-                          servingUnit: food.servingUnit,
-                        ),
+                              servingUnit: food.servingUnit,
+                            ) ??
+                            _legacyAmountLabel(food),
                   onPressed: () => unawaited(_openLegacyFastAdd(food)),
                 ),
           onTap: () {
