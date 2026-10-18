@@ -67,31 +67,49 @@ void showLoggedFoodUndo(
   bool again = false,
   void Function(String snapshotId)? onUndone,
 }) {
-  final container = ProviderScope.containerOf(context, listen: false);
-  final messenger = ScaffoldMessenger.maybeOf(context);
-  showIndiFitUndoFeedback(
+  showLoggedSnapshotsUndo(
     context,
+    [snapshot],
     message: loggedConfirmationMessage(
       snapshot,
       amount: amount,
       name: name,
       again: again,
     ),
+    onUndone: onUndone,
+  );
+}
+
+/// [showLoggedFoodUndo] for several entries logged by one tap, such as a
+/// usual meal (UF-1): one message, and Undo removes all of them.
+void showLoggedSnapshotsUndo(
+  BuildContext context,
+  List<NutritionConsumptionSnapshot> snapshots, {
+  required String message,
+  void Function(String snapshotId)? onUndone,
+}) {
+  final container = ProviderScope.containerOf(context, listen: false);
+  final messenger = ScaffoldMessenger.maybeOf(context);
+  showIndiFitUndoFeedback(
+    context,
+    message: message,
     duration: const Duration(seconds: 5),
     onUndo: () async {
       try {
         final repository = await container.read(
           nutritionConsumptionRepositoryProvider.future,
         );
-        await repository.retractConsumption(
-          userId: kLocalNutritionUserScopeId,
-          snapshotId: snapshot.id,
-          expectedLocalDate: snapshot.localDate ?? '',
-          expectedMealCategory: snapshot.mealCategory,
-          commandId: 'log-undo::${snapshot.id}',
-          reason: 'User undid a log.',
-        );
-        onUndone?.call(snapshot.id);
+        for (final snapshot in snapshots) {
+          await repository.retractConsumption(
+            userId: kLocalNutritionUserScopeId,
+            snapshotId: snapshot.id,
+            expectedLocalDate: snapshot.localDate ?? '',
+            expectedMealCategory: snapshot.mealCategory,
+            commandId: 'log-undo::${snapshot.id}',
+            reason: 'User undid a log.',
+          );
+          onUndone?.call(snapshot.id);
+        }
       } catch (error, stackTrace) {
         AppLogger.error('Undo log failed', error, stackTrace);
         messenger?.showSnackBar(
