@@ -1,3 +1,4 @@
+import '../presentation/consumer_date_label.dart';
 import '../services/local_schedule_date_service.dart';
 
 /// Where this week's goal comes from: the active plan's scheduled sessions,
@@ -14,6 +15,9 @@ class WeeklyTrainingGoalStatus {
     required this.weeksInARow,
     required this.source,
     this.trainedLocalDates = const <String>{},
+    this.planSessionsPerWeek,
+    this.planFullWeeksFromLocalDate,
+    this.planStartsLocalDate,
   });
 
   /// Monday of the current week, as a civil `YYYY-MM-DD` date.
@@ -31,7 +35,34 @@ class WeeklyTrainingGoalStatus {
   /// Civil dates this week with at least one saved workout.
   final Set<String> trainedLocalDates;
 
+  /// Set only around a plan's start: the plan's sessions in a full week.
+  /// This week's [goal] is what is still scheduled; it is never stored as
+  /// the user's own goal.
+  final int? planSessionsPerWeek;
+
+  /// The Monday full plan weeks begin, when this is the plan's first week.
+  final String? planFullWeeksFromLocalDate;
+
+  /// The plan's first workout, when the plan starts after this week.
+  final String? planStartsLocalDate;
+
   bool get isMet => completed >= goal;
+
+  WeeklyTrainingGoalStatus _withPlanStart({
+    required int sessionsPerWeek,
+    String? fullWeeksFromLocalDate,
+    String? startsLocalDate,
+  }) => WeeklyTrainingGoalStatus(
+    weekStartLocalDate: weekStartLocalDate,
+    completed: completed,
+    goal: goal,
+    weeksInARow: weeksInARow,
+    source: source,
+    trainedLocalDates: trainedLocalDates,
+    planSessionsPerWeek: sessionsPerWeek,
+    planFullWeeksFromLocalDate: fullWeeksFromLocalDate,
+    planStartsLocalDate: startsLocalDate,
+  );
 }
 
 /// Pure weekly-goal maths. Weeks run Monday to Sunday on civil dates, so DST
@@ -125,6 +156,36 @@ abstract final class WeeklyTrainingGoalCalculator {
     );
   }
 
+  /// Adds the plan's full-week pace around its start. In the week the plan
+  /// starts, the goal is already the sessions still scheduled; this says
+  /// when the full pace begins. Before the plan starts, it says when.
+  static WeeklyTrainingGoalStatus withPlanSchedule(
+    WeeklyTrainingGoalStatus status, {
+    required int sessionsPerWeek,
+    required String planFirstLocalDate,
+    LocalScheduleDateService? dates,
+  }) {
+    if (sessionsPerWeek <= 0) return status;
+    final service = dates ?? LocalScheduleDateService();
+    final planWeek = weekStartOf(planFirstLocalDate, dates: service);
+    final order = service.compare(planWeek, status.weekStartLocalDate);
+    if (order > 0) {
+      return status._withPlanStart(
+        sessionsPerWeek: sessionsPerWeek,
+        startsLocalDate: planFirstLocalDate,
+      );
+    }
+    if (order == 0 &&
+        status.source == WeeklyTrainingGoalSource.plan &&
+        status.goal < sessionsPerWeek) {
+      return status._withPlanStart(
+        sessionsPerWeek: sessionsPerWeek,
+        fullWeeksFromLocalDate: service.addCalendarDays(planWeek, _civil, 7),
+      );
+    }
+    return status;
+  }
+
   static int _atLeastOne(int goal) => goal < minGoal ? minGoal : goal;
 }
 
@@ -137,6 +198,20 @@ abstract final class WeeklyTrainingGoalCopy {
   static String thisWeek(WeeklyTrainingGoalStatus status) =>
       '${progress(status)} workouts this week';
 
+  /// "3 a week from Mon, 19 Oct" in a plan's first week; "Plan starts
+  /// Mon, 19 Oct · 3 a week" before it. Null otherwise.
+  static String? planPace(WeeklyTrainingGoalStatus status) {
+    final perWeek = status.planSessionsPerWeek;
+    if (perWeek == null) return null;
+    final starts = status.planStartsLocalDate;
+    if (starts != null) {
+      return 'Plan starts ${ConsumerDateLabel.date(starts)} · $perWeek a week';
+    }
+    final from = status.planFullWeeksFromLocalDate;
+    if (from == null) return null;
+    return '$perWeek a week from ${ConsumerDateLabel.date(from)}';
+  }
+
   /// Null at zero: the run line is hidden until there is a run.
   static String? weeksInARow(WeeklyTrainingGoalStatus status) {
     final weeks = status.weeksInARow;
@@ -145,8 +220,11 @@ abstract final class WeeklyTrainingGoalCopy {
   }
 
   /// The summary line. "Week goal done" only when this workout met it.
-  static String summary(WeeklyTrainingGoalStatus status) =>
-      status.completed == status.goal
-      ? 'Week goal done · ${thisWeek(status)}'
-      : thisWeek(status);
+  static String summary(WeeklyTrainingGoalStatus status) {
+    final week = status.completed == status.goal
+        ? 'Week goal done · ${thisWeek(status)}'
+        : thisWeek(status);
+    final pace = planPace(status);
+    return pace == null ? week : '$week · $pace';
+  }
 }

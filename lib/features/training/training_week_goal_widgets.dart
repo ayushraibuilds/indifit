@@ -22,6 +22,7 @@ class TrainingWeekGoalSummary extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.b05Colors;
     final run = WeeklyTrainingGoalCopy.weeksInARow(status);
+    final pace = WeeklyTrainingGoalCopy.planPace(status);
     final ringColor = status.isMet ? colors.success.foreground : colors.action;
     return B05Surface(
       padding: const EdgeInsets.fromLTRB(
@@ -58,7 +59,11 @@ class TrainingWeekGoalSummary extends StatelessWidget {
           Expanded(
             child: Semantics(
               container: true,
-              label: [WeeklyTrainingGoalCopy.thisWeek(status), ?run].join('. '),
+              label: [
+                WeeklyTrainingGoalCopy.thisWeek(status),
+                ?pace,
+                ?run,
+              ].join('. '),
               child: ExcludeSemantics(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -71,6 +76,8 @@ class TrainingWeekGoalSummary extends StatelessWidget {
                       'workouts this week',
                       style: B05Typography.caption(context),
                     ),
+                    if (pace != null)
+                      Text(pace, style: B05Typography.caption(context)),
                     if (run != null) ...[
                       const SizedBox(height: 2),
                       Text(

@@ -11,6 +11,7 @@ import '../../../data/repositories/b02_strength_execution_repository.dart';
 import '../../../data/repositories/calendar_repository.dart';
 import '../../progress/training_bests.dart';
 import '../../progress/training_bests_providers.dart';
+import '../../training/plan_finished_choices.dart';
 import '../../training/weekly_training_goal_providers.dart';
 import '../b02_strength_execution_controller.dart';
 import '../models/workout_completion_recap.dart';
@@ -69,6 +70,13 @@ class B02WorkoutCompletionSuccess extends ConsumerWidget {
       // Decide on the one celebration only once everything it depends on
       // is known.
       final celebrate = allowCelebration && !weeklyGoalRead.isLoading;
+      // Right after the plan's last workout, the summary says so too.
+      final finishedPlan = allowCelebration
+          ? ref.watch(finishedPlanProvider).valueOrNull
+          : null;
+      final planFinished = finishedPlan == null
+          ? null
+          : PlanFinishedChoices(finished: finishedPlan, onChanged: onDone);
       return detail.when(
         loading: () => SavedDetailsLoading(
           onDone: onDone,
@@ -86,6 +94,7 @@ class B02WorkoutCompletionSuccess extends ConsumerWidget {
           sessionId: savedSessionId,
           celebrate: celebrate,
           unlocks: unlocks,
+          planFinished: planFinished,
         ),
         data: (history) => CompletionEvidence(
           // A null read is treated like unavailable persisted detail rather
@@ -99,6 +108,7 @@ class B02WorkoutCompletionSuccess extends ConsumerWidget {
           sessionId: savedSessionId,
           celebrate: celebrate,
           unlocks: unlocks,
+          planFinished: planFinished,
         ),
       );
     }
@@ -238,6 +248,7 @@ class CompletionEvidence extends StatelessWidget {
     this.sessionId,
     this.celebrate = false,
     this.unlocks = const [],
+    this.planFinished,
   });
 
   final B02StrengthExecutionLaunch? launch;
@@ -258,6 +269,9 @@ class CompletionEvidence extends StatelessWidget {
 
   /// Celebrate the summary's moment, once per saved workout (TP-6).
   final bool celebrate;
+
+  /// "Plan finished" and its choices, after the plan's last workout.
+  final Widget? planFinished;
 
   /// Badges unlocked by this workout (see [WorkoutUnlocksRow]).
   final List<Achievement> unlocks;
@@ -338,6 +352,11 @@ class CompletionEvidence extends StatelessWidget {
                       goal: goal,
                       bestsSessionId: bestsSessionId,
                     ),
+                  if (planFinished case final finished?) ...[
+                    const SizedBox(height: 12),
+                    finished,
+                    const SizedBox(height: 12),
+                  ],
                   WorkoutUnlocksRow(unlocks: unlocks),
                   if (savedSessionId != null || bestsSessionId != null)
                     WorkoutPayoffMoment(
@@ -961,15 +980,20 @@ class B02SummaryBody extends StatelessWidget {
               : 'These completed sets and planned targets will be saved with this workout.',
         ),
         const SizedBox(height: 16),
-        FilledButton(
-          onPressed: hasLoggedSetsWithReps ? onFull : null,
-          child: const Text('Complete workout'),
-        ),
-        const SizedBox(height: 10),
-        OutlinedButton(
-          onPressed: hasLoggedSetsWithReps ? onPartial : null,
-          child: const Text('Finish partially…'),
-        ),
+        // One primary action (UR-21): finished workouts complete; anything
+        // missing saves as partial straight away, with no second dialog.
+        if (b02HasIncompleteExercises(launch.state)) ...[
+          FilledButton(
+            onPressed: hasLoggedSetsWithReps ? onPartial : null,
+            child: Text(b02SaveWorkoutLabel(launch.state, ui.slots)),
+          ),
+          const SizedBox(height: 10),
+          OutlinedButton(onPressed: onBack, child: const Text('Keep training')),
+        ] else
+          FilledButton(
+            onPressed: hasLoggedSetsWithReps ? onFull : null,
+            child: const Text('Complete workout'),
+          ),
       ],
     );
   }
@@ -982,4 +1006,60 @@ class B02SummaryBody extends StatelessWidget {
     };
     return group.label?.trim().isNotEmpty == true ? group.label!.trim() : type;
   }
+}
+
+/// True when any exercise, or any grouped round, is not completed. A
+/// workout like this is saved as partial.
+bool b02HasIncompleteExercises(B02ExecutionDraftState state) {
+  if (state.performedExercises.any((e) => e.status != 'completed')) {
+    return true;
+  }
+  for (final group in state.groups) {
+    final groupExercises = state.performedExercises.where(
+      (e) => e.performedExerciseGroupId == group.id,
+    );
+    final expected = group.roundCount * group.members.length;
+    if (groupExercises.length < expected ||
+        groupExercises.any((e) => e.status != 'completed')) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/// Logged working sets against planned ones, counting no more than each
+/// slot plans. Planned is zero when nothing was planned (Quick workout).
+({int done, int planned}) b02WorkingSetProgress(
+  B02ExecutionDraftState state,
+  List<B02StrengthExecutionSlot> slots,
+) {
+  var done = 0;
+  var planned = 0;
+  for (final slot in slots) {
+    if (slot.plannedSets <= 0) continue;
+    final logged = state.performedExercises
+        .where(
+          (exercise) =>
+              exercise.id == 'performed:${slot.id}' ||
+              (exercise.sourceExercisePrescriptionId == slot.prescriptionId &&
+                  exercise.groupRoundOrdinal == slot.roundOrdinal &&
+                  exercise.groupMemberOrdinal == slot.memberOrdinal),
+        )
+        .expand((exercise) => exercise.sets)
+        .where((set) => set.role == B02SetRole.working)
+        .length;
+    planned += slot.plannedSets;
+    done += logged < slot.plannedSets ? logged : slot.plannedSets;
+  }
+  return (done: done, planned: planned);
+}
+
+/// "Save workout (2 of 15 sets)", or "Save workout" with no plan to count.
+String b02SaveWorkoutLabel(
+  B02ExecutionDraftState state,
+  List<B02StrengthExecutionSlot> slots,
+) {
+  final progress = b02WorkingSetProgress(state, slots);
+  if (progress.planned == 0) return 'Save workout';
+  return 'Save workout (${progress.done} of ${progress.planned} sets)';
 }

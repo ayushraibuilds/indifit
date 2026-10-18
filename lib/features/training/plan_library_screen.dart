@@ -12,6 +12,7 @@ import '../../core/services/indifit_haptics.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/consumer_task_primitives.dart';
+import '../../core/widgets/indi_fit_bottom_sheet.dart';
 import '../../core/widgets/skeleton_loader.dart';
 import '../../data/database/app_database.dart';
 import '../../data/models/b02_execution_models.dart';
@@ -26,13 +27,41 @@ import '../../data/repositories/program_activation_coordinator.dart';
 import '../../data/repositories/workout_repository.dart';
 import '../calendar/calendar_controller.dart';
 import '../settings/unit_preference.dart';
+import 'plan_recommendation.dart';
+import 'plan_start_sheet.dart';
 import 'training_workout_customization.dart';
 import 'training_workout_preview.dart';
 
 /// Consumer destination for choosing among the canonical saved training plans.
 /// Training Home owns the entry point; this screen owns the library itself.
 class PlanLibraryScreen extends ConsumerStatefulWidget {
-  const PlanLibraryScreen({super.key});
+  const PlanLibraryScreen({
+    super.key,
+    this.initialEnvironment,
+    this.initialDays,
+    this.initialExperience,
+  });
+
+  /// Filters to open with, e.g. the finished plan's (UF-13).
+  final StarterPlanEnvironment? initialEnvironment;
+  final int? initialDays;
+  final StarterPlanExperience? initialExperience;
+
+  /// Reads `equipment`, `days` and `level` query values; unknown ones are
+  /// ignored.
+  factory PlanLibraryScreen.fromQuery(Map<String, String> query) {
+    T? byName<T extends Enum>(List<T> values, String? name) =>
+        values.where((value) => value.name == name).firstOrNull;
+    final days = int.tryParse(query['days'] ?? '');
+    return PlanLibraryScreen(
+      initialEnvironment: byName(
+        StarterPlanEnvironment.values,
+        query['equipment'],
+      ),
+      initialDays: days != null && days >= 3 && days <= 5 ? days : null,
+      initialExperience: byName(StarterPlanExperience.values, query['level']),
+    );
+  }
 
   @override
   ConsumerState<PlanLibraryScreen> createState() => _PlanLibraryScreenState();
@@ -41,9 +70,9 @@ class PlanLibraryScreen extends ConsumerStatefulWidget {
 class _PlanLibraryScreenState extends ConsumerState<PlanLibraryScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _query = '';
-  StarterPlanEnvironment? _environment;
-  int? _dayFilter;
-  StarterPlanExperience? _experience;
+  late StarterPlanEnvironment? _environment = widget.initialEnvironment;
+  late int? _dayFilter = widget.initialDays;
+  late StarterPlanExperience? _experience = widget.initialExperience;
 
   @override
   void dispose() {
@@ -86,8 +115,15 @@ class _PlanLibraryScreenState extends ConsumerState<PlanLibraryScreen> {
         .where((entry) => entry.isActive)
         .toList(growable: false);
     final active = activeEntries.isEmpty ? null : activeEntries.first;
+    final trainingDays = ref
+        .watch(
+          planRecommendationTrainingDaysProvider(
+            snapshot.activeProgramVersionId,
+          ),
+        )
+        .value;
     final recommendation = _showsRecommendation
-        ? _recommendedEntry(snapshot, profile)
+        ? _recommendedEntry(snapshot, profile, trainingDays)
         : null;
     final available = visibleEntries
         .where(
@@ -124,16 +160,11 @@ class _PlanLibraryScreenState extends ConsumerState<PlanLibraryScreen> {
                       },
                     ),
                     const SizedBox(height: B05Layout.space16),
-                    _PlanLibraryFilters(
+                    _PlanFilterChipRow(
                       environment: _environment,
                       dayFilter: _dayFilter,
                       experience: _experience,
-                      onEnvironmentChanged: (value) =>
-                          setState(() => _environment = value),
-                      onDayChanged: (value) =>
-                          setState(() => _dayFilter = value),
-                      onExperienceChanged: (value) =>
-                          setState(() => _experience = value),
+                      onOpenFilters: () => _openFilters(context),
                     ),
                   ],
                   const SizedBox(height: B05Layout.space24),
@@ -168,7 +199,7 @@ class _PlanLibraryScreenState extends ConsumerState<PlanLibraryScreen> {
                       _SectionHeading(
                         title: 'Recommended for you',
                         detail:
-                            'Based on the equipment saved in your profile. You can choose any plan.',
+                            'Based on your goal, training days and equipment. You can choose any plan.',
                       ),
                       const SizedBox(height: B05Layout.space8),
                       PlanLibraryCard(
@@ -179,13 +210,17 @@ class _PlanLibraryScreenState extends ConsumerState<PlanLibraryScreen> {
                         const SizedBox(height: B05Layout.space24),
                     ],
                     if (available.isNotEmpty) ...[
-                      _SectionHeading(
-                        title: 'Browse plans',
-                        detail: active == null
-                            ? 'Open a plan to see its schedule before using it.'
-                            : 'Your completed history stays saved when you switch.',
-                      ),
-                      const SizedBox(height: B05Layout.space8),
+                      // The page title already says what this list is; it
+                      // only needs a heading to set it apart from others.
+                      if (active != null || recommendation != null) ...[
+                        _SectionHeading(
+                          title: 'More plans',
+                          detail: active == null
+                              ? 'Open a plan to see its schedule before using it.'
+                              : 'Your completed history stays saved when you switch.',
+                        ),
+                        const SizedBox(height: B05Layout.space8),
+                      ],
                       ...available.map(
                         (entry) => Padding(
                           padding: const EdgeInsets.only(
@@ -247,19 +282,34 @@ class _PlanLibraryScreenState extends ConsumerState<PlanLibraryScreen> {
   PlanLibraryEntry? _recommendedEntry(
     PlanLibrarySnapshot snapshot,
     UserProfileState profile,
+    int? trainingDays,
   ) {
     if (!profile.isLoaded || !profile.hasProfile) return null;
-    final targetId = switch (profile.equipmentAccess.trim().toLowerCase()) {
-      'dumbbells' => 'dumbbell-full-body-3-day',
-      'bodyweight' => 'bodyweight-basics-3-day',
-      'full_gym' || 'gym' => 'beginner-full-body-3-day',
-      _ => null,
-    };
-    if (targetId == null) return null;
-    for (final entry in snapshot.entries) {
-      if (!entry.isActive && entry.starterPlan?.id == targetId) return entry;
-    }
-    return null;
+    final ranked = rankRecommendedPlans(
+      snapshot.entries,
+      PlanRecommendationInputs(
+        goal: profile.userGoal,
+        equipmentAccess: profile.equipmentAccess,
+        trainingDaysPerWeek: trainingDays,
+      ),
+    );
+    return ranked.firstOrNull;
+  }
+
+  Future<void> _openFilters(BuildContext context) async {
+    final result = await showIndiFitBottomSheet<_PlanFilterValues>(
+      context: context,
+      semanticLabel: 'Filter plans',
+      builder: (_) => _PlanFiltersSheet(
+        initial: _PlanFilterValues(_environment, _dayFilter, _experience),
+      ),
+    );
+    if (result == null || !mounted) return;
+    setState(() {
+      _environment = result.environment;
+      _dayFilter = result.days;
+      _experience = result.experience;
+    });
   }
 }
 
@@ -415,6 +465,19 @@ class _PlanOverviewScreenState extends ConsumerState<PlanOverviewScreen> {
             timezoneId: timezoneId,
           );
       if (!mounted) return;
+      final choice = await showPlanStartSheet(
+        context,
+        planName: entry.program.name,
+        todayLocalDate: localDate,
+        timezoneId: timezoneId,
+        dates: dates,
+        planWeekdays: planLibraryFirstWeekWeekdays(entry),
+        sessionsPerWeek: entry.metadata.trainingDaysPerWeek,
+      );
+      if (choice == null || !mounted) {
+        if (mounted) setState(() => _isActivating = false);
+        return;
+      }
       if (current.activeProgramVersionId != null &&
           current.activeProgramVersionId != entry.version.id) {
         final shouldSwitch = await _confirmSwitch(
@@ -442,8 +505,9 @@ class _PlanOverviewScreenState extends ConsumerState<PlanOverviewScreen> {
             ActivateProgramVersionCommand(
               programVersionId: versionId,
               commandId: _activationCommandId!,
-              activationLocalDate: localDate,
+              activationLocalDate: choice.startLocalDate,
               timezoneId: timezoneId,
+              trainingWeekdays: choice.trainingWeekdays,
             ),
           );
       if (!mounted) return;
@@ -711,11 +775,14 @@ class _PlanDetailsBody extends StatelessWidget {
                     ),
                   ],
                   const SizedBox(height: B05Layout.space24),
-                  if (overview != null) ...[
-                    _PlanScheduleAndHistory(overview: overview!),
-                    const SizedBox(height: B05Layout.space24),
-                  ],
+                  // What you'd actually do comes first; progress and history
+                  // appear once the plan has some (UR-23).
                   _PlanStructure(entry: entry, overview: overview),
+                  if (overview != null &&
+                      planOverviewHasHistory(overview!)) ...[
+                    const SizedBox(height: B05Layout.space24),
+                    _PlanScheduleAndHistory(overview: overview!),
+                  ],
                 ],
               ),
             ),
@@ -1612,8 +1679,7 @@ class _PlanMetadataLine extends StatelessWidget {
         ),
       _InlineFact(
         icon: Icons.fitness_center_outlined,
-        label:
-            '${entry.metadata.exerciseCount} ${_pluralize('exercise', entry.metadata.exerciseCount)}',
+        label: entry.metadata.workloadLabel,
       ),
     ],
   );
@@ -1645,9 +1711,8 @@ class _PlanMetadataPanel extends StatelessWidget {
                 value: entry.metadata.scheduleLabel,
               ),
               _DetailFact(
-                label: 'Exercises',
-                value:
-                    '${entry.metadata.exerciseCount} ${_pluralize('exercise', entry.metadata.exerciseCount)}',
+                label: 'Workload',
+                value: entry.metadata.workloadLabel,
               ),
               if (entry.starterPlan case final starter?) ...[
                 _DetailFact(label: 'Setting', value: starter.environment.label),
@@ -1797,59 +1862,162 @@ class _LibraryIntro extends StatelessWidget {
   );
 }
 
-class _PlanLibraryFilters extends StatelessWidget {
-  const _PlanLibraryFilters({
+class _PlanFilterValues {
+  const _PlanFilterValues(this.environment, this.days, this.experience);
+
+  final StarterPlanEnvironment? environment;
+  final int? days;
+  final StarterPlanExperience? experience;
+
+  int get activeCount =>
+      [environment, days, experience].where((value) => value != null).length;
+}
+
+String _dayFilterLabel(int value) => value == 5 ? '5+ days' : '$value days';
+
+/// One row of filter chips (UR-45): "Filters", then equipment · days ·
+/// level. Every chip opens the Filters sheet.
+class _PlanFilterChipRow extends StatelessWidget {
+  const _PlanFilterChipRow({
     required this.environment,
     required this.dayFilter,
     required this.experience,
-    required this.onEnvironmentChanged,
-    required this.onDayChanged,
-    required this.onExperienceChanged,
+    required this.onOpenFilters,
   });
 
   final StarterPlanEnvironment? environment;
   final int? dayFilter;
   final StarterPlanExperience? experience;
-  final ValueChanged<StarterPlanEnvironment?> onEnvironmentChanged;
-  final ValueChanged<int?> onDayChanged;
-  final ValueChanged<StarterPlanExperience?> onExperienceChanged;
+  final VoidCallback onOpenFilters;
 
   @override
-  // Full width, like the cards around it (review O-2).
-  Widget build(BuildContext context) => SizedBox(
-    width: double.infinity,
-    child: B05Surface(
-      tone: B05SurfaceTone.inset,
+  Widget build(BuildContext context) {
+    final active = _PlanFilterValues(
+      environment,
+      dayFilter,
+      experience,
+    ).activeCount;
+    Widget chip(String label, bool selected, {Key? key, IconData? icon}) =>
+        Padding(
+          padding: const EdgeInsets.only(right: B05Layout.space8),
+          child: FilterChip(
+            key: key,
+            avatar: icon == null ? null : Icon(icon, size: 18),
+            label: Text(label),
+            selected: selected,
+            showCheckmark: false,
+            onSelected: (_) => onOpenFilters(),
+          ),
+        );
+    return Semantics(
+      container: true,
+      label: 'Plan filters',
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            // Filters leads so it stays on screen on narrow phones.
+            chip(
+              active == 0 ? 'Filters' : 'Filters · $active',
+              active > 0,
+              key: const ValueKey('plan_library_filters'),
+              icon: Icons.tune_rounded,
+            ),
+            chip(environment?.label ?? 'Any equipment', environment != null),
+            chip(
+              dayFilter == null ? 'Any days' : _dayFilterLabel(dayFilter!),
+              dayFilter != null,
+            ),
+            chip(experience?.label ?? 'Any level', experience != null),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PlanFiltersSheet extends StatefulWidget {
+  const _PlanFiltersSheet({required this.initial});
+
+  final _PlanFilterValues initial;
+
+  @override
+  State<_PlanFiltersSheet> createState() => _PlanFiltersSheetState();
+}
+
+class _PlanFiltersSheetState extends State<_PlanFiltersSheet> {
+  late var _environment = widget.initial.environment;
+  late var _days = widget.initial.days;
+  late var _experience = widget.initial.experience;
+
+  @override
+  Widget build(BuildContext context) => SafeArea(
+    child: SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(
+        B05Layout.space16,
+        B05Layout.space8,
+        B05Layout.space16,
+        B05Layout.space16,
+      ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Filter plans', style: B05Typography.title(context)),
-          const SizedBox(height: B05Layout.space8),
+          const SizedBox(height: B05Layout.space12),
+          Text('Equipment', style: B05Typography.caption(context)),
+          const SizedBox(height: B05Layout.space4),
           _PlanFilterRow<StarterPlanEnvironment>(
             semanticLabel: 'Training setting filter',
-            selected: environment,
+            selected: _environment,
             allLabel: 'All equipment',
             values: StarterPlanEnvironment.values,
             labelFor: (value) => value.label,
-            onChanged: onEnvironmentChanged,
+            onChanged: (value) => setState(() => _environment = value),
           ),
-          const SizedBox(height: B05Layout.space8),
+          const SizedBox(height: B05Layout.space12),
+          Text('Days a week', style: B05Typography.caption(context)),
+          const SizedBox(height: B05Layout.space4),
           _PlanFilterRow<int>(
             semanticLabel: 'Training days filter',
-            selected: dayFilter,
+            selected: _days,
             allLabel: 'All days',
             values: const [3, 4, 5],
-            labelFor: (value) => value == 5 ? '5+ days' : '$value days',
-            onChanged: onDayChanged,
+            labelFor: _dayFilterLabel,
+            onChanged: (value) => setState(() => _days = value),
           ),
-          const SizedBox(height: B05Layout.space8),
+          const SizedBox(height: B05Layout.space12),
+          Text('Level', style: B05Typography.caption(context)),
+          const SizedBox(height: B05Layout.space4),
           _PlanFilterRow<StarterPlanExperience>(
             semanticLabel: 'Experience filter',
-            selected: experience,
+            selected: _experience,
             allLabel: 'All levels',
             values: StarterPlanExperience.values,
             labelFor: (value) => value.label,
-            onChanged: onExperienceChanged,
+            onChanged: (value) => setState(() => _experience = value),
+          ),
+          const SizedBox(height: B05Layout.space16),
+          Row(
+            children: [
+              TextButton(
+                onPressed: () => setState(() {
+                  _environment = null;
+                  _days = null;
+                  _experience = null;
+                }),
+                child: const Text('Clear'),
+              ),
+              const Spacer(),
+              FilledButton(
+                key: const ValueKey('plan_library_filters_apply'),
+                onPressed: () => Navigator.pop(
+                  context,
+                  _PlanFilterValues(_environment, _days, _experience),
+                ),
+                child: const Text('Show plans'),
+              ),
+            ],
           ),
         ],
       ),
@@ -2129,3 +2297,29 @@ bool _matchesQuery(PlanLibraryEntry entry, String rawQuery) {
 }
 
 String _pluralize(String noun, int count) => count == 1 ? noun : '${noun}s';
+
+/// The weekdays of the plan's first week, the pattern the start sheet
+/// pre-selects.
+List<int> planLibraryFirstWeekWeekdays(PlanLibraryEntry entry) {
+  final weeks = [...entry.detail.weeks]
+    ..sort((a, b) => a.programWeekOrdinal.compareTo(b.programWeekOrdinal));
+  if (weeks.isEmpty) return const [];
+  final firstWeekId = weeks.first.id;
+  return entry.detail.sessionTemplates
+      .where((template) => template.programWeekId == firstWeekId)
+      .map((template) => template.plannedWeekday)
+      .toSet()
+      .toList()
+    ..sort();
+}
+
+/// True once any workout from the plan is saved, partly done or skipped.
+bool planOverviewHasHistory(PlanOverviewSnapshot overview) =>
+    overview.history.isNotEmpty ||
+    overview.occurrences.any(
+      (item) => const {
+        'completed',
+        'partiallyCompleted',
+        'skipped',
+      }.contains(item.occurrence.status),
+    );
