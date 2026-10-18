@@ -16,7 +16,8 @@ import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/indi_fit_feedback.dart';
 import '../dashboard/today_consumer_presentation.dart';
 import '../dashboard/today_surface_controller.dart';
-import '../dashboard/widgets/dashboard_date_bar.dart';
+import '../dashboard/widgets/today_header_widgets.dart';
+import 'canonical_food_actions.dart';
 import 'diary_structure_controller.dart';
 import 'food_log_surface.dart';
 import 'food_search_screen.dart';
@@ -120,6 +121,24 @@ class _FoodDiaryScreenState extends ConsumerState<FoodDiaryScreen> {
       appBar: AppBar(
         // Same title style as the Training and Progress tabs.
         title: const Text('Food diary'),
+        actions: [
+          // The week strip shows seven days; older days come from here.
+          IconButton(
+            key: const ValueKey('food_diary_pick_day'),
+            tooltip: 'Pick a day',
+            icon: const Icon(Icons.calendar_month_rounded),
+            onPressed: () async {
+              final picked = await showDatePicker(
+                context: context,
+                initialDate: _selectedDay,
+                firstDate: DateTime(2020),
+                lastDate: _today,
+              );
+              if (picked == null || !mounted) return;
+              setState(() => _selectedDay = _civilDay(picked));
+            },
+          ),
+        ],
       ),
       body: SafeArea(
         top: false,
@@ -127,7 +146,8 @@ class _FoodDiaryScreenState extends ConsumerState<FoodDiaryScreen> {
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           children: [
-            DashboardDateBar(
+            // Today's week strip, so the diary reads like Today (UR-41).
+            TodayWeekStrip(
               selectedDate: _selectedDay,
               today: _today,
               onDateChanged: (date) {
@@ -245,6 +265,12 @@ class _FoodDiaryScreenState extends ConsumerState<FoodDiaryScreen> {
                               daily == null &&
                               (diary.isLoading || canonical.isLoading),
                           onOpen: () => _openMealDetail(context, mealType),
+                          onRecordActions: (record) => runLoggedRecordActions(
+                            context: context,
+                            ref: ref,
+                            record: record,
+                            targetDate: _selectedDay,
+                          ),
                           onAdd: () => _openMealAdd(context, mealType),
                           onCopyYesterday:
                               (mealRecords.isEmpty &&

@@ -175,6 +175,12 @@ void main() {
         ),
       );
       expect(find.textContaining('1 katori'), findsWidgets);
+      // Thali and recipe rows show their items when expanded (UR-40).
+      for (final toggle
+          in find.byIcon(Icons.expand_more_rounded).evaluate().toList()) {
+        await tester.tap(find.byWidget(toggle.widget));
+      }
+      await tester.pump();
       expect(find.textContaining('2 pieces'), findsWidgets);
       expect(find.text('Home dal'), findsOneWidget);
       expectNoInternalText(tester);

@@ -21,6 +21,7 @@ import 'package:indifit/data/repositories/nutrition_food_catalog_repository.dart
 import 'package:indifit/data/repositories/nutrition_food_logging_coordinator.dart';
 import 'package:indifit/data/repositories/nutrition_read_model_repository.dart';
 import 'package:indifit/data/repositories/nutrition_transformation_repository.dart';
+import 'package:indifit/features/dashboard/widgets/today_header_widgets.dart';
 import 'package:indifit/features/food_log/food_log_surface.dart';
 import 'package:indifit/features/food_log/food_search_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -432,7 +433,9 @@ void main() {
       await _settleR07D(tester);
 
       expect(find.text('Diary poha'), findsOneWidget);
-      expect(find.text('Diary dal · Diary rice'), findsOneWidget);
+      // Each logged food is its own row now (UR-40).
+      expect(find.text('Diary dal'), findsWidgets);
+      expect(find.text('Diary rice'), findsWidgets);
       await expectLater(
         find.byType(FoodDiaryScreen),
         matchesGoldenFile('goldens/ux_r07d_diary_populated_light.png'),
@@ -472,19 +475,9 @@ void main() {
       );
       await _settleR07D(tester);
 
-      expect(find.text('Wed, 12 Aug'), findsOneWidget);
-      await tester.tap(find.bySemanticsLabel('Next day'));
-      await _settleR07D(tester);
-      expect(find.text('Today'), findsOneWidget);
-
-      await tester.tap(find.bySemanticsLabel('Previous day'));
-      await _settleR07D(tester);
-      expect(find.text('Wed, 12 Aug'), findsOneWidget);
-      await tester.tap(find.widgetWithText(TextButton, 'Today'));
-      await _settleR07D(tester);
-      expect(find.text('Today'), findsOneWidget);
-
-      await tester.tap(find.bySemanticsLabel('Previous day'));
+      // The week strip moves the diary a day back (UR-41).
+      expect(find.byType(TodayWeekStrip), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('today-week-day-11')));
       await _settleR07D(tester);
       await tester.tap(find.bySemanticsLabel('Add Lunch'));
       await _settleR07D(tester);
@@ -492,7 +485,7 @@ void main() {
         find.byType(FoodSearchScreen),
       );
       expect(search.mealType, 'lunch');
-      expect(search.selectedDate, DateTime(2026, 8, 12));
+      expect(search.selectedDate, DateTime(2026, 8, 11));
     },
   );
 

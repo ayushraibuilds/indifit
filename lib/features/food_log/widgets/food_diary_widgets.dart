@@ -7,15 +7,16 @@ import '../../../core/nutrition_legacy_read_models.dart';
 import '../../../core/presentation/consumer_copy.dart';
 import '../../../core/presentation/consumer_number_label.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
-import '../../../core/theme/indifit_icons.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
 import '../../../data/repositories/nutrition_target_authority.dart';
 import '../../dashboard/today_consumer_presentation.dart';
 import '../../dashboard/today_surface_controller.dart';
+import '../../dashboard/widgets/today_nutrition_widgets.dart';
 import '../../settings/nutrition_targets_hub_screen.dart';
 import '../food_log_surface.dart';
 import '../food_search_screen.dart';
 import '../meal_presentation_registry.dart';
+import 'logged_food_row.dart';
 import 'meal_icon_chip.dart';
 
 /// Food diary widgets (PV1-ENG-05D first pass).
@@ -132,15 +133,6 @@ class FoodDiarySummary extends StatelessWidget {
       return const SizedBox.shrink();
     }
     final calories = presentation.calories;
-    final macros = presentation.macros
-        .where((metric) => metric.nutrientId != 'fibre')
-        .toList(growable: false);
-    final fiberMetric = presentation.macros
-        .cast<TodayNutritionMetricPresentation?>()
-        .firstWhere(
-          (metric) => metric?.nutrientId == 'fibre',
-          orElse: () => null,
-        );
     final hasTarget = calories?.hasTarget == true;
     final consumed = calories?.isAvailable == true
         ? '${calories!.value} ${calories.unit}'
@@ -248,91 +240,17 @@ class FoodDiarySummary extends StatelessWidget {
                 );
               },
             ),
-            const SizedBox(height: 10),
-            if (calories?.progress != null)
-              LinearProgressIndicator(
-                value: calories!.progress,
-                minHeight: 7,
-                borderRadius: BorderRadius.circular(8),
-                color: context.b05Colors.action,
-                backgroundColor: context.b05Colors.selected,
-              )
-            else if (presentation.state == TodayPresentationState.loading)
+            const SizedBox(height: 6),
+            if (presentation.state == TodayPresentationState.loading)
               const B05StatusMessage(
                 status: B05SemanticStatus.info,
                 label: 'Loading daily target',
               )
             else
               Text(targetContext, style: B05Typography.caption(context)),
-            if (calories?.progress != null) ...[
-              const SizedBox(height: 6),
-              Text(targetContext, style: B05Typography.caption(context)),
-            ],
             const SizedBox(height: 14),
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final itemWidth = (constraints.maxWidth - 12) / 3;
-                return Wrap(
-                  spacing: 6,
-                  runSpacing: 8,
-                  children: [
-                    for (final metric in macros)
-                      SizedBox(
-                        width: itemWidth,
-                        child: FoodDiaryMetric(metric: metric),
-                      ),
-                  ],
-                );
-              },
-            ),
-            if (fiberMetric != null && fiberMetric.isAvailable) ...[
-              const SizedBox(height: 12),
-              Builder(
-                builder: (context) {
-                  final fibre = context.b05Colors.fibre;
-                  return DecoratedBox(
-                    decoration: ShapeDecoration(
-                      color: fibre.container,
-                      shape: B05Radii.shape(B05Radii.chipRadius),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            IndiFitIcons.fibre,
-                            size: 16,
-                            color: fibre.indicator,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Fiber',
-                            style: B05Typography.caption(context).copyWith(
-                              color: fibre.foreground,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const Spacer(),
-                          Text(
-                            '${fiberMetric.value} ${fiberMetric.unit}',
-                            style: B05Typography.label(context).copyWith(
-                              color: fibre.foreground,
-                              fontWeight: FontWeight.w700,
-                              fontFeatures: const [
-                                FontFeature.tabularFigures(),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ],
+            // Today's macro tiles, with fibre as Today's quiet line (UR-41).
+            MacroComparison(metrics: presentation.macros),
             if (presentation.hasIncompleteNutrition) ...[
               const SizedBox(height: 8),
               Text(
@@ -409,27 +327,6 @@ class FoodDiarySummaryMetric extends StatelessWidget {
   );
 }
 
-class FoodDiaryMetric extends StatelessWidget {
-  const FoodDiaryMetric({super.key, required this.metric});
-
-  final TodayNutritionMetricPresentation metric;
-
-  @override
-  Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(metric.label, style: B05Typography.caption(context)),
-      const SizedBox(height: 2),
-      Text(
-        '${metric.value} ${metric.unit}',
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: B05Typography.label(context),
-      ),
-    ],
-  );
-}
-
 class FoodDiaryMealRow extends StatelessWidget {
   const FoodDiaryMealRow({
     super.key,
@@ -441,8 +338,12 @@ class FoodDiaryMealRow extends StatelessWidget {
     this.onCopyYesterday,
     this.eatAgainItems,
     this.onFastAdd,
+    this.onRecordActions,
     this.isLoading = false,
   });
+
+  /// "…" on each logged row: the record-actions entry point (UR-51).
+  final ValueChanged<NutritionHistoricalReadRecord>? onRecordActions;
 
   final String type;
   final String label;
@@ -459,22 +360,13 @@ class FoodDiaryMealRow extends StatelessWidget {
     final accent = context.b05Colors.meal(
       foodMealPresentationFor(type).accent ?? B05MealAccent.snack,
     );
-    final labels = records
-        .expand((record) => record.items)
-        .map((item) => item.displayLabel)
-        .whereType<String>()
-        .where((label) => label.trim().isNotEmpty)
-        .take(2)
-        .toList(growable: false);
     final preview = isLoading
         ? 'Loading logged food'
         : records.isEmpty
         ? (onCopyYesterday != null
               ? 'Nothing logged yet · Tap history to copy yesterday'
               : 'Nothing logged yet')
-        : labels.isEmpty
-        ? '${records.length} logged'
-        : labels.join(' · ');
+        : '${records.length} logged';
     return Semantics(
       container: true,
       button: true,
@@ -545,6 +437,18 @@ class FoodDiaryMealRow extends StatelessWidget {
               ),
             ),
           ),
+          // The logged food, one row each, as on the meal page (UR-40).
+          for (final record in records)
+            Padding(
+              padding: const EdgeInsets.only(left: 8),
+              child: LoggedFoodRow(
+                key: ValueKey('diary_logged_${record.stableId}'),
+                record: record,
+                onActions: onRecordActions == null
+                    ? null
+                    : () => onRecordActions!(record),
+              ),
+            ),
           if (eatAgainItems != null && eatAgainItems!.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(left: 42, bottom: 4),

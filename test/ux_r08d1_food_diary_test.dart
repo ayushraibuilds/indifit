@@ -9,6 +9,8 @@ import 'package:indifit/data/models/b04_goal_models.dart';
 import 'package:indifit/data/repositories/nutrition_target_authority.dart';
 import 'package:indifit/features/dashboard/today_surface_controller.dart';
 import 'package:indifit/features/dashboard/widgets/dashboard_date_bar.dart';
+import 'package:indifit/features/dashboard/widgets/today_header_widgets.dart';
+import 'package:indifit/features/dashboard/widgets/today_nutrition_widgets.dart';
 import 'package:indifit/features/food_log/food_log_surface.dart';
 import 'package:indifit/features/food_log/food_search_screen.dart';
 import 'package:indifit/features/food_log/widgets/meal_icon_chip.dart';
@@ -34,7 +36,9 @@ void main() {
     expect(find.text('2,100 kcal'), findsOneWidget);
     expect(find.text('Remaining'), findsOneWidget);
     expect(find.text('2,100 kcal daily target.'), findsOneWidget);
-    expect(find.byType(LinearProgressIndicator), findsOneWidget);
+    // Today's macro tiles, not a second flat bar (UR-41).
+    expect(find.byType(LinearProgressIndicator), findsNothing);
+    expect(find.byType(MacroComparison), findsOneWidget);
   });
 
   testWidgets('diary keeps target absence explicit instead of showing zero', (
@@ -112,16 +116,10 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.byType(DashboardDateBar), findsOneWidget);
-      expect(
-        find.byKey(const ValueKey('dashboard-date-bar-row')),
-        findsOneWidget,
-      );
-      expect(
-        find.byKey(const ValueKey('dashboard-date-bar-today')),
-        findsOneWidget,
-      );
-      expect(find.bySemanticsLabel('Go to today'), findsOneWidget);
+      // Today's week strip, plus a day picker for older days (UR-41).
+      expect(find.byType(TodayWeekStrip), findsOneWidget);
+      expect(find.byType(DashboardDateBar), findsNothing);
+      expect(find.byKey(const ValueKey('food_diary_pick_day')), findsOneWidget);
       expect(tester.takeException(), isNull);
     } finally {
       semantics.dispose();
