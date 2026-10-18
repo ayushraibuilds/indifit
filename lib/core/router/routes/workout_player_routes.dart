@@ -18,11 +18,15 @@ final workoutPlayerRoutes = <RouteBase>[
     builder: (context, state) => const RoutineEditorScreen(),
   ),
   // The retired AI report must not remain reachable from saved links.
-  // Weekly reminders now open the factual Progress destination.
+  // Weekly reminders now open the factual Sunday check-in (UF-15).
   GoRoute(
     path: '/weekly-report',
     redirect: (context, state) =>
         compatibilityRouteRedirect(state.matchedLocation),
+  ),
+  GoRoute(
+    path: '/weekly-check-in',
+    builder: (context, state) => const WeeklyCheckInScreen(),
   ),
   // Legacy player route (/workout-player) is retired and redirects to /training.
   GoRoute(

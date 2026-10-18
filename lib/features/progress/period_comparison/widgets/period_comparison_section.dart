@@ -12,9 +12,17 @@ import 'weight_period_card.dart';
 
 /// Progress tab section displaying truthful cycle-over-cycle comparisons (PV1-PROG-01).
 class PeriodComparisonSection extends ConsumerWidget {
-  const PeriodComparisonSection({super.key, required this.units});
+  const PeriodComparisonSection({
+    super.key,
+    required this.units,
+    this.onOpenWeightHistory,
+  });
 
   final String units;
+
+  /// The body weight card opens Weight history (UR-29); without it the card
+  /// opens the period breakdown.
+  final VoidCallback? onOpenWeightHistory;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -100,11 +108,13 @@ class PeriodComparisonSection extends ConsumerWidget {
               WeightPeriodCard(
                 comparison: snapshot.weightComparison!,
                 units: units,
-                onTap: () => PeriodComparisonDrilldownSheet.show(
-                  context,
-                  snapshot: snapshot,
-                  units: units,
-                ),
+                onTap:
+                    onOpenWeightHistory ??
+                    () => PeriodComparisonDrilldownSheet.show(
+                      context,
+                      snapshot: snapshot,
+                      units: units,
+                    ),
               ),
             ],
           ],
