@@ -13,6 +13,7 @@ import '../core/theme/app_theme.dart';
 import '../core/utils/app_logger.dart';
 import '../data/catalog/catalog_update_service.dart';
 import '../data/database/app_database.dart';
+import '../features/food_log/usual_meal.dart';
 import '../features/settings/food_database_providers.dart';
 import 'database_readiness.dart';
 import 'database_recovery_screen.dart';
@@ -178,6 +179,11 @@ class _IndiFitAppState extends ConsumerState<IndiFitApp>
     final themeMode = ref.watch(themeModeProvider);
     final database = ref.watch(databaseReadyProvider);
 
+    // Meal reminders name the usual meal when there is one (UF-19).
+    NotificationService.usualMealTitle = (slot) async => (await readUsualMeal(
+      await ref.read(nutritionReadModelRepositoryProvider.future),
+      slot,
+    ))?.title;
     NotificationService.onNotificationNavigate = (payload) {
       final destination = NotificationService.destinationForPayload(payload);
       if (destination == null) return;

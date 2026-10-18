@@ -134,6 +134,30 @@ class NotificationService {
 
   static Function(String payload)? onNotificationNavigate;
 
+  /// The usual meal for a slot ("Poha + Chai"), for context reminders
+  /// (UF-19); set by the app, null in tests and before it starts.
+  static Future<String?> Function(String slot)? usualMealTitle;
+
+  /// A meal reminder's title and body: the usual meal when there is one
+  /// ("Your usual poha?"), else the plain prompt.
+  static (String, String) mealReminderText(String meal, String? usual) {
+    if (usual != null && usual.trim().isNotEmpty) {
+      return (
+        'Your usual ${usual.trim()}?',
+        'Tap to log your usual $meal: ${usual.trim()}.',
+      );
+    }
+    return meal == 'dinner'
+        ? ('🍽️ Log your dinner', 'Open IndiFit to search and log your dinner.')
+        : ('🍱 Log your lunch', 'Open IndiFit to search and log your lunch.');
+  }
+
+  /// Whether today's [meal] reminder is skipped: the meal already has food.
+  static bool skipMealReminderToday({
+    required String meal,
+    required Set<String> loggedMealCategories,
+  }) => loggedMealCategories.contains(meal);
+
   /// Resolves notification payloads only to currently supported destinations.
   /// The weekly reminder opens the Sunday check-in (UF-15) instead of the
   /// retired AI report surface.
@@ -423,12 +447,18 @@ class NotificationService {
         hasAnyFoodToday =
             foodLogs.isNotEmpty || canonicalMealCategories.isNotEmpty;
 
-        hasLunchToday =
-            foodLogs.any((l) => l.mealType.toLowerCase() == 'lunch') ||
-            canonicalMealCategories.contains('lunch');
-        hasDinnerToday =
-            foodLogs.any((l) => l.mealType.toLowerCase() == 'dinner') ||
-            canonicalMealCategories.contains('dinner');
+        final logged = {
+          ...canonicalMealCategories,
+          for (final log in foodLogs) log.mealType.toLowerCase(),
+        };
+        hasLunchToday = skipMealReminderToday(
+          meal: 'lunch',
+          loggedMealCategories: logged,
+        );
+        hasDinnerToday = skipMealReminderToday(
+          meal: 'dinner',
+          loggedMealCategories: logged,
+        );
       } catch (e, st) {
         AppLogger.warning('syncDailyNotifications db check failed: $e');
         CrashReportingService.recordCrash(
@@ -468,7 +498,20 @@ class NotificationService {
       }
     }
     if (mealsEnabled) {
+      String? usualLunch;
+      String? usualDinner;
+      final readUsual = usualMealTitle;
+      if (readUsual != null) {
+        try {
+          usualLunch = await readUsual('lunch');
+          usualDinner = await readUsual('dinner');
+        } catch (e) {
+          AppLogger.warning('Usual meal for reminders unavailable: $e');
+        }
+      }
       await _scheduleMealReminders(
+        usualLunch,
+        usualDinner,
         hasLunchToday,
         hasDinnerToday,
         lunchHour,
@@ -638,6 +681,8 @@ class NotificationService {
 
   /// 🍱 Meal logging reminders — only post-lunch and post-dinner
   static Future<void> _scheduleMealReminders(
+    String? usualLunch,
+    String? usualDinner,
     bool hasLunchToday,
     bool hasDinnerToday,
     int lunchHour,
@@ -654,8 +699,8 @@ class NotificationService {
       channelName: 'Meal Reminders',
       hour: lunchHour,
       minute: lunchMinute,
-      title: '🍱 Log your lunch',
-      body: 'Open IndiFit to search and log your lunch.',
+      title: mealReminderText('lunch', usualLunch).$1,
+      body: mealReminderText('lunch', usualLunch).$2,
       payload: 'meal_lunch',
       quietHoursEnabled: quietHoursEnabled,
       quietHoursStart: quietStart,
@@ -669,8 +714,8 @@ class NotificationService {
       channelName: 'Meal Reminders',
       hour: dinnerHour,
       minute: dinnerMinute,
-      title: '🍽️ Log your dinner',
-      body: 'Open IndiFit to search and log your dinner.',
+      title: mealReminderText('dinner', usualDinner).$1,
+      body: mealReminderText('dinner', usualDinner).$2,
       payload: 'meal_dinner',
       quietHoursEnabled: quietHoursEnabled,
       quietHoursStart: quietStart,

@@ -26,6 +26,7 @@ import 'widgets/today_meal_quick_adds.dart';
 import 'widgets/today_module_widgets.dart';
 import 'widgets/today_motion.dart';
 import 'widgets/today_nutrition_widgets.dart';
+import 'widgets/today_protein_nudge_card.dart';
 import 'widgets/today_usual_meal_card.dart';
 import 'widgets/today_weigh_in_chip.dart';
 
@@ -574,6 +575,13 @@ class TodayDailyActionSurface extends ConsumerWidget {
           // One tap for the plate logged most (only on today's date).
           if (relation == TodayDateRelation.today) const TodayUsualMealCard(),
           if (relation == TodayDateRelation.today) const TodayWeighInChip(),
+          if (relation == TodayDateRelation.today)
+            TodayProteinNudgeCard(
+              proteinTarget: _metric(nutrition, 'protein')?.targetValue,
+              proteinEaten: _metric(nutrition, 'protein')?.pointValue,
+              kcalTarget: nutrition.calories?.targetValue,
+              kcalEaten: nutrition.calories?.pointValue,
+            ),
         ],
       ),
       'today.hydration' => TodayHydrationCard(
@@ -625,4 +633,14 @@ class TodayDailyActionSurface extends ConsumerWidget {
       _ => const SizedBox.shrink(),
     };
   }
+}
+
+TodayNutritionMetricPresentation? _metric(
+  TodayNutritionPresentation nutrition,
+  String nutrientId,
+) {
+  for (final metric in nutrition.macros) {
+    if (metric.nutrientId == nutrientId) return metric;
+  }
+  return null;
 }

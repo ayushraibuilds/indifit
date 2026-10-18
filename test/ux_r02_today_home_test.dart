@@ -291,10 +291,18 @@ void main() {
         usualThaliProvider.overrideWith((ref) async => null),
         usualMealProvider.overrideWith((ref, slot) async => null),
         weighInChipVisibleProvider.overrideWith((ref) async => false),
+        // A fixed morning keeps the evening protein nudge off the goldens.
+        weighInClockProvider.overrideWithValue(() => DateTime(2026, 8, 9, 9)),
         weighInChipVisibleProvider.overrideWith((ref) async => false),
+        // A fixed morning keeps the evening protein nudge off the goldens.
+        weighInClockProvider.overrideWithValue(() => DateTime(2026, 8, 9, 9)),
         usualMealProvider.overrideWith((ref, slot) async => null),
         weighInChipVisibleProvider.overrideWith((ref) async => false),
+        // A fixed morning keeps the evening protein nudge off the goldens.
+        weighInClockProvider.overrideWithValue(() => DateTime(2026, 8, 9, 9)),
         weighInChipVisibleProvider.overrideWith((ref) async => false),
+        // A fixed morning keeps the evening protein nudge off the goldens.
+        weighInClockProvider.overrideWithValue(() => DateTime(2026, 8, 9, 9)),
       ],
     );
     addTearDown(container.dispose);
@@ -539,6 +547,8 @@ Widget _todayApp({
       usualThaliProvider.overrideWith((ref) async => null),
       usualMealProvider.overrideWith((ref, slot) async => null),
       weighInChipVisibleProvider.overrideWith((ref) async => false),
+      // A fixed morning keeps the evening protein nudge off the goldens.
+      weighInClockProvider.overrideWithValue(() => DateTime(2026, 8, 9, 9)),
     ],
     child: _todaySurface(
       theme: theme,
