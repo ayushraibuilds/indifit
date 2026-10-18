@@ -1518,16 +1518,15 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                   : 'Log ${_mealLabel(mealType)}',
               style: B05Typography.title(context),
             ),
-            Row(
-              mainAxisSize: MainAxisSize.min,
+            // Wraps under the date on narrow screens and large text.
+            Wrap(
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                Flexible(
-                  child: Text(
-                    _isMultiSelect
-                        ? '${_selectedOptions.length} selected · $dateStr'
-                        : dateStr,
-                    style: B05Typography.caption(context),
-                  ),
+                Text(
+                  _isMultiSelect
+                      ? '${_selectedOptions.length} selected · $dateStr'
+                      : dateStr,
+                  style: B05Typography.caption(context),
                 ),
                 if (!_isMultiSelect)
                   TextButton(
