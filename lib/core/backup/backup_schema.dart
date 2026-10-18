@@ -333,6 +333,11 @@ class BackupData {
         'weekly_action_text',
         'weekly_action_target',
         'weekly_action_target_date',
+        'pref_my_chai_milk',
+        'pref_my_chai_milk_share',
+        'pref_my_chai_sugar_tsp',
+        'pref_my_chai_cup_ml',
+        'pref_my_roti',
       ];
       for (final key in keys) {
         final val = prefs.get(key);

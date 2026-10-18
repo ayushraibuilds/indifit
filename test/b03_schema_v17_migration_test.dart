@@ -372,7 +372,7 @@ void main() {
           (poha.servingSize, poha.servingUnit, poha.calories),
           (2.0, 'katori', 460),
         );
-        expect(await db.select(db.nutritionFoods).get(), hasLength(753));
+        expect(await db.select(db.nutritionFoods).get(), hasLength(758));
         // The 15 manifest aliases; the bundled pack adds its own (CAT-6).
         final aliases = await db.select(db.nutritionFoodAliases).get();
         expect(

@@ -48,7 +48,7 @@ SPOTCHECK_SEED = 20261007
 SPOTCHECK_VERSION = 4
 
 FORMAT = 1
-LATEST = 5
+LATEST = 6
 MIN_APP_BUILD = 1
 SOURCE_ID = "indifit-catalogue-v1"
 
@@ -69,6 +69,16 @@ DISHES = CATALOG / "sources/usda-dishes-v1/foods.csv"
 DISHES_VERSION = 5
 DISHES_SOURCE = {
     "id": "usda-dishes-v1",
+    "licence": "CC0-1.0",
+    "attribution": "USDA FoodData Central, SR Legacy",
+    "review": "unreviewed",
+}
+# Pack 6 adds sugar and milk by the millilitre, the ingredients My chai
+# (UF-2) is computed from: sources/usda-ingredients-v1/.
+INGREDIENTS = CATALOG / "sources/usda-ingredients-v1/foods.csv"
+INGREDIENTS_VERSION = 6
+INGREDIENTS_SOURCE = {
+    "id": "usda-ingredients-v1",
     "licence": "CC0-1.0",
     "attribution": "USDA FoodData Central, SR Legacy",
     "review": "unreviewed",
@@ -481,6 +491,12 @@ def build_pack(version, rows=None, overlay_dir=OVERLAYS, apply_fixes=True):
             key=lambda food: food["id"],
         )
         sources.append(dict(DISHES_SOURCE))
+    if version >= INGREDIENTS_VERSION:
+        foods = sorted(
+            foods + staple_foods(foods, INGREDIENTS, version, INGREDIENTS_SOURCE),
+            key=lambda food: food["id"],
+        )
+        sources.append(dict(INGREDIENTS_SOURCE))
     if version >= STAPLES_VERSION:
         by_id = {food["id"]: food for food in foods}
         for name, data in load_overlays(version, overlay_dir):
