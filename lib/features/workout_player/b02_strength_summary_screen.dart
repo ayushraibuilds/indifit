@@ -11,7 +11,6 @@ import '../../core/navigation/app_navigation.dart';
 import '../../core/services/achievement_service.dart';
 import '../../core/services/indifit_haptics.dart';
 import '../../core/utils/app_logger.dart';
-import '../../data/models/b02_execution_models.dart';
 import '../../data/repositories/b02_strength_execution_repository.dart';
 import '../../data/repositories/calendar_repository.dart';
 import '../../data/repositories/progress_statistics_repository.dart';
@@ -113,7 +112,7 @@ class _B02StrengthSummaryScreenState
         onRetry: ui.launch == null || _pendingCompletionKind == null
             ? null
             : () {
-                final kind = _hasIncompleteExercises(current.state)
+                final kind = b02HasIncompleteExercises(current.state)
                     ? CompletionKind.partial
                     : _pendingCompletionKind!;
                 unawaited(
@@ -130,7 +129,7 @@ class _B02StrengthSummaryScreenState
             : () => _handleFullCompletion(context, provider, current),
         onPartial: ui.isBusy || _isFinalizing
             ? null
-            : () => _confirmPartial(context, provider),
+            : () => _complete(context, provider, CompletionKind.partial),
         onDiscard: () async {
           final confirmed = await showDialog<bool>(
             context: context,
@@ -166,84 +165,20 @@ class _B02StrengthSummaryScreenState
     );
   }
 
-  bool _hasIncompleteExercises(B02ExecutionDraftState state) {
-    if (state.performedExercises.any((e) => e.status != 'completed')) {
-      return true;
-    }
-    for (final group in state.groups) {
-      final groupExercises = state.performedExercises.where(
-        (e) => e.performedExerciseGroupId == group.id,
-      );
-      final expected = group.roundCount * group.members.length;
-      if (groupExercises.length < expected ||
-          groupExercises.any((e) => e.status != 'completed')) {
-        return true;
-      }
-    }
-    return false;
-  }
-
   Future<void> _handleFullCompletion(
     BuildContext context,
     dynamic provider,
     B02StrengthExecutionLaunch launch,
-  ) async {
-    if (_hasIncompleteExercises(launch.state)) {
-      final proceed = await showDialog<bool>(
-        context: context,
-        builder: (dialogContext) => AlertDialog(
-          title: const Text('Incomplete workout'),
-          content: const Text(
-            'Some exercises or sets were not completed. Would you like to finish and save this as a partial workout?',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text('Keep training'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(dialogContext, true),
-              child: const Text('Save as partial'),
-            ),
-          ],
-        ),
-      );
-      if (proceed != true || !mounted || !context.mounted) return;
-      await _complete(context, provider, CompletionKind.partial);
-      return;
-    }
-    await _complete(context, provider, CompletionKind.full);
-  }
-
-  Future<void> _confirmPartial(BuildContext context, dynamic provider) async {
-    final reason = await showDialog<String>(
-      context: context,
-      builder: (context) {
-        final controller = TextEditingController();
-        return AlertDialog(
-          title: const Text('Finish partially?'),
-          content: TextField(
-            controller: controller,
-            decoration: const InputDecoration(
-              labelText: 'Reason (optional)',
-              hintText: 'For example: time or equipment limit',
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => context.pop(),
-              child: const Text('Keep training'),
-            ),
-            FilledButton(
-              onPressed: () => context.pop(controller.text.trim()),
-              child: const Text('Confirm partial finish'),
-            ),
-          ],
-        );
-      },
+  ) {
+    // The review only offers Complete when nothing is missing; this guard
+    // keeps a stale tap from saving an incomplete workout as full.
+    return _complete(
+      context,
+      provider,
+      b02HasIncompleteExercises(launch.state)
+          ? CompletionKind.partial
+          : CompletionKind.full,
     );
-    if (reason == null || !context.mounted) return;
-    await _complete(context, provider, CompletionKind.partial, reason: reason);
   }
 
   Future<void> _complete(

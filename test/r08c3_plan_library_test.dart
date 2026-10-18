@@ -24,6 +24,29 @@ late ProgramRepository programs;
 late LocalScheduleDateService dates;
 
 void main() {
+  test('UR-22 workload label is computed from the plan', () {
+    const even = PlanLibraryMetadata(
+      weekCount: 4,
+      sessionCount: 20,
+      exerciseCount: 100,
+      trainingDaysPerWeek: 5,
+      blockNames: [],
+      minExercisesPerSession: 5,
+      maxExercisesPerSession: 5,
+    );
+    expect(even.workloadLabel, '5 exercises a session · 20 sessions');
+    const mixed = PlanLibraryMetadata(
+      weekCount: 1,
+      sessionCount: 3,
+      exerciseCount: 15,
+      trainingDaysPerWeek: 3,
+      blockNames: [],
+      minExercisesPerSession: 4,
+      maxExercisesPerSession: 6,
+    );
+    expect(mixed.workloadLabel, '4–6 exercises a session · 3 sessions');
+  });
+
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(() async {
@@ -67,6 +90,11 @@ void main() {
       expect(snapshot.entries.first.metadata.weekCount, 2);
       expect(snapshot.entries.first.metadata.sessionCount, 4);
       expect(snapshot.entries.first.metadata.exerciseCount, 4);
+      // UR-22: per-session load, not the total slot count.
+      expect(
+        snapshot.entries.first.metadata.workloadLabel,
+        '1 exercise a session · 4 sessions',
+      );
       expect(snapshot.entries.first.metadata.trainingDaysPerWeek, 2);
       expect(snapshot.entries.first.metadata.blockNames, ['Base block']);
       expect(
