@@ -292,6 +292,11 @@ void main() {
       expect(find.text('Current plan'), findsWidgets);
       expect(find.text('Plan progress'), findsOneWidget);
       expect(find.text('Workouts from this plan'), findsOneWidget);
+      // UR-23: what you'd do comes before what you did.
+      expect(
+        tester.getTopLeft(find.text('Plan structure')).dy,
+        lessThan(tester.getTopLeft(find.text('Plan progress')).dy),
+      );
       expect(find.textContaining('partially completed'), findsWidgets);
       expect(find.textContaining('Calories'), findsNothing);
       expect(find.textContaining('PR'), findsNothing);

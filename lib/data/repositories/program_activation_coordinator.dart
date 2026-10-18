@@ -4,6 +4,7 @@ import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/services/local_schedule_date_service.dart';
+import '../../core/services/training_day_schedule.dart';
 import '../database/app_database.dart';
 import '../models/b02_execution_models.dart';
 import '../models/b02_group_plan_validator.dart';
@@ -27,12 +28,19 @@ class ActivateProgramVersionCommand {
   /// supplied here are cancelled, and their history is retained as an event.
   final Set<String> cancelPriorOccurrenceIds;
 
+  /// The weekdays the user trains on. When set, the plan's training days are
+  /// laid in order from [activationLocalDate] (the first one on that date,
+  /// each next one on the next chosen weekday) and the choice is kept on the
+  /// activation events. Null keeps each session on its planned weekday.
+  final List<int>? trainingWeekdays;
+
   const ActivateProgramVersionCommand({
     required this.programVersionId,
     required this.commandId,
     required this.activationLocalDate,
     required this.timezoneId,
     this.cancelPriorOccurrenceIds = const {},
+    this.trainingWeekdays,
   });
 }
 
@@ -73,6 +81,12 @@ class ProgramActivationCoordinator {
       command.activationLocalDate,
     );
     _dates.validateTimezone(command.timezoneId);
+    final trainingWeekdays = command.trainingWeekdays == null
+        ? null
+        : TrainingDaySchedule.normalizeWeekdays(command.trainingWeekdays!);
+    if (trainingWeekdays != null && trainingWeekdays.isEmpty) {
+      throw const ActivationRejectedException('Choose at least one day.');
+    }
 
     return _db.transaction(() async {
       final version = await _getVersion(command.programVersionId);
@@ -125,15 +139,25 @@ class ProgramActivationCoordinator {
         );
       }
 
+      final laidDates = trainingWeekdays == null
+          ? null
+          : _layTrainingDays(
+              graph.templates,
+              activationDate: activationDate,
+              timezoneId: command.timezoneId,
+              weekdays: trainingWeekdays,
+            );
       final occurrences = <ScheduledSessionOccurrence>[];
       for (final templateData in graph.templates) {
         final occurrenceId = _uuid.v4();
-        final localDate = _dates.occurrenceDate(
-          activationLocalDate: activationDate,
-          timezoneId: command.timezoneId,
-          programWeekOrdinal: templateData.week.programWeekOrdinal,
-          plannedWeekday: templateData.template.plannedWeekday,
-        );
+        final localDate =
+            laidDates?[_trainingDayKey(templateData)] ??
+            _dates.occurrenceDate(
+              activationLocalDate: activationDate,
+              timezoneId: command.timezoneId,
+              programWeekOrdinal: templateData.week.programWeekOrdinal,
+              plannedWeekday: templateData.template.plannedWeekday,
+            );
         await _db
             .into(_db.scheduledSessionOccurrences)
             .insert(
@@ -163,7 +187,10 @@ class ProgramActivationCoordinator {
                 afterLocalDate: Value(localDate),
                 afterTimezoneId: Value(command.timezoneId),
                 metadataJson: Value(
-                  jsonEncode({'activationProgramVersionId': version.id}),
+                  jsonEncode({
+                    'activationProgramVersionId': version.id,
+                    'trainingWeekdays': ?trainingWeekdays,
+                  }),
                 ),
                 occurredAtUtc: now,
               ),
@@ -494,6 +521,32 @@ class ProgramActivationCoordinator {
           : byWeek;
     });
     return _ValidatedGraph(templates: templatesForMaterialization);
+  }
+
+  /// One training day is a plan week's planned weekday; sessions sharing it
+  /// stay together on one date.
+  static (int, int) _trainingDayKey(_TemplateData data) =>
+      (data.week.programWeekOrdinal, data.template.plannedWeekday);
+
+  Map<(int, int), String> _layTrainingDays(
+    List<_TemplateData> templates, {
+    required String activationDate,
+    required String timezoneId,
+    required List<int> weekdays,
+  }) {
+    final keys = templates.map(_trainingDayKey).toSet().toList()
+      ..sort((a, b) {
+        final byWeek = a.$1.compareTo(b.$1);
+        return byWeek == 0 ? a.$2.compareTo(b.$2) : byWeek;
+      });
+    final laid = TrainingDaySchedule.layDates(
+      dates: _dates,
+      timezoneId: timezoneId,
+      startLocalDate: activationDate,
+      weekdays: weekdays,
+      count: keys.length,
+    );
+    return {for (var i = 0; i < keys.length; i++) keys[i]: laid[i]};
   }
 
   static void _requireContiguous(Iterable<int> ordinals, String label) {
