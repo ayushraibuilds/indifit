@@ -12,6 +12,10 @@ import '../progress/training_bests.dart';
 
 /// Working sets per muscle for a span of days (TF-4, free).
 ///
+/// Counts from the catalogue's `muscle_groups` (first = primary), not from
+/// the B02 mappings, which cover too few exercises yet; switch to them when
+/// they cover the catalogue (see [ExerciseDisplayMuscles]).
+///
 /// Counts only: no recovery, fatigue or readiness meaning. Keys are the
 /// exercise catalogue's display muscles in lower case ("chest", "back"),
 /// which [IndiFitMuscleMap] already resolves to geometry.
@@ -36,12 +40,12 @@ class MuscleSetCounts {
   bool get isEmpty => sets.isEmpty;
 
   /// Most sets first, then by name.
-  List<MapEntry<String, double>> get ranked =>
-      sets.entries.toList()..sort(
-        (a, b) => b.value != a.value
-            ? b.value.compareTo(a.value)
-            : a.key.compareTo(b.key),
-      );
+  List<MapEntry<String, double>> get ranked => sets.entries.toList()
+    ..sort(
+      (a, b) => b.value != a.value
+          ? b.value.compareTo(a.value)
+          : a.key.compareTo(b.key),
+    );
 }
 
 /// The one counting rule, printed in the legend.
@@ -50,7 +54,7 @@ abstract final class MuscleSetRule {
   static const secondarySets = 0.5;
 
   static const legend =
-      'Shaded by working sets this week · primary 1, secondary ½';
+      'Shaded by working sets this week · primary group 1, secondary ½';
 
   /// A logged working set with reps and no technique. Assisted, tempo,
   /// paused, drop and rest-pause sets are left out, as the bests engine
@@ -84,10 +88,8 @@ abstract final class MuscleSetRule {
       if (muscles == null || muscles.isEmpty) continue;
       final counted = record.sets
           .where(
-            (set) => counts(
-              set,
-              segmented: record.segmentedSetIds.contains(set.id),
-            ),
+            (set) =>
+                counts(set, segmented: record.segmentedSetIds.contains(set.id)),
           )
           .length;
       if (counted == 0) continue;

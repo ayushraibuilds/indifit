@@ -46,7 +46,7 @@ class _MusclesThisWeekCardState extends ConsumerState<MusclesThisWeekCard> {
           const SizedBox(height: B05Layout.space12),
           if (counts.isEmpty)
             Text(
-              'Train this week to fill your map',
+              'Train this week to fill your muscle-group map',
               textAlign: TextAlign.center,
               style: B05Typography.body(context),
             )
@@ -127,7 +127,7 @@ class _MuscleDetail extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '${ExerciseDisplayMuscles.formatMuscle(muscle)} · '
+              '${ExerciseDisplayMuscles.formatMuscle(muscle)} group · '
               '${IndiFitMuscleMap.formatSets(sets)} working '
               '${sets == 1 ? 'set' : 'sets'}',
               style: B05Typography.label(context),
