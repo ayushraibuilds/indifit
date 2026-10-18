@@ -15,6 +15,17 @@ class CatalogSearchHit {
     this.aliases = '',
   });
 
+  /// Every alias in one string ("kela केला"), for matching words that span
+  /// two aliases.
+  String get aliasText => aliases.replaceAll(_aliasSeparator, ' ');
+
+  /// Each alias on its own ("kela", "केला"), so an alias typed in full
+  /// counts as an exact match.
+  List<String> get aliasNames => [
+    for (final alias in aliases.split(_aliasSeparator))
+      if (alias.trim().isNotEmpty) alias.trim(),
+  ];
+
   final String foodId;
 
   /// The `food_items` row the food screen lists and logs, when one exists.
@@ -25,9 +36,13 @@ class CatalogSearchHit {
   /// for Chapati). The screen's ranking reads these so it keeps the hit.
   final List<String> matchedTerms;
 
-  /// The food's indexed aliases as one normalised string ("kela केला").
+  /// The food's indexed aliases, normalised, one string ("kela | केला").
   final String aliases;
 }
+
+/// Between aliases in the index's `aliases` column. The tokenizer reads it
+/// as a word break, so matching is unchanged.
+const String _aliasSeparator = ' | ';
 
 /// On-device full-text search over the catalogue (CAT-9).
 ///
@@ -91,7 +106,10 @@ class CatalogSearchIndex {
         [
           food.read<String>('id'),
           normalize(food.read<String>('display_name')),
-          normalize((aliases[food.read<String>('id')] ?? const []).join(' ')),
+          (aliases[food.read<String>('id')] ?? const [])
+              .map(normalize)
+              .where((alias) => alias.isNotEmpty)
+              .join(_aliasSeparator),
         ],
     ];
     await _db.transaction(() async {
@@ -154,7 +172,7 @@ class CatalogSearchIndex {
             legacyFoodItemId: row.read<int?>('legacy_id'),
             matchedTerms: [
               if ((row.read<String?>('aliases') ?? '').isNotEmpty)
-                row.read<String>('aliases'),
+                row.read<String>('aliases').replaceAll(_aliasSeparator, ' '),
               ...typed,
             ],
             aliases: row.read<String?>('aliases') ?? '',

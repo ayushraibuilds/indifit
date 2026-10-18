@@ -9,8 +9,9 @@ const int kFoodIdentityManifestVersion = 1;
 /// Catalogue duplicates merged on 2026-10-03, nonsense "(Double Paneer)" /
 /// "(Low Oil / Diet version)" variants of milk, curd and raw paneer, and the
 /// templated variants catalogue pack v2 retires (C-09: "With extra cheese /
-/// butter", "Double Paneer", "Extra Chicken/Meat pieces"): retired ID -> the
-/// food that replaces it. The manifest marks these deprecated (with the same
+/// butter", "Double Paneer", "Extra Chicken/Meat pieces"), and pack v5's
+/// (UR-07: "breast only" on eggs, fish and mutton; "Medium cup / Glass"
+/// copies with their dish's kcal): retired ID -> the food that replaces it. The manifest marks these deprecated (with the same
 /// replacement_id) and the bundled pack carries them as `retire` entries;
 /// tests keep all three identical. Existing installs are brought in line on
 /// open. Retired foods leave search but stay readable, so past logs keep
@@ -26,6 +27,10 @@ const Map<String, String> kRetiredCatalogueFoods = {
       'food-seed-0033', // Amul Fresh Paneer (Raw) (Low Oil / Diet version)
   'food-seed-0075': 'food-seed-0073', // Bhel Puri (With extra cheese / butter)
   'food-seed-0079': 'food-seed-0080', // Bhindi Masala (Okra Fry)
+  'food-seed-0085':
+      'food-seed-0083', // Black Coffee (No sugar) (Medium cup / Glass)
+  'food-seed-0090':
+      'food-seed-0089', // Boiled Eggs (2 pieces) (Diet prep (Low oil / breast only))
   'food-seed-0091':
       'food-seed-0089', // Boiled Eggs (2 pieces) (Extra Chicken/Meat pieces)
   'food-seed-0100':
@@ -43,6 +48,7 @@ const Map<String, String> kRetiredCatalogueFoods = {
       'food-seed-0136', // Chicken Korma (Extra Chicken/Meat pieces)
   'food-seed-0141':
       'food-seed-0139', // Chicken Tikka (6 pcs) (Extra Chicken/Meat pieces)
+  'food-seed-0148': 'food-seed-0146', // Coconut Water (Medium cup / Glass)
   'food-seed-0166':
       'food-seed-0164', // Dhokla (2 pieces) (With extra cheese / butter)
   'food-seed-0168':
@@ -50,14 +56,26 @@ const Map<String, String> kRetiredCatalogueFoods = {
   'food-seed-0169':
       'food-seed-0167', // Double Toned Milk (1 Glass) (Low Oil / Diet version)
   'food-seed-0177': 'food-seed-0174', // Dum Aloo Punjabi
+  'food-seed-0179':
+      'food-seed-0178', // Egg Bhurji (2 Eggs) (Diet prep (Low oil / breast only))
   'food-seed-0180':
       'food-seed-0178', // Egg Bhurji (2 Eggs) (Extra Chicken/Meat pieces)
+  'food-seed-0182':
+      'food-seed-0181', // Egg Curry (2 Eggs) (Diet prep (Low oil / breast only))
   'food-seed-0183':
       'food-seed-0181', // Egg Curry (2 Eggs) (Extra Chicken/Meat pieces)
+  'food-seed-0185':
+      'food-seed-0184', // Egg White Omelette (3 Eggs) (Diet prep (Low oil / breast only))
   'food-seed-0186':
       'food-seed-0184', // Egg White Omelette (3 Eggs) (Extra Chicken/Meat pieces)
+  'food-seed-0192':
+      'food-seed-0190', // Filter Coffee (with sugar) (Medium cup / Glass)
+  'food-seed-0194':
+      'food-seed-0193', // Fish Curry (Bengali style) (Diet prep (Low oil / breast only))
   'food-seed-0195':
       'food-seed-0193', // Fish Curry (Bengali style) (Extra Chicken/Meat pieces)
+  'food-seed-0197':
+      'food-seed-0196', // Fish Fry (Amritsari) (Diet prep (Low oil / breast only))
   'food-seed-0198':
       'food-seed-0196', // Fish Fry (Amritsari) (Extra Chicken/Meat pieces)
   'food-seed-0202': 'food-seed-0056', // French Beans Poriyal
@@ -68,6 +86,7 @@ const Map<String, String> kRetiredCatalogueFoods = {
   'food-seed-0230': 'food-seed-0229', // Greek Yogurt (Plain) (Double Paneer)
   'food-seed-0231':
       'food-seed-0229', // Greek Yogurt (Plain) (Low Oil / Diet version)
+  'food-seed-0234': 'food-seed-0232', // Green Tea (Medium cup / Glass)
   'food-seed-0240':
       'food-seed-0238', // Idli with Sambar (2 Idlis) (With extra cheese / butter)
   'food-seed-0254': 'food-seed-0456', // Kacha Kela (Raw Banana) Fry
@@ -77,6 +96,10 @@ const Map<String, String> kRetiredCatalogueFoods = {
       'food-seed-0288', // Low Fat Curd / Dahi (Low Oil / Diet version)
   'food-seed-0292': 'food-seed-0291', // Low Fat Paneer (Double Paneer)
   'food-seed-0293': 'food-seed-0291', // Low Fat Paneer (Low Oil / Diet version)
+  'food-seed-0299':
+      'food-seed-0297', // Masala Chai (Sugar Free) (Medium cup / Glass)
+  'food-seed-0302':
+      'food-seed-0300', // Masala Chai (with milk & sugar) (Medium cup / Glass)
   'food-seed-0305':
       'food-seed-0303', // Masala Dosa (With extra cheese / butter)
   'food-seed-0307': 'food-seed-0306', // Masala Lassi (Sweet) (Double Paneer)
@@ -87,10 +110,18 @@ const Map<String, String> kRetiredCatalogueFoods = {
   'food-seed-0320':
       'food-seed-0318', // Medu Vada with Sambar (2 Vadas) (With extra cheese / butter)
   'food-seed-0339': 'food-seed-0336', // Mixed Veg Sabji
+  'food-seed-0354':
+      'food-seed-0353', // Mutton Biryani (Diet prep (Low oil / breast only))
   'food-seed-0355':
       'food-seed-0353', // Mutton Biryani (Extra Chicken/Meat pieces)
+  'food-seed-0357':
+      'food-seed-0356', // Mutton Rogan Josh (Diet prep (Low oil / breast only))
   'food-seed-0358':
       'food-seed-0356', // Mutton Rogan Josh (Extra Chicken/Meat pieces)
+  'food-seed-0361':
+      'food-seed-0359', // Nimbu Pani (Lemonade with sugar) (Medium cup / Glass)
+  'food-seed-0364':
+      'food-seed-0362', // Nimbu Pani (Salted / Sugar-Free) (Medium cup / Glass)
   'food-seed-0371':
       'food-seed-0369', // Onion Pakora (4-5 pieces) (With extra cheese / butter)
   'food-seed-0376': 'food-seed-0375', // Palak Paneer (Double Paneer)
@@ -120,6 +151,8 @@ const Map<String, String> kRetiredCatalogueFoods = {
   'food-seed-0487': 'food-seed-0486', // Shahi Paneer (Double Paneer)
   'food-seed-0492': 'food-seed-0473', // South Indian Sambhar
   'food-seed-0500': 'food-seed-0497', // Sprouted Moong Salad / Sabji
+  'food-seed-0505':
+      'food-seed-0503', // Sugarcane Juice (Ganne ka ras) (Medium cup / Glass)
   'food-seed-0516':
       'food-seed-0514', // Tandoori Chicken (Half) (Extra Chicken/Meat pieces)
   'food-seed-0530': 'food-seed-0529', // Toned Milk (1 Glass) (Double Paneer)

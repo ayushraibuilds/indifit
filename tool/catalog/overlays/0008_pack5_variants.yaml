@@ -1,0 +1,92 @@
+# Pack 5 (17 Oct user-readiness review, UR-06 and UR-07).
+#
+# UR-06: "<dish> (Dhaba Style (High oil))" and "<dish> (Diet prep (Low oil /
+# breast only))" were never linked to their dish: their label holds brackets,
+# which the variant pattern skipped. From pack 5 build.py reads one nested
+# pair, and these labels say what the variants change. Ids stay; only
+# variant_of, variant_label and tags are added.
+#
+# UR-07: retired, never deleted (past logs resolve to the replacement):
+# - "breast only" on eggs, fish and mutton, where the label means nothing;
+# - "Medium cup / Glass" copies with exactly their dish's kcal in the same
+#   measure: a second row for the same thing.
+version: 5
+labels:
+  "Dhaba Style (High oil)": [oil]
+  "Diet prep (Low oil / breast only)": [oil]
+retire:
+  - id: food-seed-0090
+    name: "Boiled Eggs (2 pieces) (Diet prep (Low oil / breast only))"
+    replaced_by: food-seed-0089  # Boiled Eggs (2 pieces)
+    reason: "UR-07: \"breast only\" means nothing on an egg, fish or mutton dish. Log the dish instead."
+  - id: food-seed-0179
+    name: "Egg Bhurji (2 Eggs) (Diet prep (Low oil / breast only))"
+    replaced_by: food-seed-0178  # Egg Bhurji (2 Eggs)
+    reason: "UR-07: \"breast only\" means nothing on an egg, fish or mutton dish. Log the dish instead."
+  - id: food-seed-0182
+    name: "Egg Curry (2 Eggs) (Diet prep (Low oil / breast only))"
+    replaced_by: food-seed-0181  # Egg Curry (2 Eggs)
+    reason: "UR-07: \"breast only\" means nothing on an egg, fish or mutton dish. Log the dish instead."
+  - id: food-seed-0185
+    name: "Egg White Omelette (3 Eggs) (Diet prep (Low oil / breast only))"
+    replaced_by: food-seed-0184  # Egg White Omelette (3 Eggs)
+    reason: "UR-07: \"breast only\" means nothing on an egg, fish or mutton dish. Log the dish instead."
+  - id: food-seed-0194
+    name: "Fish Curry (Bengali style) (Diet prep (Low oil / breast only))"
+    replaced_by: food-seed-0193  # Fish Curry (Bengali style)
+    reason: "UR-07: \"breast only\" means nothing on an egg, fish or mutton dish. Log the dish instead."
+  - id: food-seed-0197
+    name: "Fish Fry (Amritsari) (Diet prep (Low oil / breast only))"
+    replaced_by: food-seed-0196  # Fish Fry (Amritsari)
+    reason: "UR-07: \"breast only\" means nothing on an egg, fish or mutton dish. Log the dish instead."
+  - id: food-seed-0354
+    name: "Mutton Biryani (Diet prep (Low oil / breast only))"
+    replaced_by: food-seed-0353  # Mutton Biryani
+    reason: "UR-07: \"breast only\" means nothing on an egg, fish or mutton dish. Log the dish instead."
+  - id: food-seed-0357
+    name: "Mutton Rogan Josh (Diet prep (Low oil / breast only))"
+    replaced_by: food-seed-0356  # Mutton Rogan Josh
+    reason: "UR-07: \"breast only\" means nothing on an egg, fish or mutton dish. Log the dish instead."
+  - id: food-seed-0085
+    name: "Black Coffee (No sugar) (Medium cup / Glass)"
+    replaced_by: food-seed-0083  # Black Coffee (No sugar)
+    reason: "UR-07: the same kcal as its dish in the same measure; a second row for one drink."
+  - id: food-seed-0148
+    name: "Coconut Water (Medium cup / Glass)"
+    replaced_by: food-seed-0146  # Coconut Water
+    reason: "UR-07: the same kcal as its dish in the same measure; a second row for one drink."
+  - id: food-seed-0192
+    name: "Filter Coffee (with sugar) (Medium cup / Glass)"
+    replaced_by: food-seed-0190  # Filter Coffee (with sugar)
+    reason: "UR-07: the same kcal as its dish in the same measure; a second row for one drink."
+  - id: food-seed-0234
+    name: "Green Tea (Medium cup / Glass)"
+    replaced_by: food-seed-0232  # Green Tea
+    reason: "UR-07: the same kcal as its dish in the same measure; a second row for one drink."
+  - id: food-seed-0299
+    name: "Masala Chai (Sugar Free) (Medium cup / Glass)"
+    replaced_by: food-seed-0297  # Masala Chai (Sugar Free)
+    reason: "UR-07: the same kcal as its dish in the same measure; a second row for one drink."
+  - id: food-seed-0302
+    name: "Masala Chai (with milk & sugar) (Medium cup / Glass)"
+    replaced_by: food-seed-0300  # Masala Chai (with milk & sugar)
+    reason: "UR-07: the same kcal as its dish in the same measure; a second row for one drink."
+  - id: food-seed-0361
+    name: "Nimbu Pani (Lemonade with sugar) (Medium cup / Glass)"
+    replaced_by: food-seed-0359  # Nimbu Pani (Lemonade with sugar)
+    reason: "UR-07: the same kcal as its dish in the same measure; a second row for one drink."
+  - id: food-seed-0364
+    name: "Nimbu Pani (Salted / Sugar-Free) (Medium cup / Glass)"
+    replaced_by: food-seed-0362  # Nimbu Pani (Salted / Sugar-Free)
+    reason: "UR-07: the same kcal as its dish in the same measure; a second row for one drink."
+  - id: food-seed-0505
+    name: "Sugarcane Juice (Ganne ka ras) (Medium cup / Glass)"
+    replaced_by: food-seed-0503  # Sugarcane Juice (Ganne ka ras)
+    reason: "UR-07: the same kcal as its dish in the same measure; a second row for one drink."
+extra_aliases_locale: hi-Latn
+extra_aliases:
+  food-seed-0249:  # Jowar Roti (Sorghum)
+    - jowar bhakri
+    - bhakri
+  food-seed-0152:  # Cucumber Tomato Salad (Kachumber)
+    - green salad

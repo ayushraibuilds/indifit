@@ -7819,13 +7819,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0181"
     },
     {
       "id": "food-seed-0180",
@@ -7869,13 +7869,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0178"
     },
     {
       "id": "food-seed-0091",
@@ -7919,13 +7919,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0089"
     },
     {
       "id": "food-seed-0186",
@@ -7969,13 +7969,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0184"
     },
     {
       "id": "food-seed-0358",
@@ -8019,13 +8019,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0356"
     },
     {
       "id": "food-seed-0355",
@@ -8069,13 +8069,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0353"
     },
     {
       "id": "food-seed-0195",
@@ -8119,13 +8119,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0193"
     },
     {
       "id": "food-seed-0198",
@@ -8169,13 +8169,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0196"
     },
     {
       "id": "food-seed-0012",
@@ -9919,13 +9919,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0300"
     },
     {
       "id": "food-seed-0298",
@@ -9969,13 +9969,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0297"
     },
     {
       "id": "food-seed-0191",
@@ -10019,13 +10019,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0190"
     },
     {
       "id": "food-seed-0084",
@@ -10069,13 +10069,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0083"
     },
     {
       "id": "food-seed-0233",
@@ -10119,13 +10119,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0232"
     },
     {
       "id": "food-seed-0147",
@@ -10169,13 +10169,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0146"
     },
     {
       "id": "food-seed-0360",
@@ -10219,13 +10219,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0359"
     },
     {
       "id": "food-seed-0363",
@@ -10269,13 +10269,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0362"
     },
     {
       "id": "food-seed-0504",
@@ -10319,13 +10319,13 @@
         "provider_namespace": null,
         "external_id": null
       },
-      "review_state": "manualReview",
-      "deprecated": false,
+      "review_state": "deprecated",
+      "deprecated": true,
       "is_catalogue": true,
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
-      "replacement_id": null
+      "replacement_id": "food-seed-0503"
     },
     {
       "id": "food-seed-0241",
@@ -13430,15 +13430,15 @@
     {
       "id": "food-seed-0237",
       "machine_id": "food-seed-0237",
-      "display_name": "Home Thali (Veg) — 2 Roti + Dal + Sabji + Curd",
-      "normalized_name": "home thali (veg) — 2 roti + dal + sabji + curd",
+      "display_name": "Home Thali (Veg) \u2014 2 Roti + Dal + Sabji + Curd",
+      "normalized_name": "home thali (veg) \u2014 2 roti + dal + sabji + curd",
       "kind": "canonical",
       "classification": "Healthy & Salads",
       "locale": "en-IN",
       "region": "bundled",
       "provenance": {
         "kind": "bundled_asset",
-        "key": "asset:base:home thali (veg) — 2 roti + dal + sabji + curd",
+        "key": "asset:base:home thali (veg) \u2014 2 roti + dal + sabji + curd",
         "revision": "b03-asset-v1",
         "path": "assets/data/indian_foods.json",
         "provider_namespace": null,
@@ -24352,14 +24352,14 @@
     },
     {
       "id": "legacy-base-0537",
-      "source_key": "asset:base:home thali (veg) — 2 roti + dal + sabji + curd",
+      "source_key": "asset:base:home thali (veg) \u2014 2 roti + dal + sabji + curd",
       "source_type": "legacy_food_seed",
       "legacy_local_id": 538,
       "target_id": "food-seed-0237",
       "review_state": "reviewed",
       "provenance": {
         "kind": "legacy",
-        "key": "legacy-evidence:asset:base:home thali (veg) — 2 roti + dal + sabji + curd",
+        "key": "legacy-evidence:asset:base:home thali (veg) \u2014 2 roti + dal + sabji + curd",
         "revision": "b03-legacy-map-v1",
         "path": "assets/data/indian_foods.json",
         "provider_namespace": null,
@@ -26115,7 +26115,7 @@
     "asset:base:dahi papdi chaat (light)": "food-seed-0155",
     "asset:base:grilled paneer salad bowl": "food-seed-0235",
     "asset:base:quinoa veg bowl": "food-seed-0441",
-    "asset:base:home thali (veg) — 2 roti + dal + sabji + curd": "food-seed-0237",
+    "asset:base:home thali (veg) \u2014 2 roti + dal + sabji + curd": "food-seed-0237",
     "asset:base:office tiffin (veg)": "food-seed-0368",
     "asset:base:bhindi masala (okra fry)": "food-seed-0079",
     "asset:base:aloo gobi dry sabji": "food-seed-0013",
@@ -30840,7 +30840,7 @@
       "target_id": "food-seed-0182",
       "kind": "preparationVariant",
       "classification": "Non-Veg",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
@@ -30866,7 +30866,7 @@
       "target_id": "food-seed-0179",
       "kind": "preparationVariant",
       "classification": "Non-Veg",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
@@ -30892,7 +30892,7 @@
       "target_id": "food-seed-0090",
       "kind": "preparationVariant",
       "classification": "Non-Veg",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
@@ -30918,7 +30918,7 @@
       "target_id": "food-seed-0185",
       "kind": "preparationVariant",
       "classification": "Non-Veg",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
@@ -30944,7 +30944,7 @@
       "target_id": "food-seed-0357",
       "kind": "preparationVariant",
       "classification": "Non-Veg",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
@@ -30970,7 +30970,7 @@
       "target_id": "food-seed-0354",
       "kind": "preparationVariant",
       "classification": "Non-Veg",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
@@ -30996,7 +30996,7 @@
       "target_id": "food-seed-0194",
       "kind": "preparationVariant",
       "classification": "Non-Veg",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
@@ -31022,7 +31022,7 @@
       "target_id": "food-seed-0197",
       "kind": "preparationVariant",
       "classification": "Non-Veg",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
@@ -31932,7 +31932,7 @@
       "target_id": "food-seed-0302",
       "kind": "canonical",
       "classification": "Beverages",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
@@ -31958,7 +31958,7 @@
       "target_id": "food-seed-0299",
       "kind": "preparationVariant",
       "classification": "Beverages",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
@@ -31984,7 +31984,7 @@
       "target_id": "food-seed-0192",
       "kind": "canonical",
       "classification": "Beverages",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
@@ -32010,7 +32010,7 @@
       "target_id": "food-seed-0085",
       "kind": "canonical",
       "classification": "Beverages",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
@@ -32036,7 +32036,7 @@
       "target_id": "food-seed-0234",
       "kind": "canonical",
       "classification": "Beverages",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
@@ -32062,7 +32062,7 @@
       "target_id": "food-seed-0148",
       "kind": "canonical",
       "classification": "Beverages",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
@@ -32088,7 +32088,7 @@
       "target_id": "food-seed-0361",
       "kind": "canonical",
       "classification": "Beverages",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
@@ -32114,7 +32114,7 @@
       "target_id": "food-seed-0364",
       "kind": "preparationVariant",
       "classification": "Beverages",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": "preparation",
       "parent_id": null,
       "family_id": null,
@@ -32140,7 +32140,7 @@
       "target_id": "food-seed-0505",
       "kind": "canonical",
       "classification": "Beverages",
-      "review_state": "manualReview",
+      "review_state": "deprecated",
       "variant_type": null,
       "parent_id": null,
       "family_id": null,
@@ -33759,8 +33759,8 @@
       "reason": "No per-record review evidence is checked in; preserved kind and variant metadata are a maintenance suggestion only.",
       "evidence_ref": null
     },
-    "asset:base:home thali (veg) — 2 roti + dal + sabji + curd": {
-      "source_key": "asset:base:home thali (veg) — 2 roti + dal + sabji + curd",
+    "asset:base:home thali (veg) \u2014 2 roti + dal + sabji + curd": {
+      "source_key": "asset:base:home thali (veg) \u2014 2 roti + dal + sabji + curd",
       "source_fingerprint": "5e420774b8aed022241701eb4d05e77d4b99098568e0178cbeb0f67e2900c799",
       "target_id": "food-seed-0237",
       "kind": "canonical",

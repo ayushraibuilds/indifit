@@ -10,6 +10,7 @@ import io
 import sys
 import tempfile
 import unittest
+from collections import Counter
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -176,6 +177,87 @@ class BuiltPacksTest(unittest.TestCase):
         self.assertEqual(owners[("केला", "hi")], "Banana")
         self.assertEqual(owners[("kela", "hi-Latn")], "Banana")
         self.assertNotIn(("laddu", "hi-Latn"), owners)  # two ladoos share it
+
+    def test_pack_5_links_the_bracketed_variants(self):
+        # UR-06: 47 dhaba and 14 diet-prep variants gain variant_of.
+        v4 = {food["id"]: food for food in self.packs[4]["foods"]}
+        v5 = {food["id"]: food for food in self.packs[5]["foods"]}
+        linked = {
+            fid: food
+            for fid, food in v5.items()
+            if food["variant_of"] and fid in v4 and not v4[fid]["variant_of"]
+        }
+        labels = Counter(food["variant_label"] for food in linked.values())
+        self.assertEqual(labels["Dhaba Style (High oil)"], 48)  # 47 active + 1 retired
+        self.assertEqual(labels["Diet prep (Low oil / breast only)"], 14)
+        self.assertEqual(sum(labels.values()), 62)
+        for food in linked.values():
+            self.assertEqual(food["tags"], ["oil"])
+            self.assertEqual(food["kind"], "variant")
+            base = v5[food["variant_of"]]
+            self.assertEqual(
+                food["display_name"], f"{base['display_name']} ({food['variant_label']})"
+            )
+        # Nothing else about those foods changed, except that, as variants,
+        # they no longer carry synonym aliases (search finds their dish).
+        for fid, food in linked.items():
+            self.assertEqual(food["aliases"], [])
+            before = dict(v4[fid], variant_of=None, variant_label=None, tags=[], kind="canonical", aliases=[])
+            after = dict(food, variant_of=None, variant_label=None, tags=[], kind="canonical")
+            after["lifecycle"] = before["lifecycle"]
+            self.assertEqual(after, before)
+
+    def test_pack_5_retires_nonsense_and_duplicate_variants(self):
+        # UR-07: "breast only" on eggs, fish and mutton; "Medium cup / Glass"
+        # copies with their dish's kcal. Retired, never deleted.
+        v5 = {food["id"]: food for food in self.packs[5]["foods"]}
+        before = {r["id"] for r in self.packs[4]["retire"]}
+        new = [r for r in self.packs[5]["retire"] if r["id"] not in before]
+        self.assertEqual(len(new), 17)
+        names = sorted(v5[r["id"]]["display_name"] for r in new)
+        self.assertEqual(sum("Medium cup / Glass" in n for n in names), 9)
+        self.assertEqual(sum("breast only" in n for n in names), 8)
+        for entry in new:
+            self.assertEqual(v5[entry["id"]]["lifecycle"], "deprecated")
+            self.assertEqual(v5[entry["replaced_by"]]["lifecycle"], "active")
+            self.assertEqual(v5[entry["id"]]["variant_of"], entry["replaced_by"])
+        kept = [n for n in (f["display_name"] for f in v5.values() if f["lifecycle"] == "active") if "breast only" in n]
+        self.assertTrue(kept)
+        self.assertTrue(all("Chicken" in n for n in kept))
+
+    def test_pack_5_adds_the_gap_dishes_from_usda_recipes(self):
+        v4 = {food["id"] for food in self.packs[4]["foods"]}
+        dishes = [f for f in self.packs[5]["foods"] if f["id"] not in v4]
+        self.assertEqual(len(dishes), 31)
+        self.assertTrue(all(f["source_id"] == "usda-dishes-v1" for f in dishes))
+        source = {s["id"]: s for s in self.packs[5]["sources"]}["usda-dishes-v1"]
+        self.assertEqual((source["licence"], source["review"]), ("CC0-1.0", "unreviewed"))
+        by_name = {f["display_name"]: f for f in dishes}
+        aliases = {a["text"] for a in by_name["Papad (Roasted)"]["aliases"]}
+        self.assertIn("papad", aliases)
+        self.assertIn("achar", {a["text"] for a in by_name["Mango Pickle (Achar)"]["aliases"]})
+        papad = by_name["Papad (Roasted)"]["servings"][0]
+        self.assertEqual((papad["amount"], papad["unit"], papad["grams"]), (1, "piece", 12))
+
+    def test_the_delta_on_pack_4_equals_pack_5(self):
+        delta = build.decode(self.outputs[build.PACKS / "v5/5-from-4.json.gz"])
+        self.assertEqual(validate.check_delta(self.packs[4], delta, self.packs[5]), [])
+
+    def test_pack_5_servings_hold_the_app_rows_kcal(self):
+        # UR-08: the app shows legacy rows with the pack serving.
+        self.assertEqual(validate.check_legacy_servings(self.packs[5], build.load_source_rows()), [])
+        foods = {f["display_name"]: f for f in self.packs[5]["foods"]}
+        poha = foods["Poha (Flattened Rice) (Double healthy bowl)"]["servings"][0]
+        chana = foods["Roasted Chana (with skin) (Small side bowl)"]["servings"][0]
+        self.assertEqual((poha["amount"], poha["unit"]), (2, "katori"))
+        self.assertEqual((chana["amount"], chana["unit"]), (25, "g"))
+
+    def test_a_wrong_legacy_serving_is_caught(self):
+        pack = copy.deepcopy(self.packs[5])
+        food = next(f for f in pack["foods"] if f["display_name"] == "Poha (Flattened Rice) (Double healthy bowl)")
+        food["facts"]["values"]["energy"] = 230.0
+        found = validate.check_legacy_servings(pack, build.load_source_rows())
+        self.assertEqual([v.food_id for v in found], [food["id"]])
 
     def test_spotcheck_has_50_active_foods(self):
         rows = self.outputs[build.SPOTCHECK].decode().strip().split("\n")

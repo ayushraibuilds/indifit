@@ -114,7 +114,7 @@ void main() {
           .where((food) => food['variant_of'] == null)
           .length;
       final staples = active
-          .where((food) => food['source_id'] == 'usda-staples-v1')
+          .where((food) => '${food['source_id']}'.startsWith('usda-'))
           .length;
       final regional = Directory('assets/data/regional')
           .listSync()

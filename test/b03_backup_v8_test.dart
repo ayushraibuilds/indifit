@@ -187,7 +187,10 @@ void main() {
         final source = databases.open(() => B03V16Fixture.open(fixtureFile));
         final golden = await B03LogicalSnapshot.capture(source);
         final restored = await B03LogicalSnapshot.capture(target);
-        golden.assertLogicallyEquals(restored);
+        // The fresh target carries the bundled pack's servings (UR-08).
+        golden.withoutCatalogueServings().assertLogicallyEquals(
+          restored.withoutCatalogueServings(),
+        );
         expect(source.schemaVersion, 16);
       },
     );
@@ -226,7 +229,10 @@ void main() {
       final source = databases.open(() => B03V16Fixture.open(sourceFile));
       final golden = await B03LogicalSnapshot.capture(source);
       final restored = await B03LogicalSnapshot.capture(target);
-      golden.assertLogicallyEquals(restored);
+      // The fresh target carries the bundled pack's servings (UR-08).
+      golden.withoutCatalogueServings().assertLogicallyEquals(
+        restored.withoutCatalogueServings(),
+      );
     });
 
     test(
