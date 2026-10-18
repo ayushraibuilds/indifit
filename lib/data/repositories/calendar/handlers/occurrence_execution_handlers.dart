@@ -3,8 +3,10 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 
 import '../../../../core/fixtures/workout_draft_codec.dart';
+import '../../../../core/services/training_day_schedule.dart';
 import '../../../database/app_database.dart';
 import '../../calendar_repository.dart';
+import '../../plan_schedule_reader.dart';
 import 'occurrence_command_handler.dart';
 
 class StartOccurrenceHandler
@@ -62,6 +64,11 @@ class StartOccurrenceHandler
         executionContext: command.executionContext,
       );
       final now = repo.nowUtc().toUtc();
+      // An early start does today's training: the workout moves to today and
+      // the plan's later workouts shift up (see [_shiftLaterWorkouts]).
+      final startsEarly =
+          repo.dates.compare(occurrence.effectiveLocalDate, today) > 0;
+      final startedOn = startsEarly ? today : occurrence.effectiveLocalDate;
       final changed =
           await (repo.db.update(repo.db.scheduledSessionOccurrences)..where(
                 (table) =>
@@ -73,6 +80,7 @@ class StartOccurrenceHandler
                   status: const Value('inProgress'),
                   executionSnapshotJson: Value(snapshot),
                   startedAtUtc: Value(now),
+                  effectiveLocalDate: Value(startedOn),
                 ),
               );
       if (changed != 1) repo.validator.throwStale();
@@ -105,21 +113,112 @@ class StartOccurrenceHandler
         toStatus: OccurrenceStatus.inProgress.dbValue,
         beforeLocalDate: occurrence.effectiveLocalDate,
         beforeTimezoneId: occurrence.effectiveTimezoneId,
-        afterLocalDate: occurrence.effectiveLocalDate,
+        afterLocalDate: startedOn,
         afterTimezoneId: occurrence.effectiveTimezoneId,
         metadata: {
           'snapshotVersion': 1,
+          if (startsEarly) 'startedEarly': true,
           'usedPreparedSnapshot':
               occurrence.executionSnapshotJson?.trim().isNotEmpty == true,
         },
         occurredAtUtc: now,
       );
+      if (startsEarly) {
+        await _shiftLaterWorkouts(
+          started: occurrence,
+          today: today,
+          commandId: command.commandId,
+          occurredAtUtc: now,
+        );
+      }
       return OccurrenceMutationResult(
         occurrence: (await repo.getOccurrence(occurrence.id))!,
         event: event,
         wasIdempotent: false,
       );
     });
+  }
+
+  /// Re-lays the plan's unstarted workouts dated after [today] onto the
+  /// user's training days, in their current order, starting with the first
+  /// training day after today. Workouts that share a date stay together.
+  /// Started, finished and skipped workouts never move, and running it again
+  /// on the same day changes nothing.
+  Future<void> _shiftLaterWorkouts({
+    required ScheduledSessionOccurrence started,
+    required String today,
+    required String commandId,
+    required DateTime occurredAtUtc,
+  }) async {
+    final shape = await PlanScheduleReader(
+      repo.db,
+      repo.dates,
+    ).read(started.programVersionId);
+    if (shape == null || shape.trainingWeekdays.isEmpty) return;
+    final later =
+        await (repo.db.select(repo.db.scheduledSessionOccurrences)
+              ..where(
+                (table) =>
+                    table.programVersionId.equals(started.programVersionId) &
+                    table.id.equals(started.id).not() &
+                    table.status.isIn(const ['planned', 'rescheduled']) &
+                    table.effectiveLocalDate.isBiggerThanValue(today),
+              )
+              ..orderBy([
+                (table) => OrderingTerm(expression: table.effectiveLocalDate),
+                (table) => OrderingTerm(expression: table.programWeekOrdinal),
+                (table) => OrderingTerm(expression: table.sessionOrdinal),
+                (table) => OrderingTerm(expression: table.repeatOrdinal),
+              ]))
+            .get();
+    if (later.isEmpty) return;
+    final days = <String>[];
+    for (final occurrence in later) {
+      if (days.isEmpty || days.last != occurrence.effectiveLocalDate) {
+        days.add(occurrence.effectiveLocalDate);
+      }
+    }
+    final laid = TrainingDaySchedule.layDates(
+      dates: repo.dates,
+      timezoneId: started.effectiveTimezoneId,
+      startLocalDate: today,
+      weekdays: shape.trainingWeekdays,
+      count: days.length,
+      startsOnStartDate: false,
+    );
+    final moveTo = {for (var i = 0; i < days.length; i++) days[i]: laid[i]};
+    for (final occurrence in later) {
+      final target = moveTo[occurrence.effectiveLocalDate]!;
+      if (target == occurrence.effectiveLocalDate) continue;
+      final status =
+          occurrence.originalLocalDate == target &&
+              occurrence.originalTimezoneId == started.effectiveTimezoneId
+          ? OccurrenceStatus.planned
+          : OccurrenceStatus.rescheduled;
+      await (repo.db.update(
+        repo.db.scheduledSessionOccurrences,
+      )..where((table) => table.id.equals(occurrence.id))).write(
+        ScheduledSessionOccurrencesCompanion(
+          status: Value(status.dbValue),
+          effectiveLocalDate: Value(target),
+          effectiveTimezoneId: Value(started.effectiveTimezoneId),
+        ),
+      );
+      await repo.insertEvent(
+        occurrenceId: occurrence.id,
+        commandId: commandId,
+        eventType: 'rescheduled',
+        fromStatus: occurrence.status,
+        toStatus: status.dbValue,
+        beforeLocalDate: occurrence.effectiveLocalDate,
+        beforeTimezoneId: occurrence.effectiveTimezoneId,
+        afterLocalDate: target,
+        afterTimezoneId: started.effectiveTimezoneId,
+        reason: 'Plan shifted after an early start',
+        metadata: {'shiftedAfterEarlyStartOf': started.id},
+        occurredAtUtc: occurredAtUtc,
+      );
+    }
   }
 }
 

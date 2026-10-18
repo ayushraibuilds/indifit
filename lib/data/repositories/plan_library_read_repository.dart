@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import '../database/app_database.dart';
 import 'offline_starter_plan_catalog.dart';
 import 'program_repository.dart';
@@ -14,6 +16,8 @@ class PlanLibraryMetadata {
     required this.exerciseCount,
     required this.trainingDaysPerWeek,
     required this.blockNames,
+    this.minExercisesPerSession = 0,
+    this.maxExercisesPerSession = 0,
   });
 
   final int weekCount;
@@ -21,6 +25,25 @@ class PlanLibraryMetadata {
   final int exerciseCount;
   final int? trainingDaysPerWeek;
   final List<String> blockNames;
+
+  /// Fewest and most exercises in one session of the plan.
+  final int minExercisesPerSession;
+  final int maxExercisesPerSession;
+
+  /// "5 exercises a session · 20 sessions" (UR-22). [exerciseCount] counts
+  /// every slot in every session, which reads as that many different
+  /// exercises, so cards show this instead.
+  String get workloadLabel {
+    final sessions =
+        '$sessionCount ${sessionCount == 1 ? 'session' : 'sessions'}';
+    final most = maxExercisesPerSession;
+    if (most <= 0) return sessions;
+    final least = minExercisesPerSession;
+    final perSession = least == most
+        ? '$most ${most == 1 ? 'exercise' : 'exercises'}'
+        : '$least–$most exercises';
+    return '$perSession a session · $sessions';
+  }
 
   String get scheduleLabel {
     final days = trainingDaysPerWeek;
@@ -274,10 +297,18 @@ class PlanLibraryReadRepository {
         ? null
         : daysPerWeek.first;
 
+    final perSession = [
+      for (final template in detail.sessionTemplates)
+        detail.exercisePrescriptions
+            .where((p) => p.sessionTemplateId == template.id)
+            .length,
+    ];
     return PlanLibraryMetadata(
       weekCount: detail.weeks.length,
       sessionCount: detail.sessionTemplates.length,
       exerciseCount: detail.exercisePrescriptions.length,
+      minExercisesPerSession: perSession.isEmpty ? 0 : perSession.reduce(min),
+      maxExercisesPerSession: perSession.isEmpty ? 0 : perSession.reduce(max),
       trainingDaysPerWeek: trainingDaysPerWeek,
       blockNames: detail.blocks
           .map((block) => block.name.trim())

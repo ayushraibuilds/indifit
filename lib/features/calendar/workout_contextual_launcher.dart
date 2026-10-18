@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/di/providers.dart';
+import '../../core/presentation/consumer_date_label.dart';
 import '../../core/widgets/indi_fit_feedback.dart';
 import '../../data/models/b02_execution_models.dart';
 import '../../data/repositories/b02_strength_execution_repository.dart';
@@ -41,6 +42,29 @@ abstract final class WorkoutContextualLauncher {
             .read(localScheduleDateServiceProvider)
             .todayIn(occurrence.effectiveTimezoneId) !=
         occurrence.effectiveLocalDate;
+  }
+
+  /// What starting off-date does. An early start moves this workout to
+  /// today and the plan's later workouts up to the next training days; a
+  /// late start leaves the rest of the plan where it is.
+  static String outsideDateMessage(
+    WidgetRef ref,
+    CalendarOccurrenceReadItem item,
+  ) {
+    final occurrence = item.occurrence;
+    final dates = ref.read(localScheduleDateServiceProvider);
+    final today = dates.todayIn(occurrence.effectiveTimezoneId);
+    final scheduled = ConsumerDateLabel.inSentence(
+      occurrence.effectiveLocalDate,
+      today: DateTime.parse(today),
+    );
+    if (dates.compare(occurrence.effectiveLocalDate, today) > 0) {
+      return 'This workout is scheduled for $scheduled. Starting it now '
+          'moves it to today, and your later plan workouts move up to your '
+          'next training days.';
+    }
+    return 'This workout was scheduled for $scheduled. Starting it now '
+        'leaves the rest of your plan where it is.';
   }
 
   static Future<WorkoutOccurrenceLaunchTarget> prepare({

@@ -72,7 +72,8 @@ final trainingRoutes = <RouteBase>[
   ),
   GoRoute(
     path: '/plan-library',
-    builder: (context, state) => const PlanLibraryScreen(),
+    builder: (context, state) =>
+        PlanLibraryScreen.fromQuery(state.uri.queryParameters),
   ),
   GoRoute(
     path: '/plan-overview/:versionId',

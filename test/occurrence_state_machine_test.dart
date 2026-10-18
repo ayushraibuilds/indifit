@@ -465,14 +465,16 @@ void main() {
             expectedStatus: OccurrenceStatus.inProgress,
           ),
         );
-        expect(discarded.occurrence.status, 'planned');
+        // The early start moved it to today; discarding keeps it there.
+        expect(discarded.occurrence.status, 'rescheduled');
+        expect(discarded.occurrence.effectiveLocalDate, '2026-03-02');
         expect(await db.select(db.workoutDrafts).get(), isEmpty);
 
         await calendar.start(
           StartOccurrenceCommand(
             occurrenceId: source.id,
             commandId: 'start-2',
-            expectedStatus: OccurrenceStatus.planned,
+            expectedStatus: OccurrenceStatus.rescheduled,
             confirmedOutsideEffectiveDate: true,
           ),
         );
