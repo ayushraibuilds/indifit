@@ -614,4 +614,6 @@ const _wave4PreferenceKeys = [
   'pref_my_chai_sugar_tsp',
   'pref_my_chai_cup_ml',
   'pref_my_roti',
+  'pref_weigh_in_days',
+  'pref_weigh_in_dismissed_date',
 ];

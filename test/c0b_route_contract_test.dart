@@ -59,11 +59,12 @@ void main() {
     '/equipment-profile-editor',
     '/exercise-preference-editor',
     '/travel-mode',
-    // Workout player routes (11)
+    // Workout player routes (12)
     '/routine-wizard',
     '/workout',
     '/routine-editor',
     '/weekly-report',
+    '/weekly-check-in',
     '/workout-player',
     '/workout-summary',
     '/b02-strength-player',
@@ -97,7 +98,7 @@ void main() {
       '/food/ai': '/food',
       '/settings/profile': '/profile',
       '/meal-planner': '/food',
-      '/weekly-report': '/progress',
+      '/weekly-report': '/weekly-check-in',
       '/travel-mode': '/training',
       '/workout-player': '/training',
     };
@@ -192,7 +193,7 @@ void main() {
     expect(NotificationService.destinationForPayload('evening_nudge'), '/');
     expect(
       NotificationService.destinationForPayload('weekly_report'),
-      '/progress',
+      '/weekly-check-in',
     );
     expect(NotificationService.destinationForPayload('unknown'), isNull);
     expect(NotificationService.destinationForPayload(''), isNull);

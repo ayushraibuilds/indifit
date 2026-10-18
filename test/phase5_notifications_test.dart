@@ -51,7 +51,7 @@ void main() {
         );
         expect(
           NotificationService.destinationForPayload('weekly_report'),
-          '/progress',
+          '/weekly-check-in',
         );
         expect(NotificationService.destinationForPayload('evening_nudge'), '/');
         expect(NotificationService.destinationForPayload('unknown'), isNull);

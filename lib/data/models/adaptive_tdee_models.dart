@@ -4,6 +4,19 @@ import 'b04_adaptive_target_models.dart';
 ///
 /// Pinned under a versioned policy identifier so future algorithm adjustments
 /// do not silently rewrite historical evaluations.
+/// Weigh-ins still needed before the estimate leaves "Calibrating", by the
+/// engine's own rule (moderate confidence); null when none are needed or it
+/// isn't calibrating.
+int? weighInsToCalibrate(
+  AdaptiveTdeeEstimate estimate, {
+  AdaptiveTdeePolicy policy = AdaptiveTdeePolicy.v1,
+}) {
+  if (estimate.confidence != AdaptiveTdeeConfidence.calibrating) return null;
+  final needed =
+      policy.minWeightDaysModerate - estimate.loggedWeightDaysInWindow;
+  return needed > 0 ? needed : null;
+}
+
 class AdaptiveTdeePolicy {
   final String policyVersion;
   final double alphaWeight;

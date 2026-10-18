@@ -9,6 +9,7 @@ import '../../../core/widgets/b05_accessibility_primitives.dart';
 import '../../../core/widgets/indi_fit_bottom_sheet.dart';
 import '../settings_controller.dart';
 import 'settings_reminder_toggle.dart';
+import 'weigh_in_days_setting.dart';
 
 class NotificationSettingsSection extends ConsumerStatefulWidget {
   const NotificationSettingsSection({
@@ -206,6 +207,8 @@ class _NotificationSettingsSectionState
             _editWeeklyProgressSchedule(context, state, controller),
           ),
         ),
+        const SizedBox(height: B05Layout.space16),
+        const WeighInDaysSetting(key: Key('settings_weigh_in_days')),
         const SizedBox(height: B05Layout.space16),
         _buildQuietHours(context, state, controller),
       ],
