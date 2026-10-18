@@ -33,6 +33,7 @@ import 'muscles_this_week_card.dart';
 import 'plan_finished_choices.dart';
 import 'training_plan_lifecycle_controller.dart';
 import 'training_week_goal_widgets.dart';
+import 'training_week_strip.dart';
 import 'training_workout_customization.dart';
 import 'training_workout_preview.dart';
 import 'weekly_training_goal_providers.dart';
@@ -1160,17 +1161,13 @@ class _DominantTrainingLandingBody extends StatelessWidget {
             ),
             const SizedBox(height: B05Layout.space8),
           ],
-          _TrainingWeekStrip(
-            weekStartLocalDate:
+          TrainingWeekStrip(
+            currentWeekStartLocalDate:
                 data.currentWeekStartLocalDate ??
                 weeklyGoal?.weekStartLocalDate ??
                 _trainingMondayForLocalDate(data.localDate),
-            occurrences: activePlan
-                ? data.currentWeekOccurrences
-                : const <CalendarOccurrenceReadItem>[],
-            trainedLocalDates:
-                weeklyGoal?.trainedLocalDates ?? const <String>{},
             localDate: data.localDate,
+            timezoneId: data.timezoneId,
           ),
           const SizedBox(height: B05Layout.space12),
           const MusclesThisWeekCard(),
@@ -1574,61 +1571,6 @@ String recentWorkoutDuration(int seconds) =>
 TextStyle _trainingEyebrow(BuildContext context) =>
     B05Typography.sectionLabel(context);
 
-class _TrainingWeekStrip extends StatelessWidget {
-  const _TrainingWeekStrip({
-    required this.weekStartLocalDate,
-    required this.occurrences,
-    required this.localDate,
-    this.trainedLocalDates = const <String>{},
-  });
-
-  final String weekStartLocalDate;
-  final List<CalendarOccurrenceReadItem> occurrences;
-  final String localDate;
-  final Set<String> trainedLocalDates;
-
-  @override
-  Widget build(BuildContext context) {
-    final start = DateTime.parse('${weekStartLocalDate}T12:00:00Z');
-    const labels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-    return B05Surface(
-      tone: B05SurfaceTone.section,
-      padding: const EdgeInsets.symmetric(
-        horizontal: B05Layout.space8,
-        vertical: B05Layout.space12,
-      ),
-      child: Row(
-        children: [
-          for (var index = 0; index < labels.length; index++)
-            Expanded(
-              child: _TrainingWeekDay(
-                label: labels[index],
-                date: start.add(Duration(days: index)),
-                isToday:
-                    _formatDate(start.add(Duration(days: index))) == localDate,
-                trained: trainedLocalDates.contains(
-                  _formatDate(start.add(Duration(days: index))),
-                ),
-                occurrences: occurrences
-                    .where(
-                      (item) =>
-                          item.occurrence.effectiveLocalDate ==
-                          _formatDate(start.add(Duration(days: index))),
-                    )
-                    .toList(growable: false),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  static String _formatDate(DateTime value) =>
-      '${value.year.toString().padLeft(4, '0')}-'
-      '${value.month.toString().padLeft(2, '0')}-'
-      '${value.day.toString().padLeft(2, '0')}';
-}
-
 /// Neutral label for a week-strip day with no occurrence. B01 records no
 /// explicit rest evidence, so absence must not infer recovery intent.
 const String trainingWeekEmptyDayLabel = 'no workout scheduled';
@@ -1642,158 +1584,6 @@ String trainingWeekDaySemanticLabel(
 ) =>
     '$weekdayName, $day: $statusLabel'
     '${workoutName == null ? '' : ', $workoutName'}';
-
-class _TrainingWeekDay extends StatelessWidget {
-  const _TrainingWeekDay({
-    required this.label,
-    required this.date,
-    required this.isToday,
-    required this.occurrences,
-    this.trained = false,
-  });
-
-  final String label;
-  final DateTime date;
-  final bool isToday;
-  final List<CalendarOccurrenceReadItem> occurrences;
-
-  /// A workout was saved on this day, planned or not.
-  final bool trained;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheduledStatus = _TrainingWeekStatus.from(occurrences);
-    // A saved workout outranks a schedule that hasn't caught up (or none).
-    final status =
-        trained &&
-            scheduledStatus != _TrainingWeekStatus.complete &&
-            scheduledStatus != _TrainingWeekStatus.partial
-        ? _TrainingWeekStatus.trained
-        : scheduledStatus;
-    final colors = context.b05Colors;
-    final workoutName = occurrences.isEmpty
-        ? null
-        : occurrences.first.template.name;
-    return Semantics(
-      label: trainingWeekDaySemanticLabel(
-        _weekdayName(date.weekday),
-        date.day,
-        status.accessibleLabel,
-        workoutName,
-      ),
-      child: Container(
-        constraints: const BoxConstraints(minHeight: 72),
-        decoration: BoxDecoration(
-          color: isToday ? colors.selected : Colors.transparent,
-          borderRadius: B05Radii.smallRadius,
-          border: Border.all(
-            color: isToday ? colors.action : Colors.transparent,
-          ),
-        ),
-        padding: const EdgeInsets.symmetric(vertical: B05Layout.space4),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              label,
-              style: B05Typography.caption(context).copyWith(
-                color: isToday ? colors.action : colors.textSecondary,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: B05Layout.space4),
-            Icon(
-              trained ? status.trainedIcon : status.icon,
-              size: 18,
-              color: status.color(context),
-            ),
-            const SizedBox(height: B05Layout.space4),
-            Text(
-              '${date.day}',
-              style: B05Typography.caption(context).copyWith(
-                color: colors.textPrimary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  static String _weekdayName(int weekday) => const [
-    'Monday',
-    'Tuesday',
-    'Wednesday',
-    'Thursday',
-    'Friday',
-    'Saturday',
-    'Sunday',
-  ][weekday - 1];
-}
-
-enum _TrainingWeekStatus {
-  rest,
-  scheduled,
-  inProgress,
-  complete,
-  partial,
-  skipped,
-  cancelled,
-  trained;
-
-  /// The filled tick for a day with a saved workout.
-  IconData get trainedIcon =>
-      this == partial ? Icons.timelapse_rounded : Icons.check_circle_rounded;
-
-  IconData get icon => switch (this) {
-    rest => Icons.circle_outlined,
-    scheduled => Icons.event_outlined,
-    inProgress => Icons.play_circle_outline_rounded,
-    complete => Icons.check_circle_outline_rounded,
-    partial => Icons.timelapse_rounded,
-    skipped => Icons.skip_next_rounded,
-    cancelled => Icons.remove_circle_outline_rounded,
-    trained => Icons.check_circle_rounded,
-  };
-
-  String get accessibleLabel => switch (this) {
-    // An empty day has no occurrence row: B01 does not record explicit
-    // rest evidence, so the label stays neutral instead of inferring rest.
-    rest => 'no workout scheduled',
-    scheduled => 'scheduled',
-    inProgress => 'in progress',
-    complete => 'completed',
-    partial => 'partially completed',
-    skipped => 'skipped',
-    cancelled => 'cancelled',
-    trained => 'workout saved',
-  };
-
-  Color color(BuildContext context) => switch (this) {
-    rest => context.b05Colors.textSecondary,
-    scheduled => context.b05Colors.action,
-    inProgress => context.b05Colors.action,
-    complete => context.b05Colors.success.foreground,
-    partial => context.b05Colors.warning.foreground,
-    skipped => context.b05Colors.textSecondary,
-    cancelled => context.b05Colors.textSecondary,
-    trained => context.b05Colors.success.foreground,
-  };
-
-  static _TrainingWeekStatus from(List<CalendarOccurrenceReadItem> items) {
-    if (items.isEmpty) return rest;
-    final statuses = items.map((item) => item.occurrence.status).toSet();
-    if (statuses.contains('inProgress')) return inProgress;
-    if (statuses.contains('planned') || statuses.contains('rescheduled')) {
-      return scheduled;
-    }
-    if (statuses.contains('partiallyCompleted')) return partial;
-    if (statuses.contains('completed')) return complete;
-    if (statuses.contains('skipped')) return skipped;
-    return cancelled;
-  }
-}
 
 class _RecentTrainingRow extends StatelessWidget {
   const _RecentTrainingRow({required this.session, required this.showDivider});

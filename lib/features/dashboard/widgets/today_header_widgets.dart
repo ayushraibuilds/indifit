@@ -547,9 +547,12 @@ class TodayWeekStrip extends ConsumerWidget {
         children: [
           for (final date in todayWeekDates(end))
             Expanded(
-              child: _TodayWeekDayCell(
+              child: WeekStripDayCell(
+                key: ValueKey('today-week-day-${date.day}'),
                 date: date,
-                day: days?[_key(date)],
+                progress: days?[_key(date)]?.progress,
+                filled: days?[_key(date)]?.logged ?? false,
+                spokenValue: _spokenValue(days?[_key(date)]),
                 selected: date == selected,
                 isToday: date == todayDay,
                 onTap: () => onDateChanged(date),
@@ -564,19 +567,49 @@ class TodayWeekStrip extends ConsumerWidget {
       '${date.year.toString().padLeft(4, '0')}-'
       '${date.month.toString().padLeft(2, '0')}-'
       '${date.day.toString().padLeft(2, '0')}';
+
+  static String _spokenValue(TodayWeekDay? day) {
+    if (day == null) return '';
+    if (!day.logged) return 'Nothing logged';
+    final kcal = day.kcal;
+    if (kcal == null) return 'Food logged';
+    final logged = ConsumerNumberLabel.rounded(kcal);
+    if (!day.hasTarget) return '$logged kcal logged';
+    return '$logged of ${ConsumerNumberLabel.rounded(day.targetKcal!)} kcal';
+  }
 }
 
-class _TodayWeekDayCell extends StatelessWidget {
-  const _TodayWeekDayCell({
+/// One day of a week strip: the weekday letter, a 24 pt ring and the date,
+/// with an optional caption under it. Today's calorie strip and Training's
+/// week strip both use it, so the two read alike (UR-26, TF-3).
+class WeekStripDayCell extends StatelessWidget {
+  const WeekStripDayCell({
+    super.key,
     required this.date,
-    required this.day,
+    required this.progress,
+    required this.filled,
+    required this.spokenValue,
     required this.selected,
     required this.isToday,
     required this.onTap,
+    this.doneMark = false,
+    this.caption,
   });
 
   final DateTime date;
-  final TodayWeekDay? day;
+
+  /// The ring's share, 0–1; null draws no arc.
+  final double? progress;
+
+  /// With no [progress], a full quiet ring: something was logged.
+  final bool filled;
+
+  /// A tick inside the ring: done, with nothing to measure against.
+  final bool doneMark;
+
+  /// A short line under the date, such as "Legs · Push".
+  final String? caption;
+  final String spokenValue;
   final bool selected;
   final bool isToday;
   final VoidCallback onTap;
@@ -592,13 +625,12 @@ class _TodayWeekDayCell extends StatelessWidget {
       button: true,
       selected: selected,
       label: spoken,
-      value: _spokenValue(day),
+      value: spokenValue,
       onTap: onTap,
       child: ExcludeSemantics(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 1),
           child: InkWell(
-            key: ValueKey('today-week-day-${date.day}'),
             onTap: onTap,
             customBorder: B05Radii.shape(B05Radii.rowRadius),
             child: AnimatedContainer(
@@ -645,8 +677,8 @@ class _TodayWeekDayCell extends StatelessWidget {
                     dimension: 24,
                     child: CustomPaint(
                       painter: TodayMiniRingPainter(
-                        progress: day?.progress,
-                        logged: day?.logged ?? false,
+                        progress: progress,
+                        logged: filled,
                         trackColor: colors.borderSubtle,
                         color: colors.success.indicator,
                         endColor: colors.protein.indicator,
@@ -654,6 +686,13 @@ class _TodayWeekDayCell extends StatelessWidget {
                           alpha: 0.55,
                         ),
                       ),
+                      child: doneMark
+                          ? Icon(
+                              Icons.check_rounded,
+                              size: 14,
+                              color: colors.success.foreground,
+                            )
+                          : null,
                     ),
                   ),
                   const SizedBox(height: 3),
@@ -668,6 +707,18 @@ class _TodayWeekDayCell extends StatelessWidget {
                       color: isToday ? colors.action : colors.textSecondary,
                     ),
                   ),
+                  if (caption != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      caption!,
+                      textAlign: TextAlign.center,
+                      style: B05Typography.caption(context).copyWith(
+                        fontSize: 10,
+                        height: 1.2,
+                        color: colors.textSecondary,
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -675,16 +726,6 @@ class _TodayWeekDayCell extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  static String _spokenValue(TodayWeekDay? day) {
-    if (day == null) return '';
-    if (!day.logged) return 'Nothing logged';
-    final kcal = day.kcal;
-    if (kcal == null) return 'Food logged';
-    final logged = ConsumerNumberLabel.rounded(kcal);
-    if (!day.hasTarget) return '$logged kcal logged';
-    return '$logged of ${ConsumerNumberLabel.rounded(day.targetKcal!)} kcal';
   }
 }
 

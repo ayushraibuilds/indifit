@@ -95,12 +95,9 @@ void main() {
         find.bySemanticsLabel('2 of 3 workouts this week. 4 weeks in a row'),
         findsOneWidget,
       );
-      // Trained days get a filled tick and say so.
-      expect(
-        find.bySemanticsLabel(RegExp(r'^Monday, 5: workout saved')),
-        findsOneWidget,
-      );
-      expect(find.byIcon(Icons.check_circle_rounded), findsNWidgets(2));
+      // The week strip reads saved workouts itself (TF-3); its days are
+      // covered in tf3_training_week_strip_test.dart.
+      expect(find.byKey(const ValueKey('training-week-strip')), findsOneWidget);
       expectNoDailyStreak();
       semantics.dispose();
     });
