@@ -29,6 +29,7 @@ import '../calendar/workout_contextual_launcher.dart';
 import '../workout_player/b02_strength_execution_controller.dart';
 import '../workout_player/widgets/manual_log_sheet.dart';
 import '../workout_player/workout_execution_route.dart';
+import 'muscles_this_week_card.dart';
 import 'plan_finished_choices.dart';
 import 'training_plan_lifecycle_controller.dart';
 import 'training_week_goal_widgets.dart';
@@ -1171,6 +1172,8 @@ class _DominantTrainingLandingBody extends StatelessWidget {
                 weeklyGoal?.trainedLocalDates ?? const <String>{},
             localDate: data.localDate,
           ),
+          const SizedBox(height: B05Layout.space12),
+          const MusclesThisWeekCard(),
         ],
         if (nextWorkout != null) ...[
           const SizedBox(height: B05Layout.space16),

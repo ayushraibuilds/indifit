@@ -219,11 +219,11 @@ Package and App Store ids:
 - **Stage 2, Plus (about Feb 2027 was the suggestion), offers both** a subscription (₹99/mo · ₹699/yr) and a **lifetime option** at about 3× the annual price (about ₹1,999), for people who refuse subscriptions.
   - Lifetime still has AI fair-use caps, because AI is the only cost that runs forever.
 - **The free/Plus line is fixed now,** because anything shipped free can't move later.
-  - **Always free:** logging, thali, catalogue packs, bests, the weekly goal, reminders, the home widget, backups.
+  - **Always free:** logging, thali, catalogue packs, bests, the weekly goal, the muscles-this-week map (amended 2026-10-18, decision 6; TF-4), reminders, the home widget, backups.
   - **Plus:**
     - photo and label AI;
     - unlimited describe (fair use);
-    - muscles-this-week map, consistency heatmap and period comparison (training plan TP-9);
+    - 12-week consistency heatmap and period comparison (training plan TP-9; the muscles-this-week map moved to free before it shipped, 2026-10-18);
     - program builder;
     - encrypted sync (stage 3).
 - **AI cost fallback** (being investigated by Ayush): a cheaper model through the existing `ai_model` Remote Config key, only after it passes the eval.
