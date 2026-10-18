@@ -226,6 +226,23 @@ void main() {
     expect(find.text('Filter plans'), findsNothing);
   });
 
+  test('UF-13 Plan Library opens with the finished plan filters', () {
+    final screen = PlanLibraryScreen.fromQuery(const {
+      'equipment': 'gym',
+      'days': '3',
+      'level': 'beginner',
+    });
+    expect(screen.initialEnvironment, StarterPlanEnvironment.gym);
+    expect(screen.initialDays, 3);
+    expect(screen.initialExperience, StarterPlanExperience.beginner);
+    final unknown = PlanLibraryScreen.fromQuery(const {
+      'equipment': 'moon',
+      'days': '9',
+    });
+    expect(unknown.initialEnvironment, isNull);
+    expect(unknown.initialDays, isNull);
+  });
+
   group('UR-45 recommended for you', () {
     late PlanLibrarySnapshot snapshot;
 
