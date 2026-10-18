@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,6 +14,7 @@ import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/models/b02_execution_models.dart';
 import 'package:indifit/data/repositories/b02_exercise_performance_read_repository.dart';
 import 'package:indifit/features/media/indifit_muscle_map.dart';
+import 'package:indifit/features/media/indifit_muscle_map_taxonomy.dart';
 import 'package:indifit/features/training/muscles_this_week.dart';
 import 'package:indifit/features/training/muscles_this_week_card.dart';
 
@@ -18,6 +22,8 @@ import 'package:indifit/features/training/muscles_this_week_card.dart';
 /// secondary ½; the bests engine's technique sets left out; Mon–Sun local.
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  catalogueCoverageTests();
 
   group('the counting rule', () {
     B02PerformedSet set(
@@ -68,7 +74,7 @@ void main() {
           musclesByExercise: muscles,
         );
 
-    test('primary 1, secondary ½, summed across exercises', () {
+    test('primary group 1, secondary ½, summed across exercises', () {
       final counts = count([
         record('bench', [set('a'), set('b'), set('c')]),
         record('dips', [set('d'), set('e')]),
@@ -117,7 +123,7 @@ void main() {
     test('the legend prints the rule', () {
       expect(
         MuscleSetRule.legend,
-        'Shaded by working sets this week · primary 1, secondary ½',
+        'Shaded by working sets this week · primary group 1, secondary ½',
       );
       expect(IndiFitMuscleMap.formatSets(4.5), '4½');
       expect(IndiFitMuscleMap.formatSets(0.5), '½');
@@ -255,14 +261,20 @@ void main() {
 
       await settle();
       expect(find.text('Muscles this week'), findsOneWidget);
-      expect(find.text('Train this week to fill your map'), findsOneWidget);
+      expect(
+        find.text('Train this week to fill your muscle-group map'),
+        findsOneWidget,
+      );
       expect(find.byType(IndiFitMuscleMap), findsOneWidget);
       expect(find.text(MuscleSetRule.legend), findsNothing);
 
       await tester.runAsync(() => logSets(DateTime.utc(2026, 10, 13, 6), 3));
       await settle();
 
-      expect(find.text('Train this week to fill your map'), findsNothing);
+      expect(
+        find.text('Train this week to fill your muscle-group map'),
+        findsNothing,
+      );
       expect(find.text(MuscleSetRule.legend), findsOneWidget);
       // Counts as a list, not only as shading.
       expect(find.text('Legs'), findsOneWidget);
@@ -270,8 +282,8 @@ void main() {
       expect(find.text('Glutes'), findsOneWidget);
       expect(find.text('1½ sets'), findsOneWidget);
       // Each shaded region names its muscle and count.
-      expect(find.semantics.byLabel('Legs: 3 working sets'), findsAny);
-      expect(find.semantics.byLabel('Glutes: 1½ working sets'), findsAny);
+      expect(find.semantics.byLabel('Legs group: 3 working sets'), findsAny);
+      expect(find.semantics.byLabel('Glutes group: 1½ working sets'), findsAny);
 
       // Tapping a muscle shows its count and the exercises that hit it.
       await tester.tap(find.byKey(const ValueKey('muscle_count_glutes')));
@@ -280,7 +292,7 @@ void main() {
       expect(
         find.descendant(
           of: detail,
-          matching: find.text('Glutes · 1½ working sets'),
+          matching: find.text('Glutes group · 1½ working sets'),
         ),
         findsOneWidget,
       );
@@ -291,10 +303,35 @@ void main() {
 
       // The map region does the same through its semantics action.
       expect(
-        find.semantics.byLabel('Legs: 3 working sets').evaluate().first,
+        find.semantics.byLabel('Legs group: 3 working sets').evaluate().first,
         isSemantics(hasTapAction: true),
       );
       semantics.dispose();
     });
+  });
+}
+
+/// The whole catalogue can be shaded: every exercise names a muscle group,
+/// and its first (primary) group has a region on the body map.
+void catalogueCoverageTests() {
+  test('all 140 catalogue exercises have a primary group on the body map', () {
+    final catalogue =
+        (jsonDecode(File('assets/data/exercises.json').readAsStringSync())
+                as List)
+            .cast<Map<String, dynamic>>();
+    expect(catalogue, hasLength(140));
+    for (final exercise in catalogue) {
+      final muscles = ExerciseDisplayMuscles.fromMuscleGroups(
+        exercise['muscle_groups'] as String?,
+      );
+      final name = exercise['name'];
+      expect(muscles.hasPrimary, isTrue, reason: '$name has no muscle group');
+      final key = muscles.primary!.trim().toLowerCase();
+      expect(
+        IndiFitMuscleMapTaxonomyAdapter.supportedConceptToGeometry,
+        contains(key),
+        reason: '$name: "$key" has no body-map region',
+      );
+    }
   });
 }

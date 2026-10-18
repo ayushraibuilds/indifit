@@ -131,7 +131,7 @@ class IndiFitMuscleMap extends StatelessWidget {
       container: true,
       // In sets mode each region carries its own label and count.
       excludeSemantics: !setsMode,
-      label: setsMode ? 'Muscles this week map' : 'IndiFit muscle map',
+      label: setsMode ? 'Muscle groups this week map' : 'IndiFit muscle map',
       value: setsMode ? null : description,
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -218,7 +218,7 @@ class IndiFitMuscleMap extends StatelessWidget {
           )
           .toList(growable: false);
       return trained.isEmpty
-          ? 'No working sets yet.'
+          ? 'No working sets in any muscle group yet.'
           : '$metricLabel: ${trained.join(', ')}.';
     }
 
@@ -718,7 +718,7 @@ class _IndiFitMuscleMapPainter extends CustomPainter {
 }
 
 String _setsLabel(String concept, double sets) =>
-    '${ExerciseDisplayMuscles.formatMuscle(concept)}: '
+    '${ExerciseDisplayMuscles.formatMuscle(concept)} group: '
     '${IndiFitMuscleMap.formatSets(sets)} working '
     '${sets == 1 ? 'set' : 'sets'}';
 
@@ -728,8 +728,8 @@ class IndiFitMuscleMapLegend extends StatelessWidget {
 
   static const stepLabels = ['½–2½', '3–5½', '6–9½', '10+'];
 
-  static Color stepColor(B05SemanticColors colors, int step) =>
-      colors.action.withValues(alpha: const <double>[0, 0.22, 0.45, 0.7, 0.95][step]);
+  static Color stepColor(B05SemanticColors colors, int step) => colors.action
+      .withValues(alpha: const <double>[0, 0.22, 0.45, 0.7, 0.95][step]);
 
   @override
   Widget build(BuildContext context) {
