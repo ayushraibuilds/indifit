@@ -135,6 +135,7 @@ class FoodSearchPipeline {
       NutritionFoodSearchRanking.rank(
         query: query,
         candidates: await candidates(query),
+        oneRowPerDish: true,
       );
 
   /// Splits the amount off [typed] and picks the words to search.

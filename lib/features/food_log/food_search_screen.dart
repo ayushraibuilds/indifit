@@ -365,6 +365,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       query: query,
       candidates: candidates,
       history: _searchHistory(),
+      oneRowPerDish: true,
     );
     // Online matches arrive after the on-device ones. Keep them below, so the
     // rows already on screen never move under the user's finger.
