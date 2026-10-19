@@ -53,11 +53,13 @@ class _TodayProteinNudgeCardState extends ConsumerState<TodayProteinNudgeCard> {
   }
 
   Future<void> _load() async {
-    final prefs = await _prefs();
-    final timezoneId = await ref
-        .read(localTimezoneServiceProvider)
-        .currentTimezoneId();
+    // Every ref read happens before the first await: the card can leave
+    // the tree while they run.
+    final timezones = ref.read(localTimezoneServiceProvider);
     final now = ref.read(weighInClockProvider)();
+    final prefsFuture = _prefs();
+    final prefs = await prefsFuture;
+    final timezoneId = await timezones.currentTimezoneId();
     if (!mounted) return;
     setState(() {
       _today = LocalScheduleDateService().localDateFor(now.toUtc(), timezoneId);
@@ -70,7 +72,8 @@ class _TodayProteinNudgeCardState extends ConsumerState<TodayProteinNudgeCard> {
   Future<void> _notToday() async {
     final today = _today;
     if (today == null) return;
-    await dismissProteinNudge(await _prefs(), today);
+    final prefs = _prefs();
+    await dismissProteinNudge(await prefs, today);
     if (mounted) setState(() => _dismissed = today);
   }
 
