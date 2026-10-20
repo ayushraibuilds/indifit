@@ -43,9 +43,12 @@ MANIFEST = ROOT / "assets/data/nutrition_food_identity_manifest.json"
 REGISTRY = ROOT / "assets/data/nutrient_registry.json"
 SPOTCHECK = CATALOG / "spotcheck_50.csv"
 SPOTCHECK_SEED = 20261007
+# The sample a reviewer works through stays the pack 4 one: later retirements
+# would otherwise redraw it.
+SPOTCHECK_VERSION = 4
 
 FORMAT = 1
-LATEST = 4
+LATEST = 6
 MIN_APP_BUILD = 1
 SOURCE_ID = "indifit-catalogue-v1"
 
@@ -60,6 +63,30 @@ STAPLES_SOURCE = {
     "attribution": "USDA FoodData Central, SR Legacy",
     "review": "unreviewed",
 }
+# Pack 5 adds the 17 Oct user-readiness gap dishes (§ 3.4), recipes of SR
+# Legacy ingredients: sources/usda-dishes-v1/.
+DISHES = CATALOG / "sources/usda-dishes-v1/foods.csv"
+DISHES_VERSION = 5
+DISHES_SOURCE = {
+    "id": "usda-dishes-v1",
+    "licence": "CC0-1.0",
+    "attribution": "USDA FoodData Central, SR Legacy",
+    "review": "unreviewed",
+}
+# Pack 6 adds sugar and milk by the millilitre, the ingredients My chai
+# (UF-2) is computed from: sources/usda-ingredients-v1/.
+INGREDIENTS = CATALOG / "sources/usda-ingredients-v1/foods.csv"
+INGREDIENTS_VERSION = 6
+INGREDIENTS_SOURCE = {
+    "id": "usda-ingredients-v1",
+    "licence": "CC0-1.0",
+    "attribution": "USDA FoodData Central, SR Legacy",
+    "review": "unreviewed",
+}
+# From pack 5 a label may hold one pair of brackets itself: "Dhaba Style
+# (High oil)" (UR-06). Earlier packs keep the plain pattern, so they rebuild
+# byte for byte.
+NESTED_VARIANTS_VERSION = 5
 STAPLES_FACTS = {
     "kcal": "energy",
     "protein_g": "protein",
@@ -71,6 +98,7 @@ STAPLES_FACTS = {
 GRAM_UNITS = {"g": 1.0, "gram": 1.0, "grams": 1.0, "kg": 1000.0}
 MILLILITRE_UNITS = {"ml": 1.0, "millilitre": 1.0, "l": 1000.0, "litre": 1000.0}
 VARIANT_NAME = re.compile(r"^(.*) \(([^()]*)\)$")
+NESTED_VARIANT_NAME = re.compile(r"^(.*) \(([^()]*\([^()]*\))\)$")
 
 
 class BuildError(Exception):
@@ -209,12 +237,14 @@ def build_pack_v1(rows):
 # --------------------------------------------------------------------------
 
 
-def variant_relations(rows, labels):
+def variant_relations(rows, labels, nested=False):
     """{variant id: (base id, label)} for rows named "<base> (<label>)"."""
     by_name = {row["name"]: row for row in rows}
     relations = {}
     for row in rows:
         match = VARIANT_NAME.match(row["name"])
+        if nested and (not match or match.group(1) not in by_name):
+            match = NESTED_VARIANT_NAME.match(row["name"])
         if not match or match.group(1) not in by_name:
             continue
         label = match.group(2)
@@ -314,7 +344,9 @@ def build_catalogue(version, rows=None, overlay_dir=OVERLAYS, apply_fixes=True):
                 f"not {entry['name']!r}"
             )
 
-    relations = variant_relations(rows, labels)
+    relations = variant_relations(
+        rows, labels, nested=version >= NESTED_VARIANTS_VERSION
+    )
     foods = []
     for row in rows:
         unit = row["serving_unit"].strip().lower()
@@ -369,7 +401,9 @@ def _alias_key(text):
     return re.sub(r"\s+", " ", re.sub(r"[^\w\s]", " ", text.lower())).strip()
 
 
-def staple_foods(existing, path=STAPLES, version=STAPLES_VERSION):
+def staple_foods(
+    existing, path=STAPLES, version=STAPLES_VERSION, source=STAPLES_SOURCE
+):
     """Pack foods for the USDA staples source (pack 3 on).
 
     Each serving's grams are the weight the source recipe states for that food
@@ -422,9 +456,9 @@ def staple_foods(existing, path=STAPLES, version=STAPLES_VERSION):
                 "variant_label": None,
                 "tags": [],
                 "lifecycle": "active",
-                "source_ref": f"usda-staples-v1:{row['name'].lower()}",
+                "source_ref": f"{source['id']}:{row['name'].lower()}",
                 "category": row["category"],
-                "source_id": STAPLES_SOURCE["id"],
+                "source_id": source["id"],
                 "facts": {"basis": row["basis"], "values": values},
                 "servings": [serving],
                 "aliases": aliases,
@@ -451,6 +485,19 @@ def build_pack(version, rows=None, overlay_dir=OVERLAYS, apply_fixes=True):
             foods + staple_foods(foods, version=version), key=lambda food: food["id"]
         )
         sources.append(dict(STAPLES_SOURCE))
+    if version >= DISHES_VERSION:
+        foods = sorted(
+            foods + staple_foods(foods, DISHES, version, DISHES_SOURCE),
+            key=lambda food: food["id"],
+        )
+        sources.append(dict(DISHES_SOURCE))
+    if version >= INGREDIENTS_VERSION:
+        foods = sorted(
+            foods + staple_foods(foods, INGREDIENTS, version, INGREDIENTS_SOURCE),
+            key=lambda food: food["id"],
+        )
+        sources.append(dict(INGREDIENTS_SOURCE))
+    if version >= STAPLES_VERSION:
         by_id = {food["id"]: food for food in foods}
         for name, data in load_overlays(version, overlay_dir):
             for food_id, texts in (data.get("extra_aliases") or {}).items():
@@ -615,7 +662,7 @@ def build_outputs():
     outputs[ASSETS / "manifest.json"] = _manifest_text(
         LATEST, [_entry(packs[LATEST], bundled_url, bundled)]
     ).encode()
-    outputs[SPOTCHECK] = spotcheck_csv(packs[LATEST]).encode()
+    outputs[SPOTCHECK] = spotcheck_csv(packs[SPOTCHECK_VERSION]).encode()
     return outputs, packs
 
 

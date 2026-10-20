@@ -23,7 +23,7 @@ Log home-cooked meals, follow structured training plans, record completed sets a
 
 ### Indian nutrition logging
 
-- 243 Indian dishes built in, with size and oil variants, 124 everyday foods such as fruit, nuts, breads and sweets, plus 25 more in optional regional packs.
+- 182 Indian dishes built in, with size and oil variants, 160 everyday foods such as fruit, nuts, breads, sweets, milk and sugar, plus 25 more in optional regional packs.
 - Local food search, custom foods, recipes and saved meals.
 - Nutrition facts retain their source and completeness information.
 - Group multiple dishes into a meal while keeping each logged item reviewable.

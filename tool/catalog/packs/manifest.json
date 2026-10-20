@@ -1,8 +1,38 @@
 {
   "format": 1,
-  "latest": 4,
+  "latest": 6,
   "min_app_build": 1,
   "packs": [
+    {
+      "bytes": 34708,
+      "kind": "full",
+      "sha256": "675d671a5ef1b32e8c9e222d54749af84d38f26ebdc832aead3fbeb7b9513f87",
+      "url": "v6/6.json.gz",
+      "version": 6
+    },
+    {
+      "base": 5,
+      "bytes": 724,
+      "kind": "delta",
+      "sha256": "e67d2a71477e3677fab9edde9ec46c16f084ccc75b663772600a95a5d2cdd962",
+      "url": "v6/6-from-5.json.gz",
+      "version": 6
+    },
+    {
+      "bytes": 34461,
+      "kind": "full",
+      "sha256": "a9d02492957eac910875035b340c03fd956277d92cc3f23095fc6eec89f89ea0",
+      "url": "v5/5.json.gz",
+      "version": 5
+    },
+    {
+      "base": 4,
+      "bytes": 6940,
+      "kind": "delta",
+      "sha256": "2be07fd3f5805cdf51a03f34d6997554a3169d2b6ad45692d410ab9bbc67e429",
+      "url": "v5/5-from-4.json.gz",
+      "version": 5
+    },
     {
       "bytes": 32287,
       "kind": "full",

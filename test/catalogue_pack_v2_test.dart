@@ -125,9 +125,15 @@ void main() {
           _builtPack(catalogue, '2-from-1.json.gz'),
           source: 'download',
         );
-        // Packs 3 (USDA staples) and 4 (search names) are deltas; the fresh
-        // install is 4.
-        for (final delta in ['3-from-2.json.gz', '4-from-3.json.gz']) {
+        // Packs 3 (USDA staples), 4 (search names), 5 (UR-06/07, gap
+        // dishes) and 6 (My chai's sugar and milks) are deltas; the fresh
+        // install is 6.
+        for (final delta in [
+          '3-from-2.json.gz',
+          '4-from-3.json.gz',
+          '5-from-4.json.gz',
+          '6-from-5.json.gz',
+        ]) {
           await importer.apply(
             _builtPack(catalogue, delta),
             source: 'download',
@@ -147,6 +153,24 @@ void main() {
 
     setUp(() async => catalogue = await RealCatalogue.open());
     tearDown(() => catalogue.close());
+
+    test('legacy rows show the pack serving (UR-08)', () async {
+      final rows = {
+        for (final row
+            in await catalogue.db.select(catalogue.db.foodItems).get())
+          row.name: row,
+      };
+      final poha = rows['Poha (Flattened Rice) (Double healthy bowl)']!;
+      expect(
+        (poha.servingSize, poha.servingUnit, poha.calories),
+        (2.0, 'katori', 460),
+      );
+      final chana = rows['Roasted Chana (with skin) (Small side bowl)']!;
+      expect(
+        (chana.servingSize, chana.servingUnit, chana.calories),
+        (25.0, 'g', 90),
+      );
+    });
 
     test('retired templated variants are hidden from search (C-09)', () async {
       const kept = 'Idli with Sambar (2 Idlis)';

@@ -115,7 +115,10 @@ class FoodSearchPipeline {
         NutritionFoodSearchCandidate.canonical(
           option,
           matchedTerms: hit.matchedTerms,
-          alternateNames: [if (hit.aliases.isNotEmpty) hit.aliases],
+          alternateNames: [
+            ...hit.aliasNames,
+            if (hit.aliases.isNotEmpty) hit.aliasText,
+          ],
         ),
       for (final food in legacy.items)
         NutritionFoodSearchCandidate.legacy(
@@ -132,6 +135,7 @@ class FoodSearchPipeline {
       NutritionFoodSearchRanking.rank(
         query: query,
         candidates: await candidates(query),
+        oneRowPerDish: true,
       );
 
   /// Splits the amount off [typed] and picks the words to search.
@@ -240,6 +244,7 @@ class FoodSearchPipeline {
     String? best;
     NutritionFoodSearchResult? bestTop;
     var bestCount = 0;
+    var bestKeepsLast = false;
     // Filler words go first; then each word, last word kept longest.
     final order = [
       for (var i = 0; i < tokens.length; i++)
@@ -264,18 +269,24 @@ class FoodSearchPipeline {
       }
       if (_fillerWords.contains(tokens[index])) return candidate;
       // A food named by the words left ("Plain Dosa" for "dosa") beats one
-      // that only starts with them ("Cheese Slice" for "cheese").
-      // On a tie the rarer word wins: "prawn" over "curry".
+      // that only starts with them ("Cheese Slice" for "cheese"). When both
+      // name a food, the last word is the dish ("cheese dosa" is a dosa).
+      // Then the rarer word wins: "prawn" over "curry".
       final top = ranked.first;
+      final keepsLast = index != tokens.length - 1;
       final better =
           bestTop == null ||
           top.match.index > bestTop.match.index ||
           (top.match == bestTop.match &&
-              (top.score > bestTop.score ||
-                  (top.score == bestTop.score && ranked.length < bestCount)));
+              (keepsLast != bestKeepsLast
+                  ? keepsLast
+                  : top.score > bestTop.score ||
+                        (top.score == bestTop.score &&
+                            ranked.length < bestCount)));
       if (better) {
         bestTop = top;
         bestCount = ranked.length;
+        bestKeepsLast = keepsLast;
         best = candidate;
       }
     }

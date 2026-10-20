@@ -356,8 +356,23 @@ void main() {
         expect(B03V16Fixture.readUserVersion(file), kCurrentSchemaVersion);
         expect(db.schemaVersion, kCurrentSchemaVersion);
         final after = await B03LogicalSnapshot.capture(db);
-        before.assertLogicallyEquals(after);
-        expect(await db.select(db.nutritionFoods).get(), hasLength(722));
+        // UR-08: the bundled pack gives catalogue rows its default serving;
+        // nothing else changes, and no user row does.
+        before.withoutCatalogueServings().assertLogicallyEquals(
+          after.withoutCatalogueServings(),
+        );
+        final poha =
+            await (db.select(db.foodItems)..where(
+                  (row) => row.name.equals(
+                    'Poha (Flattened Rice) (Double healthy bowl)',
+                  ),
+                ))
+                .getSingle();
+        expect(
+          (poha.servingSize, poha.servingUnit, poha.calories),
+          (2.0, 'katori', 460),
+        );
+        expect(await db.select(db.nutritionFoods).get(), hasLength(758));
         // The 15 manifest aliases; the bundled pack adds its own (CAT-6).
         final aliases = await db.select(db.nutritionFoodAliases).get();
         expect(

@@ -1020,6 +1020,23 @@ class B03LogicalSnapshot {
   bool logicallyEquals(B03LogicalSnapshot other) =>
       logicalCanonicalJson == other.logicalCanonicalJson;
 
+  /// This snapshot without the serving of catalogue (non-custom) food rows,
+  /// which the bundled catalogue pack aligns to its own (UR-08). User rows
+  /// and every other column still compare.
+  B03LogicalSnapshot withoutCatalogueServings() => B03LogicalSnapshot({
+    for (final entry in tables.entries)
+      entry.key: entry.key != 'food_items'
+          ? entry.value
+          : [
+              for (final row in entry.value)
+                row['is_custom'] == 1
+                    ? row
+                    : (Map.of(row)
+                        ..remove('serving_size')
+                        ..remove('serving_unit')),
+            ],
+  });
+
   void assertLogicallyEquals(B03LogicalSnapshot other) {
     if (!logicallyEquals(other)) {
       throw StateError(

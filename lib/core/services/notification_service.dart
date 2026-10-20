@@ -135,8 +135,8 @@ class NotificationService {
   static Function(String payload)? onNotificationNavigate;
 
   /// Resolves notification payloads only to currently supported destinations.
-  /// The weekly reminder opens factual Progress instead of the retired AI
-  /// report surface.
+  /// The weekly reminder opens the Sunday check-in (UF-15) instead of the
+  /// retired AI report surface.
   static String? destinationForPayload(String payload) {
     if (payload == 'workout') return '/training';
     if (payload.startsWith('meal_')) {
@@ -144,7 +144,7 @@ class NotificationService {
       return mealType.isEmpty ? '/food' : '/food?mealType=$mealType';
     }
     if (payload == 'evening_nudge') return '/';
-    if (payload == 'weekly_report') return '/progress';
+    if (payload == 'weekly_report') return '/weekly-check-in';
     if (payload == 'water') return '/';
     return null;
   }

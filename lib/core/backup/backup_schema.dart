@@ -333,6 +333,12 @@ class BackupData {
         'weekly_action_text',
         'weekly_action_target',
         'weekly_action_target_date',
+        'pref_my_chai_milk',
+        'pref_my_chai_milk_share',
+        'pref_my_chai_sugar_tsp',
+        'pref_my_chai_cup_ml',
+        'pref_my_roti',
+        'pref_weigh_in_dismissed_date',
       ];
       for (final key in keys) {
         final val = prefs.get(key);
@@ -345,6 +351,7 @@ class BackupData {
         'unlocked_achievement_ids',
         'pref_workout_reminder_days',
         'pref_diary_meal_slots',
+        'pref_weigh_in_days',
       ];
       for (final key in stringListKeys) {
         final listVal = prefs.getStringList(key);

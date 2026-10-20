@@ -485,11 +485,12 @@ void main() {
       expect(manifest.brandedCount, 3);
       // 1 fixture + 18 catalogue duplicates merged on 2026-10-03
       // + 20 nonsense milk/curd/raw-paneer variants retired the same day
-      // + 37 templated variants retired by catalogue pack v2 (C-09).
-      expect(manifest.deprecatedCount, 76);
+      // + 37 templated variants retired by catalogue pack v2 (C-09)
+      // + 17 nonsense or duplicate variants retired by pack v5 (UR-07).
+      expect(manifest.deprecatedCount, 93);
       expect(manifest.ambiguousCount, 10);
       expect(manifest.unresolvedCount, 2);
-      expect(manifest.manualReviewCount, 517);
+      expect(manifest.manualReviewCount, 500);
       expect(
         manifest.sourceReviews.values
             .where(
@@ -516,7 +517,7 @@ void main() {
           .toString();
       expect(
         checksum,
-        '6e0716d8e3ffe39d2d0f312ae8155c71e0f8070b0a991fc94d9985d6208dac1c',
+        '893b7cee21982a594c611bd03bbbb8a45253ad985fc12eca9f67438928fbeaee',
       );
     });
 

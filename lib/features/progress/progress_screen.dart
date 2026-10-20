@@ -177,7 +177,11 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                 ],
                 if (widget.preview == null) ...[
                   const SizedBox(height: B05Layout.space24),
-                  PeriodComparisonSection(units: units),
+                  PeriodComparisonSection(
+                    units: units,
+                    onOpenWeightHistory: () =>
+                        _openWeightHistory(snapshot, units),
+                  ),
                 ],
                 if ((snapshot.strengthSets?.isNotEmpty ?? false)) ...[
                   const SizedBox(height: B05Layout.space24),

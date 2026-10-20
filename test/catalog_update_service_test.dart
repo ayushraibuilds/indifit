@@ -403,11 +403,13 @@ void main() {
     expect(status.version, bundled);
     expect(status.source, 'bundled');
     expect(status.installedAt, isNotNull);
-    // Pack 3 carries 697 foods; 75 are retired. Of the 622 active ones,
-    // 255 are size or oil variants of a dish (`variant_of`): 243 IndiFit
-    // dishes and 124 USDA staples, the numbers the store copy states.
-    expect(status.foodCount, 622);
-    expect(status.variantCount, 255);
+    // Pack 6 carries 733 foods; 92 are retired. Of the 641 active ones,
+    // 299 are size or oil variants of a dish (`variant_of`, UR-06 links the
+    // dhaba and diet-prep ones): 182 IndiFit dishes and 160 USDA foods and
+    // dishes (pack 6 adds sugar and four milks for My chai), the numbers the
+    // store copy states.
+    expect(status.foodCount, 641);
+    expect(status.variantCount, 299);
     expect(status.lastCheckAt, isNull);
     expect(status.allowMobileData, isFalse);
   });

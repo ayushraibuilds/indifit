@@ -131,7 +131,12 @@ class TodayMealsModule extends StatelessWidget {
     required this.onLogMeal,
     required this.onRetry,
     required this.selectedDate,
+    this.quickAdds,
   });
+
+  /// One-tap adds under each row (My chai, +1 roti); the Today surface
+  /// passes [TodayMealQuickAdds]. Null shows none.
+  final Widget Function(TodayMealPresentation meal)? quickAdds;
 
   final List<TodayMealPresentation> meals;
   final bool loading;
@@ -170,6 +175,7 @@ class TodayMealsModule extends StatelessWidget {
                 onAdd: () => onLogMeal(meals[index].mealType),
                 selectedDate: selectedDate,
               ),
+              if (quickAdds != null) quickAdds!(meals[index]),
               if (index < meals.length - 1)
                 Divider(
                   height: B05Layout.space16,

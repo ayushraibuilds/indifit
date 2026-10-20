@@ -12,8 +12,9 @@ import 'support/real_catalogue.dart';
 /// review). Each query names text its first result must contain. Every pack
 /// or ranking change shows its effect here.
 ///
-/// Dishes the catalogue doesn't have (papad, modak, khakhra, …) are left
-/// out: there is no right first result to pin until a pack adds them.
+/// Dishes the catalogue doesn't have (ragi mudde, lime pickle, protein bar)
+/// are left out: there is no right first result to pin until a pack adds
+/// them. Pack 5 added the rest of § 3.4.
 const Map<String, String> everydayFirstResult = {
   // Breakfast
   'aloo paratha': 'Aloo Paratha',
@@ -30,7 +31,8 @@ const Map<String, String> everydayFirstResult = {
   'rava upma': 'Upma',
   'sprouts salad': 'Sprouted',
   'chai with sugar': 'Masala Chai',
-  '1 cup chai': 'Chai',
+  // "chai" is an alias of Tea with Milk and Sugar; Masala Chai follows.
+  '1 cup chai': 'Tea with Milk and Sugar',
   'black coffee': 'Black Coffee',
   'bournvita milk': 'Malted Milk',
   '1 glass milk': 'Milk',
@@ -72,6 +74,7 @@ const Map<String, String> everydayFirstResult = {
   'cabbage thoran': 'Cabbage Thoran',
   'moong dal khichdi': 'Khichdi',
   'cucumber raita': 'Raita',
+  'green salad': 'Kachumber',
   // Amounts typed with the food (UR-01)
   '2 roti': 'Roti',
   '3 roti': 'Roti',
@@ -124,12 +127,47 @@ const Map<String, String> everydayFirstResult = {
   'masala maggi': 'Masala Noodles',
   // One word dropped when the whole search matches nothing (UR-03)
   'fried momos': 'Momos',
-  'egg fried rice': 'Fried Rice',
   'cheese dosa': 'Dosa',
   'prawn curry': 'Prawns',
-  'green chutney': 'Chutney',
-  'schezwan fried rice': 'Fried Rice',
-  'puri bhaji': 'Puri',
+  // Pack 5: the § 3.4 gap dishes, as people type them
+  'besan chilla': 'Besan Chilla',
+  'chilla': 'Chilla',
+  'puri bhaji': 'Puri Bhaji',
+  'poori bhaji': 'Puri Bhaji',
+  'chole bhature': 'Chole Bhature',
+  'sabudana vada': 'Sabudana Vada',
+  'banana shake': 'Banana Shake',
+  'mango shake': 'Mango Shake',
+  'kadhi chawal': 'Kadhi Chawal',
+  'egg fried rice': 'Egg Fried Rice',
+  'chilli paneer': 'Chilli Paneer',
+  'chili paneer': 'Chilli Paneer',
+  'veg manchurian': 'Veg Manchurian',
+  'manchurian': 'Manchurian',
+  'chicken manchurian': 'Chicken Manchurian',
+  'chilli chicken': 'Chilli Chicken',
+  'schezwan fried rice': 'Schezwan Fried Rice',
+  'szechuan rice': 'Schezwan Fried Rice',
+  'puliyogare': 'Puliyogare',
+  'tamarind rice': 'Puliyogare',
+  'dalia': 'Dalia',
+  'tomato soup': 'Tomato Soup',
+  'sweet corn soup': 'Sweet Corn Soup',
+  'papad': 'Papad',
+  'achar': 'Pickle',
+  'mango pickle': 'Mango Pickle',
+  'khakhra': 'Khakhra',
+  'chakli': 'Chakli',
+  'murukku': 'Chakli',
+  'mathri': 'Mathri',
+  'dahi bhalla': 'Dahi Bhalla',
+  'dahi vada': 'Dahi Bhalla',
+  'coconut chutney': 'Coconut Chutney',
+  'green chutney': 'Green Chutney',
+  'onion salad': 'Onion Salad',
+  'modak': 'Modak',
+  'soan papdi': 'Soan Papdi',
+  'puran poli': 'Puran Poli',
 };
 
 void main() {
@@ -258,9 +296,9 @@ void main() {
 
   group('one word dropped when nothing matches (UR-03)', () {
     test('says it relaxed the search', () async {
-      final resolved = await pipeline.resolve('egg fried rice');
+      final resolved = await pipeline.resolve('cheese dosa');
       expect(resolved.relaxed, isTrue);
-      expect(resolved.query, 'fried rice');
+      expect(resolved.query, 'dosa');
     });
 
     test('a search that matches as typed is left alone', () async {

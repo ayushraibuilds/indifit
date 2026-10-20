@@ -6,11 +6,20 @@ import '../../../core/widgets/consumer_task_primitives.dart';
 import '../../../data/services/nutrition_food_search_ranking.dart';
 import 'food_search_widgets.dart';
 
-/// No-results empty state extracted verbatim from `food_search_screen.dart`.
+/// No-results empty state. Besides a custom food, it offers the two
+/// quickest ways out (UR-33): quick-add calories under the typed name, and,
+/// when AI is on, describing the meal in words.
 class FoodSearchNoResultsState extends StatelessWidget {
   final VoidCallback onCreateCustomFood;
+  final VoidCallback? onQuickAdd;
+  final VoidCallback? onDescribe;
 
-  const FoodSearchNoResultsState({super.key, required this.onCreateCustomFood});
+  const FoodSearchNoResultsState({
+    super.key,
+    required this.onCreateCustomFood,
+    this.onQuickAdd,
+    this.onDescribe,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -33,11 +42,34 @@ class FoodSearchNoResultsState extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 20),
-            FilledButton.icon(
-              onPressed: onCreateCustomFood,
-              icon: const Icon(Icons.add),
-              label: const Text('Create a custom food'),
-            ),
+            if (onQuickAdd != null) ...[
+              FilledButton.icon(
+                onPressed: onQuickAdd,
+                icon: const Icon(Icons.bolt_rounded),
+                label: const Text('Quick add calories'),
+              ),
+              const SizedBox(height: 8),
+            ],
+            if (onDescribe != null) ...[
+              OutlinedButton.icon(
+                onPressed: onDescribe,
+                icon: const Icon(Icons.chat_bubble_outline_rounded),
+                label: const Text('Describe it instead'),
+              ),
+              const SizedBox(height: 8),
+            ],
+            if (onQuickAdd == null)
+              FilledButton.icon(
+                onPressed: onCreateCustomFood,
+                icon: const Icon(Icons.add),
+                label: const Text('Create a custom food'),
+              )
+            else
+              TextButton.icon(
+                onPressed: onCreateCustomFood,
+                icon: const Icon(Icons.add),
+                label: const Text('Create a custom food'),
+              ),
           ],
         ),
       ),
@@ -61,6 +93,10 @@ class FoodSearchResultsList extends StatelessWidget {
   searchResultItemBuilder;
   final VoidCallback onCreateCustomFood;
 
+  /// Zero-result exits (UR-33); null hides each.
+  final VoidCallback? onQuickAdd;
+  final VoidCallback? onDescribe;
+
   /// The search to offer as "couldn't find it" (CAT-13); null hides it.
   final String? missedQuery;
 
@@ -82,6 +118,8 @@ class FoodSearchResultsList extends StatelessWidget {
     required this.searchResults,
     required this.searchResultItemBuilder,
     required this.onCreateCustomFood,
+    this.onQuickAdd,
+    this.onDescribe,
     this.missedQuery,
     this.missedQuerySaved = false,
     this.onAddMissedQuery,
@@ -131,7 +169,11 @@ class FoodSearchResultsList extends StatelessWidget {
         if (!searchingOnline &&
             (onlineSearchOff != null || !isOnlineSearchOffline) &&
             searchResults.isEmpty)
-          FoodSearchNoResultsState(onCreateCustomFood: onCreateCustomFood),
+          FoodSearchNoResultsState(
+            onCreateCustomFood: onCreateCustomFood,
+            onQuickAdd: onQuickAdd,
+            onDescribe: onDescribe,
+          ),
         if (!searchingOnline && missedQuery != null)
           FoodSearchMissedQueryRow(
             query: missedQuery!,
