@@ -12,7 +12,8 @@ import 'support/real_catalogue.dart';
 import 'support/widget_test_database.dart';
 
 /// UR-02: "3 roti" logs 3 pieces from the "+" and opens the portion sheet
-/// at 3; UR-03: a relaxed search says so.
+/// at 3; UR-03: a relaxed search says so; R-1: the confirmation names the
+/// amount the "+" named (pieces, katori, ml).
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -71,6 +72,28 @@ void main() {
       findsOneWidget,
     );
   });
+
+  // R-1: the confirmation names exactly what the "+" named.
+  for (final (query, button, name) in [
+    ('2 katori dal', '2 katori', 'Dal Fry (Chana & Toor)'),
+    ('200 ml orange juice', '200 ml', 'Orange Juice (Fresh)'),
+  ]) {
+    testWidgets('the confirmation says "$button" like the "+"', (tester) async {
+      await search(tester, query);
+      final add = find.bySemanticsLabel(
+        RegExp('^Add ${RegExp.escape('$button $name')}'),
+      );
+      expect(add, findsOneWidget);
+      await tester.tap(add);
+      await settleLoggedRecords(tester, rounds: 12);
+      expect(
+        find.textContaining(
+          RegExp('^Added ${RegExp.escape('$button $name')} · \\d+ kcal'),
+        ),
+        findsOneWidget,
+      );
+    });
+  }
 
   testWidgets('the portion sheet opens at the typed amount', (tester) async {
     await search(tester, '3 roti');
