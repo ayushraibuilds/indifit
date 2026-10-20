@@ -7,6 +7,7 @@ import '../di/core_providers.dart';
 import '../privacy/privacy_policy.dart';
 import 'ai_daily_caps.dart';
 import 'ai_gateway.dart';
+import 'ai_token_usage.dart';
 import 'backend_ai_gateway.dart';
 import 'firebase_ai_gateway.dart';
 
@@ -16,7 +17,11 @@ final aiGatewayProvider = Provider<AiGateway>((ref) {
   if (AppConfig.aiGateway == 'fastapi') {
     return BackendAiGateway(dio: ref.watch(dioProvider));
   }
-  final firebase = FirebaseAiGateway();
+  final preferences = ref.watch(sharedPreferencesProvider);
+  final tokens = AiTokenUsageCounter(preferences);
+  final firebase = FirebaseAiGateway(
+    onUsage: (_, usage) => unawaited(tokens.add(usage)),
+  );
   // Offline Mode must stop every Firebase connection, including the
   // Remote Config listener an earlier AI call opened.
   ref.listen<PrivacyPolicy>(privacyPolicyProvider, (_, policy) {
@@ -25,6 +30,6 @@ final aiGatewayProvider = Provider<AiGateway>((ref) {
   return DailyCapAiGateway(
     inner: firebase,
     caps: firebase.dailyCaps,
-    preferences: ref.watch(sharedPreferencesProvider),
+    preferences: preferences,
   );
 });

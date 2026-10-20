@@ -6,6 +6,9 @@ import 'package:firebase_ai/firebase_ai.dart';
 import '../utils/app_logger.dart';
 import 'ai_gateway.dart';
 
+/// The three things IndiFit asks Gemini for.
+enum GeminiRequestKind { describe, photo, label }
+
 /// What IndiFit asks Gemini: prompts, response schemas and generation
 /// settings, shared by [FirebaseAiGateway] and the evaluation harness
 /// (`tool/ai_eval`) so the eval always measures the shipped requests.
@@ -13,16 +16,39 @@ abstract final class GeminiRequests {
   static const defaultModel = 'gemini-3.8-flash';
 
   /// Bump whenever a prompt or schema changes; eval results record it.
-  static const promptVersion = 'meal-v1+label-v1';
+  static const promptVersion = 'meal-v1+label-v1+think-min';
 
   /// Nutrient keys the label schema can return (used by the eval data check).
   static const labelNutrientKeys = _labelNutrientKeys;
 
-  static GenerationConfig config(Schema schema) => GenerationConfig(
+  /// The settings for one request [kind] on [model]: structured JSON output
+  /// and the least thinking the model allows (N14-07).
+  static GenerationConfig config(
+    GeminiRequestKind kind, {
+    String model = defaultModel,
+  }) => GenerationConfig(
     responseMimeType: 'application/json',
-    responseSchema: schema,
+    responseSchema: switch (kind) {
+      GeminiRequestKind.describe || GeminiRequestKind.photo => _mealSchema,
+      GeminiRequestKind.label => _labelSchema,
+    },
     temperature: 0.2,
+    thinkingConfig: thinkingFor(model),
   );
+
+  /// Thinking can make a request ~3× dearer, and these are extraction tasks
+  /// that the eval shows don't need it. Gemini 3 and newer take a thinking
+  /// level, whose floor is `minimal` (they can't switch thinking off).
+  /// Gemini 2.5 takes a budget instead and rejects a level: Flash and
+  /// Flash-Lite accept 0 (off), Pro's documented minimum is 128. Keyed on the
+  /// model because Remote Config can swap it ([defaultModel] is a fallback).
+  static ThinkingConfig thinkingFor(String model) {
+    final id = model.trim().toLowerCase();
+    if (id.startsWith('gemini-2.') || id.startsWith('gemini-1.')) {
+      return ThinkingConfig.withThinkingBudget(id.contains('pro') ? 128 : 0);
+    }
+    return ThinkingConfig.withThinkingLevel(ThinkingLevel.minimal);
+  }
 
   static List<Content> mealText(String text) => [
     Content.text('$_mealTextPrompt\n\nMeal description: """$text"""'),
