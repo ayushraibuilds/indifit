@@ -2,6 +2,8 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
+import 'package:indifit/core/fixtures/exercise_display_muscles.dart';
 import 'package:indifit/core/theme/b05_semantic_colors.dart';
 import 'package:indifit/core/widgets/b05_accessibility_primitives.dart';
 
@@ -15,7 +17,10 @@ enum IndiFitMuscleMapBody { male, female }
 enum IndiFitMuscleMapView { front, back, both }
 
 /// The two caller-owned data modes plus an explicit no-data state.
-enum IndiFitMuscleMapMode { exercise, intensity, noData }
+///
+/// [sets] shades each muscle in four steps by a count of working sets
+/// (TF-4). It carries no recovery or fatigue meaning.
+enum IndiFitMuscleMapMode { exercise, intensity, noData, sets }
 
 /// A static, local, deterministic muscle-map renderer foundation.
 ///
@@ -33,6 +38,8 @@ class IndiFitMuscleMap extends StatelessWidget {
     this.showTextEquivalent = true,
   }) : mode = IndiFitMuscleMapMode.exercise,
        intensityValues = null,
+       setCounts = null,
+       onMuscleTap = null,
        metricLabel = 'Intensity';
 
   const IndiFitMuscleMap.intensity({
@@ -44,7 +51,25 @@ class IndiFitMuscleMap extends StatelessWidget {
     this.showTextEquivalent = true,
   }) : mode = IndiFitMuscleMapMode.intensity,
        primaryMuscle = null,
-       secondaryMuscles = const <String>[];
+       secondaryMuscles = const <String>[],
+       setCounts = null,
+       onMuscleTap = null;
+
+  /// Shades muscles by working sets in four steps ([setStep]); each region
+  /// has its own semantics label with its count, and tapping one reports
+  /// its concept to [onMuscleTap] (TF-4).
+  const IndiFitMuscleMap.sets({
+    required Map<String, double> this.setCounts,
+    super.key,
+    this.onMuscleTap,
+    this.bodyModel = IndiFitMuscleMapBody.male,
+    this.view = IndiFitMuscleMapView.both,
+    this.showTextEquivalent = false,
+  }) : mode = IndiFitMuscleMapMode.sets,
+       primaryMuscle = null,
+       secondaryMuscles = const <String>[],
+       intensityValues = null,
+       metricLabel = 'Working sets';
 
   const IndiFitMuscleMap.noData({
     super.key,
@@ -55,6 +80,8 @@ class IndiFitMuscleMap extends StatelessWidget {
        primaryMuscle = null,
        secondaryMuscles = const <String>[],
        intensityValues = null,
+       setCounts = null,
+       onMuscleTap = null,
        metricLabel = 'Intensity';
 
   final IndiFitMuscleMapMode mode;
@@ -66,6 +93,30 @@ class IndiFitMuscleMap extends StatelessWidget {
   final IndiFitMuscleMapView view;
   final bool showTextEquivalent;
 
+  /// Display concept ("chest", "back") → working sets, for [sets] mode.
+  final Map<String, double>? setCounts;
+  final ValueChanged<String>? onMuscleTap;
+
+  /// The four shading steps: none, under 3, 3 to under 6, 6 to under 10,
+  /// and 10 or more working sets.
+  static int setStep(double sets) => !sets.isFinite || sets <= 0
+      ? 0
+      : sets < 3
+      ? 1
+      : sets < 6
+      ? 2
+      : sets < 10
+      ? 3
+      : 4;
+
+  /// "4", "4½", "½".
+  static String formatSets(double sets) {
+    final whole = sets.floor();
+    final half = sets - whole >= 0.5;
+    if (!half) return '$whole';
+    return whole == 0 ? '½' : '$whole½';
+  }
+
   static const IndiFitMuscleMapTaxonomyAdapter _adapter =
       IndiFitMuscleMapTaxonomyAdapter();
 
@@ -75,11 +126,13 @@ class IndiFitMuscleMap extends StatelessWidget {
     final description = _description(renderState);
     final colors = context.b05Colors;
 
+    final setsMode = mode == IndiFitMuscleMapMode.sets;
     return Semantics(
       container: true,
-      excludeSemantics: true,
-      label: 'IndiFit muscle map',
-      value: description,
+      // In sets mode each region carries its own label and count.
+      excludeSemantics: !setsMode,
+      label: setsMode ? 'Muscle groups this week map' : 'IndiFit muscle map',
+      value: setsMode ? null : description,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -89,6 +142,7 @@ class IndiFitMuscleMap extends StatelessWidget {
             view: view,
             renderState: renderState,
             colors: colors,
+            onMuscleTap: onMuscleTap,
           ),
           if (showTextEquivalent) ...[
             const SizedBox(height: B05Layout.space8),
@@ -119,12 +173,53 @@ class IndiFitMuscleMap extends StatelessWidget {
         );
       case IndiFitMuscleMapMode.noData:
         return const _IndiFitMuscleMapRenderState.noData();
+      case IndiFitMuscleMapMode.sets:
+        final counts = setCounts ?? const <String, double>{};
+        final steps = <String, int>{};
+        final concepts = <String, String>{};
+        final unresolved = <String>[];
+        for (final entry in counts.entries) {
+          final slugs = IndiFitMuscleMapTaxonomyAdapter
+              .supportedConceptToGeometry[entry.key.trim().toLowerCase()];
+          if (slugs == null) {
+            unresolved.add(entry.key);
+            continue;
+          }
+          final step = setStep(entry.value);
+          for (final slug in slugs) {
+            concepts[slug] ??= entry.key;
+            if (step > (steps[slug] ?? -1)) {
+              steps[slug] = step;
+              concepts[slug] = entry.key;
+            }
+          }
+        }
+        return _IndiFitMuscleMapRenderState.sets(
+          regionSteps: steps,
+          regionConcepts: concepts,
+          setCounts: counts,
+          unresolvedMuscles: unresolved,
+        );
     }
   }
 
   String _description(_IndiFitMuscleMapRenderState renderState) {
     if (renderState.mode == IndiFitMuscleMapMode.noData) {
       return 'Muscle map unavailable: no reviewed muscle data.';
+    }
+
+    if (renderState.mode == IndiFitMuscleMapMode.sets) {
+      final trained = renderState.setCounts.entries
+          .where((entry) => entry.value > 0)
+          .map(
+            (entry) =>
+                '${ExerciseDisplayMuscles.formatMuscle(entry.key)} '
+                '${formatSets(entry.value)}',
+          )
+          .toList(growable: false);
+      return trained.isEmpty
+          ? 'No working sets in any muscle group yet.'
+          : '$metricLabel: ${trained.join(', ')}.';
     }
 
     if (renderState.mode == IndiFitMuscleMapMode.exercise) {
@@ -181,12 +276,14 @@ class _MapLayout extends StatelessWidget {
     required this.view,
     required this.renderState,
     required this.colors,
+    this.onMuscleTap,
   });
 
   final IndiFitMuscleMapBody bodyModel;
   final IndiFitMuscleMapView view;
   final _IndiFitMuscleMapRenderState renderState;
   final B05SemanticColors colors;
+  final ValueChanged<String>? onMuscleTap;
 
   @override
   Widget build(BuildContext context) {
@@ -250,8 +347,26 @@ class _MapLayout extends StatelessWidget {
               side: side,
               renderState: renderState,
               colors: colors,
+              onMuscleTap: onMuscleTap,
             ),
-            child: const SizedBox.expand(),
+            child: onMuscleTap == null
+                ? const SizedBox.expand()
+                : LayoutBuilder(
+                    builder: (context, constraints) => GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTapUp: (details) {
+                        final concept = _conceptAt(
+                          generatedBody,
+                          side,
+                          constraints.biggest,
+                          details.localPosition,
+                          renderState,
+                        );
+                        if (concept != null) onMuscleTap!(concept);
+                      },
+                      child: const SizedBox.expand(),
+                    ),
+                  ),
           ),
         ),
       ),
@@ -266,32 +381,104 @@ class _IndiFitMuscleMapRenderState {
     required this.secondarySlugs,
     required this.unresolvedMuscles,
   }) : mode = IndiFitMuscleMapMode.exercise,
-       regionIntensities = const <String, double>{};
+       regionIntensities = const <String, double>{},
+       regionSteps = const <String, int>{},
+       regionConcepts = const <String, String>{},
+       setCounts = const <String, double>{};
 
   const _IndiFitMuscleMapRenderState.intensity({
     required this.regionIntensities,
     required this.unresolvedMuscles,
   }) : mode = IndiFitMuscleMapMode.intensity,
        primarySlugs = const <String>{},
-       secondarySlugs = const <String>{};
+       secondarySlugs = const <String>{},
+       regionSteps = const <String, int>{},
+       regionConcepts = const <String, String>{},
+       setCounts = const <String, double>{};
 
   const _IndiFitMuscleMapRenderState.noData()
     : mode = IndiFitMuscleMapMode.noData,
       primarySlugs = const <String>{},
       secondarySlugs = const <String>{},
       regionIntensities = const <String, double>{},
+      regionSteps = const <String, int>{},
+      regionConcepts = const <String, String>{},
+      setCounts = const <String, double>{},
       unresolvedMuscles = const <String>[];
+
+  const _IndiFitMuscleMapRenderState.sets({
+    required this.regionSteps,
+    required this.regionConcepts,
+    required this.setCounts,
+    required this.unresolvedMuscles,
+  }) : mode = IndiFitMuscleMapMode.sets,
+       primarySlugs = const <String>{},
+       secondarySlugs = const <String>{},
+       regionIntensities = const <String, double>{};
 
   final IndiFitMuscleMapMode mode;
   final Set<String> primarySlugs;
   final Set<String> secondarySlugs;
   final Map<String, double> regionIntensities;
+
+  /// Sets mode: geometry slug → shading step (0–4), slug → the concept it
+  /// was shaded for, and the caller's counts by concept.
+  final Map<String, int> regionSteps;
+  final Map<String, String> regionConcepts;
+  final Map<String, double> setCounts;
   final List<String> unresolvedMuscles;
 
   bool get hasMappedRegions =>
       primarySlugs.isNotEmpty ||
       secondarySlugs.isNotEmpty ||
-      regionIntensities.isNotEmpty;
+      regionIntensities.isNotEmpty ||
+      regionSteps.isNotEmpty;
+}
+
+/// Where the painter draws [side]'s view box inside [size].
+({double scale, double dx, double dy, IndiFitMuscleMapViewBox box})?
+_viewTransform(
+  IndiFitMuscleMapBodyModel bodyModel,
+  IndiFitMuscleMapSide side,
+  Size size,
+) {
+  final viewBox = IndiFitMuscleMapGeometryRegistry
+      .viewBoxes[IndiFitMuscleMapGeometryRegistry.viewBoxKey(bodyModel, side)]!;
+  final scale = math.min(
+    size.width / viewBox.width,
+    size.height / viewBox.height,
+  );
+  if (!scale.isFinite || scale <= 0) return null;
+  return (
+    scale: scale,
+    dx: (size.width - viewBox.width * scale) / 2 - viewBox.originX * scale,
+    dy: (size.height - viewBox.height * scale) / 2 - viewBox.originY * scale,
+    box: viewBox,
+  );
+}
+
+/// The shaded concept under [point], if any (sets mode).
+String? _conceptAt(
+  IndiFitMuscleMapBodyModel bodyModel,
+  IndiFitMuscleMapSide side,
+  Size size,
+  Offset point,
+  _IndiFitMuscleMapRenderState renderState,
+) {
+  final transform = _viewTransform(bodyModel, side, size);
+  if (transform == null) return null;
+  final local = Offset(
+    (point.dx - transform.dx) / transform.scale,
+    (point.dy - transform.dy) / transform.scale,
+  );
+  for (final region in IndiFitMuscleMapGeometryRegistry.forView(
+    bodyModel,
+    side,
+  )) {
+    final concept = renderState.regionConcepts[region.upstreamSlug];
+    if (concept != null && region.toPath().contains(local)) return concept;
+  }
+  return null;
 }
 
 class _IndiFitMuscleMapPainter extends CustomPainter {
@@ -300,12 +487,62 @@ class _IndiFitMuscleMapPainter extends CustomPainter {
     required this.side,
     required this.renderState,
     required this.colors,
+    this.onMuscleTap,
   });
 
   final IndiFitMuscleMapBodyModel bodyModel;
   final IndiFitMuscleMapSide side;
   final _IndiFitMuscleMapRenderState renderState;
   final B05SemanticColors colors;
+  final ValueChanged<String>? onMuscleTap;
+
+  /// Sets mode: one node per shaded muscle on this side, labelled with its
+  /// count, so the shading is never the only signal.
+  @override
+  SemanticsBuilderCallback? get semanticsBuilder =>
+      renderState.mode != IndiFitMuscleMapMode.sets
+      ? null
+      : (size) {
+          final transform = _viewTransform(bodyModel, side, size);
+          if (transform == null) return const [];
+          final bounds = <String, Rect>{};
+          for (final region in IndiFitMuscleMapGeometryRegistry.forView(
+            bodyModel,
+            side,
+          )) {
+            final concept = renderState.regionConcepts[region.upstreamSlug];
+            if (concept == null) continue;
+            final box = region.toPath().getBounds();
+            final rect = Rect.fromLTRB(
+              box.left * transform.scale + transform.dx,
+              box.top * transform.scale + transform.dy,
+              box.right * transform.scale + transform.dx,
+              box.bottom * transform.scale + transform.dy,
+            );
+            bounds[concept] = bounds[concept]?.expandToInclude(rect) ?? rect;
+          }
+          return [
+            for (final entry in bounds.entries)
+              CustomPainterSemantics(
+                key: ValueKey('muscle_${side.name}_${entry.key}'),
+                rect: entry.value,
+                properties: SemanticsProperties(
+                  label: _setsLabel(
+                    entry.key,
+                    renderState.setCounts[entry.key] ?? 0,
+                  ),
+                  button: onMuscleTap != null,
+                  onTap: onMuscleTap == null
+                      ? null
+                      : () => onMuscleTap!(entry.key),
+                  textDirection: TextDirection.ltr,
+                ),
+              ),
+          ];
+        };
+
+  @override
+  bool shouldRebuildSemantics(covariant _IndiFitMuscleMapPainter old) => true;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -371,11 +608,37 @@ class _IndiFitMuscleMapPainter extends CustomPainter {
             _drawHeat(canvas, path, entry.value, scale);
           }
         }
+      case IndiFitMuscleMapMode.sets:
+        for (final entry in renderState.regionSteps.entries) {
+          final path = paths[entry.key];
+          if (path != null && entry.value > 0) {
+            _drawStep(canvas, path, entry.value, scale);
+          }
+        }
       case IndiFitMuscleMapMode.noData:
         break;
     }
 
     canvas.restore();
+  }
+
+  /// One brand tone at four strengths; never a warning or danger colour.
+  void _drawStep(ui.Canvas canvas, ui.Path path, int step, double scale) {
+    canvas.drawPath(
+      path,
+      Paint()
+        ..style = PaintingStyle.fill
+        ..color = IndiFitMuscleMapLegend.stepColor(colors, step)
+        ..isAntiAlias = true,
+    );
+    canvas.drawPath(
+      path,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.6 / scale
+        ..color = colors.action
+        ..isAntiAlias = true,
+    );
   }
 
   void _drawPrimary(ui.Canvas canvas, ui.Path path, double scale) {
@@ -452,4 +715,50 @@ class _IndiFitMuscleMapPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _IndiFitMuscleMapPainter oldDelegate) => true;
+}
+
+String _setsLabel(String concept, double sets) =>
+    '${ExerciseDisplayMuscles.formatMuscle(concept)} group: '
+    '${IndiFitMuscleMap.formatSets(sets)} working '
+    '${sets == 1 ? 'set' : 'sets'}';
+
+/// The four shading steps with their set ranges (TF-4).
+class IndiFitMuscleMapLegend extends StatelessWidget {
+  const IndiFitMuscleMapLegend({super.key});
+
+  static const stepLabels = ['½–2½', '3–5½', '6–9½', '10+'];
+
+  static Color stepColor(B05SemanticColors colors, int step) => colors.action
+      .withValues(alpha: const <double>[0, 0.22, 0.45, 0.7, 0.95][step]);
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.b05Colors;
+    return Wrap(
+      spacing: B05Layout.space12,
+      runSpacing: B05Layout.space4,
+      children: [
+        for (var step = 1; step <= 4; step++)
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 14,
+                height: 14,
+                decoration: BoxDecoration(
+                  color: Color.alphaBlend(
+                    stepColor(colors, step),
+                    colors.disabled,
+                  ),
+                  border: Border.all(color: colors.action),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+              const SizedBox(width: B05Layout.space4),
+              Text(stepLabels[step - 1], style: B05Typography.caption(context)),
+            ],
+          ),
+      ],
+    );
+  }
 }

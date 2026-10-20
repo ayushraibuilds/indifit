@@ -25,7 +25,7 @@ Update this table in every PR that touches training or progress UI. IDs are refe
 | TP-6 | Summary as the payoff: headline, "vs last time" per exercise, one celebration moment, "Total lifted" | **v1** | N | TP-3, TP-5 | Merged (#68) |
 | TP-7 | Motion and haptics map: `success()` and `restEnd()` haptics, set-row tick, count-up numbers, reduce-motion tests | **v1** | N | — | Merged (#68) |
 | TP-8 | Player sets as rows ("60 kg × 8 ✓"), no spreadsheet header; full workout title | Next | O | PR-D | Merged (#81): one row per set, "Set 2 · 8–12 reps" with a faint "Last 60 kg × 8" while to come and "✓ 60 kg × 8" once logged; no PLANNED/ACTUAL/STATUS header and no separate stacked layout. Planned workouts are titled with the session name ("Full Body A") from the occurrence snapshot; saved names are unchanged. |
-| TP-9 | Progress visuals: muscles-this-week body map, 12-week consistency heatmap (**Plus**, decided 2026-10-06); recent bests list (free) | Plus-gated (list: Next) | P | TP-1, TP-4; Plus entitlement | Not started |
+| TP-9 | Progress visuals: muscles-this-week body map (**free**, decision 6, 2026-10-18; TF-4), 12-week consistency heatmap and period comparison (**Plus**, decided 2026-10-06); recent bests list (free) | Map: free, on Training (TF-4). Heatmap: Plus-gated (list: Next) | P | TP-1, TP-4; Plus entitlement (heatmap only) | Map: in review (TF-4). Heatmap: not started |
 | TP-10 | `animations` package: card-to-screen and between-exercise transitions | Next | P | — | Moved to [PREMIUM_REDESIGN_PLAN.md](PREMIUM_REDESIGN_PLAN.md) V2 (2026-10-08). Use `animations` 2.2.0: 3.0.0 needs Flutter 3.44, CI pins 3.41.4. |
 | TP-11 | Dependency housekeeping: remove `percent_indicator`; upgrade `fl_chart` when charts are touched | Next | P | — | `percent_indicator` removal moved to [PREMIUM_REDESIGN_PLAN.md](PREMIUM_REDESIGN_PLAN.md) V1 (2026-10-08); `fl_chart` upgrade stays here with chart work. |
 | TP-12 | Specific reminders: "Full Body B today. Last time: Leg Press 60 kg × 8" | Next | Q | TP-1 | Merged (#78): "Next up: Full Body B. Last time: Leg Press 60 kg × 8." ("Next up", since the weekly reminder repeats and the next session only changes when a workout is saved, which reschedules); a one-off evening "1 more workout to hit this week's goal." only when reachable at one a day and not trained today. Plain text on any failure. |
@@ -385,13 +385,13 @@ Each gets its own section when an agent picks it up. Their tests follow the same
 
 1. **v1:** L → M → N, alongside the roadmap's A, B, C, G, D and T. They ship in the next tester build after they merge.
 2. **Next, any order:** O, Q, P (the free parts: TP-10, TP-11 and the recent-bests list), then R. S starts once the Apple Developer Program is active.
-3. **Plus-gated:** the TP-9 muscle map and heatmap ship behind the Plus switch, whenever Plus launches.
+3. **Plus-gated:** the TP-9 12-week heatmap and period comparison ship behind the Plus switch, whenever Plus launches. The muscles-this-week map is free (TF-4, decision 6 on 2026-10-18).
 
 Relative sizes: L is M–L, M and N are M. Agents can build them in parallel in separate worktrees, but they merge one at a time (L before N) and each needs a green full suite. On this Mac only one full suite runs at a time.
 
 ## 13. Open questions for Ayush
 
-**Decided 2026-10-06:** all three as recommended. Also decided: the muscle map and heatmap (TP-9) are **Plus** features. Bests, the weekly goal, reminders and the home widget stay free forever (market doc § 6.5). Until Plus exists, TP-9 waits or ships behind the Plus flag; it must not ship free and then move. Weekly badges come as a Next item, there's no goal override with a plan in v1, and the closed-test feedback form gets the tester question.
+**Decided 2026-10-06:** all three as recommended. Also decided: the muscle map and heatmap (TP-9) are **Plus** features. **Amended 2026-10-18 (decision 6, USER_READINESS_REVIEW § 10):** the muscles-this-week map is **free** (TF-4); the 12-week heatmap and period comparison stay Plus. It never shipped as Plus, so nothing moves from Plus to free for anyone. Bests, the weekly goal, reminders and the home widget stay free forever (market doc § 6.5). Until Plus exists, TP-9 waits or ships behind the Plus flag; it must not ship free and then move. Weekly badges come as a Next item, there's no goal override with a plan in v1, and the closed-test feedback form gets the tester question.
 
 1. **Weekly badges:** add "Week goal 4 weeks running" and "12 weeks running" achievements? *Recommend yes, as a Next item.* It's cheap once TP-4 exists, but v1 doesn't need it.
 2. **Goal override with a plan:** allow "my goal is 4" when the plan schedules 3? *Recommend no for v1.* Keep one source; revisit if testers ask.

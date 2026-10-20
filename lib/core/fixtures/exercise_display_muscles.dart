@@ -8,8 +8,14 @@ import 'package:flutter/foundation.dart';
 /// - Any remaining valid, distinct muscle tokens are SECONDARY display muscles.
 ///
 /// NOTE: B02 `ExerciseMuscleMappings` and `B02MuscleVolumeRepository` remain the
-/// sole authoritative source for muscle-allocation arithmetic, volume tracking,
+/// authoritative source for muscle-allocation arithmetic, volume tracking,
 /// and analytics. This resolver operates strictly on catalog display metadata.
+///
+/// The one exception is the free "Muscles this week" map (TF-4,
+/// `muscles_this_week.dart`). It counts sets from each catalogue exercise's
+/// `muscle_groups` (first = primary, the rest = secondary), because the
+/// reviewed B02 mappings cover only a few exercises today. It should switch
+/// to the B02 mappings once they cover the catalogue.
 @immutable
 class ExerciseDisplayMuscles {
   /// The primary target muscle for library categorization and prominent display.
