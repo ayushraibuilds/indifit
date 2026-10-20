@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/backup/backup_schema.dart';
 import 'package:indifit/core/config/app_preferences_keys.dart';
 import 'package:indifit/core/di/providers.dart';
+import 'package:indifit/core/presentation/diet_preference_presentation.dart';
 import 'package:indifit/core/services/local_timezone_service.dart';
 import 'package:indifit/core/services/notification_service.dart';
 import 'package:indifit/core/typed_quantities.dart';
@@ -76,11 +77,11 @@ void main() {
       final picked = ProteinNudge.pick(
         [
           food('Soya curry', 16, 200),
-          food('Dal', 8, 170, history: true),
+          food('Masoor dal', 8.2, 115, history: true),
           food(
-            'Paneer bhurji',
-            16,
-            290,
+            'Low fat paneer',
+            22,
+            160,
             category: 'Paneer & Dairy',
             history: true,
           ),
@@ -89,8 +90,96 @@ void main() {
         diet: 'veg',
         remainingKcal: 600,
       );
-      expect(picked.map((s) => s.name), ['Paneer bhurji', 'Dal', 'Soya curry']);
-      expect(picked.first.line, 'Paneer bhurji (1 katori) = 16 g');
+      expect(picked.map((s) => s.name), [
+        'Low fat paneer',
+        'Masoor dal',
+        'Soya curry',
+      ]);
+      expect(picked.first.line, 'Low fat paneer (1 katori) = 22 g');
+    });
+
+    test('R-4: only dense foods pass the protein floor', () {
+      final candidates = [
+        food('Poha', 4, 250, history: true),
+        food('3 Roti', 9, 300, history: true),
+        food('Full Cream Milk', 7, 150, history: true),
+        // Dense, but too little in the amount offered.
+        food('Egg white bite', 7.9, 50, category: 'Healthy & Salads'),
+        // Just on the per-serving line, above the density line.
+        food('Masoor dal', 8, 125),
+      ];
+      expect(
+        ProteinNudge.pick(
+          candidates,
+          diet: 'non-veg',
+          remainingKcal: 1000,
+        ).map((s) => s.name),
+        ['Masoor dal'],
+      );
+      // Nothing passes: no suggestions, so the card hides.
+      expect(
+        ProteinNudge.pick(
+          candidates.take(3),
+          diet: 'non-veg',
+          remainingKcal: 1000,
+        ),
+        isEmpty,
+      );
+    });
+
+    test('R-4: whey only for someone who has logged it', () {
+      final whey = food('Whey Protein', 24, 120, category: null);
+      final wheyLogged = food(
+        'Whey Protein',
+        24,
+        120,
+        category: null,
+        history: true,
+      );
+      expect(
+        ProteinNudge.pick([whey], diet: 'non-veg', remainingKcal: 1000),
+        isEmpty,
+      );
+      expect(
+        ProteinNudge.pick(
+          [wheyLogged],
+          diet: 'non-veg',
+          remainingKcal: 1000,
+        ).map((s) => s.name),
+        ['Whey Protein'],
+      );
+    });
+
+    test('R-4: the amount is not repeated when the name has it', () {
+      ProteinSuggestion named(String name, String amount) => ProteinSuggestion(
+        foodId: name,
+        name: name,
+        quantity: Quantity.fromNum(amount: 1, unit: QuantityUnit.piece),
+        amountLabel: amount,
+        proteinGrams: 8,
+        kcal: 120,
+        fromHistory: true,
+      );
+      expect(
+        named('Full Cream Milk (1 Glass)', '1 glass').line,
+        'Full Cream Milk (1 Glass) = 8 g',
+      );
+      expect(
+        named('Boiled Eggs (2 pieces)', '2 pieces').line,
+        'Boiled Eggs (2 pieces) = 8 g',
+      );
+      expect(
+        named('Full Cream Milk (1 Glass)', '2 glass').line,
+        'Full Cream Milk (1 Glass) (2 glass) = 8 g',
+      );
+      expect(
+        named('Lassi (11 glass)', '1 glass').line,
+        'Lassi (11 glass) (1 glass) = 8 g',
+      );
+      expect(
+        named('Paneer Bhurji', '1 katori').line,
+        'Paneer Bhurji (1 katori) = 8 g',
+      );
     });
 
     test('kcal must fit what is left', () {
@@ -110,33 +199,128 @@ void main() {
       );
     });
 
-    test('diet and constraints filter', () {
+    test('R-3: every diet, by its persisted values and aliases', () {
       final candidates = [
-        food('Chicken Korma', 24, 340, category: 'Non-Veg'),
+        food('Chicken Breast (Cooked)', 31, 165, category: 'Non-Veg'),
         food('Egg White Salad', 16, 110, category: 'Healthy & Salads'),
-        food('Paneer Bhurji', 16, 290, category: 'Paneer & Dairy'),
-        food('Masoor Dal', 8, 115, category: 'Dals & Legumes'),
-        food('Whey', 24, 120, category: null),
+        food('Low Fat Paneer', 22, 160, category: 'Paneer & Dairy'),
+        food('Aloo Soya Curry', 12, 150),
+        food('Masoor Dal', 8.2, 115, category: 'Dals & Legumes'),
+        food('Roasted Chana', 10, 150, category: 'Pulses & Legumes'),
+        // The catalogue can't place it: only unrestricted diets get it.
+        food('Tofu', 16, 150, category: null),
+      ];
+      const expected = {
+        'veg': {
+          'Low Fat Paneer',
+          'Aloo Soya Curry',
+          'Masoor Dal',
+          'Roasted Chana',
+        },
+        'eggetarian': {
+          'Egg White Salad',
+          'Low Fat Paneer',
+          'Aloo Soya Curry',
+          'Masoor Dal',
+          'Roasted Chana',
+        },
+        'non_veg': {
+          'Chicken Breast (Cooked)',
+          'Egg White Salad',
+          'Low Fat Paneer',
+          'Aloo Soya Curry',
+          'Masoor Dal',
+          'Roasted Chana',
+          'Tofu',
+        },
+        'vegan': {'Aloo Soya Curry', 'Masoor Dal', 'Roasted Chana'},
+        // Vegetarian without onion, garlic or roots (aloo).
+        'jain': {'Low Fat Paneer', 'Masoor Dal', 'Roasted Chana'},
+      };
+      expect(
+        DietPreferencePresentation.options.map((o) => o.uiValue).toSet(),
+        expected.keys.toSet(),
+      );
+      for (final option in DietPreferencePresentation.options) {
+        for (final value in {
+          option.uiValue,
+          option.preferredPersistedValue,
+          ...option.persistedAliases,
+        }) {
+          final fits = {
+            for (final c in candidates)
+              if (dietFit(value, name: c.name, category: c.category) ==
+                  DietFit.fits)
+                c.name,
+          };
+          expect(fits, expected[option.uiValue], reason: value);
+        }
+      }
+      // An unknown value is treated as vegetarian.
+      expect(
+        dietFit('pescatarian', name: 'Chicken Breast', category: 'Non-Veg'),
+        DietFit.conflicts,
+      );
+    });
+
+    test('R-3: Jain leaves out onion, garlic and roots by name', () {
+      for (final name in [
+        'Onion Pakora',
+        'Garlic Naan',
+        'Aloo Paratha',
+        'Gajar Halwa',
+        'Mooli Paratha',
+        'Beetroot Raita',
+        'Adrak Chai',
+        'Sweet Potato Chaat',
+        'Egg Curry',
+      ]) {
+        expect(
+          dietFit('jain', name: name, category: 'Vegetables & Sabjis'),
+          DietFit.conflicts,
+          reason: name,
+        );
+      }
+      expect(
+        dietFit('jain', name: 'Moong Dal Chilka', category: null),
+        DietFit.unknown,
+      );
+    });
+
+    test('R-4: the staple fallback per diet', () {
+      final staples = [
+        food('Low Fat Paneer', 22, 160, category: 'Paneer & Dairy'),
+        food('Masoor Dal', 8.2, 115, category: 'Dals & Legumes'),
+        food('Greek Yogurt', 9, 95, category: 'Paneer & Dairy'),
+        food('Roasted Chana', 10, 150, category: 'Pulses & Legumes'),
+        food('Boiled Eggs (2 pieces)', 13, 155, category: 'Non-Veg'),
+        food('Chicken Breast (Cooked)', 31, 165, category: 'Non-Veg'),
       ];
       List<String> pick(String diet, {Set<String> conflicts = const {}}) =>
           ProteinNudge.pick(
-            candidates,
+            staples,
             diet: diet,
             remainingKcal: 1000,
             conflictingFoodIds: conflicts,
           ).map((s) => s.name).toList();
-      // Veg: no meat or egg, and nothing the catalogue can't place.
-      expect(pick('veg'), ['Masoor Dal', 'Paneer Bhurji']);
+      expect(pick('veg'), ['Low Fat Paneer', 'Greek Yogurt', 'Masoor Dal']);
+      expect(pick('jain'), ['Low Fat Paneer', 'Greek Yogurt', 'Masoor Dal']);
       expect(pick('eggetarian'), [
-        'Egg White Salad',
-        'Masoor Dal',
-        'Paneer Bhurji',
+        'Low Fat Paneer',
+        'Greek Yogurt',
+        'Boiled Eggs (2 pieces)',
       ]);
-      expect(pick('vegan'), ['Masoor Dal']);
-      // Unrestricted diets take the densest first: whey, then egg whites.
-      expect(pick('non-veg').first, 'Whey');
-      expect(pick('non-veg'), hasLength(3));
-      expect(pick('veg', conflicts: {'Paneer Bhurji'}), ['Masoor Dal']);
+      expect(pick('non-veg'), [
+        'Chicken Breast (Cooked)',
+        'Low Fat Paneer',
+        'Greek Yogurt',
+      ]);
+      expect(pick('vegan'), ['Masoor Dal', 'Roasted Chana']);
+      expect(pick('veg', conflicts: {'Low Fat Paneer'}), [
+        'Greek Yogurt',
+        'Masoor Dal',
+        'Roasted Chana',
+      ]);
     });
 
     test('the staples are catalogue foods', () async {
@@ -213,6 +397,8 @@ void main() {
       kcal: 290,
       fromHistory: true,
     );
+    var suggestions = [suggestion];
+    setUp(() => suggestions = [suggestion]);
 
     Future<void> pump(WidgetTester tester, DateTime now, double eaten) async {
       final prefs = (await tester.runAsync(SharedPreferences.getInstance))!;
@@ -225,7 +411,7 @@ void main() {
             ),
             weighInClockProvider.overrideWithValue(() => now),
             proteinSuggestionsProvider.overrideWith(
-              (ref, args) async => [suggestion],
+              (ref, args) async => suggestions,
             ),
           ],
           child: MaterialApp(
@@ -257,6 +443,12 @@ void main() {
         await tester.runAsync(() => Future<void>.delayed(Duration.zero));
         await tester.pump();
       }
+      expect(find.byKey(const Key('today_protein_nudge')), findsNothing);
+    });
+
+    testWidgets('hides when no suggestion passes the floor', (tester) async {
+      suggestions = const [];
+      await pump(tester, DateTime.now().copyWith(hour: 19), 78);
       expect(find.byKey(const Key('today_protein_nudge')), findsNothing);
     });
 

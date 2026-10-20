@@ -22,18 +22,33 @@ abstract final class ProteinNudge {
   /// How far back the person's own foods are read.
   static const historyWindow = Duration(days: 30);
 
-  /// Catalogue staples offered after the person's own foods, by name.
+  /// A suggestion needs at least this much protein per 100 kcal (R-4)...
+  static const minProteinPer100Kcal = 6.0;
+
+  /// ...and at least this much in the amount offered.
+  static const minProteinPerServing = 8.0;
+
+  /// Catalogue staples offered after the person's own foods, by name. Each
+  /// still has to fit the diet and pass the floor at its default amount.
   static const staples = [
     'Paneer Bhurji',
     'Low Fat Paneer',
+    'Masoor Dal / Red Lentil Soup',
+    'Moong Dal Chilka (Cooked)',
+    'Plain Curd / Dahi (Cow Milk)',
+    'Greek Yogurt (Plain)',
+    'Roasted Chana (with skin)',
     'Soybean Chunks Curry',
     'Sprouted Moong Salad / Sabji',
-    'Masoor Dal / Red Lentil Soup',
-    'Plain Curd / Dahi (Cow Milk)',
-    'Egg White Salad',
     'Boiled Eggs (2 pieces)',
-    'Chicken Korma',
+    'Egg White Salad',
+    'Chicken Breast (Cooked)',
   ];
+
+  /// Whether [candidate] is dense enough to be worth suggesting.
+  static bool meetsFloor(ProteinSuggestion candidate) =>
+      candidate.proteinGrams >= minProteinPerServing &&
+      candidate.proteinGrams * 100 >= minProteinPer100Kcal * candidate.kcal;
 
   static bool shouldShow({
     required DateTime localNow,
@@ -49,8 +64,9 @@ abstract final class ProteinNudge {
   }
 
   /// Up to three suggestions: the person's own foods first, then staples,
-  /// each group by protein per kcal. Every one fits the diet, has no known
-  /// constraint conflict and fits [remainingKcal].
+  /// each group by protein per kcal. Every one passes [meetsFloor], fits the
+  /// diet, has no known constraint conflict and fits [remainingKcal]. Whey
+  /// is only offered to someone who has logged it. Empty hides the card.
   static List<ProteinSuggestion> pick(
     Iterable<ProteinSuggestion> candidates, {
     required String diet,
@@ -62,6 +78,8 @@ abstract final class ProteinNudge {
     for (final candidate in candidates) {
       if (!seen.add(candidate.foodId)) continue;
       if (candidate.proteinGrams <= 0 || candidate.kcal <= 0) continue;
+      if (!meetsFloor(candidate)) continue;
+      if (!candidate.fromHistory && _whey.hasMatch(candidate.name)) continue;
       if (remainingKcal == null || candidate.kcal > remainingKcal) continue;
       if (conflictingFoodIds.contains(candidate.foodId)) continue;
       if (dietFit(diet, name: candidate.name, category: candidate.category) !=
@@ -112,9 +130,21 @@ class ProteinSuggestion {
 
   double get proteinPerKcal => proteinGrams / kcal;
 
-  /// "Paneer Bhurji (1 katori) = 16 g".
-  String get line => '$name ($amountLabel) = ${proteinGrams.round()} g';
+  /// "Paneer Bhurji (1 katori) = 16 g"; "Full Cream Milk (1 Glass) = 7 g"
+  /// when the name already says the amount.
+  String get line {
+    final amount = _sayableAmount(amountLabel);
+    final named =
+        amount.isEmpty || ' ${_sayableAmount(name)} '.contains(' $amount ');
+    return '${named ? name : '$name ($amountLabel)'} = '
+        '${proteinGrams.round()} g';
+  }
 }
+
+/// [text] lowercased, with only letters, digits and single spaces: "1 Glass"
+/// and "(1 glass)" both say "1 glass".
+String _sayableAmount(String text) =>
+    text.toLowerCase().replaceAll(RegExp(r'[^a-z0-9.]+'), ' ').trim();
 
 enum DietFit { fits, conflicts, unknown }
 
@@ -125,6 +155,15 @@ final _meat = RegExp(
 );
 final _egg = RegExp(
   r'\b(eggs?|omelett?e|anda|bhurji egg)\b',
+  caseSensitive: false,
+);
+final _whey = RegExp(r'\bwhey\b', caseSensitive: false);
+// Jain food leaves out onion, garlic and roots; matched by name.
+final _jainExcluded = RegExp(
+  r'\b(onions?|pyaa?z|kanda|garlic|lehsun|lahsun|potato(es)?|aloo|alu|'
+  r'carrots?|gajar|radish|mooli|beet(root)?s?|ginger|adrak|turnips?|'
+  r'shalgam|yams?|suran|jimikand|arbi|colocasia|sweet potato(es)?|'
+  r'shakarkandi?|tapioca|sabudana|samosa|vada pav|pav bhaji|bharta)\b',
   caseSensitive: false,
 );
 final _dairy = RegExp(
@@ -157,6 +196,13 @@ DietFit dietFit(String diet, {required String name, String? category}) {
     case 'veg' || 'vegetarian':
       if (meat || egg) return DietFit.conflicts;
       return category == null ? DietFit.unknown : DietFit.fits;
+    case 'jain':
+      // Vegetarian, without onion, garlic or roots. Dishes are matched by
+      // name only, so a food the catalogue can't place is never offered.
+      if (meat || egg || _jainExcluded.hasMatch(name)) {
+        return DietFit.conflicts;
+      }
+      return category == null ? DietFit.unknown : DietFit.fits;
     case 'eggetarian':
       if (meat) return DietFit.conflicts;
       return category == null && !egg ? DietFit.unknown : DietFit.fits;
@@ -165,9 +211,11 @@ DietFit dietFit(String diet, {required String name, String? category}) {
       return _plantCategories.contains(category)
           ? DietFit.fits
           : DietFit.unknown;
-    default:
-      // Non-veg and unrestricted diets eat everything.
+    case 'non-veg' || 'non_veg' || 'nonveg':
       return DietFit.fits;
+    default:
+      // An unknown diet value is treated as the strictest common one.
+      return dietFit('veg', name: name, category: category);
   }
 }
 
