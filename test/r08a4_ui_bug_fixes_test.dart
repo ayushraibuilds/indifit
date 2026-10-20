@@ -74,8 +74,10 @@ void main() {
 
         final snackBar = tester.widget<SnackBar>(find.byType(SnackBar));
         expect(snackBar.duration, const Duration(seconds: 3));
-        expect(snackBar.backgroundColor, B05SemanticColors.light.section);
         expect(snackBar.behavior, SnackBarBehavior.floating);
+        // TF-1: the raised feedback card, not the page's section colour.
+        expect(snackBar.backgroundColor, Colors.transparent);
+        _expectRaisedCard(tester, B05SemanticColors.light);
 
         // Verify explicit dismissIndiFitFeedback
         dismissIndiFitFeedback(savedContext);
@@ -118,8 +120,15 @@ void main() {
         expect(find.text('Undo'), findsOneWidget);
 
         final snackBar = tester.widget<SnackBar>(find.byType(SnackBar));
-        expect(snackBar.backgroundColor, B05SemanticColors.dark.section);
-        expect(snackBar.action?.textColor, B05SemanticColors.dark.action);
+        expect(snackBar.backgroundColor, Colors.transparent);
+        _expectRaisedCard(tester, B05SemanticColors.dark);
+        final undo = tester.widget<TextButton>(
+          find.widgetWithText(TextButton, 'Undo'),
+        );
+        expect(
+          undo.style?.foregroundColor?.resolve(const {}),
+          B05SemanticColors.dark.action,
+        );
 
         await tester.tap(find.text('Undo'));
         await tester.pump();
@@ -473,4 +482,15 @@ void main() {
       },
     );
   });
+}
+
+void _expectRaisedCard(WidgetTester tester, B05SemanticColors colors) {
+  final decoration =
+      tester
+              .widget<DecoratedBox>(
+                find.byKey(const ValueKey('indifit_feedback_card')),
+              )
+              .decoration
+          as ShapeDecoration;
+  expect(decoration.gradient!.colors, [colors.raised, colors.raisedEnd]);
 }

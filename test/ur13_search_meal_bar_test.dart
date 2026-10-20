@@ -126,6 +126,43 @@ void main() {
     expect(await loggedCount(tester), 2);
   });
 
+  // The toast says what the "+" said (UR-14, UR-50): same amount, same unit.
+  for (final (query, food) in [
+    ('poha', 'Poha'),
+    ('boiled egg', 'Boiled Egg'),
+    ('milk', 'Milk'),
+  ]) {
+    testWidgets('the toast repeats the "+" amount for $query', (tester) async {
+      await open(tester);
+      await search(tester, query);
+      final add = find.bySemanticsLabel(
+        RegExp('^Add .*$food', caseSensitive: false),
+      );
+      expect(add, findsWidgets);
+      final label = tester.getSemantics(add.first).label;
+      // "Add 1 katori Poha …" -> "1 katori"
+      final amount = RegExp(
+        r'^Add (\d+(?:\.\d)? \S+)',
+      ).firstMatch(label)!.group(1)!;
+      await tester.tap(add.first);
+      await settleLoggedRecords(tester, rounds: 12);
+      final toast = find.byType(SnackBar);
+      expect(toast, findsOneWidget);
+      expect(
+        find.descendant(
+          of: toast,
+          matching: find.textContaining('Added $amount '),
+        ),
+        findsOneWidget,
+        reason: 'button said "$label"',
+      );
+      expect(
+        find.descendant(of: toast, matching: find.textContaining('1 serving')),
+        findsNothing,
+      );
+    });
+  }
+
   testWidgets('the portion sheet keeps search open, with its confirmation', (
     tester,
   ) async {
