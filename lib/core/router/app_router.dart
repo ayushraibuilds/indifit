@@ -25,6 +25,7 @@ import '../../features/profile/profile_screen.dart';
 import '../../features/program_authoring/program_author_screen.dart';
 import '../../features/program_authoring/program_review_screen.dart';
 import '../../features/progress/achievements_screen.dart';
+import '../../features/progress/weekly_check_in_screen.dart';
 import '../../features/settings/health_sync_hub_screen.dart';
 import '../../features/settings/household_measures_screen.dart';
 import '../../features/settings/nutrition_constraint_review_screen.dart';
@@ -65,7 +66,7 @@ const compatibilityRouteRedirects = <String, String>{
   '/food/ai': '/food',
   '/settings/profile': '/profile',
   '/meal-planner': '/food',
-  '/weekly-report': '/progress',
+  '/weekly-report': '/weekly-check-in',
   '/travel-mode': '/training',
   '/workout-player': '/training',
 };

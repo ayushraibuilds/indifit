@@ -22,10 +22,12 @@ import 'today_surface_controller.dart';
 import 'widgets/today_header_widgets.dart';
 import 'widgets/today_helpers.dart';
 import 'widgets/today_hydration_card.dart';
+import 'widgets/today_meal_quick_adds.dart';
 import 'widgets/today_module_widgets.dart';
 import 'widgets/today_motion.dart';
 import 'widgets/today_nutrition_widgets.dart';
-import 'widgets/today_usual_thali_card.dart';
+import 'widgets/today_usual_meal_card.dart';
+import 'widgets/today_weigh_in_chip.dart';
 
 export 'today_presentation_types.dart';
 export 'widgets/appearance_bottom_sheet.dart';
@@ -570,7 +572,8 @@ class TodayDailyActionSurface extends ConsumerWidget {
             ),
           ),
           // One tap for the plate logged most (only on today's date).
-          if (relation == TodayDateRelation.today) const TodayUsualThaliCard(),
+          if (relation == TodayDateRelation.today) const TodayUsualMealCard(),
+          if (relation == TodayDateRelation.today) const TodayWeighInChip(),
         ],
       ),
       'today.hydration' => TodayHydrationCard(
@@ -594,6 +597,11 @@ class TodayDailyActionSurface extends ConsumerWidget {
         onLogMeal: onLogMeal,
         onRetry: onRetry,
         selectedDate: selectedDate,
+        quickAdds: (meal) => TodayMealQuickAdds(
+          mealType: meal.mealType,
+          selectedDate: selectedDate,
+          mealLogged: meal.logged,
+        ),
       ),
       // When visible, Next Up owns the single workout CTA for this state. The
       // independently customizable Workout module remains available whenever

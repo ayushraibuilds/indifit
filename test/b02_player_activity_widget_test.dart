@@ -80,8 +80,11 @@ void main() {
       );
       expect(find.textContaining('Target vs actual'), findsNothing);
       expect(find.textContaining('Target · 8–10 reps'), findsOneWidget);
-      expect(find.text('Finish partially…'), findsOneWidget);
-      expect(find.text('Complete workout'), findsOneWidget);
+      // UR-21: an unfinished workout has one primary Save action.
+      expect(find.text('Save workout'), findsOneWidget);
+      expect(find.text('Keep training'), findsOneWidget);
+      expect(find.text('Finish partially…'), findsNothing);
+      expect(find.text('Complete workout'), findsNothing);
     },
   );
 

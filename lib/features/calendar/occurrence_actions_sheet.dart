@@ -54,7 +54,7 @@ class _OccurrenceActionsSheetState
           builder: (dialogContext) => AlertDialog(
             title: const Text('Start outside scheduled date?'),
             content: Text(
-              'This workout is scheduled for ${ConsumerDateLabel.inSentence(item.occurrence.effectiveLocalDate)}. Starting it will not change your plan.',
+              WorkoutContextualLauncher.outsideDateMessage(ref, item),
             ),
             actions: [
               TextButton(

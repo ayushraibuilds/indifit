@@ -125,12 +125,14 @@ void main() {
           _builtPack(catalogue, '2-from-1.json.gz'),
           source: 'download',
         );
-        // Packs 3 (USDA staples), 4 (search names) and 5 (UR-06/07, gap
-        // dishes) are deltas; the fresh install is 5.
+        // Packs 3 (USDA staples), 4 (search names), 5 (UR-06/07, gap
+        // dishes) and 6 (My chai's sugar and milks) are deltas; the fresh
+        // install is 6.
         for (final delta in [
           '3-from-2.json.gz',
           '4-from-3.json.gz',
           '5-from-4.json.gz',
+          '6-from-5.json.gz',
         ]) {
           await importer.apply(
             _builtPack(catalogue, delta),

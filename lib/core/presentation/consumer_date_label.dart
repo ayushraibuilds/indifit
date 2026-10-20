@@ -38,6 +38,14 @@ abstract final class ConsumerDateLabel {
         : 'on $label';
   }
 
+  /// Always the date itself ("Mon, 19 Oct"), never "Tomorrow", for copy
+  /// that names when something begins.
+  static String date(String localDate) {
+    final date = _parse(localDate);
+    if (date == null) return 'Selected day';
+    return DateFormat('EEE, d MMM').format(date);
+  }
+
   static String range(
     String startLocalDate,
     String endLocalDate, {

@@ -6,6 +6,7 @@ import 'package:indifit/core/di/providers.dart';
 import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/repositories/calendar_read_repository.dart';
+import 'package:indifit/data/repositories/plan_next_block_repository.dart';
 import 'package:indifit/data/repositories/training_next_action_resolver.dart';
 import 'package:indifit/features/calendar/calendar_read_model.dart';
 import 'package:indifit/features/calendar/program_calendar_screen.dart';
@@ -170,6 +171,78 @@ void main() {
     expect(find.text('Quick workout'), findsOneWidget);
     expect(find.text('Start workout'), findsNothing);
     expect(find.text('Resume workout'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('a rest day with a plan still offers the next workout now', (
+    tester,
+  ) async {
+    _setViewport(tester, const Size(390, 844));
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          trainingLandingSnapshotProvider.overrideWith(
+            (ref) async => TrainingLandingSnapshot(
+              localDate: '2026-08-10',
+              timezoneId: 'Asia/Kolkata',
+              todayWorkout: null,
+              upcoming: [
+                _calendarItem(
+                  name: 'Full Body A',
+                  localDate: '2026-08-12',
+                  status: 'planned',
+                  prescriptionCount: 5,
+                ),
+              ],
+              recentSessions: const [],
+              activeProgramName: 'Upper / Lower Strength',
+            ),
+          ),
+        ],
+        child: _app(AppTheme.lightTheme, const TrainingScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('No workout planned today'), findsNothing);
+    expect(find.text('Start Full Body A now'), findsOneWidget);
+    expect(find.textContaining('Rest day today'), findsOneWidget);
+    expect(find.text('Quick workout'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('a finished plan asks what comes next', (tester) async {
+    _setViewport(tester, const Size(390, 844));
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          trainingLandingSnapshotProvider.overrideWith(
+            (ref) async => const TrainingLandingSnapshot(
+              localDate: '2026-08-10',
+              timezoneId: 'Asia/Kolkata',
+              todayWorkout: null,
+              upcoming: [],
+              recentSessions: [],
+              activeProgramName: 'Upper / Lower Strength',
+              finishedPlan: FinishedPlanState(
+                programVersionId: 'r04-version',
+                planName: 'Upper / Lower Strength',
+                completedCount: 16,
+                increases: [],
+                schedule: null,
+              ),
+            ),
+          ),
+        ],
+        child: _app(AppTheme.lightTheme, const TrainingScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Plan finished'), findsOneWidget);
+    expect(find.text('Repeat as it is'), findsOneWidget);
+    expect(find.text('Pick the next plan'), findsOneWidget);
+    expect(find.text('No workout planned today'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 

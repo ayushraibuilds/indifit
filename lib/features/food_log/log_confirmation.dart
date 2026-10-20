@@ -94,12 +94,16 @@ double? _kcal(Iterable<NutrientFact?> facts) {
 /// Reads the day as the diary does: its records' energy and its target.
 Future<String?> _dayChangeAfter(
   ProviderContainer container,
-  NutritionConsumptionSnapshot snapshot,
+  List<NutritionConsumptionSnapshot> snapshots,
 ) async {
-  final protein = snapshot.totals.facts['protein'];
-  final addedProteinG = protein?.isAvailable == true && protein!.point != null
-      ? protein.point!.value.asDouble
-      : null;
+  final snapshot = snapshots.first;
+  double? addedProteinG;
+  for (final each in snapshots) {
+    final protein = each.totals.facts['protein'];
+    if (protein?.isAvailable == true && protein!.point != null) {
+      addedProteinG = (addedProteinG ?? 0) + protein.point!.value.asDouble;
+    }
+  }
   final day = DateTime.tryParse(snapshot.localDate ?? '');
   if (day == null) return loggedDayChangeLine(addedProteinG: addedProteinG);
   final provider = foodDiaryReadModelProvider(
@@ -137,6 +141,7 @@ void showFoodLogConfirmation(
   bool again = false,
   String? message,
   bool haptic = true,
+  List<NutritionConsumptionSnapshot> moreSnapshots = const [],
 }) {
   final container = ProviderScope.containerOf(context, listen: false);
   if (haptic) unawaited(IndiFitHaptics.light());
@@ -158,7 +163,7 @@ void showFoodLogConfirmation(
         size: 36,
       ),
     ),
-    detail: _dayChangeAfter(container, snapshot),
+    detail: _dayChangeAfter(container, [snapshot, ...moreSnapshots]),
     duration: const Duration(seconds: 4),
     onUndo: onUndo,
   );
@@ -174,28 +179,50 @@ void showLoggedFoodUndo(
   bool again = false,
   void Function(String snapshotId)? onUndone,
 }) {
+  showLoggedSnapshotsUndo(
+    context,
+    [snapshot],
+    message: loggedConfirmationMessage(
+      snapshot,
+      amount: amount,
+      name: name,
+      again: again,
+    ),
+    onUndone: onUndone,
+  );
+}
+
+/// [showLoggedFoodUndo] for several entries logged by one tap, such as a
+/// usual meal (UF-1): one message, and Undo removes all of them.
+void showLoggedSnapshotsUndo(
+  BuildContext context,
+  List<NutritionConsumptionSnapshot> snapshots, {
+  required String message,
+  void Function(String snapshotId)? onUndone,
+}) {
   final container = ProviderScope.containerOf(context, listen: false);
   final messenger = ScaffoldMessenger.maybeOf(context);
   showFoodLogConfirmation(
     context,
-    snapshot,
-    amount: amount,
-    name: name,
-    again: again,
+    snapshots.first,
+    message: message,
+    moreSnapshots: snapshots.skip(1).toList(growable: false),
     onUndo: () async {
       try {
         final repository = await container.read(
           nutritionConsumptionRepositoryProvider.future,
         );
-        await repository.retractConsumption(
-          userId: kLocalNutritionUserScopeId,
-          snapshotId: snapshot.id,
-          expectedLocalDate: snapshot.localDate ?? '',
-          expectedMealCategory: snapshot.mealCategory,
-          commandId: 'log-undo::${snapshot.id}',
-          reason: 'User undid a log.',
-        );
-        onUndone?.call(snapshot.id);
+        for (final snapshot in snapshots) {
+          await repository.retractConsumption(
+            userId: kLocalNutritionUserScopeId,
+            snapshotId: snapshot.id,
+            expectedLocalDate: snapshot.localDate ?? '',
+            expectedMealCategory: snapshot.mealCategory,
+            commandId: 'log-undo::${snapshot.id}',
+            reason: 'User undid a log.',
+          );
+          onUndone?.call(snapshot.id);
+        }
       } catch (error, stackTrace) {
         AppLogger.error('Undo log failed', error, stackTrace);
         messenger?.showSnackBar(

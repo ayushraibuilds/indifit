@@ -12,6 +12,7 @@ import '../../core/catalog/food_category_taxonomy.dart';
 import '../../core/di/providers.dart';
 import '../../core/motion/indifit_motion.dart';
 import '../../core/nutrients.dart';
+import '../../core/nutrition_consumption_snapshots.dart' as consumption;
 import '../../core/nutrition_household_measures.dart';
 import '../../core/nutrition_legacy_read_models.dart';
 import '../../core/presentation/consumer_copy.dart';
@@ -45,6 +46,8 @@ import 'food_staple_suggestions.dart';
 import 'log_confirmation.dart';
 import 'meal_presentation_registry.dart';
 import 'missed_food_searches.dart';
+import 'my_chai.dart';
+import 'my_roti.dart';
 import 'repeat_meal.dart';
 import 'saved_meals_screen.dart';
 import 'saved_recipe_log_screen.dart';
@@ -52,6 +55,7 @@ import 'thali/thali_route.dart';
 import 'widgets/food_portion_bottom_sheet.dart';
 import 'widgets/food_search_meal_bar.dart';
 import 'widgets/food_search_widgets.dart';
+import 'widgets/logged_food_row.dart';
 import 'widgets/meal_icon_chip.dart';
 import 'widgets/quick_add_macros_sheet.dart';
 import 'widgets/remote_food_review_sheet.dart';
@@ -1725,22 +1729,110 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     return foodStapleSuggestions(mealType: _activeMealType, diet: diet);
   }
 
+  /// Logs one tap from a starter chip (My chai, My roti) into the meal,
+  /// with the same confirmation and meal bar as any other add.
+  Future<void> _quickAddFromChip(
+    Future<consumption.NutritionConsumptionSnapshot?> Function(String mealType)
+    log, {
+    required String name,
+    String? amount,
+  }) async {
+    final mealType = await _ensureMealContext();
+    if (mealType == null || !mounted) return;
+    try {
+      final snapshot = await log(mealType);
+      if (!mounted || snapshot == null) return;
+      ref.invalidate(canonicalFoodRecordsForDayProvider);
+      ref.invalidate(foodDiaryReadModelProvider);
+      ref.read(todayNutritionRevisionProvider.notifier).state++;
+      _rememberLog(
+        LoggedSearchItem(
+          snapshot: snapshot,
+          label: '${amount ?? ''} $name'.trim(),
+        ),
+      );
+      showLoggedFoodUndo(
+        context,
+        snapshot,
+        amount: amount,
+        name: name,
+        onUndone: _forgetLog,
+      );
+    } catch (error, stackTrace) {
+      AppLogger.error('Starter chip add failed', error, stackTrace);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Couldn't add $name. Try again.")),
+        );
+      }
+    }
+  }
+
   Widget _buildStapleChips() {
-    final suggestions = _getStapleSuggestions();
+    final staples = _getStapleSuggestions();
+    final chai = ref.watch(myChaiSettingsProvider);
+    final roti = ref.watch(myRotiProvider);
+    final mealType = _activeMealType;
+    final chaiFirst =
+        chai != null &&
+        (mealType == 'breakfast' || (mealType?.contains('snack') ?? false));
+    // My chai leads breakfast and snacks once it's set up (UF-2); "Roti"
+    // logs My roti in one tap once it's chosen (UF-3). Other chips search.
+    final chips = <(String, VoidCallback)>[
+      if (chaiFirst)
+        (
+          kMyChaiName,
+          () => unawaited(
+            _quickAddFromChip(
+              (meal) => logMyChai(
+                ref,
+                chai: chai,
+                mealCategory: meal,
+                day: widget.selectedDate,
+              ),
+              name: kMyChaiName,
+              amount: '1 cup',
+            ),
+          ),
+        ),
+      for (final staple in staples)
+        if (!(chaiFirst && staple == 'Chai'))
+          if (staple == 'Roti' && roti != null)
+            (
+              'My roti',
+              () => unawaited(
+                _quickAddFromChip(
+                  (meal) => logOneCatalogueServing(
+                    ref,
+                    foodId: roti.foodId,
+                    mealCategory: meal,
+                    day: widget.selectedDate ?? DateTime.now(),
+                  ),
+                  name: roti.label,
+                ),
+              ),
+            )
+          else
+            (
+              staple,
+              () {
+                _searchController.text = staple;
+                _performSearch(staple);
+              },
+            ),
+    ];
     return SizedBox(
       height: 36,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        itemCount: suggestions.length,
+        itemCount: chips.length,
         separatorBuilder: (_, _) => const SizedBox(width: 8),
         itemBuilder: (context, index) {
-          final staple = suggestions[index];
+          final (label, onPressed) = chips[index];
           return ActionChip(
-            label: Text(staple),
-            onPressed: () {
-              _searchController.text = staple;
-              _performSearch(staple);
-            },
+            key: Key('food_search_starter_$label'),
+            label: Text(label),
+            onPressed: onPressed,
             backgroundColor: context.b05Colors.inset,
             side: BorderSide(color: context.b05Colors.border),
             labelStyle: B05Typography.caption(context).copyWith(
@@ -2073,8 +2165,18 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                   ? 'Tap to deselect from multi-food add.'
                   : 'Tap to select for multi-food add.')
             : 'Tap Add to log $quantity, or open to adjust the amount.',
-        child: ListTile(
-          minVerticalPadding: 10,
+        // The one logged-food row (UR-40). The kcal for the amount isn't
+        // stored on a recent, so the catalogue facts stay on the quiet line
+        // with their basis.
+        child: LoggedFoodRowLayout(
+          horizontalPadding: 12,
+          mealType: recent.lastLoggedMealCategory ?? _activeMealType,
+          name: identityLabel,
+          amount: quantity,
+          note:
+              '${_lastLoggedLabel(recent.loggedAtUtc)}'
+              '${recent.frequencyCount > 1 ? ' · ${recent.frequencyCount} logged' : ''}'
+              ' · $nutrition',
           leading: _isMultiSelect
               ? Semantics(
                   label: 'Select $displayName for a multi-food add',
@@ -2087,35 +2189,6 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                   ),
                 )
               : null,
-          title: brand == null || brand.isEmpty
-              ? Text(
-                  displayName,
-                  style: B05Typography.label(context),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                )
-              : Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      displayName,
-                      style: B05Typography.label(context),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    Text(
-                      brand,
-                      style: B05Typography.caption(context),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-          subtitle: Text(
-            '$quantity · ${_lastLoggedLabel(recent.loggedAtUtc)}${recent.frequencyCount > 1 ? ' · ${recent.frequencyCount} logged' : ''} · $nutrition',
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
           trailing: _isMultiSelect
               ? (isSelected
                     ? IconButton(

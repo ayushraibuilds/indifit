@@ -183,11 +183,15 @@ class RepeatOutcome {
   final int recipes;
   final int skipped;
 
+  /// What was logged, so the confirmation can undo it.
+  final List<NutritionConsumptionSnapshot> snapshots;
+
   const RepeatOutcome({
     this.foods = 0,
     this.thalis = 0,
     this.recipes = 0,
     this.skipped = 0,
+    this.snapshots = const [],
   });
 
   int get logged => foods + thalis + recipes;
@@ -235,6 +239,7 @@ Future<RepeatOutcome> logRepeatPlan({
   var loggedThalis = 0;
   var loggedRecipes = 0;
   var skipped = 0;
+  final snapshots = <NutritionConsumptionSnapshot>[];
 
   for (final item in plan.foods) {
     final option = await catalog.getOption(item.foodId!);
@@ -246,7 +251,7 @@ Future<RepeatOutcome> logRepeatPlan({
         item.quantity.quantity ??
         Quantity.fromDecimal(amount: '100', unit: QuantityUnit.gram);
     final preview = await foods.preview(option: option, quantity: quantity);
-    await foods.finalize(
+    final snapshot = await foods.finalize(
       userId: userId,
       preview: preview,
       mealCategory: mealCategory,
@@ -256,6 +261,7 @@ Future<RepeatOutcome> logRepeatPlan({
       commandId: id(),
       consumptionId: id(),
     );
+    snapshots.add(snapshot);
     loggedFoods++;
   }
 
@@ -281,7 +287,7 @@ Future<RepeatOutcome> logRepeatPlan({
       skipped++;
       continue;
     }
-    await thalis.finalize(
+    final snapshot = await thalis.finalize(
       preview: preview,
       mealCategory: mealCategory,
       loggedAt: loggedAtUtc,
@@ -292,6 +298,7 @@ Future<RepeatOutcome> logRepeatPlan({
       // The same thali was logged as it is, partial nutrition included.
       allowPartial: true,
     );
+    snapshots.add(snapshot);
     loggedThalis++;
   }
 
@@ -309,7 +316,7 @@ Future<RepeatOutcome> logRepeatPlan({
       skipped++;
       continue;
     }
-    await recipes.finalize(
+    final snapshot = await recipes.finalize(
       userId: userId,
       preview: preview,
       mealCategory: mealCategory,
@@ -320,6 +327,7 @@ Future<RepeatOutcome> logRepeatPlan({
       commandId: id(),
       allowPartial: true,
     );
+    snapshots.add(snapshot);
     loggedRecipes++;
   }
   return RepeatOutcome(
@@ -327,6 +335,7 @@ Future<RepeatOutcome> logRepeatPlan({
     thalis: loggedThalis,
     recipes: loggedRecipes,
     skipped: skipped,
+    snapshots: List.unmodifiable(snapshots),
   );
 }
 

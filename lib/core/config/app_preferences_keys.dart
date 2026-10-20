@@ -114,6 +114,17 @@ abstract final class AppPreferenceKeys {
 
   // --- Food & Diary ---
   static const prefDiaryMealSlots = 'pref_diary_meal_slots';
+  // My chai (UF-2): milk type, how much of the cup is milk, sugar, cup size.
+  static const prefMyChaiMilk = 'pref_my_chai_milk';
+  static const prefMyChaiMilkShare = 'pref_my_chai_milk_share';
+  static const prefMyChaiSugarTsp = 'pref_my_chai_sugar_tsp';
+  static const prefMyChaiCupMl = 'pref_my_chai_cup_ml';
+  // My roti (UF-3): phulka, tawa or tandoori.
+  static const prefMyRoti = 'pref_my_roti';
+  // Morning weigh-in chip (UR-29, UF-18): the weekdays it shows (1 = Mon),
+  // and the day "Not today" was tapped.
+  static const prefWeighInDays = 'pref_weigh_in_days';
+  static const prefWeighInDismissedDate = 'pref_weigh_in_dismissed_date';
 
   // --- Food database updates (device-local; CAT-7) ---
   static const catalogUpdateAllowMobileData =
