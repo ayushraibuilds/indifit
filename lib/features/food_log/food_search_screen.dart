@@ -185,6 +185,12 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     return FoodQueryAmount(units).label(servingUnit: measure!.unit);
   }
 
+  /// What the "+" logs, in the words on the button: the typed amount, else
+  /// the default serving. The confirmation uses the same label (UR-14).
+  String? _fastAddAmountLabel(NutritionFoodOption option) =>
+      _resolvedSearch?.amount?.label(servingUnit: option.measure?.unit) ??
+      _defaultAmountLabel(option);
+
   /// Option ids whose Add button shows the tick after a saved fast add.
   final Map<String, Timer> _fastAddSucceeded = {};
   bool _committingSelection = false;
@@ -780,12 +786,20 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     }
   }
 
-  Future<void> _openLegacyFastAdd(FoodItem food) async {
+  /// The amount a legacy row's "+" shows: the typed amount, else its serving.
+  String? _legacyButtonLabel(FoodItem food) =>
+      _resolvedSearch?.amount?.label(servingUnit: food.servingUnit) ??
+      _legacyAmountLabel(food);
+
+  Future<void> _openLegacyFastAdd(FoodItem food, {String? buttonLabel}) async {
     try {
       final catalog = await ref.read(
         nutritionFoodCatalogRepositoryProvider.future,
       );
-      await _addOptionFast(await catalog.ensureLegacyFood(food));
+      await _addOptionFast(
+        await catalog.ensureLegacyFood(food),
+        buttonLabel: buttonLabel,
+      );
     } catch (error, stackTrace) {
       AppLogger.error(
         'Food search: could not open a food for logging',
@@ -973,7 +987,12 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     });
   }
 
-  Future<void> _addOptionFast(NutritionFoodOption option) async {
+  /// [buttonLabel] is the amount the "+" showed when the row isn't a
+  /// catalogue food (a legacy row's own serving).
+  Future<void> _addOptionFast(
+    NutritionFoodOption option, {
+    String? buttonLabel,
+  }) async {
     // UI taps generate distinct command IDs. Guard before the first await so
     // a physical double tap cannot turn into two valid canonical commands.
     if (!_fastAddInFlight.add(option.id)) return;
@@ -1018,25 +1037,24 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         localDate: dateContext.localDate,
         mealCategory: selectedMealType,
       );
+      // The button's own label, so the toast says what the "+" said.
       final amount =
-          option.measure?.pickedAmountLabel(quantity) ??
-          typedAmount?.label(
-            servingUnit: option.servingUnitLabel?.trim().split(' ').last,
-          );
+          buttonLabel ??
+          _fastAddAmountLabel(option) ??
+          option.measure?.pickedAmountLabel(quantity);
       _rememberLog(
         LoggedSearchItem(
           snapshot: snapshot,
           label: '${amount ?? ''} ${option.displayName}'.trim(),
         ),
       );
-      showIndiFitUndoFeedback(
+      // The fast add's tick already gave this save its haptic.
+      showFoodLogConfirmation(
         context,
-        message: loggedConfirmationMessage(
-          snapshot,
-          name: option.displayName,
-          amount: amount,
-        ),
-        duration: const Duration(seconds: 4),
+        snapshot,
+        name: option.displayName,
+        amount: amount,
+        haptic: false,
         onUndo: () => unawaited(_undoLastCanonicalAdd(undo)),
       );
     } catch (_) {
@@ -1121,14 +1139,13 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
           label: '${amount ?? ''} ${option.displayName}'.trim(),
         ),
       );
-      showIndiFitUndoFeedback(
+      // The fast add's tick already gave this save its haptic.
+      showFoodLogConfirmation(
         context,
-        message: loggedConfirmationMessage(
-          snapshot,
-          name: option.displayName,
-          amount: amount,
-        ),
-        duration: const Duration(seconds: 4),
+        snapshot,
+        name: option.displayName,
+        amount: amount,
+        haptic: false,
         onUndo: () => unawaited(_undoLastCanonicalAdd(undo)),
       );
     } catch (_) {
@@ -1444,10 +1461,10 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         localDate: dateContext.localDate,
         mealCategory: mealType,
       );
-      showIndiFitUndoFeedback(
+      showFoodLogConfirmation(
         context,
+        snapshot,
         message: '${selected.length} foods added to ${_mealLabel(mealType)}',
-        duration: const Duration(seconds: 4),
         onUndo: () => unawaited(_undoLastCanonicalAdd(undo)),
       );
       if (widget.returnToParentOnSave && mounted) {
@@ -2217,9 +2234,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     final isAdding = _fastAddInFlight.contains(option.id);
     return _buildFastAddAction(
       foodName: _consumerFoodName(option.displayName),
-      amountLabel:
-          _resolvedSearch?.amount?.label(servingUnit: option.measure?.unit) ??
-          _defaultAmountLabel(option),
+      amountLabel: _fastAddAmountLabel(option),
       isAdding: isAdding,
       added: _fastAddSucceeded.containsKey(option.id),
       onPressed: isAdding ? null : () => unawaited(_addOptionFast(option)),
@@ -2627,13 +2642,13 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                     : null)
               : _buildFastAddAction(
                   foodName: displayName,
-                  amountLabel: recent
-                      ? null
-                      : _resolvedSearch?.amount?.label(
-                              servingUnit: food.servingUnit,
-                            ) ??
-                            _legacyAmountLabel(food),
-                  onPressed: () => unawaited(_openLegacyFastAdd(food)),
+                  amountLabel: recent ? null : _legacyButtonLabel(food),
+                  onPressed: () => unawaited(
+                    _openLegacyFastAdd(
+                      food,
+                      buttonLabel: _legacyButtonLabel(food),
+                    ),
+                  ),
                 ),
           onTap: () {
             if (_isMultiSelect) {
