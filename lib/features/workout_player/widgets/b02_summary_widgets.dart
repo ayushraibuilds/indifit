@@ -11,6 +11,7 @@ import '../../../data/repositories/b02_strength_execution_repository.dart';
 import '../../../data/repositories/calendar_repository.dart';
 import '../../progress/training_bests.dart';
 import '../../progress/training_bests_providers.dart';
+import '../../settings/widgets/your_data_card.dart';
 import '../../training/plan_finished_choices.dart';
 import '../../training/weekly_training_goal_providers.dart';
 import '../b02_strength_execution_controller.dart';
@@ -109,6 +110,11 @@ class B02WorkoutCompletionSuccess extends ConsumerWidget {
           celebrate: celebrate,
           unlocks: unlocks,
           planFinished: planFinished,
+          // Only right after a save whose detail read back cleanly: never
+          // from history or after an error (FT-1).
+          exportReminder: allowCelebration && history != null
+              ? const ExportReminderCard()
+              : null,
         ),
       );
     }
@@ -249,6 +255,7 @@ class CompletionEvidence extends StatelessWidget {
     this.celebrate = false,
     this.unlocks = const [],
     this.planFinished,
+    this.exportReminder,
   });
 
   final B02StrengthExecutionLaunch? launch;
@@ -272,6 +279,9 @@ class CompletionEvidence extends StatelessWidget {
 
   /// "Plan finished" and its choices, after the plan's last workout.
   final Widget? planFinished;
+
+  /// The export reminder (FT-1), on the just-saved summary only.
+  final Widget? exportReminder;
 
   /// Badges unlocked by this workout (see [WorkoutUnlocksRow]).
   final List<Achievement> unlocks;
@@ -406,6 +416,7 @@ class CompletionEvidence extends StatelessWidget {
                       ),
                     ],
                   ],
+                  ?exportReminder,
                 ],
               ),
             ),
