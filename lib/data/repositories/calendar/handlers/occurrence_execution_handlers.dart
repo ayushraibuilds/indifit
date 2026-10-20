@@ -265,11 +265,17 @@ class DiscardStartedOccurrenceHandler
           'A started occurrence with a saved session cannot be discarded.',
         );
       }
-      final restoredStatus =
-          occurrence.originalLocalDate == occurrence.effectiveLocalDate &&
-              occurrence.originalTimezoneId == occurrence.effectiveTimezoneId
-          ? OccurrenceStatus.planned
-          : OccurrenceStatus.rescheduled;
+      // A workout started early goes back to its pre-start day (R-7).
+      final earlyStart = await _earlyStartEvent(occurrence.id);
+      final restoredDate =
+          earlyStart?.beforeLocalDate ?? occurrence.effectiveLocalDate;
+      final restoredTimezone =
+          earlyStart?.beforeTimezoneId ?? occurrence.effectiveTimezoneId;
+      final restoredStatus = _statusOn(
+        occurrence,
+        restoredDate,
+        restoredTimezone,
+      );
       final latestCustomizationEvent =
           await (repo.db.select(repo.db.occurrenceEvents)
                 ..where(
@@ -318,9 +324,12 @@ class DiscardStartedOccurrenceHandler
                   status: Value(restoredStatus.dbValue),
                   executionSnapshotJson: Value(preparedSnapshot),
                   startedAtUtc: const Value(null),
+                  effectiveLocalDate: Value(restoredDate),
+                  effectiveTimezoneId: Value(restoredTimezone),
                 ),
               );
       if (changed != 1) repo.validator.throwStale();
+      final now = repo.nowUtc().toUtc();
       final event = await repo.insertEvent(
         occurrenceId: occurrence.id,
         commandId: command.commandId,
@@ -329,15 +338,121 @@ class DiscardStartedOccurrenceHandler
         toStatus: restoredStatus.dbValue,
         beforeLocalDate: occurrence.effectiveLocalDate,
         beforeTimezoneId: occurrence.effectiveTimezoneId,
-        afterLocalDate: occurrence.effectiveLocalDate,
-        afterTimezoneId: occurrence.effectiveTimezoneId,
+        afterLocalDate: restoredDate,
+        afterTimezoneId: restoredTimezone,
+        occurredAtUtc: now,
       );
+      if (earlyStart != null) {
+        await _revertShift(
+          started: occurrence,
+          startCommandId: earlyStart.commandId,
+          commandId: command.commandId,
+          occurredAtUtc: now,
+        );
+      }
       return OccurrenceMutationResult(
         occurrence: (await repo.getOccurrence(occurrence.id))!,
         event: event,
         wasIdempotent: false,
       );
     });
+  }
+
+  /// The event that started [occurrenceId] this time, when it was an early
+  /// start; null for a start on its own day.
+  Future<OccurrenceEvent?> _earlyStartEvent(String occurrenceId) async {
+    final started =
+        await (repo.db.select(repo.db.occurrenceEvents)
+              ..where(
+                (table) =>
+                    table.occurrenceId.equals(occurrenceId) &
+                    table.eventType.equals('started'),
+              )
+              ..orderBy([
+                (table) => OrderingTerm(
+                  expression: table.occurredAtUtc,
+                  mode: OrderingMode.desc,
+                ),
+                (table) =>
+                    OrderingTerm(expression: table.id, mode: OrderingMode.desc),
+              ])
+              ..limit(1))
+            .getSingleOrNull();
+    if (started == null || started.beforeLocalDate == null) return null;
+    final metadata = _metadata(started);
+    return metadata['startedEarly'] == true ? started : null;
+  }
+
+  /// Undoes the shift the early start of [started] made: each workout it
+  /// moved goes back, unless it was started, finished or moved since.
+  Future<void> _revertShift({
+    required ScheduledSessionOccurrence started,
+    required String startCommandId,
+    required String commandId,
+    required DateTime occurredAtUtc,
+  }) async {
+    final shifts =
+        await (repo.db.select(repo.db.occurrenceEvents)..where(
+              (table) =>
+                  table.commandId.equals(startCommandId) &
+                  table.eventType.equals('rescheduled') &
+                  table.occurrenceId.equals(started.id).not(),
+            ))
+            .get();
+    for (final shift in shifts) {
+      if (_metadata(shift)['shiftedAfterEarlyStartOf'] != started.id) continue;
+      final before = shift.beforeLocalDate;
+      final beforeZone = shift.beforeTimezoneId;
+      if (before == null || beforeZone == null) continue;
+      final row = await repo.getOccurrence(shift.occurrenceId);
+      if (row == null ||
+          !const {'planned', 'rescheduled'}.contains(row.status) ||
+          row.effectiveLocalDate != shift.afterLocalDate ||
+          row.effectiveTimezoneId != shift.afterTimezoneId) {
+        continue;
+      }
+      final status = _statusOn(row, before, beforeZone);
+      await (repo.db.update(
+        repo.db.scheduledSessionOccurrences,
+      )..where((table) => table.id.equals(row.id))).write(
+        ScheduledSessionOccurrencesCompanion(
+          status: Value(status.dbValue),
+          effectiveLocalDate: Value(before),
+          effectiveTimezoneId: Value(beforeZone),
+        ),
+      );
+      await repo.insertEvent(
+        occurrenceId: row.id,
+        commandId: commandId,
+        eventType: 'rescheduled',
+        fromStatus: row.status,
+        toStatus: status.dbValue,
+        beforeLocalDate: row.effectiveLocalDate,
+        beforeTimezoneId: row.effectiveTimezoneId,
+        afterLocalDate: before,
+        afterTimezoneId: beforeZone,
+        reason: 'Early start discarded',
+        metadata: {'revertedEarlyStartOf': started.id},
+        occurredAtUtc: occurredAtUtc,
+      );
+    }
+  }
+
+  static OccurrenceStatus _statusOn(
+    ScheduledSessionOccurrence occurrence,
+    String localDate,
+    String timezoneId,
+  ) =>
+      occurrence.originalLocalDate == localDate &&
+          occurrence.originalTimezoneId == timezoneId
+      ? OccurrenceStatus.planned
+      : OccurrenceStatus.rescheduled;
+
+  static Map<String, dynamic> _metadata(OccurrenceEvent event) {
+    final json = event.metadataJson;
+    if (json == null || json.trim().isEmpty) return const {};
+    final decoded = jsonDecode(json);
+    return decoded is Map<String, dynamic> ? decoded : const {};
   }
 }
 

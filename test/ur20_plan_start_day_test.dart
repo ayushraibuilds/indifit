@@ -358,6 +358,151 @@ void main() {
       );
     }
 
+    Future<OccurrenceMutationResult> discard(
+      String occurrenceId,
+      String commandId,
+    ) => calendar.discardStarted(
+      DiscardStartedOccurrenceCommand(
+        occurrenceId: occurrenceId,
+        commandId: commandId,
+        expectedStatus: OccurrenceStatus.inProgress,
+      ),
+    );
+
+    const planDays = [
+      '2026-10-19',
+      '2026-10-21',
+      '2026-10-23',
+      '2026-10-26',
+      '2026-10-28',
+      '2026-10-30',
+    ];
+
+    Future<List<OccurrenceEvent>> revertEvents() async =>
+        (await db.select(db.occurrenceEvents).get())
+            .where((event) => event.reason == 'Early start discarded')
+            .toList();
+
+    group('then discarding it (R-7)', () {
+      test('puts it and the shifted plan back on their days', () async {
+        final rows = await activateFromMonday();
+        await startEarly(rows.first.id, 'start-early');
+        final result = await discard(rows.first.id, 'discard');
+
+        expect(result.occurrence.effectiveLocalDate, '2026-10-19');
+        expect(result.event.afterLocalDate, '2026-10-19');
+        final after = await planRows();
+        expect(datesOf(after), planDays);
+        expect(after.map((row) => row.status).toSet(), {'planned'});
+        final reverts = await revertEvents();
+        expect(reverts, hasLength(5));
+        for (final event in reverts) {
+          expect(event.eventType, 'rescheduled');
+          expect(event.commandId, 'discard');
+        }
+      });
+
+      test('leaves a workout moved after the shift where it is', () async {
+        final rows = await activateFromMonday();
+        await startEarly(rows.first.id, 'start-early');
+        // C was shifted to Wed 21; the user then moves it to Thu 22.
+        await calendar.reschedule(
+          RescheduleOccurrenceCommand(
+            occurrenceId: rows[2].id,
+            commandId: 'move-c',
+            expectedStatus: OccurrenceStatus.rescheduled,
+            effectiveLocalDate: '2026-10-22',
+            effectiveTimezoneId: ist,
+            confirmed: true,
+          ),
+        );
+        await discard(rows.first.id, 'discard');
+
+        final after = await planRows();
+        expect(after[2].effectiveLocalDate, '2026-10-22');
+        expect(after[2].status, 'rescheduled');
+        expect(datesOf([after[0], after[1], ...after.skip(3)]), [
+          planDays[0],
+          planDays[1],
+          ...planDays.skip(3),
+        ]);
+        expect(await revertEvents(), hasLength(4));
+      });
+
+      test('a second discard changes nothing', () async {
+        final rows = await activateFromMonday();
+        await startEarly(rows.first.id, 'start-early');
+        await discard(rows.first.id, 'discard');
+        final once = datesOf(await planRows());
+        final eventsOnce = await db.select(db.occurrenceEvents).get();
+
+        final replay = await discard(rows.first.id, 'discard');
+        expect(replay.wasIdempotent, isTrue);
+        await expectLater(
+          discard(rows.first.id, 'discard-2'),
+          throwsA(isA<InvalidOccurrenceTransitionException>()),
+        );
+        expect(datesOf(await planRows()), once);
+        expect(
+          await db.select(db.occurrenceEvents).get(),
+          hasLength(eventsOnce.length),
+        );
+      });
+
+      test('a workout started on its own day is discarded as before', () async {
+        final monday = DateTime.utc(2026, 10, 19, 5);
+        final rows = await activate(
+          nowUtc: monday,
+          startLocalDate: '2026-10-19',
+          timezoneId: ist,
+          trainingWeekdays: monWedFri,
+        );
+        calendar = CalendarRepository(
+          db,
+          dates: datesAt(monday),
+          nowUtc: () => monday,
+        );
+        await calendar.start(
+          StartOccurrenceCommand(
+            occurrenceId: rows.first.id,
+            commandId: 'start',
+            expectedStatus: OccurrenceStatus.planned,
+          ),
+        );
+        final result = await discard(rows.first.id, 'discard');
+
+        expect(result.occurrence.status, 'planned');
+        expect(datesOf(await planRows()), planDays);
+        expect(await revertEvents(), isEmpty);
+      });
+
+      test('works outside India', () async {
+        // Saturday 31 Oct, afternoon in New York; the plan starts Mon 2 Nov.
+        final saturdayNy = DateTime.utc(2026, 10, 31, 18);
+        const ny = 'America/New_York';
+        final rows = await activate(
+          nowUtc: saturdayNy,
+          startLocalDate: '2026-11-02',
+          timezoneId: ny,
+          trainingWeekdays: monWedFri,
+        );
+        calendar = CalendarRepository(
+          db,
+          dates: datesAt(saturdayNy),
+          nowUtc: () => saturdayNy,
+        );
+        final planned = datesOf(await planRows());
+        await startEarly(rows.first.id, 'start-early');
+        expect((await planRows()).first.effectiveLocalDate, '2026-10-31');
+        await discard(rows.first.id, 'discard');
+
+        final after = await planRows();
+        expect(datesOf(after), planned);
+        expect(after.map((row) => row.effectiveTimezoneId).toSet(), {ny});
+        expect(after.map((row) => row.status).toSet(), {'planned'});
+      });
+    });
+
     test(
       'moves it to today and shifts only later unstarted workouts',
       () async {
@@ -401,24 +546,18 @@ void main() {
         hasLength(eventsOnce.length),
       );
 
-      // Discarding and starting again the same day re-lays to the same days.
-      await calendar.discardStarted(
-        DiscardStartedOccurrenceCommand(
-          occurrenceId: rows.first.id,
-          commandId: 'discard',
-          expectedStatus: OccurrenceStatus.inProgress,
-        ),
-      );
+      // Discarding puts the plan back (R-7); starting B early then lays A
+      // and the rest from Monday.
+      await discard(rows.first.id, 'discard');
       await startEarly(rows[1].id, 'start-early-again');
       final again = await planRows();
-      // Full Body A stays today, B starts today too; C onwards keep their
-      // already-laid days.
       expect(again[1].effectiveLocalDate, '2026-10-17');
+      expect(again[0].effectiveLocalDate, '2026-10-19');
       expect(datesOf(again.skip(2)), [
-        '2026-10-19',
         '2026-10-21',
         '2026-10-23',
         '2026-10-26',
+        '2026-10-28',
       ]);
     });
 
