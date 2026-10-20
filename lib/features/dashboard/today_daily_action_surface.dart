@@ -19,6 +19,7 @@ import 'dashboard_personalization_controller.dart';
 import 'today_consumer_presentation.dart';
 import 'today_presentation_types.dart';
 import 'today_surface_controller.dart';
+import 'widgets/today_check_in_card.dart';
 import 'widgets/today_header_widgets.dart';
 import 'widgets/today_helpers.dart';
 import 'widgets/today_hydration_card.dart';
@@ -582,6 +583,7 @@ class TodayDailyActionSurface extends ConsumerWidget {
               kcalTarget: nutrition.calories?.targetValue,
               kcalEaten: nutrition.calories?.pointValue,
             ),
+          if (relation == TodayDateRelation.today) const TodayCheckInCard(),
         ],
       ),
       'today.hydration' => TodayHydrationCard(
