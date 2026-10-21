@@ -138,7 +138,7 @@ void main() {
       );
       expect(listing, contains('$regional more in optional regional packs'));
       expect(privacy, contains('Open Food Facts'));
-      expect(privacy, contains('not password-protected in V1'));
+      expect(privacy, contains('encrypted with a key kept on the phone'));
     });
 
     test('legacy routine display contains no retired AI call to action', () {

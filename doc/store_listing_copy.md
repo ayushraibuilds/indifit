@@ -56,6 +56,7 @@ Log home-cooked meals, follow structured training plans, record completed sets a
 - Core logging and review work without a network connection or IndiFit account.
 - Offline Mode blocks app-initiated online food lookup, food database updates, the AI meal tools and crash diagnostics.
 - Create and restore JSON backups; optional password protection is available for manual backup files.
+- Your data stays on your phone and isn't in iCloud or Google backups. A new phone, reinstall or factory reset starts empty unless you export.
 - Copy a food and workout CSV summary when you choose.
 - Automatic rolling recovery copies are kept in the app's local storage.
 

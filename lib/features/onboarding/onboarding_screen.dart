@@ -17,6 +17,7 @@ import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/consumer_task_primitives.dart';
 import '../../data/repositories/hydration_repository.dart';
 import '../../data/repositories/workout_repository.dart';
+import '../settings/widgets/your_data_card.dart';
 import 'b05_adaptive_onboarding.dart';
 import 'widgets/onboarding_ruler_picker.dart';
 import 'widgets/onboarding_step_widgets.dart';
@@ -1156,6 +1157,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             page: 3,
             hint: 'Change your food preference.',
           ),
+          const SizedBox(height: B05Layout.space20),
+          const YourDataCard(showExportAction: false),
         ],
       ),
     );

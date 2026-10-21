@@ -1,7 +1,7 @@
 # Privacy Policy for IndiFit
 
 **Effective Date:** August 29, 2026
-**Last Updated:** October 6, 2026
+**Last Updated:** October 20, 2026
 **App Version:** 1.0.0
 
 IndiFit ("we", "our", or "us") is an offline-first workout and nutrition application. This policy explains what the V1 application stores, which optional features can connect to other services, and the controls available to you.
@@ -12,7 +12,10 @@ IndiFit ("we", "our", or "us") is an offline-first workout and nutrition applica
 
 - **Local app data:** Food logs, custom foods and recipes, workout plans and history, body measurements, preferences, and related fitness records are stored in IndiFit's application storage on your device.
 - **No IndiFit account or cloud sync:** V1 does not provide an IndiFit account, remote user database, or cloud-sync service.
-- **Automatic recovery copies:** IndiFit creates rolling JSON recovery copies in its application Documents area. Depending on your operating-system and device-backup settings, application files may be included in a device backup.
+- **Automatic recovery copies:** IndiFit creates rolling JSON recovery copies in its application Documents area.
+- **No device backup or transfer:** Your logs, history, measurements and recovery copies are excluded from iCloud and Google backups and from phone-to-phone transfer. On iPhone, basic app settings (such as reminder times) may still be part of an iCloud backup; they hold none of your logs.
+
+A new phone, reinstall or factory reset starts empty unless you export. To keep your data, export a backup file (Settings → Manage your data → Export now) and save it somewhere you control.
 
 IndiFit does not upload your workout history, body measurements, or health records to a cloud service. The optional AI meal tools send only the text or photo you choose to submit; see section 3.
 
@@ -66,7 +69,7 @@ Offline Mode disables crash diagnostics.
 ## 6. Backups, sharing, and export
 
 - **Manual backup:** You can create a JSON backup and choose where to share or save it. Password protection is optional; a backup created without a password is not encrypted by IndiFit.
-- **Automatic recovery copy:** Up to three local recovery copies may be retained in application storage. These are intended for in-app recovery and are not password-protected in V1.
+- **Automatic recovery copy:** Up to three local recovery copies may be retained in application storage. They are intended for in-app recovery and are encrypted with a key kept on the phone, so they can't be read elsewhere, and they are lost with the phone.
 - **CSV summary:** You can copy a summary of logged food and workouts to the system clipboard as CSV text. Other applications may be able to read clipboard content according to operating-system rules.
 
 Files or text that you deliberately share, save elsewhere, or copy to the clipboard are controlled by the destination you choose and are no longer solely controlled by IndiFit.

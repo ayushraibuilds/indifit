@@ -19,10 +19,12 @@ import '../../../core/widgets/b05_accessibility_primitives.dart';
 import '../../onboarding/onboarding_screen.dart';
 import '../settings_controller.dart';
 import 'ai_consent_toggle.dart';
+import 'backup_export_flow.dart';
 import 'backup_restore_card.dart';
 import 'cloud_backup_card.dart';
 import 'privacy_disclosure_card.dart';
 import 'settings_reminder_toggle.dart';
+import 'your_data_card.dart';
 
 class DataManagementSection extends ConsumerWidget {
   const DataManagementSection({super.key});
@@ -39,80 +41,6 @@ class DataManagementSection extends ConsumerWidget {
     final prefs = await _getPrefs(ref);
     ref.read(onboardingCompletedProvider.notifier).state =
         prefs.getBool(AppPreferenceKeys.onboardingCompleted) ?? false;
-  }
-
-  Future<void> _showExportDialog(BuildContext context, WidgetRef ref) async {
-    final passwordController = TextEditingController();
-    try {
-      final password = await showDialog<String>(
-        context: context,
-        builder: (dialogCtx) => AlertDialog(
-          title: const Text('Create a backup'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Creates an IndiFit backup file and opens your device’s sharing options. It is kept temporarily while you choose where to save it. Add a password if you want the file protected.',
-                  style: B05Typography.body(dialogCtx),
-                ),
-                const SizedBox(height: B05Layout.space16),
-                TextField(
-                  controller: passwordController,
-                  obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Optional password',
-                    hintText: 'Leave blank for an unprotected file',
-                  ),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogCtx),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () =>
-                  Navigator.pop(dialogCtx, passwordController.text),
-              child: const Text('Create backup'),
-            ),
-          ],
-        ),
-      );
-
-      if (password == null || !context.mounted) return;
-      final result = await ref
-          .read(settingsControllerProvider.notifier)
-          .performExport(password);
-      if (!context.mounted) return;
-
-      final message = switch (result.status) {
-        SettingsExportStatus.shared =>
-          'Sharing completed. Check the destination you chose before relying on this backup.',
-        SettingsExportStatus.cancelled =>
-          result.message ?? 'No backup was shared.',
-        SettingsExportStatus.unavailable =>
-          result.message ??
-              'Sharing is unavailable on this device. No backup was shared.',
-        SettingsExportStatus.failed =>
-          result.message ??
-              ProductFailurePresentation.fromCode(
-                'backup_export_failed',
-              ).message,
-      };
-      _showSnack(
-        context,
-        message,
-        error:
-            result.status == SettingsExportStatus.unavailable ||
-            result.status == SettingsExportStatus.failed,
-      );
-    } finally {
-      passwordController.dispose();
-    }
   }
 
   Future<void> _showRestoreDialog(BuildContext context, WidgetRef ref) async {
@@ -617,6 +545,8 @@ class DataManagementSection extends ConsumerWidget {
           'Review what stays on this device, make a copy when you need one, and choose which optional features can connect elsewhere.',
           style: B05Typography.body(context),
         ),
+        const SizedBox(height: B05Layout.space16),
+        const YourDataCard(),
         const SizedBox(height: B05Layout.space24),
         _sectionHeading(context, 'Backup'),
         B05Surface(
@@ -641,7 +571,9 @@ class DataManagementSection extends ConsumerWidget {
               ),
               const SizedBox(height: B05Layout.space16),
               BackupRestoreCard(
-                onExport: isBusy ? null : () => _showExportDialog(context, ref),
+                onExport: isBusy
+                    ? null
+                    : () => showBackupExportFlow(context, ref),
                 onRestore: isBusy
                     ? null
                     : () => _showRestoreDialog(context, ref),

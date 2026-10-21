@@ -17,6 +17,15 @@ abstract final class AppPreferenceKeys {
   static const userThemeMode = 'user_theme_mode';
   static const displayUnits = 'display_units';
 
+  // --- Data export (N14-02 / FT-1) ---
+  // Neither key is in the backup allowlist (`BackupData.createFromDatabase`),
+  // on purpose: restoring a backup must not claim an export happened on this
+  // phone, and a restored snooze would silence the reminder on a new phone
+  // that has never exported.
+  static const lastDataExportAt = 'data_last_export_at_v1';
+  static const dataExportReminderSnoozedUntil =
+      'data_export_reminder_snoozed_until_v1';
+
   // --- Onboarding Status ---
   static const onboardingCompleted = 'onboarding_completed';
   static const onboardingSkipped = 'onboarding_skipped';

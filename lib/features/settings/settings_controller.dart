@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
@@ -20,6 +21,7 @@ import '../../core/services/crash_reporting_service.dart';
 import '../../core/services/notification_service.dart';
 import '../../core/utils/csv_exporter.dart';
 import '../dashboard/today_surface_controller.dart';
+import 'data_export_status.dart';
 
 int _boundedPreference(
   int? value, {
@@ -480,7 +482,7 @@ class SettingsController extends StateNotifier<SettingsState> {
         xFile,
       ], subject: 'IndiFit backup (.indifit-backup)');
 
-      return exportResultForShareStatus(shareResult.status);
+      return await recordShareOutcome(shareResult.status);
     } catch (_) {
       return SettingsExportResult(
         SettingsExportStatus.failed,
@@ -492,6 +494,22 @@ class SettingsController extends StateNotifier<SettingsState> {
       await BackupFileAdapter.cleanupTempFile(tempFile);
       state = state.copyWith(loading: false);
     }
+  }
+
+  /// Maps the share sheet's outcome and, only when it reports success,
+  /// records the export date (FT-1). Cancelled, unavailable and failed
+  /// exports leave the last export date alone.
+  @visibleForTesting
+  Future<SettingsExportResult> recordShareOutcome(
+    ShareResultStatus status,
+  ) async {
+    final result = exportResultForShareStatus(status);
+    if (result.status == SettingsExportStatus.shared) {
+      await _ref
+          .read(dataExportStatusProvider.notifier)
+          .recordSuccessfulExport();
+    }
+    return result;
   }
 
   static SettingsExportResult exportResultForShareStatus(
