@@ -112,6 +112,7 @@ void main() {
           labelReport: labelReport,
           photoReport: photoReport,
           subset: tags != null || limit != null,
+          tokens: gateway.tokens,
         ),
       );
       File(
@@ -254,6 +255,7 @@ String _report({
   required _SectionReport labelReport,
   required _SectionReport photoReport,
   required bool subset,
+  required Map<String, int> tokens,
 }) {
   String mark(bool ok) => ok ? '✅' : '❌';
   final out = StringBuffer()
@@ -263,6 +265,14 @@ String _report({
       '${DateTime.now().toIso8601String().substring(0, 16)} · prompts '
       '`${GeminiRequests.promptVersion}` · ${summary.meals} meals'
       '${subset ? ' (subset; not a release gate)' : ''}',
+    )
+    ..writeln()
+    ..writeln(
+      'Tokens over ${tokens['requests'] ?? 0} requests: '
+      'prompt ${tokens['promptTokenCount'] ?? 0}, '
+      'output ${tokens['candidatesTokenCount'] ?? 0}, '
+      'thinking ${tokens['thoughtsTokenCount'] ?? 0}, '
+      'total ${tokens['totalTokenCount'] ?? 0}',
     )
     ..writeln()
     ..writeln('## Meal text')

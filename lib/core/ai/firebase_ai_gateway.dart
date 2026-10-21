@@ -13,6 +13,7 @@ import '../utils/app_logger.dart';
 import 'ai_daily_caps.dart';
 import 'ai_gateway.dart';
 import 'ai_remote_config_refresher.dart';
+import 'ai_token_usage.dart';
 import 'gemini_requests.dart';
 
 /// Remote Config keys that steer AI without an app release.
@@ -41,9 +42,12 @@ abstract final class AiRemoteConfigKeys {
 /// Firebase. Output is constrained by a response schema rather than by prompt
 /// wording.
 class FirebaseAiGateway implements AiGateway {
-  FirebaseAiGateway({this.timeout = const Duration(seconds: 30)});
+  FirebaseAiGateway({this.timeout = const Duration(seconds: 30), this.onUsage});
 
   final Duration timeout;
+
+  /// Called with Gemini's token counts after each answered request.
+  final void Function(GeminiRequestKind kind, AiTokenUsage usage)? onUsage;
 
   static Future<void>? _initialization;
   static AiRemoteConfigRefresher? _refresher;
@@ -61,7 +65,7 @@ class FirebaseAiGateway implements AiGateway {
   @override
   Future<Map<String, dynamic>> decomposeMealText(String text) => _generate(
     GeminiRequests.mealText(text),
-    schema: GeminiRequests.mealSchema,
+    kind: GeminiRequestKind.describe,
   );
 
   @override
@@ -75,14 +79,14 @@ class FirebaseAiGateway implements AiGateway {
     }
     return _generate(
       GeminiRequests.mealPhoto(jpeg),
-      schema: GeminiRequests.mealSchema,
+      kind: GeminiRequestKind.photo,
     );
   }
 
   @override
   Future<Map<String, dynamic>> readNutritionLabel(Uint8List jpeg) => _generate(
     GeminiRequests.nutritionLabel(jpeg),
-    schema: GeminiRequests.labelSchema,
+    kind: GeminiRequestKind.label,
   );
 
   /// Today's per-feature allowances from Remote Config.
@@ -93,7 +97,7 @@ class FirebaseAiGateway implements AiGateway {
 
   Future<Map<String, dynamic>> _generate(
     List<Content> prompt, {
-    required Schema schema,
+    required GeminiRequestKind kind,
   }) async {
     final config = await _remoteConfig();
     if (!config.getBool(AiRemoteConfigKeys.enabled)) {
@@ -102,10 +106,13 @@ class FirebaseAiGateway implements AiGateway {
         'AI meal tools are switched off right now.',
       );
     }
-    final modelId = config.getString(AiRemoteConfigKeys.model).trim();
+    final configuredModel = config.getString(AiRemoteConfigKeys.model).trim();
+    final modelId = configuredModel.isEmpty
+        ? GeminiRequests.defaultModel
+        : configuredModel;
     final model = FirebaseAI.googleAI().generativeModel(
-      model: modelId.isEmpty ? GeminiRequests.defaultModel : modelId,
-      generationConfig: GeminiRequests.config(schema),
+      model: modelId,
+      generationConfig: GeminiRequests.config(kind, model: modelId),
     );
 
     final GenerateContentResponse response;
@@ -137,6 +144,10 @@ class FirebaseAiGateway implements AiGateway {
         'The AI service is unavailable right now.',
       );
     }
+
+    final usage = AiTokenUsage.fromMetadata(response.usageMetadata);
+    AppLogger.info('Gemini ${kind.name} $modelId tokens: $usage', 'AI');
+    onUsage?.call(kind, usage);
 
     String? text;
     try {

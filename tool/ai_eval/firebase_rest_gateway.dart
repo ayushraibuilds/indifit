@@ -36,19 +36,20 @@ class FirebaseRestGateway implements AiGateway {
   /// Raw JSON replies, newest last, for the results file.
   final List<Map<String, dynamic>> responses = [];
 
+  /// Token totals across every answered request (`usageMetadata`).
+  final Map<String, int> tokens = {};
+
   @override
   Future<Map<String, dynamic>> decomposeMealText(String text) =>
-      _generate(GeminiRequests.mealText(text), GeminiRequests.mealSchema);
+      _generate(GeminiRequests.mealText(text), GeminiRequestKind.describe);
 
   @override
   Future<Map<String, dynamic>> decomposeMealPhoto(Uint8List jpeg) =>
-      _generate(GeminiRequests.mealPhoto(jpeg), GeminiRequests.mealSchema);
+      _generate(GeminiRequests.mealPhoto(jpeg), GeminiRequestKind.photo);
 
   @override
-  Future<Map<String, dynamic>> readNutritionLabel(Uint8List jpeg) => _generate(
-    GeminiRequests.nutritionLabel(jpeg),
-    GeminiRequests.labelSchema,
-  );
+  Future<Map<String, dynamic>> readNutritionLabel(Uint8List jpeg) =>
+      _generate(GeminiRequests.nutritionLabel(jpeg), GeminiRequestKind.label);
 
   Future<String> _token() async {
     if (_appCheckToken != null && DateTime.now().isBefore(_appCheckExpiry)) {
@@ -71,12 +72,12 @@ class FirebaseRestGateway implements AiGateway {
 
   Future<Map<String, dynamic>> _generate(
     List<Content> contents,
-    Schema schema,
+    GeminiRequestKind kind,
   ) async {
     final body = {
       'model': 'models/$model',
       'contents': [for (final c in contents) c.toJson()],
-      'generationConfig': GeminiRequests.config(schema).toJson(),
+      'generationConfig': GeminiRequests.config(kind, model: model).toJson(),
     };
     for (var attempt = 1; ; attempt++) {
       try {
@@ -93,6 +94,19 @@ class FirebaseRestGateway implements AiGateway {
             },
           ),
         );
+        final usage = response.data!['usageMetadata'];
+        if (usage is Map) {
+          for (final key in const [
+            'promptTokenCount',
+            'candidatesTokenCount',
+            'thoughtsTokenCount',
+            'totalTokenCount',
+          ]) {
+            tokens[key] =
+                (tokens[key] ?? 0) + ((usage[key] as num?) ?? 0).toInt();
+          }
+          tokens['requests'] = (tokens['requests'] ?? 0) + 1;
+        }
         final text = _textOf(response.data!);
         final decoded = GeminiRequests.decode(text);
         responses.add(decoded);
