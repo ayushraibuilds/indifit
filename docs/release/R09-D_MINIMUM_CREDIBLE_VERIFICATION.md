@@ -76,6 +76,45 @@ Store-signing prerequisites:
   `NSFileProtectionCompleteUntilFirstUserAuthentication`; do not remove this
   safety entitlement merely to make an incompatible provisioning profile pass.
 
+## Store build and Hosting staging (N14-03)
+
+`verify_r09_release.sh` and CI prove the app compiles. They leave out the
+RepDB pictures, the catalogue URL, Sentry and obfuscation, so their output is
+not a store build. Store candidates come only from:
+
+```bash
+SENTRY_DSN=... tool/build_store_release.sh --ai on|off --android --ios
+```
+
+It starts from `flutter clean`, fetches the RepDB pictures with
+`tool/acquire_r08_repdb_assets.dart` and fails unless exactly the pictures in
+`assets/third_party/asset_manifest.json` (65) are present with matching
+checksums. It always passes `INDIFIT_CATALOG_MANIFEST_URL`, `--obfuscate` and
+`--split-debug-info=build/symbols/<version>+<build>`. `--ai` has no default.
+A missing `SENTRY_DSN` fails the build unless `--allow-no-sentry` is passed.
+Android refuses a missing `android/key.properties` or a throwaway keystore.
+
+After building, it checks: targetSdk ≥ 36 from the built manifest, 16 KB
+alignment of every 64-bit `.so` in the AAB, and that every binary in the iOS
+`.app` is a device (`IOS`) build according to `vtool -show-build` (UR-30). It
+uploads symbols with `sentry-cli` only when that is installed and
+`SENTRY_AUTH_TOKEN` is set. Keep `build/symbols/` for every shipped build.
+
+`--check` runs the define, keystore and picture checks without building. CI
+runs `--check --ci --allow-no-sentry --ai off`; `--ci` skips the keystore
+check and is only accepted with `--check`.
+
+Catalogue packs go to Hosting with:
+
+```bash
+tool/stage_hosting.sh           # stage and validate; prints the deploy command
+tool/stage_hosting.sh --deploy  # also deploys, then deletes public/
+```
+
+Each Hosting deploy replaces the whole site, so the script stages every pack
+version in `tool/catalog/packs`, not only the newest, and checks every
+manifest entry's size and SHA-256 against the staged file.
+
 ## Required physical-device acceptance
 
 Use exact device/OS and build identifiers. `Pending` means no claim has been

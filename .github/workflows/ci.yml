@@ -110,6 +110,11 @@ jobs:
           python tool/catalog/validate.py
           python -m unittest discover -s tool/catalog/tests
 
+      # Store-release preflight (N14-03): defines, and the 65 RepDB pictures
+      # fetched and checksummed. CI has no upload keystore, hence --ci.
+      - name: Store Release Preflight
+        run: tool/build_store_release.sh --check --ci --allow-no-sentry --ai off
+
       - name: Verify Generated Code
         run: dart run build_runner build --delete-conflicting-outputs && dart format lib/data/database/app_database.g.dart && git diff --exit-code
 
