@@ -6,6 +6,11 @@ import 'package:indifit/core/fixtures/exercise_identity_fixtures.dart';
 
 const _pinnedRepDbCommit = '045845b61e4aefd9e684fa84518b84c665ea3cd3';
 const _rejectedFamilyIds = {'FAM-03', 'FAM-17', 'FAM-18', 'FAM-19', 'FAM-35'};
+
+/// Families rejected in the original review that the product owner later
+/// approved with addendum records (`<record>-A1`), by renaming the exercise to
+/// match the artwork (FAM-17, FAM-35) or accepting one-step artwork (FAM-19).
+const _addendumFamilyIds = {'FAM-17', 'FAM-19', 'FAM-35'};
 final _sha256Pattern = RegExp(r'^sha256:[0-9a-f]{64}$');
 
 void main() {
@@ -178,8 +183,8 @@ void main() {
       );
       expect(repdbSource.immutableCommit, equals(_pinnedRepDbCommit));
       expect(repdbSource.pinStatus, equals('pinned'));
-      expect(manifest.assets, hasLength(59));
-      expect(manifest.visualAssetSets, hasLength(30));
+      expect(manifest.assets, hasLength(65));
+      expect(manifest.visualAssetSets, hasLength(33));
 
       final reviewByFamily = {
         for (final row in reviewRows) row['family_id']!: row,
@@ -193,9 +198,15 @@ void main() {
       final approvedRepDbIds = approvedRows
           .map((row) => row['repdb_id']!)
           .toSet();
+      final addendumRows = approvalRows
+          .where((row) => _addendumFamilyIds.contains(row['family_id']))
+          .toList();
       expect(
         manifest.assets.map((asset) => asset.sourceAssetId).toSet(),
-        equals(approvedRepDbIds),
+        equals({
+          ...approvedRepDbIds,
+          ...addendumRows.map((row) => row['repdb_id']!),
+        }),
       );
       expect(
         manifest.assets.every(
@@ -268,8 +279,29 @@ void main() {
         manifest.visualAssetSets
             .expand((set) => set.canonicalExerciseUuids)
             .toSet(),
-        equals(expectedApprovedUuids),
+        equals({
+          ...expectedApprovedUuids,
+          for (final row in addendumRows)
+            ..._split(
+              reviewByFamily[row['family_id']]!['canonical_uuid_bindings'],
+            ),
+        }),
       );
+
+      for (final row in addendumRows) {
+        final assets = manifest.assets.where(
+          (asset) => asset.sourceAssetId == row['repdb_id'],
+        );
+        expect(assets, hasLength(2), reason: row['family_id']);
+        expect(
+          assets.every(
+            (asset) =>
+                asset.approvalRecordId == '${row['approval_record_id']}-A1',
+          ),
+          isTrue,
+          reason: row['family_id'],
+        );
+      }
       expect(expectedApprovedUuids, hasLength(120));
     });
 
@@ -278,7 +310,9 @@ void main() {
         for (final row in reviewRows) row['family_id']!: row,
       };
       for (final approval in approvalRows.where(
-        (row) => row['human_decision'] == 'REJECTED_FALLBACK',
+        (row) =>
+            row['human_decision'] == 'REJECTED_FALLBACK' &&
+            !_addendumFamilyIds.contains(row['family_id']),
       )) {
         final familyId = approval['family_id']!;
         final canonicalUuids = _split(

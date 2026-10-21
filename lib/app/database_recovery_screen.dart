@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -10,21 +11,58 @@ import 'database_readiness.dart';
 
 /// Shown while the database opens (migrations can take a few seconds after an
 /// update). Deliberately has no timeout or error state of its own.
-class DatabasePreparingScreen extends StatelessWidget {
-  const DatabasePreparingScreen({super.key});
+class DatabasePreparingScreen extends StatefulWidget {
+  const DatabasePreparingScreen({
+    super.key,
+    this.showAfter = const Duration(milliseconds: 800),
+  });
+
+  /// The spinner stays hidden for this long so a normal launch (database ready
+  /// in well under a second) never flashes a loader before the first screen.
+  final Duration showAfter;
+
+  @override
+  State<DatabasePreparingScreen> createState() =>
+      _DatabasePreparingScreenState();
+}
+
+class _DatabasePreparingScreenState extends State<DatabasePreparingScreen> {
+  late final Timer _timer;
+  bool _visible = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer(widget.showAfter, () {
+      if (mounted) setState(() => _visible = true);
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
       body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const CircularProgressIndicator(),
-            const SizedBox(height: 16),
-            Text('Getting your data ready…', style: theme.textTheme.bodyLarge),
-          ],
+        child: AnimatedOpacity(
+          opacity: _visible ? 1 : 0,
+          duration: const Duration(milliseconds: 250),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 16),
+              Text(
+                'Getting your data ready…',
+                style: theme.textTheme.bodyLarge,
+              ),
+            ],
+          ),
         ),
       ),
     );

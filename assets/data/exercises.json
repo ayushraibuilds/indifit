@@ -1084,68 +1084,68 @@
         "youtube_id": ""
     },
     {
-        "name": "Seated Leg Curl",
+        "name": "Lying Leg Curl",
         "muscle_groups": "Hamstrings",
         "equipment": "Machine",
         "difficulty": "Beginner",
         "form_cues": [
-            "Adjust pad above ankles",
-            "Curl heels down towards thighs",
+            "Lie face down with the pad just above your heels",
+            "Curl heels towards your glutes",
             "Return slowly"
         ],
         "common_mistakes": [
-            "Lifting hips off the seat",
+            "Lifting hips off the pad",
             "Using body swing"
         ],
         "youtube_id": ""
     },
     {
-        "name": "Seated Leg Curl (Standard)",
+        "name": "Lying Leg Curl (Standard)",
         "muscle_groups": "Hamstrings",
         "equipment": "Machine",
         "difficulty": "Beginner",
         "form_cues": [
-            "Adjust pad above ankles",
-            "Curl heels down towards thighs",
+            "Lie face down with the pad just above your heels",
+            "Curl heels towards your glutes",
             "Return slowly",
             "Standard version"
         ],
         "common_mistakes": [
-            "Lifting hips off the seat",
+            "Lifting hips off the pad",
             "Using body swing"
         ],
         "youtube_id": ""
     },
     {
-        "name": "Pause Seated Leg Curl",
+        "name": "Pause Lying Leg Curl",
         "muscle_groups": "Hamstrings",
         "equipment": "Machine",
         "difficulty": "Beginner",
         "form_cues": [
-            "Adjust pad above ankles",
-            "Curl heels down towards thighs",
+            "Lie face down with the pad just above your heels",
+            "Curl heels towards your glutes",
             "Return slowly",
             "Hold the contraction at the peak for 2 seconds"
         ],
         "common_mistakes": [
-            "Lifting hips off the seat",
+            "Lifting hips off the pad",
             "Using body swing"
         ],
         "youtube_id": ""
     },
     {
-        "name": "Slow Eccentric Seated Leg Curl",
+        "name": "Slow Eccentric Lying Leg Curl",
         "muscle_groups": "Hamstrings",
         "equipment": "Machine",
         "difficulty": "Beginner",
         "form_cues": [
-            "Adjust pad above ankles",
-            "Curl heels down towards thighs",
+            "Lie face down with the pad just above your heels",
+            "Curl heels towards your glutes",
             "Return slowly",
             "Lower the weight over 3-4 seconds"
         ],
         "common_mistakes": [
-            "Lifting hips off the seat",
+            "Lifting hips off the pad",
             "Using body swing"
         ],
         "youtube_id": ""
@@ -2290,13 +2290,13 @@
         "youtube_id": ""
     },
     {
-        "name": "Hanging Leg Raise",
+        "name": "Hanging Knee Raise",
         "muscle_groups": "Core",
         "equipment": "Bodyweight",
         "difficulty": "Advanced",
         "form_cues": [
-            "Hang from bar, raise legs to 90 deg",
-            "Keep legs straight, control swing",
+            "Hang from bar, bring knees up to hip height",
+            "Keep knees bent, control swing",
             "Lower down slowly"
         ],
         "common_mistakes": [
@@ -2306,13 +2306,13 @@
         "youtube_id": ""
     },
     {
-        "name": "Hanging Leg Raise (Standard)",
+        "name": "Hanging Knee Raise (Standard)",
         "muscle_groups": "Core",
         "equipment": "Bodyweight",
         "difficulty": "Advanced",
         "form_cues": [
-            "Hang from bar, raise legs to 90 deg",
-            "Keep legs straight, control swing",
+            "Hang from bar, bring knees up to hip height",
+            "Keep knees bent, control swing",
             "Lower down slowly",
             "Standard version"
         ],
@@ -2323,13 +2323,13 @@
         "youtube_id": ""
     },
     {
-        "name": "Pause Hanging Leg Raise",
+        "name": "Pause Hanging Knee Raise",
         "muscle_groups": "Core",
         "equipment": "Bodyweight",
         "difficulty": "Advanced",
         "form_cues": [
-            "Hang from bar, raise legs to 90 deg",
-            "Keep legs straight, control swing",
+            "Hang from bar, bring knees up to hip height",
+            "Keep knees bent, control swing",
             "Lower down slowly",
             "Hold the contraction at the peak for 2 seconds"
         ],
@@ -2340,13 +2340,13 @@
         "youtube_id": ""
     },
     {
-        "name": "Slow Eccentric Hanging Leg Raise",
+        "name": "Slow Eccentric Hanging Knee Raise",
         "muscle_groups": "Core",
         "equipment": "Bodyweight",
         "difficulty": "Advanced",
         "form_cues": [
-            "Hang from bar, raise legs to 90 deg",
-            "Keep legs straight, control swing",
+            "Hang from bar, bring knees up to hip height",
+            "Keep knees bent, control swing",
             "Lower down slowly",
             "Lower the weight over 3-4 seconds"
         ],

@@ -1037,6 +1037,29 @@ class B03LogicalSnapshot {
             ],
   });
 
+  /// [withoutCatalogueServings], plus the display text of bundled
+  /// (non-custom) exercises, which a fresh database seeds from the current
+  /// `assets/data/exercises.json` rather than from the backup (N14-06
+  /// renamed seated leg curl and hanging leg raise). Stable IDs, custom
+  /// exercises and every other column still compare.
+  B03LogicalSnapshot withoutBundledCatalogueText() {
+    final servingsFree = withoutCatalogueServings();
+    return B03LogicalSnapshot({
+      for (final entry in servingsFree.tables.entries)
+        entry.key: entry.key != 'exercises'
+            ? entry.value
+            : [
+                for (final row in entry.value)
+                  row['is_custom'] == 1
+                      ? row
+                      : (Map.of(row)
+                          ..remove('name')
+                          ..remove('form_cues')
+                          ..remove('common_mistakes')),
+              ],
+    });
+  }
+
   void assertLogicallyEquals(B03LogicalSnapshot other) {
     if (!logicallyEquals(other)) {
       throw StateError(

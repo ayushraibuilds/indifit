@@ -161,10 +161,10 @@ class ExerciseCatalogManifest {
     'leg extensions (standard)': '7c25a9f3-00af-5e09-b667-a6f9d9c024e2',
     'pause leg extensions': '56feb751-efbb-5302-902d-940d45697261',
     'slow eccentric leg extensions': 'e87b0d6a-0a2c-595b-b241-89fc0d6f32fb',
-    'seated leg curl': '59ff6c53-7932-57e3-a546-07ac2aa457ae',
-    'seated leg curl (standard)': '84776ac4-f142-55cd-92f6-fa35a74956d3',
-    'pause seated leg curl': '9fb9ee61-0792-5eef-a5f7-923914649294',
-    'slow eccentric seated leg curl': '4f035379-6a9e-52a9-bb2b-b4c608808ba6',
+    'lying leg curl': '59ff6c53-7932-57e3-a546-07ac2aa457ae',
+    'lying leg curl (standard)': '84776ac4-f142-55cd-92f6-fa35a74956d3',
+    'pause lying leg curl': '9fb9ee61-0792-5eef-a5f7-923914649294',
+    'slow eccentric lying leg curl': '4f035379-6a9e-52a9-bb2b-b4c608808ba6',
     'standing calf raise': '426ff89a-6639-51d1-a6c1-33184586bbed',
     'standing calf raise (standard)': 'b1e568c2-89f5-5689-b8d7-ee46d1205cf1',
     'pause standing calf raise': '419c463a-1d6a-5e6c-9000-54832b5116f5',
@@ -249,10 +249,10 @@ class ExerciseCatalogManifest {
     'plank (standard)': '6edde0de-7492-5b33-ab28-5f27747c0bbc',
     'pause plank': 'c166fed2-3d32-5641-94e5-8ea16ec447eb',
     'slow eccentric plank': 'ab2ee7bc-cc73-55a9-b542-31821cac14ca',
-    'hanging leg raise': '803fcabc-ad1c-52ac-b956-9e85a593c6f3',
-    'hanging leg raise (standard)': '4d83d57c-2da7-50e0-a69f-f8dabc69135d',
-    'pause hanging leg raise': '704c2f48-894c-5197-9232-236d83fd8118',
-    'slow eccentric hanging leg raise': 'da4d6b6f-ec07-5d98-b994-cb0bea76a66f',
+    'hanging knee raise': '803fcabc-ad1c-52ac-b956-9e85a593c6f3',
+    'hanging knee raise (standard)': '4d83d57c-2da7-50e0-a69f-f8dabc69135d',
+    'pause hanging knee raise': '704c2f48-894c-5197-9232-236d83fd8118',
+    'slow eccentric hanging knee raise': 'da4d6b6f-ec07-5d98-b994-cb0bea76a66f',
   };
 
   /// Explicitly approved 1-to-1 aliases (alias -> exact canonical catalog name).
@@ -287,6 +287,29 @@ class ExerciseCatalogManifest {
     ApprovedExerciseAlias('cable face pulls', 'Face Pulls'),
     ApprovedExerciseAlias('ez bar skull crushers', 'Skull Crushers (EZ Bar)'),
     ApprovedExerciseAlias('skullcrushers', 'Skull Crushers (EZ Bar)'),
+    ApprovedExerciseAlias('seated leg curl', 'Lying Leg Curl'),
+    ApprovedExerciseAlias(
+      'seated leg curl (standard)',
+      'Lying Leg Curl (Standard)',
+    ),
+    ApprovedExerciseAlias('pause seated leg curl', 'Pause Lying Leg Curl'),
+    ApprovedExerciseAlias(
+      'slow eccentric seated leg curl',
+      'Slow Eccentric Lying Leg Curl',
+    ),
+    ApprovedExerciseAlias('hanging leg raise', 'Hanging Knee Raise'),
+    ApprovedExerciseAlias(
+      'hanging leg raise (standard)',
+      'Hanging Knee Raise (Standard)',
+    ),
+    ApprovedExerciseAlias(
+      'pause hanging leg raise',
+      'Pause Hanging Knee Raise',
+    ),
+    ApprovedExerciseAlias(
+      'slow eccentric hanging leg raise',
+      'Slow Eccentric Hanging Knee Raise',
+    ),
   ];
 
   /// Explicitly classified ambiguous legacy exercise names that MUST NOT resolve automatically.

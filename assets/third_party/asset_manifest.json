@@ -2075,6 +2075,168 @@
       "status": "underlying_movement_only",
       "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
     }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:leg-curl:start",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:leg-curl",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "leg-curl",
+    "pinned_external_exercise_id": "leg-curl",
+    "source_relative_path": "images/flat/leg-curl-start.webp",
+    "local_destination": "assets/generated/repdb/leg-curl-start.webp",
+    "sha256": "sha256:9eed895562e2a3d7ade074fc59c3b56a07230a3a97ed5a3d35a0fa5eb6ed5e1f",
+    "media_role": "start",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-17-A1",
+    "canonical_exercise_uuids": [
+      "59ff6c53-7932-57e3-a546-07ac2aa457ae",
+      "84776ac4-f142-55cd-92f6-fa35a74956d3",
+      "9fb9ee61-0792-5eef-a5f7-923914649294",
+      "4f035379-6a9e-52a9-bb2b-b4c608808ba6"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:leg-curl:peak",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:leg-curl",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "leg-curl",
+    "pinned_external_exercise_id": "leg-curl",
+    "source_relative_path": "images/flat/leg-curl-peak.webp",
+    "local_destination": "assets/generated/repdb/leg-curl-peak.webp",
+    "sha256": "sha256:e1f4229433709ce48f3c317693a23d6a8e2525497328cad3b8235f3aad9b4911",
+    "media_role": "peak",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-17-A1",
+    "canonical_exercise_uuids": [
+      "59ff6c53-7932-57e3-a546-07ac2aa457ae",
+      "84776ac4-f142-55cd-92f6-fa35a74956d3",
+      "9fb9ee61-0792-5eef-a5f7-923914649294",
+      "4f035379-6a9e-52a9-bb2b-b4c608808ba6"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:hanging-leg-raise:start",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:hanging-leg-raise",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "hanging-leg-raise",
+    "pinned_external_exercise_id": "hanging-leg-raise",
+    "source_relative_path": "images/flat/hanging-leg-raise-start.webp",
+    "local_destination": "assets/generated/repdb/hanging-leg-raise-start.webp",
+    "sha256": "sha256:b1f318a2e21d44c666e30eb0898b5c7d808c8e4ff903cc794778f62284ab98e7",
+    "media_role": "start",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-35-A1",
+    "canonical_exercise_uuids": [
+      "803fcabc-ad1c-52ac-b956-9e85a593c6f3",
+      "4d83d57c-2da7-50e0-a69f-f8dabc69135d",
+      "704c2f48-894c-5197-9232-236d83fd8118",
+      "da4d6b6f-ec07-5d98-b994-cb0bea76a66f"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:hanging-leg-raise:peak",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:hanging-leg-raise",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "hanging-leg-raise",
+    "pinned_external_exercise_id": "hanging-leg-raise",
+    "source_relative_path": "images/flat/hanging-leg-raise-peak.webp",
+    "local_destination": "assets/generated/repdb/hanging-leg-raise-peak.webp",
+    "sha256": "sha256:b1b1a0cdb5c21b0b9baee9e5d4f5fc51eef8c110a80971c1f2a753272bd8497d",
+    "media_role": "peak",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-35-A1",
+    "canonical_exercise_uuids": [
+      "803fcabc-ad1c-52ac-b956-9e85a593c6f3",
+      "4d83d57c-2da7-50e0-a69f-f8dabc69135d",
+      "704c2f48-894c-5197-9232-236d83fd8118",
+      "da4d6b6f-ec07-5d98-b994-cb0bea76a66f"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:db-lunge:start",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:db-lunge",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "db-lunge",
+    "pinned_external_exercise_id": "db-lunge",
+    "source_relative_path": "images/flat/db-lunge-start.webp",
+    "local_destination": "assets/generated/repdb/db-lunge-start.webp",
+    "sha256": "sha256:9aaa3e3983e2f8d733cf1a7509247ec3d55296e527bfc804b1b30a7140d82e84",
+    "media_role": "start",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-19-A1",
+    "canonical_exercise_uuids": [
+      "d8a67487-1f7a-5bed-b1aa-62537870b25b",
+      "13e0d854-7591-586e-813f-4a462fbd1722",
+      "f187e832-fdfa-5c75-a9bd-2cb19ff122f7",
+      "a6b5fe22-9279-5ade-8f1e-f7d1cc323f80"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration shows a single forward lunge step. Walking lunges repeat the step, alternating legs as you travel forward. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:db-lunge:peak",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:db-lunge",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "db-lunge",
+    "pinned_external_exercise_id": "db-lunge",
+    "source_relative_path": "images/flat/db-lunge-peak.webp",
+    "local_destination": "assets/generated/repdb/db-lunge-peak.webp",
+    "sha256": "sha256:4cbc3dcac4878d0761a46d4839f8118b6e7e9933d4a1e45403e0e8c57a763613",
+    "media_role": "peak",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-19-A1",
+    "canonical_exercise_uuids": [
+      "d8a67487-1f7a-5bed-b1aa-62537870b25b",
+      "13e0d854-7591-586e-813f-4a462fbd1722",
+      "f187e832-fdfa-5c75-a9bd-2cb19ff122f7",
+      "a6b5fe22-9279-5ade-8f1e-f7d1cc323f80"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration shows a single forward lunge step. Walking lunges repeat the step, alternating legs as you travel forward. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
   }
   ]
 }

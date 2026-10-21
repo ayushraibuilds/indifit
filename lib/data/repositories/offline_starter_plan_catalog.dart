@@ -156,7 +156,7 @@ class OfflineStarterPlanCatalog {
           _exercise('Walking Lunges', 3, '8-10'),
           _exercise('Decline Hammer Strength Press', 3, '8-12'),
           _exercise('Seated Cable Row', 3, '8-12'),
-          _exercise('Seated Leg Curl', 2, '10-12'),
+          _exercise('Lying Leg Curl', 2, '10-12'),
           _exercise('Dumbbell Lateral Raise', 2, '12-15'),
         ]),
         _session('Full Body C', DateTime.friday, [
@@ -194,7 +194,7 @@ class OfflineStarterPlanCatalog {
           _exercise('Barbell Squat', 3, '5-6'),
           _exercise('Flat Barbell Bench Press', 3, '5-6'),
           _exercise('Seated Cable Row', 3, '8-10'),
-          _exercise('Seated Leg Curl', 2, '8-10'),
+          _exercise('Lying Leg Curl', 2, '8-10'),
         ]),
       ],
     ),
@@ -231,7 +231,7 @@ class OfflineStarterPlanCatalog {
         _session('Lower B', DateTime.friday, [
           _exercise('Barbell Deadlift', 3, '4-6'),
           _exercise('Leg Press', 3, '8-12'),
-          _exercise('Seated Leg Curl', 3, '10-12'),
+          _exercise('Lying Leg Curl', 3, '10-12'),
           _exercise('Walking Lunges', 2, '8-10'),
         ]),
       ],
@@ -264,7 +264,7 @@ class OfflineStarterPlanCatalog {
           _exercise('Barbell Squat', 3, '6-10'),
           _exercise('Romanian Deadlift (RDL)', 3, '8-12'),
           _exercise('Leg Press', 3, '10-15'),
-          _exercise('Seated Leg Curl', 3, '10-15'),
+          _exercise('Lying Leg Curl', 3, '10-15'),
           _exercise('Standing Calf Raise', 3, '12-20'),
         ]),
         _session('Upper', DateTime.friday, [
@@ -278,7 +278,7 @@ class OfflineStarterPlanCatalog {
           _exercise('Barbell Deadlift', 3, '5-8'),
           _exercise('Walking Lunges', 3, '8-12'),
           _exercise('Leg Extensions', 3, '12-15'),
-          _exercise('Seated Leg Curl', 3, '10-15'),
+          _exercise('Lying Leg Curl', 3, '10-15'),
           _exercise('Standing Calf Raise', 3, '12-20'),
         ]),
       ],
@@ -326,7 +326,7 @@ class OfflineStarterPlanCatalog {
         _session('Legs B', DateTime.saturday, [
           _exercise('Barbell Deadlift', 3, '5-8'),
           _exercise('Leg Press', 3, '10-15'),
-          _exercise('Seated Leg Curl', 3, '10-15'),
+          _exercise('Lying Leg Curl', 3, '10-15'),
           _exercise('Walking Lunges', 3, '8-12'),
         ]),
       ],

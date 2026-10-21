@@ -15,6 +15,17 @@ const String kR08RepDbGeneratedRoot = 'assets/generated/repdb/';
 // for this local/private acquisition path only.
 const String kR08RepDbSourceApprovalStatus =
     'pinned_candidate_assets_not_approved';
+
+/// Disclosure for the walking-lunge artwork (Addendum A1): the picture shows a
+/// single forward step, so the text says walking repeats it.
+const String kR08RepDbWalkingLungeDisclosure =
+    'This illustration shows a single forward lunge step. Walking lunges repeat the step, alternating legs as you travel forward. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details.';
+
+const Set<String> kR08RepDbApprovedDisclosures = {
+  kR08RepDbTechniqueDisclosure,
+  kR08RepDbWalkingLungeDisclosure,
+};
+
 const String kR08RepDbTechniqueDisclosure =
     'This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details.';
 
@@ -93,7 +104,9 @@ class R08RepDbAcquisitionPlan {
           asset.pinnedExternalExerciseId != asset.sourceAssetId ||
           asset.assetSetId == null ||
           asset.approvalRecordId == null ||
-          asset.techniqueDisclosure?.text != kR08RepDbTechniqueDisclosure) {
+          !kR08RepDbApprovedDisclosures.contains(
+            asset.techniqueDisclosure?.text,
+          )) {
         throw StateError(
           'RepDB asset ${asset.assetKey} is missing approved asset-set provenance.',
         );

@@ -108,10 +108,7 @@ void main() {
       );
       for (final name in [
         'decline hammer strength press',
-        'seated leg curl',
         'standing calf raise',
-        'walking lunges',
-        'hanging leg raise',
       ]) {
         expect(
           registry.lookup(ExerciseCatalogManifest.goldenCatalogUuids[name]!),
