@@ -295,6 +295,7 @@ class BackupData {
         'user_activity_level',
         'user_goal',
         'user_diet_preference',
+        'pref_jain_constraint_applied',
         'calorie_goal',
         'protein_goal',
         'carbs_goal',

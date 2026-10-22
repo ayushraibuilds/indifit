@@ -17,6 +17,7 @@ import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/consumer_task_primitives.dart';
 import '../../data/repositories/hydration_repository.dart';
 import '../../data/repositories/workout_repository.dart';
+import '../nutrition/jain_constraint_sync.dart';
 import '../settings/widgets/your_data_card.dart';
 import 'b05_adaptive_onboarding.dart';
 import 'widgets/onboarding_ruler_picker.dart';
@@ -640,6 +641,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       carbsGoal: targetChanged ? macros.carbsG : null,
       fatGoal: targetChanged ? macros.fatG : null,
     );
+
+    // Choosing Jain turns on its dietary need once (UX-16).
+    try {
+      await ref.read(jainConstraintSyncProvider).applyFor(_dietPreference);
+    } catch (error) {
+      AppLogger.warning('Jain dietary need not set: $error', 'Onboarding');
+    }
 
     // Log canonical initial weight entry in BodyMeasurements Drift table
     await ref

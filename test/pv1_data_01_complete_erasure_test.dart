@@ -609,6 +609,7 @@ Future<void> _populateExtensiveUserData(AppDatabase db) async {
 
 /// Preferences added in Wave 4 (habits); each must be erased.
 const _wave4PreferenceKeys = [
+  'pref_jain_constraint_applied',
   'pref_my_chai_milk',
   'pref_my_chai_milk_share',
   'pref_my_chai_sugar_tsp',

@@ -8,7 +8,9 @@ import 'package:indifit/core/services/local_timezone_service.dart';
 import 'package:indifit/core/utils/tdee_calculator.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/models/b04_goal_models.dart';
+import 'package:indifit/data/repositories/nutrition_constraint_repository.dart';
 import 'package:indifit/data/repositories/workout_repository.dart';
+import 'package:indifit/features/nutrition/jain_constraint_sync.dart';
 import 'package:indifit/features/onboarding/onboarding_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -176,6 +178,50 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets('finishing setup as Jain turns on the Jain need (UX-16)', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final database = await _pumpDatabase(tester);
+    final router = GoRouter(
+      initialLocation: '/onboarding',
+      routes: [
+        GoRoute(
+          path: '/onboarding',
+          builder: (context, state) => const OnboardingScreen(),
+        ),
+        GoRoute(
+          path: '/',
+          builder: (context, state) =>
+              const Scaffold(body: Text('Today shell')),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+    final jain = _RecordingJainSync(database);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          databaseProvider.overrideWithValue(database),
+          userProfileProvider.overrideWith((ref) => _TestProfileNotifier()),
+          workoutRepositoryProvider.overrideWithValue(
+            _TestWorkoutRepository(database),
+          ),
+          jainConstraintSyncProvider.overrideWithValue(jain),
+        ],
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 250));
+    await _moveToReview(tester, diet: 'Jain');
+    await tester.tap(find.text('Finish setup'));
+    await tester.pumpAndSettle();
+    expect(find.text('Today shell'), findsOneWidget);
+
+    // The sync's rules are covered in ux16_jain_constraint_test.dart.
+    expect(jain.diets, ['jain']);
+  });
 
   test(
     'profile bridge persists preference targets into canonical storage',
@@ -474,6 +520,20 @@ class _ExistingProfileNotifier extends UserProfileNotifier {
 
   @override
   Future<void> loadProfile() async {}
+}
+
+class _RecordingJainSync extends JainConstraintSync {
+  _RecordingJainSync(AppDatabase database)
+    : super(
+        repository: NutritionConstraintRepository(database: database),
+        preferences: SharedPreferences.getInstance,
+      );
+
+  final diets = <String?>[];
+
+  @override
+  Future<void> applyFor(String? dietPreference) async =>
+      diets.add(dietPreference);
 }
 
 class _TestWorkoutRepository extends WorkoutRepository {
