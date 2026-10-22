@@ -97,7 +97,8 @@ final canonicalRecentFoodsProvider =
               continue;
             }
             final option = await catalog.getOption(foodId);
-            if (option == null) continue;
+            // One-off AI estimates are not offered again (C-08).
+            if (option == null || option.isAiEstimate) continue;
             final historicalQuantity = item.quantity.isResolved
                 ? item.quantity.quantity
                 : null;

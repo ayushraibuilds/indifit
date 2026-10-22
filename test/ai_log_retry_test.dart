@@ -149,8 +149,10 @@ void main() {
       (await db.customSelect(sql).getSingle()).read<int>('c');
   Future<int> diaryEntries() =>
       count('SELECT COUNT(*) AS c FROM nutrition_consumption_snapshots');
+  // Unmatched AI items log as estimate foods (C-08); labels as user foods.
   Future<int> customFoods() => count(
-    "SELECT COUNT(*) AS c FROM nutrition_foods WHERE id LIKE 'user-food::%'",
+    'SELECT COUNT(*) AS c FROM nutrition_foods '
+    "WHERE id LIKE 'user-food::%' OR id LIKE 'ai-estimate-food::%'",
   );
   Future<int> mealGroups() => count(
     'SELECT COUNT(DISTINCT meal_group_id) AS c '

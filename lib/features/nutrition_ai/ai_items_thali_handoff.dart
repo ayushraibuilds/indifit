@@ -72,9 +72,9 @@ Future<bool> openAiItemsInThali({
         option = matched;
         quantity = portion.quantity;
       } else {
-        // No trustworthy catalogue food: keep the AI estimate as the user's
-        // own food so it stays visibly distinct from verified entries.
-        option = await catalog.createUserFood(
+        // No trustworthy catalogue food: log the AI estimate once, tagged as
+        // an estimate and never offered again as a food (C-08).
+        option = await catalog.createAiEstimateFood(
           displayName: item.foodName,
           servingSize: item.quantityAmount > 0 ? item.quantityAmount : 1.0,
           servingUnit: item.quantityUnit,

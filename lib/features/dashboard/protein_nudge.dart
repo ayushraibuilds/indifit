@@ -296,7 +296,7 @@ final proteinSuggestionsProvider = FutureProvider.autoDispose
       for (final (foodId, logged, fromHistory) in wanted) {
         try {
           final option = await catalog.getOption(foodId);
-          if (option == null) continue;
+          if (option == null || option.isAiEstimate) continue;
           final quantity = logged ?? option.defaultLoggingQuantity;
           final preview = await foods.preview(
             option: option,
