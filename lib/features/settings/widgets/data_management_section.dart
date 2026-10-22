@@ -515,9 +515,15 @@ class DataManagementSection extends ConsumerWidget {
       await showDialog<void>(
         context: context,
         builder: (errCtx) => AlertDialog(
-          title: const Text('Erasure verification failed'),
+          title: Text(
+            report.dataRemoved
+                ? 'Erasure verification failed'
+                : 'Erase didn\'t finish',
+          ),
           content: Text(
-            'Complete erasure could not be verified: ${report.failureReason ?? 'Unknown error'}. Some records or files may remain on this device.',
+            report.dataRemoved
+                ? 'Complete erasure could not be verified: ${report.failureReason ?? 'Unknown error'}. Some records or files may remain on this device.'
+                : 'Nothing was removed. Your data and recovery copies are still on this phone. You can try again.',
             style: B05Typography.body(errCtx),
           ),
           actions: [

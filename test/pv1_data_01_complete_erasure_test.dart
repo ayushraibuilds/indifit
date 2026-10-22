@@ -58,6 +58,76 @@ void main() {
 
   group('PV1-DATA-01 Complete Data Erasure Orchestrator Tests', () {
     test(
+      'a failed database wipe removes nothing: backups, secret and preferences survive',
+      () async {
+        final databases = registerTestDatabaseScope();
+        final db = databases.create();
+        await _populateExtensiveUserData(db);
+
+        // A real database failure: a trigger that aborts deleting food logs.
+        await db.customStatement(
+          'CREATE TRIGGER test_block_food_log_delete BEFORE DELETE ON food_logs '
+          "BEGIN SELECT RAISE(ABORT, 'blocked for test'); END",
+        );
+
+        final backupDir = Directory('${tempDocDir.path}/backups');
+        await backupDir.create(recursive: true);
+        final backupFile = File('${backupDir.path}/indifit_auto_backup_1.json');
+        await backupFile.writeAsString(
+          '{"format_identifier":"INDIFIT_BACKUP_ENVELOPE"}',
+        );
+        final tempExport = File(
+          '${tempExportDir.path}/indifit_backup_x.indifit-backup',
+        );
+        await tempExport.writeAsString('export');
+
+        final secretStore = _TestAutoBackupSecretStore('device-secret-12345');
+        final cloudBackup = _TestCloudBackupCapability();
+        final account = _TestAccountCapability();
+        final health = _TestHealthService();
+        final service = DataErasureService(
+          db: db,
+          secretStore: secretStore,
+          cloudBackup: cloudBackup,
+          account: account,
+          healthService: health,
+          documentsDirectoryProvider: () async => tempDocDir,
+          temporaryDirectoryProvider: () async => tempExportDir,
+        );
+
+        final report = await service.eraseAllData();
+
+        expect(report.isSuccess, isFalse);
+        expect(report.dataRemoved, isFalse);
+        expect(report.failureReason, contains('blocked for test'));
+
+        // Nothing was touched: files, secret, preferences, remote services.
+        expect(await backupFile.exists(), isTrue);
+        expect(await tempExport.exists(), isTrue);
+        expect(await secretStore.read(), 'device-secret-12345');
+        expect(secretStore.clearCalls, 0);
+        final prefs = await SharedPreferences.getInstance();
+        expect(prefs.getBool('onboarding_completed'), isTrue);
+        expect(prefs.getInt('water_goal'), 12);
+        expect(cloudBackup.deleteAllCalls, 0);
+        expect(account.deletionCalls, 0);
+        expect(health.disconnectCalls, 0);
+
+        // The transaction rolled back: the data is all still there, and the
+        // append-only protection is intact.
+        expect(await db.select(db.foodLogs).get(), isNotEmpty);
+        expect(await db.select(db.nutritionGoalVersions).get(), hasLength(1));
+        final triggers = await db
+            .customSelect(
+              "SELECT name FROM sqlite_master WHERE type = 'trigger' "
+              "AND name = 'b04_goal_versions_append_only_delete'",
+            )
+            .get();
+        expect(triggers, hasLength(1));
+      },
+    );
+
+    test(
       'erases all user records, custom items, preferences, secrets, files, and verifies zero residue',
       () async {
         final databases = registerTestDatabaseScope();
@@ -145,6 +215,15 @@ void main() {
             reason: 'Table ${entry.key} still contains ${entry.value} rows!',
           );
         }
+
+        // The append-only protection is back once the wipe is done.
+        final triggers = await db
+            .customSelect(
+              "SELECT name FROM sqlite_master WHERE type = 'trigger' "
+              "AND name = 'b04_goal_versions_append_only_delete'",
+            )
+            .get();
+        expect(triggers, hasLength(1));
 
         // 2. Custom foods and exercises must be 0
         expect(report.remainingCustomFoodsCount, 0);
@@ -438,6 +517,26 @@ class _TestHealthService extends HealthService {
 
 Future<void> _populateExtensiveUserData(AppDatabase db) async {
   final now = DateTime.now().toUtc();
+
+  // Every onboarded user has goal versions, which are append-only in the
+  // database: erasure must still remove them.
+  await db
+      .into(db.nutritionGoalVersions)
+      .insert(
+        NutritionGoalVersionsCompanion.insert(
+          id: 'erasure-goal-v1',
+          userId: 'local-user-v1',
+          versionNumber: 1,
+          goalType: 'maintenance',
+          targetSource: 'user_set',
+          calorieTargetKcal: const Value(2100),
+          proteinTargetG: const Value(140),
+          carbsTargetG: const Value(220),
+          fatTargetG: const Value(65),
+          effectiveFromLocalDate: '2026-10-01',
+          timezoneId: 'Asia/Kolkata',
+        ),
+      );
 
   // 1. User profile
   await db

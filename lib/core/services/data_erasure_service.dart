@@ -17,6 +17,10 @@ import 'rest_presence_service.dart';
 /// Comprehensive audit report summarizing the outcome of a complete data erasure.
 class DataErasureReport {
   final bool isSuccess;
+
+  /// False when the wipe failed before removing anything: the person's data
+  /// and recovery copies are still on the phone.
+  final bool dataRemoved;
   final DateTime completedAtUtc;
   final Map<String, int> remainingUserTableCounts;
   final int remainingCustomFoodsCount;
@@ -34,6 +38,7 @@ class DataErasureReport {
 
   const DataErasureReport({
     required this.isSuccess,
+    this.dataRemoved = true,
     required this.completedAtUtc,
     required this.remainingUserTableCounts,
     required this.remainingCustomFoodsCount,
@@ -97,57 +102,7 @@ class DataErasureService {
     final disclosures = <String>[];
     String? failureReason;
 
-    // 1. Remote and external cleanup (offline resilient)
-    bool? cloudBackupsPurged;
-    try {
-      await _cloudBackup.deleteAllRemoteSnapshots();
-      cloudBackupsPurged = true;
-    } catch (e) {
-      AppLogger.warning('Cloud backup snapshot purge failed (offline?): $e');
-      cloudBackupsPurged = false;
-      disclosures.add(
-        'Remote cloud backup snapshots could not be reached (the device may be offline). '
-        'All local encryption secrets and sync state were deleted to prevent resurrection.',
-      );
-    }
-
-    bool? accountDeleted;
-    try {
-      await _account.requestAccountDeletion();
-      accountDeleted = true;
-    } catch (e) {
-      AppLogger.warning('Account deletion failed (offline?): $e');
-      accountDeleted = false;
-      disclosures.add(
-        'Remote account deletion could not be reached (the device may be offline). '
-        'Local credentials were deleted to return to guest mode.',
-      );
-    }
-
-    bool healthDisconnected = true;
-    try {
-      await _healthService.disconnect();
-    } catch (e) {
-      AppLogger.warning('Health service disconnect warning: $e');
-      healthDisconnected = false;
-    }
-    disclosures.add(
-      'Health data previously synced to Apple Health or Android Health Connect '
-      'remains in your device operating system health store outside the IndiFit sandbox. '
-      'IndiFit has disconnected and revoked permissions.',
-    );
-
-    // 2. Scheduled reminders & rest presence cleanup
-    bool notificationsCancelled = true;
-    try {
-      await NotificationService.cancelAllNotificationsForErasure();
-      await RestPresenceService.cleanupStaleNotifications();
-    } catch (e) {
-      AppLogger.warning('Notification cancellation failed: $e');
-      notificationsCancelled = false;
-    }
-
-    // 3. Database Wipe
+    // 1. Database wipe and verification (first: nothing else is touched if it fails)
     // SQLite requirement: PRAGMA foreign_keys = OFF is a no-op inside a transaction!
     // It must be issued BEFORE opening the transaction.
     await _db.customStatement('PRAGMA foreign_keys = OFF;');
@@ -156,9 +111,14 @@ class DataErasureService {
 
     try {
       await _db.transaction(() async {
-        for (final table in userTables) {
-          await _db.delete(table).go();
-        }
+        // Goal versions and other B04 tables are append-only: triggers abort
+        // every DELETE, which made erasing fail for anyone with a goal. The
+        // restore seam lifts them for the wipe and recreates them after.
+        await _db.withB04RestoreMutation<void>(() async {
+          for (final table in userTables) {
+            await _db.delete(table).go();
+          }
+        });
         // Custom food items & custom exercises
         await (_db.delete(
           _db.foodItems,
@@ -231,6 +191,80 @@ class DataErasureService {
     }
     if (remainingCustomExercises > 0) {
       failureReason ??= '$remainingCustomExercises custom exercises remained.';
+    }
+
+    // The wipe is first, and a failed one stops here: recovery copies, the
+    // backup secret and preferences are untouched, so nothing is lost and the
+    // person can try again (or restore from a copy).
+    if (failureReason != null) {
+      return DataErasureReport(
+        isSuccess: false,
+        dataRemoved: false,
+        completedAtUtc: DateTime.now().toUtc(),
+        remainingUserTableCounts: remainingUserTableCounts,
+        remainingCustomFoodsCount: remainingCustomFoods,
+        remainingCustomExercisesCount: remainingCustomExercises,
+        foreignKeyCheckPassed: foreignKeyCheckPassed,
+        preferencesCleared: false,
+        secureStorageCleared: false,
+        localFilesCleared: false,
+        notificationsCancelled: false,
+        cloudBackupsPurged: null,
+        accountDeleted: null,
+        healthDisconnected: false,
+        disclosures: const [],
+        failureReason: failureReason,
+      );
+    }
+
+    // 2. Remote and external cleanup (offline resilient)
+    bool? cloudBackupsPurged;
+    try {
+      await _cloudBackup.deleteAllRemoteSnapshots();
+      cloudBackupsPurged = true;
+    } catch (e) {
+      AppLogger.warning('Cloud backup snapshot purge failed (offline?): $e');
+      cloudBackupsPurged = false;
+      disclosures.add(
+        'Remote cloud backup snapshots could not be reached (the device may be offline). '
+        'All local encryption secrets and sync state were deleted to prevent resurrection.',
+      );
+    }
+
+    bool? accountDeleted;
+    try {
+      await _account.requestAccountDeletion();
+      accountDeleted = true;
+    } catch (e) {
+      AppLogger.warning('Account deletion failed (offline?): $e');
+      accountDeleted = false;
+      disclosures.add(
+        'Remote account deletion could not be reached (the device may be offline). '
+        'Local credentials were deleted to return to guest mode.',
+      );
+    }
+
+    bool healthDisconnected = true;
+    try {
+      await _healthService.disconnect();
+    } catch (e) {
+      AppLogger.warning('Health service disconnect warning: $e');
+      healthDisconnected = false;
+    }
+    disclosures.add(
+      'Health data previously synced to Apple Health or Android Health Connect '
+      'remains in your device operating system health store outside the IndiFit sandbox. '
+      'IndiFit has disconnected and revoked permissions.',
+    );
+
+    // 3. Scheduled reminders & rest presence cleanup
+    bool notificationsCancelled = true;
+    try {
+      await NotificationService.cancelAllNotificationsForErasure();
+      await RestPresenceService.cleanupStaleNotifications();
+    } catch (e) {
+      AppLogger.warning('Notification cancellation failed: $e');
+      notificationsCancelled = false;
     }
 
     disclosures.add(
