@@ -5,6 +5,7 @@ import 'package:indifit/core/nutrition_calculation_service.dart';
 import 'package:indifit/core/nutrition_constraints.dart';
 import 'package:indifit/core/nutrition_consumption_snapshots.dart';
 import 'package:indifit/core/nutrition_household_measures.dart';
+import 'package:indifit/core/nutrition_legacy_read_models.dart';
 import 'package:indifit/core/nutrition_thali.dart';
 import 'package:indifit/core/typed_quantities.dart';
 import 'package:indifit/data/database/app_database.dart'
@@ -24,6 +25,55 @@ import 'package:indifit/features/food_log/nutrition_thali_controller.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   group('B03-13 thali composition', () {
+    test(
+      'a logged thali keeps its name, not "Thali (2 items)" (UR-28)',
+      () async {
+        final harness = await _ThaliHarness.create();
+        addTearDown(harness.close);
+        Future<String> logged(String? name, String id) async {
+          final draft = harness.repository.newDraft(
+            userId: harness.userId,
+            name: name ?? kDefaultThaliName,
+            items: [
+              for (var i = 0; i < 2; i++)
+                NutritionThaliItem(
+                  id: 'item-$id-$i',
+                  position: i,
+                  source: NutritionThaliItemSource.food,
+                  foodId: 'food-a',
+                  recipeVersionId: null,
+                  quantity: Quantity.fromNum(
+                    amount: 100,
+                    unit: QuantityUnit.gram,
+                  ),
+                  displayLabel: 'Rice',
+                ),
+            ],
+          );
+          final preview = await harness.repository.preview(
+            draft: await harness.repository.saveDraft(draft),
+          );
+          final snapshot = await harness.repository.finalize(
+            preview: preview,
+            mealCategory: 'lunch',
+            loggedAt: DateTime.utc(2026, 8, 4, 12),
+            commandId: 'cmd-$id',
+            consumptionId: 'cons-$id',
+            localDate: '2026-08-04',
+            timezoneId: 'Asia/Kolkata',
+            allowPartial: true,
+          );
+          return NutritionCanonicalSnapshotReadModel(snapshot).displayLabel;
+        }
+
+        expect(
+          await logged('North Indian Classic', 'named'),
+          'North Indian Classic',
+        );
+        expect(await logged(null, 'default'), 'Thali (2 items)');
+      },
+    );
+
     test('food picker hides regional foods that have no nutrition', () async {
       final harness = await _ThaliHarness.create();
       addTearDown(harness.close);

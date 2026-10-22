@@ -1081,6 +1081,67 @@ void _plateFitsTests() {
       expect(tester.takeException(), isNull);
     });
   }
+
+  group('katori names (UR-28)', () {
+    test('a word or two of the name', () {
+      expect(thaliKatoriShortLabel('Jeera Rice'), 'Jeera Rice');
+      expect(
+        thaliKatoriShortLabel('Whole Wheat Roti / Chapati'),
+        'Whole Wheat',
+      );
+      expect(thaliKatoriShortLabel('Toor Dal / Yellow Dal Tadka'), 'Toor Dal');
+      expect(thaliKatoriShortLabel('Curd (Dahi)'), 'Curd');
+      expect(thaliKatoriShortLabel('Kadhi Pakora'), 'Kadhi Pakora');
+      expect(
+        thaliKatoriShortLabel('Mixedvegetablesabji'),
+        'Mixedvegetablesabji',
+      );
+    });
+
+    testWidgets('each katori is named on a large plate, at 11 pt or more', (
+      tester,
+    ) async {
+      await _pumpClassic(
+        tester,
+        theme: AppTheme.lightTheme,
+        size: const Size(430, 932),
+      );
+      final labels = find.byWidgetPredicate(
+        (w) =>
+            w is Text &&
+            w.key is ValueKey<String> &&
+            (w.key! as ValueKey<String>).value.startsWith('thali_plate_label_'),
+      );
+      expect(labels, findsWidgets);
+      for (final label in tester.widgetList<Text>(labels)) {
+        expect(label.style!.fontSize, greaterThanOrEqualTo(11));
+        expect(label.maxLines, 1);
+      }
+    });
+
+    testWidgets('a plate under 300 pt shows no names', (tester) async {
+      await _pumpClassic(
+        tester,
+        theme: AppTheme.lightTheme,
+        size: const Size(320, 640),
+      );
+      expect(
+        tester.getSize(find.byType(CircularThaliPlate)).width - 32,
+        lessThan(kThaliPlateLabelMinDiameter),
+      );
+      expect(
+        find.byWidgetPredicate(
+          (w) =>
+              w is Text &&
+              w.key is ValueKey<String> &&
+              (w.key! as ValueKey<String>).value.startsWith(
+                'thali_plate_label_',
+              ),
+        ),
+        findsNothing,
+      );
+    });
+  });
 }
 
 /// Steel thali goldens (PREMIUM_REDESIGN_PLAN § 6.3): the classic preset

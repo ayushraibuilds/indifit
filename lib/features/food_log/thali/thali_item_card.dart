@@ -77,7 +77,9 @@ class ThaliItemCard extends StatelessWidget {
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
                     ),
-                    maxLines: 1,
+                    // Two lines, so "Whole Wheat Roti / Chapati" reads in
+                    // full (UR-28).
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 2),

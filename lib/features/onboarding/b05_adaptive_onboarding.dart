@@ -332,15 +332,9 @@ class B05OnboardingDraftStore {
         'other',
       }),
       name: _bounded(prefs.getString(_profileNameKey) ?? '', maxLength: 100),
-      age: _bounded(prefs.getString(_profileAgeKey) ?? '25', maxLength: 16),
-      height: _bounded(
-        prefs.getString(_profileHeightKey) ?? '170',
-        maxLength: 16,
-      ),
-      weight: _bounded(
-        prefs.getString(_profileWeightKey) ?? '70',
-        maxLength: 16,
-      ),
+      age: _bounded(prefs.getString(_profileAgeKey) ?? '', maxLength: 16),
+      height: _bounded(prefs.getString(_profileHeightKey) ?? '', maxLength: 16),
+      weight: _bounded(prefs.getString(_profileWeightKey) ?? '', maxLength: 16),
       activityLevel: normalizeActivity(prefs.getString(_profileActivityKey)),
       goal: normalizeProfileGoal(prefs.getString(_profileGoalKey)),
       targetWeight: _bounded(

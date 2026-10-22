@@ -18,6 +18,58 @@ import 'appearance_bottom_sheet.dart';
 import 'today_helpers.dart';
 import 'today_motion.dart';
 
+/// The Today greeting on one line (UR-47): "Good evening, Arjun" fits at
+/// 402 pt and 1.0× text, easing from 22 pt to 19 pt before a long name is
+/// ellipsised. From 1.35× text it may take two lines at full size.
+class TodayGreetingTitle extends StatelessWidget {
+  const TodayGreetingTitle(this.title, {super.key});
+
+  final String title;
+
+  static const double fullSize = 22;
+  static const double smallestSize = 19;
+
+  @override
+  Widget build(BuildContext context) {
+    final textScaler = MediaQuery.textScalerOf(context);
+    TextStyle style(double size) => B05Typography.pageTitle(
+      context,
+    ).copyWith(fontSize: size, letterSpacing: -0.3);
+    if (textScaler.scale(1) >= 1.35) {
+      return Text(
+        title,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: style(fullSize),
+      );
+    }
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        var size = fullSize;
+        while (size > smallestSize) {
+          final painter = TextPainter(
+            text: TextSpan(text: title, style: style(size)),
+            textDirection: Directionality.of(context),
+            textScaler: textScaler,
+            maxLines: 1,
+          )..layout(maxWidth: constraints.maxWidth);
+          final fits = !painter.didExceedMaxLines;
+          painter.dispose();
+          if (fits) break;
+          size -= 1;
+        }
+        return Text(
+          title,
+          maxLines: 1,
+          softWrap: false,
+          overflow: TextOverflow.ellipsis,
+          style: style(size),
+        );
+      },
+    );
+  }
+}
+
 /// Today's top block (T1): greeting and a quiet date on the left; the streak,
 /// the theme toggle and settings in one row on the right. Every piece keeps
 /// its size while data loads, so the page never moves when the streak lands.
@@ -110,16 +162,7 @@ class TodayHeaderState extends State<TodayHeader> with WidgetsBindingObserver {
                   header: true,
                   label: title,
                   value: dateContext,
-                  child: ExcludeSemantics(
-                    child: Text(
-                      title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: B05Typography.pageTitle(
-                        context,
-                      ).copyWith(fontSize: 22, letterSpacing: -0.3),
-                    ),
-                  ),
+                  child: ExcludeSemantics(child: TodayGreetingTitle(title)),
                 ),
                 const SizedBox(height: 2),
                 _TodayDateLine(

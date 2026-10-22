@@ -8,6 +8,7 @@ import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/features/onboarding/onboarding_screen.dart';
 
 import 'support/indifit_test_harness.dart';
+import 'support/onboarding_about.dart';
 
 void main() {
   initializeIndiFitTestHarness();
@@ -147,6 +148,8 @@ void main() {
     expect(find.text('What is your main goal?'), findsNothing);
 
     await _tapVisible(tester, 'Male');
+
+    await useOnboardingAboutDefaults(tester);
     await _tapVisible(tester, 'Next step');
     await tester.pumpAndSettle();
     expect(find.text('How do you move most days?'), findsOneWidget);
@@ -188,6 +191,7 @@ void main() {
       await tester.enterText(weight, '62');
       await tester.pump();
       await _tapVisible(tester, 'Male');
+      await useOnboardingAboutDefaults(tester);
       await _tapVisible(tester, 'Next step');
       await tester.pumpAndSettle();
       final back = find.byTooltip('Back');
@@ -248,8 +252,10 @@ void main() {
       final ageField = _field('Age');
       final weightField = _field('Current weight');
 
-      // Default age is 25
-      expect(tester.widget<TextField>(ageField).controller!.text, '25');
+      // Age starts empty, with 25 as the placeholder the steppers start from
+      // (UR-25).
+      expect(tester.widget<TextField>(ageField).controller!.text, '');
+      expect(tester.widget<TextField>(ageField).decoration!.hintText, '25');
       // Tap increase age stepper
       await tester.tap(find.bySemanticsLabel('Increase Age'));
       await tester.pump();
@@ -260,8 +266,9 @@ void main() {
       await tester.pump();
       expect(tester.widget<TextField>(ageField).controller!.text, '25');
 
-      // Default weight is 70
-      expect(tester.widget<TextField>(weightField).controller!.text, '70');
+      // Weight starts empty too; the ruler rests on the 70 placeholder.
+      expect(tester.widget<TextField>(weightField).controller!.text, '');
+      expect(tester.widget<TextField>(weightField).decoration!.hintText, '70');
       // Weight moves on the ruler (V8): one step up is 0.5 kg.
       final semantics = tester.ensureSemantics();
       final weightRuler = find.byKey(

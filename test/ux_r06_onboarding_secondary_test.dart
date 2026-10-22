@@ -17,6 +17,8 @@ import 'package:indifit/features/profile/profile_screen.dart';
 import 'package:indifit/features/settings/unit_preference.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'support/onboarding_about.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -477,6 +479,7 @@ void main() {
     await tester.ensureVisible(find.text('Male'));
     await tester.pump();
     await tester.tap(find.text('Male'));
+    await useOnboardingAboutDefaults(tester);
     await tester.tap(find.text('Next step'));
     await tester.pumpAndSettle();
     expect(find.text('How do you move most days?'), findsOneWidget);

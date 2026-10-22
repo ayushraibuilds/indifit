@@ -14,6 +14,8 @@ import 'package:indifit/features/nutrition/jain_constraint_sync.dart';
 import 'package:indifit/features/onboarding/onboarding_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'support/onboarding_about.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -64,6 +66,7 @@ void main() {
     await _tapVisible(tester, 'Maintain');
     await _tapVisible(tester, 'Next step');
     await _tapVisible(tester, 'Male');
+    await useOnboardingAboutDefaults(tester);
     await _tapVisible(tester, 'Next step');
     await _tapVisible(tester, 'Next step');
 
@@ -476,6 +479,7 @@ Future<void> _moveToReview(
     await _tapVisible(tester, 'Next step');
   }
   await _tapVisible(tester, sex);
+  await useOnboardingAboutDefaults(tester);
   await _tapVisible(tester, 'Next step');
   await _tapVisible(tester, activity);
   await _tapVisible(tester, 'Next step');
