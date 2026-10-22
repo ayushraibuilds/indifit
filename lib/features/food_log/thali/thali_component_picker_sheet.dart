@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/nutrition_thali.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
 import '../../../core/typed_quantities.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
+import '../missed_food_searches.dart';
 import '../nutrition_thali_controller.dart';
+import '../widgets/food_search_results_list.dart';
 import 'thali_quantity_label.dart';
 
 class ThaliComponentPickerSheet extends StatefulWidget {
@@ -81,6 +84,26 @@ class _ThaliComponentPickerSheetState extends State<ThaliComponentPickerSheet> {
     _searchController.dispose();
     _amountController.dispose();
     super.dispose();
+  }
+
+  /// Searches added to the "couldn't find it" list this visit.
+  final _savedMissedQueries = <String>{};
+
+  /// The same "Can't find …?" row as Food search (CAT-13, U-5).
+  Widget? _missedQueryRow() {
+    final query = _searchController.text.trim();
+    if (query.length < 2) return null;
+    return Consumer(
+      builder: (context, ref, _) => FoodSearchMissedQueryRow(
+        query: query,
+        saved: _savedMissedQueries.contains(query.toLowerCase()),
+        onAdd: () async {
+          final added = await ref.read(missedFoodSearchesProvider).add(query);
+          if (!mounted || !added) return;
+          setState(() => _savedMissedQueries.add(query.toLowerCase()));
+        },
+      ),
+    );
   }
 
   void _onSearchChanged(String value) {
@@ -256,7 +279,7 @@ class _ThaliComponentPickerSheetState extends State<ThaliComponentPickerSheet> {
                 )
               else if (foodResults.isEmpty &&
                   recipeResults.isEmpty &&
-                  _searchController.text.isNotEmpty)
+                  _searchController.text.isNotEmpty) ...[
                 Center(
                   child: Padding(
                     padding: const EdgeInsets.all(24),
@@ -265,8 +288,9 @@ class _ThaliComponentPickerSheetState extends State<ThaliComponentPickerSheet> {
                       style: TextStyle(color: colors.textSecondary),
                     ),
                   ),
-                )
-              else
+                ),
+                ?_missedQueryRow(),
+              ] else
                 Flexible(
                   child: ListView(
                     shrinkWrap: true,
@@ -359,6 +383,7 @@ class _ThaliComponentPickerSheetState extends State<ThaliComponentPickerSheet> {
                           ),
                         ),
                       ],
+                      ?_missedQueryRow(),
                     ],
                   ),
                 ),
