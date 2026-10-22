@@ -141,7 +141,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
 
     expect(find.text('Meals'), findsOneWidget);
-    expect(find.text('Nothing logged yet'), findsNWidgets(4));
+    expect(find.text('Nothing yet'), findsNWidgets(4));
     expect(
       find.byKey(const ValueKey('food_diary_primary_add')),
       findsOneWidget,
